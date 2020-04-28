@@ -43,9 +43,9 @@ Line 2, characters 2-13:
 2 |   type t0 = A  (* unused type and constructor *)
       ^^^^^^^^^^^
 Warning 34: unused type t0.
-Line 2, characters 2-13:
+Line 2, characters 12-13:
 2 |   type t0 = A  (* unused type and constructor *)
-      ^^^^^^^^^^^
+                ^
 Warning 37: unused constructor A.
 module T3 : sig  end
 |}]
@@ -61,9 +61,9 @@ Line 3, characters 20-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
                         ^^^^^^^^^^
 Warning 34: unused type t.
-Line 3, characters 20-30:
+Line 3, characters 29-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
-                        ^^^^^^^^^^
+                                 ^
 Warning 37: unused constructor A.
 Line 4, characters 2-8:
 4 |   open M (* unused open; no shadowing (A below refers to the one in t0) *)
@@ -87,9 +87,9 @@ Line 2, characters 2-13:
 2 |   type t0 = A (* unused type and constructor *)
       ^^^^^^^^^^^
 Warning 34: unused type t0.
-Line 2, characters 2-13:
+Line 2, characters 12-13:
 2 |   type t0 = A (* unused type and constructor *)
-      ^^^^^^^^^^^
+                ^
 Warning 37: unused constructor A.
 module T5 : sig  end
 |}]
@@ -131,9 +131,9 @@ Line 2, characters 2-13:
 2 |   type t0 = A  (* unused type and constructor *)
       ^^^^^^^^^^^
 Warning 34: unused type t0.
-Line 2, characters 2-13:
+Line 2, characters 12-13:
 2 |   type t0 = A  (* unused type and constructor *)
-      ^^^^^^^^^^^
+                ^
 Warning 37: unused constructor A.
 module T3_bis : sig  end
 |}]
@@ -149,9 +149,9 @@ Line 3, characters 20-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
                         ^^^^^^^^^^
 Warning 34: unused type t.
-Line 3, characters 20-30:
+Line 3, characters 29-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
-                        ^^^^^^^^^^
+                                 ^
 Warning 37: unused constructor A.
 Line 4, characters 2-9:
 4 |   open! M (* unused open; no shadowing (A below refers to the one in t0) *)
@@ -171,9 +171,9 @@ Line 2, characters 2-13:
 2 |   type t0 = A (* unused type and constructor *)
       ^^^^^^^^^^^
 Warning 34: unused type t0.
-Line 2, characters 2-13:
+Line 2, characters 12-13:
 2 |   type t0 = A (* unused type and constructor *)
-      ^^^^^^^^^^^
+                ^
 Warning 37: unused constructor A.
 module T5_bis : sig  end
 |}]

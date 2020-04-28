@@ -475,11 +475,13 @@ module EnvLazy: sig
   val create_forced : 'b -> ('a, 'b) t
   val create_failed : exn -> ('a, 'b) t
 
-  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns
-     [None] then [t] is recorded in [log]. [backtrack log] will then reset all
-     the recorded [t]s back to their original state. *)
+  (* [force_logged log f t] is equivalent to [force f t] but if [f]
+     returns [Error _] then [t] is recorded in [log]. [backtrack log]
+     will then reset all the recorded [t]s back to their original
+     state. *)
   val log : unit -> log
-  val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
+  val force_logged :
+    log -> ('a -> ('b, 'c) result) -> ('a,('b, 'c) result) t -> ('b, 'c) result
   val backtrack : log -> unit
 
 end

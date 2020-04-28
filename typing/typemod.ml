@@ -105,11 +105,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-let update_location loc = function
-    Error (_, env, err) -> Error (loc, env, err)
-  | err -> err
-let () = Typetexp.typemod_update_location := update_location
-
 open Typedtree
 
 let rec path_concat head p =
@@ -137,7 +132,7 @@ let extract_sig_open env loc mty =
 (* Compute the environment after opening a module *)
 
 let type_open_ ?used_slot ?toplevel ovf env loc lid =
-  let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
+  let path = Env.lookup_module_path ~load:true ~loc:lid.loc lid.txt env in
   match Env.open_signature ~loc ?used_slot ?toplevel ovf path env with
   | Some env -> path, env
   | None ->
@@ -529,7 +524,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         update_rec_next rs rem
     | (Sig_module(id, pres, md, rs, priv) :: rem, [s], Pwith_module (_, lid'))
       when Ident.name id = s ->
-        let path, md' = Typetexp.find_module initial_env loc lid'.txt in
+        let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
         let md'' = { md' with md_type = mty } in
@@ -539,7 +534,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         Sig_module(id, pres, newmd, rs, priv) :: rem
     | (Sig_module(id, _, md, rs, _) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
-        let path, md' = Typetexp.find_module initial_env loc lid'.txt in
+        let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let aliasable = not (Env.is_functor_arg path env) in
         let newmd = Mtype.strengthen_decl ~aliasable env md' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
@@ -598,8 +593,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
          in
          match type_decl_is_alias sdecl with
          | Some lid ->
-            let replacement =
-              try Env.lookup_type lid.txt initial_env
+            let replacement, _ =
+              try Env.find_type_by_name lid.txt initial_env
               with Not_found -> assert false
             in
             fun s path -> Subst.add_type_path path replacement s
@@ -678,11 +673,16 @@ let map_ext fn exts rem =
 let rec approx_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
-      let (path, _info) = Typetexp.find_modtype env smty.pmty_loc lid.txt in
+      let (path, _info) =
+        Env.lookup_modtype ~use:false ~loc:smty.pmty_loc lid.txt env
+      in
       Mty_ident path
   | Pmty_alias lid ->
-      let path = Typetexp.lookup_module env smty.pmty_loc lid.txt in
-      Mty_alias path
+      let path =
+        Env.lookup_module_path ~use:false ~load:false
+          ~loc:smty.pmty_loc lid.txt env
+      in
+      Mty_alias(path)
   | Pmty_signature ssg ->
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
@@ -705,9 +705,9 @@ let rec approx_modtype env smty =
           | Pwith_module (_, lid') ->
               (* Lookup the module to make sure that it is not recursive.
                  (GPR#1626) *)
-              ignore (Typetexp.find_module env lid'.loc lid'.txt)
+              ignore (Env.lookup_module ~use:false ~loc:lid'.loc lid'.txt env)
           | Pwith_modsubst (_, lid') ->
-              ignore (Typetexp.find_module env lid'.loc lid'.txt))
+              ignore (Env.lookup_module ~use:false ~loc:lid'.loc lid'.txt env))
         constraints;
       body
   | Pmty_typeof smod ->
@@ -749,7 +749,8 @@ and approx_sig env ssg =
           let scope = Ctype.create_scope () in
           let id = Ident.create_scoped ~scope pms.pms_name.txt in
           let _, md =
-            Typetexp.find_module env pms.pms_manifest.loc pms.pms_manifest.txt
+            Env.lookup_module ~use:false ~loc:pms.pms_manifest.loc
+               pms.pms_manifest.txt env
           in
           let pres =
             match md.Types.md_type with
@@ -1065,11 +1066,11 @@ let has_remove_aliases_attribute attr =
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
-  let (path, _info) = Typetexp.find_modtype env loc lid in
+  let (path, _info) = Env.lookup_modtype ~loc lid env in
   path
 
 let transl_module_alias loc env lid =
-  Typetexp.lookup_module env loc lid
+  Env.lookup_module_path ~load:false ~loc lid env
 
 let mkmty desc typ env loc attrs =
   let mty = {
@@ -1275,7 +1276,8 @@ and transl_signature env sg =
             let scope = Ctype.create_scope () in
             let id = Ident.create_scoped ~scope pms.pms_name.txt in
             let path, md =
-              Typetexp.find_module env pms.pms_manifest.loc pms.pms_manifest.txt
+              Env.lookup_module ~loc:pms.pms_manifest.loc
+                pms.pms_manifest.txt env
             in
             let aliasable = not (Env.is_functor_arg path env) in
             let md =
@@ -1489,18 +1491,11 @@ and transl_recmodule_modtypes env sdecls =
     List.map (fun x -> Ident.create_scoped ~scope x.pmd_name.txt) sdecls
   in
   let approx_env =
-    (*
-       cf #5965
-       We use a dummy module type in order to detect a reference to one
-       of the module being defined during the call to approx_modtype.
-       It will be detected in Env.lookup_module.
-    *)
     List.fold_left
       (fun env id ->
-         let dummy =
-           Mty_ident (Path.Pident (Ident.create_scoped ~scope "#recmod#"))
-         in
-         Env.add_module ~arg:true id Mp_present dummy env
+         (* cf #5965 *)
+         Env.enter_unbound_module (Ident.name id)
+           Mod_unbound_illegal_recursion env
       )
       env ids
   in
@@ -1728,16 +1723,14 @@ let rec package_constraints env loc mty constrs =
   Mty_signature sg'
 
 let modtype_of_package env loc p nl tl =
-  try match (Env.find_modtype p env).mtd_type with
+  match (Env.find_modtype p env).mtd_type with
   | Some mty when nl <> [] ->
       package_constraints env loc mty
         (List.combine (List.map Longident.flatten nl) tl)
   | _ ->
       if nl = [] then Mty_ident p
       else raise(Error(loc, env, Signature_expected))
-  with Not_found ->
-    let error = Typetexp.Unbound_modtype (Ctype.lid_of_path p) in
-    raise(Typetexp.Error(loc, env, error))
+  | exception Not_found -> assert false
 
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
@@ -1777,7 +1770,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let path =
-        Typetexp.lookup_module ~load:(not alias) env smod.pmod_loc lid.txt in
+        Env.lookup_module_path ~load:(not alias) ~loc:smod.pmod_loc lid.txt env
+      in
       let md = { mod_desc = Tmod_ident (path, lid);
                  mod_type = Mty_alias path;
                  mod_env = env;
@@ -2346,7 +2340,7 @@ let type_module_type_of env smod =
   let tmty =
     match smod.pmod_desc with
     | Pmod_ident lid -> (* turn off strengthening in this case *)
-        let path, md = Typetexp.find_module env smod.pmod_loc lid.txt in
+        let path, md = Env.lookup_module ~loc:smod.pmod_loc lid.txt env in
           rm { mod_desc = Tmod_ident (path, lid);
                mod_type = md.md_type;
                mod_env = env;

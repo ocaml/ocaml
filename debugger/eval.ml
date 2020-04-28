@@ -75,24 +75,27 @@ let value_path event env path =
       fatal_error ("Cannot find address for: " ^ (Path.name path))
 
 let rec expression event env = function
-    E_ident lid ->
-      begin try
-        let (p, valdesc) = Env.lookup_value lid env in
-        (begin match valdesc.val_kind with
-           Val_ivar (_, cl_num) ->
-             let (p0, _) =
-               Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
-             in
-             let v = value_path event env p0 in
-             let i = value_path event env p in
-             Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
-         | _ ->
-             value_path event env p
-         end,
-         Ctype.correct_levels valdesc.val_type)
-      with Not_found ->
-        raise(Error(Unbound_long_identifier lid))
-      end
+  | E_ident lid -> begin
+      match Env.find_value_by_name lid env with
+      | (p, valdesc) ->
+          let v =
+            match valdesc.val_kind with
+            | Val_ivar (_, cl_num) ->
+                let (p0, _) =
+                  Env.find_value_by_name
+                    (Longident.Lident ("self-" ^ cl_num)) env
+                in
+                let v = value_path event env p0 in
+                let i = value_path event env p in
+                Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
+            | _ ->
+                value_path event env p
+          in
+          let typ = Ctype.correct_levels valdesc.val_type in
+          v, typ
+      | exception Not_found ->
+          raise(Error(Unbound_long_identifier lid))
+    end
   | E_result ->
       begin match event with
         Some {ev_ev = {ev_kind = Event_after ty; ev_typsubst = subst}}
