@@ -658,7 +658,10 @@ and print_out_type_decl kwd ppf td =
   | Asttypes.Public -> ()
   in
   let print_immediate ppf =
-    if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
+    match td.otype_immediate with
+    | Unknown -> ()
+    | Always -> fprintf ppf " [%@%@immediate]"
+    | Always_on_64bits -> fprintf ppf " [%@%@immediate64]"
   in
   let print_unboxed ppf =
     if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()

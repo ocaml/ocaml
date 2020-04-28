@@ -300,7 +300,7 @@ type type_declaration =
     type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: bool; (* true iff type should not be a pointer *)
+    type_immediate: Type_immediacy.t;
     type_unboxed: unboxed_status;
   }
 

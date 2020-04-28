@@ -439,6 +439,7 @@ typing/btype.cmi : \
     parsing/asttypes.cmi
 typing/ctype.cmo : \
     typing/types.cmi \
+    typing/type_immediacy.cmi \
     typing/subst.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -453,6 +454,7 @@ typing/ctype.cmo : \
     typing/ctype.cmi
 typing/ctype.cmx : \
     typing/types.cmx \
+    typing/type_immediacy.cmx \
     typing/subst.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -467,6 +469,7 @@ typing/ctype.cmx : \
     typing/ctype.cmi
 typing/ctype.cmi : \
     typing/types.cmi \
+    typing/type_immediacy.cmi \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/ident.cmi \
@@ -596,6 +599,7 @@ typing/includeclass.cmi : \
 typing/includecore.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/type_immediacy.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
     typing/ident.cmi \
@@ -608,6 +612,7 @@ typing/includecore.cmo : \
 typing/includecore.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/type_immediacy.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
     typing/ident.cmx \
@@ -620,6 +625,7 @@ typing/includecore.cmx : \
 typing/includecore.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/type_immediacy.cmi \
     typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
@@ -718,6 +724,7 @@ typing/oprint.cmx : \
 typing/oprint.cmi : \
     typing/outcometree.cmi
 typing/outcometree.cmi : \
+    typing/type_immediacy.cmi \
     parsing/asttypes.cmi
 typing/parmatch.cmo : \
     utils/warnings.cmi \
@@ -864,6 +871,7 @@ typing/printpat.cmi : \
 typing/printtyp.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
+    typing/type_immediacy.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -877,13 +885,13 @@ typing/printtyp.cmo : \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/clflags.cmi \
-    parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
     typing/printtyp.cmi
 typing/printtyp.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
+    typing/type_immediacy.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -897,7 +905,6 @@ typing/printtyp.cmx : \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/clflags.cmx \
-    parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
     typing/printtyp.cmi
@@ -1032,6 +1039,14 @@ typing/tast_mapper.cmi : \
     typing/typedtree.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
+typing/type_immediacy.cmo : \
+    parsing/builtin_attributes.cmi \
+    typing/type_immediacy.cmi
+typing/type_immediacy.cmx : \
+    parsing/builtin_attributes.cmx \
+    typing/type_immediacy.cmi
+typing/type_immediacy.cmi : \
+    parsing/parsetree.cmi
 typing/typeclass.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
@@ -1260,21 +1275,22 @@ typing/typedecl_immediacy.cmo : \
     typing/types.cmi \
     typing/typedecl_unboxed.cmi \
     typing/typedecl_properties.cmi \
+    typing/type_immediacy.cmi \
     parsing/location.cmi \
     typing/ctype.cmi \
-    parsing/builtin_attributes.cmi \
     typing/typedecl_immediacy.cmi
 typing/typedecl_immediacy.cmx : \
     typing/types.cmx \
     typing/typedecl_unboxed.cmx \
     typing/typedecl_properties.cmx \
+    typing/type_immediacy.cmx \
     parsing/location.cmx \
     typing/ctype.cmx \
-    parsing/builtin_attributes.cmx \
     typing/typedecl_immediacy.cmi
 typing/typedecl_immediacy.cmi : \
     typing/types.cmi \
     typing/typedecl_properties.cmi \
+    typing/type_immediacy.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi
@@ -1483,6 +1499,7 @@ typing/typeopt.cmi : \
     lambda/lambda.cmi \
     typing/env.cmi
 typing/types.cmo : \
+    typing/type_immediacy.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1493,6 +1510,7 @@ typing/types.cmo : \
     parsing/asttypes.cmi \
     typing/types.cmi
 typing/types.cmx : \
+    typing/type_immediacy.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -1503,6 +1521,7 @@ typing/types.cmx : \
     parsing/asttypes.cmi \
     typing/types.cmi
 typing/types.cmi : \
+    typing/type_immediacy.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -4775,6 +4794,8 @@ middle_end/flambda/invariant_params.cmi : \
 middle_end/flambda/lift_code.cmo : \
     middle_end/variable.cmi \
     utils/strongly_connected_components.cmi \
+    middle_end/flambda/base_types/mutable_variable.cmi \
+    lambda/lambda.cmi \
     utils/int_replace_polymorphic_compare.cmi \
     middle_end/flambda/flambda_iterators.cmi \
     middle_end/flambda/flambda.cmi \
@@ -4783,6 +4804,8 @@ middle_end/flambda/lift_code.cmo : \
 middle_end/flambda/lift_code.cmx : \
     middle_end/variable.cmx \
     utils/strongly_connected_components.cmx \
+    middle_end/flambda/base_types/mutable_variable.cmx \
+    lambda/lambda.cmx \
     utils/int_replace_polymorphic_compare.cmx \
     middle_end/flambda/flambda_iterators.cmx \
     middle_end/flambda/flambda.cmx \

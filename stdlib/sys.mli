@@ -357,3 +357,28 @@ external opaque_identity : 'a -> 'a = "%opaque"
 
     @since 4.03.0
 *)
+
+module Immediate64 : sig
+  (** This module allows to define a type [t] with the [immediate64]
+      attribute. This attribute means that the type is immediate on 64
+      bit architectures. On other architectures, it might or might not
+      be immediate.
+
+      @since 4.10.0
+  *)
+
+  module type Non_immediate = sig
+    type t
+  end
+  module type Immediate = sig
+    type t [@@immediate]
+  end
+
+  module Make(Immediate : Immediate)(Non_immediate : Non_immediate) : sig
+    type t [@@immediate64]
+    type 'a repr =
+      | Immediate : Immediate.t repr
+      | Non_immediate : Non_immediate.t repr
+    val repr : t repr
+  end
+end

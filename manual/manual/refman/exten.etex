@@ -1583,6 +1583,11 @@ Some attributes are understood by the type-checker:
   garbage collector's write barrier, which can significantly boost performance in
   programs relying heavily on mutable state.
 \item
+  ``ocaml.immediate64'' or ``immediate64'' applied on an abstract type mark the
+  type as having a non-pointer implementation on 64 bit platforms. No assumption
+  is made on other platforms. In order to produce a type with the
+  ``immediate64`` attribute, one must use ``Sys.Immediate64.Make`` functor.
+\item
   "ocaml.unboxed" or "unboxed" can be used on a type definition if the
   type is a single-field record or a concrete type with a single
   constructor that has a single argument. It tells the compiler to
@@ -1679,6 +1684,32 @@ end = struct
 end
 \end{caml_example*}
 
+\begin{caml_example*}{verbatim}
+module Int_or_int64 : sig
+  type t [@@immediate64]
+  val zero : t
+  val one : t
+  val add : t -> t -> t
+end = struct
+
+  include Sys.Immediate64.Make(Int)(Int64)
+
+  module type S = sig
+    val zero : t
+    val one : t
+    val add : t -> t -> t
+  end
+
+  let impl : (module S) =
+    match repr with
+    | Immediate ->
+        (module Int : S)
+    | Non_immediate ->
+        (module Int64 : S)
+
+  include (val impl : S)
+end
+\end{caml_example*}
 
 \section{Extension nodes}\label{s:extension-nodes}
 
