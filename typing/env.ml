@@ -1844,8 +1844,9 @@ let enter_extension ~scope name ext env =
   let env = store_extension ~check:true id addr ext env in
   (id, env)
 
-let enter_module_declaration ?arg id presence md env =
-  add_module_declaration ?arg ~check:true id presence md env
+let enter_module_declaration ~scope ?arg s presence md env =
+  let id = Ident.create_scoped ~scope s in
+  (id, add_module_declaration ?arg ~check:true id presence md env)
 
 let enter_modtype ~scope name mtd env =
   let id = Ident.create_scoped ~scope name in
@@ -1864,9 +1865,7 @@ let enter_cltype ~scope name desc env =
   (id, env)
 
 let enter_module ~scope ?arg s presence mty env =
-  let id = Ident.create_scoped ~scope s in
-  let env = enter_module_declaration ?arg id presence (md mty) env in
-  (id, env)
+  enter_module_declaration ~scope ?arg s presence (md mty) env
 
 (* Insertion of all components of a signature *)
 

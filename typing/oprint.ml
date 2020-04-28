@@ -459,39 +459,85 @@ let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
 
-let rec print_out_functor funct ppf =
-  function
-    Omty_functor (_, None, mty_res) ->
-      if funct then fprintf ppf "() %a" (print_out_functor true) mty_res
-      else fprintf ppf "functor@ () %a" (print_out_functor true) mty_res
-  | Omty_functor (name, Some mty_arg, mty_res) -> begin
-      match name, funct with
-      | "_", true ->
-          fprintf ppf "->@ %a ->@ %a"
-            print_out_module_type mty_arg (print_out_functor false) mty_res
-      | "_", false ->
-          fprintf ppf "%a ->@ %a"
-            print_out_module_type mty_arg (print_out_functor false) mty_res
-      | name, true ->
-          fprintf ppf "(%s : %a) %a" name
-            print_out_module_type mty_arg (print_out_functor true) mty_res
-      | name, false ->
-            fprintf ppf "functor@ (%s : %a) %a" name
-              print_out_module_type mty_arg (print_out_functor true) mty_res
-    end
-  | m ->
-      if funct then fprintf ppf "->@ %a" print_out_module_type m
-      else print_out_module_type ppf m
+(* For anonymous functor arguments, the logic to choose between
+   the long-form
+     functor (_ : S) -> ...
+   and the short-form
+     S -> ...
+   is as follows: if we are already printing long-form functor arguments,
+   we use the long form unless all remaining functor arguments can use
+   the short form. (Otherwise use the short form.)
 
-and print_out_module_type ppf =
+   For example,
+     functor (X : S1) (_ : S2) (Y : S3) (_ : S4) (_ : S5) -> sig end
+   will get printed as
+     functor (X : S1) (_ : S2) (Y : S3) -> S4 -> S5 -> sig end
+
+   but
+     functor (_ : S1) (_ : S2) (Y : S3) (_ : S4) (_ : S5) -> sig end
+   gets printed as
+     S1 -> S2 -> functor (Y : S3) -> S4 -> S5 -> sig end
+*)
+
+(* take a module type that may be a functor type,
+   and return the longest prefix list of arguments
+   that should be printed in long form. *)
+let collect_functor_arguments mty =
+  let rec collect_args acc = function
+    | Omty_functor (name, mty_arg, mty_res) ->
+       collect_args ((name, mty_arg) :: acc) mty_res
+    | non_functor -> (acc, non_functor)
+  in
+  let rec uncollect_anonymous_suffix acc rest = match acc with
+      | ("_", mty_arg) :: acc ->
+         uncollect_anonymous_suffix acc (Omty_functor ("_", mty_arg, rest))
+      | (_, _) :: _ | [] ->
+         (acc, rest)
+  in
+  let (acc, non_functor) = collect_args [] mty in
+  let (acc, rest) = uncollect_anonymous_suffix acc non_functor in
+  (List.rev acc, rest)
+
+let rec print_out_module_type ppf mty =
+  print_out_functor ppf mty
+and print_out_functor ppf = function
+  | Omty_functor _ as t ->
+     let rec print_functor ppf = function
+       | Omty_functor ("_", Some mty_arg, mty_res) ->
+          fprintf ppf "%a ->@ %a"
+            print_simple_out_module_type mty_arg
+            print_functor mty_res
+       | Omty_functor _ as non_anonymous_functor ->
+          let (args, rest) = collect_functor_arguments non_anonymous_functor in
+          let print_arg ppf = function
+            | (_, None) ->
+               fprintf ppf "()"
+            | (name, Some mty) ->
+               fprintf ppf "(%s : %a)"
+                 name
+                 print_out_module_type mty
+          in
+          fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"
+            (pp_print_list ~pp_sep:pp_print_space print_arg) args
+            print_functor rest
+       | non_functor ->
+          print_simple_out_module_type ppf non_functor
+     in
+     fprintf ppf "@[<2>%a@]" print_functor t
+  | t -> print_simple_out_module_type ppf t
+and print_simple_out_module_type ppf =
   function
     Omty_abstract -> ()
-  | Omty_functor _ as t ->
-      fprintf ppf "@[<2>%a@]" (print_out_functor false) t
   | Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
-      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" !out_signature sg
+     begin match sg with
+       | [] -> fprintf ppf "sig end"
+       | sg ->
+          fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_out_signature sg
+     end
   | Omty_alias id -> fprintf ppf "(module %a)" print_ident id
+  | Omty_functor _ as non_simple ->
+     fprintf ppf "(%a)" print_out_module_type non_simple
 and print_out_signature ppf =
   function
     [] -> ()

@@ -179,7 +179,7 @@ CAMLprim value caml_memprof_set(value v)
 enum ml_alloc_kind {
   Minor = Val_long(0),
   Major = Val_long(1),
-  Serialized = Val_long(2)
+  Unmarshalled = Val_long(2)
 };
 
 /* When we call do_callback, we suspend/resume sampling. In order to
@@ -265,17 +265,15 @@ static struct postponed_block {
   *postponed_hd = default_postponed_queue; /* Pointer to next push */
 int caml_memprof_to_do = 0;
 
-static void postponed_pop(void)
+static struct postponed_block* postponed_next(struct postponed_block* p)
 {
-  caml_remove_global_root(&postponed_tl->block);
-  caml_remove_global_root(&postponed_tl->callstack);
-  postponed_tl++;
-  if (postponed_tl == postponed_queue_end) postponed_tl = postponed_queue;
+  p++;
+  if (p == postponed_queue_end) return postponed_queue;
+  else return p;
 }
 
 static void purge_postponed_queue(void)
 {
-  while (postponed_tl != postponed_hd) postponed_pop();
   if (postponed_queue != default_postponed_queue) {
     caml_stat_free(postponed_queue);
     postponed_queue = default_postponed_queue;
@@ -289,31 +287,28 @@ static void purge_postponed_queue(void)
    block is allocated, but not yet initialized, so that the heap
    invariants are broken. */
 static void register_postponed_callback(value block, uintnat occurrences,
-                                        enum ml_alloc_kind kind)
+                                        enum ml_alloc_kind kind,
+                                        value* callstack)
 {
-  value callstack;
   struct postponed_block* new_hd;
   if (occurrences == 0) return;
-  callstack = capture_callstack_postponed();
-  if (callstack == 0) return;    /* OOM */
+  if (*callstack == 0) *callstack = capture_callstack_postponed();
+  if (*callstack == 0) return;    /* OOM */
 
-  new_hd = postponed_hd + 1;
-  if (new_hd == postponed_queue_end) new_hd = postponed_queue;
+  new_hd = postponed_next(postponed_hd);
   if (new_hd == postponed_tl) {
     /* Queue is full, reallocate it. (We always leave one free slot in
        order to be able to distinguish the 100% full and the empty
        states). */
-    uintnat sz = 4 * (postponed_queue_end - postponed_queue);
+    uintnat sz = 2 * (postponed_queue_end - postponed_queue);
     struct postponed_block* new_queue =
       caml_stat_alloc_noexc(sz * sizeof(struct postponed_block));
     if (new_queue == NULL) return;
     new_hd = new_queue;
     while (postponed_tl != postponed_hd) {
       *new_hd = *postponed_tl;
-      caml_register_global_root(&new_hd->block);
-      caml_register_global_root(&new_hd->callstack);
       new_hd++;
-      postponed_pop();
+      postponed_tl = postponed_next(postponed_tl);
     }
     if (postponed_queue != default_postponed_queue)
       caml_stat_free(postponed_queue);
@@ -324,9 +319,7 @@ static void register_postponed_callback(value block, uintnat occurrences,
   }
 
   postponed_hd->block = block;
-  postponed_hd->callstack = callstack;
-  caml_register_global_root(&postponed_hd->block);
-  caml_register_global_root(&postponed_hd->callstack);
+  postponed_hd->callstack = *callstack;
   postponed_hd->occurrences = occurrences;
   postponed_hd->kind = kind;
   postponed_hd = new_hd;
@@ -348,7 +341,7 @@ void caml_memprof_handle_postponed(void)
   while (postponed_tl != postponed_hd) {
     struct postponed_block pb = *postponed_tl;
     block = pb.block;           /* pb.block is not a root! */
-    postponed_pop();
+    postponed_tl = postponed_next(postponed_tl);
     if (postponed_tl == postponed_hd) purge_postponed_queue();
 
     /* If using threads, this call can trigger reentrant calls to
@@ -364,15 +357,26 @@ void caml_memprof_handle_postponed(void)
   CAMLreturn0;
 }
 
+/* We don't expect these roots to live long. No need to have a special
+   case for young roots. */
+void caml_memprof_scan_roots(scanning_action f) {
+  struct postponed_block* p;
+  for(p = postponed_tl; p != postponed_hd; p = postponed_next(p)) {
+    f(p->block, &p->block);
+    f(p->callstack, &p->callstack);
+  }
+}
+
 /**** Sampling procedures ****/
 
 void caml_memprof_track_alloc_shr(value block)
 {
+  value callstack = 0;
   CAMLassert(Is_in_heap(block));
   /* This test also makes sure memprof is initialized. */
   if (lambda == 0 || caml_memprof_suspended) return;
   register_postponed_callback(
-      block, mt_generate_binom(Whsize_val(block)), Major);
+      block, mt_generate_binom(Whsize_val(block)), Major, &callstack);
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -435,8 +439,9 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
                       - Caml_state->young_ptr) + 1;
 
   if (!from_caml) {
+    value callstack = 0;
     register_postponed_callback(Val_hp(Caml_state->young_ptr), occurrences,
-                                Minor);
+                                Minor, &callstack);
     caml_memprof_renew_minor_sample();
     CAMLreturn0;
   }
@@ -489,4 +494,40 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
      very little heap operations are allowed until then. */
 
   CAMLreturn0;
+}
+
+void caml_memprof_track_interned(header_t* block, header_t* blockend) {
+  header_t *p;
+  value callstack = 0;
+
+  if(lambda == 0 || caml_memprof_suspended)
+    return;
+
+  /* We have to select the sampled blocks before sampling them,
+     because sampling may trigger GC, and then blocks can escape from
+     [block, blockend[. So we use the postponing machinery for
+     selecting blocks. [intern.c] will call [check_urgent_gc] which
+     will call [caml_memprof_handle_postponed] in turn. */
+  p = block;
+  while(1) {
+    uintnat next_sample = mt_generate_geom();
+    header_t *next_sample_p, *next_p;
+    if(next_sample > blockend - p)
+      break;
+    /* [next_sample_p] is the block *following* the next sampled
+       block! */
+    next_sample_p = p + next_sample;
+
+    while(1) {
+      next_p = p + Whsize_hp(p);
+      if(next_p >= next_sample_p) break;
+      p = next_p;
+    }
+
+    register_postponed_callback(
+      Val_hp(p), mt_generate_binom(next_p - next_sample_p) + 1,
+      Unmarshalled, &callstack);
+
+    p = next_p;
+  }
 }

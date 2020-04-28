@@ -736,18 +736,18 @@ and approx_sig env ssg =
       | Psig_typesubst _ -> approx_sig env srem
       | Psig_module pmd ->
           let scope = Ctype.create_scope () in
-          let id = Ident.create_scoped ~scope pmd.pmd_name.txt in
           let md = approx_module_declaration env pmd in
           let pres =
             match md.Types.md_type with
             | Mty_alias _ -> Mp_absent
             | _ -> Mp_present
           in
-          let newenv = Env.enter_module_declaration id pres md env in
+          let id, newenv =
+            Env.enter_module_declaration ~scope pmd.pmd_name.txt pres md env
+          in
           Sig_module(id, pres, md, Trec_not, Exported) :: approx_sig newenv srem
       | Psig_modsubst pms ->
           let scope = Ctype.create_scope () in
-          let id = Ident.create_scoped ~scope pms.pms_name.txt in
           let _, md =
             Env.lookup_module ~use:false ~loc:pms.pms_manifest.loc
                pms.pms_manifest.txt env
@@ -757,7 +757,9 @@ and approx_sig env ssg =
             | Mty_alias _ -> Mp_absent
             | _ -> Mp_present
           in
-          let newenv = Env.enter_module_declaration id pres md env in
+          let _, newenv =
+            Env.enter_module_declaration ~scope pms.pms_name.txt pres md env
+          in
           approx_sig newenv srem
       | Psig_recmodule sdecls ->
           let scope = Ctype.create_scope () in
@@ -1246,7 +1248,6 @@ and transl_signature env sg =
             final_env
         | Psig_module pmd ->
             let scope = Ctype.create_scope () in
-            let id = Ident.create_scoped ~scope pmd.pmd_name.txt in
             let tmty =
               Builtin_attributes.warning_scope pmd.pmd_attributes
                 (fun () -> transl_modtype env pmd.pmd_type)
@@ -1262,8 +1263,10 @@ and transl_signature env sg =
               md_loc=pmd.pmd_loc;
             }
             in
+            let id, newenv =
+              Env.enter_module_declaration ~scope pmd.pmd_name.txt pres md env
+            in
             Signature_names.check_module names pmd.pmd_name.loc id;
-            let newenv = Env.enter_module_declaration id pres md env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name;
                                 md_presence=pres; md_type=tmty;
@@ -1274,7 +1277,6 @@ and transl_signature env sg =
             final_env
         | Psig_modsubst pms ->
             let scope = Ctype.create_scope () in
-            let id = Ident.create_scoped ~scope pms.pms_name.txt in
             let path, md =
               Env.lookup_module ~loc:pms.pms_manifest.loc
                 pms.pms_manifest.txt env
@@ -1293,11 +1295,13 @@ and transl_signature env sg =
               | Mty_alias _ -> Mp_absent
               | _ -> Mp_present
             in
+            let id, newenv =
+              Env.enter_module_declaration ~scope pms.pms_name.txt pres md env
+            in
             let info =
               `Substituted_away (Subst.add_module id path Subst.identity)
             in
             Signature_names.check_module ~info names pms.pms_name.loc id;
-            let newenv = Env.enter_module_declaration id pres md env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modsubst {ms_id=id; ms_name=pms.pms_name;
                                   ms_manifest=path; ms_txt=pms.pms_manifest;
@@ -2085,11 +2089,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
                   } ->
+        let outer_scope = Ctype.get_current_level () in
         let scope = Ctype.create_scope () in
-        let id =
-          Ident.create_scoped ~scope name.txt (* create early for PR#6752 *)
-        in
-        Signature_names.check_module names pmb_loc id;
         let modl =
           Builtin_attributes.warning_scope attrs
             (fun () ->
@@ -2109,8 +2110,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           }
         in
         (*prerr_endline (Ident.unique_toplevel_name id);*)
-        Mtype.lower_nongen (scope - 1) md.md_type;
-        let newenv = Env.enter_module_declaration id pres md env in
+        Mtype.lower_nongen outer_scope md.md_type;
+        let id, newenv =
+          Env.enter_module_declaration ~scope name.txt pres md env
+        in
+        Signature_names.check_module names pmb_loc id;
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
                      mb_presence=pres; mb_attributes=attrs;  mb_loc=pmb_loc; },
         [Sig_module(id, pres,

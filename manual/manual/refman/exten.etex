@@ -330,34 +330,6 @@ constructors of [t] could be present.
 Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
 
-
-\section{Local opens for patterns}
-\ikwd{let\@\texttt{let}}
-\ikwd{open\@\texttt{open}} \label{s:local-opens}
-
-(Introduced in OCaml 4.04)
-
-\begin{syntax}
-pattern:
-       ...
-     | module-path '.(' pattern ')'
-     | module-path '.[' pattern ']'
-     | module-path '.[|' pattern '|]'
-     | module-path '.{' pattern '}'
-
-\end{syntax}
-
-For patterns, local opens are limited to the
-@module-path'.('pattern')'@ construction. This
-construction locally open the module referred to by the module path
-@module-path@ in the scope of the pattern @pattern@.
-
-When the body of a local open pattern is delimited by
-@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For example, @module-path'.['pattern']'@ is equivalent to
-@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
-equivalent to @module-path'.([|' pattern '|])'@.
-
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}

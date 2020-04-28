@@ -387,9 +387,10 @@ method select_store is_assign addr arg =
   (Istore(Word_val, addr, is_assign), arg)
 
 (* call marking methods, documented in selectgen.mli *)
+val contains_calls = ref false
 
 method mark_call =
-  Proc.contains_calls := true
+  contains_calls := true
 
 method mark_tailcall = ()
 
@@ -1221,7 +1222,6 @@ method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_ ~env =
 method initial_env () = env_empty
 
 method emit_fundecl f =
-  Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
   let rargs =
     List.map
@@ -1260,6 +1260,8 @@ method emit_fundecl f =
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
+    fun_num_stack_slots = Array.make Proc.num_register_classes 0;
+    fun_contains_calls = !contains_calls;
   }
 
 end

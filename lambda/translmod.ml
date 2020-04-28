@@ -1128,7 +1128,8 @@ let transl_store_structure glob map prims aliases str =
                 let ids0 = bound_value_identifiers od.open_bound_items in
                 let subst = !transl_store_subst in
                 let rec store_idents pos = function
-                  | [] -> transl_store rootpath subst cont rem
+                  | [] ->
+                    transl_store rootpath (add_idents true ids0 subst) cont rem
                   | id :: idl ->
                       Llet(Alias, Pgenval, id, Lvar ids.(pos),
                            Lsequence(store_ident od.open_loc id,

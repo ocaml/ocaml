@@ -1,0 +1,4 @@
+File "w60.ml", line 40, characters 13-14:
+40 |   let module M = struct end in
+                  ^
+Warning 60: unused module M.

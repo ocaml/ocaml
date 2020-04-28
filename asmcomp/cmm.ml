@@ -211,3 +211,76 @@ let ccatch (i, ids, e1, e2, dbg) =
 
 let reset () =
   label_counter := 99
+
+let iter_shallow_tail f = function
+  | Clet(_, _, body) | Cphantom_let (_, _, body) ->
+      f body;
+      true
+  | Cifthenelse(_cond, _dbg_cond, e1, _dbg_e1, e2, _dbg_e2) ->
+      f e1;
+      f e2;
+      true
+  | Csequence(_e1, e2) ->
+      f e2;
+      true
+  | Cswitch(_e, _tbl, el, _dbg') ->
+      Array.iter (fun (e, _dbg) -> f e) el;
+      true
+  | Ccatch(_rec_flag, handlers, body) ->
+      List.iter (fun (_, _, h, _dbg) -> f h) handlers;
+      f body;
+      true
+  | Ctrywith(e1, _id, e2, _dbg) ->
+      f e1;
+      f e2;
+      true
+  | Cexit _ | Cop (Craise _, _, _) ->
+      true
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _
+  | Cblockheader _
+  | Cvar _
+  | Cassign _
+  | Ctuple _
+  | Cop _ ->
+      false
+
+let rec map_tail f = function
+  | Clet(id, exp, body) ->
+      Clet(id, exp, map_tail f body)
+  | Cphantom_let(id, exp, body) ->
+      Cphantom_let (id, exp, map_tail f body)
+  | Cifthenelse(cond, dbg_cond, e1, dbg_e1, e2, dbg_e2) ->
+      Cifthenelse
+        (
+          cond, dbg_cond,
+          map_tail f e1, dbg_e1,
+          map_tail f e2, dbg_e2
+        )
+  | Csequence(e1, e2) ->
+      Csequence(e1, map_tail f e2)
+  | Cswitch(e, tbl, el, dbg') ->
+      Cswitch(e, tbl, Array.map (fun (e, dbg) -> map_tail f e, dbg) el, dbg')
+  | Ccatch(rec_flag, handlers, body) ->
+      let map_h (n, ids, handler, dbg) = (n, ids, map_tail f handler, dbg) in
+      Ccatch(rec_flag, List.map map_h handlers, map_tail f body)
+  | Ctrywith(e1, id, e2, dbg) ->
+      Ctrywith(map_tail f e1, id, map_tail f e2, dbg)
+  | Cexit _ | Cop (Craise _, _, _) as cmm ->
+      cmm
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _
+  | Cblockheader _
+  | Cvar _
+  | Cassign _
+  | Ctuple _
+  | Cop _ as c ->
+      f c

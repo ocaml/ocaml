@@ -728,7 +728,7 @@ val x : '_weak2 list ref = {contents = []}
 module F(X : sig end) =
   struct type t = int let _ = (x : < m : t> list ref) end;;
 [%%expect{|
-module F : functor (X : sig  end) -> sig type t = int end
+module F : functor (X : sig end) -> sig type t = int end
 |}];;
 x;;
 [%%expect{|

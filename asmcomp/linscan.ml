@@ -71,10 +71,10 @@ let rec release_expired_inactive ci pos = function
 
 (* Allocate a new stack slot to the interval. *)
 
-let allocate_stack_slot i =
+let allocate_stack_slot num_stack_slots i =
   let cl = Proc.register_class i.reg in
-  let ss = Proc.num_stack_slots.(cl) in
-  Proc.num_stack_slots.(cl) <- succ ss;
+  let ss = num_stack_slots.(cl) in
+  num_stack_slots.(cl) <- succ ss;
   i.reg.loc <- Stack(Local ss);
   i.reg.spill <- true
 
@@ -82,11 +82,11 @@ let allocate_stack_slot i =
    The interval is added to active. Raises Not_found if no free registers
    left. *)
 
-let allocate_free_register i =
+let allocate_free_register num_stack_slots i =
   begin match i.reg.loc, i.reg.spill with
     Unknown, true ->
       (* Allocate a stack slot for the already spilled interval *)
-      allocate_stack_slot i
+      allocate_stack_slot num_stack_slots i
   | Unknown, _ ->
       (* We need to allocate a register to this interval somehow *)
       let cl = Proc.register_class i.reg in
@@ -136,7 +136,7 @@ let allocate_free_register i =
   | _ -> ()
   end
 
-let allocate_blocked_register i =
+let allocate_blocked_register num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
   match ci.ci_active with
@@ -154,14 +154,14 @@ let allocate_blocked_register i =
       (* Remove the last interval from active and insert the current *)
       ci.ci_active <- insert_interval_sorted i il;
       (* Now get a new stack slot for the spilled register *)
-      allocate_stack_slot ilast
+      allocate_stack_slot num_stack_slots ilast
   | _ ->
       (* Either the current interval is last and we have to spill it,
          or there are no registers at all in the register class (i.e.
          floating point class on i386). *)
-      allocate_stack_slot i
+      allocate_stack_slot num_stack_slots i
 
-let walk_interval i =
+let walk_interval num_stack_slots i =
   let pos = i.ibegin land (lnot 0x01) in
   (* Release all intervals that have been expired at the current position *)
   Array.iter
@@ -172,11 +172,11 @@ let walk_interval i =
     active;
   try
     (* Allocate free register (if any) *)
-    allocate_free_register i
+    allocate_free_register num_stack_slots i
   with
     Not_found ->
       (* No free register, need to decide which interval to spill *)
-      allocate_blocked_register i
+      allocate_blocked_register num_stack_slots i
 
 let allocate_registers() =
   (* Initialize the stack slots and interval lists *)
@@ -187,8 +187,9 @@ let allocate_registers() =
       ci_active = [];
       ci_inactive = []
     };
-    Proc.num_stack_slots.(cl) <- 0
   done;
+  (* Reset the stack slot counts *)
+  let num_stack_slots = Array.make Proc.num_register_classes 0 in
   (* Add all fixed intervals (sorted by end position) *)
   List.iter
     (fun i ->
@@ -196,4 +197,5 @@ let allocate_registers() =
       ci.ci_fixed <- insert_interval_sorted i ci.ci_fixed)
     (Interval.all_fixed_intervals());
   (* Walk all the intervals within the list *)
-  List.iter walk_interval (Interval.all_intervals())
+  List.iter (walk_interval num_stack_slots) (Interval.all_intervals());
+  num_stack_slots

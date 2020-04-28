@@ -690,7 +690,6 @@ let subst update_env s lam =
     let remove_list l s =
       List.fold_left (fun s (id, _kind) -> Ident.Map.remove id s) s l
     in
-    let module M = Ident.Map in
     match lam with
     | Lvar id as l ->
         begin try Ident.Map.find id s with Not_found -> l end

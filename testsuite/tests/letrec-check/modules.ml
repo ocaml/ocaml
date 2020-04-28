@@ -72,7 +72,7 @@ let rec x = (module (val y : T) : T)
 and y = let module M = struct let x = x end in (module M : T)
 ;;
 [%%expect{|
-module type T = sig  end
+module type T = sig end
 Line 2, characters 12-36:
 2 | let rec x = (module (val y : T) : T)
                 ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -49,6 +49,7 @@ module Sys : sig
   val run_system_command : string -> unit
   val make_directory : string -> unit
   val string_of_file : string -> string
+  val copy_chan : in_channel -> out_channel -> unit
   val copy_file : string -> string -> unit
   val force_remove : string -> unit
   val has_symlink : unit -> bool

@@ -673,6 +673,8 @@ ac_ct_LD
 LD
 DEFAULT_STRING
 WINDOWS_UNICODE_MODE
+BFD_LIB_DIR
+BFD_INCLUDE_DIR
 LIBUNWIND_LIB_DIR
 LIBUNWIND_INCLUDE_DIR
 DLLIBS
@@ -719,8 +721,9 @@ sharedlib_cflags
 asm_cfi_supported
 AS
 ASPP
-libbfd_link
-libbfd_include
+bfd_ldlibs
+bfd_ldflags
+bfd_cppflags
 x_libraries
 x_includes
 pthread_link
@@ -828,6 +831,7 @@ enable_instrumented_runtime
 enable_vmthreads
 enable_systhreads
 with_libunwind
+with_bfd
 enable_graph_lib
 enable_str_lib
 enable_unix_lib
@@ -868,6 +872,8 @@ PARTIALLD
 DLLIBS
 LIBUNWIND_INCLUDE_DIR
 LIBUNWIND_LIB_DIR
+BFD_INCLUDE_DIR
+BFD_LIB_DIR
 WINDOWS_UNICODE_MODE
 DEFAULT_STRING
 CC
@@ -1520,8 +1526,8 @@ Optional Features:
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
                           headers for profiling info
-  --enable-force-safe-string
-                          force strings to be safe
+  --disable-force-safe-string
+                          do not force strings to be safe
   --disable-flat-float-array
                           do not use flat float arrays
   --disable-function-sections
@@ -1536,6 +1542,8 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-libunwind     disable libunwind support for Spacetime profiling
+  --without-bfd           disable BFD (Binary File Description) library
+                          support
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -1557,6 +1565,9 @@ Some influential environment variables:
               location of header files for libunwind
   LIBUNWIND_LIB_DIR
               location of library files for libunwind
+  BFD_INCLUDE_DIR
+              location of header files for the BFD library
+  BFD_LIB_DIR location of library files for the BFD library
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
@@ -2823,6 +2834,7 @@ VERSION=4.10.0+multicore+dev0
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.common"
@@ -3020,6 +3032,19 @@ fi
 
 
 
+
+# Check whether --with-bfd was given.
+if test "${with_bfd+set}" = set; then :
+  withval=$with_bfd;
+else
+  with_bfd=auto
+fi
+
+
+
+
+
+
 # Check whether --enable-graph-lib was given.
 if test "${enable_graph_lib+set}" = set; then :
   enableval=$enable_graph_lib; as_fn_error $? "The graphics library is no longer distributed with OCaml \
@@ -3162,9 +3187,11 @@ fi
 # explicitly passed.
 #
 # The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string DEFAULT_STRING=unsafe. OCaml 4.06
-# and later use --disable-force-safe-string DEFAULT_STRING=safe. We
-# expect --enable-force-safe-string to become the default in the future.
+# to --disable-force-safe-string DEFAULT_STRING=unsafe. With OCaml 4.06
+# and older was equivalent to --disable-force-safe-string DEFAULT_STRING=safe.
+# With OCaml 4.10 and later use --enable-force-safe-string DEFAULT_STRING=safe.
+# We expect the --disable-force-safe-string and DEFAULT_STRING=unsafe options
+# to be removed in the future.
 
 # Check whether --enable-force-safe-string was given.
 if test "${enable_force_safe_string+set}" = set; then :
@@ -15884,12 +15911,39 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 esac
 fi
 
-## libbfd
+## BFD (Binary File Description) library
 
-ac_fn_c_check_header_mongrel "$LINENO" "bfd.h" "ac_cv_header_bfd_h" "$ac_includes_default"
+bfd_cppflags=""
+bfd_ldflags=""
+bfd_ldlibs=""
+
+if test x"$with_bfd" != "xno"; then :
+  bfd_available=false
+  case $host in #(
+  x86_64-*-darwin*) :
+    if test -z "$BFD_INCLUDE_DIR"; then :
+  BFD_INCLUDE_DIR="/opt/local/include"
+fi
+      if test -z "$BFD_LIB_DIR"; then :
+  BFD_LIB_DIR="/opt/local/lib"
+fi ;; #(
+  *) :
+     ;;
+esac
+  if test -n "$BFD_INCLUDE_DIR"; then :
+  bfd_cppflags="-I$BFD_INCLUDE_DIR"
+fi
+  if test -n "$BFD_LIB_DIR"; then :
+  bfd_ldflags="-L$BFD_LIB_DIR"
+fi
+  SAVED_CPPFLAGS="$CPPFLAGS"
+  SAVED_LDFLAGS="$LDFLAGS"
+  CPPFLAGS="$CPPFLAGS $bfd_cppflags"
+  LDFLAGS="$LDFLAGS $bfd_ldflags"
+  ac_fn_c_check_header_mongrel "$LINENO" "bfd.h" "ac_cv_header_bfd_h" "$ac_includes_default"
 if test "x$ac_cv_header_bfd_h" = xyes; then :
-  libbfd_ling=""
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  bfd_ldlibs=""
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -15926,10 +15980,10 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd"
+  bfd_ldlibs="-lbfd"
 fi
 
-  if test -z "$libbfd_link"; then :
+    if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -15967,11 +16021,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl"
+  bfd_ldlibs="-lbfd -ldl"
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
+    if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -16009,11 +16063,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl -liberty"
+  bfd_ldlibs="-lbfd -ldl -liberty"
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
+    if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -16051,11 +16105,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl -liberty -lz"
+  bfd_ldlibs="-lbfd -ldl -liberty -lz"
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
+    if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -16093,21 +16147,34 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl -liberty -lz -lintl"
+  bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"
 fi
 
 fi
-  if test -n "$libbfd_link"; then :
-  $as_echo "#define HAS_LIBBFD 1" >>confdefs.h
+    if test -n "$bfd_ldlibs"; then :
+  bfd_available=true
+      $as_echo "#define HAS_LIBBFD 1" >>confdefs.h
 
+fi
+fi
+
+
+  if ! $bfd_available; then :
+  if test x"$with_bfd" = "xyes"; then :
+  as_fn_error $? "BFD library support requested but not available" "$LINENO" 5
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: BFD library not found, 'objinfo' will be unable to display info on .cmxs files." >&5
-$as_echo "$as_me: BFD library not found, 'objinfo' will be unable to display info on .cmxs files." >&6;}
+  bfd_cppflags=""
+      bfd_ldflags=""
+      { $as_echo "$as_me:${as_lineno-$LINENO}: BFD library not found, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&5
+$as_echo "$as_me: BFD library not found, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&6;}
 fi
-
 fi
-
-
+  LDFLAGS="$SAVED_LDFLAGS"
+  CPP_FLAGS="$SAVED_CPPFLAGS"
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Support for the BFD (Binary File Description) library disabled, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&5
+$as_echo "$as_me: Support for the BFD (Binary File Description) library disabled, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&6;}
+fi
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false
@@ -16621,12 +16688,12 @@ else
   afl=false
 fi
 
-if test x"$enable_force_safe_string" = "xyes"; then :
+if test x"$enable_force_safe_string" = "xno"; then :
   $as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
 
-  force_safe_string=true
-else
   force_safe_string=false
+else
+  force_safe_string=true
 fi
 
 if test x"$DEFAULT_STRING" = "xunsafe"; then :

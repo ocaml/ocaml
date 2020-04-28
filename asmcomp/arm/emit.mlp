@@ -23,7 +23,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 (* Tradeoff between code size and code speed *)
@@ -59,6 +59,12 @@ let emit_reg = function
 (* Layout of the stack frame *)
 
 let stack_offset = ref 0
+
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
+
+let contains_calls = ref false
 
 let frame_size () =
   let sz =
@@ -452,7 +458,7 @@ let emit_instr i =
     match i.desc with
     | Lend -> 0
     | Lprologue ->
-      assert (Proc.prologue_required ());
+      assert (!prologue_required);
       let n = frame_size() in
       let num_instrs =
         if n > 0 then begin
@@ -968,6 +974,11 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  contains_calls := fundecl.fun_contains_calls;
+  prologue_required := fundecl.fun_prologue_required;
   emit_named_text_section !function_name;
   `	.align	2\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
