@@ -1,6 +1,5 @@
 (* TEST
    flags = "-g"
-   compare_programs = "false"
    * bytecode
      reference = "${test_source_directory}/comballoc.byte.reference"
    * native
