@@ -14,8 +14,8 @@ module type S' = sig type s = int end
 module type S = sig module rec M : sig end and N : sig end end;;
 module type S' = S with module M := String;;
 [%%expect{|
-module type S = sig module rec M : sig  end and N : sig  end end
-module type S' = sig module rec N : sig  end end
+module type S = sig module rec M : sig end and N : sig end end
+module type S' = sig module rec N : sig end end
 |}];;
 
 (* with module type *)
@@ -119,7 +119,7 @@ Error: Multiple definition of the extension constructor name Foo.
 module F(X : sig end) = struct let x = 3 end;;
 F.x;; (* fail *)
 [%%expect{|
-module F : functor (X : sig  end) -> sig val x : int end
+module F : functor (X : sig end) -> sig val x : int end
 Line 2, characters 0-3:
 2 | F.x;; (* fail *)
     ^^^

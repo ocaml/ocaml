@@ -1,3 +1,5 @@
+# @configure_input@
+
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -13,7 +15,8 @@
 #*                                                                        *
 #**************************************************************************
 
-# This makefile contains common definitions shared by other Makefiles
+# This makefile contains common definitions and rules shared by
+# other Makefiles
 # We assume that Makefile.config has already been included
 
 INSTALL ?= @INSTALL@
@@ -65,3 +68,11 @@ endif
 
 # By default, request ocamllex to be quiet
 OCAMLLEX_FLAGS ?= -q
+
+# The rule to compile C files
+
+# This rule is similar to GNU make's implicit rule, except that it is more
+# general (it supports both .o and .obj)
+
+%.$(O): %.c
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

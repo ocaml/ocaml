@@ -1,0 +1,5 @@
+OCaml, before: 42
+C, before: 42
+C, after: 42
+OCaml, after: 42
+OCaml, after alloc: 17

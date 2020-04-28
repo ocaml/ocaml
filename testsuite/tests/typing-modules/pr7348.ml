@@ -37,5 +37,5 @@ module A : sig end = struct
   let _ = (N.x = M.x)
 end;;
 [%%expect{|
-module A : sig  end
+module A : sig end
 |}]

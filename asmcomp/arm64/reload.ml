@@ -15,5 +15,5 @@
 
 (* Reloading for the ARM 64 bits *)
 
-let fundecl f =
-  (new Reloadgen.reload_generic)#fundecl f
+let fundecl f num_stack_slots =
+  (new Reloadgen.reload_generic)#fundecl f num_stack_slots

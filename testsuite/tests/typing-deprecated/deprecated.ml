@@ -384,7 +384,7 @@ module D = struct end[@@ocaml.deprecated]
 open D
 ;;
 [%%expect{|
-module D : sig  end
+module D : sig end
 Line 3, characters 5-6:
 3 | open D
          ^
@@ -575,7 +575,7 @@ Line 8, characters 22-36:
 8 |   [@@@ocaml.ppwarning "Pp warning2!"]
                           ^^^^^^^^^^^^^^
 Warning 22: Pp warning2!
-module X : sig  end
+module X : sig end
 |}]
 
 let x =

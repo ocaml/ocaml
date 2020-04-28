@@ -64,6 +64,11 @@ let add_unboxed_id id unboxed_id bn env =
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
 
+let structured_constant_of_sym s =
+  match Compilenv.structured_constant_of_symbol s with
+  | None -> Cmmgen_state.get_structured_constant s
+  | Some _ as r -> r
+
 (* Local binding of complex expressions *)
 
 let bind name arg fn =
@@ -583,30 +588,25 @@ let test_bool dbg cmm =
 
 let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 
-let map_ccatch f rec_flag handlers body =
-  let handlers = List.map
-      (fun (n, ids, handler, dbg) -> (n, ids, f handler, dbg))
-      handlers in
-  Ccatch(rec_flag, handlers, f body)
-
-let rec unbox_float dbg cmm =
-  match cmm with
-  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header ->
-      c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_float dbg e1,
-        ifnot_dbg, unbox_float dbg e2,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
-  | Cswitch(e, tbl, el, dbg') ->
-    Cswitch(e, tbl,
-      Array.map (fun (expr, dbg) -> unbox_float dbg expr, dbg) el, dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-    map_ccatch (unbox_float dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, dbg) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
-  | c -> Cop(Cload {memory_chunk=Double_u; mutability=Immutable; is_atomic=false}, [c], dbg)
+let unbox_float dbg =
+  map_tail
+    (function
+      | Cop(Calloc, [Cblockheader (hdr, _); c], _)
+        when Nativeint.equal hdr float_header ->
+          c
+      | Cconst_symbol (s, _dbg) as cmm ->
+          begin match structured_constant_of_sym s with
+          | Some (Uconst_float x) ->
+              Cconst_float (x, dbg) (* or keep _dbg? *)
+          | _ ->
+              Cop(Cload {memory_chunk=Double_u; mutability=Immutable;
+                         is_atomic=false},
+                  [cmm], dbg)
+          end
+      | cmm -> Cop(Cload {memory_chunk=Double_u; mutability=Immutable;
+                         is_atomic=false},
+                   [cmm], dbg)
+    )
 
 (* Complex *)
 
@@ -637,7 +637,8 @@ let rec remove_unit = function
         Array.map (fun (case, dbg) -> remove_unit case, dbg) cases,
         dbg)
   | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch remove_unit rec_flag handlers body
+      let map_h (n, ids, handler, dbg) = (n, ids, remove_unit handler, dbg) in
+      Ccatch(rec_flag, List.map map_h handlers, remove_unit body)
   | Ctrywith(body, exn, handler, dbg) ->
       Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
   | Clet(id, c1, c2) ->
@@ -1116,51 +1117,63 @@ let alloc_matches_boxed_int bi ~hdr ~ops =
         && String.equal sym caml_int64_ops
   | (Pnativeint | Pint32 | Pint64), _, _ -> false
 
-let rec unbox_int bi arg dbg =
-  match arg with
-    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int (32, _)], dbg')],
-      _dbg)
-    when bi = Pint32 && size_int = 8 && big_endian
-      && alloc_matches_boxed_int bi ~hdr ~ops ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg');
-        Cconst_int (32, dbg)],
-        dbg)
-  | Cop(Calloc, [hdr; ops; contents], _dbg)
-    when bi = Pint32 && size_int = 8 && not big_endian
-      && alloc_matches_boxed_int bi ~hdr ~ops ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg);
-        Cconst_int (32, dbg)],
-        dbg)
-  | Cop(Calloc, [hdr; ops; contents], _dbg)
-    when alloc_matches_boxed_int bi ~hdr ~ops ->
-      contents
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_int bi e1 ifso_dbg,
-        ifnot_dbg, unbox_int bi e2 ifnot_dbg,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
-  | Cswitch(e, tbl, el, dbg') ->
-      Cswitch(e, tbl,
-        Array.map (fun (e, dbg) -> unbox_int bi e dbg, dbg) el,
-        dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, handler_dbg) ->
-      Ctrywith(unbox_int bi e1 dbg, id,
-        unbox_int bi e2 handler_dbg, handler_dbg)
-  | _ ->
-      if size_int = 4 && bi = Pint64 then
-        split_int64_for_32bit_target arg dbg
-      else
-        let memory_chunk = if bi = Pint32 then Thirtytwo_signed else Word_int
-        in
-        Cop(
-          Cload {memory_chunk; mutability=Mutable; is_atomic=false},
-          [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+let unbox_int dbg bi =
+  let default arg =
+    if size_int = 4 && bi = Pint64 then
+      split_int64_for_32bit_target arg dbg
+    else
+      let memory_chunk = if bi = Pint32 then Thirtytwo_signed else Word_int
+      in
+      Cop(
+        Cload {memory_chunk; mutability=Immutable; is_atomic=false},
+        [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+  in
+  map_tail
+    (function
+      | Cop(Calloc,
+            [hdr; ops;
+             Cop(Clsl, [contents; Cconst_int (32, _)], dbg')], _dbg)
+        when bi = Pint32 && size_int = 8 && big_endian
+             && alloc_matches_boxed_int bi ~hdr ~ops ->
+          (* Force sign-extension of low 32 bits *)
+          Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg');
+                     Cconst_int (32, dbg)],
+              dbg)
+      | Cop(Calloc,
+            [hdr; ops; contents], _dbg)
+        when bi = Pint32 && size_int = 8 && not big_endian
+             && alloc_matches_boxed_int bi ~hdr ~ops ->
+          (* Force sign-extension of low 32 bits *)
+          Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg);
+                     Cconst_int (32, dbg)],
+              dbg)
+      | Cop(Calloc, [hdr; ops; contents], _dbg)
+        when alloc_matches_boxed_int bi ~hdr ~ops ->
+          contents
+      | Cconst_symbol (s, _dbg) as cmm ->
+          begin match structured_constant_of_sym s, bi with
+          | Some (Uconst_nativeint n), Pnativeint ->
+              Cconst_natint (n, dbg)
+          | Some (Uconst_int32 n), Pint32 ->
+              Cconst_natint (Nativeint.of_int32 n, dbg)
+          | Some (Uconst_int64 n), Pint64 ->
+              if size_int = 8 then
+                Cconst_natint (Int64.to_nativeint n, dbg)
+              else
+                let low = Int64.to_nativeint n in
+                let high =
+                  Int64.to_nativeint (Int64.shift_right_logical n 32)
+                in
+                if big_endian then
+                  Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
+                else
+                  Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
+          | _ ->
+              default cmm
+          end
+      | cmm ->
+          default cmm
+    )
 
 let make_unsigned_int bi arg dbg =
   if bi = Pint32 && size_int = 8
@@ -1187,6 +1200,11 @@ let box_number bn arg =
   match bn with
   | Boxed_float dbg -> box_float dbg arg
   | Boxed_integer (bi, dbg) -> box_int dbg bi arg
+
+let unbox_number dbg bn arg =
+  match bn with
+  | Boxed_float _ -> unbox_float dbg arg
+  | Boxed_integer (bi, _) -> unbox_int dbg bi arg
 
 (* Big arrays *)
 
@@ -1847,118 +1865,72 @@ type unboxed_number_kind =
   | Boxed of boxed_number * bool (* true: boxed form available at no cost *)
   | No_result (* expression never returns a result *)
 
-let unboxed_number_kind_of_unbox dbg = function
-  | Same_as_ocaml_repr -> No_unboxing
-  | Unboxed_float -> Boxed (Boxed_float dbg, false)
-  | Unboxed_integer bi -> Boxed (Boxed_integer (bi, dbg), false)
-  | Untagged_int -> No_unboxing
+(* Given unboxed_number_kind from two branches of the code, returns the
+   resulting unboxed_number_kind.
 
-let rec is_unboxed_number ~strict env e =
-  (* Given unboxed_number_kind from two branches of the code, returns the
-     resulting unboxed_number_kind.
+   If [strict=false], one knows that the type of the expression
+   is an unboxable number, and we decide to return an unboxed value
+   if this indeed eliminates at least one allocation.
 
-     If [strict=false], one knows that the type of the expression
-     is an unboxable number, and we decide to return an unboxed value
-     if this indeed eliminates at least one allocation.
-
-     If [strict=true], we need to ensure that all possible branches
-     return an unboxable number (of the same kind).  This could not
-     be the case in presence of GADTs.
- *)
-  let join k1 e =
-    match k1, is_unboxed_number ~strict env e with
-    | Boxed (b1, c1), Boxed (b2, c2) when equal_boxed_number b1 b2 ->
-        Boxed (b1, c1 && c2)
-    | No_result, k | k, No_result ->
+   If [strict=true], we need to ensure that all possible branches
+   return an unboxable number (of the same kind).  This could not
+   be the case in presence of GADTs.
+*)
+let join_unboxed_number_kind ~strict k1 k2 =
+  match k1, k2 with
+  | Boxed (b1, c1), Boxed (b2, c2) when equal_boxed_number b1 b2 ->
+      Boxed (b1, c1 && c2)
+  | No_result, k | k, No_result ->
         k (* if a branch never returns, it is safe to unbox it *)
-    | No_unboxing, k | k, No_unboxing when not strict ->
-        k
-    | _, _ -> No_unboxing
-  in
-  match e with
-  | Uvar id ->
-      begin match is_unboxed_id id env with
-      | None -> No_unboxing
-      | Some (_, bn) -> Boxed (bn, false)
-      end
+  | No_unboxing, k | k, No_unboxing when not strict ->
+      k
+  | _, _ -> No_unboxing
 
-  (* CR mshinwell: Changes to [Clambda] will provide the [Debuginfo] here *)
-  | Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
-      let dbg = Debuginfo.none in
-      Boxed (Boxed_float dbg, true)
-  | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
-      let dbg = Debuginfo.none in
-      Boxed (Boxed_integer (Pint32, dbg), true)
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
-      let dbg = Debuginfo.none in
-      Boxed (Boxed_integer (Pint64, dbg), true)
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
-      let dbg = Debuginfo.none in
-      Boxed (Boxed_integer (Pnativeint, dbg), true)
-  | Uprim(p, _, dbg) ->
-      begin match simplif_primitive p with
-        | Pccall p -> unboxed_number_kind_of_unbox dbg p.prim_native_repr_res
-        | Pfloatfield _
-        | Pfloatofint
-        | Pnegfloat
-        | Pabsfloat
-        | Paddfloat
-        | Psubfloat
-        | Pmulfloat
-        | Pdivfloat
-        | Parrayrefu Pfloatarray
-        | Parrayrefs Pfloatarray -> Boxed (Boxed_float dbg, false)
-        | Pbintofint bi
-        | Pcvtbint(_, bi)
-        | Pnegbint bi
-        | Paddbint bi
-        | Psubbint bi
-        | Pmulbint bi
-        | Pdivbint {size=bi}
-        | Pmodbint {size=bi}
-        | Pandbint bi
-        | Porbint bi
-        | Pxorbint bi
-        | Plslbint bi
-        | Plsrbint bi
-        | Pasrbint bi
-        | Pbbswap bi -> Boxed (Boxed_integer (bi, dbg), false)
-        | Pbigarrayref(_, _, (Pbigarray_float32 | Pbigarray_float64), _) ->
-            Boxed (Boxed_float dbg, false)
-        | Pbigarrayref(_, _, Pbigarray_int32, _) ->
-            Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pbigarrayref(_, _, Pbigarray_int64, _) ->
-            Boxed (Boxed_integer (Pint64, dbg), false)
-        | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
-            Boxed (Boxed_integer (Pnativeint, dbg), false)
-        | Pstring_load(Thirty_two,_)
-        | Pbytes_load(Thirty_two,_) ->
-            Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pstring_load(Sixty_four,_)
-        | Pbytes_load(Sixty_four,_) ->
-            Boxed (Boxed_integer (Pint64, dbg), false)
-        | Pbigstring_load(Thirty_two,_) ->
-            Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pbigstring_load(Sixty_four,_) ->
-            Boxed (Boxed_integer (Pint64, dbg), false)
-        | Praise _ -> No_result
-        | _ -> No_unboxing
-      end
-  | Ulet (_, _, _, _, e) | Uletrec (_, e) | Usequence (_, e) ->
-      is_unboxed_number ~strict env e
-  | Uswitch (_, switch, _dbg) ->
-      let k = Array.fold_left join No_result switch.us_actions_consts in
-      Array.fold_left join k switch.us_actions_blocks
-  | Ustringswitch (_, actions, default_opt) ->
-      let k = List.fold_left (fun k (_, e) -> join k e) No_result actions in
-      begin match default_opt with
-        None -> k
-      | Some default -> join k default
-      end
-  | Ustaticfail _ -> No_result
-  | Uifthenelse (_, e1, e2) | Ucatch (_, _, e1, e2) | Utrywith (e1, _, e2) ->
-      join (is_unboxed_number ~strict env e1) e2
-  | _ -> No_unboxing
+let is_unboxed_number_cmm ~strict cmm =
+  let r = ref No_result in
+  let notify k =
+    r := join_unboxed_number_kind ~strict !r k
+  in
+  let rec aux = function
+    | Cop(Calloc, [Cblockheader (hdr, _); _], dbg)
+      when Nativeint.equal hdr float_header ->
+        notify (Boxed (Boxed_float dbg, false))
+    | Cop(Calloc, [Cblockheader (hdr, _); Cconst_symbol (ops, _); _], dbg) ->
+        if Nativeint.equal hdr boxedintnat_header
+        && String.equal ops caml_nativeint_ops
+        then
+          notify (Boxed (Boxed_integer (Pnativeint, dbg), false))
+        else
+        if Nativeint.equal hdr boxedint32_header
+        && String.equal ops caml_int32_ops
+        then
+          notify (Boxed (Boxed_integer (Pint32, dbg), false))
+        else
+        if Nativeint.equal hdr boxedint64_header
+        && String.equal ops caml_int64_ops
+        then
+          notify (Boxed (Boxed_integer (Pint64, dbg), false))
+        else
+          notify No_unboxing
+    | Cconst_symbol (s, _) ->
+        begin match structured_constant_of_sym s with
+        | Some (Uconst_float _) ->
+            notify (Boxed (Boxed_float Debuginfo.none, true))
+        | Some (Uconst_nativeint _) ->
+            notify (Boxed (Boxed_integer (Pnativeint, Debuginfo.none), true))
+        | Some (Uconst_int32 _) ->
+            notify (Boxed (Boxed_integer (Pint32, Debuginfo.none), true))
+        | Some (Uconst_int64 _) ->
+            notify (Boxed (Boxed_integer (Pint64, Debuginfo.none), true))
+        | _ ->
+            notify No_unboxing
+        end
+    | l ->
+        if not (Cmm.iter_shallow_tail aux l) then
+          notify No_unboxing
+  in
+  aux cmm;
+  !r
 
 (* Helper for compilation of initialization and assignment operations *)
 
@@ -2311,12 +2283,12 @@ let rec transl env e =
                  dbg))))
   | Uassign(id, exp) ->
       let dbg = Debuginfo.none in
+      let cexp = transl env exp in
       begin match is_unboxed_id id env with
       | None ->
-          return_unit dbg (Cassign(id, transl env exp))
+          return_unit dbg (Cassign(id, cexp))
       | Some (unboxed_id, bn) ->
-          return_unit dbg (Cassign(unboxed_id,
-            transl_unbox_number dbg env bn exp))
+          return_unit dbg (Cassign(unboxed_id, unbox_number dbg bn cexp))
       end
   | Uunreachable ->
       let dbg = Debuginfo.none in
@@ -2955,34 +2927,11 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
 
-and transl_unbox_float dbg env = function
-    Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float (f, dbg)
-  | exp -> unbox_float dbg (transl env exp)
+and transl_unbox_float dbg env exp =
+  unbox_float dbg (transl env exp)
 
-and transl_unbox_int dbg env bi = function
-    Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
-      Cconst_natint (Nativeint.of_int32 n, dbg)
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
-      Cconst_natint (n, dbg)
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
-      if size_int = 8 then
-        Cconst_natint (Int64.to_nativeint n, dbg)
-      else begin
-        let low = Int64.to_nativeint n in
-        let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
-        if big_endian then
-          Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
-        else
-          Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
-      end
-  | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
-      Cconst_int (i, dbg)
-  | exp -> unbox_int bi (transl env exp) dbg
-
-and transl_unbox_number dbg env bn arg =
-  match bn with
-  | Boxed_float _ -> transl_unbox_float dbg env arg
-  | Boxed_integer (bi, _) -> transl_unbox_int dbg env bi arg
+and transl_unbox_int dbg env bi exp =
+  unbox_int dbg bi (transl env exp)
 
 and transl_unbox_sized size dbg env exp =
   match size with
@@ -2992,6 +2941,7 @@ and transl_unbox_sized size dbg env exp =
 
 and transl_let env str kind id exp body =
   let dbg = Debuginfo.none in
+  let cexp = transl env exp in
   let unboxing =
     (* If [id] is a mutable variable (introduced to eliminate a local
        reference) and it contains a type of unboxable numbers, then
@@ -3007,14 +2957,14 @@ and transl_let env str kind id exp body =
         (* It would be safe to always unbox in this case, but
            we do it only if this indeed allows us to get rid of
            some allocations in the bound expression. *)
-        is_unboxed_number ~strict:false env exp
+        is_unboxed_number_cmm ~strict:false cexp
     | _, Pgenval ->
         (* Here we don't know statically that the bound expression
            evaluates to an unboxable number type.  We need to be stricter
            and ensure that all possible branches in the expression
            return a boxed value (of the same kind).  Indeed, with GADTs,
            different branches could return different types. *)
-        is_unboxed_number ~strict:true env exp
+        is_unboxed_number_cmm ~strict:true cexp
     | _, Pintval ->
         No_unboxing
   in
@@ -3022,10 +2972,10 @@ and transl_let env str kind id exp body =
   | No_unboxing | Boxed (_, true) | No_result ->
       (* N.B. [body] must still be traversed even if [exp] will never return:
          there may be constant closures inside that need lifting out. *)
-      Clet(id, transl env exp, transl env body)
+      Clet(id, cexp, transl env body)
   | Boxed (boxed_number, _false) ->
       let unboxed_id = V.create_local (VP.name id) in
-      Clet(VP.create unboxed_id, transl_unbox_number dbg env boxed_number exp,
+      Clet(VP.create unboxed_id, unbox_number dbg boxed_number cexp,
            transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
 
 and make_catch ncatch body handler dbg = match body with
@@ -3442,6 +3392,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
 let compunit (ulam, preallocated_blocks, constants) =
   assert (Cmmgen_state.no_more_functions ());
   let dbg = Debuginfo.none in
+  Cmmgen_state.set_structured_constants constants;
   let init_code =
     if !Clflags.afl_instrument then
       Afl_instrument.instrument_initialiser (transl empty_env ulam)
@@ -3463,6 +3414,7 @@ let compunit (ulam, preallocated_blocks, constants) =
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_clambda_constants constants c1 in
   let c3 = transl_all_functions c2 in
+  Cmmgen_state.set_structured_constants [];
   let c4 = emit_preallocated_blocks preallocated_blocks c3 in
   emit_cmm_data_items_for_constants c4
 

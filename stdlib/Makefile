@@ -180,10 +180,11 @@ ifneq "$(UNIX_OR_WIN32)" "win32"
 	strip $@
 endif
 
+$(HEADERPROGRAM)%$(O): \
+  OC_CPPFLAGS += -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"'
+
 $(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	      -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"' \
-	      $(OUTPUTOBJ)$@ $^
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $^
 
 camlheader_ur: camlheader
 	cp camlheader $@

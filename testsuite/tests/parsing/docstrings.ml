@@ -516,7 +516,7 @@ module M = struct (** foo *) end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct (** foo *)
@@ -525,7 +525,7 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -534,7 +534,7 @@ module M = struct
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -543,7 +543,7 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -553,7 +553,7 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -563,7 +563,7 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -574,7 +574,7 @@ end;;
 [%%expect {|
 
 module M = struct [@@@ocaml.text " foo "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -588,7 +588,7 @@ end;;
 
 module M = struct [@@@ocaml.text " foo "]
                   [@@@ocaml.text " bar "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 module M = struct
@@ -600,7 +600,7 @@ end;;
 
 module M = struct [@@@ocaml.text " foo "]
                   [@@@ocaml.text " bar "] end;;
-module M : sig  end
+module M : sig end
 |}]
 
 

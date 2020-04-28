@@ -21,7 +21,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 open X86_ast
@@ -79,14 +79,19 @@ let fp = Config.with_frame_pointers
 
 let fastcode_flag = ref true
 
-let stack_offset = ref 0
-
 (* Layout of the stack frame *)
+let stack_offset = ref 0
 
 let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
 
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
+
+let frame_required = ref false
+
 let frame_size () =                     (* includes return address *)
-  if frame_required() then begin
+  if !frame_required then begin
     let sz =
       (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
        + (if fp then 8 else 0))
@@ -459,7 +464,7 @@ let emit_float_test cmp i lbl =
 (* Deallocate the stack frame before a return or tail call *)
 
 let output_epilogue f =
-  if frame_required() then begin
+  if !frame_required then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
@@ -531,13 +536,13 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    assert (Proc.prologue_required ());
+    assert (!prologue_required);
     if fp then begin
       I.push rbp;
       cfi_adjust_cfa_offset 8;
       I.mov rsp rbp;
     end;
-    if frame_required() then begin
+    if !frame_required then begin
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0
       then begin
@@ -998,7 +1003,7 @@ let rec emit_all fallthrough i =
   | Lend -> ()
   | _ ->
       emit_instr fallthrough i;
-      emit_all (Linearize.has_fallthrough i.desc) i.next
+      emit_all (Linear.has_fallthrough i.desc) i.next
 
 
 let all_functions = ref []
@@ -1057,6 +1062,11 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
+  frame_required := fundecl.fun_frame_required;
   all_functions := fundecl :: !all_functions;
   emit_named_text_section !function_name;
   D.align 16;
@@ -1102,7 +1112,7 @@ let fundecl fundecl =
     I.pop r10; (* ignored *)
     I.jmp (label ret)
    end);
-  if frame_required() then begin
+  if !frame_required then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin

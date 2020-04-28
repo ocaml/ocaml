@@ -36,8 +36,6 @@ let () =
         !Clflags.transparent_modules;
       Printf.eprintf "unboxed_types: %B\n"
         !Clflags.unboxed_types;
-      Printf.eprintf "unsafe_string: %B\n"
-        !Clflags.unsafe_string;
       Printf.eprintf "</ppx-context>\n";
       flush stderr;
       default_mapper);

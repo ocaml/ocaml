@@ -218,3 +218,18 @@ val ccatch :
   -> expression
 
 val reset : unit -> unit
+
+val iter_shallow_tail: (expression -> unit) -> expression -> bool
+  (** Either apply the callback to all immediate sub-expressions that
+      can produce the final result for the expression and return
+      [true], or do nothing and return [false].  Note that the notion
+      of "tail" sub-expression used here does not match the one used
+      to trigger tail calls; in particular, try...with handlers are
+      considered to be in tail position (because their result become
+      the final result for the expression).  *)
+
+val map_tail: (expression -> expression) -> expression -> expression
+  (** Apply the transformation to an expression, trying to push it
+      to all inner sub-expressions that can produce the final result.
+      Same disclaimer as for [iter_shallow_tail] about the notion
+      of "tail" sub-expression. *)

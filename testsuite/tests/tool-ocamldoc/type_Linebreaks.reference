@@ -20,8 +20,8 @@
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;s&nbsp;=&nbsp;..<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;s&nbsp;+=&nbsp;<span class="constructor">B</span><br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;x&nbsp;:&nbsp;<span class="constructor">Linebreaks</span>.a<br>
-&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">S</span>&nbsp;:&nbsp;<span class="keyword">sig</span>&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">I</span>&nbsp;:&nbsp;<span class="keyword">sig</span>&nbsp;&nbsp;<span class="keyword">end</span>&nbsp;<span class="keyword">end</span><br>
-&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;s&nbsp;=&nbsp;<span class="keyword">sig</span>&nbsp;&nbsp;<span class="keyword">end</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">S</span>&nbsp;:&nbsp;<span class="keyword">sig</span>&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">I</span>&nbsp;:&nbsp;<span class="keyword">sig</span>&nbsp;<span class="keyword">end</span>&nbsp;<span class="keyword">end</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;s&nbsp;=&nbsp;<span class="keyword">sig</span>&nbsp;<span class="keyword">end</span><br>
 &nbsp;&nbsp;<span class="keyword">class</span>&nbsp;<span class="keyword">type</span>&nbsp;d&nbsp;=&nbsp;<span class="keyword">object</span>&nbsp;&nbsp;<span class="keyword">end</span><br>
 &nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">E</span>&nbsp;<span class="keyword">of</span>&nbsp;{&nbsp;inline&nbsp;:&nbsp;int;&nbsp;}<br>
 <span class="keyword">end</span></code></body></html>

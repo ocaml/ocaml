@@ -13,7 +13,7 @@ Line 3, characters 2-19:
 3 |   type unused = int
       ^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
-module Unused : sig  end
+module Unused : sig end
 |}]
 
 module Unused_nonrec : sig
@@ -27,7 +27,7 @@ Line 4, characters 2-27:
 4 |   type nonrec unused = used
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
-module Unused_nonrec : sig  end
+module Unused_nonrec : sig end
 |}]
 
 module Unused_rec : sig
@@ -44,7 +44,7 @@ Line 3, characters 16-27:
 3 |   type unused = A of unused
                     ^^^^^^^^^^^
 Warning 37: unused constructor A.
-module Unused_rec : sig  end
+module Unused_rec : sig end
 |}]
 
 module Used_constructor : sig
@@ -178,7 +178,7 @@ Line 3, characters 2-26:
 3 |   exception Nobody_uses_me
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 38: unused exception Nobody_uses_me
-module Unused_exception : sig  end
+module Unused_exception : sig end
 |}]
 
 module Unused_extension_constructor : sig
@@ -319,7 +319,7 @@ end = struct
     sig type t = private [> `Foo | `Bar] include S with type t := t end
 end;;
 [%%expect {|
-module Pr7438 : sig  end
+module Pr7438 : sig end
 |}]
 
 module Unused_type_disable_warning : sig
@@ -331,7 +331,7 @@ Line 3, characters 11-12:
 3 |   type t = A [@@warning "-34"]
                ^
 Warning 37: unused constructor A.
-module Unused_type_disable_warning : sig  end
+module Unused_type_disable_warning : sig end
 |}]
 
 module Unused_constructor_disable_warning : sig
@@ -343,5 +343,5 @@ Line 3, characters 2-30:
 3 |   type t = A [@@warning "-37"]
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type t.
-module Unused_constructor_disable_warning : sig  end
+module Unused_constructor_disable_warning : sig end
 |}]

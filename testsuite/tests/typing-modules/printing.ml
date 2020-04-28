@@ -28,3 +28,31 @@ module M = struct module N = struct let x = 1 end end;;
 module M : sig module N : sig val x : int end end
 module M : sig module N : sig ... end end
 |}];;
+
+(* Shortcut notation for functors *)
+module type A
+module type B
+module type C
+module type D
+module type E
+module type F
+module Test(X: ((A->(B->C)->D) -> (E -> F))) = struct end
+[%%expect {|
+module type A
+module type B
+module type C
+module type D
+module type E
+module type F
+module Test : functor (X : (A -> (B -> C) -> D) -> E -> F) -> sig end
+|}]
+
+(* test reprinting of functors *)
+module type LongFunctor1 = functor (X : A) () (_ : B) () -> C -> D -> sig end
+[%%expect {|
+module type LongFunctor1 = functor (X : A) () (_ : B) () -> C -> D -> sig end
+|}]
+module type LongFunctor2 = functor (_ : A) () (_ : B) () -> C -> D -> sig end
+[%%expect {|
+module type LongFunctor2 = A -> functor () (_ : B) () -> C -> D -> sig end
+|}]

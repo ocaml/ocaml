@@ -57,7 +57,7 @@ module C4 = F(struct end);;
 C4.chr 66;;
 [%%expect{|
 module F :
-  functor (X : sig  end) ->
+  functor (X : sig end) ->
     sig
       external code : char -> int = "%identity"
       val chr : int -> char
@@ -91,8 +91,8 @@ module C4 :
 module G(X:sig end) = struct module M = X end;; (* does not alias X *)
 module M = G(struct end);;
 [%%expect{|
-module G : functor (X : sig  end) -> sig module M : sig  end end
-module M : sig module M : sig  end end
+module G : functor (X : sig end) -> sig module M : sig end end
+module M : sig module M : sig end end
 |}];;
 
 module M' = struct
@@ -141,9 +141,9 @@ module M5 = G(struct end);;
 M5.N'.x;;
 [%%expect{|
 module F :
-  functor (X : sig  end) ->
+  functor (X : sig end) ->
     sig module N : sig val x : int end module N' = N end
-module G : functor (X : sig  end) -> sig module N' : sig val x : int end end
+module G : functor (X : sig end) -> sig module N' : sig val x : int end end
 module M5 : sig module N' : sig val x : int end end
 - : int = 1
 |}];;
@@ -377,8 +377,8 @@ end;;
 include T;;
 let f (x : t) : T.t = x ;;
 [%%expect{|
-module F : functor (M : sig  end) -> sig type t end
-module T : sig module M : sig  end type t = F(M).t end
+module F : functor (M : sig end) -> sig type t end
+module T : sig module M : sig end type t = F(M).t end
 module M = T.M
 type t = F(M).t
 val f : t -> T.t = <fun>
@@ -462,16 +462,11 @@ module G = F (M.Y);;
 (*module N = G (M);;
 module N = F (M.Y) (M);;*)
 [%%expect{|
-module FF : functor (X : sig  end) -> sig type t end
+module FF : functor (X : sig end) -> sig type t end
 module M :
-  sig
-    module X : sig  end
-    module Y : sig type t = FF(X).t end
-    type t = Y.t
-  end
-module F :
-  functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig  end
-module G : functor (M : sig type t = M.Y.t end) -> sig  end
+  sig module X : sig end module Y : sig type t = FF(X).t end type t = Y.t end
+module F : functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig end
+module G : functor (M : sig type t = M.Y.t end) -> sig end
 |}];;
 
 (* PR#6307 *)
@@ -486,13 +481,13 @@ module F (L : (module type of L1 [@remove_aliases])) = struct end;;
 module F1 = F(L1);; (* ok *)
 module F2 = F(L2);; (* should succeed too *)
 [%%expect{|
-module A1 : sig  end
-module A2 : sig  end
+module A1 : sig end
+module A2 : sig end
 module L1 : sig module X = A1 end
 module L2 : sig module X = A2 end
-module F : functor (L : sig module X : sig  end end) -> sig  end
-module F1 : sig  end
-module F2 : sig  end
+module F : functor (L : sig module X : sig end end) -> sig end
+module F1 : sig end
+module F2 : sig end
 |}];;
 
 (* Counter example: why we need to be careful with PR#6307 *)
@@ -663,8 +658,8 @@ module F (X : sig end) = struct type t end;;
 module type A = Alias with module N := F(List);;
 module rec Bad : A = Bad;;
 [%%expect{|
-module type Alias = sig module N : sig  end module M = N end
-module F : functor (X : sig  end) -> sig type t end
+module type Alias = sig module N : sig end module M = N end
+module F : functor (X : sig end) -> sig type t end
 Line 1:
 Error: Module type declarations do not match:
          module type A = sig module M = F(List) end
@@ -716,7 +711,7 @@ module type S = sig
   module Q = M
 end;;
 [%%expect{|
-module type S = sig module M : sig module P : sig  end end module Q = M end
+module type S = sig module M : sig module P : sig end end module Q = M end
 |}];;
 module type S = sig
   module M : sig module N : sig end module P : sig end end
@@ -730,12 +725,12 @@ module R' : S = R;;
 [%%expect{|
 module type S =
   sig
-    module M : sig module N : sig  end module P : sig  end end
+    module M : sig module N : sig end module P : sig end end
     module Q : sig module N = M.N module P = M.P end
   end
 module R :
   sig
-    module M : sig module N : sig  end module P : sig  end end
+    module M : sig module N : sig end module P : sig end end
     module Q = M
   end
 module R' : S
@@ -756,9 +751,9 @@ end = struct
   type a = Foo.b
 end;;
 [%%expect{|
-module F : functor (X : sig  end) -> sig type t end
+module F : functor (X : sig end) -> sig type t end
 module M :
-  sig type a module Foo : sig module Bar : sig  end type b = a end end
+  sig type a module Foo : sig module Bar : sig end type b = a end end
 |}];;
 
 (* PR#6578 *)
@@ -796,7 +791,7 @@ end = struct
   module type S = module type of struct include X end
 end;;
 [%%expect{|
-module X : sig module N : sig  end end
+module X : sig module N : sig end end
 module Y : sig module type S = sig module N = X.N end end
 |}];;
 
@@ -819,7 +814,7 @@ let s : string = Bar.N.x
 [%%expect {|
 module type S =
   sig
-    module M : sig module A : sig  end module B : sig  end end
+    module M : sig module A : sig end module B : sig end end
     module N = M.A
   end
 module Foo :
