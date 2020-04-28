@@ -1229,9 +1229,11 @@ let rec tree_of_type_decl id decl =
     let vari =
       List.map2
         (fun ty v ->
-          if abstr || not (is_Tvar (repr ty)) then
-            let inj = decl.type_kind = Type_abstract
-                && decl.type_manifest = None && Variance.mem Inj v
+          let is_var = is_Tvar (repr ty) in
+          if abstr || not is_var then
+            let inj =
+              abstr && decl.type_kind = Type_abstract && Variance.mem Inj v
+              (* && (decl.type_manifest = None || is_var) *)
             and (co, cn) = Variance.get_upper v in (co, cn, inj)
           else (true,true,false))
         decl.type_params decl.type_variance

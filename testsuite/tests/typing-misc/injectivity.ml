@@ -68,6 +68,64 @@ Error: In this definition, expected parameter variances are not satisfied.
        but it is unrestricted.
 |}]
 
+(* Can also use it on private abbreviations *)
+module M : sig type !'a t = private < m : int ; .. > end =
+  struct type 'a t = < m : int ; n : 'a > end
+type 'a u = M : 'a -> 'a M.t u
+[%%expect{|
+module M : sig type !'a t = private < m : int; .. > end
+type 'a u = M : 'a -> 'a M.t u
+|}]
+module M : sig type 'a t = private < m : int ; .. > end =
+  struct type 'a t = < m : int ; n : 'a > end
+type 'a u = M : 'a -> 'a M.t u
+[%%expect{|
+module M : sig type 'a t = private < m : int; .. > end
+Line 3, characters 0-30:
+3 | type 'a u = M : 'a -> 'a M.t u
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+|}]
+module M : sig type !'a t = private < m : int ; .. > end =
+  struct type 'a t = < m : int > end
+[%%expect{|
+Line 2, characters 2-36:
+2 |   struct type 'a t = < m : int > end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = < m : int > end
+       is not included in
+         sig type !'a t = private < m : int; .. > end
+       Type declarations do not match:
+         type 'a t = < m : int >
+       is not included in
+         type !'a t
+       Their variances do not agree.
+|}]
+
+(* Beware of constrained parameters *)
+type (_,_) eq = Refl : ('a,'a) eq
+type !'a t = private 'b constraint 'a = < b : 'b > (* OK *)
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+type !'a t = private 'b constraint 'a = < b : 'b >
+|}]
+
+type !'a t = private 'b constraint 'a = < b : 'b; c : 'c > (* KO *)
+module M : sig type !'a t constraint 'a = < b : 'b; c : 'c > end =
+  struct type nonrec 'a t = 'a t end
+let inj_t : type a b. (<b:_; c:a> M.t, <b:_; c:b> M.t) eq -> (a, b) eq =
+  fun Refl -> Refl
+[%%expect{|
+Line 1, characters 0-58:
+1 | type !'a t = private 'b constraint 'a = < b : 'b; c : 'c > (* KO *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable has a variance that
+       cannot be deduced from the type parameters.
+       It was expected to be injective , but it is unrestricted.
+|}]
 
 (* Motivating examples with GADTs *)
 

@@ -199,6 +199,21 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           Btype.iter_type_expr check ty
     in
     List.iter (fun (_,ty) -> check ty) tyl;
+    let tvl3 = ref TypeMap.empty in
+    List.iter2
+      (fun ty (_,_,i) ->
+        if not i || Btype.is_Tvar ty then () else
+        compute_variance env tvl3 (set Inj true null) ty)
+      params required;
+    List.iter
+      (fun tv ->
+        let v1 = get_variance tv tvl and v3 = get_variance tv tvl3 in
+        let i1 = mem Inj v1 and i3 = mem Inj v3
+        and (c1, n1) = get_upper v1 in
+        if i3 && not i1 then
+          raise (Error (loc, Bad_variance (Variance_not_deducible,
+                                           (c1,n1,i1), (false,false,i3)))))
+      fvl;
   end;
   List.map2
     (fun ty (p, n, i) ->
