@@ -85,6 +85,12 @@ Working version
   the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+- #8713: Introduce a state table in the runtime to contain the global variables
+   which must be duplicated for each domain in the multicore runtime.
+   (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
+    David Allsopp, review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
+    Gabriel Scherer and Damien Doligez)
+
 ### Tools:
 
 * #6792, #8654 ocamldebug now supports program using Dynlink. This

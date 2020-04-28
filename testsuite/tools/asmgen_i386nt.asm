@@ -61,11 +61,7 @@ _caml_raise_exn:
         int     3
 
         .DATA
-        PUBLIC  _caml_exception_pointer
-_caml_exception_pointer dword 0
-        PUBLIC  _caml_young_ptr
-_caml_young_ptr      dword 0
-        PUBLIC  _caml_young_limit
-_caml_young_limit    dword 0
+        PUBLIC  _Caml_state
+_Caml_state dword 0
 
         END

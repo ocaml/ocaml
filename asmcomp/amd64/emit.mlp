@@ -962,12 +962,11 @@ let emit_instr fallthrough i =
       load_label_addr lbl_handler r11;
       cfi_adjust_cfa_offset 8;
       I.push r11;
-      stack_offset := !stack_offset + 8;
       cfi_adjust_cfa_offset 8;
       I.push (domain_field Domainstate.Domain_exn_handler);
-      stack_offset := !stack_offset + 8;
       I.sub rsp (mem64 NONE 0 RSP);
-      I.mov rsp (domain_field Domainstate.Domain_exn_handler)
+      I.mov rsp (domain_field Domainstate.Domain_exn_handler);
+      stack_offset := !stack_offset + 16
   | Lpoptrap ->
       I.add rsp (mem64 NONE 0 RSP);
       I.pop (domain_field Domainstate.Domain_exn_handler);
@@ -1151,9 +1150,6 @@ let begin_assembly() =
   float_constants := [];
   all_functions := [];
   if system = S_win64 then begin
-    D.extrn "caml_young_ptr" QWORD;
-    D.extrn "caml_young_limit" QWORD;
-    D.extrn "caml_exception_pointer" QWORD;
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_call_gc1" NEAR;
     D.extrn "caml_call_gc2" NEAR;

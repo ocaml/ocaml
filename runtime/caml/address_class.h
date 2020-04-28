@@ -42,7 +42,6 @@
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
 
-extern value *caml_young_start, *caml_young_end;
 extern char * caml_code_area_start, * caml_code_area_end;
 
 #define Not_in_heap 0

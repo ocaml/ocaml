@@ -650,7 +650,12 @@ let emit_instr i =
               then `	sub	{emit_reg i.res.(0)}, alloc_ptr, #{emit_int32 a}\n`
               else `	sub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #{emit_int32 a}\n`;
               first := false) in
-          `	cmp	{emit_reg i.res.(0)}, alloc_limit\n`;
+          let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+          let tmp = if i.res.(0).loc = Reg 8 (* r12 *) then phys_reg 7 (* r7 *)
+                    else phys_reg 8 (* r12 *)
+          in
+          `	ldr	{emit_reg tmp}, [domain_state_ptr, {emit_int offset}]\n`;
+          `	cmp	{emit_reg i.res.(0)}, {emit_reg tmp}\n`;
           let lbl_call_gc = new_label() in
           `	bls	{emit_label lbl_call_gc}\n`;
           `	sub	alloc_ptr, {emit_reg i.res.(0)}, #4\n`;
@@ -896,10 +901,16 @@ let emit_instr i =
         stack_offset := !stack_offset - 8; 1
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Lambda.Raise_regular ->
+          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
+          `	mov	r12, #0\n`;
+          `	str	r12, [domain_state_ptr, {emit_int offset}]\n`;
+          `	{emit_call "caml_raise_exn"}\n`;
+          `{record_frame Reg.Set.empty true i.dbg}\n`; 3
+        | Lambda.Raise_reraise ->
           `	{emit_call "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty true i.dbg}\n`; 1
-        | Cmm.Raise_notrace ->
+        | Lambda.Raise_notrace ->
           `	mov	sp, trap_ptr\n`;
           `	pop	\{trap_ptr, pc}\n`; 2
         end
@@ -1019,7 +1030,7 @@ let begin_assembly() =
   end;
   `trap_ptr	.req	r8\n`;
   `alloc_ptr	.req	r10\n`;
-  `alloc_limit	.req	r11\n`;
+  `domain_state_ptr	.req	r11\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;

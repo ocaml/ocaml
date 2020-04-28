@@ -82,6 +82,15 @@
 #define STACK_PROBE_SIZE 16384
 #endif
 
+        .set    domain_curr_field, 0
+#define DOMAIN_STATE(c_type, name) \
+        .equ    domain_field_caml_##name, domain_curr_field ; \
+        .set    domain_curr_field, domain_curr_field + 1
+#include "../runtime/caml/domain_state.tbl"
+#undef DOMAIN_STATE
+
+#define CAML_STATE(var,reg) 8*domain_field_caml_##var(reg)
+
 /* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays,
    even if only MacOS X's ABI formally requires it. */
 #define ALIGN_STACK(amount) subl $ amount, %esp ; CFI_ADJUST(amount)
@@ -105,10 +114,13 @@ G(caml_system__code_begin):
 FUNCTION(caml_call_gc)
         CFI_STARTPROC
     /* Record lowest stack address and return address */
-        movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
+        pushl   %ebx; CFI_ADJUST(4)
+        movl    G(Caml_state), %ebx
+        movl    4(%esp), %eax
+        movl    %eax, CAML_STATE(last_return_address, %ebx)
+        leal    8(%esp), %eax
+        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
 LBL(105):
 #if !defined(SYS_mingw) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
@@ -125,7 +137,8 @@ LBL(105):
         pushl   %ecx; CFI_ADJUST(4)
         pushl   %ebx; CFI_ADJUST(4)
         pushl   %eax; CFI_ADJUST(4)
-        movl    %esp, G(caml_gc_regs)
+        movl    G(Caml_state), %ebx
+        movl    %esp, CAML_STATE(gc_regs, %ebx)
         /* MacOSX note: 16-alignment of stack preserved at this point */
     /* Call the garbage collector */
         call    G(caml_garbage_collection)
@@ -144,17 +157,21 @@ LBL(105):
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
-        movl    G(caml_young_ptr), %eax
+        pushl   %ebx; CFI_ADJUST(4)
+        movl    G(Caml_state), %ebx
+        movl    CAML_STATE(young_ptr, %ebx), %eax
         subl    $8, %eax
-        cmpl    G(caml_young_limit), %eax
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
         jb      LBL(100)
-        movl    %eax, G(caml_young_ptr)
+        movl    %eax, CAML_STATE(young_ptr, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ret
 LBL(100):
-        movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
+        movl    4(%esp), %eax
+        movl    %eax, CAML_STATE(last_return_address, %ebx)
+        leal    8(%esp), %eax
+        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ALIGN_STACK(12)
         call    LBL(105)
         UNDO_ALIGN_STACK(12)
@@ -164,17 +181,21 @@ LBL(100):
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
-        movl    G(caml_young_ptr), %eax
+        pushl   %ebx; CFI_ADJUST(4)
+        movl    G(Caml_state), %ebx
+        movl    CAML_STATE(young_ptr, %ebx), %eax
         subl    $12, %eax
-        cmpl    G(caml_young_limit), %eax
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
         jb      LBL(101)
-        movl    %eax, G(caml_young_ptr)
+        movl    %eax, CAML_STATE(young_ptr, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ret
 LBL(101):
-        movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
+        movl    4(%esp), %eax
+        movl    %eax, CAML_STATE(last_return_address, %ebx)
+        leal    8(%esp), %eax
+        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ALIGN_STACK(12)
         call    LBL(105)
         UNDO_ALIGN_STACK(12)
@@ -184,17 +205,21 @@ LBL(101):
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
-        movl    G(caml_young_ptr), %eax
+        pushl   %ebx; CFI_ADJUST(4)
+        movl    G(Caml_state), %ebx
+        movl    CAML_STATE(young_ptr, %ebx), %eax
         subl    $16, %eax
-        cmpl    G(caml_young_limit), %eax
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
         jb      LBL(102)
-        movl    %eax, G(caml_young_ptr)
+        movl    %eax, CAML_STATE(young_ptr, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ret
 LBL(102):
-        movl    0(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    4(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
+        movl    4(%esp), %eax
+        movl    %eax, CAML_STATE(last_return_address, %ebx)
+        leal    8(%esp), %eax
+        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ALIGN_STACK(12)
         call    LBL(105)
         UNDO_ALIGN_STACK(12)
@@ -204,20 +229,24 @@ LBL(102):
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
-        subl    G(caml_young_ptr), %eax /* eax = size - caml_young_ptr */
+        pushl   %eax; CFI_ADJUST(4) /* saved desired size */
+        pushl   %ebx; CFI_ADJUST(4)
+        movl    G(Caml_state), %ebx
+        /* eax = size - caml_young_ptr */
+        subl    CAML_STATE(young_ptr, %ebx), %eax
         negl    %eax                    /* eax = caml_young_ptr - size */
-        cmpl    G(caml_young_limit), %eax
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
         jb      LBL(103)
-        movl    %eax, G(caml_young_ptr)
+        movl    %eax, CAML_STATE(young_ptr, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
+        addl    $4, %esp; CFI_ADJUST(-4) /* drop desired size */
         ret
 LBL(103):
-        subl    G(caml_young_ptr), %eax /* eax = - size */
-        negl    %eax                    /* eax = size */
-        pushl   %eax; CFI_ADJUST(4)     /* save desired size */
-        movl    4(%esp), %eax
-        movl    %eax, G(caml_last_return_address)
-        leal    8(%esp), %eax
-        movl    %eax, G(caml_bottom_of_stack)
+        movl    8(%esp), %eax
+        movl    %eax, CAML_STATE(last_return_address, %ebx)
+        leal    12(%esp), %eax
+        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
+        popl    %ebx; CFI_ADJUST(-4)
         ALIGN_STACK(8)
         call    LBL(105)
         UNDO_ALIGN_STACK(8)
@@ -231,10 +260,12 @@ LBL(103):
 FUNCTION(caml_c_call)
         CFI_STARTPROC
     /* Record lowest stack address and return address */
+    /* ecx and edx are destroyed at C call. Use them as temp. */
+        movl    G(Caml_state), %ecx
         movl    (%esp), %edx
-        movl    %edx, G(caml_last_return_address)
+        movl    %edx, CAML_STATE(last_return_address, %ecx)
         leal    4(%esp), %edx
-        movl    %edx, G(caml_bottom_of_stack)
+        movl    %edx, CAML_STATE(bottom_of_stack, %ecx)
 #if !defined(SYS_mingw) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
@@ -260,27 +291,30 @@ FUNCTION(caml_start_program)
         movl    $ G(caml_program), %esi
     /* Common code for caml_start_program and caml_callback* */
 LBL(106):
+        movl    G(Caml_state), %edi
     /* Build a callback link */
-        pushl   G(caml_gc_regs); CFI_ADJUST(4)
-        pushl   G(caml_last_return_address); CFI_ADJUST(4)
-        pushl   G(caml_bottom_of_stack); CFI_ADJUST(4)
+        pushl   CAML_STATE(gc_regs, %edi); CFI_ADJUST(4)
+        pushl   CAML_STATE(last_return_address, %edi); CFI_ADJUST(4)
+        pushl   CAML_STATE(bottom_of_stack, %edi); CFI_ADJUST(4)
         /* Note: 16-alignment preserved on MacOSX at this point */
     /* Build an exception handler */
         pushl   $ LBL(108); CFI_ADJUST(4)
         ALIGN_STACK(8)
-        pushl   G(caml_exception_pointer); CFI_ADJUST(4)
-        movl    %esp, G(caml_exception_pointer)
+        pushl   CAML_STATE(exception_pointer, %edi); CFI_ADJUST(4)
+        movl    %esp, CAML_STATE(exception_pointer, %edi)
     /* Call the OCaml code */
         call    *%esi
 LBL(107):
+        movl    G(Caml_state), %edi
     /* Pop the exception handler */
-        popl    G(caml_exception_pointer); CFI_ADJUST(-4)
+        popl    CAML_STATE(exception_pointer, %edi); CFI_ADJUST(-4)
         addl    $12, %esp       ; CFI_ADJUST(-12)
 LBL(109):
+        movl    G(Caml_state), %edi /* Reload for LBL(109) entry */
     /* Pop the callback link, restoring the global variables */
-        popl    G(caml_bottom_of_stack); CFI_ADJUST(-4)
-        popl    G(caml_last_return_address); CFI_ADJUST(-4)
-        popl    G(caml_gc_regs); CFI_ADJUST(-4)
+        popl    CAML_STATE(bottom_of_stack, %edi); CFI_ADJUST(-4)
+        popl    CAML_STATE(last_return_address, %edi); CFI_ADJUST(-4)
+        popl    CAML_STATE(gc_regs, %edi); CFI_ADJUST(-4)
     /* Restore callee-save registers. */
         popl    %ebp; CFI_ADJUST(-4)
         popl    %edi; CFI_ADJUST(-4)
@@ -300,15 +334,16 @@ LBL(108):
 
 FUNCTION(caml_raise_exn)
         CFI_STARTPROC
-        testl   $1, G(caml_backtrace_active)
+        movl    G(Caml_state), %ebx
+        testl   $1, CAML_STATE(backtrace_active, %ebx)
         jne     LBL(110)
-        movl    G(caml_exception_pointer), %esp
-        popl    G(caml_exception_pointer); CFI_ADJUST(-4)
+        movl    CAML_STATE(exception_pointer, %ebx), %esp
+        popl    CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(-4)
         UNDO_ALIGN_STACK(8)
         ret
 LBL(110):
         movl    %eax, %esi          /* Save exception bucket in esi */
-        movl    G(caml_exception_pointer), %edi /* SP of handler */
+        movl    CAML_STATE(exception_pointer, %ebx), %edi /* SP of handler */
         movl    0(%esp), %eax       /* PC of raise */
         leal    4(%esp), %edx       /* SP of raise */
         ALIGN_STACK(12)
@@ -319,7 +354,7 @@ LBL(110):
         call    G(caml_stash_backtrace)
         movl    %esi, %eax              /* Recover exception bucket */
         movl    %edi, %esp
-        popl    G(caml_exception_pointer); CFI_ADJUST(-4)
+        popl    CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(-4)
         UNDO_ALIGN_STACK(8)
         ret
         CFI_ENDPROC
@@ -329,24 +364,29 @@ LBL(110):
 
 FUNCTION(caml_raise_exception)
         CFI_STARTPROC
-        testl   $1, G(caml_backtrace_active)
+        movl    G(Caml_state), %ebx
+        testl   $1, CAML_STATE(backtrace_active, %ebx)
         jne     LBL(112)
-        movl    4(%esp), %eax
-        movl    G(caml_exception_pointer), %esp
-        popl    G(caml_exception_pointer); CFI_ADJUST(-4)
+        movl    8(%esp), %eax
+        movl    CAML_STATE(exception_pointer, %ebx), %esp
+        popl    CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(-4)
         UNDO_ALIGN_STACK(8)
         ret
 LBL(112):
-        movl    4(%esp), %esi          /* Save exception bucket in esi */
+        movl    8(%esp), %esi          /* Save exception bucket in esi */
         ALIGN_STACK(12)
-        pushl   G(caml_exception_pointer); CFI_ADJUST(4)  /* 4: sp of handler */
-        pushl   G(caml_bottom_of_stack); CFI_ADJUST(4)    /* 3: sp of raise */
-        pushl   G(caml_last_return_address); CFI_ADJUST(4)/* 2: pc of raise */
-        pushl   %esi; CFI_ADJUST(4)                    /* 1: exception bucket */
+        /* 4: sp of handler */
+        pushl   CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(4)
+        /* 3: sp of raise */
+        pushl   CAML_STATE(bottom_of_stack, %ebx); CFI_ADJUST(4)
+        /* 2: pc of raise */
+        pushl   CAML_STATE(last_return_address, %ebx); CFI_ADJUST(4)
+        /* 1: exception bucket */
+        pushl   %esi; CFI_ADJUST(4)
         call    G(caml_stash_backtrace)
         movl    %esi, %eax              /* Recover exception bucket */
-        movl    G(caml_exception_pointer), %esp
-        popl    G(caml_exception_pointer); CFI_ADJUST(-4)
+        movl    CAML_STATE(exception_pointer, %ebx), %esp
+        popl    CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(-4)
         UNDO_ALIGN_STACK(8)
         ret
         CFI_ENDPROC
@@ -354,7 +394,7 @@ LBL(112):
 
 /* Callback from C to OCaml */
 
-FUNCTION(caml_callback_exn)
+FUNCTION(caml_callback_asm)
         CFI_STARTPROC
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
@@ -362,14 +402,15 @@ FUNCTION(caml_callback_exn)
         pushl   %edi; CFI_ADJUST(4)
         pushl   %ebp; CFI_ADJUST(4)
     /* Initial loading of arguments */
-        movl    20(%esp), %ebx   /* closure */
-        movl    24(%esp), %eax   /* argument */
+        movl    24(%esp), %ebx   /* arg2: closure */
+        movl    28(%esp), %edi   /* arguments array */
+        movl    0(%edi), %eax    /* arg1: argument */
         movl    0(%ebx), %esi    /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
-        ENDFUNCTION(caml_callback_exn)
+ENDFUNCTION(caml_callback_asm)
 
-FUNCTION(caml_callback2_exn)
+FUNCTION(caml_callback2_asm)
         CFI_STARTPROC
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
@@ -377,15 +418,16 @@ FUNCTION(caml_callback2_exn)
         pushl   %edi; CFI_ADJUST(4)
         pushl   %ebp; CFI_ADJUST(4)
     /* Initial loading of arguments */
-        movl    20(%esp), %ecx   /* closure */
-        movl    24(%esp), %eax   /* first argument */
-        movl    28(%esp), %ebx   /* second argument */
+        movl    24(%esp), %ecx   /* arg3: closure */
+        movl    28(%esp), %edi   /* arguments array */
+        movl    0(%edi), %eax    /* arg1: first argument */
+        movl    4(%edi), %ebx    /* arg2: second argument */
         movl    $ G(caml_apply2), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
-        ENDFUNCTION(caml_callback2_exn)
+ENDFUNCTION(caml_callback2_asm)
 
-FUNCTION(caml_callback3_exn)
+FUNCTION(caml_callback3_asm)
         CFI_STARTPROC
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
@@ -393,14 +435,15 @@ FUNCTION(caml_callback3_exn)
         pushl   %edi; CFI_ADJUST(4)
         pushl   %ebp; CFI_ADJUST(4)
     /* Initial loading of arguments */
-        movl    20(%esp), %edx   /* closure */
-        movl    24(%esp), %eax   /* first argument */
-        movl    28(%esp), %ebx   /* second argument */
-        movl    32(%esp), %ecx   /* third argument */
+        movl    24(%esp), %edx   /* arg4: closure */
+        movl    28(%esp), %edi   /* arguments array */
+        movl    0(%edi), %eax    /* arg1: first argument */
+        movl    4(%edi), %ebx    /* arg2: second argument */
+        movl    8(%edi), %ecx    /* arg3: third argument */
         movl    $ G(caml_apply3), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
-        ENDFUNCTION(caml_callback3_exn)
+ENDFUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
@@ -414,10 +457,11 @@ FUNCTION(caml_ml_array_bound_error)
         ffree   %st(6)
         ffree   %st(7)
     /* Record lowest stack address and return address */
+        movl    G(Caml_state), %ebx
         movl    (%esp), %edx
-        movl    %edx, G(caml_last_return_address)
+        movl    %edx, CAML_STATE(last_return_address, %ebx)
         leal    4(%esp), %edx
-        movl    %edx, G(caml_bottom_of_stack)
+        movl    %edx, CAML_STATE(bottom_of_stack, %ebx)
     /* Re-align the stack */
         andl    $-16, %esp
     /* Branch to [caml_array_bound_error] (never returns) */

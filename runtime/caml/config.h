@@ -48,6 +48,7 @@
 #endif
 
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
+
 #include <stddef.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
@@ -141,6 +142,7 @@ typedef uint64_t uintnat;
 #endif
 
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
+
 /* Endianness of floats */
 
 /* ARCH_FLOAT_ENDIANNESS encodes the byte order of doubles as follows:

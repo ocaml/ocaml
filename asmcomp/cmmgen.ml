@@ -437,11 +437,8 @@ let validate d m p =
   ucompare2 twoszp md < 0 && ucompare2 md (add2 twoszp twop1) <= 0
 *)
 
-let raise_regular dbg exc =
-  Cop(Craise Lambda.Raise_regular, [exc], dbg)
-
 let raise_symbol dbg symb =
-  raise_regular dbg (Cconst_symbol (symb, dbg))
+  Cop(Craise Lambda.Raise_regular, [Cconst_symbol (symb, dbg)], dbg)
 
 let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -2392,13 +2389,9 @@ and transl_prim_1 env p arg dbg =
       Cop(Cpoll, [transl env arg], dbg)
   (* Exceptions *)
   | Praise _ when not (!Clflags.debug) ->
-      Cop(Craise (Lambda.Raise_notrace), [transl env arg], dbg)
-  | Praise Lambda.Raise_notrace ->
-      Cop(Craise (Lambda.Raise_notrace), [transl env arg], dbg)
-  | Praise Lambda.Raise_reraise ->
-      Cop(Craise (Lambda.Raise_reraise), [transl env arg], dbg)
-  | Praise Lambda.Raise_regular ->
-      raise_regular dbg (transl env arg)
+      Cop(Craise Lambda.Raise_notrace, [transl env arg], dbg)
+  | Praise raise_kind ->
+      Cop(Craise raise_kind, [transl env arg], dbg)
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int (2, dbg); transl env arg], dbg)

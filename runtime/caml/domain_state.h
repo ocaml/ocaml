@@ -1,5 +1,21 @@
-#ifndef Caml_state_H
-#define Caml_state_H
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                Stephen Dolan, University of Cambridge                  */
+/*                                                                        */
+/*   Copyright 2019 Indian Institute of Technology, Madras                */
+/*   Copyright 2019 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#ifndef CAML_STATE_H
+#define CAML_STATE_H
 
 #include <stddef.h>
 #ifdef __APPLE__
@@ -63,4 +79,4 @@ CAML_STATIC_ASSERT(
   #define SET_Caml_state(x) (Caml_state = (x))
 #endif
 
-#endif
+#endif /* CAML_STATE_H */

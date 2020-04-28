@@ -27,6 +27,9 @@ ephe-c-api
 #  https://github.com/ocaml/ocaml/pull/8634
 statmemprof
 
+# TODO: not clear compatibility is sensible for multicore
+compatibility
+
 # ocamldebug is broken (#34)
 tool-debugger
 

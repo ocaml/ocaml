@@ -74,7 +74,7 @@
 /* **** compact.c */
 
 /* **** compare.c */
-/* #define compare_unordered caml_compare_unordered */
+#define compare_unordered caml_compare_unordered
 
 /* **** custom.c */
 #define alloc_custom caml_alloc_custom

@@ -193,7 +193,6 @@ CAMLprim value caml_get_current_environment(value unit)
 
 CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
-  caml_domain_state* domain_state = Caml_state;
   /* Stack layout on entry:
        return frame into instrument_closure function
        arg3 to call_original_code (arg)
@@ -220,9 +219,9 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
   value * osp, * nsp;
   int i;
 
-  osp = domain_state->current_stack->sp;
-  domain_state->current_stack->sp -= 4;
-  nsp = domain_state->current_stack->sp;
+  osp = Caml_state->current_stack->sp;
+  Caml_state->current_stack->sp -= 4;
+  nsp = Caml_state->current_stack->sp;
   for (i = 0; i < 6; i++) nsp[i] = osp[i];
   nsp[6] = codeptr;
   nsp[7] = env;
@@ -271,13 +270,6 @@ value caml_static_release_bytecode(value prog, value len)
   return Val_unit; /* not reached */
 }
 
-value * caml_stack_low;
-value * caml_stack_high;
-value * caml_stack_threshold;
-value * caml_extern_sp;
-value * caml_trapsp;
-int caml_callback_depth;
 void (* volatile caml_async_action_hook)(void);
-struct longjmp_buffer * caml_external_raise;
 
 #endif
