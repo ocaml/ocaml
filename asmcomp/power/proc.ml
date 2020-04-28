@@ -34,7 +34,8 @@ let word_addressed = false
     3 - 10              function arguments and results
     11 - 12             temporaries
     13                  pointer to small data area
-    14 - 28             general purpose, preserved by C
+    14 - 27             general purpose, preserved by C
+    28                  domain state pointer
     29                  trap pointer
     30                  allocation limit
     31                  allocation pointer
@@ -47,7 +48,7 @@ let word_addressed = false
 let int_reg_name =
   [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
      "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
-     "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
+     "22"; "23"; "24"; "25"; "26"; "27" |]
 
 let float_reg_name =
   [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
@@ -62,7 +63,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 23; 31 |]
+let num_available_registers = [| 22; 31 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -74,8 +75,8 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.make 23 Reg.dummy in
-  for i = 0 to 22 do v.(i) <- Reg.at_location Int (Reg i) done; v
+  let v = Array.make 22 Reg.dummy in
+  for i = 0 to 21 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
   let v = Array.make 31 Reg.dummy in
@@ -276,7 +277,7 @@ let loc_exn_bucket = phys_reg 0
 let int_dwarf_reg_numbers =
   [| 3; 4; 5; 6; 7; 8; 9; 10;
      14; 15; 16; 17; 18; 19; 20; 21;
-     22; 23; 24; 25; 26; 27; 28;
+     22; 23; 24; 25; 26; 27;
   |]
 
 let float_dwarf_reg_numbers =
@@ -318,12 +319,12 @@ let destroyed_at_reloadretaddr = [| phys_reg 11 |]
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall _ -> 15
-  | _ -> 23
+    Iextcall _ -> 14
+  | _ -> 22
 
 let max_register_pressure = function
-    Iextcall _ -> [| 15; 18 |]
-  | _ -> [| 23; 30 |]
+    Iextcall _ -> [| 14; 18 |]
+  | _ -> [| 22; 30 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)

@@ -98,9 +98,7 @@ let label_counter = ref 99
 
 let new_label() = incr label_counter; !label_counter
 
-type rec_flag =
-  | Nonrecursive
-  | Recursive
+type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
   | Cphantom_const_int of Targetint.t

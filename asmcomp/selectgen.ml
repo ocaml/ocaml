@@ -407,7 +407,8 @@ method mark_instr = function
   | Iraise raise_kind ->
     begin match raise_kind with
       | Lambda.Raise_notrace -> ()
-      | Lambda.Raise_regular | Lambda.Raise_reraise ->
+      | Lambda.Raise_regular
+      | Lambda.Raise_reraise ->
           (* PR#6239 *)
         (* caml_stash_backtrace; we #mark_call rather than
            #mark_c_tailcall to get a good stack backtrace *)

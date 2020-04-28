@@ -16,10 +16,12 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
+#ifndef CAML_INTERNALS
+#include "compatibility.h"
+#endif
 #include "misc.h"
 #include "addrmap.h"
 #include "config.h"
-
 
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \

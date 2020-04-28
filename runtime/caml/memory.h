@@ -18,7 +18,7 @@
 #ifndef CAML_MEMORY_H
 #define CAML_MEMORY_H
 
-#ifndef CAML_NAME_SPACE
+#ifndef CAML_INTERNALS
 #include "compatibility.h"
 #endif
 #include "config.h"

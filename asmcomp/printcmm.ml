@@ -138,7 +138,7 @@ let operation d = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
-  | Craise k -> Format.asprintf "%s%s" (Lambda.raise_kind k) (Debuginfo.to_string d)
+  | Craise k -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
   | Cpoll -> "poll"
 

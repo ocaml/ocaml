@@ -30,7 +30,6 @@ struct compare_item { value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
-CAMLexport int caml_compare_unordered;
 
 struct compare_stack {
   struct compare_item init_stack[COMPARE_STACK_INIT_SIZE];

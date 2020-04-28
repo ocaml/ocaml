@@ -83,9 +83,7 @@ val swap_float_comparison: float_comparison -> float_comparison
 type label = int
 val new_label: unit -> label
 
-type rec_flag =
-  | Nonrecursive
-  | Recursive
+type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
   (* CR-soon mshinwell: Convert this to [Targetint.OCaml.t] (or whatever the

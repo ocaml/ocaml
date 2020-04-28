@@ -66,10 +66,8 @@ CAMLextern value caml_alloc_custom_mem(const struct custom_operations * ops,
 
 CAMLextern void caml_register_custom_operations(const struct custom_operations * ops);
 
-/* In domain_state.tbl: intnat compare_unordered; */
-/* Used by custom comparison to report unordered NaN-like cases. */
-CAMLextern int caml_compare_unordered; /* FIXME: ctk21 horrific hack to get old CAPI compiling */
-
+/* Global variable moved to Caml_state in 4.10 */
+#define caml_compare_unordered (Caml_state->compare_unordered)
 
 #ifdef CAML_INTERNALS
 extern struct custom_operations * caml_find_custom_operations(char * ident);
