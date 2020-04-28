@@ -112,7 +112,7 @@ git commit -a -m "last commit before tagging $VERSION"
 # update VERSION with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
-# Update the copyright year in the manual.
+# Update \year in manual/manual/macros.hva
 rm -r autom4te.cache
 ./autogen
 make coreboot -j5

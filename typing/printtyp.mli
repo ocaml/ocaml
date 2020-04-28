@@ -69,11 +69,22 @@ module Conflicts: sig
 
   type explanation =
     { kind: namespace;
-      name:string; location:Location.t}
+      name:string;
+      root_name:string;
+      location:Location.t
+    }
 
-  val take: unit -> explanation list
-  val pp: Format.formatter -> explanation list -> unit
-  val print: Format.formatter -> unit
+  val list_explanations: unit -> explanation list
+(** [list_explanations()] return the list of conflict explanations
+    collected up to this point, and reset the list of collected
+    explanations *)
+
+  val print_located_explanations:
+    Format.formatter -> explanation list -> unit
+
+  val print_explanations: Format.formatter -> unit
+  (** Print all conflict explanations collected up to this point *)
+
   val reset: unit -> unit
 end
 

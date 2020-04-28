@@ -124,7 +124,7 @@ tools/check-typo
 
 echo "======== old school build =========="
 
-$make -s distclean || :
+git clean -q -f -d -x
 
 instdir="$HOME/ocaml-tmp-install-$$"
 ./configure --prefix "$instdir"
@@ -143,11 +143,7 @@ rm -rf "$instdir"
 
 echo "======== clang 6.0, address sanitizer, UB sanitizer =========="
 
-$make -s distclean || :
-
-# `make distclean` does not clean the files from previous versions that
-# are not produced by the current version, so use `git clean` in addition.
-git clean -f -d -x
+git clean -q -f -d -x
 
 # Use clang 6.0
 # We cannot give the sanitizer options as part of -cc because
@@ -197,7 +193,7 @@ ASAN_OPTIONS="detect_leaks=0" $run_testsuite
 
 echo "======== clang 6.0, thread sanitizer =========="
 
-$make -s distclean || :
+git clean -q -f -d -x
 
 ./configure CC=clang-6.0
 
@@ -225,7 +221,7 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 
 # echo "======== clang 6.0, memory sanitizer =========="
 
-# $make -s distclean || :
+# git clean -q -f -d -x
 
 # # Use clang 6.0
 # # We cannot give the sanitizer options as part of -cc because

@@ -666,7 +666,8 @@ end) = struct
             use ();
             Printtyp.Conflicts.reset ();
             let paths = ambiguous_types env lbl rest in
-            let expansion = Format.asprintf "%t" Printtyp.Conflicts.print in
+            let expansion =
+              Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
             if paths <> [] then
               warn lid.loc
                 (Warnings.Ambiguous_name ([Longident.last lid.txt],
@@ -694,7 +695,8 @@ end) = struct
                   Printtyp.Conflicts.reset ();
                   let paths = ambiguous_types env lbl rest in
                   let expansion =
-                    Format.asprintf "%t" Printtyp.Conflicts.print in
+                    Format.asprintf "%t"
+                      Printtyp.Conflicts.print_explanations in
                   if paths <> [] then
                     warn lid.loc
                       (Warnings.Ambiguous_name ([Longident.last lid.txt],
