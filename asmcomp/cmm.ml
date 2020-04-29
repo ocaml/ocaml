@@ -216,9 +216,9 @@ let iter_shallow_tail f = function
   | Clet(_, _, body) | Cphantom_let (_, _, body) ->
       f body;
       true
-  | Cifthenelse(_cond, _dbg_cond, e1, _dbg_e1, e2, _dbg_e2) ->
-      f e1;
-      f e2;
+  | Cifthenelse(_cond, _ifso_dbg, ifso, _ifnot_dbg, ifnot, _dbg) ->
+      f ifso;
+      f ifnot;
       true
   | Csequence(_e1, e2) ->
       f e2;
@@ -254,12 +254,13 @@ let rec map_tail f = function
       Clet(id, exp, map_tail f body)
   | Cphantom_let(id, exp, body) ->
       Cphantom_let (id, exp, map_tail f body)
-  | Cifthenelse(cond, dbg_cond, e1, dbg_e1, e2, dbg_e2) ->
+  | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
       Cifthenelse
         (
-          cond, dbg_cond,
-          map_tail f e1, dbg_e1,
-          map_tail f e2, dbg_e2
+          cond,
+          ifso_dbg, map_tail f ifso,
+          ifnot_dbg, map_tail f ifnot,
+          dbg
         )
   | Csequence(e1, e2) ->
       Csequence(e1, map_tail f e2)
@@ -284,3 +285,38 @@ let rec map_tail f = function
   | Ctuple _
   | Cop _ as c ->
       f c
+
+let map_shallow f = function
+  | Clet (id, e1, e2) ->
+      Clet (id, f e1, f e2)
+  | Cphantom_let (id, de, e) ->
+      Cphantom_let (id, de, f e)
+  | Cassign (id, e) ->
+      Cassign (id, f e)
+  | Ctuple el ->
+      Ctuple (List.map f el)
+  | Cop (op, el, dbg) ->
+      Cop (op, List.map f el, dbg)
+  | Csequence (e1, e2) ->
+      Csequence (f e1, f e2)
+  | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
+      Cifthenelse(f cond, ifso_dbg, f ifso, ifnot_dbg, f ifnot, dbg)
+  | Cswitch (e, ia, ea, dbg) ->
+      Cswitch (e, ia, Array.map (fun (e, dbg) -> f e, dbg) ea, dbg)
+  | Ccatch (rf, hl, body) ->
+      let map_h (n, ids, handler, dbg) = (n, ids, f handler, dbg) in
+      Ccatch (rf, List.map map_h hl, f body)
+  | Cexit (n, el) ->
+      Cexit (n, List.map f el)
+  | Ctrywith (e1, id, e2, dbg) ->
+      Ctrywith (f e1, id, f e2, dbg)
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _
+  | Cblockheader _
+  | Cvar _
+    as c ->
+      c

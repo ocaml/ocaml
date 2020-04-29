@@ -22,7 +22,7 @@ include $(TOPDIR)/Makefile.tools
 libraries := testing.cmi testing.cma lib.cmo
 
 # If the native compiler is enabled, then also compile testing.cmxa
-ifneq "$(ARCH)" "none"
+ifeq "$(NATIVE_COMPILER)" "true"
 libraries += testing.cmxa
 endif
 

@@ -78,7 +78,7 @@ INSTDIR=/tmp/ocaml-${VERSION}
 rm -rf ${INSTDIR}
 ./configure -prefix ${INSTDIR}
 
-make world.opt -j5
+make -j5
 make alldepend
 
 # check that .depend files have no absolute path in them
@@ -228,7 +228,7 @@ it was a release candidate.
 
 ```
 cd $WORKTREE
-make world.opt
+make
 make install
 export PATH="$INSTDIR/bin:$PATH"
 cd manual

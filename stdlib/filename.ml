@@ -70,6 +70,7 @@ let generic_dirname is_dir_sep current_dir_name name =
   else trailing_sep (String.length name - 1)
 
 module type SYSDEPS = sig
+  val null : string
   val current_dir_name : string
   val parent_dir_name : string
   val dir_sep : string
@@ -88,6 +89,7 @@ module type SYSDEPS = sig
 end
 
 module Unix : SYSDEPS = struct
+  let null = "/dev/null"
   let current_dir_name = "."
   let parent_dir_name = ".."
   let dir_sep = "/"
@@ -128,6 +130,7 @@ module Unix : SYSDEPS = struct
 end
 
 module Win32 : SYSDEPS = struct
+  let null = "NUL"
   let current_dir_name = "."
   let parent_dir_name = ".."
   let dir_sep = "\\"
@@ -261,6 +264,7 @@ Quoting commands for execution by cmd.exe is difficult.
 end
 
 module Cygwin : SYSDEPS = struct
+  let null = "/dev/null"
   let current_dir_name = "."
   let parent_dir_name = ".."
   let dir_sep = "/"

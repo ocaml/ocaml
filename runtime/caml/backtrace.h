@@ -59,7 +59,7 @@
  *
  * They are part of the state specific to each thread, and threading libraries
  * are responsible for copying them on context switch.
- * See [otherlibs/systhreads/st_stubs.c] and [otherlibs/threads/scheduler.c].
+ * See [otherlibs/systhreads/st_stubs.c].
  *
  *
  * [Caml_state->backtrace_buffer] is filled by runtime when unwinding stack. It

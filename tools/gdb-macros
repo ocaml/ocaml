@@ -124,11 +124,11 @@ define camlheader
 end
 
 define camlheap
-  if $arg0 >= caml_young_start && $arg0 < caml_young_end
+  if $arg0 >= Caml_state->young_start && $arg0 < Caml_state->young_end
     printf "YOUNG"
     set $camlheap_result = 1
   else
-    set $chunk = caml_heap_start
+    set $chunk = Caml_state->heap_start
     set $found = 0
     while $chunk != 0 && ! $found
       set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
@@ -253,7 +253,7 @@ end
 
 # displays the list of heap chunks
 define camlchunks
-  set $chunk = * (unsigned long *) &caml_heap_start
+  set $chunk = * (unsigned long *) &Caml_state->heap_start
   while $chunk != 0
     set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
     set $chunk_alloc = * (unsigned long *) ($chunk - 3 * $camlwordsize)
@@ -269,7 +269,7 @@ end
 # `camlvisitfun` can set `$camlvisitstop` to stop the iteration
 
 define camlvisit
-  set $cvchunk = * (unsigned long *) &caml_heap_start
+  set $cvchunk = * (unsigned long *) &Caml_state->heap_start
   set $camlvisitstop = 0
   while $cvchunk != 0 && ! $camlvisitstop
     set $cvchunk_size = * (unsigned long *) ($cvchunk - 2 * $camlwordsize)
@@ -290,7 +290,7 @@ define camlvisit
 end
 
 define caml_cv_check_fl0
-  if $hp == * (unsigned long *) &caml_heap_start
+  if $hp == * (unsigned long *) &Caml_state->heap_start
     set $flcheck_prev = ((unsigned long) &sentinels + 16)
   end
   if $color == 2 && $size > 5

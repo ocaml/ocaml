@@ -30,6 +30,7 @@ open Cmx_format
 open Cmxs_format
 
 module String = Misc.Stdlib.String
+module IntMap = Map.Make(Int)
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
@@ -41,17 +42,34 @@ type boxed_number =
 
 type env = {
   unboxed_ids : (V.t * boxed_number) V.tbl;
+  notify_catch : (Cmm.expression list -> unit) IntMap.t;
   environment_param : V.t option;
 }
 
+(* notify_catch associates to each catch handler a callback
+   which will be passed the list of arguments of each
+   staticfail instruction pointing to that handler. This
+   allows transl_catch to observe concrete arguments passed to each
+   handler parameter and decide whether to unbox them accordingly.
+
+   Other ways to achieve the same result would be to either (1) traverse
+   the body of the catch block after translation (this would be costly
+   and could easily lead to quadratric behavior) or (2) return
+   a description of arguments passed to each catch handler as an extra
+   value to be threaded through all transl_* functions (this would be
+   quite heavy, and probably less efficient that the callback approach).
+*)
+
+
 let empty_env =
   {
-    unboxed_ids =V.empty;
+    unboxed_ids = V.empty;
+    notify_catch = IntMap.empty;
     environment_param = None;
   }
 
 let create_env ~environment_param =
-  { unboxed_ids = V.empty;
+  { empty_env with
     environment_param;
   }
 
@@ -63,6 +81,16 @@ let add_unboxed_id id unboxed_id bn env =
   { env with
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
+
+let add_notify_catch n f env =
+  { env with
+    notify_catch = IntMap.add n f env.notify_catch
+  }
+
+let notify_catch i env l =
+  match IntMap.find_opt i env.notify_catch with
+  | Some f -> f l
+  | None -> ()
 
 let structured_constant_of_sym s =
   match Compilenv.structured_constant_of_symbol s with
@@ -2212,17 +2240,15 @@ let rec transl env e =
           strmatch_compile dbg arg (Option.map (transl env) d)
             (List.map (fun (s,act) -> s,transl env act) sw))
   | Ustaticfail (nfail, args) ->
-      Cexit (nfail, List.map (transl env) args)
+      let cargs = List.map (transl env) args in
+      notify_catch nfail env cargs;
+      Cexit (nfail, cargs)
   | Ucatch(nfail, [], body, handler) ->
       let dbg = Debuginfo.none in
       make_catch nfail (transl env body) (transl env handler) dbg
   | Ucatch(nfail, ids, body, handler) ->
       let dbg = Debuginfo.none in
-      (* CR-someday mshinwell: consider how we can do better than
-         [typ_val] when appropriate. *)
-      let ids_with_types =
-        List.map (fun (i, _) -> (i, Cmm.typ_val)) ids in
-      ccatch(nfail, ids_with_types, transl env body, transl env handler, dbg)
+      transl_catch env nfail ids body handler dbg
   | Utrywith(body, exn, handler) ->
       let dbg = Debuginfo.none in
       Ctrywith(transl env body, exn, transl env handler, dbg)
@@ -2293,6 +2319,64 @@ let rec transl env e =
   | Uunreachable ->
       let dbg = Debuginfo.none in
       Cop(mk_load_mut Word_int, [Cconst_int (0, dbg)], dbg)
+
+and transl_catch env nfail ids body handler dbg =
+  let ids = List.map (fun (id, kind) -> (id, kind, ref No_result)) ids in
+  (* Translate the body, and while doing so, collect the "unboxing type" for
+     each argument.  *)
+  let report args =
+    List.iter2
+      (fun (_id, kind, u) c ->
+         let strict =
+           match kind with
+           | Pfloatval | Pboxedintval _ -> false
+           | Pintval | Pgenval -> true
+         in
+         u := join_unboxed_number_kind ~strict !u
+             (is_unboxed_number_cmm ~strict c)
+      )
+      ids args
+  in
+  let env_body = add_notify_catch nfail report env in
+  let body = transl env_body body in
+  let typ_of_bn = function
+    | Boxed_float _ -> Cmm.typ_float
+    | Boxed_integer (Pint64, _) when size_int = 4 -> [|Int;Int|]
+    | Boxed_integer _ -> Cmm.typ_int
+  in
+  let new_env, rewrite, ids =
+    List.fold_right
+      (fun (id, _kind, u) (env, rewrite, ids) ->
+         match !u with
+         | No_unboxing | Boxed (_, true) | No_result ->
+             env,
+             (fun x -> x) :: rewrite,
+             (id, Cmm.typ_val) :: ids
+         | Boxed (bn, false) ->
+             let unboxed_id = V.create_local (VP.name id) in
+             add_unboxed_id (VP.var id) unboxed_id bn env,
+             (unbox_number Debuginfo.none bn) :: rewrite,
+             (VP.create unboxed_id, typ_of_bn bn) :: ids
+      )
+      ids (env, [], [])
+  in
+  if env == new_env then
+    (* No unboxing *)
+    ccatch (nfail, ids, body, transl env handler, dbg)
+  else
+    (* allocate new "nfail" to catch errors more easily *)
+    let new_nfail = next_raise_count () in
+    let body =
+      (* Rewrite the body to unbox the call sites *)
+      let rec aux e =
+        match Cmm.map_shallow aux e with
+        | Cexit (n, el) when n = nfail ->
+            Cexit (new_nfail, List.map2 (fun f e -> f e) rewrite el)
+        | c -> c
+      in
+      aux body
+    in
+    ccatch (new_nfail, ids, body, transl new_env handler, dbg)
 
 and transl_make_array dbg env kind args =
   match kind with
