@@ -156,12 +156,9 @@ let compute_variance_type env ~check (required, loc) decl tyl =
   if check_injectivity then
     List.iter
       (fun ty ->
-        if Btype.is_Tvar ty then () else
-        let tvl2 = ref TypeMap.empty in
-        compute_variance env tvl2 injective ty;
+        if Btype.is_Tvar ty || mem Inj (get_variance ty tvl) then () else
         if List.for_all
-            (fun tv -> mem Inj (get_variance tv tvl)
-               || not (mem Inj (get_variance tv tvl2)))
+            (fun tv -> mem Inj (get_variance tv tvl))
             (Ctype.free_variables ty)
         then compute_variance env tvl injective ty)
       params;

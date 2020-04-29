@@ -173,6 +173,21 @@ Error: In this definition, expected parameter variances are not satisfied.
        but it is unrestricted.
 |}]
 
+(* One cannot assume that abstract types are not injective *)
+module F(X : sig type 'a t end) = struct
+  type 'a u = unit constraint 'a = 'b X.t
+  type _ x = G : 'a -> 'a u x
+end
+module M = F(struct type 'a t = 'a end)
+let M.G (x : bool) = M.G 3
+[%%expect{|
+Line 3, characters 2-29:
+3 |   type _ x = G : 'a -> 'a u x
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+|}]
+
 (* Motivating examples with GADTs *)
 
 type (_,_) eq = Refl : ('a,'a) eq
