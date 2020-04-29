@@ -204,17 +204,17 @@ constraints, the variance properties of the type constructor
 are inferred from its definition, and the variance annotations are
 only checked for conformance with the definition.
 
-Injectivity annotations only make sense for abstract and private row
-types, since they can otherwise be deduced from the type declaration:
-all parameters are injective for record and variant type declarations
-(including extensible types); otherwise a parameter is injective if it
-has an injective occurrence in its defining equation (be it private or
-not). For constrained type parameters in type abbreviations, they are
-injective if the injectivity of their type variables inferred by
-assuming the injectivity of the parameter is no stronger than the one
-inferred from the body; in particular, if a constrained type parameter
-contains a variable that doesn't appear in the body, it cannot be
-injective.
+Injectivity annotations only make sense for abstract types and private
+row types, since they can otherwise be deduced from the type
+declaration: all parameters are injective for record and variant type
+declarations (including extensible types); for type abbreviations a
+parameter is injective if it has an injective occurrence in its
+defining equation (be it private or not). For constrained type
+parameters in type abbreviations, they are injective if either they
+appear at an injective position in the body, or if all their type
+variables are injective; in particular, if a constrained type
+parameter contains a variable that doesn't appear in the body, it
+cannot be injective.
 
 \ikwd{constraint\@\texttt{constraint}}
 The construct @ 'constraint' "'" ident '=' typexpr @ allows the
