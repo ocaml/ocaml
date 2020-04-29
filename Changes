@@ -140,6 +140,10 @@ OCaml 4.11
   (Mark Shinwell, David Allsopp, Vincent Laviron, Xavier Leroy,
   Geoff Reedy, original bug report by Arlen Cox)
 
+- #8791: use a variable-length encoding when marshalling bigarray dimensions,
+  avoiding overflow.
+  (Jeremy Yallop, Stephen Dolan, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
