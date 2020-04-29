@@ -95,7 +95,8 @@ open Lambda
 open Parmatch
 open Printf
 open Printpat
-open Debuginfo.Scoped_location
+
+module Scoped_location = Debuginfo.Scoped_location
 
 let dbg = false
 
@@ -153,6 +154,9 @@ let expand_record_head head =
       head |> Pattern_head.to_omega_pattern |> expand_record
       |> Pattern_head.deconstruct |> fst
   | _ -> head
+
+let head_loc ~scopes head =
+  Scoped_location.of_location ~scopes (Pattern_head.loc head)
 
 type 'a clause = 'a * lambda
 
@@ -1720,7 +1724,7 @@ let make_constr_matching ~scopes head def ctx = function
   | [] -> fatal_error "Matching.make_constr_matching"
   | (arg, _mut) :: argl ->
       let cstr = head_as_constr head in
-      let loc = of_location ~scopes (Pattern_head.loc head) in
+      let loc = head_loc ~scopes head in
       let newargs =
         if cstr.cstr_inlined <> None then
           (arg, Alias) :: argl
@@ -1759,7 +1763,7 @@ let make_variant_matching_nonconst ~scopes head def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_nonconst"
   | (arg, _mut) :: argl ->
       let def = Default_environment.specialize head def
-      and loc = of_location ~scopes (Pattern_head.loc head)
+      and loc = head_loc ~scopes head
       and ctx = Context.specialize head ctx in
       { pm =
           { cases = [];
@@ -1987,7 +1991,7 @@ let get_args_tuple arity p rem =
 let make_tuple_matching ~scopes head def = function
   | [] -> fatal_error "Matching.make_tuple_matching"
   | (arg, _mut) :: argl ->
-      let loc = of_location ~scopes (Pattern_head.loc head) in
+      let loc = head_loc ~scopes head in
       let arity = Pattern_head.arity head in
       let rec make_args pos =
         if pos >= arity then
@@ -2022,7 +2026,7 @@ let get_args_record num_fields p rem =
 let make_record_matching ~scopes head all_labels def = function
   | [] -> fatal_error "Matching.make_record_matching"
   | (arg, _mut) :: argl ->
-      let loc = of_location ~scopes (Pattern_head.loc head) in
+      let loc = head_loc ~scopes head in
       let rec make_args pos =
         if pos >= Array.length all_labels then
           argl
@@ -2074,7 +2078,7 @@ let make_array_matching ~scopes kind head def ctx = function
         | Array len -> len
         | _ -> assert false
       in
-      let loc = of_location ~scopes (Pattern_head.loc head) in
+      let loc = head_loc ~scopes head in
       let rec make_args pos =
         if pos >= len then
           argl
@@ -3225,7 +3229,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       in
       let ph = what_is_cases pm.cases in
       let pomega = Pattern_head.to_omega_pattern ph in
-      let ploc = Pattern_head.loc ph in
+      let ploc = head_loc ~scopes ph in
       match Pattern_head.desc ph with
       | Any ->
           compile_no_test ~scopes divide_var Context.rshift repr partial ctx pm
@@ -3241,13 +3245,13 @@ and do_compile_matching ~scopes repr partial ctx pmh =
           compile_test
             (compile_match ~scopes repr partial)
             partial divide_constant
-            (combine_constant (of_location ~scopes ploc) arg cst partial)
+            (combine_constant ploc arg cst partial)
             ctx pm
       | Construct cstr ->
           compile_test
             (compile_match ~scopes repr partial)
             partial (divide_constructor ~scopes)
-            (combine_constructor (of_location ~scopes ploc) arg
+            (combine_constructor ploc arg
                (Pattern_head.env ph) cstr partial)
             ctx pm
       | Array _ ->
@@ -3255,7 +3259,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
           compile_test
             (compile_match ~scopes repr partial)
             partial (divide_array ~scopes kind)
-            (combine_array (of_location ~scopes ploc) arg kind partial)
+            (combine_array ploc arg kind partial)
             ctx pm
       | Lazy ->
           compile_no_test ~scopes
@@ -3265,7 +3269,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
           compile_test
             (compile_match ~scopes repr partial)
             partial (divide_variant ~scopes !row)
-            (combine_variant (of_location ~scopes ploc) !row arg partial)
+            (combine_variant ploc !row arg partial)
             ctx pm
     )
   | PmVar { inside = pmh } ->
@@ -3410,7 +3414,7 @@ let compile_matching ~scopes repr handler_fun arg pat_act_list partial =
       lambda
 
 let partial_function ~scopes loc () =
-  let sloc = of_location ~scopes loc in
+  let sloc = Scoped_location.of_location ~scopes loc in
   let slot =
     transl_extension_path sloc Env.initial_safe_string Predef.path_match_failure
   in
@@ -3690,7 +3694,7 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
           (raise_num, Default_environment.(cons [ [ omega ] ] raise_num empty))
       | Total -> (-1, Default_environment.empty)
     in
-    let loc = of_location ~scopes loc in
+    let loc = Scoped_location.of_location ~scopes loc in
     let arg = Lprim (Pmakeblock (0, Immutable, None), paraml, loc) in
     ( raise_num,
       arg,
