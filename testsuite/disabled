@@ -34,6 +34,11 @@ statmemprof
 tests/c-api/'alloc_async.ml' with 2 (bytecode)
 tests/c-api/'alloc_async.ml' with 1 (native)
 
+# TODO: signal alloc changes
+#  https://github.com/ocaml/ocaml/pull/9027
+tests/callback/'signals_alloc.ml' with 1.1 (bytecode)
+tests/callback/'signals_alloc.ml' with 1.2 (native)
+
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
