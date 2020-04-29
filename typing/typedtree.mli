@@ -731,9 +731,7 @@ val iter_pattern: (pattern -> unit) -> pattern -> unit
 val exists_pattern: (pattern -> bool) -> pattern -> bool
 
 val let_bound_idents: value_binding list -> Ident.t list
-val rev_let_bound_idents: value_binding list -> Ident.t list
-
-val let_bound_idents_with_loc:
+val let_bound_idents_full:
     value_binding list -> (Ident.t * string loc * type_expr) list
 
 (** Alpha conversion of patterns *)

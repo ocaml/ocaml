@@ -67,7 +67,3 @@ exception Modifiers_name_already_registered of string
 exception Modifiers_name_not_found of string
 
 val register_modifiers : string -> modifiers -> unit
-
-val modifier_of_string : string -> modifier
-
-val modifiers_of_file : string -> modifiers

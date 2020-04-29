@@ -21,21 +21,26 @@ ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
   ../runtime/caml/alloc.h ../runtime/caml/signals.h \
   ../runtime/caml/osdeps.h
 actions.cmo : \
+    variables.cmi \
     result.cmi \
     environments.cmi \
     actions.cmi
 actions.cmx : \
+    variables.cmx \
     result.cmx \
     environments.cmx \
     actions.cmi
 actions.cmi : \
+    variables.cmi \
     result.cmi \
     environments.cmi
 actions_helpers.cmo : \
     variables.cmi \
+    strace.cmi \
     run_command.cmi \
     result.cmi \
     ocamltest_stdlib.cmi \
+    modifier_parser.cmi \
     filecompare.cmi \
     environments.cmi \
     builtin_variables.cmi \
@@ -43,9 +48,11 @@ actions_helpers.cmo : \
     actions_helpers.cmi
 actions_helpers.cmx : \
     variables.cmx \
+    strace.cmx \
     run_command.cmx \
     result.cmx \
     ocamltest_stdlib.cmx \
+    modifier_parser.cmx \
     filecompare.cmx \
     environments.cmx \
     builtin_variables.cmx \
@@ -86,12 +93,10 @@ builtin_variables.cmi : \
     variables.cmi
 environments.cmo : \
     variables.cmi \
-    tsl_lexer.cmi \
     ocamltest_stdlib.cmi \
     environments.cmi
 environments.cmx : \
     variables.cmx \
-    tsl_lexer.cmx \
     ocamltest_stdlib.cmx \
     environments.cmi
 environments.cmi : \
@@ -132,6 +137,20 @@ main.cmx : \
     actions.cmx \
     main.cmi
 main.cmi :
+modifier_parser.cmo : \
+    variables.cmi \
+    tsl_lexer.cmi \
+    ocamltest_stdlib.cmi \
+    environments.cmi \
+    modifier_parser.cmi
+modifier_parser.cmx : \
+    variables.cmx \
+    tsl_lexer.cmx \
+    ocamltest_stdlib.cmx \
+    environments.cmx \
+    modifier_parser.cmi
+modifier_parser.cmi : \
+    environments.cmi
 ocaml_actions.cmo : \
     result.cmi \
     ocamltest_stdlib.cmi \
@@ -374,6 +393,14 @@ run_command.cmx : \
     ocamltest_stdlib.cmx \
     run_command.cmi
 run_command.cmi :
+strace.cmo : \
+    variables.cmi \
+    strace.cmi
+strace.cmx : \
+    variables.cmx \
+    strace.cmi
+strace.cmi : \
+    variables.cmi
 tests.cmo : \
     result.cmi \
     actions.cmi \

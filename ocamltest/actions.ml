@@ -23,7 +23,9 @@ type t = {
   mutable hook : code option
 }
 
-let action_name a = a.name
+let name a = a.name
+
+let action_name = Variables.make ("action_name", "Name of the current action")
 
 let make n c = { name = n; body = c; hook = None }
 
@@ -61,6 +63,7 @@ let run log env action =
   let code = match action.hook with
     | None -> action.body
     | Some code -> code in
+  let env = Environments.add action_name action.name env in
   code log env
 
 module ActionSet = Set.Make
@@ -68,3 +71,5 @@ module ActionSet = Set.Make
   type nonrec t = t
   let compare = compare
 end)
+
+let _ = Variables.register_variable action_name

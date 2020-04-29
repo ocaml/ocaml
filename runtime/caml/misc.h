@@ -295,6 +295,9 @@ extern double caml_log1p(double);
 #define strcmp_os wcscmp
 #define strlen_os wcslen
 #define sscanf_os swscanf
+#define strcpy_os wcscpy
+#define mktemp_os _wmktemp
+#define fopen_os _wfopen
 
 #define caml_stat_strdup_os caml_stat_wcsdup
 #define caml_stat_strconcat_os caml_stat_wcsconcat
@@ -327,6 +330,9 @@ extern double caml_log1p(double);
 #define strcmp_os strcmp
 #define strlen_os strlen
 #define sscanf_os sscanf
+#define strcpy_os strcpy
+#define mktemp_os mktemp
+#define fopen_os fopen
 
 #define caml_stat_strdup_os caml_stat_strdup
 #define caml_stat_strconcat_os caml_stat_strconcat

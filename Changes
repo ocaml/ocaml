@@ -70,8 +70,11 @@ Working version
 - #8928: Move contains_calls and num_stack_slots from Proc to Mach.fundecl
   (Greta Yorsh, review by Florian Angeletti and Vincent Laviron)
 
-- #8968: refactor the generic pattern-traversal functions
-  in Typecore and Typedtree.
+- #8959, #8960, #8968: minor refactorings in the typing of patterns:
+  + refactor the {let,pat}_bound_idents* functions
+  + minor bugfix in type_pat
+  + refactor the generic pattern-traversal functions
+    in Typecore and Typedtree
   (Gabriel Scherer, review by Thomas Refis)
 
 ### Code generation and optimizations:
@@ -99,6 +102,12 @@ Working version
 - #8806: Add an [@@immediate64] attribute for types that are known to
   be immediate only on 64 bit platforms
   (Jérémie Dimino, review by Vladimir Keleshev)
+
+- #8909: Graph coloring register allocator: the weights put on
+  preference edges should not be divided by 2 in branches of
+  conditional constructs, because it is not good for performance
+  and because it leads to ignoring preference edges with 0 weight.
+  (Eric Stavarache, review by Xavier Leroy)
 
 ### Runtime system:
 
@@ -130,6 +139,9 @@ Working version
    breaks compatibility with emacs modes.
    (Whitequark and Jacques-Henri Jourdan, review by Gabriel Scherer
     and Xavier Clerc)
+
+- #8621: Make ocamlyacc a Windows Unicode application
+  (David Allsopp, review by Nicolás Ojeda Bär)
 
 * #8834, `ocaml`: adhere to the XDG base directory specification to
   locate an `.ocamlinit` file. Reads an `$XDG_CONFIG_HOME/ocaml/init.ml`
@@ -220,6 +232,10 @@ Working version
 - #8947: fix/improve support for the BFD library
   (Sébastien Hinderer, review by Damien Doligez)
 
+- #8985, #8986: fix generation of the primitives when the locale collation is
+  incompatible with C.
+  (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
+
 ### Compiler user-interface and warnings:
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
@@ -247,6 +263,11 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
+- #8855, #8858: Links for tools not created when installing with
+  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
+  ocamldep link not created)
+  (David Allsopp, report by Thomas Leonard)
+
 - #8875: fix missing newlines in the output from MSVC invocation.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
@@ -260,6 +281,9 @@ OCaml 4.09 maintenance branch:
 - #8953, #8954: Fix error submessages in the toplevel: do not display
   dummy locations
   (Armaël Guéneau, review by Gabriel Scherer)
+
+- #8965, #8979: Alpine build failure caused by check-parser-uptodate-or-warn.sh
+  (Gabriel Scherer and David Allsopp, report by Anton Kochkov)
 
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------
