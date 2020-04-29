@@ -1401,7 +1401,10 @@ and structure_item ctxt f x =
               (module_type ctxt) typ
               (module_expr ctxt) expr
               (item_attributes ctxt) pmb.pmb_attributes
-        | _ -> assert false
+        | pmb ->
+            pp f "@[<hov2>@ and@ %s@ =@ %a@]%a" pmb.pmb_name.txt
+              (module_expr ctxt) pmb.pmb_expr
+              (item_attributes ctxt) pmb.pmb_attributes
       in
       begin match decls with
       | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) :: l2 ->
@@ -1409,6 +1412,12 @@ and structure_item ctxt f x =
             pmb.pmb_name.txt
             (module_type ctxt) typ
             (module_expr ctxt) expr
+            (item_attributes ctxt) pmb.pmb_attributes
+            (fun f l2 -> List.iter (aux f) l2) l2
+      | pmb :: l2 ->
+          pp f "@[<hv>@[<hov2>module@ rec@ %s@ =@ %a@]%a@ %a@]"
+            pmb.pmb_name.txt
+            (module_expr ctxt) pmb.pmb_expr
             (item_attributes ctxt) pmb.pmb_attributes
             (fun f l2 -> List.iter (aux f) l2) l2
       | _ -> assert false

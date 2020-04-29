@@ -110,7 +110,7 @@ let compile_genfuns ~ppf_dump f =
        | (Cfunction {fun_name = name}) as ph when f name ->
            compile_phrase ~ppf_dump ph
        | _ -> ())
-    (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
+    (Cmm_helpers.generic_functions true [Compilenv.current_unit_infos ()])
 
 let compile_unit asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
@@ -147,7 +147,7 @@ let end_gen_implementation ?toplevel ~ppf_dump
      This is important if a module that uses such a symbol is later
      dynlinked. *)
   compile_phrase ~ppf_dump
-    (Cmmgen.reference_symbols
+    (Cmm_helpers.reference_symbols
        (List.filter_map (fun prim ->
            if not (Primitive.native_name_is_external prim) then None
            else Some (Primitive.native_name prim))

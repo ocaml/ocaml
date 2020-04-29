@@ -230,24 +230,25 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
   Emit.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
-  compile_phrase (Cmmgen.entry_point name_list);
+  compile_phrase (Cmm_helpers.entry_point name_list);
   let units = List.map (fun (info,_,_) -> info) units_list in
-  List.iter compile_phrase (Cmmgen.generic_functions false units);
+  List.iter compile_phrase (Cmm_helpers.generic_functions false units);
   Array.iteri
-    (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
+    (fun i name -> compile_phrase (Cmm_helpers.predef_exception i name))
     Runtimedef.builtin_exceptions;
-  compile_phrase (Cmmgen.global_table name_list);
+  compile_phrase (Cmm_helpers.global_table name_list);
   let globals_map = make_globals_map units_list ~crc_interfaces in
-  compile_phrase (Cmmgen.globals_map globals_map);
-  compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
+  compile_phrase (Cmm_helpers.globals_map globals_map);
+  compile_phrase(Cmm_helpers.data_segment_table ("_startup" :: name_list));
   if !Clflags.function_sections then
-    compile_phrase(Cmmgen.code_segment_table("_hot" :: "_startup" :: name_list))
+    compile_phrase
+      (Cmm_helpers.code_segment_table("_hot" :: "_startup" :: name_list))
   else
-    compile_phrase(Cmmgen.code_segment_table("_startup" :: name_list));
+    compile_phrase(Cmm_helpers.code_segment_table("_startup" :: name_list));
   let all_names = "_startup" :: "_system" :: name_list in
-  compile_phrase (Cmmgen.frame_table all_names);
+  compile_phrase (Cmm_helpers.frame_table all_names);
   if Config.spacetime then begin
-    compile_phrase (Cmmgen.spacetime_shapes all_names);
+    compile_phrase (Cmm_helpers.spacetime_shapes all_names);
   end;
   if !Clflags.output_complete_object then
     force_linking_of_startup ~ppf_dump;
@@ -259,10 +260,10 @@ let make_shared_startup_file ~ppf_dump units =
   Compilenv.reset "_shared_startup";
   Emit.begin_assembly ();
   List.iter compile_phrase
-    (Cmmgen.generic_functions true (List.map fst units));
-  compile_phrase (Cmmgen.plugin_header units);
+    (Cmm_helpers.generic_functions true (List.map fst units));
+  compile_phrase (Cmm_helpers.plugin_header units);
   compile_phrase
-    (Cmmgen.global_table
+    (Cmm_helpers.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
   if !Clflags.output_complete_object then
     force_linking_of_startup ~ppf_dump;
