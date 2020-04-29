@@ -80,12 +80,14 @@ Working version
 - #8928: Move contains_calls and num_stack_slots from Proc to Mach.fundecl
   (Greta Yorsh, review by Florian Angeletti and Vincent Laviron)
 
-- #8959, #8960, #8968: minor refactorings in the typing of patterns:
+- #8959, #8960, #8968, #9023: minor refactorings in the typing of patterns:
   + refactor the {let,pat}_bound_idents* functions
   + minor bugfix in type_pat
   + refactor the generic pattern-traversal functions
     in Typecore and Typedtree
-  (Gabriel Scherer, review by Thomas Refis)
+  + restrict the use of Need_backtrack
+  (Gabriel Scherer and Florian Angeletti,
+   review by Thomas Refis and Gabriel Scherer)
 
 - #8975: "ocamltests" files are no longer required or used by
   "ocamltest". Instead, any text file in the testsuite directory containing a
@@ -139,19 +141,23 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
+- #8670: Fix stack overflow detection with systhreads
+  (Stephen Dolan, review by Xavier Leroy, Anil Madhavapeddy, Gabriel Scherer,
+   Frédéric Bour and Guillaume Munch-Maccagnoni)
+
 * #8711: The major GC hooks are no longer allowed to interact with the
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
-* #8691, #8897: Allocation functions are now guaranteed not to trigger any
-   OCaml callback when called from C. In long-running C functions,
-   this can be replaced with calls to caml_check_urgent_gc.
-   Side effect of this change: in bytecode mode, polling for
-   asynchronous callbacks is perfomed at every minor heap allocation,
-   in addition to function calls and loops as in previous OCaml
-   releases.
-   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
-    Guillaume Munch-Maccagnoni)
+* #8691, #8897, #9027: Allocation functions are now guaranteed not to
+  trigger any OCaml callback when called from C. In long-running C
+  functions, this can be replaced with calls to caml_check_urgent_gc.
+  Side effect of this change: in bytecode mode, polling for
+  asynchronous callbacks is perfomed at every minor heap allocation,
+  in addition to function calls and loops as in previous OCaml
+  releases.
+  (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
+   Guillaume Munch-Maccagnoni)
 
 - #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
   the new hook caml_fatal_error_hook.
