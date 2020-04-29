@@ -889,7 +889,6 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
-  val _nopervasives : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -904,11 +903,19 @@ module type Common_options = sig
   val _no_strict_formats : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
-  val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
+
+  val anonymous : string -> unit
+end
+
+module type Core_options = sig
+  include Common_options
+
+  val _nopervasives : unit -> unit
+  val _unsafe : unit -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
 
@@ -920,7 +927,6 @@ module type Common_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
-  val anonymous : string -> unit
 end
 
 module type Compiler_options = sig
@@ -979,7 +985,7 @@ end
 ;;
 
 module type Toplevel_options = sig
-  include Common_options
+  include Core_options
   val _init : string -> unit
   val _noinit : unit -> unit
   val _no_version : unit -> unit
@@ -994,7 +1000,7 @@ end
 ;;
 
 module type Bytecomp_options = sig
-  include Common_options
+  include Core_options
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
@@ -1044,6 +1050,8 @@ module type Optcommon_options = sig
   val _o3 : unit -> unit
   val _insn_sched : unit -> unit
   val _no_insn_sched : unit -> unit
+  val _linscan : unit -> unit
+  val _no_float_const_prop : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -1069,15 +1077,14 @@ module type Optcommon_options = sig
   val _dreload : unit -> unit
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
+  val _dinterval : unit -> unit
   val _dstartup :  unit -> unit
 end;;
 
 module type Optcomp_options = sig
-  include Common_options
+  include Core_options
   include Compiler_options
   include Optcommon_options
-  val _linscan : unit -> unit
-  val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
   val _pp : string -> unit
@@ -1085,7 +1092,6 @@ module type Optcomp_options = sig
   val _shared : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
-  val _dinterval : unit -> unit
   val _function_sections : unit -> unit
 end;;
 
@@ -1462,8 +1468,10 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_labels F._labels;
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_linscan F._linscan;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
+    mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
     mk_nolabels F._nolabels;
@@ -1531,6 +1539,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dreload F._dreload;
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
+    mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
   ]
@@ -1625,3 +1634,335 @@ let options_with_command_line_syntax options r =
      options_with_command_line_syntax_inner r rest
        ~name_opt:(Some name) spec, doc)
   ) options
+
+module Default = struct
+  open Clflags
+  open Compenv
+  let set r () = r := true
+  let clear r () = r := false
+
+  module Common = struct
+    let _absname = set Clflags.absname
+    let _alert = Warnings.parse_alert_option
+    let _alias_deps = clear transparent_modules
+    let _app_funct = set applicative_functors
+    let _labels = clear classic
+    let _no_alias_deps = set transparent_modules
+    let _no_app_funct = clear applicative_functors
+    let _no_principal = clear principal
+    let _no_rectypes = clear recursive_types
+    let _no_strict_formats = clear strict_formats
+    let _no_strict_sequence = clear strict_sequence
+    let _no_unboxed_types = clear unboxed_types
+    let _noassert = set noassert
+    let _nolabels = set classic
+    let _nostdlib = set no_std_include
+    let _open s = open_modules := (s :: (!open_modules))
+    let _principal = set principal
+    let _rectypes = set recursive_types
+    let _safe_string = clear unsafe_string
+    let _short_paths = clear real_paths
+    let _strict_formats = set strict_formats
+    let _strict_sequence = set strict_sequence
+    let _unboxed_types = set unboxed_types
+    let _unsafe_string = set unsafe_string
+    let _w s = Warnings.parse_options false s
+
+    let anonymous = anonymous
+
+  end
+
+  module Core = struct
+    include Common
+    let _I dir = include_dirs := (dir :: (!include_dirs))
+    let _color = Misc.set_or_ignore color_reader.parse color
+    let _dlambda = set dump_lambda
+    let _dno_unique_ids = clear unique_ids
+    let _dparsetree = set dump_parsetree
+    let _drawlambda = set dump_rawlambda
+    let _dsource = set dump_source
+    let _dtypedtree = set dump_typedtree
+    let _dunique_ids = set unique_ids
+    let _error_style =
+      Misc.set_or_ignore error_style_reader.parse error_style
+    let _nopervasives = set nopervasives
+    let _ppx s = first_ppx := (s :: (!first_ppx))
+    let _unsafe = set unsafe
+    let _warn_error s = Warnings.parse_options true s
+    let _warn_help = Warnings.help_warnings
+  end
+
+  module Native = struct
+    let _S = set keep_asm_file
+    let _clambda_checks () = clambda_checks := true
+    let _classic_inlining () = classic_inlining := true
+    let _compact = clear optimize_for_speed
+    let _dalloc = set dump_regalloc
+    let _davail () = dump_avail := true
+    let _dclambda = set dump_clambda
+    let _dcmm = set dump_cmm
+    let _dcombine = set dump_combine
+    let _dcse = set dump_cse
+    let _dflambda = set dump_flambda
+    let _dflambda_invariants = set flambda_invariant_checks
+    let _dflambda_let stamp = dump_flambda_let := (Some stamp)
+    let _dflambda_no_invariants = clear flambda_invariant_checks
+    let _dflambda_verbose () =
+      set dump_flambda (); set dump_flambda_verbose ()
+    let _dinterval = set dump_interval
+    let _dinterf = set dump_interf
+    let _dlinear = set dump_linear
+    let _dlive () = dump_live := true
+    let _dprefer = set dump_prefer
+    let _drawclambda = set dump_rawclambda
+    let _drawflambda = set dump_rawflambda
+    let _dreload = set dump_reload
+    let _drunavail () = debug_runavail := true
+    let _dscheduling = set dump_scheduling
+    let _dsel = set dump_selection
+    let _dspill = set dump_spill
+    let _dsplit = set dump_split
+    let _dstartup = set keep_startup_file
+    let _dump_pass pass = set_dumped_pass pass true
+    let _inline spec =
+      Float_arg_helper.parse spec "Syntax: -inline <n> | <round>=<n>[,...]"
+        inline_threshold
+    let _inline_alloc_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+        inline_alloc_cost
+    let _inline_branch_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+        inline_branch_cost
+    let _inline_branch_factor spec =
+      Float_arg_helper.parse spec
+        "Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
+        inline_branch_factor
+    let _inline_call_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-call-cost <n> | <round>=<n>[,...]" inline_call_cost
+    let _inline_indirect_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
+        inline_indirect_cost
+    let _inline_lifting_benefit spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
+        inline_lifting_benefit
+    let _inline_max_depth spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-max-depth <n> | <round>=<n>[,...]" inline_max_depth
+    let _inline_max_unroll spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
+        inline_max_unroll
+    let _inline_prim_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-prim-cost <n> | <round>=<n>[,...]" inline_prim_cost
+    let _inline_toplevel spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
+        inline_toplevel_threshold
+    let _inlining_report () = inlining_report := true
+    let _insn_sched = set insn_sched
+    let _no_insn_sched = clear insn_sched
+    let _linscan = set use_linscan
+    let _no_float_const_prop = clear float_const_prop
+    let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
+    let _no_unbox_specialised_args = clear unbox_specialised_args
+    (* CR-someday mshinwell: should stop e.g. -O2 -classic-inlining
+       lgesbert: could be done in main() below, like for -pack and -c, but that
+       would prevent overriding using OCAMLPARAM.
+       mshinwell: We're going to defer this for the moment and add a note in
+       the manual that the behaviour is unspecified in cases such as this.
+       We should refactor the code so that the user's requirements are
+       collected, then checked all at once for illegal combinations, and then
+       transformed into the settings of the individual parameters.
+    *)
+    let _o2 () =
+      default_simplify_rounds := 2;
+      use_inlining_arguments_set o2_arguments;
+      use_inlining_arguments_set ~round:0 o1_arguments
+    let _o3 () =
+      default_simplify_rounds := 3;
+      use_inlining_arguments_set o3_arguments;
+      use_inlining_arguments_set ~round:1 o2_arguments;
+      use_inlining_arguments_set ~round:0 o1_arguments
+    let _remove_unused_arguments = set remove_unused_arguments
+    let _rounds n = simplify_rounds := (Some n)
+    let _unbox_closures = set unbox_closures
+    let _unbox_closures_factor f = unbox_closures_factor := f
+    let _verbose = set verbose
+  end
+
+  module Compiler = struct
+    let _a = set make_archive
+    let _annot = set annotations
+    let _args = Arg.read_arg
+    let _args0 = Arg.read_arg0
+    let _binannot = set binary_annotations
+    let _c = set compile_only
+    let _cc s = c_compiler := (Some s)
+    let _cclib s = defer (ProcessObjects (Misc.rev_split_words s))
+    let _ccopt s = first_ccopts := (s :: (!first_ccopts))
+    let _config = Misc.show_config_and_exit
+    let _config_var = Misc.show_config_variable_and_exit
+    let _dprofile () = profile_columns := Profile.all_columns
+    let _dtimings () = profile_columns := [`Time]
+    let _dump_into_file = set dump_into_file
+    let _for_pack s = for_package := (Some s)
+    let _g = set debug
+    let _i () =
+      print_types := true;
+      compile_only := true;
+      stop_after := (Some Compiler_pass.Typing);
+      ()
+    let _impl = impl
+    let _intf = intf
+    let _intf_suffix s = Config.interface_suffix := s
+    let _keep_docs = set keep_docs
+    let _keep_locs = set keep_locs
+    let _linkall = set link_everything
+    let _match_context_rows n = match_context_rows := n
+    let _no_keep_docs = clear keep_docs
+    let _no_keep_locs = clear keep_locs
+    let _noautolink = set no_auto_link
+    let _o s = output_name := (Some s)
+    let _opaque = set opaque
+    let _pack = set make_package
+    let _plugin _p = plugin := true
+    let _pp s = preprocessor := (Some s)
+    let _runtime_variant s = runtime_variant := s
+    let _stop_after pass =
+      let module P = Compiler_pass in
+        match P.of_string pass with
+        | None -> () (* this should not occur as we use Arg.Symbol *)
+        | Some pass ->
+            stop_after := (Some pass);
+            match pass with
+            | P.Parsing | P.Typing -> compile_only := true
+    let _thread = set use_threads
+    let _verbose = set verbose
+    let _version () = print_version_string ()
+    let _vnum () = print_version_string ()
+    let _where () = print_standard_library ()
+    let _with_runtime = set with_runtime
+    let _without_runtime = clear with_runtime
+  end
+
+  module Toplevel = struct
+
+    let print_version () =
+      Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
+      exit 0;
+    ;;
+
+    let print_version_num () =
+      Printf.printf "%s\n" Sys.ocaml_version;
+      exit 0;
+    ;;
+
+    let _args (_:string) = (* placeholder: wrap_expand Arg.read_arg *) [||]
+    let _args0 (_:string) = (* placeholder: wrap_expand Arg.read_arg0 *) [||]
+    let _init s = init_file := (Some s)
+    let _no_version = set noversion
+    let _noinit = set noinit
+    let _noprompt = set noprompt
+    let _nopromptcont = set nopromptcont
+    let _stdin () = (* placeholder: file_argument ""*) ()
+    let _version () = print_version ()
+    let _vnum () = print_version_num ()
+  end
+
+  module Topmain = struct
+    include Toplevel
+    include Core
+    let _dinstr = set dump_instr
+  end
+
+  module Opttopmain = struct
+    include Toplevel
+    include Native
+    include Core
+  end
+
+  module Optmain = struct
+    include Native
+    include Core
+    include Compiler
+    let _afl_inst_ratio n = afl_inst_ratio := n
+    let _afl_instrument = set afl_instrument
+    let _function_sections () =
+      assert Config.function_sections;
+      first_ccopts := ("-ffunction-sections" :: (!first_ccopts));
+      function_sections := true
+    let _nodynlink = clear dlcode
+    let _output_complete_obj () =
+      set output_c_object (); set output_complete_object ()
+    let _output_obj = set output_c_object
+    let _p () =
+      fatal
+        "Profiling with \"gprof\" (option `-p') is only supported up to \
+         OCaml 4.08.0"
+    let _shared () = shared := true; dlcode := true
+    let _v () = print_version_and_library "native-code compiler"
+  end
+
+  module Odoc_args = struct
+    include Common
+    let _I(_:string) =
+      (* placeholder:
+         Odoc_global.include_dirs := (s :: (!Odoc_global.include_dirs))
+      *) ()
+    let _impl (_:string) =
+      (* placeholder:
+         Odoc_global.files := ((!Odoc_global.files) @ [Odoc_global.Impl_file s])
+      *) ()
+    let _intf (_:string) = (* placeholder:
+      Odoc_global.files := ((!Odoc_global.files) @ [Odoc_global.Intf_file s])
+                  *) ()
+    let _intf_suffix s = Config.interface_suffix := s
+    let _pp s = Clflags.preprocessor := (Some s)
+    let _ppx s = Clflags.all_ppx := (s :: (!Clflags.all_ppx))
+    let _thread = set Clflags.use_threads
+    let _v () = Compenv.print_version_and_library "documentation generator"
+    let _verbose = set Clflags.verbose
+    let _version = Compenv.print_version_string
+    let _vmthread = ignore
+    let _vnum = Compenv.print_version_string
+  end
+
+  module Main = struct
+
+    let vmthread_removed_message = "\
+The -vmthread argument of ocamlc is no longer supported\n\
+since OCaml 4.09.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
+
+    include Core
+    include Compiler
+    let _compat_32 = set bytecode_compatible_32
+    let _custom = set custom_runtime
+    let _dcamlprimc = set keep_camlprimc_file
+    let _dinstr = set dump_instr
+    let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
+    let _dllpath s = dllpaths := ((!dllpaths) @ [s])
+    let _make_runtime () =
+      custom_runtime := true; make_runtime := true; link_everything := true
+    let _no_check_prims = set no_check_prims
+    let _output_complete_obj () =
+      output_c_object := true;
+      output_complete_object := true;
+      custom_runtime := true
+    let _output_complete_exe () =
+      _output_complete_obj (); output_complete_executable := true
+    let _output_obj () = output_c_object := true; custom_runtime := true
+    let _use_prims s = use_prims := s
+    let _use_runtime s = use_runtime := s
+    let _v () = print_version_and_library "compiler"
+    let _vmthread () = fatal vmthread_removed_message
+  end
+
+end

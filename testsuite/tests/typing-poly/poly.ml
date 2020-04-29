@@ -1755,3 +1755,13 @@ let x : [ `Foo of 'a t | `Foo of _ s ] = id (`Foo []);;
 [%%expect{|
 val x : [ `Foo of 'a list t ] = `Foo []
 |}]
+
+(* generalize spine of inherited methods too *)
+
+class c = object (self) method m ?(x=0) () = x method n = self#m () end;;
+class d = object (self) inherit c method n' = self#m () end;;
+[%%expect{|
+class c : object method m : ?x:int -> unit -> int method n : int end
+class d :
+  object method m : ?x:int -> unit -> int method n : int method n' : int end
+|}]

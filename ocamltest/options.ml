@@ -49,21 +49,30 @@ let log_to_stderr = ref false
 
 let promote = ref false
 
+let find_test_dirs = ref []
+
+let list_tests = ref []
+
+let add_to_list r x =
+  r := !r @ [x]
+
 let commandline_options =
 [
-  ("-e", Arg.Set log_to_stderr, "Log to stderr instead of a file.");
+  ("-e", Arg.Set log_to_stderr, " Log to stderr instead of a file.");
   ("-promote", Arg.Set promote,
-   "Overwrite reference files with the test output (experimental, unstable)");
-  ("-show-actions", Arg.Unit show_actions, "Show available actions.");
-  ("-show-tests", Arg.Unit show_tests, "Show available tests.");
-  ("-show-variables", Arg.Unit show_variables, "Show available variables.");
+   " Overwrite reference files with the test output (experimental, unstable)");
+  ("-show-actions", Arg.Unit show_actions, " Show available actions.");
+  ("-show-tests", Arg.Unit show_tests, " Show available tests.");
+  ("-show-variables", Arg.Unit show_variables, " Show available variables.");
+  ("-find-test-dirs", Arg.String (add_to_list find_test_dirs),
+   " Find directories that contain tests (recursive).");
+  ("-list-tests", Arg.String (add_to_list list_tests),
+   " List tests in given directory.");
 ]
 
 let files_to_test = ref []
 
-let add_testfile name = files_to_test := !files_to_test @ [name]
-
 let usage = "Usage: " ^ Sys.argv.(0) ^ " options files to test"
 
 let _ =
-  Arg.parse commandline_options add_testfile usage
+  Arg.parse (Arg.align commandline_options) (add_to_list files_to_test) usage

@@ -1166,6 +1166,19 @@ It would be incorrect to perform
 has taken place since "r" was allocated.
 
 
+\subsection{Asynchronous callbacks}
+\label{caml-check-urgent-gc}
+
+Since 4.10, allocation functions called from C do not call finalisers,
+signal handlers, and memory profiler callbacks, but delays their
+execution. These asychronous callbacks can execute arbitrary OCaml
+code, including raising asynchronous exceptions.
+
+The function \verb"caml_check_urgent_gc" from "memory.h" checks for
+pending signals and executes delayed callbacks. In long-running C
+code, it can be called at safe points with
+\verb"caml_check_urgent_gc(Val_unit)".
+
 \section{A complete example}
 
 This section outlines how the functions from the Unix "curses" library
@@ -2334,6 +2347,11 @@ The calling thread re-acquires the master lock and other OCaml
 resources.  It may block until no other thread uses the OCaml run-time
 system.
 \end{itemize}
+
+These functions check for pending signals by calling asynchronous
+callbacks (section~\ref{caml-check-urgent-gc}) before releasing and
+after acquiring the lock. They can therefore execute arbitrary OCaml
+code including raising an asynchronous exception.
 
 After "caml_release_runtime_system()" was called and until
 "caml_acquire_runtime_system()" is called, the C code must not access

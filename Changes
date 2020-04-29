@@ -77,6 +77,14 @@ Working version
     in Typecore and Typedtree
   (Gabriel Scherer, review by Thomas Refis)
 
+- #8975: "ocamltests" files are no longer required or used by
+  "ocamltest". Instead, any text file in the testsuite directory containing a
+  valid "TEST" block will be automatically included in the testsuite.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Sébastien Hinderer)
+
+- #8992: share argument implementations between executables
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.
@@ -119,9 +127,15 @@ Working version
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
-- #8691, #8897: Allocation functions are now guaranteed not to trigger any
-   OCaml callback when called from C.
-   (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
+* #8691, #8897: Allocation functions are now guaranteed not to trigger any
+   OCaml callback when called from C. In long-running C functions,
+   this can be replaced with calls to caml_check_urgent_gc.
+   Side effect of this change: in bytecode mode, polling for
+   asynchronous callbacks is perfomed at every minor heap allocation,
+   in addition to function calls and loops as in previous OCaml
+   releases.
+   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
+    Guillaume Munch-Maccagnoni)
 
 - #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
   the new hook caml_fatal_error_hook.
@@ -173,6 +187,9 @@ Working version
 
 - #8716: Optimize [Array.fill] and [Hashtbl.clear] with a new runtime primitive
   (Alain Frisch, review by David Allsopp, Stephen Dolan and Damien Doligez)
+
+- #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list
+  (Gabriel Scherer, review by Daniel Bünzli and Thomas Refis)
 
 - #8530: List.sort: avoid duplicate work by chop
   (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
@@ -249,6 +266,10 @@ Working version
   (Gabriel Scherer, review by Florian Angeletti, report on the Discourse forum)
 
 ### Bug fixes:
+
+- #6922, #8955: Fix regression with -principal type inference for inherited
+  methods, allowing to compile ocamldoc with -principal
+  (Jacques Garrigue, review by Leo White)
 
 - #7925, #8611: fix error highlighting for exceptionally
   long toplevel phrases
