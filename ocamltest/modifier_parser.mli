@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
 (*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2019 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,32 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of actions, basic blocks for tests *)
+(* Parsing of modifier (response) files created by hooks and scripts *)
 
-type code = out_channel -> Environments.t -> Result.t * Environments.t
+val modifier_of_string : string -> Environments.modifier
 
-type t
-
-val name : t -> string
-
-val action_name : Variables.t
-
-val update : t -> code -> t
-
-val make : string -> code -> t
-
-val compare : t -> t -> int
-
-val register : t -> unit
-
-val get_registered_actions : unit -> t list
-
-val lookup : string -> t option
-
-val set_hook : string -> code -> unit
-val clear_hook : string -> unit
-val clear_all_hooks : unit -> unit
-
-val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
-
-module ActionSet : Set.S with type elt = t
+val modifiers_of_file : string -> Environments.modifiers

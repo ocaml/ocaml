@@ -96,13 +96,15 @@ core := \
   run_command.mli run_command.ml \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
+  environments.mli environments.ml \
   result.mli result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
+  strace.mli strace.ml \
   tsl_ast.mli tsl_ast.ml \
   tsl_parser.mly \
   tsl_lexer.mli tsl_lexer.mll \
-  environments.mli environments.ml \
+  modifier_parser.mli modifier_parser.ml \
   tsl_semantics.mli tsl_semantics.ml \
   builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \

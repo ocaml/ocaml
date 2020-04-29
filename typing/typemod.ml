@@ -2039,7 +2039,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.map (fun (id, { Asttypes.loc; _ }, _typ)->
           Signature_names.check_value names loc id;
           Sig_value(id, Env.find_value (Pident id) newenv, Exported)
-        ) (let_bound_idents_with_loc defs),
+        ) (let_bound_idents_full defs),
         newenv
     | Pstr_primitive sdesc ->
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in

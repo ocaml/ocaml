@@ -43,7 +43,7 @@ let lookup name =
 
 let test_of_action action =
 {
-  test_name = Actions.action_name action;
+  test_name = Actions.name action;
   test_run_by_default = false;
   test_actions = [action]
 }
@@ -55,10 +55,10 @@ let run_actions log testenv actions =
     | action::remaining_actions ->
       begin
         Printf.fprintf log "Running action %d/%d (%s)\n%!"
-          action_number total (Actions.action_name action);
+          action_number total (Actions.name action);
         let (result, env') = Actions.run log env action in
         Printf.fprintf log "Action %d/%d (%s) %s\n%!"
-          action_number total (Actions.action_name action)
+          action_number total (Actions.name action)
           (Result.string_of_result result);
         if Result.is_pass result
         then run_actions_aux (action_number+1) env' remaining_actions
