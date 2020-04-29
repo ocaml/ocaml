@@ -188,6 +188,49 @@ Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 |}]
 
+(* Try to be clever *)
+type 'a t = unit
+type !'a u = int constraint 'a = 'b t
+[%%expect{|
+type 'a t = unit
+type 'a u = int constraint 'a = 'b t
+|}]
+module F(X : sig type 'a t end) = struct
+  type !'a u = 'b constraint 'a = <b : 'b> constraint 'b = _ X.t
+end
+[%%expect{|
+module F :
+  functor (X : sig type 'a t end) ->
+    sig type 'a u = 'b X.t constraint 'a = < b : 'b X.t > end
+|}]
+(* But not too clever *)
+module F(X : sig type 'a t end) = struct
+  type !'a u = 'b X.t constraint 'a = <b : 'b X.t>
+end
+[%%expect{|
+Line 2, characters 2-50:
+2 |   type !'a u = 'b X.t constraint 'a = <b : 'b X.t>
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is unrestricted.
+|}]
+module F(X : sig type 'a t end) = struct
+  type !'a u = 'b constraint 'a = <b : _ X.t as 'b>
+end
+[%%expect{|
+module F :
+  functor (X : sig type 'a t end) ->
+    sig type 'a u = 'b X.t constraint 'a = < b : 'b X.t > end
+|}, Principal{|
+Line 2, characters 2-51:
+2 |   type !'a u = 'b constraint 'a = <b : _ X.t as 'b>
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is unrestricted.
+|}]
+
 (* Motivating examples with GADTs *)
 
 type (_,_) eq = Refl : ('a,'a) eq

@@ -157,10 +157,26 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     List.iter
       (fun ty ->
         if Btype.is_Tvar ty || mem Inj (get_variance ty tvl) then () else
-        if List.for_all
-            (fun tv -> mem Inj (get_variance tv tvl))
-            (Ctype.free_variables ty)
-        then compute_variance env tvl injective ty)
+        let visited = ref TypeSet.empty in
+        let rec check ty =
+          let ty = Ctype.repr ty in
+          if TypeSet.mem ty !visited then () else begin
+            visited := TypeSet.add ty !visited;
+            if mem Inj (get_variance ty tvl) then () else
+            match ty.desc with
+            | Tvar _ -> raise Exit
+            | Tconstr _ ->
+                begin try
+                  Btype.iter_type_expr check ty
+                with Exit ->
+                  let ty' = Ctype.expand_head_opt env ty in
+                  if ty == ty' then raise Exit else check ty'
+                end
+            | _ -> Btype.iter_type_expr check ty
+          end
+        in
+        try check ty; compute_variance env tvl injective ty
+        with Exit -> ())
       params;
   if check then begin
     (* Check variance of parameters *)
