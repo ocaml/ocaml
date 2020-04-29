@@ -2,6 +2,27 @@
    * expect
 *)
 
+(* Syntax *)
+
+type ! 'a t = private 'a ref
+type +! 'a t = private 'a
+type -!'a t = private 'a -> unit
+type + !'a t = private 'a
+type - ! 'a t = private 'a -> unit
+[%%expect{|
+type !'a t = private 'a ref
+type +!'a t = private 'a
+type -!'a t = private 'a -> unit
+type +!'a t = private 'a
+type -!'a t = private 'a -> unit
+|}]
+(* Expect doesn't support syntax errors
+type -+ 'a t
+[%%expect]
+type -!! 'a t
+[%%expect]
+*)
+
 (* Define an injective abstract type, and use it in a GADT
    and a constrained type *)
 module M : sig type +!'a t end = struct type 'a t = 'a list end
