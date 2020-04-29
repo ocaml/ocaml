@@ -343,3 +343,39 @@ Some _
 (However, some guarded clause may match this value.)
 val f : int option -> unit = <fun>
 |}]
+
+(* in the single-row case we can generate more compact witnesses *)
+module Single_row_optim = struct
+type t = A | B
+
+(* This synthetic program is representative of user-written programs
+   that try to distinguish the cases "only A" and "at least one B"
+   while avoiding a fragile pattern-matching (using just _ in the last
+   row would be fragile).
+
+   It is a "single row" program from the point of view of
+   exhaustiveness checking because the first row is subsumed by the
+   second and thus removed by the [get_mins] preprocessing of
+   Parmatch.
+
+   With the single-row optimization implemented in the compiler, it
+   generates a single counter-example that contains
+   or-patterns. Without this optimization, it would generate 2^(N-1)
+   counter-examples (here N=4 so 8), one for each possible expansion
+   of the or-patterns.
+*)
+let non_exhaustive : t * t * t * t -> unit = function
+| A, A, A, A -> ()
+| (A|B), (A|B), (A|B), A (*missing B here*) -> ()
+end;;
+[%%expect {|
+Lines 20-22, characters 45-49:
+20 | .............................................function
+21 | | A, A, A, A -> ()
+22 | | (A|B), (A|B), (A|B), A (*missing B here*) -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+((A|B), (A|B), (A|B), B)
+module Single_row_optim :
+  sig type t = A | B val non_exhaustive : t * t * t * t -> unit end
+|}]

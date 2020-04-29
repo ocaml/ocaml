@@ -131,6 +131,9 @@ Working version
   (Gabriel Scherer, review by Luc Maranget, Thomas Refis and Florian Angeletti,
    report by Alex Fedoseev through Hongbo Zhang)
 
+- #9514: optimize pattern-matching exhaustivity analysis in the single-row case
+  (Gabriel Scherer, review by Stephen DOlan)
+
 ### Build system:
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
