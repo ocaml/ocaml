@@ -3216,31 +3216,7 @@ LM:
    I have  generalized the patch, so as to also find mutable fields.
 *)
 
-let find_in_pat pred =
-  let rec find_rec p =
-    pred p.pat_desc
-    ||
-    match p.pat_desc with
-    | Tpat_alias (p, _, _)
-    | Tpat_variant (_, Some p, _)
-    | Tpat_lazy p ->
-        find_rec p
-    | Tpat_tuple ps
-    | Tpat_construct (_, _, ps)
-    | Tpat_array ps ->
-        List.exists find_rec ps
-    | Tpat_record (lpats, _) -> List.exists (fun (_, _, p) -> find_rec p) lpats
-    | Tpat_or (p, q, _) -> find_rec p || find_rec q
-    | Tpat_constant _
-    | Tpat_var _
-    | Tpat_any
-    | Tpat_variant (_, None, _) ->
-        false
-    | Tpat_exception _ -> assert false
-  in
-  find_rec
-
-let is_lazy_pat = function
+let is_lazy_pat p = match p.pat_desc with
   | Tpat_lazy _ -> true
   | Tpat_alias _
   | Tpat_variant _
@@ -3255,10 +3231,11 @@ let is_lazy_pat = function
       false
   | Tpat_exception _ -> assert false
 
-let is_lazy p = find_in_pat is_lazy_pat p
+let has_lazy p =
+  Typedtree.exists_pattern is_lazy_pat p
 
-let have_mutable_field p =
-  match p with
+let is_record_with_mutable_field p =
+  match p.pat_desc with
   | Tpat_record (lps, _) ->
       List.exists
         (fun (_, lbl, _) ->
@@ -3279,14 +3256,15 @@ let have_mutable_field p =
       false
   | Tpat_exception _ -> assert false
 
-let is_mutable p = find_in_pat have_mutable_field p
+let has_mutable p =
+  Typedtree.exists_pattern is_record_with_mutable_field p
 
 (* Downgrade Total when
    1. Matching accesses some mutable fields;
    2. And there are  guards or lazy patterns.
 *)
 
-let check_partial is_mutable is_lazy pat_act_list = function
+let check_partial has_mutable has_lazy pat_act_list = function
   | Partial -> Partial
   | Total ->
       if
@@ -3294,7 +3272,7 @@ let check_partial is_mutable is_lazy pat_act_list = function
         || (* allow empty case list *)
            List.exists
              (fun (pats, lam) ->
-               is_mutable pats && (is_guarded lam || is_lazy pats))
+               has_mutable pats && (is_guarded lam || has_lazy pats))
              pat_act_list
       then
         Partial
@@ -3302,9 +3280,9 @@ let check_partial is_mutable is_lazy pat_act_list = function
         Total
 
 let check_partial_list =
-  check_partial (List.exists is_mutable) (List.exists is_lazy)
+  check_partial (List.exists has_mutable) (List.exists has_lazy)
 
-let check_partial = check_partial is_mutable is_lazy
+let check_partial = check_partial has_mutable has_lazy
 
 (* have toplevel handler when appropriate *)
 

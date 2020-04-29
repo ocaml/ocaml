@@ -70,6 +70,10 @@ Working version
 - #8928: Move contains_calls and num_stack_slots from Proc to Mach.fundecl
   (Greta Yorsh, review by Florian Angeletti and Vincent Laviron)
 
+- #8968: refactor the generic pattern-traversal functions
+  in Typecore and Typedtree.
+  (Gabriel Scherer, review by Thomas Refis)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.
@@ -127,6 +131,13 @@ Working version
    (Whitequark and Jacques-Henri Jourdan, review by Gabriel Scherer
     and Xavier Clerc)
 
+* #8834, `ocaml`: adhere to the XDG base directory specification to
+  locate an `.ocamlinit` file. Reads an `$XDG_CONFIG_HOME/ocaml/init.ml`
+  file before trying to lookup `~/.ocamlinit`. On Windows the behaviour
+  is unchanged.
+  (Daniel C. Bünzli, review by David Allsopp, Armaël Guéneau and
+   Nicolás Ojeda Bär)
+
 ### Standard library:
 
 - #8832: List.find_map : ('a -> 'b option) -> 'a list -> 'b option
@@ -181,6 +192,11 @@ Working version
 
 - #8885: Warn about unused local modules
   (Thomas Refis, review by Alain Frisch)
+
+- #8872: Add ocamlc option "-output-complete-exe" to build a self-contained
+  binary for bytecode programs, containing the runtime and C stubs.
+  (Stéphane Glondu, Nicolás Ojeda Bär, review by Jérémie Dimino and Daniel
+  Bünzli)
 
 ### Build system:
 

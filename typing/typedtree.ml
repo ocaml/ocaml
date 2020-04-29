@@ -590,7 +590,7 @@ and 'a class_infos =
 
 (* Auxiliary functions over the a.s.t. *)
 
-let iter_pattern_desc f = function
+let shallow_iter_pattern_desc f = function
   | Tpat_alias(p, _, _) -> f p
   | Tpat_tuple patl -> List.iter f patl
   | Tpat_construct(_, _, patl) -> List.iter f patl
@@ -605,7 +605,7 @@ let iter_pattern_desc f = function
   | Tpat_var _
   | Tpat_constant _ -> ()
 
-let map_pattern_desc f d =
+let shallow_map_pattern_desc f d =
   match d with
   | Tpat_alias (p1, id, s) ->
       Tpat_alias (f p1, id, s)
@@ -628,6 +628,17 @@ let map_pattern_desc f d =
   | Tpat_any
   | Tpat_variant (_,None,_) -> d
 
+let rec iter_pattern f p =
+  f p;
+  shallow_iter_pattern_desc (iter_pattern f) p.pat_desc
+
+let exists_pattern f p =
+  let exception Found in
+  let raiser f x = if (f x) then raise Found else () in
+  match iter_pattern (raiser f) p with
+  | exception Found -> true
+  | () -> false
+
 (* List the identifiers bound by a pattern or a let *)
 
 let idents = ref([]: (Ident.t * string loc * Types.type_expr) list)
@@ -640,7 +651,7 @@ let rec bound_idents pat =
   | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments binds the same variables *)
       bound_idents p1
-  | d -> iter_pattern_desc bound_idents d
+  | d -> shallow_iter_pattern_desc bound_idents d
 
 let pat_bound_idents_full pat =
   idents := [];
@@ -681,7 +692,7 @@ let rec alpha_pat env p = match p.pat_desc with
     | Not_found -> new_p
     end
 | d ->
-    {p with pat_desc = map_pattern_desc (alpha_pat env) d}
+    {p with pat_desc = shallow_map_pattern_desc (alpha_pat env) d}
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc

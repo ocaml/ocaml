@@ -17,10 +17,10 @@
 
 open Asttypes
 open Typedtree
-open Tast_mapper
+open Tast_iterator
 
-let bind_variables scope =
-  let super = Tast_mapper.default in
+let variables_iterator scope =
+  let super = default_iterator in
   let pat sub p =
     begin match p.pat_desc with
     | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
@@ -34,8 +34,8 @@ let bind_variables scope =
   {super with pat}
 
 let bind_variables scope =
-  let o = bind_variables scope in
-  fun p -> ignore (o.pat o p)
+  let iter = variables_iterator scope in
+  fun p -> iter.pat iter p
 
 let bind_bindings scope bindings =
   let o = bind_variables scope in
@@ -50,7 +50,7 @@ let bind_cases l =
         | None -> c_rhs.exp_loc
         | Some g -> {c_rhs.exp_loc with loc_start=g.exp_loc.loc_start}
       in
-      bind_variables loc  c_lhs
+      bind_variables loc c_lhs
     )
     l
 
@@ -61,7 +61,7 @@ let record_module_binding scope mb =
                     Annot.Idef scope))
 
 let rec iterator ~scope rebuild_env =
-  let super = Tast_mapper.default in
+  let super = default_iterator in
   let class_expr sub node =
     Stypes.record (Stypes.Ti_class node);
     super.class_expr sub node
@@ -149,27 +149,27 @@ let rec iterator ~scope rebuild_env =
        this will give a slightly different scope for the non-recursive
        binding case. *)
     structure_item_rem sub s []
-  and structure sub l =
+  in
+  let structure sub l =
     let rec loop = function
-      | str :: rem -> structure_item_rem sub str rem :: loop rem
-      | [] -> []
+      | str :: rem -> structure_item_rem sub str rem; loop rem
+      | [] -> ()
     in
-    {l with str_items = loop l.str_items}
+    loop l.str_items
   in
   {super with class_expr; module_expr; expr; pat; structure_item; structure}
 
 let binary_part iter x =
-  let app f x = ignore (f iter x) in
   let open Cmt_format in
   match x with
-  | Partial_structure x -> app iter.structure x
-  | Partial_structure_item x -> app iter.structure_item x
-  | Partial_expression x -> app iter.expr x
-  | Partial_pattern x -> app iter.pat x
-  | Partial_class_expr x -> app iter.class_expr x
-  | Partial_signature x -> app iter.signature x
-  | Partial_signature_item x -> app iter.signature_item x
-  | Partial_module_type x -> app iter.module_type x
+  | Partial_structure x -> iter.structure iter x
+  | Partial_structure_item x -> iter.structure_item iter x
+  | Partial_expression x -> iter.expr iter x
+  | Partial_pattern x -> iter.pat iter x
+  | Partial_class_expr x -> iter.class_expr iter x
+  | Partial_signature x -> iter.signature iter x
+  | Partial_signature_item x -> iter.signature_item iter x
+  | Partial_module_type x -> iter.module_type iter x
 
 (* Save cmt information as faked annotations, attached to
    Location.none, on top of the .annot file. Only when -save-cmt-info is
@@ -208,16 +208,16 @@ let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
     | Some _ -> target_filename
   in
   if save_cmt_info then record_cmt_info cmt;
-  let iterator = iterator ~scope:Location.none cmt.cmt_use_summaries in
+  let iter = iterator ~scope:Location.none cmt.cmt_use_summaries in
   match cmt.cmt_annots with
   | Implementation typedtree ->
-      ignore (iterator.structure iterator typedtree);
+      iter.structure iter typedtree;
       Stypes.dump target_filename
   | Interface _ ->
       Printf.eprintf "Cannot generate annotations for interface file\n%!";
       exit 2
   | Partial_implementation parts ->
-      Array.iter (binary_part iterator) parts;
+      Array.iter (binary_part iter) parts;
       Stypes.dump target_filename
   | Packed _ ->
       Printf.fprintf stderr "Packed files not yet supported\n%!";
