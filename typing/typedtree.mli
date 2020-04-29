@@ -227,7 +227,8 @@ and expression_desc =
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
   | Texp_override of Path.t * (Path.t * string loc * expression) list
   | Texp_letmodule of
-      Ident.t * string loc * Types.module_presence * module_expr * expression
+      Ident.t option * string option loc * Types.module_presence * module_expr *
+        expression
   | Texp_letexception of extension_constructor * expression
   | Texp_assert of expression
   | Texp_lazy of expression
@@ -345,10 +346,14 @@ and module_type_constraint =
   | Tmodtype_explicit of module_type
   (** The module type was in the source file. *)
 
+and functor_parameter =
+  | Unit
+  | Named of Ident.t option * string option loc * module_type
+
 and module_expr_desc =
     Tmod_ident of Path.t * Longident.t loc
   | Tmod_structure of structure
-  | Tmod_functor of Ident.t * string loc * module_type option * module_expr
+  | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
@@ -388,8 +393,8 @@ and structure_item_desc =
 
 and module_binding =
     {
-     mb_id: Ident.t;
-     mb_name: string loc;
+     mb_id: Ident.t option;
+     mb_name: string option loc;
      mb_presence: module_presence;
      mb_expr: module_expr;
      mb_attributes: attributes;
@@ -423,7 +428,7 @@ and module_type =
 and module_type_desc =
     Tmty_ident of Path.t * Longident.t loc
   | Tmty_signature of signature
-  | Tmty_functor of Ident.t * string loc * module_type option * module_type
+  | Tmty_functor of functor_parameter * module_type
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
   | Tmty_alias of Path.t * Longident.t loc
@@ -466,8 +471,8 @@ and signature_item_desc =
 
 and module_declaration =
     {
-     md_id: Ident.t;
-     md_name: string loc;
+     md_id: Ident.t option;
+     md_name: string option loc;
      md_presence: module_presence;
      md_type: module_type;
      md_attributes: attributes;

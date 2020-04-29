@@ -57,7 +57,7 @@ let bind_cases l =
 let record_module_binding scope mb =
   Stypes.record (Stypes.An_ident
                    (mb.mb_name.loc,
-                    mb.mb_name.txt,
+                    Option.value mb.mb_name.txt ~default:"_",
                     Annot.Idef scope))
 
 let rec iterator ~scope rebuild_env =
@@ -109,7 +109,8 @@ let rec iterator ~scope rebuild_env =
         bind_cases f
     | Texp_letmodule (_, modname, _, _, body ) ->
         Stypes.record (Stypes.An_ident
-                       (modname.loc,modname.txt,Annot.Idef body.exp_loc))
+                         (modname.loc,Option.value ~default:"_" modname.txt,
+                          Annot.Idef body.exp_loc))
     | _ -> ()
     end;
     Stypes.record (Stypes.Ti_expr exp);

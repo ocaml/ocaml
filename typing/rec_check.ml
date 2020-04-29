@@ -858,7 +858,7 @@ and modexp : Typedtree.module_expr -> term_judg =
       path pth
     | Tmod_structure s ->
       structure s
-    | Tmod_functor (_, _, _, e) ->
+    | Tmod_functor (_, e) ->
       modexp e << Delay
     | Tmod_apply (f, p, _) ->
       join [
@@ -992,15 +992,21 @@ and structure_item : Typedtree.structure_item -> bind_judg =
       Env.join (modexp mexp m) (Env.remove_list included_ids env)
 
 (* G |- module M = E : m -| G *)
-and module_binding : (Ident.t * Typedtree.module_expr) -> bind_judg =
+and module_binding : (Ident.t option * Typedtree.module_expr) -> bind_judg =
   fun (id, mexp) m env ->
       (*
         GE |- E: m[mM + Guard]
         -------------------------------------
         GE + G |- module M = E : m -| M:mM, G
       *)
-      let mM, env = Env.take id env in
-      let judg_E = modexp mexp << (Mode.join mM Guard) in
+      let judg_E, env =
+        match id with
+        | None -> modexp mexp << Ignore, env
+        | Some id ->
+          let mM, env = Env.take id env in
+          let judg_E = modexp mexp << (Mode.join mM Guard) in
+          judg_E, env
+      in
       Env.join (judg_E m) env
 
 and open_declaration : Typedtree.open_declaration -> bind_judg =
@@ -1010,12 +1016,18 @@ and open_declaration : Typedtree.open_declaration -> bind_judg =
       Env.join (judg_E m) (Env.remove_list bound_ids env)
 
 and recursive_module_bindings
-  : (Ident.t * Typedtree.module_expr) list -> bind_judg =
+  : (Ident.t option * Typedtree.module_expr) list -> bind_judg =
   fun m_bindings m env ->
-    let mids = List.map fst m_bindings in
+    let mids = List.filter_map fst m_bindings in
     let binding (mid, mexp) m =
-      let mM = Env.find mid env in
-      Env.remove_list mids (modexp mexp Mode.(compose m (join mM Guard)))
+      let judg_E =
+        match mid with
+        | None -> modexp mexp << Ignore
+        | Some mid ->
+          let mM = Env.find mid env in
+          modexp mexp << (Mode.join mM Guard)
+      in
+      Env.remove_list mids (judg_E m)
     in
     Env.join (list binding m_bindings m) (Env.remove_list mids env)
 

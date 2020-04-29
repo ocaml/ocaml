@@ -32,12 +32,19 @@ type unsafe_component =
   | Unsafe_non_function
   | Unsafe_typext
 
-type unsafe_info = { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+type unsafe_info =
+  | Unsafe of { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+  | Unnamed
 type error =
   Circular_dependency of (Ident.t * unsafe_info) list
 | Conflicting_inline_attributes
 
 exception Error of Location.t * error
+
+let cons_opt x_opt xs =
+  match x_opt with
+  | None -> xs
+  | Some x -> x :: xs
 
 (* Keep track of the root path (from the root of the namespace to the
    currently compiled module expression).  Useful for naming extensions. *)
@@ -218,12 +225,14 @@ let init_shape id modl =
     match Mtype.scrape env mty with
       Mty_ident _
     | Mty_alias _ ->
-        raise (Initialization_failure {reason=Unsafe_module_binding;loc;subid})
+        raise (Initialization_failure
+                (Unsafe {reason=Unsafe_module_binding;loc;subid}))
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Mty_functor _ ->
         (* can we do better? *)
-        raise (Initialization_failure {reason=Unsafe_functor;loc;subid})
+        raise (Initialization_failure
+                (Unsafe {reason=Unsafe_functor;loc;subid}))
   and init_shape_struct env sg =
     match sg with
       [] -> []
@@ -235,7 +244,9 @@ let init_shape id modl =
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
               Const_pointer 1 (* camlinternalMod.Lazy *)
           | _ ->
-              let not_a_function = {reason=Unsafe_non_function; loc; subid } in
+              let not_a_function =
+                Unsafe {reason=Unsafe_non_function; loc; subid }
+              in
               raise (Initialization_failure not_a_function) in
         init_v :: init_shape_struct env rem
     | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
@@ -245,7 +256,7 @@ let init_shape id modl =
     | Sig_type(id, tdecl, _, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext (subid, {ext_loc=loc},_,_) :: _ ->
-        raise (Initialization_failure {reason=Unsafe_typext; loc; subid})
+        raise (Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid}))
     | Sig_module(id, Mp_present, md, _, _) :: rem ->
         init_shape_mod id md.md_loc env md.md_type ::
         init_shape_struct (Env.add_module_declaration ~check:false
@@ -274,9 +285,18 @@ type binding_status =
   | Inprogress of int option (** parent node *)
   | Defined
 
+type id_or_ignore_loc =
+  | Id of Ident.t
+  | Ignore_loc of Location.t
+
 let extract_unsafe_cycle id status init cycle_start =
   let info i = match init.(i) with
-    | Result.Error r -> id.(i), r
+    | Result.Error r ->
+        begin match id.(i) with
+        | Id id -> id, r
+        | Ignore_loc _ ->
+            assert false (* Can't refer to something without a name. *)
+        end
     | Ok _ -> assert false in
   let rec collect stop l i = match status.(i) with
     | Inprogress None | Undefined | Defined -> assert false
@@ -310,7 +330,9 @@ let reorder_rec_bindings bindings =
         if is_unsafe i then begin
           status.(i) <- Inprogress parent;
           for j = 0 to num_bindings - 1 do
-            if Ident.Set.mem id.(j) fv.(i) then emit_binding (Some i) j
+            match id.(j) with
+            | Id id when Ident.Set.mem id fv.(i) -> emit_binding (Some i) j
+            | _ -> ()
           done
         end;
         res := (id.(i), init_res i, rhs.(i)) :: !res;
@@ -329,9 +351,10 @@ let eval_rec_bindings bindings cont =
   let rec bind_inits = function
     [] ->
       bind_strict bindings
-  | (_id, None, _rhs) :: rem ->
+  | (Ignore_loc _, _, _) :: rem
+  | (_, None, _) :: rem ->
       bind_inits rem
-  | (id, Some(loc, shape), _rhs) :: rem ->
+  | (Id id, Some(loc, shape), _rhs) :: rem ->
       Llet(Strict, Pgenval, id,
            Lapply{ap_should_be_tailcall=false;
                   ap_loc=Location.none;
@@ -343,16 +366,19 @@ let eval_rec_bindings bindings cont =
   and bind_strict = function
     [] ->
       patch_forwards bindings
-  | (id, None, rhs) :: rem ->
+  | (Ignore_loc loc, None, rhs) :: rem ->
+      Lsequence(Lprim(Pignore, [rhs], loc), bind_strict rem)
+  | (Id id, None, rhs) :: rem ->
       Llet(Strict, Pgenval, id, rhs, bind_strict rem)
   | (_id, Some _, _rhs) :: rem ->
       bind_strict rem
   and patch_forwards = function
     [] ->
       cont
-  | (_id, None, _rhs) :: rem ->
+  | (Ignore_loc _, _, _rhs) :: rem
+  | (_, None, _rhs) :: rem ->
       patch_forwards rem
-  | (id, Some(_loc, shape), rhs) :: rem ->
+  | (Id id, Some(_loc, shape), rhs) :: rem ->
       Lsequence(Lapply{ap_should_be_tailcall=false;
                        ap_loc=Location.none;
                        ap_func=mod_prim "update_mod";
@@ -367,8 +393,13 @@ let compile_recmodule compile_rhs bindings cont =
   eval_rec_bindings
     (reorder_rec_bindings
        (List.map
-          (fun {mb_id=id; mb_expr=modl; mb_loc=loc; _} ->
-            (id, modl.mod_loc, init_shape id modl, compile_rhs id modl loc))
+          (fun {mb_id=id; mb_name; mb_expr=modl; mb_loc=loc; _} ->
+             let id_or_ignore_loc, shape =
+               match id with
+               | None -> Ignore_loc mb_name.loc, Result.Error Unnamed
+               | Some id -> Id id, init_shape id modl
+             in
+             (id_or_ignore_loc, modl.mod_loc, shape, compile_rhs id modl loc))
           bindings))
     cont
 
@@ -397,7 +428,7 @@ let merge_functors mexp coercion root_path =
   let rec merge mexp coercion path acc inline_attribute =
     let finished = acc, mexp, path, coercion, inline_attribute in
     match mexp.mod_desc with
-    | Tmod_functor (param, _, _, body) ->
+    | Tmod_functor (param, body) ->
       let inline_attribute' =
         Translattribute.get_inline_attribute mexp.mod_attributes
       in
@@ -409,7 +440,14 @@ let merge_functors mexp coercion root_path =
         | _ -> fatal_error "Translmod.merge_functors: bad coercion"
       in
       let loc = mexp.mod_loc in
-      let path = functor_path path param in
+      let path, param =
+        match param with
+        | Unit -> None, Ident.create_local "*"
+        | Named (None, _, _) ->
+          let id = Ident.create_local "_" in
+          functor_path path id, id
+        | Named (Some id, _, _) -> functor_path path id, id
+      in
       let inline_attribute =
         merge_inline_attributes inline_attribute inline_attribute' loc
       in
@@ -591,7 +629,8 @@ and transl_structure loc fields cc rootpath final_env = function
           let id = mb.mb_id in
           (* Translate module first *)
           let module_body =
-            transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr
+            transl_module Tcoerce_none (Option.bind id (field_path rootpath))
+              mb.mb_expr
           in
           let module_body =
             Translattribute.add_inline_attribute module_body mb.mb_loc
@@ -599,42 +638,48 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           (* Translate remainder second *)
           let body, size =
-            transl_structure loc (id :: fields) cc rootpath final_env rem
+            transl_structure loc (cons_opt id fields) cc rootpath final_env rem
           in
-          let module_body =
-            Levent (module_body, {
-              lev_loc = mb.mb_loc;
-              lev_kind = Lev_module_definition id;
-              lev_repr = None;
-              lev_env = Env.empty;
-            })
-          in
-          Llet(pure_module mb.mb_expr, Pgenval, id,
-               module_body,
-               body), size
+          begin match id with
+          | None ->
+              Lsequence (Lprim(Pignore, [module_body], mb.mb_name.loc), body),
+              size
+          | Some id ->
+              let module_body =
+                Levent (module_body, {
+                  lev_loc = mb.mb_loc;
+                  lev_kind = Lev_module_definition id;
+                  lev_repr = None;
+                  lev_env = Env.empty;
+                })
+              in
+              Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body), size
+          end
       | Tstr_module {mb_presence=Mp_absent} ->
           transl_structure loc fields cc rootpath final_env rem
       | Tstr_recmodule bindings ->
           let ext_fields =
-            List.rev_append (List.map (fun mb -> mb.mb_id) bindings) fields
+            List.rev_append (List.filter_map (fun mb -> mb.mb_id) bindings)
+              fields
           in
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem
           in
           let lam =
-            compile_recmodule
-              (fun id modl loc ->
-                 let module_body =
-                   transl_module Tcoerce_none (field_path rootpath id) modl
-                 in
-                 Levent (module_body, {
-                   lev_loc = loc;
-                   lev_kind = Lev_module_definition id;
-                   lev_repr = None;
-                   lev_env = Env.empty;
-                 }))
-              bindings
-              body
+            compile_recmodule (fun id modl loc ->
+              match id with
+              | None -> transl_module Tcoerce_none None modl
+              | Some id ->
+                  let module_body =
+                    transl_module Tcoerce_none (field_path rootpath id) modl
+                  in
+                  Levent (module_body, {
+                    lev_loc = loc;
+                    lev_kind = Lev_module_definition id;
+                    lev_repr = None;
+                    lev_env = Env.empty;
+                  })
+            ) bindings body
           in
           lam, size
       | Tstr_class cl_list ->
@@ -780,10 +825,12 @@ let rec defined_idents = function
       @ defined_idents rem
     | Tstr_effect ext -> ext.ext_id :: defined_idents rem
     | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: defined_idents rem
-    | Tstr_module {mb_id; mb_presence=Mp_present} -> mb_id :: defined_idents rem
-    | Tstr_module {mb_presence=Mp_absent} -> defined_idents rem
+    | Tstr_module {mb_id = Some id; mb_presence=Mp_present} ->
+      id :: defined_idents rem
+    | Tstr_module ({mb_id = None}
+                  |{mb_presence=Mp_absent}) -> defined_idents rem
     | Tstr_recmodule decls ->
-      List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
+      List.filter_map (fun mb -> mb.mb_id) decls @ defined_idents rem
     | Tstr_modtype _ -> defined_idents rem
     | Tstr_open od ->
       bound_value_identifiers od.open_bound_items @ defined_idents rem
@@ -847,7 +894,7 @@ and all_idents = function
     | Tstr_effect ext -> ext.ext_id :: all_idents rem
     | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: all_idents rem
     | Tstr_recmodule decls ->
-      List.map (fun mb -> mb.mb_id) decls @ all_idents rem
+      List.filter_map (fun mb -> mb.mb_id) decls @ all_idents rem
     | Tstr_modtype _ -> all_idents rem
     | Tstr_open od ->
         let rest = all_idents rem in
@@ -872,15 +919,19 @@ and all_idents = function
       bound_value_identifiers incl.incl_type @ all_idents rem
 
     | Tstr_module
-        {mb_id;mb_presence=Mp_present;mb_expr={mod_desc = Tmod_structure str}}
+        { mb_id = Some id;
+          mb_presence=Mp_present;
+          mb_expr={mod_desc = Tmod_structure str} }
     | Tstr_module
-        {mb_id;mb_presence=Mp_present;
-         mb_expr=
-           {mod_desc =
-              Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
-        mb_id :: all_idents str.str_items @ all_idents rem
-    | Tstr_module {mb_id;mb_presence=Mp_present} -> mb_id :: all_idents rem
-    | Tstr_module {mb_presence=Mp_absent} -> all_idents rem
+        { mb_id = Some id;
+          mb_presence = Mp_present;
+          mb_expr =
+            {mod_desc =
+               Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
+        id :: all_idents str.str_items @ all_idents rem
+    | Tstr_module {mb_id = Some id;mb_presence=Mp_present} ->
+        id :: all_idents rem
+    | Tstr_module ({mb_id = None} | {mb_presence=Mp_absent}) -> all_idents rem
     | Tstr_attribute _ -> all_idents rem
 
 
@@ -974,7 +1025,17 @@ let transl_store_structure glob map prims aliases str =
                            store_ident ext.ext_loc id),
                       transl_store rootpath
                         (add_ident false id subst) cont rem)
-        | Tstr_module{mb_id=id;mb_loc=loc;mb_presence=Mp_present;
+        | Tstr_module
+            {mb_id=None; mb_name; mb_presence=Mp_present; mb_expr=modl;
+             mb_loc=loc; mb_attributes} ->
+            let lam =
+              Translattribute.add_inline_attribute
+                (transl_module Tcoerce_none None modl)
+                loc mb_attributes
+            in
+            Lsequence(Lprim(Pignore, [lam], mb_name.loc),
+                      transl_store rootpath subst cont rem)
+        | Tstr_module{mb_id=Some id;mb_loc=loc;mb_presence=Mp_present;
                       mb_expr={mod_desc = Tmod_structure str} as mexp;
                       mb_attributes} ->
             List.iter (Translattribute.check_attribute_on_module mexp)
@@ -996,7 +1057,7 @@ let transl_store_structure glob map prims aliases str =
                                                   (add_ident true id subst)
                                                   cont rem)))
         | Tstr_module{
-            mb_id=id;mb_loc=loc;mb_presence=Mp_present;
+            mb_id=Some id;mb_loc=loc;mb_presence=Mp_present;
             mb_expr= {
               mod_desc = Tmod_constraint (
                   {mod_desc = Tmod_structure str} as mexp, _, _,
@@ -1024,7 +1085,7 @@ let transl_store_structure glob map prims aliases str =
                                                   (add_ident true id subst)
                                                   cont rem)))
         | Tstr_module
-            {mb_id=id; mb_presence=Mp_present; mb_expr=modl;
+            {mb_id=Some id; mb_presence=Mp_present; mb_expr=modl;
              mb_loc=loc; mb_attributes} ->
             let lam =
               Translattribute.add_inline_attribute
@@ -1044,12 +1105,12 @@ let transl_store_structure glob map prims aliases str =
         | Tstr_module {mb_presence=Mp_absent} ->
             transl_store rootpath subst cont rem
         | Tstr_recmodule bindings ->
-            let ids = List.map (fun mb -> mb.mb_id) bindings in
+            let ids = List.filter_map (fun mb -> mb.mb_id) bindings in
             compile_recmodule
               (fun id modl _loc ->
                  Lambda.subst no_env_update subst
                    (transl_module Tcoerce_none
-                      (field_path rootpath id) modl))
+                      (Option.bind id (field_path rootpath)) modl))
               bindings
               (Lsequence(store_idents Location.none ids,
                          transl_store rootpath (add_idents true ids subst)
@@ -1377,16 +1438,19 @@ let transl_toplevel_item item =
       set_toplevel_unique_name ext.ext_id;
       toploop_setvalue ext.ext_id
         (transl_extension_constructor item.str_env None ext)
-  | Tstr_module {mb_id=id; mb_presence=Mp_present; mb_expr=modl} ->
+  | Tstr_module {mb_id=None; mb_presence=Mp_present; mb_expr=modl} ->
+      transl_module Tcoerce_none None modl
+  | Tstr_module {mb_id=Some id; mb_presence=Mp_present; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#8133) *)
       set_toplevel_unique_name id;
       let lam = transl_module Tcoerce_none (Some(Pident id)) modl in
       toploop_setvalue id lam
   | Tstr_recmodule bindings ->
-      let idents = List.map (fun mb -> mb.mb_id) bindings in
+      let idents = List.filter_map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
-        (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
+        (fun id modl _loc ->
+           transl_module Tcoerce_none (Option.map (fun i -> Pident i) id) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
   | Tstr_class cl_list ->
@@ -1551,16 +1615,20 @@ let print_cycle ppf cycle =
     (Ident.name @@ fst @@ List.hd cycle)
 (* we repeat the first element to make the cycle more apparent *)
 
-let explanation_submsg (id, {reason;loc;subid}) =
-  let print fmt =
-    let printer = Format.dprintf fmt (Ident.name id) (Ident.name subid) in
-    Location.mkloc printer loc in
-  match reason with
-  | Unsafe_module_binding -> print "Module %s defines an unsafe module, %s ."
-  | Unsafe_functor -> print "Module %s defines an unsafe functor, %s ."
-  | Unsafe_typext ->
-      print "Module %s defines an unsafe extension constructor, %s ."
-  | Unsafe_non_function -> print "Module %s defines an unsafe value, %s ."
+let explanation_submsg (id, unsafe_info) =
+  match unsafe_info with
+  | Unnamed -> assert false (* can't be part of a cycle. *)
+  | Unsafe {reason;loc;subid} ->
+      let print fmt =
+        let printer = Format.dprintf fmt (Ident.name id) (Ident.name subid) in
+        Location.mkloc printer loc in
+      match reason with
+      | Unsafe_module_binding ->
+          print "Module %s defines an unsafe module, %s ."
+      | Unsafe_functor -> print "Module %s defines an unsafe functor, %s ."
+      | Unsafe_typext ->
+          print "Module %s defines an unsafe extension constructor, %s ."
+      | Unsafe_non_function -> print "Module %s defines an unsafe value, %s ."
 
 let report_error loc = function
   | Circular_dependency cycle ->
