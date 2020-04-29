@@ -12,8 +12,7 @@ flags: compiler
 setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
 build: [
   ["./configure" "--prefix=%{prefix}%"]
-  [make "-j%{jobs}%" "world"]
-  [make "-j%{jobs}%" "world.opt"]
+  [make "-j%{jobs}%"]
 ]
 install: [make "install"]
 maintainer: "caml-list@inria.fr"

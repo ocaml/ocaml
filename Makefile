@@ -20,18 +20,11 @@ ROOTDIR = .
 include Makefile.config
 include Makefile.common
 
-# For users who don't read the INSTALL file
 .PHONY: defaultentry
-defaultentry:
-ifeq "$(UNIX_OR_WIN32)" "unix"
-	@echo "Please refer to the installation instructions in file INSTALL."
-	@echo "If you've just unpacked the distribution, something like"
-	@echo "	./configure"
-	@echo "	make world"
-	@echo "	make install"
-	@echo "should work.  But see the file INSTALL for more details."
+ifeq "$(NATIVE_COMPILER)" "true"
+defaultentry: world.opt
 else
-	@echo "Please refer to the instructions in file README.win32.adoc."
+defaultentry: world
 endif
 
 MKDIR=mkdir -p
@@ -1361,3 +1354,15 @@ distclean: clean
 	rm -f testsuite/_log*
 
 include .depend
+
+Makefile.config Makefile.common:
+	@echo "Please refer to the installation instructions:"
+	@echo "- In file INSTALL for Unix systems."
+	@echo "- In file README.win32.adoc for Windows systems."
+	@echo "On Unix systems, if you've just unpacked the distribution,"
+	@echo "something like"
+	@echo "	./configure"
+	@echo "	make"
+	@echo "	make install"
+	@echo "should work."
+	@false

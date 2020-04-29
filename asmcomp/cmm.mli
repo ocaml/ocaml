@@ -233,3 +233,6 @@ val map_tail: (expression -> expression) -> expression -> expression
       to all inner sub-expressions that can produce the final result.
       Same disclaimer as for [iter_shallow_tail] about the notion
       of "tail" sub-expression. *)
+
+val map_shallow: (expression -> expression) -> expression -> expression
+  (** Apply the transformation to each immediate sub-expression. *)

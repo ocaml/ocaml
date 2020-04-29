@@ -70,6 +70,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 ## Output variables
 
 AC_SUBST([CONFIGURE_ARGS])
+AC_SUBST([native_compiler])
 AC_SUBST([VERSION], [AC_PACKAGE_VERSION])
 AC_SUBST([CC])
 # Note: This is present for the flexdll bootstrap where it exposed as the old

@@ -129,7 +129,7 @@ LBL(105):
         movl    %eax, 0(%esp)
         addl    $(STACK_PROBE_SIZE), %esp; CFI_ADJUST(-STACK_PROBE_SIZE);
 #endif
-    /* Build array of registers, save it into caml_gc_regs */
+    /* Build array of registers, save it into Caml_state->gc_regs */
         pushl   %ebp; CFI_ADJUST(4)
         pushl   %edi; CFI_ADJUST(4)
         pushl   %esi; CFI_ADJUST(4)
@@ -232,9 +232,9 @@ FUNCTION(caml_allocN)
         pushl   %eax; CFI_ADJUST(4) /* saved desired size */
         pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
-        /* eax = size - caml_young_ptr */
+        /* eax = size - Caml_state->young_ptr */
         subl    CAML_STATE(young_ptr, %ebx), %eax
-        negl    %eax                    /* eax = caml_young_ptr - size */
+        negl    %eax              /* eax = Caml_state->young_ptr - size */
         cmpl    CAML_STATE(young_limit, %ebx), %eax
         jb      LBL(103)
         movl    %eax, CAML_STATE(young_ptr, %ebx)

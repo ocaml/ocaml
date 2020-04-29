@@ -20,7 +20,7 @@ git checkout -b my-modification
 +
 ----
 ./configure
-make world.opt
+make
 ----
 
 3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their

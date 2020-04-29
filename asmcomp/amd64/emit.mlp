@@ -561,8 +561,20 @@ let emit_instr fallthrough i =
   | Lop(Iconst_int n) ->
       if n = 0n then begin
         match i.res.(0).loc with
-      | Reg _ -> I.xor (res i 0) (res i 0)
-      | _     -> I.mov (int 0) (res i 0)
+        | Reg _ ->
+          (* Clearing the bottom half also clears the top half (except for
+             64-bit-only registers where the behaviour is as if the operands
+             were 64 bit). *)
+          I.xor (res32 i 0) (res32 i 0)
+        | _ ->
+          I.mov (int 0) (res i 0)
+      end else if n > 0n && n <= 0xFFFF_FFFFn then begin
+        match i.res.(0).loc with
+        | Reg _ ->
+          (* Similarly, setting only the bottom half clears the top half. *)
+          I.mov (nat n) (res32 i 0)
+        | _ ->
+          I.mov (nat n) (res i 0)
       end else
         I.mov (nat n) (res i 0)
   | Lop(Iconst_float f) ->

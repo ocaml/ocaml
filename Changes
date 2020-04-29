@@ -87,6 +87,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #8990: amd64: Emit 32bit registers for Iconst_int when we can
+  (Xavier Clerc, Tom Kelly and Mark Shinwell, review by Xavier Leroy)
+
 - #8672: Optimise Switch code generation on booleans.
   (Stephen Dolan, review by Pierre Chambart)
 
@@ -145,7 +148,7 @@ Working version
    which must be duplicated for each domain in the multicore runtime.
    (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
     David Allsopp, review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
-    Gabriel Scherer and Damien Doligez)
+    Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
 ### Tools:
 
@@ -194,6 +197,9 @@ Working version
 - #8530: List.sort: avoid duplicate work by chop
   (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
    Gabriel Scherer)
+
+- #8971: Add `Filename.null`, the conventional name of the "null" device.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Alain Frisch)
 
 ### Other libraries:
 
@@ -248,6 +254,9 @@ Working version
 
 - #8947: fix/improve support for the BFD library
   (Sébastien Hinderer, review by Damien Doligez)
+
+- #8951: let make's default target build the compiler
+  (Sébastien Hinderer, review by David Allsopp)
 
 - #8985, #8986: fix generation of the primitives when the locale collation is
   incompatible with C.
@@ -371,6 +380,9 @@ OCaml 4.09.0 (19 September 2019):
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
 
 - #2165: better unboxing heuristics for let-bound identifiers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
+- #8735: unbox across static handlers
   (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:

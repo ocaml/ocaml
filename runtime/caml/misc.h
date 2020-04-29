@@ -467,8 +467,8 @@ int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
 
 #endif /* CAML_INTERNALS */
 
-/* The [backtrace_slot] type represents values stored in the
- * [caml_backtrace_buffer].  In bytecode, it is the same as a
+/* The [backtrace_slot] type represents values stored in
+ * [Caml_state->backtrace_buffer].  In bytecode, it is the same as a
  * [code_t], in native code it as a [frame_descr *].  The difference
  * doesn't matter for code outside [backtrace_{byt,nat}.c],
  * so it is just exposed as a [void *].
