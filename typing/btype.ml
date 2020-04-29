@@ -61,9 +61,6 @@ let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
 let is_Tconstr = function {desc=Tconstr _} -> true | _ -> false
 
 let dummy_method = "*dummy method*"
-let default_mty = function
-    Some mty -> mty
-  | None -> Mty_signature []
 
 (**** Definitions for backtracking ****)
 
@@ -333,6 +330,7 @@ type type_iterators =
     it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
     it_class_declaration: type_iterators -> class_declaration -> unit;
     it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
+    it_functor_param: type_iterators -> functor_parameter -> unit;
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
     it_type_kind: type_iterators -> type_kind -> unit;
@@ -399,12 +397,15 @@ let type_iterators =
     List.iter (it.it_type_expr it) ctd.clty_params;
     it.it_class_type it ctd.clty_type;
     it.it_path ctd.clty_path
+  and it_functor_param it = function
+    | Unit -> ()
+    | Named (_, mt) -> it.it_module_type it mt
   and it_module_type it = function
       Mty_ident p
     | Mty_alias p -> it.it_path p
     | Mty_signature sg -> it.it_signature it sg
-    | Mty_functor (_, mto, mt) ->
-        Option.iter (it.it_module_type it) mto;
+    | Mty_functor (p, mt) ->
+        it.it_functor_param it p;
         it.it_module_type it mt
   and it_class_type it = function
       Cty_constr (p, tyl, cty) ->
@@ -435,7 +436,7 @@ let type_iterators =
   and it_path _p = ()
   in
   { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
-    it_type_kind; it_class_type; it_module_type;
+    it_type_kind; it_class_type; it_functor_param; it_module_type;
     it_signature; it_class_type_declaration; it_class_declaration;
     it_modtype_declaration; it_module_declaration; it_extension_constructor;
     it_type_declaration; it_value_description; it_signature_item; }

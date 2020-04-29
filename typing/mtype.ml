@@ -37,9 +37,14 @@ let rec strengthen ~aliasable env mty p =
   match scrape env mty with
     Mty_signature sg ->
       Mty_signature(strengthen_sig ~aliasable env sg p)
-  | Mty_functor(param, arg, res)
-    when !Clflags.applicative_functors && Ident.name param <> "*" ->
-      Mty_functor(param, arg,
+  | Mty_functor(Named (Some param, arg), res)
+    when !Clflags.applicative_functors ->
+      Mty_functor(Named (Some param, arg),
+        strengthen ~aliasable:false env res (Papply(p, Pident param)))
+  | Mty_functor(Named (None, arg), res)
+    when !Clflags.applicative_functors ->
+      let param = Ident.create_scoped ~scope:(Path.scope p) "Arg" in
+      Mty_functor(Named (Some param, arg),
         strengthen ~aliasable:false env res (Papply(p, Pident param)))
   | mty ->
       mty
@@ -107,9 +112,9 @@ let rec make_aliases_absent pres mty =
   | Mty_alias _ -> Mp_absent, mty
   | Mty_signature sg ->
       pres, Mty_signature(make_aliases_absent_sig sg)
-  | Mty_functor(param, arg, res) ->
+  | Mty_functor(arg, res) ->
       let _, res = make_aliases_absent Mp_present res in
-      pres, Mty_functor(param, arg, res)
+      pres, Mty_functor(arg, res)
   | mty ->
       pres, mty
 
@@ -171,14 +176,19 @@ let rec nondep_mty_with_presence env va ids pres mty =
   | Mty_signature sg ->
       let mty = Mty_signature(nondep_sig env va ids sg) in
       pres, mty
-  | Mty_functor(param, arg, res) ->
+  | Mty_functor(Unit, res) ->
+      pres, Mty_functor(Unit, nondep_mty env va ids res)
+  | Mty_functor(Named (param, arg), res) ->
       let var_inv =
         match va with Co -> Contra | Contra -> Co | Strict -> Strict in
+      let res_env =
+        match param with
+        | None -> env
+        | Some param -> Env.add_module ~arg:true param Mp_present arg env
+      in
       let mty =
-        Mty_functor(param, Option.map (nondep_mty env var_inv ids) arg,
-                    nondep_mty
-                      (Env.add_module ~arg:true param Mp_present
-                         (Btype.default_mty arg) env) va ids res)
+        Mty_functor(Named (param, nondep_mty env var_inv ids arg),
+                    nondep_mty res_env va ids res)
       in
       pres, mty
 
@@ -335,7 +345,7 @@ let rec contains_type env = function
       end
   | Mty_signature sg ->
       contains_type_sig env sg
-  | Mty_functor (_, _, body) ->
+  | Mty_functor (_, body) ->
       contains_type env body
   | Mty_alias _ ->
       ()

@@ -188,7 +188,9 @@ let rec add_pattern bv pat =
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
-  | Ppat_unpack id -> pattern_bv := String.Map.add id.txt bound !pattern_bv
+  | Ppat_unpack id ->
+      Option.iter
+        (fun name -> pattern_bv := String.Map.add name bound !pattern_bv) id.txt
   | Ppat_open ( m, p) -> let bv = open_module bv m.txt in add_pattern bv p
   | Ppat_exception p -> add_pattern bv p
   | Ppat_effect(p1, p2) -> add_pattern bv p1; add_pattern bv p2
@@ -241,7 +243,12 @@ let rec add_expr bv exp =
   | Pexp_override sel -> List.iter (fun (_s, e) -> add_expr bv e) sel
   | Pexp_letmodule(id, m, e) ->
       let b = add_module_binding bv m in
-      add_expr (String.Map.add id.txt b bv) e
+      let bv =
+        match id.txt with
+        | None -> bv
+        | Some id -> String.Map.add id b bv
+      in
+      add_expr bv e
   | Pexp_letexception(_, e) -> add_expr bv e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_lazy (e) -> add_expr bv e
@@ -290,9 +297,17 @@ and add_modtype bv mty =
     Pmty_ident l -> add bv l
   | Pmty_alias l -> add_module_path bv l
   | Pmty_signature s -> add_signature bv s
-  | Pmty_functor(id, mty1, mty2) ->
-      Option.iter (add_modtype bv) mty1;
-      add_modtype (String.Map.add id.txt bound bv) mty2
+  | Pmty_functor(param, mty2) ->
+      let bv =
+        match param with
+        | Unit -> bv
+        | Named (id, mty1) ->
+          add_modtype bv mty1;
+          match id.txt with
+          | None -> bv
+          | Some name -> String.Map.add name bound bv
+      in
+      add_modtype bv mty2
   | Pmty_with(mty, cstrl) ->
       add_modtype bv mty;
       List.iter
@@ -349,7 +364,11 @@ and add_sig_item (bv, m) item =
       add_type_exception bv te; (bv, m)
   | Psig_module pmd ->
       let m' = add_modtype_binding bv pmd.pmd_type in
-      let add = String.Map.add pmd.pmd_name.txt m' in
+      let add map =
+        match pmd.pmd_name.txt with
+        | None -> map
+        | Some name -> String.Map.add name m' map
+      in
       (add bv, add m)
   | Psig_modsubst pms ->
       let m' = add_module_alias bv pms.pms_manifest in
@@ -357,8 +376,11 @@ and add_sig_item (bv, m) item =
       (add bv, add m)
   | Psig_recmodule decls ->
       let add =
-        List.fold_right (fun pmd -> String.Map.add pmd.pmd_name.txt bound)
-                        decls
+        List.fold_right (fun pmd map ->
+          match pmd.pmd_name.txt with
+          | None -> map
+          | Some name -> String.Map.add name bound map
+        ) decls
       in
       let bv' = add bv and m' = add m in
       List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
@@ -406,9 +428,17 @@ and add_module_expr bv modl =
   match modl.pmod_desc with
     Pmod_ident l -> add_module_path bv l
   | Pmod_structure s -> ignore (add_structure bv s)
-  | Pmod_functor(id, mty, modl) ->
-      Option.iter (add_modtype bv) mty;
-      add_module_expr (String.Map.add id.txt bound bv) modl
+  | Pmod_functor(param, modl) ->
+      let bv =
+        match param with
+        | Unit -> bv
+        | Named (id, mty) ->
+          add_modtype bv mty;
+          match id.txt with
+          | None -> bv
+          | Some name -> String.Map.add name bound bv
+      in
+      add_module_expr bv modl
   | Pmod_apply(mod1, mod2) ->
       add_module_expr bv mod1; add_module_expr bv mod2
   | Pmod_constraint(modl, mty) ->
@@ -475,11 +505,19 @@ and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
       (bv, m)
   | Pstr_module x ->
       let b = add_module_binding bv x.pmb_expr in
-      let add = String.Map.add x.pmb_name.txt b in
+      let add map =
+        match x.pmb_name.txt with
+        | None -> map
+        | Some name -> String.Map.add name b map
+      in
       (add bv, add m)
   | Pstr_recmodule bindings ->
       let add =
-        List.fold_right (fun x -> String.Map.add x.pmb_name.txt bound) bindings
+        List.fold_right (fun x map ->
+          match x.pmb_name.txt with
+          | None -> map
+          | Some name -> String.Map.add name bound map
+        ) bindings
       in
       let bv' = add bv and m = add m in
       List.iter

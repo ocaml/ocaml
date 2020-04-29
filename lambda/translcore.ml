@@ -84,7 +84,7 @@ let extract_float = function
 
 type binding =
   | Bind_value of value_binding list
-  | Bind_module of Ident.t * string loc * module_presence * module_expr
+  | Bind_module of Ident.t * string option loc * module_presence * module_expr
 
 let rec push_defaults loc bindings cases partial =
   match cases with
@@ -105,7 +105,7 @@ let rec push_defaults loc bindings cases partial =
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#modulepat"};_}];
              exp_desc = Texp_letmodule
-               (id, name, pres, mexpr,
+               (Some id, name, pres, mexpr,
                 ({exp_desc = Texp_function _} as e2))}}] ->
       push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings)
                    [{c_lhs=pat;c_cont=None;c_guard=None;c_rhs=e2}]
@@ -118,7 +118,7 @@ let rec push_defaults loc bindings cases partial =
              match binds with
              | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
              | Bind_module (id, name, pres, mexpr) ->
-                 Texp_letmodule (id, name, pres, mexpr, exp)})
+                 Texp_letmodule (Some id, name, pres, mexpr, exp)})
           case.c_rhs bindings
       in
       [{case with c_rhs=exp}]
@@ -490,7 +490,10 @@ and transl_exp0 e =
                             (Lvar cpy) var expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_letmodule(id, loc, Mp_present, modl, body) ->
+  | Texp_letmodule(None, loc, Mp_present, modl, body) ->
+      let lam = !transl_module Tcoerce_none None modl in
+      Lsequence(Lprim(Pignore, [lam], loc.loc), transl_exp body)
+  | Texp_letmodule(Some id, loc, Mp_present, modl, body) ->
       let defining_expr =
         Levent (!transl_module Tcoerce_none None modl, {
           lev_loc = loc.loc;

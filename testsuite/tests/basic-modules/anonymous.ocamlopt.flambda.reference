@@ -1,0 +1,15 @@
+(seq (ignore (let (x = [0: 13 37]) (makeblock 0 x)))
+  (let
+    (A =
+       (apply (field 0 (global CamlinternalMod!)) [0: "anonymous.ml" 25 6]
+         [0: [0]])
+     B =
+       (apply (field 0 (global CamlinternalMod!)) [0: "anonymous.ml" 35 6]
+         [0: [0]]))
+    (seq (ignore (let (x = [0: 4 2]) (makeblock 0 x)))
+      (apply (field 1 (global CamlinternalMod!)) [0: [0]] A
+        (module-defn(A) anonymous.ml(23):567-608 A))
+      (apply (field 1 (global CamlinternalMod!)) [0: [0]] B
+        (module-defn(B) anonymous.ml(33):703-773
+          (let (x = [0: "foo" "bar"]) (makeblock 0))))
+      (let (f = (function param 0a)) (makeblock 0 A B f)))))

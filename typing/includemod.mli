@@ -77,7 +77,10 @@ type symptom =
   | Invalid_module_alias of Path.t
 
 type pos =
-    Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
+  | Module of Ident.t
+  | Modtype of Ident.t
+  | Arg of functor_parameter
+  | Body of functor_parameter
 type error = pos list * Env.t * symptom
 
 exception Error of error list

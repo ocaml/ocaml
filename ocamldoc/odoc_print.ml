@@ -52,18 +52,20 @@ exception Use_code of string
    than the "emptied" type.
 *)
 let simpl_module_type ?code t =
+  let open Types in
   let rec iter t =
     match t with
-      Types.Mty_ident _
-    | Types.Mty_alias _ -> t
-    | Types.Mty_signature _ ->
+      Mty_ident _
+    | Mty_alias _ -> t
+    | Mty_signature _ ->
         (
          match code with
-           None -> Types.Mty_signature []
+           None -> Mty_signature []
          | Some s -> raise (Use_code s)
         )
-    | Types.Mty_functor (id, mt1, mt2) ->
-        Types.Mty_functor (id, Option.map iter mt1, iter mt2)
+    | Mty_functor (Unit, mt) -> Mty_functor (Unit, iter mt)
+    | Mty_functor (Named (name, mt1), mt2) ->
+      Mty_functor (Named (name, iter mt1), iter mt2)
   in
   iter t
 

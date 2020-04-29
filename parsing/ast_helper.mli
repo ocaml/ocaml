@@ -29,6 +29,7 @@ type loc = Location.t
 
 type lid = Longident.t with_loc
 type str = string with_loc
+type str_opt = string option with_loc
 type attrs = attribute list
 
 (** {1 Default locations} *)
@@ -116,7 +117,7 @@ module Pat:
     val constraint_: ?loc:loc -> ?attrs:attrs -> pattern -> core_type -> pattern
     val type_: ?loc:loc -> ?attrs:attrs -> lid -> pattern
     val lazy_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
-    val unpack: ?loc:loc -> ?attrs:attrs -> str -> pattern
+    val unpack: ?loc:loc -> ?attrs:attrs -> str_opt -> pattern
     val open_: ?loc:loc -> ?attrs:attrs  -> lid -> pattern -> pattern
     val exception_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
     val effect_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern -> pattern
@@ -169,8 +170,8 @@ module Exp:
     val setinstvar: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
     val override: ?loc:loc -> ?attrs:attrs -> (str * expression) list
                   -> expression
-    val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression
-                   -> expression
+    val letmodule: ?loc:loc -> ?attrs:attrs -> str_opt -> module_expr
+                   -> expression -> expression
     val letexception:
       ?loc:loc -> ?attrs:attrs -> extension_constructor -> expression
       -> expression
@@ -251,7 +252,7 @@ module Mty:
     val alias: ?loc:loc -> ?attrs:attrs -> lid -> module_type
     val signature: ?loc:loc -> ?attrs:attrs -> signature -> module_type
     val functor_: ?loc:loc -> ?attrs:attrs ->
-      str -> module_type option -> module_type -> module_type
+      functor_parameter -> module_type -> module_type
     val with_: ?loc:loc -> ?attrs:attrs -> module_type ->
       with_constraint list -> module_type
     val typeof_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type
@@ -267,7 +268,7 @@ module Mod:
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_expr
     val structure: ?loc:loc -> ?attrs:attrs -> structure -> module_expr
     val functor_: ?loc:loc -> ?attrs:attrs ->
-      str -> module_type option -> module_expr -> module_expr
+      functor_parameter -> module_expr -> module_expr
     val apply: ?loc:loc -> ?attrs:attrs -> module_expr -> module_expr ->
       module_expr
     val constraint_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type ->
@@ -328,7 +329,7 @@ module Str:
 module Md:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?text:text ->
-      str -> module_type -> module_declaration
+      str_opt -> module_type -> module_declaration
   end
 
 (** Module substitutions *)
@@ -349,7 +350,7 @@ module Mtd:
 module Mb:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?text:text ->
-      str -> module_expr -> module_binding
+      str_opt -> module_expr -> module_binding
   end
 
 (** Opens *)
