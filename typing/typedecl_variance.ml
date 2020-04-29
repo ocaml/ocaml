@@ -134,7 +134,11 @@ let make p n i =
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
   let required =
-    List.map (fun (c,n,i) -> if c || n then (c,n,i) else (true,true,i))
+    let check_injectivity = decl.type_kind = Type_abstract in
+    List.map
+      (fun (c,n,i) ->
+        let i = if check_injectivity then i else false in
+        if c || n then (c,n,i) else (true,true,i))
       required
   in
   (* Prepare *)

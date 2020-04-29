@@ -126,6 +126,12 @@ Error: Signature mismatch:
        Their variances do not agree.
 |}]
 
+(* Ignore injectivity for nominal types *)
+type !_ t = X
+[%%expect{|
+type _ t = X
+|}]
+
 (* Beware of constrained parameters *)
 type (_,_) eq = Refl : ('a,'a) eq
 type !'a t = private 'b constraint 'a = < b : 'b > (* OK *)
