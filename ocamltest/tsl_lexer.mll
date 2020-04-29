@@ -22,9 +22,7 @@ open Tsl_parser
 let comment_start_pos = ref []
 
 let lexer_error message =
-  Printf.eprintf "%s\n%!" message;
-  exit 2
-
+  failwith (Printf.sprintf "Tsl lexer: %s" message)
 }
 
 let newline = ('\013'* '\010')
@@ -67,6 +65,8 @@ rule token = parse
         file line column (Lexing.lexeme lexbuf) in
       lexer_error message
     }
+  | eof
+    { lexer_error "unexpected eof" }
 (* Backslashes are ignored in strings except at the end of lines where they
    cause the newline to be ignored. After an escaped newline, any blank
    characters at the start of the line are ignored and optionally one blank

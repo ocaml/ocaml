@@ -1,8 +1,9 @@
 (* TEST
    reference="${test_source_directory}/redirections.reference"
    output="redirections.output"
+   files="${test_source_directory}/redirections.input"
    script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
+   -repo-root ${ocamlsrcdir} ${files} -o ${output}"
   * hasstr
   ** native-compiler
   *** shared-libraries
@@ -11,17 +12,6 @@
   *** no-shared-libraries
   **** script with unix,str
    script = "${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
+   -repo-root ${ocamlsrcdir} ${files} -o ${output}"
   ***** check-program-output
 *)
-
-\begin{caml_example}{toplevel}
-[@@@warning "+A"];;
-1 + 2. [@@expect error];;
-let f x = () [@@expect warning 27];;
-\end{caml_example}
-
-\begin{caml_example}{toplevel}
-Format.printf "Hello@.";
-print_endline "world";;
-\end{caml_example}

@@ -254,6 +254,14 @@ let filter_map f =
   in
   aux []
 
+let concat_map f l =
+  let rec aux f acc = function
+    | [] -> rev acc
+    | x :: l ->
+       let xs = f x in
+       aux f (rev_append xs acc) l
+  in aux f [] l
+
 let partition p l =
   let rec part yes no = function
   | [] -> (rev yes, rev no)

@@ -22,3 +22,7 @@ val files_to_test : string list ref
 val promote : bool ref
 
 val usage : string
+
+val find_test_dirs : string list ref
+
+val list_tests : string list ref

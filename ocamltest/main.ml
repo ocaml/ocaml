@@ -181,12 +181,62 @@ let test_file test_filename =
   (* Restore current working directory  *)
   Sys.chdir cwd
 
-let main () =
-  if !Options.files_to_test = [] then begin
-    print_usage();
-    exit 1
+let is_test s =
+  match tsl_block_of_file s with
+  | _ -> true
+  | exception _ -> false
+
+let ignored s =
+  s = "" || s.[0] = '_' || s.[0] = '.'
+
+let find_test_dirs dir =
+  let res = ref [] in
+  let rec loop dir =
+    let contains_tests = ref false in
+    Array.iter (fun s ->
+        if ignored s then ()
+        else begin
+          let s = dir ^ "/" ^ s in
+          if Sys.is_directory s then loop s
+          else if not !contains_tests && is_test s then contains_tests := true
+        end
+      ) (Sys.readdir dir);
+    if !contains_tests then res := dir :: !res
+  in
+  loop dir;
+  List.rev !res
+
+let list_tests dir =
+  let res = ref [] in
+  if Sys.is_directory dir then begin
+    Array.iter (fun s ->
+        if ignored s then ()
+        else begin
+          let s' = dir ^ "/" ^ s in
+          if Sys.is_directory s' || not (is_test s') then ()
+          else res := s :: !res
+        end
+      ) (Sys.readdir dir)
   end;
-  init_tests_to_skip();
-  List.iter test_file !Options.files_to_test
+  List.rev !res
+
+let () =
+  init_tests_to_skip()
+
+let main () =
+  let failed = ref false in
+  let work_done = ref false in
+  let list_tests dir =
+    match list_tests dir with
+    | [] -> failed := true
+    | res -> List.iter print_endline res
+  in
+  let find_test_dirs dir = List.iter print_endline (find_test_dirs dir) in
+  let doit f x = work_done := true; f x in
+  List.iter (doit find_test_dirs) !Options.find_test_dirs;
+  List.iter (doit list_tests) !Options.list_tests;
+  List.iter (doit test_file) !Options.files_to_test;
+  if not !work_done then print_usage();
+  if !failed || not !work_done then exit 1
 
 let _ = main()
