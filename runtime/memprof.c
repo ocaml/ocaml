@@ -263,7 +263,6 @@ static struct postponed_block {
   *postponed_queue_end = default_postponed_queue + POSTPONED_DEFAULT_QUEUE_SIZE,
   *postponed_tl = default_postponed_queue, /* Pointer to next pop */
   *postponed_hd = default_postponed_queue; /* Pointer to next push */
-int caml_memprof_to_do = 0;
 
 static struct postponed_block* postponed_next(struct postponed_block* p)
 {
@@ -333,10 +332,8 @@ void caml_memprof_handle_postponed(void)
   CAMLlocal1(block);
   value ephe;
 
-  if (caml_memprof_suspended) {
-    caml_memprof_to_do = 0;
+  if (caml_memprof_suspended)
     CAMLreturn0;
-  }
 
   while (postponed_tl != postponed_hd) {
     struct postponed_block pb = *postponed_tl;
@@ -353,7 +350,6 @@ void caml_memprof_handle_postponed(void)
     if (Is_block(ephe)) caml_ephemeron_set_key(Field(ephe, 0), 0, block);
   }
 
-  caml_memprof_to_do = 0;
   CAMLreturn0;
 }
 
