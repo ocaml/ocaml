@@ -30,6 +30,9 @@ Working version
 - #7927, #8527: Replace long tuples into records in typeclass.ml
   (Ulugbek Abdullaev, review by David Allsopp and Gabriel Scherer)
 
+- #1963: split cmmgen into generic Cmm helpers and clambda transformations
+  (Vincent Laviron, review by Mark Shinwell)
+
 - #1901: Fix lexing of character literals in comments
   (Pieter Goetschalckx, review by Damien Doligez)
 
@@ -84,6 +87,9 @@ Working version
 
 - #8992: share argument implementations between executables
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #9015: fix fatal error in pprint_ast (#8789)
+  (Damien Doligez, review by ...)
 
 ### Code generation and optimizations:
 
@@ -244,6 +250,10 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
 
+- #8835: new configure option --disable-stdlib-manpages to disable building
+  and installation of the library manpages.
+  (David Allsopp, review by Florian Angeletti and Gabriel Scherer)
+
 - #8837: build manpages using ocamldoc.opt when available
   cuts the manpages build time from 14s to 4s
   (Gabriel Scherer, review by David Allsopp and Sébastien Hinderer,
@@ -261,6 +271,12 @@ Working version
 - #8985, #8986: fix generation of the primitives when the locale collation is
   incompatible with C.
   (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
+
+- #8995: allow developers to specify frequently-used configure options in
+  Git (ocaml.configure option) and a directory for host-specific, shareable
+  config.cache files (ocaml.configure-cache option). See HACKING.adoc for
+  further details.
+  (David Allsopp, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
@@ -292,6 +308,10 @@ Working version
   and misleading function CamlinternalFormat.string_of_formatting_gen
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
+
+- #8792, #9018: Possible (latent) bug in Ctype.normalize_type
+  removed incrimined Btype.log_type, replaced by Btype.set_type
+  (Jacques Garrigue, report by Alain Frisch, review by Thomas Refis)
 
 - #8855, #8858: Links for tools not created when installing with
   --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but

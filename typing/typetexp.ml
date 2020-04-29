@@ -361,8 +361,8 @@ and transl_type_aux env policy styp =
           let t = instance t in
           let px = Btype.proxy t in
           begin match px.desc with
-          | Tvar None -> Btype.log_type px; px.desc <- Tvar (Some alias)
-          | Tunivar None -> Btype.log_type px; px.desc <- Tunivar (Some alias)
+          | Tvar None -> Btype.set_type_desc px (Tvar (Some alias))
+          | Tunivar None -> Btype.set_type_desc px (Tunivar (Some alias))
           | _ -> ()
           end;
           { ty with ctyp_type = t }

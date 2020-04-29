@@ -78,3 +78,8 @@ let set_structured_constants l =
 
 let get_structured_constant s =
   Hashtbl.find_opt state.structured_constants s
+
+let structured_constant_of_sym s =
+  match Compilenv.structured_constant_of_symbol s with
+  | None -> get_structured_constant s
+  | Some _ as r -> r

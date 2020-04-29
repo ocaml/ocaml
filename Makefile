@@ -157,6 +157,7 @@ ASMCOMP=\
   asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo \
   asmcomp/cmmgen_state.cmo \
+  asmcomp/cmm_helpers.cmo \
   asmcomp/cmmgen.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
@@ -326,7 +327,7 @@ utils/config.ml: utils/config.mlp Makefile.config utils/Makefile
 
 .PHONY: reconfigure
 reconfigure:
-	./configure $(CONFIGURE_ARGS)
+	ac_read_git_config=true ./configure $(CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@

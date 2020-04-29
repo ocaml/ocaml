@@ -737,6 +737,11 @@ let link_type ty ty' =
   | _ -> ()
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
+let set_type_desc ty td =
+  if td != ty.desc then begin
+    log_type ty;
+    ty.desc <- td
+  end
 let set_level ty level =
   if level <> ty.level then begin
     if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));

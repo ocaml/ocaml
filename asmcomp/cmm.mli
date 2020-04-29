@@ -148,7 +148,10 @@ and operation =
   | Cfloatofint | Cintoffloat
   | Ccmpf of float_comparison
   | Craise of Lambda.raise_kind
-  | Ccheckbound
+  | Ccheckbound (* Takes two arguments : first the bound to check against,
+                   then the index.
+                   It results in a bounds error if the index is greater than
+                   or equal to the bound. *)
   | Cpoll
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its

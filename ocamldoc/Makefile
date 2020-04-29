@@ -183,9 +183,14 @@ LIBCMOFILES = $(CMOFILES)
 LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
+ifeq "$(STDLIB_MANPAGES)" "true"
+DOCS_TARGET = manpages
+else
+DOCS_TARGET =
+endif
 
 .PHONY: all
-all: lib exe generators
+all: lib exe generators $(DOCS_TARGET)
 
 .PHONY: exe
 exe: $(OCAMLDOC)
