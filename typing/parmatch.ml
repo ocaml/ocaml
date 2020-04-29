@@ -2065,12 +2065,11 @@ end
 
 (* Whether the counter-example contains an extension pattern *)
 let contains_extension pat =
-  let r = ref false in
-  let rec loop = function
-      {pat_desc=Tpat_var (_, {txt="*extension*"})} ->
-        r := true
-    | p -> Typedtree.iter_pattern_desc loop p.pat_desc
-  in loop pat; !r
+  exists_pattern
+    (function
+     | {pat_desc=Tpat_var (_, {txt="*extension*"})} -> true
+     | _ -> false)
+    pat
 
 (* Build an untyped or-pattern from its expected type *)
 let ppat_of_type env ty =

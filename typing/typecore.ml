@@ -338,18 +338,10 @@ let finalize_variant pat =
                         row_bound=(); row_fixed=false; row_name=None})); *)
   | _ -> ()
 
-let rec iter_pattern f p =
-  f p;
-  iter_pattern_desc (iter_pattern f) p.pat_desc
-
 let has_variants p =
-  try
-    iter_pattern (function {pat_desc=Tpat_variant _} -> raise Exit | _ -> ())
-      p;
-    false
-  with Exit ->
-    true
-
+  exists_pattern
+    (function {pat_desc=Tpat_variant _} -> true | _ -> false)
+    p
 
 (* pattern environment *)
 type pattern_variable =
@@ -2061,7 +2053,7 @@ let contains_variant_either ty =
   try loop ty; unmark_type ty; false
   with Exit -> unmark_type ty; true
 
-let iter_ppat f p =
+let shallow_iter_ppat f p =
   match p.ppat_desc with
   | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_interval _
   | Ppat_extension _
@@ -2075,22 +2067,28 @@ let iter_ppat f p =
   | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, _flag) -> List.iter (fun (_,p) -> f p) args
 
-let contains_polymorphic_variant p =
+let exists_ppat f p =
+  let exception Found in
   let rec loop p =
-    match p.ppat_desc with
-      Ppat_variant _ | Ppat_type _ -> raise Exit
-    | _ -> iter_ppat loop p
-  in
-  try loop p; false with Exit -> true
+    if f p then raise Found else ();
+    shallow_iter_ppat loop p in
+  match loop p with
+  | exception Found -> true
+  | () -> false
 
-let contains_gadt p =
-  let check p =
-    match p.pat_desc with
-    | Tpat_construct (_, cd, _) when cd.cstr_generalized ->
-      raise Exit
-    | _ -> ()
-  in
-  try iter_pattern check p; false with Exit -> true
+let contains_polymorphic_variant p =
+  exists_ppat
+    (function
+     | {ppat_desc = (Ppat_variant _ | Ppat_type _)} -> true
+     | _ -> false)
+    p
+
+let contains_gadt cp =
+  exists_pattern
+    (function
+     | {pat_desc = Tpat_construct (_, cd, _)} when cd.cstr_generalized -> true
+     | _ -> false)
+    cp
 
 (* There are various things that we need to do in presence of GADT constructors
    that aren't required if there are none.
@@ -2098,12 +2096,11 @@ let contains_gadt p =
    patterns contain some GADT constructors. So we conservatively assume that
    any constructor might be a GADT constructor. *)
 let may_contain_gadts p =
-  let rec loop p =
-    match p.ppat_desc with
-    | Ppat_construct (_, _) -> raise Exit
-    | _ -> iter_ppat loop p
-  in
-  try loop p; false with Exit -> true
+  exists_ppat
+  (function
+   | {ppat_desc = Ppat_construct (_, _)} -> true
+   | _ -> false)
+  p
 
 let check_absent_variant env =
   iter_pattern

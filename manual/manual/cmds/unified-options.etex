@@ -287,7 +287,8 @@ the toplevel is running with the "#directory" directive
 \item["-init" \var{file}]
 Load the given file instead of the default initialization file.
 The default file is ".ocamlinit" in the current directory if it
-exists, otherwise ".ocamlinit" in the user's home directory.
+exists, otherwise "XDG_CONFIG_HOME/ocaml/init.ml" or
+".ocamlinit" in the user's home directory.
 }%top
 
 \notop{%
@@ -495,6 +496,15 @@ must be set with the "-o" option.
 This option can also be used to produce a \comp{C source file (".c" extension)
 or a} compiled shared/dynamic library (".so" extension, ".dll" under Windows).
 }%notop
+
+\comp{%
+\item["-output-complete-exe"]
+Build a self-contained executable by linking a C object file containing the
+bytecode program, the OCaml runtime system and any other static C code given to
+"ocamlc". The resulting effect is similar to "-custom", except that the bytecode
+is embedded in the C code so it is no longer accessible to tools such as
+"ocamldebug". On the other hand, the resulting binary is resistant to "strip".
+}%comp
 
 \nat{%
 \item["-pack"]
