@@ -100,14 +100,14 @@ let module_of_filename inputfile outputprefix =
   name
 ;;
 
-(* Check that start_from pass is before stop_after *)
+(* Check that start_after pass is before stop_after *)
 let check_pass_order () =
-  match !start_from, !stop_after with
+  match !start_after, !stop_after with
   | None, _ | _, None -> ()
   | Some start, Some stop ->
-    if Compiler_pass.compare stop start < 0 then
-      fatal "When using \"-stop-after <last>\" and \"-start-from <first>\", \
-             <first> last must be before <last>"
+    if Compiler_pass.compare stop start <= 0 then
+      fatal "When using \"-stop-after <last>\" and \"-start-after <pass>\", \
+             <pass> must be before <last>"
 
 type filename = string
 
@@ -479,9 +479,9 @@ let read_one_param ppf position name v =
       | Some pass -> set_save_ir_after pass true
     end
 
-  | "start-from" ->
-    let filter = Clflags.Compiler_pass.can_start_from in
-    set_compiler_pass ppf v ~name Clflags.start_from ~filter
+  | "start-after" ->
+    let filter = Clflags.Compiler_pass.can_start_after in
+    set_compiler_pass ppf v ~name Clflags.start_after ~filter
 
   | _ ->
     if not (List.mem name !can_discard) then begin
@@ -633,14 +633,14 @@ let check_ir name =
   match Clflags.Compiler_ir.extract_extension_with_pass name with
   | None -> false
   | Some (Linear, _) ->
-    if not (should_start_from Compiler_pass.Emit) then begin
-      match !start_from with
+    if not (should_start_after Compiler_pass.Scheduling) then begin
+      match !start_after with
       | None ->
           raise (Arg.Bad ("Format of the input file " ^ name ^
-                          " requires -start-from emit."))
+                          " requires -start-after scheduling."))
       | Some _ ->
           raise (Arg.Bad ("Format of the input file " ^ name ^
-                          " is incompatible with -start-from <pass>."))
+                          " is incompatible with -start-after <pass>."))
     end;
     true
 

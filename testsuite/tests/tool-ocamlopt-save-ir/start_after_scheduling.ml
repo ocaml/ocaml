@@ -5,14 +5,14 @@
    flags = "-save-ir-after scheduling -stop-after scheduling"
    ocamlopt_byte_exit_status = "0"
  **** script
-   script = "cp start_from_emit.cmir-linear start_from_emit_cmir_linear.ml"
+   script = "cp start_after_scheduling.cmir-linear start_after_scheduling_cmir_linear.ml"
  ***** ocamlopt.byte
-   flags = "-start-from emit -S start_from_emit.cmir-linear"
-   module = "start_from_emit_cmir_linear.ml"
+   flags = "-start-after scheduling -S"
+   module = "start_after_scheduling_cmir_linear.ml"
    ocamlopt_byte_exit_status = "0"
  ****** check-ocamlopt.byte-output
  ******* script
-   script = "sh ${test_source_directory}/start_from_emit.sh"
+   script = "sh ${test_source_directory}/start_after_scheduling.sh"
 *)
 
 let foo f x =
