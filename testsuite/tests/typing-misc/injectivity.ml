@@ -10,11 +10,11 @@ type -!'a t = private 'a -> unit
 type + !'a t = private 'a
 type - ! 'a t = private 'a -> unit
 [%%expect{|
-type !'a t = private 'a ref
-type +!'a t = private 'a
-type -!'a t = private 'a -> unit
-type +!'a t = private 'a
-type -!'a t = private 'a -> unit
+type 'a t = private 'a ref
+type +'a t = private 'a
+type -'a t = private 'a -> unit
+type +'a t = private 'a
+type -'a t = private 'a -> unit
 |}]
 (* Expect doesn't support syntax errors
 type -+ 'a t
@@ -88,8 +88,19 @@ Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be injective invariant,
        but it is unrestricted.
 |}]
+type !'a t = private 'a list
+type !'a t = private int
+[%%expect{|
+type 'a t = private 'a list
+Line 2, characters 0-24:
+2 | type !'a t = private int
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is unrestricted.
+|}]
 
-(* Can also use it on private abbreviations *)
+(* Can also use to add injectivity in private row types *)
 module M : sig type !'a t = private < m : int ; .. > end =
   struct type 'a t = < m : int ; n : 'a > end
 type 'a u = M : 'a -> 'a M.t u
@@ -126,6 +137,14 @@ Error: Signature mismatch:
        Their variances do not agree.
 |}]
 
+(* Injectivity annotations are inferred correctly for constrained parameters *)
+type 'a t = 'b constraint 'a = <b:'b>
+type !'b u = <b:'b> t
+[%%expect{|
+type 'a t = 'b constraint 'a = < b : 'b >
+type 'b u = < b : 'b > t
+|}]
+
 (* Ignore injectivity for nominal types *)
 type !_ t = X
 [%%expect{|
@@ -137,7 +156,7 @@ type (_,_) eq = Refl : ('a,'a) eq
 type !'a t = private 'b constraint 'a = < b : 'b > (* OK *)
 [%%expect{|
 type (_, _) eq = Refl : ('a, 'a) eq
-type !'a t = private 'b constraint 'a = < b : 'b >
+type 'a t = private 'b constraint 'a = < b : 'b >
 |}]
 
 type !'a t = private 'b constraint 'a = < b : 'b; c : 'c > (* KO *)
@@ -149,9 +168,9 @@ let inj_t : type a b. (<b:_; c:a> M.t, <b:_; c:b> M.t) eq -> (a, b) eq =
 Line 1, characters 0-58:
 1 | type !'a t = private 'b constraint 'a = < b : 'b; c : 'c > (* KO *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, a type variable has a variance that
-       cannot be deduced from the type parameters.
-       It was expected to be injective , but it is unrestricted.
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is unrestricted.
 |}]
 
 (* Motivating examples with GADTs *)
@@ -243,13 +262,9 @@ type _ u = M : 'a -> 'a t u (* OK *)
 [%%expect{|
 type _ u = M : < b : 'a > -> < b : 'a > t u
 |}]
-type _ v = M : 'a -> 'a ct v (* bug? *)
+type _ v = M : 'a -> 'a ct v (* OK *)
 [%%expect{|
-Line 1, characters 0-28:
-1 | type _ v = M : 'a -> 'a ct v (* bug? *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, a type variable cannot be deduced
-       from the type parameters.
+type _ v = M : < b : 'a > -> < b : 'a > ct v
 |}]
 
 type 'a t = 'b constraint 'a = <b : 'b; c : 'c>

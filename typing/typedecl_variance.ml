@@ -131,10 +131,12 @@ let make p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
 
+let injective = Variance.(set Inj true null)
+
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
+  let check_injectivity = decl.type_kind = Type_abstract in
   let required =
-    let check_injectivity = decl.type_kind = Type_abstract in
     List.map
       (fun (c,n,i) ->
         let i = if check_injectivity then i else false in
@@ -150,6 +152,19 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     (fun (cn,ty) ->
       compute_variance env tvl (if cn then full else covariant) ty)
     tyl;
+  (* Infer injectivity of constrained parameters *)
+  if check_injectivity then
+    List.iter
+      (fun ty ->
+        if Btype.is_Tvar ty then () else
+        let tvl2 = ref TypeMap.empty in
+        compute_variance env tvl2 injective ty;
+        if List.for_all
+            (fun tv -> mem Inj (get_variance tv tvl)
+               || not (mem Inj (get_variance tv tvl2)))
+            (Ctype.free_variables ty)
+        then compute_variance env tvl injective ty)
+      params;
   if check then begin
     (* Check variance of parameters *)
     let pos = ref 0 in
@@ -158,7 +173,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         incr pos;
         let var = get_variance ty tvl in
         let (co,cn) = get_upper var and ij = mem Inj var in
-        if Btype.is_Tvar ty && (co && not c || cn && not n || not ij && i)
+        if Btype.is_Tvar ty && (co && not c || cn && not n) || not ij && i
         then raise (Error(loc, Bad_variance
                                 (Variance_not_satisfied !pos,
                                                         (co,cn,ij),
@@ -203,21 +218,6 @@ let compute_variance_type env ~check (required, loc) decl tyl =
           Btype.iter_type_expr check ty
     in
     List.iter (fun (_,ty) -> check ty) tyl;
-    let tvl3 = ref TypeMap.empty in
-    List.iter2
-      (fun ty (_,_,i) ->
-        if not i || Btype.is_Tvar ty then () else
-        compute_variance env tvl3 (set Inj true null) ty)
-      params required;
-    List.iter
-      (fun tv ->
-        let v1 = get_variance tv tvl and v3 = get_variance tv tvl3 in
-        let i1 = mem Inj v1 and i3 = mem Inj v3
-        and (c1, n1) = get_upper v1 in
-        if i3 && not i1 then
-          raise (Error (loc, Bad_variance (Variance_not_deducible,
-                                           (c1,n1,i1), (false,false,i3)))))
-      fvl;
   end;
   List.map2
     (fun ty (p, n, i) ->

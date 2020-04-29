@@ -1232,8 +1232,12 @@ let rec tree_of_type_decl id decl =
           let is_var = is_Tvar (repr ty) in
           if abstr || not is_var then
             let inj =
-              abstr && decl.type_kind = Type_abstract && Variance.mem Inj v
-              (* && (decl.type_manifest = None || is_var) *)
+              decl.type_kind = Type_abstract && Variance.mem Inj v &&
+              match decl.type_manifest with
+              | None -> true
+              | Some ty -> (* only abstract or private row types *)
+                  decl.type_private = Private &&
+                  Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
             and (co, cn) = Variance.get_upper v in (co, cn, inj)
           else (true,true,false))
         decl.type_params decl.type_variance
