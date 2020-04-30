@@ -187,6 +187,8 @@ let loc_results res =
      first integer args in a0 .. a7
      first float args in fa0 .. fa7
      remaining args on stack.
+   A FP argument can be passed in an integer register if all FP registers
+   are exhausted but integer registers remain.
    Return values in a0 .. a1 or fa0 .. fa1. *)
 
 let external_calling_conventions
@@ -202,8 +204,7 @@ let external_calling_conventions
         | Val | Int | Addr as ty ->
             if !int <= last_int then begin
               loc.(i) <- [| phys_reg !int |];
-              incr int;
-              incr float;
+              incr int
             end else begin
               loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
               ofs := !ofs + size_int
@@ -211,8 +212,10 @@ let external_calling_conventions
         | Float ->
             if !float <= last_float then begin
               loc.(i) <- [| phys_reg !float |];
-              incr float;
-              incr int;
+              incr float
+            end else if !int <= last_int then begin
+              loc.(i) <- [| phys_reg !int |];
+              incr int
             end else begin
               loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
               ofs := !ofs + size_float
