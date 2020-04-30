@@ -946,28 +946,6 @@ let type_continuation_pat env expected_ty sp =
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
   | _ -> raise (Error (loc, env, Invalid_continuation_pattern))
 
-(* Remember current state for backtracking.
-   No variable information, as we only backtrack on
-   patterns without variables (cf. assert statements). *)
-type state =
- { snapshot: Btype.snapshot;
-   levels: Ctype.levels;
-   env: Env.t; }
-let save_state env =
-  { snapshot = Btype.snapshot ();
-    levels = Ctype.save_levels ();
-    env = !env; }
-let set_state s env =
-  Btype.backtrack s.snapshot;
-  Ctype.set_levels s.levels;
-  env := s.env
-
-(* type_pat does not generate local constraints inside or patterns *)
-type type_pat_mode =
-  | Normal
-  | Inside_or      (* inside a non-split or-pattern *)
-  | Split_or       (* always split or-patterns *)
-
 (* "half typed" cases are produced in [type_cases] when we've just typechecked
    the pattern but haven't type-checked the body yet.
    At this point we might have added some type equalities to the environment,
@@ -1010,12 +988,150 @@ let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_or (p, q) ->
      has_literal_pattern p || has_literal_pattern q
 
-exception Need_backtrack
-
 let check_scope_escape loc env level ty =
   try Ctype.check_scope_escape env level ty
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace, None)))
+
+type pattern_checking_mode =
+  | Normal
+  (** We are checking user code. *)
+  | Counter_example of counter_example_checking_info
+  (** In [Counter_example] mode, we are checking a counter-example
+      candidate produced by Parmatch. This is a syntactic pattern that
+      represents a set of values by using or-patterns (p_1 | ... | p_n)
+      to enumerate all alternatives in the counter-example
+      search. These or-patterns occur at every choice point, possibly
+      deep inside the pattern.
+
+      Parmatch does not use type information, so this pattern may
+      exhibit two issues:
+      - some parts of the pattern may be ill-typed due to GADTs, and
+      - some wildcard patterns may not match any values: their type is
+        empty.
+
+      The aim of [type_pat] in the [Counter_example] mode is to refine
+      this syntactic pattern into a well-typed pattern, and ensure
+      that it matches at least one concrete value.
+      - It filters ill-typed branches of or-patterns.
+        (see {!splitting_mode} below)
+      - It tries to check that wildcard patterns are non-empty.
+        (see {!explosion_fuel})
+  *)
+
+and counter_example_checking_info = {
+    explosion_fuel: int;
+    splitting_mode: splitting_mode;
+    constrs: (string, Types.constructor_description) Hashtbl.t;
+    labels: (string, Types.label_description) Hashtbl.t;
+  }
+(**
+    [explosion_fuel] controls the checking of wildcard patterns.  We
+    eliminate potentially-empty wildcard patterns by exploding them
+    into concrete sub-patterns, for example (K1 _ | K2 _) or
+    { l1: _; l2: _ }. [explosion_fuel] is the depth limit on wildcard
+    explosion. Such depth limit is required to avoid non-termination
+    and compilation-time blowups.
+
+    [splitting_mode] controls the handling of or-patterns.  In
+    [Counter_example] mode, we only need to select one branch that
+    leads to a well-typed pattern. Checking all branches is expensive,
+    we use different search strategies (see {!splitting_mode}) to
+    reduce the number of explored alternatives.
+
+    [constrs] and [labels] contain metadata produced by [Parmatch] to
+    type-check the given syntactic pattern. [Parmatch] produces
+    counter-examples by turning typed patterns into
+    [Parsetree.pattern]. In this process, constructor and label paths
+    are lost, and are replaced by generated strings. [constrs] and
+    [labels] map those synthetic names back to the typed descriptions
+    of the original names.
+ *)
+
+(** Due to GADT constraints, an or-pattern produced within
+    a counter-example may have ill-typed branches. Consider for example
+
+      type _ tag = Int : int tag | Bool : bool tag
+
+    then [Parmatch] will propose the or-pattern [Int | Bool] whenever
+    a pattern of type [tag] is required to form a counter-example. For
+    example, a function expects a (int tag option) and only [None] is
+    handled by the user-written pattern. [Some (Int | Bool)] is not
+    well-typed in this context, only the sub-pattern [Some Int] is.
+    In this example, the expected type coming from the context
+    suffices to know which or-pattern branch must be chosen.
+
+    In the general case, choosing a branch can have non-local effects
+    on the typability of the term. For example, consider a tuple type
+    ['a tag * ...'a...], where the first component is a GADT.  All
+    constructor choices for this GADT lead to a well-typed branch in
+    isolation (['a] is unconstrained), but choosing one of them adds
+    a constraint on ['a] that may make the other tuple elements
+    ill-typed.
+
+    In general, after choosing each possible branch of the or-pattern,
+    [type_pat] has to check the rest of the pattern to tell if this
+    choice leads to a well-typed term. This may lead to an explosion
+    of typing/search work -- the rest of the term may in turn contain
+    alternatives.
+
+    We use careful strategies to try to limit counterexample-checking
+    time; [splitting_mode] represents those strategies.
+*)
+and splitting_mode =
+  | Backtrack_or
+  (** Always backtrack in or-patterns.
+
+      [Backtrack_or] selects a single alternative from an or-pattern
+      by using backtracking, trying to choose each branch in turn, and
+      to complete it into a valid sub-pattern. We call this
+      "splitting" the or-pattern.
+
+      We use this mode when looking for unused patterns or sub-patterns,
+      in particular to check a refutation clause (p -> .).
+    *)
+  | Refine_or of { inside_nonsplit_or: bool; }
+  (** Only backtrack when needed.
+
+     [Refine_or] tries another approach for refining or-pattern.
+
+     Instead of always splitting each or-pattern, It first attempts to
+     find branches that do not introduce new constraints (because they
+     do not contain GADT constructors). Those branches are such that,
+     if they fail, all other branches will fail.
+
+     If we find one such branch, we attempt to complete the subpattern
+     (checking what's outside the or-pattern), ignoring other
+     branches -- we never consider another branch choice again. If all
+     branches are constrained, it falls back to splitting the
+     or-pattern.
+
+     We use this mode when checking exhaustivity of pattern matching.
+    *)
+
+(** This exception is only used internally within [type_pat_aux], to jump
+   back to the parent or-pattern in the [Refine_or] strategy.
+
+   Such a parent exists precisely when [inside_nonsplit_or = true];
+   it's an invariant that we always setup an exception handler for
+   [Need_backtrack] when we set this flag. *)
+ exception Need_backtrack
+
+(** Remember current typing state for backtracking.
+   No variable information, as we only backtrack on
+   patterns without variables (cf. assert statements). *)
+type state =
+ { snapshot: Btype.snapshot;
+   levels: Ctype.levels;
+   env: Env.t; }
+let save_state env =
+  { snapshot = Btype.snapshot ();
+    levels = Ctype.save_levels ();
+    env = !env; }
+let set_state s env =
+  Btype.backtrack s.snapshot;
+  Ctype.set_levels s.levels;
+  env := s.env
 
 (** Find the first alternative in the tree of or-patterns for which
    [f] does not raise an error. If all fail, the last error is
@@ -1027,35 +1143,52 @@ let rec find_valid_alternative f pat =
        with Error _ -> find_valid_alternative f p2)
   | _ -> f pat
 
-(* type_pat propagates the expected type as well as maps for
-   constructors and labels.
-   Unification may update the typing environment. *)
-(* constrs <> None => called from parmatch: backtrack on or-patterns
-   explode > 0 => explode Ppat_any for gadts *)
-(* Need_backtrack exceptions are raised in the [Inside_or] mode to backtrack
-   to the outermost or-pattern *)
-let rec type_pat ?(exception_allowed=false) ~constrs ~labels ~no_existentials
-          ~mode ~explode ~env sp expected_ty k =
+let no_explosion = function
+  | Normal -> Normal
+  | Counter_example info ->
+     Counter_example { info with explosion_fuel = 0 }
+
+let get_splitting_mode = function
+  | Normal -> None
+  | Counter_example {splitting_mode} -> Some splitting_mode
+
+let enter_nonsplit_or mode = match mode with
+  | Normal -> Normal
+  | Counter_example info ->
+     let splitting_mode = match info.splitting_mode with
+       | Backtrack_or ->
+          (* in Backtrack_or mode, or-patterns are always split *)
+          assert false
+       | Refine_or _ ->
+          Refine_or {inside_nonsplit_or = true}
+     in Counter_example { info with splitting_mode }
+
+let rec type_pat ?(exception_allowed=false) ~no_existentials ~mode
+    ~env sp expected_ty k =
   Builtin_attributes.warning_scope sp.ppat_attributes
     (fun () ->
-       type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
-         ~explode ~env sp expected_ty k
+       type_pat_aux ~exception_allowed ~no_existentials ~mode
+         ~env sp expected_ty k
     )
 
-and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
-      ~explode ~env sp expected_ty k =
-  let type_pat ?(exception_allowed=false) ?(constrs=constrs) ?(labels=labels)
-        ?(mode=mode) ?(explode=explode) ?(env=env) =
-    type_pat ~exception_allowed ~constrs ~labels ~no_existentials ~mode ~explode
-      ~env
+and type_pat_aux ~exception_allowed ~no_existentials ~mode
+      ~env sp expected_ty k =
+  let type_pat ?(exception_allowed=false) ?(mode=mode) ?(env=env) =
+    type_pat ~exception_allowed ~no_existentials ~mode ~env
   in
   let loc = sp.ppat_loc in
   let rup k x =
-    if constrs = None then (ignore (rp x));
+    if mode = Normal then (ignore (rp x));
     unify_pat !env x (instance expected_ty);
     k x
   in
-  let rp k x : pattern = if constrs = None then k (rp x) else k x in
+  let rp k x : pattern = if mode = Normal then k (rp x) else k x in
+  let construction_not_used_in_counterexamples = (mode = Normal) in
+  let must_backtrack_on_gadt = match get_splitting_mode mode with
+    | None -> false
+    | Some Backtrack_or -> false
+    | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or
+  in
   match sp.ppat_desc with
     Ppat_any ->
       let k' d = rp k {
@@ -1065,22 +1198,27 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
       in
-      if explode > 0 then
-        let (sp, constrs, labels) =
-          try
-            Parmatch.ppat_of_type !env expected_ty
-          with Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
-        in
-        if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
-        if mode = Inside_or then raise Need_backtrack else
-        let explode =
-          match sp.ppat_desc with
-            Parsetree.Ppat_or _ -> explode - 5
-          | _ -> explode - 1
-        in
-        type_pat ~constrs:(Some constrs) ~labels:(Some labels)
-          ~explode sp expected_ty k
-      else k' Tpat_any
+      begin match mode with
+      | Normal -> k' Tpat_any
+      | Counter_example {explosion_fuel; _} when explosion_fuel <= 0 ->
+          k' Tpat_any
+      | Counter_example ({explosion_fuel; _} as info) ->
+         begin match Parmatch.ppat_of_type !env expected_ty with
+         | exception Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
+         | (sp, constrs, labels) ->
+            if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
+            if must_backtrack_on_gadt then raise Need_backtrack else
+            let explosion_fuel =
+              match sp.ppat_desc with
+                Parsetree.Ppat_or _ -> explosion_fuel - 5
+              | _ -> explosion_fuel - 1
+            in
+            let mode =
+              Counter_example { info with explosion_fuel; constrs; labels }
+            in
+            type_pat ~mode sp expected_ty k
+         end
+      end
   | Ppat_var name ->
       let ty = instance expected_ty in
       let id = (* PR#7330 *)
@@ -1096,7 +1234,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_unpack name ->
-      assert (constrs = None);
+      assert construction_not_used_in_counterexamples;
       let t = instance expected_ty in
       begin match name.txt with
       | None ->
@@ -1122,7 +1260,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       {ppat_desc=Ppat_var name; ppat_loc=lloc; ppat_attributes = attrs},
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
-      assert (constrs = None);
+      assert construction_not_used_in_counterexamples;
       let cty, force = Typetexp.transl_simple_type_delayed !env sty in
       let ty = cty.ctyp_type in
       unify_pat_types lloc !env ty (instance expected_ty);
@@ -1145,7 +1283,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       | _ -> assert false
       end
   | Ppat_alias(sq, name) ->
-      assert (constrs = None);
+      assert construction_not_used_in_counterexamples;
       type_pat sq expected_ty (fun q ->
         begin_def ();
         let ty_var = build_as_type !env q in
@@ -1180,7 +1318,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
       let p = {p with ppat_loc=loc} in
-      type_pat ~explode:0 p expected_ty k
+      type_pat ~mode:(no_explosion mode) p expected_ty k
         (* TODO: record 'extra' to remember about interval *)
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
@@ -1208,9 +1346,11 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         with Not_found -> None
       in
       let constr =
-        match lid.txt, constrs with
-          Longident.Lident s, Some constrs ->
-            assert (Hashtbl.mem constrs s); Hashtbl.find constrs s
+        match lid.txt, mode with
+        | Longident.Lident s, Counter_example {constrs; _} ->
+           (* assert: cf. {!counter_example_checking_info} documentation *)
+            assert (Hashtbl.mem constrs s);
+            Hashtbl.find constrs s
         | _ ->
         let candidates =
           Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env in
@@ -1218,8 +1358,8 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
           (mk_expected expected_ty)
           (Constructor.disambiguate Env.Pattern lid !env opath) candidates
       in
-      if constr.cstr_generalized && constrs <> None && mode = Inside_or
-      then raise Need_backtrack;
+      if constr.cstr_generalized && must_backtrack_on_gadt then
+        raise Need_backtrack;
       begin match no_existentials, constr.cstr_existentials with
       | None, _ | _, [] -> ()
       | Some r, (_ :: _ as exs)  ->
@@ -1305,7 +1445,8 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       generalize_structure expected_ty;
       (* PR#7404: allow some_private_tag blindly, as it would not unify with
          the abstract row variable *)
-      if l = Parmatch.some_private_tag then assert (constrs <> None)
+      if l = Parmatch.some_private_tag
+      then assert (match mode with Normal -> false | Counter_example _ -> true)
       else unify_pat_types loc !env (newgenty (Tvariant row)) expected_ty;
       let k arg =
         rp k {
@@ -1356,15 +1497,17 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
       in
-      if constrs = None then
-        k (wrap_disambiguate "This record pattern is expected to have"
-             (mk_expected expected_ty)
-             (type_label_a_list ?labels loc false !env type_label_pat opath
-                lid_sp_list)
-             (k' (fun x -> x)))
-      else
-        type_label_a_list ?labels loc false !env type_label_pat opath
-          lid_sp_list (k' k)
+      begin match mode with
+      | Normal ->
+          k (wrap_disambiguate "This record pattern is expected to have"
+               (mk_expected expected_ty)
+               (type_label_a_list loc false !env type_label_pat opath
+                  lid_sp_list)
+               (k' (fun x -> x)))
+      | Counter_example {labels; _} ->
+          type_label_a_list ~labels loc false !env type_label_pat opath
+            lid_sp_list (k' k)
+      end
   | Ppat_array spl ->
       let ty_elt = newgenvar() in
       begin_def ();
@@ -1381,12 +1524,17 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
+      let may_split, must_split =
+        match get_splitting_mode mode with
+        | None -> false, false
+        | Some Backtrack_or -> true, true
+        | Some (Refine_or _) -> true, false in
       let state = save_state env in
       let split_or sp =
-        assert (constrs <> None);
+        assert may_split;
         let typ pat = type_pat ~exception_allowed pat expected_ty k in
         find_valid_alternative (fun pat -> set_state state env; typ pat) sp in
-      if mode = Split_or then split_or sp else begin
+      if must_split then split_or sp else begin
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let equation_level = !gadt_equations_level in
@@ -1396,9 +1544,10 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         let lev = get_current_level () in
         gadt_equations_level := Some lev;
         let env1 = ref !env in
+        let inside_or = enter_nonsplit_or mode in
         let p1 =
-          try Some (type_pat ~exception_allowed ~mode:Inside_or sp1 expected_ty
-                      ~env:env1 (fun x -> x))
+          try Some (type_pat ~exception_allowed ~mode:inside_or
+                      sp1 expected_ty ~env:env1 (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
@@ -1406,8 +1555,8 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         module_variables := initial_module_variables;
         let env2 = ref !env in
         let p2 =
-          try Some (type_pat ~exception_allowed ~mode:Inside_or sp2 expected_ty
-                      ~env:env2 (fun x -> x))
+          try Some (type_pat ~exception_allowed ~mode:inside_or
+                      sp2 expected_ty ~env:env2 (fun x -> x))
           with Need_backtrack -> None in
         end_def ();
         gadt_equations_level := equation_level;
@@ -1422,7 +1571,13 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         ) p2_variables;
         begin match p1, p2 with
         | None, None ->
-            if mode = Inside_or then raise Need_backtrack else split_or sp
+           let inside_nonsplit_or =
+             match get_splitting_mode mode with
+             | None | Some Backtrack_or -> false
+             | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or in
+           if inside_nonsplit_or
+           then raise Need_backtrack
+           else split_or sp
         | Some p, None | None, Some p -> rp k p (* no variables in this case *)
         | Some p1, Some p2 ->
         let alpha_env =
@@ -1441,7 +1596,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       let nv = newgenvar () in
       unify_pat_types loc !env (Predef.type_lazy_t nv) expected_ty;
       (* do not explode under lazy: PR#7421 *)
-      type_pat ~explode:0 sp1 nv (fun p1 ->
+      type_pat ~mode:(no_explosion mode) sp1 nv (fun p1 ->
         rp k {
         pat_desc = Tpat_lazy p1;
         pat_loc = loc; pat_extra=[];
@@ -1507,12 +1662,12 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-let type_pat ?exception_allowed ?no_existentials ?constrs ?labels ?(mode=Normal)
-    ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
+let type_pat ?exception_allowed ?no_existentials ?(mode=Normal)
+    ?(lev=get_current_level()) env sp expected_ty =
   Misc.protect_refs [Misc.R (gadt_equations_level, Some lev)] (fun () ->
       let r =
-        type_pat ?exception_allowed ~no_existentials ~constrs ~labels ~mode
-          ~explode ~env sp expected_ty (fun x -> x)
+        type_pat ?exception_allowed ~no_existentials ~mode
+          ~env sp expected_ty (fun x -> x)
       in
       iter_pattern (fun p -> p.pat_env <- !env) r;
       r
@@ -1520,15 +1675,20 @@ let type_pat ?exception_allowed ?no_existentials ?constrs ?labels ?(mode=Normal)
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
-let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
+let partial_pred ~lev ~splitting_mode ?(explode=0)
+      env expected_ty constrs labels p =
   let env = ref env in
   let state = save_state env in
+  let mode =
+    Counter_example {
+        splitting_mode;
+        explosion_fuel = explode;
+        constrs; labels;
+      } in
   try
     reset_pattern None true;
     let typed_p =
-      Ctype.with_passive_variants
-        (type_pat ~lev ~constrs ~labels ?mode ?explode env p)
-        expected_ty
+      Ctype.with_passive_variants (type_pat ~lev ~mode env p) expected_ty
     in
     set_state state env;
     (* types are invalidated but we don't need them here *)
@@ -1539,14 +1699,15 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
 
 let check_partial ?(lev=get_current_level ()) env expected_ty loc cases =
   let explode = match cases with [_] -> 5 | _ -> 0 in
+  let splitting_mode = Refine_or {inside_nonsplit_or = false} in
   Parmatch.check_partial
-    (partial_pred ~lev ~explode env expected_ty) loc cases
+    (partial_pred ~lev ~splitting_mode ~explode env expected_ty) loc cases
 
 let check_unused ?(lev=get_current_level ()) env expected_ty cases =
   Parmatch.check_unused
     (fun refute constrs labels spat ->
       match
-        partial_pred ~lev ~mode:Split_or ~explode:5
+        partial_pred ~lev ~splitting_mode:Backtrack_or ~explode:5
           env expected_ty constrs labels spat
       with
         Some pat when refute ->

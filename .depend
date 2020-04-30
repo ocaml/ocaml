@@ -5613,30 +5613,6 @@ asmcomp/debug/reg_with_debug_info.cmx : \
 asmcomp/debug/reg_with_debug_info.cmi : \
     asmcomp/reg.cmi \
     middle_end/backend_var.cmi
-driver/compdynlink.cmi :
-driver/compdynlink_common.cmo : \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_platform_intf.cmi \
-    driver/compdynlink_common.cmi
-driver/compdynlink_common.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmx \
-    driver/compdynlink_common.cmi
-driver/compdynlink_common.cmi : \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmo : \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmi : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmo : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmx : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmi :
 driver/compenv.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
