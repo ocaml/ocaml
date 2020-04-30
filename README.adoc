@@ -149,6 +149,7 @@ new homes:
 
 - https://github.com/ocaml/graphics/issues[The Graphics library] (removed in OCaml 4.09)
 - https://github.com/ocaml/num/issues[The Num library] (removed in OCaml 4.06)
+- https://github.com/ocaml/ocamlbuild/issues[The OCamlbuild tool] (removed in OCaml 4.03)
 - https://github.com/camlp4/camlp4/issues[The camlp4 tool] (removed in OCaml 4.02)
 - https://github.com/garrigue/labltk/issues[The LablTk library] (removed in OCaml 4.02)
 - https://github.com/ocaml/dbm/issues[The CamlDBM library] (removed in OCaml 4.00)
