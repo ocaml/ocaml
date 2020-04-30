@@ -110,6 +110,10 @@ OCaml 4.10 release branch
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
 
+- #9268, #9271: Fix bytecode backtrace generation with large integers present.
+  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer and
+   Jacques-Henri Jourdan)
+
 ### Standard library:
 
 - #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list
@@ -205,6 +209,11 @@ OCaml 4.10 release branch
   make the name of those anchor explicits.
   (Florian Angeletti, review by Daniel Bünzli, Sébastien Hinderer,
    and Gabriel Scherer)
+
+- #9257, cautionary guidelines for using the internal runtime API
+  without too much updating pain.
+  (Florian Angeletti, review by Daniel Bünzli, Guillaume Munch-Maccagnoni
+   and KC Sivaramakrishnan)
 
 
 - #8950: move local opens in pattern out of the extension chapter
@@ -487,6 +496,10 @@ OCaml 4.10 release branch
 - #9209, #9212: fix a development-version regression caused by #2288
   (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
    and Gabriel Scherer )
+
+- #9218, #9269: avoid a rare wrong module name error with "-annot" and
+  inline records.
+  (Florian Angeletti, review by Gabriel Scherer, report by Kate Deplaix)
 
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)

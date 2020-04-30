@@ -200,13 +200,6 @@ allocation in the heap. That is, if a signal is delivered while in a
 piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
 
-\item Stack overflow, typically caused by excessively deep recursion,
-is not always turned into a "Stack_overflow" exception like the
-bytecode compiler does.  The runtime system makes a best effort to
-trap stack overflows and raise the "Stack_overflow" exception, but
-sometimes it fails and a ``segmentation fault'' or another system fault
-occurs instead.
-
 \item On ARM and PowerPC processors (32 and 64 bits), fused
   multiply-add (FMA) instructions can be generated for a
   floating-point multiplication followed by a floating-point addition
@@ -237,5 +230,12 @@ not be linked and executed.  A workaround is to compile "M" with the
 "-linkall" flag so that it will always be linked and executed, even if
 not referenced.  See also the "Sys.opaque_identity" function from the
 "Sys" standard library module.
+
+\item Before 4.10, stack overflows, typically caused by excessively
+  deep recursion, are not always turned into a "Stack_overflow"
+  exception like with the bytecode compiler. The runtime system makes
+  a best effort to trap stack overflows and raise the "Stack_overflow"
+  exception, but sometimes it fails and a ``segmentation fault'' or
+  another system fault occurs instead.
 
 \end{itemize}
