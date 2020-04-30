@@ -1,5 +1,5 @@
-Working version
----------------
+OCaml 4.10.0
+------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -419,6 +419,15 @@ Working version
 
 - #8981: Fix check for incompatible -c and -o options.
   (Greta Yorsh, review by Damien Doligez)
+
+- #9031: Unregister Windows stack overflow handler while shutting
+  the runtime down.
+  (Dmitry Bely, review by David Allsopp)
+
+- #9051: fix unregistered local root in win32unix/select.c (could result in
+  `select` returning file_descr-like values which weren't in the original sets)
+  and correct initialisation of some blocks allocated with caml_alloc_small.
+  (David Allsopp, review by Xavier Leroy)
 
 OCaml 4.09 maintenance branch:
 ------------------------------

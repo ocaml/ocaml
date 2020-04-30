@@ -458,12 +458,19 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define caml_instr_init() /**/
 #define caml_instr_atexit() /**/
 
-/* Macro used to deactivate thread sanitizer on some functions. */
+
+/* Macro used to deactivate thread and address sanitizers on some
+   functions. */
 #define CAMLno_tsan
+#define CAMLno_asan
 #if defined(__has_feature)
 #  if __has_feature(thread_sanitizer)
 #    undef CAMLno_tsan
 #    define CAMLno_tsan __attribute__((no_sanitize("thread")))
+#  endif
+#  if __has_feature(address_sanitizer)
+#    undef CAMLno_asan
+#    define CAMLno_asan __attribute__((no_sanitize("address")))
 #  endif
 #endif
 

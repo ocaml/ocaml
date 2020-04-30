@@ -183,11 +183,16 @@ LSAN_OPTIONS="suppressions=$(pwd)/tools/ci/inria/lsan-suppr.txt" \
 make $jobs world.opt
 
 # Run the testsuite.
-# The suppressed leak detections related to ocamlyacc mess up the output
-# of the tests and are reported as failures by ocamltest.
-# Hence, deactivate leak detection entirely.
+# We deactivate leak detection for two reasons:
+# - The suppressed leak detections related to ocamlyacc mess up the
+# output of the tests and are reported as failures by ocamltest.
+# - The Ocaml runtime does not free the memory when a fatal error
+# occurs.
 
-ASAN_OPTIONS="detect_leaks=0" $run_testsuite
+# We already use sigaltstack for stack overflow detection. Our use
+# interracts with ASAN's. Hence, we tell ASAN not to use it.
+
+ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 
 #########################################################################
 
