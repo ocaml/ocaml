@@ -883,7 +883,7 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   /* Do not include final NULL */
   retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0);
   v = caml_alloc_string(retcode);
-  win_wide_char_to_multi_byte(s, slen, String_val(v), retcode);
+  win_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
 
   return v;
 }

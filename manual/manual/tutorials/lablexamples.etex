@@ -7,7 +7,7 @@
 \noindent This chapter gives an overview of the new features in
 OCaml 3: labels, and polymorphic variants.
 
-\section{Labels}
+\section{s:labels}{Labels}
 
 If you have a look at modules ending in "Labels" in the standard
 library, you will see that function types have annotations you did not
@@ -98,7 +98,7 @@ pattern, but you must prefix it with the label.
 h (fun ~x:_ ~y -> y+1);;
 \end{caml_example}
 
-\subsection{Optional arguments}
+\subsection{ss:optional-arguments}{Optional arguments}
 
 An interesting feature of labeled arguments is that they can be made
 optional. For optional parameters, the question mark "?" replaces the
@@ -162,8 +162,7 @@ let test2 ?x ?y () = test ?x ?y () ();;
 test2 ?x:None;;
 \end{caml_example}
 
-\subsection{Labels and type inference}
-\label{ss:label-inference}
+\subsection{ss:label-inference}{Labels and type inference}
 
 While they provide an increased comfort for writing function
 applications, labels and optional arguments have the pitfall that they
@@ -229,7 +228,7 @@ including side-effects. That is, if the application of optional
 parameters shall produce side-effects, these are delayed until the
 received function is really applied to an argument.
 
-\subsection{Suggestions for labeling}
+\subsection{ss:label-suggestions}{Suggestions for labeling}
 
 Like for names, choosing labels for functions is not an easy task. A
 good labeling is a labeling which
@@ -310,7 +309,7 @@ is only used when a more detailed specification is needed.
 \end{caml_eval}
 
 
-\section{Polymorphic variants}
+\section{s:polymorphic-variants}{Polymorphic variants}
 
 Variants as presented in section~\ref{s:tut-recvariants} are a
 powerful tool to build data structures and algorithms. However they
@@ -328,7 +327,7 @@ system will just check that it is an admissible value according to its
 use. You need not define a type before using a variant tag. A variant
 type will be inferred independently for each of its uses.
 
-\subsection*{Basic use}
+\subsection*{ss:polyvariant:basic-use}{Basic use}
 
 In programs, polymorphic variants work like usual ones. You just have
 to prefix their names with a backquote character "`".
@@ -363,7 +362,7 @@ let rec map f : 'a vlist -> 'b vlist = function
 ;;
 \end{caml_example}
 
-\subsection*{Advanced use}
+\subsection*{ss:polyvariant-advanced}{Advanced use}
 
 Type-checking polymorphic variants is a subtle thing, and some
 expressions may result in more complex type information.
@@ -448,7 +447,7 @@ let g = function
   | `Tag3 -> "Tag3";;
 \end{caml_example}
 
-\subsection{Weaknesses of polymorphic variants}
+\subsection{ss:polyvariant-weaknesses}{Weaknesses of polymorphic variants}
 
 After seeing the power of polymorphic variants, one may wonder why
 they were added to core language variants, rather than replacing them.

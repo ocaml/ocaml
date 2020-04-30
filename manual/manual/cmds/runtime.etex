@@ -4,7 +4,7 @@
 The "ocamlrun" command executes bytecode files produced by the
 linking phase of the "ocamlc" command.
 
-\section{Overview}
+\section{s:ocamlrun-overview}{Overview}
 
 The "ocamlrun" command comprises three main parts: the bytecode
 interpreter, that actually executes bytecode files; the memory
@@ -44,8 +44,7 @@ to always give ".exe" names to bytecode executables, e.g. compile
 with "ocamlc -o myprog.exe ..." rather than "ocamlc -o myprog ...".
 \end{windows}
 
-\section{Options} \label{ocamlrun-options}
-
+\section{s:ocamlrun-options}{Options}
 The following command-line options are recognized by "ocamlrun".
 
 \begin{options}
@@ -61,7 +60,7 @@ in the "OCAMLRUNPARAM" environment variable (see below).
 \item["-I" \var{dir}]
 Search the directory \var{dir} for dynamically-loaded libraries,
 in addition to the standard search path (see
-section~\ref{s-ocamlrun-dllpath}).
+section~\ref{s:ocamlrun-dllpath}).
 \item["-m"]
 Print the magic number of the bytecode executable given as argument
 and exit.
@@ -86,12 +85,12 @@ The following environment variables are also consulted:
 
 \begin{options}
 \item["CAML_LD_LIBRARY_PATH"]  Additional directories to search for
-  dynamically-loaded libraries (see section~\ref{s-ocamlrun-dllpath}).
+  dynamically-loaded libraries (see section~\ref{s:ocamlrun-dllpath}).
 
 \item["OCAMLLIB"] The directory containing the OCaml standard
   library.  (If "OCAMLLIB" is not set, "CAMLLIB" will be used instead.)
   Used to locate the "ld.conf" configuration file for
-  dynamic loading (see section~\ref{s-ocamlrun-dllpath}).  If not set,
+  dynamic loading (see section~\ref{s:ocamlrun-dllpath}).  If not set,
   default to the library directory specified when compiling OCaml.
 
 \item["OCAMLRUNPARAM"] Set the runtime system options
@@ -126,15 +125,17 @@ The following environment variables are also consulted:
 \fi
         This option takes no argument.
   \item[h] The initial size of the major heap (in words).
-  \item[a] ("allocation_policy") The policy used for allocating in the
-  OCaml heap.  Possible values are 0 for the next-fit policy, and 1
-  for the first-fit policy.  Next-fit is usually faster, but first-fit
-  is better for avoiding fragmentation and the associated heap
-  compactions.
+  \item[a] ("allocation_policy")
+    The policy used for allocating in the OCaml heap. Possible values
+    are "0" for the next-fit policy, "1" for the first-fit
+    policy, and "2" for the best-fit policy. Best-fit is still experimental,
+    but probably the best of the three. The default is "0" (next-fit).
+    See the Gc module documentation for details.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
   \item[i] ("major_heap_increment")  Default size increment for the
   major heap. (in words)
   \item[o] ("space_overhead")  The major GC speed setting.
+    See the Gc module documentation for details.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
   \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[v] ("verbose")  What GC messages to print to stderr.  This
@@ -154,7 +155,7 @@ The following environment variables are also consulted:
         \item[1024 (= 0x400)] Output GC statistics at program exit.
   \end{options}
   \item[c] ("cleanup_on_exit") Shut the runtime down gracefully on exit (see
-  "caml_shutdown" in section~\ref{s:embedded-code}). The option also enables
+  "caml_shutdown" in section~\ref{ss:c-embedded-code}). The option also enables
   pooling (as in "caml_startup_pooled"). This mode can be used to detect
   leaks with a third-party memory debugger.
   % FIXME missing: H, t, w, W see MPR#7870
@@ -204,13 +205,13 @@ The following environment variables are also consulted:
 executable file.
 \end{options}
 
-\section{Dynamic loading of shared libraries} \label{s-ocamlrun-dllpath}
+\section{s:ocamlrun-dllpath}{Dynamic loading of shared libraries}
 
 On platforms that support dynamic loading, "ocamlrun" can link
 dynamically with C shared libraries (DLLs) providing additional C primitives
 beyond those provided by the standard runtime system.  The names for
 these libraries are provided at link time as described in
-section~\ref{dynlink-c-code}), and recorded in the bytecode executable
+section~\ref{ss:dynlink-c-code}), and recorded in the bytecode executable
 file;  "ocamlrun", then, locates these libraries and resolves references
 to their primitives when the bytecode executable program starts.
 
@@ -241,7 +242,7 @@ system directories, plus the directories listed in the "PATH"
 environment variable.
 \end{enumerate}
 
-\section{Common errors}
+\section{s:ocamlrun-common-errors}{Common errors}
 
 This section describes and explains the most frequently encountered
 error messages.

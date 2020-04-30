@@ -16,8 +16,7 @@ in those languages.  OCaml has alternatives that are often more appropriate,
 such as modules and functors.  Indeed, many OCaml programs do not use objects
 at all.
 
-\section{Classes and objects}
-\label{ss:classes-and-objects}
+\section{s:classes-and-objects}{Classes and objects}
 
 The class "point" below defines one instance variable "x" and two methods
 "get_x" and "move". The initial value of the instance variable is "0".
@@ -147,11 +146,10 @@ inherited.
 This ability provides class constructors as can be found in other
 languages. Several constructors can be defined this way to build objects of
 the same class but with different initialization patterns; an
-alternative is to use initializers, as described below in section
-\ref{ss:initializers}.
+alternative is to use initializers, as described below in
+section~\ref{s:initializers}.
 
-\section{Immediate objects}
-\label{ss:immediate-objects}
+\section{s:immediate-objects}{Immediate objects}
 
 There is another, more direct way to create an object: create it
 without going through a class.
@@ -183,10 +181,9 @@ let minmax x y =
 Immediate objects have two weaknesses compared to classes: their types
 are not abbreviated, and you cannot inherit from them. But these two
 weaknesses can be advantages in some situations, as we will see
-in sections \ref{ss:reference-to-self} and \ref{ss:parameterized-classes}.
+in sections~\ref{s:reference-to-self} and~\ref{s:parameterized-classes}.
 
-\section{Reference to self}
-\label{ss:reference-to-self}
+\section{s:reference-to-self}{Reference to self}
 
 A method or an initializer can invoke methods on self (that is,
 the current object).  For that, self must be explicitly bound, here to
@@ -220,7 +217,7 @@ class my_int =
 You can ignore the first two lines of the error message. What matters
 is the last one: putting self into an external reference would make it
 impossible to extend it through inheritance.
-We will see in section \ref{ss:using-coercions} a workaround to this
+We will see in section~\ref{s:using-coercions} a workaround to this
 problem.
 Note however that, since immediate objects are not extensible, the
 problem does not occur with them.
@@ -232,8 +229,7 @@ let my_int =
   end;;
 \end{caml_example}
 
-\section{Initializers}
-\label{ss:initializers}
+\section{s:initializers}{Initializers}
 
 Let-bindings within class definitions are evaluated before the object
 is constructed. It is also possible to evaluate an expression
@@ -255,11 +251,10 @@ let p = new printable_point 17;;
 Initializers cannot be overridden. On the contrary, all initializers are
 evaluated sequentially.
 Initializers are particularly useful to enforce invariants.
-Another example can be seen in section \ref{ss:bank-accounts}.
+Another example can be seen in section~\ref{s:extended-bank-accounts}.
 
 
-\section{Virtual methods}
-\label{ss:virtual-methods}
+\section{s:virtual-methods}{Virtual methods}
 
 It is possible to declare a method without actually defining it, using
 the keyword "virtual".  This method will be provided later in
@@ -299,8 +294,7 @@ class point2 x_init =
   end;;
 \end{caml_example}
 
-\section{Private methods}
-\label{ss:private-methods}
+\section{s:private-methods}{Private methods}
 
 Private methods are methods that do not appear in object interfaces.
 They can only be invoked from other methods of the same object.
@@ -322,7 +316,7 @@ class. This is a direct consequence of the independence between types
 and classes in OCaml: two unrelated classes may produce
 objects of the same type, and there is no way at the type level to
 ensure that an object comes from a specific class. However a possible
-encoding of friend methods is given in section \ref{ss:friends}.
+encoding of friend methods is given in section~\ref{s:friends}.
 
 Private methods are inherited (they are by default visible in subclasses),
 unless they are hidden by signature matching, as described below.
@@ -365,8 +359,7 @@ class point_again x =
 Of course, private methods can also be virtual. Then, the keywords must
 appear in this order "method private virtual".
 
-\section{Class interfaces}
-\label{ss:class-interfaces}
+\section{s:class-interfaces}{Class interfaces}
 
 
 %XXX Differentiate class type and class interface ?
@@ -408,8 +401,7 @@ module Point : POINT = struct
 end;;
 \end{caml_example}
 
-\section{Inheritance}
-\label{ss:inheritance}
+\section{s:inheritance}{Inheritance}
 
 We illustrate inheritance by defining a class of colored points that
 inherits from the class of points.  This class has all instance
@@ -440,8 +432,7 @@ let set_x p = p#set_x;;
 let incr p = set_x p (get_succ_x p);;
 \end{caml_example}
 
-\section{Multiple inheritance}
-\label{ss:multiple-inheritance}
+\section{s:multiple-inheritance}{Multiple inheritance}
 
 Multiple inheritance is allowed. Only the last definition of a method
 is kept: the redefinition in a subclass of a method that was visible in
@@ -492,8 +483,7 @@ class another_printable_colored_point y c c' =
   end;;
 \end{caml_example}
 
-\section{Parameterized classes}
-\label{ss:parameterized-classes}
+\section{s:parameterized-classes}{Parameterized classes}
 
 Reference cells can be implemented as objects.
 The naive definition fails to typecheck:
@@ -598,8 +588,7 @@ class ['a] colored_circle c =
   end;;
 \end{caml_example}
 
-\section{Polymorphic methods}
-\label{ss:polymorphic-methods}
+\section{s:polymorphic-methods}{Polymorphic methods}
 
 While parameterized classes may be polymorphic in their contents, they
 are not enough to allow polymorphism of method use.
@@ -697,8 +686,8 @@ let sum lst =
 \end{caml_example}
 
 Another use of polymorphic methods is to allow some form of implicit
-subtyping in method arguments. We have already seen in section
-\ref{ss:inheritance} how some functions may be polymorphic in the
+subtyping in method arguments. We have already seen in
+section~\ref{s:inheritance} how some functions may be polymorphic in the
 class of their argument. This can be extended to methods.
 \begin{caml_example}{toplevel}
 class type point0 = object method get_x : int end;;
@@ -728,8 +717,7 @@ In method "m1", "o" must be an object with at least a method "n1",
 itself polymorphic.  In method "m2", the argument of "n2" and "x" must
 have the same type, which is quantified at the same level as "'a".
 
-\section{Using coercions}
-\label{ss:using-coercions}
+\section{s:using-coercions}{Using coercions}
 
 Subtyping is never implicit.  There are, however, two ways to perform
 subtyping.  The most general construction is fully explicit: both the
@@ -827,7 +815,7 @@ unrolled twice to obtain "< m : < m : c1; .. >; .. >" (remember "#c1 =
 You may also note that the type of "to_c2" is "#c2 -> c2" while
 the type of "to_c1" is more general than "#c1 -> c1". This is not always true,
 since there are class types for which some instances of "#c" are not subtypes
-of "c", as explained in section~\ref{ss:binary-methods}. Yet, for
+of "c", as explained in section~\ref{s:binary-methods}. Yet, for
 parameterless classes the coercion "(_ :> c)" is always more general than
 "(_ : #c :> c)".
 %If a class type exposes the type of self through one of its parameters, this
@@ -923,8 +911,7 @@ type 'a c'_class = 'a constraint 'a = < m : int; .. >;;
 \end{caml_example*}
 with an extra type variable capturing the open object type.
 
-\section{Functional objects}
-\label{ss:functional-objects}
+\section{s:functional-objects}{Functional objects}
 
 It is possible to write a version of class "point" without assignments
 on the instance variables. The override construct "{< ... >}" returns a copy of
@@ -969,10 +956,9 @@ subclass of "functional_point", the method "move" will return an
 object of the subclass.
 
 Functional update is often used in conjunction with binary methods
-as illustrated in section \ref{module:string}.
+as illustrated in section~\ref{ss:string-as-class}.
 
-\section{Cloning objects}
-\label{ss:cloning-objects}
+\section{s:cloning-objects}{Cloning objects}
 
 Objects can also be cloned, whether they are functional or imperative.
 The library function "Oo.copy" makes a shallow copy of an object. That is,
@@ -1070,8 +1056,7 @@ p # save; p # set 1; p # save; p # set 2;
 
 
 
-\section{Recursive classes}
-\label{ss:recursive-classes}
+\section{s:recursive-classes}{Recursive classes}
 
 Recursive classes can be used to define objects whose types are
 mutually recursive.
@@ -1091,8 +1076,7 @@ Although their types are mutually recursive, the classes "widget" and
 "window" are themselves independent.
 
 
-\section{Binary methods}
-\label{ss:binary-methods}
+\section{s:binary-methods}{Binary methods}
 
 A binary method is a method which takes an argument of the same type
 as self. The class "comparable" below is a template for classes with a
@@ -1157,8 +1141,8 @@ or "money2".
 (min (new money2 5.0) (new money2 3.14))#value;;
 \end{caml_example}
 
-More examples of binary methods can be found in sections
-\ref{module:string} and \ref{module:set}.
+More examples of binary methods can be found in
+sections~\ref{ss:string-as-class} and~\ref{ss:set-as-class}.
 
 Note the use of override for method "times".
 Writing  "new money2 (k *. repr)" instead of  "{< repr = k *. repr >}"
@@ -1180,8 +1164,7 @@ class money x =
   end;;
 \end{caml_example}
 
-\section{Friends}
-\label{ss:friends}
+\section{s:friends}{Friends}
 
 The above class "money" reveals a problem that often occurs with binary
 methods.  In order to interact with other objects of the same class, the
@@ -1231,8 +1214,8 @@ module Euro : MONEY =
       end
   end;;
 \end{caml_example*}
-Another example of friend functions may be found in section
-\ref{module:set}.  These examples occur when a group of objects (here
+Another example of friend functions may be found in section~\ref{ss:set-as-class}.
+These examples occur when a group of objects (here
 objects of the same class) and functions should see each others internal
 representation, while their representation should be hidden from the
 outside. The solution is always to define all friends in the same module,

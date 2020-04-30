@@ -83,7 +83,7 @@ CAMLprim value unix_readlink(value opath)
           win_wide_char_to_multi_byte(
             point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
             cbLen,
-            String_val(result),
+            (char *)String_val(result),
             len);
           CloseHandle(h);
         }

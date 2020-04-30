@@ -1,6 +1,6 @@
-\section{Lexical conventions}
+\section{s:lexical-conventions}{Lexical conventions}
 %HEVEA\cutname{lex.html}
-\subsubsection*{Blanks}
+\subsubsection*{sss:lex:blanks}{Blanks}
 
 The following characters are considered as blanks: space,
 horizontal tabulation, carriage return, line feed and form feed. Blanks are
@@ -8,7 +8,7 @@ ignored, but they separate adjacent identifiers, literals and
 keywords that would otherwise be confused as one single identifier,
 literal or keyword.
 
-\subsubsection*{Comments}
+\subsubsection*{sss:lex:comments}{Comments}
 
 Comments are introduced by the two characters  @"(*"@, with no
 intervening blanks, and terminated by the characters @"*)"@, with
@@ -16,7 +16,7 @@ no intervening blanks. Comments are treated as blank characters.
 Comments do not occur inside string or character literals. Nested
 comments are handled correctly.
 
-\subsubsection*{Identifiers}
+\subsubsection*{sss:lex:identifiers}{Identifiers}
 
 \begin{syntax}
 ident: ( letter || "_" ) { letter || "0" \ldots "9" || "_" || "'" } ;
@@ -45,7 +45,7 @@ identifiers and identifiers that begin with a lowercase letter.  The
 underscore character is considered a lowercase letter for this
 purpose.
 
-\subsubsection*{Integer literals}
+\subsubsection*{sss:integer-literals}{Integer literals}
 
 \begin{syntax}
 integer-literal:
@@ -80,7 +80,7 @@ representable integer values is undefined.
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within integer literals.
 
-\subsubsection*{Floating-point literals}
+\subsubsection*{sss:floating-point-literals}{Floating-point literals}
 
 \begin{syntax}
 float-literal:
@@ -116,7 +116,7 @@ It is written in decimal and interpreted as a power of 2.
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within floating-point literals.
 
-\subsubsection*{Character literals}
+\subsubsection*{sss:character-literals}{Character literals}
 \label{s:characterliteral}
 
 \begin{syntax}
@@ -149,8 +149,7 @@ The two single quotes enclose either one character different from
 \entree{"\\o"\var{ooo}}{the character with ASCII code \var{ooo} in octal}
 \end{tableau}
 
-\subsubsection*{String literals}
-\label{s:stringliteral}
+\subsubsection*{sss:stringliterals}{String literals}
 
 \begin{syntax}
 string-literal:
@@ -199,8 +198,7 @@ such issue (e.g. "{|hello|}", "{ext|hello {|world|}|ext}", ...).
 The current implementation places practically no restrictions on the
 length of string literals.
 
-\subsubsection*{Naming labels}
-\label{s:labelname}
+\subsubsection*{sss:labelname}{Naming labels}
 
 To avoid ambiguities, naming labels in expressions cannot just be defined
 syntactically as the sequence of the three tokens "~", @ident@ and
@@ -224,14 +222,13 @@ used in grammars, for the sake of readability. Note also that inside
 type expressions, this expansion can be taken literally, {\em i.e.}
 there are really 3 tokens, with optional blanks between them.
 
-\subsubsection*{Prefix and infix symbols}
+\subsubsection*{sss:lex-ops-symbols}{Prefix and infix symbols}
 
 %%  || '`' lowercase-ident '`'
 
 \begin{syntax}
 infix-symbol:
-        ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
-         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+        ( core-operator-char || '%' || '<' ) { operator-char }
       | "#" {{ operator-char }}
 ;
 prefix-symbol:
@@ -239,13 +236,15 @@ prefix-symbol:
       | ('?' || '~') {{ operator-char }}
 ;
 operator-char:
-        '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
-        '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
-        '^' || '|' || '~'
+        '~' || '!' || '?' || core-operator-char || '%' || '<' || ':' || '.'
+;
+core-operator-char:
+        '$' || '&' || '*' || '+' || '-' || '/' || '=' || '>' || '@' || '^' || '|'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s:ext-ops]{extension operators} and
-\hyperref[s:index-operators]{extended indexing operators}.
+\hyperref[s:ext-ops]{extension operators},
+\hyperref[s:index-operators]{extended indexing operators},
+and \hyperref[s:binding-operators]{binding operators}.
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
@@ -255,7 +254,7 @@ expressions, but otherwise behave like normal identifiers.
 %% between backquote characters @'`' lowercase-ident '`'@ are also parsed
 %% as infix operators.
 
-\subsubsection*{Keywords}
+\subsubsection*{sss:keywords}{Keywords}
 
 The identifiers below are reserved as keywords, and cannot be employed
 otherwise:
@@ -292,14 +291,14 @@ extensions and should be avoided for compatibility reasons.
     parser    value    $     $$    $:    <:    <<    >>    ??
 \end{verbatim}
 
-\subsubsection*{Ambiguities}
+\subsubsection*{sss:lex-ambiguities}{Ambiguities}
 
 Lexical ambiguities are resolved according to the ``longest match''
 rule: when a character sequence can be decomposed into two tokens in
 several different ways, the decomposition retained is the one with the
 longest first token.
 
-\subsubsection*{Line number directives}
+\subsubsection*{sss:lex-linedir}{Line number directives}
 
 \begin{syntax}
 linenum-directive:

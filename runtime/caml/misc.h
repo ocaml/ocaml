@@ -97,8 +97,13 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLweakdef
 #endif
 
-/* Alignment */
-#ifdef __GNUC__
+/* Alignment is necessary for domain_state.h, since the code generated */
+/* by ocamlopt makes direct references into the domain state structure,*/
+/* which is stored in a register on many platforms. For this to work, */
+/* we need to be able to compute the exact offset of each member. */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define CAMLalign(n) _Alignas(n)
+#elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
 #elif _MSC_VER >= 1500
 #define CAMLalign(n) __declspec(align(n))
@@ -142,7 +147,7 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 
 #define CAML_STATIC_ASSERT_3(b, l) \
   CAMLunused_start \
-    char static_assertion_failure_line_##l[(b) ? 1 : -1] \
+    CAMLextern char static_assertion_failure_line_##l[(b) ? 1 : -1] \
   CAMLunused_end
 
 #define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)

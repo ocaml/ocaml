@@ -1,4 +1,4 @@
-\section{Module types (module specifications)}
+\section{s:modtypes}{Module types (module specifications)}
 %HEVEA\cutname{modtypes.html}
 
 Module types are the module-level equivalent of type expressions: they
@@ -58,14 +58,14 @@ See also the following language extensions:
 \hyperref[s:extension-nodes]{extension nodes} and
 \hyperref[s:generative-functors]{generative functors}.
 
-\subsection{Simple module types}
+\subsection{ss:mty-simple}{Simple module types}
 
 The expression @modtype-path@ is equivalent to the module type bound
 to the name @modtype-path@.
 The expression @'(' module-type ')'@ denotes the same type as
 @module-type@.
 
-\subsection{Signatures}
+\subsection{ss:mty-signatures}{Signatures}
 
 \ikwd{sig\@\texttt{sig}}
 \ikwd{end\@\texttt{end}}
@@ -82,7 +82,7 @@ An optional @";;"@ is allowed after each specification in a
 signature. It serves as a syntactic separator with no semantic
 meaning.
 
-\subsubsection*{Value specifications}
+\subsubsection*{sss:mty-values}{Value specifications}
 
 \ikwd{val\@\texttt{val}}
 
@@ -97,7 +97,7 @@ is similar, except that it requires in addition the name to be
 implemented as the external function specified in @external-declaration@
 (see chapter~\ref{c:intf-c}).
 
-\subsubsection*{Type specifications}
+\subsubsection*{sss:mty-type}{Type specifications}
 
 \ikwd{type\@\texttt{type}}
 
@@ -148,7 +148,7 @@ This case combines the previous two: the representation of the type is
 made visible to all users, and no fresh type is generated.
 \end{description}
 
-\subsubsection*{Exception specification}
+\subsubsection*{sss:mty-exn}{Exception specification}
 
 \ikwd{exception\@\texttt{exception}}
 
@@ -157,7 +157,7 @@ matching structure to provide an exception with the name and arguments
 specified in the definition, and makes the exception available to all
 users of the structure.
 
-\subsubsection*{Class specifications}
+\subsubsection*{sss:mty-class}{Class specifications}
 
 \ikwd{class\@\texttt{class}}
 
@@ -166,9 +166,9 @@ A specification of one or several classes in a signature is written
 of mutually recursive definitions of class names.
 
 Class specifications are described more precisely in
-section~\ref{s:class-spec}.
+section~\ref{ss:class-spec}.
 
-\subsubsection*{Class type specifications}
+\subsubsection*{sss:mty-classtype}{Class type specifications}
 
 \ikwd{class\@\texttt{class}}
 \ikwd{type\@\texttt{type}}
@@ -177,9 +177,9 @@ A specification of one or several classe types in a signature is
 written @'class' 'type' classtype-def@ @{ 'and' classtype-def }@ and
 consists of a sequence of mutually recursive definitions of class type
 names. Class type specifications are described more precisely in
-section~\ref{s:classtype}.
+section~\ref{ss:classtype}.
 
-\subsubsection*{Module specifications}
+\subsubsection*{sss:mty-module}{Module specifications}
 
 \ikwd{module\@\texttt{module}}
 
@@ -203,7 +203,7 @@ instead of
                                             '->' module-type@
 \end{center}
 
-\subsubsection*{Module type specifications}
+\subsubsection*{sss:mty-mty}{Module type specifications}
 
 \ikwd{type\@\texttt{type}}
 \ikwd{module\@\texttt{module}}
@@ -222,7 +222,7 @@ requires the name @modtype-name@ to be implemented by the module type
 @module-type@ in a matching signature, but makes the equality between
 @modtype-name@ and @module-type@ apparent to all users of the signature.
 
-\subsubsection{Opening a module path}
+\subsubsection{sss:mty-open}{Opening a module path}
 
 \ikwd{open\@\texttt{open}}
 
@@ -233,7 +233,7 @@ of the signature, allowing components of the module denoted by
 path accesses @module-path '.' name@. The scope of the @"open"@
 stops at the end of the signature expression.
 
-\subsubsection{Including a signature}
+\subsubsection{sss:mty-include}{Including a signature}
 
 \ikwd{include\@\texttt{include}}
 
@@ -243,7 +243,7 @@ It behaves as if the components of the included signature were copied
 at the location of the @'include'@.  The @module-type@ argument must
 refer to a module type that is a signature, not a functor type.
 
-\subsection{Functor types}
+\subsection{ss:mty-functors}{Functor types}
 
 \ikwd{functor\@\texttt{functor}}
 
@@ -261,7 +261,7 @@ No restrictions are placed on the type of the functor argument; in
 particular, a functor may take another functor as argument
 (``higher-order'' functor).
 
-\subsection{The "with" operator}
+\subsection{ss:mty-with}{The "with" operator}
 
 \ikwd{with\@\texttt{with}}
 
