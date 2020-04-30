@@ -65,9 +65,9 @@ let save_linear f =
   end;
   f
 
-let write_linear output_prefix =
+let write_linear prefix =
   if should_save_before_emit () then begin
-    let filename = output_prefix ^ Clflags.Compiler_ir.(extension Linear) in
+    let filename = Compiler_pass.(to_output_filename Scheduling ~prefix) in
     linear_unit_info.items <- List.rev linear_unit_info.items;
     Linear_format.save filename linear_unit_info
   end

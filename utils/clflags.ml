@@ -429,6 +429,11 @@ module Compiler_ir = struct
     in
     ".cmir-" ^ ext
 
+  (** [extract_extension_with_pass filename] returns the IR whose extension
+      is a prefix of the extension of [filename], and the suffix,
+      which can be used to distinguish different passes on the same IR.
+      For example, [extract_extension_with_pass "foo.cmir-linear123"]
+      returns [Some (Linear, "123")]. *)
   let extract_extension_with_pass filename =
     let ext = Filename.extension filename in
     let ext_len = String.length ext in
@@ -449,12 +454,6 @@ module Compiler_ir = struct
       | None -> None
       | Some ir -> Some (ir, drop_prefix ir)
     end
-
-  (* Magic numbers for all IRs must be the same length. *)
-  let magic t =
-    let open Config in
-    match t with
-    | Linear -> linear_magic_number
 end
 
 (* This is used by the -stop-after option. *)
@@ -502,10 +501,6 @@ module Compiler_pass = struct
     | Scheduling -> true
     | _ -> false
 
-  let can_start_from = function
-    | Parsing | Typing | Emit -> true
-    | Scheduling -> false
-
   let available_pass_names ~filter ~native =
     passes
     |> List.filter (enabled native)
@@ -514,6 +509,16 @@ module Compiler_pass = struct
 
   let compare a b =
     compare (rank a) (rank b)
+
+  let to_output_filename t ~prefix =
+    match t with
+    | Scheduling -> prefix ^ Compiler_ir.(extension Linear)
+    | _ -> Misc.fatal_error "Not supported"
+
+  let of_input_filename name =
+    match Compiler_ir.extract_extension_with_pass name with
+    | Some (Linear, _) -> Some Emit
+    | None -> None
 end
 
 let stop_after = ref None (* -stop-after *)
@@ -539,16 +544,6 @@ let set_save_ir_after pass enabled =
       other_passes
   in
   save_ir_after := new_passes
-
-let start_from = ref None (* -start-from *)
-
-let should_start_from pass =
-  match !start_from with
-  | None -> pass = Compiler_pass.Parsing
-  | Some start ->
-    let start = Compiler_pass.rank start in
-    let cur = Compiler_pass.rank pass in
-    start = cur
 
 module String = Misc.Stdlib.String
 

@@ -100,15 +100,6 @@ let module_of_filename inputfile outputprefix =
   name
 ;;
 
-(* Check that start_from pass is before stop_after *)
-let check_pass_order () =
-  match !start_from, !stop_after with
-  | None, _ | _, None -> ()
-  | Some start, Some stop ->
-    if Compiler_pass.compare stop start < 0 then
-      fatal "When using \"-stop-after <last>\" and \"-start-from <first>\", \
-             <first> last must be before <last>"
-
 type filename = string
 
 type readenv_position =
@@ -479,10 +470,6 @@ let read_one_param ppf position name v =
       | Some pass -> set_save_ir_after pass true
     end
 
-  | "start-from" ->
-    let filter = Clflags.Compiler_pass.can_start_from in
-    set_compiler_pass ppf v ~name Clflags.start_from ~filter
-
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -629,32 +616,17 @@ type deferred_action =
 let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
-let check_ir name =
-  match Clflags.Compiler_ir.extract_extension_with_pass name with
-  | None -> false
-  | Some (Linear, _) ->
-    if not (should_start_from Compiler_pass.Emit) then begin
-      match !start_from with
-      | None ->
-          raise (Arg.Bad ("Format of the input file " ^ name ^
-                          " requires -start-from emit."))
-      | Some _ ->
-          raise (Arg.Bad ("Format of the input file " ^ name ^
-                          " is incompatible with -start-from <pass>."))
-    end;
-    true
-
 let process_action
     (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
-  let impl name =
+  let impl ~start_from name =
     readenv ppf (Before_compile name);
     let opref = output_prefix name in
-    implementation ~source_file:name ~output_prefix:opref;
+    implementation ~start_from ~source_file:name ~output_prefix:opref;
     objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
   in
   match action with
   | ProcessImplementation name ->
-      impl name
+      impl ~start_from:Compiler_pass.Parsing name
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
@@ -680,10 +652,10 @@ let process_action
         ccobjs := name :: !ccobjs
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
-      else if check_ir name then
-        impl name
       else
-        raise(Arg.Bad("don't know what to do with " ^ name))
+        match Compiler_pass.of_input_filename name with
+        | Some start_from -> impl ~start_from name
+        | None -> raise(Arg.Bad("don't know what to do with " ^ name))
 
 
 let action_of_file name =
@@ -733,7 +705,6 @@ let process_deferred_actions env =
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
-  check_pass_order ();
   stop_early :=
     !compile_only ||
     !print_types ||

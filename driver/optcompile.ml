@@ -90,7 +90,7 @@ let emit i =
   Compilenv.reset ?packname:!Clflags.for_package i.module_name;
   Asmgen.compile_implementation_linear i.output_prefix ~progname:i.source_file
 
-let implementation ~backend ~source_file ~output_prefix =
+let implementation ~backend ~start_from ~source_file ~output_prefix =
   let backend info typed =
     Compilenv.reset ?packname:!Clflags.for_package info.module_name;
     if Config.flambda
@@ -98,7 +98,8 @@ let implementation ~backend ~source_file ~output_prefix =
     else clambda info backend typed
   in
   with_info ~source_file ~output_prefix ~dump_ext:"cmx" @@ fun info ->
-  if Clflags.(should_start_from Compiler_pass.Emit) then
-    emit info
-  else
-    Compile_common.implementation info ~backend
+  match (start_from:Clflags.Compiler_pass.t) with
+  | Parsing -> Compile_common.implementation info ~backend
+  | Emit -> emit info
+  | _ -> Misc.fatal_errorf "Cannot start from %s"
+           (Clflags.Compiler_pass.to_string start_from)

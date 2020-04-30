@@ -235,20 +235,6 @@ val unboxed_types : bool ref
 val insn_sched : bool ref
 val insn_sched_default : bool
 
-module Compiler_ir : sig
-  type t = Linear
-
-  (** [extract_extension_with_pass filename] returns the IR whose extension
-      is a prefix of the extension of [filename], and the suffix,
-      which can be used to distinguish different passes on the same IR.
-      For example, [extract_extension_with_pass "foo.cmir-linear123"]
-      returns [Some (Linear, "123")]. *)
-  val extract_extension_with_pass : string -> (t * string) option
-  val extension : t -> string
-  val magic : t -> string
-  val all : t list
-end
-
 module Compiler_pass : sig
   type t = Parsing | Typing | Scheduling | Emit
   val of_string : string -> t option
@@ -256,15 +242,14 @@ module Compiler_pass : sig
   val is_compilation_pass : t -> bool
   val available_pass_names : filter:(t -> bool) -> native:bool -> string list
   val can_save_ir_after : t -> bool
-  val can_start_from : t -> bool
   val compare : t -> t -> int
+  val to_output_filename: t -> prefix:string -> string
+  val of_input_filename: string -> t option
 end
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool
 val set_save_ir_after : Compiler_pass.t -> bool -> unit
 val should_save_ir_after : Compiler_pass.t -> bool
-val start_from : Compiler_pass.t option ref
-val should_start_from : Compiler_pass.t -> bool
 
 val arg_spec : (string * Arg.spec * string) list ref
 

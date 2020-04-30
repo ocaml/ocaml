@@ -5,10 +5,10 @@
    flags = "-save-ir-after scheduling -stop-after scheduling"
    ocamlopt_byte_exit_status = "0"
  **** script
-   script = "cp start_from_emit.cmir-linear start_from_emit_cmir_linear.ml"
+   script = "touch empty.ml"
  ***** ocamlopt.byte
-   flags = "-start-from emit -S start_from_emit.cmir-linear"
-   module = "start_from_emit_cmir_linear.ml"
+   flags = "-S start_from_emit.cmir-linear"
+   module = "empty.ml"
    ocamlopt_byte_exit_status = "0"
  ****** check-ocamlopt.byte-output
  ******* script

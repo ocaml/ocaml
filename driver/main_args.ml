@@ -125,17 +125,6 @@ let mk_save_ir_after ~native f =
   " Save intermediate representation after the given compilation pass\
     (may be specified more than once)."
 
-let mk_start_from ~native f =
-  let pass_names =
-    Clflags.Compiler_pass.(available_pass_names
-                             ~filter:can_start_from
-                             ~native)
-  in
-  "-start-from",
-  Arg.Symbol (pass_names, f), " Start from the given compilation pass."
-;;
-
-
 let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
@@ -978,7 +967,6 @@ module type Compiler_options = sig
   val _for_pack : string -> unit
   val _g : unit -> unit
   val _stop_after : string -> unit
-  val _start_from : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
   val _intf : string -> unit
@@ -1180,7 +1168,6 @@ struct
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
     mk_stop_after ~native:false F._stop_after;
-    mk_start_from ~native:false F._start_from;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -1361,7 +1348,6 @@ struct
     mk_function_sections F._function_sections;
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;
-    mk_start_from ~native:true F._start_from;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -1896,15 +1882,6 @@ module Default = struct
         | None -> () (* this should not occur as we use Arg.Symbol *)
         | Some pass ->
           set_save_ir_after pass true
-    let _start_from pass =
-        match Compiler_pass.of_string pass with
-        | None -> () (* this should not occur as we use Arg.Symbol *)
-        | Some pass ->
-          match !start_from with
-          | None -> start_from := (Some pass)
-          | Some p ->
-            if not (p = pass) then
-              fatal "Please specify at most one -start-from <pass>."
     let _thread = set use_threads
     let _verbose = set verbose
     let _version () = Compenv.print_version_string ()
