@@ -27,6 +27,7 @@
 #include "caml/weak.h"
 #include "caml/minor_gc.h"
 #include "caml/signals.h"
+#include "caml/eventlog.h"
 
 value caml_ephe_list_head = 0;
 
@@ -408,7 +409,7 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     CAMLassert(loop < 10);
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
-      CAML_INSTR_INT ("force_minor/weak@", 1);
+      CAML_EV_COUNTER (EV_C_FORCE_MINOR_WEAK, 1);
       caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
@@ -463,7 +464,7 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     CAMLassert(loop < 10);
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
-      CAML_INSTR_INT ("force_minor/weak@", 1);
+      CAML_EV_COUNTER (EV_C_FORCE_MINOR_WEAK, 1);
       caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */

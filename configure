@@ -777,6 +777,7 @@ rpath
 sharedlib_cflags
 asm_cfi_supported
 AS
+endianness
 ASPP
 bfd_ldlibs
 bfd_ldflags
@@ -791,6 +792,7 @@ with_debugger
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
 otherlibraries
+has_monotonic_clock
 instrumented_runtime
 debug_runtime
 cmxs
@@ -2755,6 +2757,8 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
+instrumented_runtime=false
+instrumented_runtime_ldlibs=""
 
 # Information about the package
 
@@ -2850,7 +2854,9 @@ VERSION=4.12.0+dev0-2020-04-22
 
 
 
+
  # TODO: rename this variable
+
 
 
 
@@ -2897,6 +2903,8 @@ VERSION=4.12.0+dev0-2020-04-22
 ac_config_files="$ac_config_files Makefile.common"
 
 ac_config_files="$ac_config_files Makefile.config"
+
+ac_config_files="$ac_config_files tools/eventlog_metadata"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
@@ -13315,10 +13323,13 @@ fi
 $as_echo "$ac_cv_c_bigendian" >&6; }
  case $ac_cv_c_bigendian in #(
    yes)
-     $as_echo "#define ARCH_BIG_ENDIAN 1" >>confdefs.h
-;; #(
+
+    $as_echo "#define ARCH_BIG_ENDIAN 1" >>confdefs.h
+,
+    endianness="be"
+  ;; #(
    no)
-      ;; #(
+     endianness="le" ;; #(
    universal)
      as_fn_error $? "unable to handle universal endianness" "$LINENO" 5
 
@@ -14118,21 +14129,93 @@ if test "x$ac_cv_func_issetugid" = xyes; then :
 fi
 
 
-## clock_gettime, for the instrumented runtime
+## Checking for monotonic clock source
+## On Windows MSVC, QueryPerformanceCounter and QueryPerformanceFrequency
+## are always available.
+## On Unix platforms, we check for the appropriate POSIX feature-test macros.
+## On MacOS clock_gettime's CLOCK_MONOTONIC flag is not actually monotonic.
+## mach_timebase_info and mach_absolute_time are used instead.
 
-## Note: on MinGW, configure finds a clock_gettime and thus the build
-# system tries to build the instrumented runtime, which causes
-# warnings. For the moment we simply disable it on MinGW
-# but this would need to be further investigated
 case $host in #(
-  *-*-mingw32) :
-    instrumented_runtime=false ;; #(
-  *) :
-    if test "x$enable_instrumented_runtime" = "xno" ; then :
-  instrumented_runtime=false; instrumented_runtime_libs=""
-else
+  *-*-windows) :
+    has_monotonic_clock=true ;; #(
+  *-apple-darwin*) :
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+    for ac_func in mach_timebase_info mach_absolute_time
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+        has_monotonic_clock=true
+        $as_echo "#define HAS_MACH_ABSOLUTE_TIME 1" >>confdefs.h
+
+
+else
+  has_monotonic_clock=false
+fi
+done
+ ;; #(
+  *) :
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <unistd.h>
+    #include <time.h>
+    int main(void)
+    {
+      #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
+         && _POSIX_MONOTONIC_CLOCK != (-1))
+        #error "no monotonic clock source"
+      #endif
+        return 0;
+     }
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+      has_monotonic_clock=true
+      $as_echo "#define HAS_POSIX_MONOTONIC_CLOCK 1" >>confdefs.h
+
+
+else
+  has_monotonic_clock=false
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+ ;;
+esac
+
+# The instrumented runtime is built by default
+# if the proper clock source is found.
+# If asked via --enable-instrumented-runtime, configuration fails if the proper
+# clock source is missing.
+if test "x$enable_instrumented_runtime" != "xno" ; then :
+
+    case $host in #(
+  *-*-windows) :
+    instrumented_runtime=true ;; #(
+  *-apple-darwin*) :
+
+      case $enable_instrumented_runtime,$has_monotonic_clock in #(
+  *,true) :
+    instrumented_runtime=true ;; #(
+  yes,false) :
+
+          as_fn_error $? "Instrumented runtime support requested \
+but no proper monotonic clock source was found." "$LINENO" 5
+         ;; #(
+  auto,false) :
+    instrumented_runtime=false
+     ;; #(
+  *) :
+     ;;
+esac ;; #(
+  *) :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
 $as_echo_n "checking for library containing clock_gettime... " >&6; }
 if ${ac_cv_search_clock_gettime+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -14190,23 +14273,39 @@ else
   has_clock_gettime=false
 fi
 
-      case $enable_instrumented_runtime,$has_clock_gettime in #(
-  *,true) :
-    instrumented_runtime=true
-          if test "x$ac_cv_search_clock_gettime" = "xnone required"; then :
-  instrumented_runtime_libs=""
-else
-  instrumented_runtime_libs=$ac_cv_search_clock_gettime
-fi ;; #(
-  auto,*) :
+      case $enable_instrumented_runtime,$has_clock_gettime,$has_monotonic_clock in #(
+  auto,false,*) :
     instrumented_runtime=false ;; #(
-  yes,*) :
-    as_fn_error $? "the instrumented runtime can not be built" "$LINENO" 5 ;; #(
+  auto,*,false) :
+    instrumented_runtime=false ;; #(
+  *,true,true) :
+
+            instrumented_runtime=true
+            if test "x$ac_cv_search_clock_gettime" = "xnone required"; then :
+  instrumented_runtime_ldlibs=""
+else
+  instrumented_runtime_ldlibs=$ac_cv_search_clock_gettime
+
+fi
+           ;; #(
+  yes,false,*) :
+
+           as_fn_error $? "Instrumented runtime support requested \
+but clock_gettime is missing." "$LINENO" 5
+           ;; #(
+  yes,*,false) :
+
+           as_fn_error $? "Instrumented runtime support requested \
+but no proper monotonic clock source was found." "$LINENO" 5
+
+       ;; #(
   *) :
      ;;
 esac
-fi ;;
+     ;;
 esac
+
+fi
 
 ## Sockets
 
@@ -16897,7 +16996,7 @@ case $host in #(
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_libs"
+    bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
   nativecclibs="$cclibs $DLLIBS" ;;
 esac
 
@@ -17977,6 +18076,7 @@ do
   case $ac_config_target in
     "Makefile.common") CONFIG_FILES="$CONFIG_FILES Makefile.common" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
+    "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;

@@ -122,6 +122,7 @@ typedef unsigned short uint16_t;
 #else
 #error "No 16-bit integer type available"
 #endif
+typedef unsigned char uint8_t;
 #endif
 
 #if SIZEOF_PTR == SIZEOF_LONG

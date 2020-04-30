@@ -129,6 +129,9 @@ ARCH=@arch@
 # Whether the architecture has 64 bits
 ARCH64=@arch64@
 
+# Endianess for this architecture
+ENDIANNESS=@endianness@
+
 ### Name of architecture model for the native-code compiler.
 ### Some architectures come in several slightly different flavors
 ### that share a common code generator. This variable tailors the

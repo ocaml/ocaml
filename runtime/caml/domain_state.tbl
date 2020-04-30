@@ -73,3 +73,10 @@ DOMAIN_STATE(intnat, stat_top_heap_wsz)
 DOMAIN_STATE(intnat, stat_compactions)
 DOMAIN_STATE(intnat, stat_heap_chunks)
 /* See gc_ctrl.c */
+
+DOMAIN_STATE(uintnat, eventlog_startup_timestamp)
+DOMAIN_STATE(uint32_t, eventlog_startup_pid)
+DOMAIN_STATE(uintnat, eventlog_paused)
+DOMAIN_STATE(uintnat, eventlog_enabled)
+DOMAIN_STATE(FILE*, eventlog_out)
+/* See eventlog.c */

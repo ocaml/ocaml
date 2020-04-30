@@ -144,6 +144,17 @@ OCaml 4.11
   avoiding overflow.
   (Jeremy Yallop, Stephen Dolan, review by Xavier Leroy)
 
+- #9082: The instrumented runtime now records logs in the CTF format.
+  A new API is available in the runtime to collect runtime statistics,
+  replacing the previous instrumented runtime macros.
+  Gc.eventlog_pause and Gc.eventlog_resume were added to allow user to control
+  instrumentation in a running program.
+  (Enguerrand Decorne and Stephen Dolan, with help and review from
+  David Allsopp, Sébastien Hinderer, review by Anil Madhavapeddy,
+  Nicolás Ojeda Bär, Shakthi Kannan, KC Sivaramakrishnan, Gabriel Scherer,
+  Guillaume Munch-Maccagnoni, Damien Doligez, Leo White, Daniel Bünzli
+  and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.

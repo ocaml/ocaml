@@ -109,10 +109,8 @@ static const uintnat chunk_size = 1024 * 1024;
 
 #ifdef _WIN32
 #define strdup_os wcsdup
-#define snprintf_os _snwprintf
 #else
 #define strdup_os strdup
-#define snprintf_os snprintf
 #endif
 
 static void reinitialise_free_node_block(void)

@@ -27,6 +27,7 @@
 #include "caml/roots.h"
 #include "caml/stacks.h"
 #include "caml/memprof.h"
+#include "caml/eventlog.h"
 
 CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
@@ -81,26 +82,31 @@ intnat caml_darken_all_roots_slice (intnat work)
    ignored and [caml_darken_all_roots_slice] does nothing. */
 void caml_do_roots (scanning_action f, int do_globals)
 {
-  CAML_INSTR_SETUP (tmr, "major_roots");
   /* Global variables */
+  CAML_EV_BEGIN(EV_MAJOR_ROOTS_GLOBAL);
   f(caml_global_data, &caml_global_data);
-  CAML_INSTR_TIME (tmr, "major_roots/global");
+  CAML_EV_END(EV_MAJOR_ROOTS_GLOBAL);
   /* The stack and the local C roots */
+  CAML_EV_BEGIN(EV_MAJOR_ROOTS_LOCAL);
   caml_do_local_roots(f, Caml_state->extern_sp, Caml_state->stack_high,
                       Caml_state->local_roots);
-  CAML_INSTR_TIME (tmr, "major_roots/local");
+  CAML_EV_END(EV_MAJOR_ROOTS_LOCAL);
   /* Global C roots */
+  CAML_EV_BEGIN(EV_MAJOR_ROOTS_C);
   caml_scan_global_roots(f);
-  CAML_INSTR_TIME (tmr, "major_roots/C");
+  CAML_EV_END(EV_MAJOR_ROOTS_C);
   /* Finalised values */
+  CAML_EV_BEGIN(EV_MAJOR_ROOTS_FINALISED);
   caml_final_do_roots (f);
-  CAML_INSTR_TIME (tmr, "major_roots/finalised");
+  CAML_EV_END(EV_MAJOR_ROOTS_FINALISED);
   /* Memprof */
+  CAML_EV_BEGIN(EV_MAJOR_ROOTS_MEMPROF);
   caml_memprof_do_roots (f);
-  CAML_INSTR_TIME (tmr, "major_roots/memprof");
+  CAML_EV_END(EV_MAJOR_ROOTS_MEMPROF);
   /* Hook */
+  CAML_EV_BEGIN(EV_MAJOR_ROOTS_HOOK);
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
-  CAML_INSTR_TIME (tmr, "major_roots/hook");
+  CAML_EV_END(EV_MAJOR_ROOTS_HOOK);
 }
 
 CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,

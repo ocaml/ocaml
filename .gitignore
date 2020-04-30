@@ -259,6 +259,7 @@ _build
 /tools/make_opcodes
 /tools/make_opcodes.ml
 /tools/caml-tex
+/tools/eventlog_metadata
 
 /utils/config.ml
 /utils/domainstate.ml
