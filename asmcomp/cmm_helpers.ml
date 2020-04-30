@@ -193,6 +193,12 @@ let ignore_low_bit_int = function
   | Cop(Cor, [c; Cconst_int (1, _)], _) -> c
   | c -> c
 
+(* removes the 1-bit sign-extension left by untag_int (tag_int c) *)
+let ignore_high_bit_int = function
+    Cop(Casr,
+        [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
+  | c -> c
+
 let lsr_int c1 c2 dbg =
   match c2 with
     Cconst_int (0, _) ->
@@ -222,30 +228,16 @@ let tag_int i dbg =
   | c ->
       incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
 
-let force_tag_int i dbg =
-  match i with
-    Cconst_int (n, _) ->
-      int_const dbg n
-  | Cop(Casr, [c; Cconst_int (n, _)], dbg') when n > 0 ->
-      Cop(Cor, [asr_int c (Cconst_int (n - 1, dbg)) dbg'; Cconst_int (1, dbg)],
-        dbg)
-  | c ->
-      Cop(Cor, [lsl_int c (Cconst_int (1, dbg)) dbg; Cconst_int (1, dbg)], dbg)
-
 let untag_int i dbg =
   match i with
     Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
-      c
   | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
       Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
   | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
       Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
-  | Cop(Cor, [c; Cconst_int (1, _)], _) ->
-      Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
-  | c -> Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
+  | c -> asr_int c (Cconst_int (1, dbg)) dbg
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
   match cond with
@@ -947,6 +939,34 @@ let bigarray_set unsafe elt_kind layout b args newval dbg =
             [bigarray_indexing unsafe elt_kind layout b args dbg; newval],
             dbg))
 
+(* the three functions below assume either 32-bit or 64-bit words *)
+let () = assert (size_int = 4 || size_int = 8)
+
+(* low_32 x is a value which agrees with x on at least the low 32 bits *)
+let rec low_32 dbg = function
+  | x when size_int = 4 -> x
+    (* Ignore sign and zero extensions, which do not affect the low bits *)
+  | Cop(Casr, [Cop(Clsl, [x; Cconst_int (32, _)], _);
+               Cconst_int (32, _)], _)
+  | Cop(Cand, [x; Cconst_natint (0xFFFFFFFFn, _)], _) ->
+    low_32 dbg x
+  | Clet(id, e, body) ->
+    Clet(id, e, low_32 dbg body)
+  | x -> x
+
+(* sign_extend_32 sign-extends values from 32 bits to the word size.
+   (if the word size is 32, this is a no-op) *)
+let sign_extend_32 dbg e =
+  if size_int = 4 then e else
+    Cop(Casr, [Cop(Clsl, [low_32 dbg e; Cconst_int(32, dbg)], dbg);
+               Cconst_int(32, dbg)], dbg)
+
+(* zero_extend_32 zero-extends values from 32 bits to the word size.
+   (if the word size is 32, this is a no-op) *)
+let zero_extend_32 dbg e =
+  if size_int = 4 then e else
+    Cop(Cand, [low_32 dbg e; Cconst_natint(0xFFFFFFFFn, dbg)], dbg)
+
 (* Boxed integers *)
 
 let operations_boxed_int (bi : Primitive.boxed_integer) =
@@ -963,8 +983,10 @@ let alloc_header_boxed_int (bi : Primitive.boxed_integer) =
 
 let box_int_gen dbg (bi : Primitive.boxed_integer) arg =
   let arg' =
-    if bi = Primitive.Pint32 && size_int = 8 && big_endian
-    then Cop(Clsl, [arg; Cconst_int (32, dbg)], dbg)
+    if bi = Primitive.Pint32 && size_int = 8 then
+      if big_endian
+      then Cop(Clsl, [arg; Cconst_int (32, dbg)], dbg)
+      else sign_extend_32 dbg arg
     else arg
   in
   Cop(Calloc, [alloc_header_boxed_int bi dbg;
@@ -1007,21 +1029,17 @@ let unbox_int dbg bi =
     (function
       | Cop(Calloc,
             [hdr; ops;
-             Cop(Clsl, [contents; Cconst_int (32, _)], dbg')], _dbg)
+             Cop(Clsl, [contents; Cconst_int (32, _)], _dbg')], _dbg)
         when bi = Primitive.Pint32 && size_int = 8 && big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
-          Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg');
-                     Cconst_int (32, dbg)],
-              dbg)
+          sign_extend_32 dbg contents
       | Cop(Calloc,
             [hdr; ops; contents], _dbg)
         when bi = Primitive.Pint32 && size_int = 8 && not big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
-          Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg);
-                     Cconst_int (32, dbg)],
-              dbg)
+          sign_extend_32 dbg contents
       | Cop(Calloc, [hdr; ops; contents], _dbg)
         when alloc_matches_boxed_int bi ~hdr ~ops ->
           contents
@@ -1052,7 +1070,7 @@ let unbox_int dbg bi =
 
 let make_unsigned_int bi arg dbg =
   if bi = Primitive.Pint32 && size_int = 8
-  then Cop(Cand, [arg; Cconst_natint (0xFFFFFFFFn, dbg)], dbg)
+  then zero_extend_32 dbg arg
   else arg
 
 let unaligned_load_16 ptr idx dbg =
@@ -2341,7 +2359,7 @@ let setfield_computed ptr init arg1 arg2 arg3 dbg =
 let bytesset_unsafe arg1 arg2 arg3 dbg =
       return_unit dbg (Cop(Cstore (Byte_unsigned, Assignment),
                       [add_int arg1 (untag_int arg2 dbg) dbg;
-                       untag_int arg3 dbg], dbg))
+                       ignore_high_bit_int (untag_int arg3 dbg)], dbg))
 
 let bytesset_safe arg1 arg2 arg3 dbg =
   return_unit dbg
@@ -2350,7 +2368,8 @@ let bytesset_safe arg1 arg2 arg3 dbg =
         Csequence(
           make_checkbound dbg [string_length str dbg; idx],
           Cop(Cstore (Byte_unsigned, Assignment),
-              [add_int str idx dbg; untag_int arg3 dbg],
+              [add_int str idx dbg;
+               ignore_high_bit_int (untag_int arg3 dbg)],
               dbg)))))
 
 let arrayset_unsafe kind arg1 arg2 arg3 dbg =

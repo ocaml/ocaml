@@ -863,6 +863,8 @@ let emit_instr fallthrough i =
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
   | Lop(Ispecific(Isextend32)) ->
       I.movsxd (arg32 i 0) (res i 0)
+  | Lop(Ispecific(Izextend32)) ->
+      I.mov (arg32 i 0) (res32 i 0)
   | Lop (Iname_for_debugger _) -> ()
   | Lop (Ipoll) ->
       I.cmp (domain_field Domainstate.Domain_young_limit) r15;

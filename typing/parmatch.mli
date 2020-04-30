@@ -48,7 +48,7 @@ val le_pats : pattern list -> pattern list -> bool
 (** Exported compatibility functor, abstracted over constructor equality *)
 module Compat :
   functor
-    (Constr: sig
+    (_ : sig
       val equal :
           Types.constructor_description ->
             Types.constructor_description ->

@@ -101,6 +101,10 @@ val decr_int : expression -> Debuginfo.t -> expression
     irrelevant *)
 val ignore_low_bit_int : expression -> expression
 
+(** Simplify the given expression knowing its first bit will be
+    irrelevant *)
+val ignore_high_bit_int : expression -> expression
+
 (** Arithmetical operations on integers *)
 val add_int : expression -> expression -> Debuginfo.t -> expression
 val sub_int : expression -> expression -> Debuginfo.t -> expression
@@ -113,18 +117,10 @@ val div_int :
 val mod_int :
   expression -> expression -> Lambda.is_safe -> Debuginfo.t -> expression
 
-(** Integer tagging
-    [tag_int] and [force_tag_int] are functionally equivalent, but
-    produce syntactically different expressions ([tag_int] produces
-    an addition, while [force_tag_int] produces a logical or).
-    The difference marks the fact that the shift operation in [tag_int]
-    is assumed not to overflow, and so [untag_int (tag_int i)] can be
-    simplified to [i]. With [force_tag_int], the initial shift might
-    overflow, so the above simplification would be wrong. *)
+(** Integer tagging. [tag_int x = (x lsl 1) + 1] *)
 val tag_int : expression -> Debuginfo.t -> expression
-val force_tag_int : expression -> Debuginfo.t -> expression
 
-(** Integer untagging *)
+(** Integer untagging. [untag_int x = (x asr 1)] *)
 val untag_int : expression -> Debuginfo.t -> expression
 
 (** Specific division operations for boxed integers *)
@@ -346,6 +342,17 @@ val bigarray_set :
   bool -> Lambda.bigarray_kind -> Lambda.bigarray_layout ->
   expression -> expression list -> expression -> Debuginfo.t ->
   expression
+
+(** Operations on 32-bit integers *)
+
+(** [low_32 _ x] is a value which agrees with x on at least the low 32 bits *)
+val low_32 : Debuginfo.t -> expression -> expression
+
+(** Sign extend from 32 bits to the word size *)
+val sign_extend_32 : Debuginfo.t -> expression -> expression
+
+(** Zero extend from 32 bits to the word size *)
+val zero_extend_32 : Debuginfo.t -> expression -> expression
 
 (** Boxed numbers *)
 

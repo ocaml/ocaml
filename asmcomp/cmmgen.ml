@@ -269,10 +269,17 @@ let box_number bn arg =
   | Boxed_float dbg -> box_float dbg arg
   | Boxed_integer (bi, dbg) -> box_int dbg bi arg
 
+(* Returns the unboxed representation of a boxed float or integer.
+   For Pint32 on 64-bit archs, the high 32 bits of the result are undefined. *)
 let unbox_number dbg bn arg =
   match bn with
-  | Boxed_float _ -> unbox_float dbg arg
-  | Boxed_integer (bi, _) -> unbox_int dbg bi arg
+  | Boxed_float dbg ->
+    unbox_float dbg arg
+  | Boxed_integer (Pint32, _) ->
+    low_32 dbg (unbox_int dbg Pint32 arg)
+  | Boxed_integer (bi, _) ->
+    unbox_int dbg bi arg
+
 
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
    boxed integers *)
@@ -485,8 +492,10 @@ let rec transl env e =
           | Pbigarray_int32 -> box_int dbg Pint32 elt
           | Pbigarray_int64 -> box_int dbg Pint64 elt
           | Pbigarray_native_int -> box_int dbg Pnativeint elt
-          | Pbigarray_caml_int -> force_tag_int elt dbg
-          | _ -> tag_int elt dbg
+          | Pbigarray_caml_int -> tag_int elt dbg
+          | Pbigarray_sint8 | Pbigarray_uint8
+          | Pbigarray_sint16 | Pbigarray_uint16 -> tag_int elt dbg
+          | Pbigarray_unknown -> assert false
           end
       | (Pbigarrayset(unsafe, _num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
@@ -501,7 +510,12 @@ let rec transl env e =
             | Pbigarray_int64 -> transl_unbox_int dbg env Pint64 argnewval
             | Pbigarray_native_int ->
                 transl_unbox_int dbg env Pnativeint argnewval
-            | _ -> untag_int (transl env argnewval) dbg)
+            | Pbigarray_caml_int ->
+                untag_int (transl env argnewval) dbg
+            | Pbigarray_sint8 | Pbigarray_uint8
+            | Pbigarray_sint16 | Pbigarray_uint16 ->
+                ignore_high_bit_int (untag_int (transl env argnewval) dbg)
+            | Pbigarray_unknown -> assert false)
             dbg)
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
@@ -814,7 +828,7 @@ and transl_prim_1 env p arg dbg =
   | Pbintofint bi ->
       box_int dbg bi (untag_int (transl env arg) dbg)
   | Pintofbint bi ->
-      force_tag_int (transl_unbox_int dbg env bi arg) dbg
+      tag_int (transl_unbox_int dbg env bi arg) dbg
   | Pcvtbint(bi1, bi2) ->
       box_int dbg bi2 (transl_unbox_int dbg env bi1 arg)
   | Pnegbint bi ->
@@ -824,7 +838,8 @@ and transl_prim_1 env p arg dbg =
   | Pbbswap bi ->
       box_int dbg bi (bbswap bi (transl_unbox_int dbg env bi arg) dbg)
   | Pbswap16 ->
-      tag_int (bswap16 (untag_int (transl env arg) dbg) dbg) dbg
+      tag_int (bswap16 (ignore_high_bit_int (untag_int
+        (transl env arg) dbg)) dbg) dbg
   | Ppoll ->
       Cop(Cpoll, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer} ->
@@ -963,16 +978,16 @@ and transl_prim_2 env p arg1 arg2 dbg =
   (* Boxed integers *)
   | Paddbint bi ->
       box_int dbg bi (Cop(Caddi,
-                      [transl_unbox_int dbg env bi arg1;
-                       transl_unbox_int dbg env bi arg2], dbg))
+                      [transl_unbox_int_low dbg env bi arg1;
+                       transl_unbox_int_low dbg env bi arg2], dbg))
   | Psubbint bi ->
       box_int dbg bi (Cop(Csubi,
-                      [transl_unbox_int dbg env bi arg1;
-                       transl_unbox_int dbg env bi arg2], dbg))
+                      [transl_unbox_int_low dbg env bi arg1;
+                       transl_unbox_int_low dbg env bi arg2], dbg))
   | Pmulbint bi ->
       box_int dbg bi (Cop(Cmuli,
-                      [transl_unbox_int dbg env bi arg1;
-                       transl_unbox_int dbg env bi arg2], dbg))
+                      [transl_unbox_int_low dbg env bi arg1;
+                       transl_unbox_int_low dbg env bi arg2], dbg))
   | Pdivbint { size = bi; is_safe } ->
       box_int dbg bi (safe_div_bi is_safe
                       (transl_unbox_int dbg env bi arg1)
@@ -985,19 +1000,19 @@ and transl_prim_2 env p arg1 arg2 dbg =
                       bi dbg)
   | Pandbint bi ->
       box_int dbg bi (Cop(Cand,
-                     [transl_unbox_int dbg env bi arg1;
-                      transl_unbox_int dbg env bi arg2], dbg))
+                     [transl_unbox_int_low dbg env bi arg1;
+                      transl_unbox_int_low dbg env bi arg2], dbg))
   | Porbint bi ->
       box_int dbg bi (Cop(Cor,
-                     [transl_unbox_int dbg env bi arg1;
-                      transl_unbox_int dbg env bi arg2], dbg))
+                     [transl_unbox_int_low dbg env bi arg1;
+                      transl_unbox_int_low dbg env bi arg2], dbg))
   | Pxorbint bi ->
       box_int dbg bi (Cop(Cxor,
-                     [transl_unbox_int dbg env bi arg1;
-                      transl_unbox_int dbg env bi arg2], dbg))
+                     [transl_unbox_int_low dbg env bi arg1;
+                      transl_unbox_int_low dbg env bi arg2], dbg))
   | Plslbint bi ->
       box_int dbg bi (Cop(Clsl,
-                     [transl_unbox_int dbg env bi arg1;
+                     [transl_unbox_int_low dbg env bi arg1;
                       untag_int(transl env arg2) dbg], dbg))
   | Plsrbint bi ->
       box_int dbg bi (Cop(Clsr,
@@ -1102,9 +1117,15 @@ and transl_unbox_float dbg env exp =
 and transl_unbox_int dbg env bi exp =
   unbox_int dbg bi (transl env exp)
 
+(* transl_unbox_int, but may return garbage in upper bits *)
+and transl_unbox_int_low dbg env bi e =
+  let e = transl_unbox_int dbg env bi e in
+  if bi = Pint32 then low_32 dbg e else e
+
 and transl_unbox_sized size dbg env exp =
   match size with
-  | Sixteen -> untag_int (transl env exp) dbg
+  | Sixteen ->
+     ignore_high_bit_int (untag_int (transl env exp) dbg)
   | Thirty_two -> transl_unbox_int dbg env Pint32 exp
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 

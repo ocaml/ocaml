@@ -3563,7 +3563,8 @@ and type_format loc str env =
         | Float_G  -> mk_constr "Float_G"  []
         | Float_h  -> mk_constr "Float_h"  []
         | Float_H  -> mk_constr "Float_H"  []
-        | Float_F  -> mk_constr "Float_F"  [] in
+        | Float_F  -> mk_constr "Float_F"  []
+        | Float_CF -> mk_constr "Float_CF" [] in
         mk_exp_loc (Pexp_tuple [flag; kind])
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []

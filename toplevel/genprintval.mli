@@ -69,5 +69,5 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
-module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) :
+module Make(O : OBJ)(_ : EVALPATH with type valu = O.t) :
          (S with type t = O.t)

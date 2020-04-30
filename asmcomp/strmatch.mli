@@ -23,7 +23,7 @@ module type I = sig
           Cmm.expression
 end
 
-module Make(I:I) : sig
+module Make(_:I) : sig
   (* Compile stringswitch (arg,cases,d)
      Note: cases should not contain string duplicates *)
   val compile : Debuginfo.t -> Cmm.expression (* arg *)

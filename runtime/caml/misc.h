@@ -40,8 +40,20 @@ typedef size_t asize_t;
 #define NULL 0
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+  /* Supported since at least GCC 3.1 */
+  #define CAMLdeprecated_typedef(name, type) \
+    typedef type name __attribute ((deprecated))
+#elif _MSC_VER >= 1310
+  /* NB deprecated("message") only supported from _MSC_VER >= 1400 */
+  #define CAMLdeprecated_typedef(name, type) \
+    typedef __declspec(deprecated) type name
+#else
+  #define CAMLdeprecated_typedef(name, type) typedef type name
+#endif
+
 #ifdef CAML_INTERNALS
-typedef char * addr;
+CAMLdeprecated_typedef(addr, char *);
 #endif /* CAML_INTERNALS */
 
 /* Noreturn is preserved for compatibility reasons.
