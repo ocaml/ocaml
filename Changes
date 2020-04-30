@@ -1,5 +1,5 @@
-OCaml 4.10 release branch
--------------------------
+OCaml 4.10.0 (21 February 2020)
+-------------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -25,10 +25,10 @@ OCaml 4.10 release branch
 
 ### Runtime system:
 
-- #8809: Add a best-fit allocator for the major heap; still experimental,
-  it should be much better than current allocation policies (first-fit and
-  next-fit) for programs with large heaps, reducing both GC cost and
-  memory usage.
+- #8809, #9292: Add a best-fit allocator for the major heap; still
+  experimental, it should be much better than current allocation
+  policies (first-fit and next-fit) for programs with large heaps,
+  reducing both GC cost and memory usage.
   This new best-fit is not (yet) the default; set it explicitly with
   OCAMLRUNPARAM="a=2" (or Gc.set from the program). You may also want
   to increase the `space_overhead` parameter of the GC (a percentage,
@@ -200,6 +200,12 @@ OCaml 4.10 release branch
   (Stephen Dolan, with thanks to Andrew Hunter, Will Hasenplaugh,
    Spiros Eliopoulos and Brian Nigito. Review by Xavier Leroy)
 
+- #2165: better unboxing heuristics for let-bound identifiers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
+- #8735: unbox across static handlers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #8718, #9089: syntactic highlighting for code examples in the manual
@@ -331,8 +337,8 @@ OCaml 4.10 release branch
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
-- #8947, #9134: fix/improve support for the BFD library
-  (Sébastien Hinderer, review by Damien Doligez)
+- #8947, #9134, #9302, #9311: fix/improve support for the BFD library
+  (Sébastien Hinderer, review by Damien Doligez and David Allsopp)
 
 - #8951: let make's default target build the compiler
   (Sébastien Hinderer, review by David Allsopp)
@@ -605,12 +611,6 @@ OCaml 4.09.0 (19 September 2019):
 - #2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
-
-- #2165: better unboxing heuristics for let-bound identifiers
-  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
-
-- #8735: unbox across static handlers
-  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
