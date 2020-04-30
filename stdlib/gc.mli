@@ -132,7 +132,7 @@ type control =
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
        If compaction is permanently disabled, it is strongly suggested
-       to set [allocation_policy] to 1.
+       to set [allocation_policy] to 2.
        Default: 500. *)
 
     mutable stack_limit : int;
@@ -145,10 +145,15 @@ type control =
     [@ocaml.deprecated_mutable
          "Use {(Gc.get()) with Gc.allocation_policy = ...}"]
     (** The policy used for allocating in the heap.  Possible
-        values are 0 and 1.  0 is the next-fit policy, which is
-        quite fast but can result in fragmentation.  1 is the
+        values are 0 to 2.  0 is the original next-fit policy,
+        usually fast, but can result in fragmentation.  1 is the
         first-fit policy, which can be slower in some cases but
         can be better for programs with fragmentation problems.
+        2 is the best-fit allocation policy, the best for avoiding
+        fragmentation.
+        Note that changing the allocation policy at run-time forces
+        a heap compaction, which is a lengthy operation unless the
+        heap is small (e.g. at the start of the program).
         Default: 0. @since 3.11.0 *)
 
     window_size : int;

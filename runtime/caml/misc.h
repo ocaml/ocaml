@@ -416,6 +416,7 @@ int caml_runtime_warnings_active(void);
   01 -> fields of free list blocks in major heap
   03 -> heap chunks deallocated by heap shrinking
   04 -> fields deallocated by [caml_obj_truncate]
+  05 -> unused child pointers in large free blocks
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
   15 -> uninitialised words of [caml_stat_alloc_aligned] blocks
@@ -429,6 +430,7 @@ int caml_runtime_warnings_active(void);
 #define Debug_free_major     Debug_tag (0x01)
 #define Debug_free_shrink    Debug_tag (0x03)
 #define Debug_free_truncate  Debug_tag (0x04)
+#define Debug_free_unused    Debug_tag (0x05)
 #define Debug_uninit_minor   Debug_tag (0x10)
 #define Debug_uninit_major   Debug_tag (0x11)
 #define Debug_uninit_align   Debug_tag (0x15)
