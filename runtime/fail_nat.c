@@ -54,6 +54,9 @@ extern caml_generated_constant
 
 extern void caml_raise_exception (caml_domain_state* state, value bucket) Noreturn;
 
+/* Used by the stack overflow handler -> deactivate ASAN (see
+   segv_handler in signals_nat.c). */
+CAMLno_asan
 void caml_raise(value v)
 {
   if (Caml_state->c_stack == 0)
@@ -75,6 +78,9 @@ void caml_raise(value v)
   caml_raise_exception(Caml_state, v);
 }
 
+/* Used by the stack overflow handler -> deactivate ASAN (see
+   segv_handler in signals_nat.c). */
+CAMLno_asan
 void caml_raise_constant(value tag)
 {
   caml_raise(tag);
@@ -139,6 +145,9 @@ void caml_raise_out_of_memory(void)
   caml_raise_constant((value) caml_exn_Out_of_memory);
 }
 
+/* Used by the stack overflow handler -> deactivate ASAN (see
+   segv_handler in signals_nat.c). */
+CAMLno_asan
 void caml_raise_stack_overflow(void)
 {
   caml_raise_constant((value) caml_exn_Stack_overflow);

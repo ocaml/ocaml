@@ -34,6 +34,10 @@
 #include "caml/startup_aux.h"
 #include "caml/version.h"
 
+#ifdef _WIN32
+extern void caml_win32_unregister_overflow_detection (void);
+#endif
+
 /* Configuration parameters and flags */
 
 static struct caml_params params;
@@ -174,6 +178,9 @@ CAMLexport void caml_shutdown(void)
   caml_free_shared_libs();
 #endif
   caml_stat_destroy_pool();
+#if defined(_WIN32) && defined(NATIVE_CODE)
+  caml_win32_unregister_overflow_detection();
+#endif
 
   shutdown_happened = 1;
 }
