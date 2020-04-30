@@ -1424,6 +1424,11 @@ AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL])])
 
 AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
 
+## ffs or _BitScanForward
+
+AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
+AC_CHECK_FUNC([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])])
+
 ## Determine whether the debugger should/can be built
 
 AS_CASE([$enable_debugger],
