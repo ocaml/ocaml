@@ -1724,12 +1724,14 @@ let explain_unbound_gen ppf tv tl typ kwd pr =
     Printtyp.reset_and_mark_loops_list [typ ti; ty0];
     fprintf ppf
       ".@.@[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
-      kwd pr ti Printtyp.type_expr tv
+      kwd pr ti Printtyp.marked_type_expr tv
   with Not_found -> ()
 
 let explain_unbound ppf tv tl typ kwd lab =
   explain_unbound_gen ppf tv tl typ kwd
-    (fun ppf ti -> fprintf ppf "%s%a" (lab ti) Printtyp.type_expr (typ ti))
+    (fun ppf ti ->
+       fprintf ppf "%s%a" (lab ti) Printtyp.marked_type_expr (typ ti)
+    )
 
 let explain_unbound_single ppf tv ty =
   let trivial ty =
@@ -1771,16 +1773,13 @@ let report_error ppf = function
   | Recursive_abbrev s ->
       fprintf ppf "The type abbreviation %s is cyclic" s
   | Cycle_in_def (s, ty) ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
         s Printtyp.type_expr ty
   | Definition_mismatch (ty, None) ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
         "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
   | Definition_mismatch (ty, Some err) ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
