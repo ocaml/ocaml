@@ -167,6 +167,7 @@ tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/m.h.in text eol=lf
 runtime/caml/s.h.in text eol=lf
+runtime/caml/compatibility.h typo.long-line=may
 
 # These are all Perl scripts, so may not actually require this
 manual/tools/caml-tex text eol=lf

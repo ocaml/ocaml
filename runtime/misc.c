@@ -301,7 +301,8 @@ void caml_instr_atexit (void)
     char *name = fname;
 
     if (name[0] == '@'){
-      snprintf (buf, sizeof(buf), "%s.%d", name + 1, getpid ());
+      snprintf (buf, sizeof(buf), "%s.%lld",
+                name + 1, (long long) (getpid ()));
       name = buf;
     }
     if (name[0] == '+'){
