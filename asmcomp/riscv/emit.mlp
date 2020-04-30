@@ -283,8 +283,10 @@ let emit_instr i =
         match (src, dst) with
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
             `	mv      {emit_reg dst}, {emit_reg src}\n`
-        | {loc = Reg _; typ = Float}, {loc = Reg _} ->
+        | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
             `	fmv.d   {emit_reg dst}, {emit_reg src}\n`
+        | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Val | Int | Addr)} ->
+            `	fmv.x.d {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack s} ->
             let ofs = slot_offset s (register_class dst) in
             emit_store src ofs
