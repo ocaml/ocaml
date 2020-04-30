@@ -143,6 +143,10 @@ Working version
   untag_int (tag_int x) = x in Cmmgen.
   (Stephen Dolan, review by Vincent Laviron and Xavier Leroy)
 
+- #9041: amd64: Avoid stall in sqrtsd by clearing destination.
+  (Stephen Dolan, with thanks to Andrew Hunter, Will Hasenplaugh,
+   Spiros Eliopoulos and Brian Nigito. Review by Xavier Leroy)
+
 ### Runtime system:
 
 - #8809: Add a best-fit allocator, which should be much better for
@@ -164,13 +168,20 @@ Working version
 
 * #8691, #8897, #9027: Allocation functions are now guaranteed not to
   trigger any OCaml callback when called from C. In long-running C
-  functions, this can be replaced with calls to caml_check_urgent_gc.
+  functions, this can be replaced with calls to
+  caml_process_pending_actions at safe points.
   Side effect of this change: in bytecode mode, polling for
   asynchronous callbacks is perfomed at every minor heap allocation,
   in addition to function calls and loops as in previous OCaml
   releases.
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
    Guillaume Munch-Maccagnoni)
+
+* #9037: caml_check_urgent_gc is now guaranteed not to trigger any
+  finaliser. In long-running C functions, this can be replaced
+  with calls to caml_process_pending_actions at safe points.
+  (Guillaume Munch-Maccagnoni, review by Jacques-Henri Jourdan and
+   Stephen Dolan)
 
 - #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
   the new hook caml_fatal_error_hook.
