@@ -2,7 +2,7 @@
 
 set -e
 
-obj=start_after_scheduling_cmir_linear.${objext}
+obj=start_from_emit_cmir_linear.${objext}
 
 # Check that obj is generated
 if [ -e "$obj" ] ; then
