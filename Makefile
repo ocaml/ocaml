@@ -1081,6 +1081,7 @@ distclean: clean
 	rm -f Makefile.config Makefile.common runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache
 	rm -f config.log config.status libtool
+	rm -f tools/eventlog_metadata
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log*

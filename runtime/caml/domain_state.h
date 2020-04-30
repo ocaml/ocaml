@@ -18,6 +18,7 @@
 #define CAML_STATE_H
 
 #include <stddef.h>
+#include <stdio.h>
 #include "misc.h"
 #include "mlvalues.h"
 
