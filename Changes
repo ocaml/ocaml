@@ -37,15 +37,19 @@ OCaml 4.10 release branch
   (Damien Doligez, review by Stephen Dolan, Jacques-Henri Jourdan,
    Xavier Leroy, Leo White)
 
-* #8713: Introduce a state table in the runtime to contain the global variables.
+* #8713, #8940, #9115, #9143, #9202, #9251:
+  Introduce a state table in the runtime to contain the global variables.
   (The Multicore runtime will have one such state for each domain.)
 
-   This changes the name of some internal variables of the OCaml runtime;
-   in many cases <caml/compatibility.h> provides a compatibility macro with
-   the old name, but programs using runtime internals may need to be fixed.
+   This changes the status of some internal variables of the OCaml runtime;
+   in many cases the header file originally defining the internal variable
+   provides a compatibility macro with the old name, but programs
+   re-defining those variables by hand need to be fixed.
 
-   (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
-    David Allsopp, review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
+   (KC Sivaramakrishnan and Stephen Dolan,
+    compatibility hacking by David Allsopp, Florian Angeletti, Kate Deplaix,
+    Jacques Garrigue, Guillaume Munch-Maccagnoni and Nicolás Ojeda Bär,
+    review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
     Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
 - #8993: New C functions caml_process_pending_actions{,_exn} in
@@ -480,6 +484,12 @@ OCaml 4.10 release branch
   with caml_alloc_custom_mem in runtime/custom.c
   (Markus Mottl, review by Gabriel Scherer and Damien Doligez)
 
+- #9209, #9212: fix a development-version regression caused by #2288
+  (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
+   and Gabriel Scherer )
+
+- #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
+  (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
 
 OCaml 4.09 maintenance branch:
 ------------------------------

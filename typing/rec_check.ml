@@ -1001,7 +1001,7 @@ and module_binding : (Ident.t option * Typedtree.module_expr) -> bind_judg =
       *)
       let judg_E, env =
         match id with
-        | None -> modexp mexp << Ignore, env
+        | None -> modexp mexp << Guard, env
         | Some id ->
           let mM, env = Env.take id env in
           let judg_E = modexp mexp << (Mode.join mM Guard) in
@@ -1022,7 +1022,7 @@ and recursive_module_bindings
     let binding (mid, mexp) m =
       let judg_E =
         match mid with
-        | None -> modexp mexp << Ignore
+        | None -> modexp mexp << Guard
         | Some mid ->
           let mM = Env.find mid env in
           modexp mexp << (Mode.join mM Guard)
