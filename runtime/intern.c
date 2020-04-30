@@ -435,7 +435,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
         read_string:
           v = caml_alloc_string(len);
           if (use_intern_table) Store_field(intern_obj_table, obj_counter++, v);
-          readblock(String_val(v), len);
+          readblock((char *)String_val(v), len);
         } else {
           switch(code) {
           case CODE_INT8:

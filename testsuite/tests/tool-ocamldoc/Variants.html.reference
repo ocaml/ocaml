@@ -128,7 +128,7 @@
 <code><span id="TYPEELTVariants.A.x">x</span>&nbsp;: <code class="type">int</code>;</code></td>
 
 </tr></table>
-}
+<code>}</code>
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
@@ -149,7 +149,7 @@
 <code><span id="TYPEELTVariants.B.y">y</span>&nbsp;: <code class="type">int</code>;</code></td>
 
 </tr></table>
-}
+<code>}</code>
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">

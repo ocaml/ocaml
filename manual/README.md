@@ -113,6 +113,24 @@ of `unified-options.etex` contains the relevant information.
 Latex extensions
 ----------------
 
+### Sections (and subsections, and subsubsections)
+
+In order to provide stable links to all part of the manual, the standard
+`\section`, `\subsection` and `\subsubsection` macros are replaced by
+variants that take the section label as their first argument.
+For instance, in the manual, you have to write
+```latex
+\section{s:basics}{Basics}
+```
+rather than
+```latex
+\section{Basics\label{s:basics}}
+```
+This restriction ensures that hevea picks the section label when generating the
+header ids.
+
+A similar macro, `\lparagraph`, is provided for paragraphs.
+
 ### Caml environments
 
 The tool `tools/caml-tex` is used to generate the latex code for the examples

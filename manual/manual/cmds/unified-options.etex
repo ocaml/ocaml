@@ -223,7 +223,7 @@ C libraries.  At link-time, shared libraries are searched in the
 standard search path (the one corresponding to the "-I" option).
 The "-dllpath" option simply stores \var{dir} in the produced
 executable file, where "ocamlrun" can find it and use it as
-described in section~\ref{s-ocamlrun-dllpath}.
+described in section~\ref{s:ocamlrun-dllpath}.
 }%comp
 
 \notop{%
@@ -246,7 +246,7 @@ Add debugging information while compiling and linking. This option is
 required in order to \comp{be able to debug the program with "ocamldebug"
 (see chapter~\ref{c:debugger}), and to} produce stack backtraces when
 the program terminates on an uncaught exception (see
-section~\ref{ocamlrun-options}).
+section~\ref{s:ocamlrun-options}).
 }%notop
 
 \notop{%
@@ -351,7 +351,7 @@ incorporating the C object files and libraries given on the command
 line.  This custom runtime system can be used later to execute
 bytecode executables produced with the
 "ocamlc -use-runtime" \var{runtime-name} option.
-See section~\ref{s:custom-runtime} for more information.
+See section~\ref{ss:custom-runtime} for more information.
 }%comp
 
 \notop{%
@@ -491,7 +491,7 @@ Cause the linker to produce a C object file instead of
 \comp{a bytecode executable file}\nat{an executable file}.
 This is useful to wrap OCaml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
-section~\ref{s:embedded-code}. The name of the output object file
+section~\ref{ss:c-embedded-code}. The name of the output object file
 must be set with the "-o" option.
 This option can also be used to produce a \comp{C source file (".c" extension)
 or a} compiled shared/dynamic library (".so" extension, ".dll" under Windows).
@@ -686,7 +686,7 @@ be used with new software.
 Generate a bytecode executable file that can be executed on the custom
 runtime system \var{runtime-name}, built earlier with
 "ocamlc -make-runtime" \var{runtime-name}.
-See section~\ref{s:custom-runtime} for more information.
+See section~\ref{ss:custom-runtime} for more information.
 }%comp
 
 \item["-v"]

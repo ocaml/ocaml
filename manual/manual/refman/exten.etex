@@ -7,11 +7,12 @@ OCaml reference manual.
 
 
 %HEVEA\cutdef{section}
-\section{Recursive definitions of values} \label{s:letrecvalues}
+\section{s:letrecvalues}{Recursive definitions of values}
+%HEVEA\cutname{letrecvalues.html}
 
 (Introduced in Objective Caml 1.00)
 
-As mentioned in section~\ref{s:localdef}, the @'let' 'rec'@ binding
+As mentioned in section~\ref{sss:expr-localdef}, the @'let' 'rec'@ binding
 construct, in addition to the definition of recursive functions,
 also supports a certain class of recursive definitions of
 non-functional values, such as
@@ -76,7 +77,7 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
    is immediately linked to @name@.
 \end{itemize}
 
-\section{Recursive modules} \label{s-recursive-modules}
+\section{s:recursive-modules}{Recursive modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{and\@\texttt{and}}
 
@@ -161,7 +162,8 @@ and N:sig val x: int val y:int end = struct let x = M.x let y = 0 end
 Note that, in the @specification@ case, the @module-type@s must be
 parenthesized if they use the @'with' mod-constraint@ construct.
 
-\section{Private types}\label{s:private-types}
+\section{s:private-types}{Private types}
+%HEVEA\cutname{privatetypes.html}
 \ikwd{private\@\texttt{private}}
 
 Private type declarations in module signatures, of the form
@@ -172,11 +174,12 @@ between abstract type declarations, where no information is revealed
 on the type implementation, and data type definitions and type
 abbreviations, where all aspects of the type implementation are
 publicized.  Private type declarations come in three flavors: for
-variant and record types (section~\ref{s-private-types-variant}),
-for type abbreviations (section~\ref{s-private-types-abbrev}),
-and for row types (section~\ref{s-private-rows}).
+variant and record types (section~\ref{ss:private-types-variant}),
+for type abbreviations (section~\ref{ss:private-types-abbrev}),
+and for row types (section~\ref{ss:private-rows}).
 
-\subsection{Private variant and record types} \label{s-private-types-variant}
+\subsection{ss:private-types-variant}{Private variant and record types}
+
 
 (Introduced in Objective Caml 3.07)
 
@@ -217,7 +220,7 @@ handled like abstract types. That is, if a private type has
 parameters, their variance is the one explicitly given by prefixing
 the parameter by a `"+"' or a `"-"', it is invariant otherwise.
 
-\subsection{Private type abbreviations} \label{s-private-types-abbrev}
+\subsection{ss:private-types-abbrev}{Private type abbreviations}
 
 (Introduced in Objective Caml 3.11)
 
@@ -262,7 +265,7 @@ you must use the full form @"(" expr ":" typexpr_1 ":>" typexpr_2 ")"@ where
 @typexpr_1@ is the expected type of @expr@. Concretely, this would be "(x :
 N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 
-\subsection{Private row types} \label{s-private-rows}
+\subsection{ss:private-rows}{Private row types}
 \ikwd{private\@\texttt{private}}
 
 (Introduced in Objective Caml 3.09)
@@ -330,9 +333,11 @@ constructors of [t] could be present.
 Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
 
-\section{Locally abstract types}
+\section{s:locally-abstract}{Locally abstract types}
 \ikwd{type\@\texttt{type}}
-\ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}
+\ikwd{fun\@\texttt{fun}}
+%HEVEA\cutname{locallyabstract.html}
+
 
 (Introduced in OCaml 3.12, short syntax added in 4.03)
 
@@ -387,10 +392,10 @@ let sort_uniq (type s) (cmp : s -> s -> int) =
 \end{caml_example*}
 
 It is also extremely useful for first-class modules (see
-section~\ref{s-first-class-modules}) and generalized algebraic datatypes
+section~\ref{s:first-class-modules}) and generalized algebraic datatypes
 (GADTs: see section~\ref{s:gadts}).
 
-\paragraph{Polymorphic syntax} (Introduced in OCaml 4.00)
+\lparagraph{p:polymorpic-locally-abstract}{Polymorphic syntax} (Introduced in OCaml 4.00)
 
 \begin{syntax}
 let-binding:
@@ -423,11 +428,13 @@ GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
 
 The same feature is provided for method definitions.
 
-\section{First-class modules}\label{s-first-class-modules}
+\section{s:first-class-modules}{First-class modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
 \ikwd{and\@\texttt{and}}
+%HEVEA\cutname{firstclassmodules.html}
+
 
 (Introduced in OCaml 3.12; pattern syntax and package type inference
 introduced in 4.00; structural comparison of package types introduced in 4.02.;
@@ -506,7 +513,7 @@ It can also be used anywhere in the context of a local module binding
 @'let' 'module' module-name '=' '(' "val" expr_1 ":" package-type ')'
  "in" expr_2@.
 
-\paragraph{Basic example} A typical use of first-class modules is to
+\lparagraph{p:fst-mod-example}{Basic example} A typical use of first-class modules is to
 select at run-time among several implementations of a signature.
 Each implementation is a structure that we can encapsulate as a
 first-class module, then store in a data structure such as a hash
@@ -547,7 +554,7 @@ let draw_using_device device_name picture =
   Device.draw picture
 \end{caml_example*}
 
-\paragraph{Advanced examples}
+\lparagraph{p:fst-mod-advexamples}{Advanced examples}
 With first-class modules, it is possible to parametrize some code over the
 implementation of a module without using a functor.
 
@@ -656,7 +663,8 @@ Note that this function uses an explicit polymorphic annotation to obtain
 polymorphic recursion.
 \fi
 
-\section{Recovering the type of a module} \label{s:module-type-of}
+\section{s:module-type-of}{Recovering the type of a module}
+%HEVEA\cutname{moduletypeof.html}
 
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
@@ -710,14 +718,14 @@ end
 This idiom guarantees that "Myset" is compatible with Set, but allows
 it to represent sets internally in a different way.
 
-\section{Substituting inside a signature}
+\section{s:signature-substitution}{Substituting inside a signature}
 \ikwd{with\@\texttt{with}}
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
-\label{s:signature-substitution}
+%HEVEA\cutname{signaturesubstitution.html}
 
-\subsection{Destructive substitutions}
-\label{ss:destructive-substitution}
+
+\subsection{ss:destructive-substitution}{Destructive substitutions}
 
 (Introduced in OCaml 3.12, generalized in 4.06)
 
@@ -773,8 +781,7 @@ module type ComparableInt = Comparable with type t = int ;;
 module type CompareInt = ComparableInt with type t := int
 \end{caml_example}
 
-\subsection{Local substitution declarations}
-\label{ss:local-substitution}
+\subsection{ss:local-substitution}{Local substitution declarations}
 
 (Introduced in OCaml 4.08)
 
@@ -818,9 +825,9 @@ module type S = sig
 end [@@expect error];;
 \end{caml_example}
 
-\section{Type-level module aliases}
+\section{s:module-alias}{Type-level module aliases}
 \ikwd{module\@\texttt{module}}
-\label{s:module-alias}
+%HEVEA\cutname{modulealias.html}
 
 (Introduced in OCaml 4.02)
 
@@ -854,9 +861,9 @@ module P = struct end
 module N = P
 \end{caml_example*}
 has type
-\caml
-\:module N = P
-\endcaml
+\begin{caml_example*}{signature}
+module N = P
+\end{caml_example*}
 
 Type-level module aliases are used when checking module path
 equalities. That is, in a context where module name @N@ is known to be
@@ -933,8 +940,9 @@ compiler will always display @'Lib.FooBar'@ instead of
 all the user sees is the nicer dot names. This is how the OCaml
 standard library is compiled.
 
-\section{Overriding in open statements}\label{s:explicit-overriding-open}
+\section{s:explicit-overriding-open}{Overriding in open statements}
 \ikwd{open.\@\texttt{open\char33}}
+%HEVEA\cutname{overridingopen.html}
 
 (Introduced in OCaml 4.01)
 
@@ -969,8 +977,10 @@ intentional and should not trigger the warning.
 This is also available (since OCaml 4.06) for local opens in class
 expressions and class type expressions.
 
-\section{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
-\ikwd{match\@\texttt{match}} \label{s:gadts}
+\section{s:gadts}{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
+\ikwd{match\@\texttt{match}}
+%HEVEA\cutname{gadts.html}
+
 
 (Introduced in OCaml 4.00)
 
@@ -1011,7 +1021,7 @@ If a constructor has some existential variables, fresh locally
 abstract types are generated, and they must not escape the
 scope of this branch.
 
-\paragraph{Recursive functions}
+\lparagraph{p:gadts-recfun}{Recursive functions}
 
 Here is a concrete example:
 \begin{caml_example*}{verbatim}
@@ -1053,7 +1063,7 @@ In this branch, the type of "f" is "($App_ 'b-> a)". The prefix "$" in
 flow to the type variable "'a" and escape its scope. This triggers the
 above error.
 
-\paragraph{Type inference}
+\lparagraph{p:gadts-type-inference}{Type inference}
 
 Type inference for GADTs is notoriously hard.
 This is due to the fact some types may become ambiguous when escaping
@@ -1106,7 +1116,7 @@ let get_int : int term -> int = function
 \end{caml_example*}
 
 
-\paragraph{Refutation cases} (Introduced in OCaml 4.03)
+\lparagraph{p:gadt-refutation-cases}{Refutation cases} (Introduced in OCaml 4.03)
 
 Usually, the exhaustiveness check only tries to check whether the
 cases omitted from the pattern matching are typable or not.
@@ -1149,7 +1159,7 @@ Another addition is that the redundancy check is now aware of GADTs: a
 case will be detected as redundant if it could be replaced by a
 refutation case using the same pattern.
 
-\paragraph{Advanced examples}
+\lparagraph{p:gadts-advexamples}{Advanced examples}
 The "term" type we have defined above is an {\em indexed} type, where
 a type parameter reflects a property of the value contents.
 Another use of GADTs is {\em singleton} types, where a GADT value
@@ -1211,8 +1221,7 @@ let get_dyn : type a. a typ -> dyn -> a option =
   | Some Eq -> Some x
 \end{caml_example*}
 
-\paragraph{Existential type names in error messages}%
-\label{p:existential-names}
+\lparagraph{p:existential-names}{Existential type names in error messages}%
 (Updated in OCaml 4.03.0)
 
 The typing of pattern matching in presence of GADT can generate many
@@ -1251,7 +1260,7 @@ which could not be named using one of the previous schemes.
 As shown by the last item, the current behavior is imperfect
 and may be improved in future versions.
 
-\paragraph{Equations on non-local abstract types} (Introduced in OCaml
+\lparagraph{p:gadt-equation-nonlocal-abstract}{Equations on non-local abstract types} (Introduced in OCaml
 4.04)
 
 GADT pattern-matching may also add type equations to non-local
@@ -1273,7 +1282,8 @@ defined by the compiler itself, such as "int" or "array"), and
 abstract types defined by the local module, are non-instantiable, and
 as such cause a type error rather than introduce an equation.
 
-\section{Syntax for Bigarray access}\label{s:bigarray-access}
+\section{s:bigarray-access}{Syntax for Bigarray access}
+%HEVEA\cutname{bigarray.html}
 
 (Introduced in Objective Caml 3.00)
 
@@ -1313,7 +1323,8 @@ The short expressions are translated into calls to functions of the
 
 The last two entries are valid for any $n > 3$.
 
-\section{Attributes}\label{s:attributes}
+\section{s:attributes}{Attributes}
+%HEVEA\cutname{attributes.html}
 
 \ikwd{when\@\texttt{when}}
 
@@ -1505,8 +1516,7 @@ and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@bar] in x 
 \end{verbatim}
 
 
-\subsection{Built-in attributes}
-\label{ss:builtin-attributes}
+\subsection{ss:builtin-attributes}{Built-in attributes}
 
 Some attributes are understood by the type-checker:
 \begin{itemize}
@@ -1711,7 +1721,8 @@ end = struct
 end
 \end{caml_example*}
 
-\section{Extension nodes}\label{s:extension-nodes}
+\section{s:extension-nodes}{Extension nodes}
+%HEVEA\cutname{extensionnodes.html}
 
 (Introduced in OCaml 4.02,
 infix notations for constructs other than expressions added in 4.03,
@@ -1810,7 +1821,7 @@ different semantics than they expect. Moreover, giving semantics to a
 specific delimiter limits the freedom to change the delimiter to avoid
 escaping issues.
 
-\subsection{Built-in extension nodes}
+\subsection{ss:builtin-extension-nodes}{Built-in extension nodes}
 
 (Introduced in OCaml 4.03)
 
@@ -1833,7 +1844,8 @@ let y = [%extension_constructor Y]
  x <> y;;
 \end{caml_example}
 
-\section{Extensible variant types}\label{s:extensible-variants}
+\section{s:extensible-variants}{Extensible variant types}
+%HEVEA\cutname{extensiblevariants.html}
 
 (Introduced in OCaml 4.02)
 
@@ -1927,7 +1939,7 @@ let inspection_works = function
 let construction_is_forbidden = B.Bool 1;;
 \end{caml_example}
 
-\subsection{Private extensible variant types}
+\subsection{ss:private-extensible}{Private extensible variant types}
 
 (Introduced in OCaml 4.06)
 
@@ -1955,7 +1967,8 @@ end = struct
 end
 \end{caml_example*}
 
-\section{Generative functors}\label{s:generative-functors}
+\section{s:generative-functors}{Generative functors}
+%HEVEA\cutname{generativefunctors.html}
 
 (Introduced in OCaml 4.02)
 
@@ -1994,7 +2007,8 @@ types).
 As a side-effect of this generativity, one is allowed to unpack
 first-class modules in the body of generative functors.
 
-\section{Extension-only syntax}
+\section{s:extension-syntax}{Extension-only syntax}
+%HEVEA\cutname{extensionsyntax.html}
 (Introduced in OCaml 4.02.2, extended in 4.03)
 
 Some syntactic constructions are accepted during parsing and rejected
@@ -2003,7 +2017,7 @@ be used directly in vanilla OCaml. However, "-ppx" rewriters and other
 external tools can exploit this parser leniency to extend the language
 with these new syntactic constructions by rewriting them to
 vanilla constructions.
-\subsection{Extension operators} \label{s:ext-ops}
+\subsection{ss:extension-operators}{Extension operators} \label{s:ext-ops}
 (Introduced in OCaml 4.02.2)
 \begin{syntax}
 infix-symbol:
@@ -2015,7 +2029,7 @@ infix-symbol:
 Operator names starting with a "#" character and containing more than
 one "#" character are reserved for extensions.
 
-\subsection{Extension literals} \label{s:extension-literals}
+\subsection{ss:extension-literals}{Extension literals}
 (Introduced in OCaml 4.03)
 \begin{syntax}
 float-literal:
@@ -2045,7 +2059,8 @@ int-literal:
 Int and float literals followed by an one-letter identifier in the
 range @["g".."z"||"G".."Z"]@ are extension-only literals.
 
-\section{Inline records} \label{s:inline-records}
+\section{s:inline-records}{Inline records}
+%HEVEA\cutname{inlinerecords.html}
 (Introduced in OCaml 4.03)
 \begin{syntax}
   constr-args:
@@ -2091,7 +2106,8 @@ let invalid = function
   | Point p -> p
 \end{caml_example}
 
-\section{Documentation comments}
+\section{s:doc-comments}{Documentation comments}
+%HEVEA\cutname{doccomments.html}
 (Introduced in OCaml 4.03)
 
 Comments which start with "**" are treated specially by the
@@ -2109,7 +2125,7 @@ documentation generator (see \ref{c:ocamldoc}). The three comment forms
 recognised by the compiler are a subset of the forms accepted by
 ocamldoc (see \ref{s:ocamldoc-comments}).
 
-\subsection{Floating comments}
+\subsection{ss:floating-comments}{Floating comments}
 
 Comments surrounded by blank lines that appear within structures,
 signatures, classes or class types are converted into
@@ -2133,7 +2149,7 @@ type t = T
 let mkT = T
 \end{caml_example*}
 
-\subsection{Item comments}
+\subsection{ss:item-comments}{Item comments}
 
 Comments which appear {\em immediately before} or {\em immediately
 after} a structure item, signature item, class item or class type item
@@ -2182,7 +2198,7 @@ type s = S
 
 and the compiler will emit warning 50.
 
-\subsection{Label comments}
+\subsection{ss:label-comments}{Label comments}
 
 Comments which appear {\em immediately after} a labelled argument,
 record field, variant constructor, object method or polymorphic variant
@@ -2274,13 +2290,17 @@ type t =  T of string
 [@@ocaml.doc " Attaches to t "]
 \end{caml_example*}
 
-\section{Extended indexing operators \label{s:index-operators} }
+\section{s:index-operators}{Extended indexing operators }
+%HEVEA\cutname{indexops.html}
 (Introduced in 4.06)
 
 \begin{syntax}
 
 dot-ext:
-   | ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'='||'>'||'?'||'@'||'^'||'|'||'~') { operator-char }
+   | dot-operator-char { operator-char }
+;
+dot-operator-char:
+  '!' ||  '?' || core-operator-char || '%' || ':'
 ;
 expr:
           ...
@@ -2315,7 +2335,7 @@ dict.Dict.%{"one"};;
 let open Dict in dict.%{"two"};;
 \end{caml_example}
 
-\subsection{Multi-index notation}
+\subsection{ss:multiindexing}{Multi-index notation}
 \begin{syntax}
 expr:
           ...
@@ -2364,7 +2384,8 @@ let syntax_compare vec mat t3 t4 =
 
 
 
-\section{Empty variant types\label{s:empty-variants} }
+\section{s:empty-variants}{Empty variant types}
+%HEVEA\cutname{emptyvariants.html}
 (Introduced in 4.07.0)
 
 \begin{syntax}
@@ -2379,7 +2400,8 @@ type t = |
 let f (x: t) = match x with _ -> .
 \end{caml_example*}
 
-\section{Alerts \label{s:alerts} }
+\section{s:alerts}{Alerts}
+%HEVEA\cutname{alerts.html}
 (Introduced in 4.08)
 
 Since OCaml 4.08, it is possible to mark components (such as value or
@@ -2477,7 +2499,8 @@ val x: int
   [@@@ocaml.alert deprecated "Please do something else"]
 \end{verbatim}
 
-\section{Generalized open statements\label{s:generalized-open}}
+\section{s:generalized-open}{Generalized open statements}
+%HEVEA\cutname{generalizedopens.html}
 
 (Introduced in 4.08)
 
@@ -2595,15 +2618,16 @@ class c =
   ...
 \end{verbatim}
 
-\section{Binding operators\label{s:binding-operators} }
+\section{s:binding-operators}{Binding operators}
+%HEVEA\cutname{bindingops.html}
 (Introduced in 4.08.0)
 
 \begin{syntax}
 let-operator:
- | 'let' ('$'||'&'||'*'||'+'||'-'||'/'||'<'||'='||'>'||'@'||'^'||'|') { operator-char }
+ | 'let' (core-operator-char || '<') { dot-operator-char }
 ;
 and-operator:
- | 'and' ('$'||'&'||'*'||'+'||'-'||'/'||'<'||'='||'>'||'@'||'^'||'|') { operator-char }
+ | 'and' (core-operator-char || '<') { dot-operator-char }
 ;
 operator-name :
           ...
@@ -2690,7 +2714,7 @@ let sum3 z1 z2 z3 =
     (fun ((x1, x2), x3) -> x1 + x2 + x3)
 \end{caml_example}
 
-\subsection{Rationale}
+\subsection{ss:letops-rationale}{Rationale}
 
 This extension is intended to provide a convenient syntax for working
 with monads and applicatives.

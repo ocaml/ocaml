@@ -1,7 +1,7 @@
 \chapter{Optimisation with Flambda}
 %HEVEA\cutname{flambda.html}
 
-\section{Overview}
+\section{s:flambda-overview}{Overview}
 
 {\em Flambda} is the term used to describe a series of optimisation passes
 provided by the native code compilers as of OCaml 4.03.
@@ -33,8 +33,8 @@ bytecode.
 
 Flambda should not in general affect the semantics of existing programs.
 Two exceptions to this rule are: possible elimination of pure code
-that is being benchmarked (see section\ \ref{inhibition}) and changes in
-behaviour of code using unsafe operations (see section\ \ref{unsafe}).
+that is being benchmarked (see section\ \ref{s:flambda-inhibition}) and changes in
+behaviour of code using unsafe operations (see section\ \ref{s:flambda-unsafe}).
 
 Flambda does not yet optimise array or string bounds checks.  Neither
 does it take hints for optimisation from any assertions written by the
@@ -43,7 +43,7 @@ user in the code.
 Consult the {\em Glossary} at the end of this chapter for definitions of
 technical terms used below.
 
-\section{Command-line flags}
+\section{s:flambda-cli}{Command-line flags}
 
 The Flambda optimisers provide a variety of command-line flags that may
 be used to control their behaviour.  Detailed descriptions of each flag
@@ -54,7 +54,7 @@ Commonly-used options:
 \begin{options}
 \item[\machine{-O2}] Perform more optimisation than usual.  Compilation
 times may be lengthened.  (This flag is an abbreviation for a certain
-set of parameters described in section\ \ref{defaults}.)
+set of parameters described in section\ \ref{s:flambda-defaults}.)
 \item[\machine{-O3}] Perform even more optimisation than usual, possibly
 including unrolling of recursive functions.  Compilation times may be
 significantly lengthened.
@@ -78,10 +78,10 @@ Less commonly-used options:
 \item[\machine{-remove-unused-arguments}] Remove unused function arguments
 even when the argument is not specialised.  This may have a small
 performance penalty.
-See section\ \ref{remove-unused-args}.
+See section\ \ref{ss:flambda-remove-unused-args}.
 \item[\machine{-unbox-closures}] Pass free variables via specialised arguments
 rather than closures (an optimisation for reducing allocation).  See
-section\ \ref{unbox-closures}.  This may have a small performance penalty.
+section\ \ref{ss:flambda-unbox-closures}.  This may have a small performance penalty.
 \end{options}
 
 Advanced options, only needed for detailed tuning:
@@ -91,46 +91,46 @@ is used.
 \begin{itemize}
 \item When not in {\tt -Oclassic} mode, {\tt -inline} limits the total
 size of functions considered for inlining during any speculative inlining
-search.  (See section\ \ref{speculation}.)  Note that 
+search.  (See section\ \ref{ss:flambda-speculation}.)  Note that
 this parameter does
 {\bf not} control the assessment as to whether any particular function may
 be inlined.  Raising it to excessive amounts will not necessarily cause
 more functions to be inlined.
 \item When in {\tt -Oclassic} mode, {\tt -inline} behaves as in
 previous versions of the compiler: it is the maximum size of function to
-be considered for inlining.  See section\ \ref{classic}.
+be considered for inlining.  See section\ \ref{ss:flambda-classic}.
 \end{itemize}
 \item[\machine{-inline-toplevel}] The equivalent of {\tt -inline} but used
 when speculative inlining starts at toplevel.  See
-section\ \ref{speculation}.
+section\ \ref{ss:flambda-speculation}.
 Not used in {\tt -Oclassic} mode.
 \item[\machine{-inline-branch-factor}] Controls how the inliner assesses
 whether a code path is likely to be hot or cold.  See
-section\ \ref{assessment-inlining}.
+section\ \ref{ss:flambda-assessment-inlining}.
 \item[\machine{-inline-alloc-cost},
   \machine{-inline-branch-cost},
   \machine{-inline-call-cost}] Controls how the inliner assesses the runtime
   performance penalties associated with various operations.  See
-  section\ \ref{assessment-inlining}.
+  section\ \ref{ss:flambda-assessment-inlining}.
 \item[\machine{-inline-indirect-cost},
   \machine{-inline-prim-cost}] Likewise.
 \item[\machine{-inline-lifting-benefit}] Controls inlining of functors
-at toplevel.  See section\ \ref{assessment-inlining}.
+at toplevel.  See section\ \ref{ss:flambda-assessment-inlining}.
 \item[\machine{-inline-max-depth}] The maximum depth of any
-speculative inlining search.  See section\ \ref{speculation}.
+speculative inlining search.  See section\ \ref{ss:flambda-speculation}.
 \item[\machine{-inline-max-unroll}] The maximum depth of any unrolling of
 recursive functions during any speculative inlining search.
-See section\ \ref{speculation}.
+See section\ \ref{ss:flambda-speculation}.
 \item[\machine{-no-unbox-free-vars-of-closures}] %
-Do not unbox closure variables.  See section\ \ref{unbox-fvs}.
+Do not unbox closure variables.  See section\ \ref{ss:flambda-unbox-fvs}.
 \item[\machine{-no-unbox-specialised-args}] %
 Do not unbox arguments to which functions have been specialised.  See
-section\ \ref{unbox-spec-args}.
+section\ \ref{ss:flambda-unbox-spec-args}.
 \item[\machine{-rounds}] How many rounds of optimisation to perform.
-See section\ \ref{rounds}.
+See section\ \ref{ss:flambda-rounds}.
 \item[\machine{-unbox-closures-factor}] Scaling factor for benefit
 calculation when using {\tt -unbox-closures}.  See
-section\ \ref{unbox-closures}.
+section\ \ref{ss:flambda-unbox-closures}.
 \end{options}
 
 \paragraph{Notes}
@@ -159,7 +159,7 @@ in effect.
 releases.
 \end{itemize}
 
-\subsection{Specification of optimisation parameters by round}\label{rounds}
+\subsection{ss:flambda-rounds}{Specification of optimisation parameters by round}
 
 Flambda operates in {\em rounds}: one round consists of a certain sequence
 of transformations that may then be repeated in order to achieve more
@@ -185,7 +185,7 @@ other flags, meaning that certain parameters may be overridden without
 having to specify every parameter usually invoked by the given optimisation
 level.
 
-\section{Inlining}
+\section{s:flambda-inlining}{Inlining}
 
 {\em Inlining} refers to the copying of the code of a function to a
 place where the function is called.
@@ -237,7 +237,7 @@ let n = 4 * fact 3
 Flambda provides significantly enhanced inlining capabilities relative to
 previous versions of the compiler.
 
-\subsubsection{Aside: when inlining is performed}
+\subsubsection{sss:flambda-inlining-aside}{Aside: when inlining is performed}
 
 Inlining is performed together with all of the other Flambda optimisation
 passes, that is to say, after closure conversion.  This has three particular
@@ -258,15 +258,15 @@ it becomes more straightforward to control which variables end up
 in which closures, helping to avoid closure bloat.
 \end{itemize}
 
-\subsection{Classic inlining heuristic}\label{classic}
+\subsection{ss:flambda-classic}{Classic inlining heuristic}
 
 In {\tt -Oclassic} mode the behaviour of the Flambda inliner
 mimics previous versions
 of the compiler.  (Code may still be subject to further optimisations not
 performed by previous versions of the compiler: functors may be inlined,
 constants are lifted and unused code is eliminated all as described elsewhere
-in this chapter.  See sections \ref{functors},\ \ref{lift-const} %
-and\ \ref{remove-unused}.
+in this chapter.  See sections \ref{sss:flambda-functors},\ \ref{ss:flambda-lift-const} %
+and\ \ref{s:flambda-remove-unused}.
 At the definition site of a function, the body of the
 function is measured.  It will then be marked as eligible for inlining
 (and hence inlined at every direct call site) if:
@@ -303,7 +303,7 @@ below).
 \end{itemize}
 The Flambda mode is described in the next section.
 
-\subsection{Overview of ``Flambda'' inlining heuristics}
+\subsection{ss:flambda-inlining-overview}{Overview of ``Flambda'' inlining heuristics}
 
 The Flambda inlining heuristics, used whenever the compiler is configured
 for Flambda and {\tt -Oclassic} was not specified, make inlining decisions
@@ -356,9 +356,9 @@ if {\tt -O3} optimisation level is selected and/or the
 {\tt -inline-max-unroll}
 flag is passed with an argument greater than zero.)
 
-\subsection{Handling of specific language constructs}
+\subsection{ss:flambda-by-constructs}{Handling of specific language constructs}
 
-\subsubsection{Functors}\label{functors}
+\subsubsection{sss:flambda-functors}{Functors}
 
 There is nothing particular about functors that inhibits inlining compared
 to normal functions.  To the inliner, these both look the same, except
@@ -372,18 +372,18 @@ Applications of functors not at toplevel, for example in a local module
 inside some other expression, are treated by the inliner identically to
 normal function calls.
 
-\subsubsection{First-class modules}
+\subsubsection{sss:flambda-first-class-modules}{First-class modules}
 
 The inliner will be able to consider inlining a call to a function in a first
 class module if it knows which particular function is going to be called.
 The presence of the first-class module record that wraps the set of functions
 in the module does not per se inhibit inlining.
 
-\subsubsection{Objects}
+\subsubsection{sss:flambda-objects}{Objects}
 
 Method calls to objects are not at present inlined by Flambda.
 
-\subsection{Inlining reports}
+\subsection{ss:flambda-inlining-reports}{Inlining reports}
 
 If the {\tt -inlining-report} option is provided to the compiler then a file
 will be emitted corresponding to each round of optimisation.  For the
@@ -393,7 +393,7 @@ with {\em round} a
 zero-based integer.  Inside the files, which are formatted as ``org mode'',
 will be found English prose describing the decisions that the inliner took.
 
-\subsection{Assessment of inlining benefit}\label{assessment-inlining}
+\subsection{ss:flambda-assessment-inlining}{Assessment of inlining benefit}
 
 Inlining typically
 results in an increase in code size, which if left unchecked, may not only
@@ -428,7 +428,7 @@ The individual costs for the various kinds of operations may be adjusted
 using the various {\tt -inline-...-cost} flags as follows.  Costs are
 specified as integers.  All of these flags accept a single argument
 describing such integers using the conventions
-detailed in section\ \ref{rounds}.
+detailed in section\ \ref{ss:flambda-rounds}.
 \begin{options}
 \item[\machine{-inline-alloc-cost}] The cost of an allocation.
 \item[\machine{-inline-branch-cost}] The cost of a branch.
@@ -437,7 +437,7 @@ detailed in section\ \ref{rounds}.
 \item[\machine{-inline-prim-cost}] The cost of a {\em primitive}.  Primitives
 encompass operations including arithmetic and memory access.
 \end{options}
-(Default values are described in section\ \ref{defaults} below.)
+(Default values are described in section\ \ref{s:flambda-defaults} below.)
 
 The initial benefit value is then scaled by a factor that attempts to
 compensate for the fact that the current point in the code, if under some
@@ -464,7 +464,7 @@ an additional benefit (which may be controlled by the
 {\tt -inline-lifting-benefit} flag) to bias inlining in such situations
 towards keeping the inlined version.
 
-\subsection{Control of speculation}\label{speculation}
+\subsection{ss:flambda-speculation}{Control of speculation}
 
 As described above, there are three parameters that restrict the search
 for inlining opportunities during speculation:
@@ -509,7 +509,7 @@ the depth is incremented by one when examining the resulting body.  If the
 depth reaches the limit set by {\tt -inline-max-unroll} then speculation
 stops.
 
-\section{Specialisation}\label{specialisation}
+\section{s:flambda-specialisation}{Specialisation}
 
 The inliner may discover a call site to a recursive function where
 something is known about the arguments: for example, they may be equal to
@@ -625,7 +625,7 @@ let rec iter_swap f g l =
     iter_swap f g t
 \end{verbatim}
 
-\subsection{Assessment of specialisation benefit}
+\subsection{ss:flambda-assessment-specialisation}{Assessment of specialisation benefit}
 
 The benefit of specialisation is assessed in a similar way as for inlining.
 Specialised argument information may mean that the body of the function
@@ -634,7 +634,7 @@ into a benefit.  This, together with the size of the duplicated (specialised)
 function declaration, is then assessed against the size of the call to the
 original function.
 
-\section{Default settings of parameters}\label{defaults}
+\section{s:flambda-defaults}{Default settings of parameters}
 
 The default settings (when not using {\tt -Oclassic}) are for one
 round of optimisation using the following parameters.
@@ -655,7 +655,7 @@ round of optimisation using the following parameters.
 \entree{{\tt -unbox-closures-factor}}{10}
 \end{tableau}
 
-\subsection{Settings at -O2 optimisation level}
+\subsection{ss:flambda-o2}{Settings at -O2 optimisation level}
 
 When {\tt -O2} is specified two rounds of optimisation are performed.
 The first round uses the default parameters (see above).  The second uses
@@ -676,7 +676,7 @@ the following parameters.
 \entree{{\tt -unbox-closures-factor}}{Same as default}
 \end{tableau}
 
-\subsection{Settings at -O3 optimisation level}
+\subsection{ss:flambda-o3}{Settings at -O3 optimisation level}
 
 When {\tt -O3} is specified three rounds of optimisation are performed.
 The first two rounds are as for {\tt -O2}.  The third round uses
@@ -697,7 +697,7 @@ the following parameters.
 \entree{{\tt -unbox-closures-factor}}{Same as default}
 \end{tableau}
 
-\section{Manual control of inlining and specialisation}
+\section{s:flambda-manual-control}{Manual control of inlining and specialisation}
 
 Should the inliner prove recalcitrant and refuse to inline a particular
 function, or if the observed inlining decisions are not to the programmer's
@@ -778,7 +778,7 @@ end [@@inline never]
 module X = F [@inlined] (struct type t = int end)
 \end{verbatim}
 
-\section{Simplification}
+\section{s:flambda-simplification}{Simplification}
 
 Simplification, which is run in conjunction with inlining,
 propagates information (known as {\em approximations}) about which
@@ -808,9 +808,9 @@ Note that no information is propagated about the contents of strings,
 even in {\tt safe-string} mode, because it cannot yet be guaranteed
 that they are immutable throughout a given program.
 
-\section{Other code motion transformations}
+\section{s:flambda-other-transfs}{Other code motion transformations}
 
-\subsection{Lifting of constants}\label{lift-const}
+\subsection{ss:flambda-lift-const}{Lifting of constants}
 
 Expressions found to be constant will be lifted to symbol
 bindings---that is to say, they will be statically allocated in the
@@ -852,7 +852,7 @@ into a fresh value on the OCaml heap.
 \end{itemize}
 \end{itemize}
 
-\subsection{Lifting of toplevel let bindings}
+\subsection{ss:flambda-lift-toplevel-let}{Lifting of toplevel let bindings}
 
 Toplevel {\tt let}-expressions may be lifted to symbol bindings to ensure
 that the corresponding bound variables are not captured by closures.  If the
@@ -879,14 +879,14 @@ indeed the function declaration itself---marked
 as to never be inlined.  This technique prevents lifting of the definition
 of the value in question (assuming of course that it is not constant).
 
-\section{Unboxing transformations}
+\section{s:flambda-unboxing}{Unboxing transformations}
 
 The transformations in this section relate to the splitting apart of
 {\em boxed} (that is to say, non-immediate) values.  They are largely
 intended to reduce allocation, which tends to result in a runtime
 performance profile with lower variance and smaller tails.
 
-\subsection{Unboxing of closure variables}\label{unbox-fvs}
+\subsection{ss:flambda-unbox-fvs}{Unboxing of closure variables}
 
 This transformation is enabled unless
 {\tt -no-unbox-free-vars-of-closures} is provided.
@@ -934,7 +934,7 @@ The allocation of the pair has been eliminated.
 This transformation does not operate if it would cause the closure to
 contain more than twice as many closure variables as it did beforehand.
 
-\subsection{Unboxing of specialised arguments}\label{unbox-spec-args}
+\subsection{ss:flambda-unbox-spec-args}{Unboxing of specialised arguments}
 
 This transformation is enabled unless
 {\tt -no-unbox-specialised-args} is provided.
@@ -1011,7 +1011,7 @@ a small penalty owing to having to bounce through the wrapper.  The technique
 of {\em direct call surrogates} used for {\tt -unbox-closures} is not
 used by the transformation to unbox specialised arguments.)
 
-\subsection{Unboxing of closures}\label{unbox-closures}
+\subsection{ss:flambda-unbox-closures}{Unboxing of closures}
 
 This transformation is {\em not} enabled by default.  It may be enabled
 using the {\tt -unbox-closures} flag.
@@ -1100,22 +1100,22 @@ passes the free variables via function arguments in
 order to eliminate all closure allocation in this example (aside from any
 that might be performed inside {\tt printf}).
 
-\section{Removal of unused code and values}\label{remove-unused}
+\section{s:flambda-remove-unused}{Removal of unused code and values}
 
-\subsection{Removal of redundant let expressions}
+\subsection{ss:flambda-redundant-let}{Removal of redundant let expressions}
 
 The simplification pass removes unused {\tt let} bindings so long as
 their corresponding defining expressions have ``no effects''.  See
 the section ``Treatment of effects'' below for the precise definition of
 this term.
 
-\subsection{Removal of redundant program constructs}
+\subsection{ss:flambda-redundant}{Removal of redundant program constructs}
 
 This transformation is analogous to the removal of {\tt let}-expressions
 whose defining expressions have no effects.  It operates instead on symbol
 bindings, removing those that have no effects.
 
-\subsection{Removal of unused arguments}\label{remove-unused-args}
+\subsection{ss:flambda-remove-unused-args}{Removal of unused arguments}
 
 This transformation is only enabled by default for specialised arguments.
 It may be enabled for all arguments using the {\tt -remove-unused-arguments}
@@ -1131,7 +1131,7 @@ through the wrapper.  (The technique of {\em direct call surrogates} used
 to reduce this penalty during unboxing of closure variables (see above)
 does not yet apply to the pass that removes unused arguments.)
 
-\subsection{Removal of unused closure variables}
+\subsection{ss:flambda-removal-closure-vars}{Removal of unused closure variables}
 
 This transformation performs an analysis across
 the whole compilation unit to determine whether there exist closure variables
@@ -1140,9 +1140,9 @@ this has to be a whole-unit analysis because a projection of a closure
 variable from some particular closure may have propagated to an arbitrary
 location within the code due to inlining.)
 
-\section{Other code transformations}
+\section{s:flambda-other}{Other code transformations}
 
-\subsection{Transformation of non-escaping references into mutable variables}
+\subsection{ss:flambda-non-escaping-refs}{Transformation of non-escaping references into mutable variables}
 
 Flambda performs a simple analysis analogous to that performed elsewhere
 in the compiler that can transform {\tt ref}s into mutable variables
@@ -1150,14 +1150,14 @@ that may then be held in registers (or on the stack as appropriate) rather
 than being allocated on the OCaml heap.  This only happens so long as the
 reference concerned can be shown to not escape from its defining scope.
 
-\subsection{Substitution of closure variables for specialised arguments}
+\subsection{ss:flambda-subst-closure-vars}{Substitution of closure variables for specialised arguments}
 
 This transformation discovers closure variables that are known to be
 equal to specialised arguments.  Such closure variables are replaced by
 the specialised arguments; the closure variables may then be removed by
 the ``removal of unused closure variables'' pass (see below).
 
-\section{Treatment of effects}
+\section{s:flambda-effects}{Treatment of effects}
 
 The Flambda optimisers classify expressions in order to determine whether
 an expression:
@@ -1213,7 +1213,7 @@ It is assumed in the compiler that, subject to data dependencies,
 expressions with neither effects nor coeffects may be reordered with
 respect to other expressions.
 
-\section{Compilation of statically-allocated modules}
+\section{s:flambda-static-modules}{Compilation of statically-allocated modules}
 
 Compilation of modules that are able to be statically allocated (for example,
 the module corresponding to an entire compilation unit, as opposed to a first
@@ -1223,7 +1223,7 @@ interspersed with arbitrary effects, surrounds a record creation that becomes
 the module block.  The Flambda-specific transformation follows: these bindings
 are lifted to toplevel symbols, as described above.
 
-\section{Inhibition of optimisation}\label{inhibition}
+\section{s:flambda-inhibition}{Inhibition of optimisation}
 
 Especially when writing benchmarking suites that run non-side-effecting
 algorithms in loops, it may be found that the optimiser entirely
@@ -1232,7 +1232,7 @@ using the {\tt Sys.opaque\_identity} function (which indeed behaves as a
 normal OCaml function and does not possess any ``magic'' semantics).  The
 documentation of the {\tt Sys} module should be consulted for further details.
 
-\section{Use of unsafe operations}\label{unsafe}
+\section{s:flambda-unsafe}{Use of unsafe operations}
 
 The behaviour of the Flambda simplification pass means that certain unsafe
 operations, which may without Flambda or when using previous versions of
@@ -1285,7 +1285,7 @@ to add type annotations that claim some mutable value is always immediate
 if it might be possible for an unsafe operation to update it to a boxed
 value.
 
-\section{Glossary}
+\section{s:flambda-glossary}{Glossary}
 
 The following terminology is used in this chapter of the manual.
 
@@ -1327,7 +1327,7 @@ definition of a single compilation unit (i.e. {\tt .cmx} file).
 \item[{\bf Specialised argument}]  An argument to a function that is known
 to always hold a particular value at runtime.  These are introduced by the
 inliner when specialising recursive functions; and the {\tt unbox-closures}
-pass.  (See section\ \ref{specialisation}.)
+pass.  (See section\ \ref{s:flambda-specialisation}.)
 \item[{\bf Symbol}]  A name referencing a particular place in an object file
 or executable image.  At that particular place will be some constant value.
 Symbols may be examined using operating system-specific tools (for

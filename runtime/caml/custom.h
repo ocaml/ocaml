@@ -66,9 +66,6 @@ CAMLextern value caml_alloc_custom_mem(const struct custom_operations * ops,
 
 CAMLextern void caml_register_custom_operations(const struct custom_operations * ops);
 
-/* Global variable moved to Caml_state in 4.10 */
-#define caml_compare_unordered (Caml_state->compare_unordered)
-
 #ifdef CAML_INTERNALS
 extern struct custom_operations * caml_find_custom_operations(char * ident);
 extern struct custom_operations *
