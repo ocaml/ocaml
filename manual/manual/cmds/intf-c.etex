@@ -185,23 +185,23 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
+Before including any of these files, you should define the "OCAML_NAME_SPACE"
+macro. For instance,
+\begin{verbatim}
+#define CAML_NAME_SPACE
+#include "caml/mlvalues.h"
+#include "caml/fail.h"
+\end{verbatim}
 These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
-By default, header files in the "caml/" subdirectory give only access
-to the public interface of the OCaml runtime. It is possible to define
-the macro "CAML_INTERNALS" to get access to a lower-level interface,
-but this lower-level interface is more likely to change and break
-programs that use it.
-
-{\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
-before including these header files. If you do not define it, the
-header files will also define short names (without the "caml_" prefix)
-for most functions, which usually produce clashes with names defined
-by other C libraries that you might use. Including the header files
-without "CAML_NAME_SPACE" is only supported for backward
-compatibility.
+{\bf Note:}
+Including the header files without first defining "CAML_NAME_SPACE"
+introduces in scope short names for most functions.
+Those short names are deprecated, and may be removed in the future
+because they usually produce clashes with names defined by other
+C libraries.
 
 \subsection{ss:staticlink-c-code}{Statically linking C code with OCaml code}
 
@@ -1246,6 +1246,7 @@ The stub code file, "curses_stubs.c", looks like this:
 \begin{verbatim}
 /* File curses_stubs.c -- stub code for curses */
 #include <curses.h>
+#define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -1271,7 +1272,7 @@ static struct custom_operations curses_window_ops = {
 /* Allocating an OCaml custom block to hold the given WINDOW * */
 static value alloc_window(WINDOW * w)
 {
-  value v = alloc_custom(&curses_window_ops, sizeof(WINDOW *), 0, 1);
+  value v = caml_alloc_custom(&curses_window_ops, sizeof(WINDOW *), 0, 1);
   Window_val(v) = w;
   return v;
 }
@@ -2290,8 +2291,9 @@ code around C calls.  Technically it wraps every C call with the C function
 
 For small functions that are called repeatedly, this indirection can have
 a big impact on performances.  However this is not needed if we know that
-the C function doesn't allocate and doesn't raise exceptions.  We can
-instruct the OCaml native-code compiler of this fact by annotating the
+the C function doesn't allocate, doesn't raise exceptions, and doesn't release
+the master lock (see section~\ref{ss:parallel-execution-long-running-c-code}).  
+We can instruct the OCaml native-code compiler of this fact by annotating the
 external declaration with the attribute "[\@\@noalloc]":
 
 \begin{verbatim}
@@ -2567,6 +2569,7 @@ The rest of the binding is the same for both platforms:
 
 \begin{verbatim}
 /* The following define is necessary because the API is experimental */
+#define CAML_NAME_SPACE
 #define CAML_INTERNALS
 
 #include <caml/mlvalues.h>
@@ -2711,3 +2714,55 @@ support libraries ("-lz") and the corresponding options
 ("-L/usr/local/zlib") must be given on all three invocations of "ocamlmklib",
 because they are needed at different times depending on whether shared
 libraries are supported.
+
+
+\section{s:c-internal-guidelines}{Cautionary words: the internal runtime API}
+
+Not all header available in the "caml/" directory were described in previous
+sections. All those unmentioned headers are part of the internal runtime API,
+for which there is \emph{no} stability guarantee. If you really need access
+to this internal runtime API, this section provides some guidelines
+that may help you to write code that might not break on every new version
+of OCaml.
+\paragraph{Note} Programmers which come to rely on the internal API
+for a use-case which they find realistic and useful are encouraged to open
+a request for improvement on the bug tracker.
+
+\subsection{ss:c-internals}{Internal variables and CAML_INTERNALS}
+Since OCaml 4.04, it is possible to get access to every part of the internal
+runtime API by defining the "CAML_INTERNALS" macro before loading caml header files.
+If this macro is not defined, parts of the internal runtime API are hidden.
+
+If you are using internal C variables, do not redefine them by hand. You should
+import those variables by including the corresponding header files. The
+representation of those variables has already changed once in OCaml 4.10, and is
+still under evolution.
+If your code relies on such internal and brittle properties, it will be broken
+at some point in time.
+
+For instance, rather than redefining "caml_young_limit":
+\begin{verbatim}
+extern int caml_young_limit;
+\end{verbatim}
+which breaks in OCaml $\ge$ 4.10, you should include the "minor_gc" header:
+\begin{verbatim}
+#include <caml/minor_gc.h>
+\end{verbatim}
+
+\subsection{ss:c-internal-macros}{OCaml version macros}
+Finally, if including the right headers is not enough, or if you need to support
+version older than OCaml 4.04, the header file "caml/version.h" should help
+you to define your own compatibility layer.
+This file provides few macros defining the current OCaml version.
+In particular, the "OCAML_VERSION" macro describes the current version,
+its format is "MmmPP".
+For example, if you need some specific handling for versions older than 4.10.0,
+you could write
+\begin{verbatim}
+#include <caml/version.h>
+#if OCAML_VERSION >= 41000
+...
+#else
+...
+#endif
+\end{verbatim}

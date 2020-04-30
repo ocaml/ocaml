@@ -1097,11 +1097,6 @@ let normalize_path_prefix oloc env path =
   | Papply _ ->
       assert false
 
-let is_uident s =
-  match s.[0] with
-  | 'A'..'Z' -> true
-  | _ -> false
-
 let normalize_type_path oloc env path =
   (* Inlined version of Path.is_constructor_typath:
      constructor type paths (i.e. path pointing to an inline
@@ -1112,7 +1107,7 @@ let normalize_type_path oloc env path =
       path
   | Pdot(p, s) ->
       let p2 =
-        if is_uident s && not (is_uident (Path.last p)) then
+        if Path.is_uident s && not (Path.is_uident (Path.last p)) then
           (* Cstr M.t.C *)
           normalize_path_prefix oloc env p
         else
