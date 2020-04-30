@@ -1099,7 +1099,8 @@ include Makefile.menhir
 parsing/camlinternalMenhirLib.ml: boot/menhir/menhirLib.ml
 	cp $< $@
 parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
-	cp $< $@
+	echo '[@@@ocaml.warning "-67"]' > $@
+	cat $< >> $@
 
 # Copy parsing/parser.ml from boot/
 
@@ -1129,10 +1130,10 @@ ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 
 # OCamltest
 ocamltest: ocamlc ocamlyacc ocamllex
-	$(MAKE) -C ocamltest
+	$(MAKE) -C ocamltest all
 
 ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
-	$(MAKE) -C ocamltest ocamltest.opt$(EXE)
+	$(MAKE) -C ocamltest allopt
 
 partialclean::
 	$(MAKE) -C ocamltest clean

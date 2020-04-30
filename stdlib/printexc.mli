@@ -157,7 +157,7 @@ external raise_with_backtrace: exn -> raw_backtrace -> 'a
 
 (** {1 Current call stack} *)
 
-val get_callstack: int -> raw_backtrace
+external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 (** [Printexc.get_callstack n] returns a description of the top of the
     call stack on the current program point (for the current thread),
     with at most [n] entries.  (Note: this function is not related to

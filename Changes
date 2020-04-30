@@ -135,6 +135,14 @@ Working version
   and because it leads to ignoring preference edges with 0 weight.
   (Eric Stavarache, review by Xavier Leroy)
 
+- #9006: int32 code generation improvements
+  (Stephen Dolan, designed with Greta Yorsh, review by Xavier Clerc,
+   Xavier Leroy and Alain Frisch)
+
+- #9028, #9032: Fix miscompilation by no longer assuming that
+  untag_int (tag_int x) = x in Cmmgen.
+  (Stephen Dolan, review by Vincent Laviron and Xavier Leroy)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
@@ -169,6 +177,9 @@ Working version
     David Allsopp, review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
     Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
+- #8641: Better call stacks when a C call is involved in byte code mode
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Tools:
 
 * #6792, #8654 ocamldebug now supports program using Dynlink. This
@@ -187,6 +198,10 @@ Working version
    Nicolás Ojeda Bär)
 
 ### Standard library:
+
+- #8651: add '%#F' modifier in printf to output OCaml float constants
+  in hexadecimal
+  (Pierre Roux, review by Gabriel Scherer and Xavier Leroy)
 
 - #8832: List.find_map : ('a -> 'b option) -> 'a list -> 'b option
   (Gabriel Scherer, review by Jeremy Yallop, Nicolás Ojeda Bär
@@ -252,7 +267,14 @@ Working version
   (Stéphane Glondu, Nicolás Ojeda Bär, review by Jérémie Dimino and Daniel
   Bünzli)
 
+- #8891: Warn about unused functor parameters
+  (Thomas Refis, review by Gabriel Radanne)
+
 ### Build system:
+
+- #8840: use ocaml{c,opt}.opt when available to build internal tools
+  On my machine this reduces parallel-build times from 3m30s to 2m50s.
+  (Gabriel Scherer, review by Xavier Leroy and Sébastien Hinderer)
 
 - #8650: ensure that "make" variables are defined before use;
   revise generation of config/util.ml to better quote special characters
@@ -337,6 +359,13 @@ Working version
 - #8921, #8924: Fix stack overflow with Flambda
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
+
+- #8892, #8895: fix the definition of Is_young when CAML_INTERNALS is not
+  defined.
+  (David Allsopp, review by Xavier Leroy)
+
+- #8896: deprecate addr typedef in misc.h
+  (David Allsopp, suggestion by Xavier Leroy)
 
 OCaml 4.09 maintenance branch:
 ------------------------------

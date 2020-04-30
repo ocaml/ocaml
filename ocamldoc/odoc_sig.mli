@@ -110,7 +110,7 @@ module type Info_retriever =
   end
 
 module Analyser :
-  functor (My_ir : Info_retriever) ->
+  Info_retriever ->
     sig
       (** This variable is used to load a file as a string and retrieve characters from it.*)
       val file : string ref

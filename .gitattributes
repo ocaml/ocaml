@@ -178,6 +178,7 @@ manual/tools/texexpand text eol=lf
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
+testsuite/tests/basic-modules/anonymous.ml text eol=lf
 testsuite/tests/basic-more/morematch.ml text eol=lf
 testsuite/tests/basic-more/robustmatch.ml text eol=lf
 testsuite/tests/parsing/*.ml text eol=lf

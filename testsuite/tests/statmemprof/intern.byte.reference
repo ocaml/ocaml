@@ -7,7 +7,8 @@ check_distrib 2 2000 1 0.010000
 check_distrib 2 2000 1 0.900000
 check_distrib 300000 300000 20 0.100000
 check_callstack
-Raised by primitive operation at file "intern.ml", line 32, characters 14-35
+Raised by primitive operation at unknown location
+Called from file "intern.ml", line 32, characters 14-35
 Called from file "intern.ml", line 168, characters 2-25
 Called from file "intern.ml", line 174, characters 9-27
 OK !

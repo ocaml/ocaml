@@ -1147,8 +1147,14 @@ and transl_modtype_aux env smty =
             | Some name ->
               let scope = Ctype.create_scope () in
               let id, newenv =
-                Env.enter_module ~scope ~arg:true name Mp_present arg.mty_type
-                  env
+                let arg_md =
+                  { md_type = arg.mty_type;
+                    md_attributes = [];
+                    md_loc = param.loc;
+                  }
+                in
+                Env.enter_module_declaration ~scope ~arg:true name Mp_present
+                  arg_md env
               in
               Some id, newenv
           in
@@ -1489,7 +1495,9 @@ and transl_modtype_decl names env pmtd =
 
 and transl_modtype_decl_aux names env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
-  let tmty = Option.map (transl_modtype env) pmtd_type in
+  let tmty =
+    Option.map (transl_modtype (Env.in_signature true env)) pmtd_type
+  in
   let decl =
     {
      Types.mtd_type=Option.map (fun t -> t.mty_type) tmty;
@@ -1903,20 +1911,26 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let t_arg, ty_arg, newenv, funct_body =
         match arg_opt with
         | Unit -> Unit, Types.Unit, env, false
-        | Named (name, smty) ->
+        | Named (param, smty) ->
           let mty = transl_modtype_functor_arg env smty in
           let scope = Ctype.create_scope () in
           let (id, newenv) =
-            match name.txt with
+            match param.txt with
             | None -> None, env
             | Some name ->
+              let arg_md =
+                { md_type = mty.mty_type;
+                  md_attributes = [];
+                  md_loc = param.loc;
+                }
+              in
               let id, newenv =
-                Env.enter_module ~scope ~arg:true name Mp_present mty.mty_type
-                  env
+                Env.enter_module_declaration ~scope ~arg:true name Mp_present
+                  arg_md env
               in
               Some id, newenv
           in
-          Named (id, name, mty), Types.Named (id, mty.mty_type), newenv, true
+          Named (id, param, mty), Types.Named (id, mty.mty_type), newenv, true
       in
       let body = type_module sttn funct_body None newenv sbody in
       rm { mod_desc = Tmod_functor(t_arg, body);

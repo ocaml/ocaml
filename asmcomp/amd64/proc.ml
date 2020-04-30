@@ -376,7 +376,7 @@ let op_is_pure = function
   | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Ipoll | Iloadmut
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
-  | Ispecific(Ilea _|Isextend32) -> true
+  | Ispecific(Ilea _|Isextend32|Izextend32) -> true
   | Ispecific _ -> false
   | _ -> true
 
