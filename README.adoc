@@ -140,3 +140,16 @@ using (machine type, etc).
 
 For information on contributing to OCaml, see link:HACKING.adoc[] and
 link:CONTRIBUTING.md[].
+
+== Separately maintained components
+
+Some libraries and tools which used to be part of the OCaml distribution are
+now maintained separately. Please use the issue trackers at their respective
+new homes:
+
+- https://github.com/ocaml/graphics/issues[The Graphics library] (removed in OCaml 4.09)
+- https://github.com/ocaml/num/issues[The Num library] (removed in OCaml 4.06)
+- https://github.com/camlp4/camlp4/issues[The camlp4 tool] (removed in OCaml 4.02)
+- https://github.com/garrigue/labltk/issues[The LablTk library] (removed in OCaml 4.02)
+- https://github.com/ocaml/dbm/issues[The CamlDBM library] (removed in OCaml 4.00)
+- https://github.com/xavierleroy/ocamltopwin/issues[The OCamlWinTop Windows toplevel] (removed in OCaml 4.00)
