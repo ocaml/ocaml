@@ -2485,6 +2485,42 @@ let type_module_type_of env smod =
 
 (* For Typecore *)
 
+(* Graft a longident onto a path *)
+let rec extend_path path =
+  fun lid ->
+    match lid with
+    | Lident name -> Pdot(path, name)
+    | Ldot(m, name) -> Pdot(extend_path path m, name)
+    | Lapply _ -> assert false
+
+(* Lookup a type's longident within a signature *)
+let lookup_type_in_sig sg =
+  let types, modules =
+    List.fold_left
+      (fun acc item ->
+         match item with
+         | Sig_type(id, _, _, _) ->
+             let types, modules = acc in
+             let types = String.Map.add (Ident.name id) id types in
+             types, modules
+         | Sig_module(id, _, _, _, _) ->
+             let types, modules = acc in
+             let modules = String.Map.add (Ident.name id) id modules in
+             types, modules
+         | _ -> acc)
+      (String.Map.empty, String.Map.empty) sg
+  in
+  let rec module_path = function
+    | Lident name -> Pident (String.Map.find name modules)
+    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lapply _ -> assert false
+  in
+  fun lid ->
+    match lid with
+    | Lident name -> Pident (String.Map.find name types)
+    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lapply _ -> assert false
+
 let type_package env m p nl =
   (* Same as Pexp_letmodule *)
   (* remember original level *)
@@ -2493,40 +2529,62 @@ let type_package env m p nl =
   let modl = type_module env m in
   let scope = Ctype.create_scope () in
   Typetexp.widen context;
-  let (mp, env) =
-    match modl.mod_desc with
-    | Tmod_ident (mp,_) -> (mp, env)
-    | Tmod_constraint ({mod_desc=Tmod_ident (mp,_)}, _, Tmodtype_implicit, _)
-        -> (mp, env)  (* PR#6982 *)
-    | _ ->
-      let (id, new_env) =
-        Env.enter_module ~scope "%M" Mp_present modl.mod_type env
+  let nl', tl', env =
+    match nl with
+    | [] -> [], [], env
+    | nl ->
+      let type_path, env =
+        match modl.mod_desc with
+        | Tmod_ident (mp,_)
+        | Tmod_constraint
+            ({mod_desc=Tmod_ident (mp,_)}, _, Tmodtype_implicit, _) ->
+          (* We special case these because interactions between
+             strengthening of module types and packages can cause
+             spurious escape errors. See examples from PR#6982 in the
+             testsuite. This can be removed when such issues are
+             fixed. *)
+          extend_path mp, env
+        | _ ->
+          let sg = extract_sig_open env modl.mod_loc modl.mod_type in
+          let sg, env = Env.enter_signature ~scope sg env in
+          lookup_type_in_sig sg, env
       in
-      (Pident id, new_env)
+      let nl', tl' =
+        List.fold_right
+          (fun lid (nl, tl) ->
+             match type_path lid with
+             | exception Not_found -> (nl, tl)
+             | path -> begin
+                 match Env.find_type path env with
+                 | exception Not_found -> (nl, tl)
+                 | decl ->
+                     if decl.type_arity > 0 then begin
+                       (nl, tl)
+                     end else begin
+                       let t = Btype.newgenty (Tconstr (path,[],ref Mnil)) in
+                       (lid :: nl, t :: tl)
+                     end
+               end)
+          nl ([], [])
+      in
+      nl', tl', env
   in
-  let rec mkpath mp = function
-    | Lident name -> Pdot(mp, name)
-    | Ldot (m, name) -> Pdot(mkpath mp m, name)
-    | _ -> assert false
-  in
-  let tl' =
-    List.map
-      (fun name -> Btype.newgenty (Tconstr (mkpath mp name,[],ref Mnil)))
-      (* beware of interactions with Printtyp and short-path:
-         mp.name may have an arity > 0, cf. PR#7534 *)
-      nl in
   (* go back to original level *)
   Ctype.end_def ();
-  if nl = [] then
-    (wrap_constraint env true modl (Mty_ident p) Tmodtype_implicit, [])
-  else let mty = modtype_of_package env modl.mod_loc p nl tl' in
+  let mty =
+    if nl = [] then (Mty_ident p)
+    else modtype_of_package env modl.mod_loc p nl' tl'
+  in
   List.iter2
     (fun n ty ->
       try Ctype.unify env ty (Ctype.newvar ())
       with Ctype.Unify _ ->
-        raise (Error(m.pmod_loc, env, Scoping_pack (n,ty))))
-    nl tl';
-  (wrap_constraint env true modl mty Tmodtype_implicit, tl')
+        raise (Error(modl.mod_loc, env, Scoping_pack (n,ty))))
+    nl' tl';
+  let modl = wrap_constraint env true modl mty Tmodtype_implicit in
+  (* Dropped exports should have produced an error above *)
+  assert (List.length nl = List.length tl');
+  modl, tl'
 
 (* Fill in the forward declarations *)
 

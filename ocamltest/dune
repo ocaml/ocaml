@@ -22,7 +22,7 @@
 
 (rule
  (targets ocamltest_config.ml)
- (deps ../Makefile.config ../Makefile.common Makefile
+ (deps ../Makefile.config ../Makefile.common ../Makefile.best_binaries Makefile
        ./ocamltest_config.ml.in ./getocamloptdefaultflags)
  (action (run make %{targets})))
 

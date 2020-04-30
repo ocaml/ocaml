@@ -468,7 +468,7 @@ Line 4, characters 10-51:
 4 |   (module struct type elt = A type t = elt list end : S with type t = _ list)
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type t in this module cannot be exported.
-       Its type contains local dependencies: %M.elt list
+       Its type contains local dependencies: elt list
 |}];;
 
 type 'a s = (module S with type t = 'a);;
@@ -487,7 +487,7 @@ Line 1, characters 23-44:
 1 | let x : 'a s = (module struct type t = A end);;
                            ^^^^^^^^^^^^^^^^^^^^^
 Error: The type t in this module cannot be exported.
-       Its type contains local dependencies: %M.t
+       Its type contains local dependencies: t
 |}];;
 
 let x : 'a s = (module struct end);;
@@ -495,6 +495,7 @@ let x : 'a s = (module struct end);;
 Line 1, characters 23-33:
 1 | let x : 'a s = (module struct end);;
                            ^^^^^^^^^^
-Error: The type t in this module cannot be exported.
-       Its type contains local dependencies: %M.t
+Error: Signature mismatch:
+       Modules do not match: sig end is not included in S
+       The type `t' is required but not provided
 |}];;

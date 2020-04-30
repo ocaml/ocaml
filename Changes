@@ -99,6 +99,10 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Thomas Refis and Gabriel Scherer)
 
+- #9030: clarify and document the parameter space of type_pat
+  (Gabriel Scherer and Florian Angeletti and Jacques Garrigue,
+   review by Florian Angeletti and Thomas Refis)
+
 - #8975: "ocamltests" files are no longer required or used by
   "ocamltest". Instead, any text file in the testsuite directory containing a
   valid "TEST" block will be automatically included in the testsuite.
@@ -298,6 +302,15 @@ Working version
 
 - #8891: Warn about unused functor parameters
   (Thomas Refis, review by Gabriel Radanne)
+
+- #8903: Improve errors for first-class modules
+  (Leo White, review by Jacques Garrigue)
+
+- #9046: disable warning 30 by default
+  This outdated warning complained on label/constructor name conflicts
+  within a mutually-recursive type declarations; there is now no need
+  to complain thanks to type-based disambiguation.
+  (Gabriel Scherer)
 
 ### Build system:
 
