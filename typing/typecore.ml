@@ -4916,7 +4916,6 @@ let report_error ~loc env = function
              fprintf ppf "but an expression was expected of type");
       ) ()
   | Apply_non_function typ ->
-      reset_and_mark_loops typ;
       begin match (repr typ).desc with
         Tarrow _ ->
           Location.errorf ~loc
@@ -4933,7 +4932,6 @@ let report_error ~loc env = function
         | Nolabel -> fprintf ppf "without label"
         | l -> fprintf ppf "with label %s" (prefixed_label_name l)
       in
-      reset_and_mark_loops ty;
       Location.errorf ~loc
         "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
          This argument cannot be applied %a@]"
@@ -4951,7 +4949,6 @@ let report_error ~loc env = function
   | Wrong_name (eorp, ty_expected, kind, p, name, valid_names) ->
       Location.error_of_printer ~loc (fun ppf () ->
         let { ty; explanation } = ty_expected in
-        reset_and_mark_loops ty;
         if Path.is_constructor_typath p then begin
           fprintf ppf
             "@[The field %s is not part of the record \
@@ -4986,7 +4983,6 @@ let report_error ~loc env = function
   | Invalid_format msg ->
       Location.errorf ~loc "%s" msg
   | Undefined_method (ty, me, valid_methods) ->
-      reset_and_mark_loops ty;
       Location.error_of_printer ~loc (fun ppf () ->
         fprintf ppf
           "@[<v>@[This expression has type@;<1 2>%a@]@,\
@@ -5039,7 +5035,6 @@ let report_error ~loc env = function
             "of the form: `(foo : ty1 :> ty2)'."
       ) ()
   | Too_many_arguments (in_function, ty, explanation) ->
-      reset_and_mark_loops ty;
       if in_function then begin
         Location.errorf ~loc
           "This function expects too many arguments,@ \
@@ -5058,14 +5053,12 @@ let report_error ~loc env = function
         | Nolabel -> "but its first argument is not labelled"
         | l -> sprintf "but its first argument is labelled %s"
                        (prefixed_label_name l) in
-      reset_and_mark_loops ty;
       Location.errorf ~loc
         "@[<v>@[<2>This function should have type@ %a%t@]@,%s@]"
         type_expr ty
         (report_type_expected_explanation_opt explanation)
         (label_mark l)
   | Scoping_let_module(id, ty) ->
-      reset_and_mark_loops ty;
       Location.errorf ~loc
         "This `let module' expression has type@ %a@ \
          In this type, the locally bound module name %s escapes its scope"

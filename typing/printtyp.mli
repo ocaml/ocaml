@@ -93,7 +93,18 @@ val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
 val reset_and_mark_loops_list: type_expr list -> unit
+
 val type_expr: formatter -> type_expr -> unit
+val marked_type_expr: formatter -> type_expr -> unit
+(** The function [type_expr] is the safe version of the pair
+    [(typed_expr, marked_type_expr)]:
+    it takes care of marking loops in the type expression and resetting
+    type variable names before printing.
+      Contrarily, the function [marked_type_expr] should only be called on
+    type expressions whose loops have been marked or it may stackoverflow
+    (see #8860 for examples).
+ *)
+
 val constructor_arguments: formatter -> constructor_arguments -> unit
 val tree_of_type_scheme: type_expr -> out_type
 val type_sch : formatter -> type_expr -> unit

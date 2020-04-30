@@ -982,14 +982,33 @@ invalidate the first argument after it is computed.
 Use the normal C array syntax instead.
 
 \begin{gcrule} Global variables containing values must be registered
-with the garbage collector using the "caml_register_global_root" function.
+with the garbage collector using the "caml_register_global_root" function,
+save that global variables and locations that will only ever contain OCaml
+integers (and never pointers) do not have to be registered.
+
+The same is true for any memory location outside the OCaml heap that contains a
+value and is not guaranteed to be reachable---for as long as it contains such
+value---from either another registered global variable or location, local
+variable declared with "CAMLlocal" or function parameter declared with
+"CAMLparam".
 \end{gcrule}
 
 Registration of a global variable "v" is achieved by calling
-"caml_register_global_root(&v)" just before or just after a valid
-value is stored in "v" for the first time. You must not call any
-of the OCaml runtime functions or macros between registering and
-storing the value.
+"caml_register_global_root(&v)" just before or just after a valid value is
+stored in "v" for the first time; likewise, registration of an arbitrary
+location "p" is achieved by calling "caml_register_global_root(p)".
+
+You must not call any of the OCaml runtime functions or macros between
+registering and storing the value. Neither must you store anything in the
+variable "v" (likewise, the location "p") that is not a valid value.
+
+The registration causes the contents of the variable or memory location to be
+updated by the garbage collector whenever the value in such variable or location
+is moved within the OCaml heap. In the presence of threads care must be taken to
+ensure appropriate synchronisation with the OCaml runtime to avoid a race
+condition against the garbage collector when reading or writing the value. (See
+section
+\ref{s:parallel-execution-long-running-c-code}.)
 
 A registered global variable "v" can be un-registered by calling
 "caml_remove_global_root(&v)".
@@ -1166,18 +1185,39 @@ It would be incorrect to perform
 has taken place since "r" was allocated.
 
 
-\subsection{Asynchronous callbacks}
-\label{caml-check-urgent-gc}
+\subsection{Pending actions and asynchronous exceptions}
+\label{process-pending-actions}
 
-Since 4.10, allocation functions called from C do not call finalisers,
-signal handlers, and memory profiler callbacks, but delays their
-execution. These asychronous callbacks can execute arbitrary OCaml
-code, including raising asynchronous exceptions.
+Since 4.10, allocation functions are guaranteed not to call any OCaml
+callbacks from C, including finalisers and signal handlers, and delay
+their execution instead.
 
-The function \verb"caml_check_urgent_gc" from "memory.h" checks for
-pending signals and executes delayed callbacks. In long-running C
-code, it can be called at safe points with
-\verb"caml_check_urgent_gc(Val_unit)".
+The function \verb"caml_process_pending_actions" from
+"<caml/signals.h>" executes any pending signal handlers and
+finalisers, Memprof callbacks, and requested minor and major garbage
+collections. In particular, it can raise asynchronous exceptions. It
+is recommended to call it regularly at safe points inside long-running
+non-blocking C code.
+
+The variant \verb"caml_process_pending_actions_exn" is provided, that
+returns the exception instead of raising it directly into OCaml code.
+Its result must be tested using {\tt Is_exception_result}, and
+followed by {\tt Extract_exception} if appropriate. It is typically
+used for clean up before re-raising:
+
+\begin{verbatim}
+    CAMLlocal1(exn);
+    ...
+    exn = caml_process_pending_actions_exn();
+    if(Is_exception_result(exn)) {
+      exn = Extract_exception(exn);
+      ...cleanup...
+      caml_raise(exn);
+    }
+\end{verbatim}
+
+Correct use of exceptional return, in particular in the presence of
+garbage collection, is further detailed in Section~\ref{s:callbacks}.
 
 \section{A complete example}
 
@@ -2317,6 +2357,7 @@ previously registered, does nothing and returns 0.
 \end{itemize}
 
 \subsection{Parallel execution of long-running C code}
+\label{s:parallel-execution-long-running-c-code}
 
 The OCaml run-time system is not reentrant: at any time, at most one
 thread can be executing OCaml code or C code that uses the OCaml
@@ -2348,8 +2389,8 @@ resources.  It may block until no other thread uses the OCaml run-time
 system.
 \end{itemize}
 
-These functions check for pending signals by calling asynchronous
-callbacks (section~\ref{caml-check-urgent-gc}) before releasing and
+These functions poll for pending signals by calling asynchronous
+callbacks (section~\ref{process-pending-actions}) before releasing and
 after acquiring the lock. They can therefore execute arbitrary OCaml
 code including raising an asynchronous exception.
 

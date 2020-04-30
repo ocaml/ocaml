@@ -645,3 +645,26 @@ type var =
   [ `Foo [@ocaml.doc " foo "] | `Bar of (int * string) [@ocaml.doc " bar "]];;
 type var = [ `Bar of int * string | `Foo ]
 |}]
+
+module type S = sig
+
+  val before : unit -> unit
+  (** docstring before *)
+  [@@@foo]
+
+  [@@@foo]
+  (** docstring after *)
+  val after : unit -> unit
+
+end;;
+[%%expect {|
+
+module type S  =
+  sig
+    val before : unit -> unit[@@ocaml.doc " docstring before "]
+    [@@@foo ]
+    [@@@foo ]
+    val after : unit -> unit[@@ocaml.doc " docstring after "]
+  end;;
+module type S = sig val before : unit -> unit val after : unit -> unit end
+|}]

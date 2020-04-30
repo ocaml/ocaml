@@ -1097,7 +1097,13 @@ and tree_of_typfields sch rest = function
 let typexp sch ppf ty =
   !Oprint.out_type ppf (tree_of_typexp sch ty)
 
-let type_expr ppf ty = typexp false ppf ty
+let marked_type_expr ppf ty = typexp false ppf ty
+
+let type_expr ppf ty =
+  (* [type_expr] is used directly by error message printers,
+     we mark eventual loops ourself to avoid any misuse and stack overflow *)
+  reset_and_mark_loops ty;
+  marked_type_expr ppf ty
 
 and type_sch ppf ty = typexp true ppf ty
 
@@ -2013,9 +2019,9 @@ let explanation intro prev env = function
   | Trace.Variant v -> explain_variant v
   | Trace.Obj o -> explain_object o
   | Trace.Rec_occur(x,y) ->
-      mark_loops y;
+      reset_and_mark_loops y;
       Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
-            type_expr x type_expr y)
+            marked_type_expr x marked_type_expr y)
 
 let mismatch intro env trace =
   Trace.explain trace (fun ~prev h -> explanation intro prev env h)

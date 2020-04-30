@@ -18,6 +18,16 @@ Working version
 - #6662, #8908: Add "module _ = X" syntax
   (Thomas Refis, review by Gabriel Radanne)
 
+- #8993: New C functions caml_process_pending_actions{,_exn} in
+  caml/signals.h, intended for executing all pending actions inside
+  long-running C functions (requested minor and major collections,
+  signal handlers, finalisers, and memprof callbacks). The function
+  caml_process_pending_actions_exn returns any exception arising
+  during their execution, allowing resources to be cleaned-up before
+  re-raising.
+  (Guillaume Munch-Maccagnoni, review by Jacques-Henri Jourdan,
+   Stephen Dolan, and Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #8844: Printing faulty constructors, inline records fields and their types
@@ -157,6 +167,9 @@ Working version
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
+
+- #8667: Limit GC credit to 1.0
+  (Leo White, review by Damien Doligez)
 
 - #8670: Fix stack overflow detection with systhreads
   (Stephen Dolan, review by Xavier Leroy, Anil Madhavapeddy, Gabriel Scherer,
@@ -343,6 +356,10 @@ Working version
 
 ### Bug fixes:
 
+- #5673, #7636: unused type variable causes generalization error
+  (Jacques Garrigue and Leo White, review by Leo White,
+   reports by Jean-Louis Giavitto and Christophe Raffalli)
+
 - #6922, #8955: Fix regression with -principal type inference for inherited
   methods, allowing to compile ocamldoc with -principal
   (Jacques Garrigue, review by Leo White)
@@ -369,6 +386,10 @@ Working version
   ocamldep link not created)
   (David Allsopp, report by Thomas Leonard)
 
+- #8856, #8860: avoid stackoverflow when printing cyclic type expressions
+  in some error submessages.
+  (Florian Angeletti, report by Mekhrubon Turaev, review by Leo White)
+
 - #8875: fix missing newlines in the output from MSVC invocation.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
@@ -382,6 +403,9 @@ Working version
 
 - #8896: deprecate addr typedef in misc.h
   (David Allsopp, suggestion by Xavier Leroy)
+
+- #8981: Fix check for incompatible -c and -o options.
+  (Greta Yorsh, review by Damien Doligez)
 
 OCaml 4.09 maintenance branch:
 ------------------------------

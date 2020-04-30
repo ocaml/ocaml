@@ -661,7 +661,7 @@ let process_deferred_actions env =
 
           if List.length (List.filter (function
               | ProcessImplementation _
-              | ProcessInterface _
+              | ProcessInterface _ -> true
               | _ -> false) !deferred_actions) > 1 then
             fatal "Options -c -o are incompatible with compiling multiple files"
         end;

@@ -2,7 +2,7 @@
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
-/*             Jacques-Henri Joudan, projet Gallium, INRIA Paris          */
+/*            Jacques-Henri Jourdan, projet Gallium, INRIA Paris          */
 /*                                                                        */
 /*   Copyright 2016 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
@@ -142,7 +142,7 @@ CAMLprim value caml_memprof_set(value v)
      callback. We have to make sure that the postponed queue is empty
      before continuing. */
   if (!caml_memprof_suspended)
-    caml_memprof_handle_postponed();
+    caml_raise_if_exception(caml_memprof_handle_postponed_exn());
   else
     /* But if we are currently running a callback, there is nothing
        else we can do than purging the queue. */
@@ -182,14 +182,14 @@ enum ml_alloc_kind {
   Unmarshalled = Val_long(2)
 };
 
-/* When we call do_callback, we suspend/resume sampling. In order to
-   to avoid a systematic unnecessary calls to [caml_check_urgent_gc]
-   after each memprof callback, we do not set [caml_something_to_do]
-   when resuming. Therefore, any call to [do_callback] has to also
-   make sure the postponed queue will be handled fully at some
-   point. */
-static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
-                         value callstack, enum ml_alloc_kind cb_kind) {
+/* When we call do_callback_exn, we suspend/resume sampling. In order
+   to avoid a systematic unnecessary polling after each memprof
+   callback, we do not call [caml_set_action_pending] when resuming.
+   Therefore, any call to [do_callback_exn] has to also make sure the
+   postponed queue will be handled fully at some point. */
+static value do_callback_exn(tag_t tag, uintnat wosize, uintnat occurrences,
+                             value callstack, enum ml_alloc_kind cb_kind)
+{
   CAMLparam1(callstack);
   CAMLlocal1(sample_info);
   value res; /* Not a root, can be an exception result. */
@@ -207,11 +207,6 @@ static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
   res = caml_callback_exn(memprof_callback, sample_info);
 
   caml_memprof_suspended = 0;
-
-  if (Is_exception_result(res))
-    /* We are not necessarily called from `caml_check_urgent_gc`, but
-       this is OK to call this regardless of this fact.  */
-    caml_raise_in_async_callback(Extract_exception(res));
 
   CAMLreturn(res);
 }
@@ -326,14 +321,14 @@ static void register_postponed_callback(value block, uintnat occurrences,
   if (!caml_memprof_suspended) caml_set_action_pending();
 }
 
-void caml_memprof_handle_postponed(void)
+value caml_memprof_handle_postponed_exn(void)
 {
   CAMLparam0();
   CAMLlocal1(block);
   value ephe;
 
   if (caml_memprof_suspended)
-    CAMLreturn0;
+    CAMLreturn(Val_unit);
 
   while (postponed_tl != postponed_hd) {
     struct postponed_block pb = *postponed_tl;
@@ -344,13 +339,15 @@ void caml_memprof_handle_postponed(void)
     /* If using threads, this call can trigger reentrant calls to
        [caml_memprof_handle_postponed] even though we set
        [caml_memprof_suspended]. */
-    ephe = do_callback(Tag_val(block), Wosize_val(block),
-                       pb.occurrences, pb.callstack, pb.kind);
+    ephe = do_callback_exn(Tag_val(block), Wosize_val(block),
+                           pb.occurrences, pb.callstack, pb.kind);
+
+    if (Is_exception_result(ephe)) CAMLreturn(ephe);
 
     if (Is_block(ephe)) caml_ephemeron_set_key(Field(ephe, 0), 0, block);
   }
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 /* We don't expect these roots to live long. No need to have a special
@@ -456,10 +453,11 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
 
   /* Empty the queue to make sure callbacks are called in the right
      order. */
-  caml_memprof_handle_postponed();
+  caml_raise_if_exception(caml_memprof_handle_postponed_exn());
 
   callstack = capture_callstack();
-  ephe = do_callback(tag, wosize, occurrences, callstack, Minor);
+  ephe = caml_raise_if_exception(do_callback_exn(tag, wosize, occurrences,
+                                                 callstack, Minor));
 
   /* We can now restore the minor heap in the state needed by
      [Alloc_small_aux]. */

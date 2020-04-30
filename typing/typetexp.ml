@@ -757,7 +757,6 @@ let report_error env ppf = function
           "which should be"
            !Oprint.out_type (tree_of_typexp false ty'))
   | Not_a_variant ty ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf
         "@[The type %a@ does not expand to a polymorphic variant type@]"
         Printtyp.type_expr ty;
@@ -788,7 +787,6 @@ let report_error env ppf = function
       fprintf ppf "Multiple constraints for type %a" longident s
   | Method_mismatch (l, ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.reset_and_mark_loops_list [ty; ty'];
         fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
           l Printtyp.type_expr ty Printtyp.type_expr ty')
   | Opened_object nm ->
@@ -798,7 +796,6 @@ let report_error env ppf = function
              Some p -> fprintf ppf "@ %a" path p
            | None -> fprintf ppf "") nm
   | Not_an_object ty ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not an object type@]"
         Printtyp.type_expr ty
 

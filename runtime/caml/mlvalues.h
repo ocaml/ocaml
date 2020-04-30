@@ -88,6 +88,13 @@ typedef uintnat mark_t;
 #define Unsigned_long_val(x) ((uintnat)(x) >> 1)
 #define Unsigned_int_val(x)  ((int) Unsigned_long_val(x))
 
+/* Encoded exceptional return values, when functions are suffixed with
+   _exn. Encoded exceptions are invalid values and must not be seen
+   by the garbage collector. */
+#define Make_exception_result(v) ((v) | 2)
+#define Is_exception_result(v) (((v) & 3) == 2)
+#define Extract_exception(v) ((v) & ~3)
+
 /* Structure of the header:
 
 For 16-bit and 32-bit architectures:

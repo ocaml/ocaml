@@ -187,7 +187,6 @@ let report_error ppf = function
   | Unknown_name n ->
       fprintf ppf "@[Unknown value name $%i@]@." n
   | Tuple_index(ty, len, pos) ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf
         "@[Cannot extract field number %i from a %i-tuple of type@ %a@]@."
         pos len Printtyp.type_expr ty
