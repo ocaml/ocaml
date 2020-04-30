@@ -232,7 +232,8 @@ void caml_debugger_init(void)
       host = gethostbyname(address);
       if (host == NULL)
         caml_fatal_error("unknown debugging host %s", address);
-      memmove(&sock_addr.s_inet.sin_addr, host->h_addr, host->h_length);
+      memmove(&sock_addr.s_inet.sin_addr,
+              host->h_addr_list[0], host->h_length);
     }
     sock_addr.s_inet.sin_port = htons(atoi(port));
     sock_addr_len = sizeof(sock_addr.s_inet);

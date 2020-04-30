@@ -266,6 +266,7 @@ and transl_type_aux env policy styp =
           in check decl;
           Location.deprecated styp.ptyp_loc
             "old syntax for polymorphic variant type";
+          ignore(Env.lookup_type ~loc:lid.loc lid.txt env);
           (path, decl,true)
         with Not_found -> try
           let lid2 =
@@ -275,9 +276,10 @@ and transl_type_aux env policy styp =
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
           let path, decl = Env.find_type_by_name lid2 env in
+          ignore(Env.lookup_cltype ~loc:lid.loc lid.txt env);
           (path, decl, false)
         with Not_found ->
-          ignore (Env.lookup_class ~loc:lid.loc lid.txt env); assert false
+          ignore (Env.lookup_cltype ~loc:lid.loc lid.txt env); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,

@@ -70,13 +70,8 @@ static value alloc_host_entry(struct hostent *entry)
     else
       aliases = Atom(0);
     entry_h_length = entry->h_length;
-#ifdef h_addr
     addr_list =
       caml_alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
-#else
-    adr = alloc_one_addr(entry->h_addr);
-    addr_list = caml_alloc_1(0, adr);
-#endif
     switch (entry->h_addrtype) {
     case PF_UNIX:          addrtype = 0; break;
     case PF_INET:          addrtype = 1; break;

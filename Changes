@@ -219,13 +219,13 @@ OCaml 4.10 release branch
 - #8833: Hint for (type) redefinitions in toplevel session
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #2127: Refactor lookup functions
+- #2127, #9185: Refactor lookup functions
   Included observable changes:
     - makes the location of usage warnings and alerts for constructors more
       precise
     - don't warn about a constructor never being used to build values when it
       has been defined as private
-  (Leo White, review by Thomas Refis)
+  (Leo White, Hugo Heuzard review by Thomas Refis, Florian Angeletti)
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
   (Florian Angeletti, report by Leo White, review by Thomas Refis)
@@ -286,6 +286,10 @@ OCaml 4.10 release branch
 
 - #9127, #9130: ocamldoc: fix the formatting of closing brace in record types.
   (David Allsopp, report by San Vu Ngoc)
+
+- #9181: make objinfo work on Cygwin and look for the caml_plugin_header
+  symbol in both the static and the dynamic symbol tables.
+  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
 
 ### Build system:
 
@@ -438,11 +442,6 @@ OCaml 4.10 release branch
   removed incrimined Btype.log_type, replaced by Btype.set_type
   (Jacques Garrigue, report by Alain Frisch, review by Thomas Refis)
 
-- #8855, #8858: Links for tools not created when installing with
-  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
-  ocamldep link not created)
-  (David Allsopp, report by Thomas Leonard)
-
 - #8856, #8860: avoid stackoverflow when printing cyclic type expressions
   in some error submessages.
   (Florian Angeletti, report by Mekhrubon Turaev, review by Leo White)
@@ -481,8 +480,14 @@ OCaml 4.10 release branch
   with caml_alloc_custom_mem in runtime/custom.c
   (Markus Mottl, review by Gabriel Scherer and Damien Doligez)
 
+
 OCaml 4.09 maintenance branch:
 ------------------------------
+
+- #8855, #8858: Links for tools not created when installing with
+  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
+  ocamldep link not created)
+  (David Allsopp, report by Thomas Leonard)
 
 - #8953, #8954: Fix error submessages in the toplevel: do not display
   dummy locations
@@ -497,6 +502,22 @@ OCaml 4.09 maintenance branch:
 
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
+
+- #9180: pass -fno-common option to C compiler when available,
+  so as to detect problematic multiple definitions of global variables
+  in the C runtime
+  (Xavier Leroy, review by Mark Shinwell)
+
+- #9144, #9180: multiple definitions of global variables in the C runtime,
+  causing problems with GCC 10.0 and possibly with other C compilers
+  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
+
+- #9128: Fix a bug in bytecode mode which could lead to a segmentation
+  fault. The bug was caused by the fact that the atom table shared a
+  page with some bytecode. The fix makes sure both the atom table and
+  the minor heap have their own pages.
+  (Jacques-Henri Jourdan, review by Stephen Dolan, Xavier Leroy and
+   Gabriel Scherer)
 
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------
