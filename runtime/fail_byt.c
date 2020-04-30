@@ -20,9 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "caml/alloc.h"
+#include "caml/callback.h"
 #include "caml/fail.h"
-#include "caml/io.h"
 #include "caml/gc.h"
+#include "caml/io.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -204,6 +205,12 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   check_global_data("Sys_blocked_io");
   caml_raise_constant(Field_imm(caml_read_root(caml_global_data),
                                 SYS_BLOCKED_IO));
+}
+
+value caml_raise_if_exception(value res)
+{
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+  return res;
 }
 
 int caml_is_special_exception(value exn) {

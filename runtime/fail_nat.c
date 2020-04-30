@@ -169,6 +169,12 @@ void caml_raise_sys_blocked_io(void)
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
 }
 
+value caml_raise_if_exception(value res)
+{
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+  return res;
+}
+
 /* We use a pre-allocated exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */

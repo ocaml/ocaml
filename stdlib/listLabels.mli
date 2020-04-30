@@ -27,7 +27,16 @@ type 'a t = 'a list = [] | (::) of 'a * 'a list (**)
 
    The above considerations can usually be ignored if your lists are not
    longer than about 10000 elements.
-*)
+
+   This module is intended to be used through {!StdLabels} which replaces
+   {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts.
+
+   For example:
+   {[
+      open StdLabels
+
+      let seq len = List.init ~f:(function i -> i) ~len
+   ]} *)
 
 val length : 'a list -> int
 (** Return the length (number of elements) of the given list. *)

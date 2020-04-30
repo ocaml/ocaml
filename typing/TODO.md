@@ -80,7 +80,7 @@ consensus for all of them.
   magic "internal" names which should be avoided.
 
 - Get rid of -annot.
-  (see Nicolás' PR)
+  (see Nicolas' PR)
 
 - Consider storing warning settings (+other context) as part of `Env.t`?
 
@@ -101,4 +101,4 @@ consensus for all of them.
   and/or kill dead code in the typechecker to increase coverage ratio.
   (Partially done by Oxana's Outreachy internship.
    See PR#8874.
-   Ask Florian Angeletti and Sébastien Hinderer about the current state.)
+   Ask Florian Angeletti and Sebastien Hinderer about the current state.)

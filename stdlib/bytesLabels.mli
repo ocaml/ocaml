@@ -15,7 +15,16 @@
 
 (** Byte sequence operations.
     @since 4.02.0
- *)
+
+    This module is intended to be used through {!StdLabels} which replaces
+    {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts.
+
+    For example:
+    {[
+       open StdLabels
+
+       let first = Bytes.sub ~pos:0 ~len:1
+    ]} *)
 
 external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
