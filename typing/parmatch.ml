@@ -198,13 +198,6 @@ end = struct
     }
 end
 
-(*
-  Normalize a pattern ->
-   all arguments are omega (simple pattern) and no more variables
-*)
-
-let normalize_pat p = Pattern_head.(to_omega_pattern @@ fst @@ deconstruct p)
-
 (*******************)
 (* Coherence check *)
 (*******************)
