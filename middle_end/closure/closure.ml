@@ -1074,25 +1074,6 @@ let rec close ({ backend; fenv; cenv } as env) lam =
       let dbg = Debuginfo.from_location loc in
       (Uprim(P.Praise k, [ulam], dbg),
        Value_unknown)
-  | Lprim(Pperform, [arg], loc) ->
-      let (arg, _approx) = close env arg in
-      let dbg = Debuginfo.from_location loc in
-      let alloc_cont = Uprim(P.Pmakeblock(Obj.cont_tag, Mutable, None),
-                             [Uconst (Uconst_int 0)],
-                             dbg) in
-      (Udirect_apply ("caml_perform", [arg; alloc_cont], dbg), Value_unknown)
-  | Lprim(Presume, args, loc) ->
-      let args = close_list env args in
-      let dbg = Debuginfo.from_location loc in
-      (Udirect_apply ("caml_resume", args, dbg), Value_unknown)
-  | Lprim(Prunstack, args, loc) ->
-      let args = close_list env args in
-      let dbg = Debuginfo.from_location loc in
-      (Udirect_apply ("caml_runstack", args, dbg), Value_unknown)
-  | Lprim(Preperform, args, loc) ->
-      let args = close_list env args in
-      let dbg = Debuginfo.from_location loc in
-      (Udirect_apply ("caml_reperform", args, dbg), Value_unknown)
   | Lprim (Pmakearray _, [], _loc) -> make_const_ref (Uconst_block (0, []))
   | Lprim(p, args, loc) ->
       let p = Convert_primitives.convert p in

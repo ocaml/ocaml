@@ -840,6 +840,10 @@ and transl_prim_1 env p arg dbg =
   | Pbswap16 ->
       tag_int (bswap16 (ignore_high_bit_int (untag_int
         (transl env arg) dbg)) dbg) dbg
+  | Pperform ->
+      let cont = make_alloc dbg Obj.cont_tag [int_const dbg 0] in
+      Cop(Capply typ_val, [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
+          dbg)
   | Ppoll ->
       Cop(Cpoll, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer} ->
@@ -854,7 +858,7 @@ and transl_prim_1 env p arg dbg =
             Cop (Cloadmut {is_atomic=true},
                  [ptr; Cconst_int (0, dbg)], dbg))
   | (Pfield_computed | Psequand | Psequor
-    | Prunstack | Pperform | Presume | Preperform
+    | Prunstack | Presume | Preperform
     | Patomic_exchange | Patomic_cas | Patomic_fetch_add
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
@@ -1090,7 +1094,23 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
      Cop (Cextcall ("caml_atomic_cas", typ_int, false, None),
           [transl env arg1; transl env arg2; transl env arg3], dbg)
 
-  | Prunstack | Pperform | Presume | Preperform | Ppoll
+  (* Effects *)
+  | Presume ->
+      Cop (Capply typ_val, [Cconst_symbol ("caml_resume", dbg); transl env arg1;
+                            transl env arg2; transl env arg3],
+           dbg)
+
+  | Prunstack ->
+      Cop (Capply typ_val, [Cconst_symbol ("caml_runstack", dbg); transl env arg1;
+                            transl env arg2; transl env arg3],
+           dbg)
+
+  | Preperform ->
+      Cop (Capply typ_val, [Cconst_symbol ("caml_reperform", dbg); transl env arg1;
+                            transl env arg2; transl env arg3],
+           dbg)
+
+  | Pperform | Ppoll
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
