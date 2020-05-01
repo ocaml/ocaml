@@ -1851,7 +1851,18 @@ let inline_lazy_force_switch arg loc =
                 sw_blocks =
                   [ (Obj.forward_tag, Lprim (Pfield(0, Pointer, Mutable),
                                              [ varg ], loc));
-                    ( Obj.lazy_tag,
+
+                    (Obj.lazy_tag,
+                      Lapply
+                        { ap_should_be_tailcall=false;
+                          ap_loc=loc;
+                          ap_func=force_fun;
+                          ap_args=[varg];
+                          ap_inlined=Default_inline;
+                          ap_specialised=Default_specialise
+                        } );
+
+                    (Obj.forcing_tag,
                       Lapply
                         { ap_should_be_tailcall = false;
                           ap_loc = loc;
