@@ -1,3 +1,7 @@
+(* TEST
+   ocamlopt_flags += " -O3 "
+*)
+
 let f count =
   let _n = (Domain.self ():> int) in
   let r = ref 0 in
