@@ -419,5 +419,7 @@ ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
+# -MG ensures that the dependencies are generated even if the files listed in
+# $(GENERATED_HEADERS) haven't been assembled yet.
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MG -MT '$*.$(O)' -MF $@

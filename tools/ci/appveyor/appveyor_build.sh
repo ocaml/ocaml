@@ -55,25 +55,27 @@ function set_configuration {
         mingw)
             build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
+            dep='--disable-dependency-generation'
         ;;
         msvc)
             build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
+            dep='--disable-dependency-generation'
         ;;
         msvc64)
             build='--build=x86_64-unknown-cygwin'
             host='--host=x86_64-pc-windows'
+            # Explicitly test dependency generation on msvc64
+            dep='--enable-dependency-generation'
         ;;
     esac
 
     mkdir -p "$CACHE_DIRECTORY"
     ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                --disable-dependency-generation \
-                $build $host --prefix="$2" --enable-ocamltest || ( \
+                $dep $build $host --prefix="$2" --enable-ocamltest || ( \
       rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
       ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                  --disable-dependency-generation \
-                  $build $host --prefix="$2" --enable-ocamltest )
+                  $dep $build $host --prefix="$2" --enable-ocamltest )
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"

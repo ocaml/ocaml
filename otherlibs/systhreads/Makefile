@@ -164,7 +164,7 @@ endif
 	@
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MG -MT '$*.$(O)' -MF $@
+	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MT '$*.$(O)' -MF $@
 
 .PHONY: depend
 depend:
