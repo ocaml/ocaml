@@ -182,38 +182,6 @@ EOF
   test -z "$(git ls-files --others -i --exclude-standard)"
 }
 
-CheckChangesModified () {
-  cat<<EOF
-------------------------------------------------------------------------
-This test checks that the Changes file has been modified by the pull
-request. Most contributions should come with a message in the Changes
-file, as described in our contributor documentation:
-
-  https://github.com/ocaml/ocaml/blob/trunk/CONTRIBUTING.md#changelog
-
-Some very minor changes (typo fixes for example) may not need
-a Changes entry. In this case, you may explicitly disable this test by
-adding the code word "No change entry needed" (on a single line) to
-a commit message of the PR, or using the "no-change-entry-needed" label
-on the github pull request.
-------------------------------------------------------------------------
-EOF
-  # check that Changes has been modified
-  git diff "$TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD" --name-only --exit-code \
-    Changes > /dev/null && CheckNoChangesMessage || echo pass
-}
-
-CheckNoChangesMessage () {
-  API_URL=https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels
-  if [[ -n $(git log --grep='[Nn]o [Cc]hange.* needed' --max-count=1 \
-    "$TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD") ]]
-  then echo pass
-  elif [[ -n $(curl "$API_URL" | grep 'no-change-entry-needed') ]]
-  then echo pass
-  else exit 1
-  fi
-}
-
 CheckManual () {
       cat<<EOF
 --------------------------------------------------------------------------
@@ -343,10 +311,6 @@ CheckTypo () {
 
 case $CI_KIND in
 build) BuildAndTest;;
-changes)
-    case $TRAVIS_EVENT_TYPE in
-        pull_request) CheckChangesModified;;
-    esac;;
 manual)
     CheckManual;;
 tests)
