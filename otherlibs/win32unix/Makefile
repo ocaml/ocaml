@@ -46,7 +46,7 @@ CAMLOBJS=unix.cmo unixLabels.cmo
 WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
 LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
 EXTRACAMLFLAGS=-nolabels
-EXTRACFLAGS=-I../unix
+EXTRACPPFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h
 
 
