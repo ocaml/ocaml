@@ -68,9 +68,11 @@ function set_configuration {
 
     mkdir -p "$CACHE_DIRECTORY"
     ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
+                --disable-dependency-generation \
                 $build $host --prefix="$2" --enable-ocamltest || ( \
       rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
       ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
+                  --disable-dependency-generation \
                   $build $host --prefix="$2" --enable-ocamltest )
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config

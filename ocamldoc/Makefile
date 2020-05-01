@@ -15,8 +15,8 @@
 
 ROOTDIR = ..
 
--include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
@@ -43,7 +43,6 @@ OCAMLPP=-pp 'sh ./remove_DEBUG'
 # For installation
 ##############
 
-MKDIR=mkdir -p
 CP=cp
 OCAMLDOC=ocamldoc
 OCAMLDOC_OPT=$(OCAMLDOC).opt

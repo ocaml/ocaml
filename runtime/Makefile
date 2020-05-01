@@ -15,8 +15,8 @@
 
 ROOTDIR = ..
 
--include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 
 # Lists of source files
 
@@ -45,6 +45,9 @@ other_files := unix.c
 else
 other_files := win32.c
 endif
+
+GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
+CONFIG_HEADERS := caml/m.h caml/s.h
 
 ifeq "$(TOOLCHAIN)" "msvc"
 ASM_EXT := asm
@@ -87,22 +90,22 @@ endif
 
 ASM_OBJECTS := $(ASM_SOURCES:.$(ASM_EXT)=.$(O))
 
-libcamlrun_OBJECTS := $(BYTECODE_C_SOURCES:.c=_b.$(O))
+libcamlrun_OBJECTS := $(BYTECODE_C_SOURCES:.c=.b.$(O))
 
-libcamlrund_OBJECTS := $(BYTECODE_C_SOURCES:.c=_bd.$(O)) \
-  instrtrace_bd.$(O)
+libcamlrund_OBJECTS := $(BYTECODE_C_SOURCES:.c=.bd.$(O)) \
+  instrtrace.bd.$(O)
 
-libcamlruni_OBJECTS := $(BYTECODE_C_SOURCES:.c=_bi.$(O))
+libcamlruni_OBJECTS := $(BYTECODE_C_SOURCES:.c=.bi.$(O))
 
-libcamlrunpic_OBJECTS := $(BYTECODE_C_SOURCES:.c=_bpic.$(O))
+libcamlrunpic_OBJECTS := $(BYTECODE_C_SOURCES:.c=.bpic.$(O))
 
-libasmrun_OBJECTS := $(NATIVE_C_SOURCES:.c=_n.$(O)) $(ASM_OBJECTS)
+libasmrun_OBJECTS := $(NATIVE_C_SOURCES:.c=.n.$(O)) $(ASM_OBJECTS)
 
-libasmrund_OBJECTS := $(NATIVE_C_SOURCES:.c=_nd.$(O)) $(ASM_OBJECTS)
+libasmrund_OBJECTS := $(NATIVE_C_SOURCES:.c=.nd.$(O)) $(ASM_OBJECTS)
 
-libasmruni_OBJECTS := $(NATIVE_C_SOURCES:.c=_ni.$(O)) $(ASM_OBJECTS)
+libasmruni_OBJECTS := $(NATIVE_C_SOURCES:.c=.ni.$(O)) $(ASM_OBJECTS)
 
-libasmrunpic_OBJECTS := $(NATIVE_C_SOURCES:.c=_npic.$(O)) \
+libasmrunpic_OBJECTS := $(NATIVE_C_SOURCES:.c=.npic.$(O)) \
   $(ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
 
 # General (non target-specific) assembler and compiler flags
@@ -179,7 +182,12 @@ endif
 all: $(BYTECODE_STATIC_LIBRARIES) $(BYTECODE_SHARED_LIBRARIES) $(PROGRAMS)
 
 .PHONY: allopt
+ifneq "$(NATIVE_COMPILER)" "false"
 allopt: $(NATIVE_STATIC_LIBRARIES) $(NATIVE_SHARED_LIBRARIES)
+else
+allopt:
+	$(error The build has been configured with --disable-native-compiler)
+endif
 
 INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 .PHONY: install
@@ -204,8 +212,9 @@ clean:
 	rm -f *.o *.obj *.a *.lib *.so *.dll ld.conf
 	rm -f ocamlrun ocamlrund ocamlruni
 	rm -f ocamlrun.exe ocamlrund.exe ocamlruni.exe
-	rm -f primitives primitives.new prims.c caml/opnames.h caml/jumptbl.h
-	rm -f caml/version.h domain_state*.inc
+	rm -f primitives primitives.new prims.c $(GENERATED_HEADERS)
+	rm -f domain_state*.inc
+	rm -rf $(DEPDIR)
 
 .PHONY: distclean
 distclean: clean
@@ -313,20 +322,26 @@ libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 
 # Target-specific preprocessor and compiler flags
 
-%_bd.$(O): OC_CPPFLAGS += $(OC_DEBUG_CPPFLAGS)
+%.bd.$(O): OC_CPPFLAGS += $(OC_DEBUG_CPPFLAGS)
+%.bd.$(D): OC_CPPFLAGS += $(OC_DEBUG_CPPFLAGS)
 
-%_bi.$(O): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
+%.bi.$(O): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
+%.bi.$(D): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
 
-%_bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+%.bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
-%_n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
-%_nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_DEBUG_CPPFLAGS)
+%.nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_DEBUG_CPPFLAGS)
+%.nd.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_DEBUG_CPPFLAGS)
 
-%_ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_INSTR_CPPFLAGS)
+%.ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_INSTR_CPPFLAGS)
+%.ni.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_INSTR_CPPFLAGS)
 
-%_npic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-%_npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.npic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+%.npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 # Compilation of C files
 
@@ -334,16 +349,29 @@ libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 # that corresponds to the name of the generated object file
 # (without the extension, which is added by the macro)
 define COMPILE_C_FILE
+ifneq "$(COMPUTE_DEPS)" "false"
+ifneq "$(1)" "%"
+# This rule states that, for example, sys.b.c is sys.c and is needed for the
+# dependency generation pattern rule.
+$(1).c: %.c
+	@
+endif
 $(1).$(O): %.c
+else
+$(1).$(O): %.c $(CONFIG_HEADERS) $(GENERATED_HEADERS) $(RUNTIME_HEADERS)
+endif
 	$$(CC) -c $$(OC_CFLAGS) $$(OC_CPPFLAGS) $$(OUTPUTOBJ)$$@ $$<
 endef
 
-object_types := % %_b %_bd %_bi %_bpic %_n %_nd %_ni %_np %_npic
+object_types := % %.b %.bd %.bi %.bpic
+ifneq "$(NATIVE_COMPILER)" "false"
+object_types += %.n %.nd %.ni %.np %.npic
+endif
 
 $(foreach object_type, $(object_types), \
   $(eval $(call COMPILE_C_FILE,$(object_type))))
 
-dynlink_%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG)
+dynlink.%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG)
 
 $(foreach object_type,$(subst %,,$(object_types)), \
   $(eval dynlink$(object_type).$(O): $(ROOTDIR)/Makefile.config))
@@ -377,37 +405,19 @@ i386nt.obj: i386nt.asm domain_state32.inc
 
 # Dependencies
 
-.PHONY: depend
-ifeq "$(TOOLCHAIN)" "msvc"
-depend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
+DEP_FILES := $(addsuffix .b, $(basename $(BYTECODE_C_SOURCES) \
+                                        instrtrace $(other_files)))
+ifneq "$(NATIVE_COMPILER)" "false"
+DEP_FILES += $(addsuffix .n, $(basename $(NATIVE_C_SOURCES)))
+endif
+DEP_FILES += $(addsuffix d, $(DEP_FILES)) \
+             $(addsuffix i, $(DEP_FILES)) \
+             $(addsuffix pic, $(DEP_FILES))
+DEP_FILES := $(addsuffix .$(D), $(DEP_FILES))
 
-NATIVE_DEP_CPPFLAGS := $(OC_CPPFLAGS) $(OC_NATIVE_CPPFLAGS)
-BYTECODE_DEP_FILES := $(BYTECODE_C_SOURCES) $(other_files) instrtrace.c
-NATIVE_DEP_FILES := $(NATIVE_C_SOURCES) $(other_files)
-
-depend: *.c caml/opnames.h caml/jumptbl.h caml/version.h
-	$(CC) -MM $(OC_CPPFLAGS) $(BYTECODE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_b.$$(O)/' > .depend
-	$(CC) -MM $(OC_CPPFLAGS) $(OC_DEBUG_CPPFLAGS) \
-                  $(BYTECODE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_bd.$$(O)/' >> .depend
-	$(CC) -MM $(OC_CPPFLAGS) $(OC_INSTR_CPPFLAGS) \
-               $(BYTECODE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_bi.$$(O)/' >> .depend
-	$(CC) -MM $(OC_CPPFLAGS) $(BYTECODE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_bpic.$$(O)/' >> .depend
-	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) $(NATIVE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_n.$$(O)/' >> .depend
-	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) $(OC_DEBUG_CPPFLAGS) \
-                  $(NATIVE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_nd.$$(O)/' >> .depend
-	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) $(OC_INSTR_CPPFLAGS) \
-                  $(NATIVE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_ni.$$(O)/' >> .depend
-	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) $(NATIVE_DEP_FILES) | \
-	  sed -e 's/\([^.]*\)\.o/\1_npic.$$(O)/' >> .depend
+ifeq "$(COMPUTE_DEPS)" "true"
+include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
-include .depend
+$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
+	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MG -MT '$*.$(O)' -MF $@

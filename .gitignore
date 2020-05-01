@@ -40,7 +40,7 @@ _build
 
 # local to root directory
 
-/Makefile.common
+/Makefile.build_config
 /Makefile.config
 /autom4te.cache
 /ocamlc
@@ -114,6 +114,7 @@ _build
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/.dep
 /ocamltest/ocamltest
 /ocamltest/ocamltest.opt
 /ocamltest/ocamltest_config.ml
@@ -122,6 +123,7 @@ _build
 /ocamltest/tsl_parser.mli
 /ocamltest/ocamltest.html
 
+/otherlibs/*/.dep
 /otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
@@ -186,11 +188,8 @@ _build
 /runtime/ocamlrund
 /runtime/ocamlruni
 /runtime/ld.conf
-/runtime/interp.a.lst
-/runtime/*.[sd]obj
 /runtime/.gdb_history
-/runtime/*.d.c
-/runtime/*.pic.c
+/runtime/.dep
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
 

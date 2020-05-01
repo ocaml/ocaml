@@ -167,10 +167,11 @@ AC_SUBST([flexdll_chain])
 AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
+AC_SUBST([compute_deps])
 
 ## Generated files
 
-AC_CONFIG_FILES([Makefile.common])
+AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([tools/eventlog_metadata])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
@@ -213,6 +214,12 @@ AC_ARG_ENABLE([debugger],
     [build the debugger @<:@default=auto@:>@])],
   [],
   [enable_debugger=auto])
+
+AC_ARG_ENABLE([dependency-generation],
+  [AS_HELP_STRING([--disable-dependency-generation],
+    [do not compute dependency information for C sources])],
+  [],
+  [enable_dependency_generation=auto])
 
 AC_ARG_VAR([DLLIBS],
   [which libraries to use (in addition to -ldl) to load dynamic libs])
@@ -413,6 +420,27 @@ old_host_os=$host_os
 AS_IF([test x"$host_os" = "xwindows"],[host_os=mingw])
 LT_INIT
 host_os=$old_host_os
+
+AS_CASE([$host],
+  [*-pc-windows],
+    [AC_CHECK_TOOLS(
+      [DEP_CC],
+      [$DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc],
+      [false])],
+  [DEP_CC="$CC"])
+
+AS_CASE([$enable_dependency_generation],
+  [yes],
+    [AS_IF([test "$DEP_CC" = "false"],
+      [AC_MSG_ERROR(m4_normalize([The MSVC ports cannot generate dependency
+        information. Install gcc (or another CC-like compiler)]))],
+      [compute_deps=true])],
+  [no], [compute_deps=false],
+  [AS_IF([test -e .git],
+    [AS_IF([test "$DEP_CC" = "false"],
+      [compute_deps=false],
+      [compute_deps=true])],
+    [compute_deps=false])])
 
 # Extracting information from libtool's configuration
 AS_IF([test -n "$RANLIB" ],

@@ -1,5 +1,3 @@
-# @configure_input@
-
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -19,9 +17,10 @@
 # other Makefiles
 # We assume that Makefile.config has already been included
 
-INSTALL ?= @INSTALL@
-INSTALL_DATA ?= $(INSTALL) -m u=rw,g=rw,o=r
-INSTALL_PROG ?= $(INSTALL) -m u=rwx,g=rwx,o=rx
+# %(DEPDIR) must be kept in sync with entries in .gitignore
+DEPDIR=.dep
+D=d
+MKDIR=mkdir -p
 
 # note: these are defined by lazy expansions
 # as some parts of the makefiles change BINDIR, etc.
@@ -81,5 +80,16 @@ OCAMLLEX_FLAGS ?= -q
 # This rule is similar to GNU make's implicit rule, except that it is more
 # general (it supports both .o and .obj)
 
-%.$(O): %.c
+ifneq "$(COMPUTE_DEPS)" "false"
+REQUIRED_HEADERS :=
+else
+RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
+                   $(wildcard $(ROOTDIR)/runtime/caml/*.h)
+REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
+endif
+
+%.$(O): %.c $(RUNTIME_HEADERS) $(wildcard *.h)
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+
+$(DEPDIR):
+	$(MKDIR) $@

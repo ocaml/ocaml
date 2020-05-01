@@ -16,8 +16,8 @@
 # Common Makefile for otherlibs
 
 ROOTDIR=../..
--include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
@@ -121,8 +121,9 @@ partialclean:
 
 clean:: partialclean
 	rm -f *.dll *.so *.a *.lib *.o *.obj
+	rm -rf $(DEPDIR)
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -133,5 +134,11 @@ clean:: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-.c.$(O):
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+ifeq "$(COMPUTE_DEPS)" "true"
+ifneq "$(COBJS)" ""
+include $(addprefix $(DEPDIR)/, $(COBJS:.$(O)=.$(D)))
+endif
+endif
+
+$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
+	$(DEP_CC) $(OC_CPPFLAGS) $< -MT '$*.$(O)' -MF $@
