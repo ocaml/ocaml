@@ -2049,6 +2049,13 @@ let make_record_matching ~scopes head all_labels def = function
           in
           (access, str) :: make_args (pos + 1)
       in
+      (* There is some redundancy in the expansions here, [head] is
+         expanded here and again in matcher. Without the expansion
+         here there would be a risk of the arity being computed
+         incorrectly by Default_environment.specialize. It would be
+         nicer to have a type-level distinction between expanded heads
+         and non-expanded heads, to be able to reason confidently on
+         when expansions must happen. *)
       let head = expand_record_head head in
       let def = Default_environment.specialize head def in
       { cases = []; args = make_args 0; default = def }
