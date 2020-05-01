@@ -1,3 +1,6 @@
+(* TEST
+   ocamlopt_flags += " -O3 "
+*)
 let r = ref None
 
 let f () =
