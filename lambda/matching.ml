@@ -1955,6 +1955,14 @@ let get_expr_args_record head (arg, _mut) rem =
   make_args 0
 
 let divide_record all_labels head ctx pm =
+  (* TODO: there is redundant record expansion going on, with an expansion here
+     (necessary to get the right arity) but also an expansion in the 'matcher'
+     call within Context.specialize. We should use a separate type representation
+     for "expanded heads" to be able to reason statically on when expansion
+     happens, and avoid the redundancy.
+  
+     This is a suggestion by Florian Angeletti in #9493.
+  *)
   let head = expand_record_head head in
   divide_line (Context.specialize head) get_expr_args_record
     (get_pat_args_record (Array.length all_labels))
