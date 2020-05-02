@@ -72,10 +72,6 @@ module Pattern_head : sig
 
 end
 
-val normalize_pat : pattern -> pattern
-(** Keep only the "head" of a pattern: all arguments are replaced by [omega], so
-    are variables. *)
-
 val const_compare : constant -> constant -> int
 (** [const_compare c1 c2] compares the actual values represented by [c1] and
     [c2], while simply using [Stdlib.compare] would compare the
