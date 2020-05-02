@@ -186,6 +186,8 @@ static intnat do_compare_val(struct compare_stack* stk,
     t2 = Tag_val(v2);
     if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
     if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
+    if (t1 == Infix_tag) t1 = Closure_tag;
+    if (t2 == Infix_tag) t2 = Closure_tag;
     if (t1 != t2) return (intnat)t1 - (intnat)t2;
     switch(t1) {
     case String_tag: {
@@ -238,7 +240,6 @@ static intnat do_compare_val(struct compare_stack* stk,
       compare_free_stack(stk);
       caml_invalid_argument("compare: abstract value");
     case Closure_tag:
-    case Infix_tag:
       compare_free_stack(stk);
       caml_invalid_argument("compare: functional value");
     case Object_tag: {
