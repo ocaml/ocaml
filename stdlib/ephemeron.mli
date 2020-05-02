@@ -33,7 +33,7 @@
     OCaml weak pointers are implemented as ephemerons without data.
 
     The keys and data of an ephemeron are said to be full if they
-    point to a value, empty if the value has never been set, has
+    point to a value, or empty if the value has never been set, has
     been unset, or was erased by the GC. In the function that accesses
     the keys or data these two states are represented by the [option]
     type.
