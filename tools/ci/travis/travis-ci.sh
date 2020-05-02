@@ -78,6 +78,39 @@ case $TRAVIS_EVENT_TYPE in
      TRAVIS_MERGE_BASE=$(git merge-base "$TRAVIS_CUR_HEAD" "$TRAVIS_PR_HEAD");;
 esac
 
+CheckDepend () {
+  cat<<EOF
+------------------------------------------------------------------------
+This test checks that 'alldepend' target is a no-op in the current
+state, which means that dependencies are correctly stored in .depend
+files. It should only be run after the compiler has been built.
+If this check fails, it should be fixable by just running 'make alldepend'.
+------------------------------------------------------------------------
+EOF
+  ./configure --disable-dependency-generation \
+              --disable-debug-runtime \
+              --disable-instrumented-runtime
+  # Need a runtime
+  $MAKE -j coldstart
+  # And generated files (ocamllex compiles ocamlyacc)
+  $MAKE -j ocamllex
+  $MAKE alldepend
+  # note: we cannot use $? as (set -e) may be set globally,
+  # and disabling it locally is not worth the hassle.
+  # note: we ignore the whitespace in case different C dependency
+  # detectors use different indentation styles.
+  git diff --ignore-all-space --quiet --exit-code **.depend \
+      && result=pass || result=fail
+  case $result in
+      pass)
+          echo "CheckDepend: success";;
+      fail)
+          echo "CheckDepend: failure on the following files:"
+          git --no-pager diff --ignore-all-space --name-only **.depend
+          exit 1;;
+  esac
+}
+
 BuildAndTest () {
   mkdir -p $PREFIX
   cat<<EOF
@@ -356,6 +389,8 @@ tests)
 check-typo)
    set +x
    CheckTypo;;
+check-depend)
+    CheckDepend;;
 *) echo unknown CI kind
    exit 1
    ;;
