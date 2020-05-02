@@ -10,6 +10,11 @@ Working version
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
 
+* #9513: Selectively initialise blocks in `Obj.new_block`. Reject `Custom_tag`
+  objects and zero-length `String_tag` objects.
+  (KC Sivaramakrishnan, review by David Allsopp, Xavier Leroy, Mark Shinwell
+  and Leo White)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
