@@ -3609,6 +3609,17 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       } )
   in
   try
+    (* TODO: this split_and_precompile call is the only use remaining
+       of [split_and_precompile], which first half-simplifies the
+       matrix then call the more common
+       [split_and_precompile_half_compiled]. By inlining it here, we
+       should be able to share the half-simplification part with what
+       the half-simplification step that also happens in the
+       Cannot_flatten case.
+
+       This comes from a suggestion by Florian Angeletti in
+         https://github.com/ocaml/ocaml/pull/9447#discussion_r408910756
+    *)
     match split_and_precompile ~arg_id:None pm1 with
     | exception Cannot_flatten -> (
         (* One pattern binds the whole tuple, flattening is not possible.
