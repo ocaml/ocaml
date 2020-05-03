@@ -351,10 +351,14 @@ libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 define COMPILE_C_FILE
 ifneq "$(COMPUTE_DEPS)" "false"
 ifneq "$(1)" "%"
-# -MG ensures that the dependencies are generated even if the files listed in
-# $$(GENERATED_HEADERS) haven't been assembled yet.
-$(DEPDIR)/$(1).$(D): %.c | $(DEPDIR)
-	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MG -MT '$$*$(subst %,,$(1)).$(O)' -MF $$@
+# -MG would ensure that the dependencies are generated even if the files listed
+# in $$(GENERATED_HEADERS) haven't been assembled yet. However, this goes subtly
+# wrong if the user has the headers installed, as gcc will pick up a dependency
+# on those instead and the local ones will not be generated. For this reason, we
+# don't use -MG and instead include $(GENERATED_HEADERS) in the order only
+# dependencies to ensure that they exist before dependencies are computed.
+$(DEPDIR)/$(1).$(D): %.c | $(DEPDIR) $(GENERATED_HEADERS)
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*$(subst %,,$(1)).$(O)' -MF $$@
 endif
 $(1).$(O): %.c
 else
