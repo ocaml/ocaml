@@ -351,10 +351,10 @@ libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 define COMPILE_C_FILE
 ifneq "$(COMPUTE_DEPS)" "false"
 ifneq "$(1)" "%"
-# This rule states that, for example, sys.b.c is sys.c and is needed for the
-# dependency generation pattern rule.
-$(1).c: %.c
-	@
+# -MG ensures that the dependencies are generated even if the files listed in
+# $$(GENERATED_HEADERS) haven't been assembled yet.
+$(DEPDIR)/$(1).$(D): %.c | $(DEPDIR)
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MG -MT '$$*$(subst %,,$(1)).$(O)' -MF $$@
 endif
 $(1).$(O): %.c
 else
@@ -418,8 +418,3 @@ DEP_FILES := $(addsuffix .$(D), $(DEP_FILES))
 ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
-
-# -MG ensures that the dependencies are generated even if the files listed in
-# $(GENERATED_HEADERS) haven't been assembled yet.
-$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MG -MT '$*.$(O)' -MF $@

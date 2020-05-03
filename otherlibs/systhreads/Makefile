@@ -156,15 +156,14 @@ include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
 %.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
 
-%.b.c: %.c
-	@
+define GEN_RULE
+$(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
+endef
 
-%.n.c: %.c
-	@
-
-$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MT '$*.$(O)' -MF $@
+$(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
 
 .PHONY: depend
 depend:
