@@ -16340,7 +16340,7 @@ fi
       if test -z "$BFD_LIB_DIR"; then :
   BFD_LIB_DIR="/opt/local/lib"
 fi ;; #(
-  *-*openbsd*) :
+  *-*-openbsd*|*-*-freebsd*) :
     if test -z "$BFD_INCLUDE_DIR"; then :
   BFD_INCLUDE_DIR="/usr/local/include"
 fi
