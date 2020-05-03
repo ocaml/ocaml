@@ -16,20 +16,6 @@
 # The main Makefile
 
 ROOTDIR = .
-
-# The configure and *clean targets can all be run without running ./configure
-# first.
-# If no goals were specified (i.e. `make`), add defaultentry (since it requires
-# ./configure to be run)
-CAN_BE_UNCONFIGURED := $(strip \
-  $(filter-out partialclean clean distclean configure, \
-	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
-
-ifeq "$(CAN_BE_UNCONFIGURED)" ""
--include Makefile.build_config
-else
-include Makefile.build_config
-endif
 include Makefile.common
 
 .PHONY: defaultentry
@@ -1083,7 +1069,7 @@ distclean: clean
 include .depend
 
 
-ifneq "$(strip $(CAN_BE_UNCONFIGURED))" ""
+ifneq "$(CAN_BE_UNCONFIGURED)" ""
 Makefile.config Makefile.build_config: config.status
 
 config.status:

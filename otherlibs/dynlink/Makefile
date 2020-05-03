@@ -21,7 +21,6 @@
 
 ROOTDIR = ../..
 
--include $(ROOTDIR)/Makefile.build_config
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 

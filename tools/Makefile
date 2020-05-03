@@ -16,7 +16,6 @@
 MAKEFLAGS := -r -R
 ROOTDIR = ..
 
--include $(ROOTDIR)/Makefile.build_config
 include $(ROOTDIR)/Makefile.common
 
 ifeq ($(SYSTEM),unix)
