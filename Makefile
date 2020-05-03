@@ -1068,10 +1068,7 @@ distclean: clean
 
 include .depend
 
-
-ifneq "$(REQUIRES_CONFIGURATION)" ""
 Makefile.config Makefile.build_config: config.status
-
 config.status:
 	@echo "Please refer to the installation instructions:"
 	@echo "- In file INSTALL for Unix systems."
@@ -1083,4 +1080,3 @@ config.status:
 	@echo "	make install"
 	@echo "should work."
 	@false
-endif
