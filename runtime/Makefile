@@ -37,15 +37,6 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   dynlink clambda_checks spacetime_nat spacetime_snapshot afl bigarray \
   memprof domain)
 
-# The other_files variable stores the list of files whose dependencies
-# should be computed by `make depend` although they do not need to be
-# compiled on the current build system
-ifeq "$(UNIX_OR_WIN32)" "win32"
-other_files := unix.c
-else
-other_files := win32.c
-endif
-
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
 CONFIG_HEADERS := caml/m.h caml/s.h
 
@@ -409,8 +400,7 @@ i386nt.obj: i386nt.asm domain_state32.inc
 
 # Dependencies
 
-DEP_FILES := $(addsuffix .b, $(basename $(BYTECODE_C_SOURCES) \
-                                        instrtrace $(other_files)))
+DEP_FILES := $(addsuffix .b, $(basename $(BYTECODE_C_SOURCES) instrtrace))
 ifneq "$(NATIVE_COMPILER)" "false"
 DEP_FILES += $(addsuffix .n, $(basename $(NATIVE_C_SOURCES)))
 endif
