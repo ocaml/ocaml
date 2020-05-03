@@ -17,16 +17,16 @@
 # other Makefiles
 
 # Some special targets ('*clean' and 'configure') do not require configuration.
-# CAN_BE_UNCONFIGURED is empty if only those targets are requested,
+# REQUIRES_CONFIGURATION is empty if only those targets are requested,
 # and non-empty if configuration is required.
-CAN_BE_UNCONFIGURED := $(strip \
+REQUIRES_CONFIGURATION := $(strip \
   $(filter-out partialclean clean distclean configure, \
 	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
 # If no goals were specified (i.e. `make`), we add defaultentry
 # (since it requires ./configure to be run) so that
-# CAN_BE_UNCONFIGURED is non-empty.
+# REQUIRES_CONFIGURATION is non-empty.
 
-ifeq "$(CAN_BE_UNCONFIGURED)" ""
+ifeq "$(REQUIRES_CONFIGURATION)" ""
 -include $(ROOTDIR)/Makefile.build_config
 else
 include $(ROOTDIR)/Makefile.build_config

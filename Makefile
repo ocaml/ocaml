@@ -1069,7 +1069,7 @@ distclean: clean
 include .depend
 
 
-ifneq "$(CAN_BE_UNCONFIGURED)" ""
+ifneq "$(REQUIRES_CONFIGURATION)" ""
 Makefile.config Makefile.build_config: config.status
 
 config.status:
