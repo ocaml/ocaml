@@ -89,7 +89,7 @@ RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
 REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 
-%.$(O): %.c $(RUNTIME_HEADERS) $(wildcard *.h)
+%.$(O): %.c $(REQUIRED_HEADERS)
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 $(DEPDIR):
