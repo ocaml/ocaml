@@ -184,12 +184,28 @@ static intnat do_compare_val(struct compare_stack* stk,
 #endif
     t1 = Tag_val(v1);
     t2 = Tag_val(v2);
-    if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
-    if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
-    if (t1 == Infix_tag) t1 = Closure_tag;
-    if (t2 == Infix_tag) t2 = Closure_tag;
-    if (t1 != t2) return (intnat)t1 - (intnat)t2;
+    if (t1 != t2) {
+        /* Besides long/block comparisons, the only forms of
+           heterogeneous comparisons we support are:
+           - Forward_tag pointers, which may point to values of any type, and
+           - comparing Infix_tag and Closure_tag functions (#9521).
+
+           Other heterogeneous cases may still happen due to
+           existential types, and we just compare the tags.
+        */
+        if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
+        if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
+        if (t1 == Infix_tag) t1 = Closure_tag;
+        if (t2 == Infix_tag) t2 = Closure_tag;
+        if (t1 != t2)
+            return (intnat)t1 - (intnat)t2;
+    }
     switch(t1) {
+    case Forward_tag: {
+        v1 = Forward_val (v1);
+        v2 = Forward_val (v2);
+        continue;
+    }
     case String_tag: {
       mlsize_t len1, len2;
       int res;
@@ -240,6 +256,7 @@ static intnat do_compare_val(struct compare_stack* stk,
       compare_free_stack(stk);
       caml_invalid_argument("compare: abstract value");
     case Closure_tag:
+    case Infix_tag:
       compare_free_stack(stk);
       caml_invalid_argument("compare: functional value");
     case Object_tag: {
