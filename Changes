@@ -51,9 +51,9 @@ Working version
 
 ### Build system:
 
-- #9332, #9518: Cease storing C dependencies in the codebase. C dependencies are
-  generated on-the-fly in development mode. For incremental compilation, the
-  MSVC ports require GCC to be present.
+- #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
+  dependencies are generated on-the-fly in development mode. For incremental
+  compilation, the MSVC ports require GCC to be present.
   (David Allsopp, review by Sébastien Hinderer, YAML-fu by Stephen Dolan)
 
 ### Bug fixes:
