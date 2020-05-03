@@ -26,9 +26,7 @@ REQUIRES_CONFIGURATION := $(strip \
 # (since it requires ./configure to be run) so that
 # REQUIRES_CONFIGURATION is non-empty.
 
-ifeq "$(REQUIRES_CONFIGURATION)" ""
--include $(ROOTDIR)/Makefile.build_config
-else
+ifneq "$(REQUIRES_CONFIGURATION)" ""
 include $(ROOTDIR)/Makefile.build_config
 endif
 
