@@ -38,19 +38,10 @@ make runtop
 make tests
 ----
 
-6. Install in a new opam switch to try things out. With `opam` v2, create a local
-opam switch with the compiler installed from the current source directory:
-+
-----
-opam switch create . --empty
-opam install .
-----
+6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
 
-7. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
-
-See our <<Development tips and tricks>> for various helpful details,
-for example on how to automatically <<opam compiler script,create an
-opam switch>> from a compiler branch.
+See also our <<tips,development tips and tricks>>, for example on how to
+<<opam-switch,create an opam switch>> to test your modified compiler.
 
 === What to do
 
@@ -198,6 +189,7 @@ has excellent documentation.
   utils/::                utility libraries
   yacc/::                 parser generator
 
+[#tips]
 == Development tips and tricks
 
 === Keep merge commits when merging and cherry-picking Github PRs
@@ -216,13 +208,23 @@ the original commit in the commit message.
 git cherry-pick -x -m 1 <merge-commit-hash>
 ----
 
+[#opam-switch]
 === Testing with `opam`
 
-To test a particular branch `branch` of a public git repository
-`$REPO` of the compiler in an `opam` v2 switch issue:
+If you are working on a development version of the compiler, you can create an
+opam switch from it by running the following from the development repository:
+
+-----
+-opam switch create . --empty
+-opam install .
+-----
+
+If you want to test someone else's development version from a public
+git repository, you can build a switch directly (without cloning their
+work locally) by pinning:
 
 ----
-opam switch create ocaml-branch --empty
+opam switch create my-switch-name --empty
 # Replace $VERSION by the trunk version
 opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
 ----
