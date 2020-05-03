@@ -60,7 +60,7 @@ If something goes wrong during the automatic configuration, or if the generated
 files cause errors later on, then look at the template files:
 
         Makefile.config.in
-        Makefile.common.in
+        Makefile.build_config.in
         runtime/caml/m.h.in
         runtime/caml/s.h.in
 +
