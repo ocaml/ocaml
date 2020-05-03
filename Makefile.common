@@ -81,6 +81,7 @@ OCAMLLEX_FLAGS ?= -q
 # general (it supports both .o and .obj)
 
 ifneq "$(COMPUTE_DEPS)" "false"
+RUNTIME_HEADERS :=
 REQUIRED_HEADERS :=
 else
 RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
