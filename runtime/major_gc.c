@@ -277,9 +277,8 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 
 static int is_pointer_safe (value v, value *p)
 {
-  header_t h;
+  volatile header_t h;
   tag_t t;
-  volatile int ret_val = 0;
 
   Caml_state->checking_pointer_pc = &&on_segfault;
   h = Hd_val(v);
@@ -293,20 +292,27 @@ static int is_pointer_safe (value v, value *p)
   }
 
   /* For the pointer to be considered safe, either the given pointer is in heap
-   * or the (out of heap) pointer has a black head or the size of the object is
-   * 0. If not, we report a warning. */
-  if (Is_in_heap (v) || Is_black_hd(h) || Wosize_val(v) == 0)
+   * or the (out of heap) pointer has a black header and its size is < 2 ** 40
+   * words (128 GB). If not, we report a warning. */
+  if (Is_in_heap (v) || (Is_black_hd(h) && Wosize_hd(h) < (1ul << 40)))
     return 1;
 
 on_segfault:
   if (Caml_state->checking_pointer_pc == NULL) {
-    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
-                    "non-black head (tag=%d)\n", p, (void*)v, t);
+    if (!Is_black_hd(h)) {
+      fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                      "non-black head (tag=%d)\n", p, (void*)v, t);
+    } else {
+      fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                       "suspiciously large size: %lu words\n",
+               p, (void*)v, Wosize_hd(h));
+    }
   } else {
+    Caml_state->checking_pointer_pc = NULL;
     fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
                      "Cannot read head.\n", p, (void*)v);
   }
-  return ret_val;
+  return 0;
 }
 
 #endif
