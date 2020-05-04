@@ -440,6 +440,11 @@ OCaml 4.10 maintenance branch
   them to crash.
   (Jérémie Dimino, review by Nicolás Ojeda Bär)
 
+### Build system:
+
+- #9531: fix support for the BFD library on FreeBSD
+  (Hannes Mehnert, review by Gabriel Scherer and David Allsopp)
+
 ### Bug fixes:
 
 - #9165: Add missing -function-sections and -O3 flags in Makefiles.
