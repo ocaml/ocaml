@@ -313,10 +313,11 @@ them during most of the development cycle: opening a compiler source file with
 merlin gives a frustrating error message.
 
 To use merlin on the compiler, you want to build the compiler with an older
-version of itself. One easy way to do this is to use the experimental Dune build
-system distributed with the compiler (with no guarantees that it works all
-the time). Assuming you already have a recent OCaml version installed with
-merlin and dune, you can just run the following from the compiler sources:
+version of itself. One easy way to do this is to use the experimental build
+rules for Dune, which are distributed with the compiler (with no guarantees that
+the build will work all the time). Assuming you already have a recent OCaml
+version installed with merlin and dune, you can just run the following from the
+compiler sources:
 
 ----
 ./configure # if not already done
@@ -336,7 +337,7 @@ You only need to run `configure` once, but you will need to run `make clean`
 everytime you want to run `dune` after you built something with `make`;
 otherwise dune will complain that build artefacts are present among the sources.
 
-Finally, there will be times were the compiler simply cannot be built with an
+Finally, there will be times where the compiler simply cannot be built with an
 older version of itself. Then you will have to either live without merlin, or
 develop on an older branch of the compiler, for example the maintenance branch
 of the last released version. Developing a patch from a release branch can later
