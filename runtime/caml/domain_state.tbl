@@ -84,3 +84,6 @@ DOMAIN_STATE(uintnat, eventlog_paused)
 DOMAIN_STATE(uintnat, eventlog_enabled)
 DOMAIN_STATE(FILE*, eventlog_out)
 /* See eventlog.c */
+
+DOMAIN_STATE(void*, checking_pointer_pc)
+/* See major_gc.c */

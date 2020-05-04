@@ -273,10 +273,55 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 }
 
 
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+
+static int is_pointer_safe (value v, value *p)
+{
+  header_t h;
+  tag_t t;
+  volatile int ret_val = 0;
+
+  Caml_state->checking_pointer_pc = &&on_segfault;
+  h = Hd_val(v);
+  Caml_state->checking_pointer_pc = NULL;
+
+  t = Tag_val(v);
+  if (t == Infix_tag){
+    v -= Infix_offset_val(v);
+    h = Hd_val (v);
+    t = Tag_hd(h);
+  }
+
+  /* For the pointer to be considered safe, either the given pointer is in heap
+   * or the (out of heap) pointer has a black head or the size of the object is
+   * 0. If not, we report a warning. */
+  if (Is_in_heap (v) || Is_black_hd(h) || Wosize_val(v) == 0)
+    return 1;
+
+on_segfault:
+  if (Caml_state->checking_pointer_pc == NULL) {
+    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                    "non-black head (tag=%d)\n", p, (void*)v, t);
+  } else {
+    fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
+                     "Cannot read head.\n", p, (void*)v);
+  }
+  return ret_val;
+}
+
+#endif
+
 void caml_darken (value v, value *p /* not used */)
 {
-#ifdef NO_NAKED_POINTERS
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   if (Is_block (v) && !Is_young (v)) {
+
+    if (!is_pointer_safe(v,p)) return;
+
+    /* Atoms never need to be marked. */
+    if (Wosize_val (v) == 0)
+      return;
+
 #else
   if (Is_block (v) && Is_in_heap (v)) {
 #endif
@@ -404,8 +449,21 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
 
   child = Field (v, i);
 
-#ifdef NO_NAKED_POINTERS
-  if (Is_block (child) && !Is_young (child)) {
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+  if (Is_block (child)
+        && ! Is_young (child)
+        /* Closure blocks contain code pointers at offsets that cannot
+           be reliably determined, so we always use the page table when
+           marking such values. */
+        && (!(Tag_val (v) == Closure_tag || Tag_val (v) == Infix_tag) ||
+            Is_in_heap (child))) {
+
+    if (!is_pointer_safe(child, &Field(v,i)))
+      return gray_vals_ptr;
+
+    /* Atoms never need to be marked. */
+    if (Wosize_val (child) == 0)
+      return gray_vals_ptr;
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
