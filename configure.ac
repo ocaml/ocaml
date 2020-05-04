@@ -1638,7 +1638,7 @@ AS_IF([test x"$with_bfd" != "xno"],
         [BFD_INCLUDE_DIR="/opt/local/include"])
       AS_IF([test -z "$BFD_LIB_DIR"],
         [BFD_LIB_DIR="/opt/local/lib"])],
-    [*-*openbsd*],
+    [*-*-openbsd*|*-*-freebsd*],
       [AS_IF([test -z "$BFD_INCLUDE_DIR"],
         [BFD_INCLUDE_DIR="/usr/local/include"])
       AS_IF([test -z "$BFD_LIB_DIR"],

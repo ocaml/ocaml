@@ -56,6 +56,9 @@ Working version
   MSVC ports require GCC to be present.
   (David Allsopp, review by Sébastien Hinderer, YAML-fu by Stephen Dolan)
 
+- #9531: fix support for the BFD library on FreeBSD
+  (Hannes Mehnert, review by Gabriel Scherer and David Allsopp)
+
 ### Bug fixes:
 
 
