@@ -80,4 +80,6 @@ void caml_init_domain ()
   Caml_state->local_roots = NULL;
   Caml_state->requested_major_slice = 0;
   Caml_state->requested_minor_gc = 0;
+
+  Caml_state->checking_pointer_pc = NULL;
 }
