@@ -56,9 +56,6 @@ Working version
   MSVC ports require GCC to be present.
   (David Allsopp, review by Sébastien Hinderer, YAML-fu by Stephen Dolan)
 
-- #9531: fix support for the BFD library on FreeBSD
-  (Hannes Mehnert, review by Gabriel Scherer and David Allsopp)
-
 ### Bug fixes:
 
 
@@ -506,6 +503,11 @@ OCaml 4.10 maintenance branch
   not embed debug information and exception backtraces where causing
   them to crash.
   (Jérémie Dimino, review by Nicolás Ojeda Bär)
+
+### Build system:
+
+- #9531: fix support for the BFD library on FreeBSD
+  (Hannes Mehnert, review by Gabriel Scherer and David Allsopp)
 
 ### Bug fixes:
 
