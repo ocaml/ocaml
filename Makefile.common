@@ -16,19 +16,7 @@
 # This makefile contains common definitions and rules shared by
 # other Makefiles
 
-# Some special targets ('*clean' and 'configure') do not require configuration.
-# REQUIRES_CONFIGURATION is empty if only those targets are requested,
-# and non-empty if configuration is required.
-REQUIRES_CONFIGURATION := $(strip \
-  $(filter-out partialclean clean distclean configure, \
-	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
-# If no goals were specified (i.e. `make`), we add defaultentry
-# (since it requires ./configure to be run) so that
-# REQUIRES_CONFIGURATION is non-empty.
-
-ifneq "$(REQUIRES_CONFIGURATION)" ""
-include $(ROOTDIR)/Makefile.build_config
-endif
+include $(ROOTDIR)/Makefile.config_if_required
 
 # %(DEPDIR) must be kept in sync with entries in .gitignore
 DEPDIR=.dep

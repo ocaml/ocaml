@@ -1,0 +1,28 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Some special targets ('*clean' and 'configure') do not require configuration.
+# REQUIRES_CONFIGURATION is empty if only those targets are requested,
+# and non-empty if configuration is required.
+REQUIRES_CONFIGURATION := $(strip \
+  $(filter-out partialclean clean distclean configure, \
+	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
+# If no goals were specified (i.e. `make`), we add defaultentry
+# (since it requires ./configure to be run) so that
+# REQUIRES_CONFIGURATION is non-empty.
+
+ifneq "$(REQUIRES_CONFIGURATION)" ""
+include $(ROOTDIR)/Makefile.build_config
+endif
