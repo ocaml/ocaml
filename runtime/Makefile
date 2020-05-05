@@ -192,7 +192,7 @@ ifneq "$(BYTECODE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(BYTECODE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
 endif
 	mkdir -p "$(INSTALL_INCDIR)"
-	$(INSTALL_DATA) caml/domain_state.tbl caml/*.h "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) caml/domain_state.tbl caml/byte_domain_state.tbl caml/*.h "$(INSTALL_INCDIR)"
 
 .PHONY: installopt
 installopt:
