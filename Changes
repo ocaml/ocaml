@@ -52,6 +52,10 @@ Working version
   compilation, the MSVC ports require GCC to be present.
   (David Allsopp, review by Sébastien Hinderer, YAML-fu by Stephen Dolan)
 
+- #9527: stop including configuration when running 'clean' rules
+  to avoid C dependency recomputation.
+  (Gabriel Scherer, review by David Allsopp)
+
 ### Bug fixes:
 
 
