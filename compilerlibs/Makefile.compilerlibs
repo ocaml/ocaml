@@ -102,10 +102,6 @@ BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   driver/errors.cmo driver/compile.cmo
 BYTECOMP_CMI=
 
-ARCH_SPECIFIC =\
-  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
-  asmcomp/scheduling.ml asmcomp/reload.ml
-
 INTEL_ASM=\
   asmcomp/x86_proc.cmo \
   asmcomp/x86_dsl.cmo \
