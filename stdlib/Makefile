@@ -238,7 +238,6 @@ $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
-	rm -f camlheader*
 
 include .depend
 
