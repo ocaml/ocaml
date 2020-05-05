@@ -36,10 +36,6 @@ Working version
 
 ### Manual and documentation:
 
-- #9228: Various Map documentation improvements: add missing key argument in
-  the 'merge' example; clarify the relationship between input and output keys
-  in 'union'; note that find and find_opt return values, not bindings.
-  (Jeremy Yallop, review by Gabriel Scherer and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -289,6 +285,11 @@ OCaml 4.11
 
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
+
+- #9228: Various Map documentation improvements: add missing key argument in
+  the 'merge' example; clarify the relationship between input and output keys
+  in 'union'; note that find and find_opt return values, not bindings.
+  (Jeremy Yallop, review by Gabriel Scherer and Florian Angeletti)
 
 - #9255, #9300: reference chapter, split the expression grammar
   (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
