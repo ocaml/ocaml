@@ -66,7 +66,7 @@ Caml_inline int Is_Dead_during_clean(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
-  return Is_block (x) && !Is_young (x) && Is_white_val(x);
+  return x /* Obj.null */ && Is_block (x) && !Is_young (x) && Is_white_val(x);
 }
 /** The minor heap doesn't have to be marked, outside they should
     already be black
@@ -75,7 +75,7 @@ Caml_inline int Must_be_Marked_during_mark(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
-  return Is_block (x) && !Is_young (x);
+  return x /* Obj.null */ && Is_block (x) && !Is_young (x);
 }
 #else
 Caml_inline int Is_Dead_during_clean(value x)
