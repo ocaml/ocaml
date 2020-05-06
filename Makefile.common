@@ -81,6 +81,7 @@ OCAMLLEX_FLAGS ?= -q
 # general (it supports both .o and .obj)
 
 ifneq "$(COMPUTE_DEPS)" "false"
+RUNTIME_HEADERS :=
 REQUIRED_HEADERS :=
 else
 RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
@@ -88,7 +89,7 @@ RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
 REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 
-%.$(O): %.c $(RUNTIME_HEADERS) $(wildcard *.h)
+%.$(O): %.c $(REQUIRED_HEADERS)
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 $(DEPDIR):

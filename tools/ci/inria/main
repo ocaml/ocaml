@@ -125,7 +125,7 @@ host=''
 conffile=Makefile.config
 make=make
 instdir="$HOME/ocaml-tmp-install"
-confoptions="--enable-ocamltest --disable-dependency-generation \
+confoptions="--enable-ocamltest --enable-dependency-generation \
 ${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
 cleanup=false

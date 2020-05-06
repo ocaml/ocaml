@@ -37,15 +37,6 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   dynlink clambda_checks spacetime_nat spacetime_snapshot afl bigarray \
   memprof domain)
 
-# The other_files variable stores the list of files whose dependencies
-# should be computed by `make depend` although they do not need to be
-# compiled on the current build system
-ifeq "$(UNIX_OR_WIN32)" "win32"
-other_files := unix.c
-else
-other_files := win32.c
-endif
-
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
 CONFIG_HEADERS := caml/m.h caml/s.h
 
@@ -351,10 +342,14 @@ libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 define COMPILE_C_FILE
 ifneq "$(COMPUTE_DEPS)" "false"
 ifneq "$(1)" "%"
-# This rule states that, for example, sys.b.c is sys.c and is needed for the
-# dependency generation pattern rule.
-$(1).c: %.c
-	@
+# -MG would ensure that the dependencies are generated even if the files listed
+# in $$(GENERATED_HEADERS) haven't been assembled yet. However, this goes subtly
+# wrong if the user has the headers installed, as gcc will pick up a dependency
+# on those instead and the local ones will not be generated. For this reason, we
+# don't use -MG and instead include $(GENERATED_HEADERS) in the order only
+# dependencies to ensure that they exist before dependencies are computed.
+$(DEPDIR)/$(1).$(D): %.c | $(DEPDIR) $(GENERATED_HEADERS)
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*$(subst %,,$(1)).$(O)' -MF $$@
 endif
 $(1).$(O): %.c
 else
@@ -405,8 +400,7 @@ i386nt.obj: i386nt.asm domain_state32.inc
 
 # Dependencies
 
-DEP_FILES := $(addsuffix .b, $(basename $(BYTECODE_C_SOURCES) \
-                                        instrtrace $(other_files)))
+DEP_FILES := $(addsuffix .b, $(basename $(BYTECODE_C_SOURCES) instrtrace))
 ifneq "$(NATIVE_COMPILER)" "false"
 DEP_FILES += $(addsuffix .n, $(basename $(NATIVE_C_SOURCES)))
 endif
@@ -418,8 +412,3 @@ DEP_FILES := $(addsuffix .$(D), $(DEP_FILES))
 ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
-
-# -MG ensures that the dependencies are generated even if the files listed in
-# $(GENERATED_HEADERS) haven't been assembled yet.
-$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(basename $*).c -MG -MT '$*.$(O)' -MF $@
