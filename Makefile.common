@@ -15,7 +15,8 @@
 
 # This makefile contains common definitions and rules shared by
 # other Makefiles
-# We assume that Makefile.config has already been included
+
+include $(ROOTDIR)/Makefile.config_if_required
 
 # %(DEPDIR) must be kept in sync with entries in .gitignore
 DEPDIR=.dep

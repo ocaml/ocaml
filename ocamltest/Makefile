@@ -17,7 +17,6 @@
 
 ROOTDIR = ..
 
--include $(ROOTDIR)/Makefile.build_config
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
@@ -80,7 +79,17 @@ endif
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime -DCAML_INTERNALS
 
-run := run_$(UNIX_OR_WIN32)
+ifdef UNIX_OR_WIN32
+run_source := run_$(UNIX_OR_WIN32).c
+else
+ifneq "$(filter-out $(CLEAN_TARGET_NAMES), $(MAKECMDGOALS))" ""
+$(warning The variable UNIX_OR_WIN32 is not defined. \
+  It must be set (usually by $(ROOTDIR)/configure), \
+  or only clean rules are supported.)
+endif
+# If we are in a 'clean' rule, we ask for both versions to be cleaned.
+run_source := run_unix.c run_win32.c
+endif
 
 # List of source files from which ocamltest is compiled
 # (all the different sorts of files are derived from this)
@@ -89,8 +98,7 @@ run := run_$(UNIX_OR_WIN32)
 # which is actually built into the tool but clearly separated from its core
 
 core := \
-  $(run).c \
-  run_stubs.c \
+  $(run_source) run_stubs.c \
   ocamltest_stdlib_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
@@ -280,7 +288,6 @@ ocamltest.html: ocamltest.org
 clean:
 	rm -rf ocamltest ocamltest.exe ocamltest.opt ocamltest.opt.exe
 	rm -rf $(c_files:.c=.o) $(c_files:.c=.obj)
-	rm -rf run_unix.o run_win32.o run_win32.obj
 	rm -rf $(ml_files:.ml=.o) $(ml_files:.ml=.obj)
 	rm -rf $(cmi_files)
 	rm -rf $(cmo_files)

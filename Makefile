@@ -16,20 +16,6 @@
 # The main Makefile
 
 ROOTDIR = .
-
-# The configure and *clean targets can all be run without running ./configure
-# first.
-# If no goals were specified (i.e. `make`), add defaultentry (since it requires
-# ./configure to be run)
-CAN_BE_UNCONFIGURED := $(strip \
-  $(filter-out partialclean clean distclean configure, \
-	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
-
-ifeq "$(CAN_BE_UNCONFIGURED)" ""
--include Makefile.build_config
-else
-include Makefile.build_config
-endif
 include Makefile.common
 
 .PHONY: defaultentry
@@ -965,6 +951,10 @@ partialclean::
 
 ## Test compilation of backend-specific parts
 
+ARCH_SPECIFIC =\
+  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
+  asmcomp/scheduling.ml asmcomp/reload.ml
+
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
 
@@ -1082,10 +1072,7 @@ distclean: clean
 
 include .depend
 
-
-ifneq "$(strip $(CAN_BE_UNCONFIGURED))" ""
 Makefile.config Makefile.build_config: config.status
-
 config.status:
 	@echo "Please refer to the installation instructions:"
 	@echo "- In file INSTALL for Unix systems."
@@ -1097,4 +1084,3 @@ config.status:
 	@echo "	make install"
 	@echo "should work."
 	@false
-endif
