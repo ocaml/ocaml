@@ -135,6 +135,9 @@ by
 but can be post-processed by other tools such as
 .BR Omake (1).
 .TP
+.B \-json
+Print module dependencies in JSON format only supported with -modules for now.
+.TP
 .BI \-native
 Generate dependencies for a pure native-code program (no bytecode
 version).  When an implementation file (.ml file) has no explicit

@@ -235,6 +235,49 @@ module Stdlib = struct
   external compare : 'a -> 'a -> int = "%compare"
 end
 
+(* JSON functions *)
+
+module Json = struct
+  let escape_char ppf chr =
+      match chr with
+      | ('\"' | '\\') as c ->
+          Format.fprintf ppf "\\%c" c
+      | '\n' ->
+          Format.fprintf ppf "\\%c" 'n'
+      | '\t' ->
+          Format.fprintf ppf "\\%c" 't'
+      | '\r' ->
+          Format.fprintf ppf "\\%c" 'r'
+      | '\b' ->
+          Format.fprintf ppf "\\%c" 'b'
+      | '\x00' .. '\x1F' | '\x7F' as c ->
+          Format.fprintf ppf "\\u%04X" (Char.code c)
+      | c -> Format.fprintf ppf "%c" c
+
+  let escape_string ppf s = String.iter (escape_char ppf) s
+
+  type t =
+    [
+      | `String of string
+      | `Assoc of (string * t) list
+      | `List of t list
+    ]
+
+  let rec print ppf =
+    let comma ppf () = Format.fprintf ppf ",@ " in
+    function
+    | `String s ->
+        Format.fprintf ppf "\"%a\"" escape_string s
+    | `Assoc obj ->
+        Format.fprintf ppf "@[{@[<hv 0>%a@]@;<0 0>}@]"
+          (Format.pp_print_list ~pp_sep:comma keyed_element) obj
+    | `List l ->
+        Format.fprintf ppf "@[[@[<hv>%a@]@;<0 0>]@]"
+          (Format.pp_print_list ~pp_sep:comma print ) l
+  and keyed_element ppf (key, (element:t)) =
+    Format.fprintf ppf "\"@[<2>%a\":@ %a@]" escape_string key print element
+end
+
 (* File functions *)
 
 let find_in_path path name =
