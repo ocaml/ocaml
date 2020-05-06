@@ -68,6 +68,8 @@ let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
 
+let null = field (repr 0L) 1
+
 module Extension_constructor =
 struct
   type t = extension_constructor

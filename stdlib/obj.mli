@@ -90,6 +90,8 @@ val int_tag : int
 val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
+val null : t
+
 module Extension_constructor :
 sig
   type t = extension_constructor
