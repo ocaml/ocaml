@@ -265,7 +265,8 @@ val make_copy_of_types: t -> (t -> t)
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
-val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
+val add_extension:
+  check:bool -> rebind:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module:
   ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
@@ -317,7 +318,8 @@ val enter_value:
     string -> value_description -> t -> Ident.t * t
 val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
 val enter_extension:
-  scope:int -> string -> extension_constructor -> t -> Ident.t * t
+  scope:int -> rebind:bool -> string ->
+  extension_constructor -> t -> Ident.t * t
 val enter_module:
   scope:int -> ?arg:bool -> string -> module_presence ->
   module_type -> t -> Ident.t * t
