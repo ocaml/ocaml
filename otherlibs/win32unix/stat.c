@@ -15,7 +15,14 @@
 #define CAML_INTERNALS
 
 #include <errno.h>
+#ifdef _MSC_VER 
 #include <float.h>
+#ifndef nextafter
+#define nextafter _nextafter
+#endif
+#else
+#include <math.h>
+#endif
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -55,10 +62,6 @@
 static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
-
-#ifndef nextafter
-#define nextafter _nextafter
-#endif
 
 /* Transform a timestamp expressed in units of 100ns
    to a number of seconds in floating-point.
