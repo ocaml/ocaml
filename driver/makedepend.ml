@@ -17,6 +17,47 @@ open Compenv
 open Parsetree
 module String = Misc.Stdlib.String
 
+module Json = struct
+  let escape_char ppf chr =
+      match chr with
+      | ('\"' | '\\') as c ->
+          Format.fprintf ppf "\\%c" c
+      | '\n' ->
+          Format.fprintf ppf "\\%c" 'n'
+      | '\t' ->
+          Format.fprintf ppf "\\%c" 't'
+      | '\r' ->
+          Format.fprintf ppf "\\%c" 'r'
+      | '\b' ->
+          Format.fprintf ppf "\\%c" 'b'
+      | '\x00' .. '\x1F' | '\x7F' as c ->
+          Format.fprintf ppf "\\u%04X" (Char.code c)
+      | c -> Format.fprintf ppf "%c" c
+
+  let escape_string ppf s = String.iter (escape_char ppf) s
+
+  type t =
+    [
+      | `String of string
+      | `Assoc of (string * t) list
+      | `List of t list
+    ]
+
+  let comma ppf () = Format.fprintf ppf ",@ "
+
+  let rec print ppf = function
+    | `String s ->
+        Format.fprintf ppf "\"%a\"" escape_string s 
+    | `Assoc obj ->
+        Format.fprintf ppf "@[{@[<hv 0>%a@]@;<0 0>}@]"
+          (Format.pp_print_list ~pp_sep:comma keyed_element) obj
+    | `List l ->
+        Format.fprintf ppf "@[[@[<hv>%a@]@;<0 0>]@]"
+          (Format.pp_print_list ~pp_sep:comma print ) l
+  and keyed_element ppf (key, (element:t)) =
+    Format.fprintf ppf "\"@[<2>%a\":@ %a@]" escape_string key print element
+end
+
 let ppf = Format.err_formatter
 (* Print the dependencies *)
 
@@ -39,6 +80,7 @@ let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
+let print_json = ref false
 
 module Error_occurred : sig
   val set : unit -> unit
@@ -225,15 +267,28 @@ let print_dependencies target_files deps =
   List.iter print_dep deps;
   print_string "\n"
 
+let is_predef dep =
+  (String.length dep > 0) &&
+  (
+    match dep.[0] with
+    | 'A'..'Z' | '\128'..'\255' -> true
+    | _ -> false
+  )
+
+let json_dependencies source_file deps =
+  let elements = List.map (fun x -> `String x)
+      (List.filter is_predef (String.Set.elements deps)) in
+  `Assoc[
+    "source",`String source_file;
+    "depends_on",`List elements;
+  ]
+
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;
   String.Set.iter
     (fun dep ->
        (* filter out "*predef*" *)
-      if (String.length dep > 0)
-          && (match dep.[0] with
-              | 'A'..'Z' | '\128'..'\255' -> true
-              | _ -> false) then
+      if is_predef dep then
         begin
           print_char ' ';
           print_string dep
@@ -608,6 +663,8 @@ let main () =
         "<e>  Consider <e> as a synonym of the .mli extension";
      "-modules", Arg.Set raw_dependencies,
         " Print module dependencies in raw form (not suitable for make)";
+     "-json-modules", Arg.Set print_json,
+        " Print module dependencies in JSON format";
      "-native", Arg.Set native_only,
         " Generate dependencies for native-code only (no .cmo files)";
      "-bytecode", Arg.Set bytecode_only,
@@ -646,6 +703,11 @@ let main () =
   Clflags.parse_arguments file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
+  else if !print_json then begin
+    let sorted = List.sort compare !files in
+    let json = List.map (fun (file,_,deps,_) -> json_dependencies file deps) in
+    Format.printf "@[%a@]@." Json.print @@ `List(json sorted);
+  end
   else List.iter print_file_dependencies (List.sort compare !files);
   exit (if Error_occurred.get () then 2 else 0)
 
