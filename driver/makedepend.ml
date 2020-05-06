@@ -61,6 +61,9 @@ let fix_slash s =
     String.map (function '\\' -> '/' | c -> c) s
   end
 
+let report_errorf fmt =
+  Error_occurred.set ();
+  Location.errorf fmt
 (* Since we reinitialize load_path after reading OCAMLCOMP,
   we must use a cache instead of calling Sys.readdir too often. *)
 let dirs = ref String.Map.empty
@@ -72,8 +75,8 @@ let readdir dir =
       try
         Sys.readdir dir
       with Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-        Error_occurred.set ();
+        report_errorf "@[Bad -I option: %s@]@." msg
+        |> Location.print_report Format.err_formatter;
         [||]
     in
     dirs := String.Map.add dir contents !dirs;
@@ -88,15 +91,15 @@ let add_to_load_path dir =
     let contents = readdir dir in
     add_to_list load_path (dir, contents)
   with Sys_error msg ->
-    Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-    Error_occurred.set ()
+    report_errorf "@[Bad -I option: %s@]@." msg
+    |> Location.print_report Format.err_formatter
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
     add_to_list synonyms suffix
   else begin
-    Format.fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
-    Error_occurred.set ()
+    report_errorf "@[Bad suffix: '%s'@]@." suffix
+    |> Location.print_report Format.err_formatter
   end
 
 (* Find file 'name' (capitalized) in search path *)
@@ -394,9 +397,8 @@ let print_file_dependencies sorted =
       let json = List.map (fun (file,_,deps,_) -> json_dependencies file deps) in
       Format.printf "@[%a@]@." Json.print @@ `List(json sorted);
     end else
-      Location.error "this output is not supported in json format"
+      report_errorf "this output is not supported in json format"
       |> Location.print_report Format.err_formatter;
-      Error_occurred.set ();
   end else
     List.iter (fun (source_file, kind, extracted_deps, pp_deps) ->
       if !raw_dependencies then begin
@@ -529,12 +531,15 @@ let sort_files_by_dependencies files =
       List.sort (fun (file1, _) (file2, _) -> String.compare file1 file2) !li
     in
     List.iter (fun (file, deps) ->
-      Format.fprintf Format.err_formatter "\t@[%s: " file;
+      report_errorf "\t@[%s: " file
+      |> Location.print_report Format.err_formatter;
       List.iter (fun (modname, kind) ->
-        Format.fprintf Format.err_formatter "%s.%s " modname
-          (if kind=ML then "ml" else "mli");
+        report_errorf "%s.%s " modname
+          (if kind=ML then "ml" else "mli")
+        |> Location.print_report Format.err_formatter;
       ) !deps;
-      Format.fprintf Format.err_formatter "@]@.";
+      report_errorf "@]@."
+      |> Location.print_report Format.err_formatter;
       Printf.printf "%s " file) sorted_deps;
     Error_occurred.set ()
   end;
