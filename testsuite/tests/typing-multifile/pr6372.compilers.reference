@@ -1,0 +1,4 @@
+File "e.ml", line 1, characters 15-22:
+1 | open D;; let f (C {f}) = ()
+                   ^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
