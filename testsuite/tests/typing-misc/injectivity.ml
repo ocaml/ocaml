@@ -307,6 +307,36 @@ None
 val v' : int Vec.t Vec.t = <abstr>
 |}]
 
+(* Break it (using magic) *)
+module Vec : sig
+  type +!'a t
+  val eqt : ('a t, 'b t) eq
+end = struct
+  type 'a t = 'a
+  let eqt = Obj.magic Refl (* Never do that! *)
+end
+
+type _ ty =
+  | Int : int ty
+  | Vec : 'a ty -> 'a Vec.t ty
+
+let coe : type a b. (a,b) eq -> a ty -> b ty =
+  fun Refl x -> x
+let eq_int_any : type a. (int, a) eq =
+  let vec_ty : a Vec.t ty = coe Vec.eqt (Vec Int) in
+  let Vec Int = vec_ty in Refl
+[%%expect{|
+module Vec : sig type +!'a t val eqt : ('a t, 'b t) eq end
+type _ ty = Int : int ty | Vec : 'a ty -> 'a Vec.t ty
+val coe : ('a, 'b) eq -> 'a ty -> 'b ty = <fun>
+Line 17, characters 2-30:
+17 |   let Vec Int = vec_ty in Refl
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Vec (Vec Int)
+val eq_int_any : (int, 'a) eq = Refl
+|}]
 
 (* Not directly related: injectivity and constraints *)
 type 'a t = 'b constraint 'a = <b : 'b>
