@@ -713,6 +713,10 @@ let bad_location =
 [%%expect{|
 val bad_location : 'a GADT_ordering.is_point -> 'a -> int = <fun>
 |}, Principal{|
+Line 4, characters 11-19:
+4 |       let+ Is_point = is_point
+               ^^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 6-10:
 4 |       let+ Is_point = is_point
           ^^^^

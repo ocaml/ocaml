@@ -1561,7 +1561,8 @@ and type_pat_aux
       in
       let expected_ty = instance expected_ty in
       let expected_fvs =
-        if mode = Normal && constr.cstr_generalized && not !already_warned_gadt
+        if mode = Normal && constr.cstr_generalized && no_existentials = None
+        && not !already_warned_gadt
         then free_variables expected_ty else []
       in
       (* PR#7214: do not use gadt unification for toplevel lets *)
