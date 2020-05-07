@@ -1,6 +1,26 @@
+(* In order to use the development compiler with opam 2.0, first create a new
+   switch
+
+      opam switch create 4.10.0+multicore --empty
+
+   Initial build:
+
+      opam pin add --inplace-build ocaml-variants.4.10.0+multicore file://`pwd`
+
+   This installs the compiler for the new opam switch. Subsequent builds can be
+   done locally with:
+
+      make world; make world.opt
+
+   Subsequent installs are done with:
+
+      opam install --assume-built ocaml-variants
+
+*)
+
 opam-version: "2.0"
-version: "4.10.0"
-synopsis: "OCaml development version"
+version: "4.10.0+multicore"
+synopsis: "OCaml multicore 4.10.0"
 depends: [
   "ocaml" {= "4.10.0" & post}
   "base-unix" {post}
@@ -11,18 +31,11 @@ conflict-class: "ocaml-core-compiler"
 flags: compiler
 setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
 build: [
-  ["./configure" "--prefix=%{prefix}%"]
+  ["./configure" "--prefix=%{prefix}%" "--enable-debug-runtime"]
   [make "-j%{jobs}%"]
 ]
 install: [make "install"]
-maintainer: "caml-list@inria.fr"
-homepage: "https://github.com/ocaml/ocaml/"
-bug-reports: "https://github.com/ocaml/ocaml/issues"
-authors: [
-  "Xavier Leroy"
-  "Damien Doligez"
-  "Alain Frisch"
-  "Jacques Garrigue"
-  "Didier Rémy"
-  "Jérôme Vouillon"
-]
+maintainer: "kc@kcsrk.info"
+homepage: "https://github.com/ocaml-multicore/ocaml-multicore"
+bug-reports: "https://github.com/ocaml-multicore/ocaml-multicore/issues"
+authors: "Xavier Leroy and many contributors"
