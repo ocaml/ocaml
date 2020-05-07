@@ -58,6 +58,10 @@ Working version
 
 ### Bug fixes:
 
+- #9521, #9522: correctly fail when comparing functions
+  with Closure and Infix tags.
+  (Gabriel Scherer and Jeremy Yallop and Xavier Leroy,
+   report by Twitter user @st_toHKR through Jun Furuse)
 
 OCaml 4.11
 ----------
