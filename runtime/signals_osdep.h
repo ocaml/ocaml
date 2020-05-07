@@ -193,9 +193,9 @@
      sigact.sa_flags = SA_SIGINFO
 
   typedef greg_t context_reg;
-  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
-  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
-  #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.gregs[REG_CR2])
+  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_EIP])
+  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_ESP])
+  #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.cr2)
 
 /****************** I386, BSD_ELF */
 
