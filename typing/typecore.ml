@@ -1292,6 +1292,16 @@ let as_comp_pattern
   | Value -> as_computation_pattern pat
   | Computation -> pat
 
+let all_distinct_vars tl =
+  let seen = ref [] in
+  List.for_all
+    (fun ty ->
+      let ty = repr ty in
+      not (List.memq ty !seen) && (seen := ty :: !seen; is_Tvar ty))
+    tl
+
+let already_warned_gadt = ref false
+
 (* type_pat propagates the expected type.
    Unification may update the typing environment.
 
@@ -1550,9 +1560,17 @@ and type_pat_aux
           constr
       in
       let expected_ty = instance expected_ty in
+      let expected_fvs =
+        if mode = Normal && constr.cstr_generalized && not !already_warned_gadt
+        then free_variables expected_ty else []
+      in
       (* PR#7214: do not use gadt unification for toplevel lets *)
       unify_pat_types loc env ty_res expected_ty
         ~refine:(refine || constr.cstr_generalized && no_existentials = None);
+      if not (all_distinct_vars expected_fvs) then begin
+        already_warned_gadt := true;
+        Location.prerr_warning sp.ppat_loc Warnings.Instantiate_by_gadt;
+      end;
       end_def ();
       generalize_structure expected_ty;
       generalize_structure ty_res;
@@ -1824,7 +1842,10 @@ and type_pat_aux
 
 let type_pat category ?no_existentials ?(mode=Normal)
     ?(lev=get_current_level()) env sp expected_ty =
-  Misc.protect_refs [Misc.R (gadt_equations_level, Some lev)] (fun () ->
+  Misc.protect_refs
+    [Misc.R (gadt_equations_level, Some lev);
+     Misc.R (already_warned_gadt, false)]
+    (fun () ->
       let r =
         type_pat category ~no_existentials ~mode
           ~env sp expected_ty (fun x -> x)

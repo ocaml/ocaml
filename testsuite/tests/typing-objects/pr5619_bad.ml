@@ -26,6 +26,10 @@ class foo =
   end
 ;;
 [%%expect{|
+Line 6, characters 10-13:
+6 |           Foo -> (self :> <foo : string>)
+              ^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 class foo :
   object method cast : foo_t name -> < foo : string > method foo : string end
 |}]

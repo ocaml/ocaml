@@ -582,6 +582,10 @@ type (_, _) ctxt =
       (red, 'n) ctxt -> (black, 'n) ctxt
   | CBlk : int * dir * ('c1, 'n) sub_tree *
       (black, 'n succ) ctxt -> ('c, 'n) ctxt
+Line 22, characters 4-19:
+22 |     Rnode (l, e, r) -> Bnode (l, e, r)
+         ^^^^^^^^^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 val blacken : (red, 'a) sub_tree -> (black, 'a succ) sub_tree = <fun>
 |}];;
 
@@ -636,6 +640,10 @@ let rotate d1 pE sib d2 gE uncle (Rnode (x, e, y)) =
   | RightD, LeftD  -> Bnode (Rnode (uncle, gE, x), e, Rnode (y, pE, sib))
 ;;
 [%%expect{|
+Line 1, characters 33-50:
+1 | let rotate d1 pE sib d2 gE uncle (Rnode (x, e, y)) =
+                                     ^^^^^^^^^^^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 val rotate :
   dir ->
   int ->

@@ -44,6 +44,10 @@ type ('a, 'result, 'visit_action) context =
 Line 15, characters 4-9:
 15 |   | Local -> fun _ -> raise Exit
          ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 15, characters 4-9:
+15 |   | Local -> fun _ -> raise Exit
+         ^^^^^
 Error: This pattern matches values of type
          ($0, $0 * insert, visit_action) context
        The type constructor $0 would escape its scope
@@ -65,6 +69,10 @@ Error: This pattern matches values of type
          ($'a, $'a * insert, visit_action) context
        The type constructor $'a would escape its scope
 |}, Principal{|
+Line 4, characters 4-9:
+4 |   | Local -> fun _ -> raise Exit
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-9:
 4 |   | Local -> fun _ -> raise Exit
         ^^^^^

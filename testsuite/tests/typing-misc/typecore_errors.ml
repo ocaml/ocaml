@@ -423,6 +423,25 @@ let x  = function
 
 [%%expect{|
 type 'a x = X : [> `azdwbie ] x | Y : [> `c7diagq ] x
+Line 6, characters 4-5:
+6 |   | X -> ()
+        ^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 7, characters 4-5:
+7 |   | Y  -> ()
+        ^
+Error: Variant tags `azdwbie and `c7diagq have the same hash value.
+       Change one of them.
+|}, Principal{|
+type 'a x = X : [> `azdwbie ] x | Y : [> `c7diagq ] x
+Line 6, characters 4-5:
+6 |   | X -> ()
+        ^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 7, characters 4-5:
+7 |   | Y  -> ()
+        ^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 7, characters 4-5:
 7 |   | Y  -> ()
         ^

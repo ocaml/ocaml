@@ -18,6 +18,25 @@ let trivial t =
 ;;
 
 [%%expect{|
+Line 3, characters 4-10:
+3 |   | IntLit -> ()
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-11:
+4 |   | BoolLit -> ()
+        ^^^^^^^
+Error: This pattern matches values of type bool t
+       but a pattern was expected which matches values of type int t
+       Type bool is not compatible with type int
+|}, Principal{|
+Line 3, characters 4-10:
+3 |   | IntLit -> ()
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-11:
+4 |   | BoolLit -> ()
+        ^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-11:
 4 |   | BoolLit -> ()
         ^^^^^^^
@@ -43,6 +62,10 @@ let trivial_merged t =
 ;;
 
 [%%expect{|
+Line 3, characters 4-10:
+3 |   | IntLit
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-11:
 4 |   | BoolLit -> ()
         ^^^^^^^
@@ -118,6 +141,10 @@ let simple t a =
 ;;
 
 [%%expect{|
+Line 3, characters 4-10:
+3 |   | IntLit, 3 -> ()
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-11:
 4 |   | BoolLit, true -> ()
         ^^^^^^^
@@ -125,6 +152,14 @@ Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
 |}, Principal{|
+Line 3, characters 4-10:
+3 |   | IntLit, 3 -> ()
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-11:
+4 |   | BoolLit, true -> ()
+        ^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-17:
 4 |   | BoolLit, true -> ()
         ^^^^^^^^^^^^^
@@ -152,6 +187,10 @@ let simple_merged t a =
 ;;
 
 [%%expect{|
+Line 3, characters 4-10:
+3 |   | IntLit, 3
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-11:
 4 |   | BoolLit, true -> ()
         ^^^^^^^
@@ -386,6 +425,10 @@ let noop t a =
 ;;
 
 [%%expect{|
+Line 3, characters 4-10:
+3 |   | IntLit, x -> x
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-11:
 4 |   | BoolLit, x -> x
         ^^^^^^^
@@ -393,6 +436,14 @@ Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
 |}, Principal{|
+Line 3, characters 4-10:
+3 |   | IntLit, x -> x
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-11:
+4 |   | BoolLit, x -> x
+        ^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-14:
 4 |   | BoolLit, x -> x
         ^^^^^^^^^^
@@ -418,6 +469,10 @@ let noop_merged t a =
 ;;
 
 [%%expect{|
+Line 3, characters 4-10:
+3 |   | IntLit, x
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-11:
 4 |   | BoolLit, x -> x
         ^^^^^^^
@@ -453,6 +508,25 @@ let trivial2 t2 =
 ;;
 
 [%%expect{|
+Line 3, characters 4-9:
+3 |   | Int _ -> ()
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-10:
+4 |   | Bool _ -> ()
+        ^^^^^^
+Error: This pattern matches values of type bool t2
+       but a pattern was expected which matches values of type int t2
+       Type bool is not compatible with type int
+|}, Principal{|
+Line 3, characters 4-9:
+3 |   | Int _ -> ()
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-10:
+4 |   | Bool _ -> ()
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-10:
 4 |   | Bool _ -> ()
         ^^^^^^
@@ -478,6 +552,10 @@ let trivial2_merged t2 =
 ;;
 
 [%%expect{|
+Line 3, characters 4-9:
+3 |   | Int _
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-10:
 4 |   | Bool _ -> ()
         ^^^^^^
@@ -504,6 +582,25 @@ let extract t2 =
 ;;
 
 [%%expect{|
+Line 3, characters 4-9:
+3 |   | Int _ -> x
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-10:
+4 |   | Bool _ -> x
+        ^^^^^^
+Error: This pattern matches values of type bool t2
+       but a pattern was expected which matches values of type int t2
+       Type bool is not compatible with type int
+|}, Principal{|
+Line 3, characters 4-9:
+3 |   | Int _ -> x
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 4, characters 4-10:
+4 |   | Bool _ -> x
+        ^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-10:
 4 |   | Bool _ -> x
         ^^^^^^
@@ -529,6 +626,10 @@ let extract_merged t2 =
 ;;
 
 [%%expect{|
+Line 3, characters 4-9:
+3 |   | Int x
+        ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 4, characters 4-10:
 4 |   | Bool x -> x
         ^^^^^^
@@ -634,6 +735,10 @@ let not_annotated x =
 ;;
 
 [%%expect{|
+Line 3, characters 4-5:
+3 |   | A | B -> 3
+        ^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 val not_annotated : int t3 -> int = <fun>
 |}]
 

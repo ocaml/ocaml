@@ -13,6 +13,10 @@ type _ t =
     Int : int -> int t
   | String : string -> string t
   | Same : 'l t -> 'l t
+Line 3, characters 21-26:
+3 | let rec f = function Int x -> x | Same s -> f s;;
+                         ^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 val f : int t -> int = <fun>
 Lines 4-5, characters 0-77:
 4 | type 'a tt = 'a t =

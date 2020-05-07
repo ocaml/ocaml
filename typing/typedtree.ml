@@ -824,7 +824,7 @@ let split_pattern pat =
     (* The third parameter of [Tpat_or] is [Some _] only for "#typ"
        patterns, which we do *not* expand. Hence we can put [None] here. *)
     { pat with pat_desc = Tpat_or (p1, p2, None) } in
-  let rec split_pattern cpat =
+  let rec split_pattern (cpat : computation general_pattern) =
     match cpat.pat_desc with
     | Tpat_value p ->
         Some p, None

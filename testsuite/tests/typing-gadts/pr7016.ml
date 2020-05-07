@@ -24,8 +24,16 @@ let get1' = function
   | (Cons (x, _) : (_ * 'a, 'a) t) -> x
   | Nil -> assert false ;; (* ok *)
 [%%expect{|
+Line 3, characters 4-7:
+3 |   | Nil -> assert false ;; (* ok *)
+        ^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 val get1' : ('b * 'a as 'a, 'a) t -> 'b = <fun>
 |}, Principal{|
+Line 3, characters 4-7:
+3 |   | Nil -> assert false ;; (* ok *)
+        ^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 3, characters 4-7:
 3 |   | Nil -> assert false ;; (* ok *)
         ^^^
