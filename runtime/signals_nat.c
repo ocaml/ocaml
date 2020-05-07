@@ -17,7 +17,10 @@
 
 /* Signal handling, code specific to the native-code compiler */
 
-#if defined (SYS_linux)
+#if defined(TARGET_amd64) && defined (SYS_linux)
+#define _GNU_SOURCE
+#endif
+#if defined(TARGET_i386) && defined (SYS_linux_elf)
 #define _GNU_SOURCE
 #endif
 #include <signal.h>
