@@ -275,9 +275,17 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
 
-static int is_pointer_safe (value v, value *p)
+#if defined(__GNUC__)
+#define OPTNONE __attribute__((optimize("O0")))
+#elif defined(__clang__)
+#define OPTNONE __attribute__((optnone))
+#else
+#error "Naked pointer checker unsupported for this platform"
+#endif
+
+static int OPTNONE is_pointer_safe (value v, value *p)
 {
-  volatile header_t h;
+  header_t h;
   tag_t t;
 
   Caml_state->checking_pointer_pc = &&on_segfault;
@@ -297,21 +305,20 @@ static int is_pointer_safe (value v, value *p)
   if (Is_in_heap (v) || (Is_black_hd(h) && Wosize_hd(h) < (1ul << 40)))
     return 1;
 
-on_segfault:
-  if (Caml_state->checking_pointer_pc == NULL) {
-    if (!Is_black_hd(h)) {
-      fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
-                      "non-black head (tag=%d)\n", p, (void*)v, t);
-    } else {
-      fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
-                       "suspiciously large size: %lu words\n",
-               p, (void*)v, Wosize_hd(h));
-    }
+  if (!Is_black_hd(h)) {
+    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                    "non-black head (tag=%d)\n", p, (void*)v, t);
   } else {
-    Caml_state->checking_pointer_pc = NULL;
-    fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
-                     "Cannot read head.\n", p, (void*)v);
+    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                      "suspiciously large size: %lu words\n",
+              p, (void*)v, Wosize_hd(h));
   }
+  return 0;
+
+on_segfault:
+  Caml_state->checking_pointer_pc = NULL;
+  fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
+                   "Cannot read head.\n", p, (void*)v);
   return 0;
 }
 
