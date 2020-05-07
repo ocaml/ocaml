@@ -35,16 +35,23 @@ external unsafe_fill : bytes -> int -> int -> char -> unit
 module B = Bytes
 
 let bts = B.unsafe_to_string
-let bos = B.unsafe_of_string
 
 let make n c =
   B.make n c |> bts
 let init n f =
   B.init n f |> bts
-let copy s =
-  B.copy (bos s) |> bts
+
+let copy s = bts (B.of_string s)
+
 let sub s ofs len =
-  B.sub (bos s) ofs len |> bts
+  if ofs < 0 || len < 0 || ofs > length s - len
+  then invalid_arg "String.sub"
+  else begin
+    let r = create len in
+    unsafe_blit s ofs r 0 len;
+    bts r
+  end
+
 let fill =
   B.fill
 let blit =
@@ -70,7 +77,7 @@ let concat sep = function
     [] -> ""
   | l -> let seplen = length sep in bts @@
           unsafe_blits
-            (B.create (sum_lengths 0 seplen l))
+            (create (sum_lengths 0 seplen l))
             0 sep seplen l
 
 (* duplicated in bytes.ml *)
@@ -81,34 +88,91 @@ let iter f s =
 let iteri f s =
   for i = 0 to length s - 1 do f i (unsafe_get s i) done
 
+(* duplicated in bytes.ml *)
 let map f s =
-  B.map f (bos s) |> bts
-let mapi f s =
-  B.mapi f (bos s) |> bts
+  let l = length s in
+  if l = 0 then s else begin
+      let r = create l in
+      for i = 0 to l - 1 do unsafe_set r i (f (unsafe_get s i)) done;
+      bts r
+    end
 
-(* Beware: we cannot use B.trim or B.escape because they always make a
-   copy, but String.mli spells out some cases where we are not allowed
-   to make a copy. *)
+(* duplicated in bytes.ml *)
+let mapi f s =
+  let l = length s in
+  if l = 0 then s else begin
+      let r = create l in
+      for i = 0 to l - 1 do unsafe_set r i (f i (unsafe_get s i)) done;
+      bts r
+    end
+
+external char_code: char -> int = "%identity"
+external char_chr: int -> char = "%identity"
 
 let is_space = function
   | ' ' | '\012' | '\n' | '\r' | '\t' -> true
   | _ -> false
 
+(* duplicated in bytes.ml *)
 let trim s =
   if s = "" then s
   else if is_space (unsafe_get s 0) || is_space (unsafe_get s (length s - 1))
-    then bts (B.trim (bos s))
+  then
+    let len = length s in
+    let i = ref 0 in
+    while !i < len && is_space (unsafe_get s !i) do
+      incr i
+    done;
+    let j = ref (len - 1) in
+    while !j >= !i && is_space (unsafe_get s !j) do
+      decr j
+    done;
+    if !j >= !i then
+      sub s !i (!j - !i + 1)
+    else
+      ""
   else s
 
+(* duplicated in bytes.ml *)
 let escaped s =
-  let rec escape_if_needed s n i =
-    if i >= n then s else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
-          bts (B.escaped (bos s))
-      | _ -> escape_if_needed s n (i+1)
-  in
-  escape_if_needed s (length s) 0
+  let n = ref 0 in
+  for i = 0 to length s - 1 do
+    n := !n +
+      (match unsafe_get s i with
+       | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
+       | ' ' .. '~' -> 1
+       | _ -> 4)
+  done;
+  if !n = length s then s else begin
+    let s' = create !n in
+    n := 0;
+    for i = 0 to length s - 1 do
+      begin match unsafe_get s i with
+      | ('\"' | '\\') as c ->
+          unsafe_set s' !n '\\'; incr n; unsafe_set s' !n c
+      | '\n' ->
+          unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'n'
+      | '\t' ->
+          unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 't'
+      | '\r' ->
+          unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'r'
+      | '\b' ->
+          unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'b'
+      | (' ' .. '~') as c -> unsafe_set s' !n c
+      | c ->
+          let a = char_code c in
+          unsafe_set s' !n '\\';
+          incr n;
+          unsafe_set s' !n (char_chr (48 + a / 100));
+          incr n;
+          unsafe_set s' !n (char_chr (48 + (a / 10) mod 10));
+          incr n;
+          unsafe_set s' !n (char_chr (48 + a mod 10));
+      end;
+      incr n
+    done;
+    bts s'
+  end
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
@@ -129,14 +193,14 @@ let index_opt s c = index_rec_opt s (length s) 0 c
 (* duplicated in bytes.ml *)
 let index_from s i c =
   let l = length s in
-  if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
+  if i < 0 || i > l then invalid_arg "String.index_from" else
     index_rec s l i c
 
 (* duplicated in bytes.ml *)
 let index_from_opt s i c =
   let l = length s in
   if i < 0 || i > l then
-    invalid_arg "String.index_from_opt / Bytes.index_from_opt"
+    invalid_arg "String.index_from_opt"
   else
     index_rec_opt s l i c
 
@@ -151,7 +215,7 @@ let rindex s c = rindex_rec s (length s - 1) c
 (* duplicated in bytes.ml *)
 let rindex_from s i c =
   if i < -1 || i >= length s then
-    invalid_arg "String.rindex_from / Bytes.rindex_from"
+    invalid_arg "String.rindex_from"
   else
     rindex_rec s i c
 
@@ -166,7 +230,7 @@ let rindex_opt s c = rindex_rec_opt s (length s - 1) c
 (* duplicated in bytes.ml *)
 let rindex_from_opt s i c =
   if i < -1 || i >= length s then
-    invalid_arg "String.rindex_from_opt / Bytes.rindex_from_opt"
+    invalid_arg "String.rindex_from_opt"
   else
     rindex_rec_opt s i c
 
@@ -174,7 +238,7 @@ let rindex_from_opt s i c =
 let contains_from s i c =
   let l = length s in
   if i < 0 || i > l then
-    invalid_arg "String.contains_from / Bytes.contains_from"
+    invalid_arg "String.contains_from"
   else
     try ignore (index_rec s l i c); true with Not_found -> false
 
@@ -184,18 +248,25 @@ let contains s c = contains_from s 0 c
 (* duplicated in bytes.ml *)
 let rcontains_from s i c =
   if i < 0 || i >= length s then
-    invalid_arg "String.rcontains_from / Bytes.rcontains_from"
+    invalid_arg "String.rcontains_from"
   else
     try ignore (rindex_rec s i c); true with Not_found -> false
 
-let uppercase_ascii s =
-  B.uppercase_ascii (bos s) |> bts
-let lowercase_ascii s =
-  B.lowercase_ascii (bos s) |> bts
-let capitalize_ascii s =
-  B.capitalize_ascii (bos s) |> bts
-let uncapitalize_ascii s =
-  B.uncapitalize_ascii (bos s) |> bts
+(* duplicated in bytes.ml *)
+let uppercase_ascii s = map Char.uppercase_ascii s
+let lowercase_ascii s = map Char.lowercase_ascii s
+
+(* duplicated in bytes.ml *)
+let apply1 f s =
+  if length s = 0 then s else begin
+    let r = B.of_string s in
+    unsafe_set r 0 (f(unsafe_get s 0));
+    bts r
+  end
+
+(* duplicated in bytes.ml *)
+let capitalize_ascii s = apply1 Char.uppercase_ascii s
+let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
 type t = string
 
@@ -213,21 +284,35 @@ let split_on_char sep s =
   done;
   sub s 0 !j :: !r
 
-(* Deprecated functions implemented via other deprecated functions *)
-[@@@ocaml.warning "-3"]
-let uppercase s =
-  B.uppercase (bos s) |> bts
-let lowercase s =
-  B.lowercase (bos s) |> bts
-let capitalize s =
-  B.capitalize (bos s) |> bts
-let uncapitalize s =
-  B.uncapitalize (bos s) |> bts
+include
+  struct
+    (* Deprecated functions implemented via other deprecated functions *)
+    [@@@ocaml.warning "-3"]
+    let uppercase s = map Char.uppercase s
+    let lowercase s = map Char.lowercase s
+
+    let capitalize s = apply1 Char.uppercase s
+    let uncapitalize s = apply1 Char.lowercase s
+  end
 
 (** {1 Iterators} *)
 
-let to_seq s = bos s |> B.to_seq
+  let to_seq s =
+  let rec aux i () =
+    if i = length s then Seq.Nil
+    else
+      let x = get s i in
+      Seq.Cons (x, aux (i+1))
+  in
+  aux 0
 
-let to_seqi s = bos s |> B.to_seqi
+let to_seqi s =
+  let rec aux i () =
+    if i = length s then Seq.Nil
+    else
+      let x = get s i in
+      Seq.Cons ((i,x), aux (i+1))
+  in
+  aux 0
 
-let of_seq g = B.of_seq g |> bts
+let of_seq s = B.of_seq s |> bts
