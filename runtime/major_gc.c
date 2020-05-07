@@ -275,10 +275,10 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
 
-#if defined(__GNUC__)
-#define OPTNONE __attribute__((optimize("O0")))
-#elif defined(__clang__)
+#if defined(__clang__)
 #define OPTNONE __attribute__((optnone))
+#elif defined(__GNUC__)
+#define OPTNONE __attribute__((optimize("O0")))
 #else
 #error "Naked pointer checker unsupported for this platform"
 #endif
@@ -289,6 +289,14 @@ static int OPTNONE is_pointer_safe (value v, value *p)
   tag_t t;
 
   Caml_state->checking_pointer_pc = &&on_segfault;
+
+  /* This conditional is only needed so that clang does not miscompile the use
+   * of first-class label above. [Caml_state->young_ptr] will never be [42],
+   * but the use of [goto] is sufficient to force clang to get the right
+   * address of [on_segfault] label. */
+  if (Caml_state->young_ptr == (void*)42)
+    goto *Caml_state->checking_pointer_pc;
+
   h = Hd_val(v);
   Caml_state->checking_pointer_pc = NULL;
 
@@ -298,6 +306,7 @@ static int OPTNONE is_pointer_safe (value v, value *p)
     h = Hd_val (v);
     t = Tag_hd(h);
   }
+
 
   /* For the pointer to be considered safe, either the given pointer is in heap
    * or the (out of heap) pointer has a black header and its size is < 2 ** 40
