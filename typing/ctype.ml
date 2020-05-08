@@ -2455,6 +2455,24 @@ let add_gadt_equation env source destination =
     cleanup_abbrev ()
   end
 
+let add_gadt_equation_decl env source destination decl =
+  let expansion_scope =
+    max (Path.scope source) (get_gadt_equations_level ()) in
+  let ty = newconstr destination decl.type_params in
+  let decl = { decl with
+               type_private = Public;
+               type_manifest = Some ty;
+               type_kind = Type_abstract;
+               type_expansion_scope = expansion_scope} in
+  env := Env.add_local_type source decl !env;
+  cleanup_abbrev ()
+  
+let rec occur_expand_head_opt env path ty =
+  match try_expand_once_opt env ty with
+  | {desc = Tconstr (path', _, _)} when Path.same path path' -> true
+  | ty -> occur_expand_head_opt env path ty
+  | exception Cannot_expand -> false
+
 let unify_eq_set = TypePairs.create 11
 
 let order_type_pair t1 t2 =
@@ -2467,6 +2485,7 @@ let eq_package_path env p1 p2 =
   Path.same p1 p2 ||
   Path.same (normalize_package_path env p1) (normalize_package_path env p2)
 
+let equal' = ref (fun _ _ _ _ -> assert false)
 let nondep_type' = ref (fun _ _ _ -> assert false)
 let package_subtype = ref (fun _ _ _ _ _ _ _ -> assert false)
 
@@ -2751,13 +2770,34 @@ and unify3 env t1 t1' t2 t2' =
         when can_generate_equations () && List.length tl1 = List.length tl2 ->
           reify env t1';
           reify env t2';
+          mcomp !env t1' t2';
           begin match Env.find_type p1 !env, Env.find_type p2 !env with
           | decl1, decl2 ->
               if is_nominal decl1 && is_nominal decl2
-              && compatible_type_ident decl1 decl2 then unify_list env tl1 tl2
+              && compatible_type_ident decl1 decl2 then begin
+                unify_list env tl1 tl2;
+                if !equal' !env true decl1.type_params decl2.type_params
+                && (decl1.type_kind = decl2.type_kind
+                  || decl1.type_kind = Type_abstract
+                  || decl2.type_kind = Type_abstract)
+                then
+                let source, destination, decl =
+                  if decl1.type_kind <> decl2.type_kind then
+                    if decl1.type_kind = Type_abstract then
+                      p1, p2, decl2
+                    else if decl2.type_kind = Type_abstract then
+                      p2, p1, decl1
+                    else assert false
+                  else if Path.scope p1 > Path.scope p2
+                       && not (occur_expand_head_opt !env p1 t2')
+                       || occur_expand_head_opt !env p2 t1'
+                  then  p1, p2, decl2
+                  else  p2, p1, decl1
+                in
+                add_gadt_equation_decl env source destination decl
+              end
           | exception Not_found -> ()
-          end;
-          mcomp !env t1' t2'
+          end
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
@@ -3709,6 +3749,8 @@ let equal env rename tyl1 tyl2 =
   with
     Unify _ -> false
 
+
+let () = equal' := equal
 
                           (*************************)
                           (*  Class type matching  *)
