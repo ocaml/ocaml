@@ -15,7 +15,7 @@
 #define CAML_INTERNALS
 
 #include <errno.h>
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #include <float.h>
 #ifndef nextafter
 #define nextafter _nextafter
