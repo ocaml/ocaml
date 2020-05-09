@@ -2773,26 +2773,26 @@ and unify3 env t1 t1' t2 t2' =
           mcomp !env t1' t2';
           begin match Env.find_type p1 !env, Env.find_type p2 !env with
           | decl1, decl2 ->
-              if is_nominal decl1 && is_nominal decl2
+              let is_abstract decl =
+                decl.type_kind = Type_abstract && decl.type_manifest = None in
+              let abs1 = is_abstract decl1 and abs2 = is_abstract decl2 in
+              if (abs1 || abs2) && is_nominal decl1 && is_nominal decl2
               && compatible_type_ident decl1 decl2 then begin
                 unify_list env tl1 tl2;
-                if !equal' !env true decl1.type_params decl2.type_params
-                && (decl1.type_kind = decl2.type_kind
-                  || decl1.type_kind = Type_abstract
-                  || decl2.type_kind = Type_abstract)
-                then
+                if !equal' !env true decl1.type_params decl2.type_params then
                 let source, destination, decl =
-                  if decl1.type_kind <> decl2.type_kind then
-                    if decl1.type_kind = Type_abstract then
-                      p1, p2, decl2
-                    else if decl2.type_kind = Type_abstract then
-                      p2, p1, decl1
-                    else assert false
-                  else if Path.scope p1 > Path.scope p2
-                       && not (occur_expand_head_opt !env p1 t2')
-                       || occur_expand_head_opt !env p2 t1'
-                  then  p1, p2, decl2
-                  else  p2, p1, decl1
+                  if abs1 && abs2 && decl1.type_ident = decl2.type_ident then
+                    if Path.scope p1 > Path.scope p2
+                    && not (occur_expand_head_opt !env p1 t2')
+                    || occur_expand_head_opt !env p2 t1'
+                    then  p1, p2, decl2
+                    else  p2, p1, decl1
+                  else
+                    if abs1 && not abs2 then p1, p2, decl2 else
+                    if abs2 && not abs1 then p2, p1, decl1 else
+                    match decl2.type_ident with
+                    | Some (Some _) -> p1, p2, decl2
+                    | _             -> p2, p1, decl1
                 in
                 add_gadt_equation_decl env source destination decl
               end

@@ -393,3 +393,27 @@ let check2 (x : M.a M.t) (y : M.v) = let Eq = M.eq_at_v in x = y ;;
 val check1 : M.a -> M.b -> bool = <fun>
 val check2 : M.a M.t -> M.v -> bool = <fun>
 |}]
+
+
+(* From abstract *)
+
+type (_,_) eq = Refl : ('a,'a) eq
+module M : sig
+  type t [@@nominal "int"]
+  type 'a u [@@nominal]
+end = struct
+  type t = int type 'a u = 'a list
+end
+[%%expect]
+
+let f : (int, M.t) eq -> M.t -> int =
+  fun Refl x -> x
+let g : (bool, M.t) eq option -> unit =
+  function None -> ()
+let h1 : (int list, int M.u) eq ->
+         int M.u -> int list =
+  fun Refl x -> x
+let h2 : (int list, M.t M.u) eq ->
+         M.t -> int =
+  fun Refl x -> x
+[%%expect]
