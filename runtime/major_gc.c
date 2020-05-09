@@ -275,38 +275,41 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
 
-#if defined(__clang__)
-#define OPTNONE __attribute__((optnone))
-#elif defined(__GNUC__)
-#define OPTNONE __attribute__((optimize("O0")))
-#else
-#error "Naked pointer checker unsupported for this platform"
-#endif
+static inline int safe_load (header_t * addr, /*out*/ header_t * contents)
+{
+  int ok;
+  header_t h;
+  intnat tmp;
 
-static int OPTNONE is_pointer_safe (value v, value *p)
+  asm volatile(
+      "leaq 1f(%%rip), %[tmp] \n\t"
+      "movq %[tmp], 0(%[handler]) \n\t"
+      "xorl %[ok], %[ok] \n\t"
+      "movq 0(%[addr]), %[h] \n\t"
+      "movl $1, %[ok] \n\t"
+  "1: \n\t"
+      "xorq %[tmp], %[tmp] \n\t"
+      "movq %[tmp], 0(%[handler])"
+      : [tmp] "=&r" (tmp), [ok] "=&r" (ok), [h] "=&r" (h)
+      : [addr] "r" (addr),
+        [handler] "r" (&(Caml_state->checking_pointer_pc)));
+  *contents = h;
+  return ok;
+}
+
+static int is_pointer_safe (value v, value *p)
 {
   header_t h;
   tag_t t;
 
-  Caml_state->checking_pointer_pc = &&on_segfault;
+  if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
 
-  /* This conditional is only needed so that clang does not miscompile the use
-   * of first-class label above. [Caml_state->young_ptr] will never be [42],
-   * but the use of [goto] is sufficient to force clang to get the right
-   * address of [on_segfault] label. */
-  if (Caml_state->young_ptr == (void*)42)
-    goto *Caml_state->checking_pointer_pc;
-
-  h = Hd_val(v);
-  Caml_state->checking_pointer_pc = NULL;
-
-  t = Tag_val(v);
-  if (t == Infix_tag){
-    v -= Infix_offset_val(v);
-    h = Hd_val (v);
+  t = Tag_hd(h);
+  if (t == Infix_tag) {
+    v -= Infix_offset_hd(h);
+    if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
     t = Tag_hd(h);
   }
-
 
   /* For the pointer to be considered safe, either the given pointer is in heap
    * or the (out of heap) pointer has a black header and its size is < 2 ** 40
@@ -324,10 +327,9 @@ static int OPTNONE is_pointer_safe (value v, value *p)
   }
   return 0;
 
-on_segfault:
-  Caml_state->checking_pointer_pc = NULL;
+ on_segfault:
   fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
-                   "Cannot read head.\n", p, (void*)v);
+           "Cannot read head.\n", p, (void*)v);
   return 0;
 }
 
