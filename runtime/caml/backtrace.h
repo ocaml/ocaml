@@ -104,6 +104,9 @@ CAMLprim value caml_record_backtrace(value vflag);
 /* Path to the file containing debug information, if any, or NULL. */
 CAMLextern char_os * caml_cds_file;
 
+CAMLextern char * caml_embedded_debug_info;
+CAMLextern unsigned int caml_embedded_debug_info_len;
+
 /* Primitive called _only_ by runtime to record unwinded frames to
  * backtrace.  A similar primitive exists for native code, but with a
  * different prototype. */

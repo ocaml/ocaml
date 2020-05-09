@@ -49,6 +49,9 @@ struct ext_table caml_debug_info;
 
 CAMLexport char_os * caml_cds_file = NULL;
 
+CAMLexport char * caml_embedded_debug_info = NULL;
+CAMLexport unsigned int caml_embedded_debug_info_len = 0;
+
 /* Location of fields in the Instruct.debug_event record */
 enum {
   EV_POS = 0,
@@ -367,8 +370,26 @@ static void read_main_debug_info(struct debug_info *di)
 
      See  https://github.com/ocaml/ocaml/issues/9344 for details.
   */
-  if (caml_cds_file == NULL && caml_byte_program_mode == COMPLETE_EXE)
-    CAMLreturn0;
+  if (caml_byte_program_mode == COMPLETE_EXE) {
+    value debug_info =
+      caml_input_value_from_block(caml_embedded_debug_info,
+                                  caml_embedded_debug_info_len);
+    num_events = caml_array_length(debug_info);
+    events = caml_alloc(num_events, 0);
+    for (i = 0; i < num_events; i++) {
+      evl = Field(debug_info, i);
+      orig = Long_val(Field(evl, 0));
+      evl = Field(evl, 1);
+      for (l = evl; l != Val_int(0); l = Field(l, 1)) {
+        value ev = Field(l, 0);
+        Field(ev, EV_POS) = Val_long(Long_val(Field(ev, EV_POS)) + orig);
+      }
+      /* Record event list */
+      Store_field(events, i, evl);
+    }
+    di->events = process_debug_events(caml_start_code, events, &di->num_events);
+    return;
+  }
 
   if (caml_cds_file != NULL) {
     exec_name = caml_cds_file;

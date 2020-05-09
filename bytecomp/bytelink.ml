@@ -285,6 +285,11 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
+let debug_info_to_string () =
+  let s = Marshal.to_string (Array.of_list !debug_info) [] in
+  debug_info := [];
+  s
+
 (* Output a list of strings with 0-termination *)
 
 let output_stringlist oc l =
@@ -434,6 +439,27 @@ let output_data_string outchan data =
     end
   done
 
+let hex_digits = "0123456789abcdef"
+
+let char_to_hex buf ch =
+  let n = Char.code ch in
+  Buffer.add_char buf hex_digits.[(n lsr 4) land 0xf];
+  Buffer.add_char buf hex_digits.[n land 0xf]
+
+let output_data_string' outchan data =
+  let b = Buffer.create (String.length data * 4) in
+  let counter = ref 0 in
+  for i = 0 to String.length data - 1 do
+    Buffer.add_string b "\\x";
+    char_to_hex b data.[i];
+    incr counter;
+    if !counter >= 20 then begin
+      Buffer.add_string b "\\\n";
+      counter := 0
+    end
+  done;
+  output_string outchan (Buffer.contents b)
+
 (* Output a debug stub *)
 
 let output_cds_file outfile =
@@ -502,7 +528,14 @@ let link_bytecode_as_c tolink outfile with_main =
        Symtable.output_primitive_table outchan;
        (* The entry point *)
        if with_main then begin
+         let debug_info = debug_info_to_string () in
+         Printf.fprintf outchan "static char debug_info[%d] = \"\\\n"
+           (String.length debug_info);
+         if !Clflags.debug then output_data_string' outchan debug_info;
+         output_string outchan "\\\n\";\n\n";
          output_string outchan "\
+\nextern char * caml_embedded_debug_info;\
+\nextern unsigned int caml_embedded_debug_info_len;\
 \n#ifdef _WIN32\
 \nint wmain(int argc, wchar_t **argv)\
 \n#else\
@@ -510,6 +543,8 @@ let link_bytecode_as_c tolink outfile with_main =
 \n#endif\
 \n{\
 \n  caml_byte_program_mode = COMPLETE_EXE;\
+\n  caml_embedded_debug_info = debug_info;\
+\n  caml_embedded_debug_info_len = sizeof(debug_info);\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
@@ -687,7 +722,7 @@ let link objfiles output_name =
     in
     let temps = ref [] in
     Misc.try_finally
-      ~always:(fun () -> List.iter remove_file !temps)
+      ~always:(fun () -> if false then List.iter remove_file !temps)
       (fun () ->
          link_bytecode_as_c tolink c_file !Clflags.output_complete_executable;
          if !Clflags.output_complete_executable then begin
