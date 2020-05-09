@@ -1915,7 +1915,7 @@ let occur_univar env ty =
             let td = Env.find_type p env in
             List.iter2
               (fun t v ->
-                if Variance.(mem May_pos v || mem May_neg v)
+                if Variance.(mem May_pos v || mem May_neg v || mem Inj v)
                 then occur_rec bound t)
               tl td.type_variance
           with Not_found ->

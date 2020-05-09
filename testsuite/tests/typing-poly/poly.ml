@@ -1790,3 +1790,29 @@ Line 1, characters 30-40:
 Error: This definition has type 'b -> 'b which is less general than
          'a. 'a -> 'c
 |}]
+
+(* #7741 *)
+type 'a s = S
+
+class type ['x] c = object
+  method x : 'x list
+end
+[%%expect{|
+type 'a s = S
+class type ['x] c = object method x : 'x list end
+|}]
+
+let x : 'a c = object
+  method x : 'b . 'b s list = [S]
+end
+[%%expect{|
+Lines 1-3, characters 15-3:
+1 | ...............object
+2 |   method x : 'b . 'b s list = [S]
+3 | end
+Error: This expression has type < x : 'b. 'b s list >
+       but an expression was expected of type 'a c
+       The method x has type 'b. 'b s list, but the expected method type was
+       'a list
+       The universal variable 'b would escape its scope
+|}]
