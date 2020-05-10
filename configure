@@ -13714,6 +13714,10 @@ if test x"$enable_shared" != "xno"; then :
     natdynlink=true ;; #(
   x86_64-*-linux*) :
     natdynlink=true ;; #(
+  arm64-*-darwin*) :
+    natdynlink=true ;; #(
+  aarch64-*-darwin*) :
+    natdynlink=true ;; #(
   x86_64-*-darwin*) :
     natdynlink=true ;; #(
   s390x*-*-linux*) :
@@ -13911,6 +13915,10 @@ fi; system=elf ;; #(
     arch=amd64; system=netbsd ;; #(
   x86_64-*-openbsd*) :
     arch=amd64; system=openbsd ;; #(
+  arm64-*-darwin*) :
+    arch=arm64; system=macosx ;; #(
+  aarch64-*-darwin*) :
+    arch=arm64; system=macosx ;; #(
   x86_64-*-darwin*) :
     arch=amd64; system=macosx ;; #(
   x86_64-*-mingw32) :
