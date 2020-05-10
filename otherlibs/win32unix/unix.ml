@@ -215,10 +215,29 @@ type wait_flag =
 
 type file_descr
 
-external execv : string -> string array -> 'a = "unix_execv"
-external execve : string -> string array -> string array -> 'a = "unix_execve"
-external execvp : string -> string array -> 'a = "unix_execvp"
-external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
+let maybe_quote f =
+  if String.contains f ' ' ||
+     String.contains f '\"' ||
+     String.contains f '\t' ||
+     f = ""
+  then Filename.quote f
+  else f
+
+external sys_execv : string -> string array -> 'a = "unix_execv"
+external sys_execve :
+             string -> string array -> string array -> 'a = "unix_execve"
+external sys_execvp : string -> string array -> 'a = "unix_execvp"
+external sys_execvpe :
+             string -> string array -> string array -> 'a = "unix_execvpe"
+
+let execv prog args =
+  sys_execv prog (Array.map maybe_quote args)
+let execve prog args env =
+  sys_execve prog (Array.map maybe_quote args) env
+let execvp prog args =
+  sys_execvp prog (Array.map maybe_quote args)
+let execvpe prog args env =
+  sys_execvpe prog (Array.map maybe_quote args) env
 
 external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
@@ -935,13 +954,6 @@ external win_create_process : string -> string -> string option ->
                             = "win_create_process" "win_create_process_native"
 
 let make_cmdline args =
-  let maybe_quote f =
-    if String.contains f ' ' ||
-       String.contains f '\"' ||
-       String.contains f '\t' ||
-       f = ""
-    then Filename.quote f
-    else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
 let make_process_env env =
