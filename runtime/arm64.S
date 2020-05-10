@@ -50,19 +50,39 @@
 #endif
 
         .set    domain_curr_field, 0
+#if defined(SYS_macosx)
+#define DOMAIN_STATE(c_type, name) DOMAIN_STATE c_type, name
+        .macro DOMAIN_STATE c_type, name
+        .equ    domain_field_caml_\name, domain_curr_field
+        .set    domain_curr_field, domain_curr_field + 1
+        .endm
+#else
 #define DOMAIN_STATE(c_type, name) \
         .equ    domain_field_caml_##name, domain_curr_field ; \
         .set    domain_curr_field, domain_curr_field + 1
+#endif
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
 #define Caml_state(var) [x25, 8*domain_field_caml_##var]
 
+/* Globals and labels */
+#if defined(SYS_macosx)
+#define G(sym) _##sym
+#define L(lbl) L##lbl
+#else
 #define G(sym) sym
 #define L(lbl) .L##lbl
+#endif
 
-#if defined(__PIC__)
+#if defined(SYS_macosx)
 
+#define ADDRGLOBAL(reg,symb) ADDRGLOBAL reg, symb
+        .macro ADDRGLOBAL reg, symb
+        adrp        TMP, G(\symb)@GOTPAGE
+        ldr         \reg, [TMP, G(\symb)@GOTPAGEOFF]
+        .endm
+#elif defined(__PIC__)
 #define ADDRGLOBAL(reg,symb) \
         adrp    TMP, :got:G(symb); \
         ldr     reg, [TMP, #:got_lo12:G(symb)]
@@ -90,6 +110,28 @@ G(caml_hot__code_begin):
 G(caml_hot__code_end):
 #endif
 
+#if defined(SYS_macosx)
+
+#define FUNCTION(name) FUNCTION name
+        .macro FUNCTION name
+        TEXT_SECTION(caml.##G(\name))
+        .align 2
+        .globl G(\name)
+G(\name):
+        .endm
+#define END_FUNCTION(name)
+
+#define OBJECT(name) OBJECT name
+        .macro OBJECT name
+        .data
+        .align  3
+        .globl  G(\name)
+G(\name):
+        .endm
+#define END_OBJECT(name)
+
+#else
+
 #define FUNCTION(name) \
         TEXT_SECTION(caml.##name); \
         .align  2; \
@@ -107,6 +149,7 @@ G(name):
 G(name):
 #define END_OBJECT(name) \
         .size   G(name), .-G(name)
+#endif
 
 /* Allocation functions and GC interface */
         .globl  G(caml_system__code_begin)
@@ -476,5 +519,7 @@ OBJECT(caml_system__frametable)
         .align  3
         END_OBJECT(caml_system__frametable)
 
+#if !defined(SYS_macosx)
 /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits
+#endif
