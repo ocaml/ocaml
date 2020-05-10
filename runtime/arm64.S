@@ -333,8 +333,6 @@ FUNCTION(caml_start_program)
     /* Return to C caller */
         ret
         CFI_ENDPROC
-        .type   .Lcaml_retaddr, %function
-        .size   .Lcaml_retaddr, .-.Lcaml_retaddr
         END_FUNCTION(caml_start_program)
 
 /* The trap handler */
@@ -349,8 +347,6 @@ FUNCTION(caml_start_program)
     /* Return it */
         b       .Lreturn_result
         CFI_ENDPROC
-        .type   .Ltrap_handler, %function
-        .size   .Ltrap_handler, .-.Ltrap_handler
 
 /* Raise an exception from OCaml */
 
