@@ -1314,6 +1314,8 @@ AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
 
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
+AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
+
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition

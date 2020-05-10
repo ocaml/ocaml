@@ -106,6 +106,10 @@
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
 
+#undef HAS_SYSTEM
+
+/* Define HAS_SYSTEM if the library provides the system() function. */
+
 #undef HAS_UTIME
 #undef HAS_UTIMES
 

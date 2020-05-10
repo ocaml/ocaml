@@ -443,7 +443,11 @@ CAMLprim value caml_sys_system_command(value command)
   }
   buf = caml_stat_strdup_to_os(String_val(command));
   caml_enter_blocking_section ();
-  status = system_os(buf);
+  #if HAS_SYSTEM
+    status = system_os(buf);
+  #else
+    caml_invalid_argument("Sys.command not implemented");
+  #endif /* HAS_SYSTEM */
   caml_leave_blocking_section ();
   caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
