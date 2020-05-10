@@ -89,10 +89,12 @@ caml_hot__code_end:
 
 #define FUNCTION(name) \
         TEXT_SECTION(caml.##name); \
-        .align 2; \
-        .globl name; \
-        .type name, %function; \
+        .align  2; \
+        .globl  name; \
+        .type   name, %function; \
 name:
+#define END_FUNCTION(name) \
+        .size   name, .-name
 
 /* Allocation functions and GC interface */
         .globl  caml_system__code_begin
@@ -182,7 +184,7 @@ FUNCTION(caml_call_gc)
         ldp     x29, x30, [sp], 400
         ret
         CFI_ENDPROC
-        .size   caml_call_gc, .-caml_call_gc
+        END_FUNCTION(caml_call_gc)
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
@@ -191,7 +193,7 @@ FUNCTION(caml_alloc1)
         b.lo    .Lcaml_call_gc
         ret
         CFI_ENDPROC
-        .size   caml_alloc1, .-caml_alloc1
+        END_FUNCTION(caml_alloc1)
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
@@ -200,7 +202,7 @@ FUNCTION(caml_alloc2)
         b.lo    .Lcaml_call_gc
         ret
         CFI_ENDPROC
-        .size   caml_alloc2, .-caml_alloc2
+        END_FUNCTION(caml_alloc2)
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
@@ -209,7 +211,7 @@ FUNCTION(caml_alloc3)
         b.lo    .Lcaml_call_gc
         ret
         CFI_ENDPROC
-        .size   caml_alloc3, .-caml_alloc3
+        END_FUNCTION(caml_alloc3)
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
@@ -218,7 +220,7 @@ FUNCTION(caml_allocN)
         b.lo    .Lcaml_call_gc
         ret
         CFI_ENDPROC
-        .size   caml_allocN, .-caml_allocN
+        END_FUNCTION(caml_allocN)
 
 /* Call a C function from OCaml */
 /* Function to call is in ARG */
@@ -243,7 +245,7 @@ FUNCTION(caml_c_call)
     /* Return */
         ret     x19
         CFI_ENDPROC
-        .size   caml_c_call, .-caml_c_call
+        END_FUNCTION(caml_c_call)
 
 /* Start the OCaml program */
 
@@ -324,7 +326,7 @@ FUNCTION(caml_start_program)
         CFI_ENDPROC
         .type   .Lcaml_retaddr, %function
         .size   .Lcaml_retaddr, .-.Lcaml_retaddr
-        .size   caml_start_program, .-caml_start_program
+        END_FUNCTION(caml_start_program)
 
 /* The trap handler */
 
@@ -366,7 +368,7 @@ FUNCTION(caml_raise_exn)
         mov     x0, x19
         b       1b
         CFI_ENDPROC
-        .size   caml_raise_exn, .-caml_raise_exn
+        END_FUNCTION(caml_raise_exn)
 
 /* Raise an exception from C */
 
@@ -401,7 +403,7 @@ FUNCTION(caml_raise_exception)
         mov     x0, x19
         b       1b
         CFI_ENDPROC
-        .size   caml_raise_exception, .-caml_raise_exception
+        END_FUNCTION(caml_raise_exception)
 
 /* Callback from C to OCaml */
 
@@ -415,13 +417,9 @@ FUNCTION(caml_callback_asm)
         ldr     ARG, [x1]       /* code pointer */
         b       .Ljump_to_caml
         CFI_ENDPROC
-        .type   caml_callback_asm, %function
-        .size   caml_callback_asm, .-caml_callback_asm
+        END_FUNCTION(caml_callback_asm)
 
-        TEXT_SECTION(caml_callback2_asm)
-        .align  2
-        .globl  caml_callback2_asm
-caml_callback2_asm:
+FUNCTION(caml_callback2_asm)
         CFI_STARTPROC
     /* Initial shuffling of arguments */
     /* (x0 = Caml_state, x1 = closure, [x2] = arg1, [x2,8] = arg2) */
@@ -432,13 +430,9 @@ caml_callback2_asm:
         ADDRGLOBAL(ARG, caml_apply2)
         b       .Ljump_to_caml
         CFI_ENDPROC
-        .type   caml_callback2_asm, %function
-        .size   caml_callback2_asm, .-caml_callback2_asm
+        END_FUNCTION(caml_callback2_asm)
 
-        TEXT_SECTION(caml_callback3_asm)
-        .align  2
-        .globl  caml_callback3_asm
-caml_callback3_asm:
+FUNCTION(caml_callback3_asm)
         CFI_STARTPROC
     /* Initial shuffling of arguments */
     /* (x0 = Caml_state, x1 = closure, [x2] = arg1, [x2,8] = arg2,
@@ -450,7 +444,7 @@ caml_callback3_asm:
         ADDRGLOBAL(ARG, caml_apply3)
         b       .Ljump_to_caml
         CFI_ENDPROC
-        .size   caml_callback3_asm, .-caml_callback3_asm
+        END_FUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
@@ -459,7 +453,7 @@ FUNCTION(caml_ml_array_bound_error)
     /* Call that function */
         b       caml_c_call
         CFI_ENDPROC
-        .size   caml_ml_array_bound_error, .-caml_ml_array_bound_error
+        END_FUNCTION(caml_ml_array_bound_error)
 
         .globl  caml_system__code_end
 caml_system__code_end:
