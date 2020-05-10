@@ -26,8 +26,7 @@
 #define ALLOC_LIMIT x28
 #define ARG x15
 #define TMP x16
-#define TMP2 x17
-#define ARG_DOMAIN_STATE_PTR x18
+#define ARG_DOMAIN_STATE_PTR x17
 
 #define C_ARG_1 x0
 #define C_ARG_2 x1
@@ -62,8 +61,8 @@
 #if defined(__PIC__)
 
 #define ADDRGLOBAL(reg,symb) \
-        adrp    TMP2, :got:symb; \
-        ldr     reg, [TMP2, #:got_lo12:symb]
+        adrp    TMP, :got:symb; \
+        ldr     reg, [TMP, #:got_lo12:symb]
 #else
 
 #define ADDRGLOBAL(reg,symb) \
