@@ -96,6 +96,15 @@ name:
 #define END_FUNCTION(name) \
         .size   name, .-name
 
+#define OBJECT(name) \
+        .data; \
+        .align  3; \
+        .globl  name; \
+        .type   name, %object; \
+name:
+#define END_OBJECT(name) \
+        .size   name, .-name
+
 /* Allocation functions and GC interface */
         .globl  caml_system__code_begin
 caml_system__code_begin:
@@ -460,17 +469,13 @@ caml_system__code_end:
 
 /* GC roots for callback */
 
-        .data
-        .align  3
-        .globl  caml_system__frametable
-caml_system__frametable:
+OBJECT(caml_system__frametable)
         .quad   1               /* one descriptor */
         .quad   .Lcaml_retaddr  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots */
         .align  3
-        .type   caml_system__frametable, %object
-        .size   caml_system__frametable, .-caml_system__frametable
+        END_OBJECT(caml_system__frametable)
 
 /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits
