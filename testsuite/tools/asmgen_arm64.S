@@ -13,9 +13,11 @@
 /*                                                                        */
 /**************************************************************************/
 
-        .globl  call_gen_code
+#define G(sym) sym
+
+        .globl  G(call_gen_code)
         .align  2
-call_gen_code:
+G(call_gen_code):
     /* Set up stack frame and save callee-save registers */
         stp     x29, x30, [sp, -160]!
         add     x29, sp, #0
@@ -51,7 +53,7 @@ call_gen_code:
 
         .globl  caml_c_call
         .align  2
-caml_c_call:
+G(caml_c_call):
         br      x15
 
 /* Mark stack as non-executable */

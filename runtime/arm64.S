@@ -58,16 +58,19 @@
 
 #define Caml_state(var) [x25, 8*domain_field_caml_##var]
 
+#define G(sym) sym
+#define L(lbl) .L##lbl
+
 #if defined(__PIC__)
 
 #define ADDRGLOBAL(reg,symb) \
-        adrp    TMP, :got:symb; \
-        ldr     reg, [TMP, #:got_lo12:symb]
+        adrp    TMP, :got:G(symb); \
+        ldr     reg, [TMP, #:got_lo12:G(symb)]
 #else
 
 #define ADDRGLOBAL(reg,symb) \
-        adrp    reg, symb; \
-        add     reg, reg, #:lo12:symb
+        adrp    reg, G(symb); \
+        add     reg, reg, #:lo12:G(symb)
 
 #endif
 
@@ -79,39 +82,39 @@
 
 #if defined(FUNCTION_SECTIONS)
         TEXT_SECTION(caml_hot__code_begin)
-        .globl  caml_hot__code_begin
-caml_hot__code_begin:
+        .globl  G(caml_hot__code_begin)
+G(caml_hot__code_begin):
 
         TEXT_SECTION(caml_hot__code_end)
-        .globl  caml_hot__code_end
-caml_hot__code_end:
+        .globl  G(caml_hot__code_end)
+G(caml_hot__code_end):
 #endif
 
 #define FUNCTION(name) \
         TEXT_SECTION(caml.##name); \
         .align  2; \
-        .globl  name; \
-        .type   name, %function; \
-name:
+        .globl  G(name); \
+        .type   G(name), %function; \
+G(name):
 #define END_FUNCTION(name) \
-        .size   name, .-name
+        .size   G(name), .-G(name)
 
 #define OBJECT(name) \
         .data; \
         .align  3; \
-        .globl  name; \
-        .type   name, %object; \
-name:
+        .globl  G(name); \
+        .type   G(name), %object; \
+G(name):
 #define END_OBJECT(name) \
-        .size   name, .-name
+        .size   G(name), .-G(name)
 
 /* Allocation functions and GC interface */
-        .globl  caml_system__code_begin
-caml_system__code_begin:
+        .globl  G(caml_system__code_begin)
+G(caml_system__code_begin):
 
 FUNCTION(caml_call_gc)
         CFI_STARTPROC
-.Lcaml_call_gc:
+L(caml_call_gc):
     /* Record return address */
         str     x30, Caml_state(last_return_address)
     /* Record lowest stack address */
@@ -160,7 +163,7 @@ FUNCTION(caml_call_gc)
     /* Save trap pointer in case an exception is raised during GC */
         str     TRAP_PTR, Caml_state(exception_pointer)
     /* Call the garbage collector */
-        bl      caml_garbage_collection
+        bl      G(caml_garbage_collection)
     /* Restore registers */
         ldp     x0, x1, [sp, 16]
         ldp     x2, x3, [sp, 32]
@@ -199,7 +202,7 @@ FUNCTION(caml_alloc1)
         CFI_STARTPROC
         sub     ALLOC_PTR, ALLOC_PTR, #16
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    .Lcaml_call_gc
+        b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
         END_FUNCTION(caml_alloc1)
@@ -208,7 +211,7 @@ FUNCTION(caml_alloc2)
         CFI_STARTPROC
         sub     ALLOC_PTR, ALLOC_PTR, #24
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    .Lcaml_call_gc
+        b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
         END_FUNCTION(caml_alloc2)
@@ -217,7 +220,7 @@ FUNCTION(caml_alloc3)
         CFI_STARTPROC
         sub     ALLOC_PTR, ALLOC_PTR, #32
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    .Lcaml_call_gc
+        b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
         END_FUNCTION(caml_alloc3)
@@ -226,7 +229,7 @@ FUNCTION(caml_allocN)
         CFI_STARTPROC
         sub     ALLOC_PTR, ALLOC_PTR, ARG
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    .Lcaml_call_gc
+        b.lo    L(caml_call_gc)
         ret
         CFI_ENDPROC
         END_FUNCTION(caml_allocN)
@@ -267,7 +270,7 @@ FUNCTION(caml_start_program)
 /* Address of OCaml code to call is in ARG */
 /* Arguments to the OCaml code are in x0...x7 */
 
-.Ljump_to_caml:
+L(jump_to_caml):
     /* Set up stack frame and save callee-save registers */
         CFI_OFFSET(29, -160)
         CFI_OFFSET(30, -152)
@@ -294,7 +297,7 @@ FUNCTION(caml_start_program)
         str     x10, [sp, 16]
     /* Setup a trap frame to catch exceptions escaping the OCaml code */
         ldr     x8, Caml_state(exception_pointer)
-        adr     x9, .Ltrap_handler
+        adr     x9, L(trap_handler)
         stp     x8, x9, [sp, -16]!
         CFI_ADJUST(16)
         add     TRAP_PTR, sp, #0
@@ -303,13 +306,13 @@ FUNCTION(caml_start_program)
         ldr     ALLOC_LIMIT, Caml_state(young_limit)
     /* Call the OCaml code */
         blr     ARG
-.Lcaml_retaddr:
+L(caml_retaddr):
     /* Pop the trap frame, restoring caml_exception_pointer */
         ldr     x8, [sp], 16
         CFI_ADJUST(-16)
         str     x8, Caml_state(exception_pointer)
     /* Pop the callback link, restoring the global variables */
-.Lreturn_result:
+L(return_result):
         ldr     x10, [sp, 16]
         ldp     x8, x9, [sp], 32
         CFI_ADJUST(-32)
@@ -338,14 +341,14 @@ FUNCTION(caml_start_program)
 /* The trap handler */
 
         .align  2
-.Ltrap_handler:
+L(trap_handler):
         CFI_STARTPROC
     /* Save exception pointer */
         str     TRAP_PTR, Caml_state(exception_pointer)
     /* Encode exception bucket as an exception result */
         orr     x0, x0, #2
     /* Return it */
-        b       .Lreturn_result
+        b       L(return_result)
         CFI_ENDPROC
 
 /* Raise an exception from OCaml */
@@ -368,7 +371,7 @@ FUNCTION(caml_raise_exn)
         mov     x1, x30        /* arg2: pc of raise */
         add     x2, sp, #0     /* arg3: sp of raise */
         mov     x3, TRAP_PTR   /* arg4: sp of handler */
-        bl      caml_stash_backtrace
+        bl      G(caml_stash_backtrace)
     /* Restore exception bucket and raise */
         mov     x0, x19
         b       1b
@@ -403,7 +406,7 @@ FUNCTION(caml_raise_exception)
         ldr     x1, Caml_state(last_return_address)   /* arg2: pc of raise */
         ldr     x2, Caml_state(bottom_of_stack)       /* arg3: sp of raise */
         mov     x3, TRAP_PTR   /* arg4: sp of handler */
-        bl      caml_stash_backtrace
+        bl      G(caml_stash_backtrace)
     /* Restore exception bucket and raise */
         mov     x0, x19
         b       1b
@@ -420,7 +423,7 @@ FUNCTION(caml_callback_asm)
         ldr     x0, [x2]        /* x0 = first arg */
                                 /* x1 = closure environment */
         ldr     ARG, [x1]       /* code pointer */
-        b       .Ljump_to_caml
+        b       L(jump_to_caml)
         CFI_ENDPROC
         END_FUNCTION(caml_callback_asm)
 
@@ -433,7 +436,7 @@ FUNCTION(caml_callback2_asm)
         ldp     x0, x1, [x2, 0] /* x0 = first arg, x1 = second arg */
         mov     x2, TMP         /* x2 = closure environment */
         ADDRGLOBAL(ARG, caml_apply2)
-        b       .Ljump_to_caml
+        b       L(jump_to_caml)
         CFI_ENDPROC
         END_FUNCTION(caml_callback2_asm)
 
@@ -447,7 +450,7 @@ FUNCTION(caml_callback3_asm)
         ldp     x0, x1, [x2, 0] /* x0 = first arg, x1 = second arg */
         ldr     x2, [x2, 16]    /* x2 = third arg */
         ADDRGLOBAL(ARG, caml_apply3)
-        b       .Ljump_to_caml
+        b       L(jump_to_caml)
         CFI_ENDPROC
         END_FUNCTION(caml_callback3_asm)
 
@@ -456,18 +459,18 @@ FUNCTION(caml_ml_array_bound_error)
     /* Load address of [caml_array_bound_error] in ARG */
         ADDRGLOBAL(ARG, caml_array_bound_error)
     /* Call that function */
-        b       caml_c_call
+        b       G(caml_c_call)
         CFI_ENDPROC
         END_FUNCTION(caml_ml_array_bound_error)
 
-        .globl  caml_system__code_end
-caml_system__code_end:
+        .globl  G(caml_system__code_end)
+G(caml_system__code_end):
 
 /* GC roots for callback */
 
 OBJECT(caml_system__frametable)
         .quad   1               /* one descriptor */
-        .quad   .Lcaml_retaddr  /* return address into callback */
+        .quad   L(caml_retaddr) /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots */
         .align  3
