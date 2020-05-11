@@ -16,70 +16,27 @@
 #**************************************************************************
 
 # This file lists all standard library modules.
-# It is used in particular to know what to expunge in toplevels.
+# It is used by:
+# 1. stdlib/Makefile when building stdlib.cma
+# 2. Makefile to expunge the toplevels
+# 3. ocamldoc/Makefile.docfiles to compute all documentation files
+#    which need to be generated for the stdlib
 
-P ?= stdlib__
+# add stdlib__ as prefix to a module except for internal modules
+# and the stdlib module itself
+define add_stdlib_prefix
+  $(or $(filter stdlib camlinternal%,$1), stdlib__$1)
+endef
 
 # Modules should be listed in dependency order.
+STDLIB_MODS=\
+  camlinternalFormatBasics stdlib pervasives seq option result bool char uchar \
+  sys list bytes string unit marshal obj array float int int32 int64 nativeint \
+  lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
+  camlinternalFormat printf arg printexc fun gc digest random hashtbl weak \
+  format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
+  filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
+  stdLabels spacetime bigarray
 
 STDLIB_MODULES=\
-  camlinternalFormatBasics \
-  stdlib \
-  $(P)pervasives \
-  $(P)seq \
-  $(P)option \
-  $(P)result \
-  $(P)bool \
-  $(P)char \
-  $(P)uchar \
-  $(P)sys \
-  $(P)list \
-  $(P)bytes \
-  $(P)string \
-  $(P)unit \
-  $(P)marshal \
-  $(P)obj \
-  $(P)array \
-  $(P)float \
-  $(P)int \
-  $(P)int32 \
-  $(P)int64 \
-  $(P)nativeint \
-  $(P)lexing \
-  $(P)parsing \
-  $(P)set \
-  $(P)map \
-  $(P)stack \
-  $(P)queue \
-  camlinternalLazy \
-  $(P)lazy \
-  $(P)stream \
-  $(P)buffer \
-  camlinternalFormat \
-  $(P)printf \
-  $(P)arg \
-  $(P)printexc \
-  $(P)fun \
-  $(P)gc \
-  $(P)digest \
-  $(P)random \
-  $(P)hashtbl \
-  $(P)weak \
-  $(P)format \
-  $(P)scanf \
-  $(P)callback \
-  camlinternalOO \
-  $(P)oo \
-  camlinternalMod \
-  $(P)genlex \
-  $(P)ephemeron \
-  $(P)filename \
-  $(P)complex \
-  $(P)arrayLabels \
-  $(P)listLabels \
-  $(P)bytesLabels \
-  $(P)stringLabels \
-  $(P)moreLabels \
-  $(P)stdLabels \
-  $(P)spacetime \
-  $(P)bigarray
+  $(foreach module, $(STDLIB_MODS), $(call add_stdlib_prefix,$(module)))
