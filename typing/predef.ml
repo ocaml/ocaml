@@ -190,18 +190,22 @@ let common_initial_env add_type add_extension empty_env =
      type_kind = Type_open}
   and decl_eff =
     let tvar = newgenvar() in
+    let arity = 1 in
     {decl_abstr with
      type_params = [tvar];
-     type_arity = 1;
+     type_arity = arity;
      type_variance = [Variance.full];
+     type_separability = Types.Separability.default_signature ~arity;
      type_kind = Type_open}
   and decl_continuation =
     let tvar1 = newgenvar() in
     let tvar2 = newgenvar() in
+    let arity = 2 in
     {decl_abstr with
      type_params = [tvar1; tvar2];
-     type_arity = 2;
-     type_variance = [Variance.contravariant; Variance.covariant]}
+     type_arity = arity;
+     type_variance = [Variance.contravariant; Variance.covariant];
+     type_separability = Types.Separability.default_signature ~arity}
   and decl_array =
     decl_abstr_with_one_param
       Variance.full Separability.Ind (fun _ -> Type_abstract)
