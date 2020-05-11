@@ -445,6 +445,11 @@ OCaml 4.11
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
 
+- #9189, #9281: fix a conflict with Gentoo build system
+  by removing an one-letter Makefile variable.
+  (Florian Angeletti, report by Ralph Seichter, review by David Allsopp
+   and Damien Doligez)
+
 - #9225: Do not drop bytecode debug info after C calls.
   (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
 
