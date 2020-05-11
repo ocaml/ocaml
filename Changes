@@ -103,8 +103,8 @@ OCaml 4.11
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8920, #9238, #9239, #9254: New API for statistical memory profiling in
-  Memprof.Gc. The new version does no longer use ephemerons and allows
+- #8920, #9238, #9239, #9254, #9458: New API for statistical memory profiling
+  in Memprof.Gc. The new version does no longer use ephemerons and allows
   registering callbacks for promotion and deallocation of memory
   blocks.
   The new API no longer gives the block tags to the allocation callback.
