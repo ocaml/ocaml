@@ -436,8 +436,8 @@ external ( asr ) : int -> int -> int = "%asrint"
    [neg_infinity] for [-1.0 /. 0.0], and [nan] ('not a number')
    for [0.0 /. 0.0].  These special numbers then propagate through
    floating-point computations as expected: for instance,
-   [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
-   as argument returns [nan] as result.
+    [1.0 /. infinity] is [0.0], basic arithmetic operations
+    ([+.], [-.], [*.], [/.]) with [nan] as an argument return [nan], ...
 *)
 
 external ( ~-. ) : float -> float = "%negfloat"
