@@ -303,12 +303,14 @@ let get_gadt_equations_level () =
   | None -> assert false
 
 (* unification inside type_pat*)
-let unify_pat_types ?(refine=false) loc env ty ty' =
+let unify_pat_types ?(refine = None) loc env ty ty' =
   try
-    if refine then
-      unify_gadt ~equations_level:(get_gadt_equations_level ()) env ty ty'
-    else
-      unify !env ty ty'
+    match refine with
+    | Some allow_recursive ->
+        unify_gadt ~equations_level:(get_gadt_equations_level ())
+          ~allow_recursive env ty ty'
+    | None ->
+        unify !env ty ty'
   with
   | Unify trace ->
       raise(Error(loc, !env, Pattern_type_clash(trace, None)))
@@ -1317,7 +1319,8 @@ and type_pat_aux
     type_pat category ~no_existentials ~mode ~env
   in
   let loc = sp.ppat_loc in
-  let refine = match mode with Normal -> false | Counter_example _ -> true in
+  let refine =
+    match mode with Normal -> None | Counter_example _ -> Some true in
   let unif (x : pattern) : pattern =
     unify_pat ~refine env x (instance expected_ty);
     x
@@ -1551,8 +1554,10 @@ and type_pat_aux
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      unify_pat_types loc env ty_res expected_ty
-        ~refine:(refine || constr.cstr_generalized && no_existentials = None);
+      let refine =
+        if refine = None && constr.cstr_generalized && no_existentials = None
+        then Some false else refine in
+      unify_pat_types ~refine loc env ty_res expected_ty;
       end_def ();
       generalize_structure expected_ty;
       generalize_structure ty_res;

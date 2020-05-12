@@ -29,16 +29,22 @@ Error: This expression has type (a, a) eq
        Type a is not compatible with type t = [ `Rec of 'a ] X.t as 'a
 |}]
 
-(* trigger segfault
+(* Trigger the unsoundness *)
 module Id = struct
   type 'a t = 'b constraint 'a = [ `Rec of 'b ]
 end
-
 module Bad = Fix(Id)
-
-let segfault () =
-  print_endline (cast (trans (Bad.uniq Refl) (Bad.uniq Refl)) 0)
-*)
+let magic : type a b. a -> b =
+  fun x ->
+    let Refl = (Bad.uniq Refl : (a,Bad.t) eq) in
+    let Refl = (Bad.uniq Refl : (b,Bad.t) eq) in x
+[%%expect{|
+module Id : sig type 'a t = 'b constraint 'a = [ `Rec of 'b ] end
+Line 4, characters 13-16:
+4 | module Bad = Fix(Id)
+                 ^^^
+Error: Unbound module Fix
+|}]
 
 (* addendum: ensure that hidden paths are checked too *)
 module F (X : sig type 'a t end) = struct
