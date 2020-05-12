@@ -29,7 +29,7 @@ Error: This expression has type (a, a) eq
        Type a is not compatible with type t = [ `Rec of 'a ] X.t as 'a
 |}]
 
-(* Trigger the unsoundness *)
+(* Trigger the unsoundness if Fix were definable *)
 module Id = struct
   type 'a t = 'b constraint 'a = [ `Rec of 'b ]
 end
