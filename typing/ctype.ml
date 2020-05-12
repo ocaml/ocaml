@@ -2458,7 +2458,7 @@ let add_gadt_equation env source destination =
 let add_gadt_equation_decl env source destination decl =
   let expansion_scope =
     max (Path.scope source) (get_gadt_equations_level ()) in
-  let ty = newconstr destination decl.type_params in
+  let ty = newgenty (Tconstr (destination, decl.type_params, ref Mnil)) in
   let decl = { decl with
                type_private = Public;
                type_manifest = Some ty;
