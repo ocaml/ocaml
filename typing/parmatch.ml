@@ -465,13 +465,13 @@ let discr_pat q pss =
         refine_pat d rows
       | _ -> acc
   in
-  let q, _ = deconstruct q in
+  let q, _ = nonexpanded_deconstruct q in
   match q.pat_desc with
   (* short-circuiting: clearly if we have anything other than [Record] or
      [Any] to start with, we're not going to be able refine at all. So
      there's no point going over the matrix. *)
-  | Any | Record _ -> refine_pat q pss
-  | _ -> q
+  | Any | Record _ -> refine_pat (q:>t) pss
+  | _ -> (q:>t)
 
 (*
    In case a matching value is found, set actual arguments
@@ -565,8 +565,11 @@ let simplify_head_pat ~add_column p ps k =
   let rec simplify_head_pat p ps k =
     match Patterns.General.(view p |> strip_vars).pat_desc with
     | `Or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-    | #Patterns.Simple.view as view ->
-       add_column (Patterns.Head.deconstruct { p with pat_desc = view }) ps k
+    | #Patterns.Simple.nonexpanded_view as view ->
+        let head =
+          Patterns.Head.nonexpanded_deconstruct { p with pat_desc = view }
+        in
+       add_column head ps k
   in simplify_head_pat p ps k
 
 let rec simplify_first_col = function
@@ -654,7 +657,9 @@ let build_specialized_submatrices ~extend_row discr rows =
 
   (* insert a row of head omega into all groups *)
   let insert_omega r env =
-    List.map (fun (q0,rs) -> extend_group q0 Patterns.Head.omega [] r rs) env
+    List.map (fun (q0,rs) ->
+        extend_group q0 Patterns.Head.((omega:>t)) [] r rs
+      ) env
   in
 
   let rec form_groups constr_groups omega_tails = function
@@ -704,7 +709,7 @@ let set_last a =
     | x::l -> x :: loop l
   in
   function
-  | (_, []) -> (Patterns.Head.deconstruct a, [])
+  | (_, []) -> (Patterns.Head.nonexpanded_deconstruct a, [])
   | (first, row) -> (first, loop row)
 
 (* mark constructor lines for failure when they are incomplete *)
@@ -1131,14 +1136,14 @@ let rec satisfiable pss qs = match pss with
                 (fun (p,pss) ->
                    not (is_absent_pat p) &&
                    satisfiable pss
-                     (simple_match_args p Patterns.Head.omega [] @ qs))
+                     (simple_match_args p Patterns.Head.((omega:>t)) [] @ qs))
                 constrs
           end
        | `Variant (l,_,r) when is_absent l r -> false
-       | #Patterns.Simple.view as view ->
+       | #Patterns.Simple.nonexpanded_view as view ->
           let q = { q with pat_desc = view } in
           let pss = simplify_first_col pss in
-          let hq, qargs = Patterns.Head.deconstruct q in
+          let hq, qargs = Patterns.Head.nonexpanded_deconstruct q in
           if not (all_coherent (hq :: first_column pss)) then
             false
           else begin
@@ -1189,9 +1194,10 @@ let rec list_satisfying_vectors pss qs =
                         if is_absent_pat p then
                           []
                         else
+                          let omega = Patterns.Head.((omega:>t)) in
                           let witnesses =
                             list_satisfying_vectors pss
-                              (simple_match_args p Patterns.Head.omega [] @ qs)
+                              (simple_match_args p omega [] @ qs)
                           in
                           let p = Patterns.Head.to_omega_pattern p in
                           List.map (set_args p) witnesses
@@ -1210,9 +1216,9 @@ let rec list_satisfying_vectors pss qs =
                   end
           end
       | `Variant (l, _, r) when is_absent l r -> []
-      | #Patterns.Simple.view as view ->
+      | #Patterns.Simple.nonexpanded_view as view ->
           let q = { q with pat_desc = view } in
-          let hq, qargs = Patterns.Head.deconstruct q in
+          let hq, qargs = Patterns.Head.nonexpanded_deconstruct q in
           let pss = simplify_first_col pss in
           if not (all_coherent (hq :: first_column pss)) then
             []
@@ -1249,9 +1255,9 @@ let rec do_match pss qs = match qs with
         | _ -> []
       in
       do_match (remove_first_column pss) qs
-  | #Patterns.Simple.view as view ->
+  | #Patterns.Simple.nonexpanded_view as view ->
       let q = { q with pat_desc = view } in
-      let q0, qargs = Patterns.Head.deconstruct q in
+      let q0, qargs = Patterns.Head.nonexpanded_deconstruct q in
       let pss = simplify_first_col pss in
       (* [pss] will (or won't) match [q0 :: qs] regardless of the coherence of
          its first column. *)
@@ -1363,7 +1369,7 @@ and specialize_and_exhaust ext pss n =
             let sub_witnesses =
               exhaust
                 ext pss
-                (List.length (simple_match_args p Patterns.Head.omega [])
+                (List.length (simple_match_args p Patterns.Head.((omega:>t)) [])
                  + n - 1)
             in
             let p = Patterns.Head.to_omega_pattern p in
@@ -1648,11 +1654,11 @@ let rec every_satisfiables pss qs = match qs.active with
           every_satisfiables (push_or_column pss) (push_or qs)
     | `Variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
         Unused
-    | #Patterns.Simple.view as view ->
+    | #Patterns.Simple.nonexpanded_view as view ->
         let q = { q with pat_desc = view } in
         (* standard case, filter matrix *)
         let pss = simplify_first_usefulness_col pss in
-        let hq, args = Patterns.Head.deconstruct q in
+        let hq, args = Patterns.Head.nonexpanded_deconstruct q in
         (* The handling of incoherent matrices is kept in line with
            [satisfiable] *)
         if not (all_coherent (hq :: first_column pss)) then
@@ -2302,9 +2308,12 @@ let simplify_head_amb_pat head_bound_variables varsets ~add_column p ps k =
     | `Or (p1,p2,_) ->
       simpl head_bound_variables varsets p1 ps
         (simpl head_bound_variables varsets p2 ps k)
-    | #Patterns.Simple.view as view ->
-      add_column (Patterns.Head.deconstruct { p with pat_desc = view })
-        { row = ps; varsets = head_bound_variables :: varsets; } k
+    | #Patterns.Simple.nonexpanded_view as view ->
+        let head =
+          Patterns.Head.nonexpanded_deconstruct { p with pat_desc = view }
+        in
+        add_column head
+          { row = ps; varsets = head_bound_variables :: varsets; } k
   in simpl head_bound_variables varsets p ps k
 
 (*
