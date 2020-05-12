@@ -26,6 +26,9 @@ Working version
 
 ### Standard library:
 
+* #9554: add primitive __FUNCTION__ that returns the name of the current method
+  or function, including any enclosing module or class.
+  (Nicolás Ojeda Bär, Stephen Dolan, review by Stephen Dolan)
 
 ### Other libraries:
 
