@@ -9,3 +9,34 @@ an expression
 another expression
 locs.ml, 40, 14, 49
 yet another expression
+Locs.local_no_arg
+Locs.fn_multi
+Locs.fn_function
+Locs.fn_poly
+Locs.Mod1.Nested.apply
+Locs.anon
+Locs.anon
+Locs.anon.(fun)
+Locs.double_anon
+Locs.double_anon.(fun)
+Locs.double_anon.(fun)
+Locs.local
+Locs.local.inner
+Locs.double_local
+Locs.double_local.inner1
+Locs.double_local.inner1.inner2
+Locs.local_no_arg.(fun)
+Locs.local_no_arg.inner
+Locs.curried
+Locs.curried.inner
+Locs.local_module
+Locs.local_module.N.r
+Locs.local_module.N.foo
+Locs.Functor.fn
+Locs.Rec1.fn
+Locs.Rec2.fn
+Locs.(+@+)
+Locs.klass#meth
+Locs.inline_object.object#meth
+Locs.inline_object.object#othermeth
+Locs.bang
