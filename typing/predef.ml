@@ -241,6 +241,7 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+  add_extension ident_unhandled [] (
   add_type ident_int64 (
   add_type ident_int32 (
   add_type ident_nativeint (
@@ -270,7 +271,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_int ~immediate:Always (
   add_type ident_extension_constructor (
   add_type ident_floatarray (
-    empty_env))))))))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
