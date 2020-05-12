@@ -381,18 +381,19 @@
 #elif defined(TARGET_s390x) && defined(SYS_elf)
 
   #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, struct sigcontext * context)
+    static void name(int sig, siginfo_t * info, ucontext_t * context)
 
   #define SET_SIGACT(sigact,name) \
-     sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
+     sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+     sigact.sa_flags = SA_SIGINFO
 
   typedef unsigned long context_reg;
-  #define CONTEXT_PC (context->sregs->regs.psw.addr)
-  #define CONTEXT_EXCEPTION_POINTER (context->sregs->regs.gprs[13])
-  #define CONTEXT_YOUNG_LIMIT (context->sregs->regs.gprs[10])
-  #define CONTEXT_YOUNG_PTR (context->sregs->regs.gprs[11])
-  #define CONTEXT_SP (context->sregs->regs.gprs[15])
+  #define CONTEXT_PC (context->uc_mcontext.psw.addr)
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[13])
+  #define CONTEXT_YOUNG_LIMIT (context->uc_mcontext.gregs[10])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[11])
+  #define CONTEXT_SP (context->uc_mcontext.gregs[15])
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /******************** Default */
 
