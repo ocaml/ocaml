@@ -443,12 +443,15 @@ let type_declarations ?(equality = false) ~loc env ~mark name
       match decl1.type_manifest with
       | None -> decl1
       | Some ty ->
-          match Ctype.expand_head_opt env ty with
-          | {desc=Tconstr (p, tl, _)}
-            when decl1.type_params = [] ||
-            Ctype.equal env false decl1.type_params tl ->
-              (try Env.find_type p env with Not_found -> decl1)
+          try match Ctype.expand_head_opt env ty with
+          | {desc=Tconstr (p, tl, _)} ->
+              let decl2 = Env.find_type p env in
+              if decl1.type_params = []
+              || Ctype.equal env false decl1.type_params tl
+              && Ctype.equal env true tl decl2.type_params then decl2
+              else decl1
           | _ -> decl1
+          with Not_found -> decl1
     in
     match decl1.type_ident, decl2.type_ident with
     | Some (Some id1), Some (Some id2) ->

@@ -425,3 +425,69 @@ val g : (bool, M.t) eq option -> unit = <fun>
 val h1 : (int list, int M.u) eq -> int M.u -> int list = <fun>
 val h2 : (int list, M.t M.u) eq -> M.t -> int = <fun>
 |}]
+
+
+(* Private type abbreviations *)
+module M : sig type u [@@nominal] type t = private u val eq : (u,t) eq end =
+  struct type u = int type t = u let eq = Refl end
+let f : M.u -> M.t = fun x -> let Refl = M.eq in x
+[%%expect{|
+module M : sig type u [@@nominal] type t = private u val eq : (u, t) eq end
+val f : M.u -> M.t = <fun>
+|}]
+
+module M : sig
+  type 'a u [@@nominal] type 'a t = private 'a u
+  val eq : (int u,int t) eq
+end = struct type 'a u = 'a list type 'a t = 'a u let eq = Refl end
+let f : 'a M.u -> 'a M.t = fun x -> let Refl = M.eq in x
+[%%expect{|
+module M :
+  sig
+    type 'a u [@@nominal]
+    type 'a t = private 'a u
+    val eq : (int u, int t) eq
+  end
+val f : 'a M.u -> 'a M.t = <fun>
+|}]
+
+(* Constrained parameters and expansion *)
+module M : sig type 'a u constraint 'a = int [@@nominal] end =
+  struct type 'a u = 'a list constraint 'a = int end;;
+[%%expect{|
+Line 2, characters 2-52:
+2 |   struct type 'a u = 'a list constraint 'a = int end;;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a u = 'a list constraint 'a = int end
+       is not included in
+         sig type 'a u constraint 'a = int [@@nominal] end
+       Type declarations do not match:
+         type 'a u = 'a list constraint 'a = int
+       is not included in
+         type 'a u constraint 'a = int [@@nominal]
+       The original declaration was not nominal
+|}]
+
+module M : sig
+  type 'a u [@@nominal] type 'a t = private 'a u constraint 'a = int
+  val eq : (int u,int t) eq
+end = struct
+  type 'a u = 'a list type 'a t = 'a u constraint 'a = int
+  let eq = Refl
+end
+let f : int M.u -> int M.t = fun x -> let Refl = M.eq in x
+[%%expect{|
+module M :
+  sig
+    type 'a u [@@nominal]
+    type 'a t = private 'a u constraint 'a = int
+    val eq : (int u, int t) eq
+  end
+Line 8, characters 57-58:
+8 | let f : int M.u -> int M.t = fun x -> let Refl = M.eq in x
+                                                             ^
+Error: This expression has type int M.u
+       but an expression was expected of type int M.t
+|}]

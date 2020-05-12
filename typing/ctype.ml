@@ -2743,25 +2743,31 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (path,[],_),
          Tconstr (path',[],_))
         when is_instantiable !env path && is_instantiable !env path'
-        && can_generate_equations () ->
+        && can_generate_equations ()
+        && not (occur_expand_head_opt !env path t2' &&
+                occur_expand_head_opt !env path' t1') ->
           (* incomplete w.r.t. failure: compatibility is not transitive *)
           (* in particular we may forget a unique identifier *)
           mcomp !env t1' t2';
           let source, destination =
             if Path.scope path > Path.scope path'
+            && not (occur_expand_head_opt !env path t2')
+            || occur_expand_head_opt !env path' t1'
             then  path , t2'
             else  path', t1'
           in
           record_equation t1' t2';
           add_gadt_equation env source destination
       | (Tconstr (path,[],_), _)
-        when is_instantiable !env path && can_generate_equations () ->
+        when is_instantiable !env path && can_generate_equations ()
+        && not (occur_expand_head_opt !env path t2') ->
           reify env t2';
           mcomp !env t1' t2';
           record_equation t1' t2';
           add_gadt_equation env path t2'
       | (_, Tconstr (path,[],_))
-        when is_instantiable !env path && can_generate_equations () ->
+        when is_instantiable !env path && can_generate_equations ()
+        && not (occur_expand_head_opt !env path t1') ->
           reify env t1';
           mcomp !env t1' t2';
           record_equation t1' t2';
@@ -2773,13 +2779,59 @@ and unify3 env t1 t1' t2 t2' =
           mcomp !env t1' t2';
           begin match Env.find_type p1 !env, Env.find_type p2 !env with
           | decl1, decl2 ->
-              let is_abstract decl =
-                decl.type_kind = Type_abstract && decl.type_manifest = None in
+              let newgenconstr p decl =
+                newgenty (Tconstr(p, decl.type_params, ref Mnil)) in
+              let is_nominal p decl =
+                is_nominal decl ||
+                decl.type_private = Private &&
+                decl.type_kind = Type_abstract &&
+                let t = newgenconstr p decl in
+                let t' = expand_head_opt !env t in
+                t != t' &&
+                try match t'.desc with
+                | Tconstr (p', tyl, _) ->
+                    let decl' = Env.find_type p' !env in
+                    is_nominal decl' &&
+                    !equal' !env false decl.type_params tyl &&
+                    !equal' !env true decl'.type_params tyl
+                | _ -> false
+                with Not_found -> false
+              in
+              let is_abstract decl = decl.type_kind = Type_abstract in
               let abs1 = is_abstract decl1 and abs2 = is_abstract decl2 in
-              if (abs1 || abs2) && is_nominal decl1 && is_nominal decl2
+              if (abs1 || abs2) && is_nominal p1 decl1 && is_nominal p2 decl2
               && compatible_type_ident decl1 decl2 then begin
                 unify_list env tl1 tl2;
-                if !equal' !env true decl1.type_params decl2.type_params then
+                let abs1, abs2, body1, body2 =
+                  match abs1, decl1.type_private, decl1.type_manifest,
+                    abs2, decl2.type_private, decl2.type_manifest with
+                  | true, Public, None, true, Public, None ->
+                      true, true, [], []
+                  | true, Public, None, true, Private, Some ty2 ->
+                      if occur_expand_head_opt !env p1 t2' then
+                        false, true, [newgenconstr p1 decl1], [ty2]
+                      else
+                        true, false, [], []
+                  | true, Private, Some ty1, true, Public, None ->
+                      if occur_expand_head_opt !env p2 t1' then
+                        true, false, [ty1], [newgenconstr p2 decl2]
+                      else
+                        false, true, [], []
+                  | true, Public, None, false, _, _ ->
+                      true, false, [], []
+                  | false, _, _, true, Public, None ->
+                      false, true, [], []
+                  | true, Private, Some ty1, true, Private, Some ty2 ->
+                      true, true, [ty1], [ty2]
+                  | true, Private, Some ty1, false, _, _ ->
+                      true, false, [ty1], [newgenconstr p2 decl2]
+                  | false, _, _, true, Private, Some ty2 ->
+                      false, true, [newgenconstr p1 decl1], [ty2]
+                  | _ -> assert false
+                in
+                let types1 = decl1.type_params @ body1
+                and types2 = decl2.type_params @ body2 in
+                if !equal' !env true types1 types2 then
                 let source, destination, decl =
                   if abs1 && abs2 && decl1.type_ident = decl2.type_ident then
                     if Path.scope p1 > Path.scope p2
