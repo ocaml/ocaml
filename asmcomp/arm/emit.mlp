@@ -525,10 +525,10 @@ let emit_instr env i =
         let ninstr = emit_stack_adjustment (-n) in
         env.stack_offset <- env.stack_offset + n;
         ninstr
-    | Lop(Iload(Single, addr)) when !fpu >= VFPv2 ->
+    | Lop(Iload(Single, addr, _mut)) when !fpu >= VFPv2 ->
         `	flds	s14, {emit_addressing addr i.arg 0}\n`;
         `	fcvtds	{emit_reg i.res.(0)}, s14\n`; 2
-    | Lop(Iload((Double | Double_u), addr)) when !fpu = Soft ->
+    | Lop(Iload((Double | Double_u), addr, _mut)) when !fpu = Soft ->
         (* Use LDM or LDRD if possible *)
         begin match i.res.(0), i.res.(1), addr with
           {loc = Reg rt}, {loc = Reg rt2}, Iindexed 0
@@ -547,7 +547,7 @@ let emit_instr env i =
               `	ldr	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
             end; 2
         end
-    | Lop(Iload(size, addr)) ->
+    | Lop(Iload(size, addr, _mut)) ->
         let r = i.res.(0) in
         let instr =
           match size with

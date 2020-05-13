@@ -302,10 +302,10 @@ let emit_instr env i =
       assert (n mod 16 = 0);
       emit_stack_adjustment (-n);
       env.stack_offset <- env.stack_offset + n
-  | Lop(Iload(Single, Iindexed ofs)) ->
+  | Lop(Iload(Single, Iindexed ofs, _mut)) ->
       `	flw	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-  | Lop(Iload(chunk, Iindexed ofs)) ->
+  | Lop(Iload(chunk, Iindexed ofs, _mut)) ->
       let instr =
         match chunk with
         | Byte_unsigned -> "lbu"

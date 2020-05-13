@@ -103,6 +103,9 @@ Working version
   (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
    and David Allsopp)
 
+- #9562, #367: Allow CSE of immutable loads across stores
+  (Stephen Dolan, review by Mark Shinwell)
+
 - #9876: do not cache the young_limit GC variable in a processor register.
   This affects the ARM64, PowerPC and RISC-V ports, making signal handling
   and minor GC triggers more reliable, at the cost of a small slowdown.
