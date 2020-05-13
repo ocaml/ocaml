@@ -244,6 +244,11 @@ OCaml 4.11
   of dynlinked modules.
   (Nicolás Ojeda Bär, review by Xavier Clerc and Gabriel Scherer)
 
+- #9490, #9505: ensure proper rounding of file times returned by
+  Unix.stat, Unix.lstat, Unix.fstat.
+  (Xavier Leroy and Guillaume Melquiond, report by David Brown,
+   review by Gabriel Scherer and David Allsopp)
+
 ### Tools:
 
 - #9057: aid debugging the debugger by preserving backtraces of unhandled
