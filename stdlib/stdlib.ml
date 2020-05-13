@@ -55,6 +55,7 @@ external __FILE__ : string = "%loc_FILE"
 external __LINE__ : int = "%loc_LINE"
 external __MODULE__ : string = "%loc_MODULE"
 external __POS__ : string * int * int * int = "%loc_POS"
+external __FUNCTION__ : string = "%loc_FUNCTION"
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"

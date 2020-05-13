@@ -273,6 +273,12 @@ external __POS__ : string * int * int * int = "%loc_POS"
     @since 4.02.0
  *)
 
+external __FUNCTION__ : string = "%loc_FUNCTION"
+(** [__FUNCTION__] returns the name of the current function or method, including
+    any enclosing modules or classes.
+
+    @since 4.12.0 *)
+
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 (** [__LOC_OF__ expr] returns a pair [(loc, expr)] where [loc] is the
     location of [expr] in the file currently being parsed by the
