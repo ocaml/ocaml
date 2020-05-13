@@ -103,6 +103,7 @@ otherlibs/win32unix/symlink.c     typo.long-line
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
+testsuite/developer/**                                  typo.missing-header typo.long-line=may
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
@@ -114,6 +115,7 @@ testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
 
 # prune testsuite reference files
+testsuite/developer/**/*.reference               typo.prune
 testsuite/tests/**/*.reference               typo.prune
 
 # Expect tests with overly long lines of expected output

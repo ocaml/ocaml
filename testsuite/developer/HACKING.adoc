@@ -1,0 +1,6 @@
+== Developer Tests
+
+This directory contains tests which are not run in the full testsuite but which
+are selected either explicitly (e.g. with make one) or via a make all-* target.
+
+At present, it is used solely for slow-running tests.

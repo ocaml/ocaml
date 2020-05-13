@@ -135,7 +135,7 @@ check-failstamp:
 
 .PHONY: all-%
 all-%: lib tools
-	@for dir in tests/$**; do \
+	@for dir in tests/$** developer/$**; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
@@ -175,7 +175,7 @@ parallel-%: lib tools
 	 || (echo "Your 'parallel' tool seems incompatible with GNU parallel.";\
 	     echo "This target requires GNU parallel.";\
 	     exit 1)
-	@for dir in tests/$**; do echo $$dir; done \
+	@for dir in tests/$** developer/$**; do echo $$dir; done \
 	 | parallel --gnu --no-notice --keep-order \
 	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
 	 | tee $(TESTLOG)
