@@ -20,11 +20,9 @@
 type 'a t = 'a lazy_t
 
 exception Undefined
-exception RacyLazy
 
 val force_lazy_block : 'a lazy_t -> 'a
 
-val force_val_lazy_block : 'a lazy_t -> 'a
+val force_gen : only_val:bool -> 'a lazy_t -> 'a
 
-val force : 'a lazy_t -> 'a
-val force_val : 'a lazy_t -> 'a
+val try_force_gen : only_val:bool -> 'a lazy_t -> 'a option

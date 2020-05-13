@@ -24,4 +24,4 @@ let main () =
 let _ =
   match main () with
   | (n1, n2) -> Printf.printf "n1=%d n2=%d\n" n1 n2
-  | exception Lazy.RacyLazy -> print_endline "RacyLazy"
+  | exception Lazy.Undefined -> print_endline "Undefined"

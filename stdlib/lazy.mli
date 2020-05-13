@@ -43,7 +43,8 @@ type 'a t = 'a CamlinternalLazy.t
    [Lazy.t] instead.
 
    Note: [Lazy.force] is not thread-safe.  If you use this module in
-   a multi-threaded program, you will need to add some locks.
+   a multi-threaded program, you will need to add some locks.  See also
+   [Lazy.try_force].
 
    Note: if the program is compiled with the [-rectypes] option,
    ill-founded recursive definitions of the form [let rec x = lazy x]
@@ -57,8 +58,6 @@ type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined
 
-exception RacyLazy
-
 (* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
@@ -66,20 +65,28 @@ external force : 'a t -> 'a = "%lazy_force"
     same value again without recomputing it.  If it raised an exception,
     the same exception is raised again.
     Raise {!Undefined} if the forcing of [x] tries to force [x] itself
-    recursively.
-    Raise {!RacyLazy} if [x] is concurrently forced by another domain.
+    recursively, or if [x] is concurrently forced by another domain.
 *)
+
+val try_force : 'a t -> 'a option
+(** [try_force x] behaves similarly to [Some (force x)], except that
+    it returns immediately with [None] if [x] is concurrently forced by
+    another domain. *)
 
 val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
     result.  If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
     Raise {!Undefined} if the forcing of [x] tries to force [x] itself
-    recursively.
-    Raise {!RacyLazy} if [x] is concurrently forced by another domain.
+    recursively, or if [x] is concurrently forced by another domain.
     If the computation of [x] raises an exception, it is unspecified
     whether [force_val x] raises the same exception or {!Undefined}.
 *)
+
+val try_force_val : 'a t -> 'a option
+(** [try_force_val x] behaves similarly to [Some (force_val x)],
+    except that it returns immediately with [None] if [x] is
+    concurrently forced by another domain. *)
 
 val from_fun : (unit -> 'a) -> 'a t
 (** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
