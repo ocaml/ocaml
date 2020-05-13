@@ -187,6 +187,11 @@ Working version
 
 ### Build system:
 
+- #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
+  cross-compilation, this means the triplet-prefixed version will always be
+  used.
+  (David Allsopp, report by Adrian Nader, review by Sébastien Hinderer)
+
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
   dependencies are generated on-the-fly in development mode. For incremental
   compilation, the MSVC ports require GCC to be present.
