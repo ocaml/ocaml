@@ -428,11 +428,11 @@ val h2 : (int list, M.t M.u) eq -> M.t -> int = <fun>
 
 
 (* Private type abbreviations *)
-module M : sig type u [@@nominal] type t = private u val eq : (u,t) eq end =
+module M : sig type u type t = private u val eq : (u,t) eq end =
   struct type u = int type t = u let eq = Refl end
 let f : M.u -> M.t = fun x -> let Refl = M.eq in x
 [%%expect{|
-module M : sig type u [@@nominal] type t = private u val eq : (u, t) eq end
+module M : sig type u type t = private u val eq : (u, t) eq end
 val f : M.u -> M.t = <fun>
 |}]
 

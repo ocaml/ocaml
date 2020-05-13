@@ -2463,9 +2463,12 @@ let add_gadt_equation_decl env source destination decl =
                type_private = Public;
                type_manifest = Some ty;
                type_kind = Type_abstract;
-               type_expansion_scope = expansion_scope} in
-  env := Env.add_local_type source decl !env;
-  cleanup_abbrev ()
+               type_is_newtype = true;
+               type_expansion_scope = expansion_scope } in
+  if local_non_recursive_abbrev !env source ty then begin
+    env := Env.add_local_type source decl !env;
+    cleanup_abbrev ()
+  end
   
 let rec occur_expand_head_opt env path ty =
   match try_expand_once_opt env ty with
@@ -2781,26 +2784,34 @@ and unify3 env t1 t1' t2 t2' =
           | decl1, decl2 ->
               let newgenconstr p decl =
                 newgenty (Tconstr(p, decl.type_params, ref Mnil)) in
-              let is_nominal p decl =
-                is_nominal decl ||
-                decl.type_private = Private &&
-                decl.type_kind = Type_abstract &&
+              let is_abstract decl = decl.type_kind = Type_abstract in
+              (* Compute the real nominal status of a type *)
+              let get_ident p decl =
+                let ident = decl.type_ident in
+                if ident = None && not (is_abstract decl) then Some None else
+                let expand =
+                  ident = None && is_abstract decl &&
+                  decl.type_private = Private in
+                (* Only expand private abbreviations *)
+                if not expand then ident else
                 let t = newgenconstr p decl in
                 let t' = expand_head_opt !env t in
-                t != t' &&
+                if t == t' then ident else
                 try match t'.desc with
                 | Tconstr (p', tyl, _) ->
                     let decl' = Env.find_type p' !env in
-                    is_nominal decl' &&
-                    !equal' !env false decl.type_params tyl &&
-                    !equal' !env true decl'.type_params tyl
-                | _ -> false
-                with Not_found -> false
+                    if is_nominal decl'
+                    && !equal' !env false decl.type_params tyl
+                    && !equal' !env true decl'.type_params tyl
+                    then decl'.type_ident else ident
+                | _ -> ident
+                with Not_found -> ident
               in
-              let is_abstract decl = decl.type_kind = Type_abstract in
               let abs1 = is_abstract decl1 and abs2 = is_abstract decl2 in
-              if (abs1 || abs2) && is_nominal p1 decl1 && is_nominal p2 decl2
-              && compatible_type_ident decl1 decl2 then begin
+              let ident1 = get_ident p1 decl1 and ident2 = get_ident p2 decl2 in
+              if (abs1 || abs2)
+              && (decl1.type_arity = 0 || ident1 <> None && ident2 <> None)
+              then begin
                 unify_list env tl1 tl2;
                 let abs1, abs2, body1, body2 =
                   match abs1, decl1.type_private, decl1.type_manifest,
@@ -2844,6 +2855,7 @@ and unify3 env t1 t1' t2 t2' =
                     if abs2 && not abs1 then p2, p1, decl1 else
                     match decl2.type_ident with
                     | Some (Some _) -> p1, p2, decl2
+                    | Some _ when decl1.type_ident = None -> p1, p2, decl2
                     | _             -> p2, p1, decl1
                 in
                 add_gadt_equation_decl env source destination decl
