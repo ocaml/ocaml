@@ -231,6 +231,10 @@ OCaml 4.11
   (Guillaume Munch-Maccagnoni, review by Daniel Bünzli, Gabriel Radanne,
    and Gabriel Scherer)
 
+- #9549, #9557: Make -flarge-toc the default for PowerPC and introduce
+  -fsmall-toc to enable the previous behaviour.
+  (David Allsopp, report by Nathaniel Wesley Filardo, review by Xavier Leroy)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.
