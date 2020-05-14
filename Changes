@@ -305,6 +305,9 @@ OCaml 4.11
   on length of Sys.command argument.
   (Xavier Leroy, report by Jérémie Dimino, review by David Allsopp)
 
+- #9552: restore ocamloptp build and installation
+  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
