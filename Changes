@@ -247,6 +247,11 @@ OCaml 4.11
   of dynlinked modules.
   (Nicolás Ojeda Bär, review by Xavier Clerc and Gabriel Scherer)
 
+- #9320, #9550: under Windows, make sure that the Unix.exec* functions
+  properly quote their argument lists.
+  (Xavier Leroy, report by André Maroneze, review by Nicolás Ojeda Bär
+   and David Allsopp)
+
 - #9490, #9505: ensure proper rounding of file times returned by
   Unix.stat, Unix.lstat, Unix.fstat.
   (Xavier Leroy and Guillaume Melquiond, report by David Brown,
