@@ -27,6 +27,11 @@ OCaml 4.10 maintenance branch
   output channels would not be flushed).
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+### Tools:
+
+- #9552: restore ocamloptp build and installation
+  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
+
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 
