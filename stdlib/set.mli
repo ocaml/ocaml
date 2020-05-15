@@ -293,7 +293,7 @@ module type S =
 
     val to_rev_seq : t -> elt Seq.t
     (** Iterate on the whole set, in descending order
-        @since 4.11 *)
+        @since 4.12 *)
 
     val add_seq : elt Seq.t -> t -> t
     (** Add the given elements to the set, in order.
