@@ -98,29 +98,20 @@ type exit = {
   mutable max_depth: int;
 }
 
-let bind name lam kind f =
-  match lam with
-  | Lvar _ | Lconst _ as x -> f x
-  | _ ->
-      let x = Ident.create_local name in
-      Llet(Strict, kind, x, lam, f (Lvar x))
+let caml_string_append2 =
+  Primitive.simple ~name:"caml_string_append2" ~arity:2 ~alloc:true
 
-let bind_list name lams kind f =
-  let rec loop accu = function
-    | [] -> f accu
-    | lam :: lams ->
-        bind name lam kind (fun arg -> loop (arg :: accu) lams)
-  in
-  loop [] lams
+let caml_string_append3 =
+  Primitive.simple ~name:"caml_string_append3" ~arity:3 ~alloc:true
 
-let bytes_create =
-  Primitive.simple ~name:"caml_create_bytes" ~arity:1 ~alloc:true
+let caml_string_append4 =
+  Primitive.simple ~name:"caml_string_append4" ~arity:4 ~alloc:true
 
-let string_blit =
-  Primitive.simple ~name:"caml_blit_string" ~arity:5 ~alloc:false
+let caml_string_append5 =
+  Primitive.simple ~name:"caml_string_append5" ~arity:5 ~alloc:true
 
-let zero =
-  Lconst (Const_base (Const_int 0))
+let caml_string_appendn =
+  Primitive.simple ~name:"caml_string_appendn" ~arity:1 ~alloc:true
 
 let simplify_exits lam =
 
@@ -236,44 +227,30 @@ let simplify_exits lam =
   | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
-  | Lprim(Pstringappend, ll, _) ->
+  | Lprim(Pstringappend, ll, loc) ->
       let rec flatten_args accu = function
-        | Lprim(Pstringappend, ll, _) :: ll' ->
+        | Lprim(Pstringappend, ll, _) :: ll'
+        | Levent (Lprim (Pstringappend, ll, _), _) :: ll' ->
             flatten_args (flatten_args accu ll) ll'
         | arg :: ll ->
             flatten_args (arg :: accu) ll
         | [] ->
             accu
       in
-      let lprim p args = Lprim(p, args, Loc_unknown) in
-      let rec build accu = function
-        | arg :: args ->
-            bind "len" (lprim Pstringlength [arg]) Pintval
-              (fun len ->
-                 let off =
-                   match accu with
-                   | [] -> zero
-                   | (_, _, len) :: [] -> len
-                   | (_, off, len) :: _ -> lprim Paddint [off; len]
-                 in
-                 bind "off" off Pintval
-                   (fun off -> build ((arg, off, len) :: accu) args)
-              )
-        | [] ->
-            let len =
-              match accu with
-              | [] -> assert false
-              | (_, off, len) :: _ -> lprim Paddint [off; len]
-            in
-            bind "buf" (lprim (Pccall bytes_create) [len]) Pgenval (fun buf ->
-                List.fold_left (fun cont (arg, off, len) ->
-                    Lsequence
-                      (lprim (Pccall string_blit) [arg; zero; buf; off; len],
-                       cont)
-                  ) (lprim Pbytes_to_string [buf]) accu
-              )
+      let prim, args =
+        match List.rev (flatten_args [] ll) with
+        | [v1; v2] ->
+            caml_string_append2, [v1; v2]
+        | [v1; v2; v3] ->
+            caml_string_append3, [v1; v2; v3]
+        | [v1; v2; v3; v4] ->
+            caml_string_append4, [v1; v2; v3; v4]
+        | [v1; v2; v3; v4; v5] ->
+            caml_string_append5, [v1; v2; v3; v4; v5]
+        | vl ->
+            caml_string_appendn, [Lprim(Pmakearray (Pgenarray, Immutable), vl, loc)]
       in
-      simplif (bind_list "arg" (flatten_args [] ll) Pgenval (build []))
+      simplif (Lprim(Pccall prim, args, loc))
   | Lprim(p, ll, loc) -> begin
     let ll = List.map simplif ll in
     match p, ll with

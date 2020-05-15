@@ -549,3 +549,24 @@ CAMLprim value caml_string_append5(value v1, value v2, value v3, value v4,
 
   CAMLreturn(buf);
 }
+
+CAMLprim value caml_string_appendn(value v)
+{
+  CAMLparam1(v);
+  CAMLlocal1(buf);
+  int i, len, off;
+
+  for (i = 0, len = 0; i < caml_array_length(v); i++) {
+    len += caml_string_length(Field(v, i));
+  }
+
+  buf = caml_alloc_string(len);
+
+  for (i = 0, off = 0; i < caml_array_length(v); i++) {
+    int len = caml_string_length(Field(v, i));
+    memmove(&Byte(buf, off), &Byte(Field(v, i), 0), len);
+    off += len;
+  }
+
+  CAMLreturn(buf);
+}
