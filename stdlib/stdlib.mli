@@ -1335,6 +1335,7 @@ val do_at_exit : unit -> unit
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
+module Atomic       = Atomic
 module Bigarray     = Bigarray
 module Bool         = Bool
 module Buffer       = Buffer

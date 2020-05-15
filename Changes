@@ -3,6 +3,10 @@ Working version
 
 ### Language features:
 
+- #9570: Provide an Atomic module with a trivial purely-sequential
+  implementation, to help write code that is compatible with Multicore
+  OCaml.
+  (Gabriel Scherer, review by Xavier Leroy)
 
 ### Runtime system:
 
