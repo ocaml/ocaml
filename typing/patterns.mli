@@ -1,3 +1,19 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Gabriel Scherer, projet Partout, INRIA Paris-Saclay           *)
+(*          Thomas Refis, Jane Street Europe                              *)
+(*                                                                        *)
+(*   Copyright 2019 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 open Asttypes
 open Typedtree
 open Types
