@@ -30,6 +30,9 @@ Working version
   or function, including any enclosing module or class.
   (Nicolás Ojeda Bär, Stephen Dolan, review by Stephen Dolan)
 
+- #9075: define to_rev_seq in Set and Map modules.
+  (Sébastien Briais, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
@@ -674,8 +677,6 @@ OCaml 4.10.0 (21 February 2020)
    Jacques-Henri Jourdan)
 
 ### Standard library:
-- #9075: define to_rev_seq in Set and Map module
-   (Sébastien Briais, review by Gabriel Scherer and Nicolas Ojeda Bär)
 
 - #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list
   (Gabriel Scherer, review by Daniel Bünzli and Thomas Refis)
