@@ -472,3 +472,80 @@ CAMLprim value caml_bytes_of_string(value bv)
 {
   return bv;
 }
+
+CAMLprim value caml_string_append2(value v1, value v2)
+{
+  CAMLparam2(v1, v2);
+  CAMLlocal1(buf);
+
+  int l1 = caml_string_length(v1);
+  int l2 = caml_string_length(v2);
+
+  buf = caml_alloc_string(l1 + l2);
+
+  memmove(&Byte(buf, 0), &Byte(v1, 0), l1);
+  memmove(&Byte(buf, l1), &Byte(v2, 0), l2);
+
+  CAMLreturn(buf);
+}
+
+CAMLprim value caml_string_append3(value v1, value v2, value v3)
+{
+  CAMLparam3(v1, v2, v3);
+  CAMLlocal1(buf);
+
+  int l1 = caml_string_length(v1);
+  int l2 = caml_string_length(v2);
+  int l3 = caml_string_length(v3);
+
+  buf = caml_alloc_string(l1 + l2 + l3);
+
+  memmove(&Byte(buf, 0), &Byte(v1, 0), l1);
+  memmove(&Byte(buf, l1), &Byte(v2, 0), l2);
+  memmove(&Byte(buf, l1 + l2), &Byte(v3, 0), l3);
+
+  CAMLreturn(buf);
+}
+
+CAMLprim value caml_string_append4(value v1, value v2, value v3, value v4)
+{
+  CAMLparam4(v1, v2, v3, v4);
+  CAMLlocal1(buf);
+
+  int l1 = caml_string_length(v1);
+  int l2 = caml_string_length(v2);
+  int l3 = caml_string_length(v3);
+  int l4 = caml_string_length(v4);
+
+  buf = caml_alloc_string(l1 + l2 + l3 + l4);
+
+  memmove(&Byte(buf, 0), &Byte(v1, 0), l1);
+  memmove(&Byte(buf, l1), &Byte(v2, 0), l2);
+  memmove(&Byte(buf, l1 + l2), &Byte(v3, 0), l3);
+  memmove(&Byte(buf, l1 + l2 + l3), &Byte(v4, 0), l4);
+
+  CAMLreturn(buf);
+}
+
+CAMLprim value caml_string_append5(value v1, value v2, value v3, value v4,
+                                   value v5)
+{
+  CAMLparam5(v1, v2, v3, v4, v5);
+  CAMLlocal1(buf);
+
+  int l1 = caml_string_length(v1);
+  int l2 = caml_string_length(v2);
+  int l3 = caml_string_length(v3);
+  int l4 = caml_string_length(v4);
+  int l5 = caml_string_length(v5);
+
+  buf = caml_alloc_string(l1 + l2 + l3 + l4 + l5);
+
+  memmove(&Byte(buf, 0), &Byte(v1, 0), l1);
+  memmove(&Byte(buf, l1), &Byte(v2, 0), l2);
+  memmove(&Byte(buf, l1 + l2), &Byte(v3, 0), l3);
+  memmove(&Byte(buf, l1 + l2 + l3), &Byte(v4, 0), l4);
+  memmove(&Byte(buf, l1 + l2 + l3 + l4), &Byte(v5, 0), l5);
+
+  CAMLreturn(buf);
+}
