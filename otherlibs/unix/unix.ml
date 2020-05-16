@@ -880,18 +880,13 @@ let rec waitpid_non_intr pid =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let system cmd =
-  match fork() with
-     0 -> begin try
-            execv shell [| shell; "-c"; cmd |]
-          with _ ->
-            sys_exit 127
-          end
-  | id -> snd(waitpid_non_intr id)
-
 external spawn : string -> string array -> string array option ->
                  bool -> int array -> int
                = "unix_spawn"
+
+let system cmd =
+  let pid = spawn shell [| shell; "-c"; cmd |] None false [| 0; 1; 2 |] in
+  snd(waitpid_non_intr pid)
 
 let create_process_gen usepath cmd args optenv
                        new_stdin new_stdout new_stderr =
