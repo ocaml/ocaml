@@ -15578,6 +15578,24 @@ if test "x$ac_cv_func_execvpe" = xyes; then :
 fi
 
 
+## posix_spawn
+
+ac_fn_c_check_header_mongrel "$LINENO" "spawn.h" "ac_cv_header_spawn_h" "$ac_includes_default"
+if test "x$ac_cv_header_spawn_h" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "posix_spawn" "ac_cv_func_posix_spawn"
+if test "x$ac_cv_func_posix_spawn" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "posix_spawnp" "ac_cv_func_posix_spawnp"
+if test "x$ac_cv_func_posix_spawnp" = xyes; then :
+  $as_echo "#define HAS_POSIX_SPAWN 1" >>confdefs.h
+
+fi
+
+fi
+
+fi
+
+
+
 ## ffs or _BitScanForward
 
 ac_fn_c_check_func "$LINENO" "ffs" "ac_cv_func_ffs"
