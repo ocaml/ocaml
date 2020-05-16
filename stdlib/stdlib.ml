@@ -566,6 +566,7 @@ let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
+module Atomic       = Atomic
 module Bigarray     = Bigarray
 module Bool         = Bool
 module Buffer       = Buffer
