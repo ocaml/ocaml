@@ -36,7 +36,7 @@ COBJS=accept.o access.o addrofstr.o alarm.o bind.o channels.o chdir.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
   setgid.o setgroups.o setsid.o setuid.o shutdown.o signals.o \
   sleep.o socket.o socketaddr.o \
-  socketpair.o sockopt.o stat.o strofaddr.o symlink.o termios.o \
+  socketpair.o sockopt.o spawn.o stat.o strofaddr.o symlink.o termios.o \
   time.o times.o truncate.o umask.o unixsupport.o unlink.o \
   utimes.o wait.o write.o
 
