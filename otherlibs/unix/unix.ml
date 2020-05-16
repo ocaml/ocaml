@@ -889,56 +889,44 @@ let system cmd =
           end
   | id -> snd(waitpid_non_intr id)
 
-(* Duplicate [fd] if needed to make sure it isn't one of the
-   standard descriptors (stdin, stdout, stderr).
-   Note that this function always leaves the standard descriptors open,
-   the caller must take care of closing them if needed.
-   The "cloexec" mode doesn't matter, because
-   the descriptor returned by [dup] will be closed before the [exec],
-   and because no other thread is running concurrently
-   (we are in the child process of a fork).
- *)
-let rec file_descr_not_standard fd =
-  if fd >= 3 then fd else file_descr_not_standard (dup fd)
+external spawn : string -> string array -> string array option ->
+                 bool -> int array -> int
+               = "unix_spawn"
 
-let safe_close fd =
-  try close fd with Unix_error(_,_,_) -> ()
-
-let perform_redirections new_stdin new_stdout new_stderr =
-  let new_stdin = file_descr_not_standard new_stdin in
-  let new_stdout = file_descr_not_standard new_stdout in
-  let new_stderr = file_descr_not_standard new_stderr in
-  (*  The three dup2 close the original stdin, stdout, stderr,
-      which are the descriptors possibly left open
-      by file_descr_not_standard *)
-  dup2 ~cloexec:false new_stdin stdin;
-  dup2 ~cloexec:false new_stdout stdout;
-  dup2 ~cloexec:false new_stderr stderr;
-  safe_close new_stdin;
-  safe_close new_stdout;
-  safe_close new_stderr
+let create_process_gen usepath cmd args optenv
+                       new_stdin new_stdout new_stderr =
+  let toclose = ref [] in
+  let close_after () =
+    List.iter
+      (fun fd -> try close fd with Unix_error(_,_,_) -> ())
+      !toclose in
+  (* Duplicate [fd] if needed to make sure it isn't one of the
+     standard descriptors (stdin, stdout, stderr).
+     The temporary file descriptors created here will be closed
+     after the spawn, both in the parent (call to [close_after] below)
+     and in the child (they are close-on-exec). *)
+  let rec file_descr_not_standard fd =
+    if fd >= 3 then fd else begin
+      let fd' = dup ~cloexec:true fd in
+      toclose := fd' :: !toclose;
+      file_descr_not_standard fd'
+    end in
+  (* As an optimization, if a standard descriptor is not redirected,
+     i.e. "redirected to itself", don't duplicate it: the [unix_spawn]
+     C stub will perform no redirection either. *)
+  let redirections = [|
+    (if new_stdin = 0 then 0 else file_descr_not_standard new_stdin);
+    (if new_stdout = 1 then 1 else file_descr_not_standard new_stdout);
+    (if new_stderr = 2 then 2 else file_descr_not_standard new_stderr)
+  |] in
+  Fun.protect ~finally:close_after
+    (fun () -> spawn cmd args optenv usepath redirections)
 
 let create_process cmd args new_stdin new_stdout new_stderr =
-  match fork() with
-    0 ->
-      begin try
-        perform_redirections new_stdin new_stdout new_stderr;
-        execvp cmd args
-      with _ ->
-        sys_exit 127
-      end
-  | id -> id
+  create_process_gen true cmd args None new_stdin new_stdout new_stderr
 
 let create_process_env cmd args env new_stdin new_stdout new_stderr =
-  match fork() with
-    0 ->
-      begin try
-        perform_redirections new_stdin new_stdout new_stderr;
-        execvpe cmd args env
-      with _ ->
-        sys_exit 127
-      end
-  | id -> id
+  create_process_gen true cmd args (Some env) new_stdin new_stdout new_stderr
 
 type popen_process =
     Process of in_channel * out_channel
@@ -949,16 +937,9 @@ type popen_process =
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc prog args envopt proc input output error =
-  match fork() with
-    0 -> perform_redirections input output error;
-      begin try
-        match envopt with
-        | Some env -> execve prog args env
-        | None     -> execv prog args
-      with _ ->
-        sys_exit 127
-      end
-  | id -> Hashtbl.add popen_processes proc id
+  let pid =
+    create_process_gen false prog args envopt input output error in
+  Hashtbl.add popen_processes proc pid
 
 let open_process_args_in prog args =
   let (in_read, in_write) = pipe ~cloexec:true () in
