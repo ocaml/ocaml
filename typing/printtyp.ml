@@ -1238,8 +1238,11 @@ let rec tree_of_type_decl id decl =
               | Some ty -> (* only abstract or private row types *)
                   decl.type_private = Private &&
                   Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
-            and (co, cn) = Variance.get_upper v in (co, cn, inj)
-          else (true,true,false))
+            and (co, cn) = Variance.get_upper v in
+            (if not cn then Covariant else
+             if not co then Contravariant else NoVariance),
+            (if inj then Injective else NoInjectivity)
+          else (NoVariance, NoInjectivity))
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -1512,10 +1515,15 @@ let tree_of_class_param param variance =
   (match tree_of_typexp true param with
     Otyp_var (_, s) -> s
   | _ -> "?"),
-  if is_Tvar (repr param) then (true, true, false) else variance
+  if is_Tvar (repr param) then Asttypes.(NoVariance, NoInjectivity)
+                          else variance
 
 let class_variance =
-  List.map Variance.(fun v -> mem May_pos v, mem May_neg v, false)
+  let open Variance in let open Asttypes in
+  List.map (fun v ->
+    (if not (mem May_pos v) then Contravariant else
+     if not (mem May_neg v) then Covariant else NoVariance),
+    NoInjectivity)
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in

@@ -56,7 +56,7 @@ type out_value =
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
 
-type out_type_param = string * (bool * bool * bool)
+type out_type_param = string * (Asttypes.variance * Asttypes.injectivity)
 
 type out_type =
   | Otyp_abstract
