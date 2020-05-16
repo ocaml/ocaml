@@ -36,7 +36,11 @@ type-params:
         | '(' type-param { "," type-param } ')'
 ;
 type-param:
-          [variance] [injectivity] "'" ident
+          [ext-variance] "'" ident
+;
+ext-variance:
+          variance [injectivity]
+        | injectivity [variance]
 ;
 variance:
           '+'

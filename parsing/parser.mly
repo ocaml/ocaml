@@ -2946,11 +2946,15 @@ type_variance:
   | PLUS                                    { Covariant, NoInjectivity }
   | MINUS                                   { Contravariant, NoInjectivity }
   | BANG                                    { NoVariance, Injective }
-  | PLUS BANG                               { Covariant, Injective }
-  | MINUS BANG                              { Contravariant, Injective }
+  | PLUS BANG | BANG PLUS                   { Covariant, Injective }
+  | MINUS BANG | BANG MINUS                 { Contravariant, Injective }
   | INFIXOP2
       { if $1 = "+!" then Covariant, Injective else
         if $1 = "-!" then Contravariant, Injective else
+        expecting $loc($1) "type_variance" }
+  | PREFIXOP
+      { if $1 = "!+" then Covariant, Injective else
+        if $1 = "!-" then Contravariant, Injective else
         expecting $loc($1) "type_variance" }
 ;
 

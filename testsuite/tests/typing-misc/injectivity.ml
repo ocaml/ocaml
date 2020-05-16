@@ -9,8 +9,16 @@ type +! 'a t = private 'a
 type -!'a t = private 'a -> unit
 type + !'a t = private 'a
 type - ! 'a t = private 'a -> unit
+type !+ 'a t = private 'a
+type !-'a t = private 'a -> unit
+type ! +'a t = private 'a
+type ! -'a t = private 'a -> unit
 [%%expect{|
 type 'a t = private 'a ref
+type +'a t = private 'a
+type -'a t = private 'a -> unit
+type +'a t = private 'a
+type -'a t = private 'a -> unit
 type +'a t = private 'a
 type -'a t = private 'a -> unit
 type +'a t = private 'a
