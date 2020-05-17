@@ -482,6 +482,7 @@ stdlib__printexc.cmo : \
     stdlib__printf.cmi \
     stdlib__obj.cmi \
     stdlib__buffer.cmi \
+    stdlib__atomic.cmi \
     stdlib__array.cmi \
     stdlib__printexc.cmi
 stdlib__printexc.cmx : \
@@ -489,6 +490,7 @@ stdlib__printexc.cmx : \
     stdlib__printf.cmx \
     stdlib__obj.cmx \
     stdlib__buffer.cmx \
+    stdlib__atomic.cmx \
     stdlib__array.cmx \
     stdlib__printexc.cmi
 stdlib__printexc.cmi :
