@@ -16,12 +16,12 @@
 (** MD5 message digest.
 
    This module provides functions to compute 128-bit 'digests' of
-   arbitrary-length strings or files. The digests are of cryptographic
-   quality: it is very hard, given a digest, to forge a string having
-   that digest. The algorithm used is MD5. This module should not be
-   used for secure and sensitive cryptographic applications. For these
-   kind of applications more recent and stronger cryptographic
-   primitives should be used instead.
+   arbitrary-length strings or files. The algorithm used is MD5.
+
+   The MD5 hash function is not cryptographically secure.
+   Hence, this module should not be used for security-sensitive
+   applications.  More recent, stronger cryptographic primitives
+   should be used instead.
 *)
 
 type t = string
