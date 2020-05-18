@@ -1300,6 +1300,9 @@ val inet6_addr_any : inet_addr
 val inet6_addr_loopback : inet_addr
 (** A special IPv6 address representing the host machine ([::1]). *)
 
+val is_inet6_addr : inet_addr -> bool
+(** Whether the given [inet_addr] is an IPv6 address.
+    @since 4.12.0 *)
 
 (** {1 Sockets} *)
 
