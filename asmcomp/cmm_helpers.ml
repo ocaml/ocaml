@@ -25,7 +25,6 @@ open Arch
 let bind name arg fn =
   match arg with
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
@@ -37,7 +36,6 @@ let bind_load name arg fn =
 let bind_nonvar name arg fn =
   match arg with
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
@@ -559,11 +557,11 @@ let complex_im c dbg = Cop(Cload (Double_u, Immutable),
 
 (* Unit *)
 
-let return_unit dbg c = Csequence(c, Cconst_pointer (1, dbg))
+let return_unit dbg c = Csequence(c, Cconst_int (1, dbg))
 
 let rec remove_unit = function
-    Cconst_pointer (1, _) -> Ctuple []
-  | Csequence(c, Cconst_pointer (1, _)) -> c
+    Cconst_int (1, _) -> Ctuple []
+  | Csequence(c, Cconst_int (1, _)) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
   | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
@@ -1408,11 +1406,9 @@ let make_switch arg cases actions dbg =
     function
     (* Constant integers loaded from a table should end in 1,
        so that Cload never produces untagged integers *)
-    | Cconst_int     (n, _), _dbg
-    | Cconst_pointer (n, _), _dbg when (n land 1) = 1 ->
+    | Cconst_int     (n, _), _dbg when (n land 1) = 1 ->
         Some (Cint (Nativeint.of_int n))
     | Cconst_natint     (n, _), _dbg
-    | Cconst_natpointer (n, _), _dbg
       when Nativeint.(to_int (logand n one) = 1) ->
         Some (Cint n)
     | Cconst_symbol (s,_), _dbg ->

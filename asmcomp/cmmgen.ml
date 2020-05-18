@@ -180,8 +180,8 @@ let transl_constant dbg = function
       int_const dbg n
   | Uconst_ptr n ->
       if n <= max_repr_int && n >= min_repr_int
-      then Cconst_pointer((n lsl 1) + 1, dbg)
-      else Cconst_natpointer
+      then Cconst_int((n lsl 1) + 1, dbg)
+      else Cconst_natint
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n,
                dbg)
   | Uconst_ref (label, _) ->
@@ -810,8 +810,8 @@ and transl_prim_1 env p arg dbg =
   | Pnot ->
       transl_if env Then_false_else_true
         dbg arg
-        dbg (Cconst_pointer (1, dbg))
-        dbg (Cconst_pointer (3, dbg))
+        dbg (Cconst_int (1, dbg))
+        dbg (Cconst_int (3, dbg))
   (* Test integer/block *)
   | Pisint ->
       tag_int(Cop(Cand, [transl env arg; Cconst_int (1, dbg)], dbg)) dbg
@@ -870,8 +870,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       transl_sequand env Then_true_else_false
         dbg arg1
         dbg' arg2
-        dbg (Cconst_pointer (3, dbg))
-        dbg' (Cconst_pointer (1, dbg))
+        dbg (Cconst_int (3, dbg))
+        dbg' (Cconst_int (1, dbg))
       (* let id = V.create_local "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
@@ -880,8 +880,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       transl_sequor env Then_true_else_false
         dbg arg1
         dbg' arg2
-        dbg (Cconst_pointer (3, dbg))
-        dbg' (Cconst_pointer (1, dbg))
+        dbg (Cconst_int (3, dbg))
+        dbg' (Cconst_int (1, dbg))
   (* Integer operations *)
   | Paddint ->
       add_int_caml (transl env arg1) (transl env arg2) dbg

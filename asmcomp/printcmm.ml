@@ -151,8 +151,6 @@ let rec expr ppf = function
       (Nativeint.to_string n) (location d)
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
   | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
-  | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
-  | Cconst_natpointer (n, _dbg) -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =
