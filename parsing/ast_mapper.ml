@@ -496,6 +496,8 @@ module P = struct
     | Ppat_open (lid,p) -> open_ ~loc ~attrs (map_loc sub lid) (sub.pat sub p)
     | Ppat_exception p -> exception_ ~loc ~attrs (sub.pat sub p)
     | Ppat_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Ppat_tyvars (l,p) ->
+        tyvars ~loc ~attrs (List.map (map_loc sub) l) (sub.pat sub p)
 end
 
 module CE = struct

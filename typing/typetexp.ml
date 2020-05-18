@@ -53,7 +53,7 @@ exception Error_forward of Location.error
 (** Map indexed by type variable names. *)
 module TyVarMap = Misc.Stdlib.String.Map
 
-type variable_context = int * type_expr TyVarMap.t
+type variable_context = int * type_expr TyVarMap.t * type_expr TyVarMap.t
 
 (* Support for first-class modules. *)
 
@@ -92,18 +92,25 @@ let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
 let used_variables = ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
+let local_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
 
 let reset_type_variables () =
   reset_global_level ();
   Ctype.reset_reified_var_counter ();
-  type_variables := TyVarMap.empty
+  type_variables := TyVarMap.empty;
+  local_variables := TyVarMap.empty
 
 let narrow () =
-  (increase_global_level (), !type_variables)
+  (increase_global_level (), !type_variables, !local_variables)
 
-let widen (gl, tv) =
+let widen (gl, tv, ltv) =
   restore_global_level gl;
-  type_variables := tv
+  type_variables := tv;
+  local_variables := ltv
+
+type local_variables = type_expr TyVarMap.t
+let get_local_variables () = !local_variables
+let set_local_variables lv = local_variables := lv
 
 let strict_ident c = (c = '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
 
@@ -119,6 +126,8 @@ let newvar ?name () =
 
 let type_variable loc name =
   try
+    TyVarMap.find name !local_variables
+  with Not_found -> try
     TyVarMap.find name !type_variables
   with Not_found ->
     raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
@@ -154,6 +163,14 @@ let transl_type_param env styp =
      (but this could easily be lifted in the future). *)
   Builtin_attributes.warning_scope styp.ptyp_attributes
     (fun () -> transl_type_param env styp)
+
+let enter_local_variable name =
+  let loc = name.loc and name = name.txt in
+  if not (valid_tyvar_name name) then
+    raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
+  let v = newvar ~name () in
+  local_variables := TyVarMap.add name v !local_variables;
+  v
 
 
 let new_pre_univar ?name () =
@@ -629,17 +646,23 @@ let globalize_used_variables env fixed =
   let r = ref [] in
   TyVarMap.iter
     (fun name (ty, loc) ->
-      let v = new_global_var () in
+      let ty', v =
+        match TyVarMap.find_opt name !local_variables with
+          Some ty as ty' ->
+            ty', newvar2 (repr ty).level
+        | None ->
+            TyVarMap.find_opt name !type_variables, new_global_var ()
+      in
       let snap = Btype.snapshot () in
-      if try unify env v ty; true with _ -> Btype.backtrack snap; false
-      then try
-        r := (loc, v,  TyVarMap.find name !type_variables) :: !r
-      with Not_found ->
-        if fixed && Btype.is_Tvar (repr ty) then
-          raise(Error(loc, env, Unbound_type_variable ("'"^name)));
-        let v2 = new_global_var () in
-        r := (loc, v, v2) :: !r;
-        type_variables := TyVarMap.add name v2 !type_variables)
+      match unify env v ty; ty' with
+        Some ty' -> r := (loc, v, repr ty') :: !r
+      | None ->
+          if fixed && Btype.is_Tvar (repr ty) then
+            raise(Error(loc, env, Unbound_type_variable ("'"^name)));
+          let v2 = new_global_var () in
+          r := (loc, v, v2) :: !r;
+          type_variables := TyVarMap.add name v2 !type_variables
+      | exception _ -> Btype.backtrack snap)
     !used_variables;
   used_variables := TyVarMap.empty;
   fun () ->
@@ -665,8 +688,8 @@ let transl_simple_type_univars env styp =
   used_variables := TyVarMap.empty;
   TyVarMap.iter
     (fun name p ->
-      if TyVarMap.mem name !type_variables then
-        used_variables := TyVarMap.add name p !used_variables)
+      if TyVarMap.mem name !local_variables || TyVarMap.mem name !type_variables
+      then used_variables := TyVarMap.add name p !used_variables)
     new_variables;
   globalize_used_variables env false ();
   end_def ();
@@ -709,6 +732,7 @@ let report_error env ppf = function
   | Unbound_type_variable name ->
       let add_name name _ l = if name = "_" then l else ("'" ^ name) :: l in
       let names = TyVarMap.fold add_name !type_variables [] in
+      let names = TyVarMap.fold add_name !local_variables names in
     fprintf ppf "The type variable %s is unbound in this type declaration.@ %a"
       name
       did_you_mean (fun () -> Misc.spellcheck names name )

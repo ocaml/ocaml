@@ -2655,8 +2655,13 @@ pattern_gen:
   | mkpat(
       mkrhs(constr_longident) pattern %prec prec_constr_appl
         { Ppat_construct($1, Some $2) }
+(*    | mkrhs(constr_longident) LPAREN TYPE lident_list RPAREN
+        pattern %prec prec_constr_appl
+        { Ppat_construct($1, Some $6, Some $4) } *)
     | name_tag pattern %prec prec_constr_appl
         { Ppat_variant($1, Some $2) }
+    | LESS typevar_list GREATER pattern
+        { Ppat_tyvars($2, $4) }
     ) { $1 }
   | LAZY ext_attributes simple_pattern
       { mkpat_attrs ~loc:$sloc (Ppat_lazy $3) $2}

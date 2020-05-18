@@ -38,6 +38,11 @@ type variable_context
 val narrow: unit -> variable_context
 val widen: variable_context -> unit
 
+type local_variables
+val get_local_variables: unit -> local_variables
+val set_local_variables: local_variables -> unit
+val enter_local_variable: string Location.loc -> type_expr
+
 exception Already_bound
 
 type error =

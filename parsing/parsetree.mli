@@ -253,6 +253,7 @@ and pattern_desc =
         (* [%id] *)
   | Ppat_open of Longident.t loc * pattern
         (* M.(P) *)
+  | Ppat_tyvars of label loc list * pattern
 
 (* Value expressions *)
 

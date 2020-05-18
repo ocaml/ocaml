@@ -122,6 +122,7 @@ module Pat:
     val open_: ?loc:loc -> ?attrs:attrs  -> lid -> pattern -> pattern
     val exception_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> pattern
+    val tyvars: ?loc:loc -> ?attrs:attrs -> str list -> pattern -> pattern
   end
 
 (** Expressions *)

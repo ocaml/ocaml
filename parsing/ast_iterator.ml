@@ -452,7 +452,8 @@ module P = struct
     | Ppat_extension x -> sub.extension sub x
     | Ppat_open (lid, p) ->
         iter_loc sub lid; sub.pat sub p
-
+    | Ppat_tyvars (l, p) ->
+        List.iter (iter_loc sub) l; sub.pat sub p
 end
 
 module CE = struct

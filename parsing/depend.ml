@@ -188,6 +188,7 @@ let rec add_pattern bv pat =
   | Ppat_open ( m, p) -> let bv = open_module bv m.txt in add_pattern bv p
   | Ppat_exception p -> add_pattern bv p
   | Ppat_extension e -> handle_extension e
+  | Ppat_tyvars (_, p) -> add_pattern bv p
 
 let add_pattern bv pat =
   pattern_bv := bv;

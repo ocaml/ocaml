@@ -259,6 +259,10 @@ and pattern i ppf x =
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Ppat_tyvars (tvl,p) ->
+      line i ppf "Ppat_vars \"'%s\"\n"
+        (String.concat " '" (List.map (fun x -> x.txt) tvl));
+      pattern i ppf p
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;

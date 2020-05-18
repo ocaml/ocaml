@@ -1028,7 +1028,8 @@ type 'case_pattern half_typed_case =
     branch_env: Env.t;
     pat_vars: pattern_variable list;
     unpacks: module_variable list;
-    contains_gadt: bool; }
+    contains_gadt: bool;
+    local_type_variables: Typetexp.local_variables; }
 
 let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_constant _
@@ -1048,7 +1049,8 @@ let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_constraint (p, _)
   | Ppat_alias (p, _)
   | Ppat_lazy p
-  | Ppat_open (_, p) ->
+  | Ppat_open (_, p)
+  | Ppat_tyvars (_, p) ->
      has_literal_pattern p
   | Ppat_tuple ps
   | Ppat_array ps ->
@@ -1821,6 +1823,9 @@ and type_pat_aux
       })
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Ppat_tyvars (tvl, p) ->
+      ignore (List.map Typetexp.enter_local_variable tvl);
+      type_pat category ~env p expected_ty k
 
 let type_pat category ?no_existentials ?(mode=Normal)
     ?(lev=get_current_level()) env sp expected_ty =
@@ -2396,15 +2401,12 @@ let contains_variant_either ty =
 let shallow_iter_ppat f p =
   match p.ppat_desc with
   | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_interval _
-  | Ppat_extension _
-  | Ppat_type _ | Ppat_unpack _ -> ()
-  | Ppat_array pats -> List.iter f pats
+  | Ppat_extension _ | Ppat_type _ | Ppat_unpack _ -> ()
+  | Ppat_array pats | Ppat_tuple pats ->  List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> Option.iter f arg
-  | Ppat_tuple lst ->  List.iter f lst
-  | Ppat_exception p | Ppat_alias (p,_)
-  | Ppat_open (_,p)
-  | Ppat_constraint (p,_) | Ppat_lazy p -> f p
+  | Ppat_exception p | Ppat_alias (p,_) | Ppat_open (_,p)
+  | Ppat_constraint (p,_) | Ppat_lazy p | Ppat_tyvars (_,p) -> f p
   | Ppat_record (args, _flag) -> List.iter (fun (_,p) -> f p) args
 
 let exists_ppat f p =
@@ -2629,9 +2631,11 @@ and type_expect_
         | _, Recursive -> Some (Annot.Idef loc)
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
+      let old_local_variables = Typetexp.get_local_variables () in
       let (pat_exp_list, new_env, unpacks) =
         type_let existential_context env rec_flag spat_sexp_list scp true in
       let body = type_unpacks new_env unpacks sbody ty_expected_explained in
+      Typetexp.set_local_variables old_local_variables;
       let () =
         if rec_flag = Recursive then
           check_recursive_bindings env pat_exp_list
@@ -4548,6 +4552,7 @@ and type_cases
     if !Clflags.principal || erase_either
     then Some false else None
   in
+  let original_local_variables = Typetexp.get_local_variables () in
   begin_def (); (* propagation of the argument *)
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
@@ -4555,6 +4560,7 @@ and type_cases
   let half_typed_cases =
     List.map
       (fun ({pc_lhs; pc_guard; pc_rhs} as case) ->
+        Typetexp.set_local_variables original_local_variables;
         let loc =
           let open Location in
           match pc_guard with
@@ -4586,8 +4592,9 @@ and type_cases
           branch_env = ext_env;
           pat_vars = pvs;
           unpacks;
-          contains_gadt = contains_gadt (as_comp_pattern category pat); }
-        )
+          contains_gadt = contains_gadt (as_comp_pattern category pat);
+          local_type_variables = Typetexp.get_local_variables ();
+        })
       caselist in
   let patl = List.map (fun { typed_pat; _ } -> typed_pat) half_typed_cases in
   let does_contain_gadt =
@@ -4630,7 +4637,8 @@ and type_cases
     List.map
       (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
              untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
-             contains_gadt; _ }  ->
+             contains_gadt; local_type_variables; _ }  ->
+        Typetexp.set_local_variables local_type_variables;
         let ext_env =
           if contains_gadt then
             do_copy_types ext_env
@@ -4682,6 +4690,7 @@ and type_cases
       )
       half_typed_cases
   in
+  Typetexp.set_local_variables original_local_variables;
   if !Clflags.principal || does_contain_gadt then begin
     let ty_res' = instance ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
