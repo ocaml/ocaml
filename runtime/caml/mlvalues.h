@@ -375,10 +375,13 @@ CAMLextern header_t *caml_atom_table;
 
 /* Option constructors */
 
-#define Val_none Val_int(0)
-CAMLextern value caml_Val_some(value v);
-#define Val_some(v) caml_Val_some(v)
+#define Val_None Val_int(0)
+CAMLextern value caml_Val_Some(value v);
+#define Val_Some(v) caml_Val_Some(v)
 #define Some_val(v) Field(v,0)
+#define Tag_Some 0
+#define Is_None(v) ((v) == Val_None)
+#define Is_Some(v) Is_block(v)
 
 /* The table of global identifiers */
 

@@ -225,7 +225,7 @@ int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf)
 
 /* Option constructors */
 
-CAMLexport value caml_Val_some(value v)
+CAMLexport value caml_Val_Some(value v)
 {
   CAMLparam1(v);
   CAMLlocal1(some);
