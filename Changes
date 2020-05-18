@@ -48,6 +48,9 @@ Working version
   (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
    and Gabriel Scherer)
 
+- #9575: Add Unix.is_inet6_addr
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
+
 ### Tools:
 
 
