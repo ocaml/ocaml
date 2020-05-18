@@ -43,7 +43,7 @@ ifeq "$(TOOLCHAIN)" "msvc"
 ASM_EXT := asm
 ASM_SOURCES := $(ARCH)nt.$(ASM_EXT)
 else
-oASM_EXT := S
+ASM_EXT := S
 ASM_SOURCES := $(ARCH).$(ASM_EXT)
 endif
 
