@@ -23,6 +23,10 @@ Working version
   (KC Sivaramakrishnan, review by David Allsopp, Xavier Leroy, Mark Shinwell
   and Leo White)
 
+- #9564: Add a macro to construct out-of-heap block header.
+	(KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer, and Xavier
+	Leroy)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.

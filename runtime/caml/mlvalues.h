@@ -379,6 +379,15 @@ extern value caml_global_data;
 
 CAMLextern value caml_set_oo_id(value obj);
 
+/* Header for out-of-heap blocks. */
+
+#define Caml_out_of_heap_header(wosize, tag)                                  \
+      (/*CAMLassert ((wosize) <= Max_wosize),*/                               \
+       ((header_t) (((header_t) (wosize) << 10)                               \
+                    + (3 << 8) /* matches [Caml_black]. See [gc.h] */         \
+                    + (tag_t) (tag)))                                         \
+      )
+
 #ifdef __cplusplus
 }
 #endif
