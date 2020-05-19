@@ -24,8 +24,8 @@ Working version
   and Leo White)
 
 - #9564: Add a macro to construct out-of-heap block header.
-	(KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer, and Xavier
-	Leroy)
+  (KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer,
+   and Xavier Leroy)
 
 ### Code generation and optimizations:
 
