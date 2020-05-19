@@ -33,7 +33,6 @@ __declspec(noreturn) void __cdecl abort(void);
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/version.h"
-#include "caml/alloc.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;
@@ -221,15 +220,4 @@ int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf)
     }
   }
   return 0;
-}
-
-/* Option constructors */
-
-CAMLexport value caml_Val_Some(value v)
-{
-  CAMLparam1(v);
-  CAMLlocal1(some);
-  some = caml_alloc_small(1, 0);
-  Store_field(some, 0, v);
-  CAMLreturn(some);
 }
