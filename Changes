@@ -52,6 +52,10 @@ Working version
   (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
    and Gabriel Scherer)
 
+- #9573: reimplement Unix.create_process and related functions without
+  Unix.fork, for better efficiency and compatibility with threads.
+  (Xavier Leroy, review by Gabriel Scherer and Anil Madhavapeddy)
+
 - #9575: Add Unix.is_inet6_addr
   (Nicolás Ojeda Bär, review by Xavier Leroy)
 
