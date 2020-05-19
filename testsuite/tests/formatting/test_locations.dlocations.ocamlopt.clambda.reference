@@ -26,6 +26,6 @@ cmm:
 (function camlTest_locations__entry ()
  (let clos "camlTest_locations__1"
    (store val(root-init) "camlTest_locations" clos))
- 1a)
+ 1)
 
 (data)

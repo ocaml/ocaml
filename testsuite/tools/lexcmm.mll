@@ -191,9 +191,6 @@ rule token = parse
   | '-'? (['0'-'9']+ | "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
                      | "0o" ['0'-'7']+ | "0b" ['0'-'1']+)
       { INTCONST(int_of_string(Lexing.lexeme lexbuf)) }
-  | '-'? ['0'-'9']+ 'a'
-      { let s = Lexing.lexeme lexbuf in
-        POINTER(int_of_string(String.sub s 0 (String.length s - 1))) }
   | '-'? ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
       { FLOATCONST(Lexing.lexeme lexbuf) }
   | ['A'-'Z' 'a'-'z' '\223'-'\246' '\248'-'\255' ]
