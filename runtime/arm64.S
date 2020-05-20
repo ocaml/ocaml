@@ -24,9 +24,9 @@
 #define TRAP_PTR x26
 #define ALLOC_PTR x27
 #define ALLOC_LIMIT x28
-#define ARG x15
+#define ADDITIONAL_ARG x15
 #define TMP x16
-#define ARG_DOMAIN_STATE_PTR x17
+#define TMP2 x17
 
 #define C_ARG_1 x0
 #define C_ARG_2 x1
@@ -79,13 +79,13 @@
 
 #define ADDRGLOBAL(reg,symb) ADDRGLOBAL reg, symb
         .macro ADDRGLOBAL reg, symb
-        adrp        TMP, G(\symb)@GOTPAGE
-        ldr         \reg, [TMP, G(\symb)@GOTPAGEOFF]
+        adrp        TMP2, G(\symb)@GOTPAGE
+        ldr         \reg, [TMP2, G(\symb)@GOTPAGEOFF]
         .endm
 #elif defined(__PIC__)
 #define ADDRGLOBAL(reg,symb) \
-        adrp    TMP, :got:G(symb); \
-        ldr     reg, [TMP, #:got_lo12:G(symb)]
+        adrp    TMP2, :got:G(symb); \
+        ldr     reg, [TMP2, #:got_lo12:G(symb)]
 #else
 
 #define ADDRGLOBAL(reg,symb) \
@@ -270,7 +270,7 @@ FUNCTION(caml_alloc3)
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
-        sub     ALLOC_PTR, ALLOC_PTR, ARG
+        sub     ALLOC_PTR, ALLOC_PTR, ADDITIONAL_ARG
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    L(caml_call_gc)
         ret
@@ -278,10 +278,11 @@ FUNCTION(caml_allocN)
         END_FUNCTION(caml_allocN)
 
 /* Call a C function from OCaml */
-/* Function to call is in ARG */
+/* Function to call is in ADDITIONAL_ARG */
 
 FUNCTION(caml_c_call)
         CFI_STARTPROC
+    /* I think using x19 here should be a bug */
     /* Preserve return address in callee-save register x19 */
         mov     x19, x30
         CFI_REGISTER(30, 19)
@@ -293,7 +294,7 @@ FUNCTION(caml_c_call)
         str     ALLOC_PTR, Caml_state(young_ptr)
         str     TRAP_PTR, Caml_state(exception_pointer)
     /* Call the function */
-        blr     ARG
+        blr     ADDITIONAL_ARG
     /* Reload alloc ptr and alloc limit */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
         ldr     ALLOC_LIMIT, Caml_state(young_limit)
@@ -306,11 +307,12 @@ FUNCTION(caml_c_call)
 
 FUNCTION(caml_start_program)
         CFI_STARTPROC
-        mov     ARG_DOMAIN_STATE_PTR, C_ARG_1
-        ADDRGLOBAL(ARG, caml_program)
+        mov     TMP, C_ARG_1
+        ADDRGLOBAL(TMP2, caml_program)
 
 /* Code shared with caml_callback* */
-/* Address of OCaml code to call is in ARG */
+/* Address of domain state is in TMP */
+/* Address of OCaml code to call is in TMP2 */
 /* Arguments to the OCaml code are in x0...x7 */
 
 L(jump_to_caml):
@@ -330,7 +332,7 @@ L(jump_to_caml):
         stp     d12, d13, [sp, 128]
         stp     d14, d15, [sp, 144]
     /* Load domain state pointer from argument */
-        mov     DOMAIN_STATE_PTR, ARG_DOMAIN_STATE_PTR
+        mov     DOMAIN_STATE_PTR, TMP
     /* Setup a callback link on the stack */
         ldr     x8, Caml_state(bottom_of_stack)
         ldr     x9, Caml_state(last_return_address)
@@ -348,7 +350,7 @@ L(jump_to_caml):
         ldr     ALLOC_PTR, Caml_state(young_ptr)
         ldr     ALLOC_LIMIT, Caml_state(young_limit)
     /* Call the OCaml code */
-        blr     ARG
+        blr     TMP2
 L(caml_retaddr):
     /* Pop the trap frame, restoring caml_exception_pointer */
         ldr     x8, [sp], 16
@@ -462,10 +464,10 @@ FUNCTION(caml_callback_asm)
         CFI_STARTPROC
     /* Initial shuffling of arguments */
     /* (x0 = Caml_state, x1 = closure, [x2] = first arg) */
-        mov     ARG_DOMAIN_STATE_PTR, x0
+        mov     TMP, x0
         ldr     x0, [x2]        /* x0 = first arg */
                                 /* x1 = closure environment */
-        ldr     ARG, [x1]       /* code pointer */
+        ldr     TMP2, [x1]       /* code pointer */
         b       L(jump_to_caml)
         CFI_ENDPROC
         END_FUNCTION(caml_callback_asm)
@@ -474,11 +476,11 @@ FUNCTION(caml_callback2_asm)
         CFI_STARTPROC
     /* Initial shuffling of arguments */
     /* (x0 = Caml_state, x1 = closure, [x2] = arg1, [x2,8] = arg2) */
-        mov     ARG_DOMAIN_STATE_PTR, x0
-        mov     TMP, x1
+        mov     TMP, x0
+        mov     TMP2, x1
         ldp     x0, x1, [x2, 0] /* x0 = first arg, x1 = second arg */
-        mov     x2, TMP         /* x2 = closure environment */
-        ADDRGLOBAL(ARG, caml_apply2)
+        mov     x2, TMP2         /* x2 = closure environment */
+        ADDRGLOBAL(TMP2, caml_apply2)
         b       L(jump_to_caml)
         CFI_ENDPROC
         END_FUNCTION(caml_callback2_asm)
@@ -488,19 +490,19 @@ FUNCTION(caml_callback3_asm)
     /* Initial shuffling of arguments */
     /* (x0 = Caml_state, x1 = closure, [x2] = arg1, [x2,8] = arg2,
         [x2,16] = arg3) */
-        mov     ARG_DOMAIN_STATE_PTR, x0
+        mov     TMP, x0
         mov     x3, x1          /* x3 = closure environment */
         ldp     x0, x1, [x2, 0] /* x0 = first arg, x1 = second arg */
         ldr     x2, [x2, 16]    /* x2 = third arg */
-        ADDRGLOBAL(ARG, caml_apply3)
+        ADDRGLOBAL(TMP2, caml_apply3)
         b       L(jump_to_caml)
         CFI_ENDPROC
         END_FUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
-    /* Load address of [caml_array_bound_error] in ARG */
-        ADDRGLOBAL(ARG, caml_array_bound_error)
+    /* Load address of [caml_array_bound_error] in ADDITIONAL_ARG */
+        ADDRGLOBAL(ADDITIONAL_ARG, caml_array_bound_error)
     /* Call that function */
         b       G(caml_c_call)
         CFI_ENDPROC
