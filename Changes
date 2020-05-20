@@ -67,6 +67,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9583: when bytecode linking fails due to an unavailable module, the module
+  that requires it is now included in the error message.
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
 
 ### Internal/compiler-libs changes:
 
