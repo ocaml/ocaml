@@ -491,3 +491,17 @@ Line 8, characters 57-58:
 Error: This expression has type int M.u
        but an expression was expected of type int M.t
 |}]
+
+
+(* Nominal types are contractive (#5863) *)
+#rectypes;;
+module Fixpoint (M : sig type 'a t [@@nominal] end) =
+  struct type fix = fix M.t end;;
+[%%expect{|
+module Fixpoint :
+  functor (M : sig type 'a t [@@nominal] end) -> sig type fix = fix M.t end
+|}]
+module Nat = Fixpoint(struct type 'a t = 'a option end);;
+[%%expect{|
+module Nat : sig type fix = fix option end
+|}]
