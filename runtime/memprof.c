@@ -45,7 +45,15 @@ static double lambda = 0;
     Dummy if [lambda = 0]. */
 static double one_log1m_lambda;
 
+/* [caml_memprof_suspended] is used for masking memprof callbacks when
+   a callback is running or when an uncaught exception handler is
+   called. */
 int caml_memprof_suspended = 0;
+
+/* [callback_running] is used to trigger a fatal error whenever
+   [Thread.exit] is called from a callback. */
+static int callback_running = 0;
+
 static intnat callstack_size;
 
 /* accessors for the OCaml type [Gc.Memprof.tracker],
@@ -347,10 +355,11 @@ Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param) {
   CAMLassert(!t->callback_running && t->idx_ptr == NULL);
   CAMLassert(lambda > 0.);
 
-  t->callback_running = 1;
+  callback_running = t->callback_running = 1;
   t->idx_ptr = t_idx;
   res = caml_callback_exn(cb, param);
-   /* The call above can modify [*t_idx] and thus invalidate [t]. */
+  callback_running = 0;
+  /* The call above can modify [*t_idx] and thus invalidate [t]. */
   if (*t_idx == Invalid_index) {
     /* Make sure this entry has not been removed by [caml_memprof_set] */
     return Val_unit;
@@ -464,7 +473,7 @@ static void flush_deleted(void)
   realloc_trackst();
 }
 
-void caml_memprof_check_action_pending(void) {
+static void check_action_pending(void) {
   if (!caml_memprof_suspended && trackst.callback < trackst.len)
     caml_set_action_pending();
 }
@@ -482,7 +491,7 @@ value caml_memprof_handle_postponed_exn(void)
     if (Is_exception_result(res)) break;
   }
   caml_memprof_suspended = 0;
-  caml_memprof_check_action_pending();  /* Needed in case of an exception */
+  check_action_pending();  /* Needed in case of an exception */
   flush_deleted();
   return res;
 }
@@ -526,7 +535,7 @@ void caml_memprof_minor_update(void)
   }
   if (trackst.callback > trackst.young) {
     trackst.callback = trackst.young;
-    caml_memprof_check_action_pending();
+    check_action_pending();
   }
   trackst.young = trackst.len;
 }
@@ -553,7 +562,7 @@ void caml_memprof_update_clean_phase(void)
     }
   }
   trackst.callback = 0;
-  caml_memprof_check_action_pending();
+  check_action_pending();
 }
 
 void caml_memprof_invert_tracked(void)
@@ -581,7 +590,7 @@ void caml_memprof_track_alloc_shr(value block)
   if (callstack == 0) return;
 
   new_tracked(n_samples, Wosize_val(block), 0, 0, block, callstack);
-  caml_memprof_check_action_pending();
+  check_action_pending();
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -656,7 +665,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
 
     new_tracked(n_samples, wosize,
                 0, 1, Val_hp(Caml_state->young_ptr), callstack);
-    caml_memprof_check_action_pending();
+    check_action_pending();
     return;
   }
 
@@ -741,8 +750,8 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
   CAMLassert(alloc_ofs == 0 || Is_exception_result(res));
   CAMLassert(allocs_sampled <= nallocs);
   caml_memprof_suspended = 0;
-  caml_memprof_check_action_pending();
-  /* We need to call [caml_memprof_check_action_pending] since we
+  check_action_pending();
+  /* We need to call [check_action_pending] since we
      reset [caml_memprof_suspended] to 0 (a GC collection may have
      triggered some new callback).
 
@@ -770,7 +779,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
         t->deallocated = 1;
         if (trackst.callback > idx_tab[i]) {
           trackst.callback = idx_tab[i];
-          caml_memprof_check_action_pending();
+          check_action_pending();
         }
       }
     if (idx_tab != &first_idx) caml_stat_free(idx_tab);
@@ -845,7 +854,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
                 Wosize_hp(p), 1, is_young, Val_hp(p), callstack);
     p = next_p;
   }
-  caml_memprof_check_action_pending();
+  check_action_pending();
 }
 
 /**** Interface with the OCaml code. ****/
@@ -939,4 +948,30 @@ CAMLprim value caml_memprof_stop(value unit)
   callstack_buffer_len = 0;
 
   return Val_unit;
+}
+
+/**** Interface with systhread. ****/
+
+void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx) {
+  ctx->suspended = 0;
+  ctx->callback_running = 0;
+}
+
+void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
+  /* Make sure that no memprof callback is being executed in this
+     thread. If so, memprof data structures may have pointers to the
+     thread's stack. */
+  if(ctx->callback_running)
+    caml_fatal_error("Thread.exit called from a memprof callback.");
+}
+
+void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx) {
+  ctx->suspended = caml_memprof_suspended;
+  ctx->callback_running = callback_running;
+}
+
+void caml_memprof_restore_th_ctx(const struct caml_memprof_th_ctx* ctx) {
+  caml_memprof_suspended = ctx->suspended;
+  callback_running = ctx->callback_running;
+  check_action_pending();
 }
