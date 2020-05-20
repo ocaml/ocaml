@@ -1585,12 +1585,27 @@ and type_pat_aux
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
       begin_def ();
+      let expected_ty = instance expected_ty in
+      (* PR#7214: do not use gadt unification for toplevel lets *)
+      let unify_res ty_res =
+        let refine =
+          match refine, no_existentials with
+          | None, None when constr.cstr_generalized -> Some false
+          | _ -> refine
+        in
+        unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
+      in
       let expansion_scope = get_gadt_equations_level () in
-      let (ty_args, ty_res, _ty_ex) =
+      let ty_args, ty_res, equated_types =
         match oty with
           None ->
-            instance_constructor ~in_pattern:(env, expansion_scope) constr
+            let ty_args, ty_res, _ =
+              instance_constructor ~in_pattern:(env, expansion_scope) constr in
+            let eqt = unify_res ty_res in
+            ty_args, ty_res, eqt
         | Some (nl, sty) ->
+            let ty_args, ty_res, ty_ex = instance_constructor constr in
+            let eqt = unify_res ty_res in
             let ids =
               List.map
                 (fun name ->
@@ -1603,7 +1618,6 @@ and type_pat_aux
             in
             let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
             pattern_force := force :: !pattern_force;
-            let ty_args, ty_res, ty_ex = instance_constructor constr in
             begin match ty_args with
               [] -> ()
             | [ty_arg] ->
@@ -1622,17 +1636,7 @@ and type_pat_aux
                     raise (Error (cty.ctyp_loc, !env,
                                   Unbound_existential (ids, ty))))
               ids ty_ex);
-            ty_args, ty_res, ty_ex
-      in
-      let expected_ty = instance expected_ty in
-      (* PR#7214: do not use gadt unification for toplevel lets *)
-      let refine =
-        if refine = None && constr.cstr_generalized && no_existentials = None
-        then Some false
-        else refine
-      in
-      let equated_types =
-        unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
+            ty_args, ty_res, eqt
       in
       end_def ();
       generalize_structure expected_ty;
