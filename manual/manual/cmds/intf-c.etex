@@ -654,6 +654,9 @@ containing \var{v} and \var{w} in fields 1 and 2.
 false otherwise
 \item "Is_block("\var{v}")" is true if value \var{v} is a pointer to a block,
 and false if it is an immediate integer.
+\item "Is_none("\var{v}")" is true if value \var{v} is "None".
+\item "Is_some("\var{v}")" is true if value \var{v} (assumed to be of option
+type) corresponds to the "Some" constructor.
 \end{itemize}
 
 \subsection{ss:c-int-ops}{Operations on integers}
@@ -668,6 +671,7 @@ truth value of the C integer \var{x}.
 \item "Bool_val("\var{v}")" returns 0 if \var{v} is the OCaml boolean
 "false", 1 if \var{v} is "true".
 \item "Val_true", "Val_false" represent the OCaml booleans "true" and "false".
+\item "Val_none" represents the OCaml value "None".
 \end{itemize}
 
 \subsection{ss:c-block-access}{Accessing blocks}
@@ -723,6 +727,8 @@ of a value \var{v} of any boxed type (record or concrete data type).
 \item "caml_field_unboxable("\var{v}")" calls either
 "caml_field_unboxed" or "caml_field_boxed" according to the default
 representation of unboxable types in the current version of OCaml.
+\item "Some_val("\var{v}")" returns the argument "\var{x}" of a value \var{v} of
+the form "Some("\var{x}")".
 \end{itemize}
 The expressions "Field("\var{v}", "\var{n}")",
 "Byte("\var{v}", "\var{n}")" and
@@ -791,6 +797,8 @@ any boxed type) whose field is the value \var{v}.
 \item "caml_alloc_unboxable("\var{v}")" calls either
 "caml_alloc_unboxed" or "caml_alloc_boxed" according to the default
 representation of unboxable types in the current version of OCaml.
+\item "caml_alloc_some("\var{v}")" allocates a block representing
+"Some("\var{v}")".
 \end{itemize}
 
 \subsubsection{sss:c-low-level-alloc}{Low-level interface}
