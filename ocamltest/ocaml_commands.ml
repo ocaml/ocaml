@@ -16,7 +16,10 @@
 (* Helper functions to build OCaml-related commands *)
 
 let ocamlrun program =
-  Ocaml_files.ocamlrun ^ " " ^ program
+  if Ocamltest_config.shared_libraries then
+    Ocaml_files.ocamlrun ^ " " ^ program
+  else
+    program
 
 let ocamlrun_ocamlc = ocamlrun Ocaml_files.ocamlc
 
