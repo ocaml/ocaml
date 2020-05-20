@@ -1902,7 +1902,7 @@ module Conv = struct
             | [p] -> Some p
             | lst -> Some (mkpat (Ppat_tuple lst))
           in
-          mkpat (Ppat_construct(lid, arg))
+          mkpat (Ppat_construct(lid, None, arg))
       | Tpat_variant(label,p_opt,_row_desc) ->
           let arg = Option.map loop p_opt in
           mkpat (Ppat_variant(label, arg))

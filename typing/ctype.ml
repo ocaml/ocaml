@@ -1288,7 +1288,8 @@ let get_new_abstract_name s =
   if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
   Printf.sprintf "%s%d" s index
 
-let new_declaration expansion_scope manifest =
+let new_local_type ?(loc = Location.none)
+    ?(expansion_scope = Btype.lowest_level) ?manifest () =
   {
     type_params = [];
     type_arity = 0;
@@ -1299,7 +1300,7 @@ let new_declaration expansion_scope manifest =
     type_separability = [];
     type_is_newtype = true;
     type_expansion_scope = expansion_scope;
-    type_loc = Location.none;
+    type_loc = loc;
     type_attributes = [];
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
@@ -1316,7 +1317,7 @@ let instance_constructor ?in_pattern cstr =
     | None -> ()
     | Some (env, expansion_scope) ->
         let process existential =
-          let decl = new_declaration expansion_scope None in
+          let decl = new_local_type ~expansion_scope () in
           let name = existential_name cstr existential in
           let path =
             Path.Pident
@@ -2140,7 +2141,7 @@ let reify env t =
         (Ident.create_scoped ~scope:fresh_constr_scope
            (get_new_abstract_name name))
     in
-    let decl = new_declaration fresh_constr_scope None in
+    let decl = new_local_type ~expansion_scope:fresh_constr_scope () in
     let new_env = Env.add_local_type path decl !env in
     let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
     env := new_env;
@@ -2446,7 +2447,7 @@ let add_gadt_equation env source destination =
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())
     in
-    let decl = new_declaration expansion_scope (Some destination) in
+    let decl = new_local_type ~expansion_scope ~manifest:destination () in
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end

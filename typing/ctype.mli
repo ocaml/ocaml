@@ -207,6 +207,9 @@ val generic_instance: type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
+val new_local_type:
+        ?loc:Location.t -> ?expansion_scope:int ->
+        ?manifest:type_expr -> unit -> type_declaration
 val existential_name: constructor_description -> type_expr -> string
 val instance_constructor:
         ?in_pattern:Env.t ref * int ->

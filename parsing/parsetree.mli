@@ -215,7 +215,8 @@ and pattern_desc =
 
            Invariant: n >= 2
         *)
-  | Ppat_construct of Longident.t loc * pattern option
+  | Ppat_construct of
+      Longident.t loc * (string loc list * core_type) option * pattern option
         (* C                None
            C P              Some P
            C (P1, ..., Pn)  Some (Ppat_tuple [P1; ...; Pn])

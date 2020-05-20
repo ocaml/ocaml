@@ -129,6 +129,7 @@ type error =
   | Letop_type_clash of string * Ctype.Unification_trace.t
   | Andop_type_clash of string * Ctype.Unification_trace.t
   | Bindings_type_clash of Ctype.Unification_trace.t
+  | Unbound_existential of Ident.t list * type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1075,7 +1076,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
      true
   | Ppat_any
   | Ppat_variant (_, None)
-  | Ppat_construct (_, None)
+  | Ppat_construct (_, _, None)
   | Ppat_type _
   | Ppat_var _
   | Ppat_unpack _
@@ -1083,7 +1084,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
      false
   | Ppat_exception p
   | Ppat_variant (_, Some p)
-  | Ppat_construct (_, Some p)
+  | Ppat_construct (_, _, Some p)
   | Ppat_constraint (p, _)
   | Ppat_alias (p, _)
   | Ppat_lazy p
@@ -1524,7 +1525,7 @@ and type_pat_aux
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
-  | Ppat_construct(lid, sarg) ->
+  | Ppat_construct(lid, oty, sarg) ->
       let expected_type =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
@@ -1584,9 +1585,51 @@ and type_pat_aux
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
       begin_def ();
+      let expansion_scope = get_gadt_equations_level () in
       let (ty_args, ty_res) =
-        instance_constructor ~in_pattern:(env, get_gadt_equations_level ())
-          constr
+        match oty with
+          None ->
+            instance_constructor ~in_pattern:(env, expansion_scope) constr
+        | Some (nl, sty) ->
+            let ids =
+              List.map
+                (fun name ->
+                  let decl = new_local_type ~expansion_scope ~loc:name.loc () in
+                  let (id, new_env) =
+                    Env.enter_type ~scope:expansion_scope name.txt decl !env in
+                  env := new_env;
+                  id)
+                nl
+            in
+            let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
+            pattern_force := force :: !pattern_force;
+            let constr =
+              {constr with
+               cstr_args = constr.cstr_existentials @ constr.cstr_args}
+            in
+            let ty_args, ty_res = instance_constructor constr in
+            let ty_ex, ty_args =
+              Stdlib.List.split_at
+                (List.length constr.cstr_existentials) ty_args in
+            begin match ty_args with
+              [] -> ()
+            | [ty_arg] ->
+                unify_pat_types cty.ctyp_loc env ty ty_arg
+            | _ ->
+                unify_pat_types cty.ctyp_loc env ty (newty (Ttuple ty_args))
+            end;
+            ignore (
+            List.fold_left
+              (fun rem tv ->
+                match repr tv with
+                  {desc = Tconstr(Path.Pident id, [], _)}
+                  when List.mem id rem ->
+                    list_remove id rem
+                | _ ->
+                    raise (Error (cty.ctyp_loc, !env,
+                                  Unbound_existential (ids, ty))))
+              ids ty_ex);
+            ty_args, ty_res
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
@@ -2465,7 +2508,7 @@ let shallow_iter_ppat f p =
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
-  | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> Option.iter f arg
+  | Ppat_variant (_, arg) | Ppat_construct (_, _, arg) -> Option.iter f arg
   | Ppat_tuple lst ->  List.iter f lst
   | Ppat_exception p | Ppat_alias (p,_)
   | Ppat_open (_,p)
@@ -2502,7 +2545,7 @@ let contains_gadt p =
 let may_contain_gadts p =
   exists_ppat
   (function
-   | {ppat_desc = Ppat_construct (_, _)} -> true
+   | {ppat_desc = Ppat_construct _} -> true
    | _ -> false)
   p
 
@@ -2709,12 +2752,14 @@ and type_expect_
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+             None
              (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"))))
           (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+             None
              None)
           default;
        ]
@@ -3545,23 +3590,7 @@ and type_expect_
       (* remember original level *)
       begin_def ();
       (* Create a fake abstract type declaration for name. *)
-      let decl = {
-        type_params = [];
-        type_arity = 0;
-        type_kind = Type_abstract;
-        type_private = Public;
-        type_manifest = None;
-        type_variance = [];
-        type_separability = [];
-        type_is_newtype = true;
-        type_expansion_scope = Btype.lowest_level;
-        type_loc = loc;
-        type_attributes = [];
-        type_immediate = Unknown;
-        type_unboxed = unboxed_false_default_false;
-        type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
-      }
-      in
+      let decl = new_local_type ~loc () in
       let scope = create_scope () in
       let (id, new_env) = Env.enter_type ~scope name decl env in
 
@@ -5604,6 +5633,12 @@ let report_error ~loc env = function
           fprintf ppf "These bindings have type")
         (function ppf ->
           fprintf ppf "but bindings were expected of type")
+  | Unbound_existential (ids, ty) ->
+      Location.errorf ~loc
+        "@[<2>%s:@ @[type %s.@ %a@]@]"
+        "This type does not bind all existentials in the constructor"
+        (String.concat " " (List.map Ident.name ids))
+        Printtyp.type_expr ty
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

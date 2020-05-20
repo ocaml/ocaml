@@ -330,7 +330,7 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
     | Tpat_tuple list ->
         Ppat_tuple (List.map (sub.pat sub) list)
     | Tpat_construct (lid, _, args) ->
-        Ppat_construct (map_loc sub lid,
+        Ppat_construct (map_loc sub lid, None,
           (match args with
               [] -> None
             | [arg] -> Some (sub.pat sub arg)
