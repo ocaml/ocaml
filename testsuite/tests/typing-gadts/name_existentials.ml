@@ -49,3 +49,29 @@ Line 1, characters 36-53:
 Error: This type does not bind all existentials in the constructor:
          type a. a * (a -> a list)
 |}]
+
+(* with GADT unification *)
+type _ expr =
+  | Int : int -> int expr
+  | Add : (int -> int -> int) expr
+  | App : ('a -> 'b) expr * 'a expr -> 'b expr
+
+let rec eval : type t. t expr -> t = function
+    Int n -> n
+  | Add -> (+)
+  | App (type a) (f, x : _ * a expr) -> eval f (eval x : a)
+[%%expect{|
+type _ expr =
+    Int : int -> int expr
+  | Add : (int -> int -> int) expr
+  | App : ('a -> 'b) expr * 'a expr -> 'b expr
+val eval : 't expr -> 't = <fun>
+|}]
+
+let rec test : type a. a expr -> a = function
+  | Int (type b) (n : a) -> n
+  | Add -> (+)
+  | App (type b) (f, x : (b -> a) expr * _) -> test f (test x : b)
+[%%expect{|
+val test : 'a expr -> 'a = <fun>
+|}]
