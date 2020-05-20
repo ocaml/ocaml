@@ -21,7 +21,7 @@ val set_paths : unit -> unit
 
 (* The interactive toplevel loop *)
 
-val loop : formatter -> unit
+val loop : formatter -> string array option -> unit
 
 (* Read and execute a script from the given file *)
 

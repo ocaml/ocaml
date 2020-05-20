@@ -625,11 +625,19 @@ let set_paths () =
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
 
+external caml_sys_modify_argv : string array -> unit =
+  "caml_sys_modify_argv"
+
+let override_sys_argv new_argv =
+  caml_sys_modify_argv new_argv;
+  Arg.current := 0
+
 (* The interactive loop *)
 
 exception PPerror
 
-let loop ppf =
+let loop ppf rest_args =
+  Option.iter override_sys_argv rest_args;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
     fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
@@ -659,13 +667,6 @@ let loop ppf =
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
-
-external caml_sys_modify_argv : string array -> unit =
-  "caml_sys_modify_argv"
-
-let override_sys_argv new_argv =
-  caml_sys_modify_argv new_argv;
-  Arg.current := 0
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 

@@ -886,6 +886,11 @@ let mk__ f =
   "<file>  Treat <file> as a file name (even if it starts with `-')"
 ;;
 
+let mk___ f =
+  "--", Arg.Rest f,
+  "Stop interpreting arguments and fill Sys.argv with remaining arguments"
+;;
+
 module type Common_options = sig
   val _absname : unit -> unit
   val _alert : string -> unit
@@ -1008,6 +1013,7 @@ module type Toplevel_options = sig
   val _args0 : string -> string array
   val _color : string -> unit
   val _error_style : string -> unit
+  val rest_arg : string -> unit
 end
 ;;
 
@@ -1303,6 +1309,8 @@ struct
 
     mk_args F._args;
     mk_args0 F._args0;
+
+    mk___ F.rest_arg;
   ]
 end;;
 
@@ -1560,6 +1568,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
+    mk___ F.rest_arg;
   ]
 end;;
 
@@ -1891,6 +1900,7 @@ module Default = struct
     let _stdin () = (* placeholder: file_argument ""*) ()
     let _version () = print_version ()
     let _vnum () = print_version_num ()
+    let rest_arg _ = ()
   end
 
   module Topmain = struct

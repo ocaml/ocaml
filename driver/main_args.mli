@@ -137,6 +137,7 @@ module type Toplevel_options = sig
   val _args0 : string -> string array
   val _color : string -> unit
   val _error_style : string -> unit
+  val rest_arg : string -> unit
 end
 ;;
 

@@ -84,12 +84,15 @@ let wrap_expand f s =
   expand_position start (Array.length arr);
   arr
 
+let rest_args = ref None
+
 module Options = Main_args.Make_opttop_options (struct
     include Main_args.Default.Opttopmain
     let _stdin () = file_argument ""
     let _args = wrap_expand Arg.read_arg
     let _args0 = wrap_expand Arg.read_arg0
     let anonymous s = file_argument s
+    let rest_arg s := rest_args := Some (s :: Option.value ~default:[] !rest_args)
 end);;
 
 let () =
@@ -113,4 +116,5 @@ let main () =
   Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then exit 2;
   Compmisc.init_path ();
-  Opttoploop.loop Format.std_formatter
+  let rest_args = Option.map (fun l -> Array.of_list (List.rev l)) !rest_args in
+  Opttoploop.loop Format.std_formatter rest_args
