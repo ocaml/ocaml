@@ -35,7 +35,7 @@ If you want to try out Multicore OCaml, the easiest way is to install the compil
 
 Parallel programming examples are available in the [domainslib](https://github.com/ocaml-multicore/domainslib/tree/master/test) library. 
 
-Effect handler (concurrency) examples are available in [effects-examples](https://github.com/kayceesrk/effects-examples) repo.
+Effect handler (concurrent programming) examples are available in [effects-examples](https://github.com/kayceesrk/effects-examples) repo.
 
 ## Notes
 
