@@ -12827,6 +12827,8 @@ fi ;; #(
      oc_ldflags="-brtl -bexpfull"
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
+  gcc*,powerpc-*-linux*) :
+    oc_ldflags="-mbss-plt" ;; #(
   *) :
      ;;
 esac
@@ -13649,7 +13651,12 @@ esac ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
-      mksharedlib="$CC -shared"
+       case $CC,$host in #(
+  gcc*,powerpc-*-linux*) :
+    mksharedlib="$CC -shared -mbss-plt" ;; #(
+  *) :
+    mksharedlib="$CC -shared" ;;
+esac
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"

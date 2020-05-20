@@ -725,6 +725,8 @@ AS_CASE([$CC,$host],
     [mkexe="$mkexe "
      oc_ldflags="-brtl -bexpfull"
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
+  [gcc*,powerpc-*-linux*],
+    [oc_ldflags="-mbss-plt"],
 )
 
 
@@ -852,7 +854,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-      mksharedlib="$CC -shared"
+       AS_CASE([$CC,$host],
+           [gcc*,powerpc-*-linux*], [mksharedlib="$CC -shared -mbss-plt"],
+           [mksharedlib="$CC -shared"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
