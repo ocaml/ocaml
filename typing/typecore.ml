@@ -507,7 +507,7 @@ and build_as_type_aux env p =
       let keep = cstr.cstr_private = Private || cstr.cstr_existentials <> [] in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
-      let ty_args, ty_res = instance_constructor cstr in
+      let ty_args, ty_res, _ = instance_constructor cstr in
       List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
@@ -1046,7 +1046,7 @@ end)
 (* unification of a type with a tconstr with
    freshly created arguments *)
 let unify_head_only ~refine loc env ty constr =
-  let (_, ty_res) = instance_constructor constr in
+  let ty_res = instance constr.cstr_res in
   let ty_res = repr ty_res in
   match ty_res.desc with
   | Tconstr(p,args,m) ->
@@ -1586,7 +1586,7 @@ and type_pat_aux
                                      constr.cstr_arity, List.length sargs)));
       begin_def ();
       let expansion_scope = get_gadt_equations_level () in
-      let (ty_args, ty_res) =
+      let (ty_args, ty_res, _ty_ex) =
         match oty with
           None ->
             instance_constructor ~in_pattern:(env, expansion_scope) constr
@@ -1603,14 +1603,7 @@ and type_pat_aux
             in
             let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
             pattern_force := force :: !pattern_force;
-            let constr =
-              {constr with
-               cstr_args = constr.cstr_existentials @ constr.cstr_args}
-            in
-            let ty_args, ty_res = instance_constructor constr in
-            let ty_ex, ty_args =
-              Stdlib.List.split_at
-                (List.length constr.cstr_existentials) ty_args in
+            let ty_args, ty_res, ty_ex = instance_constructor constr in
             begin match ty_args with
               [] -> ()
             | [ty_arg] ->
@@ -1629,7 +1622,7 @@ and type_pat_aux
                     raise (Error (cty.ctyp_loc, !env,
                                   Unbound_existential (ids, ty))))
               ids ty_ex);
-            ty_args, ty_res
+            ty_args, ty_res, ty_ex
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
@@ -4488,7 +4481,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
                             (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then (begin_def (); begin_def ());
-  let (ty_args, ty_res) = instance_constructor constr in
+  let (ty_args, ty_res, _) = instance_constructor constr in
   let texp =
     re {
       exp_desc = Texp_construct(lid, constr, []);

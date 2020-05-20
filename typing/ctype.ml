@@ -1335,7 +1335,8 @@ let instance_constructor ?in_pattern cstr =
     end;
     let ty_res = copy scope cstr.cstr_res in
     let ty_args = List.map (copy scope) cstr.cstr_args in
-    (ty_args, ty_res)
+    let ty_ex = List.map (copy scope) cstr.cstr_existentials in
+    (ty_args, ty_res, ty_ex)
   )
 
 let instance_parameterized_type ?keep_names sch_args sch =
