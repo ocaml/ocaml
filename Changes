@@ -67,6 +67,11 @@ Working version
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
 
+- #9587: Arg: new Rest_all spec to get all rest arguments in a list
+  (this is similar to Rest, but makes it possible to detect when there
+   are no arguments (an empty list) after the rest marker)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär and David Allsopp)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
