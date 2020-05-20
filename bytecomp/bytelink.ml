@@ -619,7 +619,8 @@ let link objfiles output_name =
   begin
     match Ident.Map.bindings missing_modules with
     | [] -> ()
-    | (id, cu_name) :: _ -> raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
+    | (id, cu_name) :: _ ->
+        raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
