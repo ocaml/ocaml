@@ -16,6 +16,9 @@ Working version
 
 ### Standard library:
 
+- #9582: Add Array.{find_opt,find_map,split,combine}.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
+
 ### Other libraries:
 
 ### Tools:
