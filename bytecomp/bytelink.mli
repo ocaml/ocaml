@@ -33,7 +33,7 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_module_unavailable of modname
+  | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
 
 exception Error of error
