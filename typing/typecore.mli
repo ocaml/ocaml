@@ -186,6 +186,7 @@ type error =
   | Letop_type_clash of string * Ctype.Unification_trace.t
   | Andop_type_clash of string * Ctype.Unification_trace.t
   | Bindings_type_clash of Ctype.Unification_trace.t
+  | Unbound_existential of Ident.t list * type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

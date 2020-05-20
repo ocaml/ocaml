@@ -436,8 +436,10 @@ module P = struct
     | Ppat_constant _ -> ()
     | Ppat_interval _ -> ()
     | Ppat_tuple pl -> List.iter (sub.pat sub) pl
-    | Ppat_construct (l, p) ->
-        iter_loc sub l; iter_opt (sub.pat sub) p
+    | Ppat_construct (l, t, p) ->
+        iter_loc sub l;
+        iter_opt (fun (_,t) -> sub.typ sub t) t;
+        iter_opt (sub.pat sub) p
     | Ppat_variant (_l, p) -> iter_opt (sub.pat sub) p
     | Ppat_record (lpl, _cf) ->
         List.iter (iter_tuple (iter_loc sub) (sub.pat sub)) lpl

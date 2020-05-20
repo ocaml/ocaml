@@ -1000,12 +1000,14 @@ and class_expr_aux cl_num val_env met_env scl =
         Exp.case
           (Pat.construct ~loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+             None
              (Some (Pat.var ~loc (mknoloc "*sth*"))))
           (Exp.ident ~loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
           (Pat.construct ~loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+             None
              None)
           default;
        ]

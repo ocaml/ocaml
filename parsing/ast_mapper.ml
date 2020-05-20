@@ -480,8 +480,10 @@ module P = struct
     | Ppat_constant c -> constant ~loc ~attrs (sub.constant sub c)
     | Ppat_interval (c1, c2) -> interval ~loc ~attrs c1 c2
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)
-    | Ppat_construct (l, p) ->
-        construct ~loc ~attrs (map_loc sub l) (map_opt (sub.pat sub) p)
+    | Ppat_construct (l, t, p) ->
+        construct ~loc ~attrs (map_loc sub l)
+          (map_opt (fun (l,ty) -> (l,sub.typ sub ty)) t)
+          (map_opt (sub.pat sub) p)
     | Ppat_variant (l, p) -> variant ~loc ~attrs l (map_opt (sub.pat sub) p)
     | Ppat_record (lpl, cf) ->
         record ~loc ~attrs
