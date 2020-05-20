@@ -126,7 +126,6 @@ let rec import_ex ex =
     | Value_unknown_descr -> A.value_unknown Other
     | Value_int i -> A.value_int i
     | Value_char c -> A.value_char c
-    | Value_constptr i -> A.value_constptr i
     | Value_float f -> A.value_float f
     | Value_float_array float_array ->
       begin match float_array.contents with

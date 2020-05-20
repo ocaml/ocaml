@@ -217,8 +217,8 @@ let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lconst(Const_block(0,
                      [Const_base(Const_string (fname, loc, None));
-                      Const_base(Const_int line);
-                      Const_base(Const_int char)]))
+                      const_int line;
+                      const_int char]))
 
 exception Initialization_failure of unsafe_info
 
@@ -242,9 +242,9 @@ let init_shape id modl =
         let init_v =
           match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
-              Const_pointer 0 (* camlinternalMod.Function *)
+              const_int 0 (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Const_pointer 1 (* camlinternalMod.Lazy *)
+              const_int 1 (* camlinternalMod.Lazy *)
           | _ ->
               let not_a_function =
                 Unsafe {reason=Unsafe_non_function; loc; subid }
@@ -270,7 +270,7 @@ let init_shape id modl =
     | Sig_modtype(id, minfo, _) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
-        Const_pointer 2 (* camlinternalMod.Class *)
+        const_int 2 (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type _ :: rem ->
         init_shape_struct env rem
