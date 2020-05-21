@@ -127,9 +127,6 @@ let init_tests_to_skip () =
   tests_to_skip := String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS")
 
 let test_file test_filename =
-  (* Printf.printf "# reading test file %s\n%!" test_filename; *)
-  (* Save current working directory *)
-  let cwd = Sys.getcwd() in
   let skip_test = List.mem test_filename !tests_to_skip in
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
@@ -204,8 +201,6 @@ let test_file test_filename =
        if not !Options.log_to_stderr then close_out log;
        summary
     ) in
-  (* Restore current working directory  *)
-  Sys.chdir cwd;
   begin match summary with
   | Some_failure -> ()
   | No_failure ->
