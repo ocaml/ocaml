@@ -44,6 +44,176 @@ let get_string () =
 
 (* The lexer *)
 
+exception Error of string
+exception End_of_input
+
+let from_seq keywords =
+  let open Seq in
+  let kwd_table = Hashtbl.create 17 in
+  List.iter (fun s -> Hashtbl.add kwd_table s (Kwd s)) keywords;
+  let ident_or_keyword id =
+    try Hashtbl.find kwd_table id with
+      Not_found -> Ident id
+  and keyword_or_error c =
+    let s = String.make 1 c in
+    try Hashtbl.find kwd_table s with
+      Not_found -> raise (Error ("Illegal character " ^ s))
+  in
+  let rec (+::) e seq = Cons (e, fun () -> next_token seq)
+  and next_token (seq : _ Seq.t) : _ Seq.node =
+    match seq () with
+    | Nil -> Nil
+    | Cons (head, rest) ->
+        begin match head with
+        | ' ' | '\010' | '\013' | '\009' | '\026' | '\012' ->
+            next_token rest
+        | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\255' as c ->
+            reset_buffer (); store c; ident rest
+        | '!' | '%' | '&' | '$' | '#' | '+' | '/' | ':' | '<' | '=' | '>' |
+          '?' | '@' | '\\' | '~' | '^' | '|' | '*' as c ->
+            reset_buffer (); store c; ident2 rest
+        | '0'..'9' as c ->
+            reset_buffer (); store c; number rest
+        | '\'' ->
+            let c, rest =
+              try char rest with
+                End_of_input -> raise (Error "")
+            in
+            begin match rest () with
+            | Cons ('\'', rest) -> Char c +:: rest
+            | _ -> raise (Error "")
+            end
+        | '\"' ->
+            reset_buffer ();
+            let s, rest = string rest in
+            String s +:: rest
+        | '-' -> neg_number rest
+        | '(' -> maybe_comment rest
+        | c -> keyword_or_error c +:: rest
+        end
+  and ident (seq : _ Seq.t) =
+    match seq () with
+    | Cons (
+        ('A'..'Z' | 'a'..'z' | '\192'..'\255' | '0'..'9' | '_' | '\'' as c),
+        rest) ->
+        store c; ident rest
+    | _ ->
+        ident_or_keyword (get_string ()) +:: seq
+  and ident2 (seq : _ Seq.t) =
+    match seq () with
+    | Cons
+        ('!' | '%' | '&' | '$' | '#' | '+' | '-' | '/' | ':' | '<' | '=' |
+         '>' | '?' | '@' | '\\' | '~' | '^' | '|' | '*' as c
+        , rest) ->
+        store c; ident2 rest
+    | _ ->
+        ident_or_keyword (get_string ()) +:: seq
+  and neg_number (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('0'..'9' as c, rest) ->
+        reset_buffer (); store '-'; store c; number rest
+    | _ ->
+        reset_buffer (); store '-'; ident2 seq
+  and number (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('0'..'9' as c, rest) ->
+        store c; number rest
+    | Cons ('.', rest) ->
+        store '.'; decimal_part rest
+    | Cons (('e' | 'E'), rest) ->
+        store 'E'; exponent_part rest
+    | _ ->
+        Int (int_of_string (get_string ())) +:: seq
+  and decimal_part (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('0'..'9' as c, rest) ->
+        store c; decimal_part rest
+    | Cons (('e' | 'E'), rest) ->
+        store 'E'; exponent_part rest
+    | _ ->
+        Float (float_of_string (get_string ())) +:: seq
+  and exponent_part (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('+' | '-' as c, rest) ->
+        store c; end_exponent_part rest
+    | _ ->
+        end_exponent_part seq
+  and end_exponent_part (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('0'..'9' as c, rest) ->
+        store c; end_exponent_part rest
+    | _ ->
+        Float (float_of_string (get_string ())) +:: seq
+  and string (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('\"', rest) -> get_string (), rest
+    | Cons ('\\', rest) ->
+        let c, rest =
+          try escape rest with
+            End_of_input -> raise (Error "")
+        in
+        store c; string rest
+    | Cons (c, rest) -> store c; string rest
+    | Nil -> raise End_of_input
+  and char (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('\\', rest) ->
+        begin try escape rest with
+          End_of_input -> raise (Error "")
+        end
+    | Cons (c, rest) -> c, rest
+    | Nil -> raise End_of_input
+  and escape (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('n', rest) -> '\n', rest
+    | Cons ('r', rest) -> '\r', rest
+    | Cons ('t', rest) -> '\t', rest
+    | Cons ('0'..'9' as c1, rest) ->
+        begin match rest () with
+        | Cons ('0'..'9' as c2, rest) ->
+            begin match rest () with
+            | Cons ('0'..'9' as c3, rest) ->
+                let c = Char.chr
+                    ((Char.code c1 - 48) * 100 + (Char.code c2 - 48) * 10 +
+                     (Char.code c3 - 48))
+                in
+                c, rest
+            | _ -> raise (Error "")
+            end
+        | _ -> raise (Error "")
+        end
+    | Cons (c, rest) -> c, rest
+    | Nil -> raise End_of_input
+  and maybe_comment (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('*', rest) ->
+        let rest = comment rest in
+        next_token rest
+    | _ ->
+        keyword_or_error '(' +:: seq
+  and comment (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('(', rest) -> maybe_nested_comment rest
+    | Cons ('*', rest) -> maybe_end_comment rest
+    | Cons (_, rest) -> comment rest
+    | Nil -> raise End_of_input
+  and maybe_nested_comment (seq : _ Seq.t) =
+    match seq () with
+    | Cons ('*', rest) ->
+        let rest = comment rest in
+        comment rest
+    | Cons (_, rest) -> comment rest
+    | Nil -> raise End_of_input
+  and maybe_end_comment (seq : _ Seq.t) =
+    match seq () with
+    | Cons (')', rest) -> rest
+    | Cons ('*', rest) -> maybe_end_comment rest
+    | Cons (_, rest) -> comment rest
+    | Nil -> raise End_of_input
+  in
+  fun input () -> next_token input
+
+
 let make_lexer keywords =
   let kwd_table = Hashtbl.create 17 in
   List.iter (fun s -> Hashtbl.add kwd_table s (Kwd s)) keywords;

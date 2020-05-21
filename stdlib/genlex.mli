@@ -71,3 +71,17 @@ val make_lexer : string list -> char Stream.t -> token Stream.t
    Blanks and newlines are skipped. Comments delimited by [(*] and [*)]
    are skipped as well, and can be nested. A {!Stream.Failure} exception
    is raised if end of stream is unexpectedly reached.*)
+
+exception End_of_input
+exception Error of string
+
+val from_seq : string list -> char Seq.t -> token Seq.t
+(** Construct the lexer function. The first argument is the list of
+   keywords. An identifier [s] is returned as [Kwd s] if [s]
+   belongs to this list, and as [Ident s] otherwise.
+   A special character [s] is returned as [Kwd s] if [s]
+   belongs to this list, and cause a lexical error (exception
+   {!Error} with the offending lexeme as its parameter) otherwise.
+   Blanks and newlines are skipped. Comments delimited by [(*] and [*)]
+   are skipped as well, and can be nested. A {!End_of_input} exception
+   is raised if end of stream is unexpectedly reached.*)

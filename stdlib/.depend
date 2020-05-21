@@ -313,6 +313,7 @@ stdlib__Gc.cmi : gc.mli \
 stdlib__Genlex.cmo : genlex.ml \
     stdlib__String.cmi \
     stdlib__Stream.cmi \
+    stdlib__Seq.cmi \
     stdlib__List.cmi \
     stdlib__Hashtbl.cmi \
     stdlib__Char.cmi \
@@ -321,13 +322,15 @@ stdlib__Genlex.cmo : genlex.ml \
 stdlib__Genlex.cmx : genlex.ml \
     stdlib__String.cmx \
     stdlib__Stream.cmx \
+    stdlib__Seq.cmx \
     stdlib__List.cmx \
     stdlib__Hashtbl.cmx \
     stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__Genlex.cmi
 stdlib__Genlex.cmi : genlex.mli \
-    stdlib__Stream.cmi
+    stdlib__Stream.cmi \
+    stdlib__Seq.cmi
 stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
