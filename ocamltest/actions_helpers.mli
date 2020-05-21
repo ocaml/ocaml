@@ -23,21 +23,21 @@ val pass_or_skip
 
 val mkreason : string -> string -> int -> string
 
-val testfile : Environments.t -> string
+val testfile : string Actions.A.t
 
-val test_build_directory : Environments.t -> string
+val test_build_directory : string Actions.A.t
 
-val test_source_directory : Environments.t -> string
+val test_source_directory : string Actions.A.t
 
-val words_of_variable : Environments.t -> Variables.t -> string list
+val words_of_variable : Variables.t -> string list Actions.A.t
 
-val int_of_variable : Environments.t -> Variables.t -> int
+val int_of_variable : Variables.t -> int Actions.A.t
 
-val files : Environments.t -> string list
+val files : string list Actions.A.t
 
-val setup_symlinks : string -> string -> string list -> unit
+(* val setup_symlinks : string -> string -> string list -> unit *)
 
-val setup_build_env : bool -> string list -> Actions.code
+val setup_build_env : bool -> string list -> Result.t Actions.A.t
 
 val setup_simple_build_env : bool -> string list -> Actions.code
 

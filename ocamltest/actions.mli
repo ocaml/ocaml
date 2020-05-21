@@ -59,7 +59,10 @@ module A : sig
     stderr_variable:Variables.t ->
     append:bool -> string list t -> int t
 
+  val setup_symlinks: string t -> string t -> string list t -> unit t
+
   val safe_lookup: Variables.t -> string t
+  val lookup: Variables.t -> string option t
 
   val pair: 'a t -> 'b t -> ('a * 'b) t
 

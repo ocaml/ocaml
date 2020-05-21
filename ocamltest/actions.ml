@@ -171,8 +171,30 @@ module A = struct
     in
     n, env
 
+  let setup_symlinks source_dir build_dir files log env =
+    let source_dir = fst (source_dir log env) in
+    let build_dir = fst (build_dir log env) in
+    let files = fst (files log env) in
+    let symlink filename =
+      let src = Filename.concat source_dir filename in
+      let cmd = "ln -sf " ^ src ^" " ^ build_dir in
+      Sys.run_system_command cmd
+    in
+    let copy filename =
+      let src = Filename.concat source_dir filename in
+      let dst = Filename.concat build_dir filename in
+      Sys.copy_file src dst
+    in
+    let f = if Sys.win32 then copy else symlink in
+    Sys.make_directory build_dir;
+    List.iter f files;
+    Sys.chdir build_dir, env (* CHECK ME *)
+
   let safe_lookup var _ env =
     Environments.safe_lookup var env, env
+
+  let lookup var _ env =
+    Environments.lookup var env, env
 
   let pair a b log env =
     let a, _env' = a log env in

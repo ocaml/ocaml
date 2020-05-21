@@ -36,58 +36,54 @@ let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
     what commandline exitcode
 
-let testfile env =
-  match Environments.lookup Builtin_variables.test_file env with
-  | None -> assert false
-  | Some t -> t
+let testfile =
+  let open Actions.A in
+  map Option.get (lookup Builtin_variables.test_file)
 
-let test_source_directory env =
-  Environments.safe_lookup Builtin_variables.test_source_directory env
+let test_source_directory =
+  let open Actions.A in
+  safe_lookup Builtin_variables.test_source_directory
 
-let test_build_directory env =
-  Environments.safe_lookup Builtin_variables.test_build_directory env
+let test_build_directory =
+  let open Actions.A in
+  safe_lookup Builtin_variables.test_build_directory
 
-let test_build_directory_prefix env =
-  Environments.safe_lookup Builtin_variables.test_build_directory_prefix env
+let test_build_directory_prefix =
+  let open Actions.A in
+  safe_lookup Builtin_variables.test_build_directory_prefix
 
-let words_of_variable env variable =
-  String.words (Environments.safe_lookup variable env)
+let words_of_variable variable =
+  let open Actions.A in
+  map String.words (safe_lookup variable)
 
-let int_of_variable env variable =
-  try int_of_string
-    (Environments.safe_lookup variable env)
-  with _ -> 0
+let int_of_variable variable =
+  let open Actions.A in
+  let+ s = safe_lookup variable in
+  Option.value ~default:0 (int_of_string_opt s)
 
-let files env = words_of_variable env Builtin_variables.files
+let files = words_of_variable Builtin_variables.files
 
-let setup_symlinks test_source_directory build_directory files =
-  let symlink filename =
-    let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -sf " ^ src ^" " ^ build_directory in
-    Sys.run_system_command cmd in
-  let copy filename =
-    let src = Filename.concat test_source_directory filename in
-    let dst = Filename.concat build_directory filename in
-    Sys.copy_file src dst in
-  let f = if Sys.os_type="Win32" then copy else symlink in
-  Sys.make_directory build_directory;
-  List.iter f files
-
-let setup_build_env add_testfile additional_files (_log : out_channel) env =
-  let build_dir = (test_build_directory env) in
-  let some_files = additional_files @ (files env) in
+let setup_build_env add_testfile additional_files =
+  let open Actions.A in
+  let some_files =
+    let+ files = files in
+    additional_files @ files
+  in
   let files =
     if add_testfile
-    then (testfile env) :: some_files
-    else some_files in
-  setup_symlinks (test_source_directory env) build_dir files;
-  Sys.chdir build_dir;
-  (Result.pass, env)
+    then
+      let+ testfile = testfile and+ some_files = some_files in
+      testfile :: some_files
+    else
+      some_files
+  in
+  let+ () = setup_symlinks test_source_directory test_build_directory files in
+  Result.pass
 
 let setup_simple_build_env add_testfile additional_files log env =
   let build_env = Environments.add
     Builtin_variables.test_build_directory
-    (test_build_directory_prefix env) env in
+    (fst (test_build_directory_prefix log env)) env in
   setup_build_env add_testfile additional_files log build_env
 
 let run_cmd
@@ -110,7 +106,7 @@ let run_cmd
     if (Environments.lookup_as_bool Strace.strace env) = Some true then
     begin
       let action_name = Environments.safe_lookup Actions.action_name env in
-      let test_build_directory = test_build_directory env in
+      let test_build_directory = fst (test_build_directory log env) in
       let strace_logfile_name = Strace.get_logfile_name action_name in
       let strace_logfile =
         Filename.make_path [test_build_directory; strace_logfile_name]
@@ -188,7 +184,7 @@ let run
       end else env
     in
     let expected_exit_status =
-      int_of_variable env Builtin_variables.exit_status
+      fst (int_of_variable Builtin_variables.exit_status log env)
     in
     let exit_status = run_cmd log env commandline in
     if exit_status=expected_exit_status

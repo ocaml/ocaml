@@ -69,18 +69,14 @@ let get_backend_value_from_env env bytecode_var native_var =
     (Environments.safe_lookup bytecode_var env)
     (Environments.safe_lookup native_var env)
 
-let modules env =
-  Actions_helpers.words_of_variable env Ocaml_variables.modules
+let modules =
+  Actions_helpers.words_of_variable Ocaml_variables.modules
 
 let plugins =
-  let open A in
-  let+ plugins = safe_lookup Ocaml_variables.plugins in
-  String.words plugins
+  Actions_helpers.words_of_variable Ocaml_variables.plugins
 
 let directories =
-  let open A in
-  let+ dirs = safe_lookup Ocaml_variables.directories in
-  String.words dirs
+  Actions_helpers.words_of_variable Ocaml_variables.directories
 
 let directory_flags =
   let open A in
@@ -215,15 +211,15 @@ let prepare_module output_variable log env input =
       generate_parser output_variable input log env
     | Text -> assert false
 
-let get_program_file backend env =
-  let testfile = Actions_helpers.testfile env in
+let get_program_file backend log env =
+  let testfile = fst (Actions_helpers.testfile log env) in
   let testfile_basename = Filename.chop_extension testfile in
   let program_filename =
     Filename.mkexe
       (Filename.make_filename
         testfile_basename (Ocaml_backends.executable_extension backend)) in
   let test_build_directory =
-    Actions_helpers.test_build_directory env in
+    fst (Actions_helpers.test_build_directory log env) in
   Filename.make_path [test_build_directory; program_filename]
 
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
@@ -255,7 +251,7 @@ let compile_program compiler log env =
   let program_variable = Ocaml_compilers.program_variable compiler in
   let program_file = Environments.safe_lookup program_variable env in
   let all_modules =
-    Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
+    fst (Actions_helpers.words_of_variable Ocaml_variables.all_modules log env) in
   let output_variable = Ocaml_compilers.output_variable compiler in
   let prepare = prepare_module output_variable log env in
   let modules =
@@ -264,8 +260,8 @@ let compile_program compiler log env =
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes else "" in
   let expected_exit_status =
-    Actions_helpers.int_of_variable env
-      (Ocaml_compilers.exit_status_variable compiler) in
+    fst (Actions_helpers.int_of_variable
+           (Ocaml_compilers.exit_status_variable compiler) log env) in
   let module_names =
     fst (binary_modules target log env) @ List.map Ocaml_filetypes.make_filename modules
   in
@@ -402,10 +398,10 @@ let print_module_names log description modules =
     (String.concat " " (List.map Ocaml_filetypes.make_filename modules))
 
 let find_source_modules log env =
-  let source_directory = Actions_helpers.test_source_directory env in
+  let source_directory = fst (Actions_helpers.test_source_directory log env) in
   let specified_modules =
     List.map Ocaml_filetypes.filetype
-      (fst (plugins log env) @ (modules env) @ [(Actions_helpers.testfile env)]) in
+      (fst (plugins log env) @ fst (modules log env) @ [fst (Actions_helpers.testfile log env)]) in
   print_module_names log "Specified" specified_modules;
   let source_modules =
     List.concatmap
@@ -418,8 +414,8 @@ let find_source_modules log env =
     env
 
 let setup_tool_build_env tool log env =
-  let source_directory = Actions_helpers.test_source_directory env in
-  let testfile = Actions_helpers.testfile env in
+  let source_directory = fst (Actions_helpers.test_source_directory log env) in
+  let testfile = fst (Actions_helpers.testfile log env) in
   let testfile_basename = Filename.chop_extension testfile in
   let tool_reference_variable = reference_variable tool in
   let tool_reference_prefix =
@@ -433,7 +429,7 @@ let setup_tool_build_env tool log env =
       tool_reference_file env
   in
   let source_modules =
-    Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
+    fst (Actions_helpers.words_of_variable Ocaml_variables.all_modules log env) in
   let tool_directory_suffix =
     Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
   let tool_directory_name =
@@ -464,7 +460,7 @@ let setup_compiler_build_env compiler log env =
   begin
     let prog_var = Ocaml_compilers.program_variable compiler in
     let prog_output_var = Ocaml_compilers.program_output_variable compiler in
-    let default_prog_file = get_program_file (Ocaml_compilers.target compiler) env in
+    let default_prog_file = get_program_file (Ocaml_compilers.target compiler) log env in
     let env = Environments.add_if_undefined prog_var default_prog_file env in
     let prog_file = Environments.safe_lookup prog_var env in
     let prog_output_file = prog_file ^ ".output" in
@@ -529,8 +525,8 @@ let compile compiler log env =
     end
   | Some cmdline ->
     let expected_exit_status =
-      Actions_helpers.int_of_variable env
-        (Ocaml_compilers.exit_status_variable compiler) in
+      fst (Actions_helpers.int_of_variable
+             (Ocaml_compilers.exit_status_variable compiler) log env) in
     let what = Printf.sprintf "Compiling using commandline %s" cmdline in
     Printf.fprintf log "%s\n%!" what;
     let commandline = [Ocaml_compilers.name compiler; cmdline] in
@@ -675,7 +671,7 @@ let mklib log env =
     Ocaml_commands.ocamlrun_ocamlmklib;
     "-ocamlc '" ^ ocamlc_command ^ "'";
     "-o " ^ program
-  ] @ modules env in
+  ] @ fst (modules log env) in
   let expected_exit_status = 0 in
   let exit_status =
     Actions_helpers.run_cmd
@@ -742,12 +738,12 @@ let finalise_codegen_msvc test_basename log env =
   end
 
 let run_codegen log env =
-  let testfile = Actions_helpers.testfile env in
+  let testfile = fst (Actions_helpers.testfile log env) in
   let testfile_basename = Filename.chop_extension testfile in
   let what = Printf.sprintf "Running codegen on %s" testfile in
   Printf.fprintf log "%s\n%!" what;
   let test_build_directory =
-    Actions_helpers.test_build_directory env in
+    fst (Actions_helpers.test_build_directory log env) in
   let compiler_output =
     Filename.make_path [test_build_directory; "compiler-output"]
   in
@@ -805,7 +801,7 @@ let run_cc log env =
     "-I" ^ Ocaml_directories.runtime;
     output_exe ^ program;
     Environments.safe_lookup Builtin_variables.arguments env;
-  ] @ modules env in
+  ] @ fst (modules log env) in
   let expected_exit_status = 0 in
   let exit_status =
     Actions_helpers.run_cmd
@@ -867,7 +863,7 @@ let run_expect_twice input_file log env =
   end else (result1, env1)
 
 let run_expect log env =
-  let input_file = Actions_helpers.testfile env in
+  let input_file = fst (Actions_helpers.testfile log env) in
   run_expect_twice input_file log env
 
 let run_expect = Actions.make "run-expect" run_expect
@@ -987,8 +983,8 @@ let compile_module compiler compilername compileroutput log env
   let filename =
     Ocaml_filetypes.make_filename (module_basename, module_filetype) in
   let expected_exit_status =
-    Actions_helpers.int_of_variable env
-      (Ocaml_compilers.exit_status_variable compiler) in
+    fst (Actions_helpers.int_of_variable
+           (Ocaml_compilers.exit_status_variable compiler) log env) in
   let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
     (Ocaml_filetypes.action_of_filetype module_filetype) filename
       expected_exit_status in
@@ -1080,15 +1076,15 @@ let run_test_program_in_toplevel toplevel log env =
       | Some (Ok ()) ->
         (Result.skip, env)
       | None ->
-        let testfile = Actions_helpers.testfile env in
+        let testfile = fst (Actions_helpers.testfile log env) in
         let expected_exit_status =
-          Actions_helpers.int_of_variable env
-            (Ocaml_toplevels.exit_status_variable toplevel) in
+          fst (Actions_helpers.int_of_variable
+                 (Ocaml_toplevels.exit_status_variable toplevel) log env) in
         let compiler_output_variable = Ocaml_toplevels.output_variable toplevel in
         let compiler = Ocaml_toplevels.compiler toplevel in
         let compiler_name = Ocaml_compilers.name compiler in
         let modules_with_filetypes =
-          List.map Ocaml_filetypes.filetype (modules env) in
+          List.map Ocaml_filetypes.filetype (fst (modules log env)) in
         let (result, env) = compile_modules
           compiler compiler_name compiler_output_variable
           modules_with_filetypes log env in
@@ -1322,8 +1318,8 @@ let compiler_for_ocamldoc =
    before the main documentation is generated *)
 let compile_ocamldoc (basename,filetype as module_) log env =
   let expected_exit_status =
-    Actions_helpers.int_of_variable env
-      Ocaml_variables.ocamldoc_exit_status in
+    fst (Actions_helpers.int_of_variable
+           Ocaml_variables.ocamldoc_exit_status log env) in
   let what = Printf.sprintf "Compiling documentation for module %s" basename in
   Printf.fprintf log "%s\n%!" what;
   let filename =
@@ -1369,8 +1365,8 @@ let setup_ocamldoc_build_env =
   Actions.make "setup_ocamldoc_build_env" @@ fun log env ->
   let (r,env) = setup_tool_build_env `Ocamldoc log env in
   if not (Result.is_pass r) then (r,env) else
-  let source_directory = Actions_helpers.test_source_directory env in
-  let root_file = Filename.chop_extension (Actions_helpers.testfile env) in
+  let source_directory = fst (Actions_helpers.test_source_directory log env) in
+  let root_file = Filename.chop_extension (fst (Actions_helpers.testfile log env)) in
   let reference_prefix = Filename.make_path [source_directory; root_file] in
   let output = ocamldoc_output_file env root_file in
   let reference = reference_prefix ^ ocamldoc_reference_file_suffix env in
@@ -1402,14 +1398,14 @@ let run_ocamldoc =
   (* modules corresponds to secondaries modules of which the
      documentation and cmi files need to be build before the main
      module documentation *)
-  let modules =  List.map Ocaml_filetypes.filetype @@ modules env in
+  let modules = List.map Ocaml_filetypes.filetype @@ fst (modules log env) in
   (* plugins are used for custom documentation generators *)
   let plugins = List.map Ocaml_filetypes.filetype @@ fst (plugins log env) in
   let (r,env) = compiler_for_ocamldoc plugins log env in
   if not (Result.is_pass r) then r, env else
   let (r,env) = ocamldoc_compile_all log env modules in
   if not (Result.is_pass r) then r, env else
-  let input_file = Actions_helpers.testfile env in
+  let input_file = fst (Actions_helpers.testfile log env) in
   Printf.fprintf log "Generating documentation for %s\n%!" input_file;
   let load_all =
     List.map (fun name -> "-load " ^ compiled_doc_name (fst name))
