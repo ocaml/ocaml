@@ -15,14 +15,14 @@
 
 (* Locations of directories in the OCaml source tree *)
 
-val srcdir : unit -> string
+val srcdir : string
 
-val stdlib : string -> string
+val stdlib : string
 
-val libunix : string -> string
+val libunix : string
 
-val toplevel : string -> string
+val toplevel : string
 
-val runtime : string -> string
+val runtime : string
 
-val tools : string -> string
+val tools : string

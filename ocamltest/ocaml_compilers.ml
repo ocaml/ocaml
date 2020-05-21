@@ -18,7 +18,7 @@
 open Ocamltest_stdlib
 
 class compiler
-  ~(name : string -> string)
+  ~(name : string)
   ~(flags : string)
   ~(directory : string)
   ~(exit_status_variable : Variables.t)
