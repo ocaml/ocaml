@@ -416,26 +416,29 @@ let add_module_interface directory module_description =
         [(filename, Ocaml_filetypes.Interface); module_description]
   | _ -> [module_description]
 
-let print_module_names log description modules =
-  Printf.fprintf log "%s modules: %s\n%!"
-    description
-    (String.concat " " (List.map Ocaml_filetypes.make_filename modules))
+(* let print_module_names log description modules = *)
+(*   Printf.fprintf log "%s modules: %s\n%!" *)
+(*     description *)
+(*     (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) *)
 
-let find_source_modules log env =
-  let source_directory = fst (Actions_helpers.test_source_directory log env) in
-  let specified_modules =
-    List.map Ocaml_filetypes.filetype
-      (fst (plugins log env) @ fst (modules log env) @ [fst (Actions_helpers.testfile log env)]) in
-  print_module_names log "Specified" specified_modules;
+let find_source_modules =
+  (* print_module_names log "Specified" specified_modules; *)
   let source_modules =
+    let+ source_directory = Actions_helpers.test_source_directory
+    and+ specified_modules =
+      let+ plugins = plugins
+      and+ modules = modules
+      and+ testfile = Actions_helpers.testfile in
+      List.map Ocaml_filetypes.filetype (plugins @ modules @ [testfile])
+    in
     List.concatmap
       (add_module_interface source_directory)
-      specified_modules in
-  print_module_names log "Source" source_modules;
-  Environments.add
+      specified_modules
+  in
+  (* print_module_names log "Source" source_modules; *)
+  A.add
     Ocaml_variables.all_modules
-    (String.concat " " (List.map Ocaml_filetypes.make_filename source_modules))
-    env
+    (A.map (fun l -> String.concat " " (List.map Ocaml_filetypes.make_filename l)) source_modules)
 
 let setup_tool_build_env tool =
   let source_directory = Actions_helpers.test_source_directory in
@@ -824,36 +827,39 @@ let run_codegen =
 
 let codegen = Actions.make "codegen" run_codegen
 
-let run_cc log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Running C compiler to build %s" program in
-  Printf.fprintf log "%s\n%!" what;
+let run_cc =
+  let program = A.safe_lookup Builtin_variables.program in
+  (* let what = Printf.sprintf "Running C compiler to build %s" program in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
   let output_exe =
     if Ocamltest_config.ccomptype="msvc" then "/Fe" else "-o "
   in
-  let commandline =
-  [
-    Ocamltest_config.cc;
-    Ocamltest_config.cflags;
-    "-I" ^ Ocaml_directories.runtime;
-    output_exe ^ program;
-    Environments.safe_lookup Builtin_variables.arguments env;
-  ] @ fst (modules log env) in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:default_ocaml_env
+  let cmdline =
+    let+ arguments = A.safe_lookup Builtin_variables.arguments
+    and+ modules = modules
+    and+ program = program in
+    Ocamltest_config.cc ::
+    Ocamltest_config.cflags ::
+    ("-I" ^ Ocaml_directories.runtime) ::
+    (output_exe ^ program) ::
+    arguments ::
+    modules
+  in
+  let+ exit_status =
+    A.run_cmd
+      ~environment:(A.return default_ocaml_env)
       ~stdout_variable:Ocaml_variables.compiler_output
       ~stderr_variable:Ocaml_variables.compiler_output
       ~append:true
-      log env commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
+      cmdline
+  in
+  if exit_status = 0
+  then Result.pass
   else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
+    (* let reason = *)
+    (*   (Actions_helpers.mkreason *)
+    (*     what (String.concat " " commandline) exit_status) in *)
+    Result.fail_with_reason ""
   end
 
 let cc = Actions.make "cc" run_cc
@@ -1009,11 +1015,11 @@ let make_bytecode_programs_comparison_tool =
 
 let native_programs_comparison_tool = Filecompare.default_comparison_tool
 
-let compare_bytecode_programs_code log env =
+let compare_bytecode_programs_code =
   let bytecode_programs_comparison_tool =
     make_bytecode_programs_comparison_tool in
   compare_programs
-    Ocaml_backends.Bytecode bytecode_programs_comparison_tool log env
+    Ocaml_backends.Bytecode bytecode_programs_comparison_tool
 
 let compare_bytecode_programs =
   native_action
@@ -1509,7 +1515,8 @@ let run_ocamldoc =
     )
 
 let _ =
-  Environments.register_initializer "find_source_modules" find_source_modules;
+  Environments.register_initializer "find_source_modules"
+    (fun log env -> snd (find_source_modules log env));
   Environments.register_initializer "config_variables" config_variables;
   List.iter register
   [
