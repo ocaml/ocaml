@@ -258,7 +258,7 @@ let compile_program compiler log env =
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes else "" in
   let expected_exit_status =
-    Actions_helpers.exit_status_of_variable env
+    Actions_helpers.int_of_variable env
       (Ocaml_compilers.exit_status_variable compiler) in
   let module_names =
     (binary_modules target env) ^ " " ^
@@ -324,7 +324,7 @@ let compile_program compiler log env =
 let compile_module compiler module_ log env =
   let target = Ocaml_compilers.target compiler in
   let expected_exit_status =
-    Actions_helpers.exit_status_of_variable env
+    Actions_helpers.int_of_variable env
       (Ocaml_compilers.exit_status_variable compiler) in
   let what = Printf.sprintf "Compiling module %s" module_ in
   Printf.fprintf log "%s\n%!" what;
@@ -507,7 +507,7 @@ let compile compiler log env =
     end
   | Some cmdline ->
     let expected_exit_status =
-      Actions_helpers.exit_status_of_variable env
+      Actions_helpers.int_of_variable env
         (Ocaml_compilers.exit_status_variable compiler) in
     let what = Printf.sprintf "Compiling using commandline %s" cmdline in
     Printf.fprintf log "%s\n%!" what;
@@ -963,7 +963,7 @@ let compile_module compiler compilername compileroutput log env
   let filename =
     Ocaml_filetypes.make_filename (module_basename, module_filetype) in
   let expected_exit_status =
-    Actions_helpers.exit_status_of_variable env
+    Actions_helpers.int_of_variable env
       (Ocaml_compilers.exit_status_variable compiler) in
   let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
     (Ocaml_filetypes.action_of_filetype module_filetype) filename
@@ -1058,7 +1058,7 @@ let run_test_program_in_toplevel toplevel log env =
       | None ->
         let testfile = Actions_helpers.testfile env in
         let expected_exit_status =
-          Actions_helpers.exit_status_of_variable env
+          Actions_helpers.int_of_variable env
             (Ocaml_toplevels.exit_status_variable toplevel) in
         let compiler_output_variable = Ocaml_toplevels.output_variable toplevel in
         let compiler = Ocaml_toplevels.compiler toplevel in
@@ -1298,7 +1298,7 @@ let compiler_for_ocamldoc =
    before the main documentation is generated *)
 let compile_ocamldoc (basename,filetype as module_) log env =
   let expected_exit_status =
-    Actions_helpers.exit_status_of_variable env
+    Actions_helpers.int_of_variable env
       Ocaml_variables.ocamldoc_exit_status in
   let what = Printf.sprintf "Compiling documentation for module %s" basename in
   Printf.fprintf log "%s\n%!" what;

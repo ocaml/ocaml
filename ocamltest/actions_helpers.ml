@@ -53,7 +53,7 @@ let test_build_directory_prefix env =
 let words_of_variable env variable =
   String.words (Environments.safe_lookup variable env)
 
-let exit_status_of_variable env variable =
+let int_of_variable env variable =
   try int_of_string
     (Environments.safe_lookup variable env)
   with _ -> 0
@@ -186,7 +186,7 @@ let run
       end else env
     in
     let expected_exit_status =
-      exit_status_of_variable env Builtin_variables.exit_status
+      int_of_variable env Builtin_variables.exit_status
     in
     let exit_status = run_cmd log env commandline in
     if exit_status=expected_exit_status

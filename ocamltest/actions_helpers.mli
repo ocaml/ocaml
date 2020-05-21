@@ -31,7 +31,7 @@ val test_source_directory : Environments.t -> string
 
 val words_of_variable : Environments.t -> Variables.t -> string list
 
-val exit_status_of_variable : Environments.t -> Variables.t -> int
+val int_of_variable : Environments.t -> Variables.t -> int
 
 val files : Environments.t -> string list
 
