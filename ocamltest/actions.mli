@@ -42,3 +42,27 @@ val clear_all_hooks : unit -> unit
 val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
 
 module ActionSet : Set.S with type elt = t
+
+module A : sig
+  type 'a t = out_channel -> Environments.t -> 'a * Environments.t
+
+  val map: ('a -> 'b) -> 'a t -> 'b t
+
+  val return: 'a -> 'a t
+
+  val if_defined: Variables.t -> 'a t -> 'a t -> 'a t
+
+  val run_cmd:
+    environment:string array ->
+    stdin_variable:Variables.t ->
+    stdout_variable:Variables.t ->
+    stderr_variable:Variables.t ->
+    append:bool -> string list t -> int t
+
+  val safe_lookup: Variables.t -> string t
+
+  val pair: 'a t -> 'b t -> ('a * 'b) t
+
+  val (let+): 'a t -> ('a -> 'b) -> 'b t
+  val (and+): 'a t -> 'b t -> ('a * 'b) t
+end

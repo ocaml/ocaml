@@ -107,15 +107,15 @@ core := \
   variables.mli variables.ml \
   environments.mli environments.ml \
   result.mli result.ml \
+  builtin_variables.mli builtin_variables.ml \
+  strace.mli strace.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
-  strace.mli strace.ml \
   tsl_ast.mli tsl_ast.ml \
   tsl_parser.mly \
   tsl_lexer.mli tsl_lexer.mll \
   modifier_parser.mli modifier_parser.ml \
   tsl_semantics.mli tsl_semantics.ml \
-  builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \
   builtin_actions.mli builtin_actions.ml
 
