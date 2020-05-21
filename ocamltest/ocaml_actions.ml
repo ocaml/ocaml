@@ -589,86 +589,92 @@ let ocamlopt_opt =
       "ocamlopt.opt"
       (compile Ocaml_compilers.ocamlopt_opt))
 
-let env_with_lib_unix env =
-  let libunixdir = Ocaml_directories.libunix in
+let env_with_lib_unix =
   let newlibs =
-    match Environments.lookup Ocaml_variables.caml_ld_library_path env with
-    | None -> libunixdir
-    | Some libs -> libunixdir ^ " " ^ libs
+    let+ ld_lib_path = A.lookup Ocaml_variables.caml_ld_library_path in
+    match ld_lib_path with
+    | None -> Ocaml_directories.libunix
+    | Some libs -> Ocaml_directories.libunix ^ " " ^ libs
   in
-  Environments.add Ocaml_variables.caml_ld_library_path newlibs env
+  A.add Ocaml_variables.caml_ld_library_path newlibs
 
-let debug log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Debugging program %s" program in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamldebug;
-    Ocaml_flags.ocamldebug_default_flags;
-    program
-  ] in
-  let systemenv =
-    Array.append
-      default_ocaml_env
-      (Environments.to_system_env (env_with_lib_unix env))
+let debug =
+  (* let what = Printf.sprintf "Debugging program %s" program in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
+  let cmdline =
+    let+ program = A.safe_lookup Builtin_variables.program in
+    [
+      Ocaml_commands.ocamlrun_ocamldebug;
+      Ocaml_flags.ocamldebug_default_flags;
+      program
+    ]
   in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:systemenv
-      ~stdin_variable: Ocaml_variables.ocamldebug_script
-      ~stdout_variable:Builtin_variables.output
-      ~stderr_variable:Builtin_variables.output
-      ~append:true
-      log (env_with_lib_unix env) commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
+  let+ exit_status =
+    A.progn
+      env_with_lib_unix
+      (let systemenv =
+         let+ system_env = A.system_env in
+         Array.append default_ocaml_env system_env
+       in
+       A.run_cmd
+         ~environment:systemenv
+         ~stdin_variable: Ocaml_variables.ocamldebug_script
+         ~stdout_variable:Builtin_variables.output
+         ~stderr_variable:Builtin_variables.output
+         ~append:true
+         cmdline)
+  in
+  if exit_status = 0
+  then Result.pass
   else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
+    (* let reason = *)
+    (*   (Actions_helpers.mkreason *)
+    (*     what (String.concat " " commandline) exit_status) in *)
+    Result.fail_with_reason ""
   end
 
 let ocamldebug = Actions.make "ocamldebug" debug
 
-let objinfo log env =
+let objinfo =
   let tools_directory = Ocaml_directories.tools in
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Running ocamlobjinfo on %s" program in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamlobjinfo;
-    Ocaml_flags.ocamlobjinfo_default_flags;
-    program
-  ] in
-  let ocamllib = [| (Printf.sprintf "OCAMLLIB=%s" tools_directory) |] in
-  let systemenv =
-    Array.concat
+  (* let what = Printf.sprintf "Running ocamlobjinfo on %s" program in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
+  let cmdline =
+    let+ program = A.safe_lookup Builtin_variables.program in
     [
-      default_ocaml_env;
-      ocamllib;
-      (Environments.to_system_env (env_with_lib_unix env))
+      Ocaml_commands.ocamlrun_ocamlobjinfo;
+      Ocaml_flags.ocamlobjinfo_default_flags;
+      program
     ]
   in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:systemenv
-      ~stdout_variable:Builtin_variables.output
-      ~stderr_variable:Builtin_variables.output
-      ~append:true
-      log (env_with_lib_unix env) commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
-  else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
+  let ocamllib = [| Printf.sprintf "OCAMLLIB=%s" tools_directory |] in
+  A.progn
+    env_with_lib_unix
+    (let systemenv =
+       let+ system_env = A.system_env in
+       Array.concat
+         [
+           default_ocaml_env;
+           ocamllib;
+           system_env;
+         ]
+     in
+     let+ exit_status =
+       A.run_cmd
+         ~environment:systemenv
+         ~stdout_variable:Builtin_variables.output
+         ~stderr_variable:Builtin_variables.output
+         ~append:true
+         cmdline
+     in
+     if exit_status = 0
+     then Result.pass
+     else begin
+       (* let reason = *)
+       (*   (Actions_helpers.mkreason *)
+       (*     what (String.concat " " commandline) exit_status) in *)
+       Result.fail_with_reason ""
+     end)
 
 let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
 
