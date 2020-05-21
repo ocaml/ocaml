@@ -97,7 +97,7 @@ let filelist env variable extension =
   let value = Environments.safe_lookup variable env in
   let filenames = String.words value in
   let add_extension filename = Filename.make_filename filename extension in
-  String.concat " " (List.map add_extension filenames)
+  List.map add_extension filenames
 
 let libraries backend env =
   let extension = Ocaml_backends.library_extension backend in
@@ -242,7 +242,7 @@ let cmas_need_dynamic_loading directories libraries =
          begin try close_in ic with Sys_error _ -> () end;
          Some (Error ("Corrupt or non-CMA file: " ^ library))
   in
-  List.find_map loads_c_code (String.words libraries)
+  List.find_map loads_c_code libraries
 
 let compile_program compiler log env =
   let target = Ocaml_compilers.target compiler in
@@ -261,10 +261,13 @@ let compile_program compiler log env =
     Actions_helpers.int_of_variable env
       (Ocaml_compilers.exit_status_variable compiler) in
   let module_names =
-    (binary_modules target env) ^ " " ^
-    (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) in
-  let what = Printf.sprintf "Compiling program %s from modules %s"
-    (relative_to_initial_cwd program_file) module_names in
+    binary_modules target env @ List.map Ocaml_filetypes.make_filename modules
+  in
+  let what =
+    let module_names = String.concat " " module_names in
+    Printf.sprintf "Compiling program %s from modules %s"
+      (relative_to_initial_cwd program_file) module_names
+  in
   Printf.fprintf log "%s\n%!" what;
   let compile_only =
     Environments.lookup_as_bool Ocaml_variables.compile_only env = Some true
@@ -294,15 +297,16 @@ let compile_program compiler log env =
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
-        flags env;
-        libraries;
+        flags env
+      ] @ libraries @
+      [
         backend_default_flags env target;
         backend_flags env target;
         compile_flags;
         output;
         (Environments.safe_lookup Ocaml_variables.ocaml_filetype_flag env);
-        module_names;
-        last_flags env
+      ] @ module_names @
+      [ last_flags env
       ] in
       let exit_status =
         Actions_helpers.run_cmd
@@ -339,8 +343,8 @@ let compile_module compiler module_ log env =
     c_headers_flags;
     directory_flags env;
     flags env;
-    libraries target env;
-    backend_default_flags env target;
+  ] @ libraries target env @
+  [ backend_default_flags env target;
     backend_flags env target;
     "-c " ^ module_;
   ] in
@@ -1098,9 +1102,9 @@ let run_test_program_in_toplevel toplevel log env =
             directory_flags env;
             Ocaml_flags.include_toplevel_directory;
             flags env;
-            libraries;
-            binary_modules backend env;
-            if ocaml_script_as_argument then testfile else "";
+          ] @ libraries @
+            binary_modules backend env @
+          [ if ocaml_script_as_argument then testfile else "";
             Environments.safe_lookup Builtin_variables.arguments env
           ] in
           let exit_status =
