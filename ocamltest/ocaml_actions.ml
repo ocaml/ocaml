@@ -935,58 +935,66 @@ let check_ocamlopt_opt_output =
        "check-ocamlopt.opt-output"
        (`Compiler Ocaml_compilers.ocamlopt_opt))
 
-let really_compare_programs backend comparison_tool log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let program2 = Environments.safe_lookup Builtin_variables.program2 env in
-  let what = Printf.sprintf "Comparing %s programs %s and %s"
-      (Ocaml_backends.string_of_backend backend)
-      (relative_to_initial_cwd program)
-      (relative_to_initial_cwd program2) in
-  Printf.fprintf log "%s\n%!" what;
-  let files = {
-    Filecompare.filetype = Filecompare.Binary;
-    Filecompare.reference_filename = program;
-    Filecompare.output_filename = program2
-  } in
+let really_compare_programs backend comparison_tool =
+  (* let what = Printf.sprintf "Comparing %s programs %s and %s" *)
+  (*     (Ocaml_backends.string_of_backend backend) *)
+  (*     (relative_to_initial_cwd program) *)
+  (*     (relative_to_initial_cwd program2) in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
+  let program = A.safe_lookup Builtin_variables.program in
+  let program2 = A.safe_lookup Builtin_variables.program2 in
+  let files =
+    let+ program = program
+    and+ program2 = program2 in
+    { Filecompare.filetype = Filecompare.Binary;
+      Filecompare.reference_filename = program;
+      Filecompare.output_filename = program2 }
+  in
   if Ocamltest_config.flambda && backend = Ocaml_backends.Native
   then begin
     let reason =
       "flambda temporarily disables comparison of native programs" in
-    (Result.pass_with_reason reason, env)
+    A.return (Result.pass_with_reason reason)
   end else
-  if backend = Ocaml_backends.Native &&
-    (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+  if backend = Ocaml_backends.Native && (Sys.win32 || Sys.cygwin)
   then begin
     let reason =
       "comparison of native programs temporarily disabled under Windows" in
-    (Result.pass_with_reason reason, env)
+    A.return (Result.pass_with_reason reason)
   end else begin
     let comparison_tool =
-      if backend=Ocaml_backends.Native &&
-        (Sys.os_type="Win32" || Sys.os_type="Cygwin")
-        then
-          let bytes_to_ignore = 512 (* comparison_start_address program *) in
-          Filecompare.(make_cmp_tool ~ignore:{bytes=bytes_to_ignore; lines=0})
-        else comparison_tool in
+      if backend = Ocaml_backends.Native && (Sys.win32 || Sys.cygwin) then
+        let bytes_to_ignore = 512 (* comparison_start_address program *) in
+        Filecompare.(make_cmp_tool ~ignore:{bytes=bytes_to_ignore; lines=0})
+      else
+        comparison_tool
+    in
+    let+ files = files
+    and+ program = program
+    and+ program2 = program2 in
     match Filecompare.compare_files ~tool:comparison_tool files with
-      | Filecompare.Same -> (Result.pass, env)
-      | Filecompare.Different ->
-        let reason = Printf.sprintf "Files %s and %s are different"
-          program program2 in
-        (Result.fail_with_reason reason, env)
-      | Filecompare.Unexpected_output -> assert false
-      | Filecompare.Error (commandline, exitcode) ->
-        let reason = Actions_helpers.mkreason what commandline exitcode in
-        (Result.fail_with_reason reason, env)
+    | Filecompare.Same ->
+        Result.pass
+    | Filecompare.Different ->
+        let reason =
+          Printf.sprintf "Files %s and %s are different"
+            program program2
+        in
+        Result.fail_with_reason reason
+    | Filecompare.Unexpected_output ->
+        assert false
+    | Filecompare.Error (_commandline, _exitcode) ->
+        (* let reason = Actions_helpers.mkreason what commandline exitcode in *)
+        Result.fail_with_reason ""
   end
 
-let compare_programs backend comparison_tool log env =
+let compare_programs backend comparison_tool =
   let compare_programs =
-    Environments.lookup_as_bool Ocaml_variables.compare_programs env in
-  if compare_programs = Some false then begin
-    let reason = "program comparison disabled" in
-    (Result.pass_with_reason reason, env)
-  end else really_compare_programs backend comparison_tool log env
+    A.lookup_as_bool Ocaml_variables.compare_programs in
+  A.if_ (A.map ((=) (Some false)) compare_programs)
+    (let reason = "program comparison disabled" in
+     A.return (Result.pass_with_reason reason))
+    (really_compare_programs backend comparison_tool)
 
 let make_bytecode_programs_comparison_tool =
   let ocamlrun = Ocaml_files.ocamlrun in
