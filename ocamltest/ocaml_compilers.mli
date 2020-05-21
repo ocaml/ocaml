@@ -15,26 +15,29 @@
 
 (* Descriptions of the OCaml compilers *)
 
-class compiler :
-  name : string ->
-  flags : string ->
-  directory : string ->
-  exit_status_variable : Variables.t ->
-  reference_variable : Variables.t ->
-  output_variable : Variables.t ->
-  host : Ocaml_backends.t ->
-  target : Ocaml_backends.t ->
-object inherit Ocaml_tools.tool
-  method host : Ocaml_backends.t
-  method target : Ocaml_backends.t
-  method program_variable : Variables.t
-  method program_output_variable : Variables.t option
-end
+type t
 
-val ocamlc_byte : compiler
+val host: t -> Ocaml_backends.t
+val target: t -> Ocaml_backends.t
 
-val ocamlc_opt : compiler
+val program_variable: t -> Variables.t
+val program_output_variable: t -> Variables.t option
 
-val ocamlopt_byte : compiler
+val ocamlc_byte : t
 
-val ocamlopt_opt : compiler
+val ocamlc_opt : t
+
+val ocamlopt_byte : t
+
+val ocamlopt_opt : t
+
+val name : t -> string
+
+val exit_status_variable: t -> Variables.t
+val reference_variable: t -> Variables.t
+val output_variable: t -> Variables.t
+val directory: t -> string
+
+val reference_file_suffix: Environments.t -> string
+
+val reference_file: t -> Environments.t -> string -> string

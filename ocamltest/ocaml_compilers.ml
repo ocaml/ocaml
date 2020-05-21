@@ -16,86 +16,82 @@
 (* Description of the OCaml compilers *)
 
 open Ocamltest_stdlib
+open Ocaml_backends
 
-class compiler
-  ~(name : string)
-  ~(flags : string)
-  ~(directory : string)
-  ~(exit_status_variable : Variables.t)
-  ~(reference_variable : Variables.t)
-  ~(output_variable : Variables.t)
-  ~(host : Ocaml_backends.t)
-  ~(target : Ocaml_backends.t)
-= object (self) inherit Ocaml_tools.tool
-  ~name:name
-  ~family:"compiler"
-  ~flags:flags
-  ~directory:directory
-  ~exit_status_variable:exit_status_variable
-  ~reference_variable:reference_variable
-  ~output_variable:output_variable
-  as tool
+type t =
+  {
+    host: Ocaml_backends.t;
+    target: Ocaml_backends.t;
+  }
 
-  method host = host
-  method target = target
+let host {host; _} = host
+let target {target; _} = target
 
-  method program_variable =
-    if Ocaml_backends.is_native host
-    then Builtin_variables.program2
-    else Builtin_variables.program
+let  program_variable = function
+  | { host = Native; _ } -> Builtin_variables.program2
+  | { host = Bytecode; _ } -> Builtin_variables.program
 
-  method program_output_variable =
-    if Ocaml_backends.is_native host
-    then None
-    else Some Builtin_variables.output
+let program_output_variable = function
+  | { host = Native; _ } -> None
+  | { host = Bytecode; _ } -> Some Builtin_variables.output
 
-  method ! reference_file env prefix =
-    let default = tool#reference_file env prefix in
-    if Sys.file_exists default then default else
-    let suffix = self#reference_filename_suffix env in
-    let mk s = (Filename.make_filename prefix s) ^ suffix in
-    let filename = mk
-      (Ocaml_backends.string_of_backend target) in
-    if Sys.file_exists filename then filename else
-    mk "compilers"
-end
+let ocamlc_byte =
+  { host = Bytecode; target = Bytecode }
 
-let ocamlc_byte = new compiler
-  ~name: Ocaml_commands.ocamlrun_ocamlc
-  ~flags: ""
-  ~directory: "ocamlc.byte"
-  ~exit_status_variable: Ocaml_variables.ocamlc_byte_exit_status
-  ~reference_variable: Ocaml_variables.compiler_reference
-  ~output_variable: Ocaml_variables.compiler_output
-  ~host: Ocaml_backends.Bytecode
-  ~target: Ocaml_backends.Bytecode
+let ocamlc_opt =
+  { host = Native; target = Bytecode }
 
-let ocamlc_opt = new compiler
-  ~name: Ocaml_files.ocamlc_dot_opt
-  ~flags: ""
-  ~directory: "ocamlc.opt"
-  ~exit_status_variable: Ocaml_variables.ocamlc_opt_exit_status
-  ~reference_variable: Ocaml_variables.compiler_reference2
-  ~output_variable: Ocaml_variables.compiler_output2
-  ~host: Ocaml_backends.Native
-  ~target: Ocaml_backends.Bytecode
+let ocamlopt_byte =
+  { host = Bytecode; target = Native }
 
-let ocamlopt_byte = new compiler
-  ~name: Ocaml_commands.ocamlrun_ocamlopt
-  ~flags: ""
-  ~directory: "ocamlopt.byte"
-  ~exit_status_variable: Ocaml_variables.ocamlopt_byte_exit_status
-  ~reference_variable: Ocaml_variables.compiler_reference
-  ~output_variable: Ocaml_variables.compiler_output
-  ~host: Ocaml_backends.Bytecode
-  ~target: Ocaml_backends.Native
+let ocamlopt_opt =
+  { host = Native; target = Native }
 
-let ocamlopt_opt = new compiler
-  ~name: Ocaml_files.ocamlopt_dot_opt
-  ~flags: ""
-  ~directory: "ocamlopt.opt"
-  ~exit_status_variable: Ocaml_variables.ocamlopt_opt_exit_status
-  ~reference_variable: Ocaml_variables.compiler_reference2
-  ~output_variable: Ocaml_variables.compiler_output2
-  ~host: Ocaml_backends.Native
-  ~target: Ocaml_backends.Native
+let name = function
+  | { host = Bytecode; target = Bytecode } -> Ocaml_commands.ocamlrun_ocamlc
+  | { host = Native; target = Bytecode } -> Ocaml_files.ocamlc_dot_opt
+  | { host = Bytecode; target = Native } -> Ocaml_commands.ocamlrun_ocamlopt
+  | { host = Native; target = Native } -> Ocaml_files.ocamlopt_dot_opt
+
+let exit_status_variable = function
+  | { host = Bytecode; target = Bytecode } -> Ocaml_variables.ocamlc_byte_exit_status
+  | { host = Bytecode; target = Native } -> Ocaml_variables.ocamlopt_byte_exit_status
+  | { host = Native; target = Bytecode } -> Ocaml_variables.ocamlc_opt_exit_status
+  | { host = Native; target = Native } -> Ocaml_variables.ocamlopt_opt_exit_status
+
+let reference_variable = function
+  | { host = Bytecode; _ } -> Ocaml_variables.compiler_reference
+  | { host = Native; _ } -> Ocaml_variables.compiler_reference2
+
+let output_variable = function
+  | { host = Bytecode; _ } -> Ocaml_variables.compiler_output
+  | { host = Native; _ } -> Ocaml_variables.compiler_output2
+
+let directory = function
+  | { host = Bytecode; target = Bytecode } -> "ocamlc.byte"
+  | { host = Bytecode; target = Native } -> "ocamlopt.byte"
+  | { host = Native; target = Bytecode } -> "ocamlc.opt"
+  | { host = Native; target = Native } -> "ocamlopt.opt"
+
+let reference_file_suffix env =
+  let tool_reference_suffix =
+    Environments.safe_lookup Ocaml_variables.compiler_reference_suffix env
+  in
+  if tool_reference_suffix<>""
+  then tool_reference_suffix ^ ".reference"
+  else ".reference"
+
+let reference_file t env prefix =
+  let default =
+    let suffix = reference_file_suffix env in
+    Filename.make_filename prefix (directory t) ^ suffix
+  in
+  if Sys.file_exists default then default
+  else begin
+    let suffix = reference_file_suffix env in
+    let mk s = Filename.make_filename prefix s ^ suffix in
+    let filename =
+      mk (Ocaml_backends.string_of_backend t.target) in
+    if Sys.file_exists filename then filename
+    else mk "compilers"
+  end

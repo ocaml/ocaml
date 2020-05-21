@@ -128,7 +128,6 @@ ocaml_plugin := \
   ocaml_files.mli ocaml_files.ml \
   ocaml_flags.mli ocaml_flags.ml \
   ocaml_commands.mli ocaml_commands.ml \
-  ocaml_tools.mli ocaml_tools.ml \
   ocaml_compilers.mli ocaml_compilers.ml \
   ocaml_toplevels.mli ocaml_toplevels.ml \
   ocaml_actions.mli ocaml_actions.ml \

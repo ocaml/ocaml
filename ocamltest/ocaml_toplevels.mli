@@ -15,20 +15,17 @@
 
 (* Descriptions of the OCaml toplevels *)
 
-class toplevel :
-  name : string ->
-  flags : string ->
-  directory : string ->
-  exit_status_variable : Variables.t ->
-  reference_variable : Variables.t ->
-  output_variable : Variables.t ->
-  backend : Ocaml_backends.t ->
-  compiler : Ocaml_compilers.compiler ->
-object inherit Ocaml_tools.tool
-  method backend : Ocaml_backends.t
-  method compiler : Ocaml_compilers.compiler
-end
+type t
 
-val ocaml : toplevel
+val ocaml : t
+val ocamlnat : t
 
-val ocamlnat : toplevel
+val name: t -> string
+val exit_status_variable: t -> Variables.t
+val reference_variable: t -> Variables.t
+val output_variable: t -> Variables.t
+val directory: t -> string
+val compiler: t -> Ocaml_compilers.t
+val backend: t -> Ocaml_backends.t
+
+val reference_file: t -> Environments.t -> string -> string
