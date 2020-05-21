@@ -195,11 +195,11 @@ let has_symlink = make
 
 let setup_build_env = make
   "setup-build-env"
-  (Actions_helpers.setup_build_env true [])
+  (Actions_helpers.setup_build_env true (Actions.A.return []))
 
 let setup_simple_build_env = make
   "setup-simple-build-env"
-  (Actions_helpers.setup_simple_build_env true [])
+  (Actions_helpers.setup_simple_build_env true (Actions.A.return []))
 
 let run = make
   "run"

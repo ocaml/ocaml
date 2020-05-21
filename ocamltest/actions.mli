@@ -64,7 +64,18 @@ module A : sig
   val safe_lookup: Variables.t -> string t
   val lookup: Variables.t -> string option t
 
+  val add_if_undefined: Variables.t -> string t -> unit t
+  val add: Variables.t -> string t -> unit t
+
+  val force_remove: string t -> unit t
+
+  val progn: unit t -> 'a t -> 'a t
+
   val pair: 'a t -> 'b t -> ('a * 'b) t
+
+  val file_exists: string t -> bool t
+
+  val when_: bool t -> 'a t -> 'a t -> 'a t
 
   val (let+): 'a t -> ('a -> 'b) -> 'b t
   val (and+): 'a t -> 'b t -> ('a * 'b) t

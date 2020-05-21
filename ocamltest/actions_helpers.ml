@@ -66,7 +66,8 @@ let files = words_of_variable Builtin_variables.files
 let setup_build_env add_testfile additional_files =
   let open Actions.A in
   let some_files =
-    let+ files = files in
+    let+ files = files
+    and+ additional_files = additional_files in
     additional_files @ files
   in
   let files =

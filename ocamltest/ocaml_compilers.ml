@@ -17,6 +17,10 @@
 
 open Ocamltest_stdlib
 open Ocaml_backends
+open Actions
+
+let (let+) = A.(let+)
+let (and+) = A.(and+)
 
 type t =
   {
@@ -73,25 +77,25 @@ let directory = function
   | { host = Native; target = Bytecode } -> "ocamlc.opt"
   | { host = Native; target = Native } -> "ocamlopt.opt"
 
-let reference_file_suffix env =
-  let tool_reference_suffix =
-    Environments.safe_lookup Ocaml_variables.compiler_reference_suffix env
+let reference_file_suffix =
+  let+ tool_reference_suffix =
+    A.safe_lookup Ocaml_variables.compiler_reference_suffix
   in
   if tool_reference_suffix<>""
   then tool_reference_suffix ^ ".reference"
   else ".reference"
 
-let reference_file t env prefix =
+let reference_file t prefix =
   let default =
-    let suffix = reference_file_suffix env in
+    let+ prefix = prefix
+    and+ suffix = reference_file_suffix in
     Filename.make_filename prefix (directory t) ^ suffix
   in
-  if Sys.file_exists default then default
-  else begin
-    let suffix = reference_file_suffix env in
-    let mk s = Filename.make_filename prefix s ^ suffix in
-    let filename =
-      mk (Ocaml_backends.string_of_backend t.target) in
-    if Sys.file_exists filename then filename
-    else mk "compilers"
-  end
+  A.when_ (A.file_exists default) default
+    (let+ prefix = prefix
+     and+ suffix = reference_file_suffix in
+     let mk s = Filename.make_filename prefix s ^ suffix in
+     let filename =
+       mk (Ocaml_backends.string_of_backend t.target) in
+     if Sys.file_exists filename then filename
+     else mk "compilers")

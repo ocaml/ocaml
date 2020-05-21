@@ -201,6 +201,31 @@ module A = struct
     let b, env' = b log env in
     (a, b), env' (* CHECK *)
 
+  let force_remove s log env =
+    let s, _ = s log env in
+    Sys.force_remove s, env
+
+  let progn a b log env =
+    let (), env = a log env in
+    b log env
+
+  let add v s log env =
+    let s, _ = s log env in
+    (), Environments.add v s env
+
+  let add_if_undefined v s log env =
+    let s, _ = s log env in
+    (), Environments.add_if_undefined v s env
+
+  let when_ c a b log env =
+    match c log env with
+    | true, _ -> a log env
+    | false, _ -> b log env
+
+  let file_exists s log env =
+    let s, env = s log env in
+    Sys.file_exists s, env
+
   let (let+) a f = map f a
   let (and+) a b = pair a b
 end

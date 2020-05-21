@@ -38,6 +38,6 @@ val reference_variable: t -> Variables.t
 val output_variable: t -> Variables.t
 val directory: t -> string
 
-val reference_file_suffix: Environments.t -> string
+val reference_file_suffix: string Actions.A.t
 
-val reference_file: t -> Environments.t -> string -> string
+val reference_file: t -> string Actions.A.t -> string Actions.A.t

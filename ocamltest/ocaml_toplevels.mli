@@ -28,4 +28,4 @@ val directory: t -> string
 val compiler: t -> Ocaml_compilers.t
 val backend: t -> Ocaml_backends.t
 
-val reference_file: t -> Environments.t -> string -> string
+val reference_file: t -> string Actions.A.t -> string Actions.A.t

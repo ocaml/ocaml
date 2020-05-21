@@ -18,6 +18,9 @@
 open Ocamltest_stdlib
 open Actions
 
+let (let+) = A.(let+)
+let (and+) = A.(and+)
+
 let reference_variable = function
   | `Toplevel t -> Ocaml_toplevels.reference_variable t
   | `Compiler t -> Ocaml_compilers.reference_variable t
@@ -38,28 +41,28 @@ let family = function
   | `Ocamldoc -> "doc"
   | `Toplevel _ -> "toplevel"
 
-let ocamldoc_reference_file_suffix env =
-  let backend =
-    Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
+let ocamldoc_reference_file_suffix =
+  let+ backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
   if backend = "" then
     ".reference"
   else
     "." ^ backend ^ ".reference"
 
-let reference_file t env prefix =
+let reference_file t prefix =
   match t with
-  | `Toplevel t -> Ocaml_toplevels.reference_file t env prefix
-  | `Compiler t -> Ocaml_compilers.reference_file t env prefix
+  | `Toplevel t -> Ocaml_toplevels.reference_file t prefix
+  | `Compiler t -> Ocaml_compilers.reference_file t prefix
   | `Ocamldoc ->
-      Filename.make_filename prefix (directory `Ocamldoc) ^
-      ocamldoc_reference_file_suffix env
+      let+ prefix = prefix
+      and+ suffix = ocamldoc_reference_file_suffix in
+      Filename.make_filename prefix (directory `Ocamldoc) ^ suffix
 
 (* Extracting information from environment *)
 
 let native_support = Ocamltest_config.arch <> "none"
 
-let no_native_compilers _log env =
-  (Result.skip_with_reason "native compilers disabled", env)
+let no_native_compilers =
+  Actions.A.return (Result.skip_with_reason "native compilers disabled")
 
 let native_action a =
   if native_support then a else (Actions.update a no_native_compilers)
@@ -413,46 +416,39 @@ let find_source_modules log env =
     (String.concat " " (List.map Ocaml_filetypes.make_filename source_modules))
     env
 
-let setup_tool_build_env tool log env =
-  let source_directory = fst (Actions_helpers.test_source_directory log env) in
-  let testfile = fst (Actions_helpers.testfile log env) in
-  let testfile_basename = Filename.chop_extension testfile in
+let setup_tool_build_env tool =
+  let source_directory = Actions_helpers.test_source_directory in
+  let testfile = Actions_helpers.testfile in
+  let testfile_basename = A.map Filename.chop_extension testfile in
   let tool_reference_variable = reference_variable tool in
   let tool_reference_prefix =
-    Filename.make_path [source_directory; testfile_basename] in
-  let tool_reference_file =
-    reference_file tool env tool_reference_prefix
+    let+ source_dir = source_directory
+    and+ testfile_basename = testfile_basename in
+    Filename.make_path [source_dir; testfile_basename]
   in
-  let env =
-    Environments.add_if_undefined
-      tool_reference_variable
-      tool_reference_file env
-  in
+  let tool_reference_file = reference_file tool tool_reference_prefix in
   let source_modules =
-    fst (Actions_helpers.words_of_variable Ocaml_variables.all_modules log env) in
-  let tool_directory_suffix =
-    Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
-  let tool_directory_name =
-    directory tool ^ tool_directory_suffix in
-  let build_dir = Filename.concat
-    (Environments.safe_lookup
-      Builtin_variables.test_build_directory_prefix env)
-    tool_directory_name in
+    Actions_helpers.words_of_variable Ocaml_variables.all_modules in
+  let build_dir =
+    let+ build_dir_prefix = A.safe_lookup Builtin_variables.test_build_directory_prefix
+    and+ tool_dir_suffix = A.safe_lookup Ocaml_variables.compiler_directory_suffix in
+    Filename.concat build_dir_prefix (directory tool ^ tool_dir_suffix)
+  in
   let tool_output_variable = output_variable tool in
-  let tool_output_filename =
-    Filename.make_filename (directory tool) "output" in
   let tool_output_file =
+    let tool_output_filename = Filename.make_filename (directory tool) "output" in
+    let+ build_dir = build_dir in
     Filename.make_path [build_dir; tool_output_filename]
   in
-  let env =
-    Environments.add_if_undefined
-      tool_output_variable
-      tool_output_file env
-  in
-  Sys.force_remove tool_output_file;
-  let env =
-    Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false source_modules log env
+  A.progn
+    (A.add_if_undefined tool_reference_variable tool_reference_file)
+    (A.progn
+       (A.add_if_undefined tool_output_variable tool_output_file)
+       (A.progn
+          (A.force_remove tool_output_file)
+          (A.progn
+             (A.add Builtin_variables.test_build_directory build_dir)
+             (Actions_helpers.setup_build_env false source_modules))))
 
 let setup_compiler_build_env compiler log env =
   let (r, env) = setup_tool_build_env (`Compiler compiler) log env in
@@ -1369,7 +1365,7 @@ let setup_ocamldoc_build_env =
   let root_file = Filename.chop_extension (fst (Actions_helpers.testfile log env)) in
   let reference_prefix = Filename.make_path [source_directory; root_file] in
   let output = ocamldoc_output_file env root_file in
-  let reference = reference_prefix ^ ocamldoc_reference_file_suffix env in
+  let reference = reference_prefix ^ fst (ocamldoc_reference_file_suffix log env) in
   let backend = Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
   let env =
     Environments.apply_modifiers env  Ocaml_modifiers.(str @ unix)

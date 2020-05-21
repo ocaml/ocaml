@@ -37,9 +37,9 @@ val files : string list Actions.A.t
 
 (* val setup_symlinks : string -> string -> string list -> unit *)
 
-val setup_build_env : bool -> string list -> Result.t Actions.A.t
+val setup_build_env : bool -> string list Actions.A.t -> Result.t Actions.A.t
 
-val setup_simple_build_env : bool -> string list -> Actions.code
+val setup_simple_build_env : bool -> string list Actions.A.t -> Actions.code
 
 val run_cmd :
   ?environment : string array ->

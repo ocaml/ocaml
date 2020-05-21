@@ -197,8 +197,8 @@ ocaml_compilers.cmo : \
     ocaml_files.cmi \
     ocaml_commands.cmi \
     ocaml_backends.cmi \
-    environments.cmi \
     builtin_variables.cmi \
+    actions.cmi \
     ocaml_compilers.cmi
 ocaml_compilers.cmx : \
     ocamltest_stdlib.cmx \
@@ -206,13 +206,13 @@ ocaml_compilers.cmx : \
     ocaml_files.cmx \
     ocaml_commands.cmx \
     ocaml_backends.cmx \
-    environments.cmx \
     builtin_variables.cmx \
+    actions.cmx \
     ocaml_compilers.cmi
 ocaml_compilers.cmi : \
     variables.cmi \
     ocaml_backends.cmi \
-    environments.cmi
+    actions.cmi
 ocaml_directories.cmo : \
     ocamltest_stdlib.cmi \
     ocamltest_config.cmi \
