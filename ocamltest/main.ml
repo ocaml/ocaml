@@ -89,7 +89,7 @@ let rec run_test log common_prefix path behavior
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
-      let (result, newenv) = Tests.run log testenv test in
+      let (result, newenv) = Tests.run (List.length path) log testenv test in
       let msg = Result.string_of_result result in
       let children_behavior =
         if Result.is_pass result then Run newenv else Skip_all_tests in
