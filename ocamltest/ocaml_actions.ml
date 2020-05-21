@@ -858,50 +858,55 @@ let run_cc log env =
 
 let cc = Actions.make "cc" run_cc
 
-let run_expect_once input_file principal log env =
+let run_expect_once input_file principal =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ Ocaml_directories.srcdir in
   let principal_flag = if principal then "-principal" else "" in
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_expect_test;
-    expect_flags;
-    fst (flags log env);
-    repo_root;
-    principal_flag;
-    input_file
-  ] in
-  let exit_status =
-    Actions_helpers.run_cmd ~environment:default_ocaml_env log env commandline
+  let cmdline =
+    let+ flags = flags
+    and+ input_file = input_file in
+    [
+      Ocaml_commands.ocamlrun_expect_test;
+      expect_flags;
+      flags;
+      repo_root;
+      principal_flag;
+      input_file
+    ]
   in
-  if exit_status=0 then (Result.pass, env)
+  let+ exit_status =
+    A.run_cmd ~environment:(A.return default_ocaml_env) cmdline
+  in
+  if exit_status = 0 then Result.pass
   else begin
-    let reason = (Actions_helpers.mkreason
-      "expect" (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
+    (* let reason = (Actions_helpers.mkreason *)
+    (*                 "expect" (String.concat " " commandline) exit_status) in *)
+    Result.fail_with_reason ""
   end
 
-let run_expect_twice input_file log env =
-  let corrected filename = Filename.make_filename filename "corrected" in
-  let (result1, env1) = run_expect_once input_file false log env in
-  if Result.is_pass result1 then begin
-    let intermediate_file = corrected input_file in
-    let (result2, env2) =
-      run_expect_once intermediate_file true log env1 in
-    if Result.is_pass result2 then begin
-      let output_file = corrected intermediate_file in
-      let output_env = Environments.add_bindings
-      [
-        Builtin_variables.reference, input_file;
-        Builtin_variables.output, output_file
-      ] env2 in
-      (Result.pass, output_env)
-    end else (result2, env2)
-  end else (result1, env1)
+let if_ok a b c =
+  A.select a (A.map Fun.const b) c
 
-let run_expect log env =
-  let input_file = fst (Actions_helpers.testfile log env) in
-  run_expect_twice input_file log env
+let if_pass a b =
+  A.select (A.map (fun r -> if Result.is_pass r then Ok () else Error r) a) (A.map Fun.const b)
+
+let run_expect_twice input_file =
+  let corrected filename =
+    let+ filename = filename in
+    Filename.make_filename filename "corrected"
+  in
+  if_pass (run_expect_once input_file false)
+    (let intermediate_file = corrected input_file in
+     if_pass (run_expect_once intermediate_file true)
+       (let output_file = corrected intermediate_file in
+        A.progn
+          (A.add Builtin_variables.reference input_file)
+          (A.progn
+             (A.add Builtin_variables.output output_file)
+             (A.return Result.pass))))
+
+let run_expect =
+  run_expect_twice Actions_helpers.testfile
 
 let run_expect = Actions.make "run-expect" run_expect
 
@@ -1108,9 +1113,6 @@ let compile_modules
   (* in *)
   (* compile_mods modules_with_filetypes *)
 
-let if_ok a b c =
-  A.select a (A.map Fun.const b) c
-
 let run_test_program_in_toplevel toplevel =
   let backend = Ocaml_toplevels.backend toplevel in
   let libraries = libraries backend in
@@ -1134,14 +1136,10 @@ let run_test_program_in_toplevel toplevel =
             let compiler_name = Ocaml_compilers.name compiler in
             let modules_with_filetypes =
               A.map (List.map Ocaml_filetypes.filetype) modules in
-            let result =
-              compile_modules
-                compiler compiler_name compiler_output_variable
-                modules_with_filetypes
-            in
-            if_ok result
-              (
-                (* let what = *)
+            if_ok (compile_modules
+                     compiler compiler_name compiler_output_variable
+                     modules_with_filetypes)
+              ((* let what = *)
                 (* Printf.sprintf "Running %s in %s toplevel \ *)
                    (*                (expected exit status: %d)" *)
                 (*   testfile *)
@@ -1201,8 +1199,8 @@ let run_test_program_in_toplevel toplevel =
                   Result.fail_with_reason ""
                 end
               )))
-       (* (assert false) *)
-       (* end else (result, env) *)
+(* (assert false) *)
+(* end else (result, env) *)
 
 let ocaml = Actions.make
   "ocaml"
