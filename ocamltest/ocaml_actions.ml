@@ -206,7 +206,7 @@ let cmas_need_dynamic_loading directories libraries =
          begin try close_in ic with Sys_error _ -> () end;
          Some (Error ("Corrupt or non-CMA file: " ^ library))
   in
-  Misc.Stdlib.List.find_map loads_c_code (String.words libraries)
+  List.find_map loads_c_code (String.words libraries)
 
 let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
