@@ -80,9 +80,10 @@ let summary_of_result res =
   | Skip -> No_failure
   | Fail -> Some_failure
 
-let rec run_test log common_prefix path behavior = function
-  Node (testenvspec, test, env_modifiers, subtrees) ->
-  Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
+let rec run_test log common_prefix path behavior
+    (Node (testenvspec, test, env_modifiers, subtrees)) =
+  let path_str = String.concat "." (List.map string_of_int path) in
+  Printf.printf "%s %s (%s) => %!" common_prefix path_str test.Tests.test_name;
   let (msg, children_behavior, summary) = match behavior with
     | Skip_all_tests -> "n/a", Skip_all_tests, No_failure
     | Run env ->
@@ -102,9 +103,8 @@ and run_test_trees log common_prefix path behavior trees =
   List.fold_left join_summaries No_failure
     (List.mapi (run_test_i log common_prefix path behavior) trees)
 
-and run_test_i log common_prefix path behavior i test_tree =
-  let path_prefix = if path="" then "" else path ^ "." in
-  let new_path = Printf.sprintf "%s%d" path_prefix (i+1) in
+and run_test_i log common_prefix (path : int list) behavior i test_tree =
+  let new_path = (i+1) :: path in
   run_test log common_prefix new_path behavior test_tree
 
 let get_test_source_directory test_dirname =
@@ -199,7 +199,7 @@ let test_file test_filename =
          if skip_test then Skip_all_tests else Run rootenv
        in
        let summary =
-         run_test_trees log common_prefix "" initial_status test_trees in
+         run_test_trees log common_prefix [] initial_status test_trees in
        Actions.clear_all_hooks();
        if not !Options.log_to_stderr then close_out log;
        summary
