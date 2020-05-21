@@ -2499,7 +2499,12 @@ let rec list_as_pat = function
 
 let complete_pats_constrs = function
   | p :: _ as pats ->
-      let p_simple = General.(view p |> assert_simple) in
+      (* We (indirectly) call this function
+         from [combine_constructor], and nowhere else.
+         So we know patterns have been fully simplified. *)
+      let p_simple = match (Patterns.General.view p).pat_desc with
+        | #Patterns.Simple.view as simple -> { p with pat_desc = simple }
+        | _ -> invalid_arg "complete_pats_constrs" in
       List.map (pat_of_constr p)
         (complete_constrs p_simple (List.map get_key_constr pats))
   | _ -> assert false

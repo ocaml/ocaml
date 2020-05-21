@@ -132,11 +132,6 @@ module General = struct
     | `Alias (p, _, _) -> strip_vars (view p)
     | `Var _ -> { p with pat_desc = `Any }
     | #Half_simple.view as view -> { p with pat_desc = view }
-
-  let assert_simple (p : pattern) : Simple.pattern =
-    match strip_vars p with
-    | {pat_desc = `Or _; _} -> failwith "Patterns.assert_simple"
-    | {pat_desc = #Simple.view; _} as p -> p
 end
 
 (* the head constructor of a simple pattern *)

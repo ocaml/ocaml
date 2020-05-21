@@ -74,8 +74,6 @@ module General : sig
   val erase : [< view ] pattern_data -> Typedtree.pattern
 
   val strip_vars : pattern -> Half_simple.pattern
-
-  val assert_simple : pattern -> Simple.pattern
 end
 
 module Head : sig

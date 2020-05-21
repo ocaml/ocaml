@@ -907,10 +907,13 @@ let build_other_constrs env p =
   | _ -> extra_pat
 
 let complete_constrs p all_tags =
-  (* This wrapper is here for [Matching], which (indirectly) calls this function
-     from [combine_constructor], and nowhere else.
-     So we know patterns have been fully simplified. *)
-  complete_constrs (fst @@ Patterns.Head.deconstruct p) all_tags
+  (* This wrapper is here for [Matching].
+
+     TODO: instead of a simple pattern, it would be nicer to pass
+     a constructor payload directly:
+     [Types.constructor_description pattern_data].
+  *)
+  complete_constrs (fst (Patterns.Head.deconstruct p)) all_tags
 
 (* Auxiliary for build_other *)
 
