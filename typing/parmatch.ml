@@ -881,11 +881,10 @@ let rec get_variant_constructors env ty =
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
 (* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs p all_tags =
-  let open Patterns.Head in
-  let c = match p.pat_desc with Construct c -> c | _ -> assert false in
+let complete_constrs constr all_tags =
+  let c = constr.pat_desc in
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-  let constrs = get_variant_constructors p.pat_env c.cstr_res in
+  let constrs = get_variant_constructors constr.pat_env c.cstr_res in
   let others =
     List.filter
       (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
@@ -897,23 +896,15 @@ let complete_constrs p all_tags =
 let build_other_constrs env p =
   let open Patterns.Head in
   match p.pat_desc with
-  | Construct { cstr_tag = Cstr_constant _ | Cstr_block _ } ->
+  | Construct ({ cstr_tag = Cstr_constant _ | Cstr_block _ } as c) ->
+      let constr = { p with pat_desc = c } in
       let get_tag q =
         match q.pat_desc with
         | Construct c -> c.cstr_tag
         | _ -> fatal_error "Parmatch.get_tag" in
       let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-      pat_of_constrs p (complete_constrs p all_tags)
+      pat_of_constrs p (complete_constrs constr all_tags)
   | _ -> extra_pat
-
-let complete_constrs p all_tags =
-  (* This wrapper is here for [Matching].
-
-     TODO: instead of a simple pattern, it would be nicer to pass
-     a constructor payload directly:
-     [Types.constructor_description pattern_data].
-  *)
-  complete_constrs (fst (Patterns.Head.deconstruct p)) all_tags
 
 (* Auxiliary for build_other *)
 
