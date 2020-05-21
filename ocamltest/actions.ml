@@ -196,6 +196,9 @@ module A = struct
   let lookup var _ env =
     Environments.lookup var env, env
 
+  let lookup_nonempty var _ env =
+    Environments.lookup_nonempty var env, env
+
   let pair a b log env =
     let a, _env' = a log env in
     let b, env' = b log env in

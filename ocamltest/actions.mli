@@ -63,6 +63,7 @@ module A : sig
 
   val safe_lookup: Variables.t -> string t
   val lookup: Variables.t -> string option t
+  val lookup_nonempty: Variables.t -> string option t
 
   val add_if_undefined: Variables.t -> string t -> unit t
   val add: Variables.t -> string t -> unit t
