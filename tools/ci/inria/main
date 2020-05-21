@@ -235,10 +235,11 @@ eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
 if $bootstrap; then
   $make $jobs --warn-undefined-variables core
-  $make $jobs --warn-undefined-variables bootstrap
+  $make $jobs --warn-undefined-variables coreboot
   if $make_native; then
-    $make $jobs --warn-undefined-variables opt
     $make $jobs --warn-undefined-variables opt.opt
+  else
+    $make $jobs --warn-undefined-variables all
   fi
 else
   $make $jobs --warn-undefined-variables
@@ -263,4 +264,8 @@ cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
 then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
 else $make --warn-undefined-variables all
+fi
+
+if $bootstrap; then
+  git checkout ../boot/ocamlc ../boot/ocamllex
 fi
