@@ -214,15 +214,13 @@ let prepare_module output_variable log env input =
       generate_parser output_variable input log env
     | Text -> assert false
 
-let get_program_file backend log env =
-  let testfile = fst (Actions_helpers.testfile log env) in
-  let testfile_basename = Filename.chop_extension testfile in
+let get_program_file backend =
+  let+ testfile_basename = A.map Filename.chop_extension Actions_helpers.testfile
+  and+ test_build_directory = Actions_helpers.test_build_directory in
   let program_filename =
     Filename.mkexe
       (Filename.make_filename
         testfile_basename (Ocaml_backends.executable_extension backend)) in
-  let test_build_directory =
-    fst (Actions_helpers.test_build_directory log env) in
   Filename.make_path [test_build_directory; program_filename]
 
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
@@ -450,32 +448,29 @@ let setup_tool_build_env tool =
              (A.add Builtin_variables.test_build_directory build_dir)
              (Actions_helpers.setup_build_env false source_modules))))
 
-let setup_compiler_build_env compiler log env =
-  let (r, env) = setup_tool_build_env (`Compiler compiler) log env in
-  if Result.is_pass r then
-  begin
-    let prog_var = Ocaml_compilers.program_variable compiler in
-    let prog_output_var = Ocaml_compilers.program_output_variable compiler in
-    let default_prog_file = get_program_file (Ocaml_compilers.target compiler) log env in
-    let env = Environments.add_if_undefined prog_var default_prog_file env in
-    let prog_file = Environments.safe_lookup prog_var env in
-    let prog_output_file = prog_file ^ ".output" in
-    let env = match prog_output_var with
-      | None -> env
-      | Some outputvar ->
-        Environments.add_if_undefined outputvar prog_output_file env
-    in
-    (r, env)
-  end else (r, env)
-
-let setup_toplevel_build_env toplevel log env =
-  setup_tool_build_env toplevel log env
+let setup_compiler_build_env compiler =
+  let r = setup_tool_build_env (`Compiler compiler) in
+  A.when_ (A.map Result.is_pass r)
+    (let prog_var = Ocaml_compilers.program_variable compiler in
+     let prog_output_var = Ocaml_compilers.program_output_variable compiler in
+     let prog_output_file =
+       let+ prog_file = A.safe_lookup prog_var in
+       prog_file ^ ".output"
+     in
+     let default_prog_file = get_program_file (Ocaml_compilers.target compiler) in
+     A.progn
+       (A.add_if_undefined prog_var default_prog_file)
+       (A.progn
+          (match prog_output_var with
+           | None -> A.return ()
+           | Some outputvar -> A.add_if_undefined outputvar prog_output_file) r)
+    ) r
 
 let mk_compiler_env_setup name compiler =
   Actions.make name (setup_compiler_build_env compiler)
 
 let mk_toplevel_env_setup name toplevel =
-  Actions.make name (setup_toplevel_build_env toplevel)
+  Actions.make name (setup_tool_build_env toplevel)
 
 let setup_ocamlc_byte_build_env =
   mk_compiler_env_setup

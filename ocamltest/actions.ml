@@ -219,8 +219,8 @@ module A = struct
 
   let when_ c a b log env =
     match c log env with
-    | true, _ -> a log env
-    | false, _ -> b log env
+    | true, env -> a log env
+    | false, env -> b log env
 
   let file_exists s log env =
     let s, env = s log env in
