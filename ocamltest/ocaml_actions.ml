@@ -715,99 +715,112 @@ let mklib =
 
 let ocamlmklib = Actions.make "ocamlmklib" mklib
 
-let finalise_codegen_cc test_basename _log env =
+let finalise_codegen_cc test_basename =
   let test_module =
+    let+ test_basename = test_basename in
     Filename.make_filename test_basename "s"
   in
-  let archmod = Ocaml_files.asmgen_archmod in
-  let modules = test_module ^ " " ^ archmod in
-  let program = Filename.make_filename test_basename "out" in
-  let env = Environments.add_bindings
-  [
-    Ocaml_variables.modules, modules;
-    Builtin_variables.program, program;
-  ] env in
-  (Result.pass, env)
+  let modules =
+    let+ test_module = test_module in
+    test_module ^ " " ^ Ocaml_files.asmgen_archmod
+  in
+  let program =
+    let+ test_basename = test_basename in
+    Filename.make_filename test_basename "out"
+  in
+  A.progn
+    (A.add Ocaml_variables.modules modules)
+    (A.progn
+       (A.add Builtin_variables.program program)
+       (A.return Result.pass))
 
-let finalise_codegen_msvc test_basename log env =
-  let obj = Filename.make_filename test_basename Ocamltest_config.objext in
-  let src = Filename.make_filename test_basename "s" in
-  let what = "Running Microsoft assembler" in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline = [Ocamltest_config.asm; obj; src] in
-  let expected_exit_status = 0 in
+let finalise_codegen_msvc test_basename =
+  let obj = A.map (fun s -> Filename.make_filename s Ocamltest_config.objext) test_basename in
+  let src = A.map (fun s -> Filename.make_filename s "s") test_basename in
+  (* let what = "Running Microsoft assembler" in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
+  let cmdline =
+    let+ obj = obj
+    and+ src = src in
+    [Ocamltest_config.asm; obj; src]
+  in
   let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:default_ocaml_env
+    A.run_cmd
+      ~environment:(A.return default_ocaml_env)
       ~stdout_variable:Ocaml_variables.compiler_output
       ~stderr_variable:Ocaml_variables.compiler_output
       ~append:true
-      log env commandline in
-  if exit_status=expected_exit_status
-  then begin
-    let archmod = Ocaml_files.asmgen_archmod in
-    let modules = obj ^ " " ^ archmod in
-    let program = Filename.make_filename test_basename "out" in
-    let env = Environments.add_bindings
-    [
-      Ocaml_variables.modules, modules;
-      Builtin_variables.program, program;
-    ] env in
-    (Result.pass, env)
-  end else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
+      cmdline
+  in
+  A.if_ (A.map ((=) 0) exit_status)
+    (let modules =
+       let+ obj = obj in
+       obj ^ " " ^ Ocaml_files.asmgen_archmod
+     in
+     let program =
+       let+ test_basename = test_basename in
+       Filename.make_filename test_basename "out"
+     in
+     (* let env = *)
+     (*   Environments.add_bindings *)
+     (*     [ *)
+     (*       Ocaml_variables.modules, modules; *)
+     (*       Builtin_variables.program, program; *)
+     (*     ] env *)
+     (* in *)
+     A.progn
+       (A.add Ocaml_variables.modules modules)
+       (A.progn
+          (A.add Builtin_variables.program program)
+          (A.return Result.pass)))
+    ((* let reason = *)
+      (*   (Actions_helpers.mkreason *)
+      (*     what (String.concat " " commandline) exit_status) in *)
+      A.return (Result.fail_with_reason ""))
 
-let run_codegen log env =
-  let testfile = fst (Actions_helpers.testfile log env) in
-  let testfile_basename = Filename.chop_extension testfile in
-  let what = Printf.sprintf "Running codegen on %s" testfile in
-  Printf.fprintf log "%s\n%!" what;
-  let test_build_directory =
-    fst (Actions_helpers.test_build_directory log env) in
+let run_codegen =
+  (* let what = Printf.sprintf "Running codegen on %s" testfile in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
+  let testfile_basename = A.map Filename.chop_extension Actions_helpers.testfile in
   let compiler_output =
+    let+ test_build_directory = Actions_helpers.test_build_directory in
     Filename.make_path [test_build_directory; "compiler-output"]
   in
-  let env =
-    Environments.add_if_undefined
-      Ocaml_variables.compiler_output
-      compiler_output
-      env
+  let output =
+    let+ testfile_basename = testfile_basename
+    and+ test_build_directory = Actions_helpers.test_build_directory in
+    let output_file = Filename.make_filename testfile_basename "output" in
+    Filename.make_path [test_build_directory; output_file]
   in
-  let output_file = Filename.make_filename testfile_basename "output" in
-  let output = Filename.make_path [test_build_directory; output_file] in
-  let env = Environments.add Builtin_variables.output output env in
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_codegen;
-    fst (flags log env);
-    "-S " ^ testfile
-  ] in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:default_ocaml_env
-      ~stdout_variable:Ocaml_variables.compiler_output
-      ~stderr_variable:Ocaml_variables.compiler_output
-      ~append:true
-      log env commandline in
-  if exit_status=expected_exit_status
-  then begin
-    let finalise =
-       if Ocamltest_config.ccomptype="msvc"
-      then finalise_codegen_msvc
-      else finalise_codegen_cc
-    in
-    finalise testfile_basename log env
-  end else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
+  A.progn
+    (A.add_if_undefined Ocaml_variables.compiler_output compiler_output)
+    (A.progn
+     (A.add Builtin_variables.output output)
+     (let cmdline =
+        let+ testfile = Actions_helpers.testfile
+        and+ flags = flags in
+        [
+          Ocaml_commands.ocamlrun_codegen;
+          flags;
+          "-S " ^ testfile
+        ]
+      in
+      let exit_status =
+        A.run_cmd
+          ~environment:(A.return default_ocaml_env)
+          ~stdout_variable:Ocaml_variables.compiler_output
+          ~stderr_variable:Ocaml_variables.compiler_output
+          ~append:true
+          cmdline
+      in
+      A.if_ (A.map ((=) 0) exit_status)
+        (if Ocamltest_config.ccomptype="msvc"
+         then finalise_codegen_msvc testfile_basename
+         else finalise_codegen_cc testfile_basename)
+        ((* let reason = *)
+          (*   (Actions_helpers.mkreason *)
+          (*     what (String.concat " " commandline) exit_status) in *)
+          A.return (Result.fail_with_reason ""))))
 
 let codegen = Actions.make "codegen" run_codegen
 
