@@ -17,6 +17,28 @@
 
 (* Pervaisive *)
 
+let initial_cwd = Sys.getcwd ()
+
+let relative_to_initial_cwd s =
+  let split s =
+    List.flatten
+      (List.map (String.split_on_char '/') (String.split_on_char '\\' s))
+  in
+  let l1 = split s in
+  let l2 = split initial_cwd in
+  let rec loop l1 l2 =
+    match l1, l2 with
+    | [], _ -> List.map (fun _ -> "..") l2
+    | _, [] -> l1
+    | x1 :: l1', x2 :: l2' ->
+        if x1 = x2 then
+          loop l1' l2'
+        else
+          l1
+  in
+  let l1 = loop l1 l2 in
+  String.concat "/" l1
+
 let input_line_opt ic =
   try Some (input_line ic) with End_of_file -> None
 

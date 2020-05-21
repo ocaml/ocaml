@@ -264,7 +264,7 @@ let compile_program compiler log env =
     (binary_modules target env) ^ " " ^
     (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) in
   let what = Printf.sprintf "Compiling program %s from modules %s"
-    program_file module_names in
+    (relative_to_initial_cwd program_file) module_names in
   Printf.fprintf log "%s\n%!" what;
   let compile_only =
     Environments.lookup_as_bool Ocaml_variables.compile_only env = Some true
@@ -884,7 +884,9 @@ let really_compare_programs backend comparison_tool log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
   let program2 = Environments.safe_lookup Builtin_variables.program2 env in
   let what = Printf.sprintf "Comparing %s programs %s and %s"
-    (Ocaml_backends.string_of_backend backend) program program2 in
+      (Ocaml_backends.string_of_backend backend)
+      (relative_to_initial_cwd program)
+      (relative_to_initial_cwd program2) in
   Printf.fprintf log "%s\n%!" what;
   let files = {
     Filecompare.filetype = Filecompare.Binary;

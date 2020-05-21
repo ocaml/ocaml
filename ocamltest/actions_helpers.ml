@@ -102,7 +102,9 @@ let run_cmd
   let log_redirection std filename =
     if filename<>"" then
     begin
-      Printf.fprintf log "  Redirecting %s to %s \n%!" std filename
+      Printf.fprintf log "  Redirecting %s to %s \n%!"
+        (relative_to_initial_cwd std)
+        (relative_to_initial_cwd filename)
     end in
   let cmd =
     if (Environments.lookup_as_bool Strace.strace env) = Some true then
@@ -296,7 +298,8 @@ let check_output kind_of_output output_variable reference_variable log
   let reference_filename = Environments.safe_lookup reference_variable env in
   let output_filename = Environments.safe_lookup output_variable env in
   Printf.fprintf log "Comparing %s output %s to reference %s\n%!"
-    kind_of_output output_filename reference_filename;
+    kind_of_output (relative_to_initial_cwd output_filename)
+    (relative_to_initial_cwd reference_filename);
   let files =
   {
     Filecompare.filetype = Filecompare.Text;

@@ -17,6 +17,10 @@
 
 (* Pervasive *)
 
+val initial_cwd : string
+
+val relative_to_initial_cwd : string -> string
+
 val input_line_opt : in_channel -> string option
 
 module Char : sig
