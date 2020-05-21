@@ -132,6 +132,7 @@ cleanup=false
 check_make_alldepend=false
 dorebase=false
 jobs=''
+bootstrap=false
 
 case "${OCAML_ARCH}" in
   bsd)
@@ -212,6 +213,7 @@ while [ $# -gt 0 ]; do
     -patch1) patch -f -p1 <"$2"; shift;;
     -no-native) make_native=false;;
     -j[1-9]|-j[1-9][0-9]) jobs="$1";;
+    -with-bootstrap) bootstrap=true;;
     *) error "unknown option $1";;
   esac
   shift
@@ -231,21 +233,32 @@ fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
-if $make_native; then
-  $make $jobs --warn-undefined-variables
-  if $check_make_alldepend; then $make --warn-undefined-variables alldepend; fi
+if $bootstrap; then
+  $make $jobs --warn-undefined-variables core
+  $make $jobs --warn-undefined-variables bootstrap
+  if $make_native; then
+    $make $jobs --warn-undefined-variables opt
+    $make $jobs --warn-undefined-variables opt.opt
+  fi
 else
   $make $jobs --warn-undefined-variables
 fi
+
+
+if $make_native && $check_make_alldepend; then
+  $make --warn-undefined-variables alldepend
+fi
+
 if $dorebase; then
     # temporary solution to the cygwin fork problem
     # see https://github.com/alainfrisch/flexdll/issues/50
     rebase -b 0x7cd20000 otherlibs/unix/dllunix.so
     rebase -b 0x7cdc0000 otherlibs/systhreads/dllthreads.so
 fi
-$make --warn-undefined-variables install
 
+$make --warn-undefined-variables install
 rm -rf "$instdir"
+
 cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
 then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
