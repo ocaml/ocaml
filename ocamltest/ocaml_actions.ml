@@ -678,38 +678,39 @@ let objinfo =
 
 let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
 
-let mklib log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Running ocamlmklib to produce %s" program in
-  Printf.fprintf log "%s\n%!" what;
+let mklib =
+  (* let what = Printf.sprintf "Running ocamlmklib to produce %s" program in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
   let ocamlc_command =
     String.concat " "
-    [
-      Ocaml_commands.ocamlrun_ocamlc;
-      Ocaml_flags.stdlib;
-    ]
+      [
+        Ocaml_commands.ocamlrun_ocamlc;
+        Ocaml_flags.stdlib;
+      ]
   in
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamlmklib;
-    "-ocamlc '" ^ ocamlc_command ^ "'";
-    "-o " ^ program
-  ] @ fst (modules log env) in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:default_ocaml_env
+  let cmdline =
+    let+ modules = modules
+    and+ program = A.safe_lookup Builtin_variables.program in
+    Ocaml_commands.ocamlrun_ocamlmklib ::
+    ("-ocamlc '" ^ ocamlc_command ^ "'") ::
+    ("-o " ^ program) ::
+    modules
+  in
+  let+ exit_status =
+    A.run_cmd
+      ~environment:(A.return default_ocaml_env)
       ~stdout_variable:Ocaml_variables.compiler_output
       ~stderr_variable:Ocaml_variables.compiler_output
       ~append:true
-      log env commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
+      cmdline
+  in
+  if exit_status = 0
+  then Result.pass
   else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
+    (* let reason = *)
+    (*   (Actions_helpers.mkreason *)
+    (*     what (String.concat " " commandline) exit_status) in *)
+    Result.fail_with_reason ""
   end
 
 let ocamlmklib = Actions.make "ocamlmklib" mklib
