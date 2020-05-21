@@ -15,6 +15,10 @@
 
 (* Flags used in OCaml commands *)
 
+open Actions
+
+let (let+) = A.(let+)
+
 let stdlib =
   let stdlib_path = Ocaml_directories.stdlib in
   "-nostdlib -I " ^ stdlib_path
@@ -26,29 +30,29 @@ let c_includes =
   let dir = Ocaml_directories.runtime in
   "-ccopt -I" ^ dir
 
-let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
+let runtime_variant_flags =
+  match Ocaml_files.runtime_variant with
   | Ocaml_files.Normal -> ""
   | Ocaml_files.Debug -> " -runtime-variant d"
   | Ocaml_files.Instrumented -> " -runtime-variant i"
 
-let runtime_flags env backend c_files =
-  let runtime_library_flags = "-I " ^
-    Ocaml_directories.runtime in
-  let rt_flags = match backend with
-    | Ocaml_backends.Native -> runtime_variant_flags ()
+let runtime_flags backend c_files =
+  let runtime_library_flags = "-I " ^ Ocaml_directories.runtime in
+  let+ rt_flags =
+    match backend with
+    | Ocaml_backends.Native ->
+        A.return runtime_variant_flags
     | Ocaml_backends.Bytecode ->
-      begin
-        if c_files then begin (* custom mode *)
-          "-custom " ^ (runtime_variant_flags ())
-        end else begin (* non-custom mode *)
-          let use_runtime =
-            Environments.lookup_as_bool Ocaml_variables.use_runtime env
-          in
-          if use_runtime = Some false
-          then ""
-          else "-use-runtime " ^ Ocaml_files.ocamlrun
-        end
-      end in
+        A.if_ c_files
+          (A.return ("-custom " ^ runtime_variant_flags))
+          (let+ use_runtime = (* non-custom mode *)
+             A.lookup_as_bool Ocaml_variables.use_runtime
+           in
+           match use_runtime with
+           | Some false -> ""
+           | _ -> "-use-runtime " ^ Ocaml_files.ocamlrun
+          )
+  in
   rt_flags ^ " " ^ runtime_library_flags
 
 let toplevel_default_flags = "-noinit -no-version -noprompt"

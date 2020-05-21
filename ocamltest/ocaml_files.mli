@@ -20,7 +20,7 @@ type runtime_variant =
   | Debug
   | Instrumented
 
-val runtime_variant : unit -> runtime_variant
+val runtime_variant : runtime_variant
 
 val ocamlrun : string
 

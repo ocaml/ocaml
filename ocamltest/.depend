@@ -248,18 +248,18 @@ ocaml_flags.cmo : \
     ocaml_files.cmi \
     ocaml_directories.cmi \
     ocaml_backends.cmi \
-    environments.cmi \
+    actions.cmi \
     ocaml_flags.cmi
 ocaml_flags.cmx : \
     ocaml_variables.cmx \
     ocaml_files.cmx \
     ocaml_directories.cmx \
     ocaml_backends.cmx \
-    environments.cmx \
+    actions.cmx \
     ocaml_flags.cmi
 ocaml_flags.cmi : \
     ocaml_backends.cmi \
-    environments.cmi
+    actions.cmi
 ocaml_modifiers.cmo : \
     ocamltest_stdlib.cmi \
     ocamltest_config.cmi \
@@ -297,6 +297,7 @@ ocaml_toplevels.cmo : \
     ocaml_compilers.cmi \
     ocaml_commands.cmi \
     ocaml_backends.cmi \
+    actions.cmi \
     ocaml_toplevels.cmi
 ocaml_toplevels.cmx : \
     ocamltest_stdlib.cmx \
@@ -305,12 +306,13 @@ ocaml_toplevels.cmx : \
     ocaml_compilers.cmx \
     ocaml_commands.cmx \
     ocaml_backends.cmx \
+    actions.cmx \
     ocaml_toplevels.cmi
 ocaml_toplevels.cmi : \
     variables.cmi \
     ocaml_compilers.cmi \
     ocaml_backends.cmi \
-    environments.cmi
+    actions.cmi
 ocaml_variables.cmo : \
     variables.cmi \
     ocamltest_stdlib.cmi \

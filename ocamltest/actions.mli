@@ -48,22 +48,33 @@ module A : sig
 
   val map: ('a -> 'b) -> 'a t -> 'b t
 
+  val map2: ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
+
   val return: 'a -> 'a t
 
   val if_defined: Variables.t -> 'a t -> 'a t -> 'a t
 
+  val if_: bool t -> 'a t -> 'a t -> 'a t
+
+  val select: ('a, 'b) Stdlib.Result.t t -> ('a -> 'b) t -> 'b t
+
+  val (||+): bool t -> bool t -> bool t
+
+  val (&&+): bool t -> bool t -> bool t
+
   val run_cmd:
-    environment:string array ->
-    stdin_variable:Variables.t ->
-    stdout_variable:Variables.t ->
-    stderr_variable:Variables.t ->
-    append:bool -> string list t -> int t
+    ?environment:string array t ->
+    ?stdin_variable:Variables.t ->
+    ?stdout_variable:Variables.t ->
+    ?stderr_variable:Variables.t ->
+    ?append:bool -> string list t -> int t
 
   val setup_symlinks: string t -> string t -> string list t -> unit t
 
   val safe_lookup: Variables.t -> string t
   val lookup: Variables.t -> string option t
   val lookup_nonempty: Variables.t -> string option t
+  val lookup_as_bool: Variables.t -> bool option t
 
   val add_if_undefined: Variables.t -> string t -> unit t
   val add: Variables.t -> string t -> unit t
@@ -76,7 +87,13 @@ module A : sig
 
   val file_exists: string t -> bool t
 
-  val when_: bool t -> 'a t -> 'a t -> 'a t
+  val when_: bool t -> unit t -> unit t
+
+  val concatmap: ('a -> 'b list t) -> 'a list t -> 'b list t
+
+  val while_: ('a -> ('x, 'b) Stdlib.Result.t t) -> 'x -> 'a list t -> ('x, 'b) Stdlib.Result.t t
+
+  val system_env: string array t
 
   val (let+): 'a t -> ('a -> 'b) -> 'b t
   val (and+): 'a t -> 'b t -> ('a * 'b) t

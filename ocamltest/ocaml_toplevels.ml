@@ -61,7 +61,7 @@ let reference_file t prefix =
     and+ suffix = Ocaml_compilers.reference_file_suffix in
     Filename.make_filename prefix (directory t) ^ suffix
   in
-  A.when_ (A.file_exists default) default
+  A.if_ (A.file_exists default) default
     (let+ prefix = prefix
      and+ suffix = Ocaml_compilers.reference_file_suffix in
      let mk s = Filename.make_filename prefix s ^ suffix in

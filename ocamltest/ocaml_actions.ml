@@ -90,13 +90,14 @@ let flags =
   let open A in
   safe_lookup Ocaml_variables.flags
 
-let last_flags env = Environments.safe_lookup Ocaml_variables.last_flags env
+let last_flags =
+  A.safe_lookup Ocaml_variables.last_flags
 
-let ocamllex_flags env =
-  Environments.safe_lookup Ocaml_variables.ocamllex_flags env
+let ocamllex_flags =
+  A.safe_lookup Ocaml_variables.ocamllex_flags
 
-let ocamlyacc_flags env =
-  Environments.safe_lookup Ocaml_variables.ocamlyacc_flags env
+let ocamlyacc_flags =
+  A.safe_lookup Ocaml_variables.ocamlyacc_flags
 
 let filelist env variable extension =
   let value = Environments.safe_lookup variable env in
@@ -133,66 +134,69 @@ let default_ocaml_env = [|
   env_setting Clflags.error_style_reader Misc.Error_style.default_setting;
 |]
 
-type module_generator = {
-  description : string;
-  command : string;
-  flags : Environments.t -> string;
-  generated_compilation_units :
-    string -> (string * Ocaml_filetypes.t) list
-}
+type module_generator =
+  {
+    description : string;
+    command : string;
+    flags : string A.t;
+    generated_compilation_units :
+      string -> (string * Ocaml_filetypes.t) list
+  }
 
 let ocamllex =
-{
-  description = "lexer";
-  command = Ocaml_commands.ocamlrun_ocamllex;
-  flags = ocamllex_flags;
-  generated_compilation_units =
-    fun lexer_name -> [(lexer_name, Ocaml_filetypes.Implementation)]
-}
+  {
+    description = "lexer";
+    command = Ocaml_commands.ocamlrun_ocamllex;
+    flags = ocamllex_flags;
+    generated_compilation_units =
+      fun lexer_name -> [(lexer_name, Ocaml_filetypes.Implementation)]
+  }
 
 let ocamlyacc =
-{
-  description = "parser";
-  command = Ocaml_files.ocamlyacc;
-  flags = ocamlyacc_flags;
-  generated_compilation_units =
-    fun parser_name ->
-      [
-        (parser_name, Ocaml_filetypes.Interface);
-        (parser_name, Ocaml_filetypes.Implementation)
-      ]
-}
+  {
+    description = "parser";
+    command = Ocaml_files.ocamlyacc;
+    flags = ocamlyacc_flags;
+    generated_compilation_units =
+      fun parser_name ->
+        [
+          (parser_name, Ocaml_filetypes.Interface);
+          (parser_name, Ocaml_filetypes.Implementation)
+        ]
+  }
 
-let generate_module generator output_variable input log env =
+let generate_module generator output_variable input =
   let basename = fst input in
   let input_file = Ocaml_filetypes.make_filename input in
-  let what =
-    Printf.sprintf "Generating %s module from %s"
-    generator.description input_file
+  (* let what = *)
+  (*   Printf.sprintf "Generating %s module from %s" *)
+  (*   generator.description input_file *)
+  (* in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
+  let cmdline =
+    let+ flags = generator.flags in
+    [
+      generator.command;
+      flags;
+      input_file
+    ]
   in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline =
-  [
-    generator.command;
-    generator.flags env;
-    input_file
-  ] in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:default_ocaml_env
+  let+ exit_status =
+    A.run_cmd
+      ~environment:(A.return default_ocaml_env)
       ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:output_variable
       ~stderr_variable:output_variable
       ~append:true
-      log env commandline in
-  if exit_status=expected_exit_status
+      cmdline
+  in
+  if exit_status = 0
   then generator.generated_compilation_units basename
   else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    Printf.fprintf log "%s\n%!" reason;
+    (* let reason = *)
+    (*   (Actions_helpers.mkreason *)
+    (*     what (String.concat " " commandline) exit_status) in *)
+    (* Printf.fprintf log "%s\n%!" reason; *)
     []
   end
 
@@ -200,19 +204,19 @@ let generate_lexer = generate_module ocamllex
 
 let generate_parser = generate_module ocamlyacc
 
-let prepare_module output_variable log env input =
+let prepare_module output_variable input =
   let input_type = snd input in
   let open Ocaml_filetypes in
   match input_type with
-    | Implementation | Interface | C | Obj -> [input]
-    | Binary_interface -> [input]
-    | Backend_specific _ -> [input]
-    | C_minus_minus -> assert false
-    | Lexer ->
-      generate_lexer output_variable input log env
-    | Grammar ->
-      generate_parser output_variable input log env
-    | Text -> assert false
+  | Implementation | Interface | C | Obj -> A.return [input]
+  | Binary_interface -> A.return [input]
+  | Backend_specific _ -> A.return [input]
+  | C_minus_minus -> assert false
+  | Lexer ->
+      generate_lexer output_variable input
+  | Grammar ->
+      generate_parser output_variable input
+  | Text -> assert false
 
 let get_program_file backend =
   let+ testfile_basename = A.map Filename.chop_extension Actions_helpers.testfile
@@ -226,6 +230,8 @@ let get_program_file backend =
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
 
 let cmas_need_dynamic_loading directories libraries =
+  let+ libraries = libraries
+  and+ directories = directories in
   let loads_c_code library =
     let library = Misc.find_in_path directories library in
     let ic = open_in_bin library in
@@ -240,93 +246,114 @@ let cmas_need_dynamic_loading directories libraries =
         if toc.Cmo_format.lib_dllibs <> [] then Some (Ok ()) else None
       else
         raise End_of_file
-    with End_of_file
-       | Sys_error _ ->
-         begin try close_in ic with Sys_error _ -> () end;
-         Some (Error ("Corrupt or non-CMA file: " ^ library))
+    with
+    | End_of_file | Sys_error _ ->
+        close_in_noerr ic;
+        Some (Error ("Corrupt or non-CMA file: " ^ library))
   in
   List.find_map loads_c_code libraries
 
-let compile_program compiler log env =
+let compile_program compiler =
   let target = Ocaml_compilers.target compiler in
   let program_variable = Ocaml_compilers.program_variable compiler in
-  let program_file = Environments.safe_lookup program_variable env in
-  let all_modules =
-    fst (Actions_helpers.words_of_variable Ocaml_variables.all_modules log env) in
+  let program_file = A.safe_lookup program_variable in
   let output_variable = Ocaml_compilers.output_variable compiler in
-  let prepare = prepare_module output_variable log env in
   let modules =
-    List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
-  let has_c_file = List.exists is_c_file modules in
+    let all_modules = Actions_helpers.words_of_variable Ocaml_variables.all_modules in
+    A.concatmap (prepare_module output_variable)
+      (A.map (List.map Ocaml_filetypes.filetype) all_modules)
+  in
+  let has_c_file = A.map (List.exists is_c_file) modules in
   let c_headers_flags =
-    if has_c_file then Ocaml_flags.c_includes else "" in
-  let expected_exit_status =
-    fst (Actions_helpers.int_of_variable
-           (Ocaml_compilers.exit_status_variable compiler) log env) in
+    A.if_ has_c_file (A.return Ocaml_flags.c_includes) (A.return "") in
   let module_names =
-    fst (binary_modules target log env) @ List.map Ocaml_filetypes.make_filename modules
+    let+ binary_modules = binary_modules target
+    and+ modules = modules in
+    binary_modules @ List.map Ocaml_filetypes.make_filename modules
   in
-  let what =
-    let module_names = String.concat " " module_names in
-    Printf.sprintf "Compiling program %s from modules %s"
-      (relative_to_initial_cwd program_file) module_names
-  in
-  Printf.fprintf log "%s\n%!" what;
+  (* let what = *)
+  (*   let module_names = String.concat " " module_names in *)
+  (*   Printf.sprintf "Compiling program %s from modules %s" *)
+  (*     (relative_to_initial_cwd program_file) module_names *)
+  (* in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
   let compile_only =
-    Environments.lookup_as_bool Ocaml_variables.compile_only env = Some true
+    A.map (Option.value ~default:false)
+      (A.lookup_as_bool Ocaml_variables.compile_only)
   in
   let compile_flags =
-    if compile_only then " -c " else ""
+    A.if_ compile_only (A.return " -c ") (A.return "")
   in
-  let output = if compile_only then "" else "-o " ^ program_file in
-  let libraries = fst (libraries target log env) in
+  let output =
+    A.if_ compile_only (A.return "")
+      (A.map (fun s -> "-o " ^ s) program_file)
+  in
+  let libraries = libraries target in
   let cmas_need_dynamic_loading =
     if not Config.supports_shared_libraries &&
        target = Ocaml_backends.Bytecode then
-      cmas_need_dynamic_loading (fst (directories log env)) libraries
+      cmas_need_dynamic_loading directories libraries
     else
-      None
+      A.return None
   in
-  match cmas_need_dynamic_loading with
-    | Some (Error reason) ->
-        (Result.fail_with_reason reason, env)
-    | _ ->
-      let bytecode_links_c_code = (cmas_need_dynamic_loading = Some (Ok ())) in
-      let commandline =
-      [
-        Ocaml_compilers.name compiler;
-        Ocaml_flags.runtime_flags env target
-          (has_c_file || bytecode_links_c_code);
-        c_headers_flags;
-        Ocaml_flags.stdlib;
-        fst (directory_flags log env);
-        fst (flags log env)
-      ] @ libraries @
-      [
-        fst (backend_default_flags target log env);
-        fst (backend_flags target log env);
-        compile_flags;
-        output;
-        (Environments.safe_lookup Ocaml_variables.ocaml_filetype_flag env);
-      ] @ module_names @
-      [ last_flags env
-      ] in
-      let exit_status =
-        Actions_helpers.run_cmd
-          ~environment:default_ocaml_env
-          ~stdin_variable: Ocaml_variables.compiler_stdin
-          ~stdout_variable:(Ocaml_compilers.output_variable compiler)
-          ~stderr_variable:(Ocaml_compilers.output_variable compiler)
-          ~append:true
-          log env commandline in
-      if exit_status=expected_exit_status
-      then (Result.pass, env)
-      else begin
-        let reason =
-          (Actions_helpers.mkreason
-            what (String.concat " " commandline) exit_status) in
-        (Result.fail_with_reason reason, env)
-      end
+  A.if_ (A.map (function (Some (Error _)) -> true | _ -> false) cmas_need_dynamic_loading)
+    (A.return (Result.fail_with_reason ""))
+  (* match cmas_need_dynamic_loading with *)
+  (* | Some (Error reason) -> *)
+  (*     (Result.fail_with_reason reason, env) *)
+(* | _ -> *)
+    (let bytecode_links_c_code =
+       A.map (function Some (Ok ()) -> true | _ -> false)
+         cmas_need_dynamic_loading in
+     let cmdline =
+       let+ runtime_flags =
+         Ocaml_flags.runtime_flags target
+           (A.map2 (||) has_c_file bytecode_links_c_code)
+       and+ c_headers_flags = c_headers_flags
+       and+ directory_flags = directory_flags
+       and+ flags = flags
+       and+ libraries = libraries
+       and+ backend_default_flags = backend_default_flags target
+       and+ backend_flags = backend_flags target
+       and+ compile_flags = compile_flags
+       and+ last_flags = last_flags
+       and+ output = output
+       and+ filetype_flag = A.safe_lookup Ocaml_variables.ocaml_filetype_flag
+       and+ module_names = module_names in
+       Ocaml_compilers.name compiler ::
+       runtime_flags ::
+       c_headers_flags ::
+       Ocaml_flags.stdlib ::
+       directory_flags ::
+       flags ::
+       libraries @
+       backend_default_flags ::
+       backend_flags ::
+       compile_flags ::
+       output ::
+       filetype_flag ::
+       module_names @
+       last_flags :: []
+     in
+     let+ exit_status =
+       A.run_cmd
+         ~environment:(A.return default_ocaml_env)
+         ~stdin_variable: Ocaml_variables.compiler_stdin
+         ~stdout_variable:(Ocaml_compilers.output_variable compiler)
+         ~stderr_variable:(Ocaml_compilers.output_variable compiler)
+         ~append:true
+         cmdline
+     and+ expected_exit_status =
+       Actions_helpers.int_of_variable
+         (Ocaml_compilers.exit_status_variable compiler) in
+     if exit_status = expected_exit_status
+     then Result.pass
+     else
+       (* let reason = *)
+       (*   (Actions_helpers.mkreason *)
+       (*      what (String.concat " " commandline) exit_status) in *)
+       Result.fail_with_reason ""
+     )
 
 let compile_module compiler module_ =
   let+ expected_exit_status =
@@ -334,7 +361,7 @@ let compile_module compiler module_ =
   and+ exit_status =
     let target = Ocaml_compilers.target compiler in
     let c_headers_flags =
-      A.when_ (A.map is_c_file (A.map Ocaml_filetypes.filetype module_))
+      A.if_ (A.map is_c_file (A.map Ocaml_filetypes.filetype module_))
         (A.return Ocaml_flags.c_includes)
         (A.return "")
     in
@@ -358,7 +385,7 @@ let compile_module compiler module_ =
       module_ :: []
     in
     A.run_cmd
-      ~environment:default_ocaml_env
+      ~environment:(A.return default_ocaml_env)
       ~stdin_variable:Ocaml_variables.compiler_stdin
       ~stdout_variable:(Ocaml_compilers.output_variable compiler)
       ~stderr_variable:(Ocaml_compilers.output_variable compiler)
@@ -446,7 +473,7 @@ let setup_tool_build_env tool =
 
 let setup_compiler_build_env compiler =
   let r = setup_tool_build_env (`Compiler compiler) in
-  A.when_ (A.map Result.is_pass r)
+  A.if_ (A.map Result.is_pass r)
     (let prog_var = Ocaml_compilers.program_variable compiler in
      let prog_output_var = Ocaml_compilers.program_output_variable compiler in
      let prog_output_file =
@@ -504,9 +531,9 @@ let setup_ocamlnat_build_env =
 
 let compile compiler =
   let cmdline = A.lookup_nonempty Builtin_variables.commandline in
-  A.when_ (A.map Option.is_none cmdline)
+  A.if_ (A.map Option.is_none cmdline)
     (let module_ = A.lookup_nonempty Ocaml_variables.module_ in
-     A.when_ (A.map Option.is_none module_)
+     A.if_ (A.map Option.is_none module_)
        (compile_program compiler)
        (compile_module compiler (A.map Option.get module_)))
     ((* let what = Printf.sprintf "Compiling using commandline %s" cmdline in *)
@@ -520,7 +547,7 @@ let compile compiler =
          (Ocaml_compilers.exit_status_variable compiler)
      and+ exit_status =
        A.run_cmd
-         ~environment:default_ocaml_env
+         ~environment:(A.return default_ocaml_env)
          ~stdin_variable: Ocaml_variables.compiler_stdin
          ~stdout_variable:(Ocaml_compilers.output_variable compiler)
          ~stderr_variable:(Ocaml_compilers.output_variable compiler)
@@ -967,90 +994,98 @@ let compare_native_programs =
       "compare-native-programs"
       (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
 
-let compile_module compiler compilername compileroutput log env
-  (module_basename, module_filetype) =
+let compile_module compiler compilername compileroutput
+    (module_basename, module_filetype) =
   let backend = Ocaml_compilers.target compiler in
   let filename =
     Ocaml_filetypes.make_filename (module_basename, module_filetype) in
-  let expected_exit_status =
-    fst (Actions_helpers.int_of_variable
-           (Ocaml_compilers.exit_status_variable compiler) log env) in
-  let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
-    (Ocaml_filetypes.action_of_filetype module_filetype) filename
-      expected_exit_status in
+  (* let what = Printf.sprintf "%s for file %s (expected exit status: %d)" *)
+  (*     (Ocaml_filetypes.action_of_filetype module_filetype) filename *)
+  (*     expected_exit_status in *)
   let compile_commandline input_file output_file optional_flags =
     let compile = "-c " ^ input_file in
-    let output = match output_file with
+    let output =
+      match output_file with
       | None -> ""
-      | Some file -> "-o " ^ file in
-    [
-      compilername;
-      Ocaml_flags.stdlib;
-      fst (flags log env);
-      fst (backend_flags backend log env);
-      optional_flags;
-      compile;
-      output;
-    ] in
-  let exec commandline =
-    Printf.fprintf log "%s\n%!" what;
-    let exit_status =
-      Actions_helpers.run_cmd
+      | Some file -> "-o " ^ file
+    in
+    let+ flags = flags
+    and+ backend_flags = backend_flags backend in
+    compilername ::
+    Ocaml_flags.stdlib ::
+    flags ::
+    backend_flags ::
+    optional_flags ::
+    compile ::
+    output :: []
+  in
+  let exec cmdline =
+    (* Printf.fprintf log "%s\n%!" what; *)
+    let+ expected_exit_status =
+      Actions_helpers.int_of_variable
+        (Ocaml_compilers.exit_status_variable compiler)
+    and+ exit_status =
+      A.run_cmd
         ~stdin_variable: Ocaml_variables.compiler_stdin
         ~stdout_variable:compileroutput
         ~stderr_variable:compileroutput
-        ~append:true log env commandline in
-    if exit_status=expected_exit_status
-    then (Result.pass, env)
-    else begin
-      let reason =
-        (Actions_helpers.mkreason
-          what (String.concat " " commandline) exit_status) in
-      (Result.fail_with_reason reason, env)
-    end in
+        ~append:true cmdline
+    in
+    if exit_status = expected_exit_status
+    then Result.pass
+    else Result.fail_with_reason ""
+      (* let reason = *)
+      (*   (Actions_helpers.mkreason *)
+      (*      what (String.concat " " commandline) exit_status) in *)
+        (* (Result.fail_with_reason reason, env) *)
+  in
+    (* end in *)
   match module_filetype with
-    | Ocaml_filetypes.Interface ->
+  | Ocaml_filetypes.Interface ->
       let interface_name =
         Ocaml_filetypes.make_filename
           (module_basename, Ocaml_filetypes.Interface) in
-      let commandline = compile_commandline interface_name None "" in
-      exec commandline
-    | Ocaml_filetypes.Implementation ->
+      exec (compile_commandline interface_name None "")
+  | Ocaml_filetypes.Implementation ->
       let module_extension = Ocaml_backends.module_extension backend in
       let module_output_name =
         Filename.make_filename module_basename module_extension in
-      let commandline =
-        compile_commandline filename (Some module_output_name) "" in
-      exec commandline
-    | Ocaml_filetypes.C ->
+      exec (compile_commandline filename (Some module_output_name) "")
+  | Ocaml_filetypes.C ->
       let object_extension = Config.ext_obj in
       let _object_filename = module_basename ^ object_extension in
-      let commandline =
-        compile_commandline filename None
-          Ocaml_flags.c_includes in
-      exec commandline
-    | _ ->
-      let reason = Printf.sprintf "File %s of type %s not supported yet"
-        filename (Ocaml_filetypes.string_of_filetype module_filetype) in
-      (Result.fail_with_reason reason, env)
+      exec (compile_commandline filename None Ocaml_flags.c_includes)
+  | _ ->
+      (* let reason = Printf.sprintf "File %s of type %s not supported yet" *)
+      (*     filename (Ocaml_filetypes.string_of_filetype module_filetype) in *)
+      A.return (Result.fail_with_reason "")
 
-let compile_modules compiler compilername compileroutput
-    modules_with_filetypes log initial_env
-  =
-  let compile_mod env mod_ =
-    compile_module compiler compilername compileroutput
-    log env mod_ in
-  let rec compile_mods env = function
-    | [] -> (Result.pass, env)
-    | m::ms ->
-      (let (result, newenv) = compile_mod env m in
-      if Result.is_pass result then (compile_mods newenv ms)
-      else (result, newenv)) in
-  compile_mods initial_env modules_with_filetypes
+let compile_modules
+    compiler compilername compileroutput modules_with_filetypes =
+  let compile_mod mod_ =
+    compile_module compiler compilername compileroutput mod_
+  in
+  A.while_ (fun m ->
+      A.map
+        (fun r -> if Result.is_pass r then Ok Result.pass else Error r)
+        (compile_mod m)) Result.pass
+    modules_with_filetypes
+  (* let rec compile_mods = function *)
+  (*   | [] -> *)
+  (*       A.return Result.pass *)
+  (*   | m :: ms -> *)
+  (*       A.select *)
+  (*         (A.map Result.to_result (compile_mod m)) *)
+  (*         (A.map Fun.const (compile_mods ms)) *)
+  (* in *)
+  (* compile_mods modules_with_filetypes *)
 
-let run_test_program_in_toplevel toplevel log env =
+let if_ok a b c =
+  A.select a (A.map Fun.const b) c
+
+let run_test_program_in_toplevel toplevel =
   let backend = Ocaml_toplevels.backend toplevel in
-  let libraries = fst (libraries backend log env) in
+  let libraries = libraries backend in
   (* This is a sub-optimal check - skip the test if any libraries requiring
      C stubs are loaded. It would be better at this point to build a custom
      toplevel. *)
@@ -1058,82 +1093,88 @@ let run_test_program_in_toplevel toplevel log env =
     Config.supports_shared_libraries || backend <> Ocaml_backends.Bytecode
   in
   if not toplevel_can_run then
-    (Result.skip, env)
+    A.return Result.skip
   else
-    match cmas_need_dynamic_loading (fst (directories log env)) libraries with
-      | Some (Error reason) ->
-        (Result.fail_with_reason reason, env)
-      | Some (Ok ()) ->
-        (Result.skip, env)
-      | None ->
-        let testfile = fst (Actions_helpers.testfile log env) in
-        let expected_exit_status =
-          fst (Actions_helpers.int_of_variable
-                 (Ocaml_toplevels.exit_status_variable toplevel) log env) in
-        let compiler_output_variable = Ocaml_toplevels.output_variable toplevel in
-        let compiler = Ocaml_toplevels.compiler toplevel in
-        let compiler_name = Ocaml_compilers.name compiler in
-        let modules_with_filetypes =
-          List.map Ocaml_filetypes.filetype (fst (modules log env)) in
-        let (result, env) = compile_modules
-          compiler compiler_name compiler_output_variable
-          modules_with_filetypes log env in
-        if Result.is_pass result then begin
-          let what =
-            Printf.sprintf "Running %s in %s toplevel \
-                            (expected exit status: %d)"
-            testfile
-            (Ocaml_backends.string_of_backend backend)
-            expected_exit_status in
-          Printf.fprintf log "%s\n%!" what;
-          let toplevel_name = Ocaml_toplevels.name toplevel in
-          let ocaml_script_as_argument =
-            match
-              Environments.lookup_as_bool
-                Ocaml_variables.ocaml_script_as_argument env
-            with
-            | None -> false
-            | Some b -> b
-          in
-          let commandline =
-          [
-            toplevel_name;
-            Ocaml_flags.toplevel_default_flags;
-            (match Ocaml_toplevels.backend toplevel with
-             | Ocaml_backends.Native -> "-S"
-             | _ -> "");
-            Ocaml_flags.stdlib;
-            fst (directory_flags log env);
-            Ocaml_flags.include_toplevel_directory;
-            fst (flags log env);
-          ] @ libraries @
-            fst (binary_modules backend log env) @
-          [ if ocaml_script_as_argument then testfile else "";
-            Environments.safe_lookup Builtin_variables.arguments env
-          ] in
-          let exit_status =
-            if ocaml_script_as_argument
-            then Actions_helpers.run_cmd
-              ~environment:default_ocaml_env
-              ~stdout_variable:compiler_output_variable
-              ~stderr_variable:compiler_output_variable
-              log env commandline
-            else Actions_helpers.run_cmd
-              ~environment:default_ocaml_env
-              ~stdin_variable:Builtin_variables.test_file
-              ~stdout_variable:compiler_output_variable
-              ~stderr_variable:compiler_output_variable
-              log env commandline
-          in
-          if exit_status=expected_exit_status
-          then (Result.pass, env)
-          else begin
-            let reason =
-              (Actions_helpers.mkreason
-                what (String.concat " " commandline) exit_status) in
-            (Result.fail_with_reason reason, env)
-          end
-        end else (result, env)
+    let cmas_need_dynamic_loading = cmas_need_dynamic_loading directories libraries in
+    A.if_ (A.map (function Some (Error _) -> true | _ -> false) cmas_need_dynamic_loading)
+      (A.return (Result.fail_with_reason ""))
+      (A.if_ (A.map (function Some (Ok ()) -> true | _ -> false) cmas_need_dynamic_loading)
+           (A.return Result.skip)
+           (let testfile = Actions_helpers.testfile in
+            let compiler_output_variable = Ocaml_toplevels.output_variable toplevel in
+            let compiler = Ocaml_toplevels.compiler toplevel in
+            let compiler_name = Ocaml_compilers.name compiler in
+            let modules_with_filetypes =
+              A.map (List.map Ocaml_filetypes.filetype) modules in
+            let result =
+              compile_modules
+                compiler compiler_name compiler_output_variable
+                modules_with_filetypes
+            in
+            if_ok result
+              (
+                (* let what = *)
+                (* Printf.sprintf "Running %s in %s toplevel \ *)
+                   (*                (expected exit status: %d)" *)
+                (*   testfile *)
+                (*   (Ocaml_backends.string_of_backend backend) *)
+                (*   expected_exit_status in *)
+                (* Printf.fprintf log "%s\n%!" what; *)
+                let toplevel_name = Ocaml_toplevels.name toplevel in
+                let ocaml_script_as_argument =
+                  A.map (Option.value ~default:false)
+                    (A.lookup_as_bool
+                       Ocaml_variables.ocaml_script_as_argument)
+                in
+                let commandline =
+                  let+ directory_flags = directory_flags
+                  and+ flags = flags
+                  and+ binary_modules = binary_modules backend
+                  and+ arguments = A.safe_lookup Builtin_variables.arguments
+                  and+ script_arg = A.if_ ocaml_script_as_argument testfile (A.return "")
+                  and+ libraries = libraries in
+                  toplevel_name ::
+                  Ocaml_flags.toplevel_default_flags ::
+                  (match Ocaml_toplevels.backend toplevel with
+                   | Ocaml_backends.Native -> "-S"
+                   | _ -> "") ::
+                  Ocaml_flags.stdlib ::
+                  directory_flags ::
+                  Ocaml_flags.include_toplevel_directory ::
+                  flags ::
+                  libraries @
+                  binary_modules @
+                  script_arg ::
+                  arguments :: []
+                in
+                let+ expected_exit_status =
+                  Actions_helpers.int_of_variable
+                    (Ocaml_toplevels.exit_status_variable toplevel)
+                and+ exit_status =
+                  A.if_ ocaml_script_as_argument
+                    (A.run_cmd
+                       ~environment:(A.return default_ocaml_env)
+                       ~stdout_variable:compiler_output_variable
+                       ~stderr_variable:compiler_output_variable
+                       commandline)
+                    (A.run_cmd
+                       ~environment:(A.return default_ocaml_env)
+                       ~stdin_variable:Builtin_variables.test_file
+                       ~stdout_variable:compiler_output_variable
+                       ~stderr_variable:compiler_output_variable
+                       commandline)
+                in
+                if exit_status = expected_exit_status
+                then Result.pass
+                else begin
+                  (* let reason = *)
+                  (*   (Actions_helpers.mkreason *)
+                  (*      what (String.concat " " commandline) exit_status) in *)
+                  Result.fail_with_reason ""
+                end
+              )))
+       (* (assert false) *)
+       (* end else (result, env) *)
 
 let ocaml = Actions.make
   "ocaml"
@@ -1289,8 +1330,8 @@ let check_ocamldoc_output =
   make_check_tool_output
     "check-ocamldoc-output" `Ocamldoc
 
-let ocamldoc_flags env =
-  Environments.safe_lookup Ocaml_variables.ocamldoc_flags env
+let ocamldoc_flags =
+  A.safe_lookup Ocaml_variables.ocamldoc_flags
 
 let compiled_doc_name input = input ^ ".odoc"
 
@@ -1306,50 +1347,56 @@ let compiler_for_ocamldoc =
    secondaries documentation modules that need to be
    compiled into cmi files and odoc file (serialized ocamldoc information)
    before the main documentation is generated *)
-let compile_ocamldoc (basename,filetype as module_) log env =
-  let expected_exit_status =
-    fst (Actions_helpers.int_of_variable
-           Ocaml_variables.ocamldoc_exit_status log env) in
-  let what = Printf.sprintf "Compiling documentation for module %s" basename in
-  Printf.fprintf log "%s\n%!" what;
+let compile_ocamldoc (basename,filetype as module_) =
+  (* let what = Printf.sprintf "Compiling documentation for module %s" basename in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
   let filename =
     Ocaml_filetypes.make_filename (basename, filetype) in
-  let (r,env) = compiler_for_ocamldoc [module_] log env in
-  if not (Result.is_pass r) then (r,env) else
-  let commandline =
-    (* currently, we are ignoring the global ocamldoc_flags, since we
-       don't have per-module flags *)
-    [
-    Ocaml_commands.ocamlrun_ocamldoc;
-    Ocaml_flags.stdlib;
-    "-dump " ^ compiled_doc_name basename;
-     filename;
-  ] in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:(Environments.to_system_env env)
-      ~stdin_variable: Ocaml_variables.compiler_stdin
-      ~stdout_variable:Ocaml_variables.ocamldoc_output
-      ~stderr_variable:Ocaml_variables.ocamldoc_output
-      ~append:true
-      log env commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
-  else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
+  if_ok (compiler_for_ocamldoc (A.return [module_]))
+    (let cmdline =
+       (* currently, we are ignoring the global ocamldoc_flags, since we
+          don't have per-module flags *)
+       [
+         Ocaml_commands.ocamlrun_ocamldoc;
+         Ocaml_flags.stdlib;
+         "-dump " ^ compiled_doc_name basename;
+         filename;
+       ]
+     in
+     let+ expected_exit_status =
+       Actions_helpers.int_of_variable
+         Ocaml_variables.ocamldoc_exit_status
+     and+ exit_status =
+       A.run_cmd
+         ~environment:A.system_env
+         ~stdin_variable: Ocaml_variables.compiler_stdin
+         ~stdout_variable:Ocaml_variables.ocamldoc_output
+         ~stderr_variable:Ocaml_variables.ocamldoc_output
+         ~append:true
+         (A.return cmdline)
+     in
+     if exit_status = expected_exit_status
+     then Result.pass
+     else begin
+       (* let reason = *)
+       (*   (Actions_helpers.mkreason *)
+       (*     what (String.concat " " commandline) exit_status) in *)
+       Result.fail_with_reason ""
+     end)
 
-let rec ocamldoc_compile_all log env = function
-  | [] -> (Result.pass, env)
-  | a :: q ->
-      let (r,env) = compile_ocamldoc a log env in
-      if Result.is_pass r then
-        ocamldoc_compile_all log env q
-      else
-        (r,env)
+let ocamldoc_compile_all modules =
+  A.while_
+    (fun m ->
+       A.map
+         (fun r -> if Result.is_pass r then Ok Result.pass else Error r)
+         (compile_ocamldoc m)) Result.pass modules
+  (* | [] -> (Result.pass, env) *)
+  (* | a :: q -> *)
+  (*     let (r,env) = compile_ocamldoc a log env in *)
+  (*     if Result.is_pass r then *)
+  (*       ocamldoc_compile_all log env q *)
+  (*     else *)
+  (*       (r,env) *)
 
 let setup_ocamldoc_build_env =
   Actions.make "setup_ocamldoc_build_env" @@ fun log env ->
@@ -1373,60 +1420,67 @@ let setup_ocamldoc_build_env =
 
 let ocamldoc_plugin name = name ^ ".cmo"
 
-let ocamldoc_backend_flag env =
-  let backend = Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
+let ocamldoc_backend_flag =
+  let+ backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
   if backend = "" then "" else "-" ^ backend
 
-let ocamldoc_o_flag env =
-  let output =  Environments.safe_lookup Builtin_variables.output env in
-  match Environments.safe_lookup Ocaml_variables.ocamldoc_backend env with
+let ocamldoc_o_flag =
+  let+ output =  A.safe_lookup Builtin_variables.output
+  and+ backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
+  match backend with
   | "html" | "manual" -> "index"
   | _ -> output
 
 let run_ocamldoc =
-  Actions.make "ocamldoc" @@ fun log env ->
+  Actions.make "ocamldoc" @@
   (* modules corresponds to secondaries modules of which the
      documentation and cmi files need to be build before the main
      module documentation *)
-  let modules = List.map Ocaml_filetypes.filetype @@ fst (modules log env) in
+  let modules = A.map (List.map Ocaml_filetypes.filetype) modules in
   (* plugins are used for custom documentation generators *)
-  let plugins = List.map Ocaml_filetypes.filetype @@ fst (plugins log env) in
-  let (r,env) = compiler_for_ocamldoc plugins log env in
-  if not (Result.is_pass r) then r, env else
-  let (r,env) = ocamldoc_compile_all log env modules in
-  if not (Result.is_pass r) then r, env else
-  let input_file = fst (Actions_helpers.testfile log env) in
-  Printf.fprintf log "Generating documentation for %s\n%!" input_file;
-  let load_all =
-    List.map (fun name -> "-load " ^ compiled_doc_name (fst name))
-    @@ (* sort module in alphabetical order *)
-    List.sort Stdlib.compare modules in
-  let with_plugins =
-    List.map (fun name -> "-g " ^ ocamldoc_plugin (fst name)) plugins in
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamldoc;
-    ocamldoc_backend_flag env;
-    Ocaml_flags.stdlib;
-    ocamldoc_flags env]
-  @ load_all @ with_plugins @
-   [ input_file;
-     "-o"; ocamldoc_o_flag env
-   ] in
-  let exit_status =
-    Actions_helpers.run_cmd ~environment:(Environments.to_system_env env)
-      ~stdin_variable: Ocaml_variables.compiler_stdin
-      ~stdout_variable:Ocaml_variables.ocamldoc_output
-      ~stderr_variable:Ocaml_variables.ocamldoc_output
-      ~append:true
-      log env commandline in
-  if exit_status=0 then
-    (Result.pass, env)
-  else begin
-    let reason = (Actions_helpers.mkreason
-      "ocamldoc" (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
+  let plugins = A.map (List.map Ocaml_filetypes.filetype) plugins in
+  if_ok (compiler_for_ocamldoc plugins)
+    (if_ok (ocamldoc_compile_all modules)
+       (* Printf.fprintf log "Generating documentation for %s\n%!" input_file; *)
+       (let cmdline =
+          let+ ocamldoc_backend_flag = ocamldoc_backend_flag
+          and+ ocamldoc_flags = ocamldoc_flags
+          and+ ocamldoc_o_flag = ocamldoc_o_flag
+          and+ load_all =
+            (* sort module in alphabetical order *)
+            A.map (List.map (fun name -> "-load " ^ compiled_doc_name (fst name)))
+              (A.map (List.sort Stdlib.compare) modules)
+          and+ with_plugins =
+            A.map (List.map (fun name -> "-g " ^ ocamldoc_plugin (fst name)))
+              plugins
+          and+ input_file = Actions_helpers.testfile in
+          Ocaml_commands.ocamlrun_ocamldoc ::
+          ocamldoc_backend_flag ::
+          Ocaml_flags.stdlib ::
+          ocamldoc_flags ::
+          load_all @
+          with_plugins @
+          input_file ::
+          "-o" ::
+          ocamldoc_o_flag :: []
+        in
+        let+ exit_status =
+          A.run_cmd
+            ~environment:A.system_env
+            ~stdin_variable: Ocaml_variables.compiler_stdin
+            ~stdout_variable:Ocaml_variables.ocamldoc_output
+            ~stderr_variable:Ocaml_variables.ocamldoc_output
+            ~append:true
+            cmdline
+        in
+        if exit_status = 0 then
+          Result.pass
+        else begin
+          (* let reason = (Actions_helpers.mkreason *)
+          (*                 "ocamldoc" (String.concat " " commandline) exit_status) in *)
+          Result.fail_with_reason ""
+        end)
+    )
 
 let _ =
   Environments.register_initializer "find_source_modules" find_source_modules;

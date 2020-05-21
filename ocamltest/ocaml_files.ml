@@ -22,14 +22,15 @@ type runtime_variant =
   | Debug
   | Instrumented
 
-let runtime_variant() =
+let runtime_variant =
   let use_runtime = Sys.safe_getenv "USE_RUNTIME" in
   if use_runtime="d" then Debug
   else if use_runtime="i" then Instrumented
   else Normal
 
 let ocamlrun =
-  let runtime = match runtime_variant () with
+  let runtime =
+    match runtime_variant with
     | Normal -> "ocamlrun"
     | Debug -> "ocamlrund"
     | Instrumented -> "ocamlruni" in

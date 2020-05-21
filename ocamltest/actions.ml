@@ -82,6 +82,11 @@ module A = struct
     let a, env = a log env in
     f a, env
 
+  let map2 f a b log env =
+    let a, env = a log env in (* CHECK *)
+    let b, env = b log env in
+    f a b, env
+
   let return x _ env = x, env
 
   let if_defined var a b log env =
@@ -89,13 +94,21 @@ module A = struct
     | Some _ -> a log env
     | None -> b log env
 
+  let select f a log env =
+    match f log env with
+    | Ok x, env ->
+        let a, env = a log env in
+        a x, env
+    | Error b, env -> (* CHECK ME *)
+        b, env
+
   open Ocamltest_stdlib
 
   let test_build_directory env =
     Environments.safe_lookup Builtin_variables.test_build_directory env
 
   let run_cmd
-      ?(environment=[||])
+      ?environment
       ?(stdin_variable=Builtin_variables.stdin)
       ?(stdout_variable=Builtin_variables.stdout)
       ?(stderr_variable=Builtin_variables.stderr)
@@ -103,6 +116,11 @@ module A = struct
       ?(timeout=0)
       log env original_cmd
     =
+    let environment =
+      match environment with
+      | None -> [||]
+      | Some e -> fst (e log env) (* CHECK *)
+    in
     let log_redirection std filename =
       if filename<>"" then
         begin
@@ -158,16 +176,16 @@ module A = struct
       Run_command.log = log
     }
 
-  let run_cmd ~environment ~stdin_variable ~stdout_variable ~stderr_variable ~append
+  let run_cmd ?environment ?stdin_variable ?stdout_variable ?stderr_variable ?append
       cmdline log env =
     let n =
       let cmdline, env (* CHECK *) = cmdline log env in
       run_cmd
-        ~environment
-        ~stdin_variable
-        ~stdout_variable
-        ~stderr_variable
-        ~append log env cmdline
+        ?environment
+        ?stdin_variable
+        ?stdout_variable
+        ?stderr_variable
+        ?append log env cmdline
     in
     n, env
 
@@ -199,6 +217,9 @@ module A = struct
   let lookup_nonempty var _ env =
     Environments.lookup_nonempty var env, env
 
+  let lookup_as_bool var _ env =
+    Environments.lookup_as_bool var env, env
+
   let pair a b log env =
     let a, _env' = a log env in
     let b, env' = b log env in
@@ -220,15 +241,49 @@ module A = struct
     let s, _ = s log env in
     (), Environments.add_if_undefined v s env
 
-  let when_ c a b log env =
+  let if_ c a b log env =
     match c log env with
     | true, env -> a log env
     | false, env -> b log env
+
+  let when_ a b =
+    if_ a b (return ())
+
+  let concatmap f l log env =
+    let l, env = l log env in
+    let rec loop acc env = function
+      | [] -> List.rev acc, env
+      | x :: l ->
+          let xl, env = f x log env in
+          loop (xl :: acc) env l
+    in
+    let l, env = loop [] env l in
+    List.flatten l, env
+
+  let while_ f x l log env =
+    let l, env = l log env in
+    let rec loop res env = function
+      | [] -> Ok res, env
+      | x :: l ->
+          begin match f x log env with
+          | Ok x, env ->
+              loop x env l
+          | Error _ as r, env ->
+              r, env
+          end
+    in
+    loop x env l
 
   let file_exists s log env =
     let s, env = s log env in
     Sys.file_exists s, env
 
+  let system_env _ env =
+    Environments.to_system_env env, env
+
   let (let+) a f = map f a
   let (and+) a b = pair a b
+  let (||+) a b =
+    if_ a (return true) b
+  let (&&+) a b = if_ a b (return false)
 end
