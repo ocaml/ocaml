@@ -131,21 +131,15 @@
         leaq    G(label)(%rip), dst
 #endif
 
-/* Push the current exception handler.
-   (Stored as an offset, to survive stack reallocations). Clobbers %r11 */
+/* Push the current exception handler. Clobbers %r11 */
 #define PUSH_EXN_HANDLER \
         movq    Caml_state(exn_handler), %r11; \
-        subq    %rsp, %r11; \
-        addq    $0x8, %r11; \
         pushq   %r11; CFI_ADJUST(8);
 
-/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers %r11 and %r10. */
+/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers %r11 */
 #define POP_EXN_HANDLER \
         leaq    Caml_state(exn_handler), %r11; \
-        popq    %r10; CFI_ADJUST(-8); \
-        subq    $0x8, %r10; \
-        addq    %rsp, %r10; \
-        movq    %r10, (%r11)
+        popq    (%r11); CFI_ADJUST(-8)
 
 /******************************************************************************/
 /* Stack switching operations */
@@ -730,13 +724,14 @@ LBL(caml_start_program):
     /* Load the OCaml stack. */
         movq    Caml_state(current_stack), %r11
         movq    Stack_sp(%r11), %r10
-    /* Build a handler for exceptions raised in OCaml on the OCaml stack.
-       There is no previous exception handler. Instead, we use the prev
-       slot to store the C stack pointer, to allow DWARF backtraces */
+    /* Build a handler for exceptions raised in OCaml on the OCaml stack. */
         subq    $16, %r10
         lea     LBL(109)(%rip), %r11
         movq    %r11, 8(%r10)
-        movq    %rsp, 0(%r10)
+        /* load the previous context exn_handler so that copying stacks works */
+        movq    Caml_state(current_stack), %r11
+        movq    (%r11), %r11
+        movq    %r11, 0(%r10)
         movq    %r10, Caml_state(exn_handler)
     /* Switch stacks and call the OCaml code */
         movq    %r10, %rsp
@@ -747,7 +742,10 @@ LBL(caml_start_program):
              24 /* struct c_stack_link */ + 6*8 /* callee save regs */ + 8 /* ret addr */
         call    *%r12
 LBL(108):
-        leaq    16(%rsp), %r10 /* pop exn handler */
+    /* pop exn handler */
+        movq    0(%rsp), %r11
+        movq    %r11, Caml_state(exn_handler)
+        leaq    16(%rsp), %r10
 1:  /* Update alloc ptr */
         movq    %r15, Caml_state(young_ptr)
     /* Return to C stack. */
@@ -967,7 +965,10 @@ CFI_STARTPROC
         subq    $16, %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
         movq    %r10, 8(%r11)
-        movq    $0, 0(%r11) /* dummy previous trap frame */
+    /* load the previous context exn_handler so that copying stacks works */
+        movq    Caml_state(current_stack), %r10
+        movq    (%r10), %r10
+        movq    %r10, 0(%r11)
         movq    %r11, Caml_state(exn_handler)
     /* Switch to the new stack */
         movq    %r11, %rsp
