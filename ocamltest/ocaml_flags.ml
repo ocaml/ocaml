@@ -16,8 +16,7 @@
 (* Flags used in OCaml commands *)
 
 open Actions
-
-let (let+) = A.(let+)
+open A.Infix
 
 let stdlib =
   let stdlib_path = Ocaml_directories.stdlib in

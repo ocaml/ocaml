@@ -17,9 +17,7 @@
 
 open Ocamltest_stdlib
 open Actions
-
-let (let+) = A.(let+)
-let (and+) = A.(and+)
+open A.Infix
 
 let reference_variable = function
   | `Toplevel t -> Ocaml_toplevels.reference_variable t
@@ -82,7 +80,6 @@ let directories =
   Actions_helpers.words_of_variable Ocaml_variables.directories
 
 let directory_flags =
-  let open A in
   let+ dirs = directories in
   String.concat " " (List.map (fun dir -> "-I " ^ dir) dirs)
 
@@ -308,7 +305,7 @@ let compile_program compiler =
      let cmdline =
        let+ runtime_flags =
          Ocaml_flags.runtime_flags target
-           (A.map2 (||) has_c_file bytecode_links_c_code)
+           (has_c_file ||+ bytecode_links_c_code)
        and+ c_headers_flags = c_headers_flags
        and+ directory_flags = directory_flags
        and+ flags = flags

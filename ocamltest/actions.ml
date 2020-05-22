@@ -82,17 +82,7 @@ module A = struct
     let a, env = a log env in
     f a, env
 
-  let map2 f a b log env =
-    let a, env = a log env in (* CHECK *)
-    let b, env = b log env in
-    f a b, env
-
   let return x _ env = x, env
-
-  let if_defined var a b log env =
-    match Environments.lookup_nonempty var env with
-    | Some _ -> a log env
-    | None -> b log env
 
   let select f a log env =
     match f log env with
@@ -281,9 +271,11 @@ module A = struct
   let system_env _ env =
     Environments.to_system_env env, env
 
-  let (let+) a f = map f a
-  let (and+) a b = pair a b
-  let (||+) a b =
-    if_ a (return true) b
-  let (&&+) a b = if_ a b (return false)
+  module Infix = struct
+    let (let+) a f = map f a
+    let (and+) a b = pair a b
+    let (||+) a b =
+      if_ a (return true) b
+    let (&&+) a b = if_ a b (return false)
+  end
 end

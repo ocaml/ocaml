@@ -18,9 +18,7 @@
 open Ocamltest_stdlib
 open Ocaml_backends
 open Actions
-
-let (let+) = A.(let+)
-let (and+) = A.(and+)
+open A.Infix
 
 type t =
   {

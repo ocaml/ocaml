@@ -18,6 +18,7 @@
 open Ocamltest_stdlib
 open Ocaml_backends
 open Actions
+open A.Infix
 
 type t =
   Ocaml_backends.t
@@ -51,9 +52,6 @@ let backend t =
 let compiler = function
   | Bytecode -> Ocaml_compilers.ocamlc_byte
   | Native -> Ocaml_compilers.ocamlc_opt
-
-let (let+) = A.(let+)
-let (and+) = A.(and+)
 
 let reference_file t prefix =
   let default =

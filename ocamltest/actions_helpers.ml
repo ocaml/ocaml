@@ -16,6 +16,8 @@
 (* Helper functions when writing actions *)
 
 open Ocamltest_stdlib
+open Actions
+open A.Infix
 
 let skip_with_reason reason =
   let code _log env =
@@ -37,34 +39,27 @@ let mkreason what commandline exitcode =
     what commandline exitcode
 
 let testfile =
-  let open Actions.A in
-  map Option.get (lookup Builtin_variables.test_file)
+  A.map Option.get (A.lookup Builtin_variables.test_file)
 
 let test_source_directory =
-  let open Actions.A in
-  safe_lookup Builtin_variables.test_source_directory
+  A.safe_lookup Builtin_variables.test_source_directory
 
 let test_build_directory =
-  let open Actions.A in
-  safe_lookup Builtin_variables.test_build_directory
+  A.safe_lookup Builtin_variables.test_build_directory
 
 let test_build_directory_prefix =
-  let open Actions.A in
-  safe_lookup Builtin_variables.test_build_directory_prefix
+  A.safe_lookup Builtin_variables.test_build_directory_prefix
 
 let words_of_variable variable =
-  let open Actions.A in
-  map String.words (safe_lookup variable)
+  A.map String.words (A.safe_lookup variable)
 
 let int_of_variable variable =
-  let open Actions.A in
-  let+ s = safe_lookup variable in
+  let+ s = A.safe_lookup variable in
   Option.value ~default:0 (int_of_string_opt s)
 
 let files = words_of_variable Builtin_variables.files
 
 let setup_build_env add_testfile additional_files =
-  let open Actions.A in
   let some_files =
     let+ files = files
     and+ additional_files = additional_files in
@@ -78,7 +73,7 @@ let setup_build_env add_testfile additional_files =
     else
       some_files
   in
-  let+ () = setup_symlinks test_source_directory test_build_directory files in
+  let+ () = A.setup_symlinks test_source_directory test_build_directory files in
   Result.pass
 
 let setup_simple_build_env add_testfile additional_files log env =
