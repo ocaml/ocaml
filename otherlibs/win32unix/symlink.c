@@ -39,6 +39,27 @@ static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static BOOL no_symlinks_available = FALSE;
 static DWORD additional_symlink_flags = 0;
 
+// Developer Mode allows the creation of symlinks without elevation - see
+// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
+static BOOL IsDeveloperModeEnabled()
+{
+  HKEY hKey;
+  LSTATUS openKeyError, queryValueError;
+  DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
+
+  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
+  if (openKeyError != ERROR_SUCCESS) {
+    return FALSE;
+  }
+  
+  queryValueError = RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL, (LPBYTE)&developerModeRegistryValue, &dwordSize);
+  RegCloseKey(hKey);
+  if (queryValueError != ERROR_SUCCESS) {
+    return FALSE;
+  }
+  return developerModeRegistryValue != 0;
+}
+
 CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
@@ -84,27 +105,6 @@ again:
   }
 
   CAMLreturn(Val_unit);
-}
-
-// Developer Mode allows the creation of symlinks without elevation - see
-// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
-static BOOL IsDeveloperModeEnabled()
-{
-  HKEY hKey;
-  LSTATUS openKeyError, queryValueError;
-  DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
-
-  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
-  if (openKeyError != ERROR_SUCCESS) {
-    return FALSE;
-  }
-  
-  queryValueError = RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL, (LPBYTE)&developerModeRegistryValue, &dwordSize);
-  RegCloseKey(hKey);
-  if (queryValueError != ERROR_SUCCESS) {
-    return FALSE;
-  }
-  return developerModeRegistryValue != 0;
 }
 
 #define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
