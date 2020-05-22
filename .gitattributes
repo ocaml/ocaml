@@ -154,7 +154,6 @@ build-aux/missing text eol=lf
 ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
 ocamltest/ocamltest.org typo.long-line=may typo.missing-header
-ocamltest/ocamltest_stdlib_stubs.c typo.long-line
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
 tools/autogen text eol=lf

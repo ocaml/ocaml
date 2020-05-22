@@ -57,7 +57,7 @@ static BOOL IsDeveloperModeEnabled()
   if (openKeyError != ERROR_SUCCESS) {
     return FALSE;
   }
-  
+
   queryValueError = RegQueryValueExW(
     hKey,
     L"AllowDevelopmentWithoutDevLicense",
