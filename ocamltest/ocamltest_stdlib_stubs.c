@@ -43,19 +43,32 @@
 #include <sys/types.h>
 
 // Developer Mode allows the creation of symlinks without elevation - see
-// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
+// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
 static BOOL IsDeveloperModeEnabled()
 {
   HKEY hKey;
   LSTATUS openKeyError, queryValueError;
   DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
 
-  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
+  openKeyError = RegOpenKeyExW(
+    HKEY_LOCAL_MACHINE,
+    L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock",
+    0,
+    KEY_READ | KEY_WOW64_64KEY,
+    &hKey
+  );
   if (openKeyError != ERROR_SUCCESS) {
     return FALSE;
   }
-  
-  queryValueError = RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL, (LPBYTE)&developerModeRegistryValue, &dwordSize);
+ 
+  queryValueError = RegQueryValueExW(
+    hKey,
+    L"AllowDevelopmentWithoutDevLicense",
+    NULL,
+    NULL,
+    (LPBYTE)&developerModeRegistryValue,
+    &dwordSize
+  );
   RegCloseKey(hKey);
   if (queryValueError != ERROR_SUCCESS) {
     return FALSE;
