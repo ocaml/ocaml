@@ -64,6 +64,7 @@ Working version
 
 - #9593: Use new flag for non-elevated symbolic links and test for Developer
   Mode on Windows
+  (Manuel Hornung, review by David Allsopp and Nicolás Ojeda Bär)
 
 * #9601: Return EPERM for EUNKNOWN -1314 in win32unix (principally affects
   error handling when Unix.symlink is unavailable)
