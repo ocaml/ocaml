@@ -65,10 +65,10 @@ let no_native_compilers =
 let native_action a =
   if native_support then a else (Actions.update a no_native_compilers)
 
-let get_backend_value_from_env env bytecode_var native_var =
-  Ocaml_backends.make_backend_function
-    (Environments.safe_lookup bytecode_var env)
-    (Environments.safe_lookup native_var env)
+let get_backend_value_from_env bytecode_var native_var target =
+  let+ bytecode_var = A.safe_lookup bytecode_var
+  and+ native_var = A.safe_lookup native_var in
+  Ocaml_backends.make_backend_function bytecode_var native_var target
 
 let modules =
   Actions_helpers.words_of_variable Ocaml_variables.modules
@@ -96,29 +96,29 @@ let ocamllex_flags =
 let ocamlyacc_flags =
   A.safe_lookup Ocaml_variables.ocamlyacc_flags
 
-let filelist env variable extension =
-  let value = Environments.safe_lookup variable env in
+let filelist variable extension =
+  let+ value = A.safe_lookup variable in
   let filenames = String.words value in
   let add_extension filename = Filename.make_filename filename extension in
   List.map add_extension filenames
 
-let libraries backend _ env =
+let libraries backend =
   let extension = Ocaml_backends.library_extension backend in
-  filelist env Ocaml_variables.libraries extension, env
+  filelist Ocaml_variables.libraries extension
 
-let binary_modules backend _ env =
+let binary_modules backend =
   let extension = Ocaml_backends.module_extension backend in
-  filelist env Ocaml_variables.binary_modules extension, env
+  filelist Ocaml_variables.binary_modules extension
 
-let backend_default_flags target _ env =
-  get_backend_value_from_env env
+let backend_default_flags target =
+  get_backend_value_from_env
     Ocaml_variables.ocamlc_default_flags
-    Ocaml_variables.ocamlopt_default_flags target, env
+    Ocaml_variables.ocamlopt_default_flags target
 
-let backend_flags target _ env =
-  get_backend_value_from_env env
+let backend_flags target =
+  get_backend_value_from_env
     Ocaml_variables.ocamlc_flags
-    Ocaml_variables.ocamlopt_flags target, env
+    Ocaml_variables.ocamlopt_flags target
 
 let env_setting env_reader default_setting =
   Printf.sprintf "%s=%s"
@@ -887,8 +887,8 @@ let run_expect_once input_file principal =
     Result.fail_with_reason ""
   end
 
-let if_ok a b c =
-  A.select a (A.map Fun.const b) c
+let if_ok a b =
+  A.branch a (A.map Fun.const b) (A.return Fun.id)
 
 let if_pass a b =
   A.select (A.map (fun r -> if Result.is_pass r then Ok () else Error r) a) (A.map Fun.const b)
@@ -1345,9 +1345,9 @@ let no_afl_instrument = Actions.make
     "AFL instrumentation disabled"
     "AFL instrumentation enabled")
 
-let ocamldoc_output_file env prefix =
-  let backend =
-    Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
+let ocamldoc_output_file prefix =
+  let+ backend = A.safe_lookup Ocaml_variables.ocamldoc_backend
+  and+ prefix = prefix in
   let suffix = match backend with
     | "latex" -> ".tex"
     | "html" -> ".html"
@@ -1428,24 +1428,33 @@ let ocamldoc_compile_all modules =
   (*       (r,env) *)
 
 let setup_ocamldoc_build_env =
-  Actions.make "setup_ocamldoc_build_env" @@ fun log env ->
-  let (r,env) = setup_tool_build_env `Ocamldoc log env in
-  if not (Result.is_pass r) then (r,env) else
-  let source_directory = fst (Actions_helpers.test_source_directory log env) in
-  let root_file = Filename.chop_extension (fst (Actions_helpers.testfile log env)) in
-  let reference_prefix = Filename.make_path [source_directory; root_file] in
-  let output = ocamldoc_output_file env root_file in
-  let reference = reference_prefix ^ fst (ocamldoc_reference_file_suffix log env) in
-  let backend = Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
-  let env =
-    Environments.apply_modifiers env  Ocaml_modifiers.(str @ unix)
-    |> Environments.add Builtin_variables.reference reference
-    |> Environments.add Builtin_variables.output output in
-  let env =
-    if backend = "man" then Environments.add_if_undefined
-        Builtin_variables.skip_header_lines "1" env
-    else env in
-  Result.pass, env
+  Actions.make "setup_ocamldoc_build_env" @@
+  if_ok (A.map (fun r -> if Result.is_pass r then Ok r else Error r)
+           (setup_tool_build_env `Ocamldoc))
+    (* if not (Result.is_pass r) then (r,env) else *)
+    (let source_directory = Actions_helpers.test_source_directory in
+     let root_file = A.map Filename.chop_extension Actions_helpers.testfile in
+     let reference_prefix =
+       let+ source_directory = source_directory
+       and+ root_file = root_file in
+       Filename.make_path [source_directory; root_file] in
+     let output = ocamldoc_output_file root_file in
+     let reference =
+       let+ reference_prefix = reference_prefix
+       and+ suffix = ocamldoc_reference_file_suffix in
+       reference_prefix ^ suffix
+     in
+     let backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
+     A.progn
+       (A.progn (A.apply_modifiers Ocaml_modifiers.(str @ unix))
+          (A.progn (A.add Builtin_variables.reference reference)
+             (A.add Builtin_variables.output output)))
+       (A.progn
+          (A.if_ (A.map ((=) "man") backend)
+             (A.add_if_undefined
+                Builtin_variables.skip_header_lines (A.return "1"))
+             (A.return ()))
+          (A.return Result.pass)))
 
 let ocamldoc_plugin name = name ^ ".cmo"
 
@@ -1512,8 +1521,7 @@ let run_ocamldoc =
     )
 
 let _ =
-  Environments.register_initializer "find_source_modules"
-    (fun log env -> snd (find_source_modules log env));
+  Environments.register_initializer "find_source_modules" (A.cast find_source_modules);
   Environments.register_initializer "config_variables" config_variables;
   List.iter register
   [

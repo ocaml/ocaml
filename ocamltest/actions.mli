@@ -16,11 +16,13 @@
 (* Definition of actions, basic blocks for tests *)
 
 module A : sig
-  type 'a t = out_channel -> Environments.t -> 'a * Environments.t
+  type 'a t
 
   val map: ('a -> 'b) -> 'a t -> 'b t
 
   val return: 'a -> 'a t
+
+  val apply: ('a -> 'b) t -> 'a t -> 'b t
 
   val if_: bool t -> 'a t -> 'a t -> 'a t
 
@@ -56,6 +58,12 @@ module A : sig
   val while_: ('a -> ('x, 'b) Stdlib.Result.t t) -> 'x -> 'a list t -> ('x, 'b) Stdlib.Result.t t
 
   val system_env: string array t
+
+  val apply_modifiers: Environments.modifiers -> unit t
+
+  val branch: ('a, 'b) Stdlib.Result.t t -> ('a -> 'c) t -> ('b -> 'c) t -> 'c t
+
+  val cast: unit t -> (out_channel -> Environments.t -> Environments.t)
 
   module Infix : sig
     val (let+): 'a t -> ('a -> 'b) -> 'b t

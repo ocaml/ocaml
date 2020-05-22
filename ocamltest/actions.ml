@@ -82,6 +82,11 @@ module A = struct
     let a, env = a log env in
     f a, env
 
+  let apply f a log env =
+    let a, env = a log env in
+    let f, env = f log env in
+    f a, env
+
   let return x _ env = x, env
 
   let select f a log env =
@@ -270,6 +275,14 @@ module A = struct
 
   let system_env _ env =
     Environments.to_system_env env, env
+
+  let apply_modifiers modifiers _ env =
+    (), Environments.apply_modifiers env modifiers
+
+  let branch f a b =
+    select (apply (map Stdlib.Result.map_error b) f) a
+
+  let cast x log env = snd (x log env)
 
   module Infix = struct
     let (let+) a f = map f a

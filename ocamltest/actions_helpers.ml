@@ -20,19 +20,14 @@ open Actions
 open A.Infix
 
 let skip_with_reason reason =
-  let code _log env =
-    let result = Result.skip_with_reason reason in
-    (result, env)
-  in
+  let code = A.return (Result.skip_with_reason reason) in
   Actions.make "skip" code
 
-let pass_or_skip test pass_reason skip_reason _log env =
+let pass_or_skip test pass_reason skip_reason =
   let open Result in
-  let result =
-    if test
-    then pass_with_reason pass_reason
-    else skip_with_reason skip_reason in
-  (result, env)
+  if test
+  then A.return (pass_with_reason pass_reason)
+  else A.return (skip_with_reason skip_reason)
 
 let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
@@ -76,75 +71,11 @@ let setup_build_env add_testfile additional_files =
   let+ () = A.setup_symlinks test_source_directory test_build_directory files in
   Result.pass
 
-let setup_simple_build_env add_testfile additional_files log env =
-  let build_env = Environments.add
-    Builtin_variables.test_build_directory
-    (fst (test_build_directory_prefix log env)) env in
-  setup_build_env add_testfile additional_files log build_env
-
-let run_cmd
-    ?(environment=[||])
-    ?(stdin_variable=Builtin_variables.stdin)
-    ?(stdout_variable=Builtin_variables.stdout)
-    ?(stderr_variable=Builtin_variables.stderr)
-    ?(append=false)
-    ?(timeout=0)
-    log env original_cmd
-  =
-  let log_redirection std filename =
-    if filename<>"" then
-    begin
-      Printf.fprintf log "  Redirecting %s to %s \n%!"
-        (relative_to_initial_cwd std)
-        (relative_to_initial_cwd filename)
-    end in
-  let cmd =
-    if (Environments.lookup_as_bool Strace.strace env) = Some true then
-    begin
-      let action_name = Environments.safe_lookup Actions.action_name env in
-      let test_build_directory = fst (test_build_directory log env) in
-      let strace_logfile_name = Strace.get_logfile_name action_name in
-      let strace_logfile =
-        Filename.make_path [test_build_directory; strace_logfile_name]
-      in
-      let strace_flags = Environments.safe_lookup Strace.strace_flags env in
-      let strace_cmd =
-        ["strace"; "-f"; "-o"; strace_logfile; strace_flags]
-      in
-      strace_cmd @ original_cmd
-    end else original_cmd
-  in
-  let lst = List.concat (List.map String.words cmd) in
-  let quoted_lst =
-    if Sys.os_type="Win32"
-    then List.map Filename.maybe_quote lst
-    else lst in
-  let cmd' = String.concat " " quoted_lst in
-  Printf.fprintf log "Commandline: %s\n" cmd';
-  let progname = List.hd quoted_lst in
-  let arguments = Array.of_list quoted_lst in
-  let stdin_filename = Environments.safe_lookup stdin_variable env in
-  let stdout_filename = Environments.safe_lookup stdout_variable env in
-  let stderr_filename = Environments.safe_lookup stderr_variable env in
-  log_redirection "stdin" stdin_filename;
-  log_redirection "stdout" stdout_filename;
-  log_redirection "stderr" stderr_filename;
-  let systemenv =
-    Array.append
-      environment
-      (Environments.to_system_env env)
-  in
-  Run_command.run {
-    Run_command.progname = progname;
-    Run_command.argv = arguments;
-    Run_command.envp = systemenv;
-    Run_command.stdin_filename = stdin_filename;
-    Run_command.stdout_filename = stdout_filename;
-    Run_command.stderr_filename = stderr_filename;
-    Run_command.append = append;
-    Run_command.timeout = timeout;
-    Run_command.log = log
-  }
+let setup_simple_build_env add_testfile additional_files =
+  A.progn
+    (A.add Builtin_variables.test_build_directory
+       test_build_directory_prefix)
+    (setup_build_env add_testfile additional_files)
 
 let run
     (log_message : string)
@@ -152,45 +83,46 @@ let run
     (can_skip : bool)
     (prog_variable : Variables.t)
     (args_variable : Variables.t option)
-    (log : out_channel)
-    (env : Environments.t)
   =
-  match Environments.lookup prog_variable env with
-  | None ->
-    let msg = Printf.sprintf "%s: variable %s is undefined"
-      log_message (Variables.name_of_variable prog_variable) in
-    (Result.fail_with_reason msg, env)
-  | Some program ->
-    let arguments = match args_variable with
-      | None -> ""
-      | Some variable -> Environments.safe_lookup variable env in
-    let commandline = [program; arguments] in
-    let what = log_message ^ " " ^ program ^ " " ^
-    begin if arguments="" then "without any argument"
-    else "with arguments " ^ arguments
-    end in
-    let env =
-      if redirect_output
-      then begin
-        let output = Environments.safe_lookup Builtin_variables.output env in
-        let env =
-          Environments.add_if_undefined Builtin_variables.stdout output env
-        in
-        Environments.add_if_undefined Builtin_variables.stderr output env
-      end else env
-    in
-    let expected_exit_status =
-      fst (int_of_variable Builtin_variables.exit_status log env)
-    in
-    let exit_status = run_cmd log env commandline in
-    if exit_status=expected_exit_status
-    then (Result.pass, env)
-    else begin
-      let reason = mkreason what (String.concat " " commandline) exit_status in
-      if exit_status = 125 && can_skip
-      then (Result.skip_with_reason reason, env)
-      else (Result.fail_with_reason reason, env)
-    end
+  let program = A.lookup prog_variable in
+  A.if_ (A.map ((=) None) program)
+    (let msg = Printf.sprintf "%s: variable %s is undefined"
+         log_message (Variables.name_of_variable prog_variable)
+     in
+     A.return (Result.fail_with_reason msg))
+    (let program = A.map Option.get program in
+     let arguments =
+       match args_variable with
+       | None -> A.return ""
+       | Some variable -> A.safe_lookup variable
+     in
+     let commandline =
+       let+ program = program
+       and+ arguments = arguments in
+       [program; arguments]
+     in
+     (* let what = log_message ^ " " ^ program ^ " " ^ *)
+     (*            begin if arguments="" then "without any argument" *)
+     (*              else "with arguments " ^ arguments *)
+     (*            end in *)
+     A.progn
+       (if redirect_output
+        then
+          let output = A.safe_lookup Builtin_variables.output in
+          A.progn (A.add_if_undefined Builtin_variables.stdout output)
+            (A.add_if_undefined Builtin_variables.stderr output)
+        else
+          A.return ())
+       (let+ expected_exit_status = int_of_variable Builtin_variables.exit_status
+        and+ exit_status = A.run_cmd commandline in
+        if exit_status = expected_exit_status
+        then Result.pass
+        else begin
+          let reason = "" (* mkreason what (String.concat " " commandline) exit_status *) in
+          if exit_status = 125 && can_skip
+          then Result.skip_with_reason reason
+          else Result.fail_with_reason reason
+        end))
 
 let run_program =
   run
@@ -200,138 +132,142 @@ let run_program =
     Builtin_variables.program
     (Some Builtin_variables.arguments)
 
-let run_script log env =
+let run_script =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
-  Printf.fprintf log "Script should write its response to %s\n%!"
-    response_file;
-  let scriptenv = Environments.add
-    Builtin_variables.ocamltest_response response_file env in
-  let (result, newenv) = run
-    "Running script"
-    true
-    true
-    Builtin_variables.script
-    None
-    log scriptenv in
-  let final_value =
-    if Result.is_pass result then begin
-      match Modifier_parser.modifiers_of_file response_file with
-      | modifiers ->
-        let modified_env = Environments.apply_modifiers newenv modifiers in
-        (result, modified_env)
-      | exception Failure reason ->
-        (Result.fail_with_reason reason, newenv)
-      | exception Variables.No_such_variable name ->
-        let reason =
-          Printf.sprintf "error in script response: unknown variable %s" name
-        in
-        (Result.fail_with_reason reason, newenv)
-    end else begin
-      let reason = String.trim (Sys.string_of_file response_file) in
-      let newresult = { result with Result.reason = Some reason } in
-      (newresult, newenv)
-    end
-  in
-  Sys.force_remove response_file;
-  final_value
+  (* Printf.fprintf log "Script should write its response to %s\n%!" *)
+  (*   response_file; *)
+  A.progn (A.add Builtin_variables.ocamltest_response (A.return response_file))
+    (A.branch
+       (A.map (fun r -> if Result.is_pass r then Ok r else Error r)
+          (run "Running script"
+             true
+             true
+             Builtin_variables.script
+             None))
+       (* let final_value = *)
+       (* if Result.is_pass result then begin *)
+       (match Modifier_parser.modifiers_of_file response_file with
+        | modifiers ->
+            let+ () = A.apply_modifiers modifiers in
+            Fun.id
+        | exception Failure reason ->
+            A.return (Fun.const (Result.fail_with_reason reason))
+        | exception Variables.No_such_variable name ->
+            let reason =
+              Printf.sprintf "error in script response: unknown variable %s" name
+            in
+            A.return (Fun.const (Result.fail_with_reason reason)))
+       (let reason = String.trim (Sys.string_of_file response_file) in
+        A.return
+          (fun result ->
+             { result with Result.reason = Some reason })))
+     (*   end *)
+  (* in *)
+  (* Sys.force_remove response_file; *)
+  (* final_value *)
 
-let run_hook hook_name log input_env =
-  Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name;
+let run_hook hook_name =
+  (* Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name; *)
   let response_file = Filename.temp_file "ocamltest-" ".response" in
-  Printf.fprintf log "Hook should write its response to %s\n%!"
-    response_file;
-  let hookenv = Environments.add
-    Builtin_variables.ocamltest_response response_file input_env in
-  let systemenv =
-    Environments.to_system_env hookenv in
-  let open Run_command in
-  let settings = {
-    progname = "sh";
-    argv = [|"sh"; Filename.maybe_quote hook_name|];
-    envp = systemenv;
-    stdin_filename = "";
-    stdout_filename = "";
-    stderr_filename = "";
-    append = false;
-    timeout = 0;
-    log = log;
-  } in let exit_status = run settings in
-  let final_value = match exit_status with
-    | 0 ->
-      begin match Modifier_parser.modifiers_of_file response_file with
-      | modifiers ->
-        let modified_env = Environments.apply_modifiers hookenv modifiers in
-        (Result.pass, modified_env)
-      | exception Failure reason ->
-        (Result.fail_with_reason reason, hookenv)
-      | exception Variables.No_such_variable name ->
-        let reason =
-          Printf.sprintf "error in script response: unknown variable %s" name
-        in
-        (Result.fail_with_reason reason, hookenv)
-      end
-    | _ ->
-      Printf.fprintf log "Hook returned %d" exit_status;
-      let reason = String.trim (Sys.string_of_file response_file) in
-      if exit_status=125
-      then (Result.skip_with_reason reason, hookenv)
-      else (Result.fail_with_reason reason, hookenv)
-  in
-  Sys.force_remove response_file;
-  final_value
+  (* Printf.fprintf log "Hook should write its response to %s\n%!" *)
+  (*   response_file; *)
+  A.progn
+    (A.add Builtin_variables.ocamltest_response (A.return response_file))
+    (let exit_status =
+       let+ systemenv = A.system_env in
+       let open Run_command in
+       let settings = {
+         progname = "sh";
+         argv = [|"sh"; Filename.maybe_quote hook_name|];
+         envp = systemenv;
+         stdin_filename = "";
+         stdout_filename = "";
+         stderr_filename = "";
+         append = false;
+         timeout = 0;
+         log = (* log; *) stdout; (* FIXME *)
+       }
+       in
+       run settings
+     in
+     A.branch (A.map (function 0 -> Ok () | n -> Error n) exit_status)
+       (match Modifier_parser.modifiers_of_file response_file with
+        | modifiers ->
+            let+ () = A.apply_modifiers modifiers in
+            Fun.const Result.pass
+        | exception Failure reason ->
+            A.return (Fun.const (Result.fail_with_reason reason))
+        | exception Variables.No_such_variable name ->
+            let reason =
+              Printf.sprintf "error in script response: unknown variable %s" name
+            in
+            A.return (Fun.const (Result.fail_with_reason reason)))
+       ((* Printf.fprintf log "Hook returned %d" exit_status; *)
+         let reason = String.trim (Sys.string_of_file response_file) in
+         A.return (fun exit_status ->
+             if exit_status = 125
+             then Result.skip_with_reason reason
+             else Result.fail_with_reason reason)))
+  (* in *)
+  (* Sys.force_remove response_file; *) (* FIXME *)
+  (* final_value *)
 
-let check_output kind_of_output output_variable reference_variable log
-    env =
+let check_output kind_of_output output_variable reference_variable =
   let to_int = function None -> 0 | Some s -> int_of_string s in
   let skip_lines =
-    to_int (Environments.lookup Builtin_variables.skip_header_lines env) in
+    A.map to_int (A.lookup Builtin_variables.skip_header_lines) in
   let skip_bytes =
-    to_int (Environments.lookup Builtin_variables.skip_header_bytes env) in
-  let reference_filename = Environments.safe_lookup reference_variable env in
-  let output_filename = Environments.safe_lookup output_variable env in
-  Printf.fprintf log "Comparing %s output %s to reference %s\n%!"
-    kind_of_output (relative_to_initial_cwd output_filename)
-    (relative_to_initial_cwd reference_filename);
+    A.map to_int (A.lookup Builtin_variables.skip_header_bytes) in
+  let reference_filename = A.safe_lookup reference_variable in
+  let output_filename = A.safe_lookup output_variable in
+  (* Printf.fprintf log "Comparing %s output %s to reference %s\n%!" *)
+  (*   kind_of_output (relative_to_initial_cwd output_filename) *)
+  (*   (relative_to_initial_cwd reference_filename); *)
+  let+ reference_filename = reference_filename
+  and+ output_filename = output_filename
+  and+ skip_lines = skip_lines
+  and+ skip_bytes = skip_bytes
+  and+ promote = A.lookup_as_bool Builtin_variables.promote in
   let files =
-  {
-    Filecompare.filetype = Filecompare.Text;
-    Filecompare.reference_filename = reference_filename;
-    Filecompare.output_filename = output_filename
-  } in
-  let ignore_header_conf = {
-      Filecompare.lines = skip_lines;
-      Filecompare.bytes = skip_bytes;
+    {
+      Filecompare.filetype = Filecompare.Text;
+      Filecompare.reference_filename = reference_filename;
+      Filecompare.output_filename = output_filename
     } in
+  let ignore_header_conf = {
+    Filecompare.lines = skip_lines;
+    Filecompare.bytes = skip_bytes;
+  } in
   let tool =
     Filecompare.make_cmp_tool ~ignore:ignore_header_conf in
   match Filecompare.check_file ~tool files with
-    | Filecompare.Same -> (Result.pass, env)
-    | Filecompare.Different ->
+  | Filecompare.Same -> Result.pass
+  | Filecompare.Different ->
       let diff = Filecompare.diff files in
       let diffstr = match diff with
         | Ok difference -> difference
         | Error diff_file -> ("See " ^ diff_file) in
       let reason =
         Printf.sprintf "%s output %s differs from reference %s: \n%s\n"
-        kind_of_output output_filename reference_filename diffstr in
-      if Environments.lookup_as_bool Builtin_variables.promote env = Some true
+          kind_of_output output_filename reference_filename diffstr in
+      if promote = Some true
       then begin
-        Printf.fprintf log "Promoting %s output %s to reference %s\n%!"
-          kind_of_output output_filename reference_filename;
-        Filecompare.promote files ignore_header_conf;
+        (* Printf.fprintf log "Promoting %s output %s to reference %s\n%!" *)
+        (*   kind_of_output output_filename reference_filename; *)
+        Filecompare.promote files ignore_header_conf
       end;
-      (Result.fail_with_reason reason, env)
-    | Filecompare.Unexpected_output ->
+      Result.fail_with_reason reason
+  | Filecompare.Unexpected_output ->
       let banner = String.make 40 '=' in
       let unexpected_output = Sys.string_of_file output_filename in
       let unexpected_output_with_banners = Printf.sprintf
-        "%s\n%s%s\n" banner unexpected_output banner in
+          "%s\n%s%s\n" banner unexpected_output banner in
       let reason = Printf.sprintf
-        "The file %s was expected to be empty because there is no \
-          reference file %s but it is not:\n%s\n"
-        output_filename reference_filename unexpected_output_with_banners in
-      (Result.fail_with_reason reason, env)
-    | Filecompare.Error (commandline, exitcode) ->
+          "The file %s was expected to be empty because there is no \
+           reference file %s but it is not:\n%s\n"
+          output_filename reference_filename unexpected_output_with_banners in
+      Result.fail_with_reason reason
+  | Filecompare.Error (commandline, exitcode) ->
       let reason = Printf.sprintf "The command %s failed with status %d"
-        commandline exitcode in
-      (Result.fail_with_reason reason, env)
+          commandline exitcode in
+      Result.fail_with_reason reason

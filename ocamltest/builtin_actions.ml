@@ -17,50 +17,41 @@
 
 open Ocamltest_stdlib
 open Actions
+open A.Infix
 
-let reason_with_fallback env fallback =
-  match Environments.lookup Builtin_variables.reason env with
-  | None -> fallback
-  | Some reason -> reason
+let reason_with_fallback fallback =
+  A.branch (A.map (function None -> Error () | Some x -> Ok x)
+      (A.lookup Builtin_variables.reason))
+    (A.return Fun.id)
+    (A.return (Fun.const fallback))
 
 let pass = make
   "pass"
-  (fun _log env ->
-    let reason = reason_with_fallback env "the pass action always succeeds" in
-    let result = Result.pass_with_reason reason in
-    (result, env))
+  (let+ reason = reason_with_fallback "the pass action always succeeds" in
+   Result.pass_with_reason reason)
 
 let skip = make
   "skip"
-  (fun _log env ->
-    let reason = reason_with_fallback env "the skip action always skips" in
-    let result = Result.skip_with_reason reason in
-    (result, env))
+  (let+ reason = reason_with_fallback "the skip action always skips" in
+   Result.skip_with_reason reason)
 
 let fail = make
   "fail"
-  (fun _log env ->
-    let reason = reason_with_fallback env "the fail action always fails" in
-    let result = Result.fail_with_reason reason in
-    (result, env))
+  (let+ reason = reason_with_fallback "the fail action always fails" in
+   Result.fail_with_reason reason)
 
 let cd = make
   "cd"
-  (fun _log env ->
-    let cwd = Environments.safe_lookup Builtin_variables.cwd env in
-    begin
-      try
-        Sys.chdir cwd; (Result.pass, env)
-      with _ ->
-        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
-        let result = Result.fail_with_reason reason in
-        (result, env)
-    end)
+  (let+ cwd = A.safe_lookup Builtin_variables.cwd in
+   try
+     Sys.chdir cwd; Result.pass
+   with _ ->
+     let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
+     Result.fail_with_reason reason)
 
 let dumpenv = make
   "dumpenv"
-  (fun log env ->
-    Environments.dump log env; (Result.pass, env))
+  ((* Environments.dump log env;*) A.return Result.pass)
 
 let hasinstrumentedruntime = make
   "hasinstrumentedruntime"
