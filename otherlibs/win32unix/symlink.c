@@ -36,7 +36,7 @@ static int no_symlink = 0;
 CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
-  DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
+  DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) | SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
   BOOLEAN result;
   LPWSTR source;
   LPWSTR dest;
@@ -75,9 +75,33 @@ again:
 
 #define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
 
+// Developer Mode allows the creation of symlinks without elevation - see
+// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
+BOOL IsDeveloperModeEnabled() {
+  HKEY hKey;
+  LSTATUS openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ, &hKey);
+  if (openKeyError != ERROR_SUCCESS) {
+    return FALSE;
+  }
+  
+  DWORD developerModeRegistryValue;
+  DWORD dwordSize = sizeof(DWORD);
+  LSTATUS queryValueError = RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL, (LPBYTE)&developerModeRegistryValue, &dwordSize);
+  RegCloseKey(hKey);
+  if (queryValueError != ERROR_SUCCESS) {
+    return FALSE;
+  }
+  return developerModeRegistryValue != 0;
+}
+
 CAMLprim value unix_has_symlink(value unit)
 {
   CAMLparam1(unit);
+
+  if (IsDeveloperModeEnabled()) {
+    CAMLreturn(Val_true);
+  }
+
   HANDLE hProcess = GetCurrentProcess();
   BOOL result = FALSE;
 
