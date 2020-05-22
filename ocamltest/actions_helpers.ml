@@ -19,15 +19,15 @@ open Ocamltest_stdlib
 open Actions
 open A.Infix
 
-let skip_with_reason reason =
-  let code = A.return (Result.skip_with_reason reason) in
-  Actions.make "skip" code
-
 let pass_or_skip test pass_reason skip_reason =
   let open Result in
   if test
   then A.return (pass_with_reason pass_reason)
   else A.return (skip_with_reason skip_reason)
+
+let skip_with_reason reason =
+  Actions.make "skip"
+    (A.with_env (A.return (Result.skip_with_reason reason)))
 
 let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
@@ -68,14 +68,13 @@ let setup_build_env add_testfile additional_files =
     else
       some_files
   in
-  let+ () = A.setup_symlinks test_source_directory test_build_directory files in
-  Result.pass
+  A.setup_symlinks test_source_directory test_build_directory files
 
 let setup_simple_build_env add_testfile additional_files =
-  A.progn
-    (A.add Builtin_variables.test_build_directory
-       test_build_directory_prefix)
-    (setup_build_env add_testfile additional_files)
+  A.add Builtin_variables.test_build_directory
+    test_build_directory_prefix
+    (A.map snd
+       (A.with_env (setup_build_env add_testfile additional_files)))
 
 let run
     (log_message : string)
@@ -105,24 +104,25 @@ let run
      (*            begin if arguments="" then "without any argument" *)
      (*              else "with arguments " ^ arguments *)
      (*            end in *)
-     A.progn
-       (if redirect_output
-        then
-          let output = A.safe_lookup Builtin_variables.output in
-          A.progn (A.add_if_undefined Builtin_variables.stdout output)
-            (A.add_if_undefined Builtin_variables.stderr output)
-        else
-          A.return ())
-       (let+ expected_exit_status = int_of_variable Builtin_variables.exit_status
-        and+ exit_status = A.run_cmd commandline in
-        if exit_status = expected_exit_status
-        then Result.pass
-        else begin
-          let reason = "" (* mkreason what (String.concat " " commandline) exit_status *) in
-          if exit_status = 125 && can_skip
-          then Result.skip_with_reason reason
-          else Result.fail_with_reason reason
-        end))
+     let run =
+       let+ expected_exit_status = int_of_variable Builtin_variables.exit_status
+       and+ exit_status = A.run_cmd commandline in
+       if exit_status = expected_exit_status
+       then Result.pass
+       else begin
+         let reason = "" (* mkreason what (String.concat " " commandline) exit_status *) in
+         if exit_status = 125 && can_skip
+         then Result.skip_with_reason reason
+         else Result.fail_with_reason reason
+       end
+     in
+     if redirect_output
+     then
+       let output = A.safe_lookup Builtin_variables.output in
+       A.add_if_undefined Builtin_variables.stdout output
+         (A.add_if_undefined Builtin_variables.stderr output run)
+     else
+       run)
 
 let run_program =
   run
@@ -136,7 +136,7 @@ let run_script =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
   (* Printf.fprintf log "Script should write its response to %s\n%!" *)
   (*   response_file; *)
-  A.progn (A.add Builtin_variables.ocamltest_response (A.return response_file))
+  A.add Builtin_variables.ocamltest_response (A.return response_file)
     (A.branch
        (A.map (fun r -> if Result.is_pass r then Ok r else Error r)
           (run "Running script"
@@ -148,19 +148,21 @@ let run_script =
        (* if Result.is_pass result then begin *)
        (match Modifier_parser.modifiers_of_file response_file with
         | modifiers ->
-            let+ () = A.apply_modifiers modifiers in
-            Fun.id
+            A.apply_modifiers modifiers (let+ (), env = A.with_env (A.return ()) in
+                                         (fun r -> r, env))
         | exception Failure reason ->
-            A.return (Fun.const (Result.fail_with_reason reason))
+            let+ (), env = A.with_env (A.return ()) in
+            Fun.const (Result.fail_with_reason reason, env)
         | exception Variables.No_such_variable name ->
             let reason =
               Printf.sprintf "error in script response: unknown variable %s" name
             in
-            A.return (Fun.const (Result.fail_with_reason reason)))
+            let+ (), env = A.with_env (A.return ()) in
+            Fun.const (Result.fail_with_reason reason, env))
        (let reason = String.trim (Sys.string_of_file response_file) in
-        A.return
-          (fun result ->
-             { result with Result.reason = Some reason })))
+        let+ (), env = A.with_env (A.return ()) in
+        fun result ->
+          { result with Result.reason = Some reason }, env))
      (*   end *)
   (* in *)
   (* Sys.force_remove response_file; *)
@@ -171,8 +173,7 @@ let run_hook hook_name =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
   (* Printf.fprintf log "Hook should write its response to %s\n%!" *)
   (*   response_file; *)
-  A.progn
-    (A.add Builtin_variables.ocamltest_response (A.return response_file))
+  A.add Builtin_variables.ocamltest_response (A.return response_file)
     (let exit_status =
        let+ systemenv = A.system_env in
        let open Run_command in
@@ -193,8 +194,7 @@ let run_hook hook_name =
      A.branch (A.map (function 0 -> Ok () | n -> Error n) exit_status)
        (match Modifier_parser.modifiers_of_file response_file with
         | modifiers ->
-            let+ () = A.apply_modifiers modifiers in
-            Fun.const Result.pass
+            A.apply_modifiers modifiers (A.return (Fun.const Result.pass))
         | exception Failure reason ->
             A.return (Fun.const (Result.fail_with_reason reason))
         | exception Variables.No_such_variable name ->

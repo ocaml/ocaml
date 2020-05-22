@@ -76,26 +76,25 @@ let _ = Variables.register_variable action_name
 
 module A = struct
   type 'a t =
-    out_channel -> Environments.t -> 'a * Environments.t
+    out_channel -> Environments.t -> 'a
 
   let map f a log env =
-    let a, env = a log env in
-    f a, env
+    f (a log env)
 
   let apply f a log env =
-    let a, env = a log env in
-    let f, env = f log env in
-    f a, env
+    let a = a log env in
+    let f = f log env in
+    f a
 
-  let return x _ env = x, env
+  let return x _ _ = x
 
   let select f a log env =
     match f log env with
-    | Ok x, env ->
-        let a, env = a log env in
-        a x, env
-    | Error b, env -> (* CHECK ME *)
-        b, env
+    | Ok x ->
+        let a = a log env in
+        a x
+    | Error b ->
+        b
 
   open Ocamltest_stdlib
 
@@ -114,7 +113,7 @@ module A = struct
     let environment =
       match environment with
       | None -> [||]
-      | Some e -> fst (e log env) (* CHECK *)
+      | Some e -> e log env
     in
     let log_redirection std filename =
       if filename<>"" then
@@ -173,21 +172,18 @@ module A = struct
 
   let run_cmd ?environment ?stdin_variable ?stdout_variable ?stderr_variable ?append
       cmdline log env =
-    let n =
-      let cmdline, env (* CHECK *) = cmdline log env in
-      run_cmd
-        ?environment
-        ?stdin_variable
-        ?stdout_variable
-        ?stderr_variable
-        ?append log env cmdline
-    in
-    n, env
+    let cmdline = cmdline log env in
+    run_cmd
+      ?environment
+      ?stdin_variable
+      ?stdout_variable
+      ?stderr_variable
+      ?append log env cmdline
 
   let setup_symlinks source_dir build_dir files log env =
-    let source_dir = fst (source_dir log env) in
-    let build_dir = fst (build_dir log env) in
-    let files = fst (files log env) in
+    let source_dir = source_dir log env in
+    let build_dir = build_dir log env in
+    let files = files log env in
     let symlink filename =
       let src = Filename.concat source_dir filename in
       let cmd = "ln -sf " ^ src ^" " ^ build_dir in
@@ -201,94 +197,95 @@ module A = struct
     let f = if Sys.win32 then copy else symlink in
     Sys.make_directory build_dir;
     List.iter f files;
-    Sys.chdir build_dir, env (* CHECK ME *)
+    Sys.chdir build_dir
 
   let safe_lookup var _ env =
-    Environments.safe_lookup var env, env
+    Environments.safe_lookup var env
 
   let lookup var _ env =
-    Environments.lookup var env, env
+    Environments.lookup var env
 
   let lookup_nonempty var _ env =
-    Environments.lookup_nonempty var env, env
+    Environments.lookup_nonempty var env
 
   let lookup_as_bool var _ env =
-    Environments.lookup_as_bool var env, env
+    Environments.lookup_as_bool var env
 
   let pair a b log env =
-    let a, _env' = a log env in
-    let b, env' = b log env in
-    (a, b), env' (* CHECK *)
+    let a = a log env in
+    let b = b log env in
+    (a, b)
 
   let force_remove s log env =
-    let s, _ = s log env in
-    Sys.force_remove s, env
+    let s = s log env in
+    Sys.force_remove s
 
   let progn a b log env =
-    let (), env = a log env in
+    let () = a log env in
     b log env
 
-  let add v s log env =
-    let s, _ = s log env in
-    (), Environments.add v s env
+  let add v s x log env =
+    let s = s log env in
+    x log (Environments.add v s env)
 
-  let add_if_undefined v s log env =
-    let s, _ = s log env in
-    (), Environments.add_if_undefined v s env
+  let add_if_undefined v s x log env =
+    let s = s log env in
+    x log (Environments.add_if_undefined v s env)
+
+  let with_env x log env =
+    let x = x log env in
+    x, env
 
   let if_ c a b log env =
-    match c log env with
-    | true, env -> a log env
-    | false, env -> b log env
-
-  let when_ a b =
-    if_ a b (return ())
+    if c log env then
+      a log env
+    else
+      b log env
 
   let concatmap f l log env =
-    let l, env = l log env in
-    let rec loop acc env = function
-      | [] -> List.rev acc, env
+    let l = l log env in
+    let rec loop acc = function
+      | [] -> List.rev acc
       | x :: l ->
-          let xl, env = f x log env in
-          loop (xl :: acc) env l
+          let xl = f x log env in
+          loop (xl :: acc) l
     in
-    let l, env = loop [] env l in
-    List.flatten l, env
+    let l = loop [] l in
+    List.flatten l
 
   let while_ f x l log env =
-    let l, env = l log env in
-    let rec loop res env = function
-      | [] -> Ok res, env
+    let l = l log env in
+    let rec loop res = function
+      | [] -> Ok res
       | x :: l ->
           begin match f x log env with
-          | Ok x, env ->
-              loop x env l
-          | Error _ as r, env ->
-              r, env
+          | Ok x ->
+              loop x l
+          | Error _ as r ->
+              r
           end
     in
-    loop x env l
+    loop x l
 
   let file_exists s log env =
-    let s, env = s log env in
-    Sys.file_exists s, env
+    let s = s log env in
+    Sys.file_exists s
 
   let system_env _ env =
-    Environments.to_system_env env, env
+    Environments.to_system_env env
 
-  let apply_modifiers modifiers _ env =
-    (), Environments.apply_modifiers env modifiers
+  let apply_modifiers modifiers x log env =
+    x log (Environments.apply_modifiers env modifiers)
 
   let branch f a b =
     select (apply (map Stdlib.Result.map_error b) f) a
 
-  let cast x log env = snd (x log env)
+  let cast x log env = x log env
 
   module Infix = struct
     let (let+) a f = map f a
     let (and+) a b = pair a b
-    let (||+) a b =
-      if_ a (return true) b
+    let (||+) a b = if_ a (return true) b
     let (&&+) a b = if_ a b (return false)
   end
 end

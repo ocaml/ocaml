@@ -60,7 +60,7 @@ let reference_file t prefix =
 let native_support = Ocamltest_config.arch <> "none"
 
 let no_native_compilers =
-  Actions.A.return (Result.skip_with_reason "native compilers disabled")
+  A.with_env (A.return (Result.skip_with_reason "native compilers disabled"))
 
 let native_action a =
   if native_support then a else (Actions.update a no_native_compilers)
@@ -436,8 +436,10 @@ let find_source_modules =
   A.add
     Ocaml_variables.all_modules
     (A.map (fun l -> String.concat " " (List.map Ocaml_filetypes.make_filename l)) source_modules)
+    (let+ (), env = A.with_env (A.return ()) in
+     env)
 
-let setup_tool_build_env tool =
+let setup_tool_build_env tool x =
   let source_directory = Actions_helpers.test_source_directory in
   let testfile = Actions_helpers.testfile in
   let testfile_basename = A.map Filename.chop_extension testfile in
@@ -461,19 +463,16 @@ let setup_tool_build_env tool =
     let+ build_dir = build_dir in
     Filename.make_path [build_dir; tool_output_filename]
   in
-  A.progn
-    (A.add_if_undefined tool_reference_variable tool_reference_file)
-    (A.progn
-       (A.add_if_undefined tool_output_variable tool_output_file)
-       (A.progn
-          (A.force_remove tool_output_file)
-          (A.progn
-             (A.add Builtin_variables.test_build_directory build_dir)
-             (Actions_helpers.setup_build_env false source_modules))))
+  A.add_if_undefined tool_reference_variable tool_reference_file
+    (A.add_if_undefined tool_output_variable tool_output_file
+       (A.add Builtin_variables.test_build_directory build_dir
+          (let+ () = A.force_remove tool_output_file
+           and+ () = Actions_helpers.setup_build_env false source_modules
+           and+ r = x in
+           r)))
 
 let setup_compiler_build_env compiler =
-  let r = setup_tool_build_env (`Compiler compiler) in
-  A.if_ (A.map Result.is_pass r)
+  setup_tool_build_env (`Compiler compiler)
     (let prog_var = Ocaml_compilers.program_variable compiler in
      let prog_output_var = Ocaml_compilers.program_output_variable compiler in
      let prog_output_file =
@@ -481,19 +480,21 @@ let setup_compiler_build_env compiler =
        prog_file ^ ".output"
      in
      let default_prog_file = get_program_file (Ocaml_compilers.target compiler) in
-     A.progn
-       (A.add_if_undefined prog_var default_prog_file)
-       (A.progn
-          (match prog_output_var with
-           | None -> A.return ()
-           | Some outputvar -> A.add_if_undefined outputvar prog_output_file) r)
-    ) r
+     A.add_if_undefined prog_var default_prog_file
+       (match prog_output_var with
+        | None -> A.with_env (A.return ())
+        | Some outputvar ->
+            A.add_if_undefined outputvar
+              prog_output_file (A.with_env (A.return ())))
+    )
 
 let mk_compiler_env_setup name compiler =
-  Actions.make name (setup_compiler_build_env compiler)
+  Actions.make name
+    (A.map (fun ((), env) -> (Result.pass, env)) (setup_compiler_build_env compiler))
 
 let mk_toplevel_env_setup name toplevel =
-  Actions.make name (setup_tool_build_env toplevel)
+  Actions.make name (setup_tool_build_env toplevel
+                       (A.with_env (A.return Result.pass)))
 
 let setup_ocamlc_byte_build_env =
   mk_compiler_env_setup
@@ -564,6 +565,9 @@ let compile compiler =
        Result.fail_with_reason reason
    )
 
+let compile compiler =
+  A.with_env (compile compiler)
+
 (* Compile actions *)
 
 let ocamlc_byte =
@@ -589,14 +593,14 @@ let ocamlopt_opt =
       "ocamlopt.opt"
       (compile Ocaml_compilers.ocamlopt_opt))
 
-let env_with_lib_unix =
+let env_with_lib_unix x =
   let newlibs =
     let+ ld_lib_path = A.lookup Ocaml_variables.caml_ld_library_path in
     match ld_lib_path with
     | None -> Ocaml_directories.libunix
     | Some libs -> Ocaml_directories.libunix ^ " " ^ libs
   in
-  A.add Ocaml_variables.caml_ld_library_path newlibs
+  A.add Ocaml_variables.caml_ld_library_path newlibs x
 
 let debug =
   (* let what = Printf.sprintf "Debugging program %s" program in *)
@@ -610,8 +614,7 @@ let debug =
     ]
   in
   let+ exit_status =
-    A.progn
-      env_with_lib_unix
+    env_with_lib_unix
       (let systemenv =
          let+ system_env = A.system_env in
          Array.append default_ocaml_env system_env
@@ -633,7 +636,7 @@ let debug =
     Result.fail_with_reason ""
   end
 
-let ocamldebug = Actions.make "ocamldebug" debug
+let ocamldebug = Actions.make "ocamldebug" (A.with_env debug)
 
 let objinfo =
   let tools_directory = Ocaml_directories.tools in
@@ -648,8 +651,7 @@ let objinfo =
     ]
   in
   let ocamllib = [| Printf.sprintf "OCAMLLIB=%s" tools_directory |] in
-  A.progn
-    env_with_lib_unix
+  env_with_lib_unix
     (let systemenv =
        let+ system_env = A.system_env in
        Array.concat
@@ -676,7 +678,7 @@ let objinfo =
        Result.fail_with_reason ""
      end)
 
-let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
+let ocamlobjinfo = Actions.make "ocamlobjinfo" (A.with_env objinfo)
 
 let mklib =
   (* let what = Printf.sprintf "Running ocamlmklib to produce %s" program in *)
@@ -713,7 +715,7 @@ let mklib =
     Result.fail_with_reason ""
   end
 
-let ocamlmklib = Actions.make "ocamlmklib" mklib
+let ocamlmklib = Actions.make "ocamlmklib" (A.with_env mklib)
 
 let finalise_codegen_cc test_basename =
   let test_module =
@@ -728,11 +730,9 @@ let finalise_codegen_cc test_basename =
     let+ test_basename = test_basename in
     Filename.make_filename test_basename "out"
   in
-  A.progn
-    (A.add Ocaml_variables.modules modules)
-    (A.progn
-       (A.add Builtin_variables.program program)
-       (A.return Result.pass))
+  A.add Ocaml_variables.modules modules
+    (A.add Builtin_variables.program program
+       (A.with_env (A.return Result.pass)))
 
 let finalise_codegen_msvc test_basename =
   let obj = A.map (fun s -> Filename.make_filename s Ocamltest_config.objext) test_basename in
@@ -768,15 +768,13 @@ let finalise_codegen_msvc test_basename =
      (*       Builtin_variables.program, program; *)
      (*     ] env *)
      (* in *)
-     A.progn
-       (A.add Ocaml_variables.modules modules)
-       (A.progn
-          (A.add Builtin_variables.program program)
-          (A.return Result.pass)))
+     A.add Ocaml_variables.modules modules
+       (A.add Builtin_variables.program program
+          (A.with_env (A.return Result.pass))))
     ((* let reason = *)
       (*   (Actions_helpers.mkreason *)
       (*     what (String.concat " " commandline) exit_status) in *)
-      A.return (Result.fail_with_reason ""))
+      A.with_env (A.return (Result.fail_with_reason "")))
 
 let run_codegen =
   (* let what = Printf.sprintf "Running codegen on %s" testfile in *)
@@ -792,35 +790,33 @@ let run_codegen =
     let output_file = Filename.make_filename testfile_basename "output" in
     Filename.make_path [test_build_directory; output_file]
   in
-  A.progn
-    (A.add_if_undefined Ocaml_variables.compiler_output compiler_output)
-    (A.progn
-     (A.add Builtin_variables.output output)
-     (let cmdline =
-        let+ testfile = Actions_helpers.testfile
-        and+ flags = flags in
-        [
-          Ocaml_commands.ocamlrun_codegen;
-          flags;
-          "-S " ^ testfile
-        ]
-      in
-      let exit_status =
-        A.run_cmd
-          ~environment:(A.return default_ocaml_env)
-          ~stdout_variable:Ocaml_variables.compiler_output
-          ~stderr_variable:Ocaml_variables.compiler_output
-          ~append:true
-          cmdline
-      in
-      A.if_ (A.map ((=) 0) exit_status)
-        (if Ocamltest_config.ccomptype="msvc"
-         then finalise_codegen_msvc testfile_basename
-         else finalise_codegen_cc testfile_basename)
-        ((* let reason = *)
-          (*   (Actions_helpers.mkreason *)
-          (*     what (String.concat " " commandline) exit_status) in *)
-          A.return (Result.fail_with_reason ""))))
+  A.add_if_undefined Ocaml_variables.compiler_output compiler_output
+    (A.add Builtin_variables.output output
+       (let cmdline =
+          let+ testfile = Actions_helpers.testfile
+          and+ flags = flags in
+          [
+            Ocaml_commands.ocamlrun_codegen;
+            flags;
+            "-S " ^ testfile
+          ]
+        in
+        let exit_status =
+          A.run_cmd
+            ~environment:(A.return default_ocaml_env)
+            ~stdout_variable:Ocaml_variables.compiler_output
+            ~stderr_variable:Ocaml_variables.compiler_output
+            ~append:true
+            cmdline
+        in
+        A.if_ (A.map ((=) 0) exit_status)
+          (if Ocamltest_config.ccomptype="msvc"
+           then finalise_codegen_msvc testfile_basename
+           else finalise_codegen_cc testfile_basename)
+          ((* let reason = *)
+            (*   (Actions_helpers.mkreason *)
+            (*     what (String.concat " " commandline) exit_status) in *)
+            A.with_env (A.return (Result.fail_with_reason "")))))
 
 let codegen = Actions.make "codegen" run_codegen
 
@@ -859,7 +855,7 @@ let run_cc =
     Result.fail_with_reason ""
   end
 
-let cc = Actions.make "cc" run_cc
+let cc = Actions.make "cc" (A.with_env run_cc)
 
 let run_expect_once input_file principal =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
@@ -891,7 +887,8 @@ let if_ok a b =
   A.branch a (A.map Fun.const b) (A.return Fun.id)
 
 let if_pass a b =
-  A.select (A.map (fun r -> if Result.is_pass r then Ok () else Error r) a) (A.map Fun.const b)
+  A.select (A.map (fun r -> if Result.is_pass (fst r) then Ok () else Error r) (A.with_env a))
+    (A.map Fun.const b)
 
 let run_expect_twice input_file =
   let corrected filename =
@@ -902,11 +899,9 @@ let run_expect_twice input_file =
     (let intermediate_file = corrected input_file in
      if_pass (run_expect_once intermediate_file true)
        (let output_file = corrected intermediate_file in
-        A.progn
-          (A.add Builtin_variables.reference input_file)
-          (A.progn
-             (A.add Builtin_variables.output output_file)
-             (A.return Result.pass))))
+        A.add Builtin_variables.reference input_file
+          (A.add Builtin_variables.output output_file
+             (A.with_env (A.return Result.pass)))))
 
 let run_expect =
   run_expect_twice Actions_helpers.testfile
@@ -915,10 +910,11 @@ let run_expect = Actions.make "run-expect" run_expect
 
 let make_check_tool_output name tool =
   Actions.make name
-    (Actions_helpers.check_output
-       (family tool)
-       (output_variable tool)
-       (reference_variable tool))
+    (A.with_env
+       (Actions_helpers.check_output
+          (family tool)
+          (output_variable tool)
+          (reference_variable tool)))
 
 let check_ocamlc_byte_output =
   make_check_tool_output
@@ -1022,13 +1018,13 @@ let compare_bytecode_programs =
   native_action
     (Actions.make
       "compare-bytecode-programs"
-      compare_bytecode_programs_code)
+      (A.with_env compare_bytecode_programs_code))
 
 let compare_native_programs =
   native_action
     (Actions.make
       "compare-native-programs"
-      (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
+      (A.with_env (compare_programs Ocaml_backends.Native native_programs_comparison_tool)))
 
 let compile_module compiler compilername compileroutput
     (module_basename, module_filetype) =
@@ -1207,13 +1203,13 @@ let run_test_program_in_toplevel toplevel =
 
 let ocaml = Actions.make
   "ocaml"
-  (run_test_program_in_toplevel Ocaml_toplevels.ocaml)
+  (A.with_env (run_test_program_in_toplevel Ocaml_toplevels.ocaml))
 
 let ocamlnat =
   native_action
     (Actions.make
       "ocamlnat"
-      (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat))
+      (A.with_env (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat)))
 
 let check_ocaml_output =
   make_check_tool_output
@@ -1255,93 +1251,96 @@ let config_variables _log env =
     Ocaml_variables.os_type, Sys.os_type;
   ] env
 
+let pass_or_skip b s1 s2 =
+  A.with_env (Actions_helpers.pass_or_skip b s1 s2)
+
 let flat_float_array = Actions.make
   "flat-float-array"
-  (Actions_helpers.pass_or_skip Ocamltest_config.flat_float_array
+  (pass_or_skip Ocamltest_config.flat_float_array
     "compiler configured with -flat-float-array"
     "compiler configured with -no-flat-float-array")
 
 let no_flat_float_array = make
   "no-flat-float-array"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.flat_float_array)
+  (pass_or_skip (not Ocamltest_config.flat_float_array)
     "compiler configured with -no-flat-float-array"
     "compiler configured with -flat-float-array")
 
 let flambda = Actions.make
   "flambda"
-  (Actions_helpers.pass_or_skip Ocamltest_config.flambda
+  (pass_or_skip Ocamltest_config.flambda
     "support for flambda enabled"
     "support for flambda disabled")
 
 let no_flambda = make
   "no-flambda"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.flambda)
+  (pass_or_skip (not Ocamltest_config.flambda)
     "support for flambda disabled"
     "support for flambda enabled")
 
 let spacetime = Actions.make
   "spacetime"
-  (Actions_helpers.pass_or_skip Ocamltest_config.spacetime
+  (pass_or_skip Ocamltest_config.spacetime
     "support for spacetime enabled"
     "support for spacetime disabled")
 
 let no_spacetime = make
   "no-spacetime"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.spacetime)
+  (pass_or_skip (not Ocamltest_config.spacetime)
     "support for spacetime disabled"
     "support for spacetime enabled")
 
 let shared_libraries = Actions.make
   "shared-libraries"
-  (Actions_helpers.pass_or_skip Ocamltest_config.shared_libraries
+  (pass_or_skip Ocamltest_config.shared_libraries
     "Shared libraries are supported."
     "Shared libraries are not supported.")
 
 let no_shared_libraries = Actions.make
   "no-shared-libraries"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.shared_libraries)
+  (pass_or_skip (not Ocamltest_config.shared_libraries)
     "Shared libraries are not supported."
     "Shared libraries are supported.")
 
 let native_compiler = Actions.make
   "native-compiler"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.arch <> "none")
+  (pass_or_skip (Ocamltest_config.arch <> "none")
     "native compiler available"
     "native compiler not available")
 
 let native_dynlink = Actions.make
   "native-dynlink"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.native_dynlink)
+  (pass_or_skip (Ocamltest_config.native_dynlink)
     "native dynlink support available"
     "native dynlink support not available")
 
 let debugger = Actions.make
   "debugger"
-  (Actions_helpers.pass_or_skip Ocamltest_config.ocamldebug
+  (pass_or_skip Ocamltest_config.ocamldebug
      "debugger available"
      "debugger not available")
 
 let csharp_compiler = Actions.make
   "csharp-compiler"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.csc<>"")
+  (pass_or_skip (Ocamltest_config.csc<>"")
     "C# compiler available"
     "C# compiler not available")
 
 let windows_unicode = Actions.make
   "windows-unicode"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.windows_unicode )
+  (pass_or_skip (Ocamltest_config.windows_unicode )
     "Windows Unicode support available"
     "Windows Unicode support not available")
 
 let afl_instrument = Actions.make
   "afl-instrument"
-  (Actions_helpers.pass_or_skip Ocamltest_config.afl_instrument
+  (pass_or_skip Ocamltest_config.afl_instrument
     "AFL instrumentation enabled"
     "AFL instrumentation disabled")
 
 let no_afl_instrument = Actions.make
   "no-afl-instrument"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.afl_instrument)
+  (pass_or_skip (not Ocamltest_config.afl_instrument)
     "AFL instrumentation disabled"
     "AFL instrumentation enabled")
 
@@ -1429,8 +1428,9 @@ let ocamldoc_compile_all modules =
 
 let setup_ocamldoc_build_env =
   Actions.make "setup_ocamldoc_build_env" @@
-  if_ok (A.map (fun r -> if Result.is_pass r then Ok r else Error r)
-           (setup_tool_build_env `Ocamldoc))
+  setup_tool_build_env `Ocamldoc
+  (* if_ok (A.map (fun r -> if Result.is_pass r then Ok r else Error r) *)
+  (*          (setup_tool_build_env `Ocamldoc)) *)
     (* if not (Result.is_pass r) then (r,env) else *)
     (let source_directory = Actions_helpers.test_source_directory in
      let root_file = A.map Filename.chop_extension Actions_helpers.testfile in
@@ -1445,16 +1445,14 @@ let setup_ocamldoc_build_env =
        reference_prefix ^ suffix
      in
      let backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
-     A.progn
-       (A.progn (A.apply_modifiers Ocaml_modifiers.(str @ unix))
-          (A.progn (A.add Builtin_variables.reference reference)
-             (A.add Builtin_variables.output output)))
-       (A.progn
-          (A.if_ (A.map ((=) "man") backend)
-             (A.add_if_undefined
-                Builtin_variables.skip_header_lines (A.return "1"))
-             (A.return ()))
-          (A.return Result.pass)))
+     A.apply_modifiers Ocaml_modifiers.(str @ unix)
+       (A.add Builtin_variables.reference reference
+          (A.add Builtin_variables.output output
+             (A.if_ (A.map ((=) "man") backend)
+                (A.add_if_undefined
+                   Builtin_variables.skip_header_lines (A.return "1")
+                   (A.with_env (A.return Result.pass)))
+                (A.with_env (A.return Result.pass))))))
 
 let ocamldoc_plugin name = name ^ ".cmo"
 
@@ -1470,7 +1468,7 @@ let ocamldoc_o_flag =
   | _ -> output
 
 let run_ocamldoc =
-  Actions.make "ocamldoc" @@
+  Actions.make "ocamldoc" @@ A.with_env @@
   (* modules corresponds to secondaries modules of which the
      documentation and cmi files need to be build before the main
      module documentation *)

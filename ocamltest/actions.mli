@@ -42,8 +42,9 @@ module A : sig
   val lookup_nonempty: Variables.t -> string option t
   val lookup_as_bool: Variables.t -> bool option t
 
-  val add_if_undefined: Variables.t -> string t -> unit t
-  val add: Variables.t -> string t -> unit t
+  val add_if_undefined: Variables.t -> string t -> 'a t -> 'a t
+  val add: Variables.t -> string t -> 'a t -> 'a t
+  val with_env: 'a t -> ('a * Environments.t) t
 
   val force_remove: string t -> unit t
 
@@ -51,19 +52,17 @@ module A : sig
 
   val file_exists: string t -> bool t
 
-  val when_: bool t -> unit t -> unit t
-
   val concatmap: ('a -> 'b list t) -> 'a list t -> 'b list t
 
   val while_: ('a -> ('x, 'b) Stdlib.Result.t t) -> 'x -> 'a list t -> ('x, 'b) Stdlib.Result.t t
 
   val system_env: string array t
 
-  val apply_modifiers: Environments.modifiers -> unit t
+  val apply_modifiers: Environments.modifiers -> 'a t -> 'a t
 
   val branch: ('a, 'b) Stdlib.Result.t t -> ('a -> 'c) t -> ('b -> 'c) t -> 'c t
 
-  val cast: unit t -> (out_channel -> Environments.t -> Environments.t)
+  val cast: Environments.t t -> (out_channel -> Environments.t -> Environments.t)
 
   module Infix : sig
     val (let+): 'a t -> ('a -> 'b) -> 'b t
@@ -73,7 +72,7 @@ module A : sig
   end
 end
 
-type code = Result.t A.t
+type code = (Result.t * Environments.t) A.t
 
 type t
 

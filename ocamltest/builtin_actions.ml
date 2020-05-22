@@ -20,88 +20,95 @@ open Actions
 open A.Infix
 
 let reason_with_fallback fallback =
-  A.branch (A.map (function None -> Error () | Some x -> Ok x)
-      (A.lookup Builtin_variables.reason))
-    (A.return Fun.id)
-    (A.return (Fun.const fallback))
+  let+ reason = A.lookup Builtin_variables.reason in
+  match reason with
+  | None -> fallback
+  | Some r -> r
 
 let pass = make
   "pass"
-  (let+ reason = reason_with_fallback "the pass action always succeeds" in
-   Result.pass_with_reason reason)
+  (A.with_env
+     (A.map Result.pass_with_reason
+        (reason_with_fallback "the pass action always succeeds")))
 
 let skip = make
   "skip"
-  (let+ reason = reason_with_fallback "the skip action always skips" in
-   Result.skip_with_reason reason)
+  (A.with_env
+     (A.map Result.skip_with_reason
+        (reason_with_fallback "the skip action always skips")))
 
 let fail = make
   "fail"
-  (let+ reason = reason_with_fallback "the fail action always fails" in
-   Result.fail_with_reason reason)
+  (A.with_env
+     (A.map Result.fail_with_reason
+        (reason_with_fallback "the fail action always fails")))
 
 let cd = make
   "cd"
-  (let+ cwd = A.safe_lookup Builtin_variables.cwd in
-   try
-     Sys.chdir cwd; Result.pass
-   with _ ->
-     let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
-     Result.fail_with_reason reason)
+  (A.with_env
+     (let+ cwd = A.safe_lookup Builtin_variables.cwd in
+      try
+        Sys.chdir cwd; Result.pass
+      with _ ->
+        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
+        Result.fail_with_reason reason))
 
 let dumpenv = make
   "dumpenv"
-  ((* Environments.dump log env;*) A.return Result.pass)
+  ((* Environments.dump log env;*) A.with_env (A.return Result.pass))
+
+let pass_or_skip b s1 s2 =
+  A.with_env (Actions_helpers.pass_or_skip b s1 s2)
 
 let hasinstrumentedruntime = make
   "hasinstrumentedruntime"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.has_instrumented_runtime)
+  (pass_or_skip (Ocamltest_config.has_instrumented_runtime)
     "instrumented runtime available"
     "instrumented runtime not available")
 
 let hasunix = make
   "hasunix"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.libunix <> None)
+  (pass_or_skip (Ocamltest_config.libunix <> None)
     "unix library available"
     "unix library not available")
 
 let libunix = make
   "libunix"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some true)
+  (pass_or_skip (Ocamltest_config.libunix = Some true)
     "libunix available"
     "libunix not available")
 
 let libwin32unix = make
   "libwin32unix"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some false)
+  (pass_or_skip (Ocamltest_config.libunix = Some false)
     "libwin32unix available"
     "libwin32unix not available")
 
 let hassysthreads = make
   "hassysthreads"
-  (Actions_helpers.pass_or_skip Ocamltest_config.systhreads
+  (pass_or_skip Ocamltest_config.systhreads
     "systhreads library available"
     "systhreads library not available")
 
 let hasstr = make
   "hasstr"
-  (Actions_helpers.pass_or_skip Ocamltest_config.str
+  (pass_or_skip Ocamltest_config.str
     "str library available"
     "str library not available")
 
 let windows_OS = "Windows_NT"
 
-let get_OS () = Sys.safe_getenv "OS"
+let get_OS = Sys.safe_getenv "OS"
 
 let windows = make
   "windows"
-  (Actions_helpers.pass_or_skip (get_OS () = windows_OS)
+  (pass_or_skip (get_OS = windows_OS)
     "running on Windows"
     "not running on Windows")
 
 let not_windows = make
   "not-windows"
-  (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
+  (pass_or_skip (get_OS <> windows_OS)
     "not running on Windows"
     "running on Windows")
 
@@ -112,13 +119,13 @@ let is_bsd_system s =
 
 let bsd = make
   "bsd"
-  (Actions_helpers.pass_or_skip (is_bsd_system Ocamltest_config.system)
+  (pass_or_skip (is_bsd_system Ocamltest_config.system)
     "on a BSD system"
     "not on a BSD system")
 
 let not_bsd = make
   "not-bsd"
-  (Actions_helpers.pass_or_skip (not (is_bsd_system Ocamltest_config.system))
+  (pass_or_skip (not (is_bsd_system Ocamltest_config.system))
     "not on a BSD system"
     "on a BSD system")
 
@@ -126,75 +133,78 @@ let macos_system = "macosx"
 
 let macos = make
   "macos"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.system = macos_system)
+  (pass_or_skip (Ocamltest_config.system = macos_system)
     "on a MacOS system"
     "not on a MacOS system")
 
 let arch32 = make
   "arch32"
-  (Actions_helpers.pass_or_skip (Sys.word_size = 32)
+  (pass_or_skip (Sys.word_size = 32)
     "32-bit architecture"
     "non-32-bit architecture")
 
 let arch64 = make
   "arch64"
-  (Actions_helpers.pass_or_skip (Sys.word_size = 64)
+  (pass_or_skip (Sys.word_size = 64)
     "64-bit architecture"
     "non-64-bit architecture")
 
 let arch_arm = make
   "arch_arm"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "arm")
+  (pass_or_skip (String.equal Ocamltest_config.arch "arm")
      "Target is ARM architecture"
      "Target is not ARM architecture")
 
 let arch_arm64 = make
   "arch_arm64"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "arm64")
+  (pass_or_skip (String.equal Ocamltest_config.arch "arm64")
      "Target is ARM64 architecture"
      "Target is not ARM64 architecture")
 
  let arch_amd64 = make
   "arch_amd64"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "amd64")
+  (pass_or_skip (String.equal Ocamltest_config.arch "amd64")
      "Target is AMD64 architecture"
      "Target is not AMD64 architecture")
 
  let arch_i386 = make
   "arch_i386"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "i386")
+  (pass_or_skip (String.equal Ocamltest_config.arch "i386")
      "Target is i386 architecture"
      "Target is not i386 architecture")
 
 let arch_power = make
   "arch_power"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "power")
+  (pass_or_skip (String.equal Ocamltest_config.arch "power")
     "Target is POWER architecture"
     "Target is not POWER architecture")
 
 let function_sections = make
   "function_sections"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.function_sections)
+  (pass_or_skip (Ocamltest_config.function_sections)
      "Target supports function sections"
      "Target does not support function sections")
 
 let has_symlink = make
   "has_symlink"
-  (Actions_helpers.pass_or_skip (Sys.has_symlink () )
+  (pass_or_skip (Sys.has_symlink () )
     "symlinks available"
     "symlinks not available")
 
 let setup_build_env = make
   "setup-build-env"
-  (Actions_helpers.setup_build_env true (Actions.A.return []))
+  (A.with_env
+     (A.map (Fun.const Result.pass)
+        (Actions_helpers.setup_build_env true (Actions.A.return []))))
 
 let setup_simple_build_env = make
   "setup-simple-build-env"
-  (Actions_helpers.setup_simple_build_env true (Actions.A.return []))
+  (let+ env = Actions_helpers.setup_simple_build_env true (Actions.A.return []) in
+   Result.pass, env)
 
 let run = make
   "run"
-  Actions_helpers.run_program
+  (A.with_env Actions_helpers.run_program)
 
 let script = make
   "script"
@@ -202,9 +212,10 @@ let script = make
 
 let check_program_output = make
   "check-program-output"
-  (Actions_helpers.check_output "program"
-    Builtin_variables.output
-    Builtin_variables.reference)
+  (A.with_env
+     (Actions_helpers.check_output "program"
+        Builtin_variables.output
+        Builtin_variables.reference))
 
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings
