@@ -44,13 +44,13 @@
 
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
-BOOL IsDeveloperModeEnabled()
+static BOOL IsDeveloperModeEnabled()
 {
   HKEY hKey;
   LSTATUS openKeyError, queryValueError;
   DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
 
-  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ, &hKey);
+  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
   if (openKeyError != ERROR_SUCCESS) {
     return FALSE;
   }

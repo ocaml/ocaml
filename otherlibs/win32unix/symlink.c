@@ -28,15 +28,21 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)
+#endif
+
 typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
 
+static BOOL is_initialized = FALSE;
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
-static int no_symlink = 0;
+static BOOL no_symlinks_available = FALSE;
+static DWORD additional_symlink_flags = 0;
 
 CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
-  DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) | SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+  DWORD flags;
   BOOLEAN result;
   LPWSTR source;
   LPWSTR dest;
@@ -44,15 +50,22 @@ CAMLprim value unix_symlink(value to_dir, value osource, value odest)
   caml_unix_check_path(odest, "symlink");
 
 again:
-  if (no_symlink) {
+  if (no_symlinks_available) {
     caml_invalid_argument("symlink not available");
   }
 
-  if (!pCreateSymbolicLink) {
+  if (!is_initialized) {
     pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW");
-    no_symlink = !pCreateSymbolicLink;
+    no_symlinks_available = !pCreateSymbolicLink;
+
+    if (!no_symlinks_available && IsDeveloperModeEnabled()) {
+      additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    }
+
     goto again;
   }
+
+  flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) | additional_symlink_flags;
 
   /* Copy source and dest outside the OCaml heap */
   source = caml_stat_strdup_to_utf16(String_val(osource));
@@ -75,13 +88,13 @@ again:
 
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
-BOOL IsDeveloperModeEnabled()
+static BOOL IsDeveloperModeEnabled()
 {
   HKEY hKey;
   LSTATUS openKeyError, queryValueError;
   DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
 
-  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ, &hKey);
+  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ | KEY_WOW64_64KEY, &hKey);
   if (openKeyError != ERROR_SUCCESS) {
     return FALSE;
   }
@@ -99,7 +112,6 @@ BOOL IsDeveloperModeEnabled()
 CAMLprim value unix_has_symlink(value unit)
 {
   CAMLparam1(unit);
-
   HANDLE hProcess = GetCurrentProcess();
   BOOL result = FALSE;
 
