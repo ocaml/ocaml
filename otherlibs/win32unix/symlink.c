@@ -73,20 +73,20 @@ again:
   CAMLreturn(Val_unit);
 }
 
-#define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
-
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw#symbolic_link_flag_allow_unprivileged_create
-BOOL IsDeveloperModeEnabled() {
+BOOL IsDeveloperModeEnabled()
+{
   HKEY hKey;
-  LSTATUS openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ, &hKey);
+  LSTATUS openKeyError, queryValueError;
+  DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
+
+  openKeyError = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", 0, KEY_READ, &hKey);
   if (openKeyError != ERROR_SUCCESS) {
     return FALSE;
   }
   
-  DWORD developerModeRegistryValue;
-  DWORD dwordSize = sizeof(DWORD);
-  LSTATUS queryValueError = RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL, (LPBYTE)&developerModeRegistryValue, &dwordSize);
+  queryValueError = RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL, (LPBYTE)&developerModeRegistryValue, &dwordSize);
   RegCloseKey(hKey);
   if (queryValueError != ERROR_SUCCESS) {
     return FALSE;
@@ -94,16 +94,18 @@ BOOL IsDeveloperModeEnabled() {
   return developerModeRegistryValue != 0;
 }
 
+#define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
+
 CAMLprim value unix_has_symlink(value unit)
 {
   CAMLparam1(unit);
 
+  HANDLE hProcess = GetCurrentProcess();
+  BOOL result = FALSE;
+
   if (IsDeveloperModeEnabled()) {
     CAMLreturn(Val_true);
   }
-
-  HANDLE hProcess = GetCurrentProcess();
-  BOOL result = FALSE;
 
   if (OpenProcessToken(hProcess, TOKEN_READ, &hProcess)) {
     LUID seCreateSymbolicLinkPrivilege;
