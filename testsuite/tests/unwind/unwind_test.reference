@@ -10,3 +10,15 @@ caml_start_program
 caml_startup_common
 caml_main
 main
+ml_perform_stack_walk
+ml_do_no_alloc
+Mylib.bob
+caml_apply10
+Mylib.foo1
+caml_apply11
+Driver.entry
+caml_program
+caml_start_program
+caml_startup_common
+caml_main
+main
