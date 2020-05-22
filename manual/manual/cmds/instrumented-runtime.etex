@@ -3,7 +3,14 @@
 
 This chapter describes the OCaml instrumented runtime, a runtime variant
 allowing the collection of events and metrics.
-It aims to provide insight into a program's execution.
+
+Collected metrics include time spent executing the {\em garbage collector},
+allowing the overall execution time of individual pauses to be measured
+down to the time spent in specific parts of the garbage collection algorithm.
+
+Insight is also given on memory allocation and motion, recording
+the size of allocated memory blocks, as well as value promotions from the
+{\em minor heap} to the {\em major heap}.
 
 \section{s:instr-runtime-overview}{Overview}
 
@@ -20,7 +27,7 @@ A complete trace is comprised of:
   in the program being traced.
 \end{itemize}
 
-For more information on the {\em Common Trace Format}, see the website at
+For more information on the {\em Common Trace Format}, see
 \ifouthtml
 \ahref{https://diamon.org/ctf/}{https://diamon.org/ctf/}.
 \else
@@ -50,12 +57,17 @@ For the following examples, we will use the following example program:
 
 \end{verbatim}
 
-Compiling the program and linking it with the instrumented runtime,
-can be done with {\tt -runtime-variant} flag {\tt i}:
+The next step is to compile and link the program with the instrumented runtime.
+This can be done by using the {\tt -runtime-variant} flag:
 
 \begin{verbatim}
        ocamlopt -runtime-variant i program.ml -o program
 \end{verbatim}
+
+Note that the instrumented runtime is an alternative runtime for OCaml
+programs. It is only referenced during the linking stage of the final
+executable. This means that the compilation stage does not need to be altered
+to enable instrumentation.
 
 The resulting program can then be traced by running it with the environment
 variable {\tt OCAML\_EVENTLOG\_ENABLED}:
@@ -64,8 +76,8 @@ variable {\tt OCAML\_EVENTLOG\_ENABLED}:
         OCAML_EVENTLOG_ENABLED=1 ./program
 \end{verbatim}
 
-The program will execute and generate a trace file in the
-current directory.
+During execution, a trace file will be generated in the
+program's current working directory.
 
 \subsubsection*{sss:instr-runtime-build-more}{More build examples}
 
@@ -78,9 +90,9 @@ replicated using the {\tt flags} {\tt stanza} when building an executable.
          (flags "-runtime-variant=i"))
 \end{verbatim}
 
-The instrumented runtime can as well be used with OCaml's bytecode interpreter.
+The instrumented runtime can also be used with the OCaml bytecode interpreter.
 This can be done by either compiling the program using the
-{\tt -runtime-variant=i} flag with {\tt ocamlc}, or by running the generated
+{\tt -runtime-variant=i} flag when linking the program {\tt ocamlc}, or by running the generated
 bytecode through {\tt ocamlruni}:
 
 \begin{verbatim}
@@ -91,121 +103,12 @@ bytecode through {\tt ocamlruni}:
 See chapter~\ref{c:camlc} and chapter~\ref{c:runtime} for more information about
 {\tt ocamlc} and {\tt ocamlrun}.
 
-\subsection{ss:instr-runtime-prefix}{Trace filename}
-
-The default trace filename is {\tt caml-\{pid\}.eventlog}, where {\tt \{pid\}}
-is the process identifier of the traced program.
-
-This filename can also be specified using the
-{\tt OCAML\_EVENTLOG\_PREFIX} environment variable.
-The given path will be suffixed with {\tt \{.pid\}.eventlog}.
-
-\begin{verbatim}
-        OCAML_EVENTLOG_PREFIX=/tmp/a_prefix OCAML_EVENTLOG_ENABLED=1 ./program
-\end{verbatim}
-
-Note that this will only affect the prefix of the trace file, there is no
-option to specify the full effective file name.
-This restriction is in place to make room for future improvements to the
-instrumented runtime, where the single trace file per session design
-may replaced.
-
-In this example, the trace will be available at path
-{\tt /tmp/a_prefix.\{pid\}.eventlog}.
-
-For scripting purpose, matching against `\{pid\}` as well as the
-{\tt .eventlog} file extension should provide enough control over
-the generated files.
-
-\subsection{ss:instr-runtime-pause}{Pausing and resuming tracing}
-Primitives are available to control events collection at runtime.
-
-{\tt OCAML\_EVENTLOG\_ENABLED} can be set to the {\tt p} flag in order
-to {\em pause} events collection after the program has started.
-
-\begin{verbatim}
-        OCAML_EVENTLOG_ENABLED=p ./program
-\end{verbatim}
-
-The program will have to resume events collection explicitly.
-This can be done via {\tt Gc.eventlog_resume} and
-{\tt Gc.eventlog_pause}, available in the {\stdmoduleref{Gc}} module.
-
-Running the program provided earlier with {\tt OCAML\_EVENTLOG\_ENABLED=p}
-will for example yield the following result.
-
-\begin{verbatim}
-        $ OCAML_EVENTLOG_ENABLED=p ./a.out
-        $ ocaml-eventlog-report caml-{pid}.eventlog
-        ==== eventlog/flush
-        median flush time: 58ns
-        total flush time: 58ns
-        flush count: 1
-\end{verbatim}
-
-The resulting trace contains only one event payload, namely a {\em flush} event,
-indicating how much time was taken to flush the trace file to disk.
-
-However, if the program is changed to include a call to
-{\tt Gc.eventlog_resume}, events payloads can be seen again
-in the trace file.
-
-\begin{verbatim}
-       let () =
-         Gc.eventlog_resume();
-         seq 1_000_000
-         |> Seq.fold_left (fun m i -> SMap.add (s i) i m) SMap.empty
-         |> clear
-         |> ignore
-
-\end{verbatim}
-
-The resulting trace will contain every events encountered during
-the program's execution:
-
-\begin{verbatim}
-        $ ocaml-eventlog-report caml-{pid}.eventlog
-        [..omitted..]
-        ==== force_minor/alloc_small
-        100.0K..200.0K: 174
-        20.0K..30.0K: 1
-        0..100: 1
-
-        ==== eventlog/flush
-        median flush time: 207.8us
-        total flush time: 938.1us
-        flush count: 5
-\end{verbatim}
-
-\subsection{ss:instr-runtime-limitations}{Limitations}
-
-The instrumented runtime does not support the {\tt fork} system call.
-A child process forked from an instrumented program will not be traced.
-
-The instrumented runtime aims to provide insight into the runtime's execution
-while maintaining a low overhead.
-However, this overhead may become more noticeable depending on how a program
-executes.
-The instrumented runtime currently put a strong emphasis on
-tracing {\em garbage collection} events. This means that programs
-with heavy garbage collection activity may be more susceptible to
-tracing induced performance penalties.
-
-While providing an accurate estimate of potential performance loss is difficult,
-test on various OCaml programs showed a total running time increase ranging
-from 1\% to 8\%.
-
-For a program with an extended running time where the collection of only a
-small sample of events is required, using the {\em eventlog_resume} and
-{\em eventlog_pause} primitives may help relieve some of the
-tracing induced performance impact.
-
 \section{s:instr-runtime-read}{Reading traces}
 
 Traces generated by the instrumented runtime can be analyzed with tooling
 available outside of the OCaml distribution.
 
-A complete trace is comprised of a {\em metadata file} and a {\em trace file}.
+A complete trace consists of a {\em metadata file} and a {\em trace file}.
 Two simple ways to work with the traces are the {\em eventlog-tools} and
 {\em babeltrace} libraries.
 
@@ -244,7 +147,7 @@ Its location can be obtained using the following command:
 
 The {\em eventlog_metadata} file can be found at this path and
 copied in the same directory as the generated trace file.
-However, {\em babeltrace} expects the file to be named
+However, {\em babeltrace} expect the file to be named
 {\tt metadata} in order to process the trace.
 Thus, it will need to be renamed when copied to the trace's directory.
 
@@ -301,7 +204,7 @@ if __name__ == '__main__':
 
 This script expect to receive as an argument the directory containing the
 trace file. It will then copy the {\em CTF} metadata file to the trace's
-directory, and then decode the trace, printing each events in the process.
+directory, and then decode the trace, printing each event in the process.
 
 For more information on {\em babeltrace}, see the website at:
 \ifouthtml
@@ -310,3 +213,120 @@ For more information on {\em babeltrace}, see the website at:
 \else
 {\tt https://babeltrace.org/}
 \fi
+
+\section{s:instr-runtime-more}{Controlling instrumentation and limitations}
+
+\subsection{ss:instr-runtime-prefix}{Trace filename}
+
+The default trace filename is {\tt caml-\{PID\}.eventlog}, where {\tt \{PID\}}
+is the process identifier of the traced program.
+
+This filename can also be specified using the
+{\tt OCAML\_EVENTLOG\_PREFIX} environment variable.
+The given path will be suffixed with {\tt \{.PID\}.eventlog}.
+
+\begin{verbatim}
+        OCAML_EVENTLOG_PREFIX=/tmp/a_prefix OCAML_EVENTLOG_ENABLED=1 ./program
+\end{verbatim}
+
+In this example, the trace will be available at path
+{\tt /tmp/a_prefix.\{PID\}.eventlog}.
+
+Note that this will only affect the prefix of the trace file, there is no
+option to specify the full effective file name.
+This restriction is in place to make room for future improvements to the
+instrumented runtime, where the single trace file per session design
+may be replaced.
+
+For scripting purpose, matching against `\{PID\}` as well as the
+{\tt .eventlog} file extension should provide enough control over
+the generated files.
+
+Note as well that parent directories in the given path will not be created
+when opening the trace. The runtime assumes the path is
+accessible for creating and writing the trace. The program will
+fail to start if this requirement isn't met.
+
+\subsection{ss:instr-runtime-pause}{Pausing and resuming tracing}
+Mechanisms are available to control event collection at runtime.
+
+{\tt OCAML\_EVENTLOG\_ENABLED} can be set to the {\tt p} flag in order
+to start the program with event collection paused.
+
+\begin{verbatim}
+        OCAML_EVENTLOG_ENABLED=p ./program
+\end{verbatim}
+
+The program will have to start event collection explicitly.
+Starting and stopping event collection programmatically can be done by calling
+{\tt Gc.eventlog_resume} and {\tt Gc.eventlog_pause}) from within the program.
+Refer to the {\stdmoduleref{Gc}} module documentation for more information.
+
+Running the program provided earlier with {\tt OCAML\_EVENTLOG\_ENABLED=p}
+will for example yield the following result.
+
+\begin{verbatim}
+        $ OCAML_EVENTLOG_ENABLED=p ./program
+        $ ocaml-eventlog-report caml-{PID}.eventlog
+        ==== eventlog/flush
+        median flush time: 58ns
+        total flush time: 58ns
+        flush count: 1
+\end{verbatim}
+
+The resulting trace contains only one event payload, namely a {\em flush} event,
+indicating how much time was spent flushing the trace file to disk.
+
+However, if the program is changed to include a call to
+{\tt Gc.eventlog_resume}, events payloads can be seen again
+in the trace file.
+
+\begin{verbatim}
+       let () =
+         Gc.eventlog_resume();
+         seq 1_000_000
+         |> Seq.fold_left (fun m i -> SMap.add (s i) i m) SMap.empty
+         |> clear
+         |> ignore
+
+\end{verbatim}
+
+The resulting trace will contain all events encountered during
+the program's execution:
+
+\begin{verbatim}
+        $ ocaml-eventlog-report caml-{PID}.eventlog
+        [..omitted..]
+        ==== force_minor/alloc_small
+        100.0K..200.0K: 174
+        20.0K..30.0K: 1
+        0..100: 1
+
+        ==== eventlog/flush
+        median flush time: 207.8us
+        total flush time: 938.1us
+        flush count: 5
+\end{verbatim}
+
+\subsection{ss:instr-runtime-limitations}{Limitations}
+
+The instrumented runtime does not support the {\tt fork} system call.
+A child process forked from an instrumented program will not be traced.
+
+The instrumented runtime aims to provide insight into the runtime's execution
+while maintaining a low overhead.
+However, this overhead may become more noticeable depending on how a program
+executes.
+The instrumented runtime currently puts a strong emphasis on
+tracing {\em garbage collection} events. This means that programs
+with heavy garbage collection activity may be more susceptible to
+tracing induced performance penalties.
+
+While providing an accurate estimate of potential performance loss is difficult,
+test on various OCaml programs showed a total running time increase ranging
+from 1\% to 8\%.
+
+For a program with an extended running time where the collection of only a
+small sample of events is required, using the {\em eventlog_resume} and
+{\em eventlog_pause} primitives may help relieve some of the
+tracing induced performance impact.
