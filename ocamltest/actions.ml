@@ -351,6 +351,50 @@ module A = struct
     let (||+) a b = if_ a (return true) b
     let (&&+) a b = if_ a b (return false)
   end
+
+  module Uses = struct
+    module Set = Variables.Set
+
+    let rec reads : type a. a t -> Set.t = function
+      | Pure _ | Env -> Set.empty
+      | Map (_, x) -> reads x
+      | File_exists x -> reads x
+      | Apply_modifiers (_, x) -> reads x
+      | Safe_lookup v
+      | Lookup v | Lookup_nonempty v
+      | Lookup_bool v ->
+          Set.singleton v
+      | Both (a, b) ->
+          Set.union (reads a) (reads b)
+      | If (a, b, c) ->
+          Set.union (reads a)
+            (Set.union (reads b) (reads c))
+      | All l ->
+          List.fold_left (fun set x -> Set.union set (reads x))
+            Set.empty l
+      | Add (_, _, x) | Add_if_undefined (_, _, x) ->
+          reads x
+
+    let rec writes : type a. a t -> Set.t = function
+      | Pure _ | Env -> Set.empty
+      | Map (_, x) -> writes x
+      | File_exists x -> writes x
+      | Apply_modifiers (_, x) -> writes x
+      | Safe_lookup _
+      | Lookup _ | Lookup_nonempty _
+      | Lookup_bool _ ->
+          Set.empty
+      | Both (a, b) ->
+          Set.union (writes a) (writes b)
+      | If (a, b, c) ->
+          Set.union (writes a)
+            (Set.union (writes b) (writes c))
+      | All l ->
+          List.fold_left (fun set x -> Set.union set (writes x))
+            Set.empty l
+      | Add (v, _, x) | Add_if_undefined (v, _, x) ->
+          Set.add v (writes x)
+  end
 end
 
 

@@ -44,3 +44,5 @@ val find_variable : string -> t option
 val string_of_binding : t -> value -> string
 
 val get_registered_variables : unit -> t list
+
+module Set : Set.S with type elt = t

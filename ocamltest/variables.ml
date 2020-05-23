@@ -70,3 +70,5 @@ let string_of_binding variable value =
 let get_registered_variables () =
   let f _variable_name variable variable_list = variable::variable_list in
   List.sort compare (Hashtbl.fold f variables [])
+
+module Set = Set.Make (struct type nonrec t = t let compare = compare end)

@@ -126,6 +126,11 @@ module A : sig
     val (||+): bool t -> bool t -> bool t
     val (&&+): bool t -> bool t -> bool t
   end
+
+  module Uses : sig
+    val reads: 'a t -> Variables.Set.t
+    val writes: 'a t -> Variables.Set.t
+  end
 end
 
 type code = (Eff.t * Environments.t) A.t
