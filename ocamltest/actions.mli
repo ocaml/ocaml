@@ -15,6 +15,35 @@
 
 (* Definition of actions, basic blocks for tests *)
 
+module Eff : sig
+  type run_params =
+    {
+      environment: string array;
+      stdin_filename: string;
+      stdout_filename: string;
+      stderr_filename: string;
+      append: bool;
+      timeout: int;
+      strace: bool;
+      strace_logfile: string;
+      strace_flags: string;
+    }
+
+  val default_params: run_params
+
+  val run_cmd: run_params -> string list -> int
+
+  (* ?environment:string array t -> *)
+  (* ?stdin_variable:Variables.t -> *)
+  (* ?stdout_variable:Variables.t -> *)
+  (* ?stderr_variable:Variables.t -> *)
+  (* ?append:bool -> string list t -> int t *)
+
+  val setup_symlinks: string -> string -> string list -> unit
+
+  val force_remove: string -> unit
+end
+
 module A : sig
   type 'a t
 
@@ -28,15 +57,6 @@ module A : sig
 
   val select: ('a, 'b) Stdlib.Result.t t -> ('a -> 'b) t -> 'b t
 
-  val run_cmd:
-    ?environment:string array t ->
-    ?stdin_variable:Variables.t ->
-    ?stdout_variable:Variables.t ->
-    ?stderr_variable:Variables.t ->
-    ?append:bool -> string list t -> int t
-
-  val setup_symlinks: string t -> string t -> string list t -> unit t
-
   val safe_lookup: Variables.t -> string t
   val lookup: Variables.t -> string option t
   val lookup_nonempty: Variables.t -> string option t
@@ -45,10 +65,6 @@ module A : sig
   val add_if_undefined: Variables.t -> string t -> 'a t -> 'a t
   val add: Variables.t -> string t -> 'a t -> 'a t
   val with_env: 'a t -> ('a * Environments.t) t
-
-  val force_remove: string t -> unit t
-
-  val progn: unit t -> 'a t -> 'a t
 
   val file_exists: string t -> bool t
 

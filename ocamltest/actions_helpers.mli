@@ -35,6 +35,14 @@ val int_of_variable : Variables.t -> int Actions.A.t
 
 val files : string list Actions.A.t
 
+val run_params:
+    ?environment:string array A.t ->
+    ?stdin_variable:Variables.t ->
+    ?stdout_variable:Variables.t ->
+    ?stderr_variable:Variables.t ->
+    ?append:bool ->
+    ?timeout:int -> unit -> Eff.run_params A.t
+
 (* val setup_symlinks : string -> string -> string list -> unit *)
 
 val setup_build_env :

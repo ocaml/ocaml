@@ -60,15 +60,16 @@ let setup_build_env add_testfile additional_files =
     and+ additional_files = additional_files in
     additional_files @ files
   in
-  let files =
+  let+ files =
     if add_testfile
     then
       let+ testfile = testfile and+ some_files = some_files in
       testfile :: some_files
     else
       some_files
-  in
-  A.setup_symlinks test_source_directory test_build_directory files
+  and+ test_source_directory = test_source_directory
+  and+ test_build_directory = test_build_directory in
+  Eff.setup_symlinks test_source_directory test_build_directory files
 
 let setup_simple_build_env add_testfile additional_files =
   A.add Builtin_variables.test_build_directory
@@ -76,53 +77,94 @@ let setup_simple_build_env add_testfile additional_files =
     (A.map snd
        (A.with_env (setup_build_env add_testfile additional_files)))
 
+let run_params
+    ?environment
+    ?(stdin_variable=Builtin_variables.stdin)
+    ?(stdout_variable=Builtin_variables.stdout)
+    ?(stderr_variable=Builtin_variables.stderr)
+    ?(append=false)
+    ?(timeout=0) ()
+  =
+  let+ strace = A.lookup_as_bool Strace.strace
+  and+ strace_logfile =
+    let+ strace_logfile_name =
+      let+ action_name = A.safe_lookup Actions.action_name in
+      Strace.get_logfile_name action_name
+    and+ test_build_directory = test_build_directory in
+    Filename.make_path [test_build_directory; strace_logfile_name]
+  and+ strace_flags = A.safe_lookup Strace.strace_flags
+  and+ stdin_filename = A.safe_lookup stdin_variable
+  and+ stdout_filename = A.safe_lookup stdout_variable
+  and+ stderr_filename = A.safe_lookup stderr_variable
+  and+ environment =
+    let+ environment =
+      match environment with
+      | None -> A.return [||]
+      | Some a -> a
+    and+ systemv = A.system_env in
+    Array.append environment systemv
+  in
+  { Eff.environment;
+    stdin_filename;
+    stdout_filename;
+    stderr_filename;
+    append;
+    timeout;
+    strace = (strace = Some true);
+    strace_logfile;
+    strace_flags;
+  }
+
+let run
+    (log_message : string)
+    (can_skip : bool)
+    (prog_variable : Variables.t)
+    (args_variable : Variables.t option)
+  =
+  let+ program = A.lookup prog_variable
+  and+ expected_exit_status = int_of_variable Builtin_variables.exit_status
+  and+ arguments =
+    match args_variable with
+    | None -> A.return ""
+    | Some variable -> A.safe_lookup variable
+  and+ run_params = run_params () in
+  match program with
+  | None ->
+      let msg = Printf.sprintf "%s: variable %s is undefined"
+          log_message (Variables.name_of_variable prog_variable)
+      in
+      Result.fail_with_reason msg
+  | Some program ->
+      let commandline = [program; arguments] in
+      let exit_status = Eff.run_cmd run_params commandline in
+      if exit_status = expected_exit_status
+      then Result.pass
+      else begin
+        let what =
+          log_message ^ " " ^ program ^ " " ^
+          begin if arguments="" then "without any argument"
+            else "with arguments " ^ arguments
+          end
+        in
+        let reason = mkreason what (String.concat " " commandline) exit_status in
+        if exit_status = 125 && can_skip
+        then Result.skip_with_reason reason
+        else Result.fail_with_reason reason
+      end
+
 let run
     (log_message : string)
     (redirect_output : bool)
     (can_skip : bool)
     (prog_variable : Variables.t)
-    (args_variable : Variables.t option)
-  =
-  let program = A.lookup prog_variable in
-  A.if_ (A.map ((=) None) program)
-    (let msg = Printf.sprintf "%s: variable %s is undefined"
-         log_message (Variables.name_of_variable prog_variable)
-     in
-     A.return (Result.fail_with_reason msg))
-    (let program = A.map Option.get program in
-     let arguments =
-       match args_variable with
-       | None -> A.return ""
-       | Some variable -> A.safe_lookup variable
-     in
-     let commandline =
-       let+ program = program
-       and+ arguments = arguments in
-       [program; arguments]
-     in
-     (* let what = log_message ^ " " ^ program ^ " " ^ *)
-     (*            begin if arguments="" then "without any argument" *)
-     (*              else "with arguments " ^ arguments *)
-     (*            end in *)
-     let run =
-       let+ expected_exit_status = int_of_variable Builtin_variables.exit_status
-       and+ exit_status = A.run_cmd commandline in
-       if exit_status = expected_exit_status
-       then Result.pass
-       else begin
-         let reason = "" (* mkreason what (String.concat " " commandline) exit_status *) in
-         if exit_status = 125 && can_skip
-         then Result.skip_with_reason reason
-         else Result.fail_with_reason reason
-       end
-     in
-     if redirect_output
-     then
-       let output = A.safe_lookup Builtin_variables.output in
-       A.add_if_undefined Builtin_variables.stdout output
-         (A.add_if_undefined Builtin_variables.stderr output run)
-     else
-       run)
+    (args_variable : Variables.t option) =
+  let run = run log_message can_skip prog_variable args_variable in
+  if redirect_output then
+    let output = A.safe_lookup Builtin_variables.output in
+    A.add_if_undefined Builtin_variables.stdout output
+      (A.add_if_undefined Builtin_variables.stderr output run)
+  else
+    run
 
 let run_program =
   run

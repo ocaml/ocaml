@@ -15,6 +15,8 @@
 
 (* Definition of actions, basic blocks for tests *)
 
+open Ocamltest_stdlib
+
 type code = out_channel -> Environments.t -> Result.t * Environments.t
 
 type t = {
@@ -74,6 +76,126 @@ end)
 
 let _ = Variables.register_variable action_name
 
+module Eff = struct
+
+  (* let test_build_directory env = *)
+  (*   Environments.safe_lookup Builtin_variables.test_build_directory env *)
+
+  type run_params =
+    {
+      environment: string array;
+      stdin_filename: string;
+      stdout_filename: string;
+      stderr_filename: string;
+      append: bool;
+      timeout: int;
+      strace: bool;
+      strace_logfile: string;
+      strace_flags: string;
+    }
+
+  let default_params =
+    {
+      environment = [||];
+      stdin_filename = "";
+      stdout_filename = "";
+      stderr_filename = "";
+      append = false;
+      timeout = 0;
+      strace = false;
+      strace_logfile = "";
+      strace_flags = "";
+    }
+
+  let run_cmd
+      {
+        environment;
+        stdin_filename;
+        stdout_filename;
+        stderr_filename;
+        append;
+        timeout;
+        strace;
+        strace_flags;
+        strace_logfile;
+      }
+      (* ?(environment = [||]) *)
+      (* ?(stdin_variable=Builtin_variables.stdin) *)
+      (* ?(stdout_variable=Builtin_variables.stdout) *)
+      (* ?(stderr_variable=Builtin_variables.stderr) *)
+      (* ?(append=false) *)
+      (* ?(timeout=0) *)
+      original_cmd
+    =
+    (* let log_redirection std filename = *)
+    (*   if filename<>"" then *)
+    (*     begin *)
+    (*       Printf.fprintf log "  Redirecting %s to %s \n%!" *)
+    (*         (relative_to_initial_cwd std) *)
+    (*         (relative_to_initial_cwd filename) *)
+    (*     end in *)
+    let cmd =
+      if strace then
+        begin
+          let strace_cmd =
+            ["strace"; "-f"; "-o"; strace_logfile; strace_flags]
+          in
+          strace_cmd @ original_cmd
+        end else original_cmd
+    in
+    let lst = List.concat (List.map String.words cmd) in
+    let quoted_lst =
+      if Sys.os_type="Win32"
+      then List.map Filename.maybe_quote lst
+      else lst in
+    (* let cmd' = String.concat " " quoted_lst in *)
+    (* Printf.fprintf log "Commandline: %s\n" cmd'; *)
+    let progname = List.hd quoted_lst in
+    let arguments = Array.of_list quoted_lst in
+    (* let stdin_filename = Environments.safe_lookup stdin_variable env in *)
+    (* let stdout_filename = Environments.safe_lookup stdout_variable env in *)
+    (* let stderr_filename = Environments.safe_lookup stderr_variable env in *)
+    (* log_redirection "stdin" stdin_filename; *)
+    (* log_redirection "stdout" stdout_filename; *)
+    (* log_redirection "stderr" stderr_filename; *)
+    (* let systemenv = *)
+    (*   Array.append *)
+    (*     environment *)
+    (*     (Environments.to_system_env env) *)
+    (* in *)
+    Run_command.run {
+      Run_command.progname = progname;
+      Run_command.argv = arguments;
+      Run_command.envp = environment;
+      Run_command.stdin_filename = stdin_filename;
+      Run_command.stdout_filename = stdout_filename;
+      Run_command.stderr_filename = stderr_filename;
+      Run_command.append = append;
+      Run_command.timeout = timeout;
+      Run_command.log = stderr (* log FIXME *)
+    }
+
+  let setup_symlinks source_dir build_dir files =
+    let symlink filename =
+      let src = Filename.concat source_dir filename in
+      let cmd = "ln -sf " ^ src ^" " ^ build_dir in
+      Sys.run_system_command cmd
+    in
+    let copy filename =
+      let src = Filename.concat source_dir filename in
+      let dst = Filename.concat build_dir filename in
+      Sys.copy_file src dst
+    in
+    let f = if Sys.win32 then copy else symlink in
+    Sys.make_directory build_dir;
+    List.iter f files;
+    Sys.chdir build_dir
+
+  let force_remove s =
+    Sys.force_remove s
+
+end
+
 module A = struct
   type 'a t =
     out_channel -> Environments.t -> 'a
@@ -96,109 +218,6 @@ module A = struct
     | Error b ->
         b
 
-  open Ocamltest_stdlib
-
-  let test_build_directory env =
-    Environments.safe_lookup Builtin_variables.test_build_directory env
-
-  let run_cmd
-      ?environment
-      ?(stdin_variable=Builtin_variables.stdin)
-      ?(stdout_variable=Builtin_variables.stdout)
-      ?(stderr_variable=Builtin_variables.stderr)
-      ?(append=false)
-      ?(timeout=0)
-      log env original_cmd
-    =
-    let environment =
-      match environment with
-      | None -> [||]
-      | Some e -> e log env
-    in
-    let log_redirection std filename =
-      if filename<>"" then
-        begin
-          Printf.fprintf log "  Redirecting %s to %s \n%!"
-            (relative_to_initial_cwd std)
-            (relative_to_initial_cwd filename)
-        end in
-    let cmd =
-      if (Environments.lookup_as_bool Strace.strace env) = Some true then
-        begin
-          let action_name = Environments.safe_lookup action_name env in
-          let test_build_directory = test_build_directory env in
-          let strace_logfile_name = Strace.get_logfile_name action_name in
-          let strace_logfile =
-            Filename.make_path [test_build_directory; strace_logfile_name]
-          in
-          let strace_flags = Environments.safe_lookup Strace.strace_flags env in
-          let strace_cmd =
-            ["strace"; "-f"; "-o"; strace_logfile; strace_flags]
-          in
-          strace_cmd @ original_cmd
-        end else original_cmd
-    in
-    let lst = List.concat (List.map String.words cmd) in
-    let quoted_lst =
-      if Sys.os_type="Win32"
-      then List.map Filename.maybe_quote lst
-      else lst in
-    let cmd' = String.concat " " quoted_lst in
-    Printf.fprintf log "Commandline: %s\n" cmd';
-    let progname = List.hd quoted_lst in
-    let arguments = Array.of_list quoted_lst in
-    let stdin_filename = Environments.safe_lookup stdin_variable env in
-    let stdout_filename = Environments.safe_lookup stdout_variable env in
-    let stderr_filename = Environments.safe_lookup stderr_variable env in
-    log_redirection "stdin" stdin_filename;
-    log_redirection "stdout" stdout_filename;
-    log_redirection "stderr" stderr_filename;
-    let systemenv =
-      Array.append
-        environment
-        (Environments.to_system_env env)
-    in
-    Run_command.run {
-      Run_command.progname = progname;
-      Run_command.argv = arguments;
-      Run_command.envp = systemenv;
-      Run_command.stdin_filename = stdin_filename;
-      Run_command.stdout_filename = stdout_filename;
-      Run_command.stderr_filename = stderr_filename;
-      Run_command.append = append;
-      Run_command.timeout = timeout;
-      Run_command.log = log
-    }
-
-  let run_cmd ?environment ?stdin_variable ?stdout_variable ?stderr_variable ?append
-      cmdline log env =
-    let cmdline = cmdline log env in
-    run_cmd
-      ?environment
-      ?stdin_variable
-      ?stdout_variable
-      ?stderr_variable
-      ?append log env cmdline
-
-  let setup_symlinks source_dir build_dir files log env =
-    let source_dir = source_dir log env in
-    let build_dir = build_dir log env in
-    let files = files log env in
-    let symlink filename =
-      let src = Filename.concat source_dir filename in
-      let cmd = "ln -sf " ^ src ^" " ^ build_dir in
-      Sys.run_system_command cmd
-    in
-    let copy filename =
-      let src = Filename.concat source_dir filename in
-      let dst = Filename.concat build_dir filename in
-      Sys.copy_file src dst
-    in
-    let f = if Sys.win32 then copy else symlink in
-    Sys.make_directory build_dir;
-    List.iter f files;
-    Sys.chdir build_dir
-
   let safe_lookup var _ env =
     Environments.safe_lookup var env
 
@@ -215,14 +234,6 @@ module A = struct
     let a = a log env in
     let b = b log env in
     (a, b)
-
-  let force_remove s log env =
-    let s = s log env in
-    Sys.force_remove s
-
-  let progn a b log env =
-    let () = a log env in
-    b log env
 
   let add v s x log env =
     let s = s log env in
