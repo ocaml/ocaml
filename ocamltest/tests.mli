@@ -32,6 +32,7 @@ val default_tests : unit -> t list
 val lookup : string -> t option
 
 val run :
+  dry_run: bool ->
   int (* depth *) -> out_channel -> Environments.t -> t ->
   Actions.Eff.Result.t * Environments.t
 

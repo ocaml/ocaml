@@ -77,22 +77,25 @@ let describe_action s =
       list "READS FROM" reads;
       list "WRITES TO" writes
 
+let dry_run = ref false
+
 let commandline_options =
-[
-  ("-e", Arg.Set log_to_stderr, " Log to stderr instead of a file.");
-  ("-promote", Arg.Set promote,
-   " Overwrite reference files with the test output (experimental, unstable)");
-  ("-show-actions", Arg.Unit show_actions, " Show available actions.");
-  ("-describe-action", Arg.String describe_action, " Describe action.");
-  ("-show-tests", Arg.Unit show_tests, " Show available tests.");
-  ("-show-variables", Arg.Unit show_variables, " Show available variables.");
-  ("-find-test-dirs", Arg.String (add_to_list find_test_dirs),
-   " Find directories that contain tests (recursive).");
-  ("-list-tests", Arg.String (add_to_list list_tests),
-   " List tests in given directory.");
-  ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
-   " Keep the test directory (with the generated test artefacts) on success.");
-]
+  [
+    ("-e", Arg.Set log_to_stderr, " Log to stderr instead of a file.");
+    ("-promote", Arg.Set promote,
+     " Overwrite reference files with the test output (experimental, unstable)");
+    ("-show-actions", Arg.Unit show_actions, " Show available actions.");
+    ("-describe-action", Arg.String describe_action, " Describe action.");
+    ("-show-tests", Arg.Unit show_tests, " Show available tests.");
+    ("-show-variables", Arg.Unit show_variables, " Show available variables.");
+    ("-find-test-dirs", Arg.String (add_to_list find_test_dirs),
+     " Find directories that contain tests (recursive).");
+    ("-list-tests", Arg.String (add_to_list list_tests),
+     " List tests in given directory.");
+    ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
+     " Keep the test directory (with the generated test artefacts) on success.");
+    ("-dry-run", Arg.Set dry_run, " Do not actually run any commands.");
+  ]
 
 let files_to_test = ref []
 
@@ -107,3 +110,4 @@ let promote = !promote
 let find_test_dirs = !find_test_dirs
 let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
+let dry_run = !dry_run

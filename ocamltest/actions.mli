@@ -90,6 +90,8 @@ module Eff : sig
   val if_pass: t -> t -> t
 
   val echo: ('a, unit, string, t) format4 -> 'a
+
+  val run: t -> dry_run:bool -> out_channel -> Result.t
 end
 
 module A : sig
@@ -156,6 +158,6 @@ val set_hook : string -> code -> unit
 val clear_hook : string -> unit
 val clear_all_hooks : unit -> unit
 
-val run : out_channel -> Environments.t -> t -> Eff.Result.t * Environments.t
+val run : Environments.t -> t -> Eff.t * Environments.t
 
 module ActionSet : Set.S with type elt = t

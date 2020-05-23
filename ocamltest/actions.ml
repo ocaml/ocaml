@@ -112,7 +112,7 @@ module Eff = struct
   let skip_with_reason s = Pure (Result.skip_with_reason s)
   let fail_with_reason s = Pure (Result.fail_with_reason s)
 
-  let run_cmd_run
+  let run_cmd_run ~dry_run
       {
         environment;
         stdin_filename;
@@ -146,7 +146,7 @@ module Eff = struct
     in
     let lst = List.concat (List.map String.words cmd) in
     let quoted_lst =
-      if Sys.os_type="Win32"
+      if Sys.win32
       then List.map Filename.maybe_quote lst
       else lst in
     let cmd' = String.concat " " quoted_lst in
@@ -157,17 +157,23 @@ module Eff = struct
     log_redirection "stdout" stdout_filename;
     log_redirection "stderr" stderr_filename;
     let n =
-      Run_command.run {
-        Run_command.progname = progname;
-        Run_command.argv = arguments;
-        Run_command.envp = environment;
-        Run_command.stdin_filename = stdin_filename;
-        Run_command.stdout_filename = stdout_filename;
-        Run_command.stderr_filename = stderr_filename;
-        Run_command.append = append;
-        Run_command.timeout = timeout;
-        Run_command.log;
-      }
+      if dry_run then
+        if expected_exit_codes <> [] then
+          List.hd expected_exit_codes
+        else
+          0
+      else
+        Run_command.run {
+          Run_command.progname = progname;
+          Run_command.argv = arguments;
+          Run_command.envp = environment;
+          Run_command.stdin_filename = stdin_filename;
+          Run_command.stdout_filename = stdout_filename;
+          Run_command.stderr_filename = stderr_filename;
+          Run_command.append = append;
+          Run_command.timeout = timeout;
+          Run_command.log;
+        }
     in
     if List.mem n expected_exit_codes then
       Result.pass
@@ -178,7 +184,7 @@ module Eff = struct
       (* Result.fail_with_reason reason *)
       Result.fail
 
-  let setup_symlinks_run source_dir build_dir files _ =
+  let setup_symlinks_run source_dir build_dir files =
     let symlink filename =
       let src = Filename.concat source_dir filename in
       let cmd = "ln -sf " ^ src ^" " ^ build_dir in
@@ -192,14 +198,9 @@ module Eff = struct
     let f = if Sys.win32 then copy else symlink in
     Sys.make_directory build_dir;
     List.iter f files;
-    Sys.chdir build_dir;
-    Result.pass
+    Sys.chdir build_dir
 
-  let check_files_run ~kind_of_output ~promote ignore
-      ({ Filecompare.reference_filename;
-         Filecompare.output_filename; _ } as files)
-      log
-    =
+  let check_files_run ~kind_of_output ~promote ignore files log =
     let tool = Filecompare.make_cmp_tool ~ignore in
     match Filecompare.check_file ~tool files with
     | Filecompare.Same -> Result.pass
@@ -210,23 +211,23 @@ module Eff = struct
           | Error diff_file -> ("See " ^ diff_file) in
         let reason =
           Printf.sprintf "%s output %s differs from reference %s: \n%s\n"
-            kind_of_output files.Filecompare.output_filename reference_filename diffstr in
+            kind_of_output files.output_filename files.reference_filename diffstr in
         if promote = Some true
         then begin
           Printf.fprintf log "Promoting %s output %s to reference %s\n%!"
-            kind_of_output output_filename reference_filename;
+            kind_of_output files.output_filename files.reference_filename;
           Filecompare.promote files ignore
         end;
         Result.fail_with_reason reason
     | Filecompare.Unexpected_output ->
         let banner = String.make 40 '=' in
-        let unexpected_output = Sys.string_of_file output_filename in
+        let unexpected_output = Sys.string_of_file files.output_filename in
         let unexpected_output_with_banners = Printf.sprintf
             "%s\n%s%s\n" banner unexpected_output banner in
         let reason = Printf.sprintf
             "The file %s was expected to be empty because there is no \
              reference file %s but it is not:\n%s\n"
-            output_filename reference_filename unexpected_output_with_banners in
+            files.output_filename files.reference_filename unexpected_output_with_banners in
         Result.fail_with_reason reason
     | Filecompare.Error (commandline, exitcode) ->
         let reason = Printf.sprintf "The command %s failed with status %d"
@@ -240,8 +241,8 @@ module Eff = struct
     | Filecompare.Different ->
         let reason =
           Printf.sprintf "Files %s and %s are different"
-            files.Filecompare.reference_filename
-            files.Filecompare.output_filename
+            files.reference_filename
+            files.output_filename
         in
         Result.fail_with_reason reason
     | Filecompare.Unexpected_output ->
@@ -250,31 +251,34 @@ module Eff = struct
         (* let reason = Actions_helpers.mkreason what commandline exitcode in *)
         Result.fail_with_reason ""
 
-  let rec run x log =
+  let rec run x ~dry_run log =
     match x with
     | Run_cmd (run_params, commandline) ->
-        run_cmd_run run_params commandline log
+        run_cmd_run ~dry_run run_params commandline log
     | Setup_symlinks (source_dir, build_dir, files) ->
-        setup_symlinks_run source_dir build_dir files log
+        if not dry_run then setup_symlinks_run source_dir build_dir files;
+        Result.pass
     | Force_remove s ->
-        Sys.force_remove s;
+        if not dry_run then Sys.force_remove s;
         Result.pass
     | Chdir s ->
         begin try
           Sys.chdir s; Result.pass
         with _ ->
-          let reason = "Could not chidir to \"" ^ s ^ "\"" in
+          let reason = "Could not chdir to \"" ^ s ^ "\"" in
           Result.fail_with_reason reason
         end
     | Check_files {kind_of_output; promote; ignore; files} ->
-        check_files_run ~kind_of_output ~promote ignore files log
+        if dry_run then Result.pass
+        else check_files_run ~kind_of_output ~promote ignore files log
     | Compare_files {tool; files} ->
-        compare_files_run ~tool files log
+        if dry_run then Result.pass
+        else compare_files_run ~tool files log
     | Seq l ->
         let rec loop = function
           | [] -> Result.pass
           | x :: l ->
-              let r = run x log in
+              let r = run x ~dry_run log in
               if Result.is_pass r then
                 loop l
               else
@@ -287,9 +291,9 @@ module Eff = struct
     | Pure r ->
         r
     | If_pass (a, b) ->
-        let r = run a log in
+        let r = run a ~dry_run log in
         if Result.is_pass r then
-          run b log
+          run b ~dry_run log
         else
           r
 end
@@ -440,13 +444,12 @@ let clear_all_hooks () =
   let f _name action = action.hook <- None in
   Hashtbl.iter f actions
 
-let run log env action =
+let run env action =
   let code = match action.hook with
     | None -> action.body
     | Some code -> code in
   let env = Environments.add action_name action.name env in
-  let eff, env = A.run code env in
-  Eff.run eff log, env
+  A.run code env
 
 module ActionSet = Set.Make
 (struct

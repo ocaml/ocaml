@@ -48,25 +48,26 @@ let test_of_action action =
   test_actions = [action]
 }
 
-let run_actions depth log testenv actions =
+let run_actions ~dry_run depth log testenv actions =
   let rec run_actions_aux action_number env = function
     | [] -> (Actions.Eff.Result.pass, env)
     | action::remaining_actions ->
       begin
         Printf.fprintf log "%s %s\n%!"
           (String.make depth '*') (Actions.name action);
-        let (result, env') = Actions.run log env action in
+        let eff, env' = Actions.run env action in
+        let result = Actions.Eff.run eff ~dry_run log in
         if Actions.Eff.Result.is_pass result
         then run_actions_aux (action_number+1) env' remaining_actions
         else (result, env')
       end in
   run_actions_aux 1 testenv actions
 
-let run depth log env test =
+let run ~dry_run depth log env test =
   Printf.fprintf log "Running test %s with %d actions\n%!"
     test.test_name
     (List.length test.test_actions);
-  run_actions depth log env test.test_actions
+  run_actions ~dry_run depth log env test.test_actions
 
 module TestSet = Set.Make
 (struct
