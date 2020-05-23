@@ -102,7 +102,8 @@ let run_params
     and+ env = A.env in
     Array.append environment (Environments.to_system_env env)
   in
-  { Eff.environment;
+  {
+    Eff.environment;
     stdin_filename;
     stdout_filename;
     stderr_filename;
@@ -129,7 +130,8 @@ let run
   and+ run_params = run_params () in
   match program with
   | None ->
-      let msg = Printf.sprintf "%s: variable %s is undefined"
+      let msg =
+        Printf.sprintf "%s: variable %s is undefined"
           log_message (Variables.name_of_variable prog_variable)
       in
       Eff.fail_with_reason msg
@@ -163,25 +165,19 @@ let run_program =
 
 let run_script =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
-  (* Printf.fprintf log "Script should write its response to %s\n%!" *)
-  (*   response_file; *)
   A.add Builtin_variables.ocamltest_response (A.return response_file)
-    (run "Running script"
-       true
-       true
-       Builtin_variables.script
-       None)
+    (let+ eff =
+       run "Running script"
+         true
+         true
+         Builtin_variables.script
+         None
+     in
+     Eff.seq [
+       Eff.echo "Script should write its response to %s" response_file;
+       eff;
+       Eff.force_remove response_file ])
 
-
-    (* (A.branch *)
-    (*    (A.map (fun r -> if Result.is_pass r then Ok r else Error r) *)
-    (*       (run "Running script" *)
-    (*          true *)
-    (*          true *)
-    (*          Builtin_variables.script *)
-    (*          None)) *)
-       (* let final_value = *)
-       (* if Result.is_pass result then begin *)
        (* (match Modifier_parser.modifiers_of_file response_file with *)
        (*  | modifiers -> *)
        (*      A.apply_modifiers modifiers (let+ (), env = A.with_env (A.return ()) in *)
@@ -196,20 +192,8 @@ let run_script =
        (*      let+ (), env = A.with_env (A.return ()) in *)
        (*      Fun.const (Result.fail_with_reason reason, env)) *)
 
-       (*   (let reason = String.trim (Sys.string_of_file response_file) in *)
-       (*  let+ (), env = A.with_env (A.return ()) in *)
-       (*  fun result -> *)
-       (*    { result with Result.reason = Some reason }, env)) *)
-     (*   end *)
-  (* in *)
-  (* Sys.force_remove response_file; *)
-  (* final_value *)
-
 let run_hook hook_name =
-  (* Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name; *)
   let response_file = Filename.temp_file "ocamltest-" ".response" in
-  (* Printf.fprintf log "Hook should write its response to %s\n%!" *)
-  (*   response_file; *)
   A.add Builtin_variables.ocamltest_response (A.return response_file)
     (let+ env = A.env in
      let settings =
@@ -223,35 +207,13 @@ let run_hook hook_name =
          strace = false;
          strace_logfile = "";
          strace_flags = "";
-         (* argv = [|"sh"; Filename.maybe_quote hook_name|]; *)
-         (* envp = systemenv; *)
-         (* append = false; *)
-         (* timeout = 0; *)
-         (* log = (\* log; *\) stdout; (\* FIXME *\) *)
        }
      in
-     Eff.run_cmd settings ["sh"; hook_name])
-(* in *)
-     (* A.branch (A.map (function 0 -> Ok () | n -> Error n) exit_status) *)
-     (*   (match Modifier_parser.modifiers_of_file response_file with *)
-     (*    | modifiers -> *)
-     (*        A.apply_modifiers modifiers (A.return (Fun.const Result.pass)) *)
-     (*    | exception Failure reason -> *)
-     (*        A.return (Fun.const (Result.fail_with_reason reason)) *)
-     (*    | exception Variables.No_such_variable name -> *)
-     (*        let reason = *)
-     (*          Printf.sprintf "error in script response: unknown variable %s" name *)
-     (*        in *)
-     (*        A.return (Fun.const (Result.fail_with_reason reason))) *)
-     (*   ((\* Printf.fprintf log "Hook returned %d" exit_status; *\) *)
-     (*     let reason = String.trim (Sys.string_of_file response_file) in *)
-     (*     A.return (fun exit_status -> *)
-     (*         if exit_status = 125 *)
-     (*         then Result.skip_with_reason reason *)
-     (*         else Result.fail_with_reason reason))) *)
-  (* in *)
-  (* Sys.force_remove response_file; *) (* FIXME *)
-  (* final_value *)
+     Eff.seq
+       [ Eff.echo "Entering run_hook for hook %s\n%!" hook_name;
+         Eff.echo "Hook should write its response to %s" response_file;
+         Eff.with_skip_code 125 (Eff.run_cmd settings ["sh"; hook_name]);
+         Eff.force_remove response_file ])
 
 let check_output kind_of_output output_variable reference_variable =
   let to_int = function None -> 0 | Some s -> int_of_string s in
@@ -261,9 +223,6 @@ let check_output kind_of_output output_variable reference_variable =
     A.map to_int (A.lookup Builtin_variables.skip_header_bytes) in
   let reference_filename = A.safe_lookup reference_variable in
   let output_filename = A.safe_lookup output_variable in
-  (* Printf.fprintf log "Comparing %s output %s to reference %s\n%!" *)
-  (*   kind_of_output (relative_to_initial_cwd output_filename) *)
-  (*   (relative_to_initial_cwd reference_filename); *)
   let+ reference_filename = reference_filename
   and+ output_filename = output_filename
   and+ skip_lines = skip_lines
@@ -279,4 +238,8 @@ let check_output kind_of_output output_variable reference_variable =
     Filecompare.lines = skip_lines;
     Filecompare.bytes = skip_bytes;
   } in
-  Eff.check_files ~kind_of_output ~promote ignore_header_conf files
+  Eff.seq
+    [ Eff.echo "Comparing %s output %s to reference %s\n%!"
+        kind_of_output output_filename
+        reference_filename;
+      Eff.check_files ~kind_of_output ~promote ignore_header_conf files ]

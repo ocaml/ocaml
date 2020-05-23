@@ -56,7 +56,7 @@ val run : string -> bool -> bool -> Variables.t
 
 val run_program : Eff.t A.t
 
-val run_script : Eff.t (* Environments.t FIXME *) A.t
+val run_script : Eff.t A.t
 
 val run_hook : string -> Eff.t A.t
 
