@@ -78,7 +78,8 @@ module Eff = struct
     | With_skip_code of int * t
 
     | Run_cmd of run_params * string list
-    | Setup_symlinks of string * string * string list
+    | Copy_file of bool (* use ln instead *) * string * string * string
+    | Mkdir of string
     | Force_remove of string
     | Chdir of string
     | Check_files of
@@ -97,7 +98,13 @@ module Eff = struct
 
   let run_cmd params commandline = Run_cmd (params, commandline)
   let setup_symlinks source_dir build_dir files =
-    Setup_symlinks (source_dir, build_dir, files)
+    let copy_file s = Copy_file (not Sys.win32, s, source_dir, build_dir) in
+    let steps =
+      Mkdir build_dir ::
+      List.map copy_file files @
+      Chdir build_dir :: []
+    in
+    Seq steps
   let chdir s = Chdir s
   let check_files ~kind_of_output ~promote ignore files =
     Check_files {kind_of_output; promote; ignore; files}
@@ -182,22 +189,6 @@ module Eff = struct
       (* Result.fail_with_reason reason *)
       Result.fail
 
-  let setup_symlinks_run source_dir build_dir files =
-    let symlink filename =
-      let src = Filename.concat source_dir filename in
-      let cmd = "ln -sf " ^ src ^" " ^ build_dir in
-      Sys.run_system_command cmd
-    in
-    let copy filename =
-      let src = Filename.concat source_dir filename in
-      let dst = Filename.concat build_dir filename in
-      Sys.copy_file src dst
-    in
-    let f = if Sys.win32 then copy else symlink in
-    Sys.make_directory build_dir;
-    List.iter f files;
-    Sys.chdir build_dir
-
   let check_files_run ~kind_of_output ~promote ignore files log =
     let tool = Filecompare.make_cmp_tool ~ignore in
     match Filecompare.check_file ~tool files with
@@ -254,8 +245,18 @@ module Eff = struct
       | Run_cmd (run_params, commandline) ->
           do_run_cmd ~dry_run ~expected_exit_code ~skip_exit_code
             run_params commandline log
-      | Setup_symlinks (source_dir, build_dir, files) ->
-          if not dry_run then setup_symlinks_run source_dir build_dir files;
+      | Copy_file (true, filename, srcdir, dstdir) ->
+          let src = Filename.concat srcdir filename in
+          let cmd = Filename.quote_command "ln" ["-sf"; src; dstdir] in
+          if not dry_run then Sys.run_system_command cmd;
+          Result.pass
+      | Copy_file (false, filename, srcdir, dstdir) ->
+          let src = Filename.concat srcdir filename in
+          let dst = Filename.concat dstdir filename in
+          if not dry_run then Sys.copy_file src dst;
+          Result.pass
+      | Mkdir s ->
+          Sys.make_directory s;
           Result.pass
       | Force_remove s ->
           if not dry_run then Sys.force_remove s;

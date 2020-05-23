@@ -43,8 +43,6 @@ val run_params:
     ?append:bool ->
     ?timeout:int -> unit -> Eff.run_params A.t
 
-(* val setup_symlinks : string -> string -> string list -> unit *)
-
 val setup_build_env :
   bool -> string list Actions.A.t -> Eff.t A.t
 
