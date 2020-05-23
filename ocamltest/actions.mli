@@ -118,7 +118,7 @@ module A : sig
 
   val apply_modifiers: Environments.modifiers -> 'a t -> 'a t
 
-  val cast: Environments.t t -> (out_channel -> Environments.t -> Environments.t)
+  val run: 'a t -> Environments.t -> 'a
 
   module Infix : sig
     val (let+): 'a t -> ('a -> 'b) -> 'b t

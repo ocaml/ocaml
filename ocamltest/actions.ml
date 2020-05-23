@@ -254,7 +254,67 @@ module Eff = struct
   let fail_with_reason s _ = Result.fail_with_reason s
 end
 
-type code = Environments.t -> Eff.t * Environments.t
+module A = struct
+
+  type 'a t =
+    | Pure : 'a -> 'a t
+    | Map : ('a -> 'b) * 'a t -> 'b t
+    | Safe_lookup : Variables.t -> string t
+    | Lookup : Variables.t -> string option t
+    | Lookup_nonempty : Variables.t -> string option t
+    | Lookup_bool : Variables.t -> bool option t
+    | Both : 'a t * 'b t -> ('a * 'b) t
+    | Add : Variables.t * string t * 'a t -> 'a t
+    | Add_if_undefined : Variables.t * string t * 'a t -> 'a t
+    | Env : Environments.t t
+    | If : bool t * 'a t * 'a t -> 'a t
+    | File_exists : string t -> bool t
+    | Apply_modifiers : Environments.modifiers * 'a t -> 'a t
+    | All : 'a t list -> 'a list t
+
+  let return x = Pure x
+  let map f a = Map (f, a)
+  let file_exists s = File_exists s
+  let safe_lookup v = Safe_lookup v
+  let lookup v = Lookup v
+  let lookup_nonempty v = Lookup_nonempty v
+  let lookup_as_bool v = Lookup_bool v
+  let both a b = Both (a, b)
+  let env = Env
+  let if_ c a b = If (c, a, b)
+  let apply_modifiers mods x = Apply_modifiers (mods, x)
+  let add v s x = Add (v, s, x)
+  let add_if_undefined v s x = Add_if_undefined (v, s, x)
+  let all xs = All xs
+
+  let rec run : type a. a t -> Environments.t -> a = fun x env ->
+    match x with
+    | Pure x -> x
+    | Map (f, x) -> f (run x env)
+    | Safe_lookup v -> Environments.safe_lookup v env
+    | Lookup v -> Environments.lookup v env
+    | Lookup_nonempty v -> Environments.lookup_nonempty v env
+    | Lookup_bool v -> Environments.lookup_as_bool v env
+    | Both (a, b) -> (run a env, run b env)
+    | Add (v, s, x) -> run x (Environments.add v (run s env) env)
+    | Add_if_undefined (v, s, x) ->
+        run x (Environments.add_if_undefined v (run s env) env)
+    | Env -> env
+    | If (a, b, c) -> if run a env then run b env else run c env
+    | File_exists a -> Sys.file_exists (run a env)
+    | Apply_modifiers (m, x) -> run x (Environments.apply_modifiers env m)
+    | All xs -> List.map (fun x -> run x env) xs
+
+  module Infix = struct
+    let (let+) a f = map f a
+    let (and+) a b = both a b
+    let (||+) a b = if_ a (return true) b
+    let (&&+) a b = if_ a b (return false)
+  end
+end
+
+
+type code = (Eff.t * Environments.t) A.t
 
 type t = {
   name : string;
@@ -303,7 +363,7 @@ let run log env action =
     | None -> action.body
     | Some code -> code in
   let env = Environments.add action_name action.name env in
-  let eff, env = code env in
+  let eff, env = A.run code env in
   eff log, env
 
 module ActionSet = Set.Make
@@ -313,66 +373,3 @@ module ActionSet = Set.Make
 end)
 
 let _ = Variables.register_variable action_name
-
-module A = struct
-  type 'a t = Environments.t -> 'a
-
-  let map f a env =
-    f (a env)
-
-  let return x _ = x
-
-  let safe_lookup var env =
-    Environments.safe_lookup var env
-
-  let lookup var env =
-    Environments.lookup var env
-
-  let lookup_nonempty var env =
-    Environments.lookup_nonempty var env
-
-  let lookup_as_bool var env =
-    Environments.lookup_as_bool var env
-
-  let both a b env =
-    (a env, b env)
-
-  let add v s x env =
-    x (Environments.add v (s env) env)
-
-  let add_if_undefined v s x env =
-    x (Environments.add_if_undefined v (s env) env)
-
-  let env env =
-    env
-
-  let if_ c a b env =
-    if c env then
-      a env
-    else
-      b env
-
-  let all l env =
-    let rec loop accu = function
-      | [] ->
-          List.rev accu
-      | x :: l ->
-          loop (x env :: accu) l
-    in
-    loop [] l
-
-  let file_exists s env =
-    Sys.file_exists (s env)
-
-  let apply_modifiers modifiers x env =
-    x (Environments.apply_modifiers env modifiers)
-
-  let cast x _ env = x env
-
-  module Infix = struct
-    let (let+) a f = map f a
-    let (and+) a b = both a b
-    let (||+) a b = if_ a (return true) b
-    let (&&+) a b = if_ a b (return false)
-  end
-end

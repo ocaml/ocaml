@@ -1524,7 +1524,7 @@ let run_ocamldoc =
          (* end) *)
 
 let _ =
-  Environments.register_initializer "find_source_modules" (A.cast find_source_modules);
+  Environments.register_initializer "find_source_modules" (Fun.const (A.run find_source_modules));
   Environments.register_initializer "config_variables" config_variables;
   List.iter register
   [
