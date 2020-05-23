@@ -205,6 +205,9 @@ module Eff = struct
     else
       r
 
+  let echo fmt =
+    Printf.ksprintf (fun s log -> Printf.fprintf log "%s\n%!" s; Result.pass) fmt
+
   let of_result r _ =
     r
 end

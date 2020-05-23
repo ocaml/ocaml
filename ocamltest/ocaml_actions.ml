@@ -295,7 +295,6 @@ let compile_program compiler =
     and+ modules = modules in
     binary_modules @ List.map Ocaml_filetypes.make_filename modules
   in
-  (* Printf.fprintf log "%s\n%!" what; *)
   let libraries = libraries target in
   let cmas_need_dynamic_loading =
     if not Config.supports_shared_libraries &&
@@ -338,8 +337,14 @@ let compile_program compiler =
       ~append:true
       ~expected_exit_codes:[expected_exit_status] ()
   and+ cmas_need_dynamic_loading = cmas_need_dynamic_loading in
+  let what =
+    let module_names = String.concat " " module_names in
+    Printf.sprintf "Compiling program %s from modules %s"
+      (relative_to_initial_cwd program_file) module_names
+  in
   Eff.seq
     [
+      Eff.echo "%s" what;
       effects;
       (match cmas_need_dynamic_loading with
       | Some (Error reason) ->
@@ -374,6 +379,7 @@ let compile_program compiler =
 (*     Printf.sprintf "Compiling program %s from modules %s" *)
 (*       (relative_to_initial_cwd program_file) module_names *)
 (*   in *)
+  (* Printf.fprintf log "%s\n%!" what; *)
 (*   let reason = *)
 (*     (Actions_helpers.mkreason *)
 (*        what (String.concat " " commandline) exit_status) *)
@@ -440,10 +446,10 @@ let add_module_interface directory module_description =
         [(filename, Ocaml_filetypes.Interface); module_description]
   | _ -> [module_description]
 
-(* let print_module_names log description modules = *)
-(*   Printf.fprintf log "%s modules: %s\n%!" *)
-(*     description *)
-(*     (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) *)
+let _print_module_names description modules =
+  Eff.echo "%s modules: %s\n%!"
+    description
+    (String.concat " " (List.map Ocaml_filetypes.make_filename modules))
 
 let find_source_modules =
   (* print_module_names log "Specified" specified_modules; *)
@@ -577,10 +583,13 @@ let compile compiler =
          ~append:true
          ~expected_exit_codes:[expected_exit_status] ()
      and+ commandline = A.map Option.get commandline in
-     (* let what = Printf.sprintf "Compiling using commandline %s" commandline in *)
-     (* Printf.fprintf log "%s\n%!" what; *)
+     let what = Printf.sprintf "Compiling using commandline %s" commandline in
      let commandline = [Ocaml_compilers.name compiler; commandline] in
-     Eff.run_cmd run_params commandline
+     Eff.seq
+       [
+         Eff.echo "%s" what;
+         Eff.run_cmd run_params commandline;
+       ]
      (* if exit_status = expected_exit_status *)
      (* then Result.pass *)
      (* else *)
@@ -645,9 +654,10 @@ let debug =
       program
     ]
   in
-  (* let what = Printf.sprintf "Debugging program %s" program in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
-  Eff.run_cmd run_params commandline
+  let what = Printf.sprintf "Debugging program %s" program in
+  Eff.seq
+    [ Eff.echo "%s" what;
+      Eff.run_cmd run_params commandline ]
   (* if exit_status = 0 *)
   (* then Result.pass *)
   (* else begin *)
@@ -685,9 +695,10 @@ let objinfo =
       program
     ]
   in
-  (* let what = Printf.sprintf "Running ocamlobjinfo on %s" program in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
-  Eff.run_cmd run_params commandline
+  let what = Printf.sprintf "Running ocamlobjinfo on %s" program in
+  Eff.seq
+    [ Eff.echo "%s" what;
+      Eff.run_cmd run_params commandline ]
   (* if exit_status = 0 *)
   (* then Result.pass *)
   (* else begin *)
@@ -722,9 +733,10 @@ let mklib =
     ("-o " ^ program) ::
     modules
   in
-  (* let what = Printf.sprintf "Running ocamlmklib to produce %s" program in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
-  Eff.run_cmd run_params commandline
+  let what = Printf.sprintf "Running ocamlmklib to produce %s" program in
+  Eff.seq
+    [ Eff.echo "%s" what;
+      Eff.run_cmd run_params commandline ]
   (* if exit_status = 0 *)
   (* then Result.pass *)
   (* else begin *)
@@ -775,10 +787,11 @@ let finalise_codegen_msvc test_basename =
                ~append:true ()
            and+ obj = obj
            and+ src = src in
-           (* let what = "Running Microsoft assembler" in *)
-           (* Printf.fprintf log "%s\n%!" what; *)
+           let what = "Running Microsoft assembler" in
            let commandline = [Ocamltest_config.asm; obj; src] in
-           Eff.run_cmd run_params commandline)))
+           Eff.seq
+             [ Eff.echo "%s" what;
+               Eff.run_cmd run_params commandline ])))
 
   (* A.if_ (A.map ((=) 0) exit_status) *)
   (*   ((\* let env = *\) *)
@@ -797,8 +810,6 @@ let finalise_codegen_msvc test_basename =
   (*     A.with_env (A.return (Result.fail_with_reason ""))) *)
 
 let run_codegen =
-  (* let what = Printf.sprintf "Running codegen on %s" testfile in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
   let testfile_basename = A.map Filename.chop_extension Actions_helpers.testfile in
   let compiler_output =
     let+ test_build_directory = Actions_helpers.test_build_directory in
@@ -834,9 +845,13 @@ let run_codegen =
           if Ocamltest_config.ccomptype="msvc"
           then finalise_codegen_msvc testfile_basename
           else finalise_codegen_cc testfile_basename
-        in
-        Eff.if_pass eff finalise, env))
-          (* ((\* let reason = *\) *)
+        and+ testfile = Actions_helpers.testfile in
+        let what = Printf.sprintf "Running codegen on %s" testfile in
+        Eff.seq
+          [ Eff.echo "%s" what;
+            Eff.if_pass eff finalise ],
+        env))
+(* ((\* let reason = *\) *)
           (*   (\*   (Actions_helpers.mkreason *\) *)
           (*   (\*     what (String.concat " " commandline) exit_status) in *\) *)
           (*   A.with_env (A.return (Result.fail_with_reason ""))))) *)
@@ -865,9 +880,10 @@ let run_cc =
     arguments ::
     modules
   in
-  (* let what = Printf.sprintf "Running C compiler to build %s" program in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
-  Eff.run_cmd run_params commandline
+  let what = Printf.sprintf "Running C compiler to build %s" program in
+  Eff.seq
+    [ Eff.echo "%s" what;
+      Eff.run_cmd run_params commandline ]
   (* if exit_status = 0 *)
   (* then Result.pass *)
   (* else begin *)
@@ -962,11 +978,6 @@ let check_ocamlopt_opt_output =
        (`Compiler Ocaml_compilers.ocamlopt_opt))
 
 let really_compare_programs backend comparison_tool =
-  (* let what = Printf.sprintf "Comparing %s programs %s and %s" *)
-  (*     (Ocaml_backends.string_of_backend backend) *)
-  (*     (relative_to_initial_cwd program) *)
-  (*     (relative_to_initial_cwd program2) in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
   let+ program = A.safe_lookup Builtin_variables.program
   and+ program2 = A.safe_lookup Builtin_variables.program2 in
   let files =
@@ -993,7 +1004,14 @@ let really_compare_programs backend comparison_tool =
       else
         comparison_tool
     in
-    Eff.compare_files ~tool files
+    let what = Printf.sprintf "Comparing %s programs %s and %s"
+        (Ocaml_backends.string_of_backend backend)
+        (relative_to_initial_cwd program)
+        (relative_to_initial_cwd program2)
+    in
+    Eff.seq
+      [ Eff.echo "%s" what;
+        Eff.compare_files ~tool files ]
   end
 
 let compare_programs backend comparison_tool =

@@ -54,6 +54,8 @@ module Eff : sig
   val seq: t list -> t
 
   val if_pass: t -> t -> t
+
+  val echo: ('a, unit, string, t) format4 -> 'a
 end
 
 module A : sig
