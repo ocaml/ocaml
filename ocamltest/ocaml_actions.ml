@@ -445,15 +445,15 @@ let setup_tool_build_env tool x =
            Eff.seq [remove_output_file; setup_build_env], env)))
 
 let setup_compiler_build_env compiler =
+  let prog_var = Ocaml_compilers.program_variable compiler in
+  let prog_output_var = Ocaml_compilers.program_output_variable compiler in
+  let prog_output_file =
+    let+ prog_file = A.safe_lookup prog_var in
+    prog_file ^ ".output"
+  in
+  let default_prog_file = get_program_file (Ocaml_compilers.target compiler) in
   setup_tool_build_env (`Compiler compiler)
-    (let prog_var = Ocaml_compilers.program_variable compiler in
-     let prog_output_var = Ocaml_compilers.program_output_variable compiler in
-     let prog_output_file =
-       let+ prog_file = A.safe_lookup prog_var in
-       prog_file ^ ".output"
-     in
-     let default_prog_file = get_program_file (Ocaml_compilers.target compiler) in
-     A.add_if_undefined prog_var default_prog_file
+    (A.add_if_undefined prog_var default_prog_file
        (match prog_output_var with
         | None -> A.env
         | Some outputvar ->
@@ -504,9 +504,9 @@ let setup_ocamlnat_build_env =
 
 let compile compiler =
   let commandline = A.lookup_nonempty Builtin_variables.commandline in
+  let module_ = A.lookup_nonempty Ocaml_variables.module_ in
   A.if_ (A.map Option.is_none commandline)
-    (let module_ = A.lookup_nonempty Ocaml_variables.module_ in
-     A.if_ (A.map Option.is_none module_)
+    (A.if_ (A.map Option.is_none module_)
        (compile_program compiler)
        (compile_module compiler (A.map Option.get module_)))
     (let+ expected_exit_status =
