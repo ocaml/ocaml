@@ -84,16 +84,17 @@ let reference_file_suffix =
   else ".reference"
 
 let reference_file t prefix =
-  let default =
+  let+ default =
     let+ prefix = prefix
     and+ suffix = reference_file_suffix in
     Filename.make_filename prefix (directory t) ^ suffix
-  in
-  A.if_ (A.file_exists default) default
-    (let+ prefix = prefix
-     and+ suffix = reference_file_suffix in
-     let mk s = Filename.make_filename prefix s ^ suffix in
-     let filename =
-       mk (Ocaml_backends.string_of_backend t.target) in
-     if Sys.file_exists filename then filename
-     else mk "compilers")
+  and+ prefix = prefix
+  and+ suffix = reference_file_suffix in
+  if Sys.file_exists default then default
+  else begin
+    let mk s = Filename.make_filename prefix s ^ suffix in
+    let filename =
+      mk (Ocaml_backends.string_of_backend t.target) in
+    if Sys.file_exists filename then filename
+    else mk "compilers"
+  end

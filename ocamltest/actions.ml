@@ -308,13 +308,11 @@ module A = struct
     | Add_if_undefined : Variables.t * string t * 'a t -> 'a t
     | Env : Environments.t t
     | If : bool t * 'a t * 'a t -> 'a t
-    | File_exists : string t -> bool t
     | Apply_modifiers : Environments.modifiers * 'a t -> 'a t
     | All : 'a t list -> 'a list t
 
   let return x = Pure x
   let map f a = Map (f, a)
-  let file_exists s = File_exists s
   let safe_lookup v = Safe_lookup v
   let lookup v = Lookup v
   let lookup_nonempty v = Lookup_nonempty v
@@ -341,7 +339,6 @@ module A = struct
         run x (Environments.add_if_undefined v (run s env) env)
     | Env -> env
     | If (a, b, c) -> if run a env then run b env else run c env
-    | File_exists a -> Sys.file_exists (run a env)
     | Apply_modifiers (m, x) -> run x (Environments.apply_modifiers env m)
     | All xs -> List.map (fun x -> run x env) xs
 
@@ -359,7 +356,6 @@ module A = struct
     let rec reads : type a. a t -> V.Set.t = function
       | Pure _ | Env -> V.Set.empty
       | Map (_, x) -> reads x
-      | File_exists x -> reads x
       | Apply_modifiers (_, x) -> reads x
       | Safe_lookup v
       | Lookup v | Lookup_nonempty v
@@ -379,7 +375,6 @@ module A = struct
     let rec writes : type a. a t -> V.Set.t = function
       | Pure _ | Env -> V.Set.empty
       | Map (_, x) -> writes x
-      | File_exists x -> writes x
       | Apply_modifiers (_, x) -> writes x
       | Safe_lookup _
       | Lookup _ | Lookup_nonempty _

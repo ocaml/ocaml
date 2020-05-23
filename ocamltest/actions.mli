@@ -111,8 +111,6 @@ module A : sig
   val env: Environments.t t
   val both: 'a t -> 'b t -> ('a * 'b) t
 
-  val file_exists: string t -> bool t
-
   val all: 'a t list -> 'a list t
 
   val apply_modifiers: Environments.modifiers -> 'a t -> 'a t
