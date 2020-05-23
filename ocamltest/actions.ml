@@ -71,6 +71,12 @@ module Eff = struct
     }
 
   type t =
+    | Seq of t list
+    | Pure of Result.t
+    | If_pass of t * t
+    | With_exit_code of int * t
+    | With_skip_code of int * t
+
     | Run_cmd of run_params * string list
     | Setup_symlinks of string * string * string list
     | Force_remove of string
@@ -87,12 +93,7 @@ module Eff = struct
           tool: Filecompare.tool;
           files: Filecompare.files;
         }
-    | Seq of t list
     | Echo of string
-    | Pure of Result.t
-    | If_pass of t * t
-    | With_exit_code of int * t
-    | With_skip_code of int * t
 
   let run_cmd params commandline = Run_cmd (params, commandline)
   let setup_symlinks source_dir build_dir files =
@@ -307,17 +308,18 @@ module A = struct
   type 'a t =
     | Pure : 'a -> 'a t
     | Map : ('a -> 'b) * 'a t -> 'b t
+    | If : bool t * 'a t * 'a t -> 'a t
+    | All : 'a t list -> 'a list t
+    | Both : 'a t * 'b t -> ('a * 'b) t
+
     | Safe_lookup : Variables.t -> string t
     | Lookup : Variables.t -> string option t
     | Lookup_nonempty : Variables.t -> string option t
     | Lookup_bool : Variables.t -> bool option t
-    | Both : 'a t * 'b t -> ('a * 'b) t
     | Add : Variables.t * string t * 'a t -> 'a t
     | Add_if_undefined : Variables.t * string t * 'a t -> 'a t
     | Env : Environments.t t
-    | If : bool t * 'a t * 'a t -> 'a t
     | Apply_modifiers : Environments.modifiers * 'a t -> 'a t
-    | All : 'a t list -> 'a list t
 
   let return x = Pure x
   let map f a = Map (f, a)
