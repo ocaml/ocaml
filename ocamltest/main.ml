@@ -169,7 +169,7 @@ let test_file test_filename =
          let hook_name = Filename.make_filename hookname_prefix name in
          if Sys.file_exists hook_name then begin
            let hook = Actions_helpers.run_hook hook_name in
-           Actions.set_hook name (Actions.A.with_env hook)
+           Actions.set_hook name (Actions.(A.both hook A.env))
          end in
        String.Set.iter install_hook action_names;
 

@@ -20,36 +20,34 @@ open Actions
 open A.Infix
 
 let reason_with_fallback f fallback =
-  let+ reason = A.lookup Builtin_variables.reason in
-  f (Option.value ~default:fallback reason)
+  A.both
+    (let+ reason = A.lookup Builtin_variables.reason in
+     f (Option.value ~default:fallback reason))
+    A.env
 
 let pass = make
   "pass"
-  (A.with_env
-     (reason_with_fallback Eff.pass_with_reason "the pass action always succeeds"))
+  (reason_with_fallback Eff.pass_with_reason "the pass action always succeeds")
 
 let skip = make
   "skip"
-  (A.with_env
-     (reason_with_fallback Eff.skip_with_reason "the skip action always skips"))
+  (reason_with_fallback Eff.skip_with_reason "the skip action always skips")
 
 let fail = make
   "fail"
-  (A.with_env
-     (reason_with_fallback Eff.fail_with_reason "the fail action always fails"))
+  (reason_with_fallback Eff.fail_with_reason "the fail action always fails")
 
 let cd = make
   "cd"
-  (A.with_env
-     (let+ cwd = A.safe_lookup Builtin_variables.cwd in
-      Eff.cd cwd))
+  (A.both
+     (A.map Eff.cd (A.safe_lookup Builtin_variables.cwd)) A.env)
 
 let dumpenv = make
   "dumpenv"
-  ((* Environments.dump log env;*) A.with_env (A.return Eff.pass))
+  ((* Environments.dump log env;*) A.both (A.return Eff.pass) A.env)
 
 let pass_or_skip b s1 s2 =
-  A.with_env (Actions_helpers.pass_or_skip b s1 s2)
+  A.both (Actions_helpers.pass_or_skip b s1 s2) A.env
 
 let hasinstrumentedruntime = make
   "hasinstrumentedruntime"
@@ -184,8 +182,9 @@ let has_symlink = make
 
 let setup_build_env = make
   "setup-build-env"
-  (A.with_env
-     (Actions_helpers.setup_build_env true (Actions.A.return [])))
+  (A.both
+     (Actions_helpers.setup_build_env true (Actions.A.return []))
+     A.env)
 
 let setup_simple_build_env = make
   "setup-simple-build-env"
@@ -193,18 +192,19 @@ let setup_simple_build_env = make
 
 let run = make
   "run"
-  (A.with_env Actions_helpers.run_program)
+  (A.both Actions_helpers.run_program A.env)
 
 let script = make
   "script"
-  (A.with_env Actions_helpers.run_script) (* FIXME *)
+  (A.both Actions_helpers.run_script A.env) (* FIXME *)
 
 let check_program_output = make
   "check-program-output"
-  (A.with_env
+  (A.both
      (Actions_helpers.check_output "program"
         Builtin_variables.output
-        Builtin_variables.reference))
+        Builtin_variables.reference)
+     A.env)
 
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings

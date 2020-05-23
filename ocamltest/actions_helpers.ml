@@ -26,7 +26,7 @@ let pass_or_skip test pass_reason skip_reason =
 
 let skip_with_reason reason =
   Actions.make "skip"
-    (A.with_env (A.return (Eff.skip_with_reason reason)))
+    (A.both (A.return (Eff.skip_with_reason reason)) A.env)
 
 let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
@@ -73,7 +73,7 @@ let setup_build_env add_testfile additional_files =
 let setup_simple_build_env add_testfile additional_files =
   A.add Builtin_variables.test_build_directory
     test_build_directory_prefix
-    (A.with_env (setup_build_env add_testfile additional_files))
+    (A.both (setup_build_env add_testfile additional_files) A.env)
 
 let run_params
     ?environment
@@ -103,8 +103,8 @@ let run_params
       match environment with
       | None -> A.return [||]
       | Some a -> a
-    and+ systemv = A.system_env in
-    Array.append environment systemv
+    and+ env = A.env in
+    Array.append environment (Environments.to_system_env env)
   in
   { Eff.environment;
     stdin_filename;
@@ -232,10 +232,10 @@ let run_hook hook_name =
   (* Printf.fprintf log "Hook should write its response to %s\n%!" *)
   (*   response_file; *)
   A.add Builtin_variables.ocamltest_response (A.return response_file)
-    (let+ environment = A.system_env in
+    (let+ env = A.env in
      let settings =
        {
-         Eff.environment;
+         Eff.environment = Environments.to_system_env env;
          stdin_filename = "";
          stdout_filename = "";
          stderr_filename = "";

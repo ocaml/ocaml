@@ -334,7 +334,7 @@ module A = struct
   let lookup_as_bool var env =
     Environments.lookup_as_bool var env
 
-  let pair a b env =
+  let both a b env =
     (a env, b env)
 
   let add v s x env =
@@ -343,8 +343,8 @@ module A = struct
   let add_if_undefined v s x env =
     x (Environments.add_if_undefined v (s env) env)
 
-  let with_env x env =
-    x env, env
+  let env env =
+    env
 
   let if_ c a b env =
     if c env then
@@ -364,9 +364,6 @@ module A = struct
   let file_exists s env =
     Sys.file_exists (s env)
 
-  let system_env env =
-    Environments.to_system_env env
-
   let apply_modifiers modifiers x env =
     x (Environments.apply_modifiers env modifiers)
 
@@ -374,7 +371,7 @@ module A = struct
 
   module Infix = struct
     let (let+) a f = map f a
-    let (and+) a b = pair a b
+    let (and+) a b = both a b
     let (||+) a b = if_ a (return true) b
     let (&&+) a b = if_ a b (return false)
   end

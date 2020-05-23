@@ -109,11 +109,10 @@ module A : sig
 
   val add_if_undefined: Variables.t -> string t -> 'a t -> 'a t
   val add: Variables.t -> string t -> 'a t -> 'a t
-  val with_env: 'a t -> ('a * Environments.t) t
+  val env: Environments.t t
+  val both: 'a t -> 'b t -> ('a * 'b) t
 
   val file_exists: string t -> bool t
-
-  val system_env: string array t
 
   val all: 'a t list -> 'a list t
 
