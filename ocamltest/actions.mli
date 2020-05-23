@@ -77,7 +77,7 @@ module Eff : sig
   val skip_with_reason: string -> t
   val fail_with_reason: string -> t
 
-  val cd: string -> t
+  val chdir: string -> t
 
   val check_files:
     kind_of_output:string ->

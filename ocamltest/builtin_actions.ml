@@ -40,7 +40,7 @@ let fail = make
 let cd = make
   "cd"
   (A.both
-     (A.map Eff.cd (A.safe_lookup Builtin_variables.cwd)) A.env)
+     (A.map Eff.chdir (A.safe_lookup Builtin_variables.cwd)) A.env)
 
 let dumpenv = make
   "dumpenv"

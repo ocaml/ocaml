@@ -57,8 +57,6 @@ module Eff = struct
     let is_fail r = r.status = Fail
   end
 
-  type t = out_channel -> Result.t
-
   type run_params =
     {
       environment: string array;
@@ -74,7 +72,47 @@ module Eff = struct
       skip_exit_codes: int list;
     }
 
-  let run_cmd
+  type t =
+    | Run_cmd of run_params * string list
+    | Setup_symlinks of string * string * string list
+    | Force_remove of string
+    | Chdir of string
+    | Check_files of
+        {
+          kind_of_output: string;
+          promote: bool option;
+          ignore: Filecompare.ignore;
+          files: Filecompare.files;
+        }
+    | Compare_files of
+        {
+          tool: Filecompare.tool;
+          files: Filecompare.files;
+        }
+    | Seq of t list
+    | Echo of string
+    | Pure of Result.t
+    | If_pass of t * t
+
+  let run_cmd params commandline = Run_cmd (params, commandline)
+  let setup_symlinks source_dir build_dir files =
+    Setup_symlinks (source_dir, build_dir, files)
+  let chdir s = Chdir s
+  let check_files ~kind_of_output ~promote ignore files =
+    Check_files {kind_of_output; promote; ignore; files}
+  let compare_files ~tool files = Compare_files {tool; files}
+  let seq l = Seq l
+  let force_remove s = Force_remove s
+  let if_pass a b = If_pass (a, b)
+  let echo fmt = Printf.ksprintf (fun s -> Echo s) fmt
+  let pass = Pure Result.pass
+  let skip = Pure Result.skip
+  let fail = Pure Result.fail
+  let pass_with_reason s = Pure (Result.pass_with_reason s)
+  let skip_with_reason s = Pure (Result.skip_with_reason s)
+  let fail_with_reason s = Pure (Result.fail_with_reason s)
+
+  let run_cmd_run
       {
         environment;
         stdin_filename;
@@ -87,7 +125,6 @@ module Eff = struct
         strace_logfile;
         expected_exit_codes;
         skip_exit_codes;
-        (* reason; *)
       }
       original_cmd log
     =
@@ -141,7 +178,7 @@ module Eff = struct
       (* Result.fail_with_reason reason *)
       Result.fail
 
-  let setup_symlinks source_dir build_dir files _ =
+  let setup_symlinks_run source_dir build_dir files _ =
     let symlink filename =
       let src = Filename.concat source_dir filename in
       let cmd = "ln -sf " ^ src ^" " ^ build_dir in
@@ -158,18 +195,7 @@ module Eff = struct
     Sys.chdir build_dir;
     Result.pass
 
-  let force_remove s _ =
-    Sys.force_remove s;
-    Result.pass
-
-  let cd cwd _ =
-    try
-      Sys.chdir cwd; Result.pass
-    with _ ->
-      let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
-      Result.fail_with_reason reason
-
-  let check_files ~kind_of_output ~promote ignore
+  let check_files_run ~kind_of_output ~promote ignore
       ({ Filecompare.reference_filename;
          Filecompare.output_filename; _ } as files)
       log
@@ -207,7 +233,7 @@ module Eff = struct
             commandline exitcode in
         Result.fail_with_reason reason
 
-  let compare_files ~tool files _ =
+  let compare_files_run ~tool files _ =
     match Filecompare.compare_files ~tool files with
     | Filecompare.Same ->
         Result.pass
@@ -224,34 +250,48 @@ module Eff = struct
         (* let reason = Actions_helpers.mkreason what commandline exitcode in *)
         Result.fail_with_reason ""
 
-  let seq l log =
-    let rec loop = function
-      | [] -> Result.pass
-      | x :: l ->
-          let r = x log in
-          if Result.is_pass r then
-            loop l
-          else
-            r
-    in
-    loop l
-
-  let if_pass a b log =
-    let r = a log in
-    if Result.is_pass r then
-      b log
-    else
-      r
-
-  let echo fmt =
-    Printf.ksprintf (fun s log -> Printf.fprintf log "%s\n%!" s; Result.pass) fmt
-
-  let pass _ = Result.pass
-  let skip _ = Result.skip
-  let fail _ = Result.fail
-  let pass_with_reason s _ = Result.pass_with_reason s
-  let skip_with_reason s _ = Result.skip_with_reason s
-  let fail_with_reason s _ = Result.fail_with_reason s
+  let rec run x log =
+    match x with
+    | Run_cmd (run_params, commandline) ->
+        run_cmd_run run_params commandline log
+    | Setup_symlinks (source_dir, build_dir, files) ->
+        setup_symlinks_run source_dir build_dir files log
+    | Force_remove s ->
+        Sys.force_remove s;
+        Result.pass
+    | Chdir s ->
+        begin try
+          Sys.chdir s; Result.pass
+        with _ ->
+          let reason = "Could not chidir to \"" ^ s ^ "\"" in
+          Result.fail_with_reason reason
+        end
+    | Check_files {kind_of_output; promote; ignore; files} ->
+        check_files_run ~kind_of_output ~promote ignore files log
+    | Compare_files {tool; files} ->
+        compare_files_run ~tool files log
+    | Seq l ->
+        let rec loop = function
+          | [] -> Result.pass
+          | x :: l ->
+              let r = run x log in
+              if Result.is_pass r then
+                loop l
+              else
+                r
+        in
+        loop l
+    | Echo s ->
+        Printf.fprintf log "%s\n%!" s;
+        Result.pass
+    | Pure r ->
+        r
+    | If_pass (a, b) ->
+        let r = run a log in
+        if Result.is_pass r then
+          run b log
+        else
+          r
 end
 
 module A = struct
@@ -364,7 +404,7 @@ let run log env action =
     | Some code -> code in
   let env = Environments.add action_name action.name env in
   let eff, env = A.run code env in
-  eff log, env
+  Eff.run eff log, env
 
 module ActionSet = Set.Make
 (struct
