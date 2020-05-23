@@ -923,10 +923,6 @@ let run_expect_once input_file principal =
   (*   Result.fail_with_reason reason *)
   (* end *)
 
-(* let if_pass a b = *)
-(*   A.select (A.map (fun r -> if Result.is_pass (fst r) then Ok () else Error r) (A.with_env a)) *)
-(*     (A.map Fun.const b) *)
-
 let run_expect_twice input_file =
   let corrected filename =
     let+ filename = filename in

@@ -212,7 +212,7 @@ module Eff = struct
     r
 end
 
-type code = out_channel -> Environments.t -> Eff.t * Environments.t
+type code = Environments.t -> Eff.t * Environments.t
 
 type t = {
   name : string;
@@ -261,7 +261,7 @@ let run log env action =
     | None -> action.body
     | Some code -> code in
   let env = Environments.add action_name action.name env in
-  let eff, env = code log env in
+  let eff, env = code env in
   eff log, env
 
 module ActionSet = Set.Make
@@ -273,96 +273,65 @@ end)
 let _ = Variables.register_variable action_name
 
 module A = struct
-  type 'a t =
-    out_channel -> Environments.t -> 'a
+  type 'a t = Environments.t -> 'a
 
-  let map f a log env =
-    f (a log env)
+  let map f a env =
+    f (a env)
 
-  let apply f a log env =
-    let a = a log env in
-    let f = f log env in
-    f a
+  let apply f a env =
+    f env (a env)
 
-  let return x _ _ = x
+  let return x _ = x
 
-  let select f a log env =
-    match f log env with
-    | Ok x ->
-        let a = a log env in
-        a x
-    | Error b ->
-        b
-
-  let safe_lookup var _ env =
+  let safe_lookup var env =
     Environments.safe_lookup var env
 
-  let lookup var _ env =
+  let lookup var env =
     Environments.lookup var env
 
-  let lookup_nonempty var _ env =
+  let lookup_nonempty var env =
     Environments.lookup_nonempty var env
 
-  let lookup_as_bool var _ env =
+  let lookup_as_bool var env =
     Environments.lookup_as_bool var env
 
-  let pair a b log env =
-    let a = a log env in
-    let b = b log env in
-    (a, b)
+  let pair a b env =
+    (a env, b env)
 
-  let add v s x log env =
-    let s = s log env in
-    x log (Environments.add v s env)
+  let add v s x env =
+    x (Environments.add v (s env) env)
 
-  let add_if_undefined v s x log env =
-    let s = s log env in
-    x log (Environments.add_if_undefined v s env)
+  let add_if_undefined v s x env =
+    x (Environments.add_if_undefined v (s env) env)
 
-  let with_env x log env =
-    let x = x log env in
-    x, env
+  let with_env x env =
+    x env, env
 
-  let if_ c a b log env =
-    if c log env then
-      a log env
+  let if_ c a b env =
+    if c env then
+      a env
     else
-      b log env
+      b env
 
-  let concatmap f l log env =
-    let l = l log env in
-    let rec loop acc = function
-      | [] -> List.rev acc
-      | x :: l ->
-          let xl = f x log env in
-          loop (xl :: acc) l
-    in
-    let l = loop [] l in
-    List.flatten l
-
-  let all l log env =
+  let all l env =
     let rec loop accu = function
-      | [] -> List.rev accu
+      | [] ->
+          List.rev accu
       | x :: l ->
-          let x = x log env in
-          loop (x :: accu) l
+          loop (x env :: accu) l
     in
     loop [] l
 
-  let file_exists s log env =
-    let s = s log env in
-    Sys.file_exists s
+  let file_exists s env =
+    Sys.file_exists (s env)
 
-  let system_env _ env =
+  let system_env env =
     Environments.to_system_env env
 
-  let apply_modifiers modifiers x log env =
-    x log (Environments.apply_modifiers env modifiers)
+  let apply_modifiers modifiers x env =
+    x (Environments.apply_modifiers env modifiers)
 
-  let branch f a b =
-    select (apply (map Stdlib.Result.map_error b) f) a
-
-  let cast x log env = x log env
+  let cast x _ env = x env
 
   module Infix = struct
     let (let+) a f = map f a

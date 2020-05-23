@@ -69,8 +69,6 @@ module A : sig
 
   val if_: bool t -> 'a t -> 'a t -> 'a t
 
-  val select: ('a, 'b) Stdlib.Result.t t -> ('a -> 'b) t -> 'b t
-
   val safe_lookup: Variables.t -> string t
   val lookup: Variables.t -> string option t
   val lookup_nonempty: Variables.t -> string option t
@@ -82,15 +80,11 @@ module A : sig
 
   val file_exists: string t -> bool t
 
-  val concatmap: ('a -> 'b list t) -> 'a list t -> 'b list t
-
   val system_env: string array t
 
   val all: 'a t list -> 'a list t
 
   val apply_modifiers: Environments.modifiers -> 'a t -> 'a t
-
-  val branch: ('a, 'b) Stdlib.Result.t t -> ('a -> 'c) t -> ('b -> 'c) t -> 'c t
 
   val cast: Environments.t t -> (out_channel -> Environments.t -> Environments.t)
 
