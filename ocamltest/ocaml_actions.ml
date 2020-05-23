@@ -1432,31 +1432,28 @@ let compile_ocamldoc_all module_basenames_filetypes =
 
 let setup_ocamldoc_build_env =
   Actions.make "setup_ocamldoc_build_env" @@
-  setup_tool_build_env `Ocamldoc
-  (* if_ok (A.map (fun r -> if Result.is_pass r then Ok r else Error r) *)
-  (*          (setup_tool_build_env `Ocamldoc)) *)
-    (* if not (Result.is_pass r) then (r,env) else *)
-    (let source_directory = Actions_helpers.test_source_directory in
-     let root_file = A.map Filename.chop_extension Actions_helpers.testfile in
-     let reference_prefix =
-       let+ source_directory = source_directory
-       and+ root_file = root_file in
-       Filename.make_path [source_directory; root_file] in
-     let output = ocamldoc_output_file root_file in
-     let reference =
-       let+ reference_prefix = reference_prefix
-       and+ suffix = ocamldoc_reference_file_suffix in
-       reference_prefix ^ suffix
-     in
-     let backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
-     A.apply_modifiers Ocaml_modifiers.(str @ unix)
-       (A.add Builtin_variables.reference reference
-          (A.add Builtin_variables.output output
-             (A.if_ (A.map ((=) "man") backend)
-                (A.add_if_undefined
-                   Builtin_variables.skip_header_lines (A.return "1")
-                   (let+ (), env = A.with_env (A.return ()) in env))
-                (let+ (), env = A.with_env (A.return ()) in env)))))
+  setup_tool_build_env `Ocamldoc @@
+  let source_directory = Actions_helpers.test_source_directory in
+  let root_file = A.map Filename.chop_extension Actions_helpers.testfile in
+  let reference_prefix =
+    let+ source_directory = source_directory
+    and+ root_file = root_file in
+    Filename.make_path [source_directory; root_file] in
+  let output = ocamldoc_output_file root_file in
+  let reference =
+    let+ reference_prefix = reference_prefix
+    and+ suffix = ocamldoc_reference_file_suffix in
+    reference_prefix ^ suffix
+  in
+  let backend = A.safe_lookup Ocaml_variables.ocamldoc_backend in
+  A.apply_modifiers Ocaml_modifiers.(str @ unix)
+    (A.add Builtin_variables.reference reference
+       (A.add Builtin_variables.output output
+          (A.if_ (A.map ((=) "man") backend)
+             (A.add_if_undefined
+                Builtin_variables.skip_header_lines (A.return "1")
+                (let+ (), env = A.with_env (A.return ()) in env))
+             (let+ (), env = A.with_env (A.return ()) in env))))
 
 let ocamldoc_plugin name = name ^ ".cmo"
 

@@ -278,9 +278,6 @@ module A = struct
   let map f a env =
     f (a env)
 
-  let apply f a env =
-    f env (a env)
-
   let return x _ = x
 
   let safe_lookup var env =

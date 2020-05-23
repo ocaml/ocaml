@@ -65,8 +65,6 @@ module A : sig
 
   val return: 'a -> 'a t
 
-  val apply: ('a -> 'b) t -> 'a t -> 'b t
-
   val if_: bool t -> 'a t -> 'a t -> 'a t
 
   val safe_lookup: Variables.t -> string t
