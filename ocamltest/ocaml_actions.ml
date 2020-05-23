@@ -163,42 +163,7 @@ let ocamlyacc =
         ]
   }
 
-(* let generate_module generator output_variable input = *)
-(*   let basename = fst input in *)
-(*   let input_file = Ocaml_filetypes.make_filename input in *)
-(*   (\* let what = *\) *)
-(*   (\*   Printf.sprintf "Generating %s module from %s" *\) *)
-(*   (\*   generator.description input_file *\) *)
-(*   (\* in *\) *)
-(*   (\* Printf.fprintf log "%s\n%!" what; *\) *)
-(*   let+ cmdline = *)
-(*     let+ flags = generator.flags in *)
-(*     [ *)
-(*       generator.command; *)
-(*       flags; *)
-(*       input_file *)
-(*     ] *)
-(*   and+ run_params = *)
-(*     Actions_helpers.run_params *)
-(*       ~environment:(A.return default_ocaml_env) *)
-(*       ~stdin_variable: Ocaml_variables.compiler_stdin *)
-(*       ~stdout_variable:output_variable *)
-(*       ~stderr_variable:output_variable *)
-(*       ~append:true () *)
-(*   in *)
-(*   Eff.run_cmd run_params cmdline *)
-(*   (\* if exit_status = 0 *\) *)
-(*   (\* then generator.generated_compilation_units basename *\) *)
-(*   (\* else begin *\) *)
-(*   (\*   (\\* let reason = *\\) *\) *)
-(*   (\*   (\\*   (Actions_helpers.mkreason *\\) *\) *)
-(*   (\*   (\\*     what (String.concat " " commandline) exit_status) in *\\) *\) *)
-(*   (\*   (\\* Printf.fprintf log "%s\n%!" reason; *\\) *\) *)
-(*   (\*   [] *\) *)
-(*   (\* end *\) *)
-
 let prepare_modules output_variable inputs =
-  (* let open Ocaml_filetypes in *)
   let+ inputs = inputs
   and+ run_params =
     Actions_helpers.run_params
@@ -221,7 +186,10 @@ let prepare_modules output_variable inputs =
               input_file
             ]
           in
-          Eff.run_cmd run_params cmdline,
+          Eff.seq
+            [ Eff.echo "Generating %s module from %s"
+                g.description input_file;
+              Eff.run_cmd run_params cmdline ],
           g.generated_compilation_units basename
         in
         match input_type with
@@ -338,54 +306,37 @@ let compile_program compiler =
       ~append:true
       ~expected_exit_codes:[expected_exit_status] ()
   and+ cmas_need_dynamic_loading = cmas_need_dynamic_loading in
-  let what =
-    let module_names = String.concat " " module_names in
-    Printf.sprintf "Compiling program %s from modules %s"
-      (relative_to_initial_cwd program_file) module_names
+  let run_cmd =
+    match cmas_need_dynamic_loading with
+    | Some (Error reason) ->
+        Eff.fail_with_reason reason
+    | _ ->
+        let c_headers_flags = if has_c_file then Ocaml_flags.c_includes else "" in
+        let compile_flags = if compile_only then " -c " else "" in
+        let output = if compile_only then "" else "-o " ^ program_file in
+        let commandline =
+          Ocaml_compilers.name compiler ::
+          runtime_flags ::
+          c_headers_flags ::
+          Ocaml_flags.stdlib ::
+          directory_flags ::
+          flags ::
+          libraries @
+          backend_default_flags ::
+          backend_flags ::
+          compile_flags ::
+          output ::
+          filetype_flag ::
+          module_names @
+          last_flags :: []
+        in
+        Eff.run_cmd run_params commandline
   in
   Eff.seq
-    [
-      Eff.echo "%s" what;
+    [ Eff.echo "Compiling program %s from modules %s" program_file
+        (String.concat " " module_names);
       effects;
-      (match cmas_need_dynamic_loading with
-      | Some (Error reason) ->
-          Eff.fail_with_reason reason
-      | _ ->
-          let c_headers_flags = if has_c_file then Ocaml_flags.c_includes else "" in
-          let compile_flags = if compile_only then " -c " else "" in
-          let output = if compile_only then "" else "-o " ^ program_file in
-          let commandline =
-            Ocaml_compilers.name compiler ::
-            runtime_flags ::
-            c_headers_flags ::
-            Ocaml_flags.stdlib ::
-            directory_flags ::
-            flags ::
-            libraries @
-            backend_default_flags ::
-            backend_flags ::
-            compile_flags ::
-            output ::
-            filetype_flag ::
-            module_names @
-            last_flags :: []
-          in
-          Eff.run_cmd run_params commandline)
-    ]
-(* if exit_status = expected_exit_status *)
-(* then Result.pass *)
-(* else *)
-(*   let what = *)
-(*     let module_names = String.concat " " module_names in *)
-(*     Printf.sprintf "Compiling program %s from modules %s" *)
-(*       (relative_to_initial_cwd program_file) module_names *)
-(*   in *)
-  (* Printf.fprintf log "%s\n%!" what; *)
-(*   let reason = *)
-(*     (Actions_helpers.mkreason *)
-(*        what (String.concat " " commandline) exit_status) *)
-(*   in *)
-(*   Result.fail_with_reason reason *)
+      run_cmd ]
 
 let compile_module compiler module_ =
   let target = Ocaml_compilers.target compiler in
@@ -424,15 +375,6 @@ let compile_module compiler module_ =
     module_ :: []
   in
   Eff.run_cmd run_params commandline
-  (* if exit_status = expected_exit_status *)
-  (* then Result.pass *)
-  (* else *)
-  (*   let reason = *)
-  (*     let what = Printf.sprintf "Compiling module %s" module_ in *)
-  (*     Actions_helpers.mkreason *)
-  (*       what (String.concat " " commandline) exit_status *)
-  (*   in *)
-  (*   Result.fail_with_reason reason *)
 
 let module_has_interface directory module_name =
   let interface_name =
@@ -582,21 +524,10 @@ let compile compiler =
          ~append:true
          ~expected_exit_codes:[expected_exit_status] ()
      and+ commandline = A.map Option.get commandline in
-     let what = Printf.sprintf "Compiling using commandline %s" commandline in
-     let commandline = [Ocaml_compilers.name compiler; commandline] in
      Eff.seq
-       [
-         Eff.echo "%s" what;
-         Eff.run_cmd run_params commandline;
-       ]
-     (* if exit_status = expected_exit_status *)
-     (* then Result.pass *)
-     (* else *)
-     (*   let reason = *)
-     (*     (Actions_helpers.mkreason *)
-     (*        what (String.concat " " commandline) exit_status) in *)
-     (*   Result.fail_with_reason reason *)
-   )
+       [ Eff.echo  "Compiling using commandline %s" commandline;
+         Eff.run_cmd run_params [Ocaml_compilers.name compiler; commandline] ]
+    )
 
 let compile compiler =
   A.both (compile compiler) A.env
@@ -657,14 +588,6 @@ let debug =
   Eff.seq
     [ Eff.echo "%s" what;
       Eff.run_cmd run_params commandline ]
-  (* if exit_status = 0 *)
-  (* then Result.pass *)
-  (* else begin *)
-  (*   let reason = *)
-  (*     (Actions_helpers.mkreason *)
-  (*       what (String.concat " " commandline) exit_status) in *)
-  (*   Result.fail_with_reason reason *)
-  (* end *)
 
 let ocamldebug = Actions.make "ocamldebug" (A.both debug A.env)
 
@@ -694,18 +617,9 @@ let objinfo =
       program
     ]
   in
-  let what = Printf.sprintf "Running ocamlobjinfo on %s" program in
   Eff.seq
-    [ Eff.echo "%s" what;
+    [ Eff.echo "Running ocamlobjinfo on %s" program;
       Eff.run_cmd run_params commandline ]
-  (* if exit_status = 0 *)
-  (* then Result.pass *)
-  (* else begin *)
-  (*   let reason = *)
-  (*     (Actions_helpers.mkreason *)
-  (*       what (String.concat " " commandline) exit_status) in *)
-  (*   Result.fail_with_reason reason *)
-  (* end *)
 
 let ocamlobjinfo = Actions.make "ocamlobjinfo" (A.both objinfo A.env)
 
@@ -732,18 +646,9 @@ let mklib =
     ("-o " ^ program) ::
     modules
   in
-  let what = Printf.sprintf "Running ocamlmklib to produce %s" program in
   Eff.seq
-    [ Eff.echo "%s" what;
+    [ Eff.echo "Running ocamlmklib to produce %s" program;
       Eff.run_cmd run_params commandline ]
-  (* if exit_status = 0 *)
-  (* then Result.pass *)
-  (* else begin *)
-  (*   let reason = *)
-  (*     (Actions_helpers.mkreason *)
-  (*       what (String.concat " " commandline) exit_status) in *)
-  (*   Result.fail_with_reason reason *)
-  (* end *)
 
 let ocamlmklib = Actions.make "ocamlmklib" (A.both mklib A.env)
 
@@ -786,28 +691,11 @@ let finalise_codegen_msvc test_basename =
                ~append:true ()
            and+ obj = obj
            and+ src = src in
-           let what = "Running Microsoft assembler" in
            let commandline = [Ocamltest_config.asm; obj; src] in
            Eff.seq
-             [ Eff.echo "%s" what;
+             [ Eff.echo "Running Microsoft assembler";
                Eff.run_cmd run_params commandline ])
           A.env))
-
-  (* A.if_ (A.map ((=) 0) exit_status) *)
-  (*   ((\* let env = *\) *)
-  (*    (\*   Environments.add_bindings *\) *)
-  (*    (\*     [ *\) *)
-  (*    (\*       Ocaml_variables.modules, modules; *\) *)
-  (*    (\*       Builtin_variables.program, program; *\) *)
-  (*    (\*     ] env *\) *)
-  (*    (\* in *\) *)
-  (*    A.add Ocaml_variables.modules modules *)
-  (*      (A.add Builtin_variables.program program *)
-  (*         (A.with_env (A.return Result.pass)))) *)
-  (*   ((\* let reason = *\) *)
-  (*     (\*   (Actions_helpers.mkreason *\) *)
-  (*     (\*     what (String.concat " " commandline) exit_status) in *\) *)
-  (*     A.with_env (A.return (Result.fail_with_reason ""))) *)
 
 let run_codegen =
   let testfile_basename = A.map Filename.chop_extension Actions_helpers.testfile in
@@ -846,15 +734,10 @@ let run_codegen =
           then finalise_codegen_msvc testfile_basename
           else finalise_codegen_cc testfile_basename
         and+ testfile = Actions_helpers.testfile in
-        let what = Printf.sprintf "Running codegen on %s" testfile in
         Eff.seq
-          [ Eff.echo "%s" what;
+          [ Eff.echo  "Running codegen on %s" testfile;
             Eff.if_pass eff finalise ],
         env))
-(* ((\* let reason = *\) *)
-          (*   (\*   (Actions_helpers.mkreason *\) *)
-          (*   (\*     what (String.concat " " commandline) exit_status) in *\) *)
-          (*   A.with_env (A.return (Result.fail_with_reason ""))))) *)
 
 let codegen = Actions.make "codegen" run_codegen
 
@@ -880,18 +763,9 @@ let run_cc =
     arguments ::
     modules
   in
-  let what = Printf.sprintf "Running C compiler to build %s" program in
   Eff.seq
-    [ Eff.echo "%s" what;
+    [ Eff.echo "Running C compiler to build %s" program;
       Eff.run_cmd run_params commandline ]
-  (* if exit_status = 0 *)
-  (* then Result.pass *)
-  (* else begin *)
-  (*   let reason = *)
-  (*     (Actions_helpers.mkreason *)
-  (*       what (String.concat " " commandline) exit_status) in *)
-  (*   Result.fail_with_reason reason *)
-  (* end *)
 
 let cc = Actions.make "cc" (A.both run_cc A.env)
 
@@ -916,12 +790,6 @@ let run_expect_once input_file principal =
     ]
   in
   Eff.run_cmd run_params commandline
-  (* if exit_status = 0 then Result.pass *)
-  (* else begin *)
-  (*   let reason = (Actions_helpers.mkreason *)
-  (*                   "expect" (String.concat " " commandline) exit_status) in *)
-  (*   Result.fail_with_reason reason *)
-  (* end *)
 
 let run_expect_twice input_file =
   let corrected filename =
@@ -1002,13 +870,10 @@ let really_compare_programs backend comparison_tool =
       else
         comparison_tool
     in
-    let what = Printf.sprintf "Comparing %s programs %s and %s"
-        (Ocaml_backends.string_of_backend backend)
-        (relative_to_initial_cwd program)
-        (relative_to_initial_cwd program2)
-    in
     Eff.seq
-      [ Eff.echo "%s" what;
+      [ Eff.echo  "Comparing %s programs %s and %s"
+          (Ocaml_backends.string_of_backend backend)
+          program program2;
         Eff.compare_files ~tool files ]
   end
 
@@ -1082,44 +947,36 @@ let compile_modules compiler compilername compileroutput
     compile ::
     output :: []
   in
-  let exec commandline =
-    (* Printf.fprintf log "%s\n%!" what; *)
-    Eff.run_cmd run_params commandline
-    (* if exit_status = expected_exit_status *)
-    (* then Result.pass *)
-    (* else *)
-    (*   let what = Printf.sprintf "%s for file %s (expected exit status: %d)" *)
-    (*       (Ocaml_filetypes.action_of_filetype module_filetype) filename *)
-    (*       expected_exit_status in *)
-    (*   let reason = *)
-    (*     (Actions_helpers.mkreason *)
-    (*        what (String.concat " " commandline) exit_status) in *)
-    (*   Result.fail_with_reason reason *)
-  in
-  (* end in *)
   Eff.seq @@
   List.map2 (fun (module_basename, module_filetype) filename ->
-      match module_filetype with
-      | Ocaml_filetypes.Interface ->
-          let interface_name =
-            Ocaml_filetypes.make_filename
-              (module_basename, Ocaml_filetypes.Interface)
-          in
-          exec (compile_commandline interface_name None "")
-      | Ocaml_filetypes.Implementation ->
-          let module_extension = Ocaml_backends.module_extension backend in
-          let module_output_name =
-            Filename.make_filename module_basename module_extension
-          in
-          exec (compile_commandline filename (Some module_output_name) "")
-      | Ocaml_filetypes.C ->
-          let object_extension = Config.ext_obj in
-          let _object_filename = module_basename ^ object_extension in
-          exec (compile_commandline filename None Ocaml_flags.c_includes)
-      | _ ->
-          let reason = Printf.sprintf "File %s of type %s not supported yet"
-              filename (Ocaml_filetypes.string_of_filetype module_filetype) in
-          Eff.fail_with_reason reason
+      let exec =
+        match module_filetype with
+        | Ocaml_filetypes.Interface ->
+            let interface_name =
+              Ocaml_filetypes.make_filename
+                (module_basename, Ocaml_filetypes.Interface)
+            in
+            Eff.run_cmd run_params (compile_commandline interface_name None "")
+        | Ocaml_filetypes.Implementation ->
+            let module_extension = Ocaml_backends.module_extension backend in
+            let module_output_name =
+              Filename.make_filename module_basename module_extension
+            in
+            Eff.run_cmd run_params (compile_commandline filename (Some module_output_name) "")
+        | Ocaml_filetypes.C ->
+            let object_extension = Config.ext_obj in
+            let _object_filename = module_basename ^ object_extension in
+            Eff.run_cmd run_params (compile_commandline filename None Ocaml_flags.c_includes)
+        | _ ->
+            let reason = Printf.sprintf "File %s of type %s not supported yet"
+                filename (Ocaml_filetypes.string_of_filetype module_filetype) in
+            Eff.fail_with_reason reason
+      in
+      Eff.seq
+        [ Eff.echo "%s for file %s" (*  (expected exit status: %d) *)
+            (Ocaml_filetypes.action_of_filetype module_filetype) filename
+        (* expected_exit_status *);
+          exec ]
     ) module_basenames_filetypes filenames
 
 let run_test_program_in_toplevel toplevel =
@@ -1180,13 +1037,6 @@ let run_test_program_in_toplevel toplevel =
         Eff.skip
     | _ ->
         let toplevel_name = Ocaml_toplevels.name toplevel in
-        (* let what = *)
-        (*   Printf.sprintf "Running %s in %s toplevel \ *)
-        (*                   (expected exit status: %d)" *)
-        (*     testfile *)
-        (*     (Ocaml_backends.string_of_backend backend) *)
-        (*     expected_exit_status in *)
-        (* Printf.fprintf log "%s\n%!" what; *)
         let commandline =
           let script_arg =
             if ocaml_script_as_argument then testfile else ""
@@ -1205,18 +1055,15 @@ let run_test_program_in_toplevel toplevel =
           script_arg ::
           arguments :: []
         in
-        Eff.if_pass compile_modules
-          (Eff.run_cmd run_params commandline)
-           (* if exit_status = expected_exit_status *)
-           (* then Result.pass *)
-           (* else begin *)
-           (*   let reason = *)
-           (*     (Actions_helpers.mkreason *)
-           (*        what (String.concat " " commandline) exit_status) in *)
-           (*   Result.fail_with_reason reason *)
+        Eff.seq
+          [ Eff.echo
+              "Running %s in %s toplevel" (* (expected exit status: %d) *)
+              testfile
+              (Ocaml_backends.string_of_backend backend)
+              (*expected_exit_status*);
+            Eff.if_pass compile_modules
+              (Eff.run_cmd run_params commandline) ]
   end
-(* (assert false) *)
-(* end else (result, env) *)
 
 let ocaml = Actions.make
   "ocaml"
@@ -1409,29 +1256,23 @@ let compile_ocamldoc_all module_basenames_filetypes =
       ~append:true
       ~expected_exit_codes:[expected_exit_status] ()
   and+ compile = compiler_for_ocamldoc module_basenames_filetypes in
-  (* let what = Printf.sprintf "Compiling documentation for module %s" basename in *)
-(* Printf.fprintf log "%s\n%!" what; *)
-  Eff.if_pass compile
-    (Eff.seq @@ List.map2 (fun (basename, _) filename ->
-         let commandline =
-           (* currently, we are ignoring the global ocamldoc_flags, since we
-              don't have per-module flags *)
-           [
-             Ocaml_commands.ocamlrun_ocamldoc;
-             Ocaml_flags.stdlib;
-             "-dump " ^ compiled_doc_name basename;
-             filename;
-           ]
-         in
-         (Eff.run_cmd run_params commandline)
-       ) module_basenames_filetypes filenames)
-     (* if exit_status = expected_exit_status *)
-     (* then Result.pass *)
-     (* else begin *)
-     (*   let reason = *)
-     (*     (Actions_helpers.mkreason *)
-     (*       what (String.concat " " commandline) exit_status) in *)
-     (*   Result.fail_with_reason reason *)
+  Eff.seq
+    [ Eff.if_pass compile
+        (Eff.seq @@ List.map2 (fun (basename, _) filename ->
+             let commandline =
+               (* currently, we are ignoring the global ocamldoc_flags, since we
+                  don't have per-module flags *)
+               [
+                 Ocaml_commands.ocamlrun_ocamldoc;
+                 Ocaml_flags.stdlib;
+                 "-dump " ^ compiled_doc_name basename;
+                 filename;
+               ]
+             in
+             Eff.seq
+               [ Eff.echo "Compiling documentation for module %s" basename;
+                 Eff.run_cmd run_params commandline ]
+           ) module_basenames_filetypes filenames) ]
 
 let setup_ocamldoc_build_env =
   Actions.make "setup_ocamldoc_build_env" @@
@@ -1510,18 +1351,11 @@ let run_ocamldoc =
     "-o" ::
     ocamldoc_o_flag :: []
   in
-  Eff.if_pass plugin_compile
-    (Eff.if_pass all_compile
-       ((* Printf.fprintf log "Generating documentation for %s\n%!" input_file; *)
-         Eff.run_cmd run_params commandline))
-         (* if exit_status = 0 then *)
-         (*   Result.pass *)
-         (* else begin *)
-         (*   let reason = *)
-         (*     Actions_helpers.mkreason *)
-         (*       "ocamldoc" (String.concat " " commandline) exit_status in *)
-         (*   Result.fail_with_reason reason *)
-         (* end) *)
+  Eff.seq
+    [ Eff.echo "Generating documentation for %s\n%!" input_file;
+      Eff.if_pass plugin_compile
+        (Eff.if_pass all_compile
+           (Eff.run_cmd run_params commandline)) ]
 
 let _ =
   Environments.register_initializer "find_source_modules" (Fun.const (A.run find_source_modules));
