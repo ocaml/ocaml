@@ -85,8 +85,7 @@ let directory_flags =
   String.concat " " (List.map (fun dir -> "-I " ^ dir) dirs)
 
 let flags =
-  let open A in
-  safe_lookup Ocaml_variables.flags
+  A.safe_lookup Ocaml_variables.flags
 
 let last_flags =
   A.safe_lookup Ocaml_variables.last_flags
