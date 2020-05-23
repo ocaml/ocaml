@@ -61,7 +61,6 @@ module Eff : sig
       strace_flags: string;
       expected_exit_codes: int list;
       skip_exit_codes: int list;
-      (* reason: string; *)
     }
 
   val run_cmd: run_params -> string list -> t
@@ -144,6 +143,8 @@ val action_name : Variables.t
 val update : t -> code -> t
 
 val make : string -> code -> t
+
+val body : t -> code
 
 val compare : t -> t -> int
 

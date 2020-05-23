@@ -64,9 +64,6 @@ let tsl_block_of_file_safe test_filename =
     announce_test_error test_filename "could not read test block";
     exit 1
 
-let print_usage () =
-  Printf.printf "%s\n%!" Options.usage
-
 type result_summary = No_failure | Some_failure
 let join_summaries sa sb =
   match sa, sb with
@@ -262,7 +259,6 @@ let main () =
   List.iter (doit find_test_dirs) !Options.find_test_dirs;
   List.iter (doit list_tests) !Options.list_tests;
   List.iter (doit test_file) !Options.files_to_test;
-  if not !work_done then print_usage();
   if !failed || not !work_done then exit 1
 
 let _ = main()

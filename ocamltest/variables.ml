@@ -72,3 +72,4 @@ let get_registered_variables () =
   List.sort compare (Hashtbl.fold f variables [])
 
 module Set = Set.Make (struct type nonrec t = t let compare = compare end)
+module Map = Map.Make (struct type nonrec t = t let compare = compare end)

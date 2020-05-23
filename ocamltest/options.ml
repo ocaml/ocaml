@@ -58,12 +58,33 @@ let list_tests = ref []
 let add_to_list r x =
   r := !r @ [x]
 
+module V = Variables
+
+let describe_action s =
+  let actions = Actions.get_registered_actions () in
+  match List.find_opt (fun a -> Actions.name a = s) actions with
+  | None ->
+      failwith ("No such action: " ^ s)
+  | Some a ->
+      let body = Actions.body a in
+      let reads = Actions.A.Uses.reads body in
+      let writes = Actions.A.Uses.writes body in
+      let list mode set =
+        if not (V.Set.is_empty set) then begin
+          Printf.printf "* This action %s the following variables:\n" mode;
+          V.Set.iter (fun v -> Printf.printf "- %s\n" (Variables.name_of_variable v)) set
+        end
+      in
+      list "READS FROM" reads;
+      list "WRITES TO" writes
+
 let commandline_options =
 [
   ("-e", Arg.Set log_to_stderr, " Log to stderr instead of a file.");
   ("-promote", Arg.Set promote,
    " Overwrite reference files with the test output (experimental, unstable)");
   ("-show-actions", Arg.Unit show_actions, " Show available actions.");
+  ("-describe-action", Arg.String describe_action, " Describe action.");
   ("-show-tests", Arg.Unit show_tests, " Show available tests.");
   ("-show-variables", Arg.Unit show_variables, " Show available variables.");
   ("-find-test-dirs", Arg.String (add_to_list find_test_dirs),

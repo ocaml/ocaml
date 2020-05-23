@@ -46,3 +46,4 @@ val string_of_binding : t -> value -> string
 val get_registered_variables : unit -> t list
 
 module Set : Set.S with type elt = t
+module Map : Map.S with type key = t

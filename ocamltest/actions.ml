@@ -352,48 +352,49 @@ module A = struct
     let (&&+) a b = if_ a b (return false)
   end
 
-  module Uses = struct
-    module Set = Variables.Set
+  module V = Variables
 
-    let rec reads : type a. a t -> Set.t = function
-      | Pure _ | Env -> Set.empty
+  module Uses = struct
+
+    let rec reads : type a. a t -> V.Set.t = function
+      | Pure _ | Env -> V.Set.empty
       | Map (_, x) -> reads x
       | File_exists x -> reads x
       | Apply_modifiers (_, x) -> reads x
       | Safe_lookup v
       | Lookup v | Lookup_nonempty v
       | Lookup_bool v ->
-          Set.singleton v
+          V.Set.singleton v
       | Both (a, b) ->
-          Set.union (reads a) (reads b)
+          V.Set.union (reads a) (reads b)
       | If (a, b, c) ->
-          Set.union (reads a)
-            (Set.union (reads b) (reads c))
+          V.Set.union (reads a)
+            (V.Set.union (reads b) (reads c))
       | All l ->
-          List.fold_left (fun set x -> Set.union set (reads x))
-            Set.empty l
+          List.fold_left (fun set x -> V.Set.union set (reads x))
+            V.Set.empty l
       | Add (_, _, x) | Add_if_undefined (_, _, x) ->
           reads x
 
-    let rec writes : type a. a t -> Set.t = function
-      | Pure _ | Env -> Set.empty
+    let rec writes : type a. a t -> V.Set.t = function
+      | Pure _ | Env -> V.Set.empty
       | Map (_, x) -> writes x
       | File_exists x -> writes x
       | Apply_modifiers (_, x) -> writes x
       | Safe_lookup _
       | Lookup _ | Lookup_nonempty _
       | Lookup_bool _ ->
-          Set.empty
+          V.Set.empty
       | Both (a, b) ->
-          Set.union (writes a) (writes b)
+          V.Set.union (writes a) (writes b)
       | If (a, b, c) ->
-          Set.union (writes a)
-            (Set.union (writes b) (writes c))
+          V.Set.union (writes a)
+            (V.Set.union (writes b) (writes c))
       | All l ->
-          List.fold_left (fun set x -> Set.union set (writes x))
-            Set.empty l
+          List.fold_left (fun set x -> V.Set.union set (writes x))
+            V.Set.empty l
       | Add (v, _, x) | Add_if_undefined (v, _, x) ->
-          Set.add v (writes x)
+          V.Set.add v (writes x)
   end
 end
 
@@ -411,6 +412,8 @@ let name a = a.name
 let action_name = Variables.make ("action_name", "Name of the current action")
 
 let make n c = { name = n; body = c; hook = None }
+
+let body { body ; _ } = body
 
 let update action code = { action with body = code }
 
