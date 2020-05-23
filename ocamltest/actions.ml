@@ -414,7 +414,9 @@ let name a = a.name
 
 let action_name = Variables.make ("action_name", "Name of the current action")
 
-let make n c = { name = n; body = c; hook = None }
+let make_env name body = { name; body; hook = None }
+
+let make n c = make_env n (A.both c A.env)
 
 let body { body ; _ } = body
 

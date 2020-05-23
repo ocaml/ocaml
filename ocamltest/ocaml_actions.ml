@@ -462,11 +462,11 @@ let setup_compiler_build_env compiler =
     )
 
 let mk_compiler_env_setup name compiler =
-  Actions.make name
+  Actions.make_env name
     (setup_compiler_build_env compiler)
 
 let mk_toplevel_env_setup name toplevel =
-  Actions.make name (setup_tool_build_env toplevel A.env)
+  Actions.make_env name (setup_tool_build_env toplevel A.env)
 
 let setup_ocamlc_byte_build_env =
   mk_compiler_env_setup
@@ -521,13 +521,10 @@ let compile compiler =
          ~append:true ()
      and+ commandline = A.map Option.get commandline in
      Eff.seq
-       [ Eff.echo  "Compiling using commandline %s" commandline;
+       [ Eff.echo "Compiling using commandline %s" commandline;
          Eff.with_exit_code expected_exit_status
            (Eff.run_cmd run_params [Ocaml_compilers.name compiler; commandline]) ]
     )
-
-let compile compiler =
-  A.both (compile compiler) A.env
 
 (* Compile actions *)
 
@@ -586,7 +583,7 @@ let debug =
     [ Eff.echo "%s" what;
       Eff.run_cmd run_params commandline ]
 
-let ocamldebug = Actions.make "ocamldebug" (A.both debug A.env)
+let ocamldebug = Actions.make "ocamldebug" debug
 
 let objinfo =
   let+ program = A.safe_lookup Builtin_variables.program
@@ -618,7 +615,7 @@ let objinfo =
     [ Eff.echo "Running ocamlobjinfo on %s" program;
       Eff.run_cmd run_params commandline ]
 
-let ocamlobjinfo = Actions.make "ocamlobjinfo" (A.both objinfo A.env)
+let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
 
 let mklib =
   let+ program = A.safe_lookup Builtin_variables.program
@@ -647,7 +644,7 @@ let mklib =
     [ Eff.echo "Running ocamlmklib to produce %s" program;
       Eff.run_cmd run_params commandline ]
 
-let ocamlmklib = Actions.make "ocamlmklib" (A.both mklib A.env)
+let ocamlmklib = Actions.make "ocamlmklib" mklib
 
 let finalise_codegen_cc test_basename =
   let test_module =
@@ -736,7 +733,7 @@ let run_codegen =
             Eff.if_pass eff finalise ],
         env))
 
-let codegen = Actions.make "codegen" run_codegen
+let codegen = Actions.make_env "codegen" run_codegen
 
 let run_cc =
   let+ program = A.safe_lookup Builtin_variables.program
@@ -764,7 +761,7 @@ let run_cc =
     [ Eff.echo "Running C compiler to build %s" program;
       Eff.run_cmd run_params commandline ]
 
-let cc = Actions.make "cc" (A.both run_cc A.env)
+let cc = Actions.make "cc" run_cc
 
 let run_expect_once input_file principal =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
@@ -806,16 +803,14 @@ let run_expect_twice input_file =
 let run_expect =
   run_expect_twice Actions_helpers.testfile
 
-let run_expect = Actions.make "run-expect" run_expect
+let run_expect = Actions.make_env "run-expect" run_expect
 
 let make_check_tool_output name tool =
   Actions.make name
-    (A.both
-       (Actions_helpers.check_output
-          (family tool)
-          (output_variable tool)
-          (reference_variable tool))
-       A.env)
+    (Actions_helpers.check_output
+       (family tool)
+       (output_variable tool)
+       (reference_variable tool))
 
 let check_ocamlc_byte_output =
   make_check_tool_output
@@ -900,14 +895,13 @@ let compare_bytecode_programs =
   native_action
     (Actions.make
       "compare-bytecode-programs"
-      (A.both compare_bytecode_programs_code A.env))
+      compare_bytecode_programs_code)
 
 let compare_native_programs =
   native_action
     (Actions.make
       "compare-native-programs"
-      (A.both (compare_programs Ocaml_backends.Native native_programs_comparison_tool)
-         A.env))
+      (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
 
 let compile_modules compiler compilername compileroutput
     module_basenames_filetypes =
@@ -1061,13 +1055,13 @@ let run_test_program_in_toplevel toplevel =
 
 let ocaml = Actions.make
   "ocaml"
-  (A.both (run_test_program_in_toplevel Ocaml_toplevels.ocaml) A.env)
+  (run_test_program_in_toplevel Ocaml_toplevels.ocaml)
 
 let ocamlnat =
   native_action
     (Actions.make
       "ocamlnat"
-      (A.both (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat) A.env))
+      (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat))
 
 let check_ocaml_output =
   make_check_tool_output
@@ -1109,8 +1103,8 @@ let config_variables _log env =
     Ocaml_variables.os_type, Sys.os_type;
   ] env
 
-let pass_or_skip b s1 s2 =
-  A.both (Actions_helpers.pass_or_skip b s1 s2) A.env
+let pass_or_skip =
+  Actions_helpers.pass_or_skip
 
 let flat_float_array = Actions.make
   "flat-float-array"
@@ -1268,7 +1262,7 @@ let compile_ocamldoc_all module_basenames_filetypes =
            ) module_basenames_filetypes filenames) ]
 
 let setup_ocamldoc_build_env =
-  Actions.make "setup_ocamldoc_build_env" @@
+  Actions.make_env "setup_ocamldoc_build_env" @@
   setup_tool_build_env `Ocamldoc @@
   let source_directory = Actions_helpers.test_source_directory in
   let root_file = A.map Filename.chop_extension Actions_helpers.testfile in
@@ -1306,7 +1300,7 @@ let ocamldoc_o_flag =
   | _ -> output
 
 let run_ocamldoc =
-  Actions.make "ocamldoc" @@ (fun x -> A.both x A.env) @@
+  Actions.make "ocamldoc" @@
   (* modules corresponds to secondaries modules of which the
      documentation and cmi files need to be build before the main
      module documentation *)

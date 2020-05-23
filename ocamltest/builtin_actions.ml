@@ -20,10 +20,8 @@ open Actions
 open A.Infix
 
 let reason_with_fallback f fallback =
-  A.both
-    (let+ reason = A.lookup Builtin_variables.reason in
-     f (Option.value ~default:fallback reason))
-    A.env
+  let+ reason = A.lookup Builtin_variables.reason in
+  f (Option.value ~default:fallback reason)
 
 let pass = make
   "pass"
@@ -39,15 +37,14 @@ let fail = make
 
 let cd = make
   "cd"
-  (A.both
-     (A.map Eff.chdir (A.safe_lookup Builtin_variables.cwd)) A.env)
+  (A.map Eff.chdir (A.safe_lookup Builtin_variables.cwd))
 
 let dumpenv = make
   "dumpenv"
-  ((* Environments.dump log env;*) A.both (A.return Eff.pass) A.env)
+  ((* Environments.dump log env;*) A.return Eff.pass)
 
 let pass_or_skip b s1 s2 =
-  A.both (Actions_helpers.pass_or_skip b s1 s2) A.env
+  Actions_helpers.pass_or_skip b s1 s2
 
 let hasinstrumentedruntime = make
   "hasinstrumentedruntime"
@@ -182,29 +179,25 @@ let has_symlink = make
 
 let setup_build_env = make
   "setup-build-env"
-  (A.both
-     (Actions_helpers.setup_build_env true (Actions.A.return []))
-     A.env)
+  (Actions_helpers.setup_build_env true (A.return []))
 
-let setup_simple_build_env = make
+let setup_simple_build_env = make_env
   "setup-simple-build-env"
-  (Actions_helpers.setup_simple_build_env true (Actions.A.return []))
+  (Actions_helpers.setup_simple_build_env true (A.return []))
 
 let run = make
   "run"
-  (A.both Actions_helpers.run_program A.env)
+  Actions_helpers.run_program
 
 let script = make
   "script"
-  (A.both Actions_helpers.run_script A.env) (* FIXME *)
+  Actions_helpers.run_script
 
 let check_program_output = make
   "check-program-output"
-  (A.both
-     (Actions_helpers.check_output "program"
-        Builtin_variables.output
-        Builtin_variables.reference)
-     A.env)
+  (Actions_helpers.check_output "program"
+     Builtin_variables.output
+     Builtin_variables.reference)
 
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings

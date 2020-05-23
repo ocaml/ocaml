@@ -143,7 +143,9 @@ val action_name : Variables.t
 
 val update : t -> code -> t
 
-val make : string -> code -> t
+val make : string -> Eff.t A.t -> t
+
+val make_env : string -> (Eff.t * Environments.t) A.t -> t
 
 val body : t -> code
 

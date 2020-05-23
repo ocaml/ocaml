@@ -26,7 +26,7 @@ let pass_or_skip test pass_reason skip_reason =
 
 let skip_with_reason reason =
   Actions.make "skip"
-    (A.both (A.return (Eff.skip_with_reason reason)) A.env)
+    (A.return (Eff.skip_with_reason reason))
 
 let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
