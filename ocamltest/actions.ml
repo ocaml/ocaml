@@ -19,6 +19,44 @@ open Ocamltest_stdlib
 
 module Eff = struct
 
+  module Result = struct
+
+    (* Definition of test-result related types and functions *)
+
+    type status = Pass | Skip | Fail
+
+    type t =
+      {
+        status : status;
+        reason : string option
+      }
+
+    let result_of_status s = { status = s; reason = None }
+    let pass = result_of_status Pass
+    let skip = result_of_status Skip
+    let fail = result_of_status Fail
+    let result_with_reason s r = { status = s; reason = Some r }
+    let pass_with_reason r = result_with_reason Pass r
+    let skip_with_reason r = result_with_reason Skip r
+    let fail_with_reason r = result_with_reason Fail r
+
+    let string_of_status = function
+      | Pass -> "passed"
+      | Skip -> "skipped"
+      | Fail -> "failed"
+
+    let string_of_reason = function
+      | None -> ""
+      | Some reason -> (" (" ^ reason ^ ")")
+
+    let string_of_result r =
+      (string_of_status r.status) ^ (string_of_reason r.reason)
+
+    let is_pass r = r.status = Pass
+    let is_skip r = r.status = Skip
+    let is_fail r = r.status = Fail
+  end
+
   type t = out_channel -> Result.t
 
   type run_params =

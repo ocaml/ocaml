@@ -16,6 +16,36 @@
 (* Definition of actions, basic blocks for tests *)
 
 module Eff : sig
+
+  module Result : sig
+    type status = Pass | Skip | Fail
+
+    type t = {
+      status : status;
+      reason : string option
+    }
+
+    val pass : t
+
+    val skip : t
+
+    val fail : t
+
+    val pass_with_reason : string -> t
+
+    val skip_with_reason : string -> t
+
+    val fail_with_reason : string -> t
+
+    val string_of_result : t -> string
+
+    val is_pass : t -> bool
+
+    val is_skip : t -> bool
+
+    val is_fail : t -> bool
+  end
+
   type t
 
   type run_params =
@@ -118,6 +148,6 @@ val set_hook : string -> code -> unit
 val clear_hook : string -> unit
 val clear_all_hooks : unit -> unit
 
-val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
+val run : out_channel -> Environments.t -> t -> Eff.Result.t * Environments.t
 
 module ActionSet : Set.S with type elt = t

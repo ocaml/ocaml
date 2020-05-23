@@ -19,7 +19,7 @@ open Actions
 
 val skip_with_reason : string -> Actions.t
 
-val pass_or_skip : bool -> string -> string -> Result.t Actions.A.t
+val pass_or_skip : bool -> string -> string -> Eff.Result.t Actions.A.t
 
 val mkreason : string -> string -> int -> string
 

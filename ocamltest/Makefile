@@ -106,7 +106,6 @@ core := \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
-  result.mli result.ml \
   builtin_variables.mli builtin_variables.ml \
   strace.mli strace.ml \
   actions.mli actions.ml \

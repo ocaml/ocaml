@@ -60,7 +60,7 @@ let reference_file t prefix =
 let native_support = Ocamltest_config.arch <> "none"
 
 let no_native_compilers =
-  A.with_env (A.return (Eff.of_result (Result.skip_with_reason "native compilers disabled")))
+  A.with_env (A.return (Eff.(of_result (Result.skip_with_reason "native compilers disabled"))))
 
 let native_action a =
   if native_support then a else (Actions.update a no_native_compilers)
@@ -348,7 +348,7 @@ let compile_program compiler =
       effects;
       (match cmas_need_dynamic_loading with
       | Some (Error reason) ->
-          Eff.of_result (Result.fail_with_reason reason)
+          Eff.(of_result (Result.fail_with_reason reason))
       | _ ->
           let c_headers_flags = if has_c_file then Ocaml_flags.c_includes else "" in
           let compile_flags = if compile_only then " -c " else "" in
@@ -763,7 +763,7 @@ let finalise_codegen_cc test_basename =
   in
   A.add Ocaml_variables.modules modules
     (A.add Builtin_variables.program program
-       (A.with_env (A.return (Eff.of_result Result.pass))))
+       (A.with_env (A.return (Eff.(of_result Result.pass)))))
 
 let finalise_codegen_msvc test_basename =
   let obj = A.map (fun s -> Filename.make_filename s Ocamltest_config.objext) test_basename in
@@ -985,13 +985,13 @@ let really_compare_programs backend comparison_tool =
   then begin
     let reason =
       "flambda temporarily disables comparison of native programs" in
-    Eff.of_result (Result.pass_with_reason reason)
+    Eff.(of_result (Result.pass_with_reason reason))
   end else
   if backend = Ocaml_backends.Native && (Sys.win32 || Sys.cygwin)
   then begin
     let reason =
       "comparison of native programs temporarily disabled under Windows" in
-    Eff.of_result (Result.pass_with_reason reason)
+    Eff.(of_result (Result.pass_with_reason reason))
   end else begin
     let tool =
       if backend = Ocaml_backends.Native && (Sys.win32 || Sys.cygwin) then
@@ -1015,7 +1015,7 @@ let compare_programs backend comparison_tool =
     A.lookup_as_bool Ocaml_variables.compare_programs in
   A.if_ (A.map ((=) (Some false)) compare_programs)
     (let reason = "program comparison disabled" in
-     A.return (Eff.of_result (Result.pass_with_reason reason)))
+     A.return (Eff.(of_result (Result.pass_with_reason reason))))
     (really_compare_programs backend comparison_tool)
 
 let make_bytecode_programs_comparison_tool =
@@ -1114,9 +1114,9 @@ let compile_modules compiler compilername compileroutput
           let _object_filename = module_basename ^ object_extension in
           exec (compile_commandline filename None Ocaml_flags.c_includes)
       | _ ->
-          (* let reason = Printf.sprintf "File %s of type %s not supported yet" *)
-          (*     filename (Ocaml_filetypes.string_of_filetype module_filetype) in *)
-          Eff.of_result (Result.fail_with_reason "")
+          let reason = Printf.sprintf "File %s of type %s not supported yet"
+              filename (Ocaml_filetypes.string_of_filetype module_filetype) in
+          Eff.(of_result (Result.fail_with_reason reason))
     ) module_basenames_filetypes filenames
 
 let run_test_program_in_toplevel toplevel =
@@ -1168,13 +1168,13 @@ let run_test_program_in_toplevel toplevel =
          ~expected_exit_codes:[expected_exit_status] ())
   in
   if not toplevel_can_run then
-    Eff.of_result Result.skip
+    Eff.(of_result Result.skip)
   else begin
     match cmas_need_dynamic_loading with
     | Some (Error reason) ->
-        Eff.of_result (Result.fail_with_reason reason)
+        Eff.(of_result (Result.fail_with_reason reason))
     | Some (Ok ()) ->
-        Eff.of_result (Result.skip)
+        Eff.(of_result Result.skip)
     | _ ->
         let toplevel_name = Ocaml_toplevels.name toplevel in
         (* let what = *)

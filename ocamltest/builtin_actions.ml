@@ -26,17 +26,17 @@ let reason_with_fallback f fallback =
 let pass = make
   "pass"
   (A.with_env
-     (reason_with_fallback Result.pass_with_reason "the pass action always succeeds"))
+     (reason_with_fallback Eff.Result.pass_with_reason "the pass action always succeeds"))
 
 let skip = make
   "skip"
   (A.with_env
-     (reason_with_fallback Result.skip_with_reason "the skip action always skips"))
+     (reason_with_fallback Eff.Result.skip_with_reason "the skip action always skips"))
 
 let fail = make
   "fail"
   (A.with_env
-     (reason_with_fallback Result.fail_with_reason "the fail action always fails"))
+     (reason_with_fallback Eff.Result.fail_with_reason "the fail action always fails"))
 
 let cd = make
   "cd"
@@ -46,7 +46,7 @@ let cd = make
 
 let dumpenv = make
   "dumpenv"
-  ((* Environments.dump log env;*) A.with_env (A.return (Eff.of_result Result.pass)))
+  ((* Environments.dump log env;*) A.with_env (A.return (Eff.(of_result Result.pass))))
 
 let pass_or_skip b s1 s2 =
   A.with_env (A.map Eff.of_result (Actions_helpers.pass_or_skip b s1 s2))

@@ -50,13 +50,13 @@ let test_of_action action =
 
 let run_actions depth log testenv actions =
   let rec run_actions_aux action_number env = function
-    | [] -> (Result.pass, env)
+    | [] -> (Actions.Eff.Result.pass, env)
     | action::remaining_actions ->
       begin
         Printf.fprintf log "%s %s\n%!"
           (String.make depth '*') (Actions.name action);
         let (result, env') = Actions.run log env action in
-        if Result.is_pass result
+        if Actions.Eff.Result.is_pass result
         then run_actions_aux (action_number+1) env' remaining_actions
         else (result, env')
       end in
