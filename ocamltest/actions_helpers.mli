@@ -41,23 +41,25 @@ val run_params:
     ?stdout_variable:Variables.t ->
     ?stderr_variable:Variables.t ->
     ?append:bool ->
-    ?timeout:int -> unit -> Eff.run_params A.t
+    ?timeout:int ->
+    ?expected_exit_codes:int A.t list ->
+    ?skip_exit_codes:int A.t list -> unit -> Eff.run_params A.t
 
 (* val setup_symlinks : string -> string -> string list -> unit *)
 
 val setup_build_env :
-  bool -> string list Actions.A.t -> unit A.t
+  bool -> string list Actions.A.t -> Eff.t A.t
 
 val setup_simple_build_env :
-  bool -> string list Actions.A.t -> Environments.t A.t
+  bool -> string list Actions.A.t -> (Eff.t * Environments.t) A.t
 
 val run : string -> bool -> bool -> Variables.t
-                 -> Variables.t option -> Result.t A.t
+                 -> Variables.t option -> Eff.t A.t
 
-val run_program : Result.t A.t
+val run_program : Eff.t A.t
 
-val run_script : (Result.t * Environments.t) A.t
+val run_script : Eff.t (* Environments.t FIXME *) A.t
 
-val run_hook : string -> Result.t A.t
+val run_hook : string -> Eff.t A.t
 
-val check_output : string -> Variables.t -> Variables.t -> Result.t A.t
+val check_output : string -> Variables.t -> Variables.t -> Eff.t A.t

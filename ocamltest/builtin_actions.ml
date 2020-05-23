@@ -19,46 +19,37 @@ open Ocamltest_stdlib
 open Actions
 open A.Infix
 
-let reason_with_fallback fallback =
+let reason_with_fallback f fallback =
   let+ reason = A.lookup Builtin_variables.reason in
-  match reason with
-  | None -> fallback
-  | Some r -> r
+  Eff.of_result (f (Option.value ~default:fallback reason))
 
 let pass = make
   "pass"
   (A.with_env
-     (A.map Result.pass_with_reason
-        (reason_with_fallback "the pass action always succeeds")))
+     (reason_with_fallback Result.pass_with_reason "the pass action always succeeds"))
 
 let skip = make
   "skip"
   (A.with_env
-     (A.map Result.skip_with_reason
-        (reason_with_fallback "the skip action always skips")))
+     (reason_with_fallback Result.skip_with_reason "the skip action always skips"))
 
 let fail = make
   "fail"
   (A.with_env
-     (A.map Result.fail_with_reason
-        (reason_with_fallback "the fail action always fails")))
+     (reason_with_fallback Result.fail_with_reason "the fail action always fails"))
 
 let cd = make
   "cd"
   (A.with_env
      (let+ cwd = A.safe_lookup Builtin_variables.cwd in
-      try
-        Sys.chdir cwd; Result.pass
-      with _ ->
-        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
-        Result.fail_with_reason reason))
+      Eff.cd cwd))
 
 let dumpenv = make
   "dumpenv"
-  ((* Environments.dump log env;*) A.with_env (A.return Result.pass))
+  ((* Environments.dump log env;*) A.with_env (A.return (Eff.of_result Result.pass)))
 
 let pass_or_skip b s1 s2 =
-  A.with_env (Actions_helpers.pass_or_skip b s1 s2)
+  A.with_env (A.map Eff.of_result (Actions_helpers.pass_or_skip b s1 s2))
 
 let hasinstrumentedruntime = make
   "hasinstrumentedruntime"
@@ -194,13 +185,11 @@ let has_symlink = make
 let setup_build_env = make
   "setup-build-env"
   (A.with_env
-     (A.map (Fun.const Result.pass)
-        (Actions_helpers.setup_build_env true (Actions.A.return []))))
+     (Actions_helpers.setup_build_env true (Actions.A.return [])))
 
 let setup_simple_build_env = make
   "setup-simple-build-env"
-  (let+ env = Actions_helpers.setup_simple_build_env true (Actions.A.return []) in
-   Result.pass, env)
+  (Actions_helpers.setup_simple_build_env true (Actions.A.return []))
 
 let run = make
   "run"
@@ -208,7 +197,7 @@ let run = make
 
 let script = make
   "script"
-  Actions_helpers.run_script
+  (A.with_env Actions_helpers.run_script) (* FIXME *)
 
 let check_program_output = make
   "check-program-output"

@@ -16,6 +16,8 @@
 (* Definition of actions, basic blocks for tests *)
 
 module Eff : sig
+  type t
+
   type run_params =
     {
       environment: string array;
@@ -27,21 +29,31 @@ module Eff : sig
       strace: bool;
       strace_logfile: string;
       strace_flags: string;
+      expected_exit_codes: int list;
+      skip_exit_codes: int list;
+      (* reason: string; *)
     }
 
-  val default_params: run_params
+  val run_cmd: run_params -> string list -> t
 
-  val run_cmd: run_params -> string list -> int
+  val setup_symlinks: string -> string -> string list -> t
 
-  (* ?environment:string array t -> *)
-  (* ?stdin_variable:Variables.t -> *)
-  (* ?stdout_variable:Variables.t -> *)
-  (* ?stderr_variable:Variables.t -> *)
-  (* ?append:bool -> string list t -> int t *)
+  val force_remove: string -> t
 
-  val setup_symlinks: string -> string -> string list -> unit
+  val of_result: Result.t -> t
 
-  val force_remove: string -> unit
+  val cd: string -> t
+
+  val check_files:
+    kind_of_output:string ->
+    promote:bool option -> Filecompare.ignore -> Filecompare.files -> t
+
+  val compare_files:
+    tool:Filecompare.tool -> Filecompare.files -> t
+
+  val seq: t list -> t
+
+  val if_pass: t -> t -> t
 end
 
 module A : sig
@@ -70,9 +82,9 @@ module A : sig
 
   val concatmap: ('a -> 'b list t) -> 'a list t -> 'b list t
 
-  val while_: ('a -> ('x, 'b) Stdlib.Result.t t) -> 'x -> 'a list t -> ('x, 'b) Stdlib.Result.t t
-
   val system_env: string array t
+
+  val all: 'a t list -> 'a list t
 
   val apply_modifiers: Environments.modifiers -> 'a t -> 'a t
 
@@ -88,7 +100,7 @@ module A : sig
   end
 end
 
-type code = (Result.t * Environments.t) A.t
+type code = (Eff.t * Environments.t) A.t
 
 type t
 
