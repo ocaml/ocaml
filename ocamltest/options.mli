@@ -28,3 +28,5 @@ val find_test_dirs : string list ref
 val list_tests : string list ref
 
 val keep_test_dir_on_success : bool ref
+
+val parse: unit -> unit

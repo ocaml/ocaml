@@ -99,5 +99,5 @@ let files_to_test = ref []
 
 let usage = "Usage: " ^ Sys.argv.(0) ^ " options files to test"
 
-let _ =
+let parse () =
   Arg.parse (Arg.align commandline_options) (add_to_list files_to_test) usage
