@@ -18,8 +18,7 @@
 let show_objects title string_of_object objects =
   let print_object o = print_endline ("  " ^ (string_of_object o)) in
   print_endline title;
-  List.iter print_object objects;
-  exit 0
+  List.iter print_object objects
 
 let string_of_action = Actions.name
 
@@ -99,5 +98,12 @@ let files_to_test = ref []
 
 let usage = "Usage: " ^ Sys.argv.(0) ^ " options files to test"
 
-let parse () =
+let _ =
   Arg.parse (Arg.align commandline_options) (add_to_list files_to_test) usage
+
+let log_to_stderr = !log_to_stderr
+let files_to_test = !files_to_test
+let promote = !promote
+let find_test_dirs = !find_test_dirs
+let list_tests = !list_tests
+let keep_test_dir_on_success = !keep_test_dir_on_success
