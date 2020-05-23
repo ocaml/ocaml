@@ -402,7 +402,7 @@ let find_source_modules =
       and+ testfile = Actions_helpers.testfile in
       List.map Ocaml_filetypes.filetype (plugins @ modules @ [testfile])
     in
-    List.concatmap
+    List.concat_map
       (add_module_interface source_directory)
       specified_modules
   in

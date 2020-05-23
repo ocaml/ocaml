@@ -37,11 +37,6 @@ module Filename  : sig
   val mkexe : string -> string
 end
 
-module List : sig
-  include module type of List
-  val concatmap : ('a -> 'b list) -> 'a list -> 'b list
-end
-
 module String : sig
   include module type of Misc.Stdlib.String
   val words : string -> string list

@@ -70,13 +70,6 @@ module Filename = struct
     else fun name -> name
 end
 
-module List = struct
-  include List
-  let rec concatmap f = function
-    | [] -> []
-    | x::xs -> (f x) @ (concatmap f xs)
-end
-
 module String = struct
   include Misc.Stdlib.String
   let string_of_char = String.make 1
