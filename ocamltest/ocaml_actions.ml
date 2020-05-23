@@ -293,18 +293,16 @@ let compile_program compiler =
   and+ last_flags = last_flags
   and+ filetype_flag = A.safe_lookup Ocaml_variables.ocaml_filetype_flag
   and+ module_names = module_names
+  and+ expected_exit_status =
+    Actions_helpers.int_of_variable
+      (Ocaml_compilers.exit_status_variable compiler)
   and+ run_params =
-    let expected_exit_status =
-      Actions_helpers.int_of_variable
-        (Ocaml_compilers.exit_status_variable compiler)
-    in
     Actions_helpers.run_params
       ~environment:(A.return default_ocaml_env)
       ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:(Ocaml_compilers.output_variable compiler)
       ~stderr_variable:(Ocaml_compilers.output_variable compiler)
-      ~append:true
-      ~expected_exit_codes:[expected_exit_status] ()
+      ~append:true ()
   and+ cmas_need_dynamic_loading = cmas_need_dynamic_loading in
   let run_cmd =
     match cmas_need_dynamic_loading with
@@ -330,7 +328,8 @@ let compile_program compiler =
           module_names @
           last_flags :: []
         in
-        Eff.run_cmd run_params commandline
+        Eff.with_exit_code expected_exit_status
+          (Eff.run_cmd run_params commandline)
   in
   Eff.seq
     [ Eff.echo "Compiling program %s from modules %s" program_file
@@ -347,17 +346,15 @@ let compile_module compiler module_ =
   and+ backend_flags = backend_flags target
   and+ flags = flags
   and+ module_ = module_
+  and+ expected_exit_status =
+    Actions_helpers.int_of_variable (Ocaml_compilers.exit_status_variable compiler)
   and+ run_params =
-    let expected_exit_status =
-      Actions_helpers.int_of_variable (Ocaml_compilers.exit_status_variable compiler)
-    in
     Actions_helpers.run_params
       ~environment:(A.return default_ocaml_env)
       ~stdin_variable:Ocaml_variables.compiler_stdin
       ~stdout_variable:(Ocaml_compilers.output_variable compiler)
       ~stderr_variable:(Ocaml_compilers.output_variable compiler)
-      ~append:true
-      ~expected_exit_codes:[expected_exit_status] ()
+      ~append:true ()
   in
   let c_headers_flags =
     if is_c_file module_filetype then Ocaml_flags.c_includes else ""
@@ -374,7 +371,8 @@ let compile_module compiler module_ =
     "-c" ::
     module_ :: []
   in
-  Eff.run_cmd run_params commandline
+  Eff.with_exit_code expected_exit_status
+    (Eff.run_cmd run_params commandline)
 
 let module_has_interface directory module_name =
   let interface_name =
@@ -511,22 +509,21 @@ let compile compiler =
      A.if_ (A.map Option.is_none module_)
        (compile_program compiler)
        (compile_module compiler (A.map Option.get module_)))
-    (let+ run_params =
-       let expected_exit_status =
-         Actions_helpers.int_of_variable
-           (Ocaml_compilers.exit_status_variable compiler)
-       in
+    (let+ expected_exit_status =
+       Actions_helpers.int_of_variable
+         (Ocaml_compilers.exit_status_variable compiler)
+     and+ run_params =
        Actions_helpers.run_params
          ~environment:(A.return default_ocaml_env)
          ~stdin_variable: Ocaml_variables.compiler_stdin
          ~stdout_variable:(Ocaml_compilers.output_variable compiler)
          ~stderr_variable:(Ocaml_compilers.output_variable compiler)
-         ~append:true
-         ~expected_exit_codes:[expected_exit_status] ()
+         ~append:true ()
      and+ commandline = A.map Option.get commandline in
      Eff.seq
        [ Eff.echo  "Compiling using commandline %s" commandline;
-         Eff.run_cmd run_params [Ocaml_compilers.name compiler; commandline] ]
+         Eff.with_exit_code expected_exit_status
+           (Eff.run_cmd run_params [Ocaml_compilers.name compiler; commandline]) ]
     )
 
 let compile compiler =
@@ -920,16 +917,15 @@ let compile_modules compiler compilername compileroutput
     A.map (List.map Ocaml_filetypes.make_filename) module_basenames_filetypes
   (* Ocaml_filetypes.make_filename (module_basename, module_filetype) in *)
   and+ module_basenames_filetypes = module_basenames_filetypes
+  and+ expected_exit_status =
+    Actions_helpers.int_of_variable
+      (Ocaml_compilers.exit_status_variable compiler)
   and+ run_params =
-    let expected_exit_status =
-      Actions_helpers.int_of_variable
-        (Ocaml_compilers.exit_status_variable compiler) in
     Actions_helpers.run_params
       ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:compileroutput
       ~stderr_variable:compileroutput
-      ~append:true
-      ~expected_exit_codes:[expected_exit_status] ()
+      ~append:true ()
   and+ flags = flags
   and+ backend_flags = backend_flags backend in
   let compile_commandline input_file output_file optional_flags =
@@ -973,10 +969,10 @@ let compile_modules compiler compilername compileroutput
             Eff.fail_with_reason reason
       in
       Eff.seq
-        [ Eff.echo "%s for file %s" (*  (expected exit status: %d) *)
+        [ Eff.echo "%s for file %s (expected exit status: %d)"
             (Ocaml_filetypes.action_of_filetype module_filetype) filename
-        (* expected_exit_status *);
-          exec ]
+            expected_exit_status;
+          Eff.with_exit_code expected_exit_status exec ]
     ) module_basenames_filetypes filenames
 
 let run_test_program_in_toplevel toplevel =
@@ -1009,23 +1005,20 @@ let run_test_program_in_toplevel toplevel =
   and+ arguments = A.safe_lookup Builtin_variables.arguments
   and+ libraries = libraries
   and+ testfile = Actions_helpers.testfile
+  and+ expected_exit_status =
+    Actions_helpers.int_of_variable
+      (Ocaml_toplevels.exit_status_variable toplevel)
   and+ run_params =
-    let expected_exit_status =
-      Actions_helpers.int_of_variable
-        (Ocaml_toplevels.exit_status_variable toplevel)
-    in
     A.if_ ocaml_script_as_argument
       (Actions_helpers.run_params
          ~environment:(A.return default_ocaml_env)
          ~stdout_variable:compiler_output_variable
-         ~stderr_variable:compiler_output_variable
-         ~expected_exit_codes:[expected_exit_status] ())
+         ~stderr_variable:compiler_output_variable ())
       (Actions_helpers.run_params
          ~environment:(A.return default_ocaml_env)
          ~stdin_variable:Builtin_variables.test_file
          ~stdout_variable:compiler_output_variable
-         ~stderr_variable:compiler_output_variable
-         ~expected_exit_codes:[expected_exit_status] ())
+         ~stderr_variable:compiler_output_variable ())
   in
   if not toplevel_can_run then
     Eff.skip
@@ -1062,7 +1055,8 @@ let run_test_program_in_toplevel toplevel =
               (Ocaml_backends.string_of_backend backend)
               (*expected_exit_status*);
             Eff.if_pass compile_modules
-              (Eff.run_cmd run_params commandline) ]
+              (Eff.with_exit_code expected_exit_status
+                 (Eff.run_cmd run_params commandline)) ]
   end
 
 let ocaml = Actions.make
@@ -1244,17 +1238,15 @@ let compile_ocamldoc_all module_basenames_filetypes =
   let+ filenames =
     A.map (List.map Ocaml_filetypes.make_filename) module_basenames_filetypes
   and+ module_basenames_filetypes = module_basenames_filetypes
+  and+ expected_exit_status =
+    Actions_helpers.int_of_variable
+      Ocaml_variables.ocamldoc_exit_status
   and+ run_params =
-    let expected_exit_status =
-      Actions_helpers.int_of_variable
-        Ocaml_variables.ocamldoc_exit_status
-    in
     Actions_helpers.run_params
       ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:Ocaml_variables.ocamldoc_output
       ~stderr_variable:Ocaml_variables.ocamldoc_output
-      ~append:true
-      ~expected_exit_codes:[expected_exit_status] ()
+      ~append:true ()
   and+ compile = compiler_for_ocamldoc module_basenames_filetypes in
   Eff.seq
     [ Eff.if_pass compile
@@ -1271,7 +1263,8 @@ let compile_ocamldoc_all module_basenames_filetypes =
              in
              Eff.seq
                [ Eff.echo "Compiling documentation for module %s" basename;
-                 Eff.run_cmd run_params commandline ]
+                 Eff.with_exit_code expected_exit_status
+                   (Eff.run_cmd run_params commandline) ]
            ) module_basenames_filetypes filenames) ]
 
 let setup_ocamldoc_build_env =

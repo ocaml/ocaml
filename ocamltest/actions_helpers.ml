@@ -81,13 +81,9 @@ let run_params
     ?(stdout_variable=Builtin_variables.stdout)
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
-    ?(timeout=0)
-    ?(expected_exit_codes = [A.return 0])
-    ?(skip_exit_codes = []) ()
+    ?(timeout=0) ()
   =
   let+ strace = A.lookup_as_bool Strace.strace
-  and+ expected_exit_codes = A.all expected_exit_codes
-  and+ skip_exit_codes = A.all skip_exit_codes
   and+ strace_logfile =
     let+ strace_logfile_name =
       let+ action_name = A.safe_lookup Actions.action_name in
@@ -115,8 +111,6 @@ let run_params
     strace = (strace = Some true);
     strace_logfile;
     strace_flags;
-    expected_exit_codes;
-    skip_exit_codes;
   }
 
 let run
@@ -130,12 +124,9 @@ let run
     match args_variable with
     | None -> A.return ""
     | Some variable -> A.safe_lookup variable
-  and+ run_params =
-    let expected_exit_status = int_of_variable Builtin_variables.exit_status in
-    run_params
-      ~expected_exit_codes:[expected_exit_status]
-      ~skip_exit_codes:(if can_skip then [A.return 125] else []) ()
-  in
+  and+ expected_exit_status =
+    int_of_variable Builtin_variables.exit_status
+  and+ run_params = run_params () in
   match program with
   | None ->
       let msg = Printf.sprintf "%s: variable %s is undefined"
@@ -144,21 +135,9 @@ let run
       Eff.fail_with_reason msg
   | Some program ->
       let commandline = [program; arguments] in
-      Eff.run_cmd run_params commandline
-      (* if exit_status = expected_exit_status *)
-      (* then Result.pass *)
-      (* else begin *)
-      (*   let what = *)
-      (*     log_message ^ " " ^ program ^ " " ^ *)
-      (*     begin if arguments="" then "without any argument" *)
-      (*       else "with arguments " ^ arguments *)
-      (*     end *)
-      (*   in *)
-      (*   let reason = mkreason what (String.concat " " commandline) exit_status in *)
-      (*   if exit_status = 125 && can_skip *)
-      (*   then Result.skip_with_reason reason *)
-      (*   else Result.fail_with_reason reason *)
-      (* end *)
+      let run = Eff.run_cmd run_params commandline in
+      Eff.with_exit_code expected_exit_status
+        (if can_skip then Eff.with_skip_code 125 run else run)
 
 let run
     (log_message : string)
@@ -244,8 +223,6 @@ let run_hook hook_name =
          strace = false;
          strace_logfile = "";
          strace_flags = "";
-         expected_exit_codes = [0];
-         skip_exit_codes = [];
          (* argv = [|"sh"; Filename.maybe_quote hook_name|]; *)
          (* envp = systemenv; *)
          (* append = false; *)

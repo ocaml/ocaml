@@ -41,9 +41,7 @@ val run_params:
     ?stdout_variable:Variables.t ->
     ?stderr_variable:Variables.t ->
     ?append:bool ->
-    ?timeout:int ->
-    ?expected_exit_codes:int A.t list ->
-    ?skip_exit_codes:int A.t list -> unit -> Eff.run_params A.t
+    ?timeout:int -> unit -> Eff.run_params A.t
 
 (* val setup_symlinks : string -> string -> string list -> unit *)
 

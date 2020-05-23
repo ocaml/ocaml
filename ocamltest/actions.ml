@@ -68,8 +68,6 @@ module Eff = struct
       strace: bool;
       strace_logfile: string;
       strace_flags: string;
-      expected_exit_codes: int list;
-      skip_exit_codes: int list;
     }
 
   type t =
@@ -93,6 +91,8 @@ module Eff = struct
     | Echo of string
     | Pure of Result.t
     | If_pass of t * t
+    | With_exit_code of int * t
+    | With_skip_code of int * t
 
   let run_cmd params commandline = Run_cmd (params, commandline)
   let setup_symlinks source_dir build_dir files =
@@ -111,8 +111,10 @@ module Eff = struct
   let pass_with_reason s = Pure (Result.pass_with_reason s)
   let skip_with_reason s = Pure (Result.skip_with_reason s)
   let fail_with_reason s = Pure (Result.fail_with_reason s)
+  let with_exit_code n x = With_exit_code (n, x)
+  let with_skip_code n x = With_skip_code (n, x)
 
-  let run_cmd_run ~dry_run
+  let do_run_cmd ~dry_run ~expected_exit_code ~skip_exit_code
       {
         environment;
         stdin_filename;
@@ -123,8 +125,6 @@ module Eff = struct
         strace;
         strace_flags;
         strace_logfile;
-        expected_exit_codes;
-        skip_exit_codes;
       }
       original_cmd log
     =
@@ -158,10 +158,7 @@ module Eff = struct
     log_redirection "stderr" stderr_filename;
     let n =
       if dry_run then
-        if expected_exit_codes <> [] then
-          List.hd expected_exit_codes
-        else
-          0
+        expected_exit_code
       else
         Run_command.run {
           Run_command.progname = progname;
@@ -175,9 +172,9 @@ module Eff = struct
           Run_command.log;
         }
     in
-    if List.mem n expected_exit_codes then
+    if n = expected_exit_code then
       Result.pass
-    else if List.mem n skip_exit_codes then
+    else if Some n = skip_exit_code then
       (* Result.skip_with_reason reason *)
       Result.skip
     else
@@ -251,51 +248,58 @@ module Eff = struct
         (* let reason = Actions_helpers.mkreason what commandline exitcode in *)
         Result.fail_with_reason ""
 
-  let rec run x ~dry_run log =
-    match x with
-    | Run_cmd (run_params, commandline) ->
-        run_cmd_run ~dry_run run_params commandline log
-    | Setup_symlinks (source_dir, build_dir, files) ->
-        if not dry_run then setup_symlinks_run source_dir build_dir files;
-        Result.pass
-    | Force_remove s ->
-        if not dry_run then Sys.force_remove s;
-        Result.pass
-    | Chdir s ->
-        begin try
-          Sys.chdir s; Result.pass
-        with _ ->
-          let reason = "Could not chdir to \"" ^ s ^ "\"" in
-          Result.fail_with_reason reason
-        end
-    | Check_files {kind_of_output; promote; ignore; files} ->
-        if dry_run then Result.pass
-        else check_files_run ~kind_of_output ~promote ignore files log
-    | Compare_files {tool; files} ->
-        if dry_run then Result.pass
-        else compare_files_run ~tool files log
-    | Seq l ->
-        let rec loop = function
-          | [] -> Result.pass
-          | x :: l ->
-              let r = run x ~dry_run log in
-              if Result.is_pass r then
-                loop l
-              else
-                r
-        in
-        loop l
-    | Echo s ->
-        Printf.fprintf log "%s\n%!" s;
-        Result.pass
-    | Pure r ->
-        r
-    | If_pass (a, b) ->
-        let r = run a ~dry_run log in
-        if Result.is_pass r then
-          run b ~dry_run log
-        else
+  let run x ~dry_run log =
+    let rec go ~expected_exit_code ~skip_exit_code = function
+      | Run_cmd (run_params, commandline) ->
+          do_run_cmd ~dry_run ~expected_exit_code ~skip_exit_code
+            run_params commandline log
+      | Setup_symlinks (source_dir, build_dir, files) ->
+          if not dry_run then setup_symlinks_run source_dir build_dir files;
+          Result.pass
+      | Force_remove s ->
+          if not dry_run then Sys.force_remove s;
+          Result.pass
+      | Chdir s ->
+          begin try
+            Sys.chdir s; Result.pass
+          with _ ->
+            let reason = "Could not chdir to \"" ^ s ^ "\"" in
+            Result.fail_with_reason reason
+          end
+      | Check_files {kind_of_output; promote; ignore; files} ->
+          if dry_run then Result.pass
+          else check_files_run ~kind_of_output ~promote ignore files log
+      | Compare_files {tool; files} ->
+          if dry_run then Result.pass
+          else compare_files_run ~tool files log
+      | Seq l ->
+          let rec loop = function
+            | [] -> Result.pass
+            | x :: l ->
+                let r = go ~expected_exit_code ~skip_exit_code x in
+                if Result.is_pass r then
+                  loop l
+                else
+                  r
+          in
+          loop l
+      | Echo s ->
+          Printf.fprintf log "%s\n%!" s;
+          Result.pass
+      | Pure r ->
           r
+      | If_pass (a, b) ->
+          let r = go ~expected_exit_code ~skip_exit_code a in
+          if Result.is_pass r then
+            go ~expected_exit_code ~skip_exit_code b
+          else
+            r
+      | With_exit_code (n, x) ->
+          go ~expected_exit_code:n ~skip_exit_code x
+      | With_skip_code (n, x) ->
+          go ~expected_exit_code ~skip_exit_code:(Some n) x
+    in
+    go ~expected_exit_code:0 ~skip_exit_code:None x
 end
 
 module A = struct

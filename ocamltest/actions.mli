@@ -59,8 +59,6 @@ module Eff : sig
       strace: bool;
       strace_logfile: string;
       strace_flags: string;
-      expected_exit_codes: int list;
-      skip_exit_codes: int list;
     }
 
   val run_cmd: run_params -> string list -> t
@@ -75,6 +73,9 @@ module Eff : sig
   val pass_with_reason: string -> t
   val skip_with_reason: string -> t
   val fail_with_reason: string -> t
+
+  val with_exit_code: int -> t -> t
+  val with_skip_code: int -> t -> t
 
   val chdir: string -> t
 
