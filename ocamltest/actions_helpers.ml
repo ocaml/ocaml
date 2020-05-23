@@ -21,12 +21,12 @@ open A.Infix
 
 let pass_or_skip test pass_reason skip_reason =
   if test
-  then A.return (Eff.Result.pass_with_reason pass_reason)
-  else A.return (Eff.Result.skip_with_reason skip_reason)
+  then A.return (Eff.pass_with_reason pass_reason)
+  else A.return (Eff.skip_with_reason skip_reason)
 
 let skip_with_reason reason =
   Actions.make "skip"
-    (A.with_env (A.return (Eff.(of_result (Result.skip_with_reason reason)))))
+    (A.with_env (A.return (Eff.skip_with_reason reason)))
 
 let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
@@ -141,7 +141,7 @@ let run
       let msg = Printf.sprintf "%s: variable %s is undefined"
           log_message (Variables.name_of_variable prog_variable)
       in
-      Eff.(of_result (Result.fail_with_reason msg))
+      Eff.fail_with_reason msg
   | Some program ->
       let commandline = [program; arguments] in
       Eff.run_cmd run_params commandline

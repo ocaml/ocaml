@@ -70,7 +70,12 @@ module Eff : sig
 
   val force_remove: string -> t
 
-  val of_result: Result.t -> t
+  val pass: t
+  val skip: t
+  val fail: t
+  val pass_with_reason: string -> t
+  val skip_with_reason: string -> t
+  val fail_with_reason: string -> t
 
   val cd: string -> t
 

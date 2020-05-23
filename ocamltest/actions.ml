@@ -246,8 +246,12 @@ module Eff = struct
   let echo fmt =
     Printf.ksprintf (fun s log -> Printf.fprintf log "%s\n%!" s; Result.pass) fmt
 
-  let of_result r _ =
-    r
+  let pass _ = Result.pass
+  let skip _ = Result.skip
+  let fail _ = Result.fail
+  let pass_with_reason s _ = Result.pass_with_reason s
+  let skip_with_reason s _ = Result.skip_with_reason s
+  let fail_with_reason s _ = Result.fail_with_reason s
 end
 
 type code = Environments.t -> Eff.t * Environments.t

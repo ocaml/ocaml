@@ -21,22 +21,22 @@ open A.Infix
 
 let reason_with_fallback f fallback =
   let+ reason = A.lookup Builtin_variables.reason in
-  Eff.of_result (f (Option.value ~default:fallback reason))
+  f (Option.value ~default:fallback reason)
 
 let pass = make
   "pass"
   (A.with_env
-     (reason_with_fallback Eff.Result.pass_with_reason "the pass action always succeeds"))
+     (reason_with_fallback Eff.pass_with_reason "the pass action always succeeds"))
 
 let skip = make
   "skip"
   (A.with_env
-     (reason_with_fallback Eff.Result.skip_with_reason "the skip action always skips"))
+     (reason_with_fallback Eff.skip_with_reason "the skip action always skips"))
 
 let fail = make
   "fail"
   (A.with_env
-     (reason_with_fallback Eff.Result.fail_with_reason "the fail action always fails"))
+     (reason_with_fallback Eff.fail_with_reason "the fail action always fails"))
 
 let cd = make
   "cd"
@@ -46,10 +46,10 @@ let cd = make
 
 let dumpenv = make
   "dumpenv"
-  ((* Environments.dump log env;*) A.with_env (A.return (Eff.(of_result Result.pass))))
+  ((* Environments.dump log env;*) A.with_env (A.return Eff.pass))
 
 let pass_or_skip b s1 s2 =
-  A.with_env (A.map Eff.of_result (Actions_helpers.pass_or_skip b s1 s2))
+  A.with_env (Actions_helpers.pass_or_skip b s1 s2)
 
 let hasinstrumentedruntime = make
   "hasinstrumentedruntime"
