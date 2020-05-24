@@ -76,6 +76,9 @@ Working version
 - #9493, #9520: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
+- #9597: ocamltest refactor (replace objects by sum types).
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Build system:
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
