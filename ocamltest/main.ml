@@ -46,12 +46,10 @@ let announce_test_error test_filename error =
     (Filename.basename test_filename) error
 
 let tsl_block_of_file test_filename =
-  let input_channel = open_in test_filename in
+  Sys.with_input_file test_filename @@ fun input_channel ->
   let lexbuf = Lexing.from_channel input_channel in
   Location.init lexbuf test_filename;
-  match Tsl_parser.tsl_block Tsl_lexer.token lexbuf with
-    | exception e -> close_in input_channel; raise e
-    | _ as tsl_block -> close_in input_channel; tsl_block
+  Tsl_parser.tsl_block Tsl_lexer.token lexbuf
 
 let tsl_block_of_file_safe test_filename =
   try tsl_block_of_file test_filename with
