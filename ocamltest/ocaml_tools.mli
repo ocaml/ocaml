@@ -15,26 +15,71 @@
 
 (* Descriptions of the OCaml tools *)
 
-class tool :
-  name : string ->
-  family : string ->
-  flags : string ->
-  directory : string ->
-  exit_status_variable : Variables.t ->
-  reference_variable : Variables.t ->
-  output_variable : Variables.t ->
-object
-  method name : string
-  method family : string
-  method flags : string
-  method directory : string
-  method exit_status_variable : Variables.t
-  method reference_variable : Variables.t
-  method output_variable : Variables.t
-  method reference_filename_suffix : Environments.t -> string
-  method reference_file : Environments.t -> string -> string
+module Compiler : sig
+  type t
+
+  val name: t -> string
+  val reference_variable: t -> Variables.t
+  val output_variable: t -> Variables.t
+  val directory: t -> string
+  val reference_file: t -> Environments.t -> string -> string
+  val exit_status_variable: t -> Variables.t
+
+  val host: t -> Ocaml_backends.t
+  val target: t -> Ocaml_backends.t
+
+  val program_variable: t -> Variables.t
+  val program_output_variable: t -> Variables.t option
+
+  val ocamlc_byte: t
+  val ocamlc_opt: t
+  val ocamlopt_byte: t
+  val ocamlopt_opt: t
 end
 
-val expected_exit_status : Environments.t -> tool -> int
+module Toplevel : sig
+  type t
 
-val ocamldoc: tool
+  val name: t -> string
+  val reference_variable: t -> Variables.t
+  val output_variable: t -> Variables.t
+  val directory: t -> string
+  val reference_file: t -> Environments.t -> string -> string
+  val exit_status_variable: t -> Variables.t
+
+  val compiler: t -> Compiler.t
+  val backend: t -> Ocaml_backends.t
+
+  val flags: t -> string
+
+  val ocaml: t
+  val ocamlnat: t
+end
+
+module Ocamldoc : sig
+  type t
+
+  val name: t -> string
+  val reference_variable: t -> Variables.t
+  val output_variable: t -> Variables.t
+  val directory: t -> string
+  val reference_file: t -> Environments.t -> string -> string
+  val reference_file_suffix: Environments.t -> string
+  val exit_status_variable: t -> Variables.t
+  val output_file: t -> Environments.t -> string -> string
+
+  val ocamldoc: t
+end
+
+type t =
+  | Compiler of Compiler.t
+  | Toplevel of Toplevel.t
+  | Ocamldoc of Ocamldoc.t
+
+val family: t -> string
+
+val expected_exit_status: Environments.t -> t -> int
+val reference_variable: t -> Variables.t
+val reference_file: t -> Environments.t -> string -> string
+val output_variable: t -> Variables.t
+val directory: t -> string

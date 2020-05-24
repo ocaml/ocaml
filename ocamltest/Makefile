@@ -129,8 +129,6 @@ ocaml_plugin := \
   ocaml_flags.mli ocaml_flags.ml \
   ocaml_commands.mli ocaml_commands.ml \
   ocaml_tools.mli ocaml_tools.ml \
-  ocaml_compilers.mli ocaml_compilers.ml \
-  ocaml_toplevels.mli ocaml_toplevels.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 
@@ -185,7 +183,7 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-40-41-42-44-45-48 -warn-error A
 
 ocamlc := $(BEST_OCAMLC) $(flags)
 
