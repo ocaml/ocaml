@@ -52,6 +52,8 @@ val run_cmd :
   ?skip_exit_status : int ->
   what : string ->
   out_channel -> Environments.t -> string list -> Result.t
+(** Note: the [environment] argument is prepended to the environment generated
+    by the [env] argument. *)
 
 val run : string -> bool -> bool -> Variables.t
                  -> Variables.t option -> Actions.code

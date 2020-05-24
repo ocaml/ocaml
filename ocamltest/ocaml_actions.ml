@@ -513,20 +513,13 @@ let debug log env =
     Ocaml_flags.ocamldebug_default_flags;
     program
   ] in
-  let systemenv =
-    Array.append
-      default_ocaml_env
-      (Environments.to_system_env (env_with_lib_unix env))
-  in
-  let expected_exit_status = 0 in
   let result =
     Actions_helpers.run_cmd
-      ~environment:systemenv
+      ~environment:default_ocaml_env
       ~stdin_variable: Ocaml_variables.ocamldebug_script
       ~stdout_variable:Builtin_variables.output
       ~stderr_variable:Builtin_variables.output
       ~append:true
-      ~expected_exit_status
       ~what
       log (env_with_lib_unix env) commandline in
   result, env
@@ -550,7 +543,6 @@ let objinfo log env =
     [
       default_ocaml_env;
       ocamllib;
-      (Environments.to_system_env (env_with_lib_unix env))
     ]
   in
   let expected_exit_status = 0 in
@@ -993,17 +985,15 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
             Environments.safe_lookup Builtin_variables.arguments env
           ] in
           let result =
-            if ocaml_script_as_argument
-            then Actions_helpers.run_cmd
+            let stdin_variable =
+              if ocaml_script_as_argument then
+                None
+              else
+                Some Builtin_variables.test_file
+            in
+            Actions_helpers.run_cmd
               ~environment:default_ocaml_env
-              ~stdout_variable:compiler_output_variable
-              ~stderr_variable:compiler_output_variable
-              ~expected_exit_status
-              ~what
-              log env commandline
-            else Actions_helpers.run_cmd
-              ~environment:default_ocaml_env
-              ~stdin_variable:Builtin_variables.test_file
+              ?stdin_variable
               ~stdout_variable:compiler_output_variable
               ~stderr_variable:compiler_output_variable
               ~expected_exit_status
@@ -1202,7 +1192,6 @@ let compile_ocamldoc (basename,filetype as module_) log env =
   ] in
   let result =
     Actions_helpers.run_cmd
-      ~environment:(Environments.to_system_env env)
       ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:ocamldoc#output_variable
       ~stderr_variable:ocamldoc#output_variable
@@ -1284,7 +1273,7 @@ let run_ocamldoc =
      "-o"; ocamldoc_o_flag env
    ] in
   let result =
-    Actions_helpers.run_cmd ~environment:(Environments.to_system_env env)
+    Actions_helpers.run_cmd
       ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:ocamldoc#output_variable
       ~stderr_variable:ocamldoc#output_variable
