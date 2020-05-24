@@ -138,11 +138,8 @@ let compare_files ?(tool = default_comparison_tool) files =
         files.reference_filename;
         files.output_filename
       ] in
-      let dev_null = match Sys.os_type with
-        | "Win32" -> "NUL"
-        | _ -> "/dev/null" in
       let settings = Run_command.settings_of_commandline
-        ~stdout_fname:dev_null ~stderr_fname:dev_null commandline in
+        ~stdout_fname:Filename.null ~stderr_fname:Filename.null commandline in
       let status = Run_command.run settings in
       result_of_exitcode commandline status
   | Internal ignore ->

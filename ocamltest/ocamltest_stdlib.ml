@@ -28,7 +28,7 @@ end
 
 module Filename = struct
   include Filename
-  let path_sep = if Sys.os_type="Win32" then ";" else ":"
+  let path_sep = if Sys.win32 then ";" else ":"
   (* This function comes from otherlibs/win32unix/unix.ml *)
   let maybe_quote f =
     if String.contains f ' ' ||
@@ -43,7 +43,7 @@ module Filename = struct
   let make_path components = List.fold_left Filename.concat "" components
 
   let mkexe =
-    if Sys.os_type="Win32"
+    if Sys.win32
     then fun name -> make_filename name "exe"
     else fun name -> name
 end
