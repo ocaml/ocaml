@@ -130,29 +130,29 @@ let run_cmd
   let cmd' = String.concat " " quoted_lst in
   Printf.fprintf log "Commandline: %s\n" cmd';
   let progname = List.hd quoted_lst in
-  let arguments = Array.of_list quoted_lst in
+  let argv = Array.of_list quoted_lst in
   let stdin_filename = Environments.safe_lookup stdin_variable env in
   let stdout_filename = Environments.safe_lookup stdout_variable env in
   let stderr_filename = Environments.safe_lookup stderr_variable env in
   log_redirection "stdin" stdin_filename;
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
-  let systemenv =
+  let envp =
     Array.append
       environment
       (Environments.to_system_env env)
   in
   let exit_status =
     Run_command.run {
-      Run_command.progname = progname;
-      Run_command.argv = arguments;
-      Run_command.envp = systemenv;
-      Run_command.stdin_filename = stdin_filename;
-      Run_command.stdout_filename = stdout_filename;
-      Run_command.stderr_filename = stderr_filename;
-      Run_command.append = append;
-      Run_command.timeout = timeout;
-      Run_command.log = log
+      Run_command.progname;
+      Run_command.argv;
+      Run_command.envp;
+      Run_command.stdin_filename;
+      Run_command.stdout_filename;
+      Run_command.stderr_filename;
+      Run_command.append;
+      Run_command.timeout;
+      Run_command.log
     }
   in
   let reason = mkreason ~what cmd' exit_status in
