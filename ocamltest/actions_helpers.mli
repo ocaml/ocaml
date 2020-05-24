@@ -21,7 +21,7 @@ val pass_or_skip
   : bool -> string -> string -> out_channel -> Environments.t
          -> Result.t * Environments.t
 
-val mkreason : string -> string -> int -> string
+val mkreason : what:string -> string -> int -> string
 
 val testfile : Environments.t -> string
 
@@ -48,7 +48,10 @@ val run_cmd :
   ?stderr_variable : Variables.t ->
   ?append : bool ->
   ?timeout : int ->
-  out_channel -> Environments.t -> string list -> int
+  ?expected_exit_status : int ->
+  ?skip_exit_status : int ->
+  what : string ->
+  out_channel -> Environments.t -> string list -> Result.t
 
 val run : string -> bool -> bool -> Variables.t
                  -> Variables.t option -> Actions.code
