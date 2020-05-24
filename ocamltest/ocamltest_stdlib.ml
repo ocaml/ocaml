@@ -92,7 +92,7 @@ module Sys = struct
     match Sys.command command with
     | 0 -> ()
     | _ as exitcode ->
-      Printf.eprintf "Sysem command %s failed with status %d\n%!"
+      Printf.eprintf "System command %s failed with status %d\n%!"
         command exitcode;
       exit 3
 
