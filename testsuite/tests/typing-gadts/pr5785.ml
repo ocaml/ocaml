@@ -19,7 +19,7 @@ Lines 7-9, characters 43-24:
 9 |     | Two, Two -> "four"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(Two, One)
+(One, Two)
 module Add :
   functor (T : sig type two end) ->
     sig

@@ -634,7 +634,13 @@ let build_specialized_submatrices ~extend_row discr rows =
     (discr, r :: rs)
   in
 
-  (* insert a row of head [p] and rest [r] into the right group *)
+  (* insert a row of head [p] and rest [r] into the right group
+
+     Note: with this implementation, the order of the groups
+     is the order of their first row in the source order.
+     This is a nice property to get exhaustivity counter-examples
+     in source order.
+  *)
   let rec insert_constr head args r = function
     | [] ->
       (* if no group matched this row, it has a head constructor that
@@ -679,12 +685,15 @@ let build_specialized_submatrices ~extend_row discr rows =
     in
     form_groups initial_constr_group [] rows
   in
-  {
-    default = omega_tails;
-    constrs =
-      (* insert omega rows in all groups *)
-      List.fold_right insert_omega omega_tails constr_groups;
-  }
+
+  (* groups are accumulated in reverse order;
+     we restore the order of rows in the source code *)
+  let default = List.rev omega_tails in
+  let constrs =
+    List.fold_right insert_omega omega_tails constr_groups
+    |> List.map (fun (discr, rs) -> (discr, List.rev rs))
+  in
+  { default; constrs; }
 
 (* Variant related functions *)
 
@@ -2042,7 +2051,11 @@ let check_unused pred casel =
           let qs = [q] in
             begin try
               let pss =
-                  get_mins le_pats (List.filter (compats qs) pref) in
+                (* prev was accumulated in reverse order;
+                   restore source order to get ordered counter-examples *)
+                List.rev pref
+                |> List.filter (compats qs)
+                |> get_mins le_pats in
               (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
               let refute = (c_rhs.exp_desc = Texp_unreachable) in

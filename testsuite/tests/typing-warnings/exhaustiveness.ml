@@ -13,7 +13,7 @@ Lines 1-3, characters 8-23:
 3 |   | Some _, Some _ -> 2..
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(Some _, None)
+(None, Some _)
 val f : 'a option * 'b option -> int = <fun>
 |}]
 
