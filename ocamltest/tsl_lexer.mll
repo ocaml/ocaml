@@ -36,7 +36,7 @@ rule token = parse
   | "*/" { TSL_END_C_STYLE }
   | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
   | "*)" { TSL_END_OCAML_STYLE }
-  | "," { COMA }
+  | "," { COMMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
   | "+=" { PLUSEQUAL }
   | "=" { EQUAL }
