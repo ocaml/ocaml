@@ -161,11 +161,11 @@ let test_file test_filename =
   let summary = Sys.with_chdir test_build_directory_prefix
     (fun () ->
        let log =
-         if !Options.log_to_stderr then stderr else begin
+         if Options.log_to_stderr then stderr else begin
            let log_filename = test_prefix ^ ".log" in
            open_out log_filename
          end in
-       let promote = string_of_bool !Options.promote in
+       let promote = string_of_bool Options.promote in
        let install_hook name =
          let hook_name = Filename.make_filename hookname_prefix name in
          if Sys.file_exists hook_name then begin
@@ -198,13 +198,13 @@ let test_file test_filename =
        let summary =
          run_test_trees log common_prefix "" initial_status test_trees in
        Actions.clear_all_hooks();
-       if not !Options.log_to_stderr then close_out log;
+       if not Options.log_to_stderr then close_out log;
        summary
     ) in
   begin match summary with
   | Some_failure -> ()
   | No_failure ->
-      if not !Options.keep_test_dir_on_success then
+      if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
   end
 
@@ -250,7 +250,7 @@ let list_tests dir =
 let () =
   init_tests_to_skip()
 
-let main () =
+let () =
   let failed = ref false in
   let work_done = ref false in
   let list_tests dir =
@@ -260,10 +260,8 @@ let main () =
   in
   let find_test_dirs dir = List.iter print_endline (find_test_dirs dir) in
   let doit f x = work_done := true; f x in
-  List.iter (doit find_test_dirs) !Options.find_test_dirs;
-  List.iter (doit list_tests) !Options.list_tests;
-  List.iter (doit test_file) !Options.files_to_test;
+  List.iter (doit find_test_dirs) Options.find_test_dirs;
+  List.iter (doit list_tests) Options.list_tests;
+  List.iter (doit test_file) Options.files_to_test;
   if not !work_done then print_usage();
   if !failed || not !work_done then exit 1
-
-let _ = main()
