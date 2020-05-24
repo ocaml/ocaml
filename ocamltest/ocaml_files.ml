@@ -60,19 +60,22 @@ let cmpbyt =
 
 let expect_test =
   Filename.make_path
-    [Ocaml_directories.srcdir; "testsuite"; "tools"; Filename.mkexe "expect_test"]
+    [Ocaml_directories.srcdir; "testsuite"; "tools";
+     Filename.mkexe "expect_test"]
 
 let ocamllex =
   Filename.make_path [Ocaml_directories.srcdir; "lex"; "ocamllex"]
 
 let ocamlyacc =
-  Filename.make_path [Ocaml_directories.srcdir; "yacc"; Filename.mkexe "ocamlyacc"]
+  Filename.make_path [Ocaml_directories.srcdir; "yacc";
+                      Filename.mkexe "ocamlyacc"]
 
 let ocamldoc =
   Filename.make_path [Ocaml_directories.srcdir; "ocamldoc"; "ocamldoc"]
 
 let ocamldebug =
-  Filename.make_path [Ocaml_directories.srcdir; "debugger"; Filename.mkexe "ocamldebug"]
+  Filename.make_path [Ocaml_directories.srcdir; "debugger";
+                      Filename.mkexe "ocamldebug"]
 
 let ocamlobjinfo =
   Filename.make_path [Ocaml_directories.srcdir; "tools"; "ocamlobjinfo"]

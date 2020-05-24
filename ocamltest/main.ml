@@ -86,10 +86,15 @@ let rec run_test log common_prefix path behavior
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
       let (result, newenv) =
-        Tests.run ~dry_run:Options.dry_run (List.length path) log testenv test in
+        Tests.run ~dry_run:Options.dry_run
+          (List.length path) log testenv test in
       let msg = Actions.Eff.Result.string_of_result result in
       let children_behavior =
-        if Actions.Eff.Result.is_pass result then Run newenv else Skip_all_tests in
+        if Actions.Eff.Result.is_pass result then
+          Run newenv
+        else
+          Skip_all_tests
+      in
       let summary = summary_of_result result in
       (msg, children_behavior, summary) in
   Printf.printf "%s\n%!" msg;

@@ -138,7 +138,8 @@ module A : sig
       ["false"]. *)
 
   val add_if_undefined: Variables.t -> string t -> 'a t -> 'a t
-  (** Add a variable to the environment, but only if it is not already defined. *)
+  (** Add a variable to the environment, but only if it is not already
+      defined. *)
 
   val add: Variables.t -> string t -> 'a t -> 'a t
   (** Add/update a variable in the environment. *)

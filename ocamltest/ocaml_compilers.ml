@@ -56,10 +56,14 @@ let name = function
   | { host = Native; target = Native } -> Ocaml_files.ocamlopt_dot_opt
 
 let exit_status_variable = function
-  | { host = Bytecode; target = Bytecode } -> Ocaml_variables.ocamlc_byte_exit_status
-  | { host = Bytecode; target = Native } -> Ocaml_variables.ocamlopt_byte_exit_status
-  | { host = Native; target = Bytecode } -> Ocaml_variables.ocamlc_opt_exit_status
-  | { host = Native; target = Native } -> Ocaml_variables.ocamlopt_opt_exit_status
+  | { host = Bytecode; target = Bytecode } ->
+      Ocaml_variables.ocamlc_byte_exit_status
+  | { host = Bytecode; target = Native } ->
+      Ocaml_variables.ocamlopt_byte_exit_status
+  | { host = Native; target = Bytecode } ->
+      Ocaml_variables.ocamlc_opt_exit_status
+  | { host = Native; target = Native } ->
+      Ocaml_variables.ocamlopt_opt_exit_status
 
 let reference_variable = function
   | { host = Bytecode; _ } -> Ocaml_variables.compiler_reference

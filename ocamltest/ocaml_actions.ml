@@ -211,7 +211,8 @@ let prepare_modules output_variable inputs =
   Eff.seq effects, List.flatten inputs
 
 let get_program_file backend =
-  let+ testfile_basename = A.map Filename.chop_extension Actions_helpers.testfile
+  let+ testfile_basename =
+    A.map Filename.chop_extension Actions_helpers.testfile
   and+ test_build_directory = Actions_helpers.test_build_directory in
   let program_filename =
     Filename.mkexe
@@ -308,7 +309,8 @@ let compile_program compiler =
     | Some (Error reason) ->
         Eff.fail_with_reason reason
     | _ ->
-        let c_headers_flags = if has_c_file then Ocaml_flags.c_includes else "" in
+        let c_headers_flags =
+          if has_c_file then Ocaml_flags.c_includes else "" in
         let compile_flags = if compile_only then " -c " else "" in
         let output = if compile_only then "" else "-o " ^ program_file in
         let commandline =
@@ -346,7 +348,8 @@ let compile_module compiler module_ =
   and+ flags = flags
   and+ module_ = module_
   and+ expected_exit_status =
-    Actions_helpers.int_of_variable (Ocaml_compilers.exit_status_variable compiler)
+    Actions_helpers.int_of_variable
+      (Ocaml_compilers.exit_status_variable compiler)
   and+ run_params =
     Actions_helpers.run_params
       ~environment:(A.return default_ocaml_env)
@@ -408,7 +411,9 @@ let find_source_modules =
   (* print_module_names log "Source" source_modules; *)
   A.add
     Ocaml_variables.all_modules
-    (A.map (fun l -> String.concat " " (List.map Ocaml_filetypes.make_filename l)) source_modules)
+    (A.map (fun l ->
+         String.concat " " (List.map Ocaml_filetypes.make_filename l)
+       ) source_modules)
     A.env
 
 let setup_tool_build_env tool x =
@@ -425,13 +430,16 @@ let setup_tool_build_env tool x =
   let source_modules =
     Actions_helpers.words_of_variable Ocaml_variables.all_modules in
   let build_dir =
-    let+ build_dir_prefix = A.safe_lookup Builtin_variables.test_build_directory_prefix
-    and+ tool_dir_suffix = A.safe_lookup Ocaml_variables.compiler_directory_suffix in
+    let+ build_dir_prefix =
+      A.safe_lookup Builtin_variables.test_build_directory_prefix
+    and+ tool_dir_suffix =
+      A.safe_lookup Ocaml_variables.compiler_directory_suffix in
     Filename.concat build_dir_prefix (directory tool ^ tool_dir_suffix)
   in
   let tool_output_variable = output_variable tool in
   let tool_output_file =
-    let tool_output_filename = Filename.make_filename (directory tool) "output" in
+    let tool_output_filename =
+      Filename.make_filename (directory tool) "output" in
     let+ build_dir = build_dir in
     Filename.make_path [build_dir; tool_output_filename]
   in
@@ -439,7 +447,8 @@ let setup_tool_build_env tool x =
     (A.add_if_undefined tool_output_variable tool_output_file
        (A.add Builtin_variables.test_build_directory build_dir
           (let+ remove_output_file = A.map Eff.force_remove tool_output_file
-           and+ setup_build_env = Actions_helpers.setup_build_env false source_modules
+           and+ setup_build_env =
+             Actions_helpers.setup_build_env false source_modules
            and+ env = x in
            Eff.seq [remove_output_file; setup_build_env], env)))
 
@@ -522,7 +531,8 @@ let compile compiler =
      Eff.seq
        [ Eff.echo "Compiling using commandline %s" commandline;
          Eff.with_exit_code expected_exit_status
-           (Eff.run_cmd run_params [Ocaml_compilers.name compiler; commandline]) ]
+           (Eff.run_cmd run_params
+              [Ocaml_compilers.name compiler; commandline]) ]
     )
 
 (* Compile actions *)
@@ -663,7 +673,9 @@ let finalise_codegen_cc test_basename =
        (A.both (A.return Eff.pass) A.env))
 
 let finalise_codegen_msvc test_basename =
-  let obj = A.map (fun s -> Filename.make_filename s Ocamltest_config.objext) test_basename in
+  let obj =
+    A.map (fun s -> Filename.make_filename s Ocamltest_config.objext)
+      test_basename in
   let src = A.map (fun s -> Filename.make_filename s "s") test_basename in
   let modules =
     let+ obj = obj in

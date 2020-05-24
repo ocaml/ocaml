@@ -71,7 +71,9 @@ let describe_action s =
       let list mode set =
         if not (V.Set.is_empty set) then begin
           Printf.printf "* This action %s the following variables:\n" mode;
-          V.Set.iter (fun v -> Printf.printf "- %s\n" (Variables.name_of_variable v)) set
+          V.Set.iter (fun v ->
+              Printf.printf "- %s\n" (Variables.name_of_variable v)
+            ) set
         end
       in
       list "READS FROM" reads;
@@ -83,7 +85,8 @@ let commandline_options =
   [
     ("-e", Arg.Set log_to_stderr, " Log to stderr instead of a file.");
     ("-promote", Arg.Set promote,
-     " Overwrite reference files with the test output (experimental, unstable)");
+     " Overwrite reference files with the test output \
+      (experimental, unstable)");
     ("-show-actions", Arg.Unit show_actions, " Show available actions.");
     ("-describe-action", Arg.String describe_action, " Describe action.");
     ("-show-tests", Arg.Unit show_tests, " Show available tests.");
@@ -93,7 +96,8 @@ let commandline_options =
     ("-list-tests", Arg.String (add_to_list list_tests),
      " List tests in given directory.");
     ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
-     " Keep the test directory (with the generated test artefacts) on success.");
+     " Keep the test directory (with the generated test artefacts) on \
+      success.");
     ("-dry-run", Arg.Set dry_run, " Do not actually run any commands.");
   ]
 
