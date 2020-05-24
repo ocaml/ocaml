@@ -60,7 +60,7 @@ type files = {
 }
 
 let read_text_file lines_to_drop fn =
-  let ic = open_in_bin fn in
+  Sys.with_input_file ~bin:true fn @@ fun ic ->
   let drop_cr s =
     let l = String.length s in
     if l > 0 && s.[l - 1] = '\r' then String.sub s 0 (l - 1)
@@ -76,9 +76,8 @@ let read_text_file lines_to_drop fn =
     match input_line ic with
     | s -> loop (s :: acc)
     | exception End_of_file ->
-      close_in ic;
-      try List.rev_map drop_cr acc
-      with Exit -> List.rev acc
+        try List.rev_map drop_cr acc
+        with Exit -> List.rev acc
   in
   drop lines_to_drop
 
@@ -108,8 +107,8 @@ let really_input_up_to ic =
     Bytes.sub buf 0 bytes_read
 
 let compare_binary_files bytes_to_ignore file1 file2 =
-  let ic1 = open_in_bin file1 in
-  let ic2 = open_in_bin file2 in
+  Sys.with_input_file ~bin:true file1 @@ fun ic1 ->
+  Sys.with_input_file ~bin:true file2 @@ fun ic2 ->
   seek_in ic1 bytes_to_ignore;
   seek_in ic2 bytes_to_ignore;
   let rec compare () =
@@ -123,10 +122,7 @@ let compare_binary_files bytes_to_ignore file1 file2 =
     else
       Different
   in
-  let result = compare () in
-  close_in ic1;
-  close_in ic2;
-  result
+  compare ()
 
 let compare_files ?(tool = default_comparison_tool) files =
   match tool with
@@ -176,21 +172,17 @@ let diff files =
   Sys.force_remove temporary_file;
   result
 
-let promote files ignore_conf =
-  match files.filetype, ignore_conf with
-    | Text, {lines = skip_lines; _} ->
-       let reference = open_out files.reference_filename in
-       let output = open_in files.output_filename in
-       for _ = 1 to skip_lines do
-         try ignore (input_line output) with End_of_file -> ()
-       done;
-       Sys.copy_chan output reference;
-       close_out reference;
-       close_in output
-    | Binary, {bytes = skip_bytes; _} ->
-       let reference = open_out_bin files.reference_filename in
-       let output = open_in_bin files.output_filename in
-       seek_in output skip_bytes;
-       Sys.copy_chan output reference;
-       close_out reference;
-       close_in output
+let promote {filetype; reference_filename; output_filename} ignore_conf =
+  match filetype, ignore_conf with
+  | Text, {lines = skip_lines; _} ->
+      Sys.with_output_file reference_filename @@ fun reference ->
+      Sys.with_input_file output_filename @@ fun output ->
+      for _ = 1 to skip_lines do
+        try ignore (input_line output) with End_of_file -> ()
+      done;
+      Sys.copy_chan output reference
+  | Binary, {bytes = skip_bytes; _} ->
+      Sys.with_output_file ~bin:true reference_filename @@ fun reference ->
+      Sys.with_input_file ~bin:true output_filename @@ fun output ->
+      seek_in output skip_bytes;
+      Sys.copy_chan output reference
