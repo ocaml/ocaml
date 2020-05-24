@@ -158,49 +158,49 @@ let test_file test_filename =
   in
   clean_test_build_directory ();
   Sys.make_directory test_build_directory_prefix;
-  let summary = Sys.with_chdir test_build_directory_prefix
-    (fun () ->
-       let log =
-         if Options.log_to_stderr then stderr else begin
-           let log_filename = test_prefix ^ ".log" in
-           open_out log_filename
-         end in
-       let promote = string_of_bool Options.promote in
-       let install_hook name =
-         let hook_name = Filename.make_filename hookname_prefix name in
-         if Sys.file_exists hook_name then begin
-           let hook = Actions_helpers.run_hook hook_name in
-           Actions.set_hook name hook
-         end in
-       String.Set.iter install_hook action_names;
+  let summary =
+    Sys.with_chdir test_build_directory_prefix @@ fun () ->
+    let log =
+      if Options.log_to_stderr then stderr else begin
+        let log_filename = test_prefix ^ ".log" in
+        open_out log_filename
+      end in
+    let promote = string_of_bool Options.promote in
+    let install_hook name =
+      let hook_name = Filename.make_filename hookname_prefix name in
+      if Sys.file_exists hook_name then begin
+        let hook = Actions_helpers.run_hook hook_name in
+        Actions.set_hook name hook
+      end in
+    String.Set.iter install_hook action_names;
 
-       let reference_filename = Filename.concat
-           test_source_directory (test_prefix ^ ".reference") in
-       let make = try Sys.getenv "MAKE" with Not_found -> "make" in
-       let initial_environment = Environments.from_bindings
-           [
-             Builtin_variables.make, make;
-             Builtin_variables.test_file, test_basename;
-             Builtin_variables.reference, reference_filename;
-             Builtin_variables.test_source_directory, test_source_directory;
-             Builtin_variables.test_build_directory_prefix,
-               test_build_directory_prefix;
-             Builtin_variables.promote, promote;
-           ] in
-       let root_environment =
-         interprete_environment_statements
-           initial_environment rootenv_statements in
-       let rootenv = Environments.initialize log root_environment in
-       let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
-       let initial_status =
-         if skip_test then Skip_all_tests else Run rootenv
-       in
-       let summary =
-         run_test_trees log common_prefix "" initial_status test_trees in
-       Actions.clear_all_hooks();
-       if not Options.log_to_stderr then close_out log;
-       summary
-    ) in
+    let reference_filename = Filename.concat
+        test_source_directory (test_prefix ^ ".reference") in
+    let make = try Sys.getenv "MAKE" with Not_found -> "make" in
+    let initial_environment = Environments.from_bindings
+        [
+          Builtin_variables.make, make;
+          Builtin_variables.test_file, test_basename;
+          Builtin_variables.reference, reference_filename;
+          Builtin_variables.test_source_directory, test_source_directory;
+          Builtin_variables.test_build_directory_prefix,
+          test_build_directory_prefix;
+          Builtin_variables.promote, promote;
+        ] in
+    let root_environment =
+      interprete_environment_statements
+        initial_environment rootenv_statements in
+    let rootenv = Environments.initialize log root_environment in
+    let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
+    let initial_status =
+      if skip_test then Skip_all_tests else Run rootenv
+    in
+    let summary =
+      run_test_trees log common_prefix "" initial_status test_trees in
+    Actions.clear_all_hooks();
+    if not Options.log_to_stderr then close_out log;
+    summary
+  in
   begin match summary with
   | Some_failure -> ()
   | No_failure ->
