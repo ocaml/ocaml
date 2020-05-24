@@ -87,12 +87,6 @@ end
 module Sys = struct
   include Sys
 
-  let file_is_empty filename =
-    let ic = open_in filename in
-    let filesize = in_channel_length ic in
-    close_in ic;
-    filesize = 0
-
   let run_system_command prog args =
     let command = Filename.quote_command prog args in
     match Sys.command command with
@@ -110,31 +104,30 @@ module Sys = struct
     if Sys.file_exists dir then ()
     else (make_directory (Filename.dirname dir); mkdir dir)
 
-  let string_of_file filename =
-    let chan = open_in_bin filename in
-    let filesize = in_channel_length chan in
-    if filesize > Sys.max_string_length then
-    begin
-      close_in chan;
-      failwith
-        ("The file " ^ filename ^ " is too large to be loaded into a string")
-    end else begin
-      let result =
-        try really_input_string chan filesize
-        with End_of_file ->
-          close_in chan;
-          failwith ("Got unexpected end of file while reading " ^ filename) in
-      close_in chan;
-      result
-    end
-
   let with_input_file ?(bin=false) x f =
     let ic = (if bin then open_in_bin else open_in) x in
-    try let res = f ic in close_in ic; res with e -> (close_in ic; raise e)
+    Fun.protect ~finally:(fun () -> close_in_noerr ic)
+      (fun () -> f ic)
+
+  let file_is_empty filename =
+    with_input_file filename in_channel_length = 0
+
+  let string_of_file filename =
+    with_input_file ~bin:true filename @@ fun chan ->
+    let filesize = in_channel_length chan in
+    if filesize > Sys.max_string_length then
+      failwith
+        ("The file " ^ filename ^ " is too large to be loaded into a string")
+    else begin
+      try really_input_string chan filesize
+      with End_of_file ->
+        failwith ("Got unexpected end of file while reading " ^ filename)
+    end
 
   let with_output_file ?(bin=false) x f =
     let oc = (if bin then open_out_bin else open_out) x in
-    try let res = f oc in close_out oc; res with e -> (close_out oc; raise e)
+    Fun.protect ~finally:(fun () -> close_out_noerr oc)
+      (fun () -> f oc)
 
   let copy_chan ic oc =
     let m = in_channel_length ic in
@@ -150,11 +143,9 @@ module Sys = struct
     in loop ()
 
   let copy_file src dest =
-    with_input_file ~bin:true src begin fun ic ->
-      with_output_file ~bin:true dest begin fun oc ->
-        copy_chan ic oc
-      end
-    end
+    with_input_file ~bin:true src @@ fun ic ->
+    with_output_file ~bin:true dest @@ fun oc ->
+    copy_chan ic oc
 
   let force_remove file =
     if file_exists file then remove file
@@ -164,13 +155,7 @@ module Sys = struct
   let with_chdir path f =
     let oldcwd = Sys.getcwd () in
     Sys.chdir path;
-    match f () with
-    | r ->
-        Sys.chdir oldcwd;
-        r
-    | exception e ->
-        Sys.chdir oldcwd;
-        raise e
+    Fun.protect ~finally:(fun () -> Sys.chdir oldcwd) f
 
   let getenv_with_default_value variable default_value =
     try Sys.getenv variable with Not_found -> default_value
