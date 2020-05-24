@@ -876,39 +876,28 @@ let compare_programs backend comparison_tool =
      A.return (Eff.pass_with_reason reason))
     (really_compare_programs backend comparison_tool)
 
-let make_bytecode_programs_comparison_tool =
-  let ocamlrun = Ocaml_files.ocamlrun in
-  let cmpbyt = Ocaml_files.cmpbyt in
-  let tool_name = ocamlrun ^ " " ^ cmpbyt in
+let cmpbyt =
+  let tool_name = Ocaml_files.ocamlrun ^ " " ^ Ocaml_files.cmpbyt in
   Filecompare.make_comparison_tool tool_name ""
-
-let native_programs_comparison_tool = Filecompare.default_comparison_tool
-
-let compare_bytecode_programs_code =
-  let bytecode_programs_comparison_tool =
-    make_bytecode_programs_comparison_tool in
-  compare_programs
-    Ocaml_backends.Bytecode bytecode_programs_comparison_tool
 
 let compare_bytecode_programs =
   native_action
     (Actions.make
       "compare-bytecode-programs"
-      compare_bytecode_programs_code)
+      (compare_programs Ocaml_backends.Bytecode cmpbyt))
 
 let compare_native_programs =
   native_action
     (Actions.make
       "compare-native-programs"
-      (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
+      (compare_programs Ocaml_backends.Native
+         Filecompare.default_comparison_tool))
 
 let compile_modules compiler compilername compileroutput
     module_basenames_filetypes =
-    (* (module_basename, module_filetype) = *)
   let backend = Ocaml_compilers.target compiler in
   let+ filenames =
     A.map (List.map Ocaml_filetypes.make_filename) module_basenames_filetypes
-  (* Ocaml_filetypes.make_filename (module_basename, module_filetype) in *)
   and+ module_basenames_filetypes = module_basenames_filetypes
   and+ expected_exit_status =
     Actions_helpers.int_of_variable
