@@ -96,6 +96,7 @@ again:
       additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
     }
 
+    is_initialized = TRUE;
     goto again;
   }
 
