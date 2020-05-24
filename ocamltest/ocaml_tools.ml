@@ -152,19 +152,8 @@ module Toplevel = struct
     | Native -> Compiler.ocamlc_opt
 
   let reference_file t env prefix =
-    let default =
-      let suffix = Compiler.reference_file_suffix env in
-      Filename.make_filename prefix (directory t) ^ suffix
-    in
-    if Sys.file_exists default then
-      default
-    else begin
-      let suffix = Compiler.reference_file_suffix env in
-      let mk s = Filename.make_filename prefix s ^ suffix in
-      let filename = mk (Ocaml_backends.string_of_backend t) in
-      if Sys.file_exists filename then filename
-      else mk "compilers"
-    end
+    let suffix = Compiler.reference_file_suffix env in
+    Filename.make_filename prefix (directory t) ^ suffix
 
   let backend t = t
 
