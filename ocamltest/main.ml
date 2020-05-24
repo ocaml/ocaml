@@ -80,14 +80,14 @@ let summary_of_result res =
   | Skip -> No_failure
   | Fail -> Some_failure
 
-let rec run_test log common_prefix path behavior = function
-  Node (testenvspec, test, env_modifiers, subtrees) ->
+let rec run_test log common_prefix path behavior
+    {env = testenvspec; test; modifiers; subtrees} =
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
   let (msg, children_behavior, summary) = match behavior with
     | Skip_all_tests -> "n/a", Skip_all_tests, No_failure
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
-      let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
+      let testenv = List.fold_left apply_modifiers testenv0 modifiers in
       let (result, newenv) = Tests.run log testenv test in
       let msg = Result.string_of_result result in
       let children_behavior =
@@ -133,7 +133,7 @@ let test_file test_filename =
   let test_trees = match test_trees with
     | [] ->
       let default_tests = Tests.default_tests() in
-      let make_tree test = Node ([], test, [], []) in
+      let make_tree test = {env = []; test; modifiers = []; subtrees = []} in
       List.map make_tree default_tests
     | _ -> test_trees in
   let used_tests = tests_in_trees test_trees in
