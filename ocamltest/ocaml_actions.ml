@@ -852,16 +852,14 @@ let really_compare_programs backend comparison_tool log env =
       "flambda temporarily disables comparison of native programs" in
     (Result.pass_with_reason reason, env)
   end else
-  if backend = Ocaml_backends.Native &&
-    (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+  if backend = Ocaml_backends.Native && (Sys.win32 || Sys.cygwin)
   then begin
     let reason =
       "comparison of native programs temporarily disabled under Windows" in
     (Result.pass_with_reason reason, env)
   end else begin
     let comparison_tool =
-      if backend=Ocaml_backends.Native &&
-        (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+      if backend=Ocaml_backends.Native && (Sys.win32 || Sys.cygwin)
         then
           let bytes_to_ignore = 512 (* comparison_start_address program *) in
           Filecompare.(make_cmp_tool ~ignore:{bytes=bytes_to_ignore; lines=0})
