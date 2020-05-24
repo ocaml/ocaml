@@ -256,7 +256,7 @@ module Eff = struct
           if not dry_run then Sys.copy_file src dst;
           Result.pass
       | Mkdir s ->
-          Sys.make_directory s;
+          if not dry_run then Sys.make_directory s;
           Result.pass
       | Force_remove s ->
           if not dry_run then Sys.force_remove s;
