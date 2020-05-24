@@ -63,8 +63,7 @@ let files env = words_of_variable env Builtin_variables.files
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
     let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -sf " ^ src ^" " ^ build_directory in
-    Sys.run_system_command cmd in
+    Sys.run_system_command "ln" ["-sf"; src; build_directory] in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
