@@ -108,16 +108,18 @@ module Sys = struct
     close_in ic;
     filesize = 0
 
-  let run_system_command command = match Sys.command command with
+  let run_system_command prog args =
+    let command = Filename.quote_command prog args in
+    match Sys.command command with
     | 0 -> ()
     | _ as exitcode ->
-      Printf.eprintf "Sysem command %s failed with status %d\n%!"
-        command exitcode;
+        Printf.eprintf "System command %s failed with status %d\n%!"
+          command exitcode;
       exit 3
 
   let mkdir dir =
     if not (Sys.file_exists dir) then
-      run_system_command (Filename.quote_command "mkdir" [dir])
+      run_system_command "mkdir" [dir]
 
   let rec make_directory dir =
     if Sys.file_exists dir then ()

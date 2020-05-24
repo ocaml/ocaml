@@ -247,8 +247,8 @@ module Eff = struct
             run_params commandline log
       | Copy_file (true, filename, srcdir, dstdir) ->
           let src = Filename.concat srcdir filename in
-          let cmd = Filename.quote_command "ln" ["-sf"; src; dstdir] in
-          if not dry_run then Sys.run_system_command cmd;
+          if not dry_run then
+            Sys.run_system_command "ln" ["-sf"; src; dstdir];
           Result.pass
       | Copy_file (false, filename, srcdir, dstdir) ->
           let src = Filename.concat srcdir filename in
