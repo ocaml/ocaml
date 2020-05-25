@@ -486,6 +486,9 @@ OCaml 4.11
 - #7696, #6608: Record expression deleted when all fields specified
   (Jacques Garrigue, report by Jeremy Yallop)
 
+- #7817, #9546: Unsound inclusion check for polymorphic variant
+  (Jacques Garrigue, report by Mikhail Mandrykin, review by Gabriel Scherer)
+
 - #7917, #9426: Use GCC option -fexcess-precision=standard when available,
   avoiding a problem with x87 excess precision in Float.round.
   (Xavier Leroy, review by Sébastien Hinderer)
