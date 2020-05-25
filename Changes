@@ -29,8 +29,8 @@ Working version
 
 - #9569: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`, `caml_alloc_some`,
   and `Tag_some`.
-  (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, and Mark
-  Shinwell)
+  (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
+  and Xavier Leroy)
 
 ### Code generation and optimizations:
 

@@ -276,8 +276,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
 CAMLexport value caml_alloc_some(value v)
 {
   CAMLparam1(v);
-  CAMLlocal1(some);
-  some = caml_alloc_small(1, 0);
+  value some = caml_alloc_small(1, 0);
   Store_field(some, 0, v);
   CAMLreturn(some);
 }
