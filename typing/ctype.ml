@@ -1915,6 +1915,9 @@ let occur_univar env ty =
             let td = Env.find_type p env in
             List.iter2
               (fun t v ->
+                (* Optimization: rather than expanding the type definition
+                   for abbreviations, use the inferred presence information.
+                   Only public abbreviations may make this formula false. *)
                 if Variance.(mem May_pos v || mem May_neg v || mem Inj v)
                 then occur_rec bound t)
               tl td.type_variance
@@ -1964,7 +1967,9 @@ let univars_escape env univar_pairs vl ty =
             let td = Env.find_type p env in
             List.iter2
               (fun t v ->
-                if Variance.(mem May_pos v || mem May_neg v) then occur t)
+                (* Optimization: see occur_univar *)
+                if Variance.(mem May_pos v || mem May_neg v || mem Inj v)
+                then occur t)
               tl td.type_variance
           with Not_found ->
             List.iter occur tl
