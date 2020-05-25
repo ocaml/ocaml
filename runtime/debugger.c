@@ -192,9 +192,9 @@ void caml_debugger_init(void)
   /* #8676: erase the CAML_DEBUG_SOCKET variable so that processes
      created by the program being debugged do not try to connect with
      the debugger. */
-#ifdef _WIN32
+#if defined(_WIN32)
   _wputenv(L"CAML_DEBUG_SOCKET=");
-#else
+#elif defined(HAS_SETENV_UNSETENV)
   unsetenv("CAML_DEBUG_SOCKET");
 #endif
 
