@@ -37,8 +37,6 @@ static uint32_t xoshiro_state[4][RAND_BLOCK_SIZE];
 static uintnat rand_geom_buff[RAND_BLOCK_SIZE];
 static uint32_t rand_pos;
 
-static uint32_t rand_pos;
-
 /* [lambda] is the mean number of samples for each allocated word (including
    block headers). */
 static double lambda = 0;
