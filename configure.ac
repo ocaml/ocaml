@@ -907,6 +907,9 @@ AS_CASE(["$CC,$host"],
 
 OCAML_CC_SUPPORTS_ALIGNED
 
+## Check whether __attribute__((optimize("tree-vectorize")))) is supported
+OCAML_CC_SUPPORTS_TREE_VECTORIZE
+
 # Configure the native-code compiler
 
 arch=none
