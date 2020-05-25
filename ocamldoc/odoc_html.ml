@@ -2394,12 +2394,12 @@ class html =
     (** A method to create index files. *)
     method generate_elements_index :
         'a.
-        ?strip_stdlib:bool ->
+        ?strip_libname:bool ->
           'a list ->
             ('a -> Odoc_info.Name.t) ->
               ('a -> Odoc_info.info option) ->
                 ('a -> string) -> string -> string -> unit =
-    fun ?(strip_stdlib=false) elements name info target title simple_file ->
+    fun ?(strip_libname=false) elements name info target title simple_file ->
       try
         let chanout = open_out (Filename.concat !Global.target_dir simple_file) in
         let b = new_buf () in
@@ -2419,7 +2419,10 @@ class html =
         let f_ele e =
           let simple_name = Name.simple (name e) in
           let father_name = Name.father (name e) in
-          if strip_stdlib && father_name = "Stdlib" && father_name <> simple_name then
+          if strip_libname &&
+               !Odoc_global.library_namespace <> "" &&
+                 father_name = !Odoc_global.library_namespace &&
+                   father_name <> simple_name then
             (* avoid duplicata *) ()
           else
             begin
@@ -2840,7 +2843,7 @@ class html =
     (** Generate the modules index in the file [index_modules.html]. *)
     method generate_modules_index _module_list =
       self#generate_elements_index
-        ~strip_stdlib:true
+        ~strip_libname:true
         self#list_modules
         (fun m -> m.m_name)
         (fun m -> m.m_info)
