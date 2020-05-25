@@ -47,21 +47,21 @@
 static BOOL IsDeveloperModeEnabled()
 {
   HKEY hKey;
-  LSTATUS openKeyError, queryValueError;
+  LSTATUS status;
   DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
 
-  openKeyError = RegOpenKeyExW(
+  status = RegOpenKeyExW(
     HKEY_LOCAL_MACHINE,
     L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock",
     0,
     KEY_READ | KEY_WOW64_64KEY,
     &hKey
   );
-  if (openKeyError != ERROR_SUCCESS) {
+  if (status != ERROR_SUCCESS) {
     return FALSE;
   }
 
-  queryValueError = RegQueryValueExW(
+  status = RegQueryValueExW(
     hKey,
     L"AllowDevelopmentWithoutDevLicense",
     NULL,
@@ -70,7 +70,7 @@ static BOOL IsDeveloperModeEnabled()
     &dwordSize
   );
   RegCloseKey(hKey);
-  if (queryValueError != ERROR_SUCCESS) {
+  if (status != ERROR_SUCCESS) {
     return FALSE;
   }
   return developerModeRegistryValue != 0;
