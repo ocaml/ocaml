@@ -1,0 +1,26 @@
+name: "Trigger precheck"
+on:
+  issue_comment:
+    types:
+    - created
+
+jobs:
+  precheck:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: Install jq
+      run: sudo apt-get install jq
+    - name: run script
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ISSUE_URL: ${{ github.event.issue.url }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        COMMENT_USER_LOGIN: ${{ github.event.comment.user.login }}
+        COMMENT_BODY: ${{ github.event.comment.body }}
+        PULL_REQUEST_URL: ${{ github.event.issue.pull_request.url }}
+        JENKINS_USER: ${{ secrets.JENKINS_USER }}
+        JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+        CAML_DEVEL_TOKEN: ${{ secrets.CAML_DEVEL_TOKEN }}
+      run: bash ./tools/ci/precheck.sh
