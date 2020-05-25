@@ -36,7 +36,7 @@ typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
 
 static BOOL is_initialized = FALSE;
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
-static BOOL no_symlinks_available = FALSE;
+static BOOL symlinks_available = TRUE;
 static DWORD additional_symlink_flags = 0;
 
 // Developer Mode allows the creation of symlinks without elevation - see
@@ -84,15 +84,15 @@ CAMLprim value unix_symlink(value to_dir, value osource, value odest)
   caml_unix_check_path(odest, "symlink");
 
 again:
-  if (no_symlinks_available) {
+  if (!symlinks_available) {
     caml_invalid_argument("symlink not available");
   }
 
   if (!is_initialized) {
     pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW");
-    no_symlinks_available = !pCreateSymbolicLink;
+    symlinks_available = pCreateSymbolicLink;
 
-    if (!no_symlinks_available && IsDeveloperModeEnabled()) {
+    if (symlinks_available && IsDeveloperModeEnabled()) {
       additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
     }
 
