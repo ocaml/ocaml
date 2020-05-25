@@ -88,10 +88,9 @@ again:
   }
 
   if (!pCreateSymbolicLink) {
-    pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW");
-    no_symlink = !pCreateSymbolicLink;
-
-    if (!no_symlink && IsDeveloperModeEnabled()) {
+    if (!(pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW"))) {
+      no_symlink = 1;
+    } else if (IsDeveloperModeEnabled()) {
       additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
     }
 
