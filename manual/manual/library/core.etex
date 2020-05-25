@@ -27,7 +27,7 @@ indexed at the end of this report.
 \section{s:stdlib-module}{Module {\tt Stdlib}: the initially opened module}
 \begin{links}
 \item \ahref{libref/Stdlib.html}{Module \texttt{Stdlib}: the initially opened module}
-\item \ahref{libref/Pervasives.html}{Module \texttt{Pervasives}: deprecated alias for Stdlib}
+\item Module \texttt{Pervasives}: deprecated alias for Stdlib
 \end{links}
 \else
 {
