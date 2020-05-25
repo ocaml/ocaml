@@ -3196,11 +3196,7 @@ let moregen_occur env level ty =
     if ty.level > level then begin
       if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur;
       ty.level <- pivot_level - ty.level;
-      match ty.desc with
-        Tvariant row when static_row row ->
-          iter_row occur row
-      | _ ->
-          iter_type_expr occur ty
+      iter_type_expr occur ty
     end
   in
   begin try
