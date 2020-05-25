@@ -22,10 +22,15 @@
 
 (rule
  (targets ocamltest_config.ml)
- (deps ../Makefile.config ../Makefile.build_config ../Makefile.config_if_required
-       ../Makefile.common ../Makefile.best_binaries
-       Makefile
-       ./ocamltest_config.ml.in ./getocamloptdefaultflags)
+ (deps
+   ../Makefile.config
+   ../Makefile.build_config
+   ../Makefile.config_if_required
+   ../Makefile.common
+   ../Makefile.best_binaries
+   Makefile
+   ./ocamltest_config.ml.in
+   ./getocamloptdefaultflags)
  (action (run make %{targets} COMPUTE_DEPS=false)))
 
 ;; FIXME: handle UNIX_OR_WIN32 or something similar

@@ -14,6 +14,9 @@ Working version
   adding support for Musl ppc64le along the way.
   (Xavier Leroy and Anil Madhavapeddy, review by Stephen Dolan)
 
+- #9466: Memprof: optimize random samples generation.
+  (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
+
 - #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
@@ -23,8 +26,9 @@ Working version
   (KC Sivaramakrishnan, review by David Allsopp, Xavier Leroy, Mark Shinwell
   and Leo White)
 
-- #9466: Memprof: optimize random samples generation.
-  (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
+- #9564: Add a macro to construct out-of-heap block header.
+  (KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer,
+   and Xavier Leroy)
 
 ### Code generation and optimizations:
 
@@ -51,6 +55,10 @@ Working version
   (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
    and Gabriel Scherer)
 
+- #9573: reimplement Unix.create_process and related functions without
+  Unix.fork, for better efficiency and compatibility with threads.
+  (Xavier Leroy, review by Gabriel Scherer and Anil Madhavapeddy)
+
 - #9575: Add Unix.is_inet6_addr
   (Nicolás Ojeda Bär, review by Xavier Leroy)
 
@@ -62,6 +70,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9583: when bytecode linking fails due to an unavailable module, the module
+  that requires it is now included in the error message.
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
 
 ### Internal/compiler-libs changes:
 
@@ -126,8 +137,8 @@ OCaml 4.11
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8920, #9238, #9239, #9254: New API for statistical memory profiling in
-  Memprof.Gc. The new version does no longer use ephemerons and allows
+- #8920, #9238, #9239, #9254, #9458: New API for statistical memory profiling
+  in Memprof.Gc. The new version does no longer use ephemerons and allows
   registering callbacks for promotion and deallocation of memory
   blocks.
   The new API no longer gives the block tags to the allocation callback.
