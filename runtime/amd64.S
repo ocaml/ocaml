@@ -728,9 +728,9 @@ LBL(caml_start_program):
         subq    $16, %r10
         lea     LBL(109)(%rip), %r11
         movq    %r11, 8(%r10)
-        /* load the previous context exn_handler so that copying stacks works */
+    /* load the previous context exn_handler so that copying stacks works */
         movq    Caml_state(current_stack), %r11
-        movq    (%r11), %r11
+        movq    Stack_sp(%r11), %r11
         movq    %r11, 0(%r10)
         movq    %r10, Caml_state(exn_handler)
     /* Switch stacks and call the OCaml code */
@@ -960,15 +960,13 @@ CFI_STARTPROC
         movq    Stack_handler(%rdi), %rcx
         movq    %rax, Handler_parent(%rcx)
         movq    %rdi, Caml_state(current_stack)
-        movq    Stack_sp(%rdi), %r11
+        movq    Stack_sp(%rdi), %rax
     /* Create an exception handler on the target stack */
-        subq    $16, %r11
+        leaq    -16(%rax), %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
         movq    %r10, 8(%r11)
     /* load the previous context exn_handler so that copying stacks works */
-        movq    Caml_state(current_stack), %r10
-        movq    (%r10), %r10
-        movq    %r10, 0(%r11)
+        movq    %rax, 0(%r11)
         movq    %r11, Caml_state(exn_handler)
     /* Switch to the new stack */
         movq    %r11, %rsp
