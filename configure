@@ -731,8 +731,6 @@ ac_ct_LD
 LD
 DEFAULT_STRING
 WINDOWS_UNICODE_MODE
-BFD_LIB_DIR
-BFD_INCLUDE_DIR
 LIBUNWIND_LIB_DIR
 LIBUNWIND_INCLUDE_DIR
 DLLIBS
@@ -783,9 +781,6 @@ asm_cfi_supported
 AS
 endianness
 ASPP
-bfd_ldlibs
-bfd_ldflags
-bfd_cppflags
 x_libraries
 x_includes
 pthread_link
@@ -894,7 +889,6 @@ enable_instrumented_runtime
 enable_vmthreads
 enable_systhreads
 with_libunwind
-with_bfd
 enable_graph_lib
 enable_str_lib
 enable_unix_lib
@@ -937,8 +931,6 @@ PARTIALLD
 DLLIBS
 LIBUNWIND_INCLUDE_DIR
 LIBUNWIND_LIB_DIR
-BFD_INCLUDE_DIR
-BFD_LIB_DIR
 WINDOWS_UNICODE_MODE
 DEFAULT_STRING
 CC
@@ -1612,8 +1604,6 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-libunwind     disable libunwind support for Spacetime profiling
-  --without-bfd           disable BFD (Binary File Description) library
-                          support
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -1635,9 +1625,6 @@ Some influential environment variables:
               location of header files for libunwind
   LIBUNWIND_LIB_DIR
               location of library files for libunwind
-  BFD_INCLUDE_DIR
-              location of header files for the BFD library
-  BFD_LIB_DIR location of library files for the BFD library
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
@@ -2906,9 +2893,6 @@ VERSION=4.12.0+dev0-2020-04-22
 
 
 
-
-
-
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3108,19 +3092,6 @@ fi
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then :
   withval=$with_libunwind;
-fi
-
-
-
-
-
-
-
-# Check whether --with-bfd was given.
-if test "${with_bfd+set}" = set; then :
-  withval=$with_bfd;
-else
-  with_bfd=auto
 fi
 
 
@@ -16404,282 +16375,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
 esac
-fi
-
-## BFD (Binary File Description) library
-
-bfd_cppflags=""
-bfd_ldflags=""
-bfd_ldlibs=""
-
-if test x"$with_bfd" != "xno"; then :
-  bfd_available=false
-  case $host in #(
-  x86_64-*-darwin*) :
-    if test -z "$BFD_INCLUDE_DIR"; then :
-  BFD_INCLUDE_DIR="/opt/local/include"
-fi
-      if test -z "$BFD_LIB_DIR"; then :
-  BFD_LIB_DIR="/opt/local/lib"
-fi ;; #(
-  *-*-openbsd*|*-*-freebsd*) :
-    if test -z "$BFD_INCLUDE_DIR"; then :
-  BFD_INCLUDE_DIR="/usr/local/include"
-fi
-      if test -z "$BFD_LIB_DIR"; then :
-  BFD_LIB_DIR="/usr/local/lib"
-fi ;; #(
-  *) :
-     ;;
-esac
-  if test -n "$BFD_INCLUDE_DIR"; then :
-  bfd_cppflags="-I$BFD_INCLUDE_DIR"
-fi
-  if test -n "$BFD_LIB_DIR"; then :
-  bfd_ldflags="-L$BFD_LIB_DIR"
-fi
-  SAVED_CPPFLAGS="$CPPFLAGS"
-  SAVED_LDFLAGS="$LDFLAGS"
-  CPPFLAGS="$CPPFLAGS $bfd_cppflags"
-  LDFLAGS="$LDFLAGS $bfd_ldflags"
-  ac_fn_c_check_header_mongrel "$LINENO" "bfd.h" "ac_cv_header_bfd_h" "$ac_includes_default"
-if test "x$ac_cv_header_bfd_h" = xyes; then :
-  bfd_ldlibs=""
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd"
-fi
-
-    if test -z "$bfd_ldlibs"; then :
-  unset ac_cv_lib_bfd_bfd_openr
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS"
-fi
-
-fi
-    if test -z "$bfd_ldlibs"; then :
-  unset ac_cv_lib_bfd_bfd_openr
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS -liberty $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS -liberty"
-fi
-
-fi
-    if test -z "$bfd_ldlibs"; then :
-  unset ac_cv_lib_bfd_bfd_openr
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS -liberty -lz $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"
-fi
-
-fi
-    if test -z "$bfd_ldlibs"; then :
-  unset ac_cv_lib_bfd_bfd_openr
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS -liberty -lz -lintl $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"
-fi
-
-fi
-    if test -n "$bfd_ldlibs"; then :
-  bfd_available=true
-      $as_echo "#define HAS_LIBBFD 1" >>confdefs.h
-
-fi
-fi
-
-
-  if ! $bfd_available; then :
-  if test x"$with_bfd" = "xyes"; then :
-  as_fn_error $? "BFD library support requested but not available" "$LINENO" 5
-else
-  bfd_cppflags=""
-      bfd_ldflags=""
-      { $as_echo "$as_me:${as_lineno-$LINENO}: BFD library not found, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&5
-$as_echo "$as_me: BFD library not found, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&6;}
-fi
-fi
-  LDFLAGS="$SAVED_LDFLAGS"
-  CPP_FLAGS="$SAVED_CPPFLAGS"
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Support for the BFD (Binary File Description) library disabled, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&5
-$as_echo "$as_me: Support for the BFD (Binary File Description) library disabled, 'ocamlobjinfo' will be unable to display info on .cmxs files." >&6;}
 fi
 
 ## Does the assembler support debug prefix map and CFI directives
