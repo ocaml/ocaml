@@ -15,9 +15,7 @@
 
 * Under Cygwin, the `gcc-core` and `make` packages are required.  `flexdll` is
   necessary for shared library support.  `libX11-devel` is necessary for graph
-  library support and `libintl-devel` is necessary for the `ocamlobjinfo` tool
-  to be able to process `.cmxs` files.  `diffutils` is necessary to run the test
-  suite.
+  library support.  `diffutils` is necessary to run the test suite.
 
 == Configuration
 

@@ -256,8 +256,6 @@
 
 #undef HAS_SIGWAIT
 
-#undef HAS_LIBBFD
-
 #undef HAS_HUGE_PAGES
 
 #undef HUGE_PAGE_SIZE

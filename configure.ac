@@ -132,9 +132,6 @@ AC_SUBST([ocamltest])
 AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
-AC_SUBST([bfd_cppflags])
-AC_SUBST([bfd_ldflags])
-AC_SUBST([bfd_ldlibs])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
@@ -249,18 +246,6 @@ AC_ARG_VAR([LIBUNWIND_INCLUDE_DIR],
 
 AC_ARG_VAR([LIBUNWIND_LIB_DIR],
   [location of library files for libunwind])
-
-AC_ARG_WITH([bfd],
-  [AS_HELP_STRING([--without-bfd],
-    [disable BFD (Binary File Description) library support])],
-    [],
-    [with_bfd=auto])
-
-AC_ARG_VAR([BFD_INCLUDE_DIR],
-  [location of header files for the BFD library])
-
-AC_ARG_VAR([BFD_LIB_DIR],
-  [location of library files for the BFD library])
 
 AC_ARG_ENABLE([graph-lib], [],
   [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
@@ -1653,72 +1638,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
-
-## BFD (Binary File Description) library
-
-bfd_cppflags=""
-bfd_ldflags=""
-bfd_ldlibs=""
-
-AS_IF([test x"$with_bfd" != "xno"],
-  [bfd_available=false
-  AS_CASE([$host],
-    [x86_64-*-darwin*],
-      [AS_IF([test -z "$BFD_INCLUDE_DIR"],
-        [BFD_INCLUDE_DIR="/opt/local/include"])
-      AS_IF([test -z "$BFD_LIB_DIR"],
-        [BFD_LIB_DIR="/opt/local/lib"])],
-    [*-*-openbsd*|*-*-freebsd*],
-      [AS_IF([test -z "$BFD_INCLUDE_DIR"],
-        [BFD_INCLUDE_DIR="/usr/local/include"])
-      AS_IF([test -z "$BFD_LIB_DIR"],
-        [BFD_LIB_DIR="/usr/local/lib"])])
-  AS_IF([test -n "$BFD_INCLUDE_DIR"],
-    [bfd_cppflags="-I$BFD_INCLUDE_DIR"])
-  AS_IF([test -n "$BFD_LIB_DIR"],
-    [bfd_ldflags="-L$BFD_LIB_DIR"])
-  SAVED_CPPFLAGS="$CPPFLAGS"
-  SAVED_LDFLAGS="$LDFLAGS"
-  CPPFLAGS="$CPPFLAGS $bfd_cppflags"
-  LDFLAGS="$LDFLAGS $bfd_ldflags"
-  AC_CHECK_HEADER([bfd.h],
-    [bfd_ldlibs=""
-    AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd"])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS"], [], [$DLLIBS])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS -liberty"], [], [$DLLIBS -liberty])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"], [], [$DLLIBS -liberty -lz])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"], [],
-        [$DLLIBS -liberty -lz -lintl])])
-    AS_IF([test -n "$bfd_ldlibs"],
-      [bfd_available=true
-      AC_DEFINE([HAS_LIBBFD])])])
-  AS_IF([! $bfd_available],
-    [AS_IF([test x"$with_bfd" = "xyes"],
-      [AC_MSG_ERROR([BFD library support requested but not available])],
-      [bfd_cppflags=""
-      bfd_ldflags=""
-      AC_MSG_NOTICE(m4_normalize([
-        BFD library not found, 'ocamlobjinfo' will be unable to display
-        info on .cmxs files.
-      ]))])])
-  LDFLAGS="$SAVED_LDFLAGS"
-  CPP_FLAGS="$SAVED_CPPFLAGS"],
-  [AC_MSG_NOTICE(m4_normalize([
-    Support for the BFD (Binary File Description) library disabled,
-    'ocamlobjinfo' will be unable to display info on .cmxs files.
-    ]))])
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false
