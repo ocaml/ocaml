@@ -468,3 +468,23 @@ external idub : iub -> iub = "%identity";;
 type iub = I of int [@@unboxed]
 external idub : iub -> iub = "%identity"
 |}];;
+
+(* #9607: bug on abstract-with-manifest types *)
+module type T  = sig type 'k t end
+module M : T with type 'k t = string = struct
+  type 'k t = string
+end
+type t = T : 'k M.t -> t [@@unboxed]
+
+(* this is a bug: the example should be accepted *)
+[%%expect{|
+module type T = sig type 'k t end
+module M : sig type 'k t = string end
+Line 5, characters 0-36:
+5 | type t = T : 'k M.t -> t [@@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values,
+       depending on the instantiation of the existential variable 'k.
+       You should annotate it with [@@ocaml.boxed].
+|}];;
