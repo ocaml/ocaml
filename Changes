@@ -62,6 +62,10 @@ Working version
 - #9575: Add Unix.is_inet6_addr
   (Nicolás Ojeda Bär, review by Xavier Leroy)
 
+* #9601: Return EPERM for EUNKNOWN -1314 in win32unix (principally affects
+  error handling when Unix.symlink is unavailable)
+  (David Allsopp, review by Xavier Leroy)
+
 ### Tools:
 
 
