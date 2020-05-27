@@ -1440,23 +1440,39 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
   end;
   let decl = name_recursion sdecl id decl in
-  let type_variance =
+  let new_type_variance =
     try Typedecl_variance.compute_decl
           env ~check:true decl (Typedecl_variance.variance_of_sdecl sdecl)
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
-  let type_immediate =
+  let new_type_immediate =
     (* Typedecl_immediacy.compute_decl never raises *)
     Typedecl_immediacy.compute_decl env decl in
-  let type_separability =
+  let new_type_separability =
     try Typedecl_separability.compute_decl env decl
     with Typedecl_separability.Error (loc, err) ->
       raise (Error (loc, Separability err)) in
   let decl =
-    {decl with
-     type_variance;
-     type_immediate;
-     type_separability;
+    (* we intentionally write this without a fragile { decl with ... }
+       to ensure that people adding new fields to type declarations
+       consider whether they need to recompute it here; for an example
+       of bug caused by the previous approach, see #9607 *)
+    {
+      type_params = decl.type_params;
+      type_arity = decl.type_arity;
+      type_kind = decl.type_kind;
+      type_private = decl.type_private;
+      type_manifest = decl.type_manifest;
+      type_unboxed = decl.type_unboxed;
+      type_is_newtype = decl.type_is_newtype;
+      type_expansion_scope = decl.type_expansion_scope;
+      type_loc = decl.type_loc;
+      type_attributes = decl.type_attributes;
+      type_uid = decl.type_uid;
+
+      type_variance = new_type_variance;
+      type_immediate = new_type_immediate;
+      type_separability = new_type_separability;
     } in
   Ctype.end_def();
   generalize_decl decl;
