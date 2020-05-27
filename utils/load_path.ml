@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 module SMap = Misc.Stdlib.String.Map
+module RevList = Misc.RevList
 
 (* Mapping from basenames to full filenames *)
 type registry = string SMap.t ref
@@ -42,15 +43,15 @@ module Dir = struct
     { path; files = Array.to_list (readdir_compat path) }
 end
 
-let dirs = ref []
+let dirs = ref RevList.empty
 
 let reset () =
   files := SMap.empty;
   files_uncap := SMap.empty;
-  dirs := []
+  dirs := RevList.empty
 
-let get () = !dirs
-let get_paths () = List.map Dir.path !dirs
+let get () = RevList.to_list !dirs
+let get_paths () = RevList.to_list (RevList.map Dir.path !dirs)
 
 let add dir =
   let add_file base =
@@ -59,13 +60,13 @@ let add dir =
     files_uncap := SMap.add (String.uncapitalize_ascii base) fn !files_uncap;
   in
   List.iter add_file dir.Dir.files;
-  dirs := dir :: !dirs
+  dirs := RevList.add_at_end dir !dirs
 
 let remove_dir dir =
-  let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
-  if new_dirs <> !dirs then begin
+  let new_dirs = RevList.filter (fun d -> Dir.path d <> dir) !dirs in
+  if RevList.compare_length new_dirs !dirs <> 0 then begin
     reset ();
-    List.iter add (List.rev new_dirs)
+    List.iter add (List.rev (RevList.to_list new_dirs))
   end
 
 let add_dir dir = add (Dir.create dir)
