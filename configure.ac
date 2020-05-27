@@ -527,7 +527,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
   [sunc-*],
     [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
-    [CPP="$CC -nologo -EP"];
+    [CPP="$CC -nologo -EP"],
 #  TODO: why can we not use $CPP in multicore, fix this?
   [CPP="$CC -E -P"])
 
