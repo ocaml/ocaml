@@ -1448,7 +1448,16 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let type_immediate =
     (* Typedecl_immediacy.compute_decl never raises *)
     Typedecl_immediacy.compute_decl env decl in
-  let decl = {decl with type_variance; type_immediate} in
+  let type_separability =
+    try Typedecl_separability.compute_decl env decl
+    with Typedecl_separability.Error (loc, err) ->
+      raise (Error (loc, Separability err)) in
+  let decl =
+    {decl with
+     type_variance;
+     type_immediate;
+     type_separability;
+    } in
   Ctype.end_def();
   generalize_decl decl;
   {
