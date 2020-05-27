@@ -271,7 +271,6 @@ let mk_not dbg cmm =
       (* 1 -> 3, 3 -> 1 *)
       Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
 
-
 let mk_compare_ints dbg a1 a2 =
   match (a1,a2) with
   | Cconst_int (c1, _), Cconst_int (c2, _) ->
@@ -289,6 +288,25 @@ let mk_compare_ints dbg a1 a2 =
           let op2 = Cop(Ccmpi(Clt), [a1; a2], dbg) in
           tag_int(sub_int op1 op2 dbg) dbg))
     end
+
+let mk_compare_floats dbg a1 a2 =
+  bind "float_cmp" a1 (fun a1 ->
+    bind "float_cmp" a2 (fun a2 ->
+      let op1 = Cop(Ccmpf(CFgt), [a1; a2], dbg) in
+      let op2 = Cop(Ccmpf(CFlt), [a1; a2], dbg) in
+      let op3 = Cop(Ccmpf(CFeq), [a1; a1], dbg) in
+      let op4 = Cop(Ccmpf(CFeq), [a2; a2], dbg) in
+      (* If both operands a1 and a2 are not NaN, then op3 = op4 = 1,
+         and the result is op1 - op2.
+         If at least one of the operands is NaN,
+         then op1 = op2 = 0, and the result is op3 - op4,
+         which orders NaN before other values.
+         To detect if the operand is NaN, we use the property:
+         for all x, NaN is not equal to x, even if x is NaN.
+         Therefore, op3 is 0 if and only if a1 is NaN,
+         and op4 is 0 if and only if a2 is NaN.
+         See also caml_float_compare_unboxed in runtime/floats.c  *)
+      tag_int (add_int (sub_int op1 op2 dbg) (sub_int op3 op4 dbg) dbg) dbg))
 
 let create_loop body dbg =
   let cont = Lambda.next_raise_count () in
