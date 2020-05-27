@@ -1193,6 +1193,7 @@ module RevList = struct
   let exists = List.exists
   let filter = List.filter
   let filter_map = List.filter_map
+  let rev_iter = List.iter
   let snoc x l = x :: l
   let append l l' = List.append l' l
   let concat l = List.concat (List.rev l)

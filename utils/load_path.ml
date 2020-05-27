@@ -66,7 +66,7 @@ let remove_dir dir =
   let new_dirs = RevList.filter (fun d -> Dir.path d <> dir) !dirs in
   if RevList.compare_length new_dirs !dirs <> 0 then begin
     reset ();
-    List.iter add (List.rev (RevList.to_list new_dirs))
+    RevList.rev_iter add new_dirs
   end
 
 let add_dir dir = add (Dir.create dir)

@@ -696,6 +696,8 @@ module RevList : sig
   val map : ('a -> 'b) -> 'a t -> 'b t
   val filter : ('a -> bool) -> 'a t -> 'a t
   val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+  val rev_iter : ('a -> unit) -> 'a t -> unit
+  (** Iterates on the list in {e reverse} order. *)
 
   val snoc : 'a -> 'a t -> 'a t
   (** Add an element at the {e end} of the list. *)
