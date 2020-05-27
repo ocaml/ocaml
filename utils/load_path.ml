@@ -60,7 +60,7 @@ let add dir =
     files_uncap := SMap.add (String.uncapitalize_ascii base) fn !files_uncap;
   in
   List.iter add_file dir.Dir.files;
-  dirs := RevList.add_at_end dir !dirs
+  dirs := RevList.snoc dir !dirs
 
 let remove_dir dir =
   let new_dirs = RevList.filter (fun d -> Dir.path d <> dir) !dirs in

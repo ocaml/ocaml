@@ -697,7 +697,7 @@ module RevList : sig
   val filter : ('a -> bool) -> 'a t -> 'a t
   val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 
-  val add_at_end : 'a -> 'a t -> 'a t
+  val snoc : 'a -> 'a t -> 'a t
   (** Add an element at the {e end} of the list. *)
 
   val append : 'a t -> 'a t -> 'a t
