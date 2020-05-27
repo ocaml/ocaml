@@ -811,7 +811,6 @@ typing/parmatch.cmx : \
 typing/parmatch.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
-    typing/patterns.cmi \
     parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/env.cmi \

@@ -1656,7 +1656,7 @@ let divide_constant ctx m =
 (* Matching against a constructor *)
 
 let get_key_constr = function
-  | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr.cstr_tag
+  | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr
   | _ -> assert false
 
 let get_pat_args_constr p rem =
@@ -1693,7 +1693,7 @@ let get_expr_args_constr ~scopes head (arg, _mut) rem =
 let divide_constructor ~scopes ctx pm =
   divide
     (get_expr_args_constr ~scopes)
-    ( = )
+    (fun cstr1 cstr2 -> Types.equal_tag cstr1.cstr_tag cstr2.cstr_tag)
     get_key_constr
     get_pat_args_constr
     ctx pm
@@ -2498,15 +2498,14 @@ let rec list_as_pat = function
   | pat :: rem -> { pat with pat_desc = Tpat_or (pat, list_as_pat rem, None) }
 
 let complete_pats_constrs = function
-  | p :: _ as pats ->
-      (* We (indirectly) call this function
-         from [combine_constructor], and nowhere else.
-         So we know patterns have been fully simplified. *)
-      let p_simple = match (Patterns.General.view p).pat_desc with
-        | #Patterns.Simple.view as simple -> { p with pat_desc = simple }
-        | _ -> invalid_arg "complete_pats_constrs" in
-      List.map (pat_of_constr p)
-        (complete_constrs p_simple (List.map get_key_constr pats))
+  | constr :: _ as constrs ->
+      let tag_of_constr constr =
+        constr.pat_desc.cstr_tag in
+      let pat_of_constr cstr =
+        let open Patterns.Head in
+        to_omega_pattern { constr with pat_desc = Construct cstr } in
+      List.map pat_of_constr
+        (complete_constrs constr (List.map tag_of_constr constrs))
   | _ -> assert false
 
 (*
@@ -2648,9 +2647,9 @@ let combine_constant loc arg cst partial ctx def
 let split_cases tag_lambda_list =
   let rec split_rec = function
     | [] -> ([], [])
-    | (cstr, act) :: rem -> (
+    | (cstr_tag, act) :: rem -> (
         let consts, nonconsts = split_rec rem in
-        match cstr with
+        match cstr_tag with
         | Cstr_constant n -> ((n, act) :: consts, nonconsts)
         | Cstr_block n -> (consts, (n, act) :: nonconsts)
         | Cstr_unboxed -> (consts, (0, act) :: nonconsts)
@@ -2663,9 +2662,9 @@ let split_cases tag_lambda_list =
 let split_extension_cases tag_lambda_list =
   let rec split_rec = function
     | [] -> ([], [])
-    | (cstr, act) :: rem -> (
+    | (cstr_tag, act) :: rem -> (
         let consts, nonconsts = split_rec rem in
-        match cstr with
+        match cstr_tag with
         | Cstr_extension (path, true) -> ((path, act) :: consts, nonconsts)
         | Cstr_extension (path, false) -> (consts, (path, act) :: nonconsts)
         | _ -> assert false
@@ -2674,13 +2673,15 @@ let split_extension_cases tag_lambda_list =
   split_rec tag_lambda_list
 
 let combine_constructor loc arg pat_env cstr partial ctx def
-    (tag_lambda_list, total1, pats) =
+    (descr_lambda_list, total1, pats) =
+  let tag_lambda (cstr, act) = (cstr.cstr_tag, act) in
   match cstr.cstr_tag with
   | Cstr_extension _ ->
       (* Special cases for extensions *)
       let fail, local_jumps = mk_failaction_neg partial ctx def in
       let lambda1 =
-        let consts, nonconsts = split_extension_cases tag_lambda_list in
+        let consts, nonconsts =
+          split_extension_cases (List.map tag_lambda descr_lambda_list) in
         let default, consts, nonconsts =
           match fail with
           | None -> (
@@ -2715,19 +2716,23 @@ let combine_constructor loc arg pat_env cstr partial ctx def
       (lambda1, Jumps.union local_jumps total1)
   | _ ->
       (* Regular concrete type *)
-      let ncases = List.length tag_lambda_list
+      let ncases = List.length descr_lambda_list
       and nconstrs = cstr.cstr_consts + cstr.cstr_nonconsts in
       let sig_complete = ncases = nconstrs in
       let fail_opt, fails, local_jumps =
         if sig_complete then
           (None, [], Jumps.empty)
         else
-          mk_failaction_pos partial pats ctx def
+          let constrs =
+            List.map2 (fun (constr, _act) p -> { p with pat_desc = constr })
+              descr_lambda_list pats in
+          mk_failaction_pos partial constrs ctx def
       in
-      let tag_lambda_list = fails @ tag_lambda_list in
-      let consts, nonconsts = split_cases tag_lambda_list in
+      let descr_lambda_list = fails @ descr_lambda_list in
+      let consts, nonconsts =
+        split_cases (List.map tag_lambda descr_lambda_list) in
       let lambda1 =
-        match (fail_opt, same_actions tag_lambda_list) with
+        match (fail_opt, same_actions descr_lambda_list) with
         | None, Some act -> act (* Identical actions, no failure *)
         | _ -> (
             match
