@@ -1919,7 +1919,9 @@ let occur_univar env ty =
                    corresponds to type variables that do not occur in the
                    definition (expansion would erase them completely).
                    The type-checker consistently ignores type expressions
-                   in this position. *)
+                   in this position. Physical expansion, as done in `occur`,
+                   would be costly here, since we need to check inside
+                   object and variant types too. *)
                 if not Variance.(eq v null) then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
