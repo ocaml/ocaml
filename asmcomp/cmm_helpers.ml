@@ -283,9 +283,11 @@ let mk_compare_ints dbg a1 a2 =
   | Cconst_natint (c1, _), Cconst_int (c2, _) ->
      int_const dbg Nativeint.(compare c1 (of_int c2))
   | a1, a2 -> begin
-      let op1 = Cop(Ccmpi(Cgt), [a1; a2], dbg) in
-      let op2 = Cop(Ccmpi(Clt), [a1; a2], dbg) in
-      tag_int(sub_int op1 op2 dbg) dbg
+      bind "int_cmp" a1 (fun a1 ->
+        bind "int_cmp" a2 (fun a2 ->
+          let op1 = Cop(Ccmpi(Cgt), [a1; a2], dbg) in
+          let op2 = Cop(Ccmpi(Clt), [a1; a2], dbg) in
+          tag_int(sub_int op1 op2 dbg) dbg))
     end
 
 let create_loop body dbg =
