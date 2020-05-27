@@ -434,11 +434,9 @@ defined in the include file "caml/mlvalues.h", along with macros to
 manipulate values of that type. An object of type "value" is either:
 \begin{itemize}
 \item an unboxed integer;
-\item a pointer to a block inside the heap (such as the blocks
-allocated through one of the \verb"caml_alloc_*" functions below);
-\item a pointer to an object outside the heap (e.g., a pointer to a block
-allocated by "malloc", or to a C variable).
-   %%% FIXME will change in 4.02.0 (?)
+\item or a pointer to a block inside the heap,
+allocated through one of the \verb"caml_alloc_*" functions described
+in section~\ref{ss:c-block-allocation}.
 \end{itemize}
 
 \subsection{ss:c-int}{Integer values}
@@ -477,21 +475,34 @@ floating-point numbers.}
 
 \subsection{ss:c-outside-head}{Pointers outside the heap}
 
-Any word-aligned pointer to an address outside the heap can be safely
-cast to and from the type "value". This includes pointers returned by
-"malloc", and pointers to C variables (of size at least one word)
-obtained with the \verb'&' operator.
-   %%% FIXME will change in 4.02.0 (?)
+In earlier versions of OCaml, it was possible to use
+word-aligned pointers to addresses outside the heap as OCaml values,
+just by casting the pointer to type "value".  Starting with OCaml
+4.11, this usage is obsolete and will stop being supported soon.
 
-Caution: if a pointer returned by "malloc" is cast to the type "value"
-and returned to OCaml, explicit deallocation of the pointer using
-"free" is potentially dangerous, because the pointer may still be
-accessible from the OCaml world.  Worse, the memory space deallocated
-by "free" can later be reallocated as part of the OCaml heap; the
-pointer, formerly pointing outside the OCaml heap, now points inside
-the OCaml heap, and this can crash the garbage collector.  To avoid
-these problems, it is preferable to wrap the pointer in a OCaml block
-with tag "Abstract_tag" or "Custom_tag".
+The correct way to manipulate pointers to out-of-heap blocks from
+OCaml is to store those pointers in OCaml blocks with tag
+"Abstract_tag" or "Custom_tag", then use the blocks as the OCaml
+values.
+
+Here is an example of encapsulation of out-of-heap pointers of C type
+"ty *" inside "Abstract_tag" blocks.  Section~\ref{s:c-intf-example}
+gives a more complete example using "Custom_tag" blocks.
+\begin{verbatim}
+/* Create an OCaml value encapsulating the pointer p */
+static value val_of_typtr(ty * p)
+{
+  value v = caml_alloc(1, Abstract_tag);
+  *((ty **) Data_abstract_val(v)) = p;
+  return v;
+}
+
+/* Extract the pointer encapsulated in the given OCaml value */
+static ty * typtr_of_val(value v)
+{
+  return *((ty **) Data_abstract_val(v));
+}
+\end{verbatim}
 
 \section{s:c-ocaml-datatype-repr}{Representation of OCaml data types}
 
