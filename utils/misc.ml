@@ -1180,3 +1180,20 @@ module Magic_number = struct
            | Error err -> Error (Unexpected_error err)
            | Ok () -> Ok info
 end
+
+module RevList = struct
+  type 'a t = 'a list
+
+  let empty = []
+  let to_list = List.rev
+  let of_list = List.rev
+  let length = List.length
+  let compare_length = List.compare_lengths
+  let map = List.map
+  let exists = List.exists
+  let filter = List.filter
+  let filter_map = List.filter_map
+  let add_at_end x l = x :: l
+  let append l l' = List.append l' l
+  let concat l = List.concat (List.rev l)
+end

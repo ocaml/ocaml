@@ -682,3 +682,24 @@ module Magic_number : sig
 
   val all_kinds : kind list
 end
+
+module RevList : sig
+  type 'a t
+  (** Lists with an efficient "cons" at the end of the list. *)
+
+  val empty : 'a t
+  val to_list : 'a t -> 'a list
+  val of_list : 'a list -> 'a t
+  val length : 'a t -> int
+  val compare_length : 'a t -> 'b t -> int
+  val exists : ('a -> bool) -> 'a t -> bool
+  val map : ('a -> 'b) -> 'a t -> 'b t
+  val filter : ('a -> bool) -> 'a t -> 'a t
+  val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+
+  val add_at_end : 'a -> 'a t -> 'a t
+  (** Add an element at the {e end} of the list. *)
+
+  val append : 'a t -> 'a t -> 'a t
+  val concat : 'a t list -> 'a t
+end
