@@ -75,6 +75,13 @@ let init l =
   reset ();
   List.iter add_dir (List.rev l)
 
+let add dir =
+  let new_dirs = RevList.snoc dir !dirs in
+  reset ();
+  RevList.rev_iter add new_dirs
+
+let add_dir dir = add (Dir.create dir)
+
 let is_basename fn = Filename.basename fn = fn
 
 let find fn =
