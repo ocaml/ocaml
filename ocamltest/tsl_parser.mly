@@ -33,7 +33,7 @@ let mkenvstmt envstmt =
 
 %token TSL_BEGIN_C_STYLE TSL_END_C_STYLE
 %token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
-%token COMA
+%token COMMA
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
@@ -67,7 +67,7 @@ with_environment_modifiers:
 
 opt_environment_modifiers:
 | { [] }
-| opt_environment_modifiers COMA identifier { $3::$1 }
+| opt_environment_modifiers COMMA identifier { $3::$1 }
 
 env_item:
 | identifier EQUAL string

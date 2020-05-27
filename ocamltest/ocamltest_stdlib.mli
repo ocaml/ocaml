@@ -46,7 +46,7 @@ end
 module Sys : sig
   include module type of Sys
   val file_is_empty : string -> bool
-  val run_system_command : string -> unit
+  val run_system_command : string -> string list -> unit
   val make_directory : string -> unit
   val string_of_file : string -> string
   val copy_chan : in_channel -> out_channel -> unit
@@ -56,4 +56,6 @@ module Sys : sig
   val with_chdir : string -> (unit -> 'a) -> 'a
   val getenv_with_default_value : string -> string -> string
   val safe_getenv : string -> string
+  val with_input_file : ?bin:bool -> string -> (in_channel -> 'a) -> 'a
+  val with_output_file : ?bin:bool -> string -> (out_channel -> 'a) -> 'a
 end
