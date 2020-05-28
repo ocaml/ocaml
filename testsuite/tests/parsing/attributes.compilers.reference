@@ -276,6 +276,8 @@
             module_expr (attributes.ml[55,728+16]..[55,728+19])
               Pmod_ident "Int" (attributes.ml[55,728+16]..[55,728+19])
           core_type (attributes.ml[55,728+22]..[55,728+30])
+            attribute "foo"
+              []
             Ptyp_package "T" (attributes.ml[55,728+22]..[55,728+23])
             []
     ]
@@ -292,6 +294,8 @@
             module_expr (attributes.ml[57,761+16]..[57,761+19])
               Pmod_ident "Int" (attributes.ml[57,761+16]..[57,761+19])
           core_type (attributes.ml[57,761+22]..[57,761+48])
+            attribute "foo"
+              []
             Ptyp_package "T" (attributes.ml[57,761+22]..[57,761+23])
             [
               with type "t" (attributes.ml[57,761+34]..[57,761+35])
