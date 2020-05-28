@@ -468,3 +468,16 @@ external idub : iub -> iub = "%identity";;
 type iub = I of int [@@unboxed]
 external idub : iub -> iub = "%identity"
 |}];;
+
+(* #9607: separability was not computed on with-constraints *)
+module type T  = sig type 'k t end
+module M : T with type 'k t = string = struct
+  type 'k t = string
+end
+type t = T : 'k M.t -> t [@@unboxed]
+
+[%%expect{|
+module type T = sig type 'k t end
+module M : sig type 'k t = string end
+type t = T : 'k M.t -> t [@@unboxed]
+|}];;
