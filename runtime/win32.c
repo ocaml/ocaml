@@ -39,6 +39,9 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#if defined(DEBUG) || defined(NATIVE_CODE)
+#include <dbghelp.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -1157,3 +1160,61 @@ int64_t caml_time_counter(void)
   QueryPerformanceCounter(&now);
   return (now.QuadPart * frequency.QuadPart + clock_offset.QuadPart);
 }
+
+#if defined(DEBUG) || defined(NATIVE_CODE)
+void caml_print_trace(void)
+{
+  CONTEXT context;
+  STACKFRAME64 frame;
+  HANDLE hProcess = GetCurrentProcess();
+  HANDLE hThread = GetCurrentThread();
+  static int symbols_loaded = 0;
+  int i = 0;
+
+  memset(&context, 0, sizeof(CONTEXT));
+  memset(&frame, 0, sizeof(STACKFRAME64));
+
+  /* SymCleanup at present is never called */
+  if (!symbols_loaded && SymInitialize(hProcess, NULL, TRUE)) {
+    fprintf(stderr, "Loaded symbols\n");
+    symbols_loaded = 1;
+  }
+
+  context.ContextFlags = CONTEXT_FULL;
+  RtlCaptureContext(&context);
+
+#ifdef _M_X64
+  frame.AddrPC.Mode =
+    frame.AddrFrame.Mode = frame.AddrStack.Mode = AddrModeFlat;
+  frame.AddrPC.Offset = context.Rip;
+  frame.AddrFrame.Offset = context.Rsp;
+  frame.AddrStack.Offset = context.Rsp;
+#else
+#error Unsupported Windows architecture
+#endif
+
+  /* For the symbols to be populated, compile with ocamlopt -g and run
+     `cv2pdb prog.exe` to generate prog.pdb. The output of this stack trace is
+     limited, probably because we make no effort to emit correct DWARF
+     information on Windows.
+
+     cv2pdb can be downloaded from https://github.com/rainers/cv2pdb */
+  while (i++ < 10 && StackWalk64(IMAGE_FILE_MACHINE_AMD64,
+                                 hProcess, hThread,
+                                 &frame, &context, NULL,
+                                 SymFunctionTableAccess64, SymGetModuleBase64,
+                                 NULL)) {
+    char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(wchar_t)];
+    PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
+    DWORD64 offset = 0;
+    char *name;
+    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+    symbol->MaxNameLen = MAX_SYM_NAME;
+    if (SymFromAddr(hProcess, frame.AddrPC.Offset, &offset, symbol))
+      name = symbol->Name;
+    else
+      name = "???";
+    caml_gc_log("[%02d] %s\n", i, name);
+  }
+}
+#endif
