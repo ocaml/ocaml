@@ -247,6 +247,8 @@
 
 #undef HAS_EXECVPE
 
+#undef HAS_POSIX_SPAWN
+
 #undef HAS_FFS
 #undef HAS_BITSCANFORWARD
 
