@@ -104,6 +104,10 @@ Working version
   (Gabriel Scherer and Jeremy Yallop and Xavier Leroy,
    report by Twitter user @st_toHKR through Jun Furuse)
 
+- #9613: correctly handle arguments of integer and float compare that
+  have side-effects after inlining and un-anf.
+  (Greta Yorsh and Stephen Dolan, review by Leo White and Gabriel Scherer)
+
 OCaml 4.11
 ----------
 
