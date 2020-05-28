@@ -104,10 +104,6 @@ Working version
   (Gabriel Scherer and Jeremy Yallop and Xavier Leroy,
    report by Twitter user @st_toHKR through Jun Furuse)
 
-- #9613: correctly handle arguments of integer and float compare that
-  have side-effects after inlining and un-anf.
-  (Greta Yorsh and Stephen Dolan, review by Leo White and Gabriel Scherer)
-
 OCaml 4.11
 ----------
 
@@ -465,7 +461,8 @@ OCaml 4.11
 - #7927: refactor val_env met_env par_env to class_env
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
-- #2324: Replace caml_int_compare and caml_float_compare with primitives.
+- #2324, #9613: Replace the caml_int_compare and caml_float_compare
+  (C functions) with primitives.
   (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
 
 - #9246: Avoid rechecking functor applications
