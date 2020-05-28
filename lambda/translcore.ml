@@ -724,22 +724,24 @@ and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
      : Lambda.lambda)
 
 and transl_function0
-      ~scopes loc return untuplify_fn repr partial (param:Ident.t) cases =
+      ~scopes loc return untuplify_fn max_arity
+      repr partial (param:Ident.t) cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
         partial = partial'; }; exp_env; exp_type} as exp}]
-    when Parmatch.inactive ~partial pat ->
+    when max_arity > 1 && Parmatch.inactive ~partial pat ->
       let kind = value_kind pat.pat_env pat.pat_type in
       let return_kind = function_return_value_kind exp_env exp_type in
       let ((_, params, return), body) =
-        transl_function0 ~scopes exp.exp_loc return_kind false
+        transl_function0 ~scopes exp.exp_loc return_kind false (max_arity - 1)
           repr partial' param' cases
       in
       ((Curried, (param, kind) :: params, return),
        Matching.for_function ~scopes loc None (Lvar param)
          [pat, body] partial)
-  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
+  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
+    when untuplify_fn && List.length pl <= max_arity ->
       begin try
         let size = List.length pl in
         let pats_expr_list =
@@ -800,7 +802,8 @@ and transl_function ~scopes e param cases partial =
       (function repr ->
          let pl = push_defaults e.exp_loc [] cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
-         transl_function0 ~scopes e.exp_loc return_kind !Clflags.native_code
+         transl_function0 ~scopes e.exp_loc return_kind
+           !Clflags.native_code (Lambda.max_arity())
            repr partial param pl)
   in
   let attr = default_function_attribute in
@@ -1093,7 +1096,8 @@ and transl_letop ~scopes loc env let_ ands param case partial =
       event_function ~scopes case.c_rhs
         (function repr ->
            transl_function0 ~scopes case.c_rhs.exp_loc return_kind
-             !Clflags.native_code repr partial param [case])
+             !Clflags.native_code (Lambda.max_arity())
+             repr partial param [case])
     in
     let attr = default_function_attribute in
     let loc = of_location ~scopes case.c_rhs.exp_loc in

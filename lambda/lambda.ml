@@ -893,5 +893,8 @@ let function_is_curried func =
   | Curried -> true
   | Tupled -> false
 
+let max_arity () =
+  if !Clflags.native_code then 126 else max_int
+
 let reset () =
   raise_count := 0
