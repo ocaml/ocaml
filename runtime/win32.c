@@ -50,6 +50,7 @@
 #include "caml/sys.h"
 #include "caml/winsupport.h"
 #include "caml/startup_aux.h"
+#include "caml/platform.h"
 
 #include "caml/config.h"
 
@@ -1096,5 +1097,11 @@ int caml_thread_setname(wchar_t *name)
 
 void caml_init_os_params(void)
 {
+  SYSTEM_INFO si;
+
+  /* Get the system page size */
+  GetSystemInfo(&si);
+  caml_sys_pagesize = si.dwPageSize;
+
   return;
 }
