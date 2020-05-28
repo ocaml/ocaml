@@ -49,6 +49,7 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/winsupport.h"
+#include "caml/startup_aux.h"
 
 #include "caml/config.h"
 
