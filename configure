@@ -13486,6 +13486,14 @@ fi
 
 
 
+ac_fn_c_check_header_mongrel "$LINENO" "sys/mman.h" "ac_cv_header_sys_mman_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_mman_h" = xyes; then :
+  $as_echo "#define HAS_SYS_MMAN_H 1" >>confdefs.h
+
+fi
+
+
+
 # Checks for types
 
 ## off_t
