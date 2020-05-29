@@ -61,9 +61,9 @@ void caml_init_atom_table(void)
 
   for(i = 0; i < 256; i++) {
 #ifdef NATIVE_CODE
-    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_white);
+    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_black);
 #else
-    caml_atom_table[i] = Make_header(0, i, Caml_white);
+    caml_atom_table[i] = Make_header(0, i, Caml_black);
 #endif
   }
   if (caml_page_table_add(In_static_data,
