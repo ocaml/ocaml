@@ -1780,3 +1780,13 @@ class c : object method m : ?x:int -> unit -> int method n : int end
 class d :
   object method m : ?x:int -> unit -> int method n : int method n' : int end
 |}]
+
+(* #1132 *)
+let rec foo : 'a . 'a -> 'd = fun x -> x
+[%%expect{|
+Line 1, characters 30-40:
+1 | let rec foo : 'a . 'a -> 'd = fun x -> x
+                                  ^^^^^^^^^^
+Error: This definition has type 'b -> 'b which is less general than
+         'a. 'a -> 'c
+|}]
