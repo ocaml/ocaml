@@ -480,7 +480,7 @@ word-aligned pointers to addresses outside the heap as OCaml values,
 just by casting the pointer to type "value".  Starting with OCaml
 4.11, this usage is obsolete and will stop being supported soon.
 
-The correct way to manipulate pointers to out-of-heap blocks from
+A correct way to manipulate pointers to out-of-heap blocks from
 OCaml is to store those pointers in OCaml blocks with tag
 "Abstract_tag" or "Custom_tag", then use the blocks as the OCaml
 values.
@@ -503,6 +503,40 @@ static ty * typtr_of_val(value v)
   return *((ty **) Data_abstract_val(v));
 }
 \end{verbatim}
+Alternatively, out-of-heap pointers can be treated as ``native''
+integers, that is, boxed 32-bit integers on a 32-bit platform and
+boxed 64-bit integers on a 64-bit platform.
+\begin{verbatim}
+/* Create an OCaml value encapsulating the pointer p */
+static value val_of_typtr(ty * p)
+{
+  return caml_copy_nativeint((intnat) p);
+}
+
+/* Extract the pointer encapsulated in the given OCaml value */
+static ty * typtr_of_val(value v)
+{
+  return (ty *) Nativeint_val(v);
+}
+\end{verbatim}
+For pointers that are at least 2-aligned (the low bit is guaranteed to
+be zero), we have yet another valid representation as an OCaml tagged
+integer.
+\begin{verbatim}
+/* Create an OCaml value encapsulating the pointer p */
+static value val_of_typtr(ty * p)
+{
+  assert ((uintptr_t) p & 1 == 0);  /* check correct alignment */
+  return (value) p | 1;
+}
+
+/* Extract the pointer encapsulated in the given OCaml value */
+static ty * typtr_of_val(value v)
+{
+  return (ty *) (v & ~1);
+}
+\end{verbatim}
+
 
 \section{s:c-ocaml-datatype-repr}{Representation of OCaml data types}
 
