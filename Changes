@@ -82,6 +82,12 @@ Working version
   that requires it is now included in the error message.
   (Nicolás Ojeda Bär, review by Vincent Laviron)
 
+- #9615: Attach package type attributes to core_type.
+  When parsing constraints on a first class module, attributes found after the
+  module type were parsed but ignored. Now they are attached to the
+  corresponding core_type.
+  (Etienne Millon, review by Thomas Refis)
+
 ### Internal/compiler-libs changes:
 
 - #9493, #9520, #9563, #9599: refactor the pattern-matching compiler
