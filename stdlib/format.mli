@@ -398,6 +398,8 @@ val set_margin : int -> unit
 (** [pp_set_margin ppf d] sets the right margin to [d] (in characters):
   the pretty-printer splits lines that overflow the right margin according to
   the break hints given.
+  Setting the margin to [d] means that the formatting engine aims at
+  printing at most [d-1] characters by line.
   Nothing happens if [d] is smaller than 2.
   If [d] is too large, the right margin is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
