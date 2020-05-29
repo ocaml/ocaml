@@ -133,6 +133,10 @@ type formatter
   not rule the policy of inner boxes. For instance, if a vertical box is
   nested in an horizontal box, all break hints within the vertical box will
   split the line.
+
+  Moreover, opening a box after the {{!maxindent}maximum indentation limit}
+  splits the line.
+
 *)
 
 val pp_open_box : formatter -> int -> unit
@@ -415,7 +419,7 @@ val pp_get_margin : formatter -> unit -> int
 val get_margin : unit -> int
 (** Returns the position of the right margin. *)
 
-(** {1 Maximum indentation limit} *)
+(** {1:maxindent Maximum indentation limit} *)
 
 val pp_set_max_indent : formatter -> int -> unit
 val set_max_indent : int -> unit
@@ -441,6 +445,9 @@ val set_max_indent : int -> unit
   ["123456789"] and ["123456789A"] .
   Note also that vertical boxes never fit on a line whereas horizontal boxes
   always fully fit on the current line.
+  Opening a box may split a line whereas the contents may have fit.
+  If this behavior is problematic, it can be curtailed by setting the maximum
+  indentation limit to [margin - 1].
 
   Nothing happens if [d] is smaller than 2.
 
