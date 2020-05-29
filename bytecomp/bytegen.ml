@@ -158,7 +158,6 @@ let rec push_dummies n k = match n with
 
 type rhs_kind =
   | RHS_block of int
-  | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
   | RHS_nonrec
   | RHS_function of int * int
@@ -189,16 +188,12 @@ let rec size_of_lambda env = function
   | Llet(_str, _k, id, arg, body) ->
       size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
   (* See the Lletrec case of comp_expr *)
-  | Lletrec(bindings, body) when
-      List.for_all (function (_, Lfunction _) -> true | _ -> false) bindings ->
-      (* let rec of functions *)
+  | Lletrec([id, Lfunction _] as bindings, body) ->
       let fv =
         Ident.Set.elements (free_variables (Lletrec(bindings, lambda_unit))) in
       (* See Instruct(CLOSUREREC) in interp.c *)
-      let blocksize = List.length bindings * 2 - 1 + List.length fv in
-      let offsets = List.mapi (fun i (id, _e) -> (id, i * 2)) bindings in
-      let env = List.fold_right (fun (id, offset) env ->
-        Ident.add id (RHS_infix { blocksize; offset }) env) offsets env in
+      let blocksize = 1 + List.length fv in
+      let env = Ident.add id (RHS_block blocksize) env in
       size_of_lambda env body
   | Lletrec(bindings, body) ->
       let env = List.fold_right
@@ -595,81 +590,62 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
+  | Lletrec([id, Lfunction {params; body=fun_body}] as decl, body) ->
+      let fv =
+        Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
+      let lbl = new_label() in
+      let to_compile =
+        { params = List.map fst params; body = fun_body; label = lbl;
+          free_vars = fv; num_defs = 1; rec_vars = [id];
+          rec_pos = 0} in
+      Stack.push to_compile functions_to_compile;
+      comp_args env (List.map (fun n -> Lvar n) fv) sz
+        (Kclosurerec([lbl], List.length fv) ::
+         (comp_expr (add_var id (sz+1) env) body (sz+1)
+            (add_pop 1 cont)))
   | Lletrec(decl, body) ->
       let ndecl = List.length decl in
-      if List.for_all (function (_, Lfunction _) -> true | _ -> false)
-                      decl then begin
-        (* let rec of functions *)
-        let fv =
-          Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
-        let rec_idents = List.map (fun (id, _lam) -> id) decl in
-        let rec comp_fun pos = function
-            [] -> []
-          | (_id, Lfunction{params; body}) :: rem ->
-              let lbl = new_label() in
-              let to_compile =
-                { params = List.map fst params; body = body; label = lbl;
-                  free_vars = fv; num_defs = ndecl; rec_vars = rec_idents;
-                  rec_pos = pos} in
-              Stack.push to_compile functions_to_compile;
-              lbl :: comp_fun (pos + 1) rem
-          | _ -> assert false in
-        let lbls = comp_fun 0 decl in
-        comp_args env (List.map (fun n -> Lvar n) fv) sz
-          (Kclosurerec(lbls, List.length fv) ::
-            (comp_expr (add_vars rec_idents (sz+1) env) body (sz + ndecl)
-                       (add_pop ndecl cont)))
-      end else begin
-        let decl_size =
-          List.map (fun (id, exp) -> (id, exp, size_of_lambda Ident.empty exp))
-            decl in
-        let rec comp_init new_env sz = function
-          | [] -> comp_nonrec new_env sz ndecl decl_size
-          | (id, _exp, RHS_floatblock blocksize) :: rem ->
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy_float", 1) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_block blocksize) :: rem ->
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy", 1) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_infix { blocksize; offset }) :: rem ->
-              Kconst(Const_base(Const_int offset)) ::
-              Kpush ::
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy_infix", 2) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_function (blocksize,arity)) :: rem ->
-              Kconst(Const_base(Const_int arity)) ::
-              Kpush ::
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_nonrec) :: rem ->
-              Kconst(Const_base(Const_int 0)) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-        and comp_nonrec new_env sz i = function
-          | [] -> comp_rec new_env sz ndecl decl_size
-          | (_id, _exp, (RHS_block _ | RHS_infix _ |
-                         RHS_floatblock _ | RHS_function _))
-            :: rem ->
-              comp_nonrec new_env sz (i-1) rem
-          | (_id, exp, RHS_nonrec) :: rem ->
-              comp_expr new_env exp sz
-                (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
-        and comp_rec new_env sz i = function
-          | [] -> comp_expr new_env body sz (add_pop ndecl cont)
-          | (_id, exp, (RHS_block _ | RHS_infix _ |
-                        RHS_floatblock _ | RHS_function _))
-            :: rem ->
-              comp_expr new_env exp sz
-                (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
-                 comp_rec new_env sz (i-1) rem)
-          | (_id, _exp, RHS_nonrec) :: rem ->
-              comp_rec new_env sz (i-1) rem
-        in
-        comp_init env sz decl_size
-      end
+      let decl_size =
+        List.map (fun (id, exp) -> (id, exp, size_of_lambda Ident.empty exp))
+          decl in
+      let rec comp_init new_env sz = function
+        | [] -> comp_nonrec new_env sz ndecl decl_size
+        | (id, _exp, RHS_floatblock blocksize) :: rem ->
+            Kconst(Const_base(Const_int blocksize)) ::
+            Kccall("caml_alloc_dummy_float", 1) :: Kpush ::
+            comp_init (add_var id (sz+1) new_env) (sz+1) rem
+        | (id, _exp, RHS_block blocksize) :: rem ->
+            Kconst(Const_base(Const_int blocksize)) ::
+            Kccall("caml_alloc_dummy", 1) :: Kpush ::
+            comp_init (add_var id (sz+1) new_env) (sz+1) rem
+        | (id, _exp, RHS_function (blocksize,arity)) :: rem ->
+            Kconst(Const_base(Const_int arity)) ::
+            Kpush ::
+            Kconst(Const_base(Const_int blocksize)) ::
+            Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
+            comp_init (add_var id (sz+1) new_env) (sz+1) rem
+        | (id, _exp, RHS_nonrec) :: rem ->
+            Kconst(Const_base(Const_int 0)) :: Kpush ::
+            comp_init (add_var id (sz+1) new_env) (sz+1) rem
+      and comp_nonrec new_env sz i = function
+        | [] -> comp_rec new_env sz ndecl decl_size
+        | (_id, _exp, (RHS_block _ | RHS_floatblock _ | RHS_function _))
+          :: rem ->
+            comp_nonrec new_env sz (i-1) rem
+        | (_id, exp, RHS_nonrec) :: rem ->
+            comp_expr new_env exp sz
+              (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
+      and comp_rec new_env sz i = function
+        | [] -> comp_expr new_env body sz (add_pop ndecl cont)
+        | (_id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _))
+          :: rem ->
+            comp_expr new_env exp sz
+              (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
+               comp_rec new_env sz (i-1) rem)
+        | (_id, _exp, RHS_nonrec) :: rem ->
+            comp_rec new_env sz (i-1) rem
+      in
+      comp_init env sz decl_size
   | Lprim((Pidentity | Popaque), [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
