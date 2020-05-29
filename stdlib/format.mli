@@ -135,7 +135,7 @@ type formatter
   split the line.
 
   Moreover, opening a box after the {{!maxindent}maximum indentation limit}
-  splits the line.
+  splits the line whether or not the box would end up fitting on the line.
 
 *)
 
@@ -404,7 +404,7 @@ val set_margin : int -> unit
   the pretty-printer splits lines that overflow the right margin according to
   the break hints given.
   Setting the margin to [d] means that the formatting engine aims at
-  printing at most [d-1] characters by line.
+  printing at most [d-1] characters per line.
   Nothing happens if [d] is smaller than 2.
   If [d] is too large, the right margin is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
@@ -448,7 +448,8 @@ val set_max_indent : int -> unit
   always fully fit on the current line.
   Opening a box may split a line whereas the contents may have fit.
   If this behavior is problematic, it can be curtailed by setting the maximum
-  indentation limit to [margin - 1].
+  indentation limit to [margin - 1]. Note that setting the maximum indentation
+  limit to [margin] is invalid.
 
   Nothing happens if [d] is smaller than 2.
 

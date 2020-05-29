@@ -427,6 +427,10 @@ OCaml 4.11
   forward-compatible options for handling out-of-heap pointers.
   (Xavier Leroy, review by Mark Shinwell, David Allsopp and Florian Angeletti)
 
+- #9618: clarify the Format documentation on the margin and maximum indentation
+  limit
+  (Florian Angeletti, review by Josh Berdine)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
