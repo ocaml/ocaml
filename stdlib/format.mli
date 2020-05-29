@@ -150,7 +150,8 @@ val open_box : int -> unit
    A break hint splits the line if there is no more room on the line to
    print the remainder of the box.
 
-   Within this box, the pretty-printer emphasizes the box structure: a break
+   Within this box, the pretty-printer emphasizes the box structure:
+   if a structural box does not fit fully on a simple line, a break
    hint also splits the line if the splitting ``moves to the left''
    (i.e. the new line gets an indentation smaller than the one of the current
    line).
