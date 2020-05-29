@@ -153,7 +153,7 @@ static void realloc_gray_vals (void)
 void caml_darken (value v, value *p /* not used */)
 {
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-  if (Is_block (v) && !Is_young (v) && Wosize_val (v) > 0) {
+  if (Is_block (v) && !Is_young (v)) {
 #else
   if (Is_block (v) && Is_in_heap (v)) {
 #endif
@@ -237,9 +237,7 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
   child = Field (v, i);
 
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-  if (Is_block (child)
-        && ! Is_young (child)
-        && Wosize_val (child) > 0) {  /* Atoms never need to be marked. */
+  if (Is_block (child) && ! Is_young (child)) {
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
