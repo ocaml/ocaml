@@ -28,15 +28,54 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)
+#endif
+
 typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
 
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static int no_symlink = 0;
+static DWORD additional_symlink_flags = 0;
+
+// Developer Mode allows the creation of symlinks without elevation - see
+// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
+static BOOL IsDeveloperModeEnabled()
+{
+  HKEY hKey;
+  LSTATUS status;
+  DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
+
+  status = RegOpenKeyExW(
+    HKEY_LOCAL_MACHINE,
+    L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock",
+    0,
+    KEY_READ | KEY_WOW64_64KEY,
+    &hKey
+  );
+  if (status != ERROR_SUCCESS) {
+    return FALSE;
+  }
+
+  status = RegQueryValueExW(
+    hKey,
+    L"AllowDevelopmentWithoutDevLicense",
+    NULL,
+    NULL,
+    (LPBYTE)&developerModeRegistryValue,
+    &dwordSize
+  );
+  RegCloseKey(hKey);
+  if (status != ERROR_SUCCESS) {
+    return FALSE;
+  }
+  return developerModeRegistryValue != 0;
+}
 
 CAMLprim value unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
-  DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
+  DWORD flags;
   BOOLEAN result;
   LPWSTR source;
   LPWSTR dest;
@@ -49,10 +88,16 @@ again:
   }
 
   if (!pCreateSymbolicLink) {
-    pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW");
-    no_symlink = !pCreateSymbolicLink;
+    if (!(pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW"))) {
+      no_symlink = 1;
+    } else if (IsDeveloperModeEnabled()) {
+      additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    }
+
     goto again;
   }
+
+  flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0) | additional_symlink_flags;
 
   /* Copy source and dest outside the OCaml heap */
   source = caml_stat_strdup_to_utf16(String_val(osource));
@@ -80,6 +125,10 @@ CAMLprim value unix_has_symlink(value unit)
   CAMLparam1(unit);
   HANDLE hProcess = GetCurrentProcess();
   BOOL result = FALSE;
+
+  if (IsDeveloperModeEnabled()) {
+    CAMLreturn(Val_true);
+  }
 
   if (OpenProcessToken(hProcess, TOKEN_READ, &hProcess)) {
     LUID seCreateSymbolicLinkPrivilege;
