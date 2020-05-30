@@ -34,6 +34,10 @@ type (_, _) elt =
     Elt_fine : 'nat n -> ('l, 'nat * 'l) elt
   | Elt : 'nat n -> ('l, 'nat -> 'l) elt
 type _ t = Nil : nil t | Cons : ('x, 'fx) elt * 'x t -> 'fx t
+Line 9, characters 11-18:
+9 |   let Cons(Elt dim, _) = sh in ()
+               ^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 9, characters 6-22:
 9 |   let Cons(Elt dim, _) = sh in ()
           ^^^^^^^^^^^^^^^^

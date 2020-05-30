@@ -21,6 +21,10 @@ type 'fill either =
 let f (* : filled either -> string *) =
   fun (Either (Y a, N)) -> a;;
 [%%expect{|
+Line 2, characters 15-18:
+2 |   fun (Either (Y a, N)) -> a;;
+                   ^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 2, characters 2-28:
 2 |   fun (Either (Y a, N)) -> a;;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^

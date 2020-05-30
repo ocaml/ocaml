@@ -190,6 +190,10 @@ module S :
 let test_separation = function
   | S.(Sep), (S.(Sep,Sep), Sep) -> ();;
 [%%expect {|
+Line 2, characters 7-10:
+2 |   | S.(Sep), (S.(Sep,Sep), Sep) -> ();;
+           ^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 2, characters 27-30:
 2 |   | S.(Sep), (S.(Sep,Sep), Sep) -> ();;
                                ^^^
@@ -206,6 +210,10 @@ Error: Unbound constructor Ex
 let test_separation_3 = function
   | S.(Sep) -> s;;
 [%%expect {|
+Line 2, characters 7-10:
+2 |   | S.(Sep) -> s;;
+           ^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 Line 2, characters 15-16:
 2 |   | S.(Sep) -> s;;
                    ^

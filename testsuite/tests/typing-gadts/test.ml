@@ -64,6 +64,14 @@ module List =
   end
 ;;
 [%%expect{|
+Line 9, characters 10-20:
+9 |         | Cons (a,b) -> a
+              ^^^^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
+Line 12, characters 10-20:
+12 |         | Cons (a,b) -> b
+               ^^^^^^^^^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
 module List :
   sig
     type zero

@@ -1,0 +1,4 @@
+File "switch_opts.ml", line 275, characters 8-10:
+275 |       | Ag -> 1
+              ^^
+Warning 68: This GADT pattern-matching instantiated an external type variable.
