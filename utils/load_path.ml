@@ -13,7 +13,6 @@
 (**************************************************************************)
 
 module SMap = Misc.Stdlib.String.Map
-module RevList = Misc.RevList
 
 (* Mapping from basenames to full filenames *)
 type registry = string SMap.t ref
@@ -43,15 +42,15 @@ module Dir = struct
     { path; files = Array.to_list (readdir_compat path) }
 end
 
-let dirs = ref RevList.empty
+let dirs = ref []
 
 let reset () =
   files := SMap.empty;
   files_uncap := SMap.empty;
-  dirs := RevList.empty
+  dirs := []
 
-let get () = RevList.to_list !dirs
-let get_paths () = RevList.to_list (RevList.map Dir.path !dirs)
+let get () = List.rev !dirs
+let get_paths () = List.rev_map Dir.path !dirs
 
 let add_to_maps fn basenames files files_uncap =
   List.fold_left (fun (files, files_uncap) base ->
@@ -71,7 +70,7 @@ let add dir =
   in
   files := new_files;
   files_uncap := new_files_uncap;
-  dirs := RevList.snoc dir !dirs
+  dirs := dir :: !dirs
 
 let init l =
   reset ();
@@ -79,10 +78,10 @@ let init l =
   List.iter add_dir (List.rev l)
 
 let remove_dir dir =
-  let new_dirs = RevList.filter (fun d -> Dir.path d <> dir) !dirs in
-  if RevList.compare_length new_dirs !dirs <> 0 then begin
+  let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
+  if List.compare_lengths new_dirs !dirs <> 0 then begin
     reset ();
-    RevList.rev_iter add new_dirs
+    List.iter add new_dirs
   end
 
 (* General purpose version of function to add a new entry to load path: We only
@@ -96,7 +95,7 @@ let add dir =
   let first _ fn _ = Some fn in
   files := SMap.union first !files new_files;
   files_uncap := SMap.union first !files_uncap new_files_uncap;
-  dirs := RevList.snoc dir !dirs
+  dirs := dir :: !dirs
 
 let add_dir dir = add (Dir.create dir)
 
