@@ -114,7 +114,7 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #9493, #9520, #9563, #9599: refactor the pattern-matching compiler
+- #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 - #9604: refactoring of the ocamltest codebase.
