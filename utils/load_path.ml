@@ -53,14 +53,30 @@ let reset () =
 let get () = RevList.to_list !dirs
 let get_paths () = RevList.to_list (RevList.map Dir.path !dirs)
 
+let add_to_maps fn basenames files files_uncap =
+  List.fold_left (fun (files, files_uncap) base ->
+      let fn = fn base in
+      SMap.add base fn files,
+      SMap.add (String.uncapitalize_ascii base) fn files_uncap
+    ) (files, files_uncap) basenames
+
+(* Optimized version of [add] below, for use in [init] and [remove_dir]: since
+   we are starting from an empty cache, we can avoid checking whether a unit
+   name already exists in the cache simply by adding entries in reverse
+   order. *)
 let add dir =
-  let add_file base =
-    let fn = Filename.concat dir.Dir.path base in
-    files := SMap.add base fn !files;
-    files_uncap := SMap.add (String.uncapitalize_ascii base) fn !files_uncap;
+  let new_files, new_files_uncap =
+    add_to_maps (Filename.concat dir.Dir.path)
+      dir.Dir.files !files !files_uncap
   in
-  List.iter add_file dir.Dir.files;
+  files := new_files;
+  files_uncap := new_files_uncap;
   dirs := RevList.snoc dir !dirs
+
+let init l =
+  reset ();
+  let add_dir dir = add (Dir.create dir) in
+  List.iter add_dir (List.rev l)
 
 let remove_dir dir =
   let new_dirs = RevList.filter (fun d -> Dir.path d <> dir) !dirs in
@@ -69,16 +85,18 @@ let remove_dir dir =
     RevList.rev_iter add new_dirs
   end
 
-let add_dir dir = add (Dir.create dir)
-
-let init l =
-  reset ();
-  List.iter add_dir (List.rev l)
-
+(* General purpose version of function to add a new entry to load path: We only
+   add a basename to the cache if it is not already present in the cache, in
+   order to enforce left-to-right precedence. *)
 let add dir =
-  let new_dirs = RevList.snoc dir !dirs in
-  reset ();
-  RevList.rev_iter add new_dirs
+  let new_files, new_files_uncap =
+    add_to_maps (Filename.concat dir.Dir.path) dir.Dir.files
+      SMap.empty SMap.empty
+  in
+  let first _ fn _ = Some fn in
+  files := SMap.union first !files new_files;
+  files_uncap := SMap.union first !files_uncap new_files_uncap;
+  dirs := RevList.snoc dir !dirs
 
 let add_dir dir = add (Dir.create dir)
 
