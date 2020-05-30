@@ -69,19 +69,19 @@ let add dir =
       dir.Dir.files !files !files_uncap
   in
   files := new_files;
-  files_uncap := new_files_uncap;
-  dirs := dir :: !dirs
+  files_uncap := new_files_uncap
 
 let init l =
   reset ();
-  let add_dir dir = add (Dir.create dir) in
-  List.iter add_dir (List.rev l)
+  dirs := List.rev_map Dir.create l;
+  List.iter add !dirs
 
 let remove_dir dir =
   let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
   if List.compare_lengths new_dirs !dirs <> 0 then begin
     reset ();
-    List.iter add new_dirs
+    List.iter add new_dirs;
+    dirs := new_dirs
   end
 
 (* General purpose version of function to add a new entry to load path: We only
