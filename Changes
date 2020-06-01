@@ -346,6 +346,9 @@ OCaml 4.11
   warnings for consistency.
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
+- #7708, #9580: Ensure Stdlib documentation index refers to Stdlib.
+  (Stephen Dolan, review by Florian Angeletti, report by Hannes Mehnert)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
