@@ -546,7 +546,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
   cc_warnings='-Wall -Wdeclaration-after-statement'])
 
 AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
-  [yes,*|,*+dev*],
+  [yes,*|,*+dev*|,*+multicore*],
     [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:

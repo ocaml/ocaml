@@ -12492,7 +12492,7 @@ case $ocaml_cv_cc_vendor in #(
 esac
 
 case $enable_warn_error,4.10.0+multicore in #(
-  yes,*|,*+dev*) :
+  yes,*|,*+dev*|,*+multicore*) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
