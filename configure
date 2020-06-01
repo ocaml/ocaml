@@ -913,6 +913,7 @@ enable_flambda_invariants
 with_target_bindir
 enable_reserved_header_bits
 enable_stdlib_manpages
+enable_warn_error
 enable_force_safe_string
 enable_flat_float_array
 enable_function_sections
@@ -1593,6 +1594,7 @@ Optional Features:
                           headers for profiling info
   --disable-stdlib-manpages
                           do not build or install the library man pages
+  --enable-warn-error     treat C compiler warnings as errors
   --disable-force-safe-string
                           do not force strings to be safe
   --disable-flat-float-array
@@ -3248,6 +3250,12 @@ fi
 # Check whether --enable-stdlib-manpages was given.
 if test "${enable_stdlib_manpages+set}" = set; then :
   enableval=$enable_stdlib_manpages;
+fi
+
+
+# Check whether --enable-warn-error was given.
+if test "${enable_warn_error+set}" = set; then :
+  enableval=$enable_warn_error;
 fi
 
 
@@ -12610,20 +12618,25 @@ fi
 
 case $ocaml_cv_cc_vendor in #(
   xlc-*) :
-    outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i" ;; #(
+    outputobj='-o $(EMPTY)'
+    warn_error_flag=''
+    gcc_warnings='-qflag=i:i' ;; #(
   # all warnings enabled
   msvc-*) :
-    outputobj=-Fo; gcc_warnings="" ;; #(
+    outputobj='-Fo'
+    warn_error_flag='-WX'
+    gcc_warnings='' ;; #(
   *) :
     outputobj='-o $(EMPTY)'
-  gcc_warnings='-Wall -Wdeclaration-after-statement'
-  case 4.12.0+dev0-2020-04-22 in #(
-  *+dev*) :
-    gcc_warnings="$gcc_warnings -Werror" ;; #(
+  warn_error_flag='-Werror'
+  gcc_warnings='-Wall -Wdeclaration-after-statement' ;;
+esac
+
+case $enable_warn_error,4.12.0+dev0-2020-04-22 in #(
+  yes,*|,*+dev*) :
+    gcc_warnings="$gcc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
-esac
-   ;;
 esac
 
 # We select high optimization levels, provided we can turn off:
@@ -12689,7 +12702,7 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       internal_cflags="$gcc_warnings -fno-common \
 -fexcess-precision=standard" ;; #(
   msvc-*) :
-    common_cflags="-nologo -O2 -Gy- -MD"
+    common_cflags="-nologo -O2 -Gy- -MD $gcc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="

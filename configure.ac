@@ -348,6 +348,10 @@ AC_ARG_ENABLE([stdlib-manpages],
   [AS_HELP_STRING([--disable-stdlib-manpages],
     [do not build or install the library man pages])])
 
+AC_ARG_ENABLE([warn-error],
+  [AS_HELP_STRING([--enable-warn-error],
+    [treat C compiler warnings as errors])])
+
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
 
@@ -556,15 +560,20 @@ AS_IF(
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
-    [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
+    [outputobj='-o $(EMPTY)'
+    warn_error_flag=''
+    gcc_warnings='-qflag=i:i'], # all warnings enabled
   [msvc-*],
-    [outputobj=-Fo; gcc_warnings=""],
+    [outputobj='-Fo'
+    warn_error_flag='-WX'
+    gcc_warnings=''],
   [outputobj='-o $(EMPTY)'
-  gcc_warnings='-Wall -Wdeclaration-after-statement'
-  AS_CASE([AC_PACKAGE_VERSION],
-    [*+dev*],
-      [gcc_warnings="$gcc_warnings -Werror"])
-  ])
+  warn_error_flag='-Werror'
+  gcc_warnings='-Wall -Wdeclaration-after-statement'])
+
+AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*],
+    [gcc_warnings="$gcc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
@@ -627,7 +636,7 @@ AS_CASE([$host],
       internal_cflags="$gcc_warnings -fno-common \
 -fexcess-precision=standard"],
     [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD"
+      [common_cflags="-nologo -O2 -Gy- -MD $gcc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
