@@ -724,6 +724,9 @@ LBL(caml_start_program):
     /* Load the OCaml stack. */
         movq    Caml_state(current_stack), %r11
         movq    Stack_sp(%r11), %r10
+    /* Store the stack pointer to allow DWARF unwind */
+        subq    $16, %r10
+        movq    %rsp, 0(%r10)
     /* Build a handler for exceptions raised in OCaml on the OCaml stack. */
         subq    $16, %r10
         lea     LBL(109)(%rip), %r11
@@ -737,7 +740,7 @@ LBL(caml_start_program):
         movq    %r10, %rsp
         .cfi_remember_state
         .cfi_escape DW_CFA_def_cfa_expression, 3 + 2, \
-          DW_OP_breg + DW_REG_rsp, 0, DW_OP_deref,\
+          DW_OP_breg + DW_REG_rsp, 16, DW_OP_deref,\
           DW_OP_plus_uconst, \
              24 /* struct c_stack_link */ + 6*8 /* callee save regs */ + 8 /* ret addr */
         call    *%r12
@@ -745,7 +748,7 @@ LBL(108):
     /* pop exn handler */
         movq    0(%rsp), %r11
         movq    %r11, Caml_state(exn_handler)
-        leaq    16(%rsp), %r10
+        leaq    32(%rsp), %r10
 1:  /* Update alloc ptr */
         movq    %r15, Caml_state(young_ptr)
     /* Return to C stack. */
@@ -765,7 +768,8 @@ LBL(109):
     /* Exception handler*/
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
-        movq    %rsp, %r10 /* exn handler already popped here */
+        /* exn handler already popped here */
+        leaq    16(%rsp), %r10
         jmp     1b
 CFI_ENDPROC
 ENDFUNCTION(G(caml_start_program))
@@ -961,8 +965,9 @@ CFI_STARTPROC
         movq    %rax, Handler_parent(%rcx)
         movq    %rdi, Caml_state(current_stack)
         movq    Stack_sp(%rdi), %rax
-    /* Create an exception handler on the target stack */
-        leaq    -16(%rax), %r11
+    /* Create an exception handler on the target stack
+       after 16byte DWARF block (which is unused here) */
+        leaq    -32(%rax), %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
         movq    %r10, 8(%r11)
     /* load the previous context exn_handler so that copying stacks works */
@@ -972,13 +977,13 @@ CFI_STARTPROC
         movq    %r11, %rsp
         .cfi_remember_state
         .cfi_escape DW_CFA_def_cfa_expression, 3+3+2, \
-          DW_OP_breg + DW_REG_rsp, 16 /* exn */ + Handler_parent, DW_OP_deref,\
+          DW_OP_breg + DW_REG_rsp, 32 /* exn */ + Handler_parent, DW_OP_deref,\
           DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
           DW_OP_plus_uconst, 16 /* sizeof caml_context */ + 8 /* ret addr */
         movq    %r12, %rax /* first argument */
         callq   *(%rbx) /* closure in %rbx (second argument) */
 LBL(frame_runstack):
-        leaq    16(%rsp), %r11 /* SP with exn handler popped */
+        leaq    32(%rsp), %r11 /* SP with exn handler popped */
         movq    Handler_value(%r11), %rbx
 1:  /* Switch back to parent stack and free current */
         movq    Handler_parent(%r11), %r10
@@ -998,8 +1003,8 @@ LBL(frame_runstack):
     /* Invoke handle_value (or handle_exn) */
         jmp     *(%rbx)
 LBL(fiber_exn_handler):
-        movq    %rsp, %r11
-        movq    Handler_exception(%rsp), %rbx
+        leaq    16(%rsp), %r11
+        movq    Handler_exception(%r11), %rbx
         jmp     1b
 CFI_ENDPROC
 ENDFUNCTION(G(caml_runstack))
