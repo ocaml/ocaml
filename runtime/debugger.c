@@ -53,6 +53,7 @@ void caml_debugger_cleanup_fork(void)
 #include <unistd.h>
 #endif
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -187,6 +188,15 @@ void caml_debugger_init(void)
   if (address == NULL) return;
   if (dbg_addr != NULL) caml_stat_free(dbg_addr);
   dbg_addr = address;
+
+  /* #8676: erase the CAML_DEBUG_SOCKET variable so that processes
+     created by the program being debugged do not try to connect with
+     the debugger. */
+#if defined(_WIN32)
+  _wputenv(L"CAML_DEBUG_SOCKET=");
+#elif defined(HAS_SETENV_UNSETENV)
+  unsetenv("CAML_DEBUG_SOCKET");
+#endif
 
   caml_ext_table_init(&breakpoints_table, 16);
 
