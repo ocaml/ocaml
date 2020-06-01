@@ -12487,8 +12487,9 @@ case $ocaml_cv_cc_vendor in #(
     cc_warnings='' ;; #(
   *) :
     outputobj='-o $(EMPTY)'
+  # FIXME Should also be -Wdeclaration-after-statement here
   warn_error_flag='-Werror'
-  cc_warnings='-Wall -Wdeclaration-after-statement' ;;
+  cc_warnings='-Wall' ;;
 esac
 
 case $enable_warn_error,4.10.0+multicore in #(
