@@ -536,18 +536,18 @@ AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
     [outputobj='-o $(EMPTY)'
     warn_error_flag=''
-    gcc_warnings='-qflag=i:i'], # all warnings enabled
+    cc_warnings='-qflag=i:i'], # all warnings enabled
   [msvc-*],
     [outputobj='-Fo'
     warn_error_flag='-WX'
-    gcc_warnings=''],
+    cc_warnings=''],
   [outputobj='-o $(EMPTY)'
   warn_error_flag='-Werror'
-  gcc_warnings='-Wall -Wdeclaration-after-statement'])
+  cc_warnings='-Wall -Wdeclaration-after-statement'])
 
 AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
   [yes,*|,*+dev*],
-    [gcc_warnings="$gcc_warnings $warn_error_flag"])
+    [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
@@ -566,7 +566,7 @@ AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
 # in the macro itself, too
 AS_CASE([$host],
   [*-*-mingw32],
-    [internal_cflags="-Wno-unused $gcc_warnings"
+    [internal_cflags="-Wno-unused $cc_warnings"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O -mms-bitfields"
     internal_cppflags='-DUNICODE -D_UNICODE'
@@ -575,7 +575,7 @@ AS_CASE([$host],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common"],
+      internal_cflags="$cc_warnings -fno-common"],
     [gcc-[012]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -588,23 +588,23 @@ AS_CASE([$host],
         Reducing optimization level."]);
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-4-*],
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common"],
+      internal_cflags="$cc_warnings -fno-common"],
     [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD $gcc_warnings"
+      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
