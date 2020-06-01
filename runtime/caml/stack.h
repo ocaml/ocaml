@@ -74,7 +74,7 @@
 /* Structure of OCaml callback contexts */
 
 struct caml_context {
-  uintnat exception_ptr_offset; /* exception pointer offset from top of stack */
+  uintnat exception_ptr;        /* exception pointer */
   value * gc_regs;              /* pointer to register block */
 #ifdef Context_needs_padding
   value padding;

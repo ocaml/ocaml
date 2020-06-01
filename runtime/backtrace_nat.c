@@ -48,8 +48,8 @@ static frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat *
       return d;
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the trap frame (2 words). */
-      *sp += 2 * sizeof(value);
+       * chunk. This includes skipping over the DWARF link & trap frame (4 words). */
+      *sp += 4 * sizeof(value);
       if (*sp == (char*)Stack_high(stack)) {
         /* We've reached the top of stack. No more frames. */
         *pc = 0;
