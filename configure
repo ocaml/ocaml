@@ -12620,21 +12620,21 @@ case $ocaml_cv_cc_vendor in #(
   xlc-*) :
     outputobj='-o $(EMPTY)'
     warn_error_flag=''
-    gcc_warnings='-qflag=i:i' ;; #(
+    cc_warnings='-qflag=i:i' ;; #(
   # all warnings enabled
   msvc-*) :
     outputobj='-Fo'
     warn_error_flag='-WX'
-    gcc_warnings='' ;; #(
+    cc_warnings='' ;; #(
   *) :
     outputobj='-o $(EMPTY)'
   warn_error_flag='-Werror'
-  gcc_warnings='-Wall -Wdeclaration-after-statement' ;;
+  cc_warnings='-Wall -Wdeclaration-after-statement' ;;
 esac
 
 case $enable_warn_error,4.12.0+dev0-2020-04-22 in #(
   yes,*|,*+dev*) :
-    gcc_warnings="$gcc_warnings $warn_error_flag" ;; #(
+    cc_warnings="$cc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
 esac
@@ -12660,7 +12660,7 @@ case $host in #(
   gcc-[01234]-*) :
     as_fn_error $? "This version of Mingw GCC is too old. Please use GCC version 5 or above." "$LINENO" 5 ;; #(
   gcc-*) :
-    internal_cflags="-Wno-unused $gcc_warnings \
+    internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
@@ -12674,7 +12674,7 @@ esac ;; #(
     case $ocaml_cv_cc_vendor in #(
   clang-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common" ;; #(
+      internal_cflags="$cc_warnings -fno-common" ;; #(
   gcc-[012]-*) :
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -12687,29 +12687,29 @@ $as_echo "$as_me: WARNING: This version of GCC is rather old. Reducing optimizat
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Consider using GCC version 4.2 or above." >&5
 $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       common_cflags="-std=gnu99 -O";
-      internal_cflags="$gcc_warnings" ;; #(
+      internal_cflags="$cc_warnings" ;; #(
   gcc-4-[234]) :
     # No -fexcess-precision option before GCC 4.5
       common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings" ;; #(
+      internal_cflags="$cc_warnings" ;; #(
   gcc-4-*) :
     common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings -fexcess-precision=standard" ;; #(
+      internal_cflags="$cc_warnings -fexcess-precision=standard" ;; #(
   gcc-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common \
+      internal_cflags="$cc_warnings -fno-common \
 -fexcess-precision=standard" ;; #(
   msvc-*) :
-    common_cflags="-nologo -O2 -Gy- -MD $gcc_warnings"
+    common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
-      internal_cflags="$gcc_warnings" ;; #(
+      internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
 esac ;;
