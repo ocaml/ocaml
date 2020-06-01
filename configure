@@ -14903,6 +14903,19 @@ if test "x$ac_cv_func_putenv" = xyes; then :
 fi
 
 
+## setenv and unsetenv
+
+ac_fn_c_check_func "$LINENO" "setenv" "ac_cv_func_setenv"
+if test "x$ac_cv_func_setenv" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "unsetenv" "ac_cv_func_unsetenv"
+if test "x$ac_cv_func_unsetenv" = xyes; then :
+  $as_echo "#define HAS_SETENV_UNSETENV 1" >>confdefs.h
+
+fi
+
+fi
+
+
 ## newlocale() and <locale.h>
 # Note: the detection fails on msvc so we hardcode the result
 # (should be debugged later)

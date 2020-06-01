@@ -1429,6 +1429,11 @@ AS_CASE([$host],
 
 AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV])])
 
+## setenv and unsetenv
+
+AC_CHECK_FUNC([setenv],
+  [AC_CHECK_FUNC([unsetenv], [AC_DEFINE([HAS_SETENV_UNSETENV])])])
+
 ## newlocale() and <locale.h>
 # Note: the detection fails on msvc so we hardcode the result
 # (should be debugged later)

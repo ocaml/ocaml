@@ -309,6 +309,13 @@ OCaml 4.11
 
 ### Tools:
 
+- #6969: Argument -nocwd added to ocamldep
+  (Muskan Garg, review by Florian Angeletti)
+
+- #8676, #9594: turn debugger off in programs launched by the program
+  being debugged
+  (Xavier Leroy, report by Michael Soegtrop, review by Gabriel Scherer)
+
 - #9057: aid debugging the debugger by preserving backtraces of unhandled
   exceptions.
   (David Allsopp, review by Gabriel Scherer)
@@ -337,9 +344,6 @@ OCaml 4.11
   `Location.formatter_for_warnings`; it is not currently exposed
   to the toplevel.
   (Gabriel Scherer, review by Armaël Guéneau)
-
-- #6969: Argument -nocwd added to ocamldep
-  (Muskan Garg, review by Florian Angeletti)
 
 - #9207, #9210: fix ocamlyacc to work correctly with up to 255 entry
   points to the grammar.
