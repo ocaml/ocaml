@@ -30,6 +30,11 @@ Working version
   (KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer,
    and Xavier Leroy)
 
+- #9569: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`, `caml_alloc_some`,
+  and `Tag_some`.
+  (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
+  and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
