@@ -501,8 +501,9 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         let initial_env =
           Env.add_type ~check:false id_row decl_row initial_env
         in
-        let tdecl = Typedecl.transl_with_constraint
-                        initial_env id (Some(Pident id_row)) decl sdecl in
+        let tdecl =
+          Typedecl.transl_with_constraint id (Some(Pident id_row))
+            ~sig_env:env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
         check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
@@ -511,12 +512,13 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         Sig_type(id_row, decl_row, rs', priv)
         :: Sig_type(id, newdecl, rs, priv)
         :: rem
-    | (Sig_type(id, decl, rs, priv) :: rem , [s], Pwith_type (_, sdecl))
+    | (Sig_type(id, sig_decl, rs, priv) :: rem , [s], Pwith_type (_, sdecl))
       when Ident.name id = s ->
         let tdecl =
-          Typedecl.transl_with_constraint initial_env id None decl sdecl in
+          Typedecl.transl_with_constraint id None
+            ~sig_env:env ~sig_decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl sig_decl rs rem;
         (Pident id, lid, Twith_type tdecl),
         Sig_type(id, newdecl, rs, priv) :: rem
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
@@ -526,7 +528,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
       when Ident.name id = s ->
         (* Check as for a normal with constraint, but discard definition *)
         let tdecl =
-          Typedecl.transl_with_constraint initial_env id None decl sdecl in
+          Typedecl.transl_with_constraint id None
+            ~sig_env:env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
         check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         real_ids := [Pident id];
