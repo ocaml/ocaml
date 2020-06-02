@@ -67,8 +67,8 @@ let cfi_remember_state () =
 let cfi_restore_state () =
   if Config.asm_cfi_supported then D.cfi_restore_state ()
 
-let cfi_def_cfa_offset n =
-  if Config.asm_cfi_supported then D.cfi_def_cfa_offset n
+let cfi_def_cfa_register reg =
+  if Config.asm_cfi_supported then D.cfi_def_cfa_register reg
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
@@ -659,15 +659,11 @@ let emit_instr fallthrough i =
           I.inc (domain_field Domainstate.Domain_extcall_noalloc);
         end;
         cfi_remember_state ();
+        cfi_def_cfa_register "rbp";
+        (* NB: gdb has asserts on contiguous stacks that mean it
+           will not unwind through this unless we were to tag this
+           calling frame with cfi_signal_frame in it's definition. *)
         I.mov (domain_field Domainstate.Domain_c_stack) rsp;
-        cfi_def_cfa_offset 0;
-
-        (* Keep GDB happy. If the cfa_offset was left at 0, then GDB complains
-         * that the frame did not save the PC and truncates the backtrace.
-         * Subtract rsp by 16 (instead of 8) to keep the stack aligned to
-         * 16-byte boundary. *)
-        I.sub (int 16) rsp;
-        cfi_adjust_cfa_offset 16;
 
         emit_call func;
         I.mov rbp rsp;

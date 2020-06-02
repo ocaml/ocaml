@@ -78,6 +78,7 @@ module D : sig
   val cfi_startproc: unit -> unit
   val cfi_remember_state: unit -> unit
   val cfi_restore_state: unit -> unit
+  val cfi_def_cfa_register: string -> unit
   val cfi_def_cfa_offset: int -> unit
   val comment: string -> unit
   val data: unit -> unit
