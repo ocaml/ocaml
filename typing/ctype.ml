@@ -1408,7 +1408,9 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
       match ty.desc with
         Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
           (ty,(t,bound)) :: visited
-      | _ -> visited in
+      | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ | Tlink _ | Tsubst _ ->
+          visited
+    in
     let copy_rec = copy_sep cleanup_scope fixed free bound visited in
     t.desc <-
       begin match ty.desc with
@@ -1418,7 +1420,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && more.level <> generic_level in
           let more' = copy_rec more in
-          let fixed' = fixed && is_Tvar (repr more') in
+          let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
           let row = copy_row copy_rec fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
