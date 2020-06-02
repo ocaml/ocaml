@@ -921,7 +921,7 @@ CFI_STARTPROC
 LBL(frame_runstack):
         leaq    32(%rsp), %r11 /* SP with exn handler popped */
         movq    Handler_value(%r11), %rbx
-1:      movq    Caml_state(current_stack), %rdi /* arg to caml_free_stack */
+1:      movq    Caml_state(current_stack), C_ARG_1 /* arg to caml_free_stack */
     /* restore parent stack and exn_handler into Caml_state */
         movq    Handler_parent(%r11), %r10
         movq    Stack_exception(%r10), %r11
@@ -934,7 +934,7 @@ LBL(frame_runstack):
         CFI_DEF_CFA_REGISTER(DW_REG_r13)
         movq    %rax, %r12 /* save %rax across C call */
         movq    Caml_state(c_stack), %rsp
-        call    GCALL(caml_free_stack)
+        C_call  (GCALL(caml_free_stack))
     /* switch directly to parent stack with correct return */
         movq    %r13, %rsp
         CFI_RESTORE_STATE
