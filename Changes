@@ -144,7 +144,7 @@ OCaml 4.11
   (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
    request by Bikal Lem)
 
-- #6673, #1132: Relax the handling of explicit polymorphic types
+- #6673, #1132, #9617: Relax the handling of explicit polymorphic types
   (Leo White, review by Jacques Garrigue and Gabriel Scherer)
 
 - #9232: allow any class type paths in #-types,
