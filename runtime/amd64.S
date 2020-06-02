@@ -272,7 +272,7 @@
         pushq   %r13; CFI_ADJUST (8); CFI_OFFSET(r13, -56); \
         pushq   %r14; CFI_ADJUST (8); CFI_OFFSET(r14, -64); \
         pushq   %r15; CFI_ADJUST (8); CFI_OFFSET(r15, -72); \
-        subq    $(8+10*16), %rsp; CFI_ADJUST (8+10*16);     \
+        subq    $(10*16), %rsp; CFI_ADJUST (10*16);         \
         movupd  %xmm6, 0*16(%rsp);                          \
         movupd  %xmm7, 1*16(%rsp);                          \
         movupd  %xmm8, 2*16(%rsp);                          \
@@ -295,7 +295,7 @@
         movupd  7*16(%rsp), %xmm13;                         \
         movupd  8*16(%rsp), %xmm14;                         \
         movupd  9*16(%rsp), %xmm15;                         \
-        addq    $(8+10*16), %rsp; CFI_ADJUST (-8-10*16);    \
+        addq    $(10*16), %rsp; CFI_ADJUST (-10*16);        \
         popq    %r15; CFI_ADJUST(-8); CFI_SAME_VALUE(r15);  \
         popq    %r14; CFI_ADJUST(-8); CFI_SAME_VALUE(r14);  \
         popq    %r13; CFI_ADJUST(-8); CFI_SAME_VALUE(r13);  \
