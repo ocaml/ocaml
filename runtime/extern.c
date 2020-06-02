@@ -480,13 +480,185 @@ static void writecode64(int code, intnat val)
 }
 #endif
 
+/* Marshaling integers */
+
+Caml_inline void extern_int(intnat n)
+{
+  if (n >= 0 && n < 0x40) {
+    write(PREFIX_SMALL_INT + n);
+  } else if (n >= -(1 << 7) && n < (1 << 7)) {
+    writecode8(CODE_INT8, n);
+  } else if (n >= -(1 << 15) && n < (1 << 15)) {
+    writecode16(CODE_INT16, n);
+#ifdef ARCH_SIXTYFOUR
+  } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
+      if (extern_flags & COMPAT_32)
+        extern_failwith("output_value: integer cannot be read back on "
+                        "32-bit platform");
+      writecode64(CODE_INT64, n);
+#endif
+  } else {
+    writecode32(CODE_INT32, n);
+  }
+}
+
+/* Marshaling references to previously-marshaled blocks */
+
+Caml_inline void extern_shared_reference(uintnat d)
+{
+  if (d < 0x100) {
+    writecode8(CODE_SHARED8, d);
+  } else if (d < 0x10000) {
+    writecode16(CODE_SHARED16, d);
+#ifdef ARCH_SIXTYFOUR
+  } else if (d >= (uintnat)1 << 32) {
+    writecode64(CODE_SHARED64, d);
+#endif
+  } else {
+    writecode32(CODE_SHARED32, d);
+  }
+}
+
+/* Marshaling block headers */
+
+Caml_inline void extern_header(mlsize_t sz, tag_t tag)
+{
+  if (tag < 16 && sz < 8) {
+    write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
+  } else {
+    header_t hd = Make_header(sz, tag, Caml_white);
+#ifdef ARCH_SIXTYFOUR
+    if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
+      extern_failwith("output_value: array cannot be read back on "
+                      "32-bit platform");
+    if (hd < (uintnat)1 << 32)
+      writecode32(CODE_BLOCK32, hd);
+    else
+      writecode64(CODE_BLOCK64, hd);
+#else
+    writecode32(CODE_BLOCK32, hd);
+#endif
+  }
+}
+
+/* Marshaling strings */
+
+Caml_inline void extern_string(value v, mlsize_t len)
+{
+  if (len < 0x20) {
+    write(PREFIX_SMALL_STRING + len);
+  } else if (len < 0x100) {
+    writecode8(CODE_STRING8, len);
+  } else {
+#ifdef ARCH_SIXTYFOUR
+    if (len > 0xFFFFFB && (extern_flags & COMPAT_32))
+      extern_failwith("output_value: string cannot be read back on "
+                      "32-bit platform");
+    if (len < (uintnat)1 << 32)
+      writecode32(CODE_STRING32, len);
+    else
+      writecode64(CODE_STRING64, len);
+#else
+    writecode32(CODE_STRING32, len);
+#endif
+  }
+  writeblock(String_val(v), len);
+}
+
+/* Marshaling FP numbers */
+
+Caml_inline void extern_double(value v)
+{
+  write(CODE_DOUBLE_NATIVE);
+  writeblock_float8((double *) v, 1);
+}
+
+/* Marshaling FP arrays */
+
+Caml_inline void extern_double_array(value v, mlsize_t nfloats)
+{
+  if (nfloats < 0x100) {
+    writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
+  } else {
+#ifdef ARCH_SIXTYFOUR
+    if (nfloats > 0x1FFFFF && (extern_flags & COMPAT_32))
+      extern_failwith("output_value: float array cannot be read back on "
+                      "32-bit platform");
+    if (nfloats < (uintnat) 1 << 32)
+      writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+    else
+      writecode64(CODE_DOUBLE_ARRAY64_NATIVE, nfloats);
+#else
+    writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+#endif
+  }
+  writeblock_float8((double *) v, nfloats);
+}
+
+/* Marshaling custom blocks */
+
+Caml_inline void extern_custom(value v,
+                               /*out*/ uintnat * sz_32,
+                               /*out*/ uintnat * sz_64)
+{
+  char * size_header;
+  char const * ident = Custom_ops_val(v)->identifier;
+  void (*serialize)(value v, uintnat * bsize_32, uintnat * bsize_64)
+        = Custom_ops_val(v)->serialize;
+  const struct custom_fixed_length* fixed_length
+        = Custom_ops_val(v)->fixed_length;
+  if (serialize == NULL)
+    extern_invalid_argument("output_value: abstract value (Custom)");
+  if (fixed_length == NULL) {
+    write(CODE_CUSTOM_LEN);
+    writeblock(ident, strlen(ident) + 1);
+    /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
+    if (extern_ptr + 12 >= extern_limit) grow_extern_output(12);
+    size_header = extern_ptr;
+    extern_ptr += 12;
+    serialize(v, sz_32, sz_64);
+    /* Store length before serialized block */
+    store32(size_header, *sz_32);
+    store64(size_header + 4, *sz_64);
+  } else {
+    write(CODE_CUSTOM_FIXED);
+    writeblock(ident, strlen(ident) + 1);
+    serialize(v, sz_32, sz_64);
+        if (*sz_32 != fixed_length->bsize_32 ||
+            *sz_64 != fixed_length->bsize_64)
+          caml_fatal_error(
+            "output_value: incorrect fixed sizes specified by %s",
+            ident);
+  }
+}
+
+/* Marshaling code pointers */
+
+static void extern_code_pointer(char * codeptr)
+{
+  struct code_fragment * cf;
+  const char * digest;
+
+  cf = caml_find_code_fragment_by_pc(codeptr);
+  if (cf != NULL) {
+    if ((extern_flags & CLOSURES) == 0)
+      extern_invalid_argument("output_value: functional value");
+    digest = (const char *) caml_digest_of_code_fragment(cf);
+    if (digest == NULL)
+      extern_invalid_argument("output_value: private function");
+    writecode32(CODE_CODEPOINTER, codeptr - cf->code_start);
+    writeblock(digest, 16);
+  } else {
+    extern_invalid_argument("output_value: abstract value (outside heap)");
+  }
+}
+
 /* Marshal the given value in the output buffer */
 
 int caml_extern_allow_out_of_heap = 0;
 
 static void extern_rec(value v)
 {
-  struct code_fragment * cf;
   struct extern_item * sp;
   uintnat h = 0;
   uintnat pos = 0;
@@ -496,22 +668,7 @@ static void extern_rec(value v)
 
   while(1) {
   if (Is_long(v)) {
-    intnat n = Long_val(v);
-    if (n >= 0 && n < 0x40) {
-      write(PREFIX_SMALL_INT + n);
-    } else if (n >= -(1 << 7) && n < (1 << 7)) {
-      writecode8(CODE_INT8, n);
-    } else if (n >= -(1 << 15) && n < (1 << 15)) {
-      writecode16(CODE_INT16, n);
-#ifdef ARCH_SIXTYFOUR
-    } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
-      if (extern_flags & COMPAT_32)
-        extern_failwith("output_value: integer cannot be read back on "
-                        "32-bit platform");
-      writecode64(CODE_INT64, n);
-#endif
-    } else
-      writecode32(CODE_INT32, n);
+    extern_int(Long_val(v));
     goto next_item;
   }
   if (Is_in_value_area(v) || caml_extern_allow_out_of_heap) {
@@ -537,68 +694,29 @@ static void extern_rec(value v)
     /* Atoms are treated specially for two reasons: they are not allocated
        in the externed block, and they are automatically shared. */
     if (sz == 0) {
-      if (tag < 16) {
-        write(PREFIX_SMALL_BLOCK + tag);
-      } else {
-#ifdef WITH_PROFINFO
-        writecode32(CODE_BLOCK32, Hd_no_profinfo(hd));
-#else
-        writecode32(CODE_BLOCK32, hd);
-#endif
-      }
+      extern_header(0, tag);
       goto next_item;
     }
     /* Check if object already seen */
     if (! (extern_flags & NO_SHARING)) {
       if (extern_lookup_position(v, &pos, &h)) {
-        uintnat d = obj_counter - pos;
-        if (d < 0x100) {
-          writecode8(CODE_SHARED8, d);
-        } else if (d < 0x10000) {
-          writecode16(CODE_SHARED16, d);
-#ifdef ARCH_SIXTYFOUR
-        } else if (d >= (uintnat)1 << 32) {
-          writecode64(CODE_SHARED64, d);
-#endif
-        } else {
-          writecode32(CODE_SHARED32, d);
-        }
+        extern_shared_reference(obj_counter - pos);
         goto next_item;
       }
     }
-
     /* Output the contents of the object */
     switch(tag) {
     case String_tag: {
       mlsize_t len = caml_string_length(v);
-      if (len < 0x20) {
-        write(PREFIX_SMALL_STRING + len);
-      } else if (len < 0x100) {
-        writecode8(CODE_STRING8, len);
-      } else {
-#ifdef ARCH_SIXTYFOUR
-        if (len > 0xFFFFFB && (extern_flags & COMPAT_32))
-          extern_failwith("output_value: string cannot be read back on "
-                          "32-bit platform");
-        if (len < (uintnat)1 << 32)
-          writecode32(CODE_STRING32, len);
-        else
-          writecode64(CODE_STRING64, len);
-#else
-        writecode32(CODE_STRING32, len);
-#endif
-      }
-      writeblock(String_val(v), len);
+      extern_string(v, len);
       size_32 += 1 + (len + 4) / 4;
       size_64 += 1 + (len + 8) / 8;
       extern_record_location(v, h);
       break;
     }
     case Double_tag: {
-      if (sizeof(double) != 8)
-        extern_invalid_argument("output_value: non-standard floats");
-      write(CODE_DOUBLE_NATIVE);
-      writeblock_float8((double *) v, 1);
+      CAMLassert(sizeof(double) == 8);
+      extern_double(v);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
       extern_record_location(v, h);
@@ -606,25 +724,9 @@ static void extern_rec(value v)
     }
     case Double_array_tag: {
       mlsize_t nfloats;
-      if (sizeof(double) != 8)
-        extern_invalid_argument("output_value: non-standard floats");
+      CAMLassert(sizeof(double) == 8);
       nfloats = Wosize_val(v) / Double_wosize;
-      if (nfloats < 0x100) {
-        writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
-      } else {
-#ifdef ARCH_SIXTYFOUR
-        if (nfloats > 0x1FFFFF && (extern_flags & COMPAT_32))
-          extern_failwith("output_value: float array cannot be read back on "
-                          "32-bit platform");
-        if (nfloats < (uintnat) 1 << 32)
-          writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
-        else
-          writecode64(CODE_DOUBLE_ARRAY64_NATIVE, nfloats);
-#else
-        writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
-#endif
-      }
-      writeblock_float8((double *) v, nfloats);
+      extern_double_array(v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
       extern_record_location(v, h);
@@ -639,91 +741,34 @@ static void extern_rec(value v)
       continue;
     case Custom_tag: {
       uintnat sz_32, sz_64;
-      char * size_header;
-      char const * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, uintnat * bsize_32,
-                        uintnat * bsize_64)
-        = Custom_ops_val(v)->serialize;
-      const struct custom_fixed_length* fixed_length
-        = Custom_ops_val(v)->fixed_length;
-      if (serialize == NULL)
-        extern_invalid_argument("output_value: abstract value (Custom)");
-      if (fixed_length == NULL) {
-        write(CODE_CUSTOM_LEN);
-        writeblock(ident, strlen(ident) + 1);
-        /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
-        if (extern_ptr + 12 >= extern_limit) grow_extern_output(12);
-        size_header = extern_ptr;
-        extern_ptr += 12;
-        serialize(v, &sz_32, &sz_64);
-        /* Store length before serialized block */
-        store32(size_header, sz_32);
-        store64(size_header + 4, sz_64);
-      } else {
-        write(CODE_CUSTOM_FIXED);
-        writeblock(ident, strlen(ident) + 1);
-        serialize(v, &sz_32, &sz_64);
-        if (sz_32 != fixed_length->bsize_32 ||
-            sz_64 != fixed_length->bsize_64)
-          caml_fatal_error(
-            "output_value: incorrect fixed sizes specified by %s",
-            ident);
-      }
+      extern_custom(v, &sz_32, &sz_64);
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
       extern_record_location(v, h);
       break;
     }
     default: {
-      value field0;
-      if (tag < 16 && sz < 8) {
-        write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
-      } else {
-#ifdef ARCH_SIXTYFOUR
-#ifdef WITH_PROFINFO
-        header_t hd_erased = Hd_no_profinfo(hd);
-#else
-        header_t hd_erased = hd;
-#endif
-        if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
-          extern_failwith("output_value: array cannot be read back on "
-                          "32-bit platform");
-        if (hd_erased < (uintnat)1 << 32)
-          writecode32(CODE_BLOCK32, Whitehd_hd (hd_erased));
-        else
-          writecode64(CODE_BLOCK64, Whitehd_hd (hd_erased));
-#else
-        writecode32(CODE_BLOCK32, Whitehd_hd (hd));
-#endif
-      }
+      extern_header(sz, tag);
       size_32 += 1 + sz;
       size_64 += 1 + sz;
-      field0 = Field(v, 0);
       extern_record_location(v, h);
       /* Remember that we still have to serialize fields 1 ... sz - 1 */
       if (sz > 1) {
         sp++;
         if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
-        sp->v = &Field(v,1);
-        sp->count = sz-1;
+        sp->v = &Field(v, 1);
+        sp->count = sz - 1;
       }
       /* Continue serialization with the first field */
-      v = field0;
+      v = Field(v, 0);
       continue;
     }
     }
   }
-  else if ((cf = caml_find_code_fragment_by_pc((char*) v)) != NULL) {
-    const char * digest;
-    if ((extern_flags & CLOSURES) == 0)
-      extern_invalid_argument("output_value: functional value");
-    digest = (const char *) caml_digest_of_code_fragment(cf);
-    if (digest == NULL)
-      extern_invalid_argument("output_value: private function");
-    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock(digest, 16);
-  } else {
-    extern_invalid_argument("output_value: abstract value (outside heap)");
+  else {
+    /* Naked pointer outside the heap: try to marshal it as a code pointer,
+       otherwise fail. */
+    extern_code_pointer((char *) v);
   }
   next_item:
     /* Pop one more item to marshal, if any */
