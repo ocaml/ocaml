@@ -459,10 +459,11 @@ let merge_constraint initial_env remove_aliases loc sg constr =
     | Pwith_typesubst _ | Pwith_modsubst _ -> true
   in
   let real_ids = ref [] in
-  let rec merge env sg namelist row_id =
+  let sig_env = Env.add_signature sg initial_env in
+  let rec merge sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
-        raise(Error(loc, env, With_no_component lid.txt))
+        raise(Error(loc, sig_env, With_no_component lid.txt))
     | (Sig_type(id, decl, rs, priv) :: rem, [s],
        Pwith_type (_, ({ptype_kind = Ptype_abstract} as sdecl)))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
@@ -503,9 +504,9 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         in
         let tdecl =
           Typedecl.transl_with_constraint id (Some(Pident id_row))
-            ~sig_env:env ~sig_decl:decl ~outer_env:initial_env sdecl in
+            ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
+        check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         (Pident id, lid, Twith_type tdecl),
@@ -516,22 +517,23 @@ let merge_constraint initial_env remove_aliases loc sg constr =
       when Ident.name id = s ->
         let tdecl =
           Typedecl.transl_with_constraint id None
-            ~sig_env:env ~sig_decl ~outer_env:initial_env sdecl in
+            ~sig_env ~sig_decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env sdecl.ptype_loc id row_id newdecl sig_decl rs rem;
+        let loc = sdecl.ptype_loc in
+        check_type_decl sig_env loc id row_id newdecl sig_decl rs rem;
         (Pident id, lid, Twith_type tdecl),
         Sig_type(id, newdecl, rs, priv) :: rem
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
-        merge env rem namelist (Some id)
+        merge rem namelist (Some id)
     | (Sig_type(id, decl, rs, _priv) :: rem, [s], Pwith_typesubst (_, sdecl))
       when Ident.name id = s ->
         (* Check as for a normal with constraint, but discard definition *)
         let tdecl =
           Typedecl.transl_with_constraint id None
-            ~sig_env:env ~sig_decl:decl ~outer_env:initial_env sdecl in
+            ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
+        check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl rs rem;
         real_ids := [Pident id];
         (Pident id, lid, Twith_typesubst tdecl),
         update_rec_next rs rem
@@ -539,18 +541,18 @@ let merge_constraint initial_env remove_aliases loc sg constr =
       when Ident.name id = s ->
         let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let mty = md'.md_type in
-        let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
+        let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
-        let newmd = Mtype.strengthen_decl ~aliasable:false env md'' path in
-        ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
+        let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
+        ignore(Includemod.modtypes ~loc sig_env newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
         Sig_module(id, pres, newmd, rs, priv) :: rem
     | (Sig_module(id, _, md, rs, _) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
         let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
-        let aliasable = not (Env.is_functor_arg path env) in
+        let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
-          (Includemod.strengthened_module_decl ~loc ~aliasable env
+          (Includemod.strengthened_module_decl ~loc ~aliasable sig_env
              md' path md);
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
@@ -559,7 +561,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        s :: namelist, (Pwith_module _ | Pwith_type _))
       when Ident.name id = s ->
         let ((path, _, tcstr), _) =
-          merge env (extract_sig env loc md.md_type) namelist None
+          merge (extract_sig sig_env loc md.md_type) namelist None
         in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
@@ -567,7 +569,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
     | (Sig_module(id, _, md, rs, priv) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let ((path, _path_loc, tcstr), newsg) =
-          merge env (extract_sig env loc md.md_type) namelist None
+          merge (extract_sig sig_env loc md.md_type) namelist None
         in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
@@ -576,13 +578,13 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         (path, lid, tcstr),
         item :: rem
     | (item :: rem, _, _) ->
-        let (cstr, items) = merge (Env.add_item item env) rem namelist row_id
+        let (cstr, items) = merge rem namelist row_id
         in
         cstr, item :: items
   in
   try
     let names = Longident.flatten lid.txt in
-    let (tcstr, sg) = merge initial_env sg names None in
+    let (tcstr, sg) = merge sg names None in
     if destructive_substitution then (
       match List.rev !real_ids with
       | [] -> assert false

@@ -97,19 +97,57 @@ module UnboxedEnv :
   end
 |}]
 
+(* We can also have environment issues when unifying type parameters;
+   regression test contributed by Jacques Garrigue in #9623. *)
 module ParamsUnificationEnv = struct
   module type Sig =
-    sig type 'a u = 'a list type +'a t = 'b constraint 'a = 'b u end
+    sig type 'a u = 'a list type +'a t constraint 'a = 'b u end
   type +'a t = 'b constraint 'a = 'b list
-  module type Sig2 = Sig with type 'a t = 'a t
+  module type Sig2 = Sig with type +'a t = 'a t
 end
 [%%expect{|
 module ParamsUnificationEnv :
   sig
     module type Sig =
-      sig type 'a u = 'a list type +'a t = 'b constraint 'a = 'b u end
+      sig type 'a u = 'a list type +'a t constraint 'a = 'b u end
     type +'a t = 'b constraint 'a = 'b list
     module type Sig2 =
-      sig type 'a u = 'a list type 'a t = 'a t constraint 'a = 'b u end
+      sig type 'a u = 'a list type +'a t = 'a t constraint 'a = 'b u end
+  end
+|}]
+
+
+(* The construction of the "signature environment" was also broken
+   in earlier versions of the code. Regression test by Leo White in #9623. *)
+module CorrectEnvConstructionTest = struct
+  module type Sig = sig
+    type +'a user = Foo of 'a abstract
+    and +'a abstract
+  end
+
+  module type Problem = sig
+    include Sig
+    module M : Sig
+      with type 'a abstract = 'a abstract
+       and type 'a user = 'a user
+    type +'a foo = 'a M.user
+  end
+end
+[%%expect{|
+module CorrectEnvConstructionTest :
+  sig
+    module type Sig =
+      sig type 'a user = Foo of 'a abstract and +'a abstract end
+    module type Problem =
+      sig
+        type 'a user = Foo of 'a abstract
+        and +'a abstract
+        module M :
+          sig
+            type 'a user = 'a user = Foo of 'a abstract
+            and 'a abstract = 'a abstract
+          end
+        type 'a foo = 'a M.user
+      end
   end
 |}]
