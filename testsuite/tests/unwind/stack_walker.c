@@ -60,3 +60,7 @@ value ml_perform_stack_walk(value unused) {
 
     return Val_unit;
 }
+
+value ml_do_no_alloc(value unused) {
+    return ml_perform_stack_walk(unused);
+}

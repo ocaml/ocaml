@@ -88,6 +88,7 @@ module D = struct
   let cfi_startproc () = directive Cfi_startproc
   let cfi_remember_state () = directive Cfi_remember_state
   let cfi_restore_state () = directive Cfi_restore_state
+  let cfi_def_cfa_register reg = directive (Cfi_def_cfa_register reg)
   let cfi_def_cfa_offset n = directive (Cfi_def_cfa_offset n)
   let comment s = directive (Comment s)
   let data () = section [ ".data" ] None []
