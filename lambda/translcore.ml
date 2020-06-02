@@ -64,7 +64,7 @@ let transl_extension_constructor ~scopes env path ext =
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
         [Lconst (Const_base (Const_string (name, ext.ext_loc, None)));
-         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
+         Lprim (prim_fresh_oo_id, [Lconst (const_int 0)], loc)],
         loc)
   | Text_rebind(path, _lid) ->
       transl_extension_path loc env path
@@ -309,7 +309,7 @@ and transl_exp0 ~scopes e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(const_int n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
@@ -332,15 +332,15 @@ and transl_exp0 ~scopes e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(const_int tag)
       | Some arg ->
           let lam = transl_exp ~scopes arg in
           try
-            Lconst(Const_block(0, [Const_base(Const_int tag);
+            Lconst(Const_block(0, [const_int tag;
                                    extract_constant lam]))
           with Not_constant ->
             Lprim(Pmakeblock(0, Immutable, None),
-                  [Lconst(Const_base(Const_int tag)); lam],
+                  [Lconst(const_int tag); lam],
                   of_location ~scopes e.exp_loc)
       end
   | Texp_record {fields; representation; extended_expression} ->

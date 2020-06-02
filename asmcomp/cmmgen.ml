@@ -178,18 +178,12 @@ let rec expr_size env = function
 let transl_constant dbg = function
   | Uconst_int n ->
       int_const dbg n
-  | Uconst_ptr n ->
-      if n <= max_repr_int && n >= min_repr_int
-      then Cconst_int((n lsl 1) + 1, dbg)
-      else Cconst_natint
-              (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n,
-               dbg)
   | Uconst_ref (label, _) ->
       Cconst_symbol (label, dbg)
 
 let emit_constant cst cont =
   match cst with
-  | Uconst_int n | Uconst_ptr n ->
+  | Uconst_int n ->
       cint_const n
       :: cont
   | Uconst_ref (sym, _) ->
@@ -435,7 +429,7 @@ let rec transl env e =
               Cphantom_const_symbol sym
             | Uphantom_read_symbol_field { sym; field; } ->
               Cphantom_read_symbol_field { sym; field; }
-            | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
+            | Uphantom_const (Uconst_int i) ->
               Cphantom_const_int (targetint_const i)
             | Uphantom_var var -> Cphantom_var var
             | Uphantom_read_field { var; field; } ->
@@ -1178,9 +1172,9 @@ and transl_if env (approx : then_else)
       (then_dbg : Debuginfo.t) then_
       (else_dbg : Debuginfo.t) else_ =
   match cond with
-  | Uconst (Uconst_ptr 0) -> else_
-  | Uconst (Uconst_ptr 1) -> then_
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
+  | Uconst (Uconst_int 0) -> else_
+  | Uconst (Uconst_int 1) -> then_
+  | Uifthenelse (arg1, arg2, Uconst (Uconst_int 0)) ->
       (* CR mshinwell: These Debuginfos will flow through from Clambda *)
       let inner_dbg = Debuginfo.none in
       let ifso_dbg = Debuginfo.none in
@@ -1195,7 +1189,7 @@ and transl_if env (approx : then_else)
         inner_dbg arg2
         then_dbg then_
         else_dbg else_
-  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
+  | Uifthenelse (arg1, Uconst (Uconst_int 1), arg2) ->
       let inner_dbg = Debuginfo.none in
       let ifnot_dbg = Debuginfo.none in
       transl_sequor env approx
@@ -1214,13 +1208,13 @@ and transl_if env (approx : then_else)
         dbg arg
         else_dbg else_
         then_dbg then_
-  | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
+  | Uifthenelse (Uconst (Uconst_int 1), ifso, _) ->
       let ifso_dbg = Debuginfo.none in
       transl_if env approx
         ifso_dbg ifso
         then_dbg then_
         else_dbg else_
-  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
+  | Uifthenelse (Uconst (Uconst_int 0), _, ifnot) ->
       let ifnot_dbg = Debuginfo.none in
       transl_if env approx
         ifnot_dbg ifnot

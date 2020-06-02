@@ -49,7 +49,7 @@ val last_is_vars : bool * bool -> int = <fun>
 type t = ..
 type t += A | B of unit | C of bool * int;;
 [%%expect{|
-0a
+0
 type t = ..
 (let
   (A/25 = (makeblock 248 "A" (caml_fresh_oo_id 0))

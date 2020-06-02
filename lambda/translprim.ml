@@ -644,7 +644,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
   | External prim, args when prim = prim_sys_argv ->
-      Lprim(Pccall prim, Lconst (Const_pointer 0) :: args, loc)
+      Lprim(Pccall prim, Lconst (const_int 0) :: args, loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->

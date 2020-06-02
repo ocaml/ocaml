@@ -42,11 +42,6 @@ val const_bool_expr
   -> bool
   -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
-val const_ptr_expr
-   : Flambda.named
-  -> int
-  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
-
 val const_float_expr
    : Flambda.named
   -> float

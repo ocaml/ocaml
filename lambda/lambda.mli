@@ -198,7 +198,6 @@ val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
@@ -341,6 +340,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
+val const_int : int -> structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
