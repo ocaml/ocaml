@@ -132,6 +132,10 @@ Working version
   (Gabriel Scherer and Jeremy Yallop and Xavier Leroy,
    report by Twitter user @st_toHKR through Jun Furuse)
 
+- #9611: maintain order of load path entries in various situations: when passing
+  them to system linker, ppx contexts, etc.
+  (Nicolás Ojeda Bär, review by Jérémie Dimino and Gabriel Scherer)
+
 OCaml 4.11
 ----------
 
