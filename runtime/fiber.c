@@ -131,8 +131,8 @@ next_chunk:
       /* XXX KC: disabled already scanned optimization. */
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the trap frame (2 words). */
-      sp += 2 * sizeof(value);
+       * chunk. This includes skipping over the DWARF link & trap frame (4 words). */
+      sp += 4 * sizeof(value);
       goto next_chunk;
     }
   }
@@ -235,6 +235,33 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
   Used by the interpreter to allocate stack space.
 */
 
+#ifdef NATIVE_CODE
+/* Update absolute exception pointers for new stack*/
+static void rewrite_exception_stack(struct stack_info *old_stack, value** exn_ptr, struct stack_info *new_stack)
+{
+  caml_gc_log ("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
+  caml_gc_log ("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
+  if(exn_ptr) {
+    caml_gc_log ("*exn_ptr=%p", *exn_ptr);
+
+    while (Stack_base(old_stack) < *exn_ptr && *exn_ptr <= Stack_high(old_stack)) {
+      value* old_val = *exn_ptr;
+      *exn_ptr = Stack_high(new_stack) - (Stack_high(old_stack) - *exn_ptr);
+
+      caml_gc_log ("Rewriting %p to %p", old_val, *exn_ptr);
+
+      CAMLassert(Stack_base(new_stack) < *exn_ptr);
+      CAMLassert((value*)*exn_ptr <= Stack_high(new_stack));
+
+      exn_ptr = (value**)*exn_ptr;
+    }
+    caml_gc_log ("finished with *exn_ptr=%p", *exn_ptr);
+  } else {
+    caml_gc_log ("exn_ptr is null");
+  }
+}
+#endif
+
 int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
@@ -275,10 +302,7 @@ int caml_try_realloc_stack(asize_t required_space)
   new_stack->sp = Stack_high(new_stack) - stack_used;
   Stack_parent(new_stack) = Stack_parent(old_stack);
 #ifdef NATIVE_CODE
-  CAMLassert(Stack_base(old_stack) < (value*)Caml_state->exn_handler &&
-             (value*)Caml_state->exn_handler <= Stack_high(old_stack));
-  Caml_state->exn_handler =
-    Stack_high(new_stack) - (Stack_high(old_stack) - (value*)Caml_state->exn_handler);
+  rewrite_exception_stack(old_stack, (value**)&Caml_state->exn_handler, new_stack);
 #endif
 
   /* Update stack pointers in Caml_state->c_stack */
@@ -350,6 +374,14 @@ CAMLprim value caml_clone_continuation (value cont)
     if (!target) caml_raise_out_of_memory();
     memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
            stack_used * sizeof(value));
+#ifdef NATIVE_CODE
+    {
+      /* pull out the exception pointer from the caml context on the stack */
+      value* exn_start =
+        Stack_high(target) - (Stack_high(source) - (value*)source->sp);
+      rewrite_exception_stack(source, (value**)exn_start, target);
+    }
+#endif
     target->sp = Stack_high(target) - stack_used;
     *link = target;
     link = &Stack_parent(target);

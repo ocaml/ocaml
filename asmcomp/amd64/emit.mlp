@@ -982,11 +982,9 @@ let emit_instr fallthrough i =
       I.push r11;
       cfi_adjust_cfa_offset 8;
       I.push (domain_field Domainstate.Domain_exn_handler);
-      I.sub rsp (mem64 NONE 0 RSP);
       I.mov rsp (domain_field Domainstate.Domain_exn_handler);
       stack_offset := !stack_offset + 16
   | Lpoptrap ->
-      I.add rsp (mem64 NONE 0 RSP);
       I.pop (domain_field Domainstate.Domain_exn_handler);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
@@ -1005,7 +1003,6 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty true i.dbg
       | Lambda.Raise_notrace ->
           I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
-          I.add rsp (mem64 NONE 0 RSP);
           I.pop (domain_field Domainstate.Domain_exn_handler);
           I.pop r11;
           I.jmp r11
