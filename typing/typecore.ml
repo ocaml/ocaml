@@ -2709,12 +2709,18 @@ and type_expect_
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
       unify_var env (newvar()) funct.exp_type;
-      rue {
-        exp_desc = Texp_apply(funct, args);
-        exp_loc = loc; exp_extra = [];
-        exp_type = ty_res;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
+      let exp =
+        { exp_desc = Texp_apply(funct, args);
+          exp_loc = loc; exp_extra = [];
+          exp_type = ty_res;
+          exp_attributes = sexp.pexp_attributes;
+          exp_env = env } in
+      begin
+        try rue exp
+        with Error (_, _, Expr_type_clash _) as err ->
+          Misc.reraise_preserving_backtrace err (fun () ->
+            check_partial_application false exp)
+      end
   | Pexp_match(sarg, caselist) ->
       begin_def ();
       let arg = type_exp env sarg in

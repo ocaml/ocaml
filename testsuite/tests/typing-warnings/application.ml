@@ -84,3 +84,23 @@ Line 1, characters 19-20:
 Warning 20: this argument will not be used by the function.
 Exception: Stdlib.Exit.
 |}]
+
+let f a b = a + b;;
+[%%expect {|
+val f : int -> int -> int = <fun>
+|}]
+let g x = x + 1
+let _ = g (f 1);;
+[%%expect {|
+val g : int -> int = <fun>
+Line 2, characters 10-15:
+2 | let _ = g (f 1);;
+              ^^^^^
+Warning 5: this function application is partial,
+maybe some arguments are missing.
+Line 2, characters 10-15:
+2 | let _ = g (f 1);;
+              ^^^^^
+Error: This expression has type int -> int
+       but an expression was expected of type int
+|}]
