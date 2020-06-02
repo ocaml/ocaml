@@ -49,6 +49,9 @@ Working version
 - #9075: define to_rev_seq in Set and Map modules.
   (Sébastien Briais, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #9561: Unbox Unix.gettimeofday and Unix.time
+  (Stephen Dolan, review by David Allsopp)
+
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
 
