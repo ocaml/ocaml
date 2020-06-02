@@ -16,8 +16,8 @@ val error :
 |}]
 
 (* Known problem with polymorphic methods *)
-let foo : 
-  < m : 'left 'right. <left:'left; right:'right> pair > 
+let foo :
+  < m : 'left 'right. <left:'left; right:'right> pair >
    -> < m : 'left 'right. <left:'left; right:'right> pair >
 = fun x -> x
 
