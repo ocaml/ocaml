@@ -1846,11 +1846,7 @@ let partial_pred ~lev ~splitting_mode ?(explode=0)
       } in
   try
     reset_pattern None true;
-    let typed_p =
-      Ctype.with_passive_variants
-        (type_pat Value ~lev ~mode env p)
-        expected_ty
-    in
+    let typed_p = type_pat Value ~lev ~mode env p expected_ty in
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p

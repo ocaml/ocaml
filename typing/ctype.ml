@@ -2506,15 +2506,6 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
 (* force unification in Reither when one side has a non-conjunctive type *)
 let rigid_variants = ref false
 
-(* drop not force unification in Reither, even in fixed case
-   (not sound, only use it when checking exhaustiveness) *)
-let passive_variants = ref false
-let with_passive_variants f x =
-  if !passive_variants then f x else
-  match passive_variants := true; f x with
-  | r           -> passive_variants := false; r
-  | exception e -> passive_variants := false; raise e
-
 let unify_eq t1 t2 =
   t1 == t2 ||
   match !umode with
@@ -2974,7 +2965,6 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         List.iter2 (unify env) tl1 tl2
       end
       else let redo =
-        not !passive_variants &&
         (m1 || m2 || either_fixed ||
          !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
@@ -3000,7 +2990,6 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         [], [] -> ()
       | (tu1::tlu1), _ :: _ ->
           (* Attempt to merge all the types containing univars *)
-          if not !passive_variants then
           List.iter (unify env tu1) (tlu1@tlu2)
       | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
       end;
