@@ -97,6 +97,24 @@ let rec mapi i f = function
 
 let mapi f l = mapi 0 f l
 
+let map_option f =
+  let rec loop f acc = function
+    | [] -> Some (rev acc)
+    | x::xs ->
+      match f x with
+      | None -> None
+      | Some y -> loop f (y :: acc) xs
+  in loop f []
+
+let map_result f =
+  let rec loop f acc = function
+    | [] -> Ok (rev acc)
+    | x::xs ->
+      match f x with
+      | Error e -> Error e
+      | Ok y -> loop f (y :: acc) xs
+  in loop f []
+
 let rev_map f l =
   let rec rmap_f accu = function
     | [] -> accu

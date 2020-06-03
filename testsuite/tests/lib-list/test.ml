@@ -34,6 +34,28 @@ let () =
     assert (List.find_map (f ~limit:30) l = None);
   end;
 
+  begin
+    let f a = if a mod 2 = 0 then Some (a / 2) else None in
+    assert (List.map_opt f [2; 4] = Some [1; 2]);
+    assert (List.map_opt f [2; 3; 4] = None);
+    assert (
+      let n = ref 0 in
+      List.map_opt (fun a -> incr n; f a) [2; 3; 4; 5; 6] = None
+      && !n = 2
+    );
+  end;
+
+  begin
+    let f a = if a mod 2 = 0 then Ok (a / 2) else Error a in
+    assert (List.map_result f [2; 4] = Ok [1; 2]);
+    assert (List.map_result f [2; 3; 4] = Error 3);
+    assert (
+      let n = ref 0 in
+      List.map_result (fun a -> incr n; f a) [2; 3; 4; 5; 6] = Error 3
+      && !n = 2
+    );
+  end;
+
   assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
 
   assert (List.compare_lengths [] [] = 0);

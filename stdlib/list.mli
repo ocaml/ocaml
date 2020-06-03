@@ -129,6 +129,32 @@ val mapi : (int -> 'a -> 'b) -> 'a list -> 'b list
    @since 4.00.0
 *)
 
+val map_option : ('a -> 'b option) -> 'a list -> 'b list option
+(** [List.map_option f [a1; ...; an]] applies function [f] to each
+    element [a1, ..., an]:
+    - if one result is [None], we stop ([f] is not applied to further
+      elements) and return [None],
+    - if all results are [Some b1, .., Some n], we return
+      [Some [b1; ..; bn]].
+    In particular, if a list is returned, it is of the same
+    length as the input list. If you wish to filter some
+    elements instead, see {!filter_map}.
+    @since 4.12.0
+*)
+
+val map_result : ('a -> ('b, 'e) result) -> 'a list -> ('b list, 'e) result
+(** [List.map_result f [a1; ...; an]] applies function [f] to each
+    element [a1, ..., an]:
+    - if one result is [Error e], we stop ([f] is not applied to further
+      elements) and return [Error e],
+    - if all results are [Ok b1, .., Ok n], we return
+      [Ok [b1; ..; bn]].
+    In particular, if a list is returned, it is of the same
+    length as the input list. If you wish to filter some
+    elements instead, see {!filter_map}.
+    @since 4.12.0
+*)
+
 val rev_map : ('a -> 'b) -> 'a list -> 'b list
 (** [List.rev_map f l] gives the same result as
    {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
