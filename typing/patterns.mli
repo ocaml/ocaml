@@ -98,7 +98,7 @@ module Head : sig
 
   (** [deconstruct p] returns the head of [p] and the list of sub patterns.
 
-      @raises [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)
+      @raise [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)
   val deconstruct : Simple.pattern -> t * pattern list
 
   (** reconstructs a pattern, putting wildcards as sub-patterns. *)
