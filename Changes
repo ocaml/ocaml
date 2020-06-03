@@ -209,6 +209,9 @@ OCaml 4.12.0
   For the time being, infringing code should result in a principality warning.
   (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
 
+- #9584, #7074: Allow to name existentials in pattern-matching
+  (Jacques Garrigue, review by ?)
+
 ### Runtime system:
 
 - #2195: Improve error message in bytecode stack trace printing and load
