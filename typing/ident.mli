@@ -37,7 +37,7 @@ val create_predef: string -> t
 val rename: t -> t
         (** Creates an identifier with the same name as the input, a fresh
             stamp, and no scope.
-            @raises [Fatal_error] if called on a persistent / predef ident. *)
+            @raise [Fatal_error] if called on a persistent / predef ident. *)
 
 val name: t -> string
 val unique_name: t -> string

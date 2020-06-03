@@ -50,7 +50,11 @@ Error: Signature mismatch:
          type u = A of t/1
        is not included in
          type u = A of t/2
-       The types for field A are not equal.
+       Constructors do not match:
+         A of t/1
+       is not compatible with:
+         A of t/2
+       The types are not equal.
        Line 4, characters 9-19:
          Definition of type t/1
        Line 2, characters 2-11:
@@ -74,14 +78,14 @@ Lines 4-7, characters 4-7:
 7 |     end
 Error: Signature mismatch:
        Modules do not match:
-         sig module type s module A : functor (X : s) -> sig  end end
+         sig module type s module A : functor (X : s) -> sig end end
        is not included in
-         sig module A : functor (X : s) -> sig  end end
+         sig module A : functor (X : s) -> sig end end
        In module A:
        Modules do not match:
-         functor (X : s/1) -> sig  end
+         functor (X : s/1) -> sig end
        is not included in
-         functor (X : s/2) -> sig  end
+         functor (X : s/2) -> sig end
        At position module A(X : <here>) : ...
        Modules do not match: s/2 is not included in s/1
        Line 5, characters 6-19:
@@ -113,7 +117,11 @@ Error: Signature mismatch:
          type t = A of T/1.t
        is not included in
          type t = A of T/2.t
-       The types for field A are not equal.
+       Constructors do not match:
+         A of T/1.t
+       is not compatible with:
+         A of T/2.t
+       The types are not equal.
        Line 5, characters 6-34:
          Definition of module T/1
        Line 2, characters 2-30:
@@ -395,7 +403,7 @@ let add_extra_info arg = arg.Foo.info.doc
 [%%expect{|
 module Bar : sig type info = { doc : unit; } end
 module Foo : sig type t = { info : Bar.info; } end
-module Bar : sig  end
+module Bar : sig end
 Line 8, characters 38-41:
 8 | let add_extra_info arg = arg.Foo.info.doc
                                           ^^^

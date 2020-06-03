@@ -26,18 +26,11 @@
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
-
-/* The table of debug information fragments */
-struct ext_table caml_debug_info;
-
-CAMLexport int32_t caml_backtrace_active = 0;
-CAMLexport int32_t caml_backtrace_pos = 0;
-CAMLexport backtrace_slot * caml_backtrace_buffer = NULL;
-CAMLexport value caml_backtrace_last_exn = Val_unit;
+#include "caml/debugger.h"
 
 void caml_init_backtrace(void)
 {
-  caml_register_global_root(&caml_backtrace_last_exn);
+  caml_register_global_root(&Caml_state->backtrace_last_exn);
 }
 
 /* Start or stop the backtrace machinery */
@@ -45,14 +38,14 @@ CAMLprim value caml_record_backtrace(value vflag)
 {
   int flag = Int_val(vflag);
 
-  if (flag != caml_backtrace_active) {
-    caml_backtrace_active = flag;
-    caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = Val_unit;
-    /* Note: We do lazy initialization of caml_backtrace_buffer when
+  if (flag != Caml_state->backtrace_active) {
+    Caml_state->backtrace_active = flag;
+    Caml_state->backtrace_pos = 0;
+    Caml_state->backtrace_last_exn = Val_unit;
+    /* Note: We do lazy initialization of Caml_state->backtrace_buffer when
        needed in order to simplify the interface with the thread
        library (thread creation doesn't need to allocate
-       caml_backtrace_buffer). So we don't have to allocate it here.
+       Caml_state->backtrace_buffer). So we don't have to allocate it here.
     */
   }
   return Val_unit;
@@ -61,7 +54,7 @@ CAMLprim value caml_record_backtrace(value vflag)
 /* Return the status of the backtrace machinery */
 CAMLprim value caml_backtrace_status(value vunit)
 {
-  return Val_bool(caml_backtrace_active);
+  return Val_bool(Caml_state->backtrace_active);
 }
 
 /* Print location information -- same behavior as in Printexc
@@ -100,8 +93,8 @@ static void print_location(struct caml_loc_info * li, int index)
   if (! li->loc_valid) {
     fprintf(stderr, "%s unknown location%s\n", info, inlined);
   } else {
-    fprintf (stderr, "%s file \"%s\"%s, line %d, characters %d-%d\n",
-             info, li->loc_filename, inlined, li->loc_lnum,
+    fprintf (stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
+             info, li->loc_defname, li->loc_filename, inlined, li->loc_lnum,
              li->loc_startchr, li->loc_endchr);
   }
 }
@@ -119,8 +112,8 @@ CAMLexport void caml_print_exception_backtrace(void)
     return;
   }
 
-  for (i = 0; i < caml_backtrace_pos; i++) {
-    for (dbg = caml_debuginfo_extract(caml_backtrace_buffer[i]);
+  for (i = 0; i < Caml_state->backtrace_pos; i++) {
+    for (dbg = caml_debuginfo_extract(Caml_state->backtrace_buffer[i]);
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
     {
@@ -136,34 +129,17 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLparam0();
   CAMLlocal1(res);
 
-  /* Beware: the allocations below may cause finalizers to be run, and another
-     backtrace---possibly of a different length---to be stashed (for example
-     if the finalizer raises then catches an exception).  We choose to ignore
-     any such finalizer backtraces and return the original one. */
-
-  if (!caml_backtrace_active ||
-      caml_backtrace_buffer == NULL ||
-      caml_backtrace_pos == 0) {
+  if (!Caml_state->backtrace_active ||
+      Caml_state->backtrace_buffer == NULL ||
+      Caml_state->backtrace_pos == 0) {
     res = caml_alloc(0, 0);
   }
   else {
-    backtrace_slot saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
-    int saved_caml_backtrace_pos;
-    intnat i;
+    intnat i, len = Caml_state->backtrace_pos;
 
-    saved_caml_backtrace_pos = caml_backtrace_pos;
-
-    if (saved_caml_backtrace_pos > BACKTRACE_BUFFER_SIZE) {
-      saved_caml_backtrace_pos = BACKTRACE_BUFFER_SIZE;
-    }
-
-    memcpy(saved_caml_backtrace_buffer, caml_backtrace_buffer,
-           saved_caml_backtrace_pos * sizeof(backtrace_slot));
-
-    res = caml_alloc(saved_caml_backtrace_pos, 0);
-    for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      Field(res, i) = Val_backtrace_slot(saved_caml_backtrace_buffer[i]);
-    }
+    res = caml_alloc(len, 0);
+    for (i = 0; i < len; i++)
+      Field(res, i) = Val_backtrace_slot(Caml_state->backtrace_buffer[i]);
   }
 
   CAMLreturn(res);
@@ -177,7 +153,7 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   intnat i;
   mlsize_t bt_size;
 
-  caml_backtrace_last_exn = exn;
+  Caml_state->backtrace_last_exn = exn;
 
   bt_size = Wosize_val(backtrace);
   if(bt_size > BACKTRACE_BUFFER_SIZE){
@@ -187,18 +163,19 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   /* We don't allocate if the backtrace is empty (no -g or backtrace
      not activated) */
   if(bt_size == 0){
-    caml_backtrace_pos = 0;
+    Caml_state->backtrace_pos = 0;
     return Val_unit;
   }
 
   /* Allocate if needed and copy the backtrace buffer */
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+  if (Caml_state->backtrace_buffer == NULL &&
+      caml_alloc_backtrace_buffer() == -1) {
     return Val_unit;
   }
 
-  caml_backtrace_pos = bt_size;
-  for(i=0; i < caml_backtrace_pos; i++){
-    caml_backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
+  Caml_state->backtrace_pos = bt_size;
+  for(i=0; i < Caml_state->backtrace_pos; i++){
+    Caml_state->backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
   }
 
   return Val_unit;
@@ -211,20 +188,22 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 static value caml_convert_debuginfo(debuginfo dbg)
 {
   CAMLparam0();
-  CAMLlocal2(p, fname);
+  CAMLlocal3(p, fname, dname);
   struct caml_loc_info li;
 
   caml_debuginfo_location(dbg, &li);
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
-    p = caml_alloc_small(6, 0);
+    dname = caml_copy_string(li.loc_defname);
+    p = caml_alloc_small(7, 0);
     Field(p, 0) = Val_bool(li.loc_is_raise);
     Field(p, 1) = fname;
     Field(p, 2) = Val_int(li.loc_lnum);
     Field(p, 3) = Val_int(li.loc_startchr);
     Field(p, 4) = Val_int(li.loc_endchr);
     Field(p, 5) = Val_bool(li.loc_is_inlined);
+    Field(p, 6) = dname;
   } else {
     p = caml_alloc_small(1, 1);
     Field(p, 0) = Val_bool(li.loc_is_raise);
@@ -348,12 +327,17 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   CAMLreturn(res);
 }
 
-CAMLprim value caml_get_current_callstack(value max_frames_value) {
+CAMLprim value caml_get_current_callstack(value max_frames_value)
+{
   CAMLparam1(max_frames_value);
   CAMLlocal1(res);
-
-  res = caml_alloc(caml_current_callstack_size(Long_val(max_frames_value)), 0);
-  caml_current_callstack_write(res);
-
+  value* callstack = NULL;
+  intnat callstack_alloc_len = 0;
+  intnat callstack_len =
+    caml_collect_current_callstack(&callstack, &callstack_alloc_len,
+                                   Long_val(max_frames_value), -1);
+  res = caml_alloc(callstack_len, 0);
+  memcpy(Op_val(res), callstack, sizeof(value) * callstack_len);
+  caml_stat_free(callstack);
   CAMLreturn(res);
 }

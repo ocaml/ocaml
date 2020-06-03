@@ -22,7 +22,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 module String = Misc.Stdlib.String
 
@@ -56,6 +56,9 @@ let fastcode_flag = ref true
 let stack_offset = ref 0
 
 (* Layout of the stack frame *)
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
 
 let frame_size () =                     (* includes return address *)
   let sz =
@@ -137,6 +140,12 @@ let register_name r =
 
 let sym32 ?ofs s = mem_sym ?ofs DWORD (emit_symbol s)
 
+let domain_field f r =
+  mem32 DWORD (Domainstate.idx_of_field f * 8) r
+
+let load_domain_state r =
+  I.mov (sym32 "Caml_state") r
+
 let reg = function
   | { loc = Reg r } -> register_name r
   | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
@@ -191,7 +200,7 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live raise_ dbg =
+let record_frame_label ?label live dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -209,11 +218,11 @@ let record_frame_label ?label live raise_ dbg =
       | _ -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in
   def_label lbl
 
 (* Record calls to the GC -- we've moved them out of the way *)
@@ -245,7 +254,7 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
     lbl_bound_error
@@ -461,6 +470,17 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then
+    begin match system with
+    | S_macosx | S_mingw | S_cygwin | S_win32 -> D.text ()
+    | _ -> D.section [ ".text.caml."^(emit_symbol func_name) ]
+             (Some "ax") ["@progbits"]
+    end
+  else D.text ()
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -473,7 +493,7 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    assert (Proc.prologue_required ());
+    assert (!prologue_required);
     let n = frame_size() - 4 in
     if n > 0 then  begin
       I.sub (int n) esp;
@@ -520,11 +540,11 @@ let emit_instr fallthrough i =
       I.mov (immsym s) (reg i.res.(0))
   | Lop(Icall_ind { label_after; }) ->
       I.call (reg i.arg.(0));
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Icall_imm { func; label_after; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Itailcall_ind { label_after = _; }) ->
       output_epilogue begin fun () ->
         I.jmp (reg i.arg.(0))
@@ -543,7 +563,7 @@ let emit_instr fallthrough i =
       if alloc then begin
         I.mov (immsym func) eax;
         emit_call "caml_c_call";
-        record_frame i.live false i.dbg ~label:label_after
+        record_frame i.live (Dbg_other i.dbg) ~label:label_after
       end else begin
         emit_call func
       end
@@ -594,21 +614,24 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
+  | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
       if !fastcode_flag then begin
-        let lbl_redo = new_label() in
-        def_label lbl_redo;
-        I.mov (sym32 "caml_young_ptr") eax;
+        load_domain_state ebx;
+        I.mov (domain_field Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
-        I.cmp (sym32 "caml_young_limit") eax;
+        I.mov eax (domain_field Domain_young_ptr RBX);
+        I.cmp (domain_field Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame_label i.live false Debuginfo.none in
+        let lbl_frame =
+          record_frame_label ?label:label_after_call_gc
+            i.live (Dbg_alloc dbginfo) in
         I.jb (label lbl_call_gc);
-        I.mov eax (sym32 "caml_young_ptr");
+        let lbl_after_alloc = new_label() in
+        def_label lbl_after_alloc;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
+            gc_return_lbl = lbl_after_alloc;
             gc_frame = lbl_frame } :: !call_gc_sites
       end else begin
         begin match n with
@@ -620,8 +643,8 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         let label =
-          record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+          record_frame_label ?label:label_after_call_gc
+            i.live (Dbg_alloc dbginfo)
         in
         def_label label;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0))
@@ -843,7 +866,7 @@ let emit_instr fallthrough i =
       for i = 0 to Array.length jumptbl - 1 do
         D.long (ConstLabel (emit_label jumptbl.(i)))
       done;
-      D.text ()
+      emit_named_text_section !function_name
   | Lentertrap ->
       ()
   | Ladjust_trap_depth { delta_traps } ->
@@ -854,23 +877,34 @@ let emit_instr fallthrough i =
       I.push (label lbl_handler);
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
-      I.push (sym32 "caml_exception_pointer");
+      load_domain_state edx;
+      I.push (domain_field Domain_exception_pointer RDX);
       cfi_adjust_cfa_offset trap_frame_size;
-      I.mov esp (sym32 "caml_exception_pointer");
+      I.mov esp (domain_field Domain_exception_pointer RDX);
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
-      I.pop (sym32 "caml_exception_pointer");
-      I.add (int (trap_frame_size - 4)) esp;
+      I.mov edx (mem32 DWORD 4 RSP);
+      load_domain_state edx;
+      I.pop (domain_field Domain_exception_pointer RDX);
+      I.pop edx;
+      if trap_frame_size > 8 then
+        I.add (int (trap_frame_size - 8)) esp;
       cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_regular ->
+          load_domain_state ebx;
+          I.mov (int 0) (domain_field Domain_backtrace_pos RBX);
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
-      | Cmm.Raise_notrace ->
-          I.mov (sym32 "caml_exception_pointer") esp;
-          I.pop (sym32 "caml_exception_pointer");
+          record_frame Reg.Set.empty (Dbg_raise i.dbg)
+      | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty (Dbg_raise i.dbg)
+      | Lambda.Raise_notrace ->
+          load_domain_state ebx;
+          I.mov (domain_field Domain_exception_pointer RBX) esp;
+          I.pop (domain_field Domain_exception_pointer RBX);
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
           I.pop ebx;
@@ -883,7 +917,7 @@ let rec emit_all fallthrough i =
   | _ ->
       emit_instr fallthrough i;
       emit_all
-        (system = S_win32 || Linearize.has_fallthrough i.desc)
+        (system = S_win32 || Linear.has_fallthrough i.desc)
         i.next
 
 (* Emission of a function declaration *)
@@ -896,7 +930,11 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
-  D.text ();
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
+  emit_named_text_section !function_name;
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);
   D.global (emit_symbol fundecl.fun_name);
@@ -947,9 +985,6 @@ let begin_assembly() =
   if system = S_win32 then begin
     D.mode386 ();
     D.model "FLAT";
-    D.extrn "_caml_young_ptr" DWORD;
-    D.extrn "_caml_young_limit" DWORD;
-    D.extrn "_caml_exception_pointer" DWORD;
     D.extrn "_caml_extra_params" DWORD;
     D.extrn "_caml_call_gc" PROC;
     D.extrn "_caml_c_call" PROC;
@@ -959,12 +994,12 @@ let begin_assembly() =
     D.extrn "_caml_alloc3" PROC;
     D.extrn "_caml_ml_array_bound_error" PROC;
     D.extrn "_caml_raise_exn" PROC;
+    D.extrn "_Caml_state" DWORD;
   end;
 
   D.data ();
   emit_global_label "data_begin";
-
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin"
 
 let end_assembly() =
@@ -973,8 +1008,7 @@ let end_assembly() =
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  D.text ();
-
+  emit_named_text_section (Compilenv.make_symbol (Some "code_end"));
   emit_global_label "code_end";
 
   D.data ();
@@ -987,6 +1021,7 @@ let end_assembly() =
   emit_frames
     { efa_code_label = (fun l -> D.long (ConstLabel (emit_label l)));
       efa_data_label = (fun l -> D.long (ConstLabel (emit_label l)));
+      efa_8 = (fun n -> D.byte (const n));
       efa_16 = (fun n -> D.word (const n));
       efa_32 = (fun n -> D.long (const_32 n));
       efa_word = (fun n -> D.long (const n));

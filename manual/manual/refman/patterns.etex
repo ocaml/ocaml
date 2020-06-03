@@ -1,4 +1,4 @@
-\section{Patterns}
+\section{s:patterns}{Patterns}
 \ikwd{as\@\texttt{as}}
 %HEVEA\cutname{patterns.html}
 \begin{syntax}
@@ -22,10 +22,13 @@ pattern:
   | char-literal '..' char-literal
   | 'lazy' pattern
   | 'exception' pattern
+  | module-path '.(' pattern ')'
+  | module-path '.[' pattern ']'
+  | module-path '.[|' pattern '|]'
+  | module-path '.{' pattern '}'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s:local-opens]{local opens},
-\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:first-class-modules]{first-class modules},
 \hyperref[s:attributes]{attributes} and
 \hyperref[s:extension-nodes]{extension nodes}.
 
@@ -35,7 +38,7 @@ higher precedences come first.
 \ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
 \entree{".."}{--}
-\entree{"lazy" (see section~\ref{s:lazypat})}{--}
+\entree{"lazy" (see section~\ref{sss:pat-lazy})}{--}
 \entree{Constructor application, Tag application}{right}
 \entree{"::"}{right}
 \entree{","}{--}
@@ -50,7 +53,7 @@ outcome is either ``this value does not match this pattern'', or
 ``this value matches this pattern, resulting in the following bindings
 of names to values''.
 
-\subsubsection*{Variable patterns}
+\subsubsection*{sss:pat-variable}{Variable patterns}
 
 A pattern that consists in a value name matches any value,
 binding the name to the value. The pattern @"_"@ also matches
@@ -61,7 +64,7 @@ a given pattern. In particular, there is no way to test for equality
 between two parts of a data structure using only a pattern (but
 @"when"@ guards can be used for this purpose).
 
-\subsubsection*{Constant patterns}
+\subsubsection*{sss:pat-const}{Constant patterns}
 
 A pattern consisting in a constant matches the values that
 are equal to this constant.
@@ -69,7 +72,7 @@ are equal to this constant.
 %% FIXME for negative numbers, blanks are allowed between the minus
 %% sign and the first digit.
 
-\subsubsection*{Alias patterns}
+\subsubsection*{sss:pat-alias}{Alias patterns}
 \ikwd{as\@\texttt{as}}
 
 The pattern @pattern_1 "as" value-name@ matches the same values as
@@ -77,7 +80,7 @@ The pattern @pattern_1 "as" value-name@ matches the same values as
 the name @value-name@ is bound to the matched value, in addition to the
 bindings performed by the matching against @pattern_1@.
 
-\subsubsection*{Parenthesized patterns}
+\subsubsection*{sss:pat-parenthesized}{Parenthesized patterns}
 
 The pattern @"(" pattern_1 ")"@ matches the same values as
 @pattern_1@. A type constraint can appear in a
@@ -85,7 +88,7 @@ parenthesized pattern, as in @"(" pattern_1 ":" typexpr ")"@. This
 constraint forces the type of @pattern_1@ to be compatible with
 @typexpr@.
 
-\subsubsection*{``Or'' patterns}
+\subsubsection*{sss:pat-or}{``Or'' patterns}
 
 The pattern @pattern_1 "|" pattern_2@ represents the logical ``or'' of
 the two patterns @pattern_1@ and @pattern_2@. A value matches
@@ -99,7 +102,7 @@ performed are those of @pattern_1@ when $v$ matches @pattern_1@.
 Otherwise, value~$v$ matches @pattern_2@ whose bindings are performed.
 
 
-\subsubsection*{Variant patterns}
+\subsubsection*{sss:pat-variant}{Variant patterns}
 
 The pattern @constr '(' pattern_1 ',' \ldots ',' pattern_n ')'@ matches
 all variants whose
@@ -118,13 +121,13 @@ of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,
 respectively. This pattern behaves like
 @pattern_1 "::" \ldots "::" pattern_n "::" "[]"@.
 
-\subsubsection*{Polymorphic variant patterns}
+\subsubsection*{sss:pat-polyvar}{Polymorphic variant patterns}
 
 The pattern @"`"tag-name pattern_1@ matches all polymorphic variants
 whose tag is equal to @tag-name@, and whose argument matches
 @pattern_1@.
 
-\subsubsection*{Polymorphic variant abbreviation patterns}
+\subsubsection*{sss:pat-polyvar-abbrev}{Polymorphic variant abbreviation patterns}
 
 If the type @["('a,'b,"\ldots")"] typeconstr = "[" "`"tag-name_1 typexpr_1 "|"
 \ldots "|" "`"tag-name_n typexpr_n"]"@ is defined, then the pattern @"#"typeconstr@
@@ -132,14 +135,14 @@ is a shorthand for the following or-pattern:
 @"(" "`"tag-name_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag-name_n"(_"
 ":" typexpr_n"))"@. It matches all values of type @"[<" typeconstr "]"@.
 
-\subsubsection*{Tuple patterns}
+\subsubsection*{sss:pat-tuple}{Tuple patterns}
 
 The pattern @pattern_1 "," \ldots "," pattern_n@ matches $n$-tuples
 whose components match the patterns @pattern_1@ through @pattern_n@. That
 is, the pattern matches the tuple values $(v_1, \ldots, v_n)$ such that
 @pattern_i@ matches $v_i$ for \fromoneto{i}{n}.
 
-\subsubsection*{Record patterns}
+\subsubsection*{sss:pat-record}{Record patterns}
 
 The pattern @"{" field_1 ["=" pattern_1] ";" \ldots ";" field_n ["="
 pattern_n] "}"@ matches records that define at least the fields
@@ -159,13 +162,13 @@ Optional type constraints can be added field by field with
 of @field_k@ to be compatible with @typexpr_k@.
 
 
-\subsubsection*{Array patterns}
+\subsubsection*{sss:pat-array}{Array patterns}
 
 The pattern @"[|" pattern_1 ";" \ldots ";" pattern_n "|]"@
 matches arrays of length $n$ such that the $i$-th array element
 matches the pattern @pattern_i@, for \fromoneto{i}{n}.
 
-\subsubsection*{Range patterns}
+\subsubsection*{sss:pat-range}{Range patterns}
 
 The pattern
 @"'" @c@ "'" ".." "'" @d@ "'"@ is a shorthand for the pattern
@@ -177,7 +180,7 @@ where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
 instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
 
-\subsubsection{Lazy patterns} \label{s:lazypat}
+\subsubsection{sss:pat-lazy}{Lazy patterns}
 
 \ikwd{lazy\@\texttt{lazy}}
 
@@ -202,7 +205,7 @@ standard library (module \stdmoduleref{Lazy}).
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%
 
-\subsubsection*{Exception patterns} \label{s:exception-match}
+\subsubsection*{sss:exception-match}{Exception patterns}
 (Introduced in OCaml 4.02)
 
 A new form of exception pattern, @ 'exception' pattern @, is allowed
@@ -225,3 +228,18 @@ call.
 A pattern match must contain at least one value case. It is an error if
 all cases are exceptions, because there would be no code to handle
 the return of a value.
+
+\subsubsection*{sss:pat-open}{Local opens for patterns}
+\ikwd{open\@\texttt{open}}
+(Introduced in OCaml 4.04)
+
+For patterns, local opens are limited to the
+@module-path'.('pattern')'@ construction. This
+construction locally opens the module referred to by the module path
+@module-path@ in the scope of the pattern @pattern@.
+
+When the body of a local open pattern is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For example, @module-path'.['pattern']'@ is equivalent to
+@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
+equivalent to @module-path'.([|' pattern '|])'@.

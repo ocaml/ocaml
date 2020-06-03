@@ -26,6 +26,13 @@ let rec make_letdef def body =
       unbind_ident id;
       Clet(id, def, make_letdef rem body)
 
+let rec make_letmutdef def body =
+  match def with
+    [] -> body
+  | (id, ty, def) :: rem ->
+      unbind_ident id;
+      Clet_mut(id, ty, def, make_letmutdef rem body)
+
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
@@ -105,6 +112,7 @@ let access_array base numelt size =
 %token LEF
 %token LEI
 %token LET
+%token LETMUT
 %token LOAD
 %token <Location.t> LOCATION
 %token LPAREN
@@ -125,9 +133,8 @@ let access_array base numelt size =
 %token NLEF
 %token NLTF
 %token OR
-%token <int> POINTER
 %token PROJ
-%token <Cmm.raise_kind> RAISE
+%token <Lambda.raise_kind> RAISE
 %token RBRACKET
 %token RPAREN
 %token SEQ
@@ -203,10 +210,10 @@ expr:
     INTCONST    { Cconst_int ($1, debuginfo ()) }
   | FLOATCONST  { Cconst_float (float_of_string $1, debuginfo ()) }
   | STRING      { Cconst_symbol ($1, debuginfo ()) }
-  | POINTER     { Cconst_pointer ($1, debuginfo ()) }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
+  | LPAREN LETMUT letmutdef sequence RPAREN { make_letmutdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
   | LPAREN APPLY location expr exprlist machtype RPAREN
                 { Cop(Capply $6, $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
@@ -222,15 +229,19 @@ expr:
       { Cifthenelse($3, debuginfo (), $4, debuginfo (), $5, debuginfo ()) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
-      { let body =
+      {
+        let lbl0 = Lambda.next_raise_count () in
+        let lbl1 = Lambda.next_raise_count () in
+        let body =
           match $3 with
             Cconst_int (x, _) when x <> 0 -> $4
-          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (), (Cexit(0,[])),
+          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (),
+                             (Cexit(lbl0,[])),
                              debuginfo ()) in
-        Ccatch(Nonrecursive, [0, [],
+        Ccatch(Nonrecursive, [lbl0, [], Ctuple [], debuginfo ()],
           Ccatch(Recursive,
-            [1, [], Csequence(body, Cexit(1, [])), debuginfo ()],
-            Cexit(1, [])), debuginfo ()], Ctuple []) }
+            [lbl1, [], Csequence(body, Cexit(lbl1, [])), debuginfo ()],
+            Cexit(lbl1, []))) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
@@ -284,6 +295,17 @@ letdefmult:
 ;
 oneletdef:
     IDENT expr                  { (bind_ident $1, $2) }
+;
+letmutdef:
+    oneletmutdef                { [$1] }
+  | LPAREN letmutdefmult RPAREN { $2 }
+;
+letmutdefmult:
+    /**/                        { [] }
+  | oneletmutdef letmutdefmult  { $1 :: $2 }
+;
+oneletmutdef:
+    IDENT machtype expr         { (bind_ident $1, $2, $3) }
 ;
 chunk:
     UNSIGNED BYTE               { Byte_unsigned }

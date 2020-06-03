@@ -51,10 +51,14 @@ val ocamlc_cppflags : string
 (** The flags ocamlc should pass to the C preprocessor *)
 
 val ocamlopt_cflags : string
-(** The flags ocamlopt should pass to the C compiler *)
+  [@@ocaml.deprecated "Use ocamlc_cflags instead."]
+(** @deprecated {!ocamlc_cflags} should be used instead.
+    The flags ocamlopt should pass to the C compiler *)
 
 val ocamlopt_cppflags : string
-(** The flags ocamlopt should pass to the C preprocessor *)
+  [@@ocaml.deprecated "Use ocamlc_cppflags instead."]
+(** @deprecated {!ocamlc_cppflags} should be used instead.
+    The flags ocamlopt should pass to the C preprocessor *)
 
 val bytecomp_c_libraries: string
 (** The C libraries to link with custom runtimes *)
@@ -222,6 +226,10 @@ val default_safe_string: bool
 val flat_float_array : bool
 (** Whether the compiler and runtime automagically flatten float
     arrays *)
+
+val function_sections : bool
+(** Whether the compiler was configured to generate
+    each function in a separate section *)
 
 val windows_unicode: bool
 (** Whether Windows Unicode runtime is enabled *)

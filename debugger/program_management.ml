@@ -77,7 +77,7 @@ let open_connection address continue =
            connection := io_channel_of_descr sock;
            Input_handling.add_file !connection (accept_connection continue);
            connection_opened := true
-         with x -> close sock; raise x)
+         with x -> cleanup x @@ fun () -> close sock)
   with
     Failure _ -> raise Toplevel
   | (Unix_error _) as err -> report_error err; raise Toplevel
@@ -126,7 +126,8 @@ let initialize_loading () =
     prerr_endline "Program not found.";
     raise Toplevel;
   end;
-  Symbols.read_symbols !program_name;
+  Symbols.clear_symbols ();
+  Symbols.read_symbols 0 !program_name;
   Load_path.init (Load_path.get_paths () @ !Symbols.program_source_dirs);
   Envaux.reset_cache ();
   if !debug_loading then
@@ -134,7 +135,7 @@ let initialize_loading () =
   open_connection !socket_name
     (function () ->
       go_to _0;
-      Symbols.set_all_events();
+      Symbols.set_all_events 0;
       exit_main_loop ())
 
 (* Ensure the program is already loaded. *)
@@ -156,6 +157,5 @@ let ensure_loaded () =
       prerr_endline "done."
     with
       x ->
-        kill_program();
-        raise x
+        cleanup x kill_program
   end

@@ -22,32 +22,32 @@ type runtime_variant =
 
 val runtime_variant : unit -> runtime_variant
 
-val ocamlrun : string -> string
+val ocamlrun : string
 
-val ocamlc : string -> string
+val ocamlc : string
 
-val ocaml : string -> string
+val ocaml : string
 
-val ocamlc_dot_opt : string -> string
+val ocamlc_dot_opt : string
 
-val ocamlopt : string -> string
+val ocamlopt : string
 
-val ocamlopt_dot_opt : string -> string
+val ocamlopt_dot_opt : string
 
-val ocamlnat : string -> string
+val ocamlnat : string
 
-val cmpbyt : string -> string
+val cmpbyt : string
 
-val expect_test : string -> string
+val expect_test : string
 
-val ocamllex : string -> string
+val ocamllex : string
 
-val ocamlyacc : string -> string
+val ocamlyacc : string
 
-val ocamldoc : string -> string
-val ocamldebug : string -> string
-val ocamlobjinfo : string -> string
-val ocamlmklib : string -> string
-val codegen : string -> string
+val ocamldoc : string
+val ocamldebug : string
+val ocamlobjinfo : string
+val ocamlmklib : string
+val codegen : string
 
-val asmgen_archmod : string -> string
+val asmgen_archmod : string

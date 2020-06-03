@@ -19,7 +19,7 @@ dependencies. (See below for a typical "Makefile".)
 Dependencies are generated both for compiling with the bytecode
 compiler "ocamlc" and with the native-code compiler "ocamlopt".
 
-\section{Options}
+\section{s:ocamldep-options}{Options}
 
 The following command-line options are recognized by "ocamldep".
 
@@ -64,6 +64,9 @@ Otherwise, "Bar" is assumed to be a module from the standard library,
 and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
+
+\item["-nocwd"]
+Do not add current working directory to the list of include directories.
 
 \item["-impl" \var{file}]
 Process \var{file} as a ".ml" file.
@@ -140,7 +143,7 @@ Display a short usage summary and exit.
 %
 \end{options}
 
-\section{A typical Makefile}
+\section{s:ocamldep-makefile}{A typical Makefile}
 
 Here is a template "Makefile" for a OCaml program.
 

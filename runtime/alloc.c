@@ -27,6 +27,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/stacks.h"
+#include "caml/signals.h"
 
 #define Setup_for_gc
 #define Restore_after_gc
@@ -270,4 +271,12 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     }
   }
   return Val_unit;
+}
+
+CAMLexport value caml_alloc_some(value v)
+{
+  CAMLparam1(v);
+  value some = caml_alloc_small(1, 0);
+  Store_field(some, 0, v);
+  CAMLreturn(some);
 }

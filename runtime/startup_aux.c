@@ -28,14 +28,37 @@
 #endif
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
+#include "caml/memprof.h"
 
+
+#ifdef _WIN32
+extern void caml_win32_unregister_overflow_detection (void);
+#endif
+
+CAMLexport header_t *caml_atom_table = NULL;
 
 /* Initialize the atom table */
-
-CAMLexport header_t caml_atom_table[256];
 void caml_init_atom_table(void)
 {
+  caml_stat_block b;
   int i;
+
+  /* PR#9128: We need to give the atom table its own page to make sure
+     it does not share a page with a non-value, which would break code
+     which depend on the correctness of the page table. For example,
+     if the atom table shares a page with bytecode, then functions in
+     the runtime may decide to follow a code pointer in a closure, as
+     if it were a pointer to a value.
+
+     We add 1 padding at the end of the atom table because the atom
+     pointer actually points to the word *following* the corresponding
+     entry in the table (the entry is an empty block *header*).
+  */
+  asize_t request = (256 + 1) * sizeof(header_t);
+  request = (request + Page_size - 1) / Page_size * Page_size;
+  caml_atom_table =
+    caml_stat_alloc_aligned_noexc(request, 0, &b);
+
   for(i = 0; i < 256; i++) {
 #ifdef NATIVE_CODE
     caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_white);
@@ -44,7 +67,7 @@ void caml_init_atom_table(void)
 #endif
   }
   if (caml_page_table_add(In_static_data,
-                          caml_atom_table, caml_atom_table + 256) != 0) {
+                          caml_atom_table, caml_atom_table + 256 + 1) != 0) {
     caml_fatal_error("not enough memory for initial page table");
   }
 }
@@ -91,9 +114,10 @@ void caml_parse_ocamlrunparam(void)
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case 'a': scanmult (opt, &p); caml_set_allocation_policy ((intnat) p);
+        break;
       case 'b': scanmult (opt, &p); caml_record_backtrace(Val_bool (p));
-                    break;
+        break;
       case 'c': scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
       case 'h': scanmult (opt, &caml_init_heap_wsz); break;
       case 'H': scanmult (opt, &caml_use_huge_pages); break;
@@ -166,11 +190,15 @@ CAMLexport void caml_shutdown(void)
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
   caml_finalise_heap();
+  caml_memprof_shutdown();
   caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();
 #endif
   caml_stat_destroy_pool();
+#if defined(_WIN32) && defined(NATIVE_CODE)
+  caml_win32_unregister_overflow_detection();
+#endif
 
   shutdown_happened = 1;
 }

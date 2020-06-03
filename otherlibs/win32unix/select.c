@@ -960,19 +960,19 @@ static int fdlist_to_fdset(value fdlist, fd_set *fdset)
 
 static value fdset_to_fdlist(value fdlist, fd_set *fdset)
 {
-  value res = Val_int(0);
-  Begin_roots2(fdlist, res)
-    for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
-      value s = Field(fdlist, 0);
-      if (FD_ISSET(Socket_val(s), fdset)) {
-        value newres = caml_alloc_small(2, 0);
-        Field(newres, 0) = s;
-        Field(newres, 1) = res;
-        res = newres;
-      }
+  CAMLparam1(fdlist);
+  CAMLlocal2(res, s);
+  res = Val_int(0);
+  for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
+    s = Field(fdlist, 0);
+    if (FD_ISSET(Socket_val(s), fdset)) {
+      value newres = caml_alloc_small(2, 0);
+      Field(newres, 0) = s;
+      Field(newres, 1) = res;
+      res = newres;
     }
-  End_roots();
-  return res;
+  }
+  CAMLreturn(res);
 }
 
 CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
@@ -1264,20 +1264,20 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
                 {
                   iterResult = &(iterSelectData->aResults[i]);
                   l = caml_alloc_small(2, 0);
-                  Store_field(l, 0, find_handle(iterResult, readfds, writefds,
-                                                exceptfds));
+                  Field(l, 0) = find_handle(iterResult, readfds, writefds,
+                                            exceptfds);
                   switch (iterResult->EMode)
                     {
                     case SELECT_MODE_READ:
-                      Store_field(l, 1, read_list);
+                      Field(l, 1) =  read_list;
                       read_list = l;
                       break;
                     case SELECT_MODE_WRITE:
-                      Store_field(l, 1, write_list);
+                      Field(l, 1) = write_list;
                       write_list = l;
                       break;
                     case SELECT_MODE_EXCEPT:
-                      Store_field(l, 1, except_list);
+                      Field(l, 1) = except_list;
                       except_list = l;
                       break;
                     case SELECT_MODE_NONE:
@@ -1320,9 +1320,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
   DEBUG_PRINT("Build final result");
   res = caml_alloc_small(3, 0);
-  Store_field(res, 0, read_list);
-  Store_field(res, 1, write_list);
-  Store_field(res, 2, except_list);
+  Field(res, 0) = read_list;
+  Field(res, 1) = write_list;
+  Field(res, 2) = except_list;
 
   DEBUG_PRINT("out select");
 

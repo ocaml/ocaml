@@ -24,6 +24,17 @@ everyone to get an idea of planned tasks, refine them through Pull
 Requests, suggest more cleanups, or even start working on specific
 tasks (ideally after discussing it first with maintainers).
 
+# Code smells
+
+- global mutable state
+- poor data representation
+- avoid constructing a parsetree locally
+  (methods build a piece of AST with a self argument
+   with a *-using name to avoid conflicts; #row, etc.)
+- avoid magic string literals
+
+# TODO List
+
 Not all ideas have been thoroughly discussed, and there might not be a
 consensus for all of them.
 
@@ -51,7 +62,14 @@ consensus for all of them.
   (be careful about memory leaks with the naive approach of representing
   links with a persistent heap).
 
+  Modest version of the proposal: have an explicit indirection layer
+    (type_expr Unode.t)
+  for nodes in the union-find structure. Efficiency cost?
+
 - Make the logic for record/constructor disambiguation more readable.
+
+  (Jacques should write a specification, and then we could try
+  to make the implementation easier for others to understand.)
 
 - Tidy up destructive substitution.
 
@@ -61,8 +79,6 @@ consensus for all of them.
 - Track "string literals" in the type-checker, which often act as
   magic "internal" names which should be avoided.
 
-- Get rid of -annot.
-
 - Consider storing warning settings (+other context) as part of `Env.t`?
 
 - Parse attributes understood (e.g. the deprecated attribute) by the
@@ -71,9 +87,15 @@ consensus for all of them.
 - Introduce a notion of syntactic "path-like location" to point to
   allow pointing to AST fragments, and use that to implement "unused"
   warnings in a less invasive and less imperative way.
+  (See Thomas' PR)
 
 - Deprecate -nolabels, or even get rid of it?
+  (We could even stop supporting unlabeled full applications.
+   First turn on the warning by default.)
 
 - Using e.g. bisect_ppx, monitor coverage of the typechecker
   implementation while running the testsuite, and expand the testsuite
   and/or kill dead code in the typechecker to increase coverage ratio.
+  (Partially done by Oxana's Outreachy internship.
+   See PR#8874.
+   Ask Florian Angeletti and Sebastien Hinderer about the current state.)

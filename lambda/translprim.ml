@@ -22,6 +22,7 @@ open Types
 open Typedtree
 open Typeopt
 open Lambda
+open Debuginfo.Scoped_location
 
 type error =
   | Unknown_builtin_primitive of string
@@ -31,19 +32,19 @@ exception Error of Location.t * error
 
 (* Insertion of debugging events *)
 
-let event_before exp lam = match lam with
+let event_before loc exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug && not !Clflags.native_code
-  then Levent(lam, {lev_loc = exp.exp_loc;
+  then Levent(lam, {lev_loc = loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = exp.exp_env})
   else lam
 
-let event_after exp lam =
+let event_after loc exp lam =
   if !Clflags.debug && not !Clflags.native_code
-  then Levent(lam, {lev_loc = exp.exp_loc;
+  then Levent(lam, {lev_loc = loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = exp.exp_env})
@@ -74,6 +75,7 @@ type loc_kind =
   | Loc_MODULE
   | Loc_LOC
   | Loc_POS
+  | Loc_FUNCTION
 
 type prim =
   | Primitive of Lambda.primitive * int
@@ -120,6 +122,7 @@ let primitives_table =
     "%loc_LINE", Loc Loc_LINE;
     "%loc_POS", Loc Loc_POS;
     "%loc_MODULE", Loc Loc_MODULE;
+    "%loc_FUNCTION", Loc Loc_FUNCTION;
     "%field0", Primitive ((Pfield 0), 1);
     "%field1", Primitive ((Pfield 1), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
@@ -489,10 +492,6 @@ let specialize_primitive env ty ~has_constant_constructor prim =
     end
   | _ -> None
 
-let unboxed_compare name native_repr =
-  Primitive.make ~name ~alloc:false ~native_name:(name^"_unboxed")
-    ~native_repr_args:[native_repr;native_repr] ~native_repr_res:Untagged_int
-
 let caml_equal =
   Primitive.simple ~name:"caml_equal" ~arity:2 ~alloc:true
 let caml_string_equal =
@@ -531,21 +530,10 @@ let caml_bytes_greaterthan =
   Primitive.simple ~name:"caml_bytes_greaterthan" ~arity:2 ~alloc: false
 let caml_compare =
   Primitive.simple ~name:"caml_compare" ~arity:2 ~alloc:true
-let caml_int_compare =
-  (* Not unboxed since the comparison is done directly on tagged int *)
-  Primitive.simple ~name:"caml_int_compare" ~arity:2 ~alloc:false
-let caml_float_compare =
-  unboxed_compare "caml_float_compare" Unboxed_float
 let caml_string_compare =
   Primitive.simple ~name:"caml_string_compare" ~arity:2 ~alloc:false
 let caml_bytes_compare =
   Primitive.simple ~name:"caml_bytes_compare" ~arity:2 ~alloc:false
-let caml_nativeint_compare =
-  unboxed_compare "caml_nativeint_compare" (Unboxed_integer Pnativeint)
-let caml_int32_compare =
-  unboxed_compare "caml_int32_compare" (Unboxed_integer Pint32)
-let caml_int64_compare =
-  unboxed_compare "caml_int64_compare" (Unboxed_integer Pint64)
 
 let comparison_primitive comparison comparison_kind =
   match comparison, comparison_kind with
@@ -598,15 +586,16 @@ let comparison_primitive comparison comparison_kind =
   | Greater_than, Compare_int32s -> Pbintcomp(Pint32, Cgt)
   | Greater_than, Compare_int64s -> Pbintcomp(Pint64, Cgt)
   | Compare, Compare_generic -> Pccall caml_compare
-  | Compare, Compare_ints -> Pccall caml_int_compare
-  | Compare, Compare_floats -> Pccall caml_float_compare
+  | Compare, Compare_ints -> Pcompare_ints
+  | Compare, Compare_floats -> Pcompare_floats
   | Compare, Compare_strings -> Pccall caml_string_compare
   | Compare, Compare_bytes -> Pccall caml_bytes_compare
-  | Compare, Compare_nativeints -> Pccall caml_nativeint_compare
-  | Compare, Compare_int32s -> Pccall caml_int32_compare
-  | Compare, Compare_int64s -> Pccall caml_int64_compare
+  | Compare, Compare_nativeints -> Pcompare_bints Pnativeint
+  | Compare, Compare_int32s -> Pcompare_bints Pint32
+  | Compare, Compare_int64s -> Pcompare_bints Pint64
 
-let lambda_of_loc kind loc =
+let lambda_of_loc kind sloc =
+  let loc = to_location sloc in
   let loc_start = loc.Location.loc_start in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
   let file =
@@ -635,6 +624,9 @@ let lambda_of_loc kind loc =
         file lnum cnum enum in
     Lconst (Const_immstring loc)
   | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+  | Loc_FUNCTION ->
+    let scope_name = Debuginfo.Scoped_location.string_of_scoped_location sloc in
+    Lconst (Const_immstring scope_name)
 
 let caml_restore_raw_backtrace =
   Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
@@ -652,7 +644,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
   | External prim, args when prim = prim_sys_argv ->
-      Lprim(Pccall prim, Lconst (Const_pointer 0) :: args, loc)
+      Lprim(Pccall prim, Lconst (const_int 0) :: args, loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->
@@ -669,7 +661,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       let arg =
         match arg_exps with
         | None -> arg
-        | Some [arg_exp] -> event_after arg_exp arg
+        | Some [arg_exp] -> event_after loc arg_exp arg
         | Some _ -> assert false
       in
       Lprim(Praise kind, [arg], loc)
@@ -678,7 +670,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       let raise_arg =
         match arg_exps with
         | None -> Lvar vexn
-        | Some [exn_exp; _] -> event_after exn_exp (Lvar vexn)
+        | Some [exn_exp; _] -> event_after loc exn_exp (Lvar vexn)
         | Some _ -> assert false
       in
       Llet(Strict, Pgenval, vexn, exn,
@@ -687,7 +679,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
                            loc),
                      Lprim(Praise Raise_reraise, [raise_arg], loc)))
   | Lazy_force, [arg] ->
-      Matching.inline_lazy_force arg Location.none
+      Matching.inline_lazy_force arg Loc_unknown
   | Loc kind, [] ->
       lambda_of_loc kind loc
   | Loc kind, [arg] ->
@@ -702,7 +694,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | (Raise _ | Raise_with_backtrace
     | Lazy_force | Loc _ | Primitive _ | Comparison _
     | Send | Send_self | Send_cache), _ ->
-      raise(Error(loc, Wrong_arity_builtin_primitive prim_name))
+      raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
 let check_primitive_arity loc p =
   let prim = lookup_primitive loc p in
@@ -723,7 +715,7 @@ let check_primitive_arity loc p =
 (* Eta-expand a primitive *)
 
 let transl_primitive loc p env ty path =
-  let prim = lookup_primitive_and_mark_used loc p env path in
+  let prim = lookup_primitive_and_mark_used (to_location loc) p env path in
   let has_constant_constructor = false in
   let prim =
     match specialize_primitive env ty ~has_constant_constructor prim with
@@ -744,28 +736,53 @@ let transl_primitive loc p env ty path =
                  params;
                  return = Pgenval;
                  attr = default_stub_attribute;
-                 loc = loc;
-                 body = body; }
+                 loc;
+                 body; }
 
-(* Determine if a primitive is a Pccall or will be turned later into
-   a C function call that may raise an exception *)
-let primitive_is_ccall = function
-  | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ |
-    Parraysets _ | Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
-    Prevapply -> true
-  | _ -> false
+let lambda_primitive_needs_event_after = function
+  | Prevapply | Pdirapply (* PR#6920 *)
+  (* We add an event after any primitive resulting in a C call that
+     may raise an exception or allocate. These are places where we may
+     collect the call stack. *)
+  | Pduprecord _ | Pccall _ | Pfloatofint | Pnegfloat | Pabsfloat
+  | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat | Pstringrefs | Pbytesrefs
+  | Pbytessets | Pmakearray (Pgenarray, _) | Pduparray _
+  | Parrayrefu (Pgenarray | Pfloatarray) | Parraysetu (Pgenarray | Pfloatarray)
+  | Parrayrefs _ | Parraysets _ | Pbintofint _ | Pcvtbint _ | Pnegbint _
+  | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _
+  | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp _
+  | Pcompare_bints _
+  | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _ | Pstring_load_16 _
+  | Pstring_load_32 _ | Pstring_load_64 _ | Pbytes_load_16 _ | Pbytes_load_32 _
+  | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _ | Pbytes_set_64 _
+  | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
+  | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
+  | Pbbswap _ -> true
+
+  | Pidentity | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
+  | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Praise _
+  | Psequor | Psequand | Pnot | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
+  | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pcompare_ints | Pcompare_floats
+  | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
+  | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
+  | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
+  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
-  | Primitive (prim,_) -> primitive_is_ccall prim
+  | Primitive (prim,_) -> lambda_primitive_needs_event_after prim
   | External _ -> true
   | Comparison(comp, knd) ->
-      primitive_is_ccall (comparison_primitive comp knd)
+      lambda_primitive_needs_event_after (comparison_primitive comp knd)
   | Lazy_force | Send | Send_self | Send_cache -> true
   | Raise _ | Raise_with_backtrace | Loc _ -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
-  let prim = lookup_primitive_and_mark_used loc p env (Some path) in
+  let prim =
+    lookup_primitive_and_mark_used (to_location loc) p env (Some path) in
   let has_constant_constructor =
     match arg_exps with
     | [_; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
@@ -784,7 +801,7 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
     if primitive_needs_event_after prim then begin
       match exp with
       | None -> lam
-      | Some exp -> event_after exp lam
+      | Some exp -> event_after loc exp lam
     end else begin
       lam
     end

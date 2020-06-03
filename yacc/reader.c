@@ -49,8 +49,6 @@ bucket **plhs;
 int name_pool_size;
 char *name_pool;
 
-char line_format[] = "# %d \"%s\"\n";
-
 static unsigned char caml_ident_start[32] =
 "\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
 static unsigned char caml_ident_body[32] =
@@ -234,6 +232,14 @@ int process_apostrophe(FILE *const f)
             && cptr[4] == '\'') {
         fwrite(cptr, 1, 5, f);
         cptr += 5;
+    } else if (cptr[0] == '\\'
+            && cptr[1] == 'o'
+            && cptr[2] >= '0' && cptr[2] <= '3'
+            && cptr[3] >= '0' && cptr[3] <= '7'
+            && cptr[4] >= '0' && cptr[4] <= '7'
+            && cptr[5] == '\'') {
+        fwrite(cptr, 1, 6, f);
+        cptr += 6;
     } else if (cptr[0] == '\\' && cptr[2] == '\'') {
         fwrite(cptr, 1, 3, f);
         cptr += 3;
@@ -255,9 +261,30 @@ void process_apostrophe_body(FILE *f)
 
 
 static void process_open_curly_bracket(FILE *f) {
-    if (In_bitmap(caml_ident_start, *cptr) || *cptr == '|')
+    char *idcptr = cptr;
+
+    if (*idcptr == '%') {
+        if (*++idcptr == '%') idcptr++;
+
+        if (In_bitmap(caml_ident_start, *idcptr)) {
+            idcptr++;
+            while (In_bitmap(caml_ident_body, *idcptr)) idcptr++;
+            while (*idcptr == '.') {
+                idcptr++;
+                if (In_bitmap(caml_ident_start, *idcptr)) {
+                    idcptr++;
+                    while (In_bitmap(caml_ident_body, *idcptr)) idcptr++;
+                }
+            }
+            while (*idcptr == ' ' || *idcptr == 9 || *idcptr == 12) idcptr++;
+        } else {
+           return;
+        }
+    }
+
+    if (In_bitmap(caml_ident_start, *idcptr) || *idcptr == '|')
     {
-        char *newcptr = cptr;
+        char *newcptr = idcptr;
         size_t size = 0;
         char *buf;
         while(In_bitmap(caml_ident_body, *newcptr)) { newcptr++; }
@@ -267,13 +294,13 @@ static void process_open_curly_bracket(FILE *f) {
             char *s_line;
             char *s_cptr;
 
-            size = newcptr - cptr;
+            size = newcptr - idcptr;
             buf = MALLOC(size + 2);
             if (!buf) no_space();
-            memcpy(buf, cptr, size);
+            memcpy(buf, idcptr, size);
             buf[size] = '}';
             buf[size + 1] = '\0';
-            fwrite(cptr, 1, size + 1, f);
+            fwrite(cptr, 1, newcptr - cptr + 1, f);
             cptr = newcptr + 1;
             s_lineno = lineno;
             s_line = dup_line();
@@ -362,6 +389,9 @@ static void process_comment(FILE *const f) {
                 process_open_curly_bracket(f);
                 continue;
             default:
+                if (In_bitmap(caml_ident_start, c)) {
+                  while (In_bitmap(caml_ident_body, *cptr)) putc(*cptr++, f);
+                }
                 continue;
             }
         }
@@ -554,7 +584,7 @@ void copy_text(void)
         if (line == 0)
             unterminated_text(t_lineno, t_line, t_cptr);
     }
-    fprintf(f, line_format, lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name_disp);
 
 loop:
     c = *cptr++;
@@ -600,6 +630,12 @@ loop:
         goto loop;
     default:
         putc(c, f);
+        if (In_bitmap(caml_ident_start, c)) {
+          while (In_bitmap(caml_ident_body, *cptr)) {
+            putc(*cptr, f);
+            cptr++;
+          }
+        }
         need_newline = 1;
         goto loop;
     }
@@ -963,9 +999,9 @@ void declare_start(void)
 
       if (bp->class == TERM)
         terminal_start(bp->name);
-      bp->entry = ++entry_counter;
-      if (entry_counter == 256)
+      if (entry_counter >= MAX_ENTRY_POINT)
         too_many_entries();
+      bp->entry = ++entry_counter;
     }
 }
 
@@ -1271,7 +1307,7 @@ void copy_action(void)
                 item->name);
     }
     fprintf(f, "    Obj.repr(\n");
-    fprintf(f, line_format, lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name_disp);
     for (i = 0; i < cptr - line; i++) fputc(' ', f);
     fputc ('(', f);
 
@@ -1684,7 +1720,7 @@ void make_goal(void)
       if (is_polymorphic(bp->tag))
         polymorphic_entry_point(bp->name);
       fprintf(entry_file,
-              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (Parsing.yyparse yytables %d lexfun lexbuf : %s)\n",
+              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (Parsing.yyparse yytables %u lexfun lexbuf : %s)\n",
               bp->name, bp->entry, bp->tag);
       fprintf(interface_file,
               "val %s :\n  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> %s\n",
@@ -1805,8 +1841,8 @@ void print_grammar(void)
 
 void reader(void)
 {
-    virtual_input_file_name = substring (input_file_name, 0,
-                                         strlen (input_file_name));
+    virtual_input_file_name = caml_stat_strdup_of_os(input_file_name);
+    if (!virtual_input_file_name) no_space();
     create_symbol_table();
     read_declarations();
     output_token_type();

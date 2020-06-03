@@ -982,7 +982,8 @@ intnat caml_float_compare_unboxed(double f, double g)
   /* This branchless implementation is from GPR#164.
      Note that [f == f] if and only if f is not NaN.
      We expand each subresult of the expression to
-     avoid sign-extension on 64bit. GPR#2250. */
+     avoid sign-extension on 64bit. GPR#2250.
+     See also translation of Pcompare_floats in asmcomp/cmmgen.ml  */
   intnat res =
     (intnat)(f > g) - (intnat)(f < g) + (intnat)(f == f) - (intnat)(g == g);
   return res;
@@ -1045,24 +1046,4 @@ value caml_classify_float_unboxed(double vd)
 CAMLprim value caml_classify_float(value vd)
 {
   return caml_classify_float_unboxed(Double_val(vd));
-}
-
-/* The [caml_init_ieee_float] function should initialize floating-point hardware
-   so that it behaves as much as possible like the IEEE standard.
-   In particular, return special numbers like Infinity and NaN instead
-   of signalling exceptions.  Currently, everyone is in IEEE mode
-   at program startup, except FreeBSD prior to 4.0R. */
-
-#ifdef __FreeBSD__
-#include <osreldate.h>
-#if (__FreeBSD_version < 400017)
-#include <floatingpoint.h>
-#endif
-#endif
-
-void caml_init_ieee_floats(void)
-{
-#if defined(__FreeBSD__) && (__FreeBSD_version < 400017)
-  fpsetmask(0);
-#endif
 }

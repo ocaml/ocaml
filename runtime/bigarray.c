@@ -67,7 +67,7 @@ CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
 /* Operation table for bigarrays */
 
 CAMLexport struct custom_operations caml_ba_ops = {
-  "_bigarray",
+  "_bigarr02",
   caml_ba_finalize,
   caml_ba_compare,
   caml_ba_hash,
@@ -209,7 +209,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
       if (e1 < e2) return -1; \
       if (e1 > e2) return 1; \
       if (e1 != e2) { \
-        caml_compare_unordered = 1; \
+        Caml_state->compare_unordered = 1; \
         if (e1 == e1) return 1; \
         if (e2 == e2) return -1; \
       } \
@@ -374,11 +374,15 @@ CAMLexport void caml_ba_serialize(value v,
   /* Serialize header information */
   caml_serialize_int_4(b->num_dims);
   caml_serialize_int_4(b->flags & (CAML_BA_KIND_MASK | CAML_BA_LAYOUT_MASK));
-  /* On a 64-bit machine, if any of the dimensions is >= 2^32,
-     the size of the marshaled data will be >= 2^32 and
-     extern_value() will fail.  So, it is safe to write the dimensions
-     as 32-bit unsigned integers. */
-  for (i = 0; i < b->num_dims; i++) caml_serialize_int_4(b->dim[i]);
+  for (i = 0; i < b->num_dims; i++) {
+    intnat len = b->dim[i];
+    if (len < 0xffff) {
+      caml_serialize_int_2(len);
+    } else {
+      caml_serialize_int_2(0xffff);
+      caml_serialize_int_8(len);
+    }
+  }
   /* Compute total number of elements */
   num_elts = 1;
   for (i = 0; i < b->num_dims; i++) num_elts = num_elts * b->dim[i];
@@ -446,7 +450,11 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     caml_deserialize_error("input_value: wrong number of bigarray dimensions");
   b->flags = caml_deserialize_uint_4() | CAML_BA_MANAGED;
   b->proxy = NULL;
-  for (i = 0; i < b->num_dims; i++) b->dim[i] = caml_deserialize_uint_4();
+  for (i = 0; i < b->num_dims; i++) {
+    intnat len = caml_deserialize_uint_2();
+    if (len == 0xffff) len = caml_deserialize_uint_8();
+    b->dim[i] = len;
+  }
   /* Compute total number of elements.  Watch out for overflows (MPR#7765). */
   num_elts = 1;
   for (i = 0; i < b->num_dims; i++) {

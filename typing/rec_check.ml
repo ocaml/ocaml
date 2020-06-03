@@ -761,7 +761,7 @@ let rec expression : Typedtree.expression -> term_judg =
       ]
     | Texp_override (pth, fields) ->
       (*
-         G |- pth : m   (Gi |- ei : m[Derefence])^i
+         G |- pth : m   (Gi |- ei : m[Dereference])^i
          ----------------------------------------------------
          G + sum(Gi)^i |- {< (xi = ei)^i >} (at path pth) : m
 
@@ -854,7 +854,7 @@ and modexp : Typedtree.module_expr -> term_judg =
       path pth
     | Tmod_structure s ->
       structure s
-    | Tmod_functor (_, _, _, e) ->
+    | Tmod_functor (_, e) ->
       modexp e << Delay
     | Tmod_apply (f, p, _) ->
       join [
@@ -984,15 +984,21 @@ and structure_item : Typedtree.structure_item -> bind_judg =
       Env.join (modexp mexp m) (Env.remove_list included_ids env)
 
 (* G |- module M = E : m -| G *)
-and module_binding : (Ident.t * Typedtree.module_expr) -> bind_judg =
+and module_binding : (Ident.t option * Typedtree.module_expr) -> bind_judg =
   fun (id, mexp) m env ->
       (*
         GE |- E: m[mM + Guard]
         -------------------------------------
         GE + G |- module M = E : m -| M:mM, G
       *)
-      let mM, env = Env.take id env in
-      let judg_E = modexp mexp << (Mode.join mM Guard) in
+      let judg_E, env =
+        match id with
+        | None -> modexp mexp << Guard, env
+        | Some id ->
+          let mM, env = Env.take id env in
+          let judg_E = modexp mexp << (Mode.join mM Guard) in
+          judg_E, env
+      in
       Env.join (judg_E m) env
 
 and open_declaration : Typedtree.open_declaration -> bind_judg =
@@ -1002,12 +1008,18 @@ and open_declaration : Typedtree.open_declaration -> bind_judg =
       Env.join (judg_E m) (Env.remove_list bound_ids env)
 
 and recursive_module_bindings
-  : (Ident.t * Typedtree.module_expr) list -> bind_judg =
+  : (Ident.t option * Typedtree.module_expr) list -> bind_judg =
   fun m_bindings m env ->
-    let mids = List.map fst m_bindings in
+    let mids = List.filter_map fst m_bindings in
     let binding (mid, mexp) m =
-      let mM = Env.find mid env in
-      Env.remove_list mids (modexp mexp Mode.(compose m (join mM Guard)))
+      let judg_E =
+        match mid with
+        | None -> modexp mexp << Guard
+        | Some mid ->
+          let mM = Env.find mid env in
+          modexp mexp << (Mode.join mM Guard)
+      in
+      Env.remove_list mids (judg_E m)
     in
     Env.join (list binding m_bindings m) (Env.remove_list mids env)
 
@@ -1132,8 +1144,9 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
    m' is the mode under which the scrutinee of p
    (the value matched against p) is placed.
 *)
-and case : Typedtree.case -> mode -> Env.t * mode =
-  fun { Typedtree.c_lhs; c_guard; c_rhs } ->
+and case
+    : 'k . 'k Typedtree.case -> mode -> Env.t * mode
+  = fun { Typedtree.c_lhs; c_guard; c_rhs } ->
     (*
        Ge |- e : m    Gg |- g : m[Dereference]
        G := Ge+Gg     p : mp -| G
@@ -1153,7 +1166,7 @@ and case : Typedtree.case -> mode -> Env.t * mode =
 
    m is the mode under which the scrutinee of p is placed.
 *)
-and pattern : pattern -> Env.t -> mode = fun pat env ->
+and pattern : type k . k general_pattern -> Env.t -> mode = fun pat env ->
   (*
     mp := | Dereference if p is destructuring
           | Guard       otherwise
@@ -1172,7 +1185,7 @@ and pattern : pattern -> Env.t -> mode = fun pat env ->
   in
   Mode.join m_pat m_env
 
-and is_destructuring_pattern : Typedtree.pattern -> bool =
+and is_destructuring_pattern : type k . k general_pattern -> bool =
   fun pat -> match pat.pat_desc with
     | Tpat_any -> false
     | Tpat_var (_, _) -> false
@@ -1183,10 +1196,11 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_variant _ -> true
     | Tpat_record (_, _) -> true
     | Tpat_array _ -> true
+    | Tpat_lazy _ -> true
+    | Tpat_value pat -> is_destructuring_pattern (pat :> pattern)
+    | Tpat_exception _ -> false
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
-    | Tpat_lazy _ -> true
-    | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
   let ty = expression expr Return in

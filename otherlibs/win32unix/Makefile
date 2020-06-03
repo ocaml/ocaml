@@ -46,7 +46,7 @@ CAMLOBJS=unix.cmo unixLabels.cmo
 WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
 LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
 EXTRACAMLFLAGS=-nolabels
-EXTRACFLAGS=-I../unix
+EXTRACPPFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h
 
 
@@ -65,15 +65,8 @@ $(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
 	cp ../unix/$* $*
 
 .PHONY: depend
-ifeq "$(TOOLCHAIN)" "msvc"
-depend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(CC) -MM $(OC_CPPFLAGS) -I../unix $(ALL_FILES) \
-	  | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
-	  unix.ml >> .depend
-endif
+	  unix.ml > .depend
 
 include .depend

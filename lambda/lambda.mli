@@ -76,6 +76,8 @@ type primitive =
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of integer_comparison
+  (* Comparions that return int (not bool like above) for ordering *)
+  | Pcompare_ints | Pcompare_floats | Pcompare_bints of boxed_integer
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
@@ -196,7 +198,6 @@ val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
@@ -204,6 +205,7 @@ type structured_constant =
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
+  | Hint_inline (* [@inline hint] *)
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
@@ -252,6 +254,8 @@ type function_attribute = {
   stub: bool;
 }
 
+type scoped_location = Debuginfo.Scoped_location.t
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -259,12 +263,12 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
-  | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch * Location.t
+  | Lprim of primitive * lambda list * scoped_location
+  | Lswitch of lambda * lambda_switch * scoped_location
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+      lambda * (string * lambda) list * lambda option * scoped_location
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -275,7 +279,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
+  | Lsend of meth_kind * lambda * lambda * lambda list * scoped_location
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -285,12 +289,12 @@ and lfunction =
     return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
-    loc : Location.t; }
+    loc : scoped_location; }
 
 and lambda_apply =
   { ap_func : lambda;
     ap_args : lambda list;
-    ap_loc : Location.t;
+    ap_loc : scoped_location;
     ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
     ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
     ap_specialised : specialise_attribute; }
@@ -302,7 +306,7 @@ and lambda_switch =
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
     sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
-  { lev_loc: Location.t;
+  { lev_loc: scoped_location;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.t }
@@ -336,6 +340,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
+val const_int : int -> structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
@@ -363,10 +368,10 @@ val transl_prim: string -> string -> lambda
 
 val free_variables: lambda -> Ident.Set.t
 
-val transl_module_path: Location.t -> Env.t -> Path.t -> lambda
-val transl_value_path: Location.t -> Env.t -> Path.t -> lambda
-val transl_extension_path: Location.t -> Env.t -> Path.t -> lambda
-val transl_class_path: Location.t -> Env.t -> Path.t -> lambda
+val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_value_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_extension_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_class_path: scoped_location -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 

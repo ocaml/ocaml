@@ -44,7 +44,7 @@ let win64 = Arch.win64
     r10         10
     r11         11
     rbp         12
-    r14         trap pointer
+    r14         domain state pointer
     r15         allocation pointer
 
   xmm0 - xmm15  100 - 115  *)
@@ -301,14 +301,20 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
+let destroyed_by_spacetime_at_alloc =
+  if Config.spacetime then
+    [| loc_spacetime_node_hole |]
+  else
+    [| |]
+
 let destroyed_at_alloc =
   let regs =
-    if Config.spacetime then
-      [| rax; loc_spacetime_node_hole |]
+    if X86_proc.use_plt then
+      destroyed_by_plt_stub
     else
-      [| rax |]
+      [| r11 |]
   in
-  Array.concat [regs; destroyed_by_plt_stub]
+  Array.concat [regs; destroyed_by_spacetime_at_alloc]
 
 let destroyed_at_oper = function
     Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
@@ -325,6 +331,7 @@ let destroyed_at_oper = function
   | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
       [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
+  | Itrywith _ -> [| r11 |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
@@ -368,20 +375,18 @@ let op_is_pure = function
   | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
-  | Ispecific(Ilea _|Isextend32) -> true
+  | Ispecific(Ilea _|Isextend32|Izextend32) -> true
   | Ispecific _ -> false
   | _ -> true
 
 (* Layout of the stack frame *)
 
-let num_stack_slots = [| 0; 0 |]
-let contains_calls = ref false
+let frame_required fd =
+  fp || fd.fun_contains_calls ||
+  fd.fun_num_stack_slots.(0) > 0 || fd.fun_num_stack_slots.(1) > 0
 
-let frame_required () =
-  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
-
-let prologue_required () =
-  frame_required ()
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 

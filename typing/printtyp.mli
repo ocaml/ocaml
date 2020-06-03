@@ -25,6 +25,10 @@ val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
 
+val type_path: formatter -> Path.t -> unit
+(** Print a type path taking account of [-short-paths].
+    Calls should be within [wrap_printing_env]. *)
+
 module Out_name: sig
   val create: string -> out_name
   val print: out_name -> string
@@ -69,20 +73,41 @@ module Conflicts: sig
 
   type explanation =
     { kind: namespace;
-      name:string; location:Location.t}
+      name:string;
+      root_name:string;
+      location:Location.t
+    }
 
-  val take: unit -> explanation list
-  val pp: Format.formatter -> explanation list -> unit
-  val print: Format.formatter -> unit
+  val list_explanations: unit -> explanation list
+(** [list_explanations()] return the list of conflict explanations
+    collected up to this point, and reset the list of collected
+    explanations *)
+
+  val print_located_explanations:
+    Format.formatter -> explanation list -> unit
+
+  val print_explanations: Format.formatter -> unit
+  (** Print all conflict explanations collected up to this point *)
+
   val reset: unit -> unit
 end
-
 
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
 val reset_and_mark_loops_list: type_expr list -> unit
+
 val type_expr: formatter -> type_expr -> unit
+val marked_type_expr: formatter -> type_expr -> unit
+(** The function [type_expr] is the safe version of the pair
+    [(typed_expr, marked_type_expr)]:
+    it takes care of marking loops in the type expression and resetting
+    type variable names before printing.
+      Contrarily, the function [marked_type_expr] should only be called on
+    type expressions whose loops have been marked or it may stackoverflow
+    (see #8860 for examples).
+ *)
+
 val constructor_arguments: formatter -> constructor_arguments -> unit
 val tree_of_type_scheme: type_expr -> out_type
 val type_sch : formatter -> type_expr -> unit
@@ -94,6 +119,8 @@ val type_scheme_max: ?b_reset_names: bool ->
 (* End Maxence *)
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
+val label : formatter -> label_declaration -> unit
+val constructor : formatter -> constructor_declaration -> unit
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
@@ -101,6 +128,16 @@ val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
 val extension_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
+(* Prints extension constructor with the type signature:
+     type ('a, 'b) bar += A of float
+*)
+
+val extension_only_constructor:
+    Ident.t -> formatter -> extension_constructor -> unit
+(* Prints only extension constructor without type signature:
+     A of float
+*)
+
 val tree_of_module:
     Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit

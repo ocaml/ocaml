@@ -23,9 +23,11 @@ TEXINPUTS = ".:..:../refman:../library:../cmds:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
 HEVEA = hevea
 HACHA = hacha
-INFO_FLAGS = -fix -exec xxdate.exe -info -w 79
+# We suppress warnings in info and text mode (with -s) because hevea listings emit
+# DIV blocks that the text modes do not know how to interpret.
+INFO_FLAGS = -fix -exec xxdate.exe -info -w 79 -s
 HTML_FLAGS = -fix -exec xxdate.exe -O
-TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79
+TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 
 
 manual: files

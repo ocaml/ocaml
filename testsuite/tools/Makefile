@@ -12,6 +12,8 @@
 #*                                                                        *
 #**************************************************************************
 
+.NOTPARALLEL:
+
 TOPDIR = ../..
 
 COMPILERLIBSDIR = $(TOPDIR)/compilerlibs
@@ -40,7 +42,7 @@ codegen_OBJECTS = $(addsuffix .cmo,\
 
 tools := $(expect_PROG)
 
-ifneq "$(ARCH)" "none"
+ifeq "$(NATIVE_COMPILER)" "true"
 tools += $(codegen_PROG)
 ifneq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # The asmgen tests are not ported to MSVC64 yet
@@ -93,6 +95,6 @@ asmgen_i386.obj: asmgen_i386nt.asm
 
 .PHONY: clean
 clean:
-	rm -f *.cm* *.$(O)
-	rm -f $(tools)
+	rm -f *.cm* *.o *.obj
+	rm -f expect_test expect_test.exe codegen codegen.exe
 	rm -f parsecmm.ml parsecmm.mli lexcmm.ml

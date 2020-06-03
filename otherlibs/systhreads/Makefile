@@ -15,38 +15,35 @@
 
 ROOTDIR=../..
 
-include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
+
+OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
+
+NATIVE_CPPFLAGS = \
+  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
 LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
-CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc $(LIBS)
-CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt $(LIBS)
+CAMLC=$(BEST_OCAMLC) $(LIBS)
+CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
+
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
-else
-OPTCOMPFLAGS=
-endif
 
 LIBNAME=threads
-
-ifeq "$(UNIX_OR_WIN32)" "unix"
-HEADER = st_posix.h
-else # Windows
-HEADER = st_win32.h
-endif
 
 # Note: the header on which object files produced from st_stubs.c
 # should actually depend is known for sure only at compile-time.
 # That's why this dependency is handled in the Makefile directly
 # and removed from the output of the C compiler during make depend
 
-BYTECODE_C_OBJS=st_stubs_b.$(O)
-NATIVECODE_C_OBJS=st_stubs_n.$(O)
+BYTECODE_C_OBJS=st_stubs.b.$(O)
+NATIVECODE_C_OBJS=st_stubs.n.$(O)
 
 THREADS_SOURCES = thread.ml mutex.ml condition.ml event.ml threadUnix.ml
 
@@ -88,25 +85,25 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # which itself will pass -lunix to the C linker.  It seems more
 # modular to me this way. -- Alain
 
-# The following lines produce two object files st_stubs_b.$(O) and
-# st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
+# The following lines produce two object files st_stubs.b.$(O) and
+# st_stubs.n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
 
-st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime  \
-	  $(SHAREDLIB_CFLAGS) $(OUTPUTOBJ)$@ $<
+st_stubs.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
 
-st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	  -I$(ROOTDIR)/runtime $(SHAREDLIB_CFLAGS) -DNATIVE_CODE \
-	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
-	  $(OUTPUTOBJ)$@ -c $<
+ifneq "$(COMPUTE_DEPS)" "false"
+st_stubs.%.$(O): st_stubs.c
+else
+st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
+endif
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
+	rm -f dllthreads*.so dllthreads*.dll *.a *.lib *.o *.obj
+	rm -rf $(DEPDIR)
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
@@ -148,20 +145,27 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-.PHONY: depend
-ifeq "$(TOOLCHAIN)" "msvc"
-depend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
-depend:
-	$(CC) -MM $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime st_stubs.c \
-	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
-	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
-	$(CC) -MM $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime \
-	  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
-	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
-	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml >> .depend
+DEP_FILES := st_stubs.b.$(D)
+ifneq "$(NATIVE_COMPILER)" "false"
+DEP_FILES += st_stubs.n.$(D)
 endif
+
+ifeq "$(COMPUTE_DEPS)" "true"
+include $(addprefix $(DEPDIR)/, $(DEP_FILES))
+endif
+
+%.n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+
+define GEN_RULE
+$(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
+endef
+
+$(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
+
+.PHONY: depend
+depend:
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

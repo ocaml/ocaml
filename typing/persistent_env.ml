@@ -125,7 +125,11 @@ let import_crcs penv ~source crcs =
 
 let check_consistency penv ps =
   try import_crcs penv ~source:ps.ps_filename ps.ps_crcs
-  with Consistbl.Inconsistency(name, source, auth) ->
+  with Consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = source;
+      original_source = auth;
+    } ->
     error (Inconsistent_import(name, auth, source))
 
 let can_load_cmis penv =
@@ -343,7 +347,7 @@ let report_error ppf =
   let open Format in
   function
   | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
-      "Wrong file naming: %a@ contains the compiled interface for @ \
+      "Wrong file naming: %a@ contains the compiled interface for@ \
        %s when %s was expected"
       Location.print_filename filename ps_name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf

@@ -73,6 +73,8 @@ and instrument = function
 
   (* these cases add no logging, but instrument subexpressions *)
   | Clet (v, e, body) -> Clet (v, instrument e, instrument body)
+  | Clet_mut (v, k, e, body) ->
+    Clet_mut (v, k, instrument e, instrument body)
   | Cphantom_let (v, defining_expr, body) ->
     Cphantom_let (v, defining_expr, instrument body)
   | Cassign (v, e) -> Cassign (v, instrument e)
@@ -89,7 +91,7 @@ and instrument = function
 
   (* these are base cases and have no logging *)
   | Cconst_int _ | Cconst_natint _ | Cconst_float _
-  | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _
+  | Cconst_symbol _
   | Cblockheader _ | Cvar _ as c -> c
 
 let instrument_function c dbg =

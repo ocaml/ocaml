@@ -181,7 +181,7 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/317 by T/335
+Error: Illegal shadowing of included module type T/317 by T/334
        Line 2, characters 2-11:
          Module type T/317 came from this include
        Line 3, characters 2-39:
@@ -198,11 +198,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/353 by ext/370
+Error: Illegal shadowing of included type ext/352 by ext/369
        Line 2, characters 2-11:
-         Type ext/353 came from this include
+         Type ext/352 came from this include
        Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/353 is shadowed
+         The extension constructor C2 has no valid type if ext/352 is shadowed
 |}]
 
 module type Class = sig
@@ -282,8 +282,8 @@ module N :
     type t
     val unit : unit
     external e : unit -> unit = "%identity"
-    module M : sig  end
-    module type T = sig  end
+    module M : sig end
+    module type T = sig end
     exception E
     type ext = ..
     type ext += C
@@ -304,7 +304,7 @@ module NN :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -329,7 +329,7 @@ module Type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -352,7 +352,7 @@ module Module :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -370,12 +370,12 @@ end
 [%%expect{|
 module Module_type :
   sig
-    module type U = sig  end
+    module type U = sig end
     type t = N.t
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -398,7 +398,7 @@ module Exception :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -421,7 +421,7 @@ module Extension :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -444,7 +444,7 @@ module Class :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -467,7 +467,7 @@ module Class_type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig  end
+    module type T = sig end
     exception E
     type ext = N.ext = ..
     type ext += C

@@ -45,6 +45,7 @@ type float_kind_conv =
   | Float_F                        (*  %F | %+F | % F  *)
   | Float_h                        (*  %h | %+h | % h  *)
   | Float_H                        (*  %H | %+H | % H  *)
+  | Float_CF                       (*  %#F| %+#F| % #F *)
 type float_conv = float_flag_conv * float_kind_conv
 
 (***)

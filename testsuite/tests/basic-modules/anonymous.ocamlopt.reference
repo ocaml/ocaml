@@ -1,0 +1,31 @@
+(seq (ignore (let (x = [0: 13 37]) (makeblock 0 x)))
+  (let
+    (A =
+       (apply (field 0 (global CamlinternalMod!)) [0: "anonymous.ml" 25 6]
+         [0: [0]])
+     B =
+       (apply (field 0 (global CamlinternalMod!)) [0: "anonymous.ml" 35 6]
+         [0: [0]]))
+    (seq (ignore (let (x = [0: 4 2]) (makeblock 0 x)))
+      (apply (field 1 (global CamlinternalMod!)) [0: [0]] A A)
+      (apply (field 1 (global CamlinternalMod!)) [0: [0]] B
+        (let (x = [0: "foo" "bar"]) (makeblock 0)))
+      (setfield_ptr(root-init) 0 (global Anonymous!) A)
+      (setfield_ptr(root-init) 1 (global Anonymous!) B)
+      (let (f = (function param 0))
+        (setfield_ptr(root-init) 2 (global Anonymous!) f))
+      (let (s = (makemutable 0 ""))
+        (setfield_ptr(root-init) 3 (global Anonymous!) s))
+      (ignore
+        (let
+          (*match* =
+             (setfield_ptr 0 (field 3 (global Anonymous!)) "Hello World!"))
+          (makeblock 0)))
+      (let (drop = (function param 0))
+        (setfield_ptr(root-init) 4 (global Anonymous!) drop))
+      (let
+        (*match* =
+           (apply (field 4 (global Anonymous!))
+             (field 0 (field 3 (global Anonymous!)))))
+        0)
+      0)))

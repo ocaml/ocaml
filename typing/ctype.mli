@@ -37,10 +37,17 @@ module Unification_trace: sig
     | Equation of 'a
 
    (** Errors for polymorphic variants *)
+
+  type fixed_row_case =
+    | Cannot_be_closed
+    | Cannot_add_tags of string list
+
   type variant =
     | No_intersection
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
+    | Fixed_row of position * fixed_row_case * fixed_explanation
+    (** Fixed row types,  e.g. ['a. [> `X] as 'a] *)
 
   type obj =
     | Missing_field of position * string
@@ -125,8 +132,24 @@ val repr: type_expr -> type_expr
 val object_fields: type_expr -> type_expr
 val flatten_fields:
         type_expr -> (string * field_kind * type_expr) list * type_expr
-        (* Transform a field type into a list of pairs label-type *)
-        (* The fields are sorted *)
+(** Transform a field type into a list of pairs label-type.
+    The fields are sorted.
+
+    Beware of the interaction with GADTs:
+
+    Due to the introduction of object indexes for GADTs, the row variable of
+    an object may now be an expansible type abbreviation.
+    A first consequence is that [flatten_fields] will not completely flatten
+    the object, since the type abbreviation will not be expanded
+    ([flatten_fields] does not receive the current environment).
+    Another consequence is that various functions may be called with the
+    expansion of this type abbreviation, which is a Tfield, e.g. during
+    printing.
+
+    Concrete problems have been fixed, but new bugs may appear in the
+    future. (Test cases were added to typing-gadts/test.ml)
+*)
+
 val associate_fields:
         (string * field_kind * type_expr) list ->
         (string * field_kind * type_expr) list ->
@@ -142,7 +165,6 @@ val set_object_name:
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
-val lid_of_path: ?hash:string -> Path.t -> Longident.t
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
@@ -201,6 +223,7 @@ val instance_poly:
         ?keep_names:bool ->
         bool -> type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars *)
+val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * bool
 val instance_label:
         bool -> label_description -> type_expr list * type_expr * type_expr
         (* Same, for a label *)
@@ -235,8 +258,6 @@ val unify_gadt:
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
-val with_passive_variants: ('a -> 'b) -> ('a -> 'b)
-        (* Call [f] in passive_variants mode, for exhaustiveness check. *)
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
@@ -259,7 +280,7 @@ val matches: Env.t -> type_expr -> type_expr -> bool
         (* Same as [moregeneral false], implemented using the two above
            functions and backtracking. Ignore levels *)
 
-val reify_univars : Types.type_expr -> Types.type_expr
+val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
 
 type class_match_failure =
@@ -352,6 +373,8 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
 val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
+
+val immediacy : Env.t -> type_expr -> Type_immediacy.t
 
 val maybe_pointer_type : Env.t -> type_expr -> bool
        (* True if type is possibly pointer, false if definitely not a pointer *)

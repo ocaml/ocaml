@@ -99,10 +99,14 @@ let init () =
 
 let match_printer_type desc typename =
   let printer_type =
-    try
-      Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
-    with Not_found ->
-      raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename)))) in
+    match
+      Env.find_type_by_name
+        (Ldot(Lident "Topdirs", typename)) Env.empty
+    with
+    | path, _ -> path
+    | exception Not_found ->
+        raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename))))
+  in
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify Env.empty
@@ -113,17 +117,18 @@ let match_printer_type desc typename =
   ty_arg
 
 let find_printer_type lid =
-  try
-    let (path, desc) = Env.lookup_value lid Env.empty in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type desc "printer_type_old", true) in
-    (ty_arg, path, is_old_style)
-  with
-  | Not_found -> raise(Error(Unbound_identifier lid))
-  | Ctype.Unify _ -> raise(Error(Wrong_type lid))
+  match Env.find_value_by_name lid Env.empty with
+  | (path, desc) -> begin
+      match match_printer_type desc "printer_type_new" with
+      | ty_arg -> (ty_arg, path, false)
+      | exception Ctype.Unify _ -> begin
+          match match_printer_type desc "printer_type_old" with
+          | ty_arg -> (ty_arg, path, true)
+          | exception Ctype.Unify _ -> raise(Error(Wrong_type lid))
+        end
+    end
+  | exception Not_found ->
+      raise(Error(Unbound_identifier lid))
 
 let install_printer ppf lid =
   let (ty_arg, path, is_old_style) = find_printer_type lid in

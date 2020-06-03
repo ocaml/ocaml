@@ -15,18 +15,19 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+OCAMLDEP = $(BEST_OCAMLDEP)
 DEPFLAGS = -slash
-OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLLEX = $(BEST_OCAMLLEX)
+
 # TODO: figure out whether the DEBUG lines the following preprocessor removes
 # are actually useful.
 # If they are not, then the preprocessor logic (including the
@@ -41,27 +42,39 @@ OCAMLPP=-pp 'sh ./remove_DEBUG'
 # For installation
 ##############
 
-MKDIR=mkdir -p
 CP=cp
 OCAMLDOC=ocamldoc
+OCAMLDOC_OPT=$(OCAMLDOC).opt
 
 # TODO: clarify whether the following really needs to be that complicated
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(TARGET)" "$(HOST)"
     ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-      OCAMLDOC_RUN=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
+      OCAMLDOC_RUN_BYTE=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
     else
-      OCAMLDOC_RUN=./$(OCAMLDOC)
+# if shared-libraries are not supported, unix.cma and str.cma
+# are compiled with -custom, so ocamldoc also uses -custom,
+# and (ocamlrun ocamldoc) does not work.
+      OCAMLDOC_RUN_BYTE=./$(OCAMLDOC)
     endif
   else
-    OCAMLDOC_RUN=$(OCAMLRUN) ./$(OCAMLDOC)
+    OCAMLDOC_RUN_BYTE=$(OCAMLRUN) ./$(OCAMLDOC)
   endif
 else # Windows
-  OCAMLDOC_RUN = \
+  OCAMLDOC_RUN_BYTE = \
     CAML_LD_LIBRARY_PATH="$(ROOTDIR)/otherlibs/win32unix;$(ROOTDIR)/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
 endif
 
-OCAMLDOC_OPT=$(OCAMLDOC).opt
+OCAMLDOC_RUN_OPT=./$(OCAMLDOC_OPT)
+
+OCAMLDOC_RUN_PLUGINS=$(OCAMLDOC_RUN_BYTE)
+
+ifeq "$(wildcard $(OCAMLDOC_OPT))" ""
+  OCAMLDOC_RUN=$(OCAMLDOC_RUN_BYTE)
+else
+  OCAMLDOC_RUN=$(OCAMLDOC_RUN_OPT)
+endif
+
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
@@ -103,7 +116,9 @@ INCLUDES_NODEP=\
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats -bin-annot
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+  -safe-string -strict-sequence -strict-formats -bin-annot -principal
+
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES=\
@@ -168,11 +183,8 @@ LIBCMOFILES = $(CMOFILES)
 LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
-
 .PHONY: all
-all: lib exe generators manpages
-
-manpages: generators
+all: lib exe generators
 
 .PHONY: exe
 exe: $(OCAMLDOC)
@@ -343,7 +355,7 @@ test:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
 	$(MKDIR) $@-custom
-	$(OCAMLDOC_RUN) -colorize-code -sort -d $@-custom $(INCLUDES) \
+	$(OCAMLDOC_RUN_PLUGINS) -colorize-code -sort -d $@-custom $(INCLUDES) \
 	-g generators/odoc_literate.cmo -g generators/odoc_todo.cmo \
 	-load $@/ocamldoc.odoc -v
 
@@ -362,11 +374,6 @@ test_stdlib_code:
 	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
 	$(ROOTDIR)/otherlibs/str/str.ml
-
-.PHONY: test_framed
-test_framed:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 .PHONY: test_latex
 test_latex:
@@ -446,7 +453,7 @@ stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
 .PHONY: autotest_stdlib
 autotest_stdlib:
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
+	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
 	$(ROOTDIR)/stdlib/*.mli \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
@@ -496,12 +503,13 @@ odoc:
 .PHONY: clean
 clean:
 	rm -f \#*\#
-	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.$(A) *.$(O)
+	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.a *.lib *.o *.obj
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -rf stdlib_man stdlib_html stdlib_texi stdlib_latex
-	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
+	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
+        generators/*.cmx[as]
 
 .PHONY: depend
 depend:

@@ -33,6 +33,7 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #include "caml/memprof.h"
+#include "caml/eventlog.h"
 
 int caml_huge_fallback_count = 0;
 /* Number of times that mmapping big pages fails and we fell back to small
@@ -239,17 +240,6 @@ int caml_page_table_remove(int kind, void * start, void * end)
   return 0;
 }
 
-
-/* Initialize the [alloc_for_heap] system.
-   This function must be called exactly once, and it must be called
-   before the first call to [alloc_for_heap].
-   It returns 0 on success and -1 on failure.
-*/
-int caml_init_alloc_for_heap (void)
-{
-  return 0;
-}
-
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
    [request] will be rounded up to some implementation-dependent size.
@@ -335,7 +325,7 @@ int caml_add_to_heap (char *m)
 
   caml_gc_message (0x04, "Growing heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                   (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
+     (Bsize_wsize (Caml_state->stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
@@ -353,12 +343,12 @@ int caml_add_to_heap (char *m)
     Chunk_next (m) = cur;
     *last = m;
 
-    ++ caml_stat_heap_chunks;
+    ++ Caml_state->stat_heap_chunks;
   }
 
-  caml_stat_heap_wsz += Wsize_bsize (Chunk_size (m));
-  if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
-    caml_stat_top_heap_wsz = caml_stat_heap_wsz;
+  Caml_state->stat_heap_wsz += Wsize_bsize (Chunk_size (m));
+  if (Caml_state->stat_heap_wsz > Caml_state->stat_top_heap_wsz){
+    Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
   }
   return 0;
 }
@@ -437,10 +427,10 @@ void caml_shrink_heap (char *chunk)
   */
   if (chunk == caml_heap_start) return;
 
-  caml_stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
+  Caml_state->stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
   caml_gc_message (0x04, "Shrinking heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
-                   caml_stat_heap_wsz / 1024);
+                   Caml_state->stat_heap_wsz / 1024);
 
 #ifdef DEBUG
   {
@@ -451,7 +441,7 @@ void caml_shrink_heap (char *chunk)
   }
 #endif
 
-  -- caml_stat_heap_chunks;
+  -- Caml_state->stat_heap_chunks;
 
   /* Remove [chunk] from the list of chunks. */
   cp = &caml_heap_start;
@@ -467,19 +457,19 @@ void caml_shrink_heap (char *chunk)
 
 color_t caml_allocation_color (void *hp)
 {
-  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
-      || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
+  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
+      (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
     return Caml_black;
   }else{
     CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
-                && (addr)hp < (addr)caml_gc_sweep_hp));
+                && (char *)hp < (char *)caml_gc_sweep_hp));
     return Caml_white;
   }
 }
 
-static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
-                                        int raise_oom, uintnat profinfo)
+Caml_inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
+                                      int raise_oom, uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
@@ -490,13 +480,14 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
     else
       return 0;
   }
+  CAML_EV_ALLOC(wosize);
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
     if (new_block == NULL) {
       if (!raise_oom)
         return 0;
-      else if (caml_in_minor_collection)
+      else if (Caml_state->in_minor_collection)
         caml_fatal_error ("out of memory");
       else
         caml_raise_out_of_memory ();
@@ -508,21 +499,21 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
   CAMLassert (Is_in_heap (Val_hp (hp)));
 
   /* Inline expansion of caml_allocation_color. */
-  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
-      || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
+  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
+      (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
     Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_black, profinfo);
   }else{
     CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
-                && (addr)hp < (addr)caml_gc_sweep_hp));
+                && (char *)hp < (char *)caml_gc_sweep_hp));
     Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_white, profinfo);
   }
   CAMLassert (Hd_hp (hp)
     == Make_header_with_profinfo (wosize, tag, caml_allocation_color (hp),
                                   profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
-  if (caml_allocated_words > caml_minor_heap_wsz){
-    CAML_INSTR_INT ("request_major/alloc_shr@", 1);
+  if (caml_allocated_words > Caml_state->minor_heap_wsz){
+    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice ();
   }
 #ifdef DEBUG
@@ -629,7 +620,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   if (res > max) res = max;
   caml_extra_heap_resources += (double) res / (double) max;
   if (caml_extra_heap_resources > 1.0){
-    CAML_INSTR_INT ("request_major/adjust_gc_speed_1@", 1);
+    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
     caml_extra_heap_resources = 1.0;
     caml_request_major_slice ();
   }
@@ -648,7 +639,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   CAMLassert(Is_in_heap_or_young(fp));
   *fp = val;
   if (!Is_young((value)fp) && Is_block (val) && Is_young (val)) {
-    add_to_ref_table (&caml_ref_table, fp);
+    add_to_ref_table (Caml_state->ref_table, fp);
   }
 }
 
@@ -673,6 +664,11 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
         while the GC is in the marking phase
         --> call [caml_darken] on the overwritten pointer so that the
             major GC treats it as an additional root.
+
+     The logic implemented below is duplicated in caml_array_fill to
+     avoid repeated calls to caml_modify and repeated tests on the
+     values.  Don't forget to update caml_array_fill if the logic
+     below changes!
   */
   value old;
 
@@ -696,7 +692,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
     }
     /* Check for condition 1. */
     if (Is_block(val) && Is_young(val)) {
-      add_to_ref_table (&caml_ref_table, fp);
+      add_to_ref_table (Caml_state->ref_table, fp);
     }
   }
 }
@@ -889,6 +885,8 @@ CAMLexport void caml_stat_free(caml_stat_block b)
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
 {
+  if(b == NULL)
+    return caml_stat_alloc_noexc(sz);
   /* Backward compatibility mode */
   if (pool == NULL)
     return realloc(b, sz);

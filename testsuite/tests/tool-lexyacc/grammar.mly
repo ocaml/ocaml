@@ -3,6 +3,16 @@
 %{
 open Syntax
 open Gram_aux
+
+(* test f' '"' *)
+let () =
+  let f' = ignore in
+  f' '"'
+
+(* test {|*)|}, {%foo|*)|} and {%%f.oo bar|*)|bar} *)
+(* test {%foo {%| *)
+
+let () = ignore {foo||foo}
 %}
 
 %token <string> Tident

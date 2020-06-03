@@ -19,6 +19,7 @@ open Path
 open Instruct
 open Types
 open Parser_aux
+open Events
 
 type error =
     Unbound_identifier of Ident.t
@@ -47,7 +48,7 @@ let rec address path event = function
         with Symtable.Error _ -> raise(Error(Unbound_identifier id))
       else
         begin match event with
-          Some ev ->
+          Some {ev_ev = ev} ->
             begin try
               let pos = Ident.find_same id ev.ev_compenv.ce_stack in
               Debugcom.Remote_value.local (ev.ev_stacksize - pos)
@@ -74,27 +75,30 @@ let value_path event env path =
       fatal_error ("Cannot find address for: " ^ (Path.name path))
 
 let rec expression event env = function
-    E_ident lid ->
-      begin try
-        let (p, valdesc) = Env.lookup_value lid env in
-        (begin match valdesc.val_kind with
-           Val_ivar (_, cl_num) ->
-             let (p0, _) =
-               Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
-             in
-             let v = value_path event env p0 in
-             let i = value_path event env p in
-             Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
-         | _ ->
-             value_path event env p
-         end,
-         Ctype.correct_levels valdesc.val_type)
-      with Not_found ->
-        raise(Error(Unbound_long_identifier lid))
-      end
+  | E_ident lid -> begin
+      match Env.find_value_by_name lid env with
+      | (p, valdesc) ->
+          let v =
+            match valdesc.val_kind with
+            | Val_ivar (_, cl_num) ->
+                let (p0, _) =
+                  Env.find_value_by_name
+                    (Longident.Lident ("self-" ^ cl_num)) env
+                in
+                let v = value_path event env p0 in
+                let i = value_path event env p in
+                Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
+            | _ ->
+                value_path event env p
+          in
+          let typ = Ctype.correct_levels valdesc.val_type in
+          v, typ
+      | exception Not_found ->
+          raise(Error(Unbound_long_identifier lid))
+    end
   | E_result ->
       begin match event with
-        Some {ev_kind = Event_after ty; ev_typsubst = subst}
+        Some {ev_ev = {ev_kind = Event_after ty; ev_typsubst = subst}}
         when !Frames.current_frame = 0 ->
           (Debugcom.Remote_value.accu(), Subst.type_expr subst ty)
       | _ ->
@@ -183,7 +187,6 @@ let report_error ppf = function
   | Unknown_name n ->
       fprintf ppf "@[Unknown value name $%i@]@." n
   | Tuple_index(ty, len, pos) ->
-      Printtyp.reset_and_mark_loops ty;
       fprintf ppf
         "@[Cannot extract field number %i from a %i-tuple of type@ %a@]@."
         pos len Printtyp.type_expr ty

@@ -15,9 +15,8 @@ recursion and higher-rank polymorphism.
 This chapter details each of these situations and, if it is possible,
 how to recover genericity.
 
-\section{Weak polymorphism and mutation}
-\subsection{Weakly polymorphic types}
-\label{ss:weaktypes}
+\section{s:weak-polymorphism}{Weak polymorphism and mutation}
+\subsection{ss:weak-types}{Weakly polymorphic types}
 Maybe the most frequent examples of non-genericity derive from the
 interactions between polymorphic types and mutation. A simple example
 appears when typing the following expression
@@ -101,7 +100,7 @@ Otherwise, they will pick out the type of first use. If there is a mistake
 at this point, this can result in confusing type errors when later, correct
 uses are flagged as errors.
 
-\subsection{The value restriction}\label{ss:valuerestriction}
+\subsection{ss:valuerestriction}{The value restriction}
 
 Identifying the exact context in which polymorphic types should be
 replaced by weak types in a modular way is a difficult question. Indeed
@@ -141,7 +140,7 @@ With this argument, "id_again" is seen as a function definition by the type
 checker and can therefore be generalized. This kind of manipulation is called
 eta-expansion in lambda calculus and is sometimes referred under this name.
 
-\subsection{The relaxed value restriction}
+\subsection{ss:relaxed-value-restriction}{The relaxed value restriction}
 
 There is another partial solution to the problem of unnecessary weak type,
 which is implemented directly within the type checker. Briefly, it is possible
@@ -160,7 +159,7 @@ The value restriction combined with this generalization for covariant type
 parameters is called the relaxed value restriction.
 
 %question: is here the best place for describing variance?
-\subsection{Variance and value restriction}
+\subsection{ss:variance-and-value-restriction}{Variance and value restriction}
 Variance describes how type constructors behave with respect to subtyping.
 Consider for instance a pair of type "x" and "xy" with "x" a subtype of "xy",
 denoted "x :> xy":
@@ -225,7 +224,7 @@ article by Jacques Garrigue on
 Together, the relaxed value restriction and type parameter covariance
 help to avoid eta-expansion in many situations.
 
-\subsection{Abstract data types}
+\subsection{ss:variance:abstract-data-types}{Abstract data types}
 Moreover, when the type definitions are exposed, the type checker
 is able to infer variance information on its own and one can benefit from
 the relaxed value restriction even unknowingly. However, this is not the case
@@ -270,7 +269,7 @@ We then recover polymorphism:
   List2.empty ();;
 \end{caml_example}
 
-\section{Polymorphic recursion}\label{s:polymorphic-recursion}
+\section{s:polymorphic-recursion}{Polymorphic recursion}
 
 The second major class of non-genericity is directly related to the problem
 of type inference for polymorphic functions. In some circumstances, the type
@@ -328,7 +327,7 @@ the type checker had introduced a new type variable "'a" only at the
 \emph{definition} of the function "depth" whereas, here, we need a
 different type variable for every \emph{application} of the function "depth".
 
-\subsection{Explicitly polymorphic annotations}
+\subsection{ss:explicit-polymorphism}{Explicitly polymorphic annotations}
 The solution of this conundrum is to use an explicitly polymorphic type
 annotation for the type "'a":
 \begin{caml_example}{toplevel}
@@ -373,7 +372,7 @@ depth ( Nested(List [ [7]; [8] ]) );;
 
 %todo: add a paragraph on the interaction with locally abstract type
 
-\subsection{More examples}
+\subsection{ss:recursive-poly-examples}{More examples}
 With explicit polymorphic annotations, it becomes possible to implement
 any recursive function that depends only on the structure of the nested
 lists and not on the type of the elements. For instance, a more complex
@@ -413,7 +412,7 @@ let shape n =
 shape (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 \end{caml_example}
 
-\section{Higher-rank polymorphic functions}
+\section{s:higher-rank-poly}{Higher-rank polymorphic functions}
 
 Explicit polymorphic annotations are however not sufficient to cover all
 the cases where the inferred type of a function is less general than

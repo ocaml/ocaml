@@ -30,6 +30,8 @@ external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
 external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+external unsafe_fill :
+  'a array -> int -> int -> 'a -> unit = "caml_array_fill"
 external create_float: int -> float array = "caml_make_float_vect"
 let make_float = create_float
 
@@ -81,7 +83,7 @@ let sub a ofs len =
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.fill"
-  else for i = ofs to ofs + len - 1 do unsafe_set a i v done
+  else unsafe_fill a ofs len v
 
 let blit a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
@@ -183,6 +185,26 @@ let for_all p a =
     if i = n then true
     else if p (unsafe_get a i) then loop (succ i)
     else false in
+  loop 0
+
+let for_all2 p l1 l2 =
+  let n1 = length l1
+  and n2 = length l2 in
+  if n1 <> n2 then invalid_arg "Array.for_all2"
+  else let rec loop i =
+    if i = n1 then true
+    else if p (unsafe_get l1 i) (unsafe_get l2 i) then loop (succ i)
+    else false in
+  loop 0
+
+let exists2 p l1 l2 =
+  let n1 = length l1
+  and n2 = length l2 in
+  if n1 <> n2 then invalid_arg "Array.exists2"
+  else let rec loop i =
+    if i = n1 then false
+    else if p (unsafe_get l1 i) (unsafe_get l2 i) then true
+    else loop (succ i) in
   loop 0
 
 let mem x a =

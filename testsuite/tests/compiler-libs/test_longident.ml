@@ -3,8 +3,10 @@
    include ocamlcommon
    * expect
 *)
+[@@@alert "-deprecated"]
 
 module L = Longident
+
 [%%expect {|
 module L = Longident
 |}]
@@ -56,31 +58,112 @@ let last_dot_apply = L.last
 val last_dot_apply : string = "foo"
 |}];;
 
+type parse_result = { flat: L.t; spec:L.t; any_is_correct:bool }
+let test specialized s =
+  let spec = specialized (Lexing.from_string s) in
+  { flat = L.parse s;
+    spec;
+    any_is_correct = Parse.longident (Lexing.from_string s) = spec;
+  }
+
 let parse_empty = L.parse ""
+let parse_empty_val = Parse.longident (Lexing.from_string "")
 [%%expect {|
+type parse_result = { flat : L.t; spec : L.t; any_is_correct : bool; }
+val test : (Lexing.lexbuf -> L.t) -> string -> parse_result = <fun>
 val parse_empty : L.t = L.Lident ""
+Exception:
+Syntaxerr.Error
+ (Syntaxerr.Other
+   {Location.loc_start =
+     {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 0};
+    loc_end =
+     {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 0};
+    loc_ghost = false}).
 |}]
-let parse_ident = L.parse "foo"
+let parse_ident = test Parse.val_ident "foo"
 [%%expect {|
-val parse_ident : L.t = L.Lident "foo"
+val parse_ident : parse_result =
+  {flat = L.Lident "foo"; spec = L.Lident "foo"; any_is_correct = true}
 |}]
-let parse_dot = L.parse "M.foo"
+let parse_dot = test Parse.val_ident "M.foo"
 [%%expect {|
-val parse_dot : L.t = L.Ldot (L.Lident "M", "foo")
+val parse_dot : parse_result =
+  {flat = L.Ldot (L.Lident "M", "foo"); spec = L.Ldot (L.Lident "M", "foo");
+   any_is_correct = true}
 |}]
-let parse_path = L.parse "M.N.foo"
+let parse_path = test Parse.val_ident "M.N.foo"
 [%%expect {|
-val parse_path : L.t = L.Ldot (L.Ldot (L.Lident "M", "N"), "foo")
+val parse_path : parse_result =
+  {flat = L.Ldot (L.Ldot (L.Lident "M", "N"), "foo");
+   spec = L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"); any_is_correct = true}
 |}]
-let parse_complex = L.parse "M.F(M.N).N.foo"
+let parse_complex = test  Parse.type_ident "M.F(M.N).N.foo"
 (* the result below is a known misbehavior of Longident.parse
-   which does not handle applications properly. Fixing it
-   would be nice, but we soo no convenient way to do it without
-   introducing unpleasant dependencies. *)
+   which does not handle applications properly. *)
 [%%expect {|
-val parse_complex : L.t =
-  L.Ldot (L.Ldot (L.Ldot (L.Ldot (L.Lident "M", "F(M"), "N)"), "N"), "foo")
+val parse_complex : parse_result =
+  {flat =
+    L.Ldot (L.Ldot (L.Ldot (L.Ldot (L.Lident "M", "F(M"), "N)"), "N"), "foo");
+   spec =
+    L.Ldot
+     (L.Ldot
+       (L.Lapply (L.Ldot (L.Lident "M", "F"), L.Ldot (L.Lident "M", "N")),
+       "N"),
+     "foo");
+   any_is_correct = true}
 |}]
+
+let parse_op = test Parse.val_ident "M.(.%.()<-)"
+(* the result below is another known misbehavior of Longident.parse. *)
+[%%expect {|
+val parse_op : parse_result =
+  {flat = L.Ldot (L.Ldot (L.Ldot (L.Lident "M", "("), "%"), "()<-)");
+   spec = L.Ldot (L.Lident "M", ".%.()<-"); any_is_correct = true}
+|}]
+
+
+let parse_let_op = test Parse.val_ident "M.(let+*!)"
+[%%expect {|
+val parse_let_op : parse_result =
+  {flat = L.Ldot (L.Lident "M", "(let+*!)");
+   spec = L.Ldot (L.Lident "M", "let+*!"); any_is_correct = true}
+|}]
+
+let constr = test Parse.constr_ident "true"
+[%%expect{|
+val constr : parse_result =
+  {flat = L.Lident "true"; spec = L.Lident "true"; any_is_correct = true}
+|}]
+
+let prefix_constr = test Parse.constr_ident "A.B.C.(::)"
+[%%expect{|
+val prefix_constr : parse_result =
+  {flat = L.Ldot (L.Ldot (L.Ldot (L.Lident "A", "B"), "C"), "(::)");
+   spec = L.Ldot (L.Ldot (L.Ldot (L.Lident "A", "B"), "C"), "::");
+   any_is_correct = true}
+|}]
+
+
+
+let mod_ext = test Parse.extended_module_path "A.F(B.C(X)).G(Y).D"
+[%%expect{|
+val mod_ext : parse_result =
+  {flat =
+    L.Ldot (L.Ldot (L.Ldot (L.Ldot (L.Lident "A", "F(B"), "C(X))"), "G(Y)"),
+     "D");
+   spec =
+    L.Ldot
+     (L.Lapply
+       (L.Ldot
+         (L.Lapply (L.Ldot (L.Lident "A", "F"),
+           L.Lapply (L.Ldot (L.Lident "B", "C"), L.Lident "X")),
+         "G"),
+       L.Lident "Y"),
+     "D");
+   any_is_correct = true}
+|}]
+
 
 let string_of_longident lid = Format.asprintf "%a" Pprintast.longident lid
 [%%expect{|
@@ -90,15 +173,15 @@ let str_empty   = string_of_longident parse_empty
 [%%expect {|
 val str_empty : string = ""
 |}]
-let str_ident   = string_of_longident parse_ident
+let str_ident   = string_of_longident parse_ident.flat
 [%%expect {|
 val str_ident : string = "foo"
 |}]
-let str_dot     = string_of_longident parse_dot
+let str_dot     = string_of_longident parse_dot.flat
 [%%expect {|
 val str_dot : string = "M.foo"
 |}]
-let str_path    = string_of_longident parse_path
+let str_path    = string_of_longident parse_path.flat
 [%%expect {|
 val str_path : string = "M.N.foo"
 |}]

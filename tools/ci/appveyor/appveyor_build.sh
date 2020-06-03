@@ -17,11 +17,21 @@ set -e
 
 BUILD_PID=0
 
+# This must correspond with the entry in appveyor.yml
+CACHE_DIRECTORY=/cygdrive/c/projects/cache
+
+if [[ -z $APPVEYOR_PULL_REQUEST_HEAD_COMMIT ]] ; then
+  MAKE="make -j"
+else
+  MAKE=make
+fi
+
 function run {
+    if [[ $1 = "--show" ]] ; then SHOW_CMD='true'; shift; else SHOW_CMD=''; fi
     NAME=$1
     shift
     echo "-=-=- $NAME -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
-    "$@"
+    if [[ -n $SHOW_CMD ]]; then (set -x; "$@"); else "$@"; fi
     CODE=$?
     if [[ $CODE -ne 0 ]] ; then
         echo "-=-=- $NAME failed! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
@@ -45,18 +55,27 @@ function set_configuration {
         mingw)
             build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
+            dep='--disable-dependency-generation'
         ;;
         msvc)
             build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
+            dep='--disable-dependency-generation'
         ;;
         msvc64)
             build='--build=x86_64-unknown-cygwin'
             host='--host=x86_64-pc-windows'
+            # Explicitly test dependency generation on msvc64
+            dep='--enable-dependency-generation'
         ;;
     esac
 
-    ./configure $build $host --prefix="$2"
+    mkdir -p "$CACHE_DIRECTORY"
+    ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
+                $dep $build $host --prefix="$2" --enable-ocamltest || ( \
+      rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
+      ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
+                  $dep $build $host --prefix="$2" --enable-ocamltest )
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"
@@ -93,29 +112,52 @@ case "$1" in
 
     set_configuration msvc "$OCAMLROOT-msvc32" -WX
 
-    run 'make world' make world
-    run 'make runtimeopt' make runtimeopt
-    run 'make -C otherlibs/systhreads libthreadsnat.lib' \
-         make -C otherlibs/systhreads libthreadsnat.lib
+    run "$MAKE world" $MAKE world
+    run "$MAKE runtimeopt" $MAKE runtimeopt
+    run "$MAKE -C otherlibs/systhreads libthreadsnat.lib" \
+         $MAKE -C otherlibs/systhreads libthreadsnat.lib
 
     exit 0
     ;;
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
     run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
-    run "test $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" tests
-    run "install $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" install
+    if [[ $PORT = 'mingw32' ]] ; then
+      run "Check runtime symbols" \
+          "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
+          $FULL_BUILD_PREFIX-$PORT/runtime/*.a
+    fi
+    run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
+    run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
-      run 'check_all_arches' make -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
+      run "$MAKE check_all_arches" \
+           $MAKE -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
+      cd "$FULL_BUILD_PREFIX-$PORT"
+      # Ensure that .gitignore is up-to-date - this will fail if any untracked
+      # or altered files exist. We revert the change from the bootstrap (that
+      # would have failed the build earlier if necessary)
+      git checkout -- boot/ocamlc boot/ocamllex
+      # Remove the FlexDLL sources placed earlier in the process
+      rm -rf "flexdll-$FLEXDLL_VERSION"
+      run --show "Check tree is tracked" test -z "$(git status --porcelain)"
+      # check that the `distclean` target definitely cleans the tree
+      run "$MAKE distclean" $MAKE distclean
+      # Check the working tree is clean
+      run --show "Check tree is tracked" test -z "$(git status --porcelain)"
+      # Check that there are no ignored files
+      run --show "Check tree is clean" \
+        test -z "$(git ls-files --others -i --exclude-standard)"
     fi
     ;;
   *)
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
     if [[ $PORT = 'msvc64' ]] ; then
+      # Ensure that make distclean can be run from an empty tree
+      run "$MAKE distclean" $MAKE distclean
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
-      make MSVC_DETECT=0 CHAINS=msvc64 support
+      $MAKE MSVC_DETECT=0 CHAINS=msvc64 support
       cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
       cd ..
     fi
@@ -135,16 +177,17 @@ case "$1" in
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \
-        "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+        "$MAKE -C ../$BUILD_PREFIX-mingw32 flexdll && "\
+"$MAKE -C ../$BUILD_PREFIX-mingw32 world.opt" \
         "../$BUILD_PREFIX-mingw32/build.log" |
           sed -e 's/\d027\[K//g' \
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
     else
-      run 'make world' make world
-      run 'make bootstrap' make bootstrap
-      run 'make opt' make opt
-      run 'make opt.opt' make opt.opt
+      run "$MAKE world" $MAKE world
+      run "$MAKE bootstrap" $MAKE bootstrap
+      run "$MAKE opt" $MAKE opt
+      run "$MAKE opt.opt" $MAKE opt.opt
     fi
 
     ;;

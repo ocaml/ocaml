@@ -127,6 +127,11 @@ let identbody =
 let backslash_escapes =
   ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
 
+let lowercase = ['a'-'z' '_']
+let ident = identstart identbody*
+let extattrident = ident ('.' ident)*
+let blank = [' ' '\009' '\012']
+
 rule main = parse
     [' ' '\013' '\009' '\012' ] +
     { main lexbuf }
@@ -144,7 +149,7 @@ rule main = parse
       handle_lexical_error comment lexbuf;
       main lexbuf }
   | '_' { Tunderscore }
-  | identstart identbody *
+  | ident
     { match Lexing.lexeme lexbuf with
         "rule" -> Trule
       | "parse" -> Tparse
@@ -270,7 +275,7 @@ and quoted_string delim = parse
       quoted_string delim lexbuf }
   | eof
     { raise (Lexical_error ("unterminated string", "", 0, 0)) }
-  | '|' (['a'-'z' '_'] * as delim') '}'
+  | '|' (lowercase* as delim') '}'
     { if delim <> delim' then
       quoted_string delim lexbuf }
   | _
@@ -293,7 +298,7 @@ and comment = parse
       string lexbuf;
       reset_string_buffer();
       comment lexbuf }
-  | '{' (['a'-'z' '_'] * as delim) '|'
+  | '{' ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
     { quoted_string delim lexbuf;
       comment lexbuf }
   | "'"
@@ -304,7 +309,7 @@ and comment = parse
   | '\010'
     { incr_loc lexbuf 0;
       comment lexbuf }
-  | identstart identbody *
+  | ident
     { comment lexbuf }
   | _
     { comment lexbuf }
@@ -321,7 +326,7 @@ and action = parse
       handle_lexical_error string lexbuf;
       reset_string_buffer();
       action lexbuf }
-  | '{' (['a'-'z' '_'] * as delim) '|'
+  | '{' ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
     { quoted_string delim lexbuf;
       action lexbuf }
   | "'"
@@ -336,7 +341,7 @@ and action = parse
   | '\010'
     { incr_loc lexbuf 0;
       action lexbuf }
-  | identstart identbody *
+  | ident
     { action lexbuf }
   | _
     { action lexbuf }

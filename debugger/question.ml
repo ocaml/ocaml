@@ -15,12 +15,16 @@
 
 open Input_handling
 open Primitives
+module Lexer = Debugger_lexer
 
 (* Ask user a yes or no question. *)
 let yes_or_no message =
   if !interactif then
-    let old_prompt = !current_prompt in
-      try
+    let finally =
+      let old_prompt = !current_prompt in
+      fun () -> stop_user_input (); current_prompt := old_prompt
+    in
+      Fun.protect ~finally @@ fun () ->
         current_prompt := message ^ " ? (y or n) ";
         let answer =
           let rec ask () =
@@ -28,23 +32,17 @@ let yes_or_no message =
             let line =
               string_trim (Lexer.line (Lexing.from_function read_user_input))
             in
-              stop_user_input ();
               match (if String.length line > 0 then line.[0] else ' ') with
                 'y' -> true
               | 'n' -> false
               | _ ->
+                stop_user_input ();
                 print_string "Please answer y or n.";
                 print_newline ();
                 ask ()
           in
             ask ()
         in
-          current_prompt := old_prompt;
           answer
-      with
-        x ->
-          current_prompt := old_prompt;
-          stop_user_input ();
-          raise x
   else
     false

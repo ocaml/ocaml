@@ -3,7 +3,7 @@
 
 This chapter introduces the module system of OCaml.
 
-\section{Structures}
+\section{s:module:structures}{Structures}
 
 A primary motivation for modules is to package together related
 definitions (such as the definitions of a data type and associated
@@ -99,6 +99,12 @@ becomes
 \begin{caml_example}{toplevel}
   PrioQueue.[insert empty 1 "hello"];;
 \end{caml_example}
+This second form also works for patterns:
+\begin{caml_example}{toplevel}
+  let at_most_one_element x = match x with
+  | PrioQueue.( Empty| Node (_,_, Empty,Empty) ) -> true
+  | _ -> false ;;
+\end{caml_example}
 
 It is also possible to copy the components of a module inside
 another module by using an "include" statement. This can be
@@ -118,7 +124,7 @@ an exception when the priority queue is empty.
   end;;
 \end{caml_example}
 
-\section{Signatures}
+\section{s:signature}{Signatures}
 
 Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
@@ -172,7 +178,7 @@ module type PRIOQUEUE_WITH_OPT =
 \end{caml_example}
 
 
-\section{Functors}
+\section{s:functors}{Functors}
 
 Functors are ``functions'' from modules to modules. Functors let you create
 parameterized modules and then provide other modules as parameter(s) to get
@@ -223,7 +229,7 @@ module StringSet = Set(OrderedString);;
 StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
 \end{caml_example}
 
-\section{Functors and type abstraction}
+\section{s:functors-and-abstraction}{Functors and type abstraction}
 
 As in the "PrioQueue" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
@@ -312,7 +318,7 @@ operations from "AbstractStringSet" to values of type
 "NoCaseStringSet.set" could give incorrect results, or build
 lists that violate the invariants of "NoCaseStringSet".
 
-\section{Modules and separate compilation}
+\section{s:separate-compilation}{Modules and separate compilation}
 
 All examples of modules so far have been given in the context of the
 interactive system. However, modules are most useful for large,

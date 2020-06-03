@@ -165,6 +165,17 @@ Error: This expression has type string t
        Type string is not compatible with type int
 |}]
 
+(* PR#7696 *)
+let r = { (assert false) with contents = 1 } ;;
+[%%expect{|
+Line 1, characters 8-44:
+1 | let r = { (assert false) with contents = 1 } ;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 23: all the fields are explicitly listed in this record:
+the 'with' clause is useless.
+Exception: Assert_failure ("", 1, 10).
+|}]
+
 (* reexport *)
 
 type ('a,'b) def = { x:int } constraint 'b = [> `A]
@@ -208,7 +219,11 @@ Line 2, characters 0-37:
 2 | type mut = d = {x:int; mutable y:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The mutability of field y is different.
+       Fields do not match:
+         y : int;
+       is not compatible with:
+         mutable y : int;
+       This is mutable and the original is not.
 |}]
 
 type missing = d = { x:int }
@@ -226,7 +241,11 @@ Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The types for field x are not equal.
+       Fields do not match:
+         x : int;
+       is not compatible with:
+         x : float;
+       The types are not equal.
 |}]
 
 type unboxed = d = {x:float} [@@unboxed]

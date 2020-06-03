@@ -113,8 +113,6 @@ let test tst ppf arg =
   | Ieventest -> fprintf ppf "%a & 1 == 0" reg arg.(0)
   | Ioddtest -> fprintf ppf "%a & 1 == 1" reg arg.(0)
 
-let print_live = ref false
-
 let operation op arg ppf res =
   if Array.length res > 0 then fprintf ppf "%a := " regs res;
   match op with
@@ -169,7 +167,7 @@ let operation op arg ppf res =
       Arch.print_specific_operation reg op ppf arg
 
 let rec instr ppf i =
-  if !print_live then begin
+  if !Clflags.dump_live then begin
     fprintf ppf "@[<1>{%a" regsetaddr i.live;
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";
@@ -228,9 +226,9 @@ let rec instr ppf i =
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler
   | Iraise k ->
-      fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
+      fprintf ppf "%s %a" (Lambda.raise_kind k) reg i.arg.(0)
   end;
-  if not (Debuginfo.is_none i.dbg) then
+  if not (Debuginfo.is_none i.dbg) && !Clflags.locations then
     fprintf ppf "%s" (Debuginfo.to_string i.dbg);
   begin match i.next.desc with
     Iend -> ()
@@ -239,7 +237,7 @@ let rec instr ppf i =
 
 let fundecl ppf f =
   let dbg =
-    if Debuginfo.is_none f.fun_dbg then
+    if Debuginfo.is_none f.fun_dbg || not !Clflags.locations then
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in

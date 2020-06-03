@@ -48,7 +48,6 @@ val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
-val default_mty: module_type option -> module_type
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
@@ -69,8 +68,23 @@ val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
+
+val is_fixed: row_desc -> bool
+(* Return whether the row is directly marked as fixed or not *)
+
 val row_fixed: row_desc -> bool
-        (* Return whether the row should be treated as fixed or not *)
+(* Return whether the row should be treated as fixed or not.
+   In particular, [is_fixed row] implies [row_fixed row].
+*)
+
+val fixed_explanation: row_desc -> fixed_explanation option
+(* Return the potential explanation for the fixed row *)
+
+val merge_fixed_explanation:
+  fixed_explanation option -> fixed_explanation option
+  -> fixed_explanation option
+(* Merge two explanations for a fixed row *)
+
 val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int
@@ -107,6 +121,7 @@ type type_iterators =
     it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
     it_class_declaration: type_iterators -> class_declaration -> unit;
     it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
+    it_functor_param: type_iterators -> functor_parameter -> unit;
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
     it_type_kind: type_iterators -> type_kind -> unit;
@@ -190,8 +205,11 @@ val prefixed_label_name : arg_label -> label
 
 val extract_label :
     label -> (arg_label * 'a) list ->
-    arg_label * 'a * (arg_label * 'a) list * (arg_label * 'a) list
-    (* actual label, value, before list, after list *)
+    (arg_label * 'a * bool * (arg_label * 'a) list) option
+(* actual label,
+   value,
+   whether (label, value) was at the head of the list,
+   list without the extracted (label, value) *)
 
 (**** Utilities for backtracking ****)
 
@@ -212,6 +230,8 @@ val undo_compress: snapshot -> unit
 val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
            value if there is an active snapshot *)
+val set_type_desc: type_expr -> type_desc -> unit
+        (* Set directly the desc field, without sharing *)
 val set_level: type_expr -> int -> unit
 val set_scope: type_expr -> int -> unit
 val set_name:
@@ -223,8 +243,6 @@ val set_kind: field_kind option ref -> field_kind -> unit
 val set_commu: commutable ref -> commutable -> unit
 val set_typeset: TypeSet.t ref -> TypeSet.t -> unit
         (* Set references, logging the old value *)
-val log_type: type_expr -> unit
-        (* Log the old value of a type, before modifying it by hand *)
 
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref

@@ -1,0 +1,14 @@
+exception Backtrace_or_exception.Exn
+Raised at Backtrace_or_exception.without_reraise in file "backtrace_or_exception.ml", line 20, characters 4-13
+Called from Backtrace_or_exception.run in file "backtrace_or_exception.ml", line 40, characters 6-10
+---------------------------
+exception Backtrace_or_exception.Exn
+Raised at Backtrace_or_exception.return_exn in file "backtrace_or_exception.ml", line 11, characters 4-13
+Called from Backtrace_or_exception.with_reraise in file "backtrace_or_exception.ml", line 24, characters 8-44
+Re-raised at Backtrace_or_exception.with_reraise in file "backtrace_or_exception.ml", line 27, characters 4-13
+Called from Backtrace_or_exception.run in file "backtrace_or_exception.ml", line 40, characters 6-10
+---------------------------
+exception Backtrace_or_exception.Exn
+Raised at Backtrace_or_exception.trickier in file "backtrace_or_exception.ml", line 36, characters 6-15
+Called from Backtrace_or_exception.run in file "backtrace_or_exception.ml", line 40, characters 6-10
+---------------------------

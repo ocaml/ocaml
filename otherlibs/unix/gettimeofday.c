@@ -17,22 +17,17 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-
-#ifdef HAS_GETTIMEOFDAY
-
 #include <sys/types.h>
 #include <sys/time.h>
 
-CAMLprim value unix_gettimeofday(value unit)
+double unix_gettimeofday_unboxed(value unit)
 {
   struct timeval tp;
-  if (gettimeofday(&tp, NULL) == -1) uerror("gettimeofday", Nothing);
-  return caml_copy_double((double) tp.tv_sec + (double) tp.tv_usec / 1e6);
+  gettimeofday(&tp, NULL);
+  return ((double) tp.tv_sec + (double) tp.tv_usec / 1e6);
 }
 
-#else
-
 CAMLprim value unix_gettimeofday(value unit)
-{ caml_invalid_argument("gettimeofday not implemented"); }
-
-#endif
+{
+  return caml_copy_double(unix_gettimeofday_unboxed(unit));
+}

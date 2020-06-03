@@ -2,8 +2,8 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
-(*             Jacques-Henri Joudan, projet Gallium, INRIA Paris          *)
+(*            Damien Doligez, projet Para, INRIA Rocquencourt             *)
+(*            Jacques-Henri Jourdan, projet Gallium, INRIA Paris          *)
 (*                                                                        *)
 (*   Copyright 1996-2016 Institut National de Recherche en Informatique   *)
 (*     et en Automatique.                                                 *)
@@ -63,6 +63,8 @@ external get_minor_free : unit -> int = "caml_get_minor_free"
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
+external eventlog_pause : unit -> unit = "caml_eventlog_pause"
+external eventlog_resume : unit -> unit = "caml_eventlog_resume"
 
 open Printf
 
@@ -121,31 +123,37 @@ let delete_alarm a = a := false
 
 module Memprof =
   struct
-    type alloc_kind =
-      | Minor
-      | Major
-      | Serialized
+    type allocation =
+      { n_samples : int;
+        size : int;
+        unmarshalled : bool;
+        callstack : Printexc.raw_backtrace }
 
-    type sample_info = {
-        n_samples: int; kind: alloc_kind; tag: int;
-        size: int; callstack: Printexc.raw_backtrace;
+    type ('minor, 'major) tracker = {
+      alloc_minor: allocation -> 'minor option;
+      alloc_major: allocation -> 'major option;
+      promote: 'minor -> 'major option;
+      dealloc_minor: 'minor -> unit;
+      dealloc_major: 'major -> unit;
     }
 
-    type 'a callback = sample_info -> (Obj.t, 'a) Ephemeron.K1.t option
-
-    type 'a ctrl = {
-        sampling_rate : float;
-        callstack_size : int;
-        callback : 'a callback
+    let null_tracker = {
+      alloc_minor = (fun _ -> None);
+      alloc_major = (fun _ -> None);
+      promote = (fun _ -> None);
+      dealloc_minor = (fun _ -> ());
+      dealloc_major = (fun _ -> ());
     }
 
-    let stopped_ctrl = {
-        sampling_rate = 0.; callstack_size = 0;
-        callback = fun _ -> assert false
-    }
+    external c_start :
+      float -> int -> ('minor, 'major) tracker -> unit
+      = "caml_memprof_start"
 
-    external set_ctrl : 'a ctrl -> unit = "caml_memprof_set"
+    let start
+      ~sampling_rate
+      ?(callstack_size = max_int)
+      tracker =
+      c_start sampling_rate callstack_size tracker
 
-    let start = set_ctrl
-    let stop () = set_ctrl stopped_ctrl
+    external stop : unit -> unit = "caml_memprof_stop"
   end

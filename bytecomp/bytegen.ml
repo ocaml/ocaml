@@ -22,6 +22,7 @@ open Types
 open Lambda
 open Switch
 open Instruct
+open Debuginfo.Scoped_location
 
 (**** Label generation ****)
 
@@ -103,6 +104,34 @@ let rec is_tailcall = function
   | Klabel _ :: c -> is_tailcall c
   | Kpop _ :: c -> is_tailcall c
   | _ -> false
+
+(* Will this primitive result in an OCaml call which would benefit
+   from the tail call optimization? *)
+
+let preserve_tailcall_for_prim = function
+    Pidentity | Popaque | Pdirapply | Prevapply | Psequor | Psequand ->
+      true
+  | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
+  | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
+  | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
+  | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat | Pmulfloat
+  | Pdivfloat | Pfloatcomp _ | Pstringlength | Pstringrefu  | Pstringrefs
+  | Pcompare_ints | Pcompare_floats | Pcompare_bints _
+  | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
+  | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
+  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pbintofint _ | Pintofbint _
+  | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
+  | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
+  | Pasrbint _ | Pbintcomp _ | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _
+  | Pstring_load_16 _ | Pstring_load_32 _ | Pstring_load_64 _ | Pbytes_load_16 _
+  | Pbytes_load_32 _ | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _
+  | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
+  | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
+  | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer ->
+      false
 
 (* Add a Kpop N instruction in front of a continuation *)
 
@@ -200,15 +229,10 @@ let rec size_of_lambda env = function
 (**** Merging consecutive events ****)
 
 let copy_event ev kind info repr =
-  { ev_pos = 0;                   (* patched in emitcode *)
-    ev_module = ev.ev_module;
-    ev_loc = ev.ev_loc;
+  { ev with
+    ev_pos = 0;                   (* patched in emitcode *)
     ev_kind = kind;
     ev_info = info;
-    ev_typenv = ev.ev_typenv;
-    ev_typsubst = ev.ev_typsubst;
-    ev_compenv = ev.ev_compenv;
-    ev_stacksize = ev.ev_stacksize;
     ev_repr = repr }
 
 let merge_infos ev ev' =
@@ -267,6 +291,33 @@ let add_event ev =
   function
     Kevent ev' :: cont -> weaken_event (merge_events ev ev') cont
   | cont               -> weaken_event ev cont
+
+(* Pseudo events are ignored by the debugger. They are only used for
+   generating backtraces.
+
+   We prefer adding this event here rather than in lambda generation
+   1) there are many different situations where a Pmakeblock can
+      be generated
+   2) we prefer inserting a pseudo event rather than an event after
+      to prevent the debugger to stop at every single allocation. *)
+let add_pseudo_event loc modname c =
+  if !Clflags.debug then
+    let ev_defname = string_of_scoped_location loc in
+    let ev =
+      { ev_pos = 0;                   (* patched in emitcode *)
+        ev_module = modname;
+        ev_loc = to_location loc;
+        ev_defname;
+        ev_kind = Event_pseudo;
+        ev_info = Event_other;        (* Dummy *)
+        ev_typenv = Env.Env_empty;    (* Dummy *)
+        ev_typsubst = Subst.identity; (* Dummy *)
+        ev_compenv = empty_env;       (* Dummy *)
+        ev_stacksize = 0;             (* Dummy *)
+        ev_repr = Event_none }        (* Dummy *)
+    in
+    add_event ev c
+  else c
 
 (**** Compilation of a lambda expression ****)
 
@@ -337,12 +388,13 @@ let comp_primitive p args =
     Pgetglobal id -> Kgetglobal id
   | Psetglobal id -> Ksetglobal id
   | Pintcomp cmp -> Kintcomp cmp
-  | Pmakeblock(tag, _mut, _) -> Kmakeblock(List.length args, tag)
+  | Pcompare_ints -> Kccall("caml_int_compare", 2)
+  | Pcompare_floats -> Kccall("caml_float_compare", 2)
+  | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
   | Pfield n -> Kgetfield n
   | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
-  | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
@@ -529,7 +581,8 @@ let rec comp_expr env exp sz cont =
           comp_args env args' (sz + 3)
             (getmethod :: Kapply nargs :: cont1)
         end
-  | Lfunction{params; body} -> (* assume kind = Curried *)
+  | Lfunction{params; body; loc} -> (* assume kind = Curried *)
+      let cont = add_pseudo_event loc !compunit_name cont in
       let lbl = new_label() in
       let fv = Ident.Set.elements(free_variables exp) in
       let to_compile =
@@ -679,7 +732,8 @@ let rec comp_expr env exp sz cont =
         (Kpush::
          Kconst (Const_base (Const_int n))::
          Kaddint::cont)
-  | Lprim(Pmakearray (kind, _), args, _) ->
+  | Lprim(Pmakearray (kind, _), args, loc) ->
+      let cont = add_pseudo_event loc !compunit_name cont in
       begin match kind with
         Pintarray | Paddrarray ->
           comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
@@ -723,6 +777,12 @@ let rec comp_expr env exp sz cont =
         | CFnge -> Kccall("caml_ge_float", 2) :: Kboolnot :: cont
       in
       comp_args env args sz cont
+  | Lprim(Pmakeblock(tag, _mut, _), args, loc) ->
+      let cont = add_pseudo_event loc !compunit_name cont in
+      comp_args env args sz (Kmakeblock(List.length args, tag) :: cont)
+  | Lprim(Pfloatfield n, args, loc) ->
+      let cont = add_pseudo_event loc !compunit_name cont in
+      comp_args env args sz (Kgetfloatfield n :: cont)
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
@@ -860,11 +920,15 @@ let rec comp_expr env exp sz cont =
         fatal_error "Bytegen.comp_expr: assign"
       end
   | Levent(lam, lev) ->
+      let ev_defname = match lev.lev_loc with
+        | Loc_unknown -> "??"
+        | Loc_known { loc = _; scopes } -> string_of_scopes scopes in
       let event kind info =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
-          ev_loc = lev.lev_loc;
+          ev_loc = to_location lev.lev_loc;
           ev_kind = kind;
+          ev_defname;
           ev_info = info;
           ev_typenv = Env.summary lev.lev_env;
           ev_typsubst = Subst.identity;
@@ -897,18 +961,27 @@ let rec comp_expr env exp sz cont =
           let c = comp_expr env lam sz cont in
           let ev = event Event_pseudo Event_other in
           add_event ev c
-      | Lev_after _ when is_tailcall cont -> (* don't destroy tail call opt *)
-          comp_expr env lam sz cont
       | Lev_after ty ->
-          let info =
+          let preserve_tailcall =
             match lam with
-              Lapply{ap_args = args}  -> Event_return (List.length args)
-            | Lsend(_, _, _, args, _) -> Event_return (List.length args + 1)
-            | _                       -> Event_other
+            | Lprim(prim, _, _) -> preserve_tailcall_for_prim prim
+            | _ -> true
           in
-          let ev = event (Event_after ty) info in
-          let cont1 = add_event ev cont in
-          comp_expr env lam sz cont1
+          if preserve_tailcall && is_tailcall cont then
+            (* don't destroy tail call opt *)
+            comp_expr env lam sz cont
+          else begin
+            let info =
+              match lam with
+                Lapply{ap_args = args}  -> Event_return (List.length args)
+              | Lsend(_, _, _, args, _) -> Event_return (List.length args + 1)
+              | Lprim(_,args,_)         -> Event_return (List.length args)
+              | _                       -> Event_other
+            in
+            let ev = event (Event_after ty) info in
+            let cont1 = add_event ev cont in
+            comp_expr env lam sz cont1
+          end
       | Lev_module_definition _ ->
           comp_expr env lam sz cont
       end

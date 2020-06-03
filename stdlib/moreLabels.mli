@@ -152,6 +152,7 @@ module Map : sig
       val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
       val exists: f:(key -> 'a -> bool) -> 'a t -> bool
       val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
+      val filter_map: f:(key -> 'a -> 'b option) -> 'a t -> 'b t
       val partition: f:(key -> 'a -> bool) -> 'a t -> 'a t * 'a t
       val cardinal: 'a t -> int
       val bindings: 'a t -> (key * 'a) list
@@ -171,6 +172,7 @@ module Map : sig
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
       val to_seq : 'a t -> (key * 'a) Seq.t
+      val to_rev_seq : 'a t -> (key * 'a) Seq.t
       val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
       val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
       val of_seq : (key * 'a) Seq.t -> 'a t
@@ -205,6 +207,7 @@ module Set : sig
       val for_all : f:(elt -> bool) -> t -> bool
       val exists : f:(elt -> bool) -> t -> bool
       val filter : f:(elt -> bool) -> t -> t
+      val filter_map : f:(elt -> elt option) -> t -> t
       val partition : f:(elt -> bool) -> t -> t * t
       val cardinal : t -> int
       val elements : t -> elt list
@@ -224,6 +227,7 @@ module Set : sig
       val of_list: elt list -> t
       val to_seq_from : elt -> t -> elt Seq.t
       val to_seq : t -> elt Seq.t
+      val to_rev_seq : t -> elt Seq.t
       val add_seq : elt Seq.t -> t -> t
       val of_seq : elt Seq.t -> t
     end

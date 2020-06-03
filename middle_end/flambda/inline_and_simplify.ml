@@ -175,7 +175,6 @@ let simplify_const (const : Flambda.const) =
   match const with
   | Int i -> A.value_int i
   | Char c -> A.value_char c
-  | Const_pointer i -> A.value_constptr i
 
 let approx_for_allocated_const (const : Allocated_const.t) =
   match const with
@@ -798,9 +797,9 @@ and simplify_partial_application env r ~lhs_of_application
         on partial applications")
   | Unroll _ ->
     Location.prerr_warning (Debuginfo.to_location dbg)
-      (Warnings.Inlining_impossible "[@unroll] attributes may not be used \
+      (Warnings.Inlining_impossible "[@unrolled] attributes may not be used \
         on partial applications")
-  | Default_inline -> ()
+  | Hint_inline | Default_inline -> ()
   end;
   begin match (specialise_requested : Lambda.specialise_attribute) with
   | Always_specialise | Never_specialise ->
@@ -1213,10 +1212,10 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
        if arg is not effectful we can also drop it. *)
     simplify_free_variable env arg ~f:(fun env arg arg_approx ->
       begin match arg_approx.descr with
-      | Value_constptr 0 | Value_int 0 ->  (* Constant [false]: keep [ifnot] *)
+      | Value_int 0 ->  (* Constant [false]: keep [ifnot] *)
         let ifnot, r = simplify env r ifnot in
         ifnot, R.map_benefit r B.remove_branch
-      | Value_constptr _ | Value_int _
+      | Value_int _
       | Value_block _ ->  (* Constant [true]: keep [ifso] *)
         let ifso, r = simplify env r ifso in
         ifso, R.map_benefit r B.remove_branch
@@ -1630,7 +1629,6 @@ let rec simplify_program_body env r (program : Flambda.program_body)
     let approx =
       A.augment_with_symbol (A.value_block tag (Array.of_list approxs)) symbol
     in
-    let module Backend = (val (E.backend env) : Backend_intf.S) in
     let env = E.add_symbol env symbol approx in
     let program, r = simplify_program_body env r program in
     Initialize_symbol (symbol, tag, fields, program), r

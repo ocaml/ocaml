@@ -1,10 +1,61 @@
+% Section macros with mandatory labels
+% Note: hevea and normal latex are forked due to the use of \@ifstar on the latex side
+
+% First, we save the normal macros
+\let\@oldsection=\section
+\let\@oldsubsection=\subsection
+\let\@oldsubsubsection=\subsubsection
+% The *-version are distincts macros in hevea
+\let\@oldsection*=\section*
+\let\@oldsubsection*=\subsection*
+\let\@oldsubsubsection*=\subsubsection*
+
+%We go back to standard macros for ocamldoc generated files
+\newcommand{\ocamldocinputstart}{%
+\let\section=\@oldsection
+\let\subsection=\@oldsubsection
+\let\subsubsection=\@oldsubsubsection
+% The *-version are distincts macros in hevea
+\let\section*=\@oldsection*
+\let\subsection*=\@oldsubsection*
+\let\subsubsection*=\@oldsubsubsection*
+}
+
+\renewcommand{\section}[2]{\@oldsection{\label{#1}#2}}
+\renewcommand{\section*}[2]{\@oldsection*{\label{#1}#2}}
+\renewcommand{\subsection}[2]{\@oldsubsection{\label{#1}#2}}
+\renewcommand{\subsection*}[2]{\@oldsubsection*{\label{#1}#2}}
+\renewcommand{\subsubsection}[2]{\@oldsubsubsection{\label{#1}#2}}
+\renewcommand{\subsubsection*}[2]{\@oldsubsubsection*{\label{#1}#2}}
+
+% For paragraph, we do not make labels compulsory
+\newcommand{\lparagraph}[2]{\paragraph{\label{#1}#2}}
+
 % Colors for links
+
+\newstyle{a.section-anchor::after}{
+  content:"\@print@u{128279}";
+  font-size:smaller;
+  margin-left:-1.5em;
+  padding-right:0.5em;
+}
+
+
+\newstyle{a.section-anchor}{
+  visibility:hidden;
+  color:grey !important;
+  text-decoration:none !important;
+}
+
+\newstyle{*:hover>a.section-anchor}{
+  visibility:visible;
+}
+
 \def\visited@color{\#0d46a3}
 \def\link@color{\#4286f4}
-\def\hover@color{\@getstylecolor{subsection}}
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
 \newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
-\newstyle{a:hover}{color:black;text-decoration:underline;background-color:\hover@color}
+\newstyle{a:hover}{color:black;text-decoration:underline;}
 
 
 \newstyle{@media all}{@font-face \{
@@ -43,13 +94,58 @@
   border-bottom: 1px solid black;
 }
 
-\newstyle{pre}{
+
+\newstyle{div.ocaml}{
+  margin:2ex 0px;
   font-size: 1rem;
   background: beige;
   border: 1px solid grey;
   padding: 10px;
   overflow-y:auto;
-  white-space: pre-wrap;
+  display:flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+\newstyle{div.ocaml .pre}{
+  white-space: pre;
+  font-family: monospace;
+}
+
+
+
+\newstyle{.ocamlkeyword}{
+  font-weight:bold;
+}
+
+
+\newstyle{.ocamlhighlight}{
+  font-weight:bold;
+  text-decoration:underline;
+}
+
+\newstyle{.ocamlerror}{
+  font-weight:bold;
+  color:red;
+}
+
+\newstyle{.ocamlwarning}{
+  font-weight:bold;
+  color:purple;
+}
+
+\newstyle{.ocamlcomment}{
+  color:grey;
+}
+
+\newstyle{.ocamlstring}{
+  opacity:0.75;
+}
+
+% Creative commons license logo
+\newstyle{\#cc_license_logo}{
+  float:left;
+  margin-right: 1em;
 }
 
 % More spacing between lines and inside tables
@@ -58,12 +154,12 @@
 
 %Styles for caml-example and friends
 \newstyle{div.caml-output}{color:maroon;}
-\newstyle{div.caml-example pre}{margin:2ex 0px;}
 % Styles for toplevel mode only
 \newstyle{div.caml-example.toplevel div.caml-input::before}
          {content:"\#"; color:black;}
 \newstyle{div.caml-example.toplevel div.caml-input}{color:\#006000;}
-%%%
+
+%%% Code examples
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
 \newcommand{\machine}{\tt}
@@ -73,14 +169,10 @@
 \newcommand{\nextline}{\examplespace\ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \let\?=\@zyva
-\newenvironment{camlunder}{\@style{U}}{}
-\newcommand{\caml}{\begin{alltt}\renewcommand{\;}{}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
-\newcommand{\endcaml}{\activebracetrue\end{alltt}
-}
 \renewcommand{\:}{\renewcommand{\?}{\@zyva}}
 \newcommand{\var}[1]{\textit{#1}}
 
-% Caml-example environment
+%% Caml-example environment
 \newcommand{\camlexample}[1]{
   \ifthenelse{\equal{#1}{toplevel}}
     {\renewcommand{\examplespace}{\ }}
@@ -93,14 +185,16 @@
   \renewcommand{\examplespace}{\ }
 }
 
-\newcommand{\camlinput}{\@open{div}{class="caml-input"}}
-\newcommand{\endcamlinput}{\@close{div}}
-\newcommand{\camloutput}{\@open{div}{class="caml-output ok"}}
-\newcommand{\endcamloutput}{\@close{div}}
-\newcommand{\camlerror}{\@open{div}{class="caml-output error"}}
-\newcommand{\endcamlerror}{\@close{div}}
-\newcommand{\camlwarn}{\@open{div}{class="caml-output warn"}}
-\newcommand{\endcamlwarn}{\@close{div}}
+\newenvironment{caml}{\@open{div}{class=ocaml}}{\@close{div}}
+\newcommand{\ocamlkeyword}{\@span{class="ocamlkeyword"}}
+\newcommand{\ocamlhighlight}{\@span{class="ocamlhighlight"}}
+\newcommand{\ocamlerror}{\@span{class="ocamlerror"}}
+\newcommand{\ocamlwarning}{\@span{class="ocamlwarning"}}
+\newcommand{\ocamlcomment}{\@span{class="ocamlcomment"}}
+\newcommand{\ocamlstring}{\@span{class="ocamlstring"}}
+
+
+%%% End of code example
 
 \newenvironment{library}{}{}
 \newcounter{page}
@@ -114,8 +208,6 @@
 \def\versionspecific#1{\begin{quote}\textsf{#1:}\quad}
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{quote}}
-\def\macos{\versionspecific{MacOS~9}}
-\def\endmacos{\end{quote}}
 \def\windows{\versionspecific{Windows}}
 \def\endwindows{\end{quote}}
 
@@ -184,7 +276,7 @@
 
 \newcommand{\vfill}{}
 \def\number{}
-\def\year{2013}
+\def\year{\arabic{year}}
 
 % Pour alltt
 \def\rminalltt#1{{\rm #1}}

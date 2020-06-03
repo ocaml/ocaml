@@ -66,10 +66,10 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 }
 
 int caml_alloc_backtrace_buffer(void){
-  CAMLassert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer =
+  CAMLassert(Caml_state->backtrace_pos == 0);
+  Caml_state->backtrace_buffer =
     caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
-  if (caml_backtrace_buffer == NULL) return -1;
+  if (Caml_state->backtrace_buffer == NULL) return -1;
   return 0;
 }
 
@@ -81,12 +81,13 @@ int caml_alloc_backtrace_buffer(void){
    [caml_get_current_callstack] was implemented. */
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
-  if (exn != caml_backtrace_last_exn) {
-    caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = exn;
+  if (exn != Caml_state->backtrace_last_exn) {
+    Caml_state->backtrace_pos = 0;
+    Caml_state->backtrace_last_exn = exn;
   }
 
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
+  if (Caml_state->backtrace_buffer == NULL &&
+      caml_alloc_backtrace_buffer() == -1)
     return;
 
   /* iterate on each frame  */
@@ -94,59 +95,124 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
-    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-    caml_backtrace_buffer[caml_backtrace_pos++] = (backtrace_slot) descr;
+    if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] =
+      (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
     if (sp > trapsp) return;
   }
 }
 
-intnat caml_current_callstack_size(intnat max_frames) {
-  intnat trace_size = 0;
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
+/* A backtrace_slot is either a debuginfo or a frame_descr* */
+#define Slot_is_debuginfo(s) ((uintnat)(s) & 2)
+#define Debuginfo_slot(s) ((debuginfo)((uintnat)(s) - 2))
+#define Slot_debuginfo(d) ((backtrace_slot)((uintnat)(d) + 2))
+#define Frame_descr_slot(s) ((frame_descr*)(s))
+#define Slot_frame_descr(f) ((backtrace_slot)(f))
+static debuginfo debuginfo_extract(frame_descr* d, int alloc_idx);
 
-  while (1) {
+#define Default_callstack_size 32
+intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
+                                      intnat max_frames, int alloc_idx)
+{
+  uintnat pc = Caml_state->last_return_address;
+  char * sp = Caml_state->bottom_of_stack;
+  intnat trace_pos = 0;
+
+  if (max_frames <= 0) return 0;
+  if (*plen == 0) {
+    value* trace =
+      caml_stat_alloc_noexc(Default_callstack_size * sizeof(value));
+    if (trace == NULL) return 0;
+    *ptrace = trace;
+    *plen = Default_callstack_size;
+  }
+
+  if (alloc_idx >= 0) {
+    /* First frame has a Comballoc selector */
+    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
+    debuginfo info;
+    if (descr == NULL) return 0;
+    info = debuginfo_extract(descr, alloc_idx);
+    if (info != NULL) {
+      CAMLassert(((uintnat)info & 3) == 0);
+      (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_debuginfo(info));
+    } else {
+      (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_frame_descr(descr));
+    }
+  }
+
+  while (trace_pos < max_frames) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) break;
-    if (trace_size >= max_frames) break;
-    ++trace_size;
-
-    if (sp > caml_top_of_stack) break;
+    CAMLassert(((uintnat)descr & 3) == 0);
+    if (trace_pos == *plen) {
+      intnat new_len = *plen * 2;
+      value * trace = caml_stat_resize_noexc(*ptrace, new_len * sizeof(value));
+      if (trace == NULL) break;
+      *ptrace = trace;
+      *plen = new_len;
+    }
+    (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_frame_descr(descr));
   }
 
-  return trace_size;
+  return trace_pos;
 }
 
-void caml_current_callstack_write(value trace) {
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
-  intnat trace_pos, trace_size = Wosize_val(trace);
-
-  for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-    CAMLassert(descr != NULL);
-    /* [Val_backtrace_slot(...)] is always a long, no need to call
-       [caml_modify]. */
-    Field(trace, trace_pos) = Val_backtrace_slot((backtrace_slot) descr);
-  }
-}
-
-debuginfo caml_debuginfo_extract(backtrace_slot slot)
+static debuginfo debuginfo_extract(frame_descr* d, int alloc_idx)
 {
-  uintnat infoptr;
-  frame_descr * d = (frame_descr *)slot;
+  unsigned char* infoptr;
+  uint32_t debuginfo_offset;
+
+  /* The special frames marking the top of an ML stack chunk are never
+     returned by caml_next_frame_descriptor, so should never reach here. */
+  CAMLassert(d->frame_size != 0xffff);
 
   if ((d->frame_size & 1) == 0) {
     return NULL;
   }
   /* Recover debugging info */
-  infoptr = ((uintnat) d +
-             sizeof(char *) + sizeof(short) + sizeof(short) +
-             sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-            & -sizeof(frame_descr *);
-  return *((debuginfo*)infoptr);
+  infoptr = (unsigned char*)&d->live_ofs[d->num_live];
+  if (d->frame_size & 2) {
+    CAMLassert(alloc_idx == -1 || (0 <= alloc_idx && alloc_idx < *infoptr));
+    /* skip alloc_lengths */
+    infoptr += *infoptr + 1;
+    /* align to 32 bits */
+    infoptr = Align_to(infoptr, uint32_t);
+    /* select the right debug info for this allocation */
+    if (alloc_idx != -1) {
+      infoptr += alloc_idx * sizeof(uint32_t);
+      if (*(uint32_t*)infoptr == 0) {
+        /* No debug info for this particular allocation */
+        return NULL;
+      }
+    } else {
+      /* We don't care which alloc_idx we use, so use the first
+         that has debug info. (e.g. this is a backtrace through a
+         finaliser/signal handler triggered via a Comballoc alloc) */
+      while (*(uint32_t*)infoptr == 0) {
+        infoptr += sizeof(uint32_t);
+      }
+    }
+  } else {
+    /* align to 32 bits */
+    infoptr = Align_to(infoptr, uint32_t);
+    CAMLassert(alloc_idx == -1);
+  }
+  debuginfo_offset = *(uint32_t*)infoptr;
+  CAMLassert(debuginfo_offset != 0 && (debuginfo_offset & 3) == 0);
+  return (debuginfo)(infoptr + debuginfo_offset);
+}
+
+debuginfo caml_debuginfo_extract(backtrace_slot slot)
+{
+  if (Slot_is_debuginfo(slot)) {
+    /* already a decoded debuginfo */
+    return Debuginfo_slot(slot);
+  } else {
+    return debuginfo_extract(Frame_descr_slot(slot), -1);
+  }
 }
 
 debuginfo caml_debuginfo_next(debuginfo dbg)
@@ -157,14 +223,26 @@ debuginfo caml_debuginfo_next(debuginfo dbg)
     return NULL;
 
   infoptr = dbg;
-  infoptr += 2; /* Two packed info fields */
-  return *((debuginfo*)infoptr);
+  if ((infoptr[0] & 1) == 0)
+    /* No next debuginfo */
+    return NULL;
+  else
+    /* Next debuginfo is after the two packed info fields */
+    return (debuginfo*)(infoptr + 2);
 }
+
+/* Multiple names may share the same filename,
+   so it is referenced as an offset instead of stored inline */
+struct name_info {
+  int32_t filename_offs;
+  char name[1];
+};
 
 /* Extract location information for the given frame descriptor */
 void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
 {
   uint32_t info1, info2;
+  struct name_info * name_info;
 
   /* If no debugging information available, print nothing.
      When everything is compiled with -g, this corresponds to
@@ -178,20 +256,25 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   /* Recover debugging info */
   info1 = ((uint32_t *)dbg)[0];
   info2 = ((uint32_t *)dbg)[1];
+  name_info = (struct name_info*)((char *) dbg + (info1 & 0x3FFFFFC));
   /* Format of the two info words:
-       llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
-                          44       36         26                       2  0
+       llllllllllllllllllll aaaaaaaa bbbbbbbbbb ffffffffffffffffffffffff k n
+                         44       36         26                        2 1 0
                        (32+12)    (32+4)
-     k ( 2 bits): 0 if it's a call
+     n ( 1 bit ): 0 if this is the final debuginfo
+                  1 if there's another following this one
+     k ( 1 bit ): 0 if it's a call
                   1 if it's a raise
-     n (24 bits): offset (in 4-byte words) of file name relative to dbg
+     f (24 bits): offset (in 4-byte words) of file name relative to dbg
      l (20 bits): line number
      a ( 8 bits): beginning of character range
      b (10 bits): end of character range */
   li->loc_valid = 1;
-  li->loc_is_raise = (info1 & 3) == 1;
+  li->loc_is_raise = (info1 & 2) == 2;
   li->loc_is_inlined = caml_debuginfo_next(dbg) != NULL;
-  li->loc_filename = (char *) dbg + (info1 & 0x3FFFFFC);
+  li->loc_defname = name_info->name;
+  li->loc_filename =
+    (char *)name_info + name_info->filename_offs;
   li->loc_lnum = info2 >> 12;
   li->loc_startchr = (info2 >> 4) & 0xFF;
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);

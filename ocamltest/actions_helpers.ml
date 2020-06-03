@@ -63,13 +63,12 @@ let files env = words_of_variable env Builtin_variables.files
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
     let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -sf " ^ src ^" " ^ build_directory in
-    Sys.run_system_command cmd in
+    Sys.run_system_command "ln" ["-sf"; src; build_directory] in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
     Sys.copy_file src dst in
-  let f = if Sys.os_type="Win32" then copy else symlink in
+  let f = if Sys.win32 then copy else symlink in
   Sys.make_directory build_directory;
   List.iter f files
 
@@ -97,16 +96,32 @@ let run_cmd
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
     ?(timeout=0)
-    log env cmd
+    log env original_cmd
   =
   let log_redirection std filename =
     if filename<>"" then
     begin
       Printf.fprintf log "  Redirecting %s to %s \n%!" std filename
     end in
+  let cmd =
+    if (Environments.lookup_as_bool Strace.strace env) = Some true then
+    begin
+      let action_name = Environments.safe_lookup Actions.action_name env in
+      let test_build_directory = test_build_directory env in
+      let strace_logfile_name = Strace.get_logfile_name action_name in
+      let strace_logfile =
+        Filename.make_path [test_build_directory; strace_logfile_name]
+      in
+      let strace_flags = Environments.safe_lookup Strace.strace_flags env in
+      let strace_cmd =
+        ["strace"; "-f"; "-o"; strace_logfile; strace_flags]
+      in
+      strace_cmd @ original_cmd
+    end else original_cmd
+  in
   let lst = List.concat (List.map String.words cmd) in
   let quoted_lst =
-    if Sys.os_type="Win32"
+    if Sys.win32
     then List.map Filename.maybe_quote lst
     else lst in
   let cmd' = String.concat " " quoted_lst in
@@ -205,7 +220,7 @@ let run_script log env =
     log scriptenv in
   let final_value =
     if Result.is_pass result then begin
-      match Environments.modifiers_of_file response_file with
+      match Modifier_parser.modifiers_of_file response_file with
       | modifiers ->
         let modified_env = Environments.apply_modifiers newenv modifiers in
         (result, modified_env)
@@ -248,7 +263,7 @@ let run_hook hook_name log input_env =
   } in let exit_status = run settings in
   let final_value = match exit_status with
     | 0 ->
-      begin match Environments.modifiers_of_file response_file with
+      begin match Modifier_parser.modifiers_of_file response_file with
       | modifiers ->
         let modified_env = Environments.apply_modifiers hookenv modifiers in
         (Result.pass, modified_env)
@@ -287,8 +302,12 @@ let check_output kind_of_output output_variable reference_variable log
     Filecompare.reference_filename = reference_filename;
     Filecompare.output_filename = output_filename
   } in
+  let ignore_header_conf = {
+      Filecompare.lines = skip_lines;
+      Filecompare.bytes = skip_bytes;
+    } in
   let tool =
-    Filecompare.(make_cmp_tool ~ignore:{lines=skip_lines;bytes=skip_bytes}) in
+    Filecompare.make_cmp_tool ~ignore:ignore_header_conf in
   match Filecompare.check_file ~tool files with
     | Filecompare.Same -> (Result.pass, env)
     | Filecompare.Different ->
@@ -303,7 +322,7 @@ let check_output kind_of_output output_variable reference_variable log
       then begin
         Printf.fprintf log "Promoting %s output %s to reference %s\n%!"
           kind_of_output output_filename reference_filename;
-        Sys.copy_file output_filename reference_filename;
+        Filecompare.promote files ignore_header_conf;
       end;
       (Result.fail_with_reason reason, env)
     | Filecompare.Unexpected_output ->

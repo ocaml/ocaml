@@ -1,58 +1,48 @@
-(* TEST
-   reference="${test_source_directory}/ellipses.reference"
-   output="ellipses.output"
-   script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
-  * hasstr
-  ** native-compiler
-  *** shared-libraries
-  **** script with unix,str
-  ***** check-program-output
-*)
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+$\?$let start = 0
+$\?$$\ldots$
+$\?$let mid = succ hidden
+$\?$$\ldots$
 
-\camlexample{verbatim}
-\caml\camlinput\?let start = 0
-\?\ldots
-\?let mid = succ hidden
-\?\ldots
+$\?$module E = struct end
+$\?$$\ldots$
 
-\?module E = struct end
-\?\ldots
+$\?$let expr = $\ldots$
 
-\?let expr = \ldots
+$\?$let pat = match start with
+$\?$  | $\ldots$ | 1 -> succ expr
+$\?$  | _ -> succ expr
 
-\?let pat = match start with
-\?  | \ldots | 1 -> succ expr
-\?  | _ -> succ expr
-
-\?let case = match start with
-\?  | 0 -> succ pat
-\?  | \ldots
+$\?$let case = match start with
+$\?$  | 0 -> succ pat
+$\?$  | $\ldots$
 
 
-\?let annot: \ldots = succ case
+$\?$let annot: $\ldots$ = succ case
 
-\?let subexpr = succ annot + (\ldots * 2) - 2
+$\?$let subexpr = succ annot + ($\ldots$ * 2) - 2
 
-\?\ldots
+$\?$$\ldots$
 
-\?class c2 = object
-\?  \ldots
-\?  val y = 1
-\?  \ldots
-\?  method n = 3
-\?  \ldots
-\?end
+$\?$class c2 = object
+$\?$  $\ldots$
+$\?$  val y = 1
+$\?$  $\ldots$
+$\?$  method n = 3
+$\?$  $\ldots$
+$\?$end
 
-\?type t = \ldots | B \ldots | F
-\?type arrow = int -> (\ldots)
-\?type record = { a:int; \ldots c:int;
-\?                \ldots
-\?                g:int }
-\?type polyvar = [\textasciigrave\-A|\ldots |\textasciigrave\-C
-\?               |\ldots
-\?               | \textasciigrave\-G ]
-\?type exn += \ldots | B \ldots | F
-\endcamlinput
-\endcaml
-\endcamlexample
+$\?$type t = $\ldots$ | B $\ldots$ | F
+$\?$type arrow = int -> ($\ldots$)
+$\?$type record = { a:int; $\ldots$ c:int;
+$\?$                $\ldots$
+$\?$                g:int }
+$\?$type polyvar = [`A|$\ldots$ |`C
+$\?$               |$\ldots$
+$\?$               | `G ]
+$\?$type exn += $\ldots$ | B $\ldots$ | F
+\end{camlinput}
+\end{caml}
+\end{camlexample}

@@ -18,7 +18,8 @@
    (exit_module std_exit)
    (internal_modules Camlinternal*)
    (modules_before_stdlib
-     camlinternalFormatBasics))
+     camlinternalFormatBasics
+     stdlib__atomic))
  (flags (:standard -w -9 -nolabels))
  (preprocess
    (per_module

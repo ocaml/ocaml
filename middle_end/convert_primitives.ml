@@ -54,6 +54,9 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Plsrint -> Plsrint
   | Pasrint -> Pasrint
   | Pintcomp comp -> Pintcomp comp
+  | Pcompare_ints -> Pcompare_ints
+  | Pcompare_floats -> Pcompare_floats
+  | Pcompare_bints bi -> Pcompare_bints bi
   | Poffsetint offset -> Poffsetint offset
   | Poffsetref offset -> Poffsetref offset
   | Pintoffloat -> Pintoffloat

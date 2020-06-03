@@ -1,6 +1,6 @@
 (* TEST
 
-flags = "-w A"
+flags = "-w A-67"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
@@ -32,3 +32,10 @@ module M = struct
 end
 
 module O = M.N
+
+(***************)
+
+let () =
+  (* M is unused, but no warning was emitted before 4.10. *)
+  let module M = struct end in
+  ()

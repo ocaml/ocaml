@@ -80,12 +80,18 @@ let rec env_from_summary sum subst =
               Env.add_local_type (Subst.type_path subst path)
                 (Subst.type_declaration subst info))
             map (env_from_summary s subst)
-      | Env_copy_types (s, sl) ->
+      | Env_copy_types s ->
           let env = env_from_summary s subst in
-          Env.do_copy_types (Env.make_copy_of_types sl env) env
+          Env.make_copy_of_types env env
       | Env_persistent (s, id) ->
           let env = env_from_summary s subst in
           Env.add_persistent_structure id env
+      | Env_value_unbound (s, str, reason) ->
+          let env = env_from_summary s subst in
+          Env.enter_unbound_value str reason env
+      | Env_module_unbound (s, str, reason) ->
+          let env = env_from_summary s subst in
+          Env.enter_unbound_module str reason env
     in
       Hashtbl.add env_cache (sum, subst) env;
       env
@@ -100,3 +106,10 @@ open Format
 let report_error ppf = function
   | Module_not_found p ->
       fprintf ppf "@[Cannot find module %a@].@." Printtyp.path p
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

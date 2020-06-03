@@ -37,6 +37,8 @@ let str = @@STR@@
 
 let objext = "@@OBJEXT@@"
 
+let asmext = "@@ASMEXT@@"
+
 let system = "@@SYSTEM@@"
 
 let c_preprocessor = "@@CPP@@"
@@ -76,3 +78,7 @@ let bytecc_libs = "@@BYTECCLIBS@@"
 let nativecc_libs = "@@NATIVECCLIBS@@"
 
 let windows_unicode = @@WINDOWS_UNICODE@@ != 0
+
+let function_sections = @@FUNCTION_SECTIONS@@
+
+let has_instrumented_runtime = @@RUNTIMEI@@

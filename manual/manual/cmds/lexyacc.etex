@@ -18,7 +18,7 @@ principles, techniques, and tools'' by Aho, Sethi and Ullman
 (Addison-Wesley, 1986), or ``Lex $\&$ Yacc'', by Levine, Mason and
 Brown (O'Reilly, 1992).
 
-\section{Overview of \texttt{ocamllex}}
+\section{s:ocamllex-overview}{Overview of \texttt{ocamllex}}
 
 The "ocamllex" command produces a lexical analyzer from a set of regular
 expressions with attached semantic actions, in the style of
@@ -44,7 +44,7 @@ semantic actions compute a value belonging to the type "token" defined
 by the generated parsing module. (See the description of "ocamlyacc"
 below.)
 
-\subsection{Options}
+\subsection{ss:ocamllex-options}{Options}
 The following command-line options are recognized by "ocamllex".
 
 \begin{options}
@@ -74,7 +74,7 @@ Display a short usage summary and exit.
 %
 \end{options}
 
-\section{Syntax of lexer definitions}
+\section{s:ocamllex-syntax}{Syntax of lexer definitions}
 
 The format of lexer definitions is as follows:
 \begin{alltt}
@@ -97,7 +97,7 @@ the semantic consequences explained below.
 Refill handlers are a recent (optional) feature introduced in 4.02,
 documented below in subsection~\ref{ss:refill-handlers}.
 
-\subsection{Header and trailer}
+\subsection{ss:ocamllex-header-trailer}{Header and trailer}
 The {\it header} and {\it trailer} sections are arbitrary OCaml
 text enclosed in curly braces. Either or both can be omitted. If
 present, the header text is copied as is at the beginning of the
@@ -106,7 +106,7 @@ header section contains the "open" directives required
 by the actions, and possibly some auxiliary functions used in the
 actions.
 
-\subsection{Naming regular expressions}
+\subsection{ss:ocamllex-named-regexp}{Naming regular expressions}
 
 Between the header and the entry points, one can give names to
 frequently-occurring regular expressions.  This is written
@@ -114,7 +114,7 @@ frequently-occurring regular expressions.  This is written
 In regular expressions that follow this declaration, the identifier
 \var{ident} can be used as shorthand for \var{regexp}.
 
-\subsection{Entry points}
+\subsection{ss:ocamllex-entry-points}{Entry points}
 
 The names of the entry points must be valid identifiers for OCaml
 values (starting with a lowercase letter).
@@ -143,7 +143,7 @@ may facilitate the use of "ocamllex" as a simple text processing tool.
 
 
 
-\subsection{Regular expressions}
+\subsection{ss:ocamllex-regexp}{Regular expressions}
 
 The regular expressions are in the style of "lex", with a more
 OCaml-like syntax.
@@ -224,7 +224,7 @@ Concerning the precedences of operators, "#" has the highest precedence,
 followed by "*", "+"  and "?",
 then concatenation, then "|" (alternation), then "as".
 
-\subsection{Actions}
+\subsection{ss:ocamllex-actions}{Actions}
 
 The actions are arbitrary OCaml expressions. They are evaluated in
 a context where the identifiers defined by using the "as" construct
@@ -262,7 +262,7 @@ Useful for lexing nested comments, for example.
 
 \end{options}
 
-\subsection{Variables in regular expressions}
+\subsection{ss:ocamllex-variables}{Variables in regular expressions}
 The "as" construct is similar to ``\emph{groups}'' as provided by
 numerous regular expression packages.
 The type of these variables can be "string", "char", "string option"
@@ -308,8 +308,7 @@ expressions will select one of the possible resulting sets of
 bindings.
 The selected set of bindings is purposely left unspecified.
 
-\subsection{Refill handlers}
-\label{ss:refill-handlers}
+\subsection{ss:refill-handlers}{Refill handlers}
 
 By default, when ocamllex reaches the end of its lexing buffer, it
 will silently call the "refill_buff" function of "lexbuf" structure
@@ -372,13 +371,13 @@ end
 }
 \end{verbatim}
 
-\subsection{Reserved identifiers}
+\subsection{ss:ocamllex-reserved-ident}{Reserved identifiers}
 
 All identifiers starting with "__ocaml_lex" are reserved for use by
 "ocamllex"; do not use any such identifier in your programs.
 
 
-\section{Overview of \texttt{ocamlyacc}}
+\section{s:ocamlyacc-overview}{Overview of \texttt{ocamlyacc}}
 
 The "ocamlyacc" command produces a parser from a context-free grammar
 specification with attached semantic actions, in the style of "yacc".
@@ -400,7 +399,7 @@ implemented in the standard library module "Lexing". Tokens are values from
 the concrete type "token", defined in the interface file
 \var{grammar}".mli" produced by "ocamlyacc".
 
-\section{Syntax of grammar definitions}
+\section{s:ocamlyacc-syntax}{Syntax of grammar definitions}
 
 Grammar definitions have the following format:
 \begin{alltt}
@@ -418,7 +417,7 @@ Comments are enclosed between \verb|/*| and \verb|*/| (as in C) in the
 ``declarations'' and ``rules'' sections, and between \verb|(*| and
 \verb|*)| (as in OCaml) in the ``header'' and ``trailer'' sections.
 
-\subsection{Header and trailer}
+\subsection{ss:ocamlyacc-header-trailer}{Header and trailer}
 
 The header and the trailer sections are OCaml code that is copied
 as is into file \var{grammar}".ml". Both sections are optional. The header
@@ -426,7 +425,7 @@ goes at the beginning of the output file; it usually contains
 "open" directives and auxiliary functions required by the semantic
 actions of the rules. The trailer goes at the end of the output file.
 
-\subsection{Declarations}
+\subsection{ss:ocamlyacc-declarations}{Declarations}
 
 Declarations are given one per line. They all start with a \verb"%" sign.
 
@@ -509,7 +508,7 @@ resolve reduce/reduce and shift/reduce conflicts:
 
 \end{options}
 
-\subsection{Rules}
+\subsection{ss:ocamlyacc-rules}{Rules}
 
 The syntax for rules is as usual:
 \begin{alltt}
@@ -541,7 +540,7 @@ Actions occurring in the middle of rules are not supported.
 Nonterminal symbols are like regular OCaml symbols, except that they
 cannot end with "'" (single quote).
 
-\subsection{Error handling}
+\subsection{ss:ocamlyacc-error-handling}{Error handling}
 
 Error recovery is supported as follows: when the parser reaches an
 error state (no grammar rules can apply), it calls a function named
@@ -564,7 +563,7 @@ exception.
 Refer to documentation on "yacc" for more details and guidance in how
 to use error recovery.
 
-\section{Options}
+\section{s:ocamlyacc-options}{Options}
 
 The "ocamlyacc" command recognizes the following options:
 
@@ -601,13 +600,13 @@ command line.
 
 At run-time, the "ocamlyacc"-generated parser can be debugged by
 setting the "p" option in the "OCAMLRUNPARAM" environment variable
-(see section~\ref{ocamlrun-options}).  This causes the pushdown
+(see section~\ref{s:ocamlrun-options}).  This causes the pushdown
 automaton executing the parser to print a trace of its action (tokens
 shifted, rules reduced, etc).  The trace mentions rule numbers and
 state numbers that can be interpreted by looking at the file
 \var{grammar}".output" generated by "ocamlyacc -v".
 
-\section{A complete example}
+\section{s:lexyacc-example}{A complete example}
 
 The all-time favorite: a desk calculator. This program reads
 arithmetic expressions on standard input, one per line, and prints
@@ -680,7 +679,7 @@ To compile everything, execute:
         ocamlc -o calc lexer.cmo parser.cmo calc.cmo
 \end{verbatim}
 
-\section{Common errors}
+\section{s:lexyacc-common-errors}{Common errors}
 
 \begin{options}
 

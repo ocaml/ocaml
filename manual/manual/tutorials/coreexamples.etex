@@ -11,7 +11,7 @@ object-oriented features, chapter~\ref{c:labl-examples} with
 extensions to the core language (labeled arguments and polymorphic
 variants), and chapter~\ref{c:advexamples} gives some advanced examples.
 
-\section{Basics}
+\section{s:basics}{Basics}
 
 For this overview of OCaml, we use the interactive system, which
 is started by running "ocaml" from the Unix shell, or by launching the
@@ -48,7 +48,7 @@ let rec fib n =
 fib 10;;
 \end{caml_example}
 
-\section{Data types}
+\section{s:datatypes}{Data types}
 
 In addition to integers and floating-point numbers, OCaml offers the
 usual basic data types:
@@ -132,7 +132,7 @@ The OCaml notation for the type of a function with multiple arguments is \\
 the type inferred for "insert", "'a -> 'a list -> 'a list", means that "insert"
 takes two arguments, an element of any type "'a" and a list with elements of
 the same type "'a" and returns a list of the same type.
-\section{Functions as values}
+\section{s:functions-as-values}{Functions as values}
 
 OCaml is a  functional language: functions in the full mathematical
 sense are supported and can be passed around freely just as any other
@@ -169,8 +169,7 @@ let rec map f l =
   | hd :: tl -> f hd :: map f tl;;
 \end{caml_example}
 
-\section{Records and variants}
-\label{s:tut-recvariants}
+\section{s:tut-recvariants}{Records and variants}
 
 User-defined data structures include records and variants. Both are
 defined with the "type" declaration. Here, we declare a record type to
@@ -300,7 +299,7 @@ let rec insert x btree =
 \end{caml_example}
 
 
-\subsection{Record and variant disambiguation}
+\subsection{ss:record-and-variant-disambiguation}{Record and variant disambiguation}
 ( This subsection can be skipped on the first reading )
 
 Astute readers may have wondered what happens when two or more record
@@ -387,7 +386,7 @@ definition, or after opening a module (see chapter \ref{c:moduleexamples}).
 Consequently, adding explicit type annotations to guide disambiguation is
 more robust than relying on the last defined type disambiguation.
 
-\section{Imperative features}
+\section{s:imperative-features}{Imperative features}
 
 Though all examples so far were written in purely applicative style,
 OCaml is also equipped with full imperative features. This includes the
@@ -471,7 +470,7 @@ r.id <- (fun x -> print_string "called id\n"; x);;
 g r;;
 \end{caml_example}
 
-\section{Exceptions}
+\section{s:exceptions}{Exceptions}
 
 OCaml provides exceptions for signalling and handling exceptional
 conditions. Exceptions can also be used as a general-purpose non-local
@@ -580,7 +579,7 @@ let fixpoint f x =
 the function "f" cannot raise a "Done" exception, which removes an
 entire class of misbehaving functions.
 
-\section{Lazy expressions}
+\section{s:lazy-expr}{Lazy expressions}
 
 OCaml allows us to defer some computation until later when we need the result of
  that computation. 
@@ -653,7 +652,7 @@ The lazy expression "lazy_expr" is forced only if the "lazy_guard" value yields
 the lazy expression's evaluation. However, a pattern with keyword "lazy", even 
 if it is wildcard, always forces the evaluation of the deferred computation.
 
-\section{Symbolic processing of expressions}
+\section{s:symb-expr}{Symbolic processing of expressions}
 
 We finish this introduction with a more complete example
 representative of the use of OCaml for symbolic processing: formal
@@ -703,7 +702,7 @@ let rec deriv exp dv =
 deriv (Quot(Const 1.0, Var "x")) "x";;
 \end{caml_example}
 
-\section{Pretty-printing}
+\section{s:pretty-printing}{Pretty-printing}
 
 As shown in the examples above, the internal representation (also
 called {\em abstract syntax\/}) of expressions quickly becomes hard to
@@ -750,7 +749,7 @@ print_expr e; print_newline ();;
 print_expr (deriv e "x"); print_newline ();;
 \end{caml_example}
 
-\section{Printf formats}
+\section{s:printf}{Printf formats}
 
 There is a "printf" function in the \stdmoduleref{Printf} module
 (see chapter~\ref{c:moduleexamples}) that allows you to make formatted
@@ -927,7 +926,7 @@ Printf.printf str 3 4.5 "string value";;
 %% the second space in "x - 1" causes the lexer to return the three
 %% expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
 
-\section{Standalone OCaml programs}
+\section{s:standalone-programs}{Standalone OCaml programs}
 
 All examples given so far were executed under the interactive system.
 OCaml code can also be compiled separately and executed
@@ -942,15 +941,18 @@ source files created for use with OCaml compilers, but can be helpful
 to mark the end of a top-level expression unambiguously even when
 there are syntax errors.
 Here is a
-sample standalone program to print Fibonacci numbers:
+sample standalone program to print the greatest common divisor
+(gcd) of two numbers:
 \begin{verbatim}
-(* File fib.ml *)
-let rec fib n =
-  if n < 2 then 1 else fib (n-1) + fib (n-2);;
+(* File gcd.ml *)
+let rec gcd a b =
+  if b = 0 then a
+  else gcd b (a mod b);;
+
 let main () =
-  let arg = int_of_string Sys.argv.(1) in
-  print_int (fib arg);
-  print_newline ();
+  let a = int_of_string Sys.argv.(1) in
+  let b = int_of_string Sys.argv.(2) in
+  Printf.printf "%d\n" (gcd a b);
   exit 0;;
 main ();;
 \end{verbatim}
@@ -959,11 +961,11 @@ parameters. "Sys.argv.(1)" is thus the first command-line parameter.
 The program above is compiled and executed with the following shell
 commands:
 \begin{verbatim}
-$ ocamlc -o fib fib.ml
-$ ./fib 10
-89
-$ ./fib 20
-10946
+$ ocamlc -o gcd gcd.ml
+$ ./gcd 6 9
+3
+$ ./fib 7 11
+1
 \end{verbatim}
 
 More complex standalone OCaml programs are typically composed of

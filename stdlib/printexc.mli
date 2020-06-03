@@ -157,7 +157,7 @@ external raise_with_backtrace: exn -> raw_backtrace -> 'a
 
 (** {1 Current call stack} *)
 
-val get_callstack: int -> raw_backtrace
+external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 (** [Printexc.get_callstack n] returns a description of the top of the
     call stack on the current program point (for the current thread),
     with at most [n] entries.  (Note: this function is not related to
@@ -168,10 +168,17 @@ val get_callstack: int -> raw_backtrace
 
 (** {1 Uncaught exceptions} *)
 
+val default_uncaught_exception_handler: exn -> raw_backtrace -> unit
+(** [Printexc.default_uncaught_exception_handler] prints the exception and
+    backtrace on standard error output.
+
+    @since 4.11
+*)
+
 val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 (** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
-    for uncaught exceptions. The default handler prints the exception and
-    backtrace on standard error output.
+    for uncaught exceptions. The default handler is
+    {!Printexc.default_uncaught_exception_handler}.
 
     Note that when [fn] is called all the functions registered with
     {!Stdlib.at_exit} have already been called. Because of this you must
@@ -260,6 +267,16 @@ module Slot : sig
       compiled with debug information ([-g])
 
       @since 4.02
+  *)
+
+  val name : t -> string option
+  (** [name slot] returns the name of the function or definition
+      enclosing the location referred to by the slot.
+
+      [name slot] returns None if the name is unavailable, which
+      may happen for the same reasons as [location] returning None.
+
+      @since 4.11
   *)
 
   val format : int -> t -> string option

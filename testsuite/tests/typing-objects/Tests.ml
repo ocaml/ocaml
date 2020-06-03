@@ -66,6 +66,21 @@ and ['a] d : unit -> object constraint 'a = int #c end
 |}];;
 (* class ['a] c : unit -> object constraint 'a = int end
    and ['a] d : unit -> object constraint 'a = int #c end *)
+(* Class type constraint *)
+module F(X:sig type t end) = struct
+  class type ['a] c = object
+    method m: 'a -> X.t
+  end
+end
+class ['a] c = object
+  constraint 'a = 'a #F(Int).c
+end
+[%%expect {|
+module F :
+  functor (X : sig type t end) ->
+    sig class type ['a] c = object method m : 'a -> X.t end end
+class ['a] c : object constraint 'a = < m : 'a -> Int.t; .. > end
+|}]
 
 (* Self as parameter *)
 class ['a] c (x : 'a) = object (self : 'b)
@@ -179,7 +194,14 @@ and 'a d = <f : int c>;;
 Line 1, characters 0-32:
 1 | type 'a c = <f : 'a c; g : 'a d>
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the definition of d, type int c should be 'a c
+Error: This recursive type is not regular.
+       The type constructor c is defined as
+         type 'a c
+       but it is used as
+         int c
+       after the following expansion(s):
+         'a d = < f : int c >
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
 and 'a d = <f : 'a c>;;
@@ -728,7 +750,7 @@ val x : '_weak2 list ref = {contents = []}
 module F(X : sig end) =
   struct type t = int let _ = (x : < m : t> list ref) end;;
 [%%expect{|
-module F : functor (X : sig  end) -> sig type t = int end
+module F : functor (X : sig end) -> sig type t = int end
 |}];;
 x;;
 [%%expect{|
@@ -819,55 +841,6 @@ class c () = object method virtual m : int method private m = 1 end;;
 class c : unit -> object method m : int end
 |}];;
 
-(* Marshaling (cf. PR#5436) *)
-
-let r = ref 0;;
-[%%expect{|
-val r : int ref = {contents = 0}
-|}];;
-let id o = Oo.id o - !r;;
-[%%expect{|
-val id : < .. > -> int = <fun>
-|}];;
-r := Oo.id (object end);;
-[%%expect{|
-- : unit = ()
-|}];;
-id (object end);;
-[%%expect{|
-- : int = 1
-|}];;
-id (object end);;
-[%%expect{|
-- : int = 2
-|}];;
-let o = object end in
-  let s = Marshal.to_string o [] in
-  let o' : < > = Marshal.from_string s 0 in
-  let o'' : < > = Marshal.from_string s 0 in
-  (id o, id o', id o'');;
-[%%expect{|
-- : int * int * int = (3, 4, 5)
-|}];;
-
-let o = object val x = 33 method m = x end in
-  let s = Marshal.to_string o [Marshal.Closures] in
-  let o' : <m:int> = Marshal.from_string s 0 in
-  let o'' : <m:int> = Marshal.from_string s 0 in
-  (id o, id o', id o'', o#m, o'#m);;
-[%%expect{|
-- : int * int * int * int * int = (6, 7, 8, 33, 33)
-|}];;
-
-let o = object val x = 33 val y = 44 method m = x end in
-  let s = Marshal.to_string (o,o) [Marshal.Closures] in
-  let (o1, o2) : (<m:int> * <m:int>) = Marshal.from_string s 0 in
-  let (o3, o4) : (<m:int> * <m:int>) = Marshal.from_string s 0 in
-  (id o, id o1, id o2, id o3, id o4, o#m, o1#m);;
-[%%expect{|
-- : int * int * int * int * int * int * int = (9, 10, 10, 11, 11, 33, 33)
-|}];;
-
 (* Recursion (cf. PR#5291) *)
 
 class a = let _ = new b in object end
@@ -915,4 +888,33 @@ Line 2, characters 8-52:
 2 | and b = let x() = new a in let y = x() in object end;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of recursive class expression is not allowed
+|}];;
+
+class a = object val x = 3 val y = x + 2 end;;
+[%%expect{|
+Line 1, characters 35-36:
+1 | class a = object val x = 3 val y = x + 2 end;;
+                                       ^
+Error: The instance variable x
+       cannot be accessed from the definition of another instance variable
+|}];;
+
+class a = object (self) val x = self#m method m = 3 end;;
+[%%expect{|
+Line 1, characters 32-36:
+1 | class a = object (self) val x = self#m method m = 3 end;;
+                                    ^^^^
+Error: The self variable self
+       cannot be accessed from the definition of an instance variable
+|}];;
+
+class a = object method m = 3 end
+class b = object inherit a as super val x = super#m end;;
+[%%expect{|
+class a : object method m : int end
+Line 2, characters 44-49:
+2 | class b = object inherit a as super val x = super#m end;;
+                                                ^^^^^
+Error: The ancestor variable super
+       cannot be accessed from the definition of an instance variable
 |}];;

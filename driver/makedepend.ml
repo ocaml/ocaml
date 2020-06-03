@@ -31,6 +31,7 @@ let bytecode_only = ref false
 let raw_dependencies = ref false
 let sort_files = ref false
 let all_dependencies = ref false
+let nocwd = ref false
 let one_line = ref false
 let files =
   ref ([] : (string * file_kind * String.Set.t * string list) list)
@@ -310,7 +311,12 @@ let read_parse_and_extract parse_function extract_function def ast_kind
       let bound_vars =
         List.fold_left
           (fun bv modname ->
-            Depend.open_module bv (Longident.parse modname))
+             let lid =
+               let lexbuf = Lexing.from_string modname in
+               Location.init lexbuf
+                 (Printf.sprintf "command line argument: -open %S" modname);
+               Parse.simple_module_path lexbuf in
+             Depend.open_module bv lid)
           !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in
@@ -401,10 +407,12 @@ let mli_file_dependencies source_file =
 let process_file_as process_fun def source_file =
   Compenv.readenv ppf (Before_compile source_file);
   load_path := [];
+  let cwd = if !nocwd then [] else [Filename.current_dir_name] in
   List.iter add_to_load_path (
       (!Compenv.last_include_dirs @
        !Clflags.include_dirs @
-       !Compenv.first_include_dirs
+       !Compenv.first_include_dirs @
+       cwd
       ));
   Location.input_name := source_file;
   try
@@ -569,7 +577,6 @@ let print_version_num () =
 
 let main () =
   Clflags.classic := false;
-  add_to_list first_include_dirs Filename.current_dir_name;
   Compenv.readenv ppf Before_args;
   Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
   Clflags.add_arguments __LOC__ [
@@ -586,6 +593,9 @@ let main () =
         " Dump the delayed dependency map for each map file";
      "-I", Arg.String (add_to_list Clflags.include_dirs),
         "<dir>  Add <dir> to the list of include directories";
+     "-nocwd", Arg.Set nocwd,
+        " Do not add current working directory to \
+          the list of include directories";
      "-impl", Arg.String (file_dependencies_as ML),
         "<f>  Process <f> as a .ml file";
      "-intf", Arg.String (file_dependencies_as MLI),

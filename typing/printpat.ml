@@ -27,25 +27,28 @@ let is_cons = function
 let pretty_const c = match c with
 | Const_int i -> Printf.sprintf "%d" i
 | Const_char c -> Printf.sprintf "%C" c
-| Const_string (s, _) -> Printf.sprintf "%S" s
+| Const_string (s, _, _) -> Printf.sprintf "%S" s
 | Const_float f -> Printf.sprintf "%s" f
 | Const_int32 i -> Printf.sprintf "%ldl" i
 | Const_int64 i -> Printf.sprintf "%LdL" i
 | Const_nativeint i -> Printf.sprintf "%ndn" i
 
-let rec pretty_val ppf v =
+let pretty_extra ppf (cstr, _loc, _attrs) pretty_rest rest =
+  match cstr with
+  | Tpat_unpack ->
+     fprintf ppf "@[(module %a)@]" pretty_rest rest
+  | Tpat_constraint _ ->
+     fprintf ppf "@[(%a : _)@]" pretty_rest rest
+  | Tpat_type _ ->
+     fprintf ppf "@[(# %a)@]" pretty_rest rest
+  | Tpat_open _ ->
+     fprintf ppf "@[(# %a)@]" pretty_rest rest
+
+let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
   match v.pat_extra with
-      (cstr, _loc, _attrs) :: rem ->
-        begin match cstr with
-          | Tpat_unpack ->
-            fprintf ppf "@[(module %a)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_constraint _ ->
-            fprintf ppf "@[(%a : _)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_type _ ->
-            fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_open _ ->
-              fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
-        end
+    | extra :: rem ->
+       pretty_extra ppf extra
+         pretty_val { v with pat_extra = rem }
     | [] ->
   match v.pat_desc with
   | Tpat_any -> fprintf ppf "_"
@@ -89,12 +92,14 @@ let rec pretty_val ppf v =
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
       fprintf ppf "@[<2>lazy@ %a@]" pretty_arg v
-  | Tpat_exception v ->
-      fprintf ppf "@[<2>exception@ %a@]" pretty_arg v
   | Tpat_alias (v, x,_) ->
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
-  | Tpat_or (v,w,_)    ->
-      fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
+  | Tpat_value v ->
+      fprintf ppf "%a" pretty_val (v :> pattern)
+  | Tpat_exception v ->
+      fprintf ppf "@[<2>exception@ %a@]" pretty_arg v
+  | Tpat_or _ ->
+      fprintf ppf "@[(%a)@]" pretty_or v
 
 and pretty_car ppf v = match v.pat_desc with
 | Tpat_construct (_,cstr, [_ ; _])
@@ -113,10 +118,11 @@ and pretty_arg ppf v = match v.pat_desc with
 | Tpat_variant (_, Some _, _) -> fprintf ppf "(%a)" pretty_val v
 |  _ -> pretty_val ppf v
 
-and pretty_or ppf v = match v.pat_desc with
-| Tpat_or (v,w,_) ->
-    fprintf ppf "%a|@,%a" pretty_or v pretty_or w
-| _ -> pretty_val ppf v
+and pretty_or : type k . _ -> k general_pattern -> _ = fun ppf v ->
+  match v.pat_desc with
+  | Tpat_or (v,w,_) ->
+      fprintf ppf "%a|@,%a" pretty_or v pretty_or w
+  | _ -> pretty_val ppf v
 
 and pretty_vals sep ppf = function
   | [] -> ()
@@ -135,12 +141,11 @@ and pretty_lvals ppf = function
 let top_pretty ppf v =
   fprintf ppf "@[%a@]@?" pretty_val v
 
-
 let pretty_pat p =
   top_pretty Format.str_formatter p ;
   prerr_string (Format.flush_str_formatter ())
 
-type matrix = pattern list list
+type 'k matrix = 'k general_pattern list list
 
 let pretty_line fmt =
   List.iter (fun p ->
@@ -149,7 +154,7 @@ let pretty_line fmt =
     Format.fprintf fmt ">";
   )
 
-let pretty_matrix fmt (pss : matrix) =
+let pretty_matrix fmt (pss : 'k matrix) =
   Format.fprintf fmt "begin matrix\n" ;
   List.iter (fun ps ->
     pretty_line fmt ps ;

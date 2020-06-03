@@ -1,39 +1,24 @@
-run_unix.$(O): run_unix.c run.h ../runtime/caml/misc.h \
- ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
- run_common.h
-run_stubs.$(O): run_stubs.c run.h ../runtime/caml/misc.h \
- ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
- ../runtime/caml/mlvalues.h ../runtime/caml/misc.h \
- ../runtime/caml/memory.h ../runtime/caml/gc.h ../runtime/caml/mlvalues.h \
- ../runtime/caml/major_gc.h ../runtime/caml/freelist.h \
- ../runtime/caml/minor_gc.h ../runtime/caml/address_class.h \
- ../runtime/caml/memprof.h ../runtime/caml/io.h ../runtime/caml/osdeps.h \
- ../runtime/caml/memory.h
-ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
- ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
- ../runtime/caml/mlvalues.h ../runtime/caml/config.h \
- ../runtime/caml/misc.h ../runtime/caml/memory.h ../runtime/caml/gc.h \
- ../runtime/caml/mlvalues.h ../runtime/caml/major_gc.h \
- ../runtime/caml/freelist.h ../runtime/caml/minor_gc.h \
- ../runtime/caml/address_class.h ../runtime/caml/memprof.h \
- ../runtime/caml/alloc.h ../runtime/caml/signals.h \
- ../runtime/caml/osdeps.h ../runtime/caml/memory.h
 actions.cmo : \
+    variables.cmi \
     result.cmi \
     environments.cmi \
     actions.cmi
 actions.cmx : \
+    variables.cmx \
     result.cmx \
     environments.cmx \
     actions.cmi
 actions.cmi : \
+    variables.cmi \
     result.cmi \
     environments.cmi
 actions_helpers.cmo : \
     variables.cmi \
+    strace.cmi \
     run_command.cmi \
     result.cmi \
     ocamltest_stdlib.cmi \
+    modifier_parser.cmi \
     filecompare.cmi \
     environments.cmi \
     builtin_variables.cmi \
@@ -41,9 +26,11 @@ actions_helpers.cmo : \
     actions_helpers.cmi
 actions_helpers.cmx : \
     variables.cmx \
+    strace.cmx \
     run_command.cmx \
     result.cmx \
     ocamltest_stdlib.cmx \
+    modifier_parser.cmx \
     filecompare.cmx \
     environments.cmx \
     builtin_variables.cmx \
@@ -84,12 +71,10 @@ builtin_variables.cmi : \
     variables.cmi
 environments.cmo : \
     variables.cmi \
-    tsl_lexer.cmi \
     ocamltest_stdlib.cmi \
     environments.cmi
 environments.cmx : \
     variables.cmx \
-    tsl_lexer.cmx \
     ocamltest_stdlib.cmx \
     environments.cmi
 environments.cmi : \
@@ -130,6 +115,20 @@ main.cmx : \
     actions.cmx \
     main.cmi
 main.cmi :
+modifier_parser.cmo : \
+    variables.cmi \
+    tsl_lexer.cmi \
+    ocamltest_stdlib.cmi \
+    environments.cmi \
+    modifier_parser.cmi
+modifier_parser.cmx : \
+    variables.cmx \
+    tsl_lexer.cmx \
+    ocamltest_stdlib.cmx \
+    environments.cmx \
+    modifier_parser.cmi
+modifier_parser.cmi : \
+    environments.cmi
 ocaml_actions.cmo : \
     result.cmi \
     ocamltest_stdlib.cmi \
@@ -222,10 +221,12 @@ ocaml_directories.cmi :
 ocaml_files.cmo : \
     ocamltest_stdlib.cmi \
     ocamltest_config.cmi \
+    ocaml_directories.cmi \
     ocaml_files.cmi
 ocaml_files.cmx : \
     ocamltest_stdlib.cmx \
     ocamltest_config.cmx \
+    ocaml_directories.cmx \
     ocaml_files.cmi
 ocaml_files.cmi :
 ocaml_filetypes.cmo : \
@@ -372,6 +373,14 @@ run_command.cmx : \
     ocamltest_stdlib.cmx \
     run_command.cmi
 run_command.cmi :
+strace.cmo : \
+    variables.cmi \
+    strace.cmi
+strace.cmx : \
+    variables.cmx \
+    strace.cmi
+strace.cmi : \
+    variables.cmi
 tests.cmo : \
     result.cmi \
     actions.cmi \

@@ -1,0 +1,58 @@
+a
+No exception
+b
+Uncaught exception Backtrace2.Error("b")
+Raised at Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 18-34
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error in file "backtrace2.ml", line 18, characters 4-11
+Re-raised at Backtrace2.test_Error in file "backtrace2.ml", line 20, characters 62-71
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+Uncaught exception Backtrace2.Error("c")
+Raised at Backtrace2.test_Error in file "backtrace2.ml", line 21, characters 20-37
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+Uncaught exception Backtrace2.Error("d")
+Raised at Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 18-34
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error.f in file "backtrace2.ml", line 13, characters 44-55
+Called from Backtrace2.test_Error in file "backtrace2.ml", line 18, characters 4-11
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+e
+Uncaught exception Backtrace2.Error("e")
+Raised at Backtrace2.test_Error in file "backtrace2.ml", line 27, characters 50-59
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+f
+Uncaught exception Backtrace2.Error("f")
+Raised at Backtrace2.test_Error in file "backtrace2.ml", line 33, characters 62-71
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+Uncaught exception Invalid_argument("index out of bounds")
+Raised by primitive operation at Backtrace2.run in file "backtrace2.ml", line 63, characters 14-22
+test_Not_found
+Uncaught exception Not_found
+Raised at Stdlib__hashtbl.find in file "hashtbl.ml", line 537, characters 13-28
+Called from Backtrace2.test_Not_found in file "backtrace2.ml", line 44, characters 9-42
+Re-raised at Backtrace2.test_Not_found in file "backtrace2.ml", line 44, characters 61-70
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+Uncaught exception Not_found
+Raised at Backtrace2.test_lazy.aux in file "backtrace2.ml", line 48, characters 18-33
+Called from Backtrace2.test_lazy.aux in file "backtrace2.ml", line 48, characters 43-52
+Called from Backtrace2.test_lazy.aux in file "backtrace2.ml", line 48, characters 43-52
+Called from Backtrace2.test_lazy.aux in file "backtrace2.ml", line 48, characters 43-52
+Called from Backtrace2.test_lazy.aux in file "backtrace2.ml", line 48, characters 43-52
+Called from Backtrace2.test_lazy.aux in file "backtrace2.ml", line 48, characters 43-52
+Called from CamlinternalLazy.force_lazy_block in file "camlinternalLazy.ml", line 31, characters 17-27
+Re-raised at CamlinternalLazy.force_lazy_block in file "camlinternalLazy.ml", line 36, characters 4-11
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23
+Uncaught exception Not_found
+Raised at Stdlib__hashtbl.find in file "hashtbl.ml", line 537, characters 13-28
+Called from Backtrace2.test_lazy.exception_raised_internally in file "backtrace2.ml", line 51, characters 8-41
+Re-raised at CamlinternalLazy.force_lazy_block.(fun) in file "camlinternalLazy.ml", line 35, characters 56-63
+Called from CamlinternalLazy.force_lazy_block in file "camlinternalLazy.ml", line 31, characters 17-27
+Re-raised at CamlinternalLazy.force_lazy_block in file "camlinternalLazy.ml", line 36, characters 4-11
+Called from Backtrace2.run in file "backtrace2.ml", line 63, characters 11-23

@@ -52,8 +52,8 @@ val check_suffix : string -> string -> bool
 val chop_suffix : string -> string -> string
 (** [chop_suffix name suff] removes the suffix [suff] from
    the filename [name]. The behavior is undefined if [name] does not
-   end with the suffix [suff]. It is thus recommended to use
-   [chop_suffix_opt] instead.
+   end with the suffix [suff]. [chop_suffix_opt] is thus recommended
+   instead.
 *)
 
 val chop_suffix_opt: suffix:string -> string -> string option
@@ -117,6 +117,12 @@ val dirname : string -> string
 (** See {!Filename.basename}.
    This function conforms to the specification of POSIX.1-2008 for the
    [dirname] utility. *)
+
+val null : string
+(** [null] is ["/dev/null"] on POSIX and ["NUL"] on Windows. It represents a
+    file on the OS that discards all writes and returns end of file on reads.
+
+    @since 4.10.0 *)
 
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a

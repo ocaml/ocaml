@@ -86,6 +86,30 @@ AC_DEFUN([OCAML_CC_HAS_FNO_TREE_VRP], [
   CFLAGS="$saved_CFLAGS"
 ])
 
+AC_DEFUN([OCAML_CC_SUPPORTS_ALIGNED], [
+  AC_MSG_CHECKING([whether the C compiler supports __attribute__((aligned(n)))])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([typedef struct {__attribute__((aligned(8))) int t;} t;])],
+    [AC_DEFINE([SUPPORTS_ALIGNED_ATTRIBUTE])
+    AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])])])
+
+AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
+  AC_MSG_CHECKING(
+ [whether the C compiler supports __attribute__((optimize("tree-vectorize")))])
+  saved_CFLAGS="$CFLAGS"
+  CFLAGS="-Werror $CFLAGS"
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([
+       __attribute__((optimize("tree-vectorize"))) void f(void){}
+       int main() { f(); return 0; }
+    ])],
+    [AC_DEFINE([SUPPORTS_TREE_VECTORIZE])
+    AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])])
+  CFLAGS="$saved_CFLAGS"
+])
+
 AC_DEFUN([OCAML_CC_HAS_DEBUG_PREFIX_MAP], [
   AC_MSG_CHECKING([whether the C compiler supports -fdebug-prefix-map])
   saved_CFLAGS="$CFLAGS"

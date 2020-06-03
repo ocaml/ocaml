@@ -38,6 +38,9 @@ type t = Warnings.loc = {
 val none : t
 (** An arbitrary value of type [t]; describes an empty ghost range. *)
 
+val is_none : t -> bool
+(** True for [Location.none], false any other location *)
+
 val in_file : string -> t
 (** Return an empty ghost range located in a given file. *)
 
@@ -73,6 +76,13 @@ val mkloc : 'a -> t -> 'a loc
 
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
+
+(* This is used for reporting errors coming from the toplevel.
+
+   When running a toplevel session (i.e. when [!input_name] is "//toplevel//"),
+   [!input_phrase_buffer] should be [Some buf] where [buf] contains the last
+   toplevel phrase. *)
+val input_phrase_buffer: Buffer.t option ref
 
 
 (** {1 Toplevel-specific functions} *)

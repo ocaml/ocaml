@@ -16,25 +16,20 @@
 # Common Makefile for otherlibs
 
 ROOTDIR=../..
-include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
-CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
-        -I $(ROOTDIR)/stdlib
+CAMLC := $(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT := $(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
+
 OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(EXTRACPPFLAGS)
 
 # Compilation options
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
           -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
-else
-OPTCOMPFLAGS=
-endif
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
 # Variables that must be defined by individual libraries:
@@ -45,6 +40,7 @@ MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 # but have sensible default values:
 COBJS ?=
 EXTRACFLAGS ?=
+EXTRACPPFLAGS ?=
 EXTRACAMLFLAGS ?=
 LINKOPTS ?=
 LDOPTS ?=
@@ -125,8 +121,9 @@ partialclean:
 
 clean:: partialclean
 	rm -f *.dll *.so *.a *.lib *.o *.obj
+	rm -rf $(DEPDIR)
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -137,5 +134,11 @@ clean:: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-.c.$(O):
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+ifeq "$(COMPUTE_DEPS)" "true"
+ifneq "$(COBJS)" ""
+include $(addprefix $(DEPDIR)/, $(COBJS:.$(O)=.$(D)))
+endif
+endif
+
+$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
+	$(DEP_CC) $(OC_CPPFLAGS) $< -MT '$*.$(O)' -MF $@

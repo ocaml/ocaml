@@ -32,6 +32,7 @@ intnat R[200];
 double D[40];
 intnat X, Y;
 double F, G;
+volatile double H;
 
 #define INTTEST(arg,res) \
   { intnat result = (res); \
@@ -48,7 +49,9 @@ double F, G;
              #arg, #res, F, G, arg, result); \
   }
 #define FLOATTEST(arg,res) \
-  { double result = (res); \
+  { double result; \
+    H = (res); \
+    result = H; \
     if (arg < result || arg > result) \
       printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: "\
              "result %.15g, expected %.15g\n",                   \

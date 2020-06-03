@@ -61,9 +61,6 @@ let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
 let is_Tconstr = function {desc=Tconstr _} -> true | _ -> false
 
 let dummy_method = "*dummy method*"
-let default_mty = function
-    Some mty -> mty
-  | None -> Mty_signature []
 
 (**** Definitions for backtracking ****)
 
@@ -167,13 +164,33 @@ let rec row_more row =
   | {desc=Tvariant row'} -> row_more row'
   | ty -> ty
 
-let row_fixed row =
+let merge_fixed_explanation fixed1 fixed2 =
+  match fixed1, fixed2 with
+  | Some Univar _ as x, _ | _, (Some Univar _ as x) -> x
+  | Some Fixed_private as x, _ | _, (Some Fixed_private as x) -> x
+  | Some Reified _ as x, _ | _, (Some Reified _ as x) -> x
+  | Some Rigid as x, _ | _, (Some Rigid as x) -> x
+  | None, None -> None
+
+
+let fixed_explanation row =
   let row = row_repr row in
-  row.row_fixed ||
-  match (repr row.row_more).desc with
-    Tvar _ | Tnil -> false
-  | Tunivar _ | Tconstr _ -> true
-  | _ -> assert false
+  match row.row_fixed with
+  | Some _ as x -> x
+  | None ->
+      let more = repr row.row_more in
+      match more.desc with
+      | Tvar _ | Tnil -> None
+      | Tunivar _ -> Some (Univar more)
+      | Tconstr (p,_,_) -> Some (Reified p)
+      | _ -> assert false
+
+let is_fixed row = match row.row_fixed with
+  | None -> false
+  | Some _ -> true
+
+let row_fixed row = fixed_explanation row <> None
+
 
 let static_row row =
   let row = row_repr row in
@@ -313,6 +330,7 @@ type type_iterators =
     it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
     it_class_declaration: type_iterators -> class_declaration -> unit;
     it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
+    it_functor_param: type_iterators -> functor_parameter -> unit;
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
     it_type_kind: type_iterators -> type_kind -> unit;
@@ -379,12 +397,15 @@ let type_iterators =
     List.iter (it.it_type_expr it) ctd.clty_params;
     it.it_class_type it ctd.clty_type;
     it.it_path ctd.clty_path
+  and it_functor_param it = function
+    | Unit -> ()
+    | Named (_, mt) -> it.it_module_type it mt
   and it_module_type it = function
       Mty_ident p
     | Mty_alias p -> it.it_path p
     | Mty_signature sg -> it.it_signature it sg
-    | Mty_functor (_, mto, mt) ->
-        Option.iter (it.it_module_type it) mto;
+    | Mty_functor (p, mt) ->
+        it.it_functor_param it p;
         it.it_module_type it mt
   and it_class_type it = function
       Cty_constr (p, tyl, cty) ->
@@ -415,7 +436,7 @@ let type_iterators =
   and it_path _p = ()
   in
   { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
-    it_type_kind; it_class_type; it_module_type;
+    it_type_kind; it_class_type; it_functor_param; it_module_type;
     it_signature; it_class_type_declaration; it_class_declaration;
     it_modtype_declaration; it_module_declaration; it_extension_constructor;
     it_type_declaration; it_value_description; it_signature_item; }
@@ -427,16 +448,18 @@ let copy_row f fixed row keep more =
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
         | Reither(c, tl, m, e) ->
             let e = if keep then e else ref None in
-            let m = if row.row_fixed then fixed else m in
+            let m = if is_fixed row then fixed else m in
             let tl = List.map f tl in
             Reither(c, tl, m, e)
         | _ -> fi)
       row.row_fields in
   let name =
-    match row.row_name with None -> None
+    match row.row_name with
+    | None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
+  let row_fixed = if fixed then row.row_fixed else None in
   { row_fields = fields; row_more = more;
-    row_bound = (); row_fixed = row.row_fixed && fixed;
+    row_bound = (); row_fixed;
     row_closed = row.row_closed; row_name = name; }
 
 let rec copy_kind = function
@@ -668,10 +691,12 @@ let prefixed_label_name = function
   | Optional s -> "?" ^ s
 
 let rec extract_label_aux hd l = function
-    [] -> raise Not_found
+  | [] -> None
   | (l',t as p) :: ls ->
-      if label_name l' = l then (l', t, List.rev hd, ls)
-      else extract_label_aux (p::hd) l ls
+      if label_name l' = l then
+        Some (l', t, hd <> [], List.rev_append hd ls)
+      else
+        extract_label_aux (p::hd) l ls
 
 let extract_label l ls = extract_label_aux [] l ls
 
@@ -715,6 +740,11 @@ let link_type ty ty' =
   | _ -> ()
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
+let set_type_desc ty td =
+  if td != ty.desc then begin
+    log_type ty;
+    ty.desc <- td
+  end
 let set_level ty level =
   if level <> ty.level then begin
     if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));

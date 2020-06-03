@@ -79,13 +79,16 @@ exception Not_found
 
 exception Out_of_memory
 (** Exception raised by the garbage collector when there is
-   insufficient memory to complete the computation. *)
+   insufficient memory to complete the computation. (Not reliable for
+   allocations on the minor heap.) *)
 
 exception Stack_overflow
 (** Exception raised by the bytecode interpreter when the evaluation
    stack reaches its maximal size. This often indicates infinite or
-   excessively deep recursion in the user's program. (Not fully
-   implemented by the native-code compiler.) *)
+   excessively deep recursion in the user's program.
+
+   Before 4.10, it was not fully implemented by the native-code
+   compiler. *)
 
 exception Sys_error of string
   [@ocaml.warn_on_literal_pattern]
@@ -270,6 +273,12 @@ external __POS__ : string * int * int * int = "%loc_POS"
     @since 4.02.0
  *)
 
+external __FUNCTION__ : string = "%loc_FUNCTION"
+(** [__FUNCTION__] returns the name of the current function or method, including
+    any enclosing modules or classes.
+
+    @since 4.12.0 *)
+
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 (** [__LOC_OF__ expr] returns a pair [(loc, expr)] where [loc] is the
     location of [expr] in the file currently being parsed by the
@@ -433,8 +442,8 @@ external ( asr ) : int -> int -> int = "%asrint"
    [neg_infinity] for [-1.0 /. 0.0], and [nan] ('not a number')
    for [0.0 /. 0.0].  These special numbers then propagate through
    floating-point computations as expected: for instance,
-   [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
-   as argument returns [nan] as result.
+    [1.0 /. infinity] is [0.0], basic arithmetic operations
+    ([+.], [-.], [*.], [/.]) with [nan] as an argument return [nan], ...
 *)
 
 external ( ~-. ) : float -> float = "%negfloat"
@@ -1326,6 +1335,7 @@ val do_at_exit : unit -> unit
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
+module Atomic       = Atomic
 module Bigarray     = Bigarray
 module Bool         = Bool
 module Buffer       = Buffer

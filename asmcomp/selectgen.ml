@@ -25,22 +25,33 @@ module V = Backend_var
 module VP = Backend_var.With_provenance
 
 type environment =
-  { vars : (Reg.t array * Backend_var.Provenance.t option) V.Map.t;
+  { vars : (Reg.t array
+            * Backend_var.Provenance.t option
+            * Asttypes.mutable_flag) V.Map.t;
     static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
 
-let env_add var regs env =
+let env_add ?(mut=Asttypes.Immutable) var regs env =
   let provenance = VP.provenance var in
   let var = VP.var var in
-  { env with vars = V.Map.add var (regs, provenance) env.vars }
+  { env with vars = V.Map.add var (regs, provenance, mut) env.vars }
 
 let env_add_static_exception id v env =
   { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
-  let regs, _provenance = V.Map.find id env.vars in
+  let regs, _provenance, _mut = V.Map.find id env.vars in
+  regs
+
+let env_find_mut id env =
+  let regs, _provenance, mut = V.Map.find id env.vars in
+  begin match mut with
+  | Asttypes.Mutable -> ()
+  | Asttypes.Immutable ->
+    Misc.fatal_error "Selectgen.env_find_mut: not mutable"
+  end;
   regs
 
 let env_find_static_exception id env =
@@ -93,7 +104,7 @@ let size_machtype mty =
 let size_expr (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _ -> Arch.size_int
-    | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
+    | Cconst_symbol _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
     | Cblockheader _ -> Arch.size_int
@@ -303,12 +314,11 @@ method is_simple_expr = function
   | Cconst_natint _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
-  | Cconst_pointer _ -> true
-  | Cconst_natpointer _ -> true
   | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Clet(_id, arg, body) | Clet_mut(_id, _, arg, body) ->
+    self#is_simple_expr arg && self#is_simple_expr body
   | Cphantom_let(_var, _defining_expr, body) -> self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
   | Cop(op, args, _) ->
@@ -340,10 +350,10 @@ method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
+  | Cblockheader _
   | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
-  | Clet (_id, arg, body) ->
+  | Clet (_id, arg, body) | Clet_mut (_id, _, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
   | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
@@ -384,9 +394,10 @@ method select_store is_assign addr arg =
   (Istore(Word_val, addr, is_assign), arg)
 
 (* call marking methods, documented in selectgen.mli *)
+val contains_calls = ref false
 
 method mark_call =
-  Proc.contains_calls := true
+  contains_calls := true
 
 method mark_tailcall = ()
 
@@ -403,8 +414,9 @@ method mark_instr = function
       self#mark_c_tailcall (* caml_ml_array_bound_error *)
   | Iraise raise_kind ->
     begin match raise_kind with
-      | Cmm.Raise_notrace -> ()
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_notrace -> ()
+      | Lambda.Raise_regular
+      | Lambda.Raise_reraise ->
           (* PR#6239 *)
           (* caml_stash_backtrace; we #mark_call rather than
              #mark_c_tailcall to get a good stack backtrace *)
@@ -417,7 +429,8 @@ method mark_instr = function
 (* Default instruction selection for operators *)
 
 method select_allocation bytes =
-  Ialloc { bytes; spacetime_index = 0; label_after_call_gc = None; }
+  Ialloc { bytes; label_after_call_gc = None;
+           dbginfo = []; spacetime_index = 0; }
 method select_allocation_args _env = [| |]
 
 method select_checkbound () =
@@ -491,19 +504,13 @@ method select_operation op args _dbg =
 method private select_arith_comm op = function
     [arg; Cconst_int (n, _)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
-      (Iintop_imm(op, n), [arg])
   | [Cconst_int (n, _); arg] when self#is_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | [Cconst_pointer (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith op = function
     [arg; Cconst_int (n, _)] when self#is_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
@@ -517,11 +524,7 @@ method private select_shift op = function
 method private select_arith_comp cmp = function
     [arg; Cconst_int (n, _)] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
-      (Iintop_imm(Icomp cmp, n), [arg])
   | [Cconst_int (n, _); arg] when self#is_immediate n ->
-      (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
-  | [Cconst_pointer (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
       (Iintop(Icomp cmp), args)
@@ -533,18 +536,10 @@ method select_condition = function
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
-  | Cop(Ccmpi cmp, [arg1; Cconst_pointer (n, _)], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_pointer (n, _); arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_pointer (n, _)], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned cmp, n), arg1)
   | Cop(Ccmpa cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_pointer (n, _); arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
@@ -592,24 +587,6 @@ method insert_move env src dst =
 method insert_moves env src dst =
   for i = 0 to min (Array.length src) (Array.length dst) - 1 do
     self#insert_move env src.(i) dst.(i)
-  done
-
-(* Adjust the types of destination pseudoregs for a [Cassign] assignment.
-   The type inferred at [let] binding might be [Int] while we assign
-   something of type [Val] (PR#6501). *)
-
-method adjust_type src dst =
-  let ts = src.typ and td = dst.typ in
-  if ts <> td then
-    match ts, td with
-    | Val, Int -> dst.typ <- Val
-    | Int, Val -> ()
-    | _, _ -> Misc.fatal_error("Selection.adjust_type: bad assignment to "
-                               ^ Reg.name dst)
-
-method adjust_types src dst =
-  for i = 0 to min (Array.length src) (Array.length dst) - 1 do
-    self#adjust_type src.(i) dst.(i)
   done
 
 (* Insert moves and stack offsets for function arguments and results *)
@@ -666,14 +643,15 @@ method emit_expr (env:environment) exp =
       let r = self#regs_for typ_float in
       Some(self#insert_op env (Iconst_float (Int64.bits_of_float n)) [||] r)
   | Cconst_symbol (n, _dbg) ->
-      let r = self#regs_for typ_val in
+      (* Cconst_symbol _ evaluates to a statically-allocated address, so its
+         value fits in a typ_int register and is never changed by the GC.
+
+         Some Cconst_symbols point to statically-allocated blocks, some of
+         which may point to heap values. However, any such blocks will be
+         registered in the compilation unit's global roots structure, so
+         adding this register to the frame table would be redundant *)
+      let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_symbol n) [||] r)
-  | Cconst_pointer (n, _dbg) ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op env (Iconst_int(Nativeint.of_int n)) [||] r)
-  | Cconst_natpointer (n, _dbg) ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op env (Iconst_int n) [||] r)
   | Cblockheader(n, dbg) ->
       self#emit_blockheader env n dbg
   | Cvar v ->
@@ -687,18 +665,23 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
       end
+  | Clet_mut(v, k, e1, e2) ->
+      begin match self#emit_expr env e1 with
+        None -> None
+      | Some r1 -> self#emit_expr (self#bind_let_mut env v k r1) e2
+      end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_expr env body
   | Cassign(v, e1) ->
       let rv =
         try
-          env_find v env
+          env_find_mut v env
         with Not_found ->
           Misc.fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 ->
-          self#adjust_types r1 rv; self#insert_moves env r1 rv; Some [||]
+          self#insert_moves env r1 rv; Some [||]
       end
   | Ctuple [] ->
       Some [||]
@@ -773,8 +756,11 @@ method emit_expr (env:environment) exp =
           | Ialloc { bytes = _; spacetime_index; label_after_call_gc; } ->
               let rd = self#regs_for typ_val in
               let bytes = size_expr env (Ctuple new_args) in
+              assert (bytes mod Arch.size_addr = 0);
+              let alloc_words = bytes / Arch.size_addr in
               let op =
-                Ialloc { bytes; spacetime_index; label_after_call_gc; }
+                Ialloc { bytes; spacetime_index; label_after_call_gc;
+                         dbginfo = [{alloc_words; alloc_dbg = dbg}] }
               in
               let args = self#select_allocation_args env in
               self#insert_debug env (Iop op) dbg args rd;
@@ -901,6 +887,12 @@ method private bind_let (env:environment) v r1 =
     self#insert_moves env r1 rv;
     env_add v rv env
   end
+
+method private bind_let_mut (env:environment) v k r1 =
+  let rv = Reg.createv k in
+  name_regs v rv;
+  self#insert_moves env r1 rv;
+  env_add ~mut:Mutable v rv env
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass
@@ -1061,6 +1053,11 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
+  | Clet_mut (v, k, e1, e2) ->
+     begin match self#emit_expr env e1 with
+       None -> ()
+     | Some r1 -> self#emit_tail (self#bind_let_mut env v k r1) e2
+     end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_tail env body
   | Cop((Capply ty) as op, args, dbg) ->
@@ -1196,8 +1193,14 @@ method emit_tail (env:environment) exp =
           self#insert_moves env r1 loc;
           self#insert env Ireturn loc [||]
       end
-  | _ ->
-      self#emit_return env exp
+  | Cop _
+  | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+  | Cblockheader _
+  | Cvar _
+  | Cassign _
+  | Ctuple _
+  | Cexit _ ->
+    self#emit_return env exp
 
 method private emit_tail_sequence env exp =
   let s = {< instr_seq = dummy_instr >} in
@@ -1215,7 +1218,6 @@ method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_ ~env =
 method initial_env () = env_empty
 
 method emit_fundecl f =
-  Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
   let rargs =
     List.map
@@ -1254,6 +1256,8 @@ method emit_fundecl f =
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
+    fun_num_stack_slots = Array.make Proc.num_register_classes 0;
+    fun_contains_calls = !contains_calls;
   }
 
 end

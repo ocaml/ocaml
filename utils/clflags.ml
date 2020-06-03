@@ -58,6 +58,7 @@ and no_check_prims = ref false          (* -no-check-prims *)
 and bytecode_compatible_32 = ref false  (* -compat-32 *)
 and output_c_object = ref false         (* -output-obj *)
 and output_complete_object = ref false  (* -output-complete-obj *)
+and output_complete_executable = ref false  (* -output-complete-exe *)
 and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
@@ -94,7 +95,8 @@ and for_package = ref (None: string option) (* -for-pack *)
 and error_size = ref 500                (* -error-size *)
 and float_const_prop = ref true         (* -no-float-const-prop *)
 and transparent_modules = ref false     (* -trans-mod *)
-let unique_ids = ref true
+let unique_ids = ref true               (* -d(no-)unique-ds *)
+let locations = ref true                (* -d(no-)locations *)
 let dump_source = ref false             (* -dsource *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_typedtree = ref false          (* -dtypedtree *)
@@ -177,6 +179,8 @@ let inlining_report = ref false    (* -inlining-report *)
 
 let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
 let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
+
+let function_sections = ref false      (* -function-sections *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)
@@ -417,34 +421,50 @@ module Compiler_pass = struct
      - the manpages in man/ocaml{c,opt}.m
      - the manual manual/manual/cmds/unified-options.etex
   *)
-  type t = Parsing | Typing
+  type t = Parsing | Typing | Scheduling
 
   let to_string = function
     | Parsing -> "parsing"
     | Typing -> "typing"
+    | Scheduling -> "scheduling"
 
   let of_string = function
     | "parsing" -> Some Parsing
     | "typing" -> Some Typing
+    | "scheduling" -> Some Scheduling
     | _ -> None
 
   let rank = function
     | Parsing -> 0
     | Typing -> 1
+    | Scheduling -> 50
 
   let passes = [
     Parsing;
     Typing;
+    Scheduling;
   ]
-  let pass_names = List.map to_string passes
+  let is_compilation_pass _ = true
+  let is_native_only = function
+    | Scheduling -> true
+    | _ -> false
+
+  let enabled is_native t = not (is_native_only t) || is_native
+
+  let available_pass_names ~native =
+    passes
+    |> List.filter (enabled native)
+    |> List.map to_string
 end
 
 let stop_after = ref None (* -stop-after *)
 
 let should_stop_after pass =
-  match !stop_after with
-  | None -> false
-  | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
+  if Compiler_pass.(rank Typing <= rank pass) && !print_types then true
+  else
+    match !stop_after with
+    | None -> false
+    | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
 
 module String = Misc.Stdlib.String
 

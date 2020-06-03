@@ -99,6 +99,11 @@ let set_current_checkpoint checkpoint =
   if not checkpoint.c_valid then
     wait_for_connection checkpoint;
   current_checkpoint := checkpoint;
+  let dead_frags = List.filter (fun frag ->
+      not (List.mem frag checkpoint.c_code_fragments))
+    (Symbols.code_fragments ())
+  in
+  List.iter Symbols.erase_symbols dead_frags;
   set_current_connection checkpoint.c_fd
 
 (* Kill `checkpoint'. *)
@@ -231,7 +236,8 @@ let duplicate_current_checkpoint () =
        c_parent = checkpoint;
        c_breakpoint_version = checkpoint.c_breakpoint_version;
        c_breakpoints = checkpoint.c_breakpoints;
-       c_trap_barrier = checkpoint.c_trap_barrier}
+       c_trap_barrier = checkpoint.c_trap_barrier;
+       c_code_fragments = checkpoint.c_code_fragments}
     in
       checkpoints := list_replace checkpoint new_checkpoint !checkpoints;
       set_current_checkpoint checkpoint;
@@ -260,6 +266,29 @@ let interrupted = ref false
 (* Information about last breakpoint encountered *)
 let last_breakpoint = ref None
 
+(* Last debug info loaded *)
+let last_debug_info = ref None
+
+let rec do_go_dynlink steps =
+  match do_go steps with
+  | { rep_type = Code_loaded frag; rep_event_count = steps } as report ->
+    begin match !last_debug_info with
+    | Some di ->
+      Symbols.add_symbols frag di;
+      Symbols.set_all_events frag;
+      last_debug_info := None
+    | None -> assert false
+    end;
+    if !break_on_load then report
+    else do_go_dynlink steps
+  | { rep_type = Code_unloaded frag; rep_event_count = steps } ->
+    Symbols.erase_symbols frag;
+    do_go_dynlink steps
+  | { rep_type = Debug_info di; rep_event_count = steps } ->
+    last_debug_info := Some (Array.to_list di);
+    do_go_dynlink steps
+  | report -> report
+
 (* Ensure we stop on an event. *)
 let rec stop_on_event report =
   match report with
@@ -282,7 +311,7 @@ and find_event () =
     print_string "Searching next event...";
     print_newline ()
   end;
-  let report = do_go _1 in
+  let report = do_go_dynlink _1 in
   !current_checkpoint.c_report <- Some report;
   stop_on_event report
 
@@ -302,9 +331,10 @@ let internal_step duration =
            update_breakpoints ();
            update_trap_barrier ();
            !current_checkpoint.c_state <- C_running duration;
-           let report = do_go duration in
+           let report = do_go_dynlink duration in
              !current_checkpoint.c_report <- Some report;
              !current_checkpoint.c_state <- C_stopped;
+             !current_checkpoint.c_code_fragments <- Symbols.code_fragments ();
              if report.rep_type = Event then begin
                !current_checkpoint.c_time <-
                  !current_checkpoint.c_time ++ duration;
@@ -314,7 +344,7 @@ let internal_step duration =
              else begin
                !current_checkpoint.c_time <-
                   !current_checkpoint.c_time ++ duration
-                  -- (Int64.of_int report.rep_event_count) ++ _1;
+                  -- report.rep_event_count ++ _1;
                interrupted := true;
                last_breakpoint := None;
                stop_on_event report
@@ -350,7 +380,8 @@ let new_checkpoint pid fd =
      c_parent = root;
      c_breakpoint_version = 0;
      c_breakpoints = [];
-     c_trap_barrier = 0}
+     c_trap_barrier = 0;
+     c_code_fragments = [0]}
   in
     insert_checkpoint new_checkpoint
 
@@ -469,7 +500,6 @@ let find_last_breakpoint max_time =
          (Some (pc, _)) as state when breakpoint_at_pc pc -> state
        | _                                                -> None)
 
-
 (* Run from `time_max' back to `time'. *)
 (* --- Assume 0 <= time < time_max *)
 let rec back_to time time_max =
@@ -522,9 +552,9 @@ let finish () =
     None ->
       prerr_endline "`finish' not meaningful in outermost frame.";
       raise Toplevel
-  | Some curr_event ->
+  | Some {ev_ev={ev_stacksize}} ->
       set_initial_frame();
-      let (frame, pc) = up_frame curr_event.ev_stacksize in
+      let (frame, pc) = up_frame ev_stacksize in
       if frame < 0 then begin
         prerr_endline "`finish' not meaningful in outermost frame.";
         raise Toplevel
@@ -558,18 +588,18 @@ let next_1 () =
   match !current_event with
     None ->                             (* Beginning of the program. *)
       step _1
-  | Some event1 ->
+  | Some {ev_ev={ev_stacksize=ev_stacksize1}} ->
       let (frame1, _pc1) = initial_frame() in
       step _1;
       if not !interrupted then begin
         Symbols.update_current_event ();
         match !current_event with
           None -> ()
-        | Some event2 ->
+        | Some {ev_ev={ev_stacksize=ev_stacksize2}} ->
             let (frame2, _pc2) = initial_frame() in
             (* Call `finish' if we've entered a function. *)
             if frame1 >= 0 && frame2 >= 0 &&
-               frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
+               frame2 - ev_stacksize2 > frame1 - ev_stacksize1
             then finish()
       end
 
@@ -589,9 +619,9 @@ let start () =
     None ->
       prerr_endline "`start not meaningful in outermost frame.";
       raise Toplevel
-  | Some curr_event ->
+  | Some {ev_ev={ev_stacksize}} ->
       let (frame, _) = initial_frame() in
-      let (frame', pc) = up_frame curr_event.ev_stacksize in
+      let (frame', pc) = up_frame ev_stacksize in
       if frame' < 0 then begin
         prerr_endline "`start not meaningful in outermost frame.";
         raise Toplevel
@@ -602,11 +632,11 @@ let start () =
             prerr_endline "Calling function has no debugging information.";
             raise Toplevel
         with
-          {ev_info = Event_return nargs} -> nargs
+          {ev_ev = {ev_info = Event_return nargs}} -> nargs
         | _ ->  Misc.fatal_error "Time_travel.start"
       in
       let offset = if nargs < 4 then 1 else 2 in
-      let pc = pc - 4 * offset in
+      let pc = { pc with pos = pc.pos - 4 * offset } in
       while
         exec_with_temporary_breakpoint pc back_run;
         match !last_breakpoint with
@@ -614,7 +644,7 @@ let start () =
             step _minus1;
             (not !interrupted)
               &&
-            (frame' - nargs > frame - curr_event.ev_stacksize)
+            (frame' - nargs > frame - ev_stacksize)
         | _ ->
             false
       do
@@ -626,18 +656,18 @@ let previous_1 () =
   match !current_event with
     None ->                             (* End of the program. *)
       step _minus1
-  | Some event1 ->
+  | Some {ev_ev={ev_stacksize=ev_stacksize1}} ->
       let (frame1, _pc1) = initial_frame() in
       step _minus1;
       if not !interrupted then begin
         Symbols.update_current_event ();
         match !current_event with
           None -> ()
-        | Some event2 ->
+        | Some {ev_ev={ev_stacksize=ev_stacksize2}} ->
             let (frame2, _pc2) = initial_frame() in
             (* Call `start' if we've entered a function. *)
             if frame1 >= 0 && frame2 >= 0 &&
-               frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
+               frame2 - ev_stacksize2 > frame1 - ev_stacksize1
             then start()
       end
 

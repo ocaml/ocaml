@@ -17,14 +17,18 @@
 
 # duplicated from $(ROOTDIR)/runtime/Makefile
 
+# #8985: the meaning of character range a-z depends on the locale, so force C
+#        locale throughout.
+export LC_ALL=C
 (
   for prim in \
       alloc array compare extern floats gc_ctrl hash intern interp ints io \
       lexing md5 meta memprof obj parsing signals str sys callback weak \
-      finalise stacks dynlink backtrace_byt backtrace spacetime_byt afl bigarray
+      finalise stacks dynlink backtrace_byt backtrace spacetime_byt afl \
+      bigarray eventlog
   do
       sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' "$prim.c"
   done
   sed -n -e 's/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\
 caml_int64_\1_native/p' ints.c
-) | LC_ALL=C sort | uniq
+) | sort | uniq

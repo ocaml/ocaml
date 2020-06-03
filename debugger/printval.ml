@@ -99,7 +99,6 @@ let print_named_value max_depth exp env obj ppf ty =
   | _ ->
       let n = name_value obj ty in
       fprintf ppf "$%i" n in
-  Printtyp.reset_and_mark_loops ty;
   fprintf ppf "@[<2>%a:@ %a@ =@ %a@]@."
   print_value_name exp
   Printtyp.type_expr ty

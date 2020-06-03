@@ -47,7 +47,9 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   variable. Note that for Windows we add Unix-syntax directory names in
 #   PATH, and Cygwin will translate it to Windows syntax.
 
-include $(TOPDIR)/Makefile.config
+# TOPDIR is legacy, our makefiles should use ROOTDIR now
+ROOTDIR=$(TOPDIR)
+include $(ROOTDIR)/Makefile.config_if_required
 
 # Make sure USE_RUNTIME is defined
 USE_RUNTIME ?=
@@ -101,8 +103,6 @@ OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo
-BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
-NATIVECODE_ONLY=false
 
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=

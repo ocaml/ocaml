@@ -407,7 +407,7 @@ module Env = struct
     { t with inlined_debuginfo = dbg }
 
   let add_inlined_debuginfo t ~dbg =
-    Debuginfo.concat t.inlined_debuginfo dbg
+    Debuginfo.inline t.inlined_debuginfo dbg
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =
@@ -543,7 +543,7 @@ let keep_body_check ~is_classic_mode ~recursive =
         match fun_decl.inline with
         | Default_inline -> can_inline_non_rec_function fun_decl
         | Unroll factor -> factor > 0
-        | Always_inline -> true
+        | Always_inline | Hint_inline -> true
         | Never_inline -> false
       end
     end
@@ -573,8 +573,8 @@ let prepare_to_simplify_set_of_closures ~env
       set_of_closures.free_vars
   in
   let specialised_args =
-    Variable.Map.filter_map set_of_closures.specialised_args
-      ~f:(fun param (spec_to : Flambda.specialised_to) ->
+    set_of_closures.specialised_args |> Variable.Map.filter_map
+      (fun param (spec_to : Flambda.specialised_to) ->
         let keep =
           match only_for_function_decl with
           | None -> true

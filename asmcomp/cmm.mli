@@ -83,10 +83,6 @@ val swap_float_comparison: float_comparison -> float_comparison
 type label = int
 val new_label: unit -> label
 
-type raise_kind =
-  | Raise_withtrace
-  | Raise_notrace
-
 type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
@@ -145,8 +141,11 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of float_comparison
-  | Craise of raise_kind
-  | Ccheckbound
+  | Craise of Lambda.raise_kind
+  | Ccheckbound (* Takes two arguments : first the bound to check against,
+                   then the index.
+                   It results in a bounds error if the index is greater than
+                   or equal to the bound. *)
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its
     beginning. *)
@@ -155,13 +154,14 @@ and expression =
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
-  | Cconst_pointer of int * Debuginfo.t
-  | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
+  | Clet_mut of Backend_var.With_provenance.t * machtype
+                * expression * expression
   | Cphantom_let of Backend_var.With_provenance.t
       * phantom_defining_expr option * expression
+  (* Cassign must refer to a variable bound by Clet_mut *)
   | Cassign of Backend_var.t * expression
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
@@ -215,3 +215,21 @@ val ccatch :
   -> expression
 
 val reset : unit -> unit
+
+val iter_shallow_tail: (expression -> unit) -> expression -> bool
+  (** Either apply the callback to all immediate sub-expressions that
+      can produce the final result for the expression and return
+      [true], or do nothing and return [false].  Note that the notion
+      of "tail" sub-expression used here does not match the one used
+      to trigger tail calls; in particular, try...with handlers are
+      considered to be in tail position (because their result become
+      the final result for the expression).  *)
+
+val map_tail: (expression -> expression) -> expression -> expression
+  (** Apply the transformation to an expression, trying to push it
+      to all inner sub-expressions that can produce the final result.
+      Same disclaimer as for [iter_shallow_tail] about the notion
+      of "tail" sub-expression. *)
+
+val map_shallow: (expression -> expression) -> expression -> expression
+  (** Apply the transformation to each immediate sub-expression. *)

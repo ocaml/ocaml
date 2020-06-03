@@ -62,7 +62,7 @@ Lines 5-7, characters 39-23:
 7 |   | IntLit , 6 -> false
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(IntLit, 0)
+(BoolLit, true)
 val check : 's t * 's -> bool = <fun>
 |}];;
 
@@ -80,6 +80,6 @@ Lines 3-5, characters 45-38:
 5 |   | {fst = IntLit ; snd =  6} -> false
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-{fst=IntLit; snd=0}
+{fst=BoolLit; snd=true}
 val check : ('s t, 's) pair -> bool = <fun>
 |}];;

@@ -112,10 +112,13 @@ val x : 'a option -> unit = <fun>
 val y : 'a list -> unit = <fun>
 |}];;
 
-(* this is accepted as all fields are overridden *)
+(* used to be accepted, see PR#7696 *)
 let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 [%%expect{|
-val x : int ref = {contents = 3}
+Line 1, characters 12-35:
+1 | let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
+                ^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
 (* this is rejected as `c` will be dereferenced during the copy,

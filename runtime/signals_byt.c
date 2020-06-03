@@ -21,10 +21,11 @@
 #include <errno.h>
 #include "caml/config.h"
 #include "caml/memory.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
-#include "caml/finalise.h"
 
 #ifndef NSIG
 #define NSIG 64
@@ -36,20 +37,6 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
-CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
-
-void caml_process_event(void)
-{
-  void (*async_action)(void);
-
-  caml_check_urgent_gc (Val_unit);
-  async_action = caml_async_action_hook;
-  if (async_action != NULL) {
-    caml_async_action_hook = NULL;
-    (*async_action)();
-  }
-}
-
 static void handle_signal(int signal_number)
 {
   int saved_errno;
@@ -60,7 +47,7 @@ static void handle_signal(int signal_number)
 #endif
   if (signal_number < 0 || signal_number >= NSIG) return;
   if (caml_try_leave_blocking_section_hook()) {
-    caml_execute_signal(signal_number, 1);
+    caml_raise_if_exception(caml_execute_signal_exn(signal_number, 1));
     caml_enter_blocking_section_hook();
   }else{
     caml_record_signal(signal_number);
@@ -98,3 +85,5 @@ int caml_set_signal_action(int signo, int action)
   else
     return 0;
 }
+
+void caml_setup_stack_overflow_detection(void) {}

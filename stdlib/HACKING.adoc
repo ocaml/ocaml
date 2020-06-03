@@ -5,32 +5,25 @@ link:../CONTRIBUTING.md#contributing-to-the-standard-library[].
 
 Note: All paths are given relative to the root of the repository.
 
-First, build the compiler. Run `./configure`, then `make world.opt`. See
+First, build the compiler. Run `./configure`, then `make`. See
 link:../HACKING.adoc[].
 
 To add a new module, you must:
 
 * Create new `.mli` and `.ml` files for the modules, obviously.
 
-* Define the module in `stdlib/stdlib.mli`, `stdlib/stdlib.ml`, and
-  `otherlibs/threads/stdlib.ml` in the section of the code commented,
-  "MODULE ALIASES". Please maintain the same style as the rest of the code, in
-  particular the alphabetical ordering and whitespace alignment of module
-  aliases. Note that `otherlibs/threads/stdlib.mli` is a symbolic link to
-  `stdlib/stdlib.mli`.
+* Define the module in `stdlib/stdlib.mli` and `stdlib/stdlib.ml` in
+  the section of the code commented "MODULE ALIASES". Please maintain
+  the same style as the rest of the code, in particular the
+  alphabetical ordering and whitespace alignment of module aliases.
 
-* Add `$(P)module_name.cmo` to the definition of `OTHERS` in `stdlib/Makefile`.
-
-* Add `$(LIB)/$(P)module_name.cmo` to the definition of `LIB_OBJS` in
-  `otherlibs/threads/Makefile`.
-
-* Add `$(P)module_name` to the definition of `STDLIB_MODULES` in
-  `stdlib/StdlibModules`. Please maintain the alphabetical order.
+* Add `module_name` to the definition of `STDLIB_MODS` in
+  `stdlib/StdlibModules`. You must keep the list sorted in dependency order.
 
 * Run `make alldepend` to update all the `.depend` files. These files are not
   edited by hand.
 
-* Run `make clean` or `make partialclean`, then `make world.opt`.
+* Run `make clean` or `make partialclean`, then `make`.
 
 If you are adding multiple modules, follow the steps above and rebuild the
 compiler after adding each module. If you add multiple modules before

@@ -19,6 +19,7 @@
 open Checkpoints
 open Debugcom
 open Instruct
+open Events
 open Printf
 
 (*** Debugging. ***)
@@ -30,10 +31,11 @@ let debug_breakpoints = ref false
 let breakpoint_number = ref 0
 
 (* Breakpoint number -> event. *)
-let breakpoints = ref ([] : (int * debug_event) list)
+type breakpoint_id = int
+let breakpoints = ref ([] : (breakpoint_id * code_event) list)
 
 (* Program counter -> breakpoint count. *)
-let positions = ref ([] : (int * int ref) list)
+let positions = ref ([] : (pc * int ref) list)
 
 (* Versions of the breakpoint list. *)
 let current_version = ref 0
@@ -58,17 +60,17 @@ let breakpoints_count () =
 
 (* List of breakpoints at `pc'. *)
 let rec breakpoints_at_pc pc =
-  begin try
-    let ev = Symbols.event_at_pc pc in
-    match ev.ev_repr with
-      Event_child {contents = pc'} -> breakpoints_at_pc pc'
-    | _                            -> []
-  with Not_found ->
-   []
+  begin match Symbols.event_at_pc pc with
+  | {ev_frag = frag; ev_ev = {ev_repr = Event_child {contents = pos}}} ->
+     breakpoints_at_pc {frag; pos}
+  | _ -> []
+  | exception Not_found -> []
   end
     @
-  List.map fst (List.filter (function (_, {ev_pos = pos}) -> pos = pc)
-                            !breakpoints)
+  List.map fst (List.filter
+                  (function (_, {ev_frag = frag; ev_ev = {ev_pos = pos}}) ->
+                            {frag; pos} = pc)
+                  !breakpoints)
 
 (* Is there a breakpoint at `pc' ? *)
 let breakpoint_at_pc pc =
@@ -76,32 +78,28 @@ let breakpoint_at_pc pc =
 
 (*** Set and remove breakpoints ***)
 
+let print_pc out {frag;pos} = fprintf out "%d:%d" frag pos
+
 (* Remove all breakpoints. *)
-let remove_breakpoints pos =
+let remove_breakpoints pcs =
   if !debug_breakpoints then
-    (print_string "Removing breakpoints..."; print_newline ());
+    printf "Removing breakpoints...\n%!";
   List.iter
-    (function (pos, _) ->
-       if !debug_breakpoints then begin
-         print_int pos;
-         print_newline()
-       end;
-       reset_instr pos;
-       Symbols.set_event_at_pc pos)
-    pos
+    (function (pc, _) ->
+       if !debug_breakpoints then printf "%a\n%!" print_pc pc;
+       reset_instr pc;
+       Symbols.set_event_at_pc pc)
+    pcs
 
 (* Set all breakpoints. *)
-let set_breakpoints pos =
+let set_breakpoints pcs =
   if !debug_breakpoints then
-    (print_string "Setting breakpoints..."; print_newline ());
+    printf "Setting breakpoints...\n%!";
   List.iter
-    (function (pos, _) ->
-       if !debug_breakpoints then begin
-         print_int pos;
-         print_newline()
-       end;
-       set_breakpoint pos)
-    pos
+    (function (pc, _) ->
+       if !debug_breakpoints then printf "%a\n%!" print_pc pc;
+       set_breakpoint pc)
+    pcs
 
 (* Ensure the current version is installed in current checkpoint. *)
 let update_breakpoints () =
@@ -119,25 +117,15 @@ let update_breakpoints () =
          set_breakpoints !positions;
          copy_breakpoints ())
 
-let change_version version pos =
-  Exec.protect
-    (function () ->
-       current_version := version;
-       positions := pos)
-
 (* Execute given function with no breakpoint in current checkpoint. *)
 (* --- `goto' runs faster this way (does not stop on each breakpoint). *)
 let execute_without_breakpoints f =
-  let version = !current_version
-  and pos = !positions
-  in
-    change_version 0 [];
-    try
-      f ();
-      change_version version pos
-    with
-      _ ->
-        change_version version pos
+  Misc.protect_refs [Misc.R (Debugger_config.break_on_load, false);
+                     Misc.R (current_version, 0);
+                     Misc.R (positions, []);
+                     Misc.R (breakpoints, []);
+                     Misc.R (breakpoint_number, 0)]
+                    f
 
 (* Add a position in the position list. *)
 (* Change version if necessary. *)
@@ -160,37 +148,33 @@ let remove_position pos =
     end
 
 (* Insert a new breakpoint in lists. *)
-let rec new_breakpoint =
-  function
-    {ev_repr = Event_child pc} ->
-      new_breakpoint (Symbols.any_event_at_pc !pc)
-  | event ->
-      Exec.protect
-        (function () ->
-           incr breakpoint_number;
-           insert_position event.ev_pos;
-           breakpoints := (!breakpoint_number, event) :: !breakpoints);
-      if !Parameters.breakpoint then begin
-        printf "Breakpoint %d at %d: %s" !breakpoint_number event.ev_pos
-               (Pos.get_desc event);
-        print_newline ()
-      end
+let rec new_breakpoint event =
+  match event with
+    {ev_frag=frag; ev_ev={ev_repr=Event_child pos}} ->
+      new_breakpoint (Symbols.any_event_at_pc {frag; pos=(!pos)})
+  | {ev_frag=frag; ev_ev={ev_pos=pos}} ->
+    let pc = {frag; pos} in
+    Exec.protect
+      (function () ->
+         incr breakpoint_number;
+         insert_position pc;
+         breakpoints := (!breakpoint_number, event) :: !breakpoints);
+    if !Parameters.breakpoint then
+      printf "Breakpoint %d at %a: %s\n%!" !breakpoint_number print_pc pc
+             (Pos.get_desc event)
 
 (* Remove a breakpoint from lists. *)
 let remove_breakpoint number =
   try
     let ev = List.assoc number !breakpoints in
-    let pos = ev.ev_pos in
-      Exec.protect
-        (function () ->
-           breakpoints := List.remove_assoc number !breakpoints;
-           remove_position pos;
-           if !Parameters.breakpoint then begin
-             printf "Removed breakpoint %d at %d: %s" number ev.ev_pos
-                    (Pos.get_desc ev);
-             print_newline ()
-           end
-        )
+    let pc = {frag = ev.ev_frag; pos=ev.ev_ev.ev_pos} in
+    Exec.protect
+      (function () ->
+         breakpoints := List.remove_assoc number !breakpoints;
+         remove_position pc;
+         if !Parameters.breakpoint then
+           printf "Removed breakpoint %d at %a: %s\n%!" number print_pc pc
+                  (Pos.get_desc ev))
   with
     Not_found ->
       prerr_endline ("No breakpoint number " ^ (Int.to_string number) ^ ".");
@@ -202,7 +186,7 @@ let remove_all_breakpoints () =
 (*** Temporary breakpoints. ***)
 
 (* Temporary breakpoint position. *)
-let temporary_breakpoint_position = ref (None : int option)
+let temporary_breakpoint_position = ref (None : pc option)
 
 (* Execute `funct' with a breakpoint added at `pc'. *)
 (* --- Used by `finish'. *)
@@ -222,10 +206,4 @@ let exec_with_temporary_breakpoint pc funct =
     in
       Exec.protect (function () -> insert_position pc);
       temporary_breakpoint_position := Some pc;
-      try
-        funct ();
-        Exec.protect remove
-      with
-        x ->
-          Exec.protect remove;
-          raise x
+      Fun.protect ~finally:(fun () -> Exec.protect remove) funct

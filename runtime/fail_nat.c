@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "caml/alloc.h"
+#include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/io.h"
 #include "caml/gc.h"
@@ -52,24 +53,28 @@ extern caml_generated_constant
 /* Exception raising */
 
 CAMLnoreturn_start
-  extern void caml_raise_exception (value bucket)
+  extern void caml_raise_exception (caml_domain_state* state, value bucket)
 CAMLnoreturn_end;
 
-char * caml_exception_pointer = NULL;
-
+/* Used by the stack overflow handler -> deactivate ASAN (see
+   segv_handler in signals_nat.c). */
+CAMLno_asan
 void caml_raise(value v)
 {
   Unlock_exn();
-  if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
+  if (Caml_state->exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
-  while (caml_local_roots != NULL &&
-         (char *) caml_local_roots < caml_exception_pointer) {
-    caml_local_roots = caml_local_roots->next;
+  while (Caml_state->local_roots != NULL &&
+         (char *) Caml_state->local_roots < Caml_state->exception_pointer) {
+    Caml_state->local_roots = Caml_state->local_roots->next;
   }
 
-  caml_raise_exception(v);
+  caml_raise_exception(Caml_state, v);
 }
 
+/* Used by the stack overflow handler -> deactivate ASAN (see
+   segv_handler in signals_nat.c). */
+CAMLno_asan
 void caml_raise_constant(value tag)
 {
   caml_raise(tag);
@@ -135,6 +140,9 @@ void caml_raise_out_of_memory(void)
   caml_raise_constant((value) caml_exn_Out_of_memory);
 }
 
+/* Used by the stack overflow handler -> deactivate ASAN (see
+   segv_handler in signals_nat.c). */
+CAMLno_asan
 void caml_raise_stack_overflow(void)
 {
   caml_raise_constant((value) caml_exn_Stack_overflow);
@@ -163,6 +171,12 @@ void caml_raise_not_found(void)
 void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
+}
+
+value caml_raise_if_exception(value res)
+{
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+  return res;
 }
 
 /* We use a pre-allocated exception because we can't

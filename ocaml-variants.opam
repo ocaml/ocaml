@@ -1,8 +1,8 @@
 opam-version: "2.0"
-version: "4.10.0+trunk"
+version: "4.12.0+trunk"
 synopsis: "OCaml development version"
 depends: [
-  "ocaml" {= "4.10.0" & post}
+  "ocaml" {= "4.12.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
@@ -12,8 +12,7 @@ flags: compiler
 setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
 build: [
   ["./configure" "--prefix=%{prefix}%"]
-  [make "-j%{jobs}%" "world"]
-  [make "-j%{jobs}%" "world.opt"]
+  [make "-j%{jobs}%"]
 ]
 install: [make "install"]
 maintainer: "caml-list@inria.fr"

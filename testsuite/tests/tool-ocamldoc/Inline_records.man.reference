@@ -7,7 +7,7 @@ Module   Inline_records
 Module
 .BI "Inline_records"
  : 
-.B sig  end
+.B sig end
 
 .sp
 This test focuses on the printing of documentation for inline record
@@ -45,13 +45,17 @@ An open sum type
  lbl : 
 .B int
 ;  (* Field documentation for non\-inline, 
-.B lbl : int
+.ft B
+lbl : int
+.ft R
 
  *) 
  more : 
 .B int list
 ;  (* More documentation for r, 
-.B more : int list
+.ft B
+more : int list
+.ft R
 
  *) 
  }
@@ -67,13 +71,17 @@ A simple record type for reference
  lbl : 
 .B int
 ;  (* 
-.B A
+.ft B
+A
+.ft R
 field documentation
  *) 
  more : 
 .B int list
 ;  (* More 
-.B A
+.ft B
+A
+.ft R
 field documentation
  *) 
  }
@@ -92,13 +100,17 @@ A sum type with one inline record
  a_label_for_B : 
 .B int
 ;  (* 
-.B B
+.ft B
+B
+.ft R
 field documentation
  *) 
  more_label_for_B : 
 .B int list
 ;  (* More 
-.B B
+.ft B
+B
+.ft R
 field documentation
  *) 
  }
@@ -110,7 +122,9 @@ field documentation
  c_has_label_too : 
 .B float
 ;  (* 
-.B C
+.ft B
+C
+.ft R
 field documentation
  *) 
  more_than_one : 
@@ -133,13 +147,21 @@ A sum type with two inline records
  any : 
 .B 'a
 ;  (* 
-.B A
+.ft B
+A
+.ft R
 field 
-.B any:\&'a
+.ft B
+any:\&'a
+.ft R
 for 
-.B D
+.ft B
+D
+.ft R
 in 
-.B any
+.ft B
+any
+.ft R
 \&.
  *) 
  }
@@ -159,7 +181,9 @@ A gadt constructor
  name : 
 .B string
 ;  (* Error field documentation 
-.B name:string
+.ft B
+name:string
+.ft R
 
  *) 
  }
@@ -174,7 +198,9 @@ A gadt constructor
  yet_another_field : 
 .B unit
 ;  (* Field documentation for 
-.B E
+.ft B
+E
+.ft R
 in ext
  *) 
  }
@@ -186,7 +212,9 @@ in ext
  even_more : 
 .B int -> int
 ;  (* Some field documentations for 
-.B F
+.ft B
+F
+.ft R
 
  *) 
  }

@@ -21,7 +21,7 @@
   the -ppx rewriters, handling such details as the serialization format,
   forwarding of command-line flags, and storing state.
 
-  {!mapper} allows to implement AST rewriting using open recursion.
+  {!mapper} enables AST rewriting using open recursion.
   A typical mapper would be based on {!default_mapper}, a deep
   identity mapper, and will fall back on it for handling the syntax it
   does not modify. For example:
@@ -71,6 +71,7 @@ type mapper = {
   class_type_declaration: mapper -> class_type_declaration
                           -> class_type_declaration;
   class_type_field: mapper -> class_type_field -> class_type_field;
+  constant: mapper -> constant -> constant;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
   expr: mapper -> expression -> expression;

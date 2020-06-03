@@ -15,7 +15,6 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
 TARGET_BINDIR ?= $(BINDIR)
@@ -25,11 +24,6 @@ CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
           -g -warn-error A -bin-annot -nostdlib \
           -safe-string -strict-formats
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
-else
-OPTCOMPFLAGS=
-endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(BOOT_OCAMLC) -depend
@@ -37,28 +31,11 @@ DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
-# Object file prefix
-P=stdlib__
+include StdlibModules
 
-OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
-OTHERS= $(P)pervasives.cmo $(P)seq.cmo $(P)option.cmo $(P)result.cmo \
-  $(P)bool.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
-  $(P)bytes.cmo $(P)string.cmo $(P)unit.cmo \
-  $(P)marshal.cmo $(P)obj.cmo $(P)array.cmo $(P)float.cmo \
-  $(P)int.cmo $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
-  $(P)lexing.cmo $(P)parsing.cmo \
-  $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
-  camlinternalLazy.cmo $(P)lazy.cmo $(P)stream.cmo \
-  $(P)buffer.cmo camlinternalFormat.cmo $(P)printf.cmo \
-  $(P)arg.cmo $(P)printexc.cmo $(P)fun.cmo $(P)gc.cmo \
-  $(P)digest.cmo $(P)random.cmo $(P)hashtbl.cmo $(P)weak.cmo \
-  $(P)format.cmo $(P)scanf.cmo $(P)callback.cmo \
-  camlinternalOO.cmo $(P)oo.cmo camlinternalMod.cmo \
-  $(P)genlex.cmo $(P)ephemeron.cmo \
-  $(P)filename.cmo $(P)complex.cmo \
-  $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
-  $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
-  $(P)spacetime.cmo $(P)bigarray.cmo
+OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))
+NOSTDLIB= camlinternalFormatBasics.cmo stdlib__atomic.cmo stdlib.cmo
+OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 UNPREFIXED_OBJS=$(PREFIXED_OBJS:stdlib__%.cmo=%)
@@ -176,10 +153,11 @@ ifneq "$(UNIX_OR_WIN32)" "win32"
 	strip $@
 endif
 
+$(HEADERPROGRAM)%$(O): \
+  OC_CPPFLAGS += -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"'
+
 $(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	      -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"' \
-	      $(OUTPUTOBJ)$@ $^
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $^
 
 camlheader_ur: camlheader
 	cp camlheader $@
@@ -257,8 +235,7 @@ $(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
-	rm -f *.cm* *.$(O) *.$(A) *.odoc
-	rm -f camlheader*
+	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
 
 include .depend
 
@@ -269,7 +246,7 @@ SPACE := $(EMPTY) $(EMPTY)
 depend:
 	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
-	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
+	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f ./remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
 	sed -Ee \
 	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \

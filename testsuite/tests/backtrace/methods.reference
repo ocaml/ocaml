@@ -1,0 +1,5 @@
+Raised at Methods.bar#bang in file "methods.ml", line 16, characters 4-14
+Called from Methods.bar#go in file "methods.ml", line 14, characters 7-18
+Called from Methods.foo#go in file "methods.ml", line 10, characters 7-23
+Called from Methods.object#meth in file "methods.ml", line 23, characters 9-23
+Called from Methods in file "methods.ml", line 25, characters 8-16

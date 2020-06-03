@@ -40,11 +40,12 @@ _build
 
 # local to root directory
 
-/Makefile.common
+/Makefile.build_config
 /Makefile.config
 /autom4te.cache
 /ocamlc
 /config.cache
+/ocaml-*.cache
 /config.log
 /config.status
 /libtool
@@ -69,13 +70,12 @@ _build
 /boot/camlheader
 /boot/ocamlc.opt
 
-/bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
 
-/debugger/lexer.ml
-/debugger/parser.ml
-/debugger/parser.mli
+/debugger/debugger_lexer.ml
+/debugger/debugger_parser.ml
+/debugger/debugger_parser.mli
 /debugger/ocamldebug
 
 /emacs/ocamltags
@@ -114,13 +114,16 @@ _build
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/.dep
 /ocamltest/ocamltest
 /ocamltest/ocamltest.opt
 /ocamltest/ocamltest_config.ml
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
+/ocamltest/ocamltest.html
 
+/otherlibs/*/.dep
 /otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
@@ -185,11 +188,10 @@ _build
 /runtime/ocamlrund
 /runtime/ocamlruni
 /runtime/ld.conf
-/runtime/interp.a.lst
-/runtime/*.[sd]obj
 /runtime/.gdb_history
-/runtime/*.d.c
-/runtime/*.pic.c
+/runtime/.dep
+/runtime/domain_state32.inc
+/runtime/domain_state64.inc
 
 /stdlib/camlheader
 /stdlib/target_camlheader
@@ -256,8 +258,11 @@ _build
 /tools/make_opcodes
 /tools/make_opcodes.ml
 /tools/caml-tex
+/tools/eventlog_metadata
 
 /utils/config.ml
+/utils/domainstate.ml
+/utils/domainstate.mli
 
 /yacc/ocamlyacc
 /yacc/version.h

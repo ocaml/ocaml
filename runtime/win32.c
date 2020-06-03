@@ -334,8 +334,7 @@ static void expand_pattern(wchar_t * arg);
 
 static void out_of_memory(void)
 {
-  fprintf(stderr, "Out of memory while expanding command line\n");
-  exit(2);
+  caml_fatal_error("out of memory while expanding command line");
 }
 
 static void store_argument(wchar_t * arg)
@@ -561,8 +560,6 @@ static LONG CALLBACK
 }
 
 #else
-extern char *caml_exception_pointer;
-extern value *caml_young_ptr;
 
 /* Do not use the macro from address_class.h here. */
 #undef Is_in_code_area
@@ -590,8 +587,7 @@ static LONG CALLBACK
       faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
 
       /* refresh runtime parameters from registers */
-      caml_exception_pointer =  (char *) ctx->R14;
-      caml_young_ptr         = (value *) ctx->R15;
+      Caml_state->young_ptr = (value *) ctx->R15;
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
       alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
@@ -606,9 +602,20 @@ static LONG CALLBACK
 }
 #endif /* _WIN64 */
 
+static PVOID caml_stack_overflow_handle;
+
 void caml_win32_overflow_detection(void)
 {
-  AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
+  caml_stack_overflow_handle =
+    AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
+  if (caml_stack_overflow_handle == NULL) {
+    caml_fatal_error("cannot install stack overflow detection");
+  }
+}
+
+void caml_win32_unregister_overflow_detection(void)
+{
+  RemoveVectoredExceptionHandler(caml_stack_overflow_handle);
 }
 
 #endif /* NATIVE_CODE */
@@ -676,32 +683,40 @@ wchar_t * caml_executable_name(void)
 
 /* snprintf emulation */
 
-#if defined(_WIN32) && !defined(_UCRT)
-int caml_snprintf(char * buf, size_t size, const char * format, ...)
-{
-  int len;
-  va_list args;
-
-  if (size > 0) {
-    va_start(args, format);
-    len = _vsnprintf(buf, size, format, args);
-    va_end(args);
-    if (len >= 0 && len < size) {
-      /* [len] characters were stored in [buf],
-         a null-terminator was appended. */
-      return len;
-    }
-    /* [size] characters were stored in [buf], without null termination.
-       Put a null terminator, truncating the output. */
-    buf[size - 1] = 0;
-  }
-  /* Compute the actual length of output, excluding null terminator */
-  va_start(args, format);
-  len = _vscprintf(format, args);
-  va_end(args);
-  return len;
+#define CAML_SNPRINTF(_vsnprintf, _vscprintf) \
+{ \
+  int len; \
+  va_list args; \
+\
+  if (size > 0) { \
+    va_start(args, format); \
+    len = _vsnprintf(buf, size, format, args); \
+    va_end(args); \
+    if (len >= 0 && len < size) { \
+      /* [len] characters were stored in [buf], \
+         a null-terminator was appended. */ \
+      return len; \
+    } \
+    /* [size] characters were stored in [buf], without null termination. \
+       Put a null terminator, truncating the output. */ \
+    buf[size - 1] = 0; \
+  } \
+  /* Compute the actual length of output, excluding null terminator */ \
+  va_start(args, format); \
+  len = _vscprintf(format, args); \
+  va_end(args); \
+  return len; \
 }
+
+#ifndef _UCRT
+int caml_snprintf(char * buf, size_t size, const char * format, ...)
+CAML_SNPRINTF(_vsnprintf, _vscprintf)
 #endif
+
+int caml_snwprintf(wchar_t * buf, size_t size, const wchar_t * format, ...)
+CAML_SNPRINTF(_vsnwprintf, _vscwprintf)
+
+#undef CAML_SNPRINTF
 
 wchar_t *caml_secure_getenv (wchar_t const *var)
 {
@@ -876,12 +891,12 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   /* Do not include final NULL */
   retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0);
   v = caml_alloc_string(retcode);
-  win_wide_char_to_multi_byte(s, slen, String_val(v), retcode);
+  win_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
 
   return v;
 }
 
-CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
+CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
 {
   wchar_t * ws;
   int retcode;

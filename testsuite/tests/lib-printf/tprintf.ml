@@ -290,6 +290,26 @@ try
   test (sprintf "%12.3F" 42.42e42 =* "    4.24e+43");
   test (sprintf "%.3F" 42.00 = "42.");
   test (sprintf "%.3F" 0.0042 = "0.0042");
+  test (sprintf "%F" nan = "nan");
+  test (sprintf "%F" (-. nan) = "nan");
+  test (sprintf "%F" infinity = "infinity");
+  test (sprintf "%F" neg_infinity = "neg_infinity");
+
+  printf "\n#F\n%!";
+  test (sprintf "%+#F" (+0.) = "+0x0p+0");
+  test (sprintf "%+#F" (-0.) = "-0x0p+0");
+  test (sprintf "%+#F" (+1.) = "+0x1p+0");
+  test (sprintf "%+#F" (-1.) = "-0x1p+0");
+  test (sprintf "%+#F" (+1024.) = "+0x1p+10");
+  test (sprintf "% #F" (+1024.) = " 0x1p+10");
+  test (sprintf "%+#F" (-1024.) = "-0x1p+10");
+  test (sprintf "%#F" 0x123.456 = "0x1.23456p+8");
+  test (sprintf "%#F" 0x123456789ABCDE. = "0x1.23456789abcdep+52");
+  test (sprintf "%#F" epsilon_float = "0x1p-52");
+  test (sprintf "%#F" nan = "nan");
+  test (sprintf "%#F" (-. nan) = "nan");
+  test (sprintf "%#F" infinity = "infinity");
+  test (sprintf "%#F" neg_infinity = "neg_infinity");
 
   printf "\nh\n%!";
   test (sprintf "%+h" (+0.) = "+0x0p+0");

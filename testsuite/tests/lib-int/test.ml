@@ -25,6 +25,7 @@ let test_logops () =
   assert (Int.logxor 0xF0FF 0x0F0F = 0xFFF0);
   assert (Int.lognot Int.max_int = Int.min_int);
   assert (Int.shift_left 1 4 = 16);
+  assert (Int.shift_left (Int.compare 0 0) 63 = 0); (* Issue #8864 *)
   assert (Int.shift_right 16 4 = 1);
   assert (Int.shift_right (-16) 4 = (-1));
   assert (Int.shift_right (-16) 4 = (-1));

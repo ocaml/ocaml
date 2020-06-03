@@ -20,7 +20,6 @@
 
 open Printf
 open Misc
-open Config
 open Cmo_format
 
 (* Command line options to prevent printing approximation,
@@ -29,6 +28,8 @@ open Cmo_format
 let no_approx = ref false
 let no_code = ref false
 let no_crc = ref false
+
+module Magic_number = Misc.Magic_number
 
 let input_stringlist ic len =
   let get_string_list sect len =
@@ -86,10 +87,10 @@ let print_cma_infos (lib : Cmo_format.library) =
   (* PR#4949: print in linking order *)
   List.iter print_spaced_string (List.rev lib.lib_ccobjs);
   printf "\nExtra C options:";
-  List.iter print_spaced_string lib.lib_ccopts;
+  List.iter print_spaced_string (List.rev lib.lib_ccopts);
   printf "\n";
   print_string "Extra dynamically-loaded libraries:";
-  List.iter print_spaced_string lib.lib_dllibs;
+  List.iter print_spaced_string (List.rev lib.lib_dllibs);
   printf "\n";
   List.iter print_cmo_infos lib.lib_units
 
@@ -178,7 +179,7 @@ let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";
   List.iter print_spaced_string (List.rev lib.lib_ccobjs);
   printf "\nExtra C options:";
-  List.iter print_spaced_string lib.lib_ccopts;
+  List.iter print_spaced_string (List.rev lib.lib_ccopts);
   printf "\n";
   List.iter print_cmx_infos lib.lib_units
 
@@ -242,90 +243,154 @@ let dump_byte ic =
     )
     toc
 
-let read_dyn_header filename ic =
+let find_dyn_offset filename =
   let helper = Filename.concat Config.standard_library "objinfo_helper" in
   let tempfile = Filename.temp_file "objinfo" ".out" in
-  try
-    try_finally
-      ~always:(fun () -> remove_file tempfile)
+  match
+    Fun.protect
+      ~finally:(fun () -> remove_file tempfile)
       (fun () ->
-         let rc = Sys.command (sprintf "%s %s > %s"
-                                 (Filename.quote helper)
-                                 (Filename.quote filename)
-                                 tempfile) in
+         let rc =
+           Sys.command
+             (Filename.quote_command helper ~stdout:tempfile [filename])
+         in
          if rc <> 0 then failwith "cannot read";
          let tc = Scanf.Scanning.from_file tempfile in
-         try_finally
-           ~always:(fun () -> Scanf.Scanning.close_in tc)
+         Fun.protect
+           ~finally:(fun () -> Scanf.Scanning.close_in tc)
            (fun () ->
-              let ofs = Scanf.bscanf tc "%Ld" (fun x -> x) in
-              LargeFile.seek_in ic ofs;
-              Some(input_value ic : dynheader)))
-  with Failure _ | Sys_error _ -> None
+              Scanf.bscanf tc "%Ld" (fun x -> x)))
+  with
+    | offset -> Some offset
+    | exception (Failure _ | Sys_error _) -> None
+
+let exit_err msg = print_endline msg; exit 2
+let exit_errf fmt = Printf.ksprintf exit_err fmt
+
+let exit_magic_msg msg =
+  exit_errf
+     "Wrong magic number:\n\
+      this tool only supports object files produced by compiler version\n\
+      \t%s\n\
+      %s"
+    Sys.ocaml_version msg
+
+let exit_magic_error ~expected_kind err =
+  exit_magic_msg Magic_number.(match err with
+    | Parse_error err -> explain_parse_error expected_kind err
+    | Unexpected_error err -> explain_unexpected_error err)
+
+(* assume that 'ic' is already positioned at the right place
+   depending on the format (usually right after the magic number,
+   but Exec and Cmxs differ) *)
+let dump_obj_by_kind filename ic obj_kind =
+  let open Magic_number in
+  match obj_kind with
+    | Cmo ->
+       let cu_pos = input_binary_int ic in
+       seek_in ic cu_pos;
+       let cu = (input_value ic : compilation_unit) in
+       close_in ic;
+       print_cmo_infos cu
+    | Cma ->
+       let toc_pos = input_binary_int ic in
+       seek_in ic toc_pos;
+       let toc = (input_value ic : library) in
+       close_in ic;
+       print_cma_infos toc
+    | Cmi | Cmt ->
+       close_in ic;
+       let cmi, cmt = Cmt_format.read filename in
+       begin match cmi with
+         | None -> ()
+         | Some cmi ->
+            print_cmi_infos cmi.Cmi_format.cmi_name cmi.Cmi_format.cmi_crcs
+       end;
+       begin match cmt with
+         | None -> ()
+         | Some cmt -> print_cmt_infos cmt
+       end
+    | Cmx _config ->
+       let ui = (input_value ic : unit_infos) in
+       let crc = Digest.input ic in
+       close_in ic;
+       print_cmx_infos (ui, crc)
+    | Cmxa _config ->
+       let li = (input_value ic : library_infos) in
+       close_in ic;
+       print_cmxa_infos li
+    | Exec ->
+       (* no assumptions on [ic] position,
+          [dump_byte] will seek at the right place *)
+       dump_byte ic;
+       close_in ic
+    | Cmxs ->
+       (* we assume we are at the offset of the dynamic information,
+          as returned by [find_dyn_offset]. *)
+       let header = (input_value ic : dynheader) in
+       close_in ic;
+       print_cmxs_infos header;
+    | Ast_impl | Ast_intf ->
+       exit_errf "The object file type %S \
+                  is currently unsupported by this tool."
+         (human_name_of_kind obj_kind)
 
 let dump_obj filename =
+  let open Magic_number in
+  let dump_standard ic =
+    match read_current_info ~expected_kind:None ic with
+      | Error ((Unexpected_error _) as err) ->
+         exit_magic_error ~expected_kind:None err
+      | Ok { kind; version = _ } ->
+         dump_obj_by_kind filename ic kind;
+         Ok ()
+      | Error (Parse_error head_error) ->
+         Error head_error
+  and dump_exec ic =
+    let pos_trailer = in_channel_length ic - Magic_number.magic_length in
+    let _ = seek_in ic pos_trailer in
+    let expected_kind = Some Exec in
+    match read_current_info ~expected_kind ic with
+      | Error ((Unexpected_error _) as err) ->
+         exit_magic_error ~expected_kind err
+      | Ok _ ->
+         dump_obj_by_kind filename ic Exec;
+         Ok ()
+      | Error (Parse_error _)  ->
+         Error ()
+  and dump_cmxs ic =
+    flush stdout;
+    match find_dyn_offset filename with
+      | None ->
+         exit_errf "Unable to read info on %s %s."
+           (human_name_of_kind Cmxs) filename
+      | Some offset ->
+         LargeFile.seek_in ic offset;
+         let header = (input_value ic : dynheader) in
+         let expected_kind = Some Cmxs in
+         match parse header.dynu_magic with
+           | Error err ->
+              exit_magic_error ~expected_kind (Parse_error err)
+           | Ok info ->
+         match check_current Cmxs info with
+           | Error err ->
+              exit_magic_error ~expected_kind (Unexpected_error err)
+           | Ok () ->
+         LargeFile.seek_in ic offset;
+         dump_obj_by_kind filename ic Cmxs;
+         ()
+  in
   printf "File %s\n" filename;
   let ic = open_in_bin filename in
-  let len_magic_number = String.length cmo_magic_number in
-  let magic_number = really_input_string ic len_magic_number in
-  if magic_number = cmo_magic_number then begin
-    let cu_pos = input_binary_int ic in
-    seek_in ic cu_pos;
-    let cu = (input_value ic : compilation_unit) in
-    close_in ic;
-    print_cmo_infos cu
-  end else if magic_number = cma_magic_number then begin
-    let toc_pos = input_binary_int ic in
-    seek_in ic toc_pos;
-    let toc = (input_value ic : library) in
-    close_in ic;
-    print_cma_infos toc
-  end else if magic_number = cmi_magic_number ||
-              magic_number = cmt_magic_number then begin
-    close_in ic;
-    let cmi, cmt = Cmt_format.read filename in
-    begin match cmi with
-     | None -> ()
-     | Some cmi ->
-         print_cmi_infos cmi.Cmi_format.cmi_name cmi.Cmi_format.cmi_crcs
-    end;
-    begin match cmt with
-     | None -> ()
-     | Some cmt -> print_cmt_infos cmt
-    end
-  end else if magic_number = cmx_magic_number then begin
-    let ui = (input_value ic : unit_infos) in
-    let crc = Digest.input ic in
-    close_in ic;
-    print_cmx_infos (ui, crc)
-  end else if magic_number = cmxa_magic_number then begin
-    let li = (input_value ic : library_infos) in
-    close_in ic;
-    print_cmxa_infos li
-  end else begin
-    let pos_trailer = in_channel_length ic - len_magic_number in
-    let _ = seek_in ic pos_trailer in
-    let magic_number = really_input_string ic len_magic_number in
-    if magic_number = Config.exec_magic_number then begin
-      dump_byte ic;
-      close_in ic
-    end else if Filename.check_suffix filename ".cmxs" then begin
-      flush stdout;
-      match read_dyn_header filename ic with
-      | None ->
-          printf "Unable to read info on file %s\n" filename;
-          exit 2
-      | Some header ->
-          if header.dynu_magic = Config.cmxs_magic_number then
-            print_cmxs_infos header
-          else begin
-            printf "Wrong magic number\n"; exit 2
-          end;
-          close_in ic
-    end else begin
-      printf "Not an OCaml object file\n"; exit 2
-    end
-  end
+  match dump_standard ic with
+    | Ok () -> ()
+    | Error head_error ->
+  match dump_exec ic with
+    | Ok () -> ()
+    | Error () ->
+  if Filename.check_suffix filename ".cmxs"
+  then dump_cmxs ic
+  else exit_magic_error ~expected_kind:None (Parse_error head_error)
 
 let arg_list = [
   "-no-approx", Arg.Set no_approx,

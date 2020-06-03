@@ -3,17 +3,109 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 % HEVEA\@def@charset{UTF-8}%
-\usepackage{alltt}
 \usepackage{fullpage}
 \usepackage{syntaxdef}
 \usepackage{multind}
 \usepackage{html}
 \usepackage{textcomp}
-\usepackage{caml-sl}
 \usepackage{ocamldoc}
 \usepackage{xspace}
+\usepackage{color}
+
+% Package for code examples:
+\usepackage{listings}
+\usepackage{alltt}
+\usepackage{lmodern}% for supporting bold ttfamily in code examples
+\usepackage[normalem]{ulem}% for underlining errors in code examples
 
 \input{macros.tex}
+\newcommand{\hash}{\#}
+\lstnewenvironment{camloutput}{
+  \lstset{
+    basicstyle=\small\ttfamily\slshape,
+    showstringspaces=false,
+    language=caml,
+    escapeinside={$}{$},
+    columns=fullflexible,
+    stringstyle=\ocamlstring,
+    keepspaces=true,
+    keywordstyle=\ocamlkeyword,
+    keywords={[2]{val}}, keywordstyle={[2]\ocamlkeyword},
+    aboveskip=0\baselineskip,
+  }
+\ifouthtml
+  \setenvclass{lstlisting}{pre caml-output ok}
+  \lstset {basicstyle=\ttfamily}
+\else
+  \lstset{
+    upquote=true,
+    literate={'"'}{\textquotesingle "\textquotesingle}3
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+}
+\fi
+}{}
+
+\lstnewenvironment{camlinput}{
+  \lstset{
+    basicstyle=\ttfamily,
+    showstringspaces=false,
+    language=caml,
+    escapeinside={$}{$},
+    columns=fullflexible,
+    stringstyle=\ocamlstring,
+    commentstyle=\ocamlcomment,
+    keepspaces=true,
+    keywordstyle=\ocamlkeyword,
+    moredelim=[is][\ocamlhighlight]{<<}{>>},
+    moredelim=[s][\ocamlstring]{\{|}{|\}},
+    moredelim=[s][\ocamlstring]{\{delimiter|}{|delimiter\}},
+    keywords={[2]{val,initializer,nonrec}}, keywordstyle={[2]\ocamlkeyword},
+    belowskip=0\baselineskip
+  }
+\ifouthtml
+  \setenvclass{lstlisting}{pre caml-input}
+\else
+%not implemented in hevea: upquote and literate
+  \lstset{
+    upquote=true,
+    literate={'"'}{\textquotesingle "\textquotesingle}3
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+}
+\fi
+}{}
+
+\lstnewenvironment{camlerror}{
+  \lstset{
+    escapeinside={$}{$},
+    showstringspaces=false,
+    basicstyle=\small\ttfamily\slshape,
+    emph={Error}, emphstyle={\ocamlerror},
+  }
+\ifouthtml
+  \setenvclass{lstlisting}{pre caml-output error}
+  \lstset { basicstyle=\ttfamily }
+\else
+\lstset{upquote=true}
+\fi
+}
+{}
+
+\lstnewenvironment{camlwarn}{
+  \lstset{
+    escapeinside={$}{$},
+    showstringspaces=false,
+    basicstyle=\small\ttfamily\slshape,
+    emph={Warning}, emphstyle={\ocamlwarning},
+  }
+\ifouthtml
+\setenvclass{lstlisting}{pre caml-output warn}
+\lstset { basicstyle=\ttfamily }
+\else
+\lstset{upquote=true}
+\fi
+}{}
+
+
 
 % Add meta tag to the generated head tag
 \ifouthtml
@@ -30,11 +122,10 @@
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
 \def\th{^{\hbox{\scriptsize th}}}
 
+
 \raggedbottom
 \input{version.tex}
 %HEVEA\tocnumber
 %HEVEA\setcounter{cuttingdepth}{1}
 %HEVEA\title{The OCaml system, release \ocamlversion}
 \input{allfiles.tex}
-
-

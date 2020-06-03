@@ -1,0 +1,168 @@
+[
+  structure_item 
+    Pstr_value Rec
+    [
+      <def>
+        pattern 
+          Ppat_var "fib" 
+        expression 
+          Pexp_function
+          [
+            <case>
+              pattern 
+                Ppat_or
+                pattern 
+                  Ppat_constant PConst_int (0,None)
+                pattern 
+                  Ppat_constant PConst_int (1,None)
+              expression 
+                Pexp_constant PConst_int (1,None)
+            <case>
+              pattern 
+                Ppat_var "n" 
+              expression 
+                Pexp_apply
+                expression 
+                  Pexp_ident "+" 
+                [
+                  <arg>
+                  Nolabel
+                    expression 
+                      Pexp_apply
+                      expression 
+                        Pexp_ident "fib" 
+                      [
+                        <arg>
+                        Nolabel
+                          expression 
+                            Pexp_apply
+                            expression 
+                              Pexp_ident "-" 
+                            [
+                              <arg>
+                              Nolabel
+                                expression 
+                                  Pexp_ident "n" 
+                              <arg>
+                              Nolabel
+                                expression 
+                                  Pexp_constant PConst_int (1,None)
+                            ]
+                      ]
+                  <arg>
+                  Nolabel
+                    expression 
+                      Pexp_apply
+                      expression 
+                        Pexp_ident "fib" 
+                      [
+                        <arg>
+                        Nolabel
+                          expression 
+                            Pexp_apply
+                            expression 
+                              Pexp_ident "-" 
+                            [
+                              <arg>
+                              Nolabel
+                                expression 
+                                  Pexp_ident "n" 
+                              <arg>
+                              Nolabel
+                                expression 
+                                  Pexp_constant PConst_int (2,None)
+                            ]
+                      ]
+                ]
+          ]
+    ]
+]
+
+let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
+[
+  structure_item 
+    Tstr_value Rec
+    [
+      <def>
+        pattern 
+          Tpat_var "fib"
+        expression 
+          Texp_function
+          Nolabel
+          [
+            <case>
+              pattern 
+                Tpat_or
+                pattern 
+                  Tpat_constant Const_int 0
+                pattern 
+                  Tpat_constant Const_int 1
+              expression 
+                Texp_constant Const_int 1
+            <case>
+              pattern 
+                Tpat_var "n"
+              expression 
+                Texp_apply
+                expression 
+                  Texp_ident "Stdlib!.+"
+                [
+                  <arg>
+                    Nolabel
+                    expression 
+                      Texp_apply
+                      expression 
+                        Texp_ident "fib"
+                      [
+                        <arg>
+                          Nolabel
+                          expression 
+                            Texp_apply
+                            expression 
+                              Texp_ident "Stdlib!.-"
+                            [
+                              <arg>
+                                Nolabel
+                                expression 
+                                  Texp_ident "n"
+                              <arg>
+                                Nolabel
+                                expression 
+                                  Texp_constant Const_int 1
+                            ]
+                      ]
+                  <arg>
+                    Nolabel
+                    expression 
+                      Texp_apply
+                      expression 
+                        Texp_ident "fib"
+                      [
+                        <arg>
+                          Nolabel
+                          expression 
+                            Texp_apply
+                            expression 
+                              Texp_ident "Stdlib!.-"
+                            [
+                              <arg>
+                                Nolabel
+                                expression 
+                                  Texp_ident "n"
+                              <arg>
+                                Nolabel
+                                expression 
+                                  Texp_constant Const_int 2
+                            ]
+                      ]
+                ]
+          ]
+    ]
+]
+
+(setglobal Test_locations!
+  (letrec
+    (fib
+       (function n[int] : int
+         (if (isout 1 n) (+ (apply fib (- n 1)) (apply fib (- n 2))) 1)))
+    (makeblock 0 fib)))

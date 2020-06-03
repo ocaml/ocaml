@@ -71,8 +71,8 @@ module USERCODE :
                    sig type value type state type usert = X.combined end
                  val setglobal : V.state -> string -> V.value -> unit
                  val apply : V.value -> V.state -> V.value list -> V.value
-               end) ->
-          sig val init : C.V.state -> unit end
+               end)
+          -> sig val init : C.V.state -> unit end
     end
 module Weapon : sig type t end
 module type WEAPON_LIB =
@@ -86,8 +86,8 @@ module type WEAPON_LIB =
                 type combined
                 type t = t
                 val map : (combined -> t) * (t -> combined)
-              end) ->
-        USERCODE(TV).F
+              end)
+        -> USERCODE(TV).F
   end
 module type X = functor (X : CORE) -> BARECODE
 module type X = CORE -> BARECODE

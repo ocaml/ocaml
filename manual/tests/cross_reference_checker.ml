@@ -141,7 +141,7 @@ module OCaml_refs = struct
     then None
     else begin match attr.attr_payload with
       | PStr [{pstr_desc= Pstr_eval
-                 ({ pexp_desc = Pexp_constant Pconst_string (s,_) },_) } ] ->
+                 ({ pexp_desc = Pexp_constant Pconst_string (s,_,_) },_) } ] ->
           Some s
       | _ -> print_error (Wrong_attribute_payload attr.attr_loc);
           Some "" (* triggers an error *)

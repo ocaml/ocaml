@@ -55,6 +55,7 @@ external __FILE__ : string = "%loc_FILE"
 external __LINE__ : int = "%loc_LINE"
 external __MODULE__ : string = "%loc_MODULE"
 external __POS__ : string * int * int * int = "%loc_POS"
+external __FUNCTION__ : string = "%loc_FUNCTION"
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
@@ -542,18 +543,21 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let exit_function = ref flush_all
+let exit_function = Stdlib__atomic.make flush_all
 
-let at_exit f =
-  let g = !exit_function in
+let rec at_exit f =
+  let module Atomic = Stdlib__atomic in
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
-  let f_already_ran = ref false in
-  exit_function :=
-    (fun () ->
-      if not !f_already_ran then begin f_already_ran := true; f() end;
-      g())
+  let f_yet_to_run = Atomic.make true in
+  let old_exit = Atomic.get exit_function in
+  let new_exit () =
+    if Atomic.compare_and_set f_yet_to_run true false then f () ;
+    old_exit ()
+  in
+  let success = Atomic.compare_and_set exit_function old_exit new_exit in
+  if not success then at_exit f
 
-let do_at_exit () = (!exit_function) ()
+let do_at_exit () = (Stdlib__atomic.get exit_function) ()
 
 let exit retcode =
   do_at_exit ();
@@ -565,6 +569,7 @@ let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
+module Atomic       = Atomic
 module Bigarray     = Bigarray
 module Bool         = Bool
 module Buffer       = Buffer

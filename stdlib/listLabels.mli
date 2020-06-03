@@ -27,7 +27,16 @@ type 'a t = 'a list = [] | (::) of 'a * 'a list (**)
 
    The above considerations can usually be ignored if your lists are not
    longer than about 10000 elements.
-*)
+
+   This module is intended to be used through {!StdLabels} which replaces
+   {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts.
+
+   For example:
+   {[
+      open StdLabels
+
+      let seq len = List.init ~f:(function i -> i) ~len
+   ]} *)
 
 val length : 'a list -> int
 (** Return the length (number of elements) of the given list. *)
@@ -143,6 +152,20 @@ val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
     @since 4.08.0
 *)
 
+val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
+(** [List.concat_map f l] gives the same result as
+    {!List.concat}[ (]{!List.map}[ f l)]. Tail-recursive.
+
+    @since 4.10.0
+*)
+
+val fold_left_map :
+  f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b list -> 'a * 'c list
+(** [fold_left_map] is  a combination of [fold_left] and [map] hat threads an
+    accumulator through calls to [f]
+    @since 4.11.0
+*)
+
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)
@@ -235,6 +258,13 @@ val find_opt: f:('a -> bool) -> 'a list -> 'a option
    list [l].
    @since 4.05 *)
 
+val find_map: f:('a -> 'b option) -> 'a list -> 'b option
+(** [find_map f l] applies [f] to the elements of [l] in order,
+    and returns the first result of the form [Some v], or [None]
+    if none exist.
+    @since 4.10.0
+*)
+
 val filter : f:('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
    that satisfy the predicate [p].  The order of the elements
@@ -242,6 +272,13 @@ val filter : f:('a -> bool) -> 'a list -> 'a list
 
 val find_all : f:('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!List.filter}. *)
+
+val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
+(** Same as {!List.filter}, but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.11.0
+*)
 
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition p l] returns a pair of lists [(l1, l2)], where

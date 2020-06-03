@@ -141,6 +141,19 @@ val filter_map : ('a -> 'b option) -> 'a list -> 'b list
     @since 4.08.0
 *)
 
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** [List.concat_map f l] gives the same result as
+    {!List.concat}[ (]{!List.map}[ f l)]. Tail-recursive.
+
+    @since 4.10.0
+*)
+
+val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+(** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
+    accumulator through calls to [f]
+    @since 4.11.0
+*)
+
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)
@@ -189,12 +202,14 @@ val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
 val for_all : ('a -> bool) -> 'a list -> bool
 (** [for_all p [a1; ...; an]] checks if all elements of the list
    satisfy the predicate [p]. That is, it returns
-   [(p a1) && (p a2) && ... && (p an)]. *)
+   [(p a1) && (p a2) && ... && (p an)] for a non-empty list and
+   [true] if the list is empty. *)
 
 val exists : ('a -> bool) -> 'a list -> bool
 (** [exists p [a1; ...; an]] checks if at least one element of
    the list satisfies the predicate [p]. That is, it returns
-   [(p a1) || (p a2) || ... || (p an)]. *)
+   [(p a1) || (p a2) || ... || (p an)] for a non-empty list and
+   [false] if the list is empty. *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 (** Same as {!List.for_all}, but for a two-argument predicate.
@@ -230,6 +245,13 @@ val find_opt: ('a -> bool) -> 'a list -> 'a option
     satisfies [p] in the list [l].
     @since 4.05 *)
 
+val find_map: ('a -> 'b option) -> 'a list -> 'b option
+(** [find_map f l] applies [f] to the elements of [l] in order,
+    and returns the first result of the form [Some v], or [None]
+    if none exist.
+    @since 4.10.0
+*)
+
 val filter : ('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
    that satisfy the predicate [p].  The order of the elements
@@ -237,6 +259,13 @@ val filter : ('a -> bool) -> 'a list -> 'a list
 
 val find_all : ('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!List.filter}. *)
+
+val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
+(** Same as {!List.filter}, but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.11.0
+*)
 
 val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition p l] returns a pair of lists [(l1, l2)], where

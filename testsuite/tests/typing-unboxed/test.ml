@@ -413,10 +413,14 @@ type i = I of int
 Line 2, characters 0-34:
 2 | external id : i -> i = "%identity";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 61: This primitive declaration uses type i, which is unannotated and
-unboxable. The representation of such types may change in future
-versions. You should annotate the declaration of i with [@@boxed]
-or [@@unboxed].
+Warning 61: This primitive declaration uses type i, whose representation
+may be either boxed or unboxed. Without an annotation to indicate
+which representation is intended, the boxed representation has been
+selected by default. This default choice may change in future
+versions of the compiler, breaking the primitive implementation.
+You should explicitly annotate the declaration of i
+with [@@boxed] or [@@unboxed], so that its external interface
+remains stable in the future.
 external id : i -> i = "%identity"
 |}];;
 
@@ -429,17 +433,25 @@ type j = J of int
 Line 3, characters 0-34:
 3 | external id : i -> j = "%identity";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 61: This primitive declaration uses type i, which is unannotated and
-unboxable. The representation of such types may change in future
-versions. You should annotate the declaration of i with [@@boxed]
-or [@@unboxed].
+Warning 61: This primitive declaration uses type i, whose representation
+may be either boxed or unboxed. Without an annotation to indicate
+which representation is intended, the boxed representation has been
+selected by default. This default choice may change in future
+versions of the compiler, breaking the primitive implementation.
+You should explicitly annotate the declaration of i
+with [@@boxed] or [@@unboxed], so that its external interface
+remains stable in the future.
 Line 3, characters 0-34:
 3 | external id : i -> j = "%identity";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 61: This primitive declaration uses type j, which is unannotated and
-unboxable. The representation of such types may change in future
-versions. You should annotate the declaration of j with [@@boxed]
-or [@@unboxed].
+Warning 61: This primitive declaration uses type j, whose representation
+may be either boxed or unboxed. Without an annotation to indicate
+which representation is intended, the boxed representation has been
+selected by default. This default choice may change in future
+versions of the compiler, breaking the primitive implementation.
+You should explicitly annotate the declaration of j
+with [@@boxed] or [@@unboxed], so that its external interface
+remains stable in the future.
 external id : i -> j = "%identity"
 |}];;
 
@@ -455,4 +467,17 @@ external idub : iub -> iub = "%identity";;
 [%%expect{|
 type iub = I of int [@@unboxed]
 external idub : iub -> iub = "%identity"
+|}];;
+
+(* #9607: separability was not computed on with-constraints *)
+module type T  = sig type 'k t end
+module M : T with type 'k t = string = struct
+  type 'k t = string
+end
+type t = T : 'k M.t -> t [@@unboxed]
+
+[%%expect{|
+module type T = sig type 'k t end
+module M : sig type 'k t = string end
+type t = T : 'k M.t -> t [@@unboxed]
 |}];;

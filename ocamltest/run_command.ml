@@ -32,7 +32,7 @@ type settings = {
 let settings_of_commandline ?(stdout_fname="") ?(stderr_fname="") commandline =
   let words = String.words commandline in
   let quoted_words =
-    if Sys.os_type="Win32"
+    if Sys.win32
     then List.map Filename.maybe_quote words
     else words in
   {

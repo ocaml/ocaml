@@ -37,7 +37,6 @@
 
 code_t caml_start_code;
 asize_t caml_code_size;
-unsigned char * caml_saved_code;
 struct ext_table caml_code_fragments_table;
 
 /* Read the main bytecode block from a file */
@@ -56,8 +55,6 @@ void caml_init_code_fragments(void) {
 
 void caml_load_code(int fd, asize_t len)
 {
-  int i;
-
   caml_code_size = len;
   caml_start_code = (code_t) caml_stat_alloc(caml_code_size);
   if (read(fd, (char *) caml_start_code, caml_code_size) != caml_code_size)
@@ -67,15 +64,7 @@ void caml_load_code(int fd, asize_t len)
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness(caml_start_code, caml_code_size);
 #endif
-  if (caml_debugger_in_use) {
-    len /= sizeof(opcode_t);
-    caml_saved_code = (unsigned char *) caml_stat_alloc(len);
-    for (i = 0; i < len; i++) caml_saved_code[i] = caml_start_code[i];
-  }
 #ifdef THREADED_CODE
-  /* Better to thread now than at the beginning of [caml_interprete],
-     since the debugger interface needs to perform SET_EVENT requests
-     on the code. */
   caml_thread_code(caml_start_code, caml_code_size);
 #endif
 }

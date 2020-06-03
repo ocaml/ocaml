@@ -20,9 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "caml/alloc.h"
+#include "caml/callback.h"
 #include "caml/fail.h"
-#include "caml/io.h"
 #include "caml/gc.h"
+#include "caml/io.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -30,15 +31,12 @@
 #include "caml/signals.h"
 #include "caml/stacks.h"
 
-CAMLexport struct longjmp_buffer * caml_external_raise = NULL;
-value caml_exn_bucket;
-
 CAMLexport void caml_raise(value v)
 {
   Unlock_exn();
-  caml_exn_bucket = v;
-  if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);
-  siglongjmp(caml_external_raise->buf, 1);
+  Caml_state->exn_bucket = v;
+  if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  siglongjmp(Caml_state->external_raise->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)
@@ -107,7 +105,7 @@ static void check_global_data_param(char const *exception_name, char const *msg)
   }
 }
 
-static inline value caml_get_failwith_tag (char const *msg)
+Caml_inline value caml_get_failwith_tag (char const *msg)
 {
   check_global_data_param("Failure", msg);
   return Field(caml_global_data, FAILURE_EXN);
@@ -126,7 +124,7 @@ CAMLexport void caml_failwith_value (value msg)
   CAMLnoreturn;
 }
 
-static inline value caml_get_invalid_argument_tag (char const *msg)
+Caml_inline value caml_get_invalid_argument_tag (char const *msg)
 {
   check_global_data_param("Invalid_argument", msg);
   return Field(caml_global_data, INVALID_EXN);
@@ -190,6 +188,12 @@ CAMLexport void caml_raise_sys_blocked_io(void)
 {
   check_global_data("Sys_blocked_io");
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
+}
+
+value caml_raise_if_exception(value res)
+{
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+  return res;
 }
 
 int caml_is_special_exception(value exn) {

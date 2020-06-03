@@ -35,6 +35,10 @@ val modtypes:
   loc:Location.t -> Env.t -> ?mark:mark ->
   module_type -> module_type -> module_coercion
 
+val strengthened_module_decl:
+  loc:Location.t -> aliasable:bool -> Env.t -> ?mark:mark ->
+  module_declaration -> Path.t -> module_declaration -> module_coercion
+
 val check_modtype_inclusion :
   loc:Location.t -> Env.t -> Types.module_type -> Path.t -> Types.module_type ->
   unit
@@ -61,7 +65,7 @@ type symptom =
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch
   | Extension_constructors of Ident.t * extension_constructor
-        * extension_constructor * Includecore.type_mismatch
+        * extension_constructor * Includecore.extension_constructor_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation of Types.module_type * Typedtree.module_coercion
@@ -77,7 +81,10 @@ type symptom =
   | Invalid_module_alias of Path.t
 
 type pos =
-    Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
+  | Module of Ident.t
+  | Modtype of Ident.t
+  | Arg of functor_parameter
+  | Body of functor_parameter
 type error = pos list * Env.t * symptom
 
 exception Error of error list

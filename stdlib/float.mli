@@ -24,8 +24,8 @@
     [neg_infinity] for [-1.0 /. 0.0], and [nan] ('not a number')
     for [0.0 /. 0.0].  These special numbers then propagate through
     floating-point computations as expected: for instance,
-    [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
-    as argument returns [nan] as result.
+    [1.0 /. infinity] is [0.0], basic arithmetic operations
+    ([+.], [-.], [*.], [/.]) with [nan] as an argument return [nan], ...
 
     @since 4.07.0
 *)
@@ -550,7 +550,7 @@ module Array : sig
       function.  The comparison function must return 0 if its arguments
       compare as equal, a positive integer if the first is greater,
       and a negative integer if the first is smaller (see below for a
-      complete specification).  For example, {!Pervasives.compare} is
+      complete specification).  For example, {!Stdlib.compare} is
       a suitable comparison function.  After calling [sort], the
       array is sorted in place in increasing order.
       [sort] is guaranteed to run in constant heap space

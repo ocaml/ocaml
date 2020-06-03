@@ -134,7 +134,7 @@ val bind_map : int list = [8; 9; 10; 9; 10; 11; 10; 11; 12]
 module Let_unbound = struct
 end;;
 [%%expect{|
-module Let_unbound : sig  end
+module Let_unbound : sig end
 |}];;
 
 let let_unbound =

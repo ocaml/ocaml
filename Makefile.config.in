@@ -113,6 +113,9 @@ RPATH=@rpath@
 
 ############# Configuration for the native-code compiler
 
+### Whether the native compiler has been enabled or not
+NATIVE_COMPILER=@native_compiler@
+
 ### Name of architecture for the native-code compiler
 ### Currently supported:
 ###
@@ -125,6 +128,9 @@ ARCH=@arch@
 
 # Whether the architecture has 64 bits
 ARCH64=@arch64@
+
+# Endianess for this architecture
+ENDIANNESS=@endianness@
 
 ### Name of architecture model for the native-code compiler.
 ### Some architectures come in several slightly different flavors
@@ -153,11 +159,14 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 
 ### Which libraries to compile and install
 # Currently available:
-#       unix            Unix system calls
-#       str             Regular expressions and high-level string processing
-#       systhreads      Same as threads, requires POSIX threads
-#       dynlink         Dynamic linking of bytecode
-#       bigarray        Large, multidimensional numerical arrays
+#       bigarray          Large, multidimensional numerical arrays
+#                           (legacy support: this library is now part of the
+#                            Standard Library)
+#       dynlink           Dynamic linking (bytecode and native)
+#       (win32)unix       Unix system calls
+#       str               Regular expressions and high-level string processing
+#       raw_spacetime_lib Parsing of spacetime traces
+#       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
 ### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
@@ -167,8 +176,9 @@ PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
 
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
-LIBBFD_LINK=@libbfd_link@
-LIBBFD_INCLUDE=@libbfd_include@
+BFD_CPPFLAGS=@bfd_cppflags@
+BFD_LDFLAGS=@bfd_ldflags@
+BFD_LDLIBS=@bfd_ldlibs@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
@@ -186,8 +196,10 @@ NATDYNLINK=@natdynlink@
 NATDYNLINKOPTS=@natdynlinkopts@
 SYSLIB=@syslib@
 MKLIB=@mklib@
-OCAMLOPT_CFLAGS=@ocamlopt_cflags@
-OCAMLOPT_CPPFLAGS=@ocamlopt_cppflags@
+# #7678: ocamlopt uses these only to compile .c files, and the behaviour for the
+#        two drivers should be identical.
+OCAMLOPT_CFLAGS=@ocamlc_cflags@
+OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
 NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@
@@ -211,6 +223,7 @@ RUNTIMEI=@instrumented_runtime@
 WITH_DEBUGGER=@with_debugger@
 WITH_CAMLTEX=@with_camltex@
 WITH_OCAMLDOC=@ocamldoc@
+WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
 WITH_SPACETIME=@spacetime@
@@ -231,7 +244,9 @@ WINDOWS_UNICODE=@windows_unicode@
 AFL_INSTRUMENT=@afl@
 MAX_TESTSUITE_DIR_RETRIES=@max_testsuite_dir_retries@
 FLAT_FLOAT_ARRAY=@flat_float_array@
+FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
+STDLIB_MANPAGES=@stdlib_manpages@
 
 
 ### Native command to build ocamlrun.exe

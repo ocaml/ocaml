@@ -124,7 +124,6 @@ and descr = private
   | Value_block of Tag.t * t array
   | Value_int of int
   | Value_char of char
-  | Value_constptr of int
   | Value_float of float option
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
@@ -248,7 +247,6 @@ val value_mutable_float_array : size:int -> t
 val value_immutable_float_array : t array -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
-val value_constptr : int -> t
 val value_block : Tag.t -> t array -> t
 val value_extern : Export_id.t -> t
 val value_symbol : Symbol.t -> t
@@ -280,14 +278,12 @@ val value_set_of_closures
     together with an Flambda expression representing it. *)
 val make_const_int : int -> Flambda.t * t
 val make_const_char : char -> Flambda.t * t
-val make_const_ptr : int -> Flambda.t * t
 val make_const_bool : bool -> Flambda.t * t
 val make_const_float : float -> Flambda.t * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> Flambda.t * t
 
 val make_const_int_named : int -> Flambda.named * t
 val make_const_char_named : char -> Flambda.named * t
-val make_const_ptr_named : int -> Flambda.named * t
 val make_const_bool_named : bool -> Flambda.named * t
 val make_const_float_named : float -> Flambda.named * t
 val make_const_boxed_int_named : 'i boxed_int -> 'i -> Flambda.named * t

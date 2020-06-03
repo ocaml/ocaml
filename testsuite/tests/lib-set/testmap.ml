@@ -75,6 +75,11 @@ let test x v s1 s2 =
     (let p x y = x >= 3 && x <= 6 in
      M.bindings(M.filter p s1) = List.filter (uncurry p) (M.bindings s1));
 
+  checkbool "filter_map"
+    (let f x y = if x >= 3 && x <= 6 then Some (2 * x) else None in
+     let f_on_pair (x, y) = Option.map (fun v -> (x, v)) (f x y) in
+     M.bindings(M.filter_map f s1) = List.filter_map f_on_pair (M.bindings s1));
+
   checkbool "partition"
     (let p x y = x >= 3 && x <= 6 in
      let (st,sf) = M.partition p s1
@@ -172,6 +177,9 @@ let test x v s1 s2 =
   checkbool "to_seq_of_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_seq s1));
 
+  checkbool "to_rev_seq_of_seq"
+    (M.equal (=) s1 (M.of_seq @@ M.to_rev_seq s1));
+
   checkbool "to_seq_from"
     (let seq = M.to_seq_from x s1 in
      let ok1 = List.of_seq seq |> List.for_all (fun (y,_) -> y >= x) in
@@ -181,6 +189,18 @@ let test x v s1 s2 =
        (List.of_seq seq)
      in
      ok1 && ok2);
+
+  checkbool "to_seq_increasing"
+    (let seq = M.to_seq s1 in
+     let last = ref min_int in
+     Seq.iter (fun (x, _) -> assert (!last <= x); last := x) seq;
+     true);
+
+  checkbool "to_rev_seq_decreasing"
+    (let seq = M.to_rev_seq s1 in
+     let last = ref max_int in
+     Seq.iter (fun (x, _) -> assert (x <= !last); last := x) seq;
+     true);
 
   ()
 

@@ -77,7 +77,7 @@ external command : string -> int = "caml_sys_system_command"
   such as file redirections [>] and [<], which will be honored by the
   shell.
 
-  Conversely, whitespace or special shell characters occuring in
+  Conversely, whitespace or special shell characters occurring in
   command names or in their arguments must be quoted or escaped
   so that the shell does not interpret them.  The quoting rules vary
   between the POSIX shell and the Windows shell.
@@ -330,7 +330,7 @@ val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
-    being closed.  Runtime warnings are enabled by default.
+    being closed.  Runtime warnings are disabled by default.
 
     @since 4.03.0 *)
 
@@ -357,3 +357,28 @@ external opaque_identity : 'a -> 'a = "%opaque"
 
     @since 4.03.0
 *)
+
+module Immediate64 : sig
+  (** This module allows to define a type [t] with the [immediate64]
+      attribute. This attribute means that the type is immediate on 64
+      bit architectures. On other architectures, it might or might not
+      be immediate.
+
+      @since 4.10.0
+  *)
+
+  module type Non_immediate = sig
+    type t
+  end
+  module type Immediate = sig
+    type t [@@immediate]
+  end
+
+  module Make(Immediate : Immediate)(Non_immediate : Non_immediate) : sig
+    type t [@@immediate64]
+    type 'a repr =
+      | Immediate : Immediate.t repr
+      | Non_immediate : Non_immediate.t repr
+    val repr : t repr
+  end
+end

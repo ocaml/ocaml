@@ -40,7 +40,7 @@ module type UnitId = sig
   val unit : t -> Compilation_unit.t
 end
 
-module Id(E:sig end) : Id = struct
+module Id() : Id = struct
   type t = int * string
   let empty_string = ""
   let create = let r = ref 0 in

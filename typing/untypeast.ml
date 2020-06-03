@@ -24,8 +24,7 @@ type mapper = {
   attribute: mapper -> T.attribute -> attribute;
   attributes: mapper -> T.attribute list -> attribute list;
   binding_op: mapper -> T.binding_op -> T.pattern -> binding_op;
-  case: mapper -> T.case -> case;
-  cases: mapper -> T.case list -> case list;
+  case: 'k . mapper -> 'k T.case -> case;
   class_declaration: mapper -> T.class_declaration -> class_declaration;
   class_description: mapper -> T.class_description -> class_description;
   class_expr: mapper -> T.class_expr -> class_expr;
@@ -55,7 +54,7 @@ type mapper = {
   package_type: mapper -> T.package_type -> package_type;
   open_declaration: mapper -> T.open_declaration -> open_declaration;
   open_description: mapper -> T.open_description -> open_description;
-  pat: mapper -> T.pattern -> pattern;
+  pat: 'k . mapper -> 'k T.general_pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
   object_field: mapper -> T.object_field -> object_field;
   signature: mapper -> T.signature -> signature;
@@ -108,11 +107,8 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 let fresh_name s env =
   let rec aux i =
     let name = s ^ Int.to_string i in
-    try
-      let _ = Env.lookup_value (Lident name) env in
-      name
-    with
-      | Not_found -> aux (i+1)
+    if Env.bound_value name env then aux (i+1)
+    else name
   in
   aux 0
 
@@ -136,7 +132,7 @@ let rec extract_letop_patterns n pat =
 
 let constant = function
   | Const_char c -> Pconst_char c
-  | Const_string (s,d) -> Pconst_string (s,d)
+  | Const_string (s,loc,d) -> Pconst_string (s,loc,d)
   | Const_int i -> Pconst_integer (Int.to_string i, None)
   | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
   | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
@@ -293,14 +289,16 @@ let extension_constructor sub ext =
       | Text_rebind (_p, lid) -> Pext_rebind (map_loc sub lid)
     )
 
-let pattern sub pat =
+let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
   let loc = sub.location sub pat.pat_loc in
   (* todo: fix attributes on extras *)
   let attrs = sub.attributes sub pat.pat_attributes in
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } ->
-        Ppat_unpack name
+      { pat_extra=[Tpat_unpack, loc, _attrs]; pat_desc = Tpat_any; _ } ->
+        Ppat_unpack { txt = None; loc  }
+    | { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } ->
+        Ppat_unpack { name with txt = Some name.txt }
     | { pat_extra=[Tpat_type (_path, lid), _, _attrs]; _ } ->
         Ppat_type (map_loc sub lid)
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
@@ -313,7 +311,7 @@ let pattern sub pat =
         begin
           match (Ident.name id).[0] with
             'A'..'Z' ->
-              Ppat_unpack name
+              Ppat_unpack { name with txt = Some name.txt}
           | _ ->
               Ppat_var name
         end
@@ -348,9 +346,11 @@ let pattern sub pat =
         Ppat_record (List.map (fun (lid, _, pat) ->
             map_loc sub lid, sub.pat sub pat) list, closed)
     | Tpat_array list -> Ppat_array (List.map (sub.pat sub) list)
-    | Tpat_or (p1, p2, _) -> Ppat_or (sub.pat sub p1, sub.pat sub p2)
     | Tpat_lazy p -> Ppat_lazy (sub.pat sub p)
+
     | Tpat_exception p -> Ppat_exception (sub.pat sub p)
+    | Tpat_value p -> (sub.pat sub (p :> pattern)).ppat_desc
+    | Tpat_or (p1, p2, _) -> Ppat_or (sub.pat sub p1, sub.pat sub p2)
   in
   Pat.mk ~loc ~attrs desc
 
@@ -370,9 +370,7 @@ let exp_extra sub (extra, loc, attrs) sexp =
   in
   Exp.mk ~loc ~attrs desc
 
-let cases sub l = List.map (sub.case sub) l
-
-let case sub {c_lhs; c_guard; c_rhs} =
+let case : type k . mapper -> k case -> _ = fun sub {c_lhs; c_guard; c_rhs} ->
   {
    pc_lhs = sub.pat sub c_lhs;
    pc_guard = Option.map (sub.expr sub) c_guard;
@@ -405,14 +403,14 @@ let expression sub exp =
         Pexp_fun (arg_label, None, sub.pat sub p, sub.expr sub e)
     (* No label: it's a function. *)
     | Texp_function { arg_label = Nolabel; cases; _; } ->
-        Pexp_function (sub.cases sub cases)
+        Pexp_function (List.map (sub.case sub) cases)
     (* Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
     | Texp_function { arg_label = Labelled s | Optional s as label; cases;
           _ } ->
         let name = fresh_name s exp.exp_env in
         Pexp_fun (label, None, Pat.var ~loc {loc;txt = name },
           Exp.match_ ~loc (Exp.ident ~loc {loc;txt= Lident name})
-                          (sub.cases sub cases))
+                          (List.map (sub.case sub) cases))
     | Texp_apply (exp, list) ->
         Pexp_apply (sub.expr sub exp,
           List.fold_right (fun (label, expo) list ->
@@ -421,9 +419,9 @@ let expression sub exp =
               | Some exp -> (label, sub.expr sub exp) :: list
           ) list [])
     | Texp_match (exp, cases, _) ->
-      Pexp_match (sub.expr sub exp, sub.cases sub cases)
+      Pexp_match (sub.expr sub exp, List.map (sub.case sub) cases)
     | Texp_try (exp, cases) ->
-        Pexp_try (sub.expr sub exp, sub.cases sub cases)
+        Pexp_try (sub.expr sub exp, List.map (sub.case sub) cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map (sub.expr sub) list)
     | Texp_construct (lid, _, args) ->
@@ -602,6 +600,11 @@ let class_declaration sub = class_infos sub.class_expr sub
 let class_description sub = class_infos sub.class_type sub
 let class_type_declaration sub = class_infos sub.class_type sub
 
+let functor_parameter sub : functor_parameter -> Parsetree.functor_parameter =
+  function
+  | Unit -> Unit
+  | Named (_, name, mtype) -> Named (name, sub.module_type sub mtype)
+
 let module_type sub mty =
   let loc = sub.location sub mty.mty_loc in
   let attrs = sub.attributes sub mty.mty_attributes in
@@ -609,9 +612,8 @@ let module_type sub mty =
       Tmty_ident (_path, lid) -> Pmty_ident (map_loc sub lid)
     | Tmty_alias (_path, lid) -> Pmty_alias (map_loc sub lid)
     | Tmty_signature sg -> Pmty_signature (sub.signature sub sg)
-    | Tmty_functor (_id, name, mtype1, mtype2) ->
-        Pmty_functor (name, Option.map (sub.module_type sub) mtype1,
-          sub.module_type sub mtype2)
+    | Tmty_functor (arg, mtype2) ->
+        Pmty_functor (functor_parameter sub arg, sub.module_type sub mtype2)
     | Tmty_with (mtype, list) ->
         Pmty_with (sub.module_type sub mtype,
           List.map (sub.with_constraint sub) list)
@@ -641,9 +643,9 @@ let module_expr sub mexpr =
         let desc = match mexpr.mod_desc with
             Tmod_ident (_p, lid) -> Pmod_ident (map_loc sub lid)
           | Tmod_structure st -> Pmod_structure (sub.structure sub st)
-          | Tmod_functor (_id, name, mtype, mexpr) ->
-              Pmod_functor (name, Option.map (sub.module_type sub) mtype,
-                sub.module_expr sub mexpr)
+          | Tmod_functor (arg, mexpr) ->
+              Pmod_functor
+                (functor_parameter sub arg, sub.module_expr sub mexpr)
           | Tmod_apply (mexp1, mexp2, _) ->
               Pmod_apply (sub.module_expr sub mexp1, sub.module_expr sub mexp2)
           | Tmod_constraint (mexpr, _, Tmodtype_explicit mtype, _) ->
@@ -874,7 +876,6 @@ let default_mapper =
     value_binding = value_binding;
     constructor_declaration = constructor_declaration;
     label_declaration = label_declaration;
-    cases = cases;
     case = case;
     location = location;
     row_field = row_field ;

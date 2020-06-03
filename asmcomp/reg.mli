@@ -23,7 +23,7 @@ end
 type t =
   { mutable raw_name: Raw_name.t;       (* Name *)
     stamp: int;                         (* Unique stamp *)
-    mutable typ: Cmm.machtype_component;(* Type of contents *)
+    typ: Cmm.machtype_component;        (* Type of contents *)
     mutable loc: location;              (* Actual location *)
     mutable spill: bool;                (* "true" to force stack allocation  *)
     mutable part: int option;           (* Zero-based index of part of value *)
@@ -31,7 +31,7 @@ type t =
     mutable prefer: (t * int) list;     (* Preferences for other regs *)
     mutable degree: int;                (* Number of other regs live sim. *)
     mutable spill_cost: int;            (* Estimate of spilling cost *)
-    mutable visited: bool }             (* For graph walks *)
+    mutable visited: int }              (* For graph walks *)
 
 and location =
     Unknown
@@ -68,3 +68,7 @@ val reset: unit -> unit
 val all_registers: unit -> t list
 val num_registers: unit -> int
 val reinit: unit -> unit
+
+val mark_visited : t -> unit
+val is_visited : t -> bool
+val clear_visited_marks : unit -> unit

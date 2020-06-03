@@ -28,7 +28,7 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_module_unavailable of modname
+  | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
 
 exception Error of error
@@ -86,17 +86,17 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-let missing_globals = ref Ident.Set.empty
+let missing_globals = ref Ident.Map.empty
 
 let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      Ident.Set.mem id !missing_globals
+      Ident.Map.mem id !missing_globals
   | _ -> false
 
 let add_required compunit =
   let add id =
-    missing_globals := Ident.Set.add id !missing_globals
+    missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
   in
   List.iter add (Symtable.required_globals compunit.cu_reloc);
   List.iter add compunit.cu_required_globals
@@ -104,7 +104,7 @@ let add_required compunit =
 let remove_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      missing_globals := Ident.Set.remove id !missing_globals
+      missing_globals := Ident.Map.remove id !missing_globals
   | _ -> ()
 
 let scan_file obj_name tolink =
@@ -178,7 +178,11 @@ let check_consistency file_name cu =
             then Consistbl.set crc_interfaces name crc file_name
             else Consistbl.check crc_interfaces name crc file_name)
       cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
+  with Consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = user;
+      original_source = auth;
+    } ->
     raise(Error(Inconsistent_import(name, user, auth)))
   end;
   begin try
@@ -454,7 +458,7 @@ let output_cds_file outfile =
 
 (* Output a bytecode executable as a C file *)
 
-let link_bytecode_as_c tolink outfile =
+let link_bytecode_as_c tolink outfile with_main =
   let outchan = open_out outfile in
   Misc.try_finally
     ~always:(fun () -> close_out outchan)
@@ -497,7 +501,25 @@ let link_bytecode_as_c tolink outfile =
        (* The table of primitives *)
        Symtable.output_primitive_table outchan;
        (* The entry point *)
-       output_string outchan "\
+       if with_main then begin
+         output_string outchan "\
+\n#ifdef _WIN32\
+\nint wmain(int argc, wchar_t **argv)\
+\n#else\
+\nint main(int argc, char **argv)\
+\n#endif\
+\n{\
+\n  caml_byte_program_mode = COMPLETE_EXE;\
+\n  caml_startup_code(caml_code, sizeof(caml_code),\
+\n                    caml_data, sizeof(caml_data),\
+\n                    caml_sections, sizeof(caml_sections),\
+\n                    /* pooling */ 0,\
+\n                    argv);\
+\n  caml_sys_exit(Val_int(0));\
+\n  return 0; /* not reached */\
+\n}\n"
+       end else begin
+         output_string outchan "\
 \nvoid caml_startup(char_os ** argv)\
 \n{\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
@@ -532,7 +554,9 @@ let link_bytecode_as_c tolink outfile =
 \n                               caml_sections, sizeof(caml_sections),\
 \n                               /* pooling */ 1,\
 \n                               argv);\
-\n}\
+\n}\n"
+       end;
+       output_string outchan "\
 \n#ifdef __cplusplus\
 \n}\
 \n#endif\n";
@@ -552,9 +576,12 @@ let build_custom_runtime prim_name exec_name =
       [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
     else
       [] in
+  let exitcode =
+    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+  in
   Ccomp.call_linker Ccomp.Exe exec_name
     (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+    exitcode = 0
 
 let append_bytecode bytecode_name exec_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -576,17 +603,24 @@ let fix_exec_name name =
 
 let link objfiles output_name =
   let objfiles =
-    if !Clflags.nopervasives then objfiles
-    else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
-    else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
+    match
+      !Clflags.nopervasives,
+      !Clflags.output_c_object,
+      !Clflags.output_complete_executable
+    with
+    | true, _, _         -> objfiles
+    | false, true, false -> "stdlib.cma" :: objfiles
+    | _                  -> "stdlib.cma" :: objfiles @ ["std_exit.cmo"]
+  in
   let tolink = List.fold_right scan_file objfiles [] in
   let missing_modules =
-    Ident.Set.filter (fun id -> not (Ident.is_predef id)) !missing_globals
+    Ident.Map.filter (fun id _ -> not (Ident.is_predef id)) !missing_globals
   in
   begin
-    match Ident.Set.elements missing_modules with
+    match Ident.Map.bindings missing_modules with
     | [] -> ()
-    | id :: _ -> raise (Error (Required_module_unavailable (Ident.name id)))
+    | (id, cu_name) :: _ ->
+        raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
@@ -636,7 +670,7 @@ let link objfiles output_name =
            append_bytecode bytecode_name exec_name
       )
   end else begin
-    let basename = Filename.chop_extension output_name in
+    let basename = Filename.remove_extension output_name in
     let c_file, stable_name =
       if !Clflags.output_complete_object
          && not (Filename.check_suffix output_name ".c")
@@ -656,8 +690,12 @@ let link objfiles output_name =
     Misc.try_finally
       ~always:(fun () -> List.iter remove_file !temps)
       (fun () ->
-         link_bytecode_as_c tolink c_file;
-         if not (Filename.check_suffix output_name ".c") then begin
+         link_bytecode_as_c tolink c_file !Clflags.output_complete_executable;
+         if !Clflags.output_complete_executable then begin
+           temps := c_file :: !temps;
+           if not (build_custom_runtime c_file output_name) then
+             raise(Error Custom_runtime)
+         end else if not (Filename.check_suffix output_name ".c") then begin
            temps := c_file :: !temps;
            if Ccomp.compile_file ~output:obj_file ?stable_name c_file <> 0 then
              raise(Error Custom_runtime);
@@ -676,7 +714,7 @@ let link objfiles output_name =
                    else "-lcamlrun" ^ !Clflags.runtime_variant in
                  Ccomp.call_linker mode output_name
                    ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-                   c_libs
+                   c_libs = 0
                ) then raise (Error Custom_runtime);
            end
          end;
@@ -714,8 +752,8 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
-  | Required_module_unavailable s ->
-      fprintf ppf "Required module `%s' is unavailable" s
+  | Required_module_unavailable (s, m) ->
+      fprintf ppf "Module `%s' is unavailable (required by `%s')" s m
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %s: %s" header msg
 
@@ -730,7 +768,7 @@ let reset () =
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := [];
-  missing_globals := Ident.Set.empty;
+  missing_globals := Ident.Map.empty;
   Consistbl.clear crc_interfaces;
   implementations_defined := [];
   debug_info := [];

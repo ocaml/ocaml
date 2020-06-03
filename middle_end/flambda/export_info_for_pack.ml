@@ -99,7 +99,6 @@ let import_descr_for_pack units pack (descr : Export_info.descr)
   match descr with
   | Value_int _
   | Value_char _
-  | Value_constptr _
   | Value_string _
   | Value_float _
   | Value_float_array _

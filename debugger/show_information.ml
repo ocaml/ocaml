@@ -32,7 +32,7 @@ let show_current_event ppf =
     fprintf ppf "Time: %Li" (current_time ());
     (match current_pc () with
      | Some pc ->
-         fprintf ppf " - pc: %i" pc
+         fprintf ppf " - pc: %i:%i" pc.frag pc.pos
      | _ -> ());
   end;
   update_current_event ();
@@ -43,7 +43,7 @@ let show_current_event ppf =
       fprintf ppf "Beginning of program.@.";
       show_no_point ()
   | Some {rep_type = (Event | Breakpoint); rep_program_pointer = pc} ->
-        let ev = get_current_event () in
+        let ev = (get_current_event ()).ev_ev in
         if !Parameters.time then fprintf ppf " - module %s@." ev.ev_module;
         (match breakpoints_at_pc pc with
          | [] ->
@@ -68,28 +68,34 @@ let show_current_event ppf =
          @[Uncaught exception:@ %a@]@."
       Printval.print_exception (Debugcom.Remote_value.accu ());
       show_no_point ()
-  | Some {rep_type = Trap_barrier} ->
-                                        (* Trap_barrier not visible outside *)
-                                        (* of module `time_travel'. *)
+  | Some {rep_type = Code_loaded frag} ->
+      let mds = String.concat ", " (Symbols.modules_in_code_fragment frag) in
+      fprintf ppf "@.Module(s) %s loaded.@." mds;
+      show_no_point ()
+  | Some {rep_type = Trap_barrier}
+  | Some {rep_type = Debug_info _}
+  | Some {rep_type = Code_unloaded _} ->
+      (* Not visible outside *)
+      (* of module `time_travel'. *)
       if !Parameters.time then fprintf ppf "@.";
       Misc.fatal_error "Show_information.show_current_event"
 
 (* Display short information about one frame. *)
 
-let show_one_frame framenum ppf event =
-  let pos = Events.get_pos event in
+let show_one_frame framenum ppf ev =
+  let pos = Events.get_pos ev.ev_ev in
   let cnum =
     try
-      let buffer = get_buffer pos event.ev_module in
+      let buffer = get_buffer pos ev.ev_ev.ev_module in
       snd (start_and_cnum buffer pos)
     with _ -> pos.Lexing.pos_cnum in
   if !machine_readable then
-    fprintf ppf "#%i  Pc: %i  %s char %i@."
-           framenum event.ev_pos event.ev_module
+    fprintf ppf "#%i  Pc: %i:%i  %s char %i@."
+           framenum ev.ev_frag ev.ev_ev.ev_pos ev.ev_ev.ev_module
            cnum
   else
     fprintf ppf "#%i %s %s:%i:%i@."
-           framenum event.ev_module
+           framenum ev.ev_ev.ev_module
            pos.Lexing.pos_fname pos.Lexing.pos_lnum
            (pos.Lexing.pos_cnum - pos.Lexing.pos_bol + 1)
 
@@ -101,7 +107,8 @@ let show_current_frame ppf selected =
       fprintf ppf "@.No frame selected.@."
   | Some sel_ev ->
       show_one_frame !current_frame ppf sel_ev;
-      begin match breakpoints_at_pc sel_ev.ev_pos with
+      begin match breakpoints_at_pc
+                    {frag=sel_ev.ev_frag; pos = sel_ev.ev_ev.ev_pos} with
       | [] -> ()
       | [breakpoint] ->
           fprintf ppf "Breakpoint: %i@." breakpoint
@@ -111,4 +118,4 @@ let show_current_frame ppf selected =
             List.iter (function x -> fprintf ppf "%i " x) l)
           (List.sort compare breakpoints);
       end;
-      show_point sel_ev selected
+      show_point sel_ev.ev_ev selected

@@ -30,7 +30,6 @@ struct compare_item { value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
-CAMLexport int caml_compare_unordered;
 
 struct compare_stack {
   struct compare_item init_stack[COMPARE_STACK_INIT_SIZE];
@@ -140,9 +139,9 @@ static intnat do_compare_val(struct compare_stack* stk,
           int res;
           int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
           if (compare == NULL) break;  /* for backward compatibility */
-          caml_compare_unordered = 0;
+          Caml_state->compare_unordered = 0;
           res = compare(v1, v2);
-          if (caml_compare_unordered && !total) return UNORDERED;
+          if (Caml_state->compare_unordered && !total) return UNORDERED;
           if (res != 0) return res;
           goto next_item;
         }
@@ -163,9 +162,9 @@ static intnat do_compare_val(struct compare_stack* stk,
           int res;
           int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
           if (compare == NULL) break;  /* for backward compatibility */
-          caml_compare_unordered = 0;
+          Caml_state->compare_unordered = 0;
           res = compare(v1, v2);
-          if (caml_compare_unordered && !total) return UNORDERED;
+          if (Caml_state->compare_unordered && !total) return UNORDERED;
           if (res != 0) return res;
           goto next_item;
         }
@@ -185,10 +184,28 @@ static intnat do_compare_val(struct compare_stack* stk,
 #endif
     t1 = Tag_val(v1);
     t2 = Tag_val(v2);
-    if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
-    if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
-    if (t1 != t2) return (intnat)t1 - (intnat)t2;
+    if (t1 != t2) {
+        /* Besides long/block comparisons, the only forms of
+           heterogeneous comparisons we support are:
+           - Forward_tag pointers, which may point to values of any type, and
+           - comparing Infix_tag and Closure_tag functions (#9521).
+
+           Other heterogeneous cases may still happen due to
+           existential types, and we just compare the tags.
+        */
+        if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
+        if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
+        if (t1 == Infix_tag) t1 = Closure_tag;
+        if (t2 == Infix_tag) t2 = Closure_tag;
+        if (t1 != t2)
+            return (intnat)t1 - (intnat)t2;
+    }
     switch(t1) {
+    case Forward_tag: {
+        v1 = Forward_val (v1);
+        v2 = Forward_val (v2);
+        continue;
+    }
     case String_tag: {
       mlsize_t len1, len2;
       int res;
@@ -261,9 +278,9 @@ static intnat do_compare_val(struct compare_stack* stk,
         compare_free_stack(stk);
         caml_invalid_argument("compare: abstract value");
       }
-      caml_compare_unordered = 0;
+      Caml_state->compare_unordered = 0;
       res = compare(v1, v2);
-      if (caml_compare_unordered && !total) return UNORDERED;
+      if (Caml_state->compare_unordered && !total) return UNORDERED;
       if (res != 0) return res;
       break;
     }

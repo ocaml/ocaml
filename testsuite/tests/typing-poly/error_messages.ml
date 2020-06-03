@@ -38,8 +38,8 @@ Line 4, characters 49-50:
                                                      ^
 Error: This expression has type < a : 'a; b : 'a >
        but an expression was expected of type < a : 'a; b : 'a0. 'a0 >
-       The method b has type 'a, but the expected method type was 'a0. 'a0
-       The universal variable 'a0 would escape its scope
+       The method b has type 'a, but the expected method type was 'a. 'a
+       The universal variable 'a would escape its scope
 |}]
 
 
@@ -61,8 +61,8 @@ Lines 5-7, characters 10-5:
 Error: This expression has type < f : 'a -> int >
        but an expression was expected of type t_a
        The method f has type 'a -> int, but the expected method type was
-       'a0. 'a0 -> int
-       The universal variable 'a0 would escape its scope
+       'a. 'a -> int
+       The universal variable 'a would escape its scope
 |}
 ]
 
@@ -80,6 +80,54 @@ Line 4, characters 11-49:
 Error: This expression has type 'a v but an expression was expected of type
          uv
        The method f has type 'a -> int, but the expected method type was
-       'a0. 'a0 -> int
-       The universal variable 'a0 would escape its scope
+       'a. 'a -> int
+       The universal variable 'a would escape its scope
+|}]
+
+(* Issue #8702: row types unified with universally quantified types*)
+
+let f: 'a. ([> `A ] as 'a) -> [ `A ] = fun x -> x
+[%%expect {|
+Line 1, characters 48-49:
+1 | let f: 'a. ([> `A ] as 'a) -> [ `A ] = fun x -> x
+                                                    ^
+Error: This expression has type [> `A ]
+       but an expression was expected of type [ `A ]
+       The first variant type is bound to the universal type variable 'a,
+       it cannot be closed
+|}]
+
+let f: 'a. [ `A ] -> ([> `A ] as 'a) = fun x -> x
+[%%expect {|
+Line 1, characters 48-49:
+1 | let f: 'a. [ `A ] -> ([> `A ] as 'a) = fun x -> x
+                                                    ^
+Error: This expression has type [ `A ] but an expression was expected of type
+         [> `A ]
+       The second variant type is bound to the universal type variable 'a,
+       it cannot be closed
+|}]
+
+
+let f: 'a. [ `A | `B ] -> ([> `A ] as 'a) = fun x -> x
+[%%expect {|
+Line 1, characters 53-54:
+1 | let f: 'a. [ `A | `B ] -> ([> `A ] as 'a) = fun x -> x
+                                                         ^
+Error: This expression has type [ `A | `B ]
+       but an expression was expected of type [> `A ]
+       The second variant type is bound to the universal type variable 'a,
+       it cannot be closed
+|}]
+
+
+let f: 'a. [> `A | `B | `C ] -> ([> `A ] as 'a) = fun x -> x
+[%%expect {|
+Line 1, characters 59-60:
+1 | let f: 'a. [> `A | `B | `C ] -> ([> `A ] as 'a) = fun x -> x
+                                                               ^
+Error: This expression has type [> `A | `B | `C ]
+       but an expression was expected of type [> `A ]
+       The second variant type is bound to the universal type variable 'a,
+       it may not allow the tag(s) `B, `C
 |}]

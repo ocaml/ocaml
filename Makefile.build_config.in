@@ -1,0 +1,29 @@
+# @configure_input@
+
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 David Allsopp, OCaml Labs, Cambridge.                  *
+#*                                                                        *
+#*   Copyright 2020 MetaStack Solutions Ltd.                              *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This Makefile contains configuration gleaned by configure but which should not
+# be installed in Makefile.config. The file is designed to be included in
+# OCaml's build system and so itself includes Makefile.config. It assumes that
+# $(ROOTDIR) has been defined.
+
+include $(ROOTDIR)/Makefile.config
+INSTALL ?= @INSTALL@
+INSTALL_DATA ?= @INSTALL_DATA@
+INSTALL_PROG ?= @INSTALL_PROGRAM@
+
+# The command to generate C dependency information
+DEP_CC=@DEP_CC@ -MM
+COMPUTE_DEPS=@compute_deps@

@@ -281,13 +281,7 @@ let simple_merged_annotated_under_poly_variant (type a) (pair : a t * a) =
 ;;
 
 [%%expect{|
-Line 3, characters 19-20:
-3 |   | `Foo ( IntLit, 3
-                       ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_poly_variant : 'a t * 'a -> unit = <fun>
 |}]
 
 let simple_merged_annotated_under_poly_variant_annotated (type a) pair =

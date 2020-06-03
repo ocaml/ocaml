@@ -27,6 +27,7 @@
 #include "caml/weak.h"
 #include "caml/minor_gc.h"
 #include "caml/signals.h"
+#include "caml/eventlog.h"
 
 value caml_ephe_list_head = 0;
 
@@ -61,7 +62,7 @@ CAMLexport mlsize_t caml_ephemeron_num_keys(value eph)
 /** The minor heap is considered alive. */
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 /** Outside minor and major heap, x must be black. */
-static inline int Is_Dead_during_clean(value x)
+Caml_inline int Is_Dead_during_clean(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
@@ -70,20 +71,20 @@ static inline int Is_Dead_during_clean(value x)
 /** The minor heap doesn't have to be marked, outside they should
     already be black
 */
-static inline int Must_be_Marked_during_mark(value x)
+Caml_inline int Must_be_Marked_during_mark(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
   return Is_block (x) && !Is_young (x);
 }
 #else
-static inline int Is_Dead_during_clean(value x)
+Caml_inline int Is_Dead_during_clean(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
   return Is_block (x) && Is_in_heap (x) && Is_white_val(x);
 }
-static inline int Must_be_Marked_during_mark(value x)
+Caml_inline int Must_be_Marked_during_mark(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
@@ -105,12 +106,14 @@ CAMLexport value caml_ephemeron_create (mlsize_t len)
   for (i = 1; i < size; i++) Field (res, i) = caml_ephe_none;
   Field (res, CAML_EPHE_LINK_OFFSET) = caml_ephe_list_head;
   caml_ephe_list_head = res;
-  return caml_check_urgent_gc(res);
+  return res;
 }
 
 CAMLprim value caml_ephe_create (value len)
 {
-  return caml_ephemeron_create(Long_val(len));
+  value res = caml_ephemeron_create(Long_val(len));
+  // run memprof callbacks
+  return caml_process_pending_actions_with_root(res);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -168,7 +171,7 @@ static void do_check_key_clean(value ar, mlsize_t offset)
 
 /* If we are in Phase_clean we need to do as if the key is empty when
    it will be cleaned during this phase */
-static inline int is_ephe_key_none(value ar, mlsize_t offset)
+Caml_inline int is_ephe_key_none(value ar, mlsize_t offset)
 {
   value elt = Field (ar, offset);
   if (elt == caml_ephe_none){
@@ -189,7 +192,7 @@ static void do_set (value ar, mlsize_t offset, value v)
     value old = Field (ar, offset);
     Field (ar, offset) = v;
     if (!(Is_block (old) && Is_young (old))){
-      add_to_ephe_ref_table (&caml_ephe_ref_table, ar, offset);
+      add_to_ephe_ref_table (Caml_state->ephe_ref_table, ar, offset);
     }
   }else{
     Field (ar, offset) = v;
@@ -290,6 +293,9 @@ static value optionalize(int status, value *x)
   } else {
     res = None_val;
   }
+  // run memprof callbacks both for the option we are allocating here
+  // and the calling function.
+  caml_process_pending_actions();
   CAMLreturn(res);
 }
 
@@ -350,7 +356,7 @@ CAMLprim value caml_ephe_get_data (value ar)
 }
 
 
-static inline void copy_value(value src, value dst)
+Caml_inline void copy_value(value src, value dst)
 {
   if (Tag_val (src) < No_scan_tag){
     mlsize_t i;
@@ -403,9 +409,8 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     CAMLassert(loop < 10);
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
-      CAML_INSTR_INT ("force_minor/weak@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
+      CAML_EV_COUNTER (EV_C_FORCE_MINOR_WEAK, 1);
+      caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
       elt = caml_alloc (Wosize_val (v), Tag_val (v));
@@ -419,8 +424,8 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
 CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 {
   value key;
-  return optionalize(caml_ephemeron_get_key_copy(ar, Long_val(n), &key),
-                     &key);
+  int status = caml_ephemeron_get_key_copy(ar, Long_val(n), &key);
+  return optionalize(status, &key);
 }
 
 CAMLprim value caml_weak_get_copy (value ar, value n)
@@ -459,9 +464,8 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     CAMLassert(loop < 10);
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
-      CAML_INSTR_INT ("force_minor/weak@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
+      CAML_EV_COUNTER (EV_C_FORCE_MINOR_WEAK, 1);
+      caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
       elt = caml_alloc (Wosize_val (v), Tag_val (v));
@@ -475,7 +479,8 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
 CAMLprim value caml_ephe_get_data_copy (value ar)
 {
   value data;
-  return optionalize(caml_ephemeron_get_data_copy(ar, &data), &data);
+  int status = caml_ephemeron_get_data_copy(ar, &data);
+  return optionalize(status, &data);
 }
 
 CAMLexport int caml_ephemeron_key_is_set(value ar, mlsize_t offset)
@@ -526,8 +531,12 @@ CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
   offset_d += CAML_EPHE_FIRST_KEY;
 
   if (caml_gc_phase == Phase_clean){
-    caml_ephe_clean(ars);
-    caml_ephe_clean(ard);
+    caml_ephe_clean_partial(ars, offset_s, offset_s + length);
+    /* We don't need to clean the keys that are about to be overwritten,
+       except where cleaning them could result in releasing the data,
+       which can't happen if data is already released. */
+    if (Field (ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none)
+      caml_ephe_clean_partial(ard, offset_d, offset_d + length);
   }
   if (offset_d < offset_s){
     for (i = 0; i < length; i++){

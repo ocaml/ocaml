@@ -7,9 +7,9 @@ let test f =
 ;;
 
 [%%expect{|
-Line _, characters 2-43:
-    match f () with exception Not_found -> ()
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 2, characters 2-43:
+2 |   match f () with exception Not_found -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: None of the patterns in this 'match' expression match values.
 |}]
 ;;

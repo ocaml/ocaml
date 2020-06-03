@@ -85,6 +85,7 @@ val no_check_prims : bool ref
 val bytecode_compatible_32 : bool ref
 val output_c_object : bool ref
 val output_complete_object : bool ref
+val output_complete_executable : bool ref
 val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
@@ -122,6 +123,7 @@ val error_size : int ref
 val float_const_prop : bool ref
 val transparent_modules : bool ref
 val unique_ids : bool ref
+val locations : bool ref
 val dump_source : bool ref
 val dump_parsetree : bool ref
 val dump_typedtree : bool ref
@@ -206,6 +208,7 @@ val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref
 val afl_instrument : bool ref
 val afl_inst_ratio : int ref
+val function_sections : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool
@@ -233,11 +236,11 @@ val insn_sched : bool ref
 val insn_sched_default : bool
 
 module Compiler_pass : sig
-  type t = Parsing | Typing
+  type t = Parsing | Typing | Scheduling
   val of_string : string -> t option
   val to_string : t -> string
-  val passes : t list
-  val pass_names : string list
+  val is_compilation_pass : t -> bool
+  val available_pass_names : native:bool -> string list
 end
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool

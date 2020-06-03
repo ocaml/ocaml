@@ -56,12 +56,13 @@
 
    ;; TYPING
    ident path primitive types btype oprint subst predef datarepr
-   cmi_format persistent_env env
+   cmi_format persistent_env env type_immediacy
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper cmt_format untypeast includemod
-   typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
+   typetexp patterns printpat parmatch stypes typedecl typeopt rec_check
+   typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
-   typedecl_unboxed
+   typedecl_unboxed typedecl_separability cmt2annot
    ; manual update: mli only files
    annot outcometree
 
@@ -112,7 +113,7 @@
    symbol variable
 
    ;; middle_end/closure/
-   closure
+   closure closure_middle_end
 
    ;; middle_end/flambda/base_types/
    closure_element closure_id closure_origin export_id id_types mutable_variable
@@ -147,11 +148,12 @@
  (modules
    ;; asmcomp/
    afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
-   branch_relaxation_intf cmm cmmgen cmmgen_state coloring comballoc CSE CSEgen
-   deadcode emit emitaux interf interval linearize linscan liveness mach
-   printcmm printlinear printmach proc reg reload reloadgen schedgen scheduling
-   selectgen selection spacetime_profiling spill split strmatch x86_ast
-   x86_dsl x86_gas x86_masm x86_proc
+   branch_relaxation_intf cmm_helpers cmm cmmgen cmmgen_state coloring comballoc
+   CSE CSEgen
+   deadcode domainstate emit emitaux interf interval linear linearize linscan
+   liveness mach printcmm printlinear printmach proc reg reload reloadgen
+   schedgen scheduling selectgen selection spacetime_profiling spill split
+   strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
 
    ;; asmcomp/debug/
    reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
@@ -206,3 +208,16 @@
        toplevel/ocaml.byte
        toplevel/expunge.exe
        ))
+
+(alias
+  (name libs)
+  (deps
+    ocamloptcomp.cma
+    ocamlmiddleend.cma
+    ocamlcommon.cma
+    runtime/runtime.cma
+    stdlib/stdlib.cma
+    ocamlbytecomp.cma
+    ocamltest/ocamltest_core_and_plugin.cma
+    toplevel/ocamltoplevel.cma
+  ))

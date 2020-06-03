@@ -83,8 +83,8 @@ let close_phrase lam =
     let glb, pos = toplevel_value id in
     let glob =
       Lprim (Pfield pos,
-             [Lprim (Pgetglobal glb, [], Location.none)],
-             Location.none)
+             [Lprim (Pgetglobal glb, [], Loc_unknown)],
+             Loc_unknown)
     in
     Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam
@@ -187,7 +187,7 @@ let parse_mod_use_file name lb =
   [ Ptop_def
       [ Str.module_
           (Mb.mk
-             (Location.mknoloc modname)
+             (Location.mknoloc (Some modname))
              (Mod.structure items)
           )
        ]
@@ -262,7 +262,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     else Closure_middle_end.lambda_to_clambda
   in
   Asmgen.compile_implementation ~toplevel:need_symbol
-    ~backend ~filename ~prefixname:""
+    ~backend ~filename ~prefixname:filename
     ~middle_end ~ppf_dump:ppf program;
   Asmlink.call_linker_shared [filename ^ ext_obj] dll;
   Sys.remove (filename ^ ext_obj);
@@ -449,43 +449,66 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
 
-let use_file ppf wrap_mod name =
-  try
-    let (filename, ic, must_close) =
-      if name = "" then
-        ("(stdin)", stdin, false)
-      else begin
-        let filename = Load_path.find name in
-        let ic = open_in_bin filename in
-        (filename, ic, true)
-      end
-    in
-    let lb = Lexing.from_channel ic in
-    Location.init lb filename;
-    (* Skip initial #! line if any *)
-    Lexer.skip_hash_bang lb;
-    let success =
-      protect_refs [ R (Location.input_name, filename) ] (fun () ->
-        try
-          List.iter
-            (fun ph ->
-              let ph = preprocess_phrase ppf ph in
-              if not (execute_phrase !use_print_results ppf ph) then raise Exit)
-            (if wrap_mod then
-               parse_mod_use_file name lb
-             else
-               !parse_use_file lb);
-          true
-        with
-        | Exit -> false
-        | Sys.Break -> fprintf ppf "Interrupted.@."; false
-        | x -> Location.report_exception ppf x; false) in
-    if must_close then close_in ic;
-    success
-  with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+let use_channel ppf ~wrap_in_module ic name filename =
+  let lb = Lexing.from_channel ic in
+  Location.init lb filename;
+  (* Skip initial #! line if any *)
+  Lexer.skip_hash_bang lb;
+  let success =
+    protect_refs [ R (Location.input_name, filename) ] (fun () ->
+      try
+        List.iter
+          (fun ph ->
+            let ph = preprocess_phrase ppf ph in
+            if not (execute_phrase !use_print_results ppf ph) then raise Exit)
+          (if wrap_in_module then
+             parse_mod_use_file name lb
+           else
+             !parse_use_file lb);
+        true
+      with
+      | Exit -> false
+      | Sys.Break -> fprintf ppf "Interrupted.@."; false
+      | x -> Location.report_exception ppf x; false) in
+  success
 
-let mod_use_file ppf name = use_file ppf true name
-let use_file ppf name = use_file ppf false name
+let use_output ppf command =
+  let fn = Filename.temp_file "ocaml" "_toploop.ml" in
+  Misc.try_finally ~always:(fun () ->
+      try Sys.remove fn with Sys_error _ -> ())
+    (fun () ->
+       match
+         Printf.ksprintf Sys.command "%s > %s"
+           command
+           (Filename.quote fn)
+       with
+       | 0 ->
+         let ic = open_in_bin fn in
+         Misc.try_finally ~always:(fun () -> close_in ic)
+           (fun () ->
+              use_channel ppf ~wrap_in_module:false ic "" "(command-output)")
+       | n ->
+         fprintf ppf "Command exited with code %d.@." n;
+         false)
+
+let use_file ppf ~wrap_in_module name =
+  match name with
+  | "" ->
+    use_channel ppf ~wrap_in_module stdin name "(stdin)"
+  | _ ->
+    match Load_path.find name with
+    | filename ->
+      let ic = open_in_bin filename in
+      Misc.try_finally ~always:(fun () -> close_in ic)
+        (fun () -> use_channel ppf ~wrap_in_module ic name filename)
+    | exception Not_found ->
+      fprintf ppf "Cannot find file %s.@." name;
+      false
+
+let mod_use_file ppf name =
+  use_file ppf ~wrap_in_module:true name
+let use_file ppf name =
+  use_file ppf ~wrap_in_module:false name
 
 let use_silently ppf name =
   protect_refs [ R (use_print_results, false) ] (fun () -> use_file ppf name)
@@ -544,17 +567,42 @@ let _ =
   Clflags.dlcode := true;
   ()
 
+let find_ocamlinit () =
+  let ocamlinit = ".ocamlinit" in
+  if Sys.file_exists ocamlinit then Some ocamlinit else
+  let getenv var = match Sys.getenv var with
+    | exception Not_found -> None | "" -> None | v -> Some v
+  in
+  let exists_in_dir dir file = match dir with
+    | None -> None
+    | Some dir ->
+        let file = Filename.concat dir file in
+        if Sys.file_exists file then Some file else None
+  in
+  let home_dir () = getenv "HOME" in
+  let config_dir () =
+    if Sys.win32 then None else
+    match getenv "XDG_CONFIG_HOME" with
+    | Some _ as v -> v
+    | None ->
+        match home_dir () with
+        | None -> None
+        | Some dir -> Some (Filename.concat dir ".config")
+  in
+  let init_ml = Filename.concat "ocaml" "init.ml" in
+  match exists_in_dir (config_dir ()) init_ml with
+  | Some _ as v -> v
+  | None -> exists_in_dir (home_dir ()) ocamlinit
+
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
   | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
               else fprintf ppf "Init file not found: \"%s\".@." f
   | None ->
-     if Sys.file_exists ".ocamlinit" then ignore (use_silently ppf ".ocamlinit")
-     else try
-       let home_init = Filename.concat (Sys.getenv "HOME") ".ocamlinit" in
-       if Sys.file_exists home_init then ignore (use_silently ppf home_init)
-     with Not_found -> ()
+      match find_ocamlinit () with
+      | None -> ()
+      | Some file -> ignore (use_silently ppf file)
 ;;
 
 let set_paths () =

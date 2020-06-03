@@ -102,6 +102,10 @@ val get_titles_in_text : Odoc_types.text -> (int * string option * Odoc_types.te
    begin with a letter should be in the first returned list.*)
 val create_index_lists : 'a list -> ('a -> string) -> 'a list list
 
+(** [remove_duplicates compare li] removes the duplicates in the input list,
+    keeping the leftmost occurrence of each repeated element. *)
+val remove_duplicates : ('a -> 'a -> int) -> 'a list -> 'a list
+
 (** [remove_ending_newline s] returns [s] without the optional ending newline. *)
 val remove_ending_newline : string -> string
 

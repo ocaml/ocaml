@@ -36,7 +36,7 @@ type error =
   | Inconsistent_interface of modname * filepath * filepath
   | Inconsistent_implementation of modname * filepath * filepath
   | Assembler_error of filepath
-  | Linking_error
+  | Linking_error of int
   | Multiple_definition of modname * filepath * filepath
   | Missing_cmx of filepath * modname
 

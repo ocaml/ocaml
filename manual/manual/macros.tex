@@ -1,4 +1,5 @@
 \makeatletter
+
 % Pour hevea
 \newif\ifouthtml\outhtmlfalse
 \newcommand{\cutname}[1]{}
@@ -9,6 +10,31 @@
 \def\optvar#1{\textrm{[}\var{#1}\/\textrm{]}}
 \def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1, \ldots, #2$}
+
+
+% Redefining sections macros to make label mandatory
+\let\@oldsection=\section
+\let\@oldsubsection=\subsection
+\let\@oldsubsubsection=\subsection
+
+\newcommand{\ocamldocinputstart}{
+\let\section=\@oldsection
+\let\subsection=\@oldsubsection
+\let\subsubsection=\@oldsubsubsection
+}
+
+\renewcommand{\section}{\@ifstar{\@lsectionstar}{\@lsection}}
+\renewcommand{\subsection}{\@ifstar{\@lsubsectionstar}{\@lsubsection}}
+\renewcommand{\subsubsection}{\@ifstar{\@lsubsubsectionstar}{\@lsubsubsection}}
+
+\newcommand{\@lsection}[2]{\@oldsection{\label{#1}#2}}
+\newcommand{\@lsectionstar}[2]{\@oldsection*{\label{#1}#2}}
+\newcommand{\@lsubsection}[2]{\@oldsubsection{\label{#1}#2}}
+\newcommand{\@lsubsectionstar}[2]{\@oldsubsection*{\label{#1}#2}}
+\newcommand{\@lsubsubsection}[2]{\@oldsubsubsection{\label{#1}#2}}
+\newcommand{\@lsubsubsectionstar}[2]{\@oldsubsubsection*{\label{#1}#2}}
+
+\newcommand{\lparagraph}[1]{\paragraph{\label{#1}#1}}
 
 % Numerotation
 \setcounter{secnumdepth}{2}     % Pour numeroter les \subsection
@@ -44,8 +70,6 @@
 
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{description}}
-%\def\macos{\versionspecific{MacOS 9}}
-%\def\endmacos{\end{description}}
 \def\windows{\versionspecific{Windows}}
 \def\endwindows{\end{description}}
 
@@ -204,5 +228,28 @@
 \newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
 
 \newenvironment{maintitle}{\begin{center}}{\end{center}}
+
+
+
+% Caml-example related command
+\newenvironment{camlexample}[1]{
+  \ifnum\pdfstrcmp{#1}{toplevel}=0
+    \renewcommand{\hash}{\#}
+  \else
+    \renewcommand{\hash}{}
+  \fi
+}{}
+\newenvironment{caml}{}{}
+\newcommand{\ocamlkeyword}{\bfseries}
+\newcommand{\ocamlhighlight}{\bfseries\uline}
+\newcommand{\ocamlerror}{\bfseries}
+\newcommand{\ocamlwarning}{\bfseries}
+
+\definecolor{gray}{gray}{0.5}
+\newcommand{\ocamlcomment}{\color{gray}\normalfont\small}
+\newcommand{\ocamlstring}{\color{gray}\bfseries}
+
+\newcommand{\?}{\normalsize\tt\hash{} }
+\renewcommand{\:}{\small\ttfamily\slshape}
 
 \makeatother

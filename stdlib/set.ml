@@ -44,6 +44,7 @@ module type S =
     val for_all: (elt -> bool) -> t -> bool
     val exists: (elt -> bool) -> t -> bool
     val filter: (elt -> bool) -> t -> t
+    val filter_map: (elt -> elt option) -> t -> t
     val partition: (elt -> bool) -> t -> t * t
     val cardinal: t -> int
     val elements: t -> elt list
@@ -63,6 +64,7 @@ module type S =
     val of_list: elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
+    val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
@@ -530,6 +532,27 @@ module Make(Ord: OrderedType) =
          if l == l' && v == v' && r == r' then t
          else try_join l' v' r'
 
+    let try_concat t1 t2 =
+      match (t1, t2) with
+        (Empty, t) -> t
+      | (t, Empty) -> t
+      | (_, _) -> try_join t1 (min_elt t2) (remove_min_elt t2)
+
+    let rec filter_map f = function
+      | Empty -> Empty
+      | Node{l; v; r} as t ->
+         (* enforce left-to-right evaluation order *)
+         let l' = filter_map f l in
+         let v' = f v in
+         let r' = filter_map f r in
+         begin match v' with
+           | Some v' ->
+              if l == l' && v == v' && r == r' then t
+              else try_join l' v' r'
+           | None ->
+              try_concat l' r'
+         end
+
     let of_sorted_list l =
       let rec sub n l =
         match n, l with
@@ -571,6 +594,17 @@ module Make(Ord: OrderedType) =
       | More (x, t, rest) -> Seq.Cons (x, seq_of_enum_ (cons_enum t rest))
 
     let to_seq c = seq_of_enum_ (cons_enum c End)
+
+    let rec snoc_enum s e =
+      match s with
+        Empty -> e
+      | Node{l; v; r} -> snoc_enum r (More(v, l, e))
+
+    let rec rev_seq_of_enum_ c () = match c with
+      | End -> Seq.Nil
+      | More (x, t, rest) -> Seq.Cons (x, rev_seq_of_enum_ (snoc_enum t rest))
+
+    let to_rev_seq c = rev_seq_of_enum_ (snoc_enum c End)
 
     let to_seq_from low s =
       let rec aux low s c = match s with

@@ -49,6 +49,9 @@ val str : bool
 val objext : string
 (** Extension of object files *)
 
+val asmext : string
+(** Extension of assembly files *)
+
 val system : string
 (** The content of the SYSTEM Make variable *)
 
@@ -105,3 +108,10 @@ val bytecc_libs : string
 val nativecc_libs : string
 
 val windows_unicode : bool
+
+val function_sections : bool
+(** Whether the compiler was configured to generate
+    each function in a separate section *)
+
+val has_instrumented_runtime : bool
+(** Whether the instrumented runtime is available *)

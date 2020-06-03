@@ -71,6 +71,7 @@ type primitive =
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of integer_comparison
+  | Pcompare_ints | Pcompare_floats | Pcompare_bints of boxed_integer
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
@@ -206,7 +207,6 @@ let equal_value_kind x y =
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
@@ -214,6 +214,7 @@ type structured_constant =
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
+  | Hint_inline (* [@inlined hint] attribute *)
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
@@ -221,12 +222,14 @@ let equal_inline_attribute x y =
   match x, y with
   | Always_inline, Always_inline
   | Never_inline, Never_inline
+  | Hint_inline, Hint_inline
   | Default_inline, Default_inline
     ->
     true
   | Unroll u, Unroll v ->
     u = v
-  | (Always_inline | Never_inline | Unroll _ | Default_inline), _ ->
+  | (Always_inline | Never_inline
+    | Hint_inline | Unroll _ | Default_inline), _ ->
     false
 
 type specialise_attribute =
@@ -271,6 +274,8 @@ type function_attribute = {
   stub: bool;
 }
 
+type scoped_location = Debuginfo.Scoped_location.t
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -278,10 +283,10 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
-  | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch * Location.t
+  | Lprim of primitive * lambda list * scoped_location
+  | Lswitch of lambda * lambda_switch * scoped_location
   | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+      lambda * (string * lambda) list * lambda option * scoped_location
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -290,7 +295,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
+  | Lsend of meth_kind * lambda * lambda * lambda list * scoped_location
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -300,12 +305,12 @@ and lfunction =
     return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
-    loc: Location.t; }
+    loc: scoped_location; }
 
 and lambda_apply =
   { ap_func : lambda;
     ap_args : lambda list;
-    ap_loc : Location.t;
+    ap_loc : scoped_location;
     ap_should_be_tailcall : bool;
     ap_inlined : inline_attribute;
     ap_specialised : specialise_attribute; }
@@ -318,7 +323,7 @@ and lambda_switch =
     sw_failaction : lambda option}
 
 and lambda_event =
-  { lev_loc: Location.t;
+  { lev_loc: scoped_location;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.t }
@@ -336,7 +341,9 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_unit = Const_pointer 0
+let const_int n = Const_base (Const_int n)
+
+let const_unit = const_int 0
 
 let lambda_unit = Lconst const_unit
 
@@ -381,7 +388,7 @@ let make_key e =
     | Lapply ap ->
         Lapply {ap with ap_func = tr_rec env ap.ap_func;
                         ap_args = tr_recs env ap.ap_args;
-                        ap_loc = Location.none}
+                        ap_loc = Loc_unknown}
     | Llet (Alias,_k,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
@@ -393,7 +400,7 @@ let make_key e =
         let y = make_key x in
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es,_) ->
-        Lprim (p,tr_recs env es, Location.none)
+        Lprim (p,tr_recs env es, Loc_unknown)
     | Lswitch (e,sw,loc) ->
         Lswitch (tr_rec env e,tr_sw env sw,loc)
     | Lstringswitch (e,sw,d,_) ->
@@ -401,7 +408,7 @@ let make_key e =
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
            tr_opt env d,
-          Location.none)
+          Loc_unknown)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
     | Lstaticcatch (e1,xs,e2) ->
@@ -415,7 +422,7 @@ let make_key e =
     | Lassign (x,e) ->
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,_loc) ->
-        Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
+        Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Loc_unknown)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
@@ -656,8 +663,8 @@ let transl_prim mod_name name =
   let pers = Ident.create_persistent mod_name in
   let env = Env.add_persistent_structure pers Env.empty in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
-  match Env.lookup_value lid env with
-  | path, _ -> transl_value_path Location.none env path
+  match Env.find_value_by_name lid env with
+  | path, _ -> transl_value_path Loc_unknown env path
   | exception Not_found ->
       fatal_error ("Primitive " ^ name ^ " not found.")
 
@@ -678,7 +685,6 @@ let subst update_env s lam =
     let remove_list l s =
       List.fold_left (fun s (id, _kind) -> Ident.Map.remove id s) s l
     in
-    let module M = Ident.Map in
     match lam with
     | Lvar id as l ->
         begin try Ident.Map.find id s with Not_found -> l end

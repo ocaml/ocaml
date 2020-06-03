@@ -1,4 +1,5 @@
 (* TEST
+   compare_programs = "false" (* See https://github.com/ocaml/ocaml/pull/8853 *)
 *)
 
 let current = ref 0;;

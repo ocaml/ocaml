@@ -19,6 +19,9 @@
 
 #include "defs.h"
 
+/* String displayed if we can't malloc a buffer for the UTF-8 conversion */
+static char *unknown = "<unknown; out of memory>";
+
 void fatal(char *msg)
 {
     fprintf(stderr, "%s: f - %s\n", myname, msg);
@@ -33,9 +36,10 @@ void no_space(void)
 }
 
 
-void open_error(char *filename)
+void open_error(char_os *filename)
 {
-    fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, filename);
+    char *u8 = caml_stat_strdup_of_os(filename);
+    fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, (u8 ? u8 : unknown));
     done(2);
 }
 
@@ -173,8 +177,8 @@ token\n", virtual_input_file_name, lineno, s);
 
 void too_many_entries(void)
 {
-    fprintf(stderr, "File \"%s\", line %d: more than 256 entry points\n",
-            virtual_input_file_name, lineno);
+    fprintf(stderr, "File \"%s\", line %d: more than %u entry points\n",
+            virtual_input_file_name, lineno, MAX_ENTRY_POINT);
     done(1);
 }
 

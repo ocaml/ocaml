@@ -1,4 +1,4 @@
-\section{Names} \label{s:names}
+\section{s:names}{Names}
 %HEVEA\cutname{names.html}
 
 Identifiers are used to give names to several classes of language
@@ -6,7 +6,7 @@ objects and refer to these objects by name later:
 \begin{itemize}
 \item value names (syntactic class @value-name@),
 \item value constructors and exception constructors (class @constr-name@),
-\item labels (@label-name@, defined in section~\ref{s:labelname}),
+\item labels (@label-name@, defined in section~\ref{sss:labelname}),
 \item polymorphic variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
 \item record fields (@field-name@),
@@ -22,7 +22,7 @@ identifier is in lowercase (written @lowercase-ident@ below) or in
 uppercase (written @capitalized-ident@).  Underscore is considered a
 lowercase letter for this purpose.
 
-\subsubsection*{Naming objects}
+\subsubsection*{sss:naming-objects}{Naming objects}
 \ikwd{mod\@\texttt{mod}}
 \ikwd{land\@\texttt{land}}
 \ikwd{lor\@\texttt{lor}}
@@ -99,7 +99,7 @@ lowercase variant tags in addition to capitalized variant tags, but we
 suggest you avoid lowercase variant tags for portability and
 compatibility with future OCaml versions.
 
-\subsubsection*{Referring to named objects}
+\subsubsection*{sss:refer-named}{Referring to named objects}
 
 \begin{syntax}
 value-path:

@@ -67,20 +67,41 @@ let tsl_block_of_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
+type result_summary = No_failure | Some_failure
+let join_summaries sa sb =
+  match sa, sb with
+  | Some_failure, _ | _, Some_failure -> Some_failure
+  | No_failure, No_failure -> No_failure
+
+let summary_of_result res =
+  let open Result in
+  match res.status with
+  | Pass -> No_failure
+  | Skip -> No_failure
+  | Fail -> Some_failure
+
 let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
-  let (msg, b) = match behavior with
-    | Skip_all_tests -> "n/a", Skip_all_tests
+  let (msg, children_behavior, summary) = match behavior with
+    | Skip_all_tests -> "n/a", Skip_all_tests, No_failure
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
       let (result, newenv) = Tests.run log testenv test in
-      let s = Result.string_of_result result in
-      if Result.is_pass result then (s, Run newenv)
-      else (s, Skip_all_tests) in
+      let msg = Result.string_of_result result in
+      let children_behavior =
+        if Result.is_pass result then Run newenv else Skip_all_tests in
+      let summary = summary_of_result result in
+      (msg, children_behavior, summary) in
   Printf.printf "%s\n%!" msg;
-  List.iteri (run_test_i log common_prefix path b) subtrees
+  join_summaries summary
+    (run_test_trees log common_prefix path children_behavior subtrees)
+
+and run_test_trees log common_prefix path behavior trees =
+  List.fold_left join_summaries No_failure
+    (List.mapi (run_test_i log common_prefix path behavior) trees)
+
 and run_test_i log common_prefix path behavior i test_tree =
   let path_prefix = if path="" then "" else path ^ "." in
   let new_path = Printf.sprintf "%s%d" path_prefix (i+1) in
@@ -106,9 +127,6 @@ let init_tests_to_skip () =
   tests_to_skip := String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS")
 
 let test_file test_filename =
-  (* Printf.printf "# reading test file %s\n%!" test_filename; *)
-  (* Save current working directory *)
-  let cwd = Sys.getcwd() in
   let skip_test = List.mem test_filename !tests_to_skip in
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
@@ -121,7 +139,7 @@ let test_file test_filename =
   let used_tests = tests_in_trees test_trees in
   let used_actions = actions_in_tests used_tests in
   let action_names =
-    let f act names = String.Set.add (Actions.action_name act) names in
+    let f act names = String.Set.add (Actions.name act) names in
     Actions.ActionSet.fold f used_actions String.Set.empty in
   let test_dirname = Filename.dirname test_filename in
   let test_basename = Filename.basename test_filename in
@@ -133,16 +151,21 @@ let test_file test_filename =
   let hookname_prefix = Filename.concat test_source_directory test_prefix in
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
-  ignore (Sys.command ("rm -rf " ^ test_build_directory_prefix));
+  let clean_test_build_directory () =
+    ignore
+      (Sys.command
+         (Filename.quote_command "rm" ["-rf"; test_build_directory_prefix]))
+  in
+  clean_test_build_directory ();
   Sys.make_directory test_build_directory_prefix;
-  Sys.with_chdir test_build_directory_prefix
+  let summary = Sys.with_chdir test_build_directory_prefix
     (fun () ->
        let log =
-         if !Options.log_to_stderr then stderr else begin
+         if Options.log_to_stderr then stderr else begin
            let log_filename = test_prefix ^ ".log" in
            open_out log_filename
          end in
-       let promote = string_of_bool !Options.promote in
+       let promote = string_of_bool Options.promote in
        let install_hook name =
          let hook_name = Filename.make_filename hookname_prefix name in
          if Sys.file_exists hook_name then begin
@@ -172,21 +195,73 @@ let test_file test_filename =
        let initial_status =
          if skip_test then Skip_all_tests else Run rootenv
        in
-       List.iteri
-         (run_test_i log common_prefix "" initial_status)
-         test_trees;
+       let summary =
+         run_test_trees log common_prefix "" initial_status test_trees in
        Actions.clear_all_hooks();
-       if not !Options.log_to_stderr then close_out log
-    );
-  (* Restore current working directory  *)
-  Sys.chdir cwd
+       if not Options.log_to_stderr then close_out log;
+       summary
+    ) in
+  begin match summary with
+  | Some_failure -> ()
+  | No_failure ->
+      if not Options.keep_test_dir_on_success then
+        clean_test_build_directory ()
+  end
 
-let main () =
-  if !Options.files_to_test = [] then begin
-    print_usage();
-    exit 1
+let is_test s =
+  match tsl_block_of_file s with
+  | _ -> true
+  | exception _ -> false
+
+let ignored s =
+  s = "" || s.[0] = '_' || s.[0] = '.'
+
+let find_test_dirs dir =
+  let res = ref [] in
+  let rec loop dir =
+    let contains_tests = ref false in
+    Array.iter (fun s ->
+        if ignored s then ()
+        else begin
+          let s = dir ^ "/" ^ s in
+          if Sys.is_directory s then loop s
+          else if not !contains_tests && is_test s then contains_tests := true
+        end
+      ) (Sys.readdir dir);
+    if !contains_tests then res := dir :: !res
+  in
+  loop dir;
+  List.rev !res
+
+let list_tests dir =
+  let res = ref [] in
+  if Sys.is_directory dir then begin
+    Array.iter (fun s ->
+        if ignored s then ()
+        else begin
+          let s' = dir ^ "/" ^ s in
+          if Sys.is_directory s' || not (is_test s') then ()
+          else res := s :: !res
+        end
+      ) (Sys.readdir dir)
   end;
-  init_tests_to_skip();
-  List.iter test_file !Options.files_to_test
+  List.rev !res
 
-let _ = main()
+let () =
+  init_tests_to_skip()
+
+let () =
+  let failed = ref false in
+  let work_done = ref false in
+  let list_tests dir =
+    match list_tests dir with
+    | [] -> failed := true
+    | res -> List.iter print_endline res
+  in
+  let find_test_dirs dir = List.iter print_endline (find_test_dirs dir) in
+  let doit f x = work_done := true; f x in
+  List.iter (doit find_test_dirs) Options.find_test_dirs;
+  List.iter (doit list_tests) Options.list_tests;
+  List.iter (doit test_file) Options.files_to_test;
+  if not !work_done then print_usage();
+  if !failed || not !work_done then exit 1

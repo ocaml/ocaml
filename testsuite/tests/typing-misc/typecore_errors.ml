@@ -91,17 +91,6 @@ Error: This expression has type 'a * 'b
 |}]
 
 
-(** Masked instance variable *)
-let c = object val x= 0 val y = x end
-[%%expect{|
-Line 1, characters 32-33:
-1 | let c = object val x= 0 val y = x end
-                                    ^
-Error: The instance variable x
-       cannot be accessed from the definition of another instance variable
-|}]
-
-
 (** No value clause *)
 
 let f x = match x with exception Not_found -> ();;
@@ -235,7 +224,7 @@ module type empty = sig  end
 let f (x:int) = ()
 let x = f (module struct end)
 [%%expect {|
-module type empty = sig  end
+module type empty = sig end
 val f : int -> unit = <fun>
 Line 3, characters 10-29:
 3 | let x = f (module struct end)

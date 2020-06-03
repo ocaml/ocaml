@@ -1,16 +1,17 @@
 (* TEST
    flags = "-g"
    * bytecode
-     reference = "${test_source_directory}/lists_in_minor.byte.reference"
+   * native
+     compare_programs = "false"
 *)
 
 open Gc.Memprof
 
+let rec allocate_list accu = function
+  | 0 -> accu
+  | n -> allocate_list (n::accu) (n-1)
+
 let[@inline never] allocate_lists len cnt =
-  let rec allocate_list accu = function
-    | 0 -> accu
-    | n -> allocate_list (n::accu) (n-1)
-  in
   for j = 0 to cnt-1 do
     ignore (allocate_list [] len)
   done
@@ -18,17 +19,15 @@ let[@inline never] allocate_lists len cnt =
 let check_distrib len cnt rate =
   Printf.printf "check_distrib %d %d %f\n%!" len cnt rate;
   let smp = ref 0 in
-  start {
-      sampling_rate = rate;
-      callstack_size = 10;
-      callback = fun info ->
-        assert (info.kind = Minor);
-        if info.tag = 0 then begin (* Exclude noise such as spurious closures. *)
-          assert (info.size = 2);
-          assert (info.n_samples > 0);
-          smp := !smp + info.n_samples
-        end;
-        None
+  start ~callstack_size:10 ~sampling_rate:rate
+    { null_tracker with
+      alloc_major = (fun _ -> assert false);
+      alloc_minor = (fun info ->
+        assert (info.size = 2);
+        assert (info.n_samples > 0);
+        assert (not info.unmarshalled);
+        smp := !smp + info.n_samples;
+        None);
     };
   allocate_lists len cnt;
   stop ();
@@ -56,25 +55,6 @@ let () =
   check_distrib 1000000 10 0.01;
   check_distrib 100000 10 0.1;
   check_distrib 100000 10 0.9
-
-let[@inline never] check_callstack () =
-  Printf.printf "check_callstack\n%!";
-  let callstack = ref None in
-  start {
-      sampling_rate = 1.;
-      callstack_size = 10;
-      callback = fun info ->
-        if info.tag = 0 then callstack := Some info.callstack;
-        None
-    };
-  allocate_lists 1000000 1;
-  stop ();
-  match !callstack with
-  | None -> assert false
-  | Some cs -> Printexc.print_raw_backtrace stdout cs
-
-let () =
-  check_callstack ()
 
 let () =
   Printf.printf "OK !\n"

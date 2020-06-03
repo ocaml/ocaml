@@ -235,7 +235,7 @@ val system : string -> process_status
    its termination status. The string is interpreted by the shell
    [/bin/sh] (or the command interpreter [cmd.exe] on Windows) and
    therefore can contain redirections, quotes, variables, etc.
-   To properly quote whitespace and shell special characters occuring
+   To properly quote whitespace and shell special characters occurring
    in file names or command arguments, the use of
    {!Filename.quote_command} is recommended.
    The result [WEXITED 127] indicates that the shell couldn't be
@@ -1300,6 +1300,9 @@ val inet6_addr_any : inet_addr
 val inet6_addr_loopback : inet_addr
 (** A special IPv6 address representing the host machine ([::1]). *)
 
+val is_inet6_addr : inet_addr -> bool
+(** Whether the given [inet_addr] is an IPv6 address.
+    @since 4.12.0 *)
 
 (** {1 Sockets} *)
 
@@ -1324,7 +1327,7 @@ type socket_type =
 
 type sockaddr =
     ADDR_UNIX of string
-  | ADDR_INET of inet_addr * int
+  | ADDR_INET of inet_addr * int (**)
 (** The type of socket addresses. [ADDR_UNIX name] is a socket
    address in the Unix domain; [name] is a file name in the file
    system. [ADDR_INET(addr,port)] is a socket address in the Internet
@@ -1389,7 +1392,7 @@ val getpeername : file_descr -> sockaddr
 type msg_flag =
     MSG_OOB
   | MSG_DONTROUTE
-  | MSG_PEEK
+  | MSG_PEEK (**)
 (** The flags for {!Unix.recv},  {!Unix.recvfrom},
    {!Unix.send} and {!Unix.sendto}. *)
 

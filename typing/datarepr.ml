@@ -65,7 +65,7 @@ let constructor_existentials cd_args cd_res =
   in
   (tyl, existentials)
 
-let constructor_args priv cd_args cd_res path rep =
+let constructor_args ~current_unit priv cd_args cd_res path rep =
   let tyl, existentials = constructor_existentials cd_args cd_res in
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
@@ -77,27 +77,30 @@ let constructor_args priv cd_args cd_res path rep =
         | Record_unboxed _ -> unboxed_true_default_false
         | _ -> unboxed_false_default_false
       in
+      let arity = List.length type_params in
       let tdecl =
         {
           type_params;
-          type_arity = List.length type_params;
+          type_arity = arity;
           type_kind = Type_record (lbls, rep);
           type_private = priv;
           type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
+          type_separability = Types.Separability.default_signature ~arity;
           type_is_newtype = false;
           type_expansion_scope = Btype.lowest_level;
           type_loc = Location.none;
           type_attributes = [];
-          type_immediate = false;
+          type_immediate = Unknown;
           type_unboxed;
+          type_uid = Uid.mk ~current_unit;
         }
       in
       existentials,
       [ newgenconstr path type_params ],
       Some tdecl
 
-let constructor_descrs ty_path decl cstrs =
+let constructor_descrs ~current_unit ty_path decl cstrs =
   let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
@@ -107,7 +110,7 @@ let constructor_descrs ty_path decl cstrs =
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes} :: rem ->
+    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes; cd_uid} :: rem ->
         let ty_res =
           match cd_res with
           | Some ty_res' -> ty_res'
@@ -129,7 +132,7 @@ let constructor_descrs ty_path decl cstrs =
             then Record_unboxed true
             else Record_inlined idx_nonconst
           in
-          constructor_args decl.type_private cd_args cd_res
+          constructor_args ~current_unit decl.type_private cd_args cd_res
             (Path.Pdot (ty_path, cstr_name)) representation
         in
         let cstr =
@@ -147,18 +150,19 @@ let constructor_descrs ty_path decl cstrs =
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
             cstr_inlined;
+            cstr_uid = cd_uid;
           } in
         (cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
 
-let extension_descr path_ext ext =
+let extension_descr ~current_unit path_ext ext =
   let ty_res =
     match ext.ext_ret_type with
         Some type_ret -> type_ret
       | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
   let existentials, cstr_args, cstr_inlined =
-    constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
+    constructor_args ~current_unit ext.ext_private ext.ext_args ext.ext_ret_type
       path_ext (Record_extension path_ext)
   in
     { cstr_name = Path.last path_ext;
@@ -175,6 +179,7 @@ let extension_descr path_ext ext =
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
       cstr_inlined;
+      cstr_uid = ext.ext_uid;
     }
 
 let none = {desc = Ttuple []; level = -1; scope = Btype.generic_level; id = -1}
@@ -185,6 +190,7 @@ let dummy_label =
     lbl_private = Public;
     lbl_loc = Location.none;
     lbl_attributes = [];
+    lbl_uid = Uid.internal_not_actually_unique;
   }
 
 let label_descrs ty_res lbls repres priv =
@@ -203,6 +209,7 @@ let label_descrs ty_res lbls repres priv =
             lbl_private = priv;
             lbl_loc = l.ld_loc;
             lbl_attributes = l.ld_attributes;
+            lbl_uid = l.ld_uid;
           } in
         all_labels.(num) <- lbl;
         (l.ld_id, lbl) :: describe_labels (num+1) rest in
@@ -225,9 +232,9 @@ let rec find_constr tag num_const num_nonconst = function
 let find_constr_by_tag tag cstrlist =
   find_constr tag 0 0 cstrlist
 
-let constructors_of_type ty_path decl =
+let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
-  | Type_variant cstrs -> constructor_descrs ty_path decl cstrs
+  | Type_variant cstrs -> constructor_descrs ~current_unit ty_path decl cstrs
   | Type_record _ | Type_abstract | Type_open -> []
 
 let labels_of_type ty_path decl =

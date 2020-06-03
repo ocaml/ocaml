@@ -15,8 +15,8 @@
 # Define the lists of mli file used by ocamldoc to generate the stdlib
 # + otherlibs + compilerlibs documentation
 
-include $(SRC)/Makefile.config
-include $(SRC)/stdlib/StdlibModules
+-include $(SRC)/Makefile.config
+-include $(SRC)/stdlib/StdlibModules
 PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
 UTILS_MLIS := $(wildcard $(SRC)/utils/*.mli)
 STR_MLIS = $(addprefix $(SRC)/otherlibs/str/, str.mli)
@@ -41,10 +41,8 @@ DOC_COMPILERLIBS_INCLUDES = $(addprefix -I $(SRC)/, $(DOC_COMPILERLIBS_DIRS))
 
 DOC_ALL_INCLUDES = $(DOC_STDLIB_INCLUDES) $(DOC_COMPILERLIBS_INCLUDES)
 
-STDLIB_MODS = $(STDLIB_MODULES:stdlib__%=%)
-
 STDLIB_MOD_WP = $(filter-out stdlib__pervasives, $(STDLIB_MODULES))
-STDLIB_MLI0 = $(SRC)/stdlib/pervasives.ml $(STDLIB_MOD_WP:%=$(SRC)/stdlib/%.mli)
+STDLIB_MLI0 = $(STDLIB_MOD_WP:%=$(SRC)/stdlib/%.mli)
 STDLIB_MLIS=\
   $(STDLIB_MLI0:$(SRC)/stdlib/stdlib__%=$(SRC)/stdlib/%) \
   $(STR_MLIS) \

@@ -23,6 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
+#include "caml/eventlog.h"
 /* Why is caml/spacetime.h included conditionnally sometimes and not here ? */
 #include "caml/spacetime.h"
 
@@ -278,9 +279,9 @@ CAMLprim value caml_floatarray_create(value len)
     caml_invalid_argument("Float.Array.create");
   else {
     result = caml_alloc_shr (wosize, Double_array_tag);
-    result = caml_check_urgent_gc (result);
   }
-  return result;
+  // Give the GC a chance to run, and run memprof callbacks
+  return caml_process_pending_actions_with_root (result);
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -320,18 +321,18 @@ CAMLprim value caml_make_vect(value len, value init)
       if (Is_block(init) && Is_young(init)) {
         /* We don't want to create so many major-to-minor references,
            so [init] is moved to the major heap by doing a minor GC. */
-        CAML_INSTR_INT ("force_minor/make_vect@", 1);
-        caml_request_minor_gc ();
-        caml_gc_dispatch ();
+        CAML_EV_COUNTER (EV_C_FORCE_MINOR_MAKE_VECT, 1);
+        caml_minor_collection ();
       }
       CAMLassert(!(Is_block(init) && Is_young(init)));
       res = caml_alloc_shr(size, 0);
       /* We now know that [init] is not in the minor heap, so there is
          no need to call [caml_initialize]. */
       for (i = 0; i < size; i++) Field(res, i) = init;
-      res = caml_check_urgent_gc (res);
     }
   }
+  // Give the GC a chance to run, and run memprof callbacks
+  caml_process_pending_actions ();
   CAMLreturn (res);
 }
 
@@ -379,12 +380,13 @@ CAMLprim value caml_make_array(value init)
         res = caml_alloc_small(wsize, Double_array_tag);
       } else {
         res = caml_alloc_shr(wsize, Double_array_tag);
-        res = caml_check_urgent_gc(res);
       }
       for (i = 0; i < size; i++) {
         double d = Double_val(Field(init, i));
         Store_double_flat_field(res, i, d);
       }
+      // run memprof callbacks
+      caml_process_pending_actions();
       CAMLreturn (res);
     }
   }
@@ -521,8 +523,9 @@ static value caml_array_gather(intnat num_arrays,
     CAMLassert(pos == size);
 
     /* Many caml_initialize in a row can create a lot of old-to-young
-       refs.  Give the minor GC a chance to run if it needs to. */
-    res = caml_check_urgent_gc(res);
+       refs.  Give the minor GC a chance to run if it needs to.
+       Run memprof callbacks for the major allocation. */
+    res = caml_process_pending_actions_with_root (res);
   }
   CAMLreturn (res);
 }
@@ -588,4 +591,47 @@ CAMLprim value caml_array_concat(value al)
     caml_stat_free(lengths);
   }
   return res;
+}
+
+CAMLprim value caml_array_fill(value array,
+                               value v_ofs,
+                               value v_len,
+                               value val)
+{
+  intnat ofs = Long_val(v_ofs);
+  intnat len = Long_val(v_len);
+  value* fp;
+
+  /* This duplicates the logic of caml_modify.  Please refer to the
+     implementation of that function for a description of GC
+     invariants we need to enforce.*/
+
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag) {
+    double d = Double_val (val);
+    for (; len > 0; len--, ofs++)
+      Store_double_flat_field(array, ofs, d);
+    return Val_unit;
+  }
+#endif
+  fp = &Field(array, ofs);
+  if (Is_young(array)) {
+    for (; len > 0; len--, fp++) *fp = val;
+  } else {
+    int is_val_young_block = Is_block(val) && Is_young(val);
+    CAMLassert(Is_in_heap(fp));
+    for (; len > 0; len--, fp++) {
+      value old = *fp;
+      if (old == val) continue;
+      *fp = val;
+      if (Is_block(old)) {
+        if (Is_young(old)) continue;
+        if (caml_gc_phase == Phase_mark) caml_darken(old, NULL);
+      }
+      if (is_val_young_block)
+        add_to_ref_table (Caml_state->ref_table, fp);
+    }
+    if (is_val_young_block) caml_check_urgent_gc (Val_unit);
+  }
+  return Val_unit;
 }

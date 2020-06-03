@@ -1,6 +1,6 @@
 (* TEST
 
-flags = "-w A"
+flags = "-w A-60"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

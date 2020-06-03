@@ -1,14 +1,14 @@
 (setglobal Functors!
   (let
     (O =
-       (module-defn(O) functors.ml(12):184-279
+       (module-defn(O) Functors functors.ml(12):184-279
          (function X is_a_functor always_inline
            (let
              (cow = (function x[int] : int (apply (field 0 X) x))
               sheep = (function x[int] : int (+ 1 (apply cow x))))
              (makeblock 0 cow sheep))))
      F =
-       (module-defn(F) functors.ml(17):281-392
+       (module-defn(F) Functors functors.ml(17):281-392
          (function X Y is_a_functor always_inline
            (let
              (cow =
@@ -17,7 +17,7 @@
               sheep = (function x[int] : int (+ 1 (apply cow x))))
              (makeblock 0 cow sheep))))
      F1 =
-       (module-defn(F1) functors.ml(31):516-632
+       (module-defn(F1) Functors functors.ml(31):516-632
          (function X Y is_a_functor always_inline
            (let
              (sheep =
@@ -25,7 +25,7 @@
                   (+ 1 (apply (field 0 Y) (apply (field 0 X) x)))))
              (makeblock 0 sheep))))
      F2 =
-       (module-defn(F2) functors.ml(36):634-784
+       (module-defn(F2) Functors functors.ml(36):634-784
          (function X Y is_a_functor always_inline
            (let
              (X =a (makeblock 0 (field 1 X))
@@ -35,10 +35,10 @@
                   (+ 1 (apply (field 0 Y) (apply (field 0 X) x)))))
              (makeblock 0 sheep))))
      M =
-       (module-defn(M) functors.ml(41):786-970
+       (module-defn(M) Functors functors.ml(41):786-970
          (let
            (F =
-              (module-defn(F) functors.ml(44):849-966
+              (module-defn(F) Functors.M functors.ml(44):849-966
                 (function X Y is_a_functor always_inline
                   (let
                     (cow =

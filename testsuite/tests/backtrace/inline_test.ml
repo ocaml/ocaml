@@ -2,14 +2,11 @@
    flags = "-g"
    ocamlrunparam += ",b=1"
    * bytecode
-     reference = "${test_source_directory}/inline_test.byte.reference"
    * native
-     reference = "${test_source_directory}/inline_test.opt.reference"
      compare_programs = "false"
    * native
      ocamlopt_flags = "-O3"
      compiler_directory_suffix = ".O3"
-     reference = "${test_source_directory}/inline_test.opt.reference"
      compare_programs = "false"
 *)
 

@@ -13,6 +13,8 @@
 #*                                                                        *
 #**************************************************************************
 
+.NOTPARALLEL:
+
 TOPDIR = ../..
 COMPFLAGS ?=
 RUNTIME_VARIANT ?=
@@ -22,7 +24,7 @@ include $(TOPDIR)/Makefile.tools
 libraries := testing.cmi testing.cma lib.cmo
 
 # If the native compiler is enabled, then also compile testing.cmxa
-ifneq "$(ARCH)" "none"
+ifeq "$(NATIVE_COMPILER)" "true"
 libraries += testing.cmxa
 endif
 
@@ -47,4 +49,4 @@ testing.cmo : testing.cmi
 
 .PHONY: clean
 clean:
-	rm -f *.cm* *.$(O) *.$(A)
+	rm -f *.cm* *.o *.obj *.a *.lib
