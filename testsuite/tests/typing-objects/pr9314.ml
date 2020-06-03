@@ -273,3 +273,31 @@ module M :
       t
   end
 |}]
+
+
+(* Leo's example *)
+
+module Foo (X : sig type 'a bar constraint 'a = < foo : 'b > end) =
+struct
+  type t = < foo : t X.bar >
+  type s = t X.bar
+end
+
+module M = struct type 'a bar = 'b constraint 'a = < foo : 'b > end
+[%%expect{|
+module Foo :
+  functor (X : sig type 'a bar constraint 'a = < foo : 'b > end) ->
+    sig type t = < foo : t X.bar > type s = t X.bar end
+module M : sig type 'a bar = 'b constraint 'a = < foo : 'b > end
+|}]
+
+module N = Foo(M)  (* Fail *)
+[%%expect{|
+Line 1:
+Error: Cycle detected in type: t M.bar => t M.bar => t M.bar => t M.bar =>
+|}]
+
+(* The following should not be typable!
+let string_of_int x =
+  ((fun (type a) -> ((x : int) : N.s) : N.s) : string)
+*)
