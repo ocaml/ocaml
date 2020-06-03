@@ -1790,3 +1790,65 @@ Line 1, characters 30-40:
 Error: This definition has type 'b -> 'b which is less general than
          'a. 'a -> 'c
 |}]
+
+(* #7741 *)
+type 'a s = S
+
+class type ['x] c = object
+  method x : 'x list
+end
+[%%expect{|
+type 'a s = S
+class type ['x] c = object method x : 'x list end
+|}]
+
+let x : 'a c = object
+  method x : 'b . 'b s list = [S]
+end
+[%%expect{|
+Lines 1-3, characters 15-3:
+1 | ...............object
+2 |   method x : 'b . 'b s list = [S]
+3 | end
+Error: This expression has type < x : 'b. 'b s list >
+       but an expression was expected of type 'a c
+       The method x has type 'b. 'b s list, but the expected method type was
+       'a list
+       The universal variable 'b would escape its scope
+|}]
+
+type u = < m : 'a. 'a s list * (< m : 'b. 'a s list * 'c > as 'c) >
+type v = < m : 'a. 'a s list * 'c > as 'c
+[%%expect{|
+type u = < m : 'a. 'a s list * (< m : 'a s list * 'b > as 'b) >
+type v = < m : 'a. 'a s list * 'b > as 'b
+|}]
+let f (x : u) = (x : v)
+[%%expect{|
+Line 1, characters 17-18:
+1 | let f (x : u) = (x : v)
+                     ^
+Error: This expression has type u but an expression was expected of type v
+       The method m has type 'a s list * < m : 'b > as 'b,
+       but the expected method type was 'a. 'a s list * < m : 'a. 'b > as 'b
+       The universal variable 'a would escape its scope
+|}]
+
+type 'a s = private int
+[%%expect{|
+type 'a s = private int
+|}]
+let x : 'a c = object
+  method x : 'b . 'b s list = []
+end
+[%%expect{|
+Lines 1-3, characters 15-3:
+1 | ...............object
+2 |   method x : 'b . 'b s list = []
+3 | end
+Error: This expression has type < x : 'b. 'b s list >
+       but an expression was expected of type 'a c
+       The method x has type 'b. 'b s list, but the expected method type was
+       'a list
+       The universal variable 'b would escape its scope
+|}]

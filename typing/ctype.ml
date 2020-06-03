@@ -1915,8 +1915,14 @@ let occur_univar env ty =
             let td = Env.find_type p env in
             List.iter2
               (fun t v ->
-                if Variance.(mem May_pos v || mem May_neg v)
-                then occur_rec bound t)
+                (* The null variance only occurs in type abbreviations and
+                   corresponds to type variables that do not occur in the
+                   definition (expansion would erase them completely).
+                   The type-checker consistently ignores type expressions
+                   in this position. Physical expansion, as done in `occur`,
+                   would be costly here, since we need to check inside
+                   object and variant types too. *)
+                if not Variance.(eq v null) then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
             List.iter (occur_rec bound) tl
@@ -1963,8 +1969,8 @@ let univars_escape env univar_pairs vl ty =
           begin try
             let td = Env.find_type p env in
             List.iter2
-              (fun t v ->
-                if Variance.(mem May_pos v || mem May_neg v) then occur t)
+              (* see occur_univar *)
+              (fun t v -> if not Variance.(eq v null) then occur t)
               tl td.type_variance
           with Not_found ->
             List.iter occur tl
