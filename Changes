@@ -533,6 +533,9 @@ OCaml 4.11
 - #7696, #6608: Record expression deleted when all fields specified
   (Jacques Garrigue, report by Jeremy Yallop)
 
+- #7741: Failure to report escaping type variable
+  (Jacques Garrigue, report by Gabriel Radanne, review by Gabriel Scherer)
+
 - #7817, #9546: Unsound inclusion check for polymorphic variant
   (Jacques Garrigue, report by Mikhail Mandrykin, review by Gabriel Scherer)
 
