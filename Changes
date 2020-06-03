@@ -521,6 +521,9 @@ OCaml 4.11
 
 ### Bug fixes:
 
+- #7520, #9547: Odd behaviour of refutation cases with polymorphic variants
+  (Jacques Garrigue, report by Leo White, reviews by Gabriel Scherer and Leo)
+
 - #7562, #9456: ocamlopt-generated code crashed on Alpine Linux on
   ppc64le, arm, and i386.  Fixed by turning PIE off for musl-based Linux
   systems except amd64 (x86_64) and s390x.

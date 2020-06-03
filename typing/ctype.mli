@@ -258,8 +258,6 @@ val unify_gadt:
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
-val with_passive_variants: ('a -> 'b) -> ('a -> 'b)
-        (* Call [f] in passive_variants mode, for exhaustiveness check. *)
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
