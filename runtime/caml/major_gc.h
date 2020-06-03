@@ -26,12 +26,19 @@ typedef struct {
   asize_t alloc;         /* in bytes, used for compaction */
   asize_t size;          /* in bytes */
   char *next;
+  int requires_redarken;
+  value* redarken_start;  /* first block in chunk to redarken */
+  value* redarken_end;    /* last block in chunk that needs redarkening */
 } heap_chunk_head;
 
 #define Chunk_size(c) (((heap_chunk_head *) (c)) [-1]).size
 #define Chunk_alloc(c) (((heap_chunk_head *) (c)) [-1]).alloc
 #define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
 #define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
+#define Chunk_requires_redarken(c) \
+                          ((((heap_chunk_head *) (c)) [-1]).requires_redarken)
+#define Chunk_redarken_start(c) (((heap_chunk_head *) (c)) [-1]).redarken_start
+#define Chunk_redarken_end(c) (((heap_chunk_head *) (c)) [-1]).redarken_end
 
 extern int caml_gc_phase;
 extern int caml_gc_subphase;

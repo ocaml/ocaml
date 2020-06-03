@@ -30,6 +30,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
+#include "caml/skiplist.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
 #include "caml/memprof.h"
@@ -41,21 +42,35 @@ Caml_inline double fmin(double a, double b) {
 }
 #endif
 
+#define MARK_STACK_INIT_SIZE 2048
+
+typedef struct {
+  value block;
+  uintnat offset;
+} mark_entry;
+
+struct mark_stack {
+  mark_entry* stack;
+  uintnat count;
+  uintnat size;
+};
+
 uintnat caml_percent_free;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Pase_clean,
                              Phase_sweep, or Phase_idle */
-static value *gray_vals;
-static value *gray_vals_cur, *gray_vals_end;
-static asize_t gray_vals_size;
 uintnat caml_allocated_words;
 uintnat caml_dependent_size, caml_dependent_allocated;
 double caml_extra_heap_resources;
 uintnat caml_fl_wsz_at_phase_change = 0;
 
 extern char *caml_fl_merge;  /* Defined in freelist.c. */
+
+/* redarken_first_chunk is the first chunk needing redarkening, if NULL no
+  redarkening required */
+static char *redarken_first_chunk = NULL;
 
 static char *sweep_chunk, *sweep_limit;
 static double p_backlog = 0.0; /* backlog for the gc speedup parameter */
@@ -98,7 +113,7 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
  */
 static int ephe_list_pure;
 /** The ephemerons is pure if since the start of its iteration
-    no value have been darken. */
+    no value have been darkened. */
 static value *ephes_checked_if_pure;
 static value *ephes_to_check;
 
@@ -114,29 +129,149 @@ static unsigned long major_gc_counter = 0;
 
 void (*caml_major_gc_hook)(void) = NULL;
 
-static void realloc_gray_vals (void)
+/* This function prunes the mark stack if it's about to overflow. It does so
+   by building a skiplist of major heap chunks and then iterating through the
+   mark stack and setting redarken_start/redarken_end on each chunk to indicate
+   the range that requires redarkening. */
+static void mark_stack_prune (struct mark_stack* stk)
 {
-  value *new;
+  int entry;
+  uintnat mark_stack_count = stk->count;
+  mark_entry* mark_stack = stk->stack;
 
-  CAMLassert (gray_vals_cur == gray_vals_end);
-  if (1 /* FIXME: handle overflow if
-           gray_vals_size < caml_stat_heap_wsz / 32*/){
-    caml_gc_message (0x08, "Growing gray_vals to %"
-                           ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                     (intnat) gray_vals_size * sizeof (value) / 512);
-    new = (value *) caml_stat_resize_noexc ((char *) gray_vals,
-                                            2 * gray_vals_size *
-                                            sizeof (value));
-    if (new == NULL){
-      caml_fatal_error("No room for growing gray_vals");
-    }else{
-      gray_vals = new;
-      gray_vals_cur = gray_vals + gray_vals_size;
-      gray_vals_size *= 2;
-      gray_vals_end = gray_vals + gray_vals_size;
+  char* heap_chunk = caml_heap_start;
+  struct skiplist chunk_sklist = {0};
+
+  caml_skiplist_init(&chunk_sklist);
+
+  do {
+    caml_skiplist_insert(&chunk_sklist, (uintnat)heap_chunk,
+                          (uintnat)(heap_chunk+Chunk_size(heap_chunk)));
+    heap_chunk = Chunk_next(heap_chunk);
+  } while( heap_chunk != NULL );
+
+  heap_chunk = caml_heap_start;
+
+  for( entry = 0; entry < mark_stack_count ; entry++ ) {
+    mark_entry me = mark_stack[entry];
+    value* block_op = Op_val(me.block);
+    uintnat chunk_addr = 0, chunk_addr_below = 0;
+
+    caml_skiplist_find_below(&chunk_sklist, (uintnat)me.block, &chunk_addr,
+                              &chunk_addr_below);
+
+    if( chunk_addr != 0 && me.block >= chunk_addr
+        && me.block < chunk_addr_below ) {
+
+      if( Chunk_redarken_start(chunk_addr) > block_op ) {
+        Chunk_redarken_start(chunk_addr) = block_op;
+      }
+
+      if( Chunk_redarken_end(chunk_addr) < block_op ) {
+        Chunk_redarken_end(chunk_addr) = block_op;
+      }
+
+      Chunk_requires_redarken(chunk_addr) = 1;
+
+      if( redarken_first_chunk == NULL
+          || redarken_first_chunk > (char*)chunk_addr ) {
+        redarken_first_chunk = (char*)chunk_addr;
+      }
     }
   }
+
+  caml_skiplist_empty(&chunk_sklist);
+
+  caml_gc_message(0x08, "Mark stack overflow.\n");
+
+  stk->count = 0;
 }
+
+static void realloc_mark_stack (struct mark_stack* stk)
+{
+  mark_entry* new;
+  uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
+
+  if ( mark_stack_bsize < Caml_state->stat_heap_wsz / 32
+      || mark_stack_bsize < MARK_STACK_INIT_SIZE*sizeof(mark_entry) ) {
+    caml_gc_message (0x08, "Growing mark stack to %"
+                           ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
+                     (intnat) mark_stack_bsize * 2 / 1024);
+
+    new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                                2 * mark_stack_bsize);
+    if (new != NULL) {
+      stk->stack = new;
+      stk->size *= 2;
+      return;
+    }
+  }
+
+  caml_gc_message (0x08, "No room for growing mark stack. Pruning..\n");
+  mark_stack_prune(stk);
+}
+
+/* This function pushes the provided mark_entry [me] on to the current mark
+   stk [stk]. It first checks, if the block is small enough, whether there
+   are any fields we would actually do mark work on. If so then it enqueues
+   the entry. */
+Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
+                                  intnat* work)
+{
+  value v;
+  int i, block_end = Wosize_val(me.block), end;
+
+  CAMLassert (Is_in_heap (me.block) || Is_black_hd (Hd_val(me.block)));
+
+  CAMLassert(Is_black_val(me.block));
+  CAMLassert(Is_block(me.block));
+  CAMLassert(Tag_val(me.block) != Infix_tag);
+  CAMLassert(Tag_val(me.block) < No_scan_tag);
+
+#ifdef NO_NAKED_POINTERS
+  if (Tag_val(me.block) == Closure_tag) {
+    /* Skip the code pointers and integers at beginning of closure;
+        start scanning at the first word of the environment part. */
+    me.offset = Start_env_closinfo(Closinfo_val(me.block));
+    CAMLassert(me.offset <= Wosize_val(me.block));
+  }
+#endif
+
+  end = (block_end < 8 ? block_end : 8);
+
+  /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
+   * into the mark stack. */
+  for (i = me.offset; i < end; i++) {
+    v = Field(me.block, i);
+
+    if (Is_block(v) && !Is_black_val(v))
+      /* found something to mark */
+      break;
+  }
+
+  if (i == block_end) {
+    /* nothing left to mark */
+    if( work != NULL ) {
+      /* we should take credit for it though */
+      *work -= Whsize_wosize(block_end - me.offset);
+    }
+    return;
+  }
+
+  if( work != NULL ) {
+    /* take credit for the work we skipped due to the optimisation.
+       we will take credit for the header later as part of marking. */
+    *work -= (i - me.offset);
+  }
+
+  me.offset = i;
+
+  if (stk->count == stk->size)
+    realloc_mark_stack(stk);
+
+  stk->stack[stk->count++] = me;
+}
+
 
 void caml_darken (value v, value *p /* not used */)
 {
@@ -163,18 +298,54 @@ void caml_darken (value v, value *p /* not used */)
       ephe_list_pure = 0;
       Hd_val (v) = Blackhd_hd (h);
       if (t < No_scan_tag){
-        *gray_vals_cur++ = v;
-        if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+        mark_entry me = {v, 0};
+        mark_stack_push(Caml_state->mark_stack, me, NULL);
       }
     }
   }
 }
 
+/* This function adds blocks in the passed heap chunk [heap_chunk] to the mark
+   stack. It may return 0 if doing so would cause the mark stack to grow more
+   than a quarter full. This is to lower the chance of triggering another
+   overflow, which would be wasteful. Subsequent calls will continue progress.
+   It will return 1 when the supplied chunk has no more range to redarken. */
+static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
+  value* p = (value*)Chunk_redarken_start(heap_chunk);
+  value* end = (value*)Chunk_redarken_end(heap_chunk);
+
+  while (p <= end) {
+    header_t hd = Hd_op(p);
+
+    if( Is_black_hd(hd) && Tag_hd(hd) < No_scan_tag ) {
+      if( stk->count < stk->size/4 ) {
+        mark_entry me = { Val_op(p), 0 };
+        mark_stack_push(stk, me, NULL);
+      } else {
+        /* Only fill up a quarter of the mark stack, we can resume later
+           for more if we need to */
+        Chunk_redarken_start(heap_chunk) = p;
+        return 0;
+      }
+    }
+
+    p += Whsize_hp(Hp_op(p));
+  }
+
+  Chunk_requires_redarken(heap_chunk) = 0;
+  Chunk_redarken_start(heap_chunk) =
+      (value*)(heap_chunk + Chunk_size(heap_chunk));
+
+  Chunk_redarken_end(heap_chunk) = 0;
+  return 1;
+}
+
 static void start_cycle (void)
 {
   CAMLassert (caml_gc_phase == Phase_idle);
-  CAMLassert (gray_vals_cur == gray_vals);
-  caml_gc_message (0x01, "Starting new major GC cycle\n");
+  CAMLassert (Caml_state->mark_stack->count == 0);
+  CAMLassert (redarken_first_chunk == NULL);
+  caml_gc_message (0x01, "starting new major GC cycle\n");
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
   caml_gc_subphase = Subphase_mark_roots;
@@ -186,13 +357,6 @@ static void start_cycle (void)
   caml_heap_check ();
 #endif
 }
-
-/* We may stop the slice inside values, in order to avoid large latencies
-   on large arrays. In this case, [current_value] is the partially-marked
-   value and [current_index] is the index of the next field to be marked.
-*/
-static value current_value = 0;
-static mlsize_t current_index = 0;
 
 static void init_sweep_phase(void)
 {
@@ -209,9 +373,9 @@ static void init_sweep_phase(void)
 }
 
 /* auxiliary function of mark_slice */
-Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
-                                     value v, mlsize_t i,
-                                     int in_ephemeron, int *slice_pointers)
+Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
+                                       int in_ephemeron, int *slice_pointers,
+                                       intnat *work)
 {
   value child;
   header_t chd;
@@ -219,7 +383,7 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
   child = Field (v, i);
 
 #ifdef NO_NAKED_POINTERS
-  if (Is_block (child) && ! Is_young (child)) {
+  if (Is_block (child) && !Is_young (child)) {
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
@@ -259,19 +423,18 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
     if (Is_white_hd (chd)){
       ephe_list_pure = 0;
       Hd_val (child) = Blackhd_hd (chd);
-      *gray_vals_ptr++ = child;
-      if (gray_vals_ptr >= gray_vals_end) {
-        gray_vals_cur = gray_vals_ptr;
-        realloc_gray_vals ();
-        gray_vals_ptr = gray_vals_cur;
+      if( Tag_hd(chd) < No_scan_tag ) {
+        mark_entry me = {child, 0};
+        mark_stack_push(stk, me, work);
+      }
+      else {
+        *work -= 1; /* Account for header */
       }
     }
   }
-
-  return gray_vals_ptr;
 }
 
-static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
+static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
                              int *slice_pointers)
 {
   value v, data, key;
@@ -294,7 +457,9 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
     int alive_data = 1;
 
     /* The liveness of the ephemeron is one of the condition */
-    if (Is_white_hd (hd)) alive_data = 0;
+    if (Is_white_hd (hd)) {
+      alive_data = 0;
+    }
 
     /* The liveness of the keys not caml_ephe_none is the other condition */
     size = Wosize_hd (hd);
@@ -333,13 +498,13 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
     *work -= Whsize_wosize(i);
 
     if (alive_data){
-      gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,
+      mark_slice_darken(stk, v,
                                         CAML_EPHE_DATA_OFFSET,
                                         /*in_ephemeron=*/1,
-                                        slice_pointers);
+                                        slice_pointers, work);
     } else { /* not triggered move to the next one */
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
-      return gray_vals_ptr;
+      return;
     }
   } else {  /* a simily weak pointer or an already alive data */
     *work -= 1;
@@ -359,91 +524,76 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
     *ephes_checked_if_pure = v;
     ephes_checked_if_pure = &Field(v,CAML_EPHE_LINK_OFFSET);
   }
-  return gray_vals_ptr;
 }
 
 
 
 static void mark_slice (intnat work)
 {
-  value *gray_vals_ptr;  /* Local copy of [gray_vals_cur] */
-  value v;
-  header_t hd;
-  mlsize_t size, i, start, end; /* [start] is a local copy of [current_index] */
+  mark_entry me = {0};
+  mlsize_t me_end = 0;
 #ifdef CAML_INSTR
   int slice_fields = 0; /** eventlog counters */
 #endif /*CAML_INSTR*/
   int slice_pointers = 0;
+  struct mark_stack* stk = Caml_state->mark_stack;
 
   caml_gc_message (0x40, "Marking %"ARCH_INTNAT_PRINTF_FORMAT"d words\n", work);
   caml_gc_message (0x40, "Subphase = %d\n", caml_gc_subphase);
-  gray_vals_ptr = gray_vals_cur;
-  v = current_value;
-  start = current_index;
-  while (work > 0){
-    if (v == 0 && gray_vals_ptr > gray_vals){
-      CAMLassert (start == 0);
-      v = *--gray_vals_ptr;
-      CAMLassert (Is_black_val (v));
-#ifdef NO_NAKED_POINTERS
-      if (Tag_val(v) == Closure_tag) {
-        /* Skip the code pointers and integers at beginning of closure;
-           start scanning at the first word of the environment part. */
-        start = Start_env_closinfo(Closinfo_val(v));
-        CAMLassert(start <= Wosize_val(v));
+
+  while (1){
+    int can_mark = 0;
+
+    if (me.offset == me_end) {
+      if (stk->count > 0)
+      {
+        me = stk->stack[--stk->count];
+        me_end = Wosize_val(me.block);
+        can_mark = 1;
       }
-#endif
     }
-    if (v != 0){
-      hd = Hd_val(v);
-      CAMLassert (Is_black_hd (hd));
-      size = Wosize_hd (hd);
-      end = start + work;
-      if (Tag_hd (hd) < No_scan_tag){
-        start = size < start ? size : start;
-        end = size < end ? size : end;
-        CAMLassert (end >= start);
-        CAML_EVENTLOG_DO({
-          slice_fields += end - start;
-          if (size > end)
-            CAML_EV_COUNTER (EV_C_MAJOR_MARK_SLICE_REMAIN, size - end);
-        });
-        for (i = start; i < end; i++){
-          gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,i,
-                                            /*in_ephemeron=*/ 0,
-                                            &slice_pointers);
-        }
-        if (end < size){
-          work = 0;
-          start = end;
-          /* [v] doesn't change. */
-          CAMLassert (Is_black_val (v));
-        }else{
-          CAMLassert (end == size);
-          Hd_val (v) = Blackhd_hd (hd);
-          work -= Whsize_wosize(end - start);
-          start = 0;
-          v = 0;
-        }
-      }else{
-        /* The block doesn't contain any pointers. */
-        CAMLassert (start == 0);
-        Hd_val (v) = Blackhd_hd (hd);
-        work -= Whsize_wosize(size);
-        v = 0;
+    else
+    {
+      can_mark = 1;
+    }
+
+    if (work <= 0) {
+      if( can_mark ) {
+        mark_stack_push(stk, me, NULL);
+      }
+      break;
+    }
+
+    if( can_mark ) {
+      CAMLassert(Is_block(me.block) &&
+                Is_black_val (me.block) &&
+                Tag_val(me.block) < No_scan_tag);
+
+      mark_slice_darken(stk, me.block, me.offset++, /*in_ephemeron=*/ 0,
+                                              &slice_pointers, &work);
+
+      work--;
+
+      if( me.offset == me_end ) {
+        work--; /* Include header word */
+      }
+    } else if( redarken_first_chunk != NULL ) {
+      /* There are chunks that need to be redarkened because we
+         overflowed our mark stack */
+      if( redarken_chunk(redarken_first_chunk, stk) ) {
+        do {
+          redarken_first_chunk = Chunk_next(redarken_first_chunk);
+        } while( redarken_first_chunk != NULL
+                  && !Chunk_requires_redarken(redarken_first_chunk) );
       }
     } else if (caml_gc_subphase == Subphase_mark_roots) {
-      CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
-      gray_vals_cur = gray_vals_ptr;
       work = caml_darken_all_roots_slice (work);
-      gray_vals_ptr = gray_vals_cur;
-      CAML_EV_END(EV_MAJOR_MARK_ROOTS);
       if (work > 0){
         caml_gc_subphase = Subphase_mark_main;
       }
     } else if (*ephes_to_check != (value) NULL) {
       /* Continue to scan the list of ephe */
-      gray_vals_ptr = mark_ephe_aux(gray_vals_ptr,&work,&slice_pointers);
+      mark_ephe_aux(stk,&work,&slice_pointers);
     } else if (!ephe_list_pure){
       /* We must scan again the list because some value have been darken */
       ephe_list_pure = 1;
@@ -453,20 +603,7 @@ static void mark_slice (intnat work)
       case Subphase_mark_main: {
           /* Subphase_mark_main is done.
              Mark finalised values. */
-          CAML_EV_BEGIN(EV_MAJOR_MARK_MAIN);
-          gray_vals_cur = gray_vals_ptr;
           caml_final_update_mark_phase ();
-          gray_vals_ptr = gray_vals_cur;
-          if (gray_vals_ptr > gray_vals){
-            v = *--gray_vals_ptr;
-            CAMLassert (start == 0);
-#ifdef NO_NAKED_POINTERS
-            if (Tag_val(v) == Closure_tag) {
-              start = Start_env_closinfo(Closinfo_val(v));
-              CAMLassert(start <= Wosize_val(v));
-            }
-#endif
-          }
           /* Complete the marking */
           ephes_to_check = ephes_checked_if_pure;
           CAML_EV_END(EV_MAJOR_MARK_MAIN);
@@ -495,9 +632,6 @@ static void mark_slice (intnat work)
       }
     }
   }
-  gray_vals_cur = gray_vals_ptr;
-  current_value = v;
-  current_index = start;
   CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_FIELDS, slice_fields);
   CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_POINTERS, slice_pointers);
 }
@@ -545,7 +679,8 @@ static void sweep_slice (intnat work)
       caml_gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case Caml_white:
-        caml_gc_sweep_hp = (char *) caml_fl_merge_block (Val_hp (hp), sweep_limit);
+        caml_gc_sweep_hp =
+            (char *)caml_fl_merge_block(Val_hp (hp), sweep_limit);
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
@@ -811,6 +946,7 @@ void caml_finish_major_cycle (void)
   while (caml_gc_phase == Phase_mark) mark_slice (LONG_MAX);
   while (caml_gc_phase == Phase_clean) clean_slice (LONG_MAX);
   CAMLassert (caml_gc_phase == Phase_sweep);
+  CAMLassert (redarken_first_chunk == NULL);
   while (caml_gc_phase == Phase_sweep) sweep_slice (LONG_MAX);
   CAMLassert (caml_gc_phase == Phase_idle);
   Caml_state->stat_major_words += caml_allocated_words;
@@ -869,12 +1005,21 @@ void caml_init_major_heap (asize_t heap_size)
   caml_make_free_blocks ((value *) caml_heap_start,
                          Caml_state->stat_heap_wsz, 1, Caml_white);
   caml_gc_phase = Phase_idle;
-  gray_vals_size = 2048;
-  gray_vals = (value *) caml_stat_alloc_noexc (gray_vals_size * sizeof (value));
-  if (gray_vals == NULL)
-    caml_fatal_error ("not enough memory for the gray cache");
-  gray_vals_cur = gray_vals;
-  gray_vals_end = gray_vals + gray_vals_size;
+
+  Caml_state->mark_stack = caml_stat_alloc_noexc(sizeof(struct mark_stack));
+  if (Caml_state->mark_stack == NULL)
+    caml_fatal_error ("not enough memory for the mark stack");
+
+  Caml_state->mark_stack->stack =
+    caml_stat_alloc_noexc(MARK_STACK_INIT_SIZE * sizeof(mark_entry));
+
+  if(Caml_state->mark_stack->stack == NULL) {
+    caml_fatal_error("not enough memory for the mark stack");
+  }
+
+  Caml_state->mark_stack->count = 0;
+  Caml_state->mark_stack->size = MARK_STACK_INIT_SIZE;
+
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
   for (i = 0; i < Max_major_window; i++) caml_major_ring[i] = 0.0;
