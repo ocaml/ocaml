@@ -10,6 +10,10 @@ Working version
 
 ### Runtime system:
 
+- #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
+  to allow it to work with directories.
+  (Daniil Baturin, review by Damien Doligez)
+
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
   adding support for Musl ppc64le along the way.
   (Xavier Leroy and Anil Madhavapeddy, review by Stephen Dolan)
