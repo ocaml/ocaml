@@ -95,7 +95,7 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#define TEXT_SECTION(name) .section .text.caml.##name,"ax",%progbits
 #else
 #define TEXT_SECTION(name)
 #endif
@@ -114,7 +114,7 @@ G(caml_hot__code_end):
 
 #define FUNCTION(name) FUNCTION name
         .macro FUNCTION name
-        TEXT_SECTION(caml.##G(\name))
+        TEXT_SECTION(G(\name))
         .align 2
         .globl G(\name)
 G(\name):
@@ -133,7 +133,7 @@ G(\name):
 #else
 
 #define FUNCTION(name) \
-        TEXT_SECTION(caml.##name); \
+        TEXT_SECTION(name); \
         .align  2; \
         .globl  G(name); \
         .type   G(name), %function; \
@@ -152,6 +152,7 @@ G(name):
 #endif
 
 /* Allocation functions and GC interface */
+        TEXT_SECTION(caml_system__code_begin)
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
 
@@ -507,6 +508,7 @@ FUNCTION(caml_ml_array_bound_error)
         CFI_ENDPROC
         END_FUNCTION(caml_ml_array_bound_error)
 
+         TEXT_SECTION(caml_system__code_end)
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
 
