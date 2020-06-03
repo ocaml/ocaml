@@ -12,6 +12,9 @@ Working version
 - #9466: Memprof: optimize random samples generation.
   (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
 
+- #9628: Memprof: disable sampling when memprof is suspended.
+  (Jacques-Henri Jourdan review by Gabriel Scherer and Stephen Dolan)
+
 - #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
