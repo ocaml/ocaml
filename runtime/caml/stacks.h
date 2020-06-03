@@ -33,7 +33,7 @@
 #define caml_trap_barrier (Caml_state_field(trap_barrier))
 
 #define Trap_pc(tp) (((code_t *)(tp))[0])
-#define Trap_link(tp) (((value **)(tp))[1])
+#define Trap_link_offset(tp) (((value *)(tp))[1])
 
 void caml_init_stack (uintnat init_max_size);
 void caml_realloc_stack (asize_t required_size);
