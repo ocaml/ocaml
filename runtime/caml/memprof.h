@@ -22,7 +22,7 @@
 #include "mlvalues.h"
 #include "roots.h"
 
-extern int caml_memprof_suspended;
+extern void caml_memprof_set_suspended(int);
 
 extern value caml_memprof_handle_postponed_exn(void);
 

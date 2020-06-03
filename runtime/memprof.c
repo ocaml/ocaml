@@ -45,10 +45,10 @@ static double lambda = 0;
     Dummy if [lambda = 0]. */
 static float one_log1m_lambda;
 
-/* [caml_memprof_suspended] is used for masking memprof callbacks when
+/* [suspended] is used for masking memprof callbacks when
    a callback is running or when an uncaught exception handler is
    called. */
-int caml_memprof_suspended = 0;
+static int suspended = 0;
 
 /* [callback_running] is used to trigger a fatal error whenever
    [Thread.exit] is called from a callback. */
@@ -256,14 +256,14 @@ static value capture_callstack_postponed()
 /* In this version, we are allowed to call the GC, so we use
    [caml_alloc], which is more efficient since it uses the minor
    heap.
-   Should be called with [caml_memprof_suspended == 1] */
+   Should be called with [suspended == 1] */
 static value capture_callstack(int alloc_idx)
 {
   value res;
   intnat callstack_len =
     caml_collect_current_callstack(&callstack_buffer, &callstack_buffer_len,
                                    callstack_size, alloc_idx);
-  CAMLassert(caml_memprof_suspended);
+  CAMLassert(suspended);
   res = caml_alloc(callstack_len, 0);
   memcpy(Op_val(res), callstack_buffer, sizeof(value) * callstack_len);
   if (callstack_buffer_len > 256 && callstack_buffer_len > callstack_len * 8) {
@@ -542,8 +542,14 @@ static void flush_deleted(void)
 }
 
 static void check_action_pending(void) {
-  if (!caml_memprof_suspended && trackst.callback < trackst.len)
+  if (!suspended && trackst.callback < trackst.len)
     caml_set_action_pending();
+}
+
+void caml_memprof_set_suspended(int s) {
+  suspended = s;
+  caml_memprof_renew_minor_sample();
+  if(!s) check_action_pending();
 }
 
 /* In case of a thread context switch during a callback, this can be
@@ -551,15 +557,15 @@ static void check_action_pending(void) {
 value caml_memprof_handle_postponed_exn(void)
 {
   value res = Val_unit;
-  if (caml_memprof_suspended) return res;
-  caml_memprof_suspended = 1;
+  if (suspended || trackst.callback >= trackst.len) return res;
+
+  caml_memprof_set_suspended(1);
   while (trackst.callback < trackst.len) {
     uintnat i = trackst.callback;
     res = handle_entry_callbacks_exn(&i);
     if (Is_exception_result(res)) break;
   }
-  caml_memprof_suspended = 0;
-  check_action_pending();  /* Needed in case of an exception */
+  caml_memprof_set_suspended(0);
   flush_deleted();
   return res;
 }
@@ -648,8 +654,7 @@ void caml_memprof_track_alloc_shr(value block)
   value callstack = 0;
   CAMLassert(Is_in_heap(block));
 
-  /* This test also makes sure memprof is initialized. */
-  if (lambda == 0 || caml_memprof_suspended) return;
+  if (lambda == 0 || suspended) return;
 
   n_samples = rand_binom(Whsize_val(block));
   if (n_samples == 0) return;
@@ -682,7 +687,7 @@ static void shift_sample(uintnat n)
 void caml_memprof_renew_minor_sample(void)
 {
 
-  if (lambda == 0) /* No trigger in the current minor heap. */
+  if (lambda == 0 || suspended) /* No trigger in the current minor heap. */
     caml_memprof_young_trigger = Caml_state->young_alloc_start;
   else {
     uintnat geom = rand_geom();
@@ -711,16 +716,11 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
   uintnat first_idx, *idx_tab = &first_idx;
   double saved_lambda = lambda;
 
-  if (caml_memprof_suspended) {
-    caml_memprof_renew_minor_sample();
-    return;
-  }
-
-  /* If [lambda == 0], then [caml_memprof_young_trigger] should be
+  /* If this condition is false, then [caml_memprof_young_trigger] should be
      equal to [Caml_state->young_alloc_start]. But this function is only
      called with [Caml_state->young_alloc_start <= Caml_state->young_ptr <
      caml_memprof_young_trigger], which is contradictory. */
-  CAMLassert(lambda > 0);
+  CAMLassert(!suspended && lambda > 0);
 
   if (!from_caml) {
     unsigned n_samples = 1 +
@@ -752,8 +752,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
   /* Restore the minor heap in a valid state for calling the callbacks.
      We should not call the GC before these two instructions. */
   Caml_state->young_ptr += whsize;
-  caml_memprof_renew_minor_sample();
-  caml_memprof_suspended = 1;
+  caml_memprof_set_suspended(1); // This also updates the memprof trigger
 
   /* Perform the sampling of the block in the set of Comballoc'd
      blocks, insert them in the entries array, and run the
@@ -817,15 +816,11 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
 
   CAMLassert(alloc_ofs == 0 || Is_exception_result(res));
   CAMLassert(allocs_sampled <= nallocs);
-  caml_memprof_suspended = 0;
-  check_action_pending();
-  /* We need to call [check_action_pending] since we
-     reset [caml_memprof_suspended] to 0 (a GC collection may have
-     triggered some new callback).
-
-     We need to make sure that the action pending flag is not set
-     systematically, which is to be expected, since [new_tracked]
-     created a new block without updating
+  caml_memprof_set_suspended(0);
+  /* [caml_memprof_set_suspended] will attempt to set the action
+     pending flag, but we need to make sure that the action pending
+     flag is not set systematically, which is to be expected, since
+     [new_tracked] created a new block without updating
      [trackst.callback]. Fortunately, [handle_entry_callback_exn]
      increments [trackst.callback] if it is equal to [t_idx]. */
 
@@ -897,8 +892,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
   value callstack = 0;
   int is_young = Is_young(Val_hp(block));
 
-  if (lambda == 0 || caml_memprof_suspended)
-    return;
+  if (lambda == 0 || suspended) return;
 
   p = block;
   while (1) {
@@ -936,7 +930,8 @@ void caml_memprof_shutdown(void) {
   init = 0;
   started = 0;
   lambda = 0.;
-  caml_memprof_suspended = 0;
+  suspended = 0;
+  callback_running = 0;
   trackst.len = 0;
   trackst.callback = trackst.young = trackst.delete = 0;
   caml_stat_free(trackst.entries);
@@ -1001,6 +996,8 @@ CAMLprim value caml_memprof_stop(value unit)
   trackst.alloc_len = 0;
 
   lambda = 0;
+  // Reset the memprof trigger in order to make sure we won't enter
+  // [caml_memprof_track_young].
   caml_memprof_renew_minor_sample();
   started = 0;
 
@@ -1029,12 +1026,11 @@ void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
 }
 
 void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx) {
-  ctx->suspended = caml_memprof_suspended;
+  ctx->suspended = suspended;
   ctx->callback_running = callback_running;
 }
 
 void caml_memprof_restore_th_ctx(const struct caml_memprof_th_ctx* ctx) {
-  caml_memprof_suspended = ctx->suspended;
   callback_running = ctx->callback_running;
-  check_action_pending();
+  caml_memprof_set_suspended(ctx->suspended);
 }
