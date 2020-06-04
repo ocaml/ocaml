@@ -240,10 +240,12 @@ let transl_labels env closed lbls =
 let transl_constructor_arguments env closed = function
   | Pcstr_tuple l ->
       let l = List.map (transl_simple_type env closed) l in
-      Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
-      Cstr_tuple l
+      let tl = List.map (fun t -> t.ctyp_type) l in
+      List.iter (Ctype.force_expand_all env) tl;
+      Types.Cstr_tuple tl, Cstr_tuple l
   | Pcstr_record l ->
       let lbls, lbls' = transl_labels env closed l in
+      List.iter (fun ld -> Ctype.force_expand_all env ld.Types.ld_type) lbls';
       Types.Cstr_record lbls',
       Cstr_record lbls
 
@@ -271,6 +273,7 @@ let make_constructor env type_path type_params sargs sret_type =
             raise (Error (sret_type.ptyp_loc, Constraint_failed
                             (ret_type, Ctype.newconstr type_path type_params)))
       end;
+      Ctype.force_expand_all env ret_type;
       widen z;
       targs, Some tret_type, args, Some ret_type
 
@@ -394,6 +397,7 @@ let transl_declaration env sdecl (id, uid) =
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
         let cty = transl_simple_type env no_row sty in
+        Ctype.force_expand_all env cty.ctyp_type;
         Some cty, Some cty.ctyp_type
     in
     let arity = List.length params in
