@@ -350,7 +350,7 @@ method private cse n i k =
       let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
       self#cse_array n1 cases (fun cases ->
         self#cse empty_numbering i.next (fun next ->
-          k {i with desc = Iswitch(index, cases); next; }))
+          k { i with desc = Iswitch(index, cases); next; }))
   | Icatch(rec_flag, handlers, body) ->
       let handler_code = List.map (fun (_, handler) -> handler) handlers in
       self#cse_list empty_numbering handler_code (fun handler_code ->
