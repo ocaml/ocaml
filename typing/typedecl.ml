@@ -1370,29 +1370,38 @@ let transl_value_decl env loc valdecl =
     (fun () -> transl_value_decl env loc valdecl)
 
 (* Translate a "with" constraint -- much simplified version of
-    transl_type_decl. *)
-let transl_with_constraint env id row_path orig_decl sdecl =
-  Env.mark_type_used orig_decl.type_uid;
+   transl_type_decl. For a constraint [Sig with t = sdecl],
+   there are two declarations of interest in two environments:
+   - [sig_decl] is the declaration of [t] in [Sig],
+     in the environment [sig_env] (containing the declarations
+     of [Sig] before [t])
+   - [sdecl] is the new syntactic declaration, to be type-checked
+     in the current, outer environment [with_env].
+
+   In particular, note that [sig_env] is an extension of
+   [outer_env].
+*)
+let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
+  Env.mark_type_used sig_decl.type_uid;
   reset_type_variables();
   Ctype.begin_def();
+  (* In the first part of this function, we typecheck the syntactic
+     declaration [sdecl] in the outer environment [outer_env]. *)
+  let env = outer_env in
+  let loc = sdecl.ptype_loc in
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
-  let orig_decl = Ctype.instance_declaration orig_decl in
-  let arity_ok = List.length params = orig_decl.type_arity in
-  if arity_ok then
-    List.iter2 (Ctype.unify_var env) params orig_decl.type_params;
-  let constraints = List.map
-    (function (ty, ty', loc) ->
-       try
-         let cty = transl_simple_type env false ty in
-         let cty' = transl_simple_type env false ty' in
-         let ty = cty.ctyp_type in
-         let ty' = cty'.ctyp_type in
-         Ctype.unify env ty ty';
-         (cty, cty', loc)
-       with Ctype.Unify tr ->
-         raise(Error(loc, Inconsistent_constraint (env, tr))))
-    sdecl.ptype_cstrs
+  let arity = List.length params in
+  let constraints =
+    List.map (fun (ty, ty', loc) ->
+      let cty = transl_simple_type env false ty in
+      let cty' = transl_simple_type env false ty' in
+      (* Note: We delay the unification of those constraints
+         after the unification of parameters, so that clashing
+         constraints report an error on the constraint location
+         rather than the parameter location. *)
+      (cty, cty', loc)
+    ) sdecl.ptype_cstrs
   in
   let no_row = not (is_fixed_type sdecl) in
   let (tman, man) =  match sdecl.ptype_manifest with
@@ -1401,22 +1410,43 @@ let transl_with_constraint env id row_path orig_decl sdecl =
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type
   in
+  (* In the second part, we check the consistency between the two
+     declarations and compute a "merged" declaration; we now need to
+     work in the larger signature environment [sig_env], because
+     [sig_decl.type_params] and [sig_decl.type_kind] are only valid
+     there. *)
+  let env = sig_env in
+  let sig_decl = Ctype.instance_declaration sig_decl in
+  let arity_ok = arity = sig_decl.type_arity in
+  if arity_ok then
+    List.iter2 (fun (cty, _) tparam ->
+      try Ctype.unify_var env cty.ctyp_type tparam
+      with Ctype.Unify tr ->
+        raise(Error(cty.ctyp_loc, Inconsistent_constraint (env, tr)))
+    ) tparams sig_decl.type_params;
+  List.iter (fun (cty, cty', loc) ->
+    (* Note: contraints must also be enforced in [sig_env] because
+       they may contain parameter variables from [tparams]
+       that have now be unified in [sig_env]. *)
+    try Ctype.unify env cty.ctyp_type cty'.ctyp_type
+    with Ctype.Unify tr ->
+      raise(Error(loc, Inconsistent_constraint (env, tr)))
+  ) constraints;
   let priv =
     if sdecl.ptype_private = Private then Private else
-    if arity_ok && orig_decl.type_kind <> Type_abstract
-    then orig_decl.type_private else sdecl.ptype_private
+    if arity_ok && sig_decl.type_kind <> Type_abstract
+    then sig_decl.type_private else sdecl.ptype_private
   in
-  if arity_ok && orig_decl.type_kind <> Type_abstract
+  if arity_ok && sig_decl.type_kind <> Type_abstract
   && sdecl.ptype_private = Private then
-    Location.deprecated sdecl.ptype_loc "spurious use of private";
+    Location.deprecated loc "spurious use of private";
   let type_kind, type_unboxed =
     if arity_ok && man <> None then
-      orig_decl.type_kind, orig_decl.type_unboxed
+      sig_decl.type_kind, sig_decl.type_unboxed
     else
       Type_abstract, unboxed_false_default_false
   in
-  let arity = List.length params in
-  let decl =
+  let new_sig_decl =
     { type_params = params;
       type_arity = arity;
       type_kind;
@@ -1426,7 +1456,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
-      type_loc = sdecl.ptype_loc;
+      type_loc = loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = Unknown;
       type_unboxed;
@@ -1434,55 +1464,56 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     }
   in
   begin match row_path with None -> ()
-  | Some p -> set_fixed_row env sdecl.ptype_loc p decl
+  | Some p -> set_fixed_row env loc p new_sig_decl
   end;
-  begin match Ctype.closed_type_decl decl with None -> ()
-  | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
+  begin match Ctype.closed_type_decl new_sig_decl with None -> ()
+  | Some ty -> raise(Error(loc, Unbound_type_var(ty, new_sig_decl)))
   end;
-  let decl = name_recursion sdecl id decl in
+  let new_sig_decl = name_recursion sdecl id new_sig_decl in
   let new_type_variance =
-    try Typedecl_variance.compute_decl
-          env ~check:true decl (Typedecl_variance.variance_of_sdecl sdecl)
+    let required = Typedecl_variance.variance_of_sdecl sdecl in
+    try
+      Typedecl_variance.compute_decl env ~check:true new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
   let new_type_immediate =
     (* Typedecl_immediacy.compute_decl never raises *)
-    Typedecl_immediacy.compute_decl env decl in
+    Typedecl_immediacy.compute_decl env new_sig_decl in
   let new_type_separability =
-    try Typedecl_separability.compute_decl env decl
+    try Typedecl_separability.compute_decl env new_sig_decl
     with Typedecl_separability.Error (loc, err) ->
       raise (Error (loc, Separability err)) in
-  let decl =
+  let new_sig_decl =
     (* we intentionally write this without a fragile { decl with ... }
        to ensure that people adding new fields to type declarations
        consider whether they need to recompute it here; for an example
        of bug caused by the previous approach, see #9607 *)
     {
-      type_params = decl.type_params;
-      type_arity = decl.type_arity;
-      type_kind = decl.type_kind;
-      type_private = decl.type_private;
-      type_manifest = decl.type_manifest;
-      type_unboxed = decl.type_unboxed;
-      type_is_newtype = decl.type_is_newtype;
-      type_expansion_scope = decl.type_expansion_scope;
-      type_loc = decl.type_loc;
-      type_attributes = decl.type_attributes;
-      type_uid = decl.type_uid;
+      type_params = new_sig_decl.type_params;
+      type_arity = new_sig_decl.type_arity;
+      type_kind = new_sig_decl.type_kind;
+      type_private = new_sig_decl.type_private;
+      type_manifest = new_sig_decl.type_manifest;
+      type_unboxed = new_sig_decl.type_unboxed;
+      type_is_newtype = new_sig_decl.type_is_newtype;
+      type_expansion_scope = new_sig_decl.type_expansion_scope;
+      type_loc = new_sig_decl.type_loc;
+      type_attributes = new_sig_decl.type_attributes;
+      type_uid = new_sig_decl.type_uid;
 
       type_variance = new_type_variance;
       type_immediate = new_type_immediate;
       type_separability = new_type_separability;
     } in
   Ctype.end_def();
-  generalize_decl decl;
+  generalize_decl new_sig_decl;
   {
     typ_id = id;
     typ_name = sdecl.ptype_name;
     typ_params = tparams;
-    typ_type = decl;
+    typ_type = new_sig_decl;
     typ_cstrs = constraints;
-    typ_loc = sdecl.ptype_loc;
+    typ_loc = loc;
     typ_manifest = tman;
     typ_kind = Ttype_abstract;
     typ_private = sdecl.ptype_private;
