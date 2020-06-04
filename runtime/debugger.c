@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "caml/alloc.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/debugger.h"
 #include "caml/misc.h"
@@ -308,13 +309,8 @@ static void restore_instruction(code_t pc)
 
 static code_t pc_from_pos(int frag, intnat pos)
 {
-  struct code_fragment *cf;
-  CAMLassert (frag >= 0);
-  CAMLassert (frag < caml_code_fragments_table.size);
-  CAMLassert (pos >= 0);
-  CAMLassert (pos < caml_code_size);
-
-  cf = (struct code_fragment *) caml_code_fragments_table.contents[frag];
+  struct code_fragment *cf = caml_find_code_fragment_by_num(frag);
+  CAMLassert(cf != NULL);
   return (code_t) (cf->code_start + pos);
 }
 
@@ -337,7 +333,8 @@ void caml_debugger_code_unloaded(int index)
   caml_putch(dbg_out, REP_CODE_UNLOADED);
   caml_putword(dbg_out, index);
 
-  cf = (struct code_fragment *) caml_code_fragments_table.contents[index];
+  cf = caml_find_code_fragment_by_num(index);
+  CAMLassert(cf != NULL);
 
   FOREACH_SKIPLIST_ELEMENT(elt, &event_points_table, {
     pc = (char *) elt->key;
@@ -357,9 +354,8 @@ void caml_debugger(enum event_kind event, value param)
   value *frame, *newframe;
   intnat i, pos;
   value val;
-  int frag, found = 0;
+  int frag;
   struct code_fragment *cf;
-  (void) found; /* Silence unused variable warning. */
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
@@ -407,9 +403,9 @@ void caml_debugger(enum event_kind event, value param)
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
     caml_putword(dbg_out, Caml_state->stack_high - frame);
-    found = caml_find_code_fragment((char*) Pc(frame), &frag, &cf);
-    CAMLassert(found);
-    caml_putword(dbg_out, frag);
+    cf = caml_find_code_fragment_by_pc((char*) Pc(frame));
+    CAMLassert(cf != NULL);
+    caml_putword(dbg_out, cf->fragnum);
     caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
   } else {
     /* No PC and no stack frame associated with other events */
@@ -472,8 +468,8 @@ void caml_debugger(enum event_kind event, value param)
     case REQ_GET_FRAME:
       caml_putword(dbg_out, Caml_state->stack_high - frame);
       if (frame < Caml_state->stack_high &&
-          caml_find_code_fragment((char*) Pc(frame), &frag, &cf)) {
-        caml_putword(dbg_out, frag);
+          (cf = caml_find_code_fragment_by_pc((char*) Pc(frame))) != NULL) {
+        caml_putword(dbg_out, cf->fragnum);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
       } else {
         caml_putword(dbg_out, 0);
@@ -489,12 +485,12 @@ void caml_debugger(enum event_kind event, value param)
       i = caml_getword(dbg_in);
       newframe = frame + Extra_args(frame) + i + 3;
       if (newframe >= Caml_state->stack_high ||
-          !caml_find_code_fragment((char*) Pc(newframe), &frag, &cf)) {
+          (cf = caml_find_code_fragment_by_pc((char *) Pc(newframe))) == NULL) {
         caml_putword(dbg_out, -1);
       } else {
         frame = newframe;
         caml_putword(dbg_out, Caml_state->stack_high - frame);
-        caml_putword(dbg_out, frag);
+        caml_putword(dbg_out, cf->fragnum);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
       }
       caml_flush(dbg_out);
@@ -547,9 +543,9 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_GET_CLOSURE_CODE:
       val = getval(dbg_in);
-      found = caml_find_code_fragment((char*) Code_val(val), &frag, &cf);
-      CAMLassert(found);
-      caml_putword(dbg_out, frag);
+      cf = caml_find_code_fragment_by_pc((char*) Code_val(val));
+      CAMLassert(cf != NULL);
+      caml_putword(dbg_out, cf->fragnum);
       caml_putword(dbg_out, (char*) Code_val(val) - cf->code_start);
       caml_flush(dbg_out);
       break;
