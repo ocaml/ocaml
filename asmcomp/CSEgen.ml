@@ -383,6 +383,6 @@ method fundecl f =
   if List.mem Cmm.No_CSE f.fun_codegen_options then
     f
   else
-    {f with fun_body = self#cse empty_numbering f.fun_body (fun i -> i) }
+    { f with fun_body = self#cse empty_numbering f.fun_body Fun.id }
 
 end
