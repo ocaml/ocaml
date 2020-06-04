@@ -1958,10 +1958,8 @@ bytecomp/printinstr.cmx : \
     bytecomp/printinstr.cmi
 bytecomp/printinstr.cmi : \
     bytecomp/instruct.cmi
-bytecomp/runtimedef.cmo :
-bytecomp/runtimedef.cmx :
 bytecomp/symtable.cmo : \
-    bytecomp/runtimedef.cmo \
+    lambda/runtimedef.cmi \
     typing/predef.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
@@ -1976,7 +1974,7 @@ bytecomp/symtable.cmo : \
     parsing/asttypes.cmi \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmx : \
-    bytecomp/runtimedef.cmx \
+    lambda/runtimedef.cmx \
     typing/predef.cmx \
     utils/misc.cmx \
     bytecomp/meta.cmx \
@@ -2153,7 +2151,7 @@ asmcomp/asmlibrarian.cmx : \
     asmcomp/asmlibrarian.cmi
 asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmo : \
-    bytecomp/runtimedef.cmo \
+    lambda/runtimedef.cmi \
     utils/profile.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -2171,7 +2169,7 @@ asmcomp/asmlink.cmo : \
     asmcomp/asmgen.cmi \
     asmcomp/asmlink.cmi
 asmcomp/asmlink.cmx : \
-    bytecomp/runtimedef.cmx \
+    lambda/runtimedef.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
@@ -5727,30 +5725,6 @@ asmcomp/debug/reg_with_debug_info.cmx : \
 asmcomp/debug/reg_with_debug_info.cmi : \
     asmcomp/reg.cmi \
     middle_end/backend_var.cmi
-driver/compdynlink.cmi :
-driver/compdynlink_common.cmo : \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_platform_intf.cmi \
-    driver/compdynlink_common.cmi
-driver/compdynlink_common.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmx \
-    driver/compdynlink_common.cmi
-driver/compdynlink_common.cmi : \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmo : \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmi : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmo : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmx : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmi :
 driver/compenv.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -6068,13 +6042,13 @@ driver/pparse.cmi : \
     parsing/parsetree.cmi
 toplevel/expunge.cmo : \
     bytecomp/symtable.cmi \
-    bytecomp/runtimedef.cmo \
+    lambda/runtimedef.cmi \
     utils/misc.cmi \
     typing/ident.cmi \
     bytecomp/bytesections.cmi
 toplevel/expunge.cmx : \
     bytecomp/symtable.cmx \
-    bytecomp/runtimedef.cmx \
+    lambda/runtimedef.cmx \
     utils/misc.cmx \
     typing/ident.cmx \
     bytecomp/bytesections.cmx
