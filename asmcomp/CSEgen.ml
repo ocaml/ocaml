@@ -352,7 +352,7 @@ method private cse n i k =
         self#cse empty_numbering i.next (fun next ->
           k { i with desc = Iswitch(index, cases); next; }))
   | Icatch(rec_flag, handlers, body) ->
-      let handler_code = List.map (fun (_, handler) -> handler) handlers in
+      let nfail, handler_code = List.split handlers in
       self#cse_list empty_numbering handler_code (fun handler_code ->
         let handlers =
           List.map2 (fun (nfail, _) handler -> nfail, handler)
