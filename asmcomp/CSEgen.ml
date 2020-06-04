@@ -365,7 +365,7 @@ method private cse n i k =
       self#cse n body (fun body ->
         self#cse empty_numbering handler (fun handler ->
           self#cse empty_numbering i.next (fun next ->
-            k {i with desc = Itrywith(body, handler); next; })))
+            k { i with desc = Itrywith(body, handler); next; })))
 
 method private cse_array n is k =
   self#cse_list n (Array.to_list is) (fun is -> k (Array.of_list is))
