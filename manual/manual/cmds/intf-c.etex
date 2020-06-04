@@ -478,7 +478,7 @@ floating-point numbers.}
 In earlier versions of OCaml, it was possible to use
 word-aligned pointers to addresses outside the heap as OCaml values,
 just by casting the pointer to type "value".  Starting with OCaml
-4.11, this usage is obsolete and will stop being supported soon.
+4.11, this usage is deprecated and will stop being supported in OCaml 5.00.
 
 A correct way to manipulate pointers to out-of-heap blocks from
 OCaml is to store those pointers in OCaml blocks with tag
@@ -526,7 +526,7 @@ integer.
 /* Create an OCaml value encapsulating the pointer p */
 static value val_of_typtr(ty * p)
 {
-  assert ((uintptr_t) p & 1 == 0);  /* check correct alignment */
+  assert (((uintptr_t) p & 1) == 0);  /* check correct alignment */
   return (value) p | 1;
 }
 
