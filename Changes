@@ -40,6 +40,9 @@ Working version
 - #9441: Add RISC-V RV64G native-code backend.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
+- #9636: Make CSE pass tail recursive
+  (Mark Shinwell)
+
 ### Standard library:
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
