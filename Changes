@@ -3,11 +3,6 @@ Working version
 
 ### Language features:
 
-- #9570: Provide an Atomic module with a trivial purely-sequential
-  implementation, to help write code that is compatible with Multicore
-  OCaml.
-  (Gabriel Scherer, review by Xavier Leroy)
-
 ### Runtime system:
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
@@ -51,6 +46,11 @@ Working version
 
 - #9561: Unbox Unix.gettimeofday and Unix.time
   (Stephen Dolan, review by David Allsopp)
+
+- #9570: Provide an Atomic module with a trivial purely-sequential
+  implementation, to help write code that is compatible with Multicore
+  OCaml.
+  (Gabriel Scherer, review by Xavier Leroy)
 
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
