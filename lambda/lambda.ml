@@ -893,5 +893,10 @@ let function_is_curried func =
   | Curried -> true
   | Tupled -> false
 
+let max_arity () =
+  if !Clflags.native_code then 126 else max_int
+  (* 126 = 127 (the maximal number of parameters supported in C--)
+           - 1 (the hidden parameter containing the environment) *)
+
 let reset () =
   raise_count := 0

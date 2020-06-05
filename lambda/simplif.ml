@@ -515,7 +515,8 @@ let simplify_lets lam =
   | Lfunction{kind; params; return=return1; body = l; attr; loc} ->
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; return=return2; body; attr; loc}
-        when kind = Curried && optimize ->
+        when kind = Curried && optimize &&
+             List.length params + List.length params' <= Lambda.max_arity() ->
           (* The return type is the type of the value returned after
              applying all the parameters to the function. The return
              type of the merged function taking [params @ params'] as

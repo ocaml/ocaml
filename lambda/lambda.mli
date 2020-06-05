@@ -412,6 +412,12 @@ val default_stub_attribute : function_attribute
 
 val function_is_curried : lfunction -> bool
 
+val max_arity : unit -> int
+  (** Maximal number of parameters for a function, or in other words,
+      maximal length of the [params] list of a [lfunction] record.
+      This is unlimited ([max_int]) for bytecode, but limited
+      (currently to 126) for native code. *)
+
 (***********************)
 (* For static failures *)
 (***********************)
