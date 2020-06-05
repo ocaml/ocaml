@@ -139,6 +139,10 @@ Working version
   them to system linker, ppx contexts, etc.
   (Nicolás Ojeda Bär, review by Jérémie Dimino and Gabriel Scherer)
 
+- #9633: ocamltest: fix a bug when certain variables set in test scripts would
+  be ignored (eg `ocamlrunparam`).
+  (Nicolás Ojeda Bär, review by Sébastien Hinderer)
+
 OCaml 4.11
 ----------
 
