@@ -5,7 +5,7 @@ cmm:
  int 3063
  "camlTest_locations__1":
  addr "camlTest_locations__fib_81"
- int 3)
+ int 72057594037927941)
 (data int 1792 global "camlTest_locations" "camlTest_locations": int 1)
 (data
  global "camlTest_locations__gc_roots"

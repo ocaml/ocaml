@@ -373,6 +373,7 @@ let rec transl env e =
       in
       Cconst_symbol (sym, dbg)
   | Uclosure(fundecls, clos_vars) ->
+      let startenv = fundecls_size fundecls in
       let rec transl_fundecls pos = function
           [] ->
             List.map (transl env) clos_vars
@@ -382,16 +383,19 @@ let rec transl env e =
             let without_header =
               if f.arity = 1 || f.arity = 0 then
                 Cconst_symbol (f.label, dbg) ::
-                int_const dbg f.arity ::
+                alloc_closure_info ~arity:f.arity
+                                   ~startenv:(startenv - pos) dbg ::
                 transl_fundecls (pos + 3) rem
               else
                 Cconst_symbol (curry_function_sym f.arity, dbg) ::
-                int_const dbg f.arity ::
+                alloc_closure_info ~arity:f.arity
+                                   ~startenv:(startenv - pos) dbg ::
                 Cconst_symbol (f.label, dbg) ::
                 transl_fundecls (pos + 4) rem
             in
-            if pos = 0 then without_header
-            else (alloc_infix_header pos f.dbg) :: without_header
+            if pos = 0
+            then without_header
+            else alloc_infix_header pos f.dbg :: without_header
       in
       let dbg =
         match fundecls with
