@@ -8,7 +8,7 @@ cmm:
  global "camlTest_locations__fib_5_closure"
  "camlTest_locations__fib_5_closure":
  addr "camlTest_locations__fib_5"
- int 3)
+ int 72057594037927941)
 (data
  global "camlTest_locations__gc_roots"
  "camlTest_locations__gc_roots":
