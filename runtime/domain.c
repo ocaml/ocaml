@@ -1293,11 +1293,13 @@ CAMLprim value caml_ml_domain_yield_until(value t)
 
 CAMLprim value caml_ml_domain_cpu_relax(value t)
 {
-  int interrupts;
+  uintnat interrupts = 0;
   struct interruptor* s = &domain_self->interruptor;
-  caml_plat_lock(&s->lock);
-  interrupts = handle_incoming(s);
-  caml_plat_unlock(&s->lock);
+  if (Caml_check_gc_interrupt(Caml_state)) {
+    caml_plat_lock(&s->lock);
+    interrupts = handle_incoming(s);
+    caml_plat_unlock(&s->lock);
+  }
   if (!interrupts) cpu_relax();
   return Val_unit;
 }
