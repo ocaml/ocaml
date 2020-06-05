@@ -42,10 +42,10 @@ allopt: ocamllex.opt
 opt.opt: allopt
 
 ocamllex: $(OBJS)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
 ocamllex.opt: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT_CMD) -o ocamllex.opt $(OBJS:.cmo=.cmx)
+	$(CAMLOPT_CMD) -o $@ $^
 
 clean::
 	rm -f ocamllex ocamllex.opt
