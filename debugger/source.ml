@@ -40,7 +40,7 @@ let source_of_module pos mdle =
         else
           acc)
       Debugger_config.load_path_for
-      (Load_path.get_paths ()) in
+      (Load_path.Cache.get_paths ()) in
   let fname = pos.Lexing.pos_fname in
   if fname = "" then
     let innermost_module =

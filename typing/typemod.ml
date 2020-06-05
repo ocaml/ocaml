@@ -169,7 +169,7 @@ let initial_env ~loc ~safe_string ~initially_opened_module
       env
   in
   let units =
-    List.map Env.persistent_structures_of_dir (Load_path.get ())
+    List.map Env.persistent_structures_of_dir (Load_path.Cache.get ())
   in
   let env, units =
     match initially_opened_module with
@@ -2885,7 +2885,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         if Sys.file_exists sourceintf then begin
           let intf_file =
             try
-              Load_path.find_uncap (modulename ^ ".cmi")
+              Load_path.Cache.find_uncap (modulename ^ ".cmi")
             with Not_found ->
               raise(Error(Location.in_file sourcefile, Env.empty,
                           Interface_not_compiled sourceintf)) in

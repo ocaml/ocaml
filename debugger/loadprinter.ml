@@ -36,13 +36,13 @@ open Format
 
 let rec loadfiles ppf name =
   try
-    let filename = Load_path.find name in
+    let filename = Load_path.Cache.find name in
     Dynlink.allow_unsafe_modules true;
     Dynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
-      if not (List.mem d (Load_path.get_paths ())) then
-        Load_path.add_dir d;
+      if not (List.mem d (Load_path.Cache.get_paths ())) then
+        Load_path.Cache.add_dir d;
     end;
     fprintf ppf "File %s loaded@."
       (if d <> Filename.current_dir_name then

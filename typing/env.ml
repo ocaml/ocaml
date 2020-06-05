@@ -2343,7 +2343,7 @@ let unit_name_of_filename fn =
   | _ -> None
 
 let persistent_structures_of_dir dir =
-  Load_path.Dir.files dir
+  Load_path.Cache.Dir.files dir
   |> List.to_seq
   |> Seq.filter_map unit_name_of_filename
   |> String.Set.of_seq

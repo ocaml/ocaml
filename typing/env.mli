@@ -295,7 +295,8 @@ val add_persistent_structure : Ident.t -> t -> t
 
 (* Returns the set of persistent structures found in the given
    directory. *)
-val persistent_structures_of_dir : Load_path.Dir.t -> Misc.Stdlib.String.Set.t
+val persistent_structures_of_dir :
+  Load_path.Cache.Dir.t -> Misc.Stdlib.String.Set.t
 
 (* [filter_non_loaded_persistent f env] removes all the persistent
    structures that are not yet loaded and for which [f] returns

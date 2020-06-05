@@ -252,7 +252,7 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   let expand = Misc.expand_directory Config.standard_library in
-  let current_load_path = Load_path.get_paths () in
+  let current_load_path = Load_path.Cache.get_paths () in
   let load_path = List.concat [
       [ "" ];
       List.map expand (List.rev !Compenv.first_include_dirs);
@@ -262,7 +262,7 @@ let set_paths () =
       [expand "+camlp4"];
     ]
   in
-  Load_path.init load_path;
+  Load_path.Cache.init load_path;
   Dll.add_path load_path
 
 let initialize_toplevel_env () =

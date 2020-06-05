@@ -69,8 +69,8 @@ let _ = add_directive "quit" (Directive_none dir_quit)
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
   Dll.add_path [d];
-  let dir = Load_path.Dir.create d in
-  Load_path.add dir;
+  let dir = Load_path.Cache.Dir.create d in
+  Load_path.Cache.add dir;
   toplevel_env :=
     Stdlib.String.Set.fold
       (fun name env ->
@@ -89,12 +89,12 @@ let _ = add_directive "directory" (Directive_string dir_directory)
 let dir_remove_directory s =
   let d = expand_directory Config.standard_library s in
   let keep id =
-    match Load_path.find_uncap (Ident.name id ^ ".cmi") with
+    match Load_path.Cache.find_uncap (Ident.name id ^ ".cmi") with
     | exception Not_found -> true
     | fn -> Filename.dirname fn <> d
   in
   toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
-  Load_path.remove_dir s;
+  Load_path.Cache.remove_dir s;
   Dll.remove_path [d]
 
 let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
@@ -104,7 +104,7 @@ let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
     }
 
 let dir_show_dirs () =
-  List.iter print_endline (Load_path.get_paths ())
+  List.iter print_endline (Load_path.Cache.get_paths ())
 
 let _ = add_directive "show_dirs" (Directive_none dir_show_dirs)
     {

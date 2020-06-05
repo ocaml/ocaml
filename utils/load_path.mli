@@ -17,50 +17,55 @@
     This module offers a high level interface to locating files in the
     load path, which is constructed from [-I] command line flags and a few
     other parameters.
-
-    It makes the assumption that the contents of include directories
-    doesn't change during the execution of the compiler.
 *)
 
-val add_dir : string -> unit
-(** Add a directory to the load path *)
+module Cache : sig
+  (** This module takes care of caching the contents of the load path, to avoid
+      costly directory traversals each time a file needs to be looked up.
 
-val remove_dir : string -> unit
-(** Remove a directory from the load path *)
+      It makes the assumption that the contents of include directories
+      doesn't change during the execution of the compiler. *)
 
-val reset : unit -> unit
-(** Remove all directories *)
+  val add_dir : string -> unit
+  (** Add a directory to the load path *)
 
-val init : string list -> unit
-(** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
+  val remove_dir : string -> unit
+  (** Remove a directory from the load path *)
 
-val get_paths : unit -> string list
-(** Return the list of directories passed to [add_dir] so far. *)
+  val reset : unit -> unit
+  (** Remove all directories *)
 
-val find : string -> string
-(** Locate a file in the load path. Raise [Not_found] if the file
-    cannot be found. This function is optimized for the case where the
-    filename is a basename, i.e. doesn't contain a directory
-    separator. *)
+  val init : string list -> unit
+  (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 
-val find_uncap : string -> string
-(** Same as [find], but search also for uncapitalized name, i.e.  if
-    name is Foo.ml, allow /path/Foo.ml and /path/foo.ml to match. *)
+  val get_paths : unit -> string list
+  (** Return the list of directories passed to [add_dir] so far. *)
 
-module Dir : sig
-  type t
-  (** Represent one directory in the load path. *)
+  val find : string -> string
+  (** Locate a file in the load path. Raise [Not_found] if the file
+      cannot be found. This function is optimized for the case where the
+      filename is a basename, i.e. doesn't contain a directory
+      separator. *)
 
-  val create : string -> t
+  val find_uncap : string -> string
+  (** Same as [find], but search also for uncapitalized name, i.e.  if
+      name is Foo.ml, allow /path/Foo.ml and /path/foo.ml to match. *)
 
-  val path : t -> string
+  module Dir : sig
+    type t
+    (** Represent one directory in the load path. *)
 
-  val files : t -> string list
-  (** All the files in that directory. This doesn't include files in
-      sub-directories of this directory. *)
+    val create : string -> t
+
+    val path : t -> string
+
+    val files : t -> string list
+    (** All the files in that directory. This doesn't include files in
+        sub-directories of this directory. *)
+  end
+
+  val add : Dir.t -> unit
+
+  val get : unit -> Dir.t list
+  (** Same as [get_paths ()], except that it returns a [Dir.t list]. *)
 end
-
-val add : Dir.t -> unit
-
-val get : unit -> Dir.t list
-(** Same as [get_paths ()], except that it returns a [Dir.t list]. *)
