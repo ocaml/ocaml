@@ -147,8 +147,7 @@ coreall: runtime
 
 # Build the core system: the minimum needed to make depend and bootstrap
 .PHONY: core
-core:
-	$(MAKE) coldstart
+core: coldstart
 	$(MAKE) coreall
 
 # Check if fixpoint reached
