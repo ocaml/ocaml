@@ -239,12 +239,7 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   if (Is_block (child)
         && ! Is_young (child)
-        && Wosize_val (child) > 0  /* Atoms never need to be marked. */
-        /* Closure blocks contain code pointers at offsets that cannot
-           be reliably determined, so we always use the page table when
-           marking such values. */
-        && (!(Tag_val (v) == Closure_tag || Tag_val (v) == Infix_tag) ||
-            Is_in_heap (child))) {
+        && Wosize_val (child) > 0) {  /* Atoms never need to be marked. */
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
@@ -398,6 +393,14 @@ static void mark_slice (intnat work)
       CAMLassert (start == 0);
       v = *--gray_vals_ptr;
       CAMLassert (Is_gray_val (v));
+#ifdef NO_NAKED_POINTERS
+      if (Tag_val(v) == Closure_tag) {
+        /* Skip the code pointers and integers at beginning of closure;
+           start scanning at the first word of the environment part. */
+        start = Start_env_closinfo(Closinfo_val(v));
+        CAMLassert(start <= Wosize_val(v));
+      }
+#endif
     }
     if (v != 0){
       hd = Hd_val(v);
@@ -451,6 +454,12 @@ static void mark_slice (intnat work)
           CAMLassert (gray_vals_ptr == gray_vals);
           CAMLassert (v == 0 && start == 0);
           v = Val_hp (markhp);
+#ifdef NO_NAKED_POINTERS
+          if (Tag_val(v) == Closure_tag) {
+            start = Start_env_closinfo(Closinfo_val(v));
+            CAMLassert(start <= Wosize_val(v));
+          }
+#endif
         }
         markhp += Bhsize_hp (markhp);
       }
@@ -487,6 +496,12 @@ static void mark_slice (intnat work)
           if (gray_vals_ptr > gray_vals){
             v = *--gray_vals_ptr;
             CAMLassert (start == 0);
+#ifdef NO_NAKED_POINTERS
+            if (Tag_val(v) == Closure_tag) {
+              start = Start_env_closinfo(Closinfo_val(v));
+              CAMLassert(start <= Wosize_val(v));
+            }
+#endif
           }
           /* Complete the marking */
           ephes_to_check = ephes_checked_if_pure;
