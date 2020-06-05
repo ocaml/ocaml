@@ -138,7 +138,8 @@ debugger_config.cmo : \
 debugger_config.cmx : \
     int64ops.cmx \
     debugger_config.cmi
-debugger_config.cmi :
+debugger_config.cmi : \
+    ../utils/load_path.cmi
 debugger_lexer.cmo : \
     debugger_parser.cmi \
     debugger_lexer.cmi
@@ -317,7 +318,6 @@ main.cmo : \
     primitives.cmi \
     ../typing/persistent_env.cmi \
     parameters.cmi \
-    ../utils/misc.cmi \
     loadprinter.cmi \
     ../utils/load_path.cmi \
     input_handling.cmi \
@@ -339,7 +339,6 @@ main.cmx : \
     primitives.cmx \
     ../typing/persistent_env.cmx \
     parameters.cmx \
-    ../utils/misc.cmx \
     loadprinter.cmx \
     ../utils/load_path.cmx \
     input_handling.cmx \
@@ -363,7 +362,8 @@ parameters.cmx : \
     debugger_config.cmx \
     ../utils/config.cmx \
     parameters.cmi
-parameters.cmi :
+parameters.cmi : \
+    ../utils/load_path.cmi
 parser_aux.cmi : \
     ../parsing/longident.cmi \
     debugcom.cmi

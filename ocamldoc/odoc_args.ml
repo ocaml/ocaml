@@ -198,7 +198,7 @@ let anonymous f =
 
 module Options = Main_args.Make_ocamldoc_options(struct
     include Main_args.Default.Odoc_args
-    let _I s = Odoc_global.include_dirs := s :: !Odoc_global.include_dirs
+    let _I s = Odoc_global.load_path := Load_path.add_dir !Odoc_global.load_path s
     let _impl s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Impl_file s]
     let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
 end)

@@ -41,7 +41,7 @@ let rec loadfiles ppf name =
     Dynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
-      if not (List.mem d (Load_path.Cache.get_paths ())) then
+      if not (Load_path.mem d (Load_path.Cache.get_paths ())) then
         Load_path.Cache.add_dir d;
     end;
     fprintf ppf "File %s loaded@."

@@ -36,7 +36,7 @@ let arg_list = Arg.align [
     "<file> Read additional NUL separated command line arguments from \n\
     \      <file>";
   "-I", Arg.String (fun s ->
-    Clflags.include_dirs := s :: !Clflags.include_dirs),
+    Clflags.load_path := Load_path.add_dir !Clflags.load_path s),
     "<dir> Add <dir> to the list of include directories";
   ]
 
@@ -69,7 +69,8 @@ let print_info cmt =
     Printf.fprintf oc "sourcefile: %s\n" name;
   end;
   Printf.fprintf oc "build directory: %s\n" cmt.cmt_builddir;
-  List.iter (Printf.fprintf oc "load path: %s\n%!") cmt.cmt_loadpath;
+  List.iter (Printf.fprintf oc "load path: %s\n%!")
+    (Load_path.paths cmt.cmt_loadpath);
   begin
     match cmt.cmt_source_digest with
       None -> ()
@@ -149,7 +150,8 @@ let record_cmt_info cmt =
                                     Annot.Idef (location_file value)))
   in
   let open Cmt_format in
-  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath;
+  List.iter (fun dir -> record_info "include" dir)
+    (Load_path.paths cmt.cmt_loadpath);
   record_info "chdir" cmt.cmt_builddir;
   (match cmt.cmt_sourcefile with
     None -> () | Some file -> record_info "source" file)
@@ -174,7 +176,8 @@ let main () =
           | Some _ as x -> x
         in
         Envaux.reset_cache ();
-        List.iter Load_path.Cache.add_dir cmt.cmt_loadpath;
+        List.iter Load_path.Cache.add_dir
+          (Load_path.paths cmt.cmt_loadpath);
         Cmt2annot.gen_annot target_filename
           ~sourcefile:cmt.cmt_sourcefile
           ~use_summaries:cmt.cmt_use_summaries

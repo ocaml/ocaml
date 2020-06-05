@@ -23,7 +23,7 @@ let socket_name = ref ""
 let arguments = ref ""
 
 let default_load_path =
-  ref [ Filename.current_dir_name; Config.standard_library ]
+  ref (Load_path.of_dirs [ Filename.current_dir_name; Config.standard_library ])
 
 let breakpoint = ref true
 let prompt = ref true
@@ -37,8 +37,9 @@ let add_path dir =
   Envaux.reset_cache()
 
 let add_path_for mdl dir =
-  let old = try Hashtbl.find load_path_for mdl with Not_found -> [] in
-  Hashtbl.replace load_path_for mdl (dir :: old)
+  let old =
+    try Hashtbl.find load_path_for mdl with Not_found -> Load_path.empty in
+  Hashtbl.replace load_path_for mdl (Load_path.add_dir old dir)
 
 (* Used by emacs ? *)
 let emacs = ref false

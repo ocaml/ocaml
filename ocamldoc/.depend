@@ -85,6 +85,7 @@ odoc_args.cmo : \
     odoc_dot.cmo \
     odoc_config.cmi \
     ../driver/main_args.cmi \
+    ../utils/load_path.cmi \
     ../utils/config.cmi \
     ../driver/compenv.cmi \
     odoc_args.cmi
@@ -100,6 +101,7 @@ odoc_args.cmx : \
     odoc_dot.cmx \
     odoc_config.cmx \
     ../driver/main_args.cmx \
+    ../utils/load_path.cmx \
     ../utils/config.cmx \
     ../driver/compenv.cmx \
     odoc_args.cmi
@@ -353,7 +355,8 @@ odoc_global.cmx : \
     ../utils/clflags.cmx \
     odoc_global.cmi
 odoc_global.cmi : \
-    odoc_types.cmi
+    odoc_types.cmi \
+    ../utils/load_path.cmi
 odoc_html.cmo : \
     odoc_text.cmi \
     odoc_ocamlhtml.cmo \
@@ -395,6 +398,7 @@ odoc_info.cmo : \
     odoc_class.cmo \
     odoc_analyse.cmi \
     ../parsing/location.cmi \
+    ../utils/load_path.cmi \
     odoc_info.cmi
 odoc_info.cmx : \
     ../typing/printtyp.cmx \
@@ -419,6 +423,7 @@ odoc_info.cmx : \
     odoc_class.cmx \
     odoc_analyse.cmx \
     ../parsing/location.cmx \
+    ../utils/load_path.cmx \
     odoc_info.cmi
 odoc_info.cmi : \
     ../typing/types.cmi \
@@ -433,6 +438,7 @@ odoc_info.cmi : \
     odoc_exception.cmo \
     odoc_class.cmo \
     ../parsing/location.cmi \
+    ../utils/load_path.cmi \
     ../parsing/asttypes.cmi
 odoc_inherit.cmo :
 odoc_inherit.cmx :

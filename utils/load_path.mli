@@ -19,6 +19,30 @@
     other parameters.
 *)
 
+type t
+(** The type of load paths, mostly specified by sequences of [-I] flags. *)
+
+val empty : t
+
+val of_dirs : string list -> t
+
+val of_paths : string list -> t
+
+val add_dir : t -> string -> t
+(** Add a directory to the load path. *)
+
+val dirs : t -> string list
+(** Return the sequence of directories in the load path. *)
+
+val paths : t -> string list
+(** Return the full sequence of entries in the load path. *)
+
+val mem : string -> t -> bool
+
+val concat : t list -> t
+
+val expand_directory : string -> t -> t
+
 module Cache : sig
   (** This module takes care of caching the contents of the load path, to avoid
       costly directory traversals each time a file needs to be looked up.
@@ -27,19 +51,22 @@ module Cache : sig
       doesn't change during the execution of the compiler. *)
 
   val add_dir : string -> unit
-  (** Add a directory to the load path *)
+  (** Add a directory to the cache *)
 
   val remove_dir : string -> unit
-  (** Remove a directory from the load path *)
+  (** Remove a directory from the cache *)
 
   val reset : unit -> unit
   (** Remove all directories *)
 
-  val init : string list -> unit
-  (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
+  val init : t -> unit
+  (** Initialize the cache with the given load path.  Earlier entries in the
+      load path take precedence over later entries (ie left-to-right precedence
+      for command-line flags). *)
 
-  val get_paths : unit -> string list
-  (** Return the list of directories passed to [add_dir] so far. *)
+  val get_paths : unit -> t
+  (** Return a load path such that [init (get_paths ())] is equivalent to the
+      current cache. *)
 
   val find : string -> string
   (** Locate a file in the load path. Raise [Not_found] if the file

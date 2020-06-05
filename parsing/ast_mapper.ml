@@ -827,9 +827,10 @@ module PpxContext = struct
     let fields =
       [
         lid "tool_name",    make_string tool_name;
-        lid "include_dirs", make_list make_string !Clflags.include_dirs;
+        lid "include_dirs", make_list make_string
+          (Load_path.paths !Clflags.load_path);
         lid "load_path",    make_list make_string
-          (Load_path.Cache.get_paths ());
+          (Load_path.paths (Load_path.Cache.get_paths ()));
         lid "open_modules", make_list make_string !Clflags.open_modules;
         lid "for_package",  make_option make_string !Clflags.for_package;
         lid "debug",        make_bool !Clflags.debug;
@@ -897,9 +898,11 @@ module PpxContext = struct
       | "tool_name" ->
           tool_name_ref := get_string payload
       | "include_dirs" ->
-          Clflags.include_dirs := get_list get_string payload
+          Clflags.load_path :=
+            Load_path.of_paths (get_list get_string payload)
       | "load_path" ->
-          Load_path.Cache.init (get_list get_string payload)
+          Load_path.Cache.init
+            (Load_path.of_paths (get_list get_string payload))
       | "open_modules" ->
           Clflags.open_modules := get_list get_string payload
       | "for_package" ->

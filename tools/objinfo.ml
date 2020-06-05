@@ -109,7 +109,7 @@ let print_cmt_infos cmt =
   printf "Compilation flags:";
   Array.iter print_spaced_string cmt.cmt_args;
   printf "\nLoad path:";
-  List.iter print_spaced_string cmt.cmt_loadpath;
+  List.iter print_spaced_string (Load_path.paths cmt.cmt_loadpath);
   printf "\n";
   printf "cmt interface digest: %s\n"
     (match cmt.cmt_interface_digest with

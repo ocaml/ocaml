@@ -407,12 +407,16 @@ let process_file_as process_fun def source_file =
   Compenv.readenv ppf (Before_compile source_file);
   load_path := [];
   let cwd = if !nocwd then [] else [Filename.current_dir_name] in
-  List.iter add_to_load_path (
-      (!Compenv.last_include_dirs @
-       !Clflags.include_dirs @
-       !Compenv.first_include_dirs @
-       cwd
-      ));
+  let load_path =
+    Load_path.concat
+      [
+        Load_path.of_dirs cwd;
+        !Compenv.initial_load_path;
+        !Clflags.load_path;
+        !Compenv.final_load_path;
+      ]
+  in
+  List.iter add_to_load_path (Load_path.paths load_path);
   Location.input_name := source_file;
   try
     if Sys.file_exists source_file then process_fun source_file else def
@@ -606,7 +610,7 @@ let run_main argv =
         (* "compiler uses -no-alias-deps, and no module is coerced"; *)
       "-debug-map", Arg.Set debug,
         " Dump the delayed dependency map for each map file";
-      "-I", Arg.String (add_to_list Clflags.include_dirs),
+      "-I", Arg.String (fun s -> Clflags.load_path := Load_path.add_dir !Clflags.load_path s),
         "<dir>  Add <dir> to the list of include directories";
       "-nocwd", Arg.Set nocwd,
         " Do not add current working directory to \

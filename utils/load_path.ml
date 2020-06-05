@@ -12,6 +12,31 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type t = string list
+(* Kept in reverse order *)
+
+let empty = []
+
+let of_dirs l = List.rev l
+
+let of_paths l = List.rev l
+
+let add_dir t dir = dir :: t
+
+let dirs t = List.rev t
+
+let paths t = List.rev t
+
+let mem s t = List.mem s t
+
+let concat ts = List.concat (List.rev ts)
+
+let expand_directory dir t = List.map (Misc.expand_directory dir) t
+
+let find fn t = Misc.find_in_path (List.rev t) fn
+
+let find_uncap fn t = Misc.find_in_path_uncap (List.rev t) fn
+
 module Cache = struct
   open Local_store
 
@@ -54,7 +79,7 @@ module Cache = struct
     dirs := []
 
   let get () = List.rev !dirs
-  let get_paths () = List.rev_map Dir.path !dirs
+  let get_paths () = List.map Dir.path !dirs
 
   (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
      we are starting from an empty cache, we can avoid checking whether a unit
@@ -69,7 +94,7 @@ module Cache = struct
 
   let init l =
     reset ();
-    dirs := List.rev_map Dir.create l;
+    dirs := List.map Dir.create l;
     List.iter add !dirs
 
   let remove_dir dir =
@@ -106,12 +131,12 @@ module Cache = struct
     if is_basename fn && not !Sys.interactive then
       STbl.find !files fn
     else
-      Misc.find_in_path (get_paths ()) fn
+      find fn (get_paths ())
 
   let find_uncap fn =
     assert (not Config.merlin || Local_store.is_bound ());
     if is_basename fn && not !Sys.interactive then
       STbl.find !files_uncap (String.uncapitalize_ascii fn)
     else
-      Misc.find_in_path_uncap (get_paths ()) fn
+      find_uncap fn (get_paths ())
 end

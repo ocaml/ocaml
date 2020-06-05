@@ -44,7 +44,7 @@ and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
 
 let compile_only = ref false            (* -c *)
 and output_name = ref (None : string option) (* -o *)
-and include_dirs = ref ([] : string list)(* -I *)
+and load_path = ref Load_path.empty     (* -I or -inc *)
 and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)

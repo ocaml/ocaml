@@ -1080,7 +1080,7 @@ end
    @return the list of analysed top modules. *)
 val analyse_files :
     ?merge_options:Odoc_types.merge_option list ->
-      ?include_dirs:string list ->
+      ?load_path:Load_path.t ->
         ?labels:bool ->
           ?sort_modules:bool ->
             ?no_stop:bool ->

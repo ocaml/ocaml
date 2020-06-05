@@ -1708,7 +1708,7 @@ module Default = struct
 
   module Core = struct
     include Common
-    let _I dir = include_dirs := (dir :: (!include_dirs))
+    let _I dir = load_path := Load_path.add_dir !load_path dir
     let _color = Misc.set_or_ignore color_reader.parse color
     let _dlambda = set dump_lambda
     let _dparsetree = set dump_parsetree
