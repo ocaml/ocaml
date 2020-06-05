@@ -22,26 +22,38 @@
 type t
 (** The type of load paths, mostly specified by sequences of [-I] flags. *)
 
+type path = Dir of string | File of string
+(** The type of load path entries *)
+
+val path_to_string : path -> string
+
 val empty : t
 
 val of_dirs : string list -> t
 
-val of_paths : string list -> t
+val of_paths : path list -> t
 
 val add_dir : t -> string -> t
 (** Add a directory to the load path. *)
 
+val add_file : t -> string -> t
+(** Add a file to the load path. *)
+
 val dirs : t -> string list
 (** Return the sequence of directories in the load path. *)
 
-val paths : t -> string list
+val paths : t -> path list
 (** Return the full sequence of entries in the load path. *)
 
-val mem : string -> t -> bool
+val mem : path -> t -> bool
 
 val concat : t list -> t
 
 val expand_directory : string -> t -> t
+
+val find_uncap : string -> t -> string
+
+val find_rel : string -> t -> string
 
 module Cache : sig
   (** This module takes care of caching the contents of the load path, to avoid
@@ -52,6 +64,11 @@ module Cache : sig
 
   val add_dir : string -> unit
   (** Add a directory to the cache *)
+
+  val add_file : string -> unit
+  (** Add a file to the cache *)
+
+  val add_path : path -> unit
 
   val remove_dir : string -> unit
   (** Remove a directory from the cache *)
@@ -78,21 +95,21 @@ module Cache : sig
   (** Same as [find], but search also for uncapitalized name, i.e.  if
       name is Foo.ml, allow /path/Foo.ml and /path/foo.ml to match. *)
 
-  module Dir : sig
+  module Path : sig
     type t
-    (** Represent one directory in the load path. *)
+    (** Represent a cached version of an entry in the load path. *)
 
-    val create : string -> t
+    val dir : string -> t
 
-    val path : t -> string
+    val path : t -> path
 
     val files : t -> string list
     (** All the files in that directory. This doesn't include files in
         sub-directories of this directory. *)
   end
 
-  val add : Dir.t -> unit
+  val add : Path.t -> unit
 
-  val get : unit -> Dir.t list
+  val get : unit -> Path.t list
   (** Same as [get_paths ()], except that it returns a [Dir.t list]. *)
 end

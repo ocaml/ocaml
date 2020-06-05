@@ -279,7 +279,7 @@ let instr_dir ppf lexbuf =
     end;
     let print_dirs ppf l =
       List.iter (function x -> fprintf ppf "@ %s" x)
-        (Load_path.paths l) in
+        (List.map Load_path.path_to_string (Load_path.paths l)) in
     fprintf ppf "@[<2>Directories: %a@]@." print_dirs
       (Load_path.Cache.get_paths ());
     Hashtbl.iter

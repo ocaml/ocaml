@@ -69,13 +69,13 @@ let _ = add_directive "quit" (Directive_none dir_quit)
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
   Dll.add_path [d];
-  let dir = Load_path.Cache.Dir.create d in
+  let dir = Load_path.Cache.Path.dir d in
   Load_path.Cache.add dir;
   toplevel_env :=
     Stdlib.String.Set.fold
       (fun name env ->
          Env.add_persistent_structure (Ident.create_persistent name) env)
-      (Env.persistent_structures_of_dir dir)
+      (Env.persistent_structures_of_path dir)
       !toplevel_env
 
 let _ = add_directive "directory" (Directive_string dir_directory)
@@ -104,7 +104,8 @@ let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
     }
 
 let dir_show_dirs () =
-  List.iter print_endline (Load_path.paths (Load_path.Cache.get_paths ()))
+  List.iter (fun path -> print_endline (Load_path.path_to_string path))
+    (Load_path.paths (Load_path.Cache.get_paths ()))
 
 let _ = add_directive "show_dirs" (Directive_none dir_show_dirs)
     {

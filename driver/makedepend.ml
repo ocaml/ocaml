@@ -416,7 +416,7 @@ let process_file_as process_fun def source_file =
         !Compenv.final_load_path;
       ]
   in
-  List.iter add_to_load_path (Load_path.paths load_path);
+  List.iter add_to_load_path (Load_path.dirs load_path); (* FIXME *)
   Location.input_name := source_file;
   try
     if Sys.file_exists source_file then process_fun source_file else def

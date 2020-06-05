@@ -99,6 +99,9 @@ let print_cmi_infos name crcs =
   printf "Interfaces imported:\n";
   List.iter print_name_crc crcs
 
+let print_spaced_path path =
+  print_spaced_string (Load_path.path_to_string path)
+
 let print_cmt_infos cmt =
   let open Cmt_format in
   printf "Cmt unit name: %s\n" cmt.cmt_modname;
@@ -109,7 +112,7 @@ let print_cmt_infos cmt =
   printf "Compilation flags:";
   Array.iter print_spaced_string cmt.cmt_args;
   printf "\nLoad path:";
-  List.iter print_spaced_string (Load_path.paths cmt.cmt_loadpath);
+  List.iter print_spaced_path (Load_path.paths cmt.cmt_loadpath);
   printf "\n";
   printf "cmt interface digest: %s\n"
     (match cmt.cmt_interface_digest with

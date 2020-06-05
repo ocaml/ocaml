@@ -16,7 +16,6 @@
 
 (************************ Source management ****************************)
 
-open Misc
 open Primitives
 
 let source_extensions = [".ml"]
@@ -41,7 +40,6 @@ let source_of_module pos mdle =
           acc)
       Debugger_config.load_path_for
       (Load_path.Cache.get_paths ()) in
-  let path = Load_path.paths path in
   let fname = pos.Lexing.pos_fname in
   if fname = "" then
     let innermost_module =
@@ -53,11 +51,11 @@ let source_of_module pos mdle =
       function
         | [] -> raise Not_found
         | ext :: exts ->
-          try find_in_path_uncap path (innermost_module ^ ext)
+          try Load_path.find_uncap (innermost_module ^ ext) path
           with Not_found -> loop exts
     in loop source_extensions
   else if Filename.is_relative fname then
-    find_in_path_rel path fname
+    Load_path.find_rel fname path
   else if Sys.file_exists fname then fname
   else raise Not_found
 

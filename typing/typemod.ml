@@ -169,7 +169,7 @@ let initial_env ~loc ~safe_string ~initially_opened_module
       env
   in
   let units =
-    List.map Env.persistent_structures_of_dir (Load_path.Cache.get ())
+    List.map Env.persistent_structures_of_path (Load_path.Cache.get ())
   in
   let env, units =
     match initially_opened_module with
