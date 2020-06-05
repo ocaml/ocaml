@@ -627,7 +627,7 @@ OCaml 4.11
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
-- #9623: fix typing environments in Typedecl.transl_with_constraint
+- #9623, #9642: fix typing environments in Typedecl.transl_with_constraint
   (Gabriel Scherer, review by Jacques Garrigue and Leo White,
    report by Hugo Heuzard)
 
