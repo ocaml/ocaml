@@ -512,30 +512,26 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         Sig_type(id_row, decl_row, rs', priv)
         :: Sig_type(id, newdecl, rs, priv)
         :: rem
-    | (Sig_type(id, sig_decl, rs, priv) :: rem , [s], Pwith_type (_, sdecl))
+    | (Sig_type(id, sig_decl, rs, priv) :: rem , [s],
+       (Pwith_type (_, sdecl) | Pwith_typesubst (_, sdecl) as constr))
       when Ident.name id = s ->
         let tdecl =
           Typedecl.transl_with_constraint id None
             ~sig_env ~sig_decl ~outer_env:initial_env sdecl in
-        let newdecl = tdecl.typ_type in
-        let loc = sdecl.ptype_loc in
+        let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
         check_type_decl sig_env loc id row_id newdecl sig_decl rs rem;
-        (Pident id, lid, Twith_type tdecl),
-        Sig_type(id, newdecl, rs, priv) :: rem
+        begin match constr with
+          Pwith_type _ ->
+            (Pident id, lid, Twith_type tdecl),
+            Sig_type(id, newdecl, rs, priv) :: rem
+        | (* Pwith_typesubst *) _ ->
+            real_ids := [Pident id];
+            (Pident id, lid, Twith_typesubst tdecl),
+            update_rec_next rs rem
+        end
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge sig_env rem namelist (Some id)
-    | (Sig_type(id, decl, rs, _priv) :: rem, [s], Pwith_typesubst (_, sdecl))
-      when Ident.name id = s ->
-        (* Check as for a normal with constraint, but discard definition *)
-        let tdecl =
-          Typedecl.transl_with_constraint id None
-            ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
-        let newdecl = tdecl.typ_type in
-        check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl rs rem;
-        real_ids := [Pident id];
-        (Pident id, lid, Twith_typesubst tdecl),
-        update_rec_next rs rem
     | (Sig_module(id, pres, md, rs, priv) :: rem, [s], Pwith_module (_, lid'))
       when Ident.name id = s ->
         let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
@@ -563,8 +559,10 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         let path = path_concat id path in
         real_ids := path :: !real_ids;
         let item =
-          match md, constr with
-            {md_type = Mty_alias _}, (Pwith_module _ | Pwith_type _) ->
+          match md.md_type, constr with
+            Mty_alias _, (Pwith_module _ | Pwith_type _) ->
+              (* A module alias cannot be refined, so keep it
+                 and just check that the constraint is correct *)
               item
           | _ ->
               let newmd = {md with md_type = Mty_signature newsg} in
