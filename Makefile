@@ -152,10 +152,13 @@ core:
 	$(MAKE) coreall
 
 # Check if fixpoint reached
+
+CMPBYT := $(CAMLRUN) tools/cmpbyt
+
 .PHONY: compare
 compare:
-	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
-         && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex; \
+	@if $(CMPBYT) boot/ocamlc ocamlc \
+         && $(CMPBYT) boot/ocamllex lex/ocamllex; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
 	else \
 	  echo "Fixpoint not reached, try one more bootstrapping cycle."; \
