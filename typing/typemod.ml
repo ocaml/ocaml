@@ -459,8 +459,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
     | Pwith_typesubst _ | Pwith_modsubst _ -> true
   in
   let real_ids = ref [] in
-  let sig_env = Env.add_signature sg initial_env in
-  let rec merge sg namelist row_id =
+  let rec merge sig_env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
         raise(Error(loc, sig_env, With_no_component lid.txt))
@@ -525,7 +524,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         Sig_type(id, newdecl, rs, priv) :: rem
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
-        merge rem namelist (Some id)
+        merge sig_env rem namelist (Some id)
     | (Sig_type(id, decl, rs, _priv) :: rem, [s], Pwith_typesubst (_, sdecl))
       when Ident.name id = s ->
         (* Check as for a normal with constraint, but discard definition *)
@@ -560,16 +559,18 @@ let merge_constraint initial_env remove_aliases loc sg constr =
     | (Sig_module(id, _, ({md_type = Mty_alias _} as md), _, _) as item :: rem,
        s :: namelist, (Pwith_module _ | Pwith_type _))
       when Ident.name id = s ->
-        let ((path, _, tcstr), _) =
-          merge (extract_sig sig_env loc md.md_type) namelist None
-        in
+        let sg = extract_sig sig_env loc md.md_type in
+        let sig_env = Env.add_signature sg sig_env in
+        let ((path, _, tcstr), _) = merge sig_env sg namelist None in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
         (path, lid, tcstr), item :: rem
     | (Sig_module(id, _, md, rs, priv) :: rem, s :: namelist, _)
       when Ident.name id = s ->
+        let sg = extract_sig sig_env loc md.md_type in
+        let sig_env = Env.add_signature sg sig_env in
         let ((path, _path_loc, tcstr), newsg) =
-          merge (extract_sig sig_env loc md.md_type) namelist None
+          merge sig_env sg namelist None
         in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
@@ -578,13 +579,14 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         (path, lid, tcstr),
         item :: rem
     | (item :: rem, _, _) ->
-        let (cstr, items) = merge rem namelist row_id
+        let (cstr, items) = merge sig_env rem namelist row_id
         in
         cstr, item :: items
   in
   try
     let names = Longident.flatten lid.txt in
-    let (tcstr, sg) = merge sg names None in
+    let sig_env = Env.add_signature sg initial_env in
+    let (tcstr, sg) = merge sig_env sg names None in
     if destructive_substitution then (
       match List.rev !real_ids with
       | [] -> assert false

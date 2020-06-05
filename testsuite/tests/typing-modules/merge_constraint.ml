@@ -1,6 +1,8 @@
 (* TEST
    * expect *)
 
+(* #9623 *)
+
 module RhsScopeCheck = struct
   module type Sig1 = sig
     type t
@@ -149,5 +151,72 @@ module CorrectEnvConstructionTest :
           end
         type 'a foo = 'a M.user
       end
+  end
+|}]
+
+(* #9640 *)
+
+module type Packet_type = sig
+  type t
+end
+module type Unpacked_header = sig
+  module Packet_type : Packet_type
+  type t
+  val f : t -> Packet_type.t -> unit
+end
+module type Header = sig
+  module Packet_type : Packet_type
+  module Unpacked : Unpacked_header with module Packet_type := Packet_type
+end
+module type S = sig
+  module Packet_type : Packet_type
+  module Header : Header with module Packet_type = Packet_type
+end
+[%%expect{|
+module type Packet_type = sig type t end
+module type Unpacked_header =
+  sig
+    module Packet_type : Packet_type
+    type t
+    val f : t -> Packet_type.t -> unit
+  end
+module type Header =
+  sig
+    module Packet_type : Packet_type
+    module Unpacked : sig type t val f : t -> Packet_type.t -> unit end
+  end
+module type S =
+  sig
+    module Packet_type : Packet_type
+    module Header :
+      sig
+        module Packet_type : sig type t = Packet_type.t end
+        module Unpacked : sig type t val f : t -> Packet_type.t -> unit end
+      end
+  end
+|}]
+module type Iobuf_packet = sig
+  module Make (Header : Header) () :
+    S
+    with module Packet_type = Header.Packet_type
+    with module Header.Unpacked = Header.Unpacked
+end
+[%%expect{|
+module type Iobuf_packet =
+  sig
+    module Make :
+      functor (Header : Header) () ->
+        sig
+          module Packet_type : sig type t = Header.Packet_type.t end
+          module Header :
+            sig
+              module Packet_type : sig type t = Packet_type.t end
+              module Unpacked :
+                sig
+                  type t = Header.Unpacked.t
+                  val f : t -> Header.Packet_type.t -> unit
+                end
+            end
+        end
   end
 |}]
