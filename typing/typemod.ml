@@ -556,37 +556,33 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
-    | (Sig_module(id, _, ({md_type = Mty_alias _} as md), _, _) as item :: rem,
-       s :: namelist, (Pwith_module _ | Pwith_type _))
+    | (Sig_module(id, _, md, rs, priv) as item :: rem, s :: namelist, constr)
       when Ident.name id = s ->
         let sg = extract_sig sig_env loc md.md_type in
-        let sig_env = Env.add_signature sg sig_env in
-        let ((path, _, tcstr), _) = merge sig_env sg namelist None in
+        let ((path, _, tcstr), newsg) = merge_signature sig_env sg namelist in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
-        (path, lid, tcstr), item :: rem
-    | (Sig_module(id, _, md, rs, priv) :: rem, s :: namelist, _)
-      when Ident.name id = s ->
-        let sg = extract_sig sig_env loc md.md_type in
-        let sig_env = Env.add_signature sg sig_env in
-        let ((path, _path_loc, tcstr), newsg) =
-          merge sig_env sg namelist None
+        let item =
+          match md, constr with
+            {md_type = Mty_alias _}, (Pwith_module _ | Pwith_type _) ->
+              item
+          | _ ->
+              let newmd = {md with md_type = Mty_signature newsg} in
+              Sig_module(id, Mp_present, newmd, rs, priv)
         in
-        let path = path_concat id path in
-        real_ids := path :: !real_ids;
-        let newmd = {md with md_type=Mty_signature newsg} in
-        let item = Sig_module(id, Mp_present, newmd, rs, priv) in
         (path, lid, tcstr),
         item :: rem
     | (item :: rem, _, _) ->
         let (cstr, items) = merge sig_env rem namelist row_id
         in
         cstr, item :: items
+  and merge_signature env sg namelist =
+    let sig_env = Env.add_signature sg env in
+    merge sig_env sg namelist None
   in
   try
     let names = Longident.flatten lid.txt in
-    let sig_env = Env.add_signature sg initial_env in
-    let (tcstr, sg) = merge sig_env sg names None in
+    let (tcstr, sg) = merge_signature initial_env sg names in
     if destructive_substitution then (
       match List.rev !real_ids with
       | [] -> assert false
