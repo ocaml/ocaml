@@ -3270,6 +3270,7 @@ lambda/lambda.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     lambda/lambda.cmi
 lambda/lambda.cmx : \
@@ -3281,6 +3282,7 @@ lambda/lambda.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmi \
     lambda/lambda.cmi
 lambda/lambda.cmi : \

@@ -42,6 +42,11 @@ Working version
 - #9441: Add RISC-V RV64G native-code backend.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
+- #9620: Limit the number of parameters for an uncurried or untupled
+   function.  Functions with more parameters than that are left
+   partially curried or tupled.
+   (Xavier Leroy, review by Mark Shinwell)
+
 ### Standard library:
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
