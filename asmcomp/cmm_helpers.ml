@@ -72,11 +72,22 @@ let caml_nativeint_ops = "caml_nativeint_ops"
 let caml_int32_ops = "caml_int32_ops"
 let caml_int64_ops = "caml_int64_ops"
 
+let pos_arity_in_closinfo = 8 * size_addr - 8
+       (* arity = the top 8 bits of the closinfo word *)
+
+let closure_info ~arity ~startenv =
+  assert (-128 <= arity && arity <= 127);
+  assert (0 <= startenv && startenv < 1 lsl (pos_arity_in_closinfo - 1));
+  Nativeint.(add (shift_left (of_int arity) pos_arity_in_closinfo)
+                 (add (shift_left (of_int startenv) 1)
+                      1n))
 
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
 let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
 let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
 let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
+let alloc_closure_info ~arity ~startenv dbg =
+  Cblockheader (closure_info ~arity ~startenv, dbg)
 let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
 let alloc_boxedint64_header dbg = Cblockheader (boxedint64_header, dbg)
 let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
@@ -1799,8 +1810,10 @@ let apply_function_body arity =
   (args, clos,
    if arity = 1 then app_fun clos 0 else
    Cifthenelse(
-   Cop(Ccmpi Ceq, [get_field_gen Asttypes.Mutable (Cvar clos) 1 (dbg ());
-                   int_const (dbg ()) arity], dbg ()),
+   Cop(Ccmpi Ceq, [Cop(Casr,
+                       [get_field_gen Asttypes.Mutable (Cvar clos) 1 (dbg());
+                        Cconst_int(pos_arity_in_closinfo, dbg())], dbg());
+                   Cconst_int(arity, dbg())], dbg()),
    dbg (),
    Cop(Capply typ_val,
        get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
@@ -1987,7 +2000,8 @@ let rec intermediate_curry_functions arity num =
            Cop(Calloc,
                [alloc_closure_header 5 (dbg ());
                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
-                int_const (dbg ()) (arity - num - 1);
+                alloc_closure_info ~arity:(arity - num - 1)
+                                   ~startenv:3 (dbg ());
                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1) ^ "_app",
                   dbg ());
                 Cvar arg; Cvar clos],
@@ -1996,7 +2010,8 @@ let rec intermediate_curry_functions arity num =
            Cop(Calloc,
                 [alloc_closure_header 4 (dbg ());
                  Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
-                 int_const (dbg ()) 1; Cvar arg; Cvar clos],
+                 alloc_closure_info ~arity:1 ~startenv:2 (dbg ());
+                 Cvar arg; Cvar clos],
                 dbg ());
       fun_codegen_options = [];
       fun_dbg;
@@ -2713,6 +2728,7 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
       assert (clos_vars = []);
       cdefine_symbol symb @ clos_vars @ cont
   | f1 :: remainder ->
+      let startenv = fundecls_size fundecls in
       let rec emit_others pos = function
           [] -> clos_vars @ cont
       | (f2 : Clambda.ufunction) :: rem ->
@@ -2720,13 +2736,13 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
             Cint(infix_header pos) ::
             (closure_symbol f2) @
             Csymbol_address f2.label ::
-            cint_const f2.arity ::
+            Cint(closure_info ~arity:f2.arity ~startenv:(startenv - pos)) ::
             emit_others (pos + 3) rem
           else
             Cint(infix_header pos) ::
             (closure_symbol f2) @
             Csymbol_address(curry_function_sym f2.arity) ::
-            cint_const f2.arity ::
+            Cint(closure_info ~arity:f2.arity ~startenv:(startenv - pos)) ::
             Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
       Cint(black_closure_header (fundecls_size fundecls
@@ -2735,11 +2751,11 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
       (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
         Csymbol_address f1.label ::
-        cint_const f1.arity ::
+        Cint(closure_info ~arity:f1.arity ~startenv) ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function_sym f1.arity) ::
-        cint_const f1.arity ::
+        Cint(closure_info ~arity:f1.arity ~startenv) ::
         Csymbol_address f1.label ::
         emit_others 4 remainder
 
