@@ -409,6 +409,10 @@ OCaml 4.11
 - #7708, #9580: Ensure Stdlib documentation index refers to Stdlib.
   (Stephen Dolan, review by Florian Angeletti, report by Hannes Mehnert)
 
+- #9610: manual, C FFI: naked pointers are deprecated, detail the
+  forward-compatible options for handling out-of-heap pointers.
+  (Xavier Leroy, review by Mark Shinwell, David Allsopp and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
