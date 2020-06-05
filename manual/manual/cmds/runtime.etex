@@ -98,6 +98,8 @@ The following environment variables are also consulted:
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications separated
   by commas.
+  For convenience, commas at the beginning of the variable are ignored,
+  and multiple runs of commas are interpreted as a single one.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;

@@ -30,6 +30,9 @@ Working version
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
 
+- #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
