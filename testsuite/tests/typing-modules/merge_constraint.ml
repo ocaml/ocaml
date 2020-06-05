@@ -220,3 +220,29 @@ module type Iobuf_packet =
         end
   end
 |}]
+
+(* Simpler example by @gasche *)
+module type S = sig
+  type t
+  type u = t
+end
+module type Pack = sig
+  module M : S
+end
+[%%expect{|
+module type S = sig type t type u = t end
+module type Pack = sig module M : S end
+|}]
+module type Weird = sig
+  module M : S
+  module P : Pack
+    with type M.t = M.t
+    with type M.u = M.u
+end
+[%%expect{|
+module type Weird =
+  sig
+    module M : S
+    module P : sig module M : sig type t = M.t type u = M.u end end
+  end
+|}]
