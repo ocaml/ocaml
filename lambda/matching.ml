@@ -1637,12 +1637,6 @@ let split_and_precompile_half_simplified ~arg pm =
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
-let split_and_precompile ~arg pm =
-  let pm =
-    { pm with cases = List.map (half_simplify_clause ~arg) pm.cases }
-  in
-  split_and_precompile_half_simplified ~arg pm
-
 (* General divide functions *)
 
 type cell = {
@@ -3787,7 +3781,10 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
       } )
   in
   try
-    let next, nexts = split_and_precompile ~arg pm1 in
+    let pm1_half =
+      { pm1 with cases = List.map (half_simplify_clause ~arg) pm1.cases }
+    in
+    let next, nexts = split_and_precompile_half_simplified ~arg pm1_half in
     let size = List.length paraml
     and idl = List.map (function
       | Lvar id -> id
