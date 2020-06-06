@@ -3325,13 +3325,47 @@ let check_partial pat_act_list =
 
 (* have toplevel handler when appropriate *)
 
-let check_total total lambda i handler_fun =
+type failer_kind =
+  | Raise_match_failure
+  | Reraise_noloc of lambda
+
+let failure_handler ~scopes loc ~failer () =
+  match failer with
+  | Reraise_noloc exn_lam ->
+    Lprim (Praise Raise_reraise, [ exn_lam ], Scoped_location.Loc_unknown)
+  | Raise_match_failure ->
+    let sloc = Scoped_location.of_location ~scopes loc in
+    let slot =
+      transl_extension_path sloc
+        Env.initial_safe_string Predef.path_match_failure
+    in
+    let fname, line, char =
+      Location.get_pos_info loc.Location.loc_start in
+    Lprim
+      ( Praise Raise_regular,
+        [ Lprim
+            ( Pmakeblock (0, Immutable, None),
+              [ slot;
+                Lconst
+                  (Const_block
+                     ( 0,
+                       [ Const_base (Const_string (fname, loc, None));
+                         Const_base (Const_int line);
+                         Const_base (Const_int char)
+                       ] ))
+              ],
+              sloc )
+        ],
+        sloc )
+
+let check_total ~scopes loc ~failer total lambda i =
   if Jumps.is_empty total then
     lambda
   else
-    Lstaticcatch (lambda, (i, []), handler_fun ())
+    Lstaticcatch (lambda, (i, []),
+                  failure_handler ~scopes loc ~failer ())
 
-let compile_matching ~scopes repr handler_fun arg pat_act_list partial =
+let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
   match partial with
   | Partial -> (
@@ -3346,7 +3380,7 @@ let compile_matching ~scopes repr handler_fun arg pat_act_list partial =
       try
         let lambda, total =
           compile_match ~scopes repr partial (Context.start 1) pm in
-        check_total total lambda raise_num handler_fun
+        check_total ~scopes loc ~failer total lambda raise_num
       with Unused -> assert false
       (* ; handler_fun() *)
     )
@@ -3362,33 +3396,9 @@ let compile_matching ~scopes repr handler_fun arg pat_act_list partial =
       assert (Jumps.is_empty total);
       lambda
 
-let partial_function ~scopes loc () =
-  let sloc = Scoped_location.of_location ~scopes loc in
-  let slot =
-    transl_extension_path sloc Env.initial_safe_string Predef.path_match_failure
-  in
-  let fname, line, char =
-    Location.get_pos_info loc.Location.loc_start in
-  Lprim
-    ( Praise Raise_regular,
-      [ Lprim
-          ( Pmakeblock (0, Immutable, None),
-            [ slot;
-              Lconst
-                (Const_block
-                   ( 0,
-                     [ Const_base (Const_string (fname, loc, None));
-                       Const_base (Const_int line);
-                       Const_base (Const_int char)
-                     ] ))
-            ],
-            sloc )
-      ],
-      sloc )
-
 let for_function ~scopes loc repr param pat_act_list partial =
-  let f () = partial_function ~scopes loc () in
-  compile_matching ~scopes repr f param pat_act_list partial
+  compile_matching ~scopes loc ~failer:Raise_match_failure
+    repr param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith ~scopes loc param pat_act_list =
@@ -3397,17 +3407,14 @@ let for_trywith ~scopes loc param pat_act_list =
      and is thus reraised for the next handler in the stack.
 
      It is important to *not* include location information in
-     the reraise (hence the [Loc_unknown]) to avoid seeing this
+     the reraise (hence the [_noloc]) to avoid seeing this
      silent reraise in exception backtraces. *)
-  compile_matching ~scopes None
-    (fun () ->
-       ignore loc;
-       Lprim (Praise Raise_reraise, [ param ], Loc_unknown))
-    param pat_act_list Partial
+  compile_matching ~scopes loc ~failer:(Reraise_noloc param)
+    None param pat_act_list Partial
 
 let simple_for_let ~scopes loc param pat body =
-  compile_matching ~scopes None (partial_function ~scopes loc)
-    param [ (pat, body) ] Partial
+  compile_matching ~scopes loc ~failer:Raise_match_failure
+    None param [ (pat, body) ] Partial
 
 (* Optimize binding of immediate tuples
 
@@ -3585,8 +3592,10 @@ let for_tupled_function ~scopes loc paraml pats_act_list partial =
       compile_match ~scopes None partial
         (Context.start (List.length paraml)) pm
     in
-    check_total total lambda raise_num (partial_function ~scopes loc)
-  with Unused -> partial_function ~scopes loc ()
+    check_total ~scopes loc ~failer:Raise_match_failure
+      total lambda raise_num
+  with Unused ->
+    failure_handler ~scopes loc ~failer:Raise_match_failure ()
 
 let flatten_pattern size p =
   match p.pat_desc with
@@ -3693,7 +3702,8 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
           compile_match ~scopes None partial (Context.start 1) pm1 in
         begin match partial with
         | Partial ->
-            check_total total lambda raise_num (partial_function ~scopes loc)
+            check_total ~scopes loc ~failer:Raise_match_failure
+              total lambda raise_num
         | Total ->
             assert (Jumps.is_empty total);
             lambda
@@ -3713,7 +3723,8 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
         List.fold_right2 (bind Strict) idl paraml
           ( match partial with
           | Partial ->
-              check_total total lam raise_num (partial_function ~scopes loc)
+              check_total ~scopes loc ~failer:Raise_match_failure
+                total lam raise_num
           | Total ->
               assert (Jumps.is_empty total);
               lam
