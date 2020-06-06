@@ -1624,6 +1624,7 @@ let options_with_command_line_syntax_inner r after_rest =
       if not !after_rest then (after_rest := true; option ());
       arg a
     in
+    let rest_all a = option (); List.iter arg a in
     match spec with
     | Unit f -> Unit (fun a -> f a; option ())
     | Bool f -> Bool (fun a -> f a; option_with_arg (string_of_bool a))
@@ -1641,6 +1642,7 @@ let options_with_command_line_syntax_inner r after_rest =
        Tuple (loop ~name_opt hd :: List.map (loop ~name_opt:None) tl)
     | Symbol (l, f) -> Symbol (l, (fun a -> f a; option_with_arg a))
     | Rest f -> Rest (fun a -> f a; rest a)
+    | Rest_all f -> Rest_all (fun a -> f a; rest_all a)
     | Expand f -> Expand f
   in
   loop
