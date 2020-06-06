@@ -106,7 +106,7 @@ include compilerlibs/Makefile.compilerlibs
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp Makefile.config utils/Makefile
+utils/config.ml: utils/config.mlp Makefile.config utils/Makefile VERSION
 	$(MAKE) -C utils config.ml
 
 .PHONY: reconfigure

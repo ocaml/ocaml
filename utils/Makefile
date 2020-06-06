@@ -62,7 +62,10 @@ SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
 
-config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
+VERSION=$(shell head -n1 $(ROOTDIR)/VERSION | tr -d '\r\n')
+SHORTVERSION=$(shell echo $(VERSION) | cut -d. -f1,2 | tr '.' '\n' | $(ROOTDIR)/tools/base36.sh)
+
+config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile $(ROOTDIR)/VERSION
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST_STRING,ARCMD) \
@@ -113,6 +116,8 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,FUNCTION_SECTIONS) \
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
+	    $(call SUBST,VERSION) \
+	    $(call SUBST,SHORTVERSION) \
 	    $< > $@
 
 # Test for the substitution functions above
