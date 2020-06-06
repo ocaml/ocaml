@@ -3662,23 +3662,14 @@ let for_let ~scopes loc param pat body =
 (* Easy case since variables are available *)
 let for_tupled_function ~scopes loc paraml pats_act_list partial =
   let partial = check_partial_list pats_act_list partial in
-  let raise_num = next_raise_count () in
-  let omega_params = [ Patterns.omega_list paraml ] in
-  let pm =
-    { cases = pats_act_list;
-      args = List.map (fun id -> (Lvar id, Strict)) paraml;
-      default = Default_environment.(cons omega_params raise_num empty)
-    }
-  in
-  try
-    let lambda, total =
-      compile_match ~scopes None partial
-        (Context.start (List.length paraml)) pm
-    in
-    check_total ~scopes loc ~failer:Raise_match_failure
-      total lambda raise_num
-  with Unused ->
-    failure_handler ~scopes loc ~failer:Raise_match_failure ()
+  let args = List.map (fun id -> (Lvar id, Strict)) paraml in
+  let handler =
+    toplevel_handler ~scopes loc ~failer:Raise_match_failure
+      partial args pats_act_list in
+  handler (fun partial pm ->
+    compile_match ~scopes None partial
+      (Context.start (List.length paraml)) pm
+  )
 
 let flatten_pattern size p =
   match p.pat_desc with
