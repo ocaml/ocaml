@@ -2916,16 +2916,17 @@ let compile_list compile_fun division =
     | (key, cell) :: rem -> (
         if Context.is_empty cell.ctx then
           c_rec totals rem
-        else
-          try
-            let lambda1, total1 = compile_fun cell.ctx cell.pm in
+        else begin
+          match compile_fun cell.ctx cell.pm with
+          | exception Unused -> c_rec totals rem
+          | lambda1, total1 ->
             let c_rem, total, new_discrs =
               c_rec (Jumps.map Context.combine total1 :: totals) rem
             in
             ( (key, lambda1) :: c_rem,
               total,
               Patterns.Head.to_omega_pattern cell.discr :: new_discrs )
-          with Unused -> c_rec totals rem
+        end
       )
   in
   c_rec [] division
@@ -2934,10 +2935,12 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
     | { provenance = mat; exit = i; vars; pm } :: rem -> (
-        try
-          let ctx = Context.select_columns mat ctx in
-          let handler_i, total_i = compile_fun ctx pm in
-          match raw_action r with
+        let ctx = Context.select_columns mat ctx in
+        match compile_fun ctx pm with
+        | exception Unused ->
+          do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
+        | handler_i, total_i ->
+          begin match raw_action r with
           | Lstaticraise (j, args) ->
               if i = j then
                 ( List.fold_right2
@@ -2952,8 +2955,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
                 (Jumps.union (Jumps.remove i total_r)
                    (Jumps.map (Context.rshift_num (ncols mat)) total_i))
                 rem
-        with Unused ->
-          do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
+          end
       )
   in
   do_rec lambda1 total1 to_catch
@@ -3029,28 +3031,28 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
             let ctx_i, total_rem = Jumps.extract i total_body in
             if Context.is_empty ctx_i then
               c_rec body total_body rem
-            else
-              try
-                let li, total_i =
-                  comp_fun
-                    ( match rem with
-                    | [] -> partial
-                    | _ -> Partial
-                    )
-                    ctx_i pm
-                in
+            else begin
+              let partial = match rem with
+                | [] -> partial
+                | _ -> Partial
+              in
+              match comp_fun partial ctx_i pm with
+              | li, total_i ->
                 c_rec
                   (Lstaticcatch (body, (i, []), li))
                   (Jumps.union total_i total_rem)
                   rem
-              with Unused ->
-                c_rec (Lstaticcatch (body, (i, []), lambda_unit)) total_rem rem
+              | exception Unused ->
+                c_rec
+                  (Lstaticcatch (body, (i, []), lambda_unit))
+                  total_rem rem
+            end
           )
       in
-      try
-        let first_lam, total = comp_fun Partial ctx first_match in
+      match comp_fun Partial ctx first_match with
+      | first_lam, total ->
         c_rec first_lam total rem
-      with Unused -> (
+      | exception Unused -> (
         match next_matchs with
         | [] -> raise Unused
         | (_, x) :: xs -> comp_match_handlers comp_fun partial ctx x xs
