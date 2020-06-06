@@ -3452,36 +3452,32 @@ let check_total ~scopes loc ~failer total lambda i =
     Lstaticcatch (lambda, (i, []),
                   failure_handler ~scopes loc ~failer ())
 
+let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
+  match partial with
+  | Total ->
+      let default = Default_environment.empty in
+      let pm = { args; cases; default } in
+      let (lam, total) = compile_fun Total pm in
+      assert (Jumps.is_empty total);
+      lam
+  | Partial ->
+      let raise_num = next_raise_count () in
+      let default =
+        Default_environment.cons [ Patterns.omega_list args ] raise_num
+          Default_environment.empty in
+      let pm = { args; cases; default } in
+      begin match compile_fun Partial pm with
+      | exception Unused -> assert false
+      | (lam, total) ->
+          check_total ~scopes loc ~failer total lam raise_num
+      end
+
 let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
-  match partial with
-  | Partial -> (
-      let raise_num = next_raise_count () in
-      let pm =
-        { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
-          args = [ (arg, Strict) ];
-          default =
-            Default_environment.(cons [ [ Patterns.omega ] ] raise_num empty)
-        }
-      in
-      try
-        let lambda, total =
-          compile_match ~scopes repr partial (Context.start 1) pm in
-        check_total ~scopes loc ~failer total lambda raise_num
-      with Unused -> assert false
-      (* ; handler_fun() *)
-    )
-  | Total ->
-      let pm =
-        { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
-          args = [ (arg, Strict) ];
-          default = Default_environment.empty
-        }
-      in
-      let lambda, total =
-        compile_match ~scopes repr partial (Context.start 1) pm in
-      assert (Jumps.is_empty total);
-      lambda
+  let args = [ (arg, Strict) ] in
+  let rows = map_on_rows (fun pat -> (pat, [])) pat_act_list in
+  toplevel_handler ~scopes loc ~failer partial args rows (fun partial pm ->
+    compile_match_nonempty ~scopes repr partial (Context.start 1) pm)
 
 let for_function ~scopes loc repr param pat_act_list partial =
   compile_matching ~scopes loc ~failer:Raise_match_failure
@@ -3760,29 +3756,17 @@ let compile_flattened ~scopes repr partial ctx pmh =
 
 let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
   let repr = None in
-  let partial = check_partial pat_act_list partial in
-  let raise_num, arg, pm1 =
-    let raise_num, default =
-      match partial with
-      | Partial ->
-          let raise_num = next_raise_count () in
-          ( raise_num,
-            Default_environment.(cons [ [ Patterns.omega ] ] raise_num empty)
-          )
-      | Total -> (-1, Default_environment.empty)
-    in
-    let loc = Scoped_location.of_location ~scopes loc in
-    let arg = Lprim (Pmakeblock (0, Immutable, None), paraml, loc) in
-    ( raise_num,
-      arg,
-      { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
-        args = [ (arg, Strict) ];
-        default
-      } )
-  in
-  try
+  let arg =
+    let sloc = Scoped_location.of_location ~scopes loc in
+    Lprim (Pmakeblock (0, Immutable, None), paraml, sloc) in
+  let handler =
+    let partial = check_partial pat_act_list partial in
+    let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
+    toplevel_handler ~scopes loc ~failer:Raise_match_failure
+      partial [ (arg, Strict) ] rows in
+  handler (fun partial pm1 ->
     let pm1_half =
-      { pm1 with cases = List.map (half_simplify_clause ~arg) pm1.cases }
+      { pm1 with cases = List.map (half_simplify_nonempty ~arg) pm1.cases }
     in
     let next, nexts = split_and_precompile_half_simplified ~arg pm1_half in
     let size = List.length paraml
@@ -3798,18 +3782,8 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
       comp_match_handlers (compile_flattened ~scopes repr) partial
         (Context.start size) flat_next flat_nexts
     in
-    List.fold_right2 (bind Strict) idl paraml
-      ( match partial with
-      | Partial ->
-          let failer = Raise_match_failure in
-          check_total ~scopes loc ~failer total lam raise_num
-      | Total ->
-          assert (Jumps.is_empty total);
-          lam
-      )
-  with Unused -> assert false
-
-(* ; partial_function loc () *)
+    List.fold_right2 (bind Strict) idl paraml lam, total
+  )
 
 (* PR#4828: Believe it or not, the 'paraml' argument below
    may not be side effect free. *)
