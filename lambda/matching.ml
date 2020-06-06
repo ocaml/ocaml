@@ -3391,9 +3391,18 @@ let for_function ~scopes loc repr param pat_act_list partial =
   compile_matching ~scopes repr f param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
-let for_trywith ~scopes param pat_act_list =
+let for_trywith ~scopes loc param pat_act_list =
+  (* Note: the failure action of [for_trywith] corresponds
+     to an exception that is not matched by a try..with handler,
+     and is thus reraised for the next handler in the stack.
+
+     It is important to *not* include location information in
+     the reraise (hence the [Loc_unknown]) to avoid seeing this
+     silent reraise in exception backtraces. *)
   compile_matching ~scopes None
-    (fun () -> Lprim (Praise Raise_reraise, [ param ], Loc_unknown))
+    (fun () ->
+       ignore loc;
+       Lprim (Praise Raise_reraise, [ param ], Loc_unknown))
     param pat_act_list Partial
 
 let simple_for_let ~scopes loc param pat body =
