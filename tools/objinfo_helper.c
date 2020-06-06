@@ -111,7 +111,7 @@ int main(int argc, char ** argv)
   long value;
 
   if (argc != 2)
-    error(NULL, "Usage: objinfo_helper <dynamic library>");
+    error(NULL, "Usage: %s <dynamic library>", argv[0]);
 
   fd = bfd_openr(argv[1], "default");
   if (!fd)
