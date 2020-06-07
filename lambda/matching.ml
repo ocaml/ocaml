@@ -3753,41 +3753,27 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
       } )
   in
   try
-    match split_and_precompile ~arg pm1 with
-    | exception Cannot_flatten ->
-        (* One pattern binds the whole tuple, flattening is not possible.
-           We need to allocate the scrutinee. *)
-        let lambda, total =
-          compile_match ~scopes None partial (Context.start 1) pm1 in
-        begin match partial with
-        | Partial ->
-            check_total ~scopes loc ~failer:Raise_match_failure
-              total lambda raise_num
-        | Total ->
-            assert (Jumps.is_empty total);
-            lambda
-        end
-    | next, nexts ->
-        let size = List.length paraml
-        and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
-        let args = List.map (fun id -> (Lvar id, Alias)) idl in
-        let flat_next = flatten_precompiled size args next
-        and flat_nexts =
-          List.map (fun (e, pm) -> (e, flatten_precompiled size args pm)) nexts
-        in
-        let lam, total =
-          comp_match_handlers (compile_flattened ~scopes repr) partial
-            (Context.start size) flat_next flat_nexts
-        in
-        List.fold_right2 (bind Strict) idl paraml
-          ( match partial with
-          | Partial ->
-              check_total ~scopes loc ~failer:Raise_match_failure
-                total lam raise_num
-          | Total ->
-              assert (Jumps.is_empty total);
-              lam
-          )
+    let next, nexts = split_and_precompile ~arg pm1 in
+    let size = List.length paraml
+    and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
+    let args = List.map (fun id -> (Lvar id, Alias)) idl in
+    let flat_next = flatten_precompiled size args next
+    and flat_nexts =
+      List.map (fun (e, pm) -> (e, flatten_precompiled size args pm)) nexts
+    in
+    let lam, total =
+      comp_match_handlers (compile_flattened ~scopes repr) partial
+        (Context.start size) flat_next flat_nexts
+    in
+    List.fold_right2 (bind Strict) idl paraml
+      ( match partial with
+      | Partial ->
+          let failer = Raise_match_failure in
+          check_total ~scopes loc ~failer total lam raise_num
+      | Total ->
+          assert (Jumps.is_empty total);
+          lam
+      )
   with Unused -> assert false
 
 (* ; partial_function loc () *)

@@ -3,8 +3,6 @@
    * expect
 *)
 
-(* Successful flattening *)
-
 match (3, 2, 1) with
 | (_, 3, _)
 | (1, _, _) -> true
@@ -27,8 +25,8 @@ match (3, 2, 1) with
 - : bool = false
 |}];;
 
-(* Failed flattening: we need to allocate the tuple to bind x. *)
-
+(* This tests needs to allocate the tuple to bind 'x',
+   but this is only done in the branches that use it. *)
 match (3, 2, 1) with
 | ((_, 3, _) as x)
 | ((1, _, _) as x) -> ignore x; true
@@ -39,22 +37,21 @@ match (3, 2, 1) with
   (*match*/96 = 3
    *match*/97 = 2
    *match*/98 = 1
-   *match*/99 = (makeblock 0 *match*/96 *match*/97 *match*/98))
+   *match*/103 = *match*/96
+   *match*/104 = *match*/97
+   *match*/105 = *match*/98)
   (catch
     (catch
-      (let (*match*/100 =a (field 0 *match*/99))
-        (catch
-          (let (*match*/101 =a (field 1 *match*/99))
-            (if (!= *match*/101 3) (exit 7)
-              (let (*match*/102 =a (field 2 *match*/99)) (exit 5 *match*/99))))
-         with (7)
-          (if (!= *match*/100 1) (exit 6)
-            (let
-              (*match*/104 =a (field 2 *match*/99)
-               *match*/103 =a (field 1 *match*/99))
-              (exit 5 *match*/99)))))
-     with (6) 0)
-   with (5 x/94) (seq (ignore x/94) 1)))
+      (catch
+        (if (!= *match*/104 3) (exit 6)
+          (let (x/102 =a (makeblock 0 *match*/96 *match*/97 *match*/98))
+            (exit 4 x/102)))
+       with (6)
+        (if (!= *match*/103 1) (exit 5)
+          (let (x/100 =a (makeblock 0 *match*/96 *match*/97 *match*/98))
+            (exit 4 x/100))))
+     with (5) 0)
+   with (4 x/94) (seq (ignore x/94) 1)))
 - : bool = false
 |}];;
 
@@ -64,39 +61,31 @@ let _ = fun a b ->
   | ((true, _) as _g)
   | ((false, _) as _g) -> ()
 [%%expect{|
-(function a/105 b/106 (let (*match*/109 = a/105 *match*/110 = b/106) 0))
+(function a/106 b/107 (let (*match*/110 = a/106 *match*/111 = b/107) 0))
 - : bool -> 'a -> unit = <fun>
 |}];;
 
 (* More complete tests.
 
-   The current strategy of the compiler is to determine whether
-   flattening of tuple patterns is possible during precompilation,
-   after the pattern has been half-simplified (toplevel alias
-   patterns are gone), during simplification (explosion of
-   or-patterns). Flattening fail if there is an alias pattern found
-   under an or-pattern during explosion.
-
    The test cases below compare the compiler output on alias patterns
-   that are outside an or-pattern (handled during
-   half-simplification, then flattened) or inside an or-pattern
-   (handled during simplification, blocks flattening).
+   that are outside an or-pattern (handled during half-simplification,
+   then flattened) or inside an or-pattern (handled during simplification).
 
-   TL;DR:
-   - outside: flattening happens, good code generated
-   - inside: raises Cannot_flatten, worse code generated
+   We used to have a Cannot_flatten exception that would result in fairly
+   different code generated in both cases, but now the compilation strategy
+   is fairly similar.
 *)
 let _ = fun a b -> match a, b with
 | (true, _) as p -> p
 | (false, _) as p -> p
 (* outside, trivial *)
 [%%expect {|
-(function a/111 b/112
+(function a/112 b/113
   (let
-    (*match*/115 = a/111
-     *match*/116 = b/112
-     p/113 =a (makeblock 0 a/111 b/112))
-    p/113))
+    (*match*/116 = a/112
+     *match*/117 = b/113
+     p/114 =a (makeblock 0 a/112 b/113))
+    p/114))
 - : bool -> 'a -> bool * 'a = <fun>
 |}]
 
@@ -105,8 +94,12 @@ let _ = fun a b -> match a, b with
 | ((false, _) as p) -> p
 (* inside, trivial *)
 [%%expect{|
-(function a/117 b/118
-  (let (*match*/121 = (makeblock 0 a/117 b/118) p/119 =a *match*/121) p/119))
+(function a/118 b/119
+  (let
+    (*match*/126 = a/118
+     *match*/127 = b/119
+     p/120 =a (makeblock 0 a/118 b/119))
+    p/120))
 - : bool -> 'a -> bool * 'a = <fun>
 |}];;
 
@@ -115,13 +108,13 @@ let _ = fun a b -> match a, b with
 | (false as x, _) as p -> x, p
 (* outside, simple *)
 [%%expect {|
-(function a/125 b/126
+(function a/128 b/129
   (let
-    (*match*/131 = a/125
-     *match*/132 = b/126
-     x/127 =a *match*/131
-     p/128 =a (makeblock 0 a/125 b/126))
-    (makeblock 0 x/127 p/128)))
+    (*match*/134 = a/128
+     *match*/135 = b/129
+     x/130 =a *match*/134
+     p/131 =a (makeblock 0 a/128 b/129))
+    (makeblock 0 x/130 p/131)))
 - : bool -> 'a -> bool * (bool * 'a) = <fun>
 |}]
 
@@ -130,12 +123,13 @@ let _ = fun a b -> match a, b with
 | ((false as x, _) as p) -> x, p
 (* inside, simple *)
 [%%expect {|
-(function a/133 b/134
+(function a/136 b/137
   (let
-    (*match*/140 = (makeblock 0 a/133 b/134)
-     x/135 =a (field 0 *match*/140)
-     p/136 =a *match*/140)
-    (makeblock 0 x/135 p/136)))
+    (*match*/148 = a/136
+     *match*/149 = b/137
+     x/138 =a *match*/148
+     p/139 =a (makeblock 0 a/136 b/137))
+    (makeblock 0 x/138 p/139)))
 - : bool -> 'a -> bool * (bool * 'a) = <fun>
 |}]
 
@@ -144,13 +138,13 @@ let _ = fun a b -> match a, b with
 | (false, x) as p -> x, p
 (* outside, complex *)
 [%%expect{|
-(function a/145 b/146
-  (let (*match*/151 = a/145 *match*/152 = b/146)
-    (if *match*/151
-      (let (x/147 =a *match*/151 p/148 =a (makeblock 0 a/145 b/146))
-        (makeblock 0 x/147 p/148))
-      (let (x/149 =a *match*/152 p/150 =a (makeblock 0 a/145 b/146))
-        (makeblock 0 x/149 p/150)))))
+(function a/150 b/151
+  (let (*match*/156 = a/150 *match*/157 = b/151)
+    (if *match*/156
+      (let (x/152 =a *match*/156 p/153 =a (makeblock 0 a/150 b/151))
+        (makeblock 0 x/152 p/153))
+      (let (x/154 =a *match*/157 p/155 =a (makeblock 0 a/150 b/151))
+        (makeblock 0 x/154 p/155)))))
 - : bool -> bool -> bool * (bool * bool) = <fun>
 |}]
 
@@ -160,34 +154,33 @@ let _ = fun a b -> match a, b with
   -> x, p
 (* inside, complex *)
 [%%expect{|
-(function a/153 b/154
-  (let (*match*/160 = (makeblock 0 a/153 b/154))
+(function a/158 b/159
+  (let (*match*/170 = a/158 *match*/171 = b/159)
     (catch
-      (let (x/162 =a (field 0 *match*/160))
-        (if x/162
-          (let (*match*/163 =a (field 1 *match*/160))
-            (exit 14 x/162 *match*/160))
-          (let (x/161 =a (field 1 *match*/160)) (exit 14 x/161 *match*/160))))
-     with (14 x/155 p/156) (makeblock 0 x/155 p/156))))
+      (if *match*/170
+        (let (x/167 =a *match*/170 p/169 =a (makeblock 0 a/158 b/159))
+          (exit 10 x/167 p/169))
+        (let (x/164 =a *match*/171 p/166 =a (makeblock 0 a/158 b/159))
+          (exit 10 x/164 p/166)))
+     with (10 x/160 p/161) (makeblock 0 x/160 p/161))))
 - : bool -> bool -> bool * (bool * bool) = <fun>
 |}]
 
 (* here flattening is an optimisation,
    as we avoid allocating the tuple in the first case,
    and only allocate in the second case *)
-
 let _ = fun a b -> match a, b with
 | (true as x, _) as _p -> x, (true, true)
 | (false as x, _) as p -> x, p
 (* outside, onecase *)
 [%%expect {|
-(function a/164 b/165
-  (let (*match*/170 = a/164 *match*/171 = b/165)
-    (if *match*/170
-      (let (x/166 =a *match*/170 _p/167 =a (makeblock 0 a/164 b/165))
-        (makeblock 0 x/166 [0: 1 1]))
-      (let (x/168 =a *match*/170 p/169 =a (makeblock 0 a/164 b/165))
-        (makeblock 0 x/168 p/169)))))
+(function a/172 b/173
+  (let (*match*/178 = a/172 *match*/179 = b/173)
+    (if *match*/178
+      (let (x/174 =a *match*/178 _p/175 =a (makeblock 0 a/172 b/173))
+        (makeblock 0 x/174 [0: 1 1]))
+      (let (x/176 =a *match*/178 p/177 =a (makeblock 0 a/172 b/173))
+        (makeblock 0 x/176 p/177)))))
 - : bool -> bool -> bool * (bool * bool) = <fun>
 |}]
 
@@ -196,12 +189,13 @@ let _ = fun a b -> match a, b with
 | ((false as x, _) as p) -> x, p
 (* inside, onecase *)
 [%%expect{|
-(function a/172 b/173
+(function a/180 b/181
   (let
-    (*match*/179 = (makeblock 0 a/172 b/173)
-     x/174 =a (field 0 *match*/179)
-     p/175 =a *match*/179)
-    (makeblock 0 x/174 p/175)))
+    (*match*/192 = a/180
+     *match*/193 = b/181
+     x/182 =a *match*/192
+     p/183 =a (makeblock 0 a/180 b/181))
+    (makeblock 0 x/182 p/183)))
 - : bool -> 'a -> bool * (bool * 'a) = <fun>
 |}]
 
@@ -217,36 +211,31 @@ let _ =fun a b -> match a, b with
 | (_, _) as p -> p
 (* outside, tuplist *)
 [%%expect {|
-(function a/187 b/188
-  (let (*match*/191 = a/187 *match*/192 = b/188)
+(function a/197 b/198
+  (let (*match*/201 = a/197 *match*/202 = b/198)
     (catch
-      (if *match*/191
-        (if *match*/192 (let (p/189 =a (field 0 *match*/192)) p/189)
-          (exit 17))
-        (exit 17))
-     with (17) (let (p/190 =a (makeblock 0 a/187 b/188)) p/190))))
+      (if *match*/201
+        (if *match*/202 (let (p/199 =a (field 0 *match*/202)) p/199)
+          (exit 12))
+        (exit 12))
+     with (12) (let (p/200 =a (makeblock 0 a/197 b/198)) p/200))))
 - : bool -> bool tuplist -> bool * bool tuplist = <fun>
 |}]
 
-(* if we cannot flatten, we generate worse code *)
 let _ = fun a b -> match a, b with
 | (true, Cons p)
 | ((_, _) as p) -> p
 (* inside, tuplist *)
 [%%expect{|
-(function a/193 b/194
-  (let (*match*/197 = (makeblock 0 a/193 b/194))
+(function a/203 b/204
+  (let (*match*/210 = a/203 *match*/211 = b/204)
     (catch
-      (let (*match*/199 =a (field 0 *match*/197))
-        (catch
-          (if *match*/199
-            (let (*match*/200 =a (field 1 *match*/197))
-              (if *match*/200
-                (let (p/198 =a (field 0 *match*/200)) (exit 19 p/198))
-                (exit 20)))
-            (exit 20))
-         with (20)
-          (let (*match*/201 =a (field 1 *match*/197)) (exit 19 *match*/197))))
-     with (19 p/195) p/195)))
+      (catch
+        (if *match*/210
+          (if *match*/211
+            (let (p/209 =a (field 0 *match*/211)) (exit 13 p/209)) (exit 14))
+          (exit 14))
+       with (14) (let (p/208 =a (makeblock 0 a/203 b/204)) (exit 13 p/208)))
+     with (13 p/205) p/205)))
 - : bool -> bool tuplist -> bool * bool tuplist = <fun>
 |}]
