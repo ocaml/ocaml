@@ -653,6 +653,32 @@ static void extern_code_pointer(char * codeptr)
   }
 }
 
+/* Marshaling the non-environment part of closures */
+
+Caml_inline mlsize_t extern_closure_up_to_env(value v)
+{
+  mlsize_t startenv, i;
+  value info;
+
+  startenv = Start_env_closinfo(Closinfo_val(v));
+  i = 0;
+  do {
+    /* The infix header */
+    if (i > 0) extern_int(Long_val(Field(v, i++)));
+    /* The default entry point */
+    extern_code_pointer((char *) Field(v, i++));
+    /* The closure info. */
+    info = Field(v, i++);
+    extern_int(Long_val(info));
+    /* The direct entry point if arity is neither 0 nor 1 */
+    if (Arity_closinfo(info) != 0 && Arity_closinfo(info) != 1) {
+      extern_code_pointer((char *) Field(v, i++));
+    }
+  } while (i < startenv);
+  CAMLassert(i == startenv);
+  return startenv;
+}
+
 /* Marshal the given value in the output buffer */
 
 int caml_extern_allow_out_of_heap = 0;
@@ -669,9 +695,15 @@ static void extern_rec(value v)
   while(1) {
   if (Is_long(v)) {
     extern_int(Long_val(v));
-    goto next_item;
   }
-  if (Is_in_value_area(v) || caml_extern_allow_out_of_heap) {
+#ifndef NO_NAKED_POINTERS
+  else if (! (Is_in_value_area(v) || caml_extern_allow_out_of_heap)) {
+    /* Naked pointer outside the heap: try to marshal it as a code pointer,
+       otherwise fail. */
+    extern_code_pointer((char *) v);
+  }
+#endif
+  else {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
@@ -747,6 +779,27 @@ static void extern_rec(value v)
       extern_record_location(v, h);
       break;
     }
+#ifdef NO_NAKED_POINTERS
+    case Closure_tag: {
+      mlsize_t i;
+      extern_header(sz, tag);
+      size_32 += 1 + sz;
+      size_64 += 1 + sz;
+      extern_record_location(v, h);
+      i = extern_closure_up_to_env(v);
+      if (i >= sz) goto next_item;
+      /* Remember that we still have to serialize fields i + 1 ... sz - 1 */
+      if (i < sz - 1) {
+        sp++;
+        if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+        sp->v = &Field(v, i + 1);
+        sp->count = sz - i - 1;
+      }
+      /* Continue serialization with the first environment field */
+      v = Field(v, i);
+      continue;
+    }
+#endif
     default: {
       extern_header(sz, tag);
       size_32 += 1 + sz;
@@ -764,11 +817,6 @@ static void extern_rec(value v)
       continue;
     }
     }
-  }
-  else {
-    /* Naked pointer outside the heap: try to marshal it as a code pointer,
-       otherwise fail. */
-    extern_code_pointer((char *) v);
   }
   next_item:
     /* Pop one more item to marshal, if any */
