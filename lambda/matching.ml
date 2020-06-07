@@ -582,13 +582,15 @@ end
 
 let rec flatten_pat_line size p k =
   match p.pat_desc with
-  | Tpat_any -> Patterns.omegas size :: k
+  | Tpat_any | Tpat_var _ -> Patterns.omegas size :: k
   | Tpat_tuple args -> args :: k
   | Tpat_or (p1, p2, _) ->
       flatten_pat_line size p1 (flatten_pat_line size p2 k)
   | Tpat_alias (p, _, _) ->
-      (* Note: if this 'as' pat is here, then this is a
-                           useless binding, solves PR#3780 *)
+      (* Note: we are only called from flatten_matrix,
+         which is itself only ever used in places
+         where variables do not matter (default environments,
+         "provenance", etc.). *)
       flatten_pat_line size p k
   | _ -> fatal_error "Matching.flatten_pat_line"
 
@@ -909,17 +911,17 @@ type handler = {
   pm : initial_clause pattern_matching
 }
 
-type 'head_pat pm_or_compiled = {
+type ('head_pat, 'matrix) pm_or_compiled = {
   body : 'head_pat Non_empty_row.t clause pattern_matching;
   handlers : handler list;
-  or_matrix : matrix
+  or_matrix : 'matrix
 }
 
 (* Pattern matching after application of both the or-pat rule and the
    mixture rule *)
 
 type pm_half_compiled =
-  | PmOr of Simple.pattern pm_or_compiled
+  | PmOr of (Simple.pattern, matrix) pm_or_compiled
   | PmVar of { inside : pm_half_compiled }
   | Pm of Simple.clause pattern_matching
 
@@ -3704,17 +3706,17 @@ let flatten_handler size handler =
   { handler with provenance = flatten_matrix size handler.provenance }
 
 type pm_flattened =
-  | FPmOr of pattern pm_or_compiled
+  | FPmOr of (pattern, unit) pm_or_compiled
   | FPm of pattern Non_empty_row.t clause pattern_matching
 
 let flatten_precompiled size args pmh =
   match pmh with
   | Pm pm -> FPm (flatten_pm size args pm)
-  | PmOr { body = b; handlers = hs; or_matrix = m } ->
+  | PmOr { body = b; handlers = hs; or_matrix = _ } ->
       FPmOr
         { body = flatten_pm size args b;
           handlers = List.map (flatten_handler size) hs;
-          or_matrix = flatten_matrix size m
+          or_matrix = ();
         }
   | PmVar _ -> assert false
 
