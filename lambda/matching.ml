@@ -1454,6 +1454,45 @@ and do_not_precompile args cls def k =
     k )
 
 and precompile_or ~arg_id (cls : Simple.clause list) ors args def k =
+  (* Example: if [cls] is a single-row matrix
+
+       s11        p12 .. p1n -> act1
+
+     and [ors] has three rows
+
+       (s21|s'21) p22 .. p2n -> act2
+       (s31|s'31) p32 .. p3n -> act3
+       s41        p42 .. p4n -> act4
+
+     where the first and second rows start with disjoint or-patterns
+     of simple patterns, binding the variables x2, y2, z2 and x3, y3
+     respectively, we precompile into the following:
+
+     catch
+       ( match arg1 .. argn with
+       | s11  p12 .. p1n -> act1
+       | s21  _   .. _   -> exit 2 x2 y2 z2
+       | s'21 _   .. _   -> exit 2 x2 y2 z2
+       | s31  _   .. _   -> exit 3 x3 y3
+       | s'31 _   .. _   -> exit 3 x3 y3
+       | s41  p42 .. p4n -> act4 )
+     with
+     | exit 2 x2 y2 z2 ->
+       ( match arg2 .. argn with
+       | p22 .. p2n -> act2 )
+     | exit 3 x3 y3 ->
+       ( match arg2 .. argn with
+       | p32 .. p3n -> act3 )
+
+     Note that if arg1 matches s21 or s'21, we exit to a submatrix
+     that will never try any of the following rows; this relies on the
+     disjointness-like properties documented in the {!Or_matrix}
+     module.
+
+     The code below builds this catch/exit structure, The splitting of
+     the or-patterns is done in [Simple.explode_or_pat] -- it turns
+     half-simple clauses into simple clauses.
+  *)
   let rec do_cases = function
     | [] -> ([], [])
     | ((p, patl), action) :: rem -> (
