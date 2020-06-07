@@ -80,6 +80,10 @@ Working version
 
 ### Tools:
 
+- #9606, #9635, #9637: fix performance regression in the debugger
+  (behaviors quadratic in the size of the debugged program)
+  (Xavier Leroy, report by Jacques Garrigue and Virgile Prevosto,
+  review by David Allsopp and Jacques-Henri Jourdan)
 
 ### Manual and documentation:
 
