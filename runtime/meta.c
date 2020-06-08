@@ -231,7 +231,7 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
   Caml_state->extern_sp -= 4;
   nsp = Caml_state->extern_sp;
   for (i = 0; i < 7; i++) nsp[i] = osp[i];
-  nsp[7] = codeptr;
+  nsp[7] = (value) Nativeint_val(codeptr);
   nsp[8] = env;
   nsp[9] = Val_int(0);
   nsp[10] = arg;
