@@ -1365,8 +1365,10 @@ let run_ocamldoc =
   end
 
 let _ =
-  Environments.register_initializer Environments.Post "find_source_modules" find_source_modules;
-  Environments.register_initializer Environments.Pre "config_variables" config_variables;
+  Environments.register_initializer Environments.Post
+    "find_source_modules" find_source_modules;
+  Environments.register_initializer Environments.Pre
+    "config_variables" config_variables;
   List.iter register
   [
     setup_ocamlc_byte_build_env;
