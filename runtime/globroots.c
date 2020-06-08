@@ -17,170 +17,20 @@
 
 /* Registration of global memory roots */
 
-#include "caml/memory.h"
-#include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/globroots.h"
+#include "caml/skiplist.h"
 
-/* The sets of global memory roots are represented as skip lists
-   (see William Pugh, "Skip lists: a probabilistic alternative to
-   balanced binary trees", Comm. ACM 33(6), 1990). */
+/* The three global root lists.
+   Each is represented by a skip list with the key being the address
+   of the root.  (The associated data field is unused.) */
 
-struct global_root {
-  value * root;                    /* the address of the root */
-  struct global_root * forward[1]; /* variable-length array */
-};
-
-#define NUM_LEVELS 17
-
-struct global_root_list {
-  value * root;                 /* dummy value for layout compatibility */
-  struct global_root * forward[NUM_LEVELS]; /* forward chaining */
-  int level;                    /* max used level */
-};
-
-/* Generate a random level for a new node: 0 with probability 3/4,
-   1 with probability 3/16, 2 with probability 3/64, etc.
-   We use a simple linear congruential PRNG (see Knuth vol 2) instead
-   of random(), because we need exactly 32 bits of pseudo-random data
-   (i.e. 2 * (NUM_LEVELS - 1)).  Moreover, the congruential PRNG
-   is faster and guaranteed to be deterministic (to reproduce bugs). */
-
-static uint32_t random_seed = 0;
-
-static int random_level(void)
-{
-  uint32_t r;
-  int level = 0;
-
-  /* Linear congruence with modulus = 2^32, multiplier = 69069
-     (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173. */
-  r = random_seed = random_seed * 69069 + 25173;
-  /* Knuth (vol 2 p. 13) shows that the least significant bits are
-     "less random" than the most significant bits with a modulus of 2^m,
-     so consume most significant bits first */
-  while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
-  CAMLassert(level < NUM_LEVELS);
-  return level;
-}
-
-/* Insertion in a global root list */
-
-static void caml_insert_global_root(struct global_root_list * rootlist,
-                                    value * r)
-{
-  struct global_root * update[NUM_LEVELS];
-  struct global_root * e, * f;
-  int i, new_level;
-
-  CAMLassert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
-
-  /* Init "cursor" to list head */
-  e = (struct global_root *) rootlist;
-  /* Find place to insert new node */
-  for (i = rootlist->level; i >= 0; i--) {
-    while (1) {
-      f = e->forward[i];
-      if (f == NULL || f->root >= r) break;
-      e = f;
-    }
-    update[i] = e;
-  }
-  e = e->forward[0];
-  /* If already present, don't do anything */
-  if (e != NULL && e->root == r) return;
-  /* Insert additional element, updating list level if necessary */
-  new_level = random_level();
-  if (new_level > rootlist->level) {
-    for (i = rootlist->level + 1; i <= new_level; i++)
-      update[i] = (struct global_root *) rootlist;
-    rootlist->level = new_level;
-  }
-  e = caml_stat_alloc(sizeof(struct global_root) +
-                      new_level * sizeof(struct global_root *));
-  e->root = r;
-  for (i = 0; i <= new_level; i++) {
-    e->forward[i] = update[i]->forward[i];
-    update[i]->forward[i] = e;
-  }
-}
-
-/* Deletion in a global root list */
-
-static void caml_delete_global_root(struct global_root_list * rootlist,
-                                    value * r)
-{
-  struct global_root * update[NUM_LEVELS];
-  struct global_root * e, * f;
-  int i;
-
-  CAMLassert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
-
-  /* Init "cursor" to list head */
-  e = (struct global_root *) rootlist;
-  /* Find element in list */
-  for (i = rootlist->level; i >= 0; i--) {
-    while (1) {
-      f = e->forward[i];
-      if (f == NULL || f->root >= r) break;
-      e = f;
-    }
-    update[i] = e;
-  }
-  e = e->forward[0];
-  /* If not found, nothing to do */
-  if (e == NULL || e->root != r) return;
-  /* Rebuild list without node */
-  for (i = 0; i <= rootlist->level; i++) {
-    if (update[i]->forward[i] == e)
-      update[i]->forward[i] = e->forward[i];
-  }
-  /* Reclaim list element */
-  caml_stat_free(e);
-  /* Down-correct list level */
-  while (rootlist->level > 0 &&
-         rootlist->forward[rootlist->level] == NULL)
-    rootlist->level--;
-}
-
-/* Iterate over a global root list */
-
-static void caml_iterate_global_roots(scanning_action f,
-                                      struct global_root_list * rootlist)
-{
-  struct global_root * gr;
-
-  for (gr = rootlist->forward[0]; gr != NULL; gr = gr->forward[0]) {
-    f(*(gr->root), gr->root);
-  }
-}
-
-/* Empty a global root list */
-
-static void caml_empty_global_roots(struct global_root_list * rootlist)
-{
-  struct global_root * gr, * next;
-  int i;
-
-  CAMLassert(0 <= rootlist->level && rootlist->level < NUM_LEVELS);
-
-  for (gr = rootlist->forward[0]; gr != NULL; /**/) {
-    next = gr->forward[0];
-    caml_stat_free(gr);
-    gr = next;
-  }
-  for (i = 0; i <= rootlist->level; i++) rootlist->forward[i] = NULL;
-  rootlist->level = 0;
-}
-
-/* The three global root lists */
-
-struct global_root_list caml_global_roots = { NULL, { NULL, }, 0 };
+struct skiplist caml_global_roots = SKIPLIST_STATIC_INITIALIZER;
                   /* mutable roots, don't know whether old or young */
-struct global_root_list caml_global_roots_young = { NULL, { NULL, }, 0 };
-                 /* generational roots pointing to minor or major heap */
-struct global_root_list caml_global_roots_old = { NULL, { NULL, }, 0 };
+struct skiplist caml_global_roots_young = SKIPLIST_STATIC_INITIALIZER;
+                  /* generational roots pointing to minor or major heap */
+struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
                   /* generational roots pointing to major heap */
 
 /* The invariant of the generational roots is the following:
@@ -191,7 +41,30 @@ struct global_root_list caml_global_roots_old = { NULL, { NULL, }, 0 };
    - Otherwise (the root contains a pointer outside of the heap or an integer),
      then neither [caml_global_roots_young] nor [caml_global_roots_old] contain
      it.
- */
+*/
+
+/* Insertion and deletion */
+
+Caml_inline void caml_insert_global_root(struct skiplist * list, value * r)
+{
+  caml_skiplist_insert(list, (uintnat) r, 0);
+}
+
+Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
+{
+  caml_skiplist_remove(list, (uintnat) r);
+}
+
+/* Iterate a GC scanning action over a global root list */
+
+static void caml_iterate_global_roots(scanning_action f,
+                                      struct skiplist * rootlist)
+{
+  FOREACH_SKIPLIST_ELEMENT(e, rootlist, {
+      value * r = (value *) (e->key);
+      f(*r, r);
+    })
+}
 
 /* Register a global C root of the mutable kind */
 
@@ -300,14 +173,13 @@ void caml_scan_global_roots(scanning_action f)
 
 void caml_scan_global_young_roots(scanning_action f)
 {
-  struct global_root * gr;
 
   caml_iterate_global_roots(f, &caml_global_roots);
   caml_iterate_global_roots(f, &caml_global_roots_young);
   /* Move young roots to old roots */
-  for (gr = caml_global_roots_young.forward[0];
-       gr != NULL; gr = gr->forward[0]) {
-    caml_insert_global_root(&caml_global_roots_old, gr->root);
-  }
-  caml_empty_global_roots(&caml_global_roots_young);
+  FOREACH_SKIPLIST_ELEMENT(e, &caml_global_roots_young, {
+      value * r = (value *) (e->key);
+      caml_insert_global_root(&caml_global_roots_old, r);
+    });
+  caml_skiplist_empty(&caml_global_roots_young);
 }

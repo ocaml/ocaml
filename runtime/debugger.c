@@ -28,6 +28,7 @@
 #include "caml/debugger.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
+#include "caml/skiplist.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
@@ -96,7 +97,7 @@ static struct channel * dbg_out;/* Output channel on the socket */
 
 static char *dbg_addr = NULL;
 
-static struct ext_table breakpoints_table;
+static struct skiplist event_points_table = SKIPLIST_STATIC_INITIALIZER;
 
 static void open_connection(void)
 {
@@ -198,8 +199,6 @@ void caml_debugger_init(void)
   unsetenv("CAML_DEBUG_SOCKET");
 #endif
 
-  caml_ext_table_init(&breakpoints_table, 16);
-
 #ifdef _WIN32
   winsock_startup();
   (void)atexit(winsock_cleanup);
@@ -281,38 +280,14 @@ static void safe_output_value(struct channel *chan, value val)
   Caml_state->external_raise = saved_external_raise;
 }
 
-struct breakpoint {
-  code_t pc;
-  opcode_t saved;
-};
-
-static struct breakpoint *find_breakpoint(code_t pc)
-{
-  struct breakpoint *bpti;
-  int i;
-
-  for (i = 0; i < breakpoints_table.size; i++) {
-    bpti = (struct breakpoint *) breakpoints_table.contents[i];
-    if (bpti->pc == pc)
-      return bpti;
-  }
-
-  return NULL;
-}
-
 static void save_instruction(code_t pc)
 {
-  struct breakpoint *bpt;
-
-  if (find_breakpoint(pc) != NULL) {
+  uintnat saved;
+  if (caml_skiplist_find(&event_points_table, (uintnat) pc, &saved)) {
     /* Already saved. Nothing to do. */
     return;
   }
-
-  bpt = caml_stat_alloc(sizeof(struct breakpoint));
-  bpt->pc = pc;
-  bpt->saved = *pc;
-  caml_ext_table_add(&breakpoints_table, bpt);
+  caml_skiplist_insert(&event_points_table, (uintnat) pc, *pc);
 }
 
 static void set_instruction(code_t pc, opcode_t opcode)
@@ -323,11 +298,12 @@ static void set_instruction(code_t pc, opcode_t opcode)
 
 static void restore_instruction(code_t pc)
 {
-  struct breakpoint *bpt = find_breakpoint(pc);
-  CAMLassert (bpt != NULL);
-
-  *pc = bpt->saved;
-  caml_ext_table_remove(&breakpoints_table, bpt);
+  CAMLunused_start int found; CAMLunused_end
+  uintnat saved;
+  found = caml_skiplist_find(&event_points_table, (uintnat) pc, &saved);
+  CAMLassert(found);
+  *pc = saved;
+  caml_skiplist_remove(&event_points_table, (uintnat) pc);
 }
 
 static code_t pc_from_pos(int frag, intnat pos)
@@ -344,17 +320,17 @@ static code_t pc_from_pos(int frag, intnat pos)
 
 opcode_t caml_debugger_saved_instruction(code_t pc)
 {
-  struct breakpoint *bpt = find_breakpoint(pc);
-  CAMLassert (bpt != NULL);
-
-  return bpt->saved;
+  CAMLunused_start int found; CAMLunused_end
+  uintnat saved;
+  found = caml_skiplist_find(&event_points_table, (uintnat) pc, &saved);
+  CAMLassert(found);
+  return saved;
 }
 
 void caml_debugger_code_unloaded(int index)
 {
   struct code_fragment *cf;
-  struct breakpoint *bpti;
-  int i;
+  char * pc;
 
   if (!caml_debugger_in_use) return;
 
@@ -363,16 +339,12 @@ void caml_debugger_code_unloaded(int index)
 
   cf = (struct code_fragment *) caml_code_fragments_table.contents[index];
 
-  for (i = 0; i < breakpoints_table.size; i++) {
-    bpti = (struct breakpoint *) breakpoints_table.contents[i];
-    if ((char*) bpti->pc >= cf->code_start && (char*) bpti->pc < cf->code_end) {
-      caml_ext_table_remove(&breakpoints_table, bpti);
-      /* caml_ext_table_remove has shifted the next element in place
-         of the one we just removed. Decrement i for the next
-         iteration. */
-      i--;
+  FOREACH_SKIPLIST_ELEMENT(elt, &event_points_table, {
+    pc = (char *) elt->key;
+    if (pc >= cf->code_start && pc < cf->code_end) {
+      caml_skiplist_remove(&event_points_table, (uintnat) pc);
     }
-  }
+  })
 }
 
 #define Pc(sp) ((code_t)((sp)[0]))
@@ -590,7 +562,7 @@ void caml_debugger(enum event_kind event, value param)
 
 void caml_debugger_cleanup_fork(void)
 {
-  /* We could remove all of the breakpoints, but closing the connection
+  /* We could remove all of the event points, but closing the connection
    * means that they'll just be skipped anyway. */
   close_connection();
   caml_debugger_in_use = 0;
