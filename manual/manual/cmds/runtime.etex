@@ -137,7 +137,9 @@ The following environment variables are also consulted:
   \item[o] ("space_overhead")  The major GC speed setting.
     See the Gc module documentation for details.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
-  \item[l] ("stack_limit") The limit (in words) of the stack size.
+  \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
+  relevant to the byte-code runtime, as the native code runtime uses the
+  operating system's stack.
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
