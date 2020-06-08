@@ -15,70 +15,70 @@
 
 (* The configuration module for ocamltest *)
 
-let arch = "@@ARCH@@"
+let arch = "%%ARCH%%"
 
-let afl_instrument = @@AFL_INSTRUMENT@@
+let afl_instrument = %%AFL_INSTRUMENT%%
 
-let asm = "@@ASM@@"
+let asm = "%%ASM%%"
 
-let cc = "@@CC@@"
+let cc = "%%CC%%"
 
-let cflags = "@@CFLAGS@@"
+let cflags = "%%OC_CFLAGS%%"
 
-let ccomptype = "@@CCOMPTYPE@@"
+let ccomptype = "%%CCOMPTYPE%%"
 
-let shared_libraries = @@SHARED_LIBRARIES@@
+let shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
-let libunix = @@UNIX@@
+let libunix = %%unix%%
 
-let systhreads = @@SYSTHREADS@@
+let systhreads = %%systhreads%%
 
-let str = @@STR@@
+let str = %%str%%
 
-let objext = "@@OBJEXT@@"
+let objext = "%%O%%"
 
-let asmext = "@@ASMEXT@@"
+let asmext = "%%S%%"
 
-let system = "@@SYSTEM@@"
+let system = "%%SYSTEM%%"
 
-let c_preprocessor = "@@CPP@@"
+let c_preprocessor = "%%CPP%%"
 
-let ocamlsrcdir = "@@OCAMLSRCDIR@@"
+let ocamlsrcdir = "%%ocamlsrcdir%%"
 
-let flambda = @@FLAMBDA@@
+let flambda = %%FLAMBDA%%
 
-let spacetime = @@SPACETIME@@
+let spacetime = %%WITH_SPACETIME%%
 
-let ocamlc_default_flags = "@@OCAMLCDEFAULTFLAGS@@"
-let ocamlopt_default_flags = "@@OCAMLOPTDEFAULTFLAGS@@"
+let ocamlc_default_flags = "%%ocamlcdefaultflags%%"
+let ocamlopt_default_flags = "%%ocamloptdefaultflags%%"
 
-let safe_string = @@FORCE_SAFE_STRING@@
+let safe_string = %%FORCE_SAFE_STRING%%
 
-let flat_float_array = @@FLAT_FLOAT_ARRAY@@
+let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
-let ocamldoc = @@OCAMLDOC@@
+let ocamldoc = %%WITH_OCAMLDOC%%
 
-let ocamldebug = @@OCAMLDEBUG@@
+let ocamldebug = %%WITH_OCAMLDEBUG%%
 
-let native_dynlink = @@NATIVE_DYNLINK@@
+let native_dynlink = %%NATDYNLINK%%
 
-let shared_library_cflags = "@@SHARED_LIBRARY_CFLAGS@@"
+let shared_library_cflags = "%%SHAREDLIB_CFLAGS%%"
 
-let sharedobjext = "@@SHAREDOBJEXT@@"
+let sharedobjext = "%%SO%%"
 
-let csc = "@@CSC@@"
+let csc = "%%CSC%%"
 
-let csc_flags = "@@CSCFLAGS@@"
+let csc_flags = "%%CSCFLAGS%%"
 
-let mkdll = "@@MKDLL@@"
-let mkexe = "@@MKEXE@@"
+let mkdll = "%%MKDLL%%"
+let mkexe = "%%mkexe%%"
 
-let bytecc_libs = "@@BYTECCLIBS@@"
+let bytecc_libs = "%%BYTECCLIBS%%"
 
-let nativecc_libs = "@@NATIVECCLIBS@@"
+let nativecc_libs = "%%NATIVECCLIBS%%"
 
-let windows_unicode = @@WINDOWS_UNICODE@@ != 0
+let windows_unicode = %%WINDOWS_UNICODE%% != 0
 
-let function_sections = @@FUNCTION_SECTIONS@@
+let function_sections = %%FUNCTION_SECTIONS%%
 
-let has_instrumented_runtime = @@RUNTIMEI@@
+let has_instrumented_runtime = %%RUNTIMEI%%
