@@ -102,7 +102,6 @@ type t =
 
 type alert = {kind:string; message:string; def:loc; use:loc}
 
-
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
@@ -173,6 +172,170 @@ let number = function
 ;;
 
 let last_warning_number = 67
+;;
+
+(* Third component of each tuple is the list of names for each warning. The
+   first element of the list is the current name, any following ones are
+   deprecated. They current name should always be derived mechanically from the
+   constructor name. *)
+
+let descriptions =
+  [
+    1, "Suspicious-looking start-of-comment mark.",
+    ["comment-start"];
+    2, "Suspicious-looking end-of-comment mark.",
+    ["comment-not-end"];
+    3, "Deprecated synonym for the 'deprecated' alert.",
+    ["fragile-match"];
+    4, "Fragile pattern matching: matching that will remain complete even\n\
+       \    if additional constructors are added to one of the variant types\n\
+       \    matched.",
+    ["partial-application"];
+    5, "Partially applied function: expression whose result has function\n\
+       \    type and is ignored.",
+    ["labels-omitted"];
+    6, "Label omitted in function application.",
+    ["method-override"];
+    7, "Method overridden.",
+    ["partial-match"];
+    8, "Partial match: missing cases in pattern-matching.",
+    ["non-closed-record-pattern"];
+    9, "Missing fields in a record pattern.",
+    ["statement-type"];
+    10, "Expression on the left-hand side of a sequence that doesn't have \
+         type\n\
+        \    \"unit\" (and that is not a function, see warning number 5).",
+    ["statement-type"];
+    11, "Redundant case in a pattern matching (unused match case).",
+    ["unused-match"];
+    12, "Redundant sub-pattern in a pattern-matching.",
+    ["unused-pat"];
+    13, "Instance variable overridden.",
+    ["instance-variable-override"];
+    14, "Illegal backslash escape in a string constant.",
+    ["illegal-backslash"];
+    15, "Private method made public implicitly.",
+    ["implicit-public-methods"];
+    16, "Unerasable optional argument.",
+    ["unerasable-optional-argument"];
+    17, "Undeclared virtual method.",
+    ["undeclared-virtual-method"];
+    18, "Non-principal type.",
+    ["not-principal"];
+    19, "Type without principality.",
+    ["without-principality"];
+    20, "Unused function argument.",
+    ["unused-argument"];
+    21, "Non-returning statement.",
+    ["nonreturning-statement"];
+    22, "Preprocessor warning.",
+    ["preprocessor"];
+    23, "Useless record \"with\" clause.",
+    ["unless-record-with"];
+    24, "Bad module name: the source file name is not a valid OCaml module \
+         name.",
+    ["bad-module-name"];
+    25, "Deprecated: now part of warning 8.",
+    ["all-clauses-guarded"];
+    26, "Suspicious unused variable: unused variable that is bound\n\
+        \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
+        \    character.",
+    ["unused-var"];
+    27, "Innocuous unused variable: unused variable that is not bound with\n\
+        \    \"let\" nor \"as\", and doesn't start with an underscore (\"_\")\n\
+        \    character.",
+    ["unused-var-strict"];
+    28, "Wildcard pattern given as argument to a constant constructor.",
+    ["wildcard-arg-to-constant-constr"];
+    29, "Unescaped end-of-line in a string constant (non-portable code).",
+    ["eol-in-string"];
+    30, "Two labels or constructors of the same name are defined in two\n\
+        \    mutually recursive types.",
+    ["duplicate-definitions"];
+    31, "A module is linked twice in the same executable.",
+    ["multiple-definition"];
+    32, "Unused value declaration.",
+    ["unused-value-declaration"];
+    33, "Unused open statement.",
+    ["unused-open"];
+    34, "Unused type declaration.",
+    ["unused-type-declaration"];
+    35, "Unused for-loop index.",
+    ["unused-for-index"];
+    36, "Unused ancestor variable.",
+    ["unused-ancestor"];
+    37, "Unused constructor.",
+    ["unused-constructor"];
+    38, "Unused extension constructor.",
+    ["unused-extension"];
+    39, "Unused rec flag.",
+    ["unused-rec-flag"];
+    40, "Constructor or label name used out of scope.",
+    ["name-out-of-scope"];
+    41, "Ambiguous constructor or label name.",
+    ["ambiguous-name"];
+    42, "Disambiguated constructor or label name (compatibility warning).",
+    ["disambiguated-name"];
+    43, "Nonoptional label applied as optional.",
+    ["nonoptional-label"];
+    44, "Open statement shadows an already defined identifier.",
+    ["open-shadow-identifier"];
+    45, "Open statement shadows an already defined label or constructor.",
+    ["open-shadow-label-constructor"];
+    46, "Error in environment variable.",
+    ["bad-env-variable"];
+    47, "Illegal attribute payload.",
+    ["attribute-payload"];
+    48, "Implicit elimination of optional arguments.",
+    ["eliminated-optional-arguments"];
+    49, "Absent cmi file when looking up module alias.",
+    ["no-cmi-file"];
+    50, "Unexpected documentation comment.",
+    ["bad-docstring"];
+    51, "Warning on non-tail calls if @tailcall present.",
+    ["expect-tailcall"];
+    52, "Fragile constant pattern.",
+    ["fragile-literal-pattern"];
+    53, "Attribute cannot appear in this context.",
+    ["misplaced-attribute"];
+    54, "Attribute used more than once on an expression.",
+    ["duplicated-attribute"];
+    55, "Inlining impossible.",
+    ["inlining-impossible"];
+    56, "Unreachable case in a pattern-matching (based on type information).",
+    ["unreachable-case"];
+    57, "Ambiguous or-pattern variables under guard.",
+    ["ambiguous-pattern"];
+    58, "Missing cmx file.",
+    ["no-cmx-file"];
+    59, "Assignment to non-mutable value.",
+    ["assignment-to-non-mutable-value"];
+    60, "Unused module declaration.",
+    ["unused-module"];
+    61, "Unboxable type in primitive declaration.",
+    ["unboxable-type-in-prim-decl"];
+    62, "Type constraint on GADT type declaration.",
+    ["constraint-on-gadt"];
+    63, "Erroneous printed signature.",
+    ["erroneous-printed-signature"];
+    64, "-unsafe used with a preprocessor returning a syntax tree.",
+    ["unsafe-without-parsing"];
+    65, "Type declaration defining a new '()' constructor.",
+    ["redefining-unit"];
+    66, "Unused open! statement.",
+    ["unused-open-bang"];
+    67, "Unused functor parameter.",
+    ["unused-functor-parameter"];
+  ]
+;;
+
+let name_to_number =
+  let h = Hashtbl.create last_warning_number in
+  List.iter (fun (num, _, names) ->
+      assert (names <> []);
+      List.iter (fun name -> Hashtbl.add h name num) names
+    ) descriptions;
+  fun s -> Hashtbl.find_opt h s
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -383,7 +546,18 @@ let parse_opt error active errflag s =
        loop (i+1)
     | _ -> error ()
   in
-  loop 0
+  match name_to_number s with
+  | Some n -> set n
+  | None ->
+      if s = "" then loop 0
+      else begin
+        let rest = String.sub s 1 (String.length s - 1) in
+        match s.[0], name_to_number rest with
+        | '+', Some n -> set n
+        | '-', Some n -> clear n
+        | '@', Some n -> set_all n
+        | _ -> loop 0
+      end
 ;;
 
 let parse_options errflag s =
@@ -696,91 +870,10 @@ let check_fatal () =
   end;
 ;;
 
-let descriptions =
-  [
-    1, "Suspicious-looking start-of-comment mark.";
-    2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated synonym for the 'deprecated' alert.";
-    4, "Fragile pattern matching: matching that will remain complete even\n\
-   \    if additional constructors are added to one of the variant types\n\
-   \    matched.";
-    5, "Partially applied function: expression whose result has function\n\
-   \    type and is ignored.";
-    6, "Label omitted in function application.";
-    7, "Method overridden.";
-    8, "Partial match: missing cases in pattern-matching.";
-    9, "Missing fields in a record pattern.";
-   10, "Expression on the left-hand side of a sequence that doesn't have \
-      type\n\
-   \    \"unit\" (and that is not a function, see warning number 5).";
-   11, "Redundant case in a pattern matching (unused match case).";
-   12, "Redundant sub-pattern in a pattern-matching.";
-   13, "Instance variable overridden.";
-   14, "Illegal backslash escape in a string constant.";
-   15, "Private method made public implicitly.";
-   16, "Unerasable optional argument.";
-   17, "Undeclared virtual method.";
-   18, "Non-principal type.";
-   19, "Type without principality.";
-   20, "Unused function argument.";
-   21, "Non-returning statement.";
-   22, "Preprocessor warning.";
-   23, "Useless record \"with\" clause.";
-   24, "Bad module name: the source file name is not a valid OCaml module \
-        name.";
-   25, "Deprecated: now part of warning 8.";
-   26, "Suspicious unused variable: unused variable that is bound\n\
-   \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
-   \    character.";
-   27, "Innocuous unused variable: unused variable that is not bound with\n\
-   \    \"let\" nor \"as\", and doesn't start with an underscore (\"_\")\n\
-   \    character.";
-   28, "Wildcard pattern given as argument to a constant constructor.";
-   29, "Unescaped end-of-line in a string constant (non-portable code).";
-   30, "Two labels or constructors of the same name are defined in two\n\
-   \    mutually recursive types.";
-   31, "A module is linked twice in the same executable.";
-   32, "Unused value declaration.";
-   33, "Unused open statement.";
-   34, "Unused type declaration.";
-   35, "Unused for-loop index.";
-   36, "Unused ancestor variable.";
-   37, "Unused constructor.";
-   38, "Unused extension constructor.";
-   39, "Unused rec flag.";
-   40, "Constructor or label name used out of scope.";
-   41, "Ambiguous constructor or label name.";
-   42, "Disambiguated constructor or label name (compatibility warning).";
-   43, "Nonoptional label applied as optional.";
-   44, "Open statement shadows an already defined identifier.";
-   45, "Open statement shadows an already defined label or constructor.";
-   46, "Error in environment variable.";
-   47, "Illegal attribute payload.";
-   48, "Implicit elimination of optional arguments.";
-   49, "Absent cmi file when looking up module alias.";
-   50, "Unexpected documentation comment.";
-   51, "Warning on non-tail calls if @tailcall present.";
-   52, "Fragile constant pattern.";
-   53, "Attribute cannot appear in this context.";
-   54, "Attribute used more than once on an expression.";
-   55, "Inlining impossible.";
-   56, "Unreachable case in a pattern-matching (based on type information).";
-   57, "Ambiguous or-pattern variables under guard.";
-   58, "Missing cmx file.";
-   59, "Assignment to non-mutable value.";
-   60, "Unused module declaration.";
-   61, "Unboxable type in primitive declaration.";
-   62, "Type constraint on GADT type declaration.";
-   63, "Erroneous printed signature.";
-   64, "-unsafe used with a preprocessor returning a syntax tree.";
-   65, "Type declaration defining a new '()' constructor.";
-   66, "Unused open! statement.";
-   67, "Unused functor parameter.";
-  ]
-;;
-
 let help_warnings () =
-  List.iter (fun (i, s) -> Printf.printf "%3i %s\n" i s) descriptions;
+  List.iter
+    (fun (i, s, names) -> Printf.printf "%3i [%s] %s\n" i (List.hd names) s)
+    descriptions;
   print_endline "  A all warnings";
   for i = Char.code 'b' to Char.code 'z' do
     let c = Char.chr i in
