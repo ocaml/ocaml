@@ -60,7 +60,8 @@ struct exec_trailer {
 
 /* Magic number for this release */
 
-#define EXEC_MAGIC "Caml1999X027"
+#include "version.h"
+#define EXEC_MAGIC "Caml1999X" OCAML_VERSION_SHORT_STRING "-"
 
 #endif /* CAML_INTERNALS */
 
