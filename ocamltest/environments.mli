@@ -43,11 +43,13 @@ val dump : out_channel -> t -> unit
 
 (* Initializers *)
 
+type kind = Pre | Post
+
 type env_initializer = out_channel -> t -> t
 
-val register_initializer : string -> env_initializer -> unit
+val register_initializer : kind -> string -> env_initializer -> unit
 
-val initialize : env_initializer
+val initialize : kind -> env_initializer
 
 (* Modifiers *)
 

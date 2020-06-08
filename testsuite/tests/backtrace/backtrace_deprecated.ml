@@ -36,7 +36,6 @@ let run args =
         trace
 
 let _ =
-  Printexc.record_backtrace true;
   run [| "a" |];
   run [| "b" |];
   run [| "c" |];
