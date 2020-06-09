@@ -239,9 +239,6 @@ clean::
 
 include .depend
 
-EMPTY :=
-SPACE := $(EMPTY) $(EMPTY)
-
 .PHONY: depend
 depend:
 	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
