@@ -25,15 +25,16 @@
 #include "caml/memory.h"
 #include "caml/skiplist.h"
 
-static struct skiplist caml_code_fragments_list = SKIPLIST_STATIC_INITIALIZER;
+static struct skiplist code_fragments_by_pc = SKIPLIST_STATIC_INITIALIZER;
 
-static struct ext_table caml_code_fragments_table = {0, 0, NULL};
+static struct skiplist code_fragments_by_num = SKIPLIST_STATIC_INITIALIZER;
+
+static int code_fragments_counter = 0;
 
 int caml_register_code_fragment(char * start, char * end,
                                 enum digest_status digest_kind,
                                 unsigned char * opt_digest)
 {
-  int pos;
   struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
 
   cf->code_start = start;
@@ -52,30 +53,18 @@ int caml_register_code_fragment(char * start, char * end,
     break;
   }
   cf->digest_status = digest_kind;
-  caml_skiplist_insert(&caml_code_fragments_list,
+  cf->fragnum = code_fragments_counter++;
+  caml_skiplist_insert(&code_fragments_by_pc,
                        (uintnat) start, (uintnat) cf);
-  if (caml_code_fragments_table.capacity == 0) {
-    caml_ext_table_init(&caml_code_fragments_table, 8);
-  }
-  pos = caml_ext_table_add(&caml_code_fragments_table, cf);
-  cf->fragnum = pos;
-  return pos;
+  caml_skiplist_insert(&code_fragments_by_num,
+                       cf->fragnum, (uintnat) cf);
+  return cf->fragnum;
 }
 
 void caml_remove_code_fragment(struct code_fragment * cf)
 {
-  caml_skiplist_remove(&caml_code_fragments_list, (uintnat) cf->code_start);
-  /* Currently, caml_remove_code_fragment is used only to remove
-     the fragment most recently inserted, so optimize for this case. */
-  if (cf->fragnum == caml_code_fragments_table.size - 1) {
-    caml_code_fragments_table.size--;
-  } else {
-    /* Just mark the table entry invalid.  Later, we could maintain
-       a free list of empty entries in caml_code_fragments_table
-       so as to reuse them on the next caml_register_code_fragment.
-       Or replace the table by a skiplist. */
-    caml_code_fragments_table.contents[cf->fragnum] = NULL;
-  }
+  caml_skiplist_remove(&code_fragments_by_pc, (uintnat) cf->code_start);
+  caml_skiplist_remove(&code_fragments_by_num, cf->fragnum);
   caml_stat_free(cf);
 }
 
@@ -84,7 +73,7 @@ struct code_fragment * caml_find_code_fragment_by_pc(char *pc)
   struct code_fragment * cf;
   uintnat key, data;
 
-  if (caml_skiplist_find_below(&caml_code_fragments_list,
+  if (caml_skiplist_find_below(&code_fragments_by_pc,
                                (uintnat) pc, &key, &data)) {
     cf = (struct code_fragment *) data;
     if (cf->code_start <= pc && pc < cf->code_end) return cf;
@@ -94,8 +83,9 @@ struct code_fragment * caml_find_code_fragment_by_pc(char *pc)
 
 struct code_fragment * caml_find_code_fragment_by_num(int fragnum)
 {
-  if (0 <= fragnum && fragnum < caml_code_fragments_table.size) {
-    return caml_code_fragments_table.contents[fragnum];
+  uintnat data;
+  if (caml_skiplist_find(&code_fragments_by_num, fragnum, &data)) {
+    return (struct code_fragment *) data;
   } else {
     return NULL;
   }
@@ -115,12 +105,10 @@ unsigned char * caml_digest_of_code_fragment(struct code_fragment * cf)
 struct code_fragment *
    caml_find_code_fragment_by_digest(unsigned char digest[16])
 {
-  int i;
-
-  for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
-    struct code_fragment * cf = caml_code_fragments_table.contents[i];
+  FOREACH_SKIPLIST_ELEMENT(e, &code_fragments_by_pc, {
+    struct code_fragment * cf = (struct code_fragment *) e->data;
     unsigned char * d = caml_digest_of_code_fragment(cf);
     if (d != NULL && memcmp(digest, d, 16) == 0) return cf;
-  }
+  })
   return NULL;
 }
