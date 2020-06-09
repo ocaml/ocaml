@@ -63,7 +63,10 @@ SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
 
 VERSION=$(shell head -n1 $(ROOTDIR)/VERSION | tr -d '\r\n')
-SHORTVERSION=$(shell echo $(VERSION) | cut -d. -f1,2 | tr '.' '\n' | $(ROOTDIR)/tools/base36.sh)
+include ../tools/Makefile.version
+SHORT_MAJOR=$(call BASE36,$(word 1,$(subst ., ,$(VERSION))))
+SHORT_MINOR=$(call BASE36,$(word 2,$(subst ., ,$(VERSION))))
+SHORTVERSION=$(SHORT_MAJOR)$(SHORT_MINOR)
 
 config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile $(ROOTDIR)/VERSION
 	sed $(call SUBST,AFL_INSTRUMENT) \

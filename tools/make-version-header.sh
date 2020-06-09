@@ -53,5 +53,6 @@ case "$suffix" in
 esac
 printf '#define OCAML_VERSION %d%02d%02d\n' "$major" "$minor" "$patchlvl"
 echo "#define OCAML_VERSION_STRING \"$version\""
-short_string="`(echo $major; echo $minor) | ../tools/base36.sh`"
+MAKE="${MAKE:-make} --no-print-directory"
+short_string="$($MAKE -f "$(dirname $0)/Makefile.version" VERSION="$version")"
 printf '#define OCAML_VERSION_SHORT_STRING "%s"\n' "$short_string"
