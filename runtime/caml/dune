@@ -24,6 +24,7 @@
 (rule
  (targets version.h)
  (mode    fallback)
+ (deps    ../../VERSION)
  (action
    (with-stdout-to %{targets}
-     (run %{dep:../../tools/make-version-header.sh} %{dep:../../VERSION}))))
+     (run make -C .. caml/version.h))))

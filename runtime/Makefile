@@ -266,8 +266,67 @@ caml/jumptbl.h : caml/instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' > $@
 
-caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION
-	$^ > $@
+# caml/version.h is derived from $(ROOTDIR)/VERSION. This used to be done with
+# shell script and a lot of sed invocations. The only difference here is that
+# spaces at the end of the string are not preserved.
+
+# We need both the BASE36 function and B36 list of chars
+include $(ROOTDIR)/tools/Makefile.version
+
+# Get the version (can be overridden for testing)
+OCAML_VERSION ?= $(shell sed -e 1q "$(ROOTDIR)/VERSION" | tr -d '\r')
+
+# Technically, VERSION can include spaces after the +, so get those words
+OCAML_VERSION_WORDS := $(wordlist 2,$(words $(OCAML_VERSION)),$(OCAML_VERSION))
+
+# OCAML_VERSION gets written verbatim to version.h, so use $(VERSION) from here.
+# VERSION is either a single word (release) or two words (release + additional1)
+VERSION := $(subst +, ,$(word 1,$(OCAML_VERSION)))
+
+# OCAML_VERSION_ADDITIONAL is everything after the first +
+OCAML_VERSION_ADDITIONAL := \
+  $(subst $(SPACE),+,$(wordlist 2,$(words $(VERSION)),$(VERSION)))
+
+# And add anything after the first space back in
+ifneq "$(OCAML_VERSION_WORDS)" ""
+OCAML_VERSION_ADDITIONAL += $(OCAML_VERSION_WORDS)
+endif
+
+# Now version is either 3 words (release) or 4 words (release + additional1)
+VERSION := $(subst ., ,$(VERSION))
+OCAML_VERSION_MAJOR := $(word 1,$(VERSION))
+OCAML_VERSION_MINOR := $(word 2,$(VERSION))
+OCAML_VERSION_PATCH := $(word 3,$(VERSION))
+
+# Remove leading 0 for the OCAML_VERSION_MINOR define
+OCAML_NUMERIC_MINOR := $(patsubst 0%,%,$(OCAML_VERSION_MINOR))
+
+# B36 is non-zero characters of base 36, so the filter-out with 0 added detects
+# $(1) < 10 and adds a leading zero.
+FORMAT_02D = $(if $(filter-out $(B36) 0,$(1)),$(1),0$(1))
+
+# OCAML_NUMERIC_VERSION produces a 5 digit integer
+OCAML_NUMERIC_VERSION := $(OCAML_VERSION_MAJOR)$(OCAML_VERSION_MINOR)
+OCAML_NUMERIC_VERSION := \
+  $(OCAML_NUMERIC_VERSION)$(call FORMAT_02D,$(OCAML_VERSION_PATCH))
+
+# Convert OCAML_VERSION_MAJOR and OCAML_VERSION_MINOR to base 36
+OCAML_MAGIC := \
+  $(call BASE36,$(OCAML_VERSION_MAJOR))$(call BASE36,$(OCAML_VERSION_MINOR))
+
+caml/version.h : $(ROOTDIR)/VERSION
+	echo '#define OCAML_VERSION_MAJOR $(OCAML_VERSION_MAJOR)' > $@
+	echo '#define OCAML_VERSION_MINOR $(OCAML_NUMERIC_MINOR)' >> $@
+	echo '#define OCAML_VERSION_PATCHLEVEL $(OCAML_VERSION_PATCH)' >> $@
+ifeq "$(OCAML_VERSION_ADDITIONAL)" ""
+	echo '#undef OCAML_VERSION_ADDITIONAL' >> $@
+else
+	echo '#define OCAML_VERSION_ADDITIONAL "$(OCAML_VERSION_ADDITIONAL)"' \
+          >> $@
+endif
+	echo '#define OCAML_VERSION $(OCAML_NUMERIC_VERSION)' >> $@
+	echo '#define OCAML_VERSION_STRING "$(strip OCAML_VERSION)"' >> $@
+	echo '#define OCAML_VERSION_SHORT_STRING "$(OCAML_MAGIC)"' >> $@
 
 # Libraries and programs
 
