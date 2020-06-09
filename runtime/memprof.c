@@ -85,14 +85,16 @@ static intnat callstack_buffer_len = 0;
 
 /**** Statistical sampling ****/
 
-Caml_inline uint64_t splitmix64_next(uint64_t* x) {
+Caml_inline uint64_t splitmix64_next(uint64_t* x)
+{
   uint64_t z = (*x += 0x9E3779B97F4A7C15ull);
   z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
   z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
   return z ^ (z >> 31);
 }
 
-static void xoshiro_init(void) {
+static void xoshiro_init(void)
+{
   int i;
   uint64_t splitmix64_state = 42;
   rand_pos = RAND_BLOCK_SIZE;
@@ -106,7 +108,8 @@ static void xoshiro_init(void) {
   }
 }
 
-Caml_inline uint32_t xoshiro_next(int i) {
+Caml_inline uint32_t xoshiro_next(int i)
+{
   uint32_t res = xoshiro_state[0][i] + xoshiro_state[3][i];
   uint32_t t = xoshiro_state[1][i] << 9;
   xoshiro_state[2][i] ^= xoshiro_state[0][i];
@@ -122,7 +125,8 @@ Caml_inline uint32_t xoshiro_next(int i) {
 /* Computes [log((y+0.5)/2^32)], up to a relatively good precision,
    and guarantee that the result is negative.
    The average absolute error is very close to 0. */
-Caml_inline float log_approx(uint32_t y) {
+Caml_inline float log_approx(uint32_t y)
+{
   union { float f; int32_t i; } u;
   float exp, x;
   u.f = y + 0.5f;    /* We convert y to a float ... */
@@ -155,7 +159,8 @@ Caml_inline float log_approx(uint32_t y) {
 #ifdef SUPPORTS_TREE_VECTORIZE
 __attribute__((optimize("tree-vectorize")))
 #endif
-static void rand_batch(void) {
+static void rand_batch(void)
+{
   int i;
 
   /* Instead of using temporary buffers, we could use one big loop,
@@ -167,23 +172,23 @@ static void rand_batch(void) {
   CAMLassert(lambda > 0.);
 
   /* Shuffle the xoshiro samplers, and generate uniform variables in A. */
-  for(i = 0; i < RAND_BLOCK_SIZE; i++)
+  for (i = 0; i < RAND_BLOCK_SIZE; i++)
     A[i] = xoshiro_next(i);
 
   /* Generate exponential random variables by computing logarithms. We
      do not use math.h library functions, which are slow and prevent
      compiler from using SIMD instructions. */
-  for(i = 0; i < RAND_BLOCK_SIZE; i++)
+  for (i = 0; i < RAND_BLOCK_SIZE; i++)
     B[i] = 1 + log_approx(A[i]) * one_log1m_lambda;
 
   /* We do the final flooring for generating geometric
      variables. Compilers are unlikely to use SIMD instructions for
      this loop, because it involves a conditional and variables of
      different sizes (32 and 64 bits). */
-  for(i = 0; i < RAND_BLOCK_SIZE; i++) {
+  for (i = 0; i < RAND_BLOCK_SIZE; i++) {
     double f = B[i];
     CAMLassert (f >= 1);
-    if(f > (double)Max_long) rand_geom_buff[i] = Max_long;
+    if (f > (double)Max_long) rand_geom_buff[i] = Max_long;
     else rand_geom_buff[i] = (uintnat)f;
   }
 
@@ -196,7 +201,7 @@ static uintnat rand_geom(void)
 {
   uintnat res;
   CAMLassert(lambda > 0.);
-  if(rand_pos == RAND_BLOCK_SIZE) rand_batch();
+  if (rand_pos == RAND_BLOCK_SIZE) rand_batch();
   res = rand_geom_buff[rand_pos++];
   CAMLassert(1 <= res && res <= Max_long);
   return res;
@@ -360,7 +365,8 @@ static struct tracking_state {
    large.
    Returns 1 if reallocation succeeded --[trackst.alloc_len] is at
    least [trackst.len]--, and 0 otherwise. */
-static int realloc_trackst(void) {
+static int realloc_trackst(void)
+{
   uintnat new_alloc_len;
   struct tracked* new_entries;
   if (trackst.len <= trackst.alloc_len &&
@@ -417,7 +423,8 @@ static void mark_deleted(uintnat t_idx)
 /* The return value is an exception or [Val_unit] iff [*t_idx] is set to
    [Invalid_index]. In this case, the entry is deleted.
    Otherwise, the return value is a [Some(...)] block. */
-Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param) {
+Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param)
+{
   struct tracked* t = &trackst.entries[*t_idx];
   value res;
   CAMLassert(!t->callback_running && t->idx_ptr == NULL);
@@ -541,15 +548,17 @@ static void flush_deleted(void)
   realloc_trackst();
 }
 
-static void check_action_pending(void) {
+static void check_action_pending(void)
+{
   if (!suspended && trackst.callback < trackst.len)
     caml_set_action_pending();
 }
 
-void caml_memprof_set_suspended(int s) {
+void caml_memprof_set_suspended(int s)
+{
   suspended = s;
   caml_memprof_renew_minor_sample();
-  if(!s) check_action_pending();
+  if (!s) check_action_pending();
 }
 
 /* In case of a thread context switch during a callback, this can be
@@ -573,7 +582,7 @@ value caml_memprof_handle_postponed_exn(void)
 void caml_memprof_oldify_young_roots(void)
 {
   uintnat i;
-  /* This loop should always have a small number of iteration (when
+  /* This loop should always have a small number of iterations (when
      compared to the size of the minor heap), because the young
      pointer should always be close to the end of the array. Indeed,
      it is only moved back when returning from a callback triggered by
@@ -887,7 +896,8 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
   return;
 }
 
-void caml_memprof_track_interned(header_t* block, header_t* blockend) {
+void caml_memprof_track_interned(header_t* block, header_t* blockend)
+{
   header_t *p;
   value callstack = 0;
   int is_young = Is_young(Val_hp(block));
@@ -921,7 +931,8 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
 /**** Interface with the OCaml code. ****/
 
-static void caml_memprof_init(void) {
+static void caml_memprof_init(void)
+{
   init = 1;
   xoshiro_init();
 }
@@ -996,26 +1007,30 @@ CAMLprim value caml_memprof_stop(value unit)
 
 /**** Interface with systhread. ****/
 
-CAMLexport void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx)
+{
   ctx->suspended = 0;
   ctx->callback_running = 0;
 }
 
-CAMLexport void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx)
+{
   /* Make sure that no memprof callback is being executed in this
      thread. If so, memprof data structures may have pointers to the
      thread's stack. */
-  if(ctx->callback_running)
+  if (ctx->callback_running)
     caml_fatal_error("Thread.exit called from a memprof callback.");
 }
 
-CAMLexport void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx)
+{
   ctx->suspended = suspended;
   ctx->callback_running = callback_running;
 }
 
 CAMLexport void caml_memprof_restore_th_ctx
-        (const struct caml_memprof_th_ctx* ctx) {
+        (const struct caml_memprof_th_ctx* ctx)
+{
   callback_running = ctx->callback_running;
   caml_memprof_set_suspended(ctx->suspended);
 }
