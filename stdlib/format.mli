@@ -133,6 +133,10 @@ type formatter
   not rule the policy of inner boxes. For instance, if a vertical box is
   nested in an horizontal box, all break hints within the vertical box will
   split the line.
+
+  Moreover, opening a box after the {{!maxindent}maximum indentation limit}
+  splits the line whether or not the box would end up fitting on the line.
+
 *)
 
 val pp_open_box : formatter -> int -> unit
@@ -146,7 +150,8 @@ val open_box : int -> unit
    A break hint splits the line if there is no more room on the line to
    print the remainder of the box.
 
-   Within this box, the pretty-printer emphasizes the box structure: a break
+   Within this box, the pretty-printer emphasizes the box structure:
+   if a structural box does not fit fully on a simple line, a break
    hint also splits the line if the splitting ``moves to the left''
    (i.e. the new line gets an indentation smaller than the one of the current
    line).
@@ -398,6 +403,8 @@ val set_margin : int -> unit
 (** [pp_set_margin ppf d] sets the right margin to [d] (in characters):
   the pretty-printer splits lines that overflow the right margin according to
   the break hints given.
+  Setting the margin to [d] means that the formatting engine aims at
+  printing at most [d-1] characters per line.
   Nothing happens if [d] is smaller than 2.
   If [d] is too large, the right margin is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
@@ -413,7 +420,7 @@ val pp_get_margin : formatter -> unit -> int
 val get_margin : unit -> int
 (** Returns the position of the right margin. *)
 
-(** {1 Maximum indentation limit} *)
+(** {1:maxindent Maximum indentation limit} *)
 
 val pp_set_max_indent : formatter -> int -> unit
 val set_max_indent : int -> unit
@@ -439,6 +446,10 @@ val set_max_indent : int -> unit
   ["123456789"] and ["123456789A"] .
   Note also that vertical boxes never fit on a line whereas horizontal boxes
   always fully fit on the current line.
+  Opening a box may split a line whereas the contents may have fit.
+  If this behavior is problematic, it can be curtailed by setting the maximum
+  indentation limit to [margin - 1]. Note that setting the maximum indentation
+  limit to [margin] is invalid.
 
   Nothing happens if [d] is smaller than 2.
 
