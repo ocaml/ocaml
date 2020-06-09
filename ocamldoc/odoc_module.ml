@@ -17,8 +17,6 @@ module String = Misc.Stdlib.String
 
 (** Representation and manipulation of modules and module types. *)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 module Name = Odoc_name
 
 (** To keep the order of elements in a module. *)
@@ -253,11 +251,8 @@ let module_elements ?(trans=true) m =
 *)
   let rec module_elements visited ?(trans=true) m =
     let rec iter_kind = function
-        Module_struct l ->
-          print_DEBUG "Odoc_module.module_elements: Module_struct";
-          l
+        Module_struct l -> l
       | Module_alias ma ->
-          print_DEBUG "Odoc_module.module_elements: Module_alias";
           if trans then
             match ma.ma_module with
               None -> []
@@ -270,18 +265,14 @@ let module_elements ?(trans=true) m =
           else
             []
       | Module_functor (_, k)
-      | Module_apply (k, _) ->
-          print_DEBUG "Odoc_module.module_elements: Module_functor ou Module_apply";
-          iter_kind k
+      | Module_apply (k, _) -> iter_kind k
       | Module_with (tk,_) ->
-          print_DEBUG "Odoc_module.module_elements: Module_with";
           module_type_elements ~trans: trans
             { mt_name = "" ; mt_info = None ; mt_type = None ;
               mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
               mt_loc = Odoc_types.dummy_loc ;
             }
       | Module_constraint (k, _tk) ->
-          print_DEBUG "Odoc_module.module_elements: Module_constraint";
           (* FIXME : use k or tk ? *)
           module_elements visited ~trans: trans
             { m_name = "" ;

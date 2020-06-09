@@ -17,9 +17,6 @@
 
 open Asttypes
 open Types
-
-let print_DEBUG s = print_string s ; print_newline ();;
-
 open Odoc_parameter
 open Odoc_value
 open Odoc_type
@@ -954,23 +951,6 @@ module Analyser =
                       pos_limit2
                       type_decl
                   in
-(* DEBUG *)       begin
-(* DEBUG *)         let comm =
-(* DEBUG *)           match assoc_com with
-(* DEBUG *)           | None -> "sans commentaire"
-(* DEBUG *)           | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)         in
-(* DEBUG *)         print_DEBUG ("Type "^name.txt^" : "^comm);
-(* DEBUG *)         let f_DEBUG (name, c_opt) =
-(* DEBUG *)           let comm =
-(* DEBUG *)             match c_opt with
-(* DEBUG *)             | None -> "sans commentaire"
-(* DEBUG *)             | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)           in
-(* DEBUG *)           print_DEBUG ("constructor/field "^name^": "^comm)
-(* DEBUG *)         in
-(* DEBUG *)         List.iter f_DEBUG name_comment_list;
-(* DEBUG *)       end;
                   (* get the information for the type in the signature *)
                   let sig_type_decl =
                     try Signature_search.search_type table name.txt
@@ -1062,23 +1042,6 @@ module Analyser =
                       pos_limit2
                       type_decl
                   in
-(* DEBUG *)       begin
-(* DEBUG *)         let comm =
-(* DEBUG *)           match assoc_com with
-(* DEBUG *)           | None -> "sans commentaire"
-(* DEBUG *)           | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)         in
-(* DEBUG *)         print_DEBUG ("Type "^name.txt^" : "^comm);
-(* DEBUG *)         let f_DEBUG (name, c_opt) =
-(* DEBUG *)           let comm =
-(* DEBUG *)             match c_opt with
-(* DEBUG *)             | None -> "sans commentaire"
-(* DEBUG *)             | Some c -> Odoc_misc.string_of_info c
-(* DEBUG *)           in
-(* DEBUG *)           print_DEBUG ("constructor/field "^name^": "^comm)
-(* DEBUG *)         in
-(* DEBUG *)         List.iter f_DEBUG name_comment_list;
-(* DEBUG *)       end;
                   (* get the information for the type in the signature *)
                   let sig_type_decl =
                     try Signature_search.search_type table name.txt
@@ -1218,9 +1181,7 @@ module Analyser =
                         (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
                         Types.Mty_signature s ->
                           Odoc_env.add_signature e complete_name ~rel: name s
-                      | _ ->
-                          print_DEBUG "not a Tmty_signature";
-                          e
+                      | _ -> e
                     )
                     env
                     decls
@@ -1589,7 +1550,6 @@ module Analyser =
            let loc_start = Loc.start loc in
            let loc_end = Loc.end_ loc in
            let mp_type_code = get_string_of_file loc_start loc_end in
-           print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            match sig_module_type with
              Types.Mty_functor (param, body_module_type) ->
                let mp_name, mp_kind =
@@ -1689,7 +1649,6 @@ module Analyser =
                let loc_start = Loc.start loc in
                let loc_end = Loc.end_ loc in
                let mp_type_code = get_string_of_file loc_start loc_end in
-               print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
                let mp_name, mp_kind =
                  match param2, param with
                    Parsetree.Named (_, pmty), Types.Named (Some ident, mty) ->
@@ -1744,7 +1703,6 @@ module Analyser =
       match parse_class_type.Parsetree.pcty_desc, sig_class_type with
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
-          print_DEBUG "Cty_constr _";
            let path_name = Name.from_path p in
            let name = Odoc_env.full_class_or_class_type_name env path_name in
            let k =
@@ -1795,7 +1753,6 @@ module Analyser =
       match parse_class_type.Parsetree.pcty_desc, sig_class_type with
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
-          print_DEBUG "Cty_constr _";
           Class_type
             {
               cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
