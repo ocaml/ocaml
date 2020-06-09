@@ -64,18 +64,18 @@ int caml_register_code_fragment(char * start, char * end,
 
 void caml_remove_code_fragment(struct code_fragment * cf)
 {
-  struct code_fragment * c;
-  int i;
-
   caml_skiplist_remove(&caml_code_fragments_list, (uintnat) cf->code_start);
-  /* Remove cf from the table, maintaining the invariant that
-     if c is the i-th element of the table, c->fragnum is equal to i. */
-  for (i = cf->fragnum; i < caml_code_fragments_table.size - 1; i++) {
-    c = caml_code_fragments_table.contents[i + 1];
-    caml_code_fragments_table.contents[i] = c;
-    c->fragnum = i;
+  /* Currently, caml_remove_code_fragment is used only to remove
+     the fragment most recently inserted, so optimize for this case. */
+  if (cf->fragnum == caml_code_fragments_table.size - 1) {
+    caml_code_fragments_table.size--;
+  } else {
+    /* Just mark the table entry invalid.  Later, we could maintain
+       a free list of empty entries in caml_code_fragments_table
+       so as to reuse them on the next caml_register_code_fragment.
+       Or replace the table by a skiplist. */
+    caml_code_fragments_table.contents[cf->fragnum] = NULL;
   }
-  caml_code_fragments_table.size--;
   caml_stat_free(cf);
 }
 
