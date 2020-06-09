@@ -30,11 +30,12 @@ endef
 
 # Modules should be listed in dependency order.
 STDLIB_MODS=\
-  camlinternalFormatBasics atomic \
+  camlinternalFormatBasics camlinternalAtomic \
   stdlib pervasives seq option result bool char uchar \
   sys list bytes string unit marshal obj array float int int32 int64 nativeint \
   lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
-  camlinternalFormat printf arg printexc fun gc digest random hashtbl weak \
+  camlinternalFormat printf arg atomic \
+  printexc fun gc digest random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
   stdLabels spacetime bigarray

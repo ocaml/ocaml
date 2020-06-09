@@ -20,7 +20,7 @@ case $1 in
            ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   # stdlib dependencies
   camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
-  stdlib__atomic*.cm[iox]) echo ' -nopervasives';;
+  camlinternalAtomic.cm[iox]) echo ' -nopervasives';;
   # end stdlib dependencies
   camlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
   camlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;

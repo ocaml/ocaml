@@ -32,8 +32,10 @@ stdlib__arrayLabels.cmx : \
 stdlib__arrayLabels.cmi : \
     stdlib__seq.cmi
 stdlib__atomic.cmo : \
+    camlinternalAtomic.cmi \
     stdlib__atomic.cmi
 stdlib__atomic.cmx : \
+    camlinternalAtomic.cmx \
     stdlib__atomic.cmi
 stdlib__atomic.cmi :
 stdlib__bigarray.cmo : \
@@ -103,6 +105,11 @@ stdlib__callback.cmx : \
     stdlib__obj.cmx \
     stdlib__callback.cmi
 stdlib__callback.cmi :
+camlinternalAtomic.cmo : \
+    camlinternalAtomic.cmi
+camlinternalAtomic.cmx : \
+    camlinternalAtomic.cmi
+camlinternalAtomic.cmi :
 camlinternalFormat.cmo : \
     stdlib__sys.cmi \
     stdlib__string.cmi \
@@ -687,9 +694,11 @@ stdlib__weak.cmi : \
     stdlib__hashtbl.cmi
 stdlib.cmo : \
     camlinternalFormatBasics.cmi \
+    camlinternalAtomic.cmi \
     stdlib.cmi
 stdlib.cmx : \
     camlinternalFormatBasics.cmx \
+    camlinternalAtomic.cmx \
     stdlib.cmi
 stdlib.cmi : \
     camlinternalFormatBasics.cmi
