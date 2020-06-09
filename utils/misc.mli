@@ -554,7 +554,7 @@ module Magic_number : sig
   val native_obj_config : native_obj_config
   (** the native object file configuration of the active/configured compiler. *)
 
-  type version = int
+  type version = string
 
   type kind =
     | Exec

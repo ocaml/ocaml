@@ -942,7 +942,7 @@ module Magic_number = struct
     flambda = Config.flambda;
   }
 
-  type version = int
+  type version = string
 
   type kind =
     | Exec
@@ -1076,11 +1076,7 @@ module Magic_number = struct
       let raw_version = String.sub s kind_length version_length in
       match parse_kind raw_kind with
       | None -> Error (Not_a_magic_number s)
-      | Some kind ->
-          begin match int_of_string raw_version with
-          | exception _ -> Error (Truncated s)
-          | version -> Ok { kind; version }
-          end
+      | Some kind -> Ok { kind; version = raw_version }
     end
     else begin
       (* a header is "truncated" if it starts like a valid magic number,
@@ -1103,7 +1099,7 @@ module Magic_number = struct
     parse (Buffer.contents header)
 
   let raw { kind; version; } =
-    Printf.sprintf "%s%03d" (raw_kind kind) version
+    Printf.sprintf "%s%s" (raw_kind kind) version
 
   let current_raw kind =
     let open Config in
@@ -1143,8 +1139,7 @@ module Magic_number = struct
      to trust the present module instead. *)
   let current_version kind =
     let raw = current_raw kind in
-    try int_of_string (String.sub raw kind_length version_length)
-    with _ -> assert false
+    String.sub raw kind_length version_length
 
   type 'a unexpected = { expected : 'a; actual : 'a }
   type unexpected_error =
