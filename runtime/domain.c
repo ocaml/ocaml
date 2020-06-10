@@ -1111,9 +1111,11 @@ static void caml_wait_interrupt_completed(struct interruptor* self, struct inter
 
   while (!atomic_load_acq(&req->completed)) {
     cpu_relax();
-    caml_plat_lock(&self->lock);
-    handle_incoming(self);
-    caml_plat_unlock(&self->lock);
+    if (Caml_check_gc_interrupt(Caml_state)) {
+      caml_plat_lock(&self->lock);
+      handle_incoming(self);
+      caml_plat_unlock(&self->lock);
+    }
   }
   return;
 }
