@@ -540,6 +540,13 @@ stdlib__random.cmi : \
     stdlib__nativeint.cmi \
     stdlib__int64.cmi \
     stdlib__int32.cmi
+stdlib__ref.cmo : \
+    stdlib__fun.cmi \
+    stdlib__ref.cmi
+stdlib__ref.cmx : \
+    stdlib__fun.cmx \
+    stdlib__ref.cmi
+stdlib__ref.cmi :
 stdlib__result.cmo : \
     stdlib__seq.cmi \
     stdlib__result.cmi
