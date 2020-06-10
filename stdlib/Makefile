@@ -55,17 +55,8 @@ endif
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
-LEGACY_OBJS=$(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", \
-                                  $(filter stdlib__%,$(OBJS)))
 .PHONY: install
 install::
-# Transitional: when upgrading from 4.06 -> 4.07, module M is in stdlib__m.cm*,
-# while previously it was in m.cm*, which confuses the compiler.
-	rm -f $(LEGACY_OBJS)
-# Remove "old" pervasives.* and bigarray.* to avoid getting confused with the
-# Stdlib versions.
-	rm -f "$(INSTALL_LIBDIR)/pervasives.*" "$(INSTALL_LIBDIR)/bigarray.*"
-# End transitional
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
