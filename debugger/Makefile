@@ -60,7 +60,7 @@ ocamldebug$(EXE): $(libraries) $(all_objects)
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
-	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
+	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)"
 
 clean::
 	rm -f ocamldebug ocamldebug.exe

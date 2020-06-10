@@ -86,8 +86,7 @@ lib$(CLIBNAME).$(A): $(COBJS)
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
 	  $(INSTALL_PROG) \
-	    dll$(CLIBNAME)$(EXT_DLL) \
-	    "$(INSTALL_STUBLIBDIR)/"; \
+	    dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
 ifneq "$(STUBSLIB)" ""
 	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
@@ -113,7 +112,7 @@ installopt:
 	   "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
 	if test -f $(LIBNAME).cmxs; then \
-	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; \
+	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)"; \
 	fi
 
 partialclean:

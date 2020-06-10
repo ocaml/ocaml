@@ -241,8 +241,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  dynlink.cmti dynlink.mli \
 	  "$(INSTALL_LIBDIR)"
 endif
-	$(INSTALL_PROG) \
-	  $(extract_crc) "$(INSTALL_LIBDIR)/$(extract_crc)"
+	$(INSTALL_PROG) $(extract_crc) "$(INSTALL_LIBDIR)"
 
 installopt:
 	if $(NATDYNLINK); then \

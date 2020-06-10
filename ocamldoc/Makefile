@@ -294,7 +294,7 @@ install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(MKDIR) "$(INSTALL_MANODIR)"
-	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)"
+	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
@@ -321,8 +321,7 @@ installopt:
 installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
-	$(INSTALL_PROG) \
-	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)"
+	$(INSTALL_PROG) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"

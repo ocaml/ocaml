@@ -353,7 +353,7 @@ install:
 	  VERSION \
 	  "$(INSTALL_LIBDIR)"
 	$(MAKE) -C runtime install
-	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)/ocaml$(EXE)"
+	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) ocamlc$(EXE) "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
 endif
@@ -362,7 +362,7 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex$(EXE) \
 	  "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
 endif
-	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
+	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	   utils/*.cmi \
 	   parsing/*.cmi \
@@ -391,7 +391,7 @@ endif
 	$(INSTALL_DATA) \
 	   $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_PROG) $(expunge) "$(INSTALL_LIBDIR)/$(expunge)"
+	$(INSTALL_PROG) $(expunge) "$(INSTALL_LIBDIR)"
 	$(INSTALL_DATA) \
 	   toplevel/topdirs.cmi \
 	   "$(INSTALL_LIBDIR)"
@@ -420,7 +420,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	  $(MAKE) install-flexdll; \
 	fi
 endif
-	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)/Makefile.config"
+	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt$(EXE); then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
@@ -511,11 +511,9 @@ endif
 
 .PHONY: installoptopt
 installoptopt:
-	$(INSTALL_PROG) ocamlc.opt$(EXE) "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
-	$(INSTALL_PROG) ocamlopt.opt$(EXE) \
-	  "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
-	$(INSTALL_PROG) \
-	  lex/ocamllex.opt$(EXE) "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
+	$(INSTALL_PROG) ocamlc.opt$(EXE) "$(INSTALL_BINDIR)"
+	$(INSTALL_PROG) ocamlopt.opt$(EXE) "$(INSTALL_BINDIR)"
+	$(INSTALL_PROG) lex/ocamllex.opt$(EXE) "$(INSTALL_BINDIR)"
 	cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
@@ -538,8 +536,7 @@ installoptopt:
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
 	if test -f ocamlnat$(EXE) ; then \
-	  $(INSTALL_PROG) \
-	    ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
+	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
 	  $(INSTALL_DATA) \
 	     toplevel/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
