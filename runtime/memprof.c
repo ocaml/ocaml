@@ -73,9 +73,6 @@ static value tracker;
  */
 value* caml_memprof_young_trigger;
 
-/* Whether memprof has been initialized.  */
-static int init = 0;
-
 /* Whether memprof is started. */
 static int started = 0;
 
@@ -921,13 +918,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
 /**** Interface with the OCaml code. ****/
 
-static void caml_memprof_init(void) {
-  init = 1;
-  xoshiro_init();
-}
-
 void caml_memprof_shutdown(void) {
-  init = 0;
   started = 0;
   lambda = 0.;
   suspended = 0;
@@ -954,7 +945,7 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
   if (sz < 0 || !(l >= 0.) || l > 1.) /* Checks that [l] is not NAN. */
     caml_invalid_argument("Gc.Memprof.start");
 
-  caml_memprof_init();
+  xoshiro_init();
 
   lambda = l;
   if (l > 0) {
