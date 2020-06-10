@@ -240,9 +240,15 @@ void caml_update_young_limit (void)
              Caml_state->young_trigger < Caml_state->young_alloc_end);
 
   /* The minor heap grows downwards. The first trigger is the largest one. */
-  Caml_state->young_limit =
-    caml_memprof_young_trigger < Caml_state->young_trigger ?
-    Caml_state->young_trigger : caml_memprof_young_trigger;
+  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc) {
+    Caml_state->young_limit_c = Caml_state->young_alloc_end;
+  } else {
+    Caml_state->young_limit_c =
+      caml_memprof_young_trigger < Caml_state->young_trigger ?
+      Caml_state->young_trigger : caml_memprof_young_trigger;
+  }
+
+  Caml_state->young_limit = Caml_state->young_limit_c;
 
   if (caml_something_to_do)
     notify_action();
@@ -254,12 +260,16 @@ void caml_request_major_slice (void)
 {
   Caml_state->requested_major_slice = 1;
   caml_set_action_pending();
+  // update Caml_state->young_limit_c
+  caml_update_young_limit();
 }
 
 void caml_request_minor_gc (void)
 {
   Caml_state->requested_minor_gc = 1;
   caml_set_action_pending();
+  // update Caml_state->young_limit_c
+  caml_update_young_limit();
 }
 
 value caml_do_pending_actions_exn(void)

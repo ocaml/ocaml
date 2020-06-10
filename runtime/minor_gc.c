@@ -44,21 +44,24 @@
        this interval, starting at [Caml_state->young_alloc_end].
    [Caml_state->young_alloc_mid] is the mid-point of this interval.
    [Caml_state->young_ptr], [Caml_state->young_trigger],
-   [Caml_state->young_limit]
+   [Caml_state->young_limit], [Caml_state->young_limit_c]
        These pointers are all inside the allocation arena.
        - [Caml_state->young_ptr] is where the next allocation will take place.
        - [Caml_state->young_trigger] is how far we can allocate before
          triggering [caml_gc_dispatch]. Currently, it is either
          [Caml_state->young_alloc_start] or the mid-point of the allocation
          arena.
-       - [Caml_state->young_limit] is the pointer that is compared to
-         [Caml_state->young_ptr] for allocation. It is either:
-            + [Caml_state->young_alloc_end] if a signal handler or
-              finaliser or memprof callback is pending, or if a major
-              or minor collection has been requested, or an
-              asynchronous callback has just raised an exception,
+       - [Caml_state->young_limit_c] is the pointer that is compared to
+         [Caml_state->young_ptr] for allocation from C. It is either:
             + [caml_memprof_young_trigger] if a memprof sample is planned,
-            + or [Caml_state->young_trigger].
+            + [Caml_state->young_alloc_end] if a major or minor collection has
+              been requested,
+            + or [Caml_state->young_trigger], whichever comes earlier.
+       - [Caml_state->young_limit] is the pointer that is compared to
+         [Caml_state->young_ptr] for allocation from OCaml. It is either:
+            + [Caml_state->young_alloc_end] if a signal handler or
+              finaliser or memprof callback is pending,
+            + or [Caml_state->young_limit_c].
 */
 
 struct generic_table CAML_TABLE_STRUCT(char);
@@ -503,8 +506,8 @@ void caml_gc_dispatch (void)
 }
 
 /* Called by young allocations when [Caml_state->young_ptr] reaches
-   [Caml_state->young_limit]. We may have to either call memprof or
-   the gc. */
+   [Caml_state->young_limit] or [Caml_state->young_limit_c]. We may
+   have to either call memprof or the gc. */
 void caml_alloc_small_dispatch (intnat wosize, int flags,
                                 int nallocs, unsigned char* encoded_alloc_lens)
 {
@@ -525,7 +528,7 @@ void caml_alloc_small_dispatch (intnat wosize, int flags,
       /* In the case of long-running C code that regularly polls with
          caml_process_pending_actions, force a query of all callbacks
          at every minor collection or major slice. */
-      caml_something_to_do = 1;
+      caml_set_action_pending();
     }
 
     /* Now, there might be enough room in the minor heap to do our

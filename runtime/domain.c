@@ -35,6 +35,7 @@ void caml_init_domain ()
   Caml_state->exception_pointer = NULL;
 
   Caml_state->young_ptr = NULL;
+  Caml_state->young_limit_c = NULL;
   Caml_state->young_base = NULL;
   Caml_state->young_start = NULL;
   Caml_state->young_end = NULL;

@@ -21,6 +21,7 @@ DOMAIN_STATE(value*, young_limit)
 DOMAIN_STATE(char*, exception_pointer)
 /* Exception pointer that points into the current stack */
 
+DOMAIN_STATE(value*, young_limit_c)
 DOMAIN_STATE(void*, young_base)
 DOMAIN_STATE(value*, young_start)
 DOMAIN_STATE(value*, young_end)
