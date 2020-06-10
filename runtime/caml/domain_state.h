@@ -29,11 +29,7 @@ typedef struct caml_root_private* caml_root;
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
 typedef struct {
-#ifdef CAML_NAME_SPACE
 #define DOMAIN_STATE(type, name) CAMLalign(8) type name;
-#else
-#define DOMAIN_STATE(type, name) CAMLalign(8) type _##name;
-#endif
 #include "domain_state.tbl"
 #ifndef NATIVE_CODE
   /* Bytecode TLS vars, not used for native code */
