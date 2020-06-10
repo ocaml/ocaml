@@ -954,7 +954,7 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
   if (sz < 0 || !(l >= 0.) || l > 1.) /* Checks that [l] is not NAN. */
     caml_invalid_argument("Gc.Memprof.start");
 
-  if (!init) caml_memprof_init();
+  caml_memprof_init();
 
   lambda = l;
   if (l > 0) {
