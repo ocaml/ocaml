@@ -23,8 +23,6 @@ let remove_beginning_blanks s =
 
 let remove_trailing_blanks s =
   Str.global_replace (Str.regexp (blank^"+$")) "" s
-
-let print_DEBUG s = print_string s; print_newline ()
 %}
 
 %token END

@@ -28,17 +28,6 @@ OCAMLDEP = $(BEST_OCAMLDEP)
 DEPFLAGS = -slash
 OCAMLLEX = $(BEST_OCAMLLEX)
 
-# TODO: figure out whether the DEBUG lines the following preprocessor removes
-# are actually useful.
-# If they are not, then the preprocessor logic (including the
-# remove_DEBUG script and the debug target) could be removed.
-# If they are, it may be better to be able to enable them at run-time
-# rather than compile-time, e.g. through a -debug command-line option.
-# In the following line, "sh" is useful under Windows. Without it,
-# the ./remove_DEBUG command would be executed by cmd.exe which would not
-# know how to handle it.
-OCAMLPP=-pp 'sh ./remove_DEBUG'
-
 # For installation
 ##############
 
@@ -208,11 +197,6 @@ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 .PHONY: generatorsopt
 generatorsopt: $(GENERATORS_CMXS)
 
-# TODO: the following debug target could be replaced by a DEBUG variable
-.PHONY: debug
-debug:
-	$(MAKE) OCAMLPP=""
-
 OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 
 OCAMLDOC_BCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cma)
@@ -271,16 +255,16 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 .SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx .cmxs
 
 .ml.cmo:
-	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
+	$(OCAMLC) $(COMPFLAGS) -c $<
 
 .mli.cmi:
-	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
+	$(OCAMLC)  $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
+	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 .ml.cmxs:
-	$(OCAMLOPT_CMD) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
+	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
 
 .mll.ml:
 	$(OCAMLLEX) $(OCAMLLEX_FLAGS) $<
