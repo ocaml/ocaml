@@ -57,7 +57,7 @@ int caml_register_code_fragment(char * start, char * end,
   caml_skiplist_insert(&code_fragments_by_pc,
                        (uintnat) start, (uintnat) cf);
   caml_skiplist_insert(&code_fragments_by_num,
-                       cf->fragnum, (uintnat) cf);
+                       (uintnat) cf->fragnum, (uintnat) cf);
   return cf->fragnum;
 }
 
@@ -76,7 +76,8 @@ struct code_fragment * caml_find_code_fragment_by_pc(char *pc)
   if (caml_skiplist_find_below(&code_fragments_by_pc,
                                (uintnat) pc, &key, &data)) {
     cf = (struct code_fragment *) data;
-    if (cf->code_start <= pc && pc < cf->code_end) return cf;
+    CAMLassert(cf->code_start <= pc);
+    if (pc < cf->code_end) return cf;
   }
   return NULL;
 }
