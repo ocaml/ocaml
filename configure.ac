@@ -341,6 +341,10 @@ AC_ARG_ENABLE([stdlib-manpages],
   [AS_HELP_STRING([--disable-stdlib-manpages],
     [do not build or install the library man pages])])
 
+AC_ARG_ENABLE([warn-error],
+  [AS_HELP_STRING([--enable-warn-error],
+    [treat C compiler warnings as errors])])
+
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
 
@@ -530,15 +534,21 @@ AS_IF(
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
-    [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
+    [outputobj='-o $(EMPTY)'
+    warn_error_flag=''
+    cc_warnings='-qflag=i:i'], # all warnings enabled
   [msvc-*],
-    [outputobj=-Fo; gcc_warnings=""],
-  [outputobj='-o $(EMPTY)'; AS_CASE([AC_PACKAGE_VERSION],
-    [*+dev*],
-      [gcc_warnings="-Wall -Werror"],
-    [gcc_warnings="-Wall"]
-  )]
-)
+    [outputobj='-Fo'
+    warn_error_flag='-WX'
+    cc_warnings=''],
+  [outputobj='-o $(EMPTY)'
+  # FIXME Should also be -Wdeclaration-after-statement here
+  warn_error_flag='-Werror'
+  cc_warnings='-Wall'])
+
+AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*|,*+multicore*],
+    [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
@@ -557,7 +567,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
 # in the macro itself, too
 AS_CASE([$host],
   [*-*-mingw32],
-    [internal_cflags="-Wno-unused $gcc_warnings"
+    [internal_cflags="-Wno-unused $cc_warnings"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O -mms-bitfields"
     internal_cppflags='-DUNICODE -D_UNICODE'
@@ -566,7 +576,7 @@ AS_CASE([$host],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common"],
+      internal_cflags="$cc_warnings -fno-common"],
     [gcc-[012]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -579,23 +589,23 @@ AS_CASE([$host],
         Reducing optimization level."]);
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-4-*],
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common"],
+      internal_cflags="$cc_warnings -fno-common"],
     [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD"
+      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
