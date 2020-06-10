@@ -473,9 +473,10 @@ let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
   | Never_local -> fprintf ppf "never_local@ "
   end
 
-let apply_tailcall_attribute ppf tailcall =
-  if tailcall then
-    fprintf ppf " @@tailcall"
+let apply_tailcall_attribute ppf = function
+  | Default_tailcall -> ()
+  | Should_be_tailcall ->
+    fprintf ppf " tailcall"
 
 let apply_inlined_attribute ppf = function
   | Default_inline -> ()
@@ -498,7 +499,7 @@ let rec lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a%a%a%a)@]" lam ap.ap_func lams ap.ap_args
-        apply_tailcall_attribute ap.ap_should_be_tailcall
+        apply_tailcall_attribute ap.ap_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
   | Lfunction{kind; params; return; body; attr} ->

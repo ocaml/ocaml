@@ -67,7 +67,7 @@ val get_and_remove_specialised_attribute
 
 val get_tailcall_attribute
    : Typedtree.expression
-  -> bool * Typedtree.expression
+  -> Lambda.tailcall_attribute * Typedtree.expression
 
 val add_function_attributes
   : Lambda.lambda

@@ -202,6 +202,10 @@ type structured_constant =
   | Const_float_array of string list
   | Const_immstring of string
 
+type tailcall_attribute =
+  | Should_be_tailcall (* [@tailcall] *)
+  | Default_tailcall (* no [@tailcall] attribute *)
+
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
@@ -295,7 +299,7 @@ and lambda_apply =
   { ap_func : lambda;
     ap_args : lambda list;
     ap_loc : scoped_location;
-    ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
+    ap_tailcall : tailcall_attribute;
     ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
     ap_specialised : specialise_attribute; }
 
