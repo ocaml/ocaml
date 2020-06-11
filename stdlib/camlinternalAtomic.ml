@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*          Guillaume Munch-Maccagnoni, projet Gallinette, INRIA          *)
+(*             Gabriel Scherer, projet Partout, INRIA Paris-Saclay        *)
 (*                                                                        *)
 (*   Copyright 2020 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
@@ -13,4 +13,37 @@
 (*                                                                        *)
 (**************************************************************************)
 
-include CamlinternalAtomic
+(* CamlinternalAtomic is a dependency of Stdlib, so it is compiled with
+   -nopervasives. *)
+external ( == ) : 'a -> 'a -> bool = "%eq"
+external ( + ) : int -> int -> int = "%addint"
+external ignore : 'a -> unit = "%ignore"
+
+(* We are not reusing ('a ref) directly to make it easier to reason
+   about atomicity if we wish to: even in a sequential implementation,
+   signals and other asynchronous callbacks might break atomicity. *)
+type 'a t = {mutable v: 'a}
+
+let make v = {v}
+let get r = r.v
+let set r v = r.v <- v
+
+let exchange r v =
+  let cur = r.v in
+  r.v <- v;
+  cur
+
+let compare_and_set r seen v =
+  let cur = r.v in
+  if cur == seen then
+    (r.v <- v; true)
+  else
+    false
+
+let fetch_and_add r n =
+  let cur = r.v in
+  r.v <- (cur + n);
+  cur
+
+let incr r = ignore (fetch_and_add r 1)
+let decr r = ignore (fetch_and_add r (-1))
