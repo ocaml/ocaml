@@ -21,6 +21,7 @@
    and in "hash.h" (for the other exported functions). */
 
 #include "caml/mlvalues.h"
+#include "caml/codefrag.h"
 #include "caml/custom.h"
 #include "caml/memory.h"
 #include "caml/hash.h"
@@ -174,6 +175,18 @@ CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
   return h;
 }
 
+/* Mix a code pointer.  To make the hash value reproducible
+   across runs of the program, do not use the absolute address
+   but the relative offset within the code fragment containing the
+   code pointer. */
+
+static uint32_t caml_hash_mix_codeptr(uint32_t h, char * codeptr)
+{
+  struct code_fragment * cf = caml_find_code_fragment_by_pc(codeptr);
+  CAMLassert(cf != NULL);
+  return caml_hash_mix_intnat(h, codeptr - cf->code_start);
+}
+
 /* Maximal size of the queue used for breadth-first traversal.  */
 #define HASH_QUEUE_SIZE 256
 /* Maximal number of Forward_tag links followed in one step */
@@ -207,7 +220,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
     }
 #ifndef NO_NAKED_POINTERS
     else if (!Is_in_value_area(v)) {
-      /* v is a pointer outside the heap, probably a code pointer.
+      /* v is a pointer outside the heap, but not a code pointer.
          Shall we count it?  Let's say yes by compatibility with old code. */
       h = caml_hash_mix_intnat(h, v);
       num--;
@@ -262,19 +275,30 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
           num--;
         }
         break;
-#ifdef NO_NAKED_POINTERS
       case Closure_tag: {
         mlsize_t startenv;
+        value info;
         len = Wosize_val(v);
         startenv = Start_env_closinfo(Closinfo_val(v));
         CAMLassert (startenv <= len);
         /* Mix in the tag and size, but do not count this towards [num] */
         h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
         /* Mix the code pointers, closure info fields, and infix headers */
-        for (i = 0; i < startenv; i++) {
-          h = caml_hash_mix_intnat(h, Field(v, i));
-          num--;
-        }
+        i = 0;
+        do {
+          /* The infix header */
+          if (i > 0) h = caml_hash_mix_intnat(h, Field(v, i++));
+          /* The default entry point */
+          h = caml_hash_mix_codeptr(h, (char *) Field(v, i++));
+          /* The closure info. */
+          info = Field(v, i++);
+          h = caml_hash_mix_intnat(h, info);
+          /* The direct entry point if arity is neither 0 nor 1 */
+          if (Arity_closinfo(info) != 0 && Arity_closinfo(info) != 1) {
+            h = caml_hash_mix_codeptr(h, (char *) Field(v, i++));
+          }
+        } while (i < startenv);
+        CAMLassert(i == startenv);
         /* Copy environment fields into queue,
            not exceeding the total size [sz] */
         for (/*nothing*/; i < len; i++) {
@@ -283,7 +307,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         }
         break;
       }
-#endif
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
         h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
@@ -426,6 +449,8 @@ static void hash_aux(struct hash_state* h, value obj)
         hash_aux(h, Field(obj, i));
       }
       /* Combine the code pointers, closure info fields, and infix headers */
+      /* We don't use relative addresses for code pointers to keep
+         this legacy code that nobody should be using simpler. */
       while (i > 0) {
         i--;
         Combine(Field(obj, i));
