@@ -124,7 +124,7 @@ val wait_pid : int -> int * Unix.process_status
   Each thread possesses a set of blocked signals, which can be modified
   using {!Thread.sigmask}.  This set is inherited at thread creation time.
   Per-thread signal masks are supported only by the system thread library
-  under Unix, but not under Win32, nor by the VM thread library. *)
+  under Unix, but not under Win32. *)
 
 val sigmask : Unix.sigprocmask_command -> int list -> int list
 (** [sigmask cmd sigs] changes the set of blocked signals for the

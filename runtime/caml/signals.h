@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-CAMLextern void caml_enter_blocking_section (void);
+CAMLextern void caml_enter_blocking_section (void); // raises
 CAMLextern void caml_enter_blocking_section_no_pending (void);
 CAMLextern void caml_leave_blocking_section (void);
 

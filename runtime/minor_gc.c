@@ -518,7 +518,7 @@ void caml_alloc_small_dispatch (intnat wosize, int flags,
 
   while(1) {
     /* We might be here because of an async callback / urgent GC
-       request. Take the opportunity to do what has been requested. */
+       request. Here we do what has been requested. */
     if (flags & CAML_FROM_CAML)
       /* In the case of allocations performed from OCaml, execute
          asynchronous callbacks. */
@@ -537,8 +537,9 @@ void caml_alloc_small_dispatch (intnat wosize, int flags,
     if (Caml_state->young_ptr - whsize >= Caml_state->young_trigger)
       break;
 
-    /* If not, then empty the minor heap, and check again for async
-       callbacks. */
+    /* If not, then empty the minor heap, and check again for new
+       async callbacks in the queue. This helps with calling memprof
+       callbacks as soon as possible. */
     CAML_EV_COUNTER (EV_C_FORCE_MINOR_ALLOC_SMALL, 1);
     caml_gc_dispatch ();
   }

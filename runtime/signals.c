@@ -144,7 +144,7 @@ void caml_set_action_pending(void)
    as soon as possible:
    - via action_pending, processed in caml_process_pending_actions_exn.
    - by playing with the allocation limit, processed in
-     caml_garbage_collection and caml_alloc_small_dispatch.
+     caml_alloc_small_dispatch when called from OCaml.
 */
 
 CAMLno_tsan
@@ -306,7 +306,7 @@ value caml_do_pending_actions_exn(void)
 
   caml_update_young_limit();
 
-  // Call signal handlers first
+  // Call signal handlers first (see documentation of action_pending).
   exn = caml_process_pending_signals_exn();
   if (Is_exception_result(exn)) goto exception;
 
