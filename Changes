@@ -40,6 +40,10 @@ Working version
 - #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #9649: Update the marshaler (output_value) to take advantage
+  of the new representation for function closures
+  (Xavier Leroy, review by Damien Doligez)
+
 - #9654: More efficient management of code fragments.
   (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
   Stephen Dolan)
