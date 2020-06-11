@@ -40,6 +40,11 @@ Working version
 - #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #9654: More efficient management of code fragments.
+  (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
+  Stephen Dolan)
+
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
