@@ -79,6 +79,6 @@ CAML_STATIC_ASSERT(
   #define SET_Caml_state(x) (Caml_state = (x))
 #endif
 
-#define Caml_state_field(field) Caml_state->field
+#define Caml_state_field(field) (Caml_state->field)
 
 #endif /* CAML_STATE_H */
