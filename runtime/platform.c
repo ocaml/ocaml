@@ -91,7 +91,13 @@ int caml_plat_timedwait(caml_plat_cond* cond, int64_t until)
 void caml_plat_broadcast(caml_plat_cond* cond)
 {
   caml_plat_assert_locked(cond->mutex);
-  check_err("signal", pthread_cond_broadcast(&cond->cond));
+  check_err("cond_broadcast", pthread_cond_broadcast(&cond->cond));
+}
+
+void caml_plat_signal(caml_plat_cond* cond)
+{
+  caml_plat_assert_locked(cond->mutex);
+  check_err("cond_signal", pthread_cond_signal(&cond->cond));
 }
 
 void caml_plat_cond_free(caml_plat_cond* cond)

@@ -50,7 +50,7 @@ unsigned caml_plat_spin_wait(unsigned spins,
                              const char* function);
 
 #define SPIN_WAIT                                                       \
-  for (; 1; cpu_relax())                                                
+  for (; 1; cpu_relax())
 
 INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
   SPIN_WAIT {
@@ -85,6 +85,7 @@ void caml_plat_wait(caml_plat_cond*);
    without a signal, then this function returns 1. */
 int caml_plat_timedwait(caml_plat_cond*, int64_t);
 void caml_plat_broadcast(caml_plat_cond*);
+void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
 
 struct caml__mutex_unwind {
