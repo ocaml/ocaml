@@ -23,13 +23,13 @@
 #include <stdio.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
 #include "caml/io.h"
-#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/memprof.h"
 #include "caml/mlvalues.h"
@@ -953,21 +953,11 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset)
 {
-  int i;
-  for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
-    struct code_fragment * cf = caml_code_fragments_table.contents[i];
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
-    if (memcmp(digest, cf->digest, 16) == 0) {
-      if (cf->code_start + offset < cf->code_end)
-        return cf->code_start + offset;
-      else
-        return NULL;
-    }
-  }
-  return NULL;
+  struct code_fragment * cf = caml_find_code_fragment_by_digest(digest);
+  if (cf != NULL && cf->code_start + offset < cf->code_end)
+    return cf->code_start + offset;
+  else
+    return NULL;
 }
 
 static void intern_bad_code_pointer(unsigned char digest[16])

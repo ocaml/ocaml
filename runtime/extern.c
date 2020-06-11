@@ -21,13 +21,13 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
 #include "caml/io.h"
-#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -713,15 +713,15 @@ static void extern_rec(value v)
     }
     }
   }
-  else if (caml_find_code_fragment((char*) v, NULL, &cf)) {
+  else if ((cf = caml_find_code_fragment_by_pc((char*) v)) != NULL) {
+    const char * digest;
     if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
+    digest = (const char *) caml_digest_of_code_fragment(cf);
+    if (digest == NULL)
+      extern_invalid_argument("output_value: private function");
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((const char *)cf->digest, 16);
+    writeblock(digest, 16);
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }

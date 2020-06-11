@@ -432,18 +432,6 @@ extern int caml_snwprintf(wchar_t * buf,
 #  endif
 #endif
 
-/* A table of all code fragments (main program and dynlinked modules) */
-struct code_fragment {
-  char *code_start;
-  char *code_end;
-  unsigned char digest[16];
-  char digest_computed;
-};
-
-extern struct ext_table caml_code_fragments_table;
-
-int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
-
 #endif /* CAML_INTERNALS */
 
 /* The [backtrace_slot] type represents values stored in

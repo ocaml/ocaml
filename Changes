@@ -14,6 +14,10 @@ OCaml 4.11 maintenance branch
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
 
+- #9654: More efficient management of code fragments.
+  (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
+  Stephen Dolan)
+
 ### Tools:
 
 - #9606, #9635, #9637: fix performance regression in the debugger

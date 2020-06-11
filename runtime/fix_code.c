@@ -25,11 +25,11 @@
 #include <io.h>
 #endif
 
+#include "caml/codefrag.h"
 #include "caml/debugger.h"
 #include "caml/fix_code.h"
 #include "caml/instruct.h"
 #include "caml/intext.h"
-#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -37,20 +37,14 @@
 
 code_t caml_start_code;
 asize_t caml_code_size;
-struct ext_table caml_code_fragments_table;
 
 /* Read the main bytecode block from a file */
 
 void caml_init_code_fragments(void) {
-  struct code_fragment * cf;
-  /* Register the code in the table of code fragments */
-  cf = caml_stat_alloc(sizeof(struct code_fragment));
-  cf->code_start = (char *) caml_start_code;
-  cf->code_end = (char *) caml_start_code + caml_code_size;
-  caml_md5_block(cf->digest, caml_start_code, caml_code_size);
-  cf->digest_computed = 1;
-  caml_ext_table_init(&caml_code_fragments_table, 8);
-  caml_ext_table_add(&caml_code_fragments_table, cf);
+  /* Register the main bytecode block in the table of code fragments */
+  caml_register_code_fragment((char *) caml_start_code,
+                              (char *) caml_start_code + caml_code_size,
+                              DIGEST_NOW, NULL);
 }
 
 void caml_load_code(int fd, asize_t len)

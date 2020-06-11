@@ -20,6 +20,7 @@
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
@@ -93,25 +94,26 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
 {
   CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal3(clos, bytecode, retval);
-  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
   code_t prog;
   asize_t len;
+  enum digest_status digest_kind;
+  unsigned char * digest;
+  int fragnum;
 
   prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
   caml_add_debug_info(prog, Val_long(len), debuginfo);
-  cf->code_start = (char *) prog;
-  cf->code_end = (char *) prog + len;
   /* match (digest_opt : string option) with */
   if (Is_block(digest_opt)) {
     /* | Some digest -> */
-    memcpy(cf->digest, String_val(Field(digest_opt, 0)), 16);
-    cf->digest_computed = 1;
+    digest_kind = DIGEST_PROVIDED;
+    digest = (unsigned char *) String_val(Field(digest_opt, 0));
   } else {
     /* | None -> */
-    cf->digest_computed = 0;
+    digest_kind = DIGEST_LATER;
+    digest = NULL;
   }
-  caml_ext_table_add(&caml_code_fragments_table, cf);
-
+  fragnum = caml_register_code_fragment((char *) prog, (char *) prog + len,
+                                        digest_kind, digest);
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, len);
 #endif
@@ -121,7 +123,7 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   caml_prepare_bytecode((code_t) prog, len);
 
   /* Notify debugger after fragment gets added and reified. */
-  caml_debugger(CODE_LOADED, Val_long(caml_code_fragments_table.size - 1));
+  caml_debugger(CODE_LOADED, Val_long(fragnum));
 
   clos = caml_alloc_small (1, Closure_tag);
   Code_val(clos) = (code_t) prog;
@@ -142,21 +144,19 @@ CAMLprim value caml_static_release_bytecode(value bc)
 {
   code_t prog;
   asize_t len;
-  int found, index;
   struct code_fragment *cf;
 
   prog = Bytecode_val(bc)->prog;
   len = Bytecode_val(bc)->len;
   caml_remove_debug_info(prog);
 
-  found = caml_find_code_fragment((char*) prog, &index, &cf);
-  /* Not matched with a caml_reify_bytecode call; impossible. */
-  CAMLassert(found); (void) found; /* Silence unused variable warning. */
+  cf = caml_find_code_fragment_by_pc((char *) prog);
+  CAMLassert(cf != NULL);
 
   /* Notify debugger before the fragment gets destroyed. */
-  caml_debugger(CODE_UNLOADED, Val_long(index));
+  caml_debugger(CODE_UNLOADED, Val_long(cf->fragnum));
 
-  caml_ext_table_remove(&caml_code_fragments_table, cf);
+  caml_remove_code_fragment(cf);
 
 #ifndef NATIVE_CODE
   caml_release_bytecode(prog, len);
