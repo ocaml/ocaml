@@ -655,6 +655,7 @@ static void extern_code_pointer(char * codeptr)
 
 /* Marshaling the non-environment part of closures */
 
+#ifdef NO_NAKED_POINTERS
 Caml_inline mlsize_t extern_closure_up_to_env(value v)
 {
   mlsize_t startenv, i;
@@ -678,6 +679,7 @@ Caml_inline mlsize_t extern_closure_up_to_env(value v)
   CAMLassert(i == startenv);
   return startenv;
 }
+#endif
 
 /* Marshal the given value in the output buffer */
 
