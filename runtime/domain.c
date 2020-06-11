@@ -1167,7 +1167,6 @@ static void domain_terminate()
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
   domain_self->backup_thread_running = 0;
-  pthread_join(domain_self->backup_thread, 0);
 
   caml_plat_assert_all_locks_unlocked();
   /* This is the last thing we do because we need to be able to rely
