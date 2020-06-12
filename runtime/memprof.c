@@ -72,6 +72,10 @@ struct tracked {
      This is a strong GC root. */
   value user_data;
 
+  /* The thread currently running a callback for this entry,
+     or NULL if there is none */
+  struct caml_memprof_th_ctx* running;
+
   /* Whether this block has been initially allocated in the minor heap. */
   unsigned int alloc_young : 1;
 
@@ -85,7 +89,8 @@ struct tracked {
   unsigned int deallocated : 1;
 
   /* Whether the allocation callback has been called depends on
-     whether the entry is in [local->entries] or in [entries_global]. */
+     whether the entry is in a thread local entry array or in
+     [entries_global]. */
 
   /* Whether the promotion callback has been called. */
   unsigned int cb_promote_called : 1;
@@ -95,15 +100,6 @@ struct tracked {
 
   /* Whether this entry is deleted. */
   unsigned int deleted : 1;
-
-  /* Whether a callback is currently running for this entry. */
-  unsigned int callback_running : 1;
-
-  /* Pointer to the [t_idx] variable in the [run_callback_exn] frame which
-     is currently running the callback for this entry. This is needed
-     to make [run_callback_exn] reetrant, in the case it is called
-     simultaneously by several threads. */
-  uintnat* idx_ptr;
 };
 
 /* During the alloc callback for a minor allocation, the block being
@@ -114,9 +110,6 @@ struct tracked {
 #define Offs_placeholder(block) (Long_val(block) & 0xFFFF)
 #define Is_placeholder(block) \
   (Is_long(block) && (Long_val(block) & ~(uintnat)0xFFFF) == Placeholder_magic)
-
-/* When an entry is deleted, its index is replaced by that integer. */
-#define Invalid_index (~(uintnat)0)
 
 /* A resizable array of entries */
 struct entry_array {
@@ -141,6 +134,10 @@ static struct entry_array entries_global =
    position ([callback_idx <= entries_global.len]). */
 static uintnat callback_idx;
 
+#define CB_IDLE -1
+#define CB_LOCAL -2
+#define CB_STOPPED -3
+
 /* Structure for thread-local variables. */
 struct caml_memprof_th_ctx {
   /* [suspended] is used for masking memprof callbacks when
@@ -148,14 +145,22 @@ struct caml_memprof_th_ctx {
      called. */
   int suspended;
 
-  /* [callback_running] is used to trigger a fatal error whenever
-   [Thread.exit] is called from a callback. */
-  int callback_running;
+  /* [callback_status] contains:
+     - CB_STOPPED if the current thread is running a callback, but
+       sampling has been stopped using [caml_memprof_stop];
+     - The index of the corresponding entry in the [entries_global]
+       array if the current thread is currently running a promotion or
+       a deallocation callback;
+     - CB_LOCAL if the current thread is currently running an
+       allocation callback;
+     - CB_IDLE if the current thread is not running any callback.
+  */
+  intnat callback_status;
 
   /* Entries for blocks whose alloc callback has not yet been called. */
   struct entry_array entries;
 } caml_memprof_main_ctx =
-  { 0, 0, { NULL, MIN_ENTRIES_LOCAL_ALLOC_LEN, 0, 0, 0, 0 } };
+  { 0, CB_IDLE, { NULL, MIN_ENTRIES_LOCAL_ALLOC_LEN, 0, 0, 0, 0 } };
 static struct caml_memprof_th_ctx* local = &caml_memprof_main_ctx;
 
 /* Pointer to the word following the next sample in the minor
@@ -397,6 +402,8 @@ static int realloc_entries(struct entry_array* ea, uintnat grow)
   return 1;
 }
 
+#define Invalid_index (~(uintnat)0)
+
 Caml_inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
                                 int is_unmarshalled, int is_young,
                                 value block, value user_data)
@@ -410,14 +417,13 @@ Caml_inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
   t->n_samples = n_samples;
   t->wosize = wosize;
   t->user_data = user_data;
-  t->idx_ptr = NULL;
+  t->running = NULL;
   t->alloc_young = is_young;
   t->unmarshalled = is_unmarshalled;
   t->promoted = 0;
   t->deallocated = 0;
   t->cb_promote_called = t->cb_dealloc_called = 0;
   t->deleted = 0;
-  t->callback_running = 0;
   return local->entries.len - 1;
 }
 
@@ -428,7 +434,6 @@ static void mark_deleted(struct entry_array* ea, uintnat t_idx)
   t->user_data = Val_unit;
   t->block = Val_unit;
   if (t_idx < ea->delete_idx) ea->delete_idx = t_idx;
-  CAMLassert(t->idx_ptr == NULL);
 }
 
 Caml_inline value run_callback_exn(
@@ -436,22 +441,28 @@ Caml_inline value run_callback_exn(
 {
   struct tracked* t = &ea->t[t_idx];
   value res;
-  CAMLassert(!t->callback_running && t->idx_ptr == NULL);
+  CAMLassert(t->running == NULL);
   CAMLassert(lambda > 0.);
 
-  local->callback_running = t->callback_running = 1;
-  t->idx_ptr = &t_idx;
+  local->callback_status = ea == &entries_global ? t_idx : CB_LOCAL;
+  t->running = local;
   t->user_data = Val_unit;      /* Release root. */
   res = caml_callback_exn(cb, param);
-  local->callback_running = 0;
-  /* The call above can modify [t_idx] and thus invalidate [t]. */
-  if (t_idx == Invalid_index) {
+  if (local->callback_status == CB_STOPPED) {
     /* Make sure this entry has not been removed by [caml_memprof_stop] */
-    return Val_unit;
+    local->callback_status = CB_IDLE;
+    return Is_exception_result(res) ? res : Val_unit;
   }
-  t = &ea->t[t_idx];
-  t->idx_ptr = NULL;
-  t->callback_running = 0;
+  /* The call above can move the tracked entry and thus invalidate
+     [t_idx] and [t]. */
+  if (ea == &entries_global) {
+    CAMLassert(local->callback_status >= 0 && local->callback_status < ea->len);
+    t_idx = local->callback_status;
+    t = &ea->t[t_idx];
+  }
+  local->callback_status = CB_IDLE;
+  CAMLassert(t->running == local);
+  t->running = NULL;
   if (Is_exception_result(res) || res == Val_unit) {
     /* Callback raised an exception or returned None or (), discard
        this entry. */
@@ -484,7 +495,7 @@ Caml_inline value run_callback_exn(
 
 /* Run the allocation callback for a given entry of the local entries array.
    This assumes that the corresponding [deleted] and
-   [callback_running] fields of the entry are both set to 0.
+   [running] fields of the entry are both set to 0.
    Reentrancy is not a problem for this function, since other threads
    will use a different array for entries.
    The index of the entry will not change, except if [caml_memprof_stop] is
@@ -505,7 +516,7 @@ static value run_alloc_callback_exn(uintnat t_idx)
   Field(sample_info, 2) = Val_long(t->unmarshalled);
   Field(sample_info, 3) = t->user_data;
   return run_callback_exn(&local->entries, t_idx,
-      t->alloc_young ? Alloc_minor(tracker) : Alloc_major(tracker), sample_info);
+     t->alloc_young ? Alloc_minor(tracker) : Alloc_major(tracker), sample_info);
 }
 
 /* Remove any deleted entries from [ea], updating [ea->young_idx] and
@@ -519,7 +530,9 @@ static void flush_deleted(struct entry_array* ea)
   j = i = ea->delete_idx;
   while (i < ea->len) {
     if (!ea->t[i].deleted) {
-      if (ea->t[i].idx_ptr != NULL) *ea->t[i].idx_ptr = j;
+      struct caml_memprof_th_ctx* runner = ea->t[i].running;
+      if (runner != NULL && runner->callback_status == i)
+        runner->callback_status = j;
       ea->t[j] = ea->t[i];
       j++;
     }
@@ -561,9 +574,14 @@ value caml_memprof_handle_postponed_exn(void)
 
   for (i = 0; i < local->entries.len; i++) {
     /* We are the only thread allowed to modify [local->entries], so
-       the indices cannot shift. */
+       the indices cannot shift, but it is still possible that
+       [caml_memprof_stop] got called during the callback,
+       invalidating all the entries. */
     res = run_alloc_callback_exn(i);
     if (Is_exception_result(res)) goto end;
+    if (local->entries.len == 0)
+      goto end; /* [caml_memprof_stop] has been called. */
+    if (local->entries.t[i].deleted) continue;
     if (realloc_entries(&entries_global, 1))
       /* Transfer the entry to the global array. */
       entries_global.t[entries_global.len++] = local->entries.t[i];
@@ -573,7 +591,7 @@ value caml_memprof_handle_postponed_exn(void)
   while (callback_idx < entries_global.len) {
     struct tracked* t = &entries_global.t[callback_idx];
 
-    if (t->deleted || t->callback_running) {
+    if (t->deleted || t->running != NULL) {
       /* This entry is not ready. Ignore it. */
       callback_idx++;
     } else if (t->promoted && !t->cb_promote_called) {
@@ -894,39 +912,38 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
 
   for (i = 0; i < allocs_sampled; i++) {
     uintnat idx = local->entries.len-allocs_sampled+i;
-    if (!local->entries.t[idx].deleted) {
-      if (realloc_entries(&entries_global, 1)) {
-        /* Transfer the entry to the global array. */
-        struct tracked* t = &entries_global.t[entries_global.len];
-        entries_global.len++;
-        *t = local->entries.t[idx];
+    if (local->entries.t[idx].deleted) continue;
+    if (realloc_entries(&entries_global, 1)) {
+      /* Transfer the entry to the global array. */
+      struct tracked* t = &entries_global.t[entries_global.len];
+      entries_global.len++;
+      *t = local->entries.t[idx];
 
-        if (Is_exception_result(res)) {
-          /* The allocations are cancelled because of the exception,
-             but this callback has already been called. We simulate a
-             deallocation. */
-          t->block = Val_unit;
-          t->deallocated = 1;
-        } else {
-          /* If the execution of the callback has succeeded, then we start the
-             tracking of this block..
+      if (Is_exception_result(res)) {
+        /* The allocations are cancelled because of the exception,
+           but this callback has already been called. We simulate a
+           deallocation. */
+        t->block = Val_unit;
+        t->deallocated = 1;
+      } else {
+        /* If the execution of the callback has succeeded, then we start the
+           tracking of this block..
 
-             Subtlety: we are actually writing [t->block] with an invalid
-             (uninitialized) block. This is correct because the allocation
-             and initialization happens right after returning from
-             [caml_memprof_track_young]. */
-          t->block = Val_hp(Caml_state->young_ptr + Offs_placeholder(t->block));
+           Subtlety: we are actually writing [t->block] with an invalid
+           (uninitialized) block. This is correct because the allocation
+           and initialization happens right after returning from
+           [caml_memprof_track_young]. */
+        t->block = Val_hp(Caml_state->young_ptr + Offs_placeholder(t->block));
 
-          /* We make sure that the action pending flag is not set
-             systematically, which is to be expected, since we created
-             a new block in the global entry array, but this new block
-             does not need promotion or deallocationc callback. */
-          if (callback_idx == entries_global.len - 1)
-            callback_idx = entries_global.len;
-        }
+        /* We make sure that the action pending flag is not set
+           systematically, which is to be expected, since we created
+           a new block in the global entry array, but this new block
+           does not need promotion or deallocationc callback. */
+        if (callback_idx == entries_global.len - 1)
+          callback_idx = entries_global.len;
       }
-      mark_deleted(&local->entries, idx);
     }
+    mark_deleted(&local->entries, idx);
   }
 
   flush_deleted(&local->entries);
@@ -1016,24 +1033,32 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
   CAMLreturn(Val_unit);
 }
 
-static void entry_array_discard(struct entry_array* ea, void* data)
+static void empty_entry_array(struct entry_array *ea) {
+  if (ea != NULL) {
+    ea->alloc_len = ea->len = ea->young_idx = ea->delete_idx = 0;
+    caml_stat_free(ea->t);
+    ea->t = NULL;
+  }
+}
+
+static void th_ctx_memprof_stop(struct caml_memprof_th_ctx* ctx, void* data)
 {
-  uintnat i;
   (void)data;
-  for (i = 0; i < ea->len; i++)
-    if (ea->t[i].idx_ptr != NULL)
-      *ea->t[i].idx_ptr = Invalid_index;
-  ea->alloc_len = ea->len = ea->young_idx = ea->delete_idx = 0;
-  caml_stat_free(ea->t);
-  ea->t = NULL;
+  if (ctx->callback_status != CB_IDLE) ctx->callback_status = CB_STOPPED;
+  empty_entry_array(&ctx->entries);
 }
 
 CAMLprim value caml_memprof_stop(value unit)
 {
   if (!started) caml_failwith("Gc.Memprof.stop: not started.");
 
-  /* Discard the tracked blocks. */
-  entry_arrays_iter(entry_array_discard, NULL);
+  /* Discard the tracked blocks in the global entries array. */
+  empty_entry_array(&entries_global);
+
+  /* Discard the tracked blocks in the local entries array,
+     and set [callback_status] to [CB_STOPPED]. */
+  caml_memprof_th_ctx_iter_hook(th_ctx_memprof_stop, NULL);
+
   callback_idx = 0;
 
   lambda = 0;
@@ -1065,7 +1090,7 @@ CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx()
   struct caml_memprof_th_ctx* ctx =
     caml_stat_alloc(sizeof(struct caml_memprof_th_ctx));
   ctx->suspended = 0;
-  ctx->callback_running = 0;
+  ctx->callback_status = CB_IDLE;
   ctx->entries.t = NULL;
   ctx->entries.min_alloc_len = MIN_ENTRIES_LOCAL_ALLOC_LEN;
   ctx->entries.alloc_len = ctx->entries.len = 0;
@@ -1075,11 +1100,10 @@ CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx()
 
 CAMLexport void caml_memprof_delete_th_ctx(struct caml_memprof_th_ctx* ctx)
 {
-  /* Make sure that no memprof callback is being executed in this
-     thread. If so, memprof data structures may have pointers to the
-     thread's stack. */
-  if (ctx->callback_running)
-    caml_fatal_error("Thread.exit called from a memprof callback.");
+  if (ctx->callback_status >= 0)
+    /* A callback is running in this thread from the global entries
+       array. We delete the corresponding entry. */
+    mark_deleted(&entries_global, ctx->callback_status);
   if (ctx == local) local = NULL;
   caml_stat_free(ctx->entries.t);
   if (ctx != &caml_memprof_main_ctx) caml_stat_free(ctx);

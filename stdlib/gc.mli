@@ -531,10 +531,7 @@ module Memprof :
 
        Note that the callback can be postponed slightly after the
        actual event. The callstack passed to the callback is always
-       accurate, but the program state may have evolved.
-
-       Calling [Thread.exit] in a callback is currently unsafe and can
-       result in undefined behavior. *)
+       accurate, but the program state may have evolved. *)
 
     val stop : unit -> unit
     (** Stop the sampling. Fails if sampling is not active.
