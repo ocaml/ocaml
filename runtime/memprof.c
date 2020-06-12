@@ -329,9 +329,9 @@ struct tracked {
   /* Whether a callback is currently running for this entry. */
   unsigned int callback_running : 1;
 
-  /* Pointer to the [t_idx] variable in the [run_callback] frame which
+  /* Pointer to the [t_idx] variable in the [run_callback_exn] frame which
      is currently running the callback for this entry. This is needed
-     to make [run_callback] reetrant, in the case it is called
+     to make [run_callback_exn] reetrant, in the case it is called
      simultaneously by several threads. */
   uintnat* idx_ptr;
 };
@@ -425,9 +425,6 @@ static void mark_deleted(uintnat t_idx)
   CAMLassert(t->idx_ptr == NULL);
 }
 
-/* The return value is an exception or [Val_unit] iff [*t_idx] is set to
-   [Invalid_index]. In this case, the entry is deleted.
-   Otherwise, the return value is a [Some(...)] block. */
 Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param)
 {
   struct tracked* t = &entries.t[*t_idx];
@@ -437,6 +434,7 @@ Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param)
 
   local->callback_running = t->callback_running = 1;
   t->idx_ptr = t_idx;
+  t->user_data = Val_unit;      /* Release root. */
   res = caml_callback_exn(cb, param);
   local->callback_running = 0;
   /* The call above can modify [*t_idx] and thus invalidate [t]. */
@@ -452,8 +450,17 @@ Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param)
        this entry. */
     mark_deleted(*t_idx);
     *t_idx = Invalid_index;
+    return res;
+  } else {
+    /* Callback returned [Some _]. Store the value in [user_data]. */
+    CAMLassert(!Is_exception_result(res) && Is_block(res) && Tag_val(res) == 0
+               && Wosize_val(res) == 1);
+    t->user_data = Field(res, 0);
+    if (Is_block(t->user_data) && Is_young(t->user_data) &&
+        *t_idx < entries.young_idx)
+      entries.young_idx = *t_idx;
+    return Val_unit;
   }
-  return res;
 }
 
 /* Run all the needed callbacks for a given entry.
@@ -469,7 +476,7 @@ Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param)
  */
 static value handle_entry_callbacks_exn(uintnat* t_idx)
 {
-  value sample_info, res, user_data;    /* No need to make these roots */
+  value sample_info, res;    /* No need to make these roots */
   struct tracked* t = &entries.t[*t_idx];
   if (*t_idx == callback_idx) callback_idx++;
 
@@ -485,47 +492,27 @@ static value handle_entry_callbacks_exn(uintnat* t_idx)
     Field(sample_info, 1) = Val_long(t->wosize);
     Field(sample_info, 2) = Val_long(t->unmarshalled);
     Field(sample_info, 3) = t->user_data;
-    t->user_data = Val_unit;
     res = run_callback_exn(t_idx,
         t->alloc_young ? Alloc_minor(tracker) : Alloc_major(tracker),
         sample_info);
-    if (*t_idx == Invalid_index)
-      return res;
-    CAMLassert(!Is_exception_result(res) && Is_block(res) && Tag_val(res) == 0
-               && Wosize_val(res) == 1);
+    if (*t_idx == Invalid_index) return res;
     t = &entries.t[*t_idx];
-    t->user_data = Field(res, 0);
-    if (Is_block(t->user_data) && Is_young(t->user_data) &&
-        *t_idx < entries.young_idx)
-      entries.young_idx = *t_idx;
   }
 
   if (t->promoted && !t->cb_promote_called) {
     t->cb_promote_called = 1;
-    user_data = t->user_data;
-    t->user_data = Val_unit;
-    res = run_callback_exn(t_idx, Promote(tracker), user_data);
-    if (*t_idx == Invalid_index)
-      return res;
-    CAMLassert(!Is_exception_result(res) && Is_block(res) && Tag_val(res) == 0
-               && Wosize_val(res) == 1);
+    res = run_callback_exn(t_idx, Promote(tracker), t->user_data);
+    if (*t_idx == Invalid_index) return res;
     t = &entries.t[*t_idx];
-    t->user_data = Field(res, 0);
-    if (Is_block(t->user_data) && Is_young(t->user_data) &&
-        *t_idx < entries.young_idx)
-      entries.young_idx = *t_idx;
   }
 
   if (t->deallocated && !t->cb_dealloc_called) {
     value cb = (t->promoted || !t->alloc_young) ?
       Dealloc_major(tracker) : Dealloc_minor(tracker);
     t->cb_dealloc_called = 1;
-    user_data = t->user_data;
-    t->user_data = Val_unit;
-    res = run_callback_exn(t_idx, cb, user_data);
+    res = run_callback_exn(t_idx, cb, t->user_data);
     /* [t] is invalid, but we do no longer use it. */
     CAMLassert(*t_idx == Invalid_index);
-    CAMLassert(Is_exception_result(res) || res == Val_unit);
     return res;
   }
 
