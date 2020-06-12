@@ -61,6 +61,10 @@ let () =
   assert (
     let f a b = a + b, string_of_int b in
     List.fold_left_map f 0 l = (45, sl));
+  assert (List.fold_assoc_left (fun a k v -> (k,v+1)::a) [] [(1,2); (3,4)]
+         = [(3, 5); (1, 3)]);
+  assert (List.fold_assoc_right (fun k v a -> (k,v+1)::a) [(1,2); (3,4)] []
+         = [(1, 3); (3, 5)]);
   ()
 ;;
 
