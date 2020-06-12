@@ -152,9 +152,7 @@ static void (*prev_scan_roots_hook) (scanning_action);
 
 static void caml_thread_scan_roots(scanning_action action)
 {
-  caml_thread_t th;
-
-  th = curr_thread;
+  caml_thread_t th = curr_thread;
   do {
     (*action)(th->descr, &th->descr);
     (*action)(th->backtrace_last_exn, &th->backtrace_last_exn);
@@ -172,6 +170,17 @@ static void caml_thread_scan_roots(scanning_action action)
   } while (th != curr_thread);
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
+}
+
+/* Hook for iterating over Memprof's entries arrays */
+
+static void memprof_ctx_iter(th_ctx_action f, void* data)
+{
+  caml_thread_t th = curr_thread;
+  do {
+    f(th->memprof_ctx, data);
+    th = th->next;
+  } while (th != curr_thread);
 }
 
 /* Saving and restoring runtime state in curr_thread */
@@ -469,6 +478,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
   prev_stack_usage_hook = caml_stack_usage_hook;
   caml_stack_usage_hook = caml_thread_stack_usage;
+  caml_memprof_th_ctx_iter_hook = memprof_ctx_iter;
   /* Set up fork() to reinitialize the thread machinery in the child
      (PR#4577) */
   st_atfork(caml_thread_reinitialize);

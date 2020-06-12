@@ -494,6 +494,9 @@ module Memprof :
        to keep for minor blocks, and ['major] the type of metadata
        for major blocks.
 
+       When using threads, it is guaranteed that allocation callbacks are
+       always run in the thread where the allocation takes place.
+
        If an allocation-tracking or promotion-tracking function returns [None],
        memprof stops tracking the corresponding value.
      *)

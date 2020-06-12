@@ -454,8 +454,7 @@ void caml_empty_minor_heap (void)
 extern uintnat caml_instr_alloc_jump;
 #endif /*CAML_INSTR*/
 
-/* Do a minor collection or a slice of major collection, call finalisation
-   functions, etc.
+/* Do a minor collection or a slice of major collection, etc.
    Leave enough room in the minor heap to allocate at least one object.
    Guaranteed not to call any OCaml callback.
 */

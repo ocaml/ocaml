@@ -47,6 +47,9 @@ CAMLextern void caml_memprof_leave_thread(void);
 CAMLextern void caml_memprof_enter_thread(struct caml_memprof_th_ctx*);
 CAMLextern void caml_memprof_delete_th_ctx(struct caml_memprof_th_ctx*);
 
+typedef void (*th_ctx_action)(struct caml_memprof_th_ctx*, void*);
+extern void (*caml_memprof_th_ctx_iter_hook)(th_ctx_action, void*);
+
 #endif
 
 #endif /* CAML_MEMPROF_H */
