@@ -666,7 +666,11 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
               in
               Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body), size
           end
-      | Tstr_module {mb_presence=Mp_absent} ->
+      | Tstr_module ({mb_presence=Mp_absent} as mb) ->
+          List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+            mb.mb_attributes;
+          List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+            mb.mb_expr.mod_attributes;
           transl_structure ~scopes loc fields cc rootpath final_env rem
       | Tstr_recmodule bindings ->
           let ext_fields =
@@ -1120,7 +1124,11 @@ let transl_store_structure ~scopes glob map prims aliases str =
                            transl_store ~scopes rootpath
                              (add_ident true id subst)
                              cont rem))
-        | Tstr_module {mb_presence=Mp_absent} ->
+        | Tstr_module ({mb_presence=Mp_absent} as mb) ->
+            List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+              mb.mb_attributes;
+            List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+              mb.mb_expr.mod_attributes;
             transl_store ~scopes rootpath subst cont rem
         | Tstr_recmodule bindings ->
             let ids = List.filter_map (fun mb -> mb.mb_id) bindings in
@@ -1539,8 +1547,13 @@ let transl_toplevel_item ~scopes item =
                transl_module ~scopes Tcoerce_none None od.open_expr,
                set_idents 0 ids)
       end
+  | Tstr_module ({mb_presence=Mp_absent} as mb) ->
+      List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+        mb.mb_attributes;
+      List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+        mb.mb_expr.mod_attributes;
+      lambda_unit
   | Tstr_modtype _
-  | Tstr_module {mb_presence=Mp_absent}
   | Tstr_type _
   | Tstr_class_type _
   | Tstr_attribute _ ->
