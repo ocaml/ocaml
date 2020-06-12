@@ -486,6 +486,10 @@ let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
 ;;
 
+let mk_asm f =
+  "-asm", Arg.String f, "<command>  Use <command> as the assembler"
+;;
+
 let mk_safe_string f =
   "-safe-string", Arg.Unit f,
   if Config.safe_string then " (was set when configuring the compiler)"
@@ -1101,6 +1105,7 @@ module type Optcomp_options = sig
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
+  val _asm : string -> unit
   val _shared : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
@@ -1112,6 +1117,7 @@ module type Opttop_options = sig
   include Optcommon_options
   val _verbose : unit -> unit
   val _S : unit -> unit
+  val _asm : string -> unit
 end;;
 
 module type Ocamldoc_options = sig
@@ -1392,6 +1398,7 @@ struct
     mk_with_runtime F._with_runtime;
     mk_without_runtime F._without_runtime;
     mk_S F._S;
+    mk_asm F._asm;
     mk_safe_string F._safe_string;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
@@ -1509,6 +1516,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_rectypes F._no_rectypes;
     mk_remove_unused_arguments F._remove_unused_arguments;
     mk_S F._S;
+    mk_asm F._asm;
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
@@ -1714,6 +1722,7 @@ module Default = struct
 
   module Native = struct
     let _S = set keep_asm_file
+    let _asm s = asm_compiler := (Some s)
     let _clambda_checks () = clambda_checks := true
     let _classic_inlining () = classic_inlining := true
     let _compact = clear optimize_for_speed

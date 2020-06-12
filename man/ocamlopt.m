@@ -191,6 +191,11 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 .TP
+.BI \-asm \ as
+Use
+.I as
+as the assembler for assembling generated assembly files.
+.TP
 .BI \-cc \ ccomp
 Use
 .I ccomp

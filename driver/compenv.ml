@@ -246,6 +246,7 @@ let read_one_param ppf position name v =
   |  "s" ->
     set "s" [ Clflags.keep_asm_file ; Clflags.keep_startup_file ] v
   |  "S" -> set "S" [ Clflags.keep_asm_file ] v
+  |  "asm" -> asm_compiler := Some v
   |  "dstartup" -> set "dstartup" [ Clflags.keep_startup_file ] v
 
   (* warn-errors *)
