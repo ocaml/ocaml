@@ -18,4 +18,5 @@
 BEGIN { in_aliases=0 }
 NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
 /^\(\*MODULE_ALIASES\*\)\r?$/ { in_aliases=1 }
+/^\(\*END_MODULE_ALIASES\*\)\r?$/ { in_aliases=0 }
 !in_aliases { print }

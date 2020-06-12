@@ -13,6 +13,66 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(*MODULE_ALIASES*)
+(* Can be used inside stdlib.ml *)
+module Atomic       = Atomic
+(* Cannot be used inside stdlib.ml *)
+module Arg          = Arg
+module Array        = Array
+module ArrayLabels  = ArrayLabels
+module Bigarray     = Bigarray
+module Bool         = Bool
+module Buffer       = Buffer
+module Bytes        = Bytes
+module BytesLabels  = BytesLabels
+module Callback     = Callback
+module Char         = Char
+module Complex      = Complex
+module Digest       = Digest
+module Ephemeron    = Ephemeron
+module Filename     = Filename
+module Float        = Float
+module Format       = Format
+module Fun          = Fun
+module Gc           = Gc
+module Genlex       = Genlex
+module Hashtbl      = Hashtbl
+module Int          = Int
+module Int32        = Int32
+module Int64        = Int64
+module Lazy         = Lazy
+module Lexing       = Lexing
+module List         = List
+module ListLabels   = ListLabels
+module Map          = Map
+module Marshal      = Marshal
+module MoreLabels   = MoreLabels
+module Nativeint    = Nativeint
+module Obj          = Obj
+module Oo           = Oo
+module Option       = Option
+module Parsing      = Parsing
+module Pervasives   = Pervasives
+module Printexc     = Printexc
+module Printf       = Printf
+module Queue        = Queue
+module Random       = Random
+module Result       = Result
+module Scanf        = Scanf
+module Seq          = Seq
+module Set          = Set
+module Spacetime    = Spacetime
+module Stack        = Stack
+module StdLabels    = StdLabels
+module Stream       = Stream
+module String       = String
+module StringLabels = StringLabels
+module Sys          = Sys
+module Uchar        = Uchar
+module Unit         = Unit
+module Weak         = Weak
+(*END_MODULE_ALIASES*)
+
 (* Exceptions *)
 
 external register_named_value : string -> 'a -> unit
@@ -543,10 +603,9 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let exit_function = Stdlib__atomic.make flush_all
+let exit_function = Atomic.make flush_all
 
 let rec at_exit f =
-  let module Atomic = Stdlib__atomic in
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
   let f_yet_to_run = Atomic.make true in
   let old_exit = Atomic.get exit_function in
@@ -557,67 +616,10 @@ let rec at_exit f =
   let success = Atomic.compare_and_set exit_function old_exit new_exit in
   if not success then at_exit f
 
-let do_at_exit () = (Stdlib__atomic.get exit_function) ()
+let do_at_exit () = (Atomic.get exit_function) ()
 
 let exit retcode =
   do_at_exit ();
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
-
-(*MODULE_ALIASES*)
-module Arg          = Arg
-module Array        = Array
-module ArrayLabels  = ArrayLabels
-module Atomic       = Atomic
-module Bigarray     = Bigarray
-module Bool         = Bool
-module Buffer       = Buffer
-module Bytes        = Bytes
-module BytesLabels  = BytesLabels
-module Callback     = Callback
-module Char         = Char
-module Complex      = Complex
-module Digest       = Digest
-module Ephemeron    = Ephemeron
-module Filename     = Filename
-module Float        = Float
-module Format       = Format
-module Fun          = Fun
-module Gc           = Gc
-module Genlex       = Genlex
-module Hashtbl      = Hashtbl
-module Int          = Int
-module Int32        = Int32
-module Int64        = Int64
-module Lazy         = Lazy
-module Lexing       = Lexing
-module List         = List
-module ListLabels   = ListLabels
-module Map          = Map
-module Marshal      = Marshal
-module MoreLabels   = MoreLabels
-module Nativeint    = Nativeint
-module Obj          = Obj
-module Oo           = Oo
-module Option       = Option
-module Parsing      = Parsing
-module Pervasives   = Pervasives
-module Printexc     = Printexc
-module Printf       = Printf
-module Queue        = Queue
-module Random       = Random
-module Result       = Result
-module Scanf        = Scanf
-module Seq          = Seq
-module Set          = Set
-module Spacetime    = Spacetime
-module Stack        = Stack
-module StdLabels    = StdLabels
-module Stream       = Stream
-module String       = String
-module StringLabels = StringLabels
-module Sys          = Sys
-module Uchar        = Uchar
-module Unit         = Unit
-module Weak         = Weak

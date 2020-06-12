@@ -687,9 +687,11 @@ stdlib__weak.cmi : \
     stdlib__hashtbl.cmi
 stdlib.cmo : \
     camlinternalFormatBasics.cmi \
+    stdlib__atomic.cmi \
     stdlib.cmi
 stdlib.cmx : \
     camlinternalFormatBasics.cmx \
+    stdlib__atomic.cmx \
     stdlib.cmi
 stdlib.cmi : \
     camlinternalFormatBasics.cmi

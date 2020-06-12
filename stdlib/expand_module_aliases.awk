@@ -17,6 +17,7 @@
 BEGIN { state=0 }
 NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
 /\(\*MODULE_ALIASES\*\)\r?/ { state=1 }
+/\(\*END_MODULE_ALIASES\*\)\r?/ { state=0 }
 { if (state==0)
     print;
   else if (state==1)
