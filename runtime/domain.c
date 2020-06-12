@@ -69,6 +69,7 @@ void caml_init_domain ()
   Caml_state->stat_heap_wsz = 0;
   Caml_state->stat_top_heap_wsz = 0;
   Caml_state->stat_compactions = 0;
+  Caml_state->stat_forced_major_collections = 0;
   Caml_state->stat_heap_chunks = 0;
 
   Caml_state->backtrace_active = 0;

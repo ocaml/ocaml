@@ -233,9 +233,10 @@ static value heap_stats (int returnstats)
     intnat majcoll = Caml_state->stat_major_collections;
     intnat heap_words = Caml_state->stat_heap_wsz;
     intnat cpct = Caml_state->stat_compactions;
+    intnat forcmajcoll = Caml_state->stat_forced_major_collections;
     intnat top_heap_words = Caml_state->stat_top_heap_wsz;
 
-    res = caml_alloc_tuple (16);
+    res = caml_alloc_tuple (17);
     Store_field (res, 0, caml_copy_double (minwords));
     Store_field (res, 1, caml_copy_double (prowords));
     Store_field (res, 2, caml_copy_double (majwords));
@@ -252,6 +253,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 13, Val_long (cpct));
     Store_field (res, 14, Val_long (top_heap_words));
     Store_field (res, 15, Val_long (caml_stack_usage()));
+    Store_field (res, 16, Val_long (forcmajcoll));
     CAMLreturn (res);
   }else{
     CAMLreturn (Val_unit);
@@ -292,9 +294,10 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat heap_words = Caml_state->stat_heap_wsz;
   intnat top_heap_words = Caml_state->stat_top_heap_wsz;
   intnat cpct = Caml_state->stat_compactions;
+  intnat forcmajcoll = Caml_state->stat_forced_major_collections;
   intnat heap_chunks = Caml_state->stat_heap_chunks;
 
-  res = caml_alloc_tuple (16);
+  res = caml_alloc_tuple (17);
   Store_field (res, 0, caml_copy_double (minwords));
   Store_field (res, 1, caml_copy_double (prowords));
   Store_field (res, 2, caml_copy_double (majwords));
@@ -311,6 +314,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 13, Val_long (cpct));
   Store_field (res, 14, Val_long (top_heap_words));
   Store_field (res, 15, Val_long (caml_stack_usage()));
+  Store_field (res, 16, Val_long (forcmajcoll));
   CAMLreturn (res);
 }
 
@@ -504,6 +508,7 @@ CAMLprim value caml_gc_set(value v)
     caml_empty_minor_heap ();
     caml_finish_major_cycle ();
     caml_finish_major_cycle ();
+    ++ Caml_state->stat_forced_major_collections;
     caml_compact_heap (newpolicy);
     caml_gc_message (0x20, "New allocation policy: %"
                      ARCH_INTNAT_PRINTF_FORMAT "u\n", newpolicy);
@@ -583,6 +588,7 @@ CAMLprim value caml_gc_full_major(value v)
   if (Is_exception_result(exn)) goto cleanup;
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
+  ++ Caml_state->stat_forced_major_collections;
   test_and_compact ();
   // call finalisers
   exn = caml_process_pending_actions_exn();
@@ -617,6 +623,7 @@ CAMLprim value caml_gc_compaction(value v)
   if (Is_exception_result(exn)) goto cleanup;
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
+  ++ Caml_state->stat_forced_major_collections;
   caml_compact_heap (-1);
   // call finalisers
   exn = caml_process_pending_actions_exn();

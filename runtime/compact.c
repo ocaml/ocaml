@@ -562,6 +562,7 @@ void caml_compact_heap_maybe (void)
     caml_gc_message (0x200, "Automatic compaction triggered.\n");
     caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
     caml_finish_major_cycle ();
+    ++ Caml_state->stat_forced_major_collections;
 
     fw = caml_fl_cur_wsz;
     fp = 100.0 * fw / (Caml_state->stat_heap_wsz - fw);

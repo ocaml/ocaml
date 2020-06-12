@@ -31,6 +31,7 @@ type stat = {
   compactions : int;
   top_heap_words : int;
   stack_size : int;
+  forced_major_collections: int;
 }
 
 type control = {
@@ -70,9 +71,10 @@ open Printf
 
 let print_stat c =
   let st = stat () in
-  fprintf c "minor_collections: %d\n" st.minor_collections;
-  fprintf c "major_collections: %d\n" st.major_collections;
-  fprintf c "compactions:       %d\n" st.compactions;
+  fprintf c "minor_collections:      %d\n" st.minor_collections;
+  fprintf c "major_collections:      %d\n" st.major_collections;
+  fprintf c "compactions:            %d\n" st.compactions;
+  fprintf c "forced_major_collections: %d\n" st.forced_major_collections;
   fprintf c "\n";
   let l1 = String.length (sprintf "%.0f" st.minor_words) in
   fprintf c "minor_words:    %*.0f\n" l1 st.minor_words;

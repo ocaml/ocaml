@@ -130,6 +130,7 @@ CAMLprim value caml_sys_exit(value retcode_v)
     intnat heap_chunks = Caml_state->stat_heap_chunks;
     intnat top_heap_words = Caml_state->stat_top_heap_wsz;
     intnat cpct = Caml_state->stat_compactions;
+    intnat forcmajcoll = Caml_state->stat_forced_major_collections;
     caml_gc_message(0x400, "allocated_words: %.0f\n", allocated_words);
     caml_gc_message(0x400, "minor_words: %.0f\n", minwords);
     caml_gc_message(0x400, "promoted_words: %.0f\n", prowords);
@@ -146,6 +147,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
                     top_heap_words);
     caml_gc_message(0x400, "compactions: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                     cpct);
+    caml_gc_message(0x400,
+                    "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    forcmajcoll);
   }
 
 #ifndef NATIVE_CODE
