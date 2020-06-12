@@ -403,20 +403,15 @@ static void caml_thread_remove_info(caml_thread_t th)
 
 static void caml_thread_reinitialize(void)
 {
-  caml_thread_t thr, next;
   struct channel * chan;
 
   /* Remove all other threads (now nonexistent)
      from the doubly-linked list of threads */
-  thr = curr_thread->next;
-  while (thr != curr_thread) {
-    next = thr->next;
-    caml_stat_free(thr);
-    thr = next;
+  while (curr_thread->next != curr_thread) {
+    caml_memprof_delete_th_ctx(curr_thread->next->memprof_ctx);
+    caml_thread_remove_info(curr_thread->next);
   }
-  curr_thread->next = curr_thread;
-  curr_thread->prev = curr_thread;
-  all_threads = curr_thread;
+
   /* Reinitialize the master lock machinery,
      just in case the fork happened while other threads were doing
      caml_leave_blocking_section */
