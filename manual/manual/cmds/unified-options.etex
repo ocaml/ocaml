@@ -101,6 +101,11 @@ and as the C compiler for compiling ".c" source files.
 }%notop
 
 \notop{%
+\item["-asm" \var{as}]
+Use \var{as} as the assembler for assembling object files.
+}%notop
+
+\notop{%
 \item["-cclib" "-l"\var{libname}]
 Pass the "-l"\var{libname} option to the \comp{C} linker
 \comp{when linking in ``custom runtime'' mode (see the "-custom" option)}.

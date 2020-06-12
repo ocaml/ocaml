@@ -241,11 +241,15 @@ let binary_content = ref None
 
 let compile infile outfile =
   if masm then
-    Ccomp.command (Config.asm ^
+    Ccomp.command ((match !Clflags.asm_compiler with
+                    | Some asm -> asm
+                    | None -> Config.asm) ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
   else
-    Ccomp.command (Config.asm ^ " " ^
+    Ccomp.command ((match !Clflags.asm_compiler with
+                    | Some asm -> asm
+                    | None -> Config.asm) ^ " " ^
                    (String.concat " " (Misc.debug_prefix_map_flags ())) ^
                    " -o " ^ Filename.quote outfile ^ " " ^
                    Filename.quote infile)
