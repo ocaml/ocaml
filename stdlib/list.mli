@@ -102,6 +102,39 @@ val flatten : 'a list list -> 'a list
 (** An alias for [concat]. *)
 
 
+(** {1 Comparison} *)
+
+val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+(** [equal eq [a1; ...; an] [b1; ..; bm]] holds when
+    the two input lists have the same length, and for each
+    pair of elements [ai], [bi] at the same position we have
+    [eq ai bi].
+
+    Note: the [eq] function may be called even if the
+    lists have different length. If you know your equality
+    function is costly, you may want to check {!compare_lengths}
+    first.
+
+    @since 4.12.0
+*)
+
+val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+(** [compare cmp l1 l2] performs a lexicographic comparison
+    of the two input lists, using the same ['a -> 'a -> int]
+    interface as {!Stdlib.compare}.
+
+    - [a1 :: l1] is smaller than [a2 :: l2]
+      if [a1] is smaller than [a2], or if they are equal
+      and [l1] is smaller than [l2].
+    - the empty list [[]] is strictly smaller than non-empty lists.
+
+    Note: the [cmp] function will be called even if the lists have
+    different lengths. A shorter list is not necessarily smaller,
+    for example [List.compare [3] [2; 1] > 0].
+
+    @since 4.12.0
+*)
+
 (** {1 Iterators} *)
 
 
