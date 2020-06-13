@@ -221,6 +221,7 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let output_variable = compiler#output_variable in
   let prepare = prepare_module output_variable log env in
   let modules =
+    (* NOTE: [prepare] performs side effects. *)
     List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
   let has_c_file = List.exists is_c_file modules in
   let c_headers_flags =
@@ -252,11 +253,11 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
     | Error reason ->
         (Result.fail_with_reason reason, env)
     | Ok bytecode_links_c_code ->
+      let needs_custom = has_c_file || bytecode_links_c_code in
       let commandline =
       [
         compiler#name;
-        Ocaml_flags.runtime_flags env compiler#target
-                                  (has_c_file || bytecode_links_c_code);
+        Ocaml_flags.runtime_flags env compiler#target needs_custom;
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
@@ -278,6 +279,13 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
           ~stderr_variable:compiler#output_variable
           ~append:true
           log env commandline in
+      let env =
+        (* In custom mode, bytecode executables are native binaries *)
+        if needs_custom then
+          Environments.add Ocaml_variables.compare_programs "false" env
+        else
+          env
+      in
       if exit_status=expected_exit_status
       then (Result.pass, env)
       else begin
