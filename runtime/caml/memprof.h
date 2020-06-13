@@ -40,8 +40,6 @@ extern void caml_memprof_do_roots(scanning_action f);
 extern void caml_memprof_update_clean_phase(void);
 extern void caml_memprof_invert_tracked(void);
 
-extern void caml_memprof_shutdown(void);
-
 struct caml_memprof_th_ctx {
   int suspended, callback_running;
 };

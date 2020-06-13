@@ -926,22 +926,6 @@ static void caml_memprof_init(void) {
   xoshiro_init();
 }
 
-void caml_memprof_shutdown(void) {
-  init = 0;
-  started = 0;
-  lambda = 0.;
-  suspended = 0;
-  callback_running = 0;
-  trackst.len = 0;
-  trackst.callback = trackst.young = trackst.delete = 0;
-  caml_stat_free(trackst.entries);
-  trackst.entries = NULL;
-  trackst.alloc_len = 0;
-  caml_stat_free(callstack_buffer);
-  callstack_buffer = NULL;
-  callstack_buffer_len = 0;
-}
-
 CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
 {
   CAMLparam3(lv, szv, tracker_param);
