@@ -1,5 +1,7 @@
 (* TEST
    modules = "cmstub.c cmmain.c"
+
+* native
 *)
 
 (* OCaml part of the code *)
