@@ -3063,21 +3063,45 @@ let report_lookup_error _loc env ppf = function
   | Unbound_type lid ->
       fprintf ppf "Unbound type constructor %a" !print_longident lid;
       spellcheck ppf extract_types env lid;
-  | Unbound_module lid ->
+  | Unbound_module lid -> begin
       fprintf ppf "Unbound module %a" !print_longident lid;
-      spellcheck ppf extract_modules env lid;
+       match find_modtype_by_name lid env with
+      | exception Not_found -> spellcheck ppf extract_modules env lid;
+      | _ ->
+         fprintf ppf
+           "@.@[%s %a, %s@]"
+           "Hint: There is a module type named"
+           !print_longident lid
+           "but module types are not modules"
+    end
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" !print_longident lid;
       spellcheck ppf extract_constructors env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" !print_longident lid;
       spellcheck ppf extract_labels env lid;
-  | Unbound_class lid ->
+  | Unbound_class lid -> begin
       fprintf ppf "Unbound class %a" !print_longident lid;
-      spellcheck ppf extract_classes env lid;
-  | Unbound_modtype lid ->
+      match find_cltype_by_name lid env with
+      | exception Not_found -> spellcheck ppf extract_classes env lid;
+      | _ ->
+         fprintf ppf
+           "@.@[%s %a, %s@]"
+           "Hint: There is a class type named"
+           !print_longident lid
+           "but classes are not class types"
+    end
+  | Unbound_modtype lid -> begin
       fprintf ppf "Unbound module type %a" !print_longident lid;
-      spellcheck ppf extract_modtypes env lid;
+      match find_module_by_name lid env with
+      | exception Not_found -> spellcheck ppf extract_modtypes env lid;
+      | _ ->
+         fprintf ppf
+           "@.@[%s %a, %s@]"
+           "Hint: There is a module named"
+           !print_longident lid
+           "but modules are not module types"
+    end
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" !print_longident lid;
       spellcheck ppf extract_cltypes env lid;
