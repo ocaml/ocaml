@@ -313,14 +313,14 @@ let set_mode_pattern ~generate ~injective f =
 
 (*** Checks for type definitions ***)
 
-let in_current_module = function
-  | Path.Pident _ -> true
-  | Path.Pdot _ | Path.Papply _ -> false
-
 let in_pervasives p =
-  in_current_module p &&
-  try ignore (Env.find_type p Env.initial_safe_string); true
-  with Not_found -> false
+  match p with
+  | Path.Pident _ -> begin
+    match Env.find_type p Env.initial_safe_string with
+    | _ -> true
+    | exception Not_found -> false
+  end
+  | Path.Pdot _ | Path.Papply _ -> false
 
 let is_datatype decl=
   match decl.type_kind with
@@ -2163,9 +2163,8 @@ let is_newtype env p =
     decl.type_private = Public
   with Not_found -> false
 
-let non_aliasable p decl =
-  (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
+let non_aliasable p =
+  in_pervasives p
 
 let is_instantiable env p =
   try
@@ -2174,7 +2173,7 @@ let is_instantiable env p =
     decl.type_private = Public &&
     decl.type_arity = 0 &&
     decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    not (non_aliasable p)
   with Not_found -> false
 
 
@@ -2240,7 +2239,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then raise (Unify [])
+              if non_aliasable p || is_datatype decl then raise (Unify [])
             with Not_found -> ()
             end
         (*
@@ -2335,7 +2334,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
+    end else if non_aliasable p1 && non_aliasable p2 then
       raise (Unify [])
     else
       match decl.type_kind, decl'.type_kind with
@@ -2348,8 +2347,8 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
       | Type_abstract, Type_abstract -> ()
-      | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract when not (non_aliasable p2 decl') -> ()
+      | Type_abstract, _ when not (non_aliasable p1)-> ()
+      | _, Type_abstract when not (non_aliasable p2) -> ()
       | _ -> raise (Unify [])
   with Not_found -> ()
 
@@ -2661,7 +2660,7 @@ and unify3 env t1 t1' t2 t2' =
           else if !assume_injective then
             set_mode_pattern ~generate:true ~injective:false
                              (fun () -> unify_list env tl1 tl2)
-          else if in_current_module p1 (* || in_pervasives p1 *)
+          else if in_pervasives p1
                   || List.exists (expands_to_datatype !env) [t1'; t1; t2] then
             unify_list env tl1 tl2
           else

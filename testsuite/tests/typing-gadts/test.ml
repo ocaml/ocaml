@@ -47,7 +47,7 @@ module Exp :
 
 module List =
   struct
-    type zero
+    type zero = private Z
     type _ t =
       | Nil : zero t
       | Cons : 'a * 'b t -> ('a * 'b) t
@@ -66,7 +66,7 @@ module List =
 [%%expect{|
 module List :
   sig
-    type zero
+    type zero = private Z
     type _ t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
