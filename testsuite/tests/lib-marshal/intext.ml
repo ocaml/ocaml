@@ -321,91 +321,88 @@ let test_size() =
   let s = Marshal.to_bytes (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
   test 300 (Marshal.header_size + Marshal.data_size s 0 = Bytes.length s)
 
-external marshal_to_block
-   : string -> int -> 'a -> Marshal.extern_flags list -> unit
-   = "marshal_to_block"
-external marshal_from_block : string -> int -> 'a = "marshal_from_block"
-external static_alloc : int -> string = "caml_static_alloc"
+external marshal_to_block : int -> 'a -> Marshal.extern_flags list -> unit
+                          = "marshal_to_block"
+external marshal_from_block : int -> 'a = "marshal_from_block"
 
 let test_block () =
-  let s = static_alloc 512 in
-  marshal_to_block s 512 1 [];
-  test 401 (marshal_from_block s 512 = 1);
-  marshal_to_block s 512 (-1) [];
-  test 402 (marshal_from_block s 512 = (-1));
-  marshal_to_block s 512 258 [];
-  test 403 (marshal_from_block s 512 = 258);
-  marshal_to_block s 512 20000 [];
-  test 404 (marshal_from_block s 512 = 20000);
-  marshal_to_block s 512 0x12345678 [];
-  test 405 (marshal_from_block s 512 = 0x12345678);
-  marshal_to_block s 512 bigint [];
-  test 406 (marshal_from_block s 512 = bigint);
-  marshal_to_block s 512 "foobargeebuz" [];
-  test 407 (marshal_from_block s 512 = "foobargeebuz");
-  marshal_to_block s 512 longstring [];
-  test 408 (marshal_from_block s 512 = longstring);
+  marshal_to_block 512 1 [];
+  test 401 (marshal_from_block 512 = 1);
+  marshal_to_block 512 (-1) [];
+  test 402 (marshal_from_block 512 = (-1));
+  marshal_to_block 512 258 [];
+  test 403 (marshal_from_block 512 = 258);
+  marshal_to_block 512 20000 [];
+  test 404 (marshal_from_block 512 = 20000);
+  marshal_to_block 512 0x12345678 [];
+  test 405 (marshal_from_block 512 = 0x12345678);
+  marshal_to_block 512 bigint [];
+  test 406 (marshal_from_block 512 = bigint);
+  marshal_to_block 512 "foobargeebuz" [];
+  test 407 (marshal_from_block 512 = "foobargeebuz");
+  marshal_to_block 512 longstring [];
+  test 408 (marshal_from_block 512 = longstring);
   test 409
-    (try marshal_to_block s 512 verylongstring []; false
+    (try marshal_to_block 512 verylongstring []; false
      with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true);
-  marshal_to_block s 512 3.141592654 [];
-  test 410 (marshal_from_block s 512 = 3.141592654);
-  marshal_to_block s 512 () [];
-  test 411 (marshal_from_block s 512 = ());
-  marshal_to_block s 512 A [];
-  test 412 (match marshal_from_block s 512 with
+  marshal_to_block 512 3.141592654 [];
+  test 410 (marshal_from_block 512 = 3.141592654);
+  marshal_to_block 512 () [];
+  test 411 (marshal_from_block 512 = ());
+  marshal_to_block 512 A [];
+  test 412 (match marshal_from_block 512 with
     A -> true
   | _ -> false);
-  marshal_to_block s 512 (B 1) [];
-  test 413 (match marshal_from_block s 512 with
+  marshal_to_block 512 (B 1) [];
+  test 413 (match marshal_from_block 512 with
     (B 1) -> true
   | _ -> false);
-  marshal_to_block s 512 (C 2.718) [];
-  test 414 (match marshal_from_block s 512 with
+  marshal_to_block 512 (C 2.718) [];
+  test 414 (match marshal_from_block 512 with
     (C f) -> f = 2.718
   | _ -> false);
-  marshal_to_block s 512 (D "hello, world!") [];
-  test 415 (match marshal_from_block s 512 with
+  marshal_to_block 512 (D "hello, world!") [];
+  test 415 (match marshal_from_block 512 with
     (D "hello, world!") -> true
   | _ -> false);
-  marshal_to_block s 512 (E 'l') [];
-  test 416 (match marshal_from_block s 512 with
+  marshal_to_block 512 (E 'l') [];
+  test 416 (match marshal_from_block 512 with
     (E 'l') -> true
   | _ -> false);
-  marshal_to_block s 512 (F(B 1)) [];
-  test 417 (match marshal_from_block s 512 with
+  marshal_to_block 512 (F(B 1)) [];
+  test 417 (match marshal_from_block 512 with
     (F(B 1)) -> true
   | _ -> false);
-  marshal_to_block s 512 (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [];
-  test 418 (match marshal_from_block s 512 with
+  marshal_to_block 512 (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [];
+  test 418 (match marshal_from_block 512 with
     (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) -> true
   | _ -> false);
-  marshal_to_block s 512 (H(1, A)) [];
-  test 419 (match marshal_from_block s 512 with
+  marshal_to_block 512 (H(1, A)) [];
+  test 419 (match marshal_from_block 512 with
     (H(1, A)) -> true
   | _ -> false);
-  marshal_to_block s 512 (I(B 2, 1e-6)) [];
-  test 420 (match marshal_from_block s 512 with
+  marshal_to_block 512 (I(B 2, 1e-6)) [];
+  test 420 (match marshal_from_block 512 with
     (I(B 2, 1e-6)) -> true
   | _ -> false);
   let x = D "sharing" in
   let y = G(x, x) in
   let z = G(y, G(x, y)) in
-  marshal_to_block s 512 z [];
-  test 421 (match marshal_from_block s 512 with
+  marshal_to_block 512 z [];
+  test 421 (match marshal_from_block 512 with
     G((G((D "sharing" as t1), t2) as t3), G(t4, t5)) ->
       t1 == t2 && t3 == t5 && t4 == t1
   | _ -> false);
-  marshal_to_block s 512 [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] [];
-  test 422 (marshal_from_block s 512 =
+  marshal_to_block 512 [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] [];
+  test 422 (marshal_from_block 512 =
             [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
   test 423
-    (try marshal_to_block s 512 (big 1000) []; false
+    (try marshal_to_block 512 (big 1000) []; false
      with Failure _ -> true);
   test 424
-    (try marshal_to_block s 512 "Hello, world!" [];
-         ignore (marshal_from_block s 8);
+    (try marshal_to_block 512 "Hello, world!" [];
+         ignore (marshal_from_block 8);
          false
      with Failure _ -> true)
 
