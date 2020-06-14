@@ -1905,7 +1905,7 @@ let occur_in env ty0 t =
 (* PR#6992: we actually need it for contractiveness *)
 (* This is a simplified version of occur, only for the rectypes case *)
 
-let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
+let rec local_non_recursive_abbrev ~allow_rec strict visited env id_pairs p ty =
   (*Format.eprintf "@[Check %s =@ %a@]@." (Path.name p) !Btype.print_raw ty;*)
   let ty = repr ty in
   if not (List.memq ty visited) then begin
@@ -1916,8 +1916,8 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
         let visited = ty :: visited in
         begin try
           (* try expanding, since [p] could be hidden *)
-          local_non_recursive_abbrev ~allow_rec strict visited env p
-            (try_expand_head try_expand_once_opt env [] ty)
+          local_non_recursive_abbrev ~allow_rec strict visited env id_pairs p
+            (try_expand_head try_expand_once_opt env id_pairs ty)
         with Cannot_expand ->
           let params =
             try (Env.find_type p' env).type_params
@@ -1926,7 +1926,8 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
           List.iter2
             (fun tv ty ->
               let strict = strict || not (is_Tvar (repr tv)) in
-              local_non_recursive_abbrev ~allow_rec strict visited env p ty)
+              local_non_recursive_abbrev ~allow_rec strict visited env id_pairs
+                p ty)
             params args
         end
     | Tobject _ | Tvariant _ when not strict ->
@@ -1935,15 +1936,20 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
         if strict || not allow_rec then (* PR#7374 *)
           let visited = ty :: visited in
           iter_type_expr
-            (local_non_recursive_abbrev ~allow_rec true visited env p) ty
+            (local_non_recursive_abbrev ~allow_rec true visited env id_pairs p)
+            ty
   end
 
 let local_non_recursive_abbrev env p ty =
   let allow_rec =
     !Clflags.recursive_types || !umode = Pattern && !allow_recursive_equation in
   try (* PR#7397: need to check trace_gadt_instances *)
+    (* We don't need to consider external [id_pairs] here. If there are
+       substitutions to be made in [ty], a preceding call to [reify] should
+       already have marked them with an escape error.
+    *)
     wrap_trace_gadt_instances env
-      (local_non_recursive_abbrev ~allow_rec false [] env p) ty;
+      (local_non_recursive_abbrev ~allow_rec false [] env [] p) ty;
     true
   with Occur -> false
 
@@ -2828,6 +2834,7 @@ and unify3 env t1 t1' t2 t2' =
             then  path , t2'
             else  path', t1'
           in
+          reify env destination;
           record_equation t1' t2';
           add_gadt_equation env source destination
       | (Tconstr (path,[],_), _)
