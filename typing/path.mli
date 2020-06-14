@@ -46,6 +46,11 @@ val unsubst : (Ident.t * Ident.t) list -> t -> t
 (** Non-allocating equivalent to [scope (subst id_pairs t)]. *)
 val scope_subst : (Ident.t * Ident.t) list -> t -> int
 
+(** Non-allocating equivalent to
+    [same (subst id_pairs1 p1) (subst id_pairs2 p2)]. *)
+val same_subst : (Ident.t * Ident.t) list ->
+  (Ident.t * Ident.t) list -> t -> t -> bool
+
 val name: ?paren:(string -> bool) -> t -> string
     (* [paren] tells whether a path suffix needs parentheses *)
 val head: t -> Ident.t

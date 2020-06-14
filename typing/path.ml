@@ -89,15 +89,30 @@ let unsubst id_pairs p =
       p
   with Not_found -> p
 
+let subst_id_pair id_pairs id =
+  match List.find_opt (fun x -> Ident.same id (fst x)) id_pairs with
+  | Some (_, id') -> id'
+  | None -> id
+
 (* Non-allocating equivalent to [scope (subst id_pairs t)]. *)
 let rec scope_subst id_pairs = function
-    Pident id ->
-      begin match List.find_opt (fun x -> Ident.same id (fst x)) id_pairs with
-      | Some (_, id') -> Ident.scope id'
-      | None -> Ident.scope id
-      end
+    Pident id -> Ident.scope (subst_id_pair id_pairs id)
   | Pdot(p, _s) -> scope_subst id_pairs p
   | Papply(p1, p2) -> max (scope_subst id_pairs p1) (scope_subst id_pairs p2)
+
+(* Non-allocating equivalent to
+   [same (subst id_pairs1 p1) (subst id_pairs2 p2)]. *)
+let rec same_subst id_pairs1 id_pairs2 p1 p2 =
+  p1 == p2
+  || match (p1, p2) with
+    (Pident id1, Pident id2) ->
+      Ident.same (subst_id_pair id_pairs1 id1) (subst_id_pair id_pairs2 id2)
+  | (Pdot(p1, s1), Pdot(p2, s2)) ->
+      s1 = s2 && same_subst id_pairs1 id_pairs2 p1 p2
+  | (Papply(fun1, arg1), Papply(fun2, arg2)) ->
+       same_subst id_pairs1 id_pairs2 fun1 fun2
+       && same_subst id_pairs1 id_pairs2 arg1 arg2
+  | (_, _) -> false
 
 let kfalse _ = false
 
