@@ -17,6 +17,7 @@
 
 /* To walk the memory roots for garbage collection */
 
+#include "caml/codefrag.h"
 #include "caml/finalise.h"
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
@@ -42,6 +43,9 @@ void caml_oldify_local_roots (void)
   intnat i, j;
 
   /* The stack */
+  /* [caml_oldify_one] acts only on pointers into the minor heap.
+     So, it is safe to pass code pointers to [caml_oldify_one],
+     even in no-naked-pointers mode */
   for (sp = Caml_state->extern_sp; sp < Caml_state->stack_high; sp++) {
     caml_oldify_one (*sp, sp);
   }
@@ -118,7 +122,16 @@ CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
   int i, j;
 
   for (sp = stack_low; sp < stack_high; sp++) {
+#ifdef NO_NAKED_POINTERS
+    /* Code pointers inside the stack are naked pointers.
+       We must avoid passing them to function [f]. */
+    value v = *sp;
+    if (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL) {
+      f(v, sp);
+    }
+#else
     f (*sp, sp);
+#endif
   }
   for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
