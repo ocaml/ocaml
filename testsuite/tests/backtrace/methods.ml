@@ -1,6 +1,6 @@
 (* TEST
    flags = "-g"
-   compare_programs = "false" *)
+*)
 
 let[@inline never] id x = Sys.opaque_identity x
 

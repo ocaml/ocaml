@@ -4,7 +4,6 @@
    ocamlc_flags = "config.cmo"
    ocamlopt_flags = "-inline 20 config.cmx"
    * native
-     compare_programs = "false"
 *)
 
 let eliminate_intermediate_float_record () =

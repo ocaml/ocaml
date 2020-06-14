@@ -3,8 +3,6 @@
 * hassysthreads
   include systhreads
 ** native
-   compare_programs = "false"
-
 *)
 
 open Printf
