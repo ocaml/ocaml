@@ -1698,9 +1698,9 @@ let expand_head_once env ty =
   try expand_abbrev env [] (repr ty) with Cannot_expand -> assert false
 
 (* Check whether a type can be expanded *)
-let safe_abbrev env ty =
+let safe_abbrev env id_pairs ty =
   let snap = Btype.snapshot () in
-  try ignore (expand_abbrev env [] ty); true
+  try ignore (expand_abbrev env id_pairs ty); true
   with Cannot_expand | Unify _ ->
     Btype.backtrack snap;
     false
@@ -4227,7 +4227,7 @@ let warn = ref false  (* whether double coercion might do better *)
 let pred_expand n = if n mod 2 = 0 && n > 0 then pred n else n
 let pred_enlarge n = if n mod 2 = 1 then pred n else n
 
-type change = Unchanged | Equiv | Changed
+type change = Unchanged | Path_subst | Equiv | Changed
 let collect l = List.fold_left (fun c1 (_, c2) -> max c1 c2) Unchanged l
 
 let rec filter_visited = function
@@ -4251,7 +4251,7 @@ let find_cltype_for_path env p =
 let has_constr_row' env t =
   has_constr_row (expand_abbrev env [] t)
 
-let rec build_subtype env visited loops posi level t =
+let rec build_subtype env id_pairs visited loops posi level t =
   let t = repr t in
   match t.desc with
     Tvar _ ->
@@ -4267,8 +4267,12 @@ let rec build_subtype env visited loops posi level t =
   | Tarrow(l, t1, t2, _) ->
       if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
-      let (t1', c1) = build_subtype env visited loops (not posi) level t1 in
-      let (t2', c2) = build_subtype env visited loops posi level t2 in
+      let (t1', c1) =
+        build_subtype env id_pairs visited loops (not posi) level t1
+      in
+      let (t2', c2) =
+        build_subtype env id_pairs visited loops posi level t2
+      in
       let c = max c1 c2 in
       if c > Unchanged then (newty (Tarrow(l, t1', t2', Cok)), c)
       else (t, Unchanged)
@@ -4276,26 +4280,28 @@ let rec build_subtype env visited loops posi level t =
       if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       let tlist' =
-        List.map (build_subtype env visited loops posi level) tlist
+        List.map (build_subtype env id_pairs visited loops posi level) tlist
       in
       let c = collect tlist' in
       if c > Unchanged then (newty (Ttuple (List.map fst tlist')), c)
       else (t, Unchanged)
   | Tconstr(p, tl, abbrev)
-    when level > 0 && generic_abbrev env [] p && safe_abbrev env t
+    when level > 0 && generic_abbrev env id_pairs p
+    && safe_abbrev env id_pairs t
     && not (has_constr_row' env t) ->
-      let t' = repr (expand_abbrev env [] t) in
+      let t' = repr (expand_abbrev env id_pairs t) in
       let level' = pred_expand level in
       begin try match t'.desc with
         Tobject _ when posi && not (opened_object t') ->
           let cl_abbr, body = find_cltype_for_path env p in
           let ty =
-            subst env [] !current_level Public abbrev None
+            subst env id_pairs !current_level Public abbrev None
               cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
             match ty.desc with
-              Tobject(ty1,{contents=Some(p',tl1)}) when Path.same p p' ->
+              Tobject(ty1,{contents=Some(p',tl1)})
+              when Path.same_subst id_pairs id_pairs p p' ->
                 ty1, tl1
             | _ -> raise Not_found
           in
@@ -4308,16 +4314,26 @@ let rec build_subtype env visited loops posi level t =
           let loops = (ty, t'') :: loops in
           (* May discard [visited] as level is going down *)
           let (ty1', c) =
-            build_subtype env [t'] loops posi (pred_enlarge level') ty1 in
+            build_subtype env id_pairs [t'] loops posi (pred_enlarge level')
+              ty1
+          in
           assert (is_Tvar t'');
           let nm =
-            if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
+            if c > Equiv || deep_occur ty ty1' then None
+            else
+              let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
+              if p' == p then Some (p, tl1) else None
+          in
           set_type_desc t'' (Tobject (ty1', ref nm));
-          (try unify_var env [] [] ty t with Unify _ -> assert false);
+          (* TODO: This can fail in cases where there are substitutions. *)
+          (try unify_var env id_pairs id_pairs ty t with
+            Unify _ -> assert false);
           (t'', Changed)
       | _ -> raise Not_found
       with Not_found ->
-        let (t'',c) = build_subtype env visited loops posi level' t' in
+        let (t'',c) =
+          build_subtype env id_pairs visited loops posi level' t'
+        in
         if c > Unchanged then (t'',c)
         else (t, Unchanged)
       end
@@ -4327,8 +4343,10 @@ let rec build_subtype env visited loops posi level t =
       if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       begin try
-        let decl = Env.find_type p env in
-        if level = 0 && generic_abbrev env [] p && safe_abbrev env t
+        let p' = Path.subst id_pairs p in
+        let decl = Env.find_type p' env in
+        if level = 0 && generic_abbrev env id_pairs p'
+        && safe_abbrev env id_pairs t
         && not (has_constr_row' env t)
         then warn := true;
         let tl' =
@@ -4336,15 +4354,19 @@ let rec build_subtype env visited loops posi level t =
             (fun v t ->
               let (co,cn) = Variance.get_upper v in
               if cn then
-                if co then (t, Unchanged)
-                else build_subtype env visited loops (not posi) level t
+                if co && id_pairs = [] then (t, Unchanged)
+                else
+                  build_subtype env id_pairs visited loops (not posi) level t
               else
-                if co then build_subtype env visited loops posi level t
+                if co then
+                  build_subtype env id_pairs visited loops posi level t
                 else (newvar(), Changed))
             decl.type_variance tl
         in
-        let c = collect tl' in
-        if c > Unchanged then (newconstr p (List.map fst tl'), c)
+        let p'' = Path.unsubst id_pairs p' in
+        let c' = if p == p'' then Unchanged else Path_subst in
+        let c = max c' (collect tl') in
+        if c > Unchanged then (newconstr p'' (List.map fst tl'), c)
         else (t, Unchanged)
       with Not_found ->
         (t, Unchanged)
@@ -4365,7 +4387,9 @@ let rec build_subtype env visited loops posi level t =
               else
                 orig, Unchanged
           | Rpresent(Some t) ->
-              let (t', c) = build_subtype env visited loops posi level' t in
+              let (t', c) =
+                build_subtype env id_pairs visited loops posi level' t
+              in
               let f =
                 if posi && level > 0
                 then Reither(false, [t'], false, ref None)
@@ -4381,17 +4405,25 @@ let rec build_subtype env visited loops posi level t =
           row_name = if c > Unchanged then None else row.row_name }
       in
       (newty (Tvariant row), Changed)
-  | Tobject (t1, _) ->
+  | Tobject (t1, nm) ->
       if memq_warn t visited || opened_object t1 then (t, Unchanged) else
       let level' = pred_enlarge level in
       let visited =
         t :: if level' < level then [] else filter_visited visited in
-      let (t1', c) = build_subtype env visited loops posi level' t1 in
+      let (t1', c) = build_subtype env id_pairs visited loops posi level' t1 in
+      let c =
+        match !nm with
+        | Some (p, _) ->
+            let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
+            let c' = if p' == p then Unchanged else Path_subst in
+            max c' c
+        | None -> c
+      in
       if c > Unchanged then (newty (Tobject (t1', ref None)), c)
       else (t, Unchanged)
   | Tfield(s, _, t1, t2) (* Always present *) ->
-      let (t1', c1) = build_subtype env visited loops posi level t1 in
-      let (t2', c2) = build_subtype env visited loops posi level t2 in
+      let (t1', c1) = build_subtype env id_pairs visited loops posi level t1 in
+      let (t2', c2) = build_subtype env id_pairs visited loops posi level t2 in
       let c = max c1 c2 in
       if c > Unchanged then (newty (Tfield(s, Fpresent, t1', t2')), c)
       else (t, Unchanged)
@@ -4406,7 +4438,7 @@ let rec build_subtype env visited loops posi level t =
   | Tsubst _ | Tlink _ ->
       assert false
   | Tpoly(t1, tl) ->
-      let (t1', c) = build_subtype env visited loops posi level t1 in
+      let (t1', c) = build_subtype env id_pairs visited loops posi level t1 in
       if c > Unchanged then (newty (Tpoly(t1', tl)), c)
       else (t, Unchanged)
   | Tunivar _ | Tpackage _ ->
@@ -4415,7 +4447,7 @@ let rec build_subtype env visited loops posi level t =
 let enlarge_type env ty =
   warn := false;
   (* [level = 4] allows 2 expansions involving objects/variants *)
-  let (ty', _) = build_subtype env [] [] true 4 ty in
+  let (ty', _) = build_subtype env [] [] [] true 4 ty in
   (ty', !warn)
 
 (**** Check whether a type is a subtype of another type. ****)
@@ -4461,10 +4493,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
         cstrs
     | (Tconstr(p1, _tl1, _abbrev1), _)
-      when generic_abbrev env [] p1 && safe_abbrev env t1 ->
+      when generic_abbrev env [] p1 && safe_abbrev env [] t1 ->
         subtype_rec env trace (expand_abbrev env [] t1) t2 cstrs
     | (_, Tconstr(p2, _tl2, _abbrev2))
-      when generic_abbrev env [] p2 && safe_abbrev env t2 ->
+      when generic_abbrev env [] p2 && safe_abbrev env [] t2 ->
         subtype_rec env trace t1 (expand_abbrev env [] t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
         begin try
