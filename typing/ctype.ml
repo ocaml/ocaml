@@ -1530,7 +1530,7 @@ let instance_label fixed lbl =
 (**** Instantiation with parameter substitution ****)
 
 let unify' = (* Forward declaration *)
-  ref (fun _env _id_pairs _ty1 _ty2 -> raise (Unify []))
+  ref (fun _env _id_pairs1 _id_pairs2 _ty1 _ty2 -> raise (Unify []))
 
 let subst env id_pairs level priv abbrev ty params args body =
   if List.length params <> List.length args then raise (Unify []);
@@ -1549,8 +1549,13 @@ let subst env id_pairs level priv abbrev ty params args body =
     abbreviations := abbrev;
     let (params', body') = instance_parameterized_type params body in
     abbreviations := ref Mnil;
-    !unify' env id_pairs body0 body';
-    List.iter2 (!unify' env id_pairs) params' args;
+    (* TODO: This will fail in some cases involving substituted identifiers.
+       In particular, this will fail escape checks, since we are attempting to
+       unify a type variable with terms that may include locally bound
+       identifiers.
+    *)
+    !unify' env id_pairs id_pairs body0 body';
+    List.iter2 (!unify' env id_pairs id_pairs) params' args;
     current_level := old_level;
     body'
   with Unify _ as exn ->
@@ -2152,6 +2157,7 @@ let rec has_cached_expansion p abbrev =
 (* +++ Move it to some other place ? *)
 
 let expand_trace env id_pairs trace =
+  (* TODO: Should use different [id_pairs] when expanding different sides.. *)
   let expand_desc x = match x.Trace.expanded with
     | None ->
         Trace.{ t = repr x.t; expanded= Some(full_expand env id_pairs x.t) }
@@ -2185,7 +2191,7 @@ let get_gadt_equations_level () =
 (* a local constraint can be added only if the rhs
    of the constraint does not contain any Tvars.
    They need to be removed using this function *)
-let reify env t =
+let reify env id_pairs t =
   let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
@@ -2233,7 +2239,7 @@ let reify env t =
           iter_type_expr (iterator env id_pairs) ty
     end
   in
-  iterator env [] t
+  iterator env id_pairs t
 
 let is_newtype env p =
   try
@@ -2510,11 +2516,11 @@ let find_lowest_level ty =
 let find_expansion_scope env path =
   (Env.find_type path env).type_expansion_scope
 
-let add_gadt_equation env source destination =
+let add_gadt_equation env id_pairs source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
-  if has_free_univars !env [] destination then
-    occur_univar ~inj_only:true !env [] destination
+  if has_free_univars !env id_pairs destination then
+    occur_univar ~inj_only:true !env id_pairs destination
   else if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =
@@ -2625,13 +2631,20 @@ let unify_eq t1 t2 =
       try TypePairs.find unify_eq_set (order_type_pair t1 t2); true
       with Not_found -> false
 
-let unify1_var env t1 t2 =
+let unify1_var env id_pairs t1 t2 =
   assert (is_Tvar t1);
-  occur env [] t1 t2;
+  (* NOTE: we pass [id_pairs] here to ensure that an unscoped indentifier
+     doesn't get misdiagnosed as an occurence error.
+  *)
+  occur env id_pairs t1 t2;
+  (* TODO: Check that [t2] doesn't contain any unscoped identifiers. *)
   occur_univar env [] t2;
   let d1 = t1.desc in
   link_type t1 t2;
   try
+    (* We need not pass [id_pairs] here: the check above guarantees that the
+       substituted identifiers do not appear in [t2].
+    *)
     update_level env [] t1.level t2;
     update_scope t1.scope t2
   with Unify _ as e ->
@@ -2645,14 +2658,15 @@ let record_equation t1 t2 =
   | Allowed { equated_types } -> TypePairs.add equated_types (t1, t2) ()
 
 (* Called from unify3 *)
-let unify3_var env t1' t2 t2' =
-  occur !env [] t1' t2;
+let unify3_var env id_pairs t1' t2 t2' =
+  occur !env id_pairs t1' t2;
   try
+    (* TODO: Check that [t2] doesn't contain any unscoped identifiers. *)
     occur_univar !env [] t2;
     link_type t1' t2;
   with Unify _ when !umode = Pattern ->
-    reify env t1';
-    reify env t2';
+    reify env [] t1';
+    reify env [] t2';
     if can_generate_equations () then begin
       occur_univar ~inj_only:true !env [] t2';
       record_equation t1' t2';
@@ -2682,7 +2696,7 @@ let unify3_var env t1' t2 t2' =
       information is indeed lost, but it probably does not worth it.
 *)
 
-let rec unify (env:Env.t ref) t1 t2 =
+let rec unify (env:Env.t ref) id_pairs1 id_pairs2 t1 t2 =
   (* First step: special cases (optimizations) *)
   if t1 == t2 then () else
   let t1 = repr t1 in
@@ -2694,22 +2708,22 @@ let rec unify (env:Env.t ref) t1 t2 =
     type_changed := true;
     begin match (t1.desc, t2.desc) with
       (Tvar _, Tconstr _) when deep_occur t1 t2 ->
-        unify2 env t1 t2
+        unify2 env id_pairs1 id_pairs2 t1 t2
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
-        unify2 env t1 t2
+        unify2 env id_pairs1 id_pairs2 t1 t2
     | (Tvar _, _) ->
-        if !umode = Pattern && has_free_univars !env [] t2 then
-          unify2 env t1 t2
+        if !umode = Pattern && has_free_univars !env id_pairs2 t2 then
+          unify2 env id_pairs1 id_pairs2 t1 t2
         else
-          unify1_var !env t1 t2
+          unify1_var !env id_pairs2 t1 t2
     | (_, Tvar _) ->
-        if !umode = Pattern && has_free_univars !env [] t1 then
-          unify2 env t1 t2
+        if !umode = Pattern && has_free_univars !env id_pairs1 t1 then
+          unify2 env id_pairs1 id_pairs2 t1 t2
         else
-          unify1_var !env t2 t1
+          unify1_var !env id_pairs1 t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
-        update_level !env [] t1.level t2;
+        update_level !env id_pairs2 t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
@@ -2719,7 +2733,7 @@ let rec unify (env:Env.t ref) t1 t2 =
                when any of the types has a cached expansion. *)
             && not (has_cached_expansion p1 !a1
                  || has_cached_expansion p2 !a2) ->
-        update_level !env [] t1.level t2;
+        update_level !env id_pairs2 t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
@@ -2728,31 +2742,33 @@ let rec unify (env:Env.t ref) t1 t2 =
         (* Do not use local constraints more than necessary *)
         begin try
           if find_expansion_scope !env p1 > find_expansion_scope !env p2 then
-            unify env t1 (try_expand_once !env [] t2)
+            unify env id_pairs1 id_pairs2 t1
+              (try_expand_once !env id_pairs2 t2)
           else
-            unify env (try_expand_once !env [] t1) t2
+            unify env id_pairs1 id_pairs2 (try_expand_once !env id_pairs1 t1)
+              t2
         with Cannot_expand ->
-          unify2 env t1 t2
+          unify2 env id_pairs1 id_pairs2 t1 t2
         end
     | _ ->
-        unify2 env t1 t2
+        unify2 env id_pairs1 id_pairs2 t1 t2
     end;
     reset_trace_gadt_instances reset_tracing;
   with Unify trace ->
     reset_trace_gadt_instances reset_tracing;
     raise( Unify (Trace.diff t1 t2 :: trace) )
 
-and unify2 env t1 t2 =
+and unify2 env id_pairs1 id_pairs2 t1 t2 =
   (* Second step: expansion of abbreviations *)
   (* Expansion may change the representative of the types. *)
-  ignore (expand_head_unif !env [] t1);
-  ignore (expand_head_unif !env [] t2);
-  let t1' = expand_head_unif !env [] t1 in
-  let t2' = expand_head_unif !env [] t2 in
+  ignore (expand_head_unif !env id_pairs1 t1);
+  ignore (expand_head_unif !env id_pairs2 t2);
+  let t1' = expand_head_unif !env id_pairs1 t1 in
+  let t2' = expand_head_unif !env id_pairs2 t2 in
   let lv = min t1'.level t2'.level in
   let scope = max t1'.scope t2'.scope in
-  update_level !env [] lv t2;
-  update_level !env [] lv t1;
+  update_level !env id_pairs2 lv t2;
+  update_level !env id_pairs1 lv t1;
   update_scope scope t2;
   update_scope scope t1;
   if unify_eq t1' t2' then () else
@@ -2768,12 +2784,12 @@ and unify2 env t1 t2 =
     else (t1, t2)
   in
   if unify_eq t1 t1' || not (unify_eq t2 t2') then
-    unify3 env t1 t1' t2 t2'
+    unify3 env id_pairs1 id_pairs2 t1 t1' t2 t2'
   else
-    try unify3 env t2 t2' t1 t1' with Unify trace ->
+    try unify3 env id_pairs2 id_pairs1 t2 t2' t1 t1' with Unify trace ->
       raise (Unify (Trace.swap trace))
 
-and unify3 env t1 t1' t2 t2' =
+and unify3 env id_pairs1 id_pairs2 t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
@@ -2784,15 +2800,15 @@ and unify3 env t1 t1' t2 t2' =
       unify_univar t1' t2' !univar_pairs;
       link_type t1' t2'
   | (Tvar _, _) ->
-      unify3_var env t1' t2 t2'
+      unify3_var env id_pairs2 t1' t2 t2'
   | (_, Tvar _) ->
-      unify3_var env t2' t1 t1'
+      unify3_var env id_pairs1 t2' t1 t1'
   | (Tfield _, Tfield _) -> (* special case for GADTs *)
-      unify_fields env t1' t2'
+      unify_fields env id_pairs1 id_pairs2 t1' t2'
   | _ ->
     begin match !umode with
     | Expression ->
-        occur !env [] t1' t2';
+        occur !env id_pairs2 t1' t2';
         if is_self_type d1 (* PR#7711: do not abbreviate self type *)
         then link_type t1' t2'
         else link_type t1' t2
@@ -2804,41 +2820,45 @@ and unify3 env t1 t1' t2 t2' =
         (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2 ||
         (!Clflags.classic || !umode = Pattern) &&
         not (is_optional l1 || is_optional l2) ->
-          unify  env t1 t2; unify env  u1 u2;
+          unify env id_pairs1 id_pairs2 t1 t2;
+          unify env id_pairs1 id_pairs2 u1 u2;
           begin match commu_repr c1, commu_repr c2 with
             Clink r, c2 -> set_commu r c2
           | c1, Clink r -> set_commu r c1
           | _ -> ()
           end
       | (Ttuple tl1, Ttuple tl2) ->
-          unify_list env tl1 tl2
-      | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
+          unify_list env id_pairs1 id_pairs2 tl1 tl2
+      | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
+        when Path.same_subst id_pairs1 id_pairs2 p1 p2 ->
           if !umode = Expression || !equations_generation = Forbidden then
-            unify_list env tl1 tl2
+            unify_list env id_pairs1 id_pairs2 tl1 tl2
           else if !assume_injective then
             set_mode_pattern ~generate:!equations_generation ~injective:false
               ~allow_recursive:!allow_recursive_equation
-              (fun () -> unify_list env tl1 tl2)
+              (fun () -> unify_list env id_pairs1 id_pairs2 tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
-                  || List.exists (expands_to_datatype !env []) [t1'; t1]
-                  || expands_to_datatype !env [] t2 then
-            unify_list env tl1 tl2
+                  || List.exists (expands_to_datatype !env id_pairs1) [t1'; t1]
+                  || expands_to_datatype !env id_pairs2 t2 then
+            unify_list env id_pairs1 id_pairs2 tl1 tl2
           else
             let inj =
-              try List.map Variance.(mem Inj)
-                    (Env.find_type p1 !env).type_variance
+              try
+                List.map Variance.(mem Inj)
+                  (Env.find_type (Path.subst id_pairs1 p1) !env).type_variance
               with Not_found -> List.map (fun _ -> false) tl1
             in
             List.iter2
               (fun i (t1, t2) ->
-                if i then unify env t1 t2 else
+                if i then unify env id_pairs1 id_pairs2 t1 t2 else
                 set_mode_pattern ~generate:Forbidden ~injective:false
                   ~allow_recursive:!allow_recursive_equation
                   begin fun () ->
                     let snap = snapshot () in
-                    try unify env t1 t2 with Unify _ ->
+                    try unify env id_pairs1 id_pairs2 t1 t2 with Unify _ ->
                       backtrack snap;
-                      reify env t1; reify env t2
+
+                      reify env id_pairs1 t1; reify env id_pairs2 t2
                   end)
               inj (List.combine tl1 tl2)
       | (Tconstr (path,[],_),
@@ -2850,28 +2870,31 @@ and unify3 env t1 t1' t2 t2' =
             then  path , t2'
             else  path', t1'
           in
-          reify env destination;
+          (* No [id_pairs]: reify will throw if we require a substitution. *)
+          reify env [] destination;
           record_equation t1' t2';
-          add_gadt_equation env source destination
+          add_gadt_equation env [] source destination
       | (Tconstr (path,[],_), _)
         when is_instantiable !env path && can_generate_equations () ->
-          reify env t2';
+          (* No [id_pairs]: reify will throw if we require a substitution. *)
+          reify env [] t2';
           record_equation t1' t2';
-          add_gadt_equation env path t2'
+          add_gadt_equation env [] path t2'
       | (_, Tconstr (path,[],_))
         when is_instantiable !env path && can_generate_equations () ->
-          reify env t1';
+          (* No [id_pairs]: reify will throw if we require a substitution. *)
+          reify env [] t1';
           record_equation t1' t2';
-          add_gadt_equation env path t1'
+          add_gadt_equation env [] path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
-          reify env t1';
-          reify env t2';
+          reify env id_pairs1 t1';
+          reify env id_pairs2 t2';
           if can_generate_equations () then (
-            mcomp !env [] [] t1' t2';
+            mcomp !env id_pairs1 id_pairs2 t1' t2';
             record_equation t1' t2'
           )
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
-          unify_fields env fi1 fi2;
+          unify_fields env id_pairs1 id_pairs2 fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
           (* XXX One should do some kind of unification... *)
           begin match (repr t2').desc with
@@ -2883,25 +2906,39 @@ and unify3 env t1 t1' t2 t2' =
           end
       | (Tvariant row1, Tvariant row2) ->
           if !umode = Expression then
-            unify_row env row1 row2
+            unify_row env id_pairs1 id_pairs2 row1 row2
           else begin
             let snap = snapshot () in
-            try unify_row env row1 row2
+            try unify_row env id_pairs1 id_pairs2 row1 row2
             with Unify _ ->
               backtrack snap;
-              reify env t1';
-              reify env t2';
+              reify env id_pairs1 t1';
+              reify env id_pairs2 t2';
               if can_generate_equations () then (
-                mcomp !env [] [] t1' t2';
+                mcomp !env id_pairs1 id_pairs2 t1' t2';
                 record_equation t1' t2'
               )
           end
-      | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
+      | (Tfield(f,kind,_,rem), Tnil) ->
           begin match field_kind_repr kind with
             Fvar r when f <> dummy_method ->
               set_kind r Fabsent;
-              if d2 = Tnil then unify env rem t2'
-              else unify env (newty2 rem.level Tnil) rem
+              if d2 = Tnil then unify env id_pairs1 id_pairs2 rem t2'
+              else unify env id_pairs1 id_pairs1 (newty2 rem.level Tnil) rem
+          | _      ->
+              if f = dummy_method then
+                raise (Unify Trace.[Obj Self_cannot_be_closed])
+              else if d1 = Tnil then
+                raise (Unify Trace.[Obj(Missing_field (First, f))])
+              else
+                raise (Unify Trace.[Obj(Missing_field (Second, f))])
+          end
+      | (Tnil, Tfield(f,kind,_,rem)) ->
+          begin match field_kind_repr kind with
+            Fvar r when f <> dummy_method ->
+              set_kind r Fabsent;
+              if d2 = Tnil then unify env id_pairs2 id_pairs2 rem t2'
+              else unify env id_pairs2 id_pairs2 (newty2 rem.level Tnil) rem
           | _      ->
               if f = dummy_method then
                 raise (Unify Trace.[Obj Self_cannot_be_closed])
@@ -2913,16 +2950,19 @@ and unify3 env t1 t1' t2 t2' =
       | (Tnil, Tnil) ->
           ()
       | (Tpoly (t1, []), Tpoly (t2, [])) ->
-          unify env t1 t2
+          unify env id_pairs1 id_pairs2 t1 t2
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-          enter_poly !env [] [] univar_pairs t1 tl1 t2 tl2 (unify env)
+          enter_poly !env id_pairs1 id_pairs2 univar_pairs t1 tl1 t2 tl2
+            (unify env id_pairs1 id_pairs2)
       | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
           begin try
-            unify_package !env (unify_list env)
-              t1.level p1 n1 tl1 t2.level p2 n2 tl2
+            unify_package !env (unify_list env id_pairs1 id_pairs2)
+              t1.level (Path.subst id_pairs1 p1) n1 tl1
+              t2.level (Path.subst id_pairs2 p2) n2 tl2
           with Not_found ->
             if !umode = Expression then raise (Unify []);
-            List.iter (reify env) (tl1 @ tl2);
+            List.iter (reify env id_pairs1) tl1;
+            List.iter (reify env id_pairs2) tl2;
             (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
           end
       | (Tnil,  Tconstr _ ) -> raise (Unify Trace.[Obj(Abstract_row Second)])
@@ -2934,8 +2974,8 @@ and unify3 env t1 t1' t2 t2' =
       if create_recursion then
         match t2.desc with
           Tconstr (p, tl, abbrev) ->
-            forget_abbrev abbrev p;
-            let t2'' = expand_head_unif !env [] t2 in
+            forget_abbrev abbrev (Path.subst id_pairs2 p);
+            let t2'' = expand_head_unif !env id_pairs2 t2 in
             if not (closed_parameterized_type tl t2'') then
               link_type (repr t2) (repr t2')
         | _ ->
@@ -2945,10 +2985,10 @@ and unify3 env t1 t1' t2 t2' =
       raise (Unify trace)
   end
 
-and unify_list env tl1 tl2 =
+and unify_list env id_pairs1 id_pairs2 tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
     raise (Unify []);
-  List.iter2 (unify env) tl1 tl2
+  List.iter2 (unify env id_pairs1 id_pairs2) tl1 tl2
 
 (* Build a fresh row variable for unification *)
 and make_rowvar level use1 rest1 use2 rest2  =
@@ -2970,7 +3010,7 @@ and make_rowvar level use1 rest1 use2 rest2  =
   if use1 then rest1 else
   if use2 then rest2 else newvar2 ?name level
 
-and unify_fields env ty1 ty2 =          (* Optimization *)
+and unify_fields env id_pairs1 id_pairs2 ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -2978,17 +3018,17 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   let va = make_rowvar (min l1 l2) (miss2=[]) rest1 (miss1=[]) rest2 in
   let d1 = rest1.desc and d2 = rest2.desc in
   try
-    unify env (build_fields l1 miss1 va) rest2;
-    unify env rest1 (build_fields l2 miss2 va);
+    unify env id_pairs1 id_pairs2 (build_fields l1 miss1 va) rest2;
+    unify env id_pairs1 id_pairs2 rest1 (build_fields l2 miss2 va);
     List.iter
       (fun (n, k1, t1, k2, t2) ->
         unify_kind k1 k2;
         try
           if !trace_gadt_instances then begin
-            update_level !env [] va.level t1;
+            update_level !env id_pairs1 va.level t1;
             update_scope va.scope t1
           end;
-          unify env t1 t2
+          unify env id_pairs1 id_pairs2 t1 t2
         with Unify trace ->
           raise( Unify (Trace.incompatible_fields n t1 t2 :: trace) )
       )
@@ -3008,7 +3048,7 @@ and unify_kind k1 k2 =
   | (Fpresent, Fpresent)          -> ()
   | _                             -> assert false
 
-and unify_row env row1 row2 =
+and unify_row env id_pairs1 id_pairs2 row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let rm1 = row_more row1 and rm2 = row_more row2 in
   if unify_eq rm1 rm2 then () else
@@ -3058,7 +3098,7 @@ and unify_row env row1 row2 =
   in
   let row0 = {row_fields = []; row_more = more; row_bound = ();
               row_closed = closed; row_fixed = fixed; row_name = name} in
-  let set_more row rest =
+  let set_more id_pairs row rest =
     let rest =
       if closed then
         filter_row_fields row.row_closed rest
@@ -3080,23 +3120,25 @@ and unify_row env row1 row2 =
     let rm = row_more row in
     (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
     if !trace_gadt_instances then
-      update_level !env [] rm.level (newgenty (Tvariant row));
+      update_level !env id_pairs rm.level (newgenty (Tvariant row));
     if row_fixed row then
       if more == rm then () else
-      if is_Tvar rm then link_type rm more else unify env rm more
+      if is_Tvar rm then link_type rm more
+      else unify env id_pairs id_pairs rm more
     else
       let ty = newgenty (Tvariant {row0 with row_fields = rest}) in
-      update_level !env [] rm.level ty;
+      update_level !env id_pairs rm.level ty;
       update_scope rm.scope ty;
       link_type rm ty
   in
   let md1 = rm1.desc and md2 = rm2.desc in
   begin try
-    set_more row2 r1;
-    set_more row1 r2;
+    set_more id_pairs2 row2 r1;
+    set_more id_pairs1 row1 r2;
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2
+        try
+          unify_row_field env id_pairs1 id_pairs2 fixed1 fixed2 rm1 rm2 l f1 f2
         with Unify trace ->
           raise Trace.( Unify( Variant (Incompatible_types_for l) :: trace ))
       )
@@ -3109,7 +3151,7 @@ and unify_row env row1 row2 =
     set_type_desc rm1 md1; set_type_desc rm2 md2; raise exn
   end
 
-and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
+and unify_row_field env id_pairs1 id_pairs2 fixed1 fixed2 rm1 rm2 l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   let if_not_fixed (pos,fixed) f =
     match fixed with
@@ -3123,7 +3165,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
     | _ -> true in
   if f1 == f2 then () else
   match f1, f2 with
-    Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
+    Rpresent(Some t1), Rpresent(Some t2) -> unify env id_pairs1 id_pairs2 t1 t2
   | Rpresent None, Rpresent None -> ()
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
@@ -3132,18 +3174,29 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         (* PR#7496 *)
         let f = Reither (c1 || c2, [], m1 || m2, ref None) in
         set_row_field e1 f; set_row_field e2 f;
-        List.iter2 (unify env) tl1 tl2
+        List.iter2 (unify env id_pairs1 id_pairs2) tl1 tl2
       end
       else let redo =
         (m1 || m2 || either_fixed ||
          !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
-        begin match tl1 @ tl2 with [] -> false
-        | t1 :: tl ->
+        begin match tl1, tl2 with [], [] -> false
+        | t1 :: tl1, [] ->
             if c1 || c2 then raise (Unify []);
-            List.iter (unify env t1) tl;
+            List.iter (unify env id_pairs1 id_pairs1 t1) tl1;
+            !e1 <> None || !e2 <> None
+        | [], t2 :: tl2 ->
+            if c1 || c2 then raise (Unify []);
+            List.iter (unify env id_pairs2 id_pairs2 t2) tl2;
+            !e1 <> None || !e2 <> None
+        | t1 :: tl1, tl2 ->
+            if c1 || c2 then raise (Unify []);
+            List.iter (unify env id_pairs1 id_pairs1 t1) tl1;
+            List.iter (unify env id_pairs1 id_pairs2 t1) tl2;
             !e1 <> None || !e2 <> None
         end in
-      if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
+      if redo then
+        unify_row_field env id_pairs1 id_pairs2 fixed1 fixed2 rm1 rm2 l f1 f2
+      else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
@@ -3151,24 +3204,26 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       in
       let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
       (* PR#6744 *)
-      let (tlu1,tl1') = List.partition (has_free_univars !env []) tl1'
-      and (tlu2,tl2') = List.partition (has_free_univars !env []) tl2' in
+      let (tlu1,tl1') = List.partition (has_free_univars !env id_pairs1) tl1'
+      and (tlu2,tl2') = List.partition (has_free_univars !env id_pairs2) tl2' in
       begin match tlu1, tlu2 with
         [], [] -> ()
       | (tu1::tlu1), _ :: _ ->
           (* Attempt to merge all the types containing univars *)
-          List.iter (unify env tu1) (tlu1@tlu2)
-      | (tu::_, []) | ([], tu::_) -> occur_univar !env [] tu
+          List.iter (unify env id_pairs1 id_pairs1 tu1) tlu1;
+          List.iter (unify env id_pairs1 id_pairs2 tu1) tlu2
+      | (tu1::_, []) -> occur_univar !env id_pairs1 tu1
+      | ([], tu2::_) -> occur_univar !env id_pairs2 tu2
       end;
       (* Is this handling of levels really principal? *)
       List.iter (fun ty ->
         let rm = repr rm2 in
-        update_level !env [] rm.level ty;
+        update_level !env id_pairs1 rm.level ty;
         update_scope rm.scope ty;
       ) tl1';
       List.iter (fun ty ->
         let rm = repr rm1 in
-        update_level !env [] rm.level ty;
+        update_level !env id_pairs2 rm.level ty;
         update_scope rm.scope ty;
       ) tl2';
       let e = ref None in
@@ -3184,18 +3239,18 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed first (fun () ->
           set_row_field e1 f2;
           let rm = repr rm1 in
-          update_level !env [] rm.level t2;
+          update_level !env id_pairs2 rm.level t2;
           update_scope rm.scope t2;
-          (try List.iter (fun t1 -> unify env t1 t2) tl
+          (try List.iter (fun t1 -> unify env id_pairs1 id_pairs2 t1 t2) tl
            with exn -> e1 := None; raise exn)
         )
   | Rpresent(Some t1), Reither(false, tl, _, e2) ->
       if_not_fixed second (fun () ->
           set_row_field e2 f1;
           let rm = repr rm2 in
-          update_level !env [] rm.level t1;
+          update_level !env id_pairs1 rm.level t1;
           update_scope rm.scope t1;
-          (try List.iter (unify env t1) tl
+          (try List.iter (unify env id_pairs1 id_pairs2 t1) tl
            with exn -> e2 := None; raise exn)
         )
   | Reither(true, [], _, e1), Rpresent None ->
@@ -3204,14 +3259,14 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed second (fun () -> set_row_field e2 f1)
   | _ -> raise (Unify [])
 
-let unify env ty1 ty2 =
+let unify env id_pairs1 id_pairs2 ty1 ty2 =
   let snap = Btype.snapshot () in
   try
-    unify env ty1 ty2
+    unify env id_pairs1 id_pairs2 ty1 ty2
   with
     Unify trace ->
       undo_compress snap;
-      raise (Unify (expand_trace !env [] trace))
+      raise (Unify (expand_trace !env (id_pairs1 @ id_pairs2) trace))
 
 let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
   try
@@ -3222,7 +3277,7 @@ let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
       ~generate:(Allowed { equated_types })
       ~injective:true
       ~allow_recursive
-      (fun () -> unify env ty1 ty2);
+      (fun () -> unify env [] [] ty1 ty2);
     gadt_equations_level := None;
     TypePairs.clear unify_eq_set;
     equated_types
@@ -3231,38 +3286,38 @@ let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
     TypePairs.clear unify_eq_set;
     raise e
 
-let unify_var env id_pairs t1 t2 =
+let unify_var env id_pairs1 id_pairs2 t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
   if t1 == t2 then () else
   match t1.desc, t2.desc with
     Tvar _, Tconstr _ when deep_occur t1 t2 ->
-      unify (ref env) t1 t2
+      unify (ref env) id_pairs1 id_pairs2 t1 t2
   | Tvar _, _ ->
       let reset_tracing = check_trace_gadt_instances env in
       begin try
-        occur env id_pairs t1 t2;
-        update_level env id_pairs t1.level t2;
+        occur env id_pairs2 t1 t2;
+        update_level env id_pairs2 t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
       with Unify trace ->
         reset_trace_gadt_instances reset_tracing;
         let expanded_trace =
-          expand_trace env [] @@ Trace.diff t1 t2 :: trace
+          expand_trace env (id_pairs1 @ id_pairs2) @@ Trace.diff t1 t2 :: trace
         in
         raise (Unify expanded_trace)
       end
   | _ ->
-      unify (ref env) t1 t2
+      unify (ref env) id_pairs1 id_pairs2 t1 t2
 
 let _ = unify' := unify_var
 
-let unify_pairs env ty1 ty2 pairs =
+let unify_pairs env id_pairs1 id_pairs2 ty1 ty2 pairs =
   univar_pairs := pairs;
-  unify env ty1 ty2
+  unify env id_pairs1 id_pairs2 ty1 ty2
 
-let unify env ty1 ty2 =
-  unify_pairs (ref env) ty1 ty2 []
+let unify env id_pairs1 id_pairs2 ty1 ty2 =
+  unify_pairs (ref env) id_pairs1 id_pairs2 ty1 ty2 []
 
 
 
@@ -3620,7 +3675,7 @@ let matches env ty ty' =
   let vars = rigidify ty in
   cleanup_abbrev ();
   let ok =
-    try unify env ty ty'; all_distinct_vars env vars
+    try unify env [] [] ty ty'; all_distinct_vars env vars
     with Unify _ -> false
   in
   backtrack snap;
@@ -4220,7 +4275,7 @@ let rec build_subtype env visited loops posi level t =
           let nm =
             if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
           set_type_desc t'' (Tobject (ty1', ref nm));
-          (try unify_var env [] ty t with Unify _ -> assert false);
+          (try unify_var env [] [] ty t with Unify _ -> assert false);
           (t'', Changed)
       | _ -> raise Not_found
       with Not_found ->
@@ -4434,7 +4489,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
             (* need to check module subtyping *)
             let snap = Btype.snapshot () in
             try
-              List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs';
+              List.iter (fun (_, t1, t2, _) -> unify env [] [] t1 t2) cstrs';
               if !package_subtype env p1 nl1 tl1 p2 nl2 tl2
               then (Btype.backtrack snap; cstrs' @ cstrs)
               else raise (Unify [])
@@ -4533,7 +4588,7 @@ let subtype env ty1 ty2 =
   function () ->
     List.iter
       (function (trace0, t1, t2, pairs) ->
-         try unify_pairs (ref env) t1 t2 pairs with Unify trace ->
+         try unify_pairs (ref env)  [] [] t1 t2 pairs with Unify trace ->
            raise (Subtype (expand_trace env [] (List.rev trace0),
                            List.tl trace)))
       (List.rev cstrs)
@@ -4959,7 +5014,7 @@ let rec collapse_conj env visited ty =
         (fun (_l,fi) ->
           match row_field_repr fi with
             Reither (c, t1::(_::_ as tl), m, e) ->
-              List.iter (unify env t1) tl;
+              List.iter (unify env [] [] t1) tl;
               set_row_field e (Reither (c, [t1], m, ref None))
           | _ ->
               ())
@@ -5022,6 +5077,7 @@ let maybe_pointer_type env typ = not (is_immediate (immediacy env typ))
 let expand_head env ty = expand_head env [] ty
 let try_expand_once_opt env ty = try_expand_once_opt env [] ty
 let expand_head_opt env ty = expand_head_opt env [] ty
-let unify_var env ty1 ty2 = unify_var env [] ty1 ty2
 let full_expand env ty = full_expand env [] ty
 let mcomp env ty1 ty2 = mcomp env [] [] ty1 ty2
+let unify env ty1 ty2 = unify env [] [] ty1 ty2
+let unify_var env ty1 ty2 = unify_var env [] [] ty1 ty2
