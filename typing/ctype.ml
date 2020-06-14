@@ -4889,13 +4889,16 @@ let nondep_variants = TypeHash.create 17
 let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
 
-let rec nondep_type_rec ?(expand_private=false) env ids ty =
-  let expand_abbrev env t =
-    if expand_private then expand_abbrev_opt env t else expand_abbrev env t
+let rec nondep_type_rec ?(expand_private=false) env id_pairs ids ty =
+  let expand_abbrev env id_pairs t =
+    if expand_private then
+      expand_abbrev_opt env id_pairs t
+    else
+      expand_abbrev env id_pairs t
   in
   match ty.desc with
     Tvar _ | Tunivar _ -> ty
-  | Tlink ty -> nondep_type_rec env ids ty
+  | Tlink ty -> nondep_type_rec env id_pairs ids ty
   | _ -> try TypeHash.find nondep_hash ty
   with Not_found ->
     let ty' = newgenvar () in        (* Stub *)
@@ -4903,17 +4906,19 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
     set_type_desc ty'
       begin match ty.desc with
       | Tconstr(p, tl, _abbrev) ->
+          let p = Path.unsubst id_pairs (Path.subst id_pairs p) in
           begin try
             (* First, try keeping the same type constructor p *)
             match Path.find_free_opt ids p with
             | Some id ->
                raise (Nondep_cannot_erase id)
             | None ->
-               Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
+               Tconstr
+                 (p, List.map (nondep_type_rec env id_pairs ids) tl, ref Mnil)
           with (Nondep_cannot_erase _) as exn ->
             (* If that doesn't work, try expanding abbrevs *)
-            try Tlink (nondep_type_rec ~expand_private env ids
-                       (expand_abbrev env [] (newty2 ty.level ty.desc)))
+            try Tlink (nondep_type_rec ~expand_private env id_pairs ids
+                       (expand_abbrev env id_pairs (newty2 ty.level ty.desc)))
               (*
                  The [Tlink] is important. The expanded type may be a
                  variable, or may not be completely copied yet
@@ -4922,19 +4927,33 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
                *)
             with Cannot_expand | Unify _ -> raise exn
           end
-      | Tpackage(p, nl, tl) when Path.exists_free ids p ->
-          let p' = normalize_package_path env p in
+      | Tpackage(p, nl, tl) when Path.exists_free ids p || id_pairs <> [] ->
+          let p' =
+            if Path.exists_free ids p then
+              p |> Path.subst id_pairs
+                |> normalize_package_path env
+                |> Path.unsubst id_pairs
+            else
+              p |> Path.subst id_pairs
+                |> Path.unsubst id_pairs
+          in
           begin match Path.find_free_opt ids p' with
           | Some id -> raise (Nondep_cannot_erase id)
-          | None -> Tpackage (p', nl, List.map (nondep_type_rec env ids) tl)
+          | None ->
+            Tpackage (p', nl, List.map (nondep_type_rec env id_pairs ids) tl)
           end
       | Tobject (t1, name) ->
-          Tobject (nondep_type_rec env ids t1,
-                 ref (match !name with
-                        None -> None
-                      | Some (p, tl) ->
-                          if Path.exists_free ids p then None
-                          else Some (p, List.map (nondep_type_rec env ids) tl)))
+          Tobject
+            ( nondep_type_rec env id_pairs ids t1
+            , ref
+                (match !name with
+                   None -> None
+                 | Some (p, tl) ->
+                     let p = Path.unsubst id_pairs (Path.subst id_pairs p) in
+                     if Path.exists_free ids p then None
+                     else
+                       Some
+                         (p, List.map (nondep_type_rec env id_pairs ids) tl)) )
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -4951,15 +4970,19 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             let more' = if static then newgenty Tnil else more in
             (* Return a new copy *)
             let row =
-              copy_row (nondep_type_rec env ids) true row true more' in
+              copy_row (nondep_type_rec env id_pairs ids) true row true more'
+            in
             match row.row_name with
               Some (p, _tl) when Path.exists_free ids p ->
                 Tvariant {row with row_name = None}
             | _ -> Tvariant row
           end
-      | _ -> copy_type_desc (nondep_type_rec env ids) [] ty.desc
+      | _ -> copy_type_desc (nondep_type_rec env id_pairs ids) id_pairs ty.desc
       end;
     ty'
+
+let nondep_type_rec ?expand_private env id ty =
+  nondep_type_rec ?expand_private env [] id ty
 
 let nondep_type env id ty =
   try
