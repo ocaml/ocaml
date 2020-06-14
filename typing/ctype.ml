@@ -1530,9 +1530,9 @@ let instance_label fixed lbl =
 (**** Instantiation with parameter substitution ****)
 
 let unify' = (* Forward declaration *)
-  ref (fun _env _ty1 _ty2 -> raise (Unify []))
+  ref (fun _env _id_pairs _ty1 _ty2 -> raise (Unify []))
 
-let subst env level priv abbrev ty params args body =
+let subst env id_pairs level priv abbrev ty params args body =
   if List.length params <> List.length args then raise (Unify []);
   let old_level = !current_level in
   current_level := level;
@@ -1549,8 +1549,8 @@ let subst env level priv abbrev ty params args body =
     abbreviations := abbrev;
     let (params', body') = instance_parameterized_type params body in
     abbreviations := ref Mnil;
-    !unify' env body0 body';
-    List.iter2 (!unify' env) params' args;
+    !unify' env id_pairs body0 body';
+    List.iter2 (!unify' env id_pairs) params' args;
     current_level := old_level;
     body'
   with Unify _ as exn ->
@@ -1565,7 +1565,7 @@ let subst env level priv abbrev ty params args body =
 *)
 let apply env params body args =
   try
-    subst env generic_level Public (ref Mnil) None params args body
+    subst env [] generic_level Public (ref Mnil) None params args body
   with
     Unify _ -> raise Cannot_apply
 
@@ -1667,9 +1667,9 @@ let expand_abbrev_gen kind find_type_expansion env id_pairs ty =
               ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
             let ty' =
               if use_abbrev then
-                subst env level kind abbrev (Some ty) params args body
+                subst env id_pairs level kind abbrev (Some ty) params args body
               else
-                subst env level kind (ref Mnil) None params args body
+                subst env id_pairs level kind (ref Mnil) None params args body
             in
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
@@ -1792,7 +1792,7 @@ let enforce_constraints env ty =
       begin try
         let decl = Env.find_type path env in
         ignore
-          (subst env level Public (ref Mnil) None decl.type_params args
+          (subst env [] level Public (ref Mnil) None decl.type_params args
              (newvar2 level))
       with Not_found -> ()
       end
@@ -3204,7 +3204,7 @@ let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
     TypePairs.clear unify_eq_set;
     raise e
 
-let unify_var env t1 t2 =
+let unify_var env id_pairs t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
   if t1 == t2 then () else
   match t1.desc, t2.desc with
@@ -3214,7 +3214,7 @@ let unify_var env t1 t2 =
       let reset_tracing = check_trace_gadt_instances env in
       begin try
         occur env t1 t2;
-        update_level env [] t1.level t2;
+        update_level env id_pairs t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
@@ -4166,7 +4166,7 @@ let rec build_subtype env visited loops posi level t =
         Tobject _ when posi && not (opened_object t') ->
           let cl_abbr, body = find_cltype_for_path env p in
           let ty =
-            subst env !current_level Public abbrev None
+            subst env [] !current_level Public abbrev None
               cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
@@ -4189,7 +4189,7 @@ let rec build_subtype env visited loops posi level t =
           let nm =
             if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
           set_type_desc t'' (Tobject (ty1', ref nm));
-          (try unify_var env ty t with Unify _ -> assert false);
+          (try unify_var env [] ty t with Unify _ -> assert false);
           (t'', Changed)
       | _ -> raise Not_found
       with Not_found ->
@@ -4991,3 +4991,4 @@ let maybe_pointer_type env typ = not (is_immediate (immediacy env typ))
 let expand_head env ty = expand_head env [] ty
 let try_expand_once_opt env ty = try_expand_once_opt env [] ty
 let expand_head_opt env ty = expand_head_opt env [] ty
+let unify_var env ty1 ty2 = unify_var env [] ty1 ty2
