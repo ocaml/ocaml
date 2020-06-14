@@ -5136,7 +5136,7 @@ let nondep_cltype_declaration env ids decl =
   decl
 
 (* collapse conjunctive types in class parameters *)
-let rec collapse_conj env visited ty =
+let rec collapse_conj env id_pairs visited ty =
   let ty = repr ty in
   if List.memq ty visited then () else
   let visited = ty :: visited in
@@ -5147,17 +5147,17 @@ let rec collapse_conj env visited ty =
         (fun (_l,fi) ->
           match row_field_repr fi with
             Reither (c, t1::(_::_ as tl), m, e) ->
-              List.iter (unify env [] [] t1) tl;
+              List.iter (unify env id_pairs id_pairs t1) tl;
               set_row_field e (Reither (c, [t1], m, ref None))
           | _ ->
               ())
         row.row_fields;
-      iter_row (collapse_conj env visited) row
+      iter_row (collapse_conj env id_pairs visited) row
   | _ ->
-      iter_type_expr (collapse_conj env visited) ty
+      iter_type_expr (collapse_conj env id_pairs visited) ty
 
 let collapse_conj_params env params =
-  List.iter (collapse_conj env []) params
+  List.iter (collapse_conj env [] []) params
 
 let same_constr env t1 t2 =
   let t1 = expand_head env [] t1 in
