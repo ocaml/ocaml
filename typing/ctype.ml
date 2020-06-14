@@ -2266,13 +2266,13 @@ let compatible_paths p1 p2 =
   Path.same p1 path_string && Path.same p2 path_bytes
 
 (* Check for datatypes carefully; see PR#6348 *)
-let rec expands_to_datatype env ty =
+let rec expands_to_datatype env id_pairs ty =
   let ty = repr ty in
   match ty.desc with
     Tconstr (p, _, _) ->
       begin try
-        is_datatype (Env.find_type p env) ||
-        expands_to_datatype env (try_expand_once env [] ty)
+        is_datatype (Env.find_type (Path.subst id_pairs p) env) ||
+        expands_to_datatype env id_pairs (try_expand_once env id_pairs ty)
       with Not_found | Cannot_expand -> false
       end
   | _ -> false
@@ -2805,7 +2805,8 @@ and unify3 env t1 t1' t2 t2' =
               ~allow_recursive:!allow_recursive_equation
               (fun () -> unify_list env tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
-                  || List.exists (expands_to_datatype !env) [t1'; t1; t2] then
+                  || List.exists (expands_to_datatype !env []) [t1'; t1]
+                  || expands_to_datatype !env [] t2 then
             unify_list env tl1 tl2
           else
             let inj =
