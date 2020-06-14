@@ -17,6 +17,8 @@
 
 type t
 
+type raw_data = nativeint
+
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
@@ -34,6 +36,10 @@ external floatarray_set :
 let [@inline always] double_field x i = floatarray_get (obj x : floatarray) i
 let [@inline always] set_double_field x i v =
   floatarray_set (obj x : floatarray) i v
+external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
+external set_raw_field : t -> int -> raw_data -> unit
+                                          = "caml_obj_set_raw_field"
+
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"

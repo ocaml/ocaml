@@ -84,6 +84,11 @@ Working version
    are no arguments (an empty list) after the rest marker)
   (Gabriel Scherer, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #9655: Obj: introduce type raw_data and functions raw_field, set_raw_field
+   to manipulate out-of-heap pointers in no-naked-pointer mode,
+   and more generally all other data that is not a well-formed OCaml value
+   (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
