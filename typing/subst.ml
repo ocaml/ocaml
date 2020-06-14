@@ -253,7 +253,7 @@ let rec typexp copy_scope s ty =
           end
       | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp copy_scope s t2)
-      | _ -> copy_type_desc (typexp copy_scope s) desc
+      | _ -> copy_type_desc (typexp copy_scope s) [] desc
       end;
     ty'
 

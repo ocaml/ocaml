@@ -1138,7 +1138,7 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names scope ty =
+let rec copy ?partial ?keep_names scope id_pairs ty =
   let copy = copy ?partial ?keep_names scope in
   let ty = repr ty in
   match ty.desc with
@@ -1165,9 +1165,10 @@ let rec copy ?partial ?keep_names scope ty =
     Private_type_expr.set_desc t
       begin match desc with
       | Tconstr (p, tl, _) ->
-          let abbrevs = proper_abbrevs p tl !abbreviations in
-          begin match find_repr p !abbrevs with
-            Some ty when repr ty != t ->
+          let p' = Path.subst id_pairs p in
+          let abbrevs = proper_abbrevs p' tl !abbreviations in
+          begin match find_repr p' !abbrevs with
+            Some ty when repr ty != t && p' == p ->
               Tlink ty
           | _ ->
           (*
@@ -1179,7 +1180,7 @@ let rec copy ?partial ?keep_names scope ty =
              ation can be released by changing the content of just
              one reference.
           *)
-              Tconstr (p, List.map copy tl,
+              Tconstr (Path.unsubst id_pairs p, List.map (copy id_pairs) tl,
                        ref (match !(!abbreviations) with
                               Mcons _ -> Mlink !abbreviations
                             | abbrev  -> abbrev))
@@ -1205,7 +1206,7 @@ let rec copy ?partial ?keep_names scope ty =
                      possibly an interaction with (copy more) below? *)
                 | Tconstr _ | Tnil ->
                     For_copy.save_desc scope more more.desc;
-                    copy more
+                    copy id_pairs more
                 | Tvar _ | Tunivar _ ->
                     For_copy.save_desc scope more more.desc;
                     if keep then more else newty more.desc
@@ -1245,21 +1246,23 @@ let rec copy ?partial ?keep_names scope ty =
               Private_type_expr.set_desc
                 more (Tsubst (more', Some t));
               (* Return a new copy *)
-              Tvariant (copy_row copy true row keep more')
+              Tvariant (copy_row (copy id_pairs) true row keep more')
           end
       | Tfield (_p, k, _ty1, ty2) ->
           begin match field_kind_repr k with
-            Fabsent  -> Tlink (copy ty2)
-          | Fpresent -> copy_type_desc copy desc
+            Fabsent  -> Tlink (copy id_pairs ty2)
+          | Fpresent -> copy_type_desc (copy id_pairs) id_pairs desc
           | Fvar r ->
               For_copy.dup_kind scope r;
-              copy_type_desc copy desc
+              copy_type_desc (copy id_pairs) id_pairs desc
           end
       | Tobject (ty1, _) when partial <> None ->
-          Tobject (copy ty1, ref None)
-      | _ -> copy_type_desc ?keep_names copy desc
+          Tobject (copy id_pairs ty1, ref None)
+      | _ -> copy_type_desc ?keep_names (copy id_pairs) id_pairs desc
       end;
     t
+
+let copy ?partial ?keep_names scope ty = copy ?partial ?keep_names scope [] ty
 
 (**** Variants of instantiations ****)
 
@@ -1484,7 +1487,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           let visited =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
           Tpoly (copy_sep cleanup_scope fixed free bound visited t1, tl')
-      | _ -> copy_type_desc copy_rec ty.desc
+      | _ -> copy_type_desc copy_rec [] ty.desc
       end;
     t
   end
@@ -4758,7 +4761,7 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
                 Tvariant {row with row_name = None}
             | _ -> Tvariant row
           end
-      | _ -> copy_type_desc (nondep_type_rec env ids) ty.desc
+      | _ -> copy_type_desc (nondep_type_rec env ids) [] ty.desc
       end;
     ty'
 

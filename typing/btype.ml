@@ -487,25 +487,30 @@ let rec copy_kind = function
 let copy_commu c =
   if commu_repr c = Cok then Cok else Clink (ref Cunknown)
 
-let rec copy_type_desc ?(keep_names=false) f = function
+let rec copy_type_desc ?(keep_names=false) f id_pairs = function
     Tvar _ as ty        -> if keep_names then ty else Tvar None
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
   | Ttuple l            -> Ttuple (List.map f l)
-  | Tconstr (p, l, _)   -> Tconstr (p, List.map f l, ref Mnil)
-  | Tobject(ty, {contents = Some (p, tl)})
-                        -> Tobject (f ty, ref (Some(p, List.map f tl)))
+  | Tconstr (p, l, _)   ->
+      let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
+      Tconstr (p', List.map f l, ref Mnil)
+  | Tobject(ty, {contents = Some (p, tl)}) ->
+      let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
+      Tobject (f ty, ref (Some(p', List.map f tl)))
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant _          -> assert false (* too ambiguous *)
   | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
       Tfield (p, field_kind_repr k, f ty1, f ty2)
   | Tnil                -> Tnil
-  | Tlink ty            -> copy_type_desc f ty.desc
+  | Tlink ty            -> copy_type_desc f id_pairs ty.desc
   | Tsubst _            -> assert false
   | Tunivar _ as ty     -> ty (* always keep the name *)
   | Tpoly (ty, tyl)     ->
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
-  | Tpackage (p, n, l)  -> Tpackage (p, n, List.map f l)
+  | Tpackage (p, n, l)  ->
+      let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
+      Tpackage (p', n, List.map f l)
 
 (* Utilities for copying *)
 
