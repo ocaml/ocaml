@@ -4752,7 +4752,7 @@ let cyclic_abbrev env id ty =
 exception Non_closed0
 let visited = ref TypeSet.empty
 
-let rec closed_schema_rec env ty =
+let rec closed_schema_rec env id_pairs ty =
   let ty = repr ty in
   if TypeSet.mem ty !visited then () else begin
     visited := TypeSet.add ty !visited;
@@ -4761,30 +4761,32 @@ let rec closed_schema_rec env ty =
         raise Non_closed0
     | Tconstr _ ->
         let old = !visited in
-        begin try iter_type_expr (closed_schema_rec env) ty
+        begin try iter_type_expr (closed_schema_rec env id_pairs) ty
         with Non_closed0 -> try
           visited := old;
-          closed_schema_rec env (try_expand_head try_expand_safe env [] ty)
+          closed_schema_rec env id_pairs
+            (try_expand_head try_expand_safe env id_pairs ty)
         with Cannot_expand ->
           raise Non_closed0
         end
     | Tfield(_, kind, t1, t2) ->
         if field_kind_repr kind = Fpresent then
-          closed_schema_rec env t1;
-        closed_schema_rec env t2
+          closed_schema_rec env id_pairs t1;
+        closed_schema_rec env id_pairs t2
     | Tvariant row ->
         let row = row_repr row in
-        iter_row (closed_schema_rec env) row;
-        if not (static_row row) then closed_schema_rec env row.row_more
+        iter_row (closed_schema_rec env id_pairs) row;
+        if not (static_row row) then
+          closed_schema_rec env id_pairs row.row_more
     | _ ->
-        iter_type_expr (closed_schema_rec env) ty
+        iter_type_expr (closed_schema_rec env id_pairs) ty
   end
 
 (* Return whether all variables of type [ty] are generic. *)
 let closed_schema env ty =
   visited := TypeSet.empty;
   try
-    closed_schema_rec env ty;
+    closed_schema_rec env [] ty;
     visited := TypeSet.empty;
     true
   with Non_closed0 ->
