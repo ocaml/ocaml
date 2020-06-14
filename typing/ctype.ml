@@ -3428,6 +3428,7 @@ let moregen_occur env level ty =
     unmark_type ty; raise (Unify [])
   end;
   (* also check for free univars *)
+  (* TODO: Check that [ty] doesn't contain any unscoped identifiers. *)
   occur_univar env [] ty;
   update_level env [] level ty
 
@@ -3435,7 +3436,7 @@ let may_instantiate inst_nongen t1 =
   if inst_nongen then t1.level <> generic_level - 1
                  else t1.level =  generic_level
 
-let rec moregen inst_nongen type_pairs env t1 t2 =
+let rec moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -3446,13 +3447,14 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
       (Tvar _, _) when may_instantiate inst_nongen t1 ->
         moregen_occur env t1.level t2;
         update_scope t1.scope t2;
-        occur env [] t1 t2;
+        occur env id_pairs2 t1 t2;
         link_type t1 t2
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+    | (Tconstr (p1, [], _), Tconstr (p2, [], _))
+      when Path.same_subst id_pairs1 id_pairs2 p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head env [] t1 in
-        let t2' = expand_head env [] t2 in
+        let t1' = expand_head env id_pairs1 t1 in
+        let t2' = expand_head env id_pairs2 t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -3467,32 +3469,39 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
-              moregen inst_nongen type_pairs env t1 t2;
-              moregen inst_nongen type_pairs env u1 u2
+              moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2;
+              moregen inst_nongen type_pairs env id_pairs1 id_pairs2 u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
-              moregen_list inst_nongen type_pairs env tl1 tl2
+              moregen_list inst_nongen type_pairs env id_pairs1 id_pairs2 tl1
+                tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-                when Path.same p1 p2 ->
-              moregen_list inst_nongen type_pairs env tl1 tl2
+            when Path.same_subst id_pairs1 id_pairs2 p1 p2 ->
+              moregen_list inst_nongen type_pairs env id_pairs1 id_pairs2 tl1
+                tl2
           | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
               begin try
-                unify_package env (moregen_list inst_nongen type_pairs env)
-                  t1'.level p1 n1 tl1 t2'.level p2 n2 tl2
+                unify_package env
+                  (moregen_list inst_nongen type_pairs env id_pairs1 id_pairs2)
+                  t1'.level (Path.subst id_pairs1 p1) n1 tl1
+                  t2'.level (Path.subst id_pairs2 p2) n2 tl2
               with Not_found -> raise (Unify [])
               end
           | (Tvariant row1, Tvariant row2) ->
-              moregen_row inst_nongen type_pairs env row1 row2
+              moregen_row inst_nongen type_pairs env id_pairs1 id_pairs2 row1
+                row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              moregen_fields inst_nongen type_pairs env fi1 fi2
+              moregen_fields inst_nongen type_pairs env id_pairs1 id_pairs2 fi1
+                fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
-              moregen_fields inst_nongen type_pairs env t1' t2'
+              moregen_fields inst_nongen type_pairs env id_pairs1 id_pairs2 t1'
+                t2'
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              moregen inst_nongen type_pairs env t1 t2
+              moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly env [] [] univar_pairs t1 tl1 t2 tl2
-                (moregen inst_nongen type_pairs env)
+              enter_poly env id_pairs1 id_pairs2 univar_pairs t1 tl1 t2 tl2
+                (moregen inst_nongen type_pairs env id_pairs1 id_pairs2)
           | (Tunivar _, Tunivar _) ->
               unify_univar t1' t2' !univar_pairs
           | (_, _) ->
@@ -3500,26 +3509,27 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         end
   with Unify trace ->  raise( Unify ( Trace.diff t1 t2 :: trace ) )
 
-and moregen_list inst_nongen type_pairs env tl1 tl2 =
+and moregen_list inst_nongen type_pairs env id_pairs1 id_pairs2 tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
     raise (Unify []);
-  List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+  List.iter2 (moregen inst_nongen type_pairs env id_pairs1 id_pairs2) tl1 tl2
 
-and moregen_fields inst_nongen type_pairs env ty1 ty2 =
+and moregen_fields inst_nongen type_pairs env id_pairs1 id_pairs2 ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   if miss1 <> [] then raise (Unify []);
-  moregen inst_nongen type_pairs env rest1
+  moregen inst_nongen type_pairs env id_pairs1 id_pairs2 rest1
     (build_fields (repr ty2).level miss2 rest2);
   List.iter
     (fun (n, k1, t1, k2, t2) ->
        moregen_kind k1 k2;
-       try moregen inst_nongen type_pairs env t1 t2 with Unify trace ->
-         let e = Trace.diff
-             (newty (Tfield(n, k1, t1, rest2)))
-             (newty (Tfield(n, k2, t2, rest2))) in
-         raise( Unify ( e :: trace ) )
+       try moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2 with
+         Unify trace ->
+           let e = Trace.diff
+               (newty (Tfield(n, k1, t1, rest2)))
+               (newty (Tfield(n, k2, t2, rest2))) in
+           raise( Unify ( e :: trace ) )
     )
     pairs
 
@@ -3532,7 +3542,7 @@ and moregen_kind k1 k2 =
   | (Fpresent, Fpresent)           -> ()
   | _                              -> raise (Unify [])
 
-and moregen_row inst_nongen type_pairs env row1 row2 =
+and moregen_row inst_nongen type_pairs env id_pairs1 id_pairs2 row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
   if rm1 == rm2 then () else
@@ -3560,7 +3570,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       update_scope rm1.scope ext;
       link_type rm1 ext
   | Tconstr _, Tconstr _ ->
-      moregen inst_nongen type_pairs env rm1 rm2
+      moregen inst_nongen type_pairs env id_pairs1 id_pairs2 rm1 rm2
   | _ -> raise (Unify [])
   end;
   List.iter
@@ -3569,20 +3579,27 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       if f1 == f2 then () else
       match f1, f2 with
         Rpresent(Some t1), Rpresent(Some t2) ->
-          moregen inst_nongen type_pairs env t1 t2
+          moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2
       | Rpresent None, Rpresent None -> ()
       | Reither(false, tl1, _, e1), Rpresent(Some t2) when may_inst ->
           set_row_field e1 f2;
-          List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
+          List.iter
+            (fun t1 ->
+              moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2)
+            tl1
       | Reither(c1, tl1, _, e1), Reither(c2, tl2, m2, e2) ->
           if e1 != e2 then begin
             if c1 && not c2 then raise(Unify []);
             set_row_field e1 (Reither (c2, [], m2, e2));
             if List.length tl1 = List.length tl2 then
-              List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+              List.iter2
+                (moregen inst_nongen type_pairs env id_pairs1 id_pairs2)
+                tl1 tl2
             else match tl2 with
               t2 :: _ ->
-                List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
+                List.iter
+                  (fun t1 ->
+                    moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2)
                   tl1
             | [] ->
                 if tl1 <> [] then raise (Unify [])
@@ -3598,7 +3615,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
 (* Must empty univar_pairs first *)
 let moregen inst_nongen type_pairs env patt subj =
   univar_pairs := [];
-  moregen inst_nongen type_pairs env patt subj
+  moregen inst_nongen type_pairs env [] [] patt subj
 
 (*
    Non-generic variable can be instantiated only if [inst_nongen] is
