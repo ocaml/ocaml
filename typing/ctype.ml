@@ -4795,7 +4795,7 @@ let closed_schema env ty =
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)
-let rec normalize_type_rec visited ty =
+let rec normalize_type_rec id_pairs visited ty =
   let ty = repr ty in
   if not (TypeSet.mem ty !visited) then begin
     visited := TypeSet.add ty !visited;
@@ -4817,7 +4817,9 @@ let rec normalize_type_rec visited ty =
                 List.fold_left
                   (fun tyl ty ->
                     if List.exists
-                        (fun ty' -> equal Env.empty false [] [] [ty] [ty']) tyl
+                        (fun ty' ->
+                          equal Env.empty false id_pairs id_pairs [ty] [ty'])
+                        tyl
                     then tyl else ty::tyl)
                   [ty] tyl
               in
@@ -4855,11 +4857,11 @@ let rec normalize_type_rec visited ty =
         set_type_desc fi fi'.desc
     | _ -> ()
     end;
-    iter_type_expr (normalize_type_rec visited) ty
+    iter_type_expr (normalize_type_rec id_pairs visited) ty
   end
 
 let normalize_type ty =
-  normalize_type_rec (ref TypeSet.empty) ty
+  normalize_type_rec [] (ref TypeSet.empty) ty
 
 
                               (*************************)
