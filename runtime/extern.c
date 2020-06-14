@@ -1130,3 +1130,66 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
   }
 #endif
 }
+
+CAMLprim value caml_obj_reachable_words(value v)
+{
+  intnat size;
+  struct extern_item * sp;
+  uintnat h = 0;
+  uintnat pos;
+
+  extern_init_position_table();
+  sp = extern_stack;
+  size = 0;
+  while (1) {
+    if (Is_long(v)) {
+      /* Tagged integers contribute 0 to the size, nothing to do */
+#ifndef NO_NAKED_POINTERS
+    } else if (! Is_in_heap_or_young(v)) {
+      /* Out-of-heap blocks contribute 0 to the size, nothing to do */
+      /* However, once we get rid of the page table, we will no longer
+         be able to distinguish major heap blocks and out-of-heap blocks,
+         so we will need to count out-of-heap blocks too. */
+#endif
+    } else if (extern_lookup_position(v, &pos, &h)) {
+      /* Already seen and counted, nothing to do */
+    } else {
+      header_t hd = Hd_val(v);
+      tag_t tag = Tag_hd(hd);
+      mlsize_t sz = Wosize_hd(hd);
+      /* Infix pointer: go back to containing closure */
+      if (tag == Infix_tag) {
+        v = v - Infix_offset_hd(hd);
+        continue;
+      }
+      /* Remember that we've visited this block */
+      extern_record_location(v, h);
+      /* The block contributes to the total size */
+      size += 1 + sz;           /* header word included */
+      if (tag < No_scan_tag) {
+        /* i is the position of the first field to traverse recursively */
+        uintnat i =
+          tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;
+        if (i < sz) {
+          if (i < sz - 1) {
+            /* Remember that we need to count fields i + 1 ... sz - 1 */
+            sp++;
+            if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+            sp->v = &Field(v, i + 1);
+            sp->count = sz - i - 1;
+          }
+          /* Continue with field i */
+          v = Field(v, i);
+          continue;
+        }
+      }
+    }
+    /* Pop one more item to traverse, if any */
+    if (sp == extern_stack) break;
+    v = *((sp->v)++);
+    if (--(sp->count) == 0) sp--;
+  }
+  extern_free_stack();
+  extern_free_position_table();
+  return Val_long(size);
+}
