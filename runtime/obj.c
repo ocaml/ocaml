@@ -31,23 +31,6 @@
 #include "caml/signals.h"
 #include "caml/spacetime.h"
 
-/* [size] is a value encoding a number of bytes */
-CAMLprim value caml_static_alloc(value size)
-{
-  return (value) caml_stat_alloc((asize_t) Long_val(size));
-}
-
-CAMLprim value caml_static_free(value blk)
-{
-  caml_stat_free((void *) blk);
-  return Val_unit;
-}
-
-CAMLprim value caml_static_resize(value blk, value new_size)
-{
-  return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
-}
-
 /* unused since GPR#427 */
 CAMLprim value caml_obj_is_block(value arg)
 {

@@ -48,6 +48,8 @@ Working version
   (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
   Stephen Dolan)
 
+- #9675: Remove the caml_static_{alloc,free,resize} primitives, now unused.
+  (Xavier Leroy, review by Gabriel Scherer)
 
 ### Code generation and optimizations:
 
