@@ -1814,17 +1814,19 @@ let full_expand env id_pairs ty =
    During the typing of a class, abbreviations for correspondings
    types expand to non-generic types.
 *)
-let generic_abbrev env path =
+let generic_abbrev env id_pairs path =
   try
-    let (_, body, _) = Env.find_type_expansion path env in
+    let (_, body, _) =
+      Env.find_type_expansion (Path.subst id_pairs path) env
+    in
     (repr body).level = generic_level
   with
     Not_found ->
       false
 
-let generic_private_abbrev env path =
+let generic_private_abbrev env id_pairs path =
   try
-    match Env.find_type path env with
+    match Env.find_type (Path.subst id_pairs path) env with
       {type_kind = Type_abstract;
        type_private = Private;
        type_manifest = Some body} ->
@@ -4163,7 +4165,7 @@ let rec build_subtype env visited loops posi level t =
       if c > Unchanged then (newty (Ttuple (List.map fst tlist')), c)
       else (t, Unchanged)
   | Tconstr(p, tl, abbrev)
-    when level > 0 && generic_abbrev env p && safe_abbrev env t
+    when level > 0 && generic_abbrev env [] p && safe_abbrev env t
     && not (has_constr_row' env t) ->
       let t' = repr (expand_abbrev env [] t) in
       let level' = pred_expand level in
@@ -4209,7 +4211,7 @@ let rec build_subtype env visited loops posi level t =
       let visited = t :: visited in
       begin try
         let decl = Env.find_type p env in
-        if level = 0 && generic_abbrev env p && safe_abbrev env t
+        if level = 0 && generic_abbrev env [] p && safe_abbrev env t
         && not (has_constr_row' env t)
         then warn := true;
         let tl' =
@@ -4342,10 +4344,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
         cstrs
     | (Tconstr(p1, _tl1, _abbrev1), _)
-      when generic_abbrev env p1 && safe_abbrev env t1 ->
+      when generic_abbrev env [] p1 && safe_abbrev env t1 ->
         subtype_rec env trace (expand_abbrev env [] t1) t2 cstrs
     | (_, Tconstr(p2, _tl2, _abbrev2))
-      when generic_abbrev env p2 && safe_abbrev env t2 ->
+      when generic_abbrev env [] p2 && safe_abbrev env t2 ->
         subtype_rec env trace t1 (expand_abbrev env [] t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
         begin try
@@ -4365,7 +4367,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Not_found ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
-    | (Tconstr(p1, _, _), _) when generic_private_abbrev env p1 ->
+    | (Tconstr(p1, _, _), _) when generic_private_abbrev env [] p1 ->
         subtype_rec env trace (expand_abbrev_opt env [] t1) t2 cstrs
 (*  | (_, Tconstr(p2, _, _)) when generic_private_abbrev false env p2 ->
         subtype_rec env trace t1 (expand_abbrev_opt env t2) cstrs *)
