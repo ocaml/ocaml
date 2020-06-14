@@ -3703,10 +3703,10 @@ let matches env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
-let expand_head_rigid env ty =
+let expand_head_rigid env id_pairs ty =
   let old = !rigid_variants in
   rigid_variants := true;
-  let ty' = expand_head env ty in
+  let ty' = expand_head env id_pairs ty in
   rigid_variants := old; ty'
 
 let normalize_subst subst =
