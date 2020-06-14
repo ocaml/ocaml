@@ -2056,7 +2056,7 @@ let get_univar_family univar_pairs univars =
   List.fold_left insert s univar_pairs
 
 (* Whether a family of univars escapes from a type *)
-let univars_escape env univar_pairs vl ty =
+let univars_escape env id_pairs univar_pairs vl ty =
   let family = get_univar_family univar_pairs vl in
   let visited = ref TypeSet.empty in
   let rec occur t =
@@ -2072,7 +2072,7 @@ let univars_escape env univar_pairs vl ty =
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
           begin try
-            let td = Env.find_type p env in
+            let td = Env.find_type (Path.subst id_pairs p) env in
             List.iter2
               (* see occur_univar *)
               (fun t v -> if not Variance.(eq v null) then occur t)
@@ -2087,7 +2087,7 @@ let univars_escape env univar_pairs vl ty =
   occur ty
 
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
-let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
+let enter_poly env id_pairs1 id_pairs2 univar_pairs t1 tl1 t2 tl2 f =
   let old_univars = !univar_pairs in
   let known_univars =
     List.fold_left (fun s (cl,_) -> add_univars s cl)
@@ -2095,9 +2095,9 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
   in
   let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
   if List.exists (fun t -> TypeSet.mem t known_univars) tl1 then
-     univars_escape env old_univars tl1 (newty(Tpoly(t2,tl2)));
+     univars_escape env id_pairs1 old_univars tl1 (newty(Tpoly(t2,tl2)));
   if List.exists (fun t -> TypeSet.mem t known_univars) tl2 then
-    univars_escape env old_univars tl2 (newty(Tpoly(t1,tl1)));
+    univars_escape env id_pairs2 old_univars tl2 (newty(Tpoly(t1,tl1)));
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
@@ -2343,7 +2343,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tpoly (t1, []), Tpoly (t2, [])) ->
             mcomp type_pairs env t1 t2
         | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-            enter_poly env univar_pairs t1 tl1 t2 tl2
+            enter_poly env [] [] univar_pairs t1 tl1 t2 tl2
               (mcomp type_pairs env)
         | (Tunivar _, Tunivar _) ->
             unify_univar t1' t2' !univar_pairs
@@ -2899,7 +2899,7 @@ and unify3 env t1 t1' t2 t2' =
       | (Tpoly (t1, []), Tpoly (t2, [])) ->
           unify env t1 t2
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-          enter_poly !env univar_pairs t1 tl1 t2 tl2 (unify env)
+          enter_poly !env [] [] univar_pairs t1 tl1 t2 tl2 (unify env)
       | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
           begin try
             unify_package !env (unify_list env)
@@ -3420,7 +3420,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               moregen inst_nongen type_pairs env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly env univar_pairs t1 tl1 t2 tl2
+              enter_poly env [] [] univar_pairs t1 tl1 t2 tl2
                 (moregen inst_nongen type_pairs env)
           | (Tunivar _, Tunivar _) ->
               unify_univar t1' t2' !univar_pairs
@@ -3691,7 +3691,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               eqtype rename type_pairs subst env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly env univar_pairs t1 tl1 t2 tl2
+              enter_poly env [] []univar_pairs t1 tl1 t2 tl2
                 (eqtype rename type_pairs subst env)
           | (Tunivar _, Tunivar _) ->
               unify_univar t1' t2' !univar_pairs
@@ -4398,7 +4398,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env trace u1' u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try
-          enter_poly env univar_pairs u1 tl1 u2 tl2
+          enter_poly env [] [] univar_pairs u1 tl1 u2 tl2
             (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
         with Unify _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
