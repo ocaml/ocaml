@@ -35,12 +35,6 @@
 #include "caml/memprof.h"
 #include "caml/eventlog.h"
 
-#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
-#define NATIVE_CODE_AND_NO_NAKED_POINTERS
-#else
-#undef NATIVE_CODE_AND_NO_NAKED_POINTERS
-#endif
-
 #ifdef _MSC_VER
 Caml_inline double fmin(double a, double b) {
   return (a < b) ? a : b;
@@ -152,7 +146,7 @@ static void realloc_gray_vals (void)
 
 void caml_darken (value v, value *p /* not used */)
 {
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#ifdef NO_NAKED_POINTERS
   if (Is_block (v) && !Is_young (v)) {
 #else
   if (Is_block (v) && Is_in_heap (v)) {
@@ -164,7 +158,7 @@ void caml_darken (value v, value *p /* not used */)
       h = Hd_val (v);
       t = Tag_hd (h);
     }
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#ifdef NO_NAKED_POINTERS
     /* We insist that naked pointers to outside the heap point to things that
        look like values with headers coloured black.  This isn't always
        strictly necessary but is essential in certain cases---in particular
@@ -236,7 +230,7 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
 
   child = Field (v, i);
 
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#ifdef NO_NAKED_POINTERS
   if (Is_block (child) && ! Is_young (child)) {
 #else
   if (Is_block (child) && Is_in_heap (child)) {
@@ -270,7 +264,7 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
       child -= Infix_offset_val(child);
       chd = Hd_val(child);
     }
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#ifdef NO_NAKED_POINTERS
     /* See [caml_darken] for a description of this assertion. */
     CAMLassert (Is_in_heap (child) || Is_black_hd (chd));
 #endif
