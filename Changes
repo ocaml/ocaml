@@ -618,6 +618,9 @@ OCaml 4.11
   even if they are at tail position.
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
 
+- #9244: Fix some missing usage warnings
+  (Leo White, review by Florian Angeletti)
+
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
 
