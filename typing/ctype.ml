@@ -872,22 +872,22 @@ let update_scope scope ty =
     (without this constraint, the type system would actually be unsound.)
 *)
 
-let rec update_level env level expand ty =
+let rec update_level env id_pairs level expand ty =
   let ty = repr ty in
   if ty.level > level then begin
     if level < ty.scope then raise (Trace.scope_escape ty);
     match ty.desc with
-      Tconstr(p, _tl, _abbrev) when level < Path.scope p ->
+      Tconstr(p, _tl, _abbrev) when level < Path.scope_subst id_pairs p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          link_type ty (!forward_try_expand_once env [] ty);
-          update_level env level expand ty
+          link_type ty (!forward_try_expand_once env id_pairs ty);
+          update_level env id_pairs level expand ty
         with Cannot_expand ->
           raise Trace.(Unify [escape(Constructor p)])
         end
     | Tconstr(p, (_ :: _ as tl), _) ->
         let variance =
-          try (Env.find_type p env).type_variance
+          try (Env.find_type (Path.subst id_pairs p) env).type_variance
           with Not_found -> List.map (fun _ -> Variance.unknown) tl in
         let needs_expand =
           expand ||
@@ -897,50 +897,54 @@ let rec update_level env level expand ty =
         in
         begin try
           if not needs_expand then raise Cannot_expand;
-          link_type ty (!forward_try_expand_once env [] ty);
-          update_level env level expand ty
+          link_type ty (!forward_try_expand_once env id_pairs ty);
+          update_level env id_pairs level expand ty
         with Cannot_expand ->
           set_level ty level;
-          iter_type_expr (update_level env level expand) ty
+          iter_type_expr (update_level env id_pairs level expand) ty
         end
-    | Tpackage (p, nl, tl) when level < Path.scope p ->
-        let p' = normalize_package_path env p in
+    | Tpackage (p, nl, tl) when level < Path.scope_subst id_pairs p ->
+        let p' =
+          p |> Path.subst id_pairs
+            |> normalize_package_path env
+            |> Path.unsubst id_pairs
+        in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
         set_type_desc ty (Tpackage (p', nl, tl));
-        update_level env level expand ty
+        update_level env id_pairs level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
-      when level < Path.scope p ->
+      when level < Path.scope_subst id_pairs p ->
         set_name nm None;
-        update_level env level expand ty
+        update_level env id_pairs level expand ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
-        | Some (p, _tl) when level < Path.scope p ->
+        | Some (p, _tl) when level < Path.scope_subst id_pairs p ->
             set_type_desc ty (Tvariant {row with row_name = None})
         | _ -> ()
         end;
         set_level ty level;
-        iter_type_expr (update_level env level expand) ty
+        iter_type_expr (update_level env id_pairs level expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && (repr ty1).level > level ->
         raise Trace.(Unify [escape Self])
     | _ ->
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level expand) ty
+        iter_type_expr (update_level env id_pairs level expand) ty
   end
 
 (* First try without expanding, then expand everything,
    to avoid combinatorial blow-up *)
-let update_level env level ty =
+let update_level env id_pairs level ty =
   let ty = repr ty in
   if ty.level > level then begin
     let snap = snapshot () in
     try
-      update_level env level false ty
+      update_level env id_pairs level false ty
     with Unify _ ->
       backtrack snap;
-      update_level env level true ty
+      update_level env id_pairs level true ty
   end
 
 (* Lower level of type variables inside contravariant branches *)
@@ -1628,7 +1632,7 @@ let expand_abbrev_gen kind find_type_expansion env id_pairs ty =
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
           if level <> generic_level then
             begin try
-              update_level env level ty'
+              update_level env id_pairs level ty'
             with Unify _ ->
               (* XXX This should not happen.
                  However, levels are not correctly restored after a
@@ -2600,7 +2604,7 @@ let unify1_var env t1 t2 =
   let d1 = t1.desc in
   link_type t1 t2;
   try
-    update_level env t1.level t2;
+    update_level env [] t1.level t2;
     update_scope t1.scope t2
   with Unify _ as e ->
     Private_type_expr.set_desc t1 d1;
@@ -2677,7 +2681,7 @@ let rec unify (env:Env.t ref) t1 t2 =
           unify1_var !env t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
-        update_level !env t1.level t2;
+        update_level !env [] t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
@@ -2687,7 +2691,7 @@ let rec unify (env:Env.t ref) t1 t2 =
                when any of the types has a cached expansion. *)
             && not (has_cached_expansion p1 !a1
                  || has_cached_expansion p2 !a2) ->
-        update_level !env t1.level t2;
+        update_level !env [] t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
@@ -2719,8 +2723,8 @@ and unify2 env t1 t2 =
   let t2' = expand_head_unif !env [] t2 in
   let lv = min t1'.level t2'.level in
   let scope = max t1'.scope t2'.scope in
-  update_level !env lv t2;
-  update_level !env lv t1;
+  update_level !env [] lv t2;
+  update_level !env [] lv t1;
   update_scope scope t2;
   update_scope scope t1;
   if unify_eq t1' t2' then () else
@@ -2951,7 +2955,7 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
         unify_kind k1 k2;
         try
           if !trace_gadt_instances then begin
-            update_level !env va.level t1;
+            update_level !env [] va.level t1;
             update_scope va.scope t1
           end;
           unify env t1 t2
@@ -3046,13 +3050,13 @@ and unify_row env row1 row2 =
     let rm = row_more row in
     (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
     if !trace_gadt_instances then
-      update_level !env rm.level (newgenty (Tvariant row));
+      update_level !env [] rm.level (newgenty (Tvariant row));
     if row_fixed row then
       if more == rm then () else
       if is_Tvar rm then link_type rm more else unify env rm more
     else
       let ty = newgenty (Tvariant {row0 with row_fields = rest}) in
-      update_level !env rm.level ty;
+      update_level !env [] rm.level ty;
       update_scope rm.scope ty;
       link_type rm ty
   in
@@ -3129,12 +3133,12 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       (* Is this handling of levels really principal? *)
       List.iter (fun ty ->
         let rm = repr rm2 in
-        update_level !env rm.level ty;
+        update_level !env [] rm.level ty;
         update_scope rm.scope ty;
       ) tl1';
       List.iter (fun ty ->
         let rm = repr rm1 in
-        update_level !env rm.level ty;
+        update_level !env [] rm.level ty;
         update_scope rm.scope ty;
       ) tl2';
       let e = ref None in
@@ -3150,7 +3154,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed first (fun () ->
           set_row_field e1 f2;
           let rm = repr rm1 in
-          update_level !env rm.level t2;
+          update_level !env [] rm.level t2;
           update_scope rm.scope t2;
           (try List.iter (fun t1 -> unify env t1 t2) tl
            with exn -> e1 := None; raise exn)
@@ -3159,7 +3163,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed second (fun () ->
           set_row_field e2 f1;
           let rm = repr rm2 in
-          update_level !env rm.level t1;
+          update_level !env [] rm.level t1;
           update_scope rm.scope t1;
           (try List.iter (unify env t1) tl
            with exn -> e2 := None; raise exn)
@@ -3207,7 +3211,7 @@ let unify_var env t1 t2 =
       let reset_tracing = check_trace_gadt_instances env in
       begin try
         occur env t1 t2;
-        update_level env t1.level t2;
+        update_level env [] t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
@@ -3294,7 +3298,7 @@ let filter_method env name priv ty =
     Tvar _ ->
       let ty1 = newvar () in
       let ty' = newobj ty1 in
-      update_level env ty.level ty';
+      update_level env [] ty.level ty';
       update_scope ty.scope ty';
       link_type ty ty';
       filter_method_field env name priv ty1
@@ -3338,7 +3342,7 @@ let moregen_occur env level ty =
   end;
   (* also check for free univars *)
   occur_univar env ty;
-  update_level env level ty
+  update_level env [] level ty
 
 let may_instantiate inst_nongen t1 =
   if inst_nongen then t1.level <> generic_level - 1
