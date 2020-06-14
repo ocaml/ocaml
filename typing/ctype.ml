@@ -813,7 +813,7 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s))
       | _ -> p
 
-let rec check_scope_escape env level ty =
+let rec check_scope_escape env id_pairs level ty =
   let mark ty =
     (* Mark visited types with [ty.level < lowest_level]. *)
     set_level ty (lowest_level - 1)
@@ -826,30 +826,34 @@ let rec check_scope_escape env level ty =
     if level < ty.scope then
       raise(Trace.scope_escape ty);
     begin match ty.desc with
-    | Tconstr (p, _, _) when level < Path.scope p ->
-        begin match !forward_try_expand_once env [] ty with
+    | Tconstr (p, _, _) when level < Path.scope_subst id_pairs p ->
+        begin match !forward_try_expand_once env id_pairs ty with
         | ty' ->
             mark ty;
-            check_scope_escape env level ty'
+            check_scope_escape env id_pairs level ty'
         | exception Cannot_expand ->
             raise Trace.(Unify [escape (Constructor p)])
         end
-    | Tpackage (p, nl, tl) when level < Path.scope p ->
-        let p' = normalize_package_path env p in
+    | Tpackage (p, nl, tl) when level < Path.scope_subst id_pairs p ->
+        let p' =
+          p |> Path.subst id_pairs
+            |> normalize_package_path env
+            |> Path.unsubst id_pairs
+        in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
         let orig_level = ty.level in
         mark ty;
-        check_scope_escape env level
+        check_scope_escape env id_pairs level
           (Btype.newty2 orig_level (Tpackage (p', nl, tl)))
     | _ ->
       mark ty;
-      iter_type_expr (check_scope_escape env level) ty
+      iter_type_expr (check_scope_escape env id_pairs level) ty
     end;
   end
 
 let check_scope_escape env level ty =
   let snap = snapshot () in
-  try check_scope_escape env level ty; backtrack snap
+  try check_scope_escape env [] level ty; backtrack snap
   with Unify [Trace.Escape x] ->
     backtrack snap;
     raise Trace.(Unify[Escape { x with context = Some ty }])
