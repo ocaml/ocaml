@@ -14,7 +14,7 @@
   compile_only = "true"
   flags="-bin-annot"
   module="cmis_on_file_system.ml"
-  ****** compare-native-programs
+  ****** compare-binary-files
   program="cmis_on_file_system.cmt"
   program2="lone.cmt"
 *)

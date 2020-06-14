@@ -904,10 +904,10 @@ let compare_bytecode_programs =
       "compare-bytecode-programs"
       compare_bytecode_programs_code)
 
-let compare_native_programs =
+let compare_binary_files =
   native_action
     (Actions.make
-      "compare-native-programs"
+      "compare-binary-files"
       (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
 
 let compile_module compiler compilername compileroutput log env
@@ -1385,7 +1385,7 @@ let _ =
     check_ocamlopt_opt_output;
     run_expect;
     compare_bytecode_programs;
-    compare_native_programs;
+    compare_binary_files;
     setup_ocaml_build_env;
     ocaml;
     check_ocaml_output;
