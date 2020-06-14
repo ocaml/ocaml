@@ -1262,6 +1262,9 @@ let rec copy ?partial ?keep_names scope id_pairs ty =
       end;
     t
 
+let copy' ?partial ?keep_names scope id_pairs ty =
+  copy ?partial ?keep_names scope id_pairs ty
+
 let copy ?partial ?keep_names scope ty = copy ?partial ?keep_names scope [] ty
 
 (**** Variants of instantiations ****)
@@ -1442,14 +1445,16 @@ let delayed_copy = ref []
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
-let rec copy_sep cleanup_scope fixed free bound visited ty =
+let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
   let ty = repr ty in
   let univars = free ty in
   if TypeSet.is_empty univars then
     if ty.level <> generic_level then ty else
     let t = newvar () in
     delayed_copy :=
-      lazy (Private_type_expr.set_desc t (Tlink (copy cleanup_scope ty)))
+      lazy
+        (Private_type_expr.set_desc t
+          (Tlink (copy' cleanup_scope id_pairs ty)))
       :: !delayed_copy;
     t
   else try
@@ -1476,9 +1481,9 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           let more = repr row.row_more in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && more.level <> generic_level in
-          let more' = copy_rec more in
+          let more' = copy_rec id_pairs more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
-          let row = copy_row copy_rec fixed' row keep more' in
+          let row = copy_row (copy_rec id_pairs) fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl = List.map repr tl in
@@ -1486,8 +1491,9 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
-          Tpoly (copy_sep cleanup_scope fixed free bound visited t1, tl')
-      | _ -> copy_type_desc copy_rec [] ty.desc
+          Tpoly
+            (copy_sep cleanup_scope fixed free bound visited id_pairs t1, tl')
+      | _ -> copy_type_desc (copy_rec id_pairs) id_pairs ty.desc
       end;
     t
   end
@@ -1503,7 +1509,9 @@ let instance_poly' cleanup_scope ~keep_names fixed univars sch =
   let vars = List.map copy_var univars in
   let pairs = List.map2 (fun u v -> u, (v, [])) univars vars in
   delayed_copy := [];
-  let ty = copy_sep cleanup_scope fixed (compute_univars sch) [] pairs sch in
+  let ty =
+    copy_sep cleanup_scope fixed (compute_univars sch) [] pairs [] sch
+  in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
