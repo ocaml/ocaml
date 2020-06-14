@@ -1848,23 +1848,23 @@ let is_contractive env p =
 
 exception Occur
 
-let rec occur_rec env allow_recursive visited ty0 = function
+let rec occur_rec env id_pairs allow_recursive visited ty0 = function
   | {desc=Tlink ty} ->
-      occur_rec env allow_recursive visited ty0 ty
+      occur_rec env id_pairs allow_recursive visited ty0 ty
   | ty ->
   if ty == ty0  then raise Occur;
   match ty.desc with
     Tconstr(p, _tl, _abbrev) ->
-      if allow_recursive && is_contractive env p then () else
-      begin try
+      if allow_recursive && is_contractive env (Path.subst id_pairs p) then ()
+      else begin try
         if TypeSet.mem ty visited then raise Occur;
         let visited = TypeSet.add ty visited in
-        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
+        iter_type_expr (occur_rec env id_pairs allow_recursive visited ty0) ty
       with Occur -> try
-        let ty' = try_expand_head try_expand_once env [] ty in
+        let ty' = try_expand_head try_expand_once env id_pairs ty in
         (* This call used to be inlined, but there seems no reason for it.
            Message was referring to change in rev. 1.58 of the CVS repo. *)
-        occur_rec env allow_recursive visited ty0 ty'
+        occur_rec env id_pairs allow_recursive visited ty0 ty'
       with Cannot_expand ->
         raise Occur
       end
@@ -1873,21 +1873,21 @@ let rec occur_rec env allow_recursive visited ty0 = function
   | _ ->
       if allow_recursive ||  TypeSet.mem ty visited then () else begin
         let visited = TypeSet.add ty visited in
-        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
+        iter_type_expr (occur_rec env id_pairs allow_recursive visited ty0) ty
       end
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
 let merge r b = if b then r := true
 
-let occur env ty0 ty =
+let occur env id_pairs ty0 ty =
   let allow_recursive =
     !Clflags.recursive_types || !umode = Pattern && !allow_recursive_equation in
   let old = !type_changed in
   try
     while
       type_changed := false;
-      occur_rec env allow_recursive TypeSet.empty ty0 ty;
+      occur_rec env id_pairs allow_recursive TypeSet.empty ty0 ty;
       !type_changed
     do () (* prerr_endline "changed" *) done;
     merge type_changed old
@@ -1898,7 +1898,7 @@ let occur env ty0 ty =
     | _ -> raise exn
 
 let occur_in env ty0 t =
-  try occur env ty0 t; false with Unify _ -> true
+  try occur env [] ty0 t; false with Unify _ -> true
 
 (* Check that a local constraint is well-founded *)
 (* PR#6405: not needed since we allow recursion and work on normalized types *)
@@ -2605,7 +2605,7 @@ let unify_eq t1 t2 =
 
 let unify1_var env t1 t2 =
   assert (is_Tvar t1);
-  occur env t1 t2;
+  occur env [] t1 t2;
   occur_univar env t2;
   let d1 = t1.desc in
   link_type t1 t2;
@@ -2624,7 +2624,7 @@ let record_equation t1 t2 =
 
 (* Called from unify3 *)
 let unify3_var env t1' t2 t2' =
-  occur !env t1' t2;
+  occur !env [] t1' t2;
   try
     occur_univar !env t2;
     link_type t1' t2;
@@ -2770,7 +2770,7 @@ and unify3 env t1 t1' t2 t2' =
   | _ ->
     begin match !umode with
     | Expression ->
-        occur !env t1' t2';
+        occur !env [] t1' t2';
         if is_self_type d1 (* PR#7711: do not abbreviate self type *)
         then link_type t1' t2'
         else link_type t1' t2
@@ -3216,7 +3216,7 @@ let unify_var env id_pairs t1 t2 =
   | Tvar _, _ ->
       let reset_tracing = check_trace_gadt_instances env in
       begin try
-        occur env t1 t2;
+        occur env id_pairs t1 t2;
         update_level env id_pairs t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2;
@@ -3367,7 +3367,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
       (Tvar _, _) when may_instantiate inst_nongen t1 ->
         moregen_occur env t1.level t2;
         update_scope t1.scope t2;
-        occur env t1 t2;
+        occur env [] t1 t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
