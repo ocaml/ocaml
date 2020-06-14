@@ -3715,7 +3715,7 @@ let normalize_subst subst =
       !subst
   then subst := List.map (fun (t1,t2) -> repr t1, repr t2) !subst
 
-let rec eqtype rename type_pairs subst env t1 t2 =
+let rec eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -3731,11 +3731,12 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           if List.exists (fun (_, t) -> t == t2) !subst then raise (Unify []);
           subst := (t1, t2) :: !subst
         end
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+    | (Tconstr (p1, [], _), Tconstr (p2, [], _))
+      when Path.same_subst id_pairs1 id_pairs2 p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_rigid env [] t1 in
-        let t2' = expand_head_rigid env [] t2 in
+        let t1' = expand_head_rigid env id_pairs1 t1 in
+        let t2' = expand_head_rigid env id_pairs2 t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -3755,32 +3756,39 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               end
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
-              eqtype rename type_pairs subst env t1 t2;
-              eqtype rename type_pairs subst env u1 u2;
+              eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2;
+              eqtype rename type_pairs subst env id_pairs1 id_pairs2 u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
-              eqtype_list rename type_pairs subst env tl1 tl2
+              eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1
+                tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
-              eqtype_list rename type_pairs subst env tl1 tl2
+              eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1
+                tl2
           | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
               begin try
-                unify_package env (eqtype_list rename type_pairs subst env)
-                  t1'.level p1 n1 tl1 t2'.level p2 n2 tl2
+                unify_package env
+                  (eqtype_list rename type_pairs subst env id_pairs1 id_pairs2)
+                  t1'.level (Path.subst id_pairs1 p1) n1 tl1
+                  t2'.level (Path.subst id_pairs2 p2) n2 tl2
               with Not_found -> raise (Unify [])
               end
           | (Tvariant row1, Tvariant row2) ->
-              eqtype_row rename type_pairs subst env row1 row2
+              eqtype_row rename type_pairs subst env id_pairs1 id_pairs2 row1
+                row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              eqtype_fields rename type_pairs subst env fi1 fi2
+              eqtype_fields rename type_pairs subst env id_pairs1 id_pairs2 fi1
+                fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
-              eqtype_fields rename type_pairs subst env t1' t2'
+              eqtype_fields rename type_pairs subst env id_pairs1 id_pairs2 t1'
+                t2'
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              eqtype rename type_pairs subst env t1 t2
+              eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly env [] []univar_pairs t1 tl1 t2 tl2
-                (eqtype rename type_pairs subst env)
+              enter_poly env id_pairs1 id_pairs2 univar_pairs t1 tl1 t2 tl2
+                (eqtype rename type_pairs subst env id_pairs1 id_pairs2)
           | (Tunivar _, Tunivar _) ->
               unify_univar t1' t2' !univar_pairs
           | (_, _) ->
@@ -3788,12 +3796,12 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         end
   with Unify trace ->  raise ( Unify (Trace.diff t1 t2 :: trace) )
 
-and eqtype_list rename type_pairs subst env tl1 tl2 =
+and eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
     raise (Unify []);
-  List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+  List.iter2 (eqtype rename type_pairs subst env id_pairs1 id_pairs2) tl1 tl2
 
-and eqtype_fields rename type_pairs subst env ty1 ty2 =
+and eqtype_fields rename type_pairs subst env id_pairs1 id_pairs2 ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)
@@ -3803,20 +3811,22 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match expand_head_rigid env [] rest2 with
-    {desc=Tobject(ty2,_)} -> eqtype_fields rename type_pairs subst env ty1 ty2
+  match expand_head_rigid env id_pairs2 rest2 with
+    {desc=Tobject(ty2,_)} ->
+      eqtype_fields rename type_pairs subst env id_pairs1 id_pairs2 ty1 ty2
   | _ ->
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  eqtype rename type_pairs subst env rest1 rest2;
+  eqtype rename type_pairs subst env id_pairs1 id_pairs2 rest1 rest2;
   if (miss1 <> []) || (miss2 <> []) then raise (Unify []);
   List.iter
     (function (n, k1, t1, k2, t2) ->
        eqtype_kind k1 k2;
-       try eqtype rename type_pairs subst env t1 t2 with Unify trace ->
-         let e = Trace.diff
-             (newty (Tfield(n, k1, t1, rest2)))
-             (newty (Tfield(n, k2, t2, rest2))) in
-         raise ( Unify ( e :: trace ) )
+       try eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2 with
+         Unify trace ->
+           let e = Trace.diff
+               (newty (Tfield(n, k1, t1, rest2)))
+               (newty (Tfield(n, k2, t2, rest2))) in
+           raise ( Unify ( e :: trace ) )
     )
     pairs
 
@@ -3828,10 +3838,11 @@ and eqtype_kind k1 k2 =
   | (Fpresent, Fpresent) -> ()
   | _                    -> raise (Unify [])
 
-and eqtype_row rename type_pairs subst env row1 row2 =
+and eqtype_row rename type_pairs subst env id_pairs1 id_pairs2 row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  match expand_head_rigid env [] (row_more row2) with
-    {desc=Tvariant row2} -> eqtype_row rename type_pairs subst env row1 row2
+  match expand_head_rigid env id_pairs2 (row_more row2) with
+    {desc=Tvariant row2} ->
+      eqtype_row rename type_pairs subst env id_pairs1 id_pairs2 row1 row2
   | _ ->
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
@@ -3840,23 +3851,30 @@ and eqtype_row rename type_pairs subst env row1 row2 =
   || filter_row_fields false (r1 @ r2) <> []
   then raise (Unify []);
   if not (static_row row1) then
-    eqtype rename type_pairs subst env row1.row_more row2.row_more;
+    eqtype rename type_pairs subst env id_pairs1 id_pairs2 row1.row_more
+      row2.row_more;
   List.iter
     (fun (_,f1,f2) ->
       match row_field_repr f1, row_field_repr f2 with
         Rpresent(Some t1), Rpresent(Some t2) ->
-          eqtype rename type_pairs subst env t1 t2
+          eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2
       | Reither(c1, [], _, _), Reither(c2, [], _, _) when c1 = c2 ->
           ()
       | Reither(c1, t1::tl1, _, _), Reither(c2, t2::tl2, _, _) when c1 = c2 ->
-          eqtype rename type_pairs subst env t1 t2;
+          eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2;
           if List.length tl1 = List.length tl2 then
             (* if same length allow different types (meaning?) *)
-            List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+            List.iter2 (eqtype rename type_pairs subst env id_pairs1 id_pairs2)
+              tl1 tl2
           else begin
             (* otherwise everything must be equal *)
-            List.iter (eqtype rename type_pairs subst env t1) tl2;
-            List.iter (fun t1 -> eqtype rename type_pairs subst env t1 t2) tl1
+            List.iter
+              (eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1)
+              tl2;
+            List.iter
+              (fun t1 ->
+                eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2)
+              tl1
           end
       | Rpresent None, Rpresent None -> ()
       | Rabsent, Rabsent -> ()
@@ -3864,20 +3882,23 @@ and eqtype_row rename type_pairs subst env row1 row2 =
     pairs
 
 (* Must empty univar_pairs first *)
-let eqtype_list rename type_pairs subst env tl1 tl2 =
+let eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1 tl2 =
   univar_pairs := [];
   let snap = Btype.snapshot () in
   Misc.try_finally
     ~always:(fun () -> backtrack snap)
-    (fun () -> eqtype_list rename type_pairs subst env tl1 tl2)
+    (fun () ->
+      eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1 tl2 )
 
 let eqtype rename type_pairs subst env t1 t2 =
-  eqtype_list rename type_pairs subst env [t1] [t2]
+  eqtype_list rename type_pairs subst env [] [] [t1] [t2]
 
 (* Two modes: with or without renaming of variables *)
-let equal env rename tyl1 tyl2 =
+let equal env rename id_pairs1 id_pairs2 tyl1 tyl2 =
   try
-    eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
+    eqtype_list rename (TypePairs.create 11) (ref []) env id_pairs1 id_pairs2
+      tyl1 tyl2;
+    true
   with
     Unify _ -> false
 
@@ -4734,7 +4755,7 @@ let rec normalize_type_rec visited ty =
                 List.fold_left
                   (fun tyl ty ->
                     if List.exists
-                        (fun ty' -> equal Env.empty false [ty] [ty']) tyl
+                        (fun ty' -> equal Env.empty false [] [] [ty] [ty']) tyl
                     then tyl else ty::tyl)
                   [ty] tyl
               in
@@ -5098,3 +5119,4 @@ let full_expand env ty = full_expand env [] ty
 let mcomp env ty1 ty2 = mcomp env [] [] ty1 ty2
 let unify env ty1 ty2 = unify env [] [] ty1 ty2
 let unify_var env ty1 ty2 = unify_var env [] [] ty1 ty2
+let equal env rename tyl1 tyl2 = equal env rename [] [] tyl1 tyl2
