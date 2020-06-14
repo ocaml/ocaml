@@ -949,7 +949,7 @@ let update_level env id_pairs level ty =
 
 (* Lower level of type variables inside contravariant branches *)
 
-let rec lower_contravariant env var_level visited contra ty =
+let rec lower_contravariant env var_level visited id_pairs contra ty =
   let ty = repr ty in
   let must_visit =
     ty.level > var_level &&
@@ -966,7 +966,7 @@ let rec lower_contravariant env var_level visited contra ty =
     | Tconstr (path, tyl, _abbrev) ->
        let variance, maybe_expand =
          try
-           let typ = Env.find_type path env in
+           let typ = Env.find_type (Path.subst id_pairs path) env in
            typ.type_variance,
            typ.type_kind = Type_abstract
           with Not_found ->
@@ -980,26 +980,26 @@ let rec lower_contravariant env var_level visited contra ty =
               (fun v t ->
                 if v = Variance.null then () else
                   if Variance.(mem May_weak v)
-                  then lower_rec true t
-                  else lower_rec contra t)
+                  then lower_rec id_pairs true t
+                  else lower_rec id_pairs contra t)
               variance tyl in
           if maybe_expand then (* we expand cautiously to avoid missing cmis *)
-            match !forward_try_expand_once env [] ty with
-            | ty -> lower_rec contra ty
+            match !forward_try_expand_once env id_pairs ty with
+            | ty -> lower_rec id_pairs contra ty
             | exception Cannot_expand -> not_expanded ()
           else not_expanded ()
     | Tpackage (_, _, tyl) ->
-        List.iter (lower_rec true) tyl
+        List.iter (lower_rec id_pairs true) tyl
     | Tarrow (_, t1, t2, _) ->
-        lower_rec true t1;
-        lower_rec contra t2
+        lower_rec id_pairs true t1;
+        lower_rec id_pairs contra t2
     | _ ->
-        iter_type_expr (lower_rec contra) ty
+        iter_type_expr (lower_rec id_pairs contra) ty
   end
 
 let lower_contravariant env ty =
   simple_abbrevs := Mnil;
-  lower_contravariant env !nongen_level (Hashtbl.create 7) false ty
+  lower_contravariant env !nongen_level (Hashtbl.create 7) [] false ty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
