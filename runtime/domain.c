@@ -1098,9 +1098,24 @@ void caml_handle_incoming_interrupts()
   caml_plat_unlock(&s->lock);
 }
 
-static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req)
+static void handle_incoming_otherwise_relax (caml_domain_state* domain_state,
+                                             struct interruptor* self)
+{
+  if (Caml_check_gc_interrupt(domain_state)) {
+    caml_plat_lock(&self->lock);
+    handle_incoming(self);
+    caml_plat_unlock(&self->lock);
+  } else {
+    cpu_relax();
+  }
+}
+
+static void caml_wait_interrupt_completed (struct interruptor* self,
+                                           struct interrupt* req)
 {
   int i;
+  caml_domain_state* domain_state = Caml_state;
+
   /* Often, interrupt handlers are fast, so spin for a bit before waiting */
   for (i=0; i<1000; i++) {
     if (atomic_load_acq(&req->completed)) {
@@ -1109,15 +1124,9 @@ static void caml_wait_interrupt_completed(struct interruptor* self, struct inter
     cpu_relax();
   }
 
-  while (!atomic_load_acq(&req->completed)) {
-    if (Caml_check_gc_interrupt(Caml_state)) {
-      caml_plat_lock(&self->lock);
-      handle_incoming(self);
-      caml_plat_unlock(&self->lock);
-    } else {
-      cpu_relax();
-    }
-  }
+  while (!atomic_load_acq(&req->completed))
+    handle_incoming_otherwise_relax(domain_state, self);
+
   return;
 }
 
@@ -1296,13 +1305,7 @@ CAMLprim value caml_ml_domain_yield_until(value t)
 
 CAMLprim value caml_ml_domain_cpu_relax(value t)
 {
-  uintnat interrupts = 0;
-  struct interruptor* s = &domain_self->interruptor;
-  if (Caml_check_gc_interrupt(Caml_state)) {
-    caml_plat_lock(&s->lock);
-    interrupts = handle_incoming(s);
-    caml_plat_unlock(&s->lock);
-  }
-  if (!interrupts) cpu_relax();
+  struct interruptor* self = &domain_self->interruptor;
+  handle_incoming_otherwise_relax (Caml_state, self);
   return Val_unit;
 }
