@@ -198,10 +198,13 @@ val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
+
+type tailcall_attribute =
+  | Should_be_tailcall (* [@tailcall] *)
+  | Default_tailcall (* no [@tailcall] attribute *)
 
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
@@ -296,7 +299,7 @@ and lambda_apply =
   { ap_func : lambda;
     ap_args : lambda list;
     ap_loc : scoped_location;
-    ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
+    ap_tailcall : tailcall_attribute;
     ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
     ap_specialised : specialise_attribute; }
 
@@ -341,6 +344,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
+val const_int : int -> structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
@@ -411,6 +415,12 @@ val default_function_attribute : function_attribute
 val default_stub_attribute : function_attribute
 
 val function_is_curried : lfunction -> bool
+
+val max_arity : unit -> int
+  (** Maximal number of parameters for a function, or in other words,
+      maximal length of the [params] list of a [lfunction] record.
+      This is unlimited ([max_int]) for bytecode, but limited
+      (currently to 126) for native code. *)
 
 (***********************)
 (* For static failures *)

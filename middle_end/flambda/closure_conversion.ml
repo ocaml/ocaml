@@ -137,7 +137,6 @@ let rec declare_const t (const : Lambda.structured_constant)
       Names.const_int64
   | Const_base (Const_nativeint c) ->
     register_const t (Allocated_const (Nativeint c)) Names.const_nativeint
-  | Const_pointer c -> Const (Const_pointer c), Names.const_ptr
   | Const_immstring c ->
     register_const t (Allocated_const (Immutable_string c))
       Names.const_immstring
@@ -162,9 +161,9 @@ let close_const t (const : Lambda.structured_constant)
 
 let lambda_const_bool b : Lambda.structured_constant =
   if b then
-    Const_pointer 1
+    Lambda.const_int 1
   else
-    Const_pointer 0
+    Lambda.const_int 0
 
 let lambda_const_int i : Lambda.structured_constant =
   Const_base (Const_int i)
@@ -226,8 +225,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure)) ~name)
-  | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall = _;
-        ap_inlined; ap_specialised; } ->
+  | Lapply { ap_func; ap_args; ap_loc;
+             ap_tailcall = _; ap_inlined; ap_specialised; } ->
     Lift_code.lifting_helper (close_list t env ap_args)
       ~evaluation_order:`Right_to_left
       ~name:Names.apply_arg
@@ -391,7 +390,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_true = Variable.create Names.const_true in
     let cond = Variable.create Names.cond_sequor in
-    Flambda.create_let const_true (Const (Const_pointer 1))
+    Flambda.create_let const_true (Const (Int 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2], _) ->
@@ -399,7 +398,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_false = Variable.create Names.const_false in
     let cond = Variable.create Names.const_sequand in
-    Flambda.create_let const_false (Const (Const_pointer 0))
+    Flambda.create_let const_false (Const (Int 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
@@ -412,17 +411,17 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       close_let_bound_expression t var env arg
     in
     Flambda.create_let var defining_expr
-      (name_expr (Const (Const_pointer 0)) ~name:Names.unit)
+      (name_expr (Const (Int 0)) ~name:Names.unit)
   | Lprim (Pdirapply, [funct; arg], loc)
   | Lprim (Prevapply, [arg; funct], loc) ->
     let apply : Lambda.lambda_apply =
       { ap_func = funct;
         ap_args = [arg];
         ap_loc = loc;
-        ap_should_be_tailcall = false;
         (* CR-someday lwhite: it would be nice to be able to give
-           inlined attributes to functions applied with the application
+           application attributes to functions applied with the application
            operators. *)
+        ap_tailcall = Default_tailcall;
         ap_inlined = Default_inline;
         ap_specialised = Default_specialise;
       }
@@ -448,7 +447,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         | Ostype_win32 -> lambda_const_bool (String.equal Sys.os_type "Win32")
         | Ostype_cygwin -> lambda_const_bool (String.equal Sys.os_type "Cygwin")
         | Backend_type ->
-            Lambda.Const_pointer 0 (* tag 0 is the same as Native *)
+            Lambda.const_int 0 (* tag 0 is the same as Native *)
         end
       in
       close t env

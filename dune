@@ -59,7 +59,8 @@
    cmi_format persistent_env env type_immediacy
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper cmt_format untypeast includemod
-   typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
+   typetexp patterns printpat parmatch stypes typedecl typeopt rec_check
+   typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
    typedecl_unboxed typedecl_separability cmt2annot
    ; manual update: mli only files

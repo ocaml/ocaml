@@ -115,7 +115,7 @@ Lines 24-26, characters 6-30:
 26 |         | Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(Bar _, Foo _)
+(Foo _, Bar _)
 module Nonexhaustive :
   sig
     type 'a u = C1 : int -> int u | C2 : bool -> bool u
@@ -816,11 +816,10 @@ let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
-Error: This expression has type
-         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
-       but an expression was expected of type
-         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'e | `B ] as 'd) -> 'd
-       The universal variable 'a would escape its scope
+Error: This definition has type
+         'c. ('d, 'c) eq -> ([< `A of 'c & 'f & 'd | `B ] as 'e) -> 'e
+       which is less general than
+         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'h | `B ] as 'g) -> 'g
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =

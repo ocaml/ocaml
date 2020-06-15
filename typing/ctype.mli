@@ -132,8 +132,24 @@ val repr: type_expr -> type_expr
 val object_fields: type_expr -> type_expr
 val flatten_fields:
         type_expr -> (string * field_kind * type_expr) list * type_expr
-        (* Transform a field type into a list of pairs label-type *)
-        (* The fields are sorted *)
+(** Transform a field type into a list of pairs label-type.
+    The fields are sorted.
+
+    Beware of the interaction with GADTs:
+
+    Due to the introduction of object indexes for GADTs, the row variable of
+    an object may now be an expansible type abbreviation.
+    A first consequence is that [flatten_fields] will not completely flatten
+    the object, since the type abbreviation will not be expanded
+    ([flatten_fields] does not receive the current environment).
+    Another consequence is that various functions may be called with the
+    expansion of this type abbreviation, which is a Tfield, e.g. during
+    printing.
+
+    Concrete problems have been fixed, but new bugs may appear in the
+    future. (Test cases were added to typing-gadts/test.ml)
+*)
+
 val associate_fields:
         (string * field_kind * type_expr) list ->
         (string * field_kind * type_expr) list ->
@@ -243,8 +259,6 @@ val unify_gadt:
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
-val with_passive_variants: ('a -> 'b) -> ('a -> 'b)
-        (* Call [f] in passive_variants mode, for exhaustiveness check. *)
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr

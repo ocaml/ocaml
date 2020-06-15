@@ -332,6 +332,10 @@ module type S =
     (** Iterate on the whole map, in ascending order of keys
         @since 4.07 *)
 
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
+    (** Iterate on the whole map, in descending order of keys
+        @since 4.12 *)
+
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     (** [to_seq_from k m] iterates on a subset of the bindings of [m],
         in ascending order of keys, from key [k] or above.

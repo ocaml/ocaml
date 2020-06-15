@@ -287,11 +287,18 @@ and value_kind =
 
 module Variance : sig
   type t
-  type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
-  val null : t                          (* no occurrence *)
-  val full : t                          (* strictly invariant *)
-  val covariant : t                     (* strictly covariant *)
-  val may_inv : t                       (* maybe invariant *)
+  type f =
+      May_pos                (* allow positive occurrences *)
+    | May_neg                (* allow negative occurrences *)
+    | May_weak               (* allow occurrences under a negative position *)
+    | Inj                    (* type is injective in this parameter *)
+    | Pos                    (* there is a positive occurrence *)
+    | Neg                    (* there is a negative occurrence *)
+    | Inv                    (* both negative and positive occurrences *)
+  val null : t               (* no occurrence *)
+  val full : t               (* strictly invariant (all flags) *)
+  val covariant : t          (* strictly covariant (May_pos, Pos and Inj) *)
+  val may_inv : t            (* allow both positive and negative occurrences *)
   val union  : t -> t -> t
   val inter  : t -> t -> t
   val subset : t -> t -> bool

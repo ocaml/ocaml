@@ -60,6 +60,7 @@ the above 4 modules \\
 "Lazy" & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects
 from being garbage-collected \\
+"Atomic" & p.~\pageref{Atomic} & atomic references (for compatibility with concurrent runtimes) \\
 "Ephemeron" & p.~\pageref{Ephemeron} & ephemerons and weak hash tables \\
 "Bigarray" & p.~\pageref{Bigarray} & large, multi-dimensional, numerical arrays
 \end{tabular}
@@ -110,6 +111,7 @@ be called from C \\
 \item \ahref{libref/Arg.html}{Module \texttt{Arg}: parsing of command line arguments}
 \item \ahref{libref/Array.html}{Module \texttt{Array}: array operations}
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
+\item \ahref{libref/Atomic.html}{Module \texttt{Atomic}: atomic references}
 \item \ahref{libref/Bigarray.html}{Module \texttt{Bigarray}: large, multi-dimensional, numerical arrays}
 \item \ahref{libref/Bool.html}{Module \texttt{Bool}: boolean values}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
@@ -165,6 +167,7 @@ be called from C \\
 \input{Arg.tex}
 \input{Array.tex}
 \input{ArrayLabels.tex}
+\input{Atomic.tex}
 \input{Bigarray.tex}
 \input{Bool.tex}
 \input{Buffer.tex}

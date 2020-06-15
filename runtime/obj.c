@@ -31,23 +31,6 @@
 #include "caml/signals.h"
 #include "caml/spacetime.h"
 
-/* [size] is a value encoding a number of bytes */
-CAMLprim value caml_static_alloc(value size)
-{
-  return (value) caml_stat_alloc((asize_t) Long_val(size));
-}
-
-CAMLprim value caml_static_free(value blk)
-{
-  caml_stat_free((void *) blk);
-  return Val_unit;
-}
-
-CAMLprim value caml_static_resize(value blk, value new_size)
-{
-  return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
-}
-
 /* unused since GPR#427 */
 CAMLprim value caml_obj_is_block(value arg)
 {
@@ -70,6 +53,18 @@ CAMLprim value caml_obj_tag(value arg)
 CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
+  return Val_unit;
+}
+
+CAMLprim value caml_obj_raw_field(value arg, value pos)
+{
+  /* Represent field contents as a native integer */
+  return caml_copy_nativeint((intnat) Field(arg, Long_val(pos)));
+}
+
+CAMLprim value caml_obj_set_raw_field(value arg, value pos, value bits)
+{
+  Field(arg, Long_val(pos)) = (value) Nativeint_val(bits);
   return Val_unit;
 }
 

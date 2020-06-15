@@ -28,7 +28,7 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_module_unavailable of modname
+  | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
 
 exception Error of error
@@ -86,17 +86,17 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-let missing_globals = ref Ident.Set.empty
+let missing_globals = ref Ident.Map.empty
 
 let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      Ident.Set.mem id !missing_globals
+      Ident.Map.mem id !missing_globals
   | _ -> false
 
 let add_required compunit =
   let add id =
-    missing_globals := Ident.Set.add id !missing_globals
+    missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
   in
   List.iter add (Symtable.required_globals compunit.cu_reloc);
   List.iter add compunit.cu_required_globals
@@ -104,7 +104,7 @@ let add_required compunit =
 let remove_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      missing_globals := Ident.Set.remove id !missing_globals
+      missing_globals := Ident.Map.remove id !missing_globals
   | _ -> ()
 
 let scan_file obj_name tolink =
@@ -614,12 +614,13 @@ let link objfiles output_name =
   in
   let tolink = List.fold_right scan_file objfiles [] in
   let missing_modules =
-    Ident.Set.filter (fun id -> not (Ident.is_predef id)) !missing_globals
+    Ident.Map.filter (fun id _ -> not (Ident.is_predef id)) !missing_globals
   in
   begin
-    match Ident.Set.elements missing_modules with
+    match Ident.Map.bindings missing_modules with
     | [] -> ()
-    | id :: _ -> raise (Error (Required_module_unavailable (Ident.name id)))
+    | (id, cu_name) :: _ ->
+        raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
@@ -751,8 +752,8 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
-  | Required_module_unavailable s ->
-      fprintf ppf "Required module `%s' is unavailable" s
+  | Required_module_unavailable (s, m) ->
+      fprintf ppf "Module `%s' is unavailable (required by `%s')" s m
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %s: %s" header msg
 
@@ -767,7 +768,7 @@ let reset () =
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := [];
-  missing_globals := Ident.Set.empty;
+  missing_globals := Ident.Map.empty;
   Consistbl.clear crc_interfaces;
   implementations_defined := [];
   debug_info := [];

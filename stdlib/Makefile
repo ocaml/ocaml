@@ -34,7 +34,8 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 include StdlibModules
 
 OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))
-OTHERS=$(filter-out camlinternalFormatBasics.cmo stdlib.cmo,$(OBJS))
+NOSTDLIB= camlinternalFormatBasics.cmo camlinternalAtomic.cmo stdlib.cmo
+OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 UNPREFIXED_OBJS=$(PREFIXED_OBJS:stdlib__%.cmo=%)
@@ -54,17 +55,8 @@ endif
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
-LEGACY_OBJS=$(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", \
-                                  $(filter stdlib__%,$(OBJS)))
 .PHONY: install
 install::
-# Transitional: when upgrading from 4.06 -> 4.07, module M is in stdlib__m.cm*,
-# while previously it was in m.cm*, which confuses the compiler.
-	rm -f $(LEGACY_OBJS)
-# Remove "old" pervasives.* and bigarray.* to avoid getting confused with the
-# Stdlib versions.
-	rm -f "$(INSTALL_LIBDIR)/pervasives.*" "$(INSTALL_LIBDIR)/bigarray.*"
-# End transitional
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
 	  "$(INSTALL_LIBDIR)"

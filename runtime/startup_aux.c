@@ -61,9 +61,9 @@ void caml_init_atom_table(void)
 
   for(i = 0; i < 256; i++) {
 #ifdef NATIVE_CODE
-    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_white);
+    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_black);
 #else
-    caml_atom_table[i] = Make_header(0, i, Caml_white);
+    caml_atom_table[i] = Make_header(0, i, Caml_black);
 #endif
   }
   if (caml_page_table_add(In_static_data,
@@ -135,6 +135,7 @@ void caml_parse_ocamlrunparam(void)
       case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'w': scanmult (opt, &caml_init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
+      case ',': continue;
       }
       while (*opt != '\0'){
         if (*opt++ == ',') break;
@@ -190,7 +191,6 @@ CAMLexport void caml_shutdown(void)
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
   caml_finalise_heap();
-  caml_memprof_shutdown();
   caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();

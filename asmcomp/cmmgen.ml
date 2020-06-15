@@ -178,18 +178,12 @@ let rec expr_size env = function
 let transl_constant dbg = function
   | Uconst_int n ->
       int_const dbg n
-  | Uconst_ptr n ->
-      if n <= max_repr_int && n >= min_repr_int
-      then Cconst_pointer((n lsl 1) + 1, dbg)
-      else Cconst_natpointer
-              (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n,
-               dbg)
   | Uconst_ref (label, _) ->
       Cconst_symbol (label, dbg)
 
 let emit_constant cst cont =
   match cst with
-  | Uconst_int n | Uconst_ptr n ->
+  | Uconst_int n ->
       cint_const n
       :: cont
   | Uconst_ref (sym, _) ->
@@ -379,6 +373,7 @@ let rec transl env e =
       in
       Cconst_symbol (sym, dbg)
   | Uclosure(fundecls, clos_vars) ->
+      let startenv = fundecls_size fundecls in
       let rec transl_fundecls pos = function
           [] ->
             List.map (transl env) clos_vars
@@ -388,16 +383,19 @@ let rec transl env e =
             let without_header =
               if f.arity = 1 || f.arity = 0 then
                 Cconst_symbol (f.label, dbg) ::
-                int_const dbg f.arity ::
+                alloc_closure_info ~arity:f.arity
+                                   ~startenv:(startenv - pos) dbg ::
                 transl_fundecls (pos + 3) rem
               else
                 Cconst_symbol (curry_function_sym f.arity, dbg) ::
-                int_const dbg f.arity ::
+                alloc_closure_info ~arity:f.arity
+                                   ~startenv:(startenv - pos) dbg ::
                 Cconst_symbol (f.label, dbg) ::
                 transl_fundecls (pos + 4) rem
             in
-            if pos = 0 then without_header
-            else (alloc_infix_header pos f.dbg) :: without_header
+            if pos = 0
+            then without_header
+            else alloc_infix_header pos f.dbg :: without_header
       in
       let dbg =
         match fundecls with
@@ -435,7 +433,7 @@ let rec transl env e =
               Cphantom_const_symbol sym
             | Uphantom_read_symbol_field { sym; field; } ->
               Cphantom_read_symbol_field { sym; field; }
-            | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
+            | Uphantom_const (Uconst_int i) ->
               Cphantom_const_int (targetint_const i)
             | Uphantom_var var -> Cphantom_var var
             | Uphantom_read_field { var; field; } ->
@@ -810,8 +808,8 @@ and transl_prim_1 env p arg dbg =
   | Pnot ->
       transl_if env Then_false_else_true
         dbg arg
-        dbg (Cconst_pointer (1, dbg))
-        dbg (Cconst_pointer (3, dbg))
+        dbg (Cconst_int (1, dbg))
+        dbg (Cconst_int (3, dbg))
   (* Test integer/block *)
   | Pisint ->
       tag_int(Cop(Cand, [transl env arg; Cconst_int (1, dbg)], dbg)) dbg
@@ -870,8 +868,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       transl_sequand env Then_true_else_false
         dbg arg1
         dbg' arg2
-        dbg (Cconst_pointer (3, dbg))
-        dbg' (Cconst_pointer (1, dbg))
+        dbg (Cconst_int (3, dbg))
+        dbg' (Cconst_int (1, dbg))
       (* let id = V.create_local "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
@@ -880,8 +878,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
       transl_sequor env Then_true_else_false
         dbg arg1
         dbg' arg2
-        dbg (Cconst_pointer (3, dbg))
-        dbg' (Cconst_pointer (1, dbg))
+        dbg (Cconst_int (3, dbg))
+        dbg' (Cconst_int (1, dbg))
   (* Integer operations *)
   | Paddint ->
       add_int_caml (transl env arg1) (transl env arg2) dbg
@@ -917,21 +915,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pcompare_floats ->
       let a1 = transl_unbox_float dbg env arg1 in
       let a2 = transl_unbox_float dbg env arg2 in
-      let op1 = Cop(Ccmpf(CFgt), [a1; a2], dbg) in
-      let op2 = Cop(Ccmpf(CFlt), [a1; a2], dbg) in
-      let op3 = Cop(Ccmpf(CFeq), [a1; a1], dbg) in
-      let op4 = Cop(Ccmpf(CFeq), [a2; a2], dbg) in
-      (* If both operands a1 and a2 are not NaN, then op3 = op4 = 1,
-         and the result is op1 - op2.
-         If at least one of the operands is NaN,
-         then op1 = op2 = 0, and the result is op3 - op4,
-         which orders NaN before other values.
-         To detect if the operand is NaN, we use the property:
-         for all x, NaN is not equal to x, even if x is NaN.
-         Therefore, op3 is 0 if and only if a1 is NaN,
-         and op4 is 0 if and only if a2 is NaN.
-         See also caml_float_compare_unboxed in runtime/floats.c  *)
-      tag_int (add_int (sub_int op1 op2 dbg) (sub_int op3 op4 dbg) dbg) dbg
+      mk_compare_floats dbg a1 a2
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2) dbg
   (* Float operations *)
@@ -1192,9 +1176,9 @@ and transl_if env (approx : then_else)
       (then_dbg : Debuginfo.t) then_
       (else_dbg : Debuginfo.t) else_ =
   match cond with
-  | Uconst (Uconst_ptr 0) -> else_
-  | Uconst (Uconst_ptr 1) -> then_
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
+  | Uconst (Uconst_int 0) -> else_
+  | Uconst (Uconst_int 1) -> then_
+  | Uifthenelse (arg1, arg2, Uconst (Uconst_int 0)) ->
       (* CR mshinwell: These Debuginfos will flow through from Clambda *)
       let inner_dbg = Debuginfo.none in
       let ifso_dbg = Debuginfo.none in
@@ -1209,7 +1193,7 @@ and transl_if env (approx : then_else)
         inner_dbg arg2
         then_dbg then_
         else_dbg else_
-  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
+  | Uifthenelse (arg1, Uconst (Uconst_int 1), arg2) ->
       let inner_dbg = Debuginfo.none in
       let ifnot_dbg = Debuginfo.none in
       transl_sequor env approx
@@ -1228,13 +1212,13 @@ and transl_if env (approx : then_else)
         dbg arg
         else_dbg else_
         then_dbg then_
-  | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
+  | Uifthenelse (Uconst (Uconst_int 1), ifso, _) ->
       let ifso_dbg = Debuginfo.none in
       transl_if env approx
         ifso_dbg ifso
         then_dbg then_
         else_dbg else_
-  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
+  | Uifthenelse (Uconst (Uconst_int 0), _, ifnot) ->
       let ifnot_dbg = Debuginfo.none in
       transl_if env approx
         ifnot_dbg ifnot
@@ -1334,7 +1318,7 @@ and transl_letrec env bindings cont =
         Clet(id, op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
           init_blocks rem)
     | (id, _exp, RHS_nonrec) :: rem ->
-        Clet (id, Cconst_int (0, dbg), init_blocks rem)
+        Clet (id, Cconst_int (1, dbg), init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
     | (_id, _exp,

@@ -95,18 +95,31 @@ let dump log environment =
 
 (* Initializers *)
 
+type kind = Pre | Post
+
 type env_initializer = out_channel -> t -> t
 
-let (initializers : (string, env_initializer) Hashtbl.t) = Hashtbl.create 10
+type initializers =
+  {
+    pre: (string, env_initializer) Hashtbl.t;
+    post: (string, env_initializer) Hashtbl.t;
+  }
 
-let register_initializer name code = Hashtbl.add initializers name code
+let initializers = {pre = Hashtbl.create 10; post = Hashtbl.create 10}
+
+let get_initializers = function
+  | Pre -> initializers.pre
+  | Post -> initializers.post
+
+let register_initializer kind name code =
+  Hashtbl.add (get_initializers kind) name code
 
 let apply_initializer _log _name code env =
   code _log env
 
-let initialize log env =
+let initialize kind log env =
   let f = apply_initializer log in
-  Hashtbl.fold f initializers env
+  Hashtbl.fold f (get_initializers kind) env
 
 (* Modifiers *)
 

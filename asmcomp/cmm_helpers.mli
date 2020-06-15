@@ -64,11 +64,16 @@ val boxedint32_header : nativeint
 val boxedint64_header : nativeint
 val boxedintnat_header : nativeint
 
+(** Closure info for a closure of given arity and distance to environment *)
+val closure_info : arity:int -> startenv:int -> nativeint
+
 (** Wrappers *)
 val alloc_float_header : Debuginfo.t -> expression
 val alloc_floatarray_header : int -> Debuginfo.t -> expression
 val alloc_closure_header : int -> Debuginfo.t -> expression
 val alloc_infix_header : int -> Debuginfo.t -> expression
+val alloc_closure_info :
+      arity:int -> startenv:int -> Debuginfo.t -> expression
 val alloc_boxedint32_header : Debuginfo.t -> expression
 val alloc_boxedint64_header : Debuginfo.t -> expression
 val alloc_boxedintnat_header : Debuginfo.t -> expression
@@ -153,8 +158,9 @@ val mk_if_then_else :
 (** Boolean negation *)
 val mk_not : Debuginfo.t -> expression -> expression
 
-(** Integer comparison that returns int not bool *)
+(** Integer and float comparison that returns int not bool *)
 val mk_compare_ints : Debuginfo.t -> expression -> expression -> expression
+val mk_compare_floats : Debuginfo.t -> expression -> expression -> expression
 
 (** Loop construction (while true do expr done).
     Used to be represented as Cloop. *)

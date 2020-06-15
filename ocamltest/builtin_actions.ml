@@ -224,7 +224,7 @@ let initialize_test_exit_status_variables _log env =
   ] env
 
 let _ =
-  Environments.register_initializer
+  Environments.register_initializer Environments.Post
     "test_exit_status_variables" initialize_test_exit_status_variables;
   List.iter register
   [

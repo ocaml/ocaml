@@ -20,6 +20,7 @@
 #include "caml/memory.h"
 #include "caml/stack.h"
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/alloc.h"
 #include "caml/intext.h"
 #include "caml/osdeps.h"
@@ -100,7 +101,6 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   CAMLlocal1 (result);
   void *sym,*sym2;
   void* handle = Handle_val(handle_v);
-  struct code_fragment * cf;
 
 #define optsym(n) getsym(handle,unit,n)
   const char *unit;
@@ -128,11 +128,8 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   sym2 = optsym("__code_end");
   if (NULL != sym && NULL != sym2) {
     caml_page_table_add(In_code_area, sym, sym2);
-    cf = caml_stat_alloc(sizeof(struct code_fragment));
-    cf->code_start = (char *) sym;
-    cf->code_end = (char *) sym2;
-    cf->digest_computed = 0;
-    caml_ext_table_add(&caml_code_fragments_table, cf);
+    caml_register_code_fragment((char *) sym, (char *) sym2,
+                                DIGEST_LATER, NULL);
   }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);

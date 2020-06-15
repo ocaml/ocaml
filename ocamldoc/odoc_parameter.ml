@@ -15,8 +15,6 @@
 
 (** Representation and manipulation of method / function / class parameters. *)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 (** Types *)
 
 (** Representation of a simple parameter name *)
@@ -109,7 +107,6 @@ let type_by_name pi name =
 
 (** access to the optional description of a parameter name from an optional info structure.*)
 let desc_from_info_opt info_opt s =
-  print_DEBUG "desc_from_info_opt";
   match info_opt with
     None -> None
   | Some i ->
@@ -119,7 +116,4 @@ let desc_from_info_opt info_opt s =
           try
             Some (List.assoc s i.Odoc_types.i_params)
           with
-            Not_found ->
-              print_DEBUG ("desc_from_info_opt "^s^" not found in\n");
-              List.iter (fun (s, _) -> print_DEBUG s) i.Odoc_types.i_params;
-              None
+            Not_found -> None

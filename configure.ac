@@ -348,6 +348,10 @@ AC_ARG_ENABLE([stdlib-manpages],
   [AS_HELP_STRING([--disable-stdlib-manpages],
     [do not build or install the library man pages])])
 
+AC_ARG_ENABLE([warn-error],
+  [AS_HELP_STRING([--enable-warn-error],
+    [treat C compiler warnings as errors])])
+
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
 
@@ -556,15 +560,20 @@ AS_IF(
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
-    [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
+    [outputobj='-o $(EMPTY)'
+    warn_error_flag=''
+    cc_warnings='-qflag=i:i'], # all warnings enabled
   [msvc-*],
-    [outputobj=-Fo; gcc_warnings=""],
+    [outputobj='-Fo'
+    warn_error_flag='-WX'
+    cc_warnings=''],
   [outputobj='-o $(EMPTY)'
-  gcc_warnings='-Wall -Wdeclaration-after-statement'
-  AS_CASE([AC_PACKAGE_VERSION],
-    [*+dev*],
-      [gcc_warnings="$gcc_warnings -Werror"])
-  ])
+  warn_error_flag='-Werror'
+  cc_warnings='-Wall -Wdeclaration-after-statement'])
+
+AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*],
+    [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
@@ -588,7 +597,7 @@ AS_CASE([$host],
         [AC_MSG_ERROR(m4_normalize([This version of Mingw GCC is too old.
           Please use GCC version 5 or above.]))],
       [gcc-*],
-        [internal_cflags="-Wno-unused $gcc_warnings \
+        [internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
@@ -599,7 +608,7 @@ AS_CASE([$host],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common"],
+      internal_cflags="$cc_warnings -fno-common"],
     [gcc-[[012]]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -612,29 +621,29 @@ AS_CASE([$host],
         Reducing optimization level."]));
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-4-[[234]]],
       # No -fexcess-precision option before GCC 4.5
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-4-*],
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings -fexcess-precision=standard"],
+      internal_cflags="$cc_warnings -fexcess-precision=standard"],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common \
+      internal_cflags="$cc_warnings -fno-common \
 -fexcess-precision=standard"],
     [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD"
+      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
@@ -702,13 +711,13 @@ AS_CASE([$CC,$host],
       mkexedebugflag="-link -g"])
     ostype="Win32"
     toolchain="mingw"
-    mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='-municode'
     SO="dll"],
   [*,*-pc-windows],
     [toolchain=msvc
     ostype="Win32"
-    mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='/ENTRY:wmainCRTStartup'
     AS_CASE([$host],
       [i686-pc-windows], [flexdll_chain=msvc],
@@ -725,6 +734,8 @@ AS_CASE([$CC,$host],
     [mkexe="$mkexe "
      oc_ldflags="-brtl -bexpfull"
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
+  [gcc*,powerpc-*-linux*],
+    [oc_ldflags="-mbss-plt"],
 )
 
 
@@ -852,7 +863,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-      mksharedlib="$CC -shared"
+       AS_CASE([$CC,$host],
+           [gcc*,powerpc-*-linux*], [mksharedlib="$CC -shared -mbss-plt"],
+           [mksharedlib="$CC -shared"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -902,6 +915,9 @@ AS_CASE(["$CC,$host"],
       [internal_cflags="$internal_cflags -fno-tree-vrp"])])
 
 OCAML_CC_SUPPORTS_ALIGNED
+
+## Check whether __attribute__((optimize("tree-vectorize")))) is supported
+OCAML_CC_SUPPORTS_TREE_VECTORIZE
 
 # Configure the native-code compiler
 
@@ -1422,6 +1438,11 @@ AS_CASE([$host],
 
 AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV])])
 
+## setenv and unsetenv
+
+AC_CHECK_FUNC([setenv],
+  [AC_CHECK_FUNC([unsetenv], [AC_DEFINE([HAS_SETENV_UNSETENV])])])
+
 ## newlocale() and <locale.h>
 # Note: the detection fails on msvc so we hardcode the result
 # (should be debugged later)
@@ -1558,6 +1579,12 @@ AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL])])
 ## execvpe
 
 AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
+
+## posix_spawn
+
+AC_CHECK_HEADER([spawn.h],
+  [AC_CHECK_FUNC([posix_spawn],
+    [AC_CHECK_FUNC([posix_spawnp], [AC_DEFINE([HAS_POSIX_SPAWN])])])])
 
 ## ffs or _BitScanForward
 

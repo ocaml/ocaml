@@ -18,7 +18,7 @@
 open Ocamltest_stdlib
 
 class tool
-  ~(name : string -> string)
+  ~(name : string)
   ~(family : string)
   ~(flags : string)
   ~(directory : string)

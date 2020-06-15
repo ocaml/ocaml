@@ -59,6 +59,10 @@ val try_finally :
     for easier debugging.
 *)
 
+val reraise_preserving_backtrace : exn -> (unit -> unit) -> 'a
+(** [reraise_preserving_backtrace e f] is (f (); raise e) except that the
+    current backtrace is preserved, even if [f] uses exceptions internally. *)
+
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
@@ -96,10 +100,6 @@ module Stdlib : sig
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     (** Returns [true] iff the given lists have the same length and content
         with respect to the given equality function. *)
-
-    val find_map : ('a -> 'b option) -> 'a t -> 'b option
-    (** [find_map f l] returns the first evaluation of [f] that returns [Some],
-       or returns None if there is no such element. *)
 
     val some_if_all_elements_are_some : 'a option t -> 'a t option
     (** If all elements of the given list are [Some _] then [Some xs]

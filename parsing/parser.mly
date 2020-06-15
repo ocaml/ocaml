@@ -39,7 +39,7 @@ let ghost_loc (startpos, endpos) = {
   Location.loc_ghost = true;
 }
 
-let mktyp ~loc d = Typ.mk ~loc:(make_loc loc) d
+let mktyp ~loc ?attrs d = Typ.mk ~loc:(make_loc loc) ?attrs d
 let mkpat ~loc d = Pat.mk ~loc:(make_loc loc) d
 let mkexp ~loc d = Exp.mk ~loc:(make_loc loc) d
 let mkmty ~loc ?attrs d = Mty.mk ~loc:(make_loc loc) ?attrs d
@@ -555,9 +555,9 @@ let package_type_of_module_type pmty =
         err pmty.pmty_loc "only 'with type t =' constraints are supported"
   in
   match pmty with
-  | {pmty_desc = Pmty_ident lid} -> (lid, [])
+  | {pmty_desc = Pmty_ident lid} -> (lid, [], pmty.pmty_attributes)
   | {pmty_desc = Pmty_with({pmty_desc = Pmty_ident lid}, cstrs)} ->
-      (lid, List.map map_cstr cstrs)
+      (lid, List.map map_cstr cstrs, pmty.pmty_attributes)
   | _ ->
       err pmty.pmty_loc
         "only module type identifier and 'with type' constraints are supported"
@@ -3315,10 +3315,10 @@ atomic_type:
       { tys }
 ;
 
-%inline package_type:
-    mktyp(module_type
-      { Ptyp_package (package_type_of_module_type $1) })
-      { $1 }
+%inline package_type: module_type
+      { let (lid, cstrs, attrs) = package_type_of_module_type $1 in
+        let descr = Ptyp_package (lid, cstrs) in
+        mktyp ~loc:$sloc ~attrs descr }
 ;
 %inline row_field_list:
   separated_nonempty_llist(BAR, row_field)

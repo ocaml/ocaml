@@ -1486,7 +1486,7 @@ match fun x -> x with x -> x, x;;
 - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
 |}];;
 
-(* PR#6747 *)
+(* PR#6744 *)
 (* ok *)
 let n = object
   method m : 'x 'o. ([< `Foo of 'x] as 'o) -> 'x = fun x -> assert false
@@ -1524,6 +1524,39 @@ Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
          < m : 'a. [< `Foo of int ] -> 'a >
        The universal variable 'x would escape its scope
 |}];;
+(* ok *)
+let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
+  (n : < m : 'b 'r. [< `Foo of 'b & int | `Bar] as 'r >)
+[%%expect{|
+val f :
+  < m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c > ->
+  < m : 'b 'd. [< `Bar | `Foo of 'b & int ] as 'd > = <fun>
+|}]
+(* fail? *)
+let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
+  (n : < m : 'b 'r. [< `Foo of int & 'b | `Bar] as 'r >)
+[%%expect{|
+Line 2, characters 3-4:
+2 |   (n : < m : 'b 'r. [< `Foo of int & 'b | `Bar] as 'r >)
+       ^
+Error: This expression has type
+         < m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >
+       but an expression was expected of type
+         < m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >
+       Types for tag `Foo are incompatible
+|}]
+(* fail? *)
+let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
+  (n : < m : 'b. [< `Foo of 'b & int | `Bar] >)
+[%%expect{|
+Line 1:
+Error: Values do not match:
+         val f :
+           < m : 'a. [< `Bar | `Foo of 'a & int ] as 'c > -> < m : 'b. 'c >
+       is not included in
+         val f :
+           < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
+|}]
 
 (* PR#6171 *)
 let f b (x: 'x) =
@@ -1779,4 +1812,76 @@ class d = object (self) inherit c method n' = self#m () end;;
 class c : object method m : ?x:int -> unit -> int method n : int end
 class d :
   object method m : ?x:int -> unit -> int method n : int method n' : int end
+|}]
+
+(* #1132 *)
+let rec foo : 'a . 'a -> 'd = fun x -> x
+[%%expect{|
+Line 1, characters 30-40:
+1 | let rec foo : 'a . 'a -> 'd = fun x -> x
+                                  ^^^^^^^^^^
+Error: This definition has type 'b -> 'b which is less general than
+         'a. 'a -> 'c
+|}]
+
+(* #7741 *)
+type 'a s = S
+
+class type ['x] c = object
+  method x : 'x list
+end
+[%%expect{|
+type 'a s = S
+class type ['x] c = object method x : 'x list end
+|}]
+
+let x : 'a c = object
+  method x : 'b . 'b s list = [S]
+end
+[%%expect{|
+Lines 1-3, characters 15-3:
+1 | ...............object
+2 |   method x : 'b . 'b s list = [S]
+3 | end
+Error: This expression has type < x : 'b. 'b s list >
+       but an expression was expected of type 'a c
+       The method x has type 'b. 'b s list, but the expected method type was
+       'a list
+       The universal variable 'b would escape its scope
+|}]
+
+type u = < m : 'a. 'a s list * (< m : 'b. 'a s list * 'c > as 'c) >
+type v = < m : 'a. 'a s list * 'c > as 'c
+[%%expect{|
+type u = < m : 'a. 'a s list * (< m : 'a s list * 'b > as 'b) >
+type v = < m : 'a. 'a s list * 'b > as 'b
+|}]
+let f (x : u) = (x : v)
+[%%expect{|
+Line 1, characters 17-18:
+1 | let f (x : u) = (x : v)
+                     ^
+Error: This expression has type u but an expression was expected of type v
+       The method m has type 'a s list * < m : 'b > as 'b,
+       but the expected method type was 'a. 'a s list * < m : 'a. 'b > as 'b
+       The universal variable 'a would escape its scope
+|}]
+
+type 'a s = private int
+[%%expect{|
+type 'a s = private int
+|}]
+let x : 'a c = object
+  method x : 'b . 'b s list = []
+end
+[%%expect{|
+Lines 1-3, characters 15-3:
+1 | ...............object
+2 |   method x : 'b . 'b s list = []
+3 | end
+Error: This expression has type < x : 'b. 'b s list >
+       but an expression was expected of type 'a c
+       The method x has type 'b. 'b s list, but the expected method type was
+       'a list
+       The universal variable 'b would escape its scope
 |}]

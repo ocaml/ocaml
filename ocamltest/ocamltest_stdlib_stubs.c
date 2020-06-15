@@ -42,6 +42,40 @@
 #include <process.h>
 #include <sys/types.h>
 
+// Developer Mode allows the creation of symlinks without elevation - see
+// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
+static BOOL IsDeveloperModeEnabled()
+{
+  HKEY hKey;
+  LSTATUS status;
+  DWORD developerModeRegistryValue, dwordSize = sizeof(DWORD);
+
+  status = RegOpenKeyExW(
+    HKEY_LOCAL_MACHINE,
+    L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock",
+    0,
+    KEY_READ | KEY_WOW64_64KEY,
+    &hKey
+  );
+  if (status != ERROR_SUCCESS) {
+    return FALSE;
+  }
+
+  status = RegQueryValueExW(
+    hKey,
+    L"AllowDevelopmentWithoutDevLicense",
+    NULL,
+    NULL,
+    (LPBYTE)&developerModeRegistryValue,
+    &dwordSize
+  );
+  RegCloseKey(hKey);
+  if (status != ERROR_SUCCESS) {
+    return FALSE;
+  }
+  return developerModeRegistryValue != 0;
+}
+
 #define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
 
 CAMLprim value caml_has_symlink(value unit)
@@ -49,6 +83,10 @@ CAMLprim value caml_has_symlink(value unit)
   CAMLparam1(unit);
   HANDLE hProcess = GetCurrentProcess();
   BOOL result = FALSE;
+
+  if (IsDeveloperModeEnabled()) {
+    CAMLreturn(Val_true);
+  }
 
   if (OpenProcessToken(hProcess, TOKEN_READ, &hProcess)) {
     LUID seCreateSymbolicLinkPrivilege;

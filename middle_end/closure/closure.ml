@@ -237,8 +237,7 @@ let make_const_ref c =
   make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
     Some c))
 let make_const_int n = make_const (Uconst_int n)
-let make_const_ptr n = make_const (Uconst_ptr n)
-let make_const_bool b = make_const_ptr(if b then 1 else 0)
+let make_const_bool b = make_const_int(if b then 1 else 0)
 
 let make_integer_comparison cmp x y =
   let open Clambda_primitives in
@@ -279,7 +278,7 @@ let simplif_arith_prim_pure ~backend fpc p (args, approxs) dbg =
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
   (* int (or enumerated type) *)
-  | [ Value_const(Uconst_int n1 | Uconst_ptr n1) ] ->
+  | [ Value_const(Uconst_int n1) ] ->
       begin match p with
       | Pnot -> make_const_bool (n1 = 0)
       | Pnegint -> make_const_int (- n1)
@@ -293,8 +292,8 @@ let simplif_arith_prim_pure ~backend fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int (or enumerated type), int (or enumerated type) *)
-  | [ Value_const(Uconst_int n1 | Uconst_ptr n1);
-      Value_const(Uconst_int n2 | Uconst_ptr n2) ] ->
+  | [ Value_const(Uconst_int n1);
+      Value_const(Uconst_int n2) ] ->
       begin match p with
       | Psequand -> make_const_bool (n1 <> 0 && n2 <> 0)
       | Psequor -> make_const_bool (n1 <> 0 || n2 <> 0)
@@ -493,7 +492,7 @@ let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
   (* Kind test *)
   | Pisint, _, [a1] ->
       begin match a1 with
-      | Value_const(Uconst_int _ | Uconst_ptr _) -> make_const_bool true
+      | Value_const(Uconst_int _) -> make_const_bool true
       | Value_const(Uconst_ref _) -> make_const_bool false
       | Value_closure _ | Value_tuple _ -> make_const_bool false
       | _ -> (Uprim(p, args, dbg), Value_unknown)
@@ -607,7 +606,7 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
         match sarg with
         | Uconst (Uconst_ref (_,  Some (Uconst_block (tag, _)))) ->
             find_action sw.us_index_blocks sw.us_actions_blocks tag
-        | Uconst (Uconst_ptr tag) ->
+        | Uconst (Uconst_int tag) ->
             find_action sw.us_index_consts sw.us_actions_consts tag
         | _ -> None
       in
@@ -663,7 +662,7 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
                  (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute loc st sb rn u1 with
-        Uconst (Uconst_ptr n) ->
+        Uconst (Uconst_int n) ->
           if n <> 0 then
             substitute loc st sb rn u2
           else
@@ -799,8 +798,7 @@ let direct_apply env fundesc ufunct uargs ~loc ~attribute =
   then app
   else Usequence(ufunct, app)
 
-(* Add [Value_integer] or [Value_constptr] info to the approximation
-   of an application *)
+(* Add [Value_integer] info to the approximation of an application *)
 
 let strengthen_approx appl approx =
   match approx_ulam appl with
@@ -808,7 +806,7 @@ let strengthen_approx appl approx =
       intapprox
   | _ -> approx
 
-(* If a term has approximation Value_integer or Value_constptr and is pure,
+(* If a term has approximation Value_integer and is pure,
    replace it by an integer constant *)
 
 let check_constant_result ulam approx =
@@ -875,7 +873,6 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
         | Const_base(Const_char c) -> Uconst_int (Char.code c)
-        | Const_pointer n -> Uconst_ptr n
         | Const_block (tag, fields) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->
@@ -943,12 +940,14 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
                kind = Curried;
                return = Pgenval;
                params = List.map (fun v -> v, Pgenval) final_args;
-               body = Lapply{ap_should_be_tailcall=false;
-                             ap_loc=loc;
-                             ap_func=(Lvar funct_var);
-                             ap_args=internal_args;
-                             ap_inlined=Default_inline;
-                             ap_specialised=Default_specialise};
+               body = Lapply{
+                 ap_loc=loc;
+                 ap_func=(Lvar funct_var);
+                 ap_args=internal_args;
+                 ap_tailcall=Default_tailcall;
+                 ap_inlined=Default_inline;
+                 ap_specialised=Default_specialise;
+               };
                loc;
                attr = default_function_attribute})
         in
@@ -1057,24 +1056,27 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
         | Backend_type ->
-            make_const_ptr 0 (* tag 0 is the same as Native here *)
+            make_const_int 0 (* tag 0 is the same as Native here *)
       in
       let arg, _approx = close env arg in
       let id = Ident.create_local "dummy" in
       Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
   | Lprim(Pignore, [arg], _loc) ->
-      let expr, approx = make_const_ptr 0 in
+      let expr, approx = make_const_int 0 in
       Usequence(fst (close env arg), expr), approx
   | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
       close env arg
   | Lprim(Pdirapply,[funct;arg], loc)
   | Lprim(Prevapply,[arg;funct], loc) ->
-      close env       (Lapply{ap_should_be_tailcall=false;
-                              ap_loc=loc;
-                              ap_func=funct;
-                              ap_args=[arg];
-                              ap_inlined=Default_inline;
-                              ap_specialised=Default_specialise})
+      close env
+        (Lapply{
+           ap_loc=loc;
+           ap_func=funct;
+           ap_args=[arg];
+           ap_tailcall=Default_tailcall;
+           ap_inlined=Default_inline;
+           ap_specialised=Default_specialise;
+         })
   | Lprim(Pgetglobal id, [], loc) ->
       let dbg = Debuginfo.from_location loc in
       check_constant_result (getglobal dbg id)
@@ -1161,7 +1163,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       (Utrywith(ubody, VP.create id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close env arg with
-        (uarg, Value_const (Uconst_ptr n)) ->
+        (uarg, Value_const (Uconst_int n)) ->
           sequence_constant_expr uarg
             (close env (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
@@ -1435,7 +1437,7 @@ let collect_exported_structured_constants a =
         Compilenv.add_exported_constant s;
         structured_constant c
     | Uconst_ref (_s, None) -> assert false (* Cannot be generated *)
-    | Uconst_int _ | Uconst_ptr _ -> ()
+    | Uconst_int _ -> ()
   and structured_constant = function
     | Uconst_block (_, ul) -> List.iter const ul
     | Uconst_float _ | Uconst_int32 _

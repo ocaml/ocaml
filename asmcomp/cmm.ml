@@ -147,8 +147,6 @@ type expression =
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
-  | Cconst_pointer of int * Debuginfo.t
-  | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
@@ -237,8 +235,6 @@ let iter_shallow_tail f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
   | Cblockheader _
   | Cvar _
   | Cassign _
@@ -276,8 +272,6 @@ let rec map_tail f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
   | Cblockheader _
   | Cvar _
   | Cassign _
@@ -315,8 +309,6 @@ let map_shallow f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cconst_pointer _
-  | Cconst_natpointer _
   | Cblockheader _
   | Cvar _
     as c ->

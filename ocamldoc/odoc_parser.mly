@@ -20,8 +20,6 @@ let uppercase = "[A-Z\192-\214\216-\222]"
 let identchar =
   "[A-Za-z_\192-\214\216-\246\248-\255'0-9]"
 let blank = "[ \010\013\009\012]"
-
-let print_DEBUG s = print_string s; print_newline ()
 %}
 
 %token <string * (string option)> Description
@@ -101,12 +99,9 @@ param:
       | _ :: [] ->
           raise (Failure "usage: @param id description")
       | id :: _ ->
-          print_DEBUG ("Identificator "^id);
           let reg = identchar^"+" in
-          print_DEBUG ("reg="^reg);
           if Str.string_match (Str.regexp reg) id 0 then
             let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
-            print_DEBUG ("T_PARAM Desc remain="^remain);
             let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
             params := !params @ [(id, remain2)]
           else
@@ -135,7 +130,6 @@ before:
       | _ :: [] ->
           raise (Failure "usage: @before version description")
       | id :: _ ->
-          print_DEBUG ("version "^id);
             let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
             let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
             before := !before @ [(id, remain2)]
@@ -154,9 +148,7 @@ raise_exc:
       | _ :: [] ->
           raise (Failure "usage: @raise Exception description")
       | id :: _ ->
-          print_DEBUG ("exception "^id);
           let reg = uppercase^identchar^"*"^"\\(\\."^uppercase^identchar^"*\\)*" in
-          print_DEBUG ("reg="^reg);
           if Str.string_match (Str.regexp reg) id 0 then
             let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
             let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in

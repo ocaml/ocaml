@@ -44,11 +44,8 @@ let blank = "[ \013\009\012]"
 (** The nested comments level. *)
 let comments_level = ref 0
 
-let print_DEBUG2 s = print_string s; print_newline ()
-
 (** This function returns the given string without the leading and trailing blanks.*)
 let remove_blanks s =
-  print_DEBUG2 ("remove_blanks "^s);
   let l = Str.split_delim (Str.regexp "\n") s in
   let l2 =
     let rec iter liste =
@@ -57,7 +54,6 @@ let remove_blanks s =
           let h2 = Str.global_replace (Str.regexp ("^"^blank^"+")) "" h in
           if h2 = "" then
             (
-             print_DEBUG2 (h^" n'a que des blancs");
              (* we remove this line and must remove leading blanks of the next one *)
              iter q
             )
@@ -75,7 +71,6 @@ let remove_blanks s =
           let h2 = Str.global_replace (Str.regexp (blank^"+$")) "" h in
           if h2 = "" then
             (
-             print_DEBUG2 (h^" n'a que des blancs");
              (* we remove this line and must remove trailing blanks of the next one *)
              iter q
             )
@@ -294,7 +289,6 @@ and elements = parse
   | [ '\010' ]
       { incr line_number;
         incr Odoc_comments_global.nb_chars;
-        print_DEBUG2 "newline";
         elements lexbuf }
   | "@"
       {
@@ -306,7 +300,6 @@ and elements = parse
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         let s2 = String.sub s 1 ((String.length s) - 1) in
-        print_DEBUG2 s2;
         match s2 with
           "param" ->
             T_PARAM
@@ -339,7 +332,6 @@ and elements = parse
         let s = Lexing.lexeme lexbuf in
         let s = Str.global_replace (Str.regexp_string "\\@") "@" s in
         let s = remove_blanks s in
-        print_DEBUG2 ("Desc "^s);
         Desc s
       }
   | eof

@@ -49,6 +49,11 @@ let try_finally ?(always=(fun () -> ())) ?(exceptionally=(fun () -> ())) work =
           Printexc.raise_with_backtrace always_exn always_bt
       end
 
+let reraise_preserving_backtrace e f =
+  let bt = Printexc.get_raw_backtrace () in
+  f ();
+  Printexc.raise_with_backtrace e bt
+
 type ref_and_value = R : 'a ref * 'a -> ref_and_value
 
 let protect_refs =
@@ -109,14 +114,6 @@ module Stdlib = struct
       | ([], []) -> true
       | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
       | (_, _) -> false
-
-    let rec find_map f = function
-      | x :: xs ->
-          begin match f x with
-          | None -> find_map f xs
-          | Some _ as y -> y
-          end
-      | [] -> None
 
     let map2_prefix f l1 l2 =
       let rec aux acc l1 l2 =

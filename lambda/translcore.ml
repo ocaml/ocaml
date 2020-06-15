@@ -64,7 +64,7 @@ let transl_extension_constructor ~scopes env path ext =
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
         [Lconst (Const_base (Const_string (name, ext.ext_loc, None)));
-         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
+         Lprim (prim_fresh_oo_id, [Lconst (const_int 0)], loc)],
         loc)
   | Text_rebind(path, _lid) ->
       transl_extension_path loc env path
@@ -259,7 +259,7 @@ and transl_exp0 ~scopes e =
       in
       if extra_args = [] then lam
       else begin
-        let should_be_tailcall, funct =
+        let tailcall, funct =
           Translattribute.get_tailcall_attribute funct
         in
         let inlined, funct =
@@ -270,11 +270,11 @@ and transl_exp0 ~scopes e =
         in
         let e = { e with exp_desc = Texp_apply(funct, oargs) } in
         event_after ~scopes e
-          (transl_apply ~scopes ~should_be_tailcall ~inlined ~specialised
+          (transl_apply ~scopes ~tailcall ~inlined ~specialised
              lam extra_args (of_location ~scopes e.exp_loc))
       end
   | Texp_apply(funct, oargs) ->
-      let should_be_tailcall, funct =
+      let tailcall, funct =
         Translattribute.get_tailcall_attribute funct
       in
       let inlined, funct =
@@ -285,7 +285,7 @@ and transl_exp0 ~scopes e =
       in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after ~scopes e
-        (transl_apply ~scopes ~should_be_tailcall ~inlined ~specialised
+        (transl_apply ~scopes ~tailcall ~inlined ~specialised
            (transl_exp ~scopes funct) oargs (of_location ~scopes e.exp_loc))
   | Texp_match(arg, pat_expr_list, partial) ->
       transl_match ~scopes e arg pat_expr_list partial
@@ -309,7 +309,7 @@ and transl_exp0 ~scopes e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(const_int n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
@@ -332,15 +332,15 @@ and transl_exp0 ~scopes e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(const_int tag)
       | Some arg ->
           let lam = transl_exp ~scopes arg in
           try
-            Lconst(Const_block(0, [Const_base(Const_int tag);
+            Lconst(Const_block(0, [const_int tag;
                                    extract_constant lam]))
           with Not_constant ->
             Lprim(Pmakeblock(0, Immutable, None),
-                  [Lconst(Const_base(Const_int tag)); lam],
+                  [Lconst(const_int tag); lam],
                   of_location ~scopes e.exp_loc)
       end
   | Texp_record {fields; representation; extended_expression} ->
@@ -454,13 +454,15 @@ and transl_exp0 ~scopes e =
       event_after ~scopes e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
       let loc = of_location ~scopes loc in
-      Lapply{ap_should_be_tailcall=false;
-             ap_loc=loc;
-             ap_func=
-               Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
-             ap_args=[lambda_unit];
-             ap_inlined=Default_inline;
-             ap_specialised=Default_specialise}
+      Lapply{
+        ap_loc=loc;
+        ap_func=
+          Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
+        ap_args=[lambda_unit];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      }
   | Texp_instvar(path_self, path, _) ->
       let loc = of_location ~scopes e.exp_loc in
       let self = transl_value_path loc e.exp_env path_self in
@@ -476,12 +478,14 @@ and transl_exp0 ~scopes e =
       let self = transl_value_path loc e.exp_env path_self in
       let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
-           Lapply{ap_should_be_tailcall=false;
-                  ap_loc=Loc_unknown;
-                  ap_func=Translobj.oo_prim "copy";
-                  ap_args=[self];
-                  ap_inlined=Default_inline;
-                  ap_specialised=Default_specialise},
+           Lapply{
+             ap_loc=Loc_unknown;
+             ap_func=Translobj.oo_prim "copy";
+             ap_args=[self];
+             ap_tailcall=Default_tailcall;
+             ap_inlined=Default_inline;
+             ap_specialised=Default_specialise;
+           },
            List.fold_right
              (fun (path, _, expr) rem ->
                let var = transl_value_path loc e.exp_env path in
@@ -648,8 +652,12 @@ and transl_tupled_cases ~scopes patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard ~scopes guard expr))
     patl_expr_list
 
-and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
-      ?(specialised = Default_specialise) lam sargs loc =
+and transl_apply ~scopes
+      ?(tailcall=Default_tailcall)
+      ?(inlined = Default_inline)
+      ?(specialised = Default_specialise)
+      lam sargs loc
+  =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, _) ->
@@ -659,12 +667,14 @@ and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
     | Lapply ap ->
         Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
     | lexp ->
-        Lapply {ap_should_be_tailcall=should_be_tailcall;
-                ap_loc=loc;
-                ap_func=lexp;
-                ap_args=args;
-                ap_inlined=inlined;
-                ap_specialised=specialised;}
+        Lapply {
+          ap_loc=loc;
+          ap_func=lexp;
+          ap_args=args;
+          ap_tailcall=tailcall;
+          ap_inlined=inlined;
+          ap_specialised=specialised;
+        }
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -724,22 +734,24 @@ and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
      : Lambda.lambda)
 
 and transl_function0
-      ~scopes loc return untuplify_fn repr partial (param:Ident.t) cases =
+      ~scopes loc return untuplify_fn max_arity
+      repr partial (param:Ident.t) cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
         partial = partial'; }; exp_env; exp_type} as exp}]
-    when Parmatch.inactive ~partial pat ->
+    when max_arity > 1 && Parmatch.inactive ~partial pat ->
       let kind = value_kind pat.pat_env pat.pat_type in
       let return_kind = function_return_value_kind exp_env exp_type in
       let ((_, params, return), body) =
-        transl_function0 ~scopes exp.exp_loc return_kind false
+        transl_function0 ~scopes exp.exp_loc return_kind false (max_arity - 1)
           repr partial' param' cases
       in
       ((Curried, (param, kind) :: params, return),
        Matching.for_function ~scopes loc None (Lvar param)
          [pat, body] partial)
-  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
+  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
+    when untuplify_fn && List.length pl <= max_arity ->
       begin try
         let size = List.length pl in
         let pats_expr_list =
@@ -800,7 +812,8 @@ and transl_function ~scopes e param cases partial =
       (function repr ->
          let pl = push_defaults e.exp_loc [] cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
-         transl_function0 ~scopes e.exp_loc return_kind !Clflags.native_code
+         transl_function0 ~scopes e.exp_loc return_kind
+           !Clflags.native_code (Lambda.max_arity())
            repr partial param pl)
   in
   let attr = default_function_attribute in
@@ -1073,12 +1086,14 @@ and transl_letop ~scopes loc env let_ ands param case partial =
         let exp = transl_exp ~scopes and_.bop_exp in
         let lam =
           bind Strict right_id exp
-            (Lapply{ap_should_be_tailcall = false;
-                    ap_loc = of_location ~scopes and_.bop_loc;
-                    ap_func = op;
-                    ap_args=[Lvar left_id; Lvar right_id];
-                    ap_inlined=Default_inline;
-                    ap_specialised=Default_specialise})
+            (Lapply{
+               ap_loc = of_location ~scopes and_.bop_loc;
+               ap_func = op;
+               ap_args=[Lvar left_id; Lvar right_id];
+               ap_tailcall = Default_tailcall;
+               ap_inlined = Default_inline;
+               ap_specialised = Default_specialise;
+             })
         in
         bind Strict left_id prev_lam (loop lam rest)
   in
@@ -1093,18 +1108,21 @@ and transl_letop ~scopes loc env let_ ands param case partial =
       event_function ~scopes case.c_rhs
         (function repr ->
            transl_function0 ~scopes case.c_rhs.exp_loc return_kind
-             !Clflags.native_code repr partial param [case])
+             !Clflags.native_code (Lambda.max_arity())
+             repr partial param [case])
     in
     let attr = default_function_attribute in
     let loc = of_location ~scopes case.c_rhs.exp_loc in
     Lfunction{kind; params; return; body; attr; loc}
   in
-  Lapply{ap_should_be_tailcall = false;
-         ap_loc = of_location ~scopes loc;
-         ap_func = op;
-         ap_args=[exp; func];
-         ap_inlined=Default_inline;
-         ap_specialised=Default_specialise}
+  Lapply{
+    ap_loc = of_location ~scopes loc;
+    ap_func = op;
+    ap_args=[exp; func];
+    ap_tailcall = Default_tailcall;
+    ap_inlined = Default_inline;
+    ap_specialised = Default_specialise;
+  }
 
 (* Wrapper for class compilation *)
 

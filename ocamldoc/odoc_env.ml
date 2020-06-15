@@ -15,8 +15,6 @@
 
 (** Environment for finding complete names from relative names. *)
 
-let print_DEBUG s = print_string s ; print_newline ();;
-
 module Name = Odoc_name
 
 (** relative name * complete name *)
@@ -118,17 +116,11 @@ let add_class_type env full_name =
 
 let full_module_name env n =
   try List.assoc n env.env_modules
-  with Not_found ->
-    print_DEBUG ("Module "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_modules;
-    n
+  with Not_found -> n
 
 let full_module_type_name env n =
   try List.assoc n env.env_module_types
-  with Not_found ->
-    print_DEBUG ("Module "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_modules;
-    n
+  with Not_found -> n
 
 let full_module_or_module_type_name env n =
   try List.assoc n env.env_modules
@@ -151,24 +143,15 @@ let full_value_name env n =
 
 let full_extension_constructor_name env n =
   try List.assoc n env.env_extensions
-  with Not_found ->
-    print_DEBUG ("Extension "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_extensions;
-    n
+  with Not_found -> n
 
 let full_class_name env n =
   try List.assoc n env.env_classes
-  with Not_found ->
-    print_DEBUG ("Class "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_classes;
-    n
+  with Not_found -> n
 
 let full_class_type_name env n =
   try List.assoc n env.env_class_types
-  with Not_found ->
-    print_DEBUG ("Class type "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_class_types;
-    n
+  with Not_found -> n
 
 let full_class_or_class_type_name env n =
   try List.assoc n env.env_classes

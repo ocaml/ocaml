@@ -15,7 +15,6 @@
 
 #define CAML_INTERNALS
 
-#include <math.h>
 #include <string.h>
 #include "caml/memprof.h"
 #include "caml/fail.h"
@@ -32,10 +31,11 @@
 #include "caml/printexc.h"
 #include "caml/eventlog.h"
 
-#define MT_STATE_SIZE 624
+#define RAND_BLOCK_SIZE 64
 
-static uint32_t mt_state[MT_STATE_SIZE];
-static uint32_t mt_index;
+static uint32_t xoshiro_state[4][RAND_BLOCK_SIZE];
+static uintnat rand_geom_buff[RAND_BLOCK_SIZE];
+static uint32_t rand_pos;
 
 /* [lambda] is the mean number of samples for each allocated word (including
    block headers). */
@@ -43,9 +43,17 @@ static double lambda = 0;
  /* Precomputed value of [1/log(1-lambda)], for fast sampling of
     geometric distribution.
     Dummy if [lambda = 0]. */
-static double one_log1m_lambda;
+static float one_log1m_lambda;
 
-int caml_memprof_suspended = 0;
+/* [suspended] is used for masking memprof callbacks when
+   a callback is running or when an uncaught exception handler is
+   called. */
+static int suspended = 0;
+
+/* [callback_running] is used to trigger a fatal error whenever
+   [Thread.exit] is called from a callback. */
+static int callback_running = 0;
+
 static intnat callstack_size;
 
 /* accessors for the OCaml type [Gc.Memprof.tracker],
@@ -57,7 +65,6 @@ static intnat callstack_size;
 #define Dealloc_major(tracker) (Field(tracker, 4))
 
 static value tracker;
-
 
 /* Pointer to the word following the next sample in the minor
    heap. Equals [Caml_state->young_alloc_start] if no sampling is planned in
@@ -78,55 +85,124 @@ static intnat callstack_buffer_len = 0;
 
 /**** Statistical sampling ****/
 
-static double mt_generate_uniform(void)
-{
-  int i;
-  uint32_t y;
+Caml_inline uint64_t splitmix64_next(uint64_t* x) {
+  uint64_t z = (*x += 0x9E3779B97F4A7C15ull);
+  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+  z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+  return z ^ (z >> 31);
+}
 
-  /* Mersenne twister PRNG */
-  if (mt_index == MT_STATE_SIZE) {
-    for (i = 0; i < 227; i++) {
-      y = (mt_state[i] & 0x80000000) + (mt_state[i+1] & 0x7fffffff);
-      mt_state[i] = mt_state[i+397] ^ (y >> 1) ^ ((-(y&1)) & 0x9908b0df);
-    }
-    for (i = 227; i < MT_STATE_SIZE - 1; i++) {
-      y = (mt_state[i] & 0x80000000) + (mt_state[i+1] & 0x7fffffff);
-      mt_state[i] = mt_state[i-227] ^ (y >> 1) ^ ((-(y&1)) & 0x9908b0df);
-    }
-    y = (mt_state[MT_STATE_SIZE - 1] & 0x80000000) + (mt_state[0] & 0x7fffffff);
-    mt_state[MT_STATE_SIZE - 1] =
-      mt_state[396] ^ (y >> 1) ^ ((-(y&1)) & 0x9908b0df);
-    mt_index = 0;
+static void xoshiro_init(void) {
+  int i;
+  uint64_t splitmix64_state = 42;
+  rand_pos = RAND_BLOCK_SIZE;
+  for (i = 0; i < RAND_BLOCK_SIZE; i++) {
+    uint64_t t = splitmix64_next(&splitmix64_state);
+    xoshiro_state[0][i] = t & 0xFFFFFFFF;
+    xoshiro_state[1][i] = t >> 32;
+    t = splitmix64_next(&splitmix64_state);
+    xoshiro_state[2][i] = t & 0xFFFFFFFF;
+    xoshiro_state[3][i] = t >> 32;
+  }
+}
+
+Caml_inline uint32_t xoshiro_next(int i) {
+  uint32_t res = xoshiro_state[0][i] + xoshiro_state[3][i];
+  uint32_t t = xoshiro_state[1][i] << 9;
+  xoshiro_state[2][i] ^= xoshiro_state[0][i];
+  xoshiro_state[3][i] ^= xoshiro_state[1][i];
+  xoshiro_state[1][i] ^= xoshiro_state[2][i];
+  xoshiro_state[0][i] ^= xoshiro_state[3][i];
+  xoshiro_state[2][i] ^= t;
+  t = xoshiro_state[3][i];
+  xoshiro_state[3][i] = (t << 11) | (t >> 21);
+  return res;
+}
+
+/* Computes [log((y+0.5)/2^32)], up to a relatively good precision,
+   and guarantee that the result is negative.
+   The average absolute error is very close to 0. */
+Caml_inline float log_approx(uint32_t y) {
+  union { float f; int32_t i; } u;
+  float exp, x;
+  u.f = y + 0.5f;    /* We convert y to a float ... */
+  exp = u.i >> 23;   /* ... of which we extract the exponent ... */
+  u.i = (u.i & 0x7FFFFF) | 0x3F800000;
+  x = u.f;           /* ... and the mantissa. */
+
+  return
+    /* This polynomial computes the logarithm of the mantissa (which
+       is in [1, 2]), up to an additive constant. It is chosen such that :
+       - Its degree is 4.
+       - Its average value is that of log in [1, 2]
+             (the sampling has the right mean when lambda is small).
+       - f(1) = f(2) - log(2) = -159*log(2) - 1e-5
+             (this guarantee that log_approx(y) is always <= -1e-5 < 0).
+       - The maximum of abs(f(x)-log(x)+159*log(2)) is minimized.
+    */
+    x * (2.104659476859f + x * (-0.720478916626f + x * 0.107132064797f))
+
+    /* Then, we add the term corresponding to the exponent, and
+       additive constants. */
+    + (-111.701724334061f + 0.6931471805f*exp);
+}
+
+/* This function regenerates [MT_STATE_SIZE] geometric random
+   variables at once. Doing this by batches help us gain performances:
+   many compilers (e.g., GCC, CLang, ICC) will be able to use SIMD
+   instructions to get a performance boost.
+*/
+#ifdef SUPPORTS_TREE_VECTORIZE
+__attribute__((optimize("tree-vectorize")))
+#endif
+static void rand_batch(void) {
+  int i;
+
+  /* Instead of using temporary buffers, we could use one big loop,
+     but it turns out SIMD optimizations of compilers are more fragile
+     when using larger loops.  */
+  static uint32_t A[RAND_BLOCK_SIZE];
+  static float B[RAND_BLOCK_SIZE];
+
+  CAMLassert(lambda > 0.);
+
+  /* Shuffle the xoshiro samplers, and generate uniform variables in A. */
+  for(i = 0; i < RAND_BLOCK_SIZE; i++)
+    A[i] = xoshiro_next(i);
+
+  /* Generate exponential random variables by computing logarithms. We
+     do not use math.h library functions, which are slow and prevent
+     compiler from using SIMD instructions. */
+  for(i = 0; i < RAND_BLOCK_SIZE; i++)
+    B[i] = 1 + log_approx(A[i]) * one_log1m_lambda;
+
+  /* We do the final flooring for generating geometric
+     variables. Compilers are unlikely to use SIMD instructions for
+     this loop, because it involves a conditional and variables of
+     different sizes (32 and 64 bits). */
+  for(i = 0; i < RAND_BLOCK_SIZE; i++) {
+    double f = B[i];
+    CAMLassert (f >= 1);
+    if(f > Max_long) rand_geom_buff[i] = Max_long;
+    else rand_geom_buff[i] = (uintnat)f;
   }
 
-  y = mt_state[mt_index];
-  y = y ^ (y >> 11);
-  y = y ^ ((y << 7) & 0x9d2c5680);
-  y = y ^ ((y << 15) & 0xefc60000);
-  y = y ^ (y >> 18);
-
-  mt_index++;
-  return y*2.3283064365386962890625e-10 + /* 2^-32 */
-          1.16415321826934814453125e-10; /* 2^-33 */
+  rand_pos = 0;
 }
 
 /* Simulate a geometric variable of parameter [lambda].
    The result is clipped in [1..Max_long] */
-static uintnat mt_generate_geom(void)
+static uintnat rand_geom(void)
 {
-  double res;
+  uintnat res;
   CAMLassert(lambda > 0.);
-  /* We use the float versions of exp/log, since these functions are
-     significantly faster, and we really don't need much precision
-     here. The entropy contained in [next_mt_generate_geom] is anyway
-     bounded by the entropy provided by [mt_generate_uniform], which
-     is 32bits. */
-  res = 1 + logf(mt_generate_uniform()) * one_log1m_lambda;
-  if (res > Max_long) return Max_long;
-  return (uintnat)res;
+  if(rand_pos == RAND_BLOCK_SIZE) rand_batch();
+  res = rand_geom_buff[rand_pos++];
+  CAMLassert(1 <= res && res <= Max_long);
+  return res;
 }
 
-static uintnat next_mt_generate_geom;
+static uintnat next_rand_geom;
 /* Simulate a binomial variable of parameters [len] and [lambda].
    This sampling algorithm has running time linear with [len *
    lambda].  We could use more a involved algorithm, but this should
@@ -138,13 +214,13 @@ static uintnat next_mt_generate_geom;
      Hormann, Wolfgang. "The generation of binomial random variates."
      Journal of statistical computation and simulation 46.1-2 (1993), pp101-110.
  */
-static uintnat mt_generate_binom(uintnat len)
+static uintnat rand_binom(uintnat len)
 {
   uintnat res;
   CAMLassert(lambda > 0. && len < Max_long);
-  for (res = 0; next_mt_generate_geom < len; res++)
-    next_mt_generate_geom += mt_generate_geom();
-  next_mt_generate_geom -= len;
+  for (res = 0; next_rand_geom < len; res++)
+    next_rand_geom += rand_geom();
+  next_rand_geom -= len;
   return res;
 }
 
@@ -180,14 +256,14 @@ static value capture_callstack_postponed()
 /* In this version, we are allowed to call the GC, so we use
    [caml_alloc], which is more efficient since it uses the minor
    heap.
-   Should be called with [caml_memprof_suspended == 1] */
+   Should be called with [suspended == 1] */
 static value capture_callstack(int alloc_idx)
 {
   value res;
   intnat callstack_len =
     caml_collect_current_callstack(&callstack_buffer, &callstack_buffer_len,
                                    callstack_size, alloc_idx);
-  CAMLassert(caml_memprof_suspended);
+  CAMLassert(suspended);
   res = caml_alloc(callstack_len, 0);
   memcpy(Op_val(res), callstack_buffer, sizeof(value) * callstack_len);
   if (callstack_buffer_len > 256 && callstack_buffer_len > callstack_len * 8) {
@@ -347,10 +423,11 @@ Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param) {
   CAMLassert(!t->callback_running && t->idx_ptr == NULL);
   CAMLassert(lambda > 0.);
 
-  t->callback_running = 1;
+  callback_running = t->callback_running = 1;
   t->idx_ptr = t_idx;
   res = caml_callback_exn(cb, param);
-   /* The call above can modify [*t_idx] and thus invalidate [t]. */
+  callback_running = 0;
+  /* The call above can modify [*t_idx] and thus invalidate [t]. */
   if (*t_idx == Invalid_index) {
     /* Make sure this entry has not been removed by [caml_memprof_set] */
     return Val_unit;
@@ -464,9 +541,15 @@ static void flush_deleted(void)
   realloc_trackst();
 }
 
-void caml_memprof_check_action_pending(void) {
-  if (!caml_memprof_suspended && trackst.callback < trackst.len)
+static void check_action_pending(void) {
+  if (!suspended && trackst.callback < trackst.len)
     caml_set_action_pending();
+}
+
+void caml_memprof_set_suspended(int s) {
+  suspended = s;
+  caml_memprof_renew_minor_sample();
+  if(!s) check_action_pending();
 }
 
 /* In case of a thread context switch during a callback, this can be
@@ -474,15 +557,15 @@ void caml_memprof_check_action_pending(void) {
 value caml_memprof_handle_postponed_exn(void)
 {
   value res = Val_unit;
-  if (caml_memprof_suspended) return res;
-  caml_memprof_suspended = 1;
+  if (suspended || trackst.callback >= trackst.len) return res;
+
+  caml_memprof_set_suspended(1);
   while (trackst.callback < trackst.len) {
     uintnat i = trackst.callback;
     res = handle_entry_callbacks_exn(&i);
     if (Is_exception_result(res)) break;
   }
-  caml_memprof_suspended = 0;
-  caml_memprof_check_action_pending();  /* Needed in case of an exception */
+  caml_memprof_set_suspended(0);
   flush_deleted();
   return res;
 }
@@ -526,7 +609,7 @@ void caml_memprof_minor_update(void)
   }
   if (trackst.callback > trackst.young) {
     trackst.callback = trackst.young;
-    caml_memprof_check_action_pending();
+    check_action_pending();
   }
   trackst.young = trackst.len;
 }
@@ -553,7 +636,7 @@ void caml_memprof_update_clean_phase(void)
     }
   }
   trackst.callback = 0;
-  caml_memprof_check_action_pending();
+  check_action_pending();
 }
 
 void caml_memprof_invert_tracked(void)
@@ -571,17 +654,16 @@ void caml_memprof_track_alloc_shr(value block)
   value callstack = 0;
   CAMLassert(Is_in_heap(block));
 
-  /* This test also makes sure memprof is initialized. */
-  if (lambda == 0 || caml_memprof_suspended) return;
+  if (lambda == 0 || suspended) return;
 
-  n_samples = mt_generate_binom(Whsize_val(block));
+  n_samples = rand_binom(Whsize_val(block));
   if (n_samples == 0) return;
 
   callstack = capture_callstack_postponed();
   if (callstack == 0) return;
 
   new_tracked(n_samples, Wosize_val(block), 0, 0, block, callstack);
-  caml_memprof_check_action_pending();
+  check_action_pending();
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -605,10 +687,10 @@ static void shift_sample(uintnat n)
 void caml_memprof_renew_minor_sample(void)
 {
 
-  if (lambda == 0) /* No trigger in the current minor heap. */
+  if (lambda == 0 || suspended) /* No trigger in the current minor heap. */
     caml_memprof_young_trigger = Caml_state->young_alloc_start;
   else {
-    uintnat geom = mt_generate_geom();
+    uintnat geom = rand_geom();
     if (Caml_state->young_ptr - Caml_state->young_alloc_start < geom)
       /* No trigger in the current minor heap. */
       caml_memprof_young_trigger = Caml_state->young_alloc_start;
@@ -634,20 +716,15 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
   uintnat first_idx, *idx_tab = &first_idx;
   double saved_lambda = lambda;
 
-  if (caml_memprof_suspended) {
-    caml_memprof_renew_minor_sample();
-    return;
-  }
-
-  /* If [lambda == 0], then [caml_memprof_young_trigger] should be
+  /* If this condition is false, then [caml_memprof_young_trigger] should be
      equal to [Caml_state->young_alloc_start]. But this function is only
      called with [Caml_state->young_alloc_start <= Caml_state->young_ptr <
      caml_memprof_young_trigger], which is contradictory. */
-  CAMLassert(lambda > 0);
+  CAMLassert(!suspended && lambda > 0);
 
   if (!from_caml) {
     unsigned n_samples = 1 +
-      mt_generate_binom(caml_memprof_young_trigger - 1 - Caml_state->young_ptr);
+      rand_binom(caml_memprof_young_trigger - 1 - Caml_state->young_ptr);
     CAMLassert(encoded_alloc_lens == NULL);    /* No Comballoc in C! */
     caml_memprof_renew_minor_sample();
 
@@ -656,7 +733,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
 
     new_tracked(n_samples, wosize,
                 0, 1, Val_hp(Caml_state->young_ptr), callstack);
-    caml_memprof_check_action_pending();
+    check_action_pending();
     return;
   }
 
@@ -675,8 +752,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
   /* Restore the minor heap in a valid state for calling the callbacks.
      We should not call the GC before these two instructions. */
   Caml_state->young_ptr += whsize;
-  caml_memprof_renew_minor_sample();
-  caml_memprof_suspended = 1;
+  caml_memprof_set_suspended(1); // This also updates the memprof trigger
 
   /* Perform the sampling of the block in the set of Comballoc'd
      blocks, insert them in the entries array, and run the
@@ -688,7 +764,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
     alloc_ofs -= Whsize_wosize(alloc_wosz);
     while (alloc_ofs < trigger_ofs) {
       n_samples++;
-      trigger_ofs -= mt_generate_geom();
+      trigger_ofs -= rand_geom();
     }
     if (n_samples > 0) {
       uintnat *idx_ptr, t_idx;
@@ -704,7 +780,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
           /* [lambda] changed during the callback. We need to refresh
              [trigger_ofs]. */
           saved_lambda = lambda;
-          trigger_ofs = lambda == 0. ? 0 : alloc_ofs - (mt_generate_geom() - 1);
+          trigger_ofs = lambda == 0. ? 0 : alloc_ofs - (rand_geom() - 1);
         }
       }
       if (Is_exception_result(res)) break;
@@ -740,15 +816,11 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
 
   CAMLassert(alloc_ofs == 0 || Is_exception_result(res));
   CAMLassert(allocs_sampled <= nallocs);
-  caml_memprof_suspended = 0;
-  caml_memprof_check_action_pending();
-  /* We need to call [caml_memprof_check_action_pending] since we
-     reset [caml_memprof_suspended] to 0 (a GC collection may have
-     triggered some new callback).
-
-     We need to make sure that the action pending flag is not set
-     systematically, which is to be expected, since [new_tracked]
-     created a new block without updating
+  caml_memprof_set_suspended(0);
+  /* [caml_memprof_set_suspended] will attempt to set the action
+     pending flag, but we need to make sure that the action pending
+     flag is not set systematically, which is to be expected, since
+     [new_tracked] created a new block without updating
      [trackst.callback]. Fortunately, [handle_entry_callback_exn]
      increments [trackst.callback] if it is equal to [t_idx]. */
 
@@ -770,7 +842,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
         t->deallocated = 1;
         if (trackst.callback > idx_tab[i]) {
           trackst.callback = idx_tab[i];
-          caml_memprof_check_action_pending();
+          check_action_pending();
         }
       }
     if (idx_tab != &first_idx) caml_stat_free(idx_tab);
@@ -820,12 +892,11 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
   value callstack = 0;
   int is_young = Is_young(Val_hp(block));
 
-  if (lambda == 0 || caml_memprof_suspended)
-    return;
+  if (lambda == 0 || suspended) return;
 
   p = block;
   while (1) {
-    uintnat next_sample = mt_generate_geom();
+    uintnat next_sample = rand_geom();
     header_t *next_sample_p, *next_p;
     if (next_sample > blockend - p)
       break;
@@ -841,39 +912,18 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
     if (callstack == 0) callstack = capture_callstack_postponed();
     if (callstack == 0) break;  /* OOM */
-    new_tracked(mt_generate_binom(next_p - next_sample_p) + 1,
+    new_tracked(rand_binom(next_p - next_sample_p) + 1,
                 Wosize_hp(p), 1, is_young, Val_hp(p), callstack);
     p = next_p;
   }
-  caml_memprof_check_action_pending();
+  check_action_pending();
 }
 
 /**** Interface with the OCaml code. ****/
 
 static void caml_memprof_init(void) {
-  uintnat i;
-
   init = 1;
-
-  mt_index = MT_STATE_SIZE;
-  mt_state[0] = 42;
-  for (i = 1; i < MT_STATE_SIZE; i++)
-    mt_state[i] = 0x6c078965 * (mt_state[i-1] ^ (mt_state[i-1] >> 30)) + i;
-}
-
-void caml_memprof_shutdown(void) {
-  init = 0;
-  started = 0;
-  lambda = 0.;
-  caml_memprof_suspended = 0;
-  trackst.len = 0;
-  trackst.callback = trackst.young = trackst.delete = 0;
-  caml_stat_free(trackst.entries);
-  trackst.entries = NULL;
-  trackst.alloc_len = 0;
-  caml_stat_free(callstack_buffer);
-  callstack_buffer = NULL;
-  callstack_buffer_len = 0;
+  xoshiro_init();
 }
 
 CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
@@ -893,7 +943,8 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
   lambda = l;
   if (l > 0) {
     one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
-    next_mt_generate_geom = mt_generate_geom();
+    rand_pos = RAND_BLOCK_SIZE;
+    next_rand_geom = rand_geom();
   }
 
   caml_memprof_renew_minor_sample();
@@ -929,6 +980,8 @@ CAMLprim value caml_memprof_stop(value unit)
   trackst.alloc_len = 0;
 
   lambda = 0;
+  // Reset the memprof trigger in order to make sure we won't enter
+  // [caml_memprof_track_young].
   caml_memprof_renew_minor_sample();
   started = 0;
 
@@ -939,4 +992,29 @@ CAMLprim value caml_memprof_stop(value unit)
   callstack_buffer_len = 0;
 
   return Val_unit;
+}
+
+/**** Interface with systhread. ****/
+
+void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx) {
+  ctx->suspended = 0;
+  ctx->callback_running = 0;
+}
+
+void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
+  /* Make sure that no memprof callback is being executed in this
+     thread. If so, memprof data structures may have pointers to the
+     thread's stack. */
+  if(ctx->callback_running)
+    caml_fatal_error("Thread.exit called from a memprof callback.");
+}
+
+void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx) {
+  ctx->suspended = suspended;
+  ctx->callback_running = callback_running;
+}
+
+void caml_memprof_restore_th_ctx(const struct caml_memprof_th_ctx* ctx) {
+  callback_running = ctx->callback_running;
+  caml_memprof_set_suspended(ctx->suspended);
 }

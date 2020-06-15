@@ -20,7 +20,7 @@ let test msg producer consumer src dst =
   let cons = Thread.create consumer (ipipe, oc) in
   Thread.join prod;
   Thread.join cons;
-  if Unix.system ("cmp " ^ src ^ " " ^ dst) = Unix.WEXITED 0
+  if Sys.command ("cmp " ^ src ^ " " ^ dst) = 0
   then print_string "passed"
   else print_string "FAILED";
   print_newline()

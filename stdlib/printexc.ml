@@ -17,7 +17,7 @@ open Printf
 
 type t = exn = ..
 
-let printers = ref []
+let printers = Atomic.make []
 
 let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 
@@ -50,7 +50,7 @@ let use_printers x =
          | None | exception _ -> conv tl
          | Some s -> Some s)
     | [] -> None in
-  conv !printers
+  conv (Atomic.get printers)
 
 let to_string_default = function
   | Out_of_memory -> "Out of memory"
@@ -260,8 +260,11 @@ let get_backtrace () = raw_backtrace_to_string (get_raw_backtrace ())
 external record_backtrace: bool -> unit = "caml_record_backtrace"
 external backtrace_status: unit -> bool = "caml_backtrace_status"
 
-let register_printer fn =
-  printers := fn :: !printers
+let rec register_printer fn =
+  let old_printers = Atomic.get printers in
+  let new_printers = fn :: old_printers in
+  let success = Atomic.compare_and_set printers old_printers new_printers in
+  if not success then register_printer fn
 
 external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 

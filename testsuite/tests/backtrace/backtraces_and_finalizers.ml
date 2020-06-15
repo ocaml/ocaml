@@ -5,8 +5,6 @@
    * native
 *)
 
-let () = Printexc.record_backtrace true
-
 let finaliser _ = try raise Exit with _ -> ()
 
 let create () =

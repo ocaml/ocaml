@@ -43,9 +43,6 @@ let description = ref ""
 
 let blank = "[ \013\009\012]"
 
-
-let print_DEBUG s = print_string s; print_newline ()
-
 (** this flag indicates whether we're in a string between begin_code and end_code tokens, to
    remember the number of open '[' and handle ']' correctly. *)
 let open_brackets = ref 0
@@ -189,7 +186,6 @@ rule main = parse
 
 | end
     {
-      print_DEBUG "end";
       incr_cpts lexbuf ;
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) then
@@ -202,7 +198,6 @@ rule main = parse
     }
 | begin_title
     {
-      print_DEBUG "begin_title";
       incr_cpts lexbuf ;
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) || !ele_ref_mode then
@@ -313,7 +308,6 @@ rule main = parse
      }
 | begin_list
     {
-      print_DEBUG "LIST";
       incr_cpts lexbuf ;
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) || !ele_ref_mode then
@@ -332,7 +326,6 @@ rule main = parse
     }
 | begin_item
     {
-      print_DEBUG "ITEM";
       incr_cpts lexbuf ;
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) || !ele_ref_mode then
@@ -828,7 +821,6 @@ rule main = parse
 
 | begin_custom
     {
-      print_DEBUG "begin_custom";
       incr_cpts lexbuf ;
       if !verb_mode || !target_mode || !code_pre_mode ||
         (!open_brackets >= 1) || !ele_ref_mode then

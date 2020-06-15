@@ -17,21 +17,21 @@
 
 open Ocamltest_stdlib
 
-let srcdir () =
+let srcdir =
   Sys.getenv_with_default_value "OCAMLSRCDIR" Ocamltest_config.ocamlsrcdir
 
-let stdlib ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "stdlib"]
+let stdlib =
+  Filename.make_path [srcdir; "stdlib"]
 
-let libunix ocamlsrcdir =
-  let subdir = if Sys.os_type="Win32" then "win32unix" else "unix" in
-  Filename.make_path [ocamlsrcdir; "otherlibs"; subdir]
+let libunix =
+  let subdir = if Sys.win32 then "win32unix" else "unix" in
+  Filename.make_path [srcdir; "otherlibs"; subdir]
 
-let toplevel ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "toplevel"]
+let toplevel =
+  Filename.make_path [srcdir; "toplevel"]
 
-let runtime ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "runtime"]
+let runtime =
+  Filename.make_path [srcdir; "runtime"]
 
-let tools ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "tools"]
+let tools =
+  Filename.make_path [srcdir; "tools"]

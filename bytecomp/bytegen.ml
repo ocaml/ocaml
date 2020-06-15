@@ -176,7 +176,7 @@ let rec size_of_lambda env = function
   | Lvar id ->
       begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Lfunction{params} as funct ->
-      RHS_function (1 + Ident.Set.cardinal(free_variables funct),
+      RHS_function (2 + Ident.Set.cardinal(free_variables funct),
                     List.length params)
   | Llet (Strict, _k, id, Lprim (Pduprecord (kind, size), _, _), body)
     when check_recordwith_updates id body ->
@@ -195,8 +195,8 @@ let rec size_of_lambda env = function
       let fv =
         Ident.Set.elements (free_variables (Lletrec(bindings, lambda_unit))) in
       (* See Instruct(CLOSUREREC) in interp.c *)
-      let blocksize = List.length bindings * 2 - 1 + List.length fv in
-      let offsets = List.mapi (fun i (id, _e) -> (id, i * 2)) bindings in
+      let blocksize = List.length bindings * 3 - 1 + List.length fv in
+      let offsets = List.mapi (fun i (id, _e) -> (id, i * 3)) bindings in
       let env = List.fold_right (fun (id, offset) env ->
         Ident.add id (RHS_infix { blocksize; offset }) env) offsets env in
       size_of_lambda env body
@@ -676,12 +676,14 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz (add_const_unit cont)
   | Lprim(Pdirapply, [func;arg], loc)
   | Lprim(Prevapply, [arg;func], loc) ->
-      let exp = Lapply{ap_should_be_tailcall=false;
-                       ap_loc=loc;
-                       ap_func=func;
-                       ap_args=[arg];
-                       ap_inlined=Default_inline;
-                       ap_specialised=Default_specialise} in
+      let exp = Lapply{
+        ap_loc=loc;
+        ap_func=func;
+        ap_args=[arg];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      } in
       comp_expr env exp sz cont
   | Lprim(Pnot, [arg], _) ->
       let newcont =
@@ -1057,8 +1059,8 @@ let comp_function tc cont =
     | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
   let env =
     { ce_stack = positions arity (-1) tc.params;
-      ce_heap = positions (2 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
-      ce_rec = positions (-2 * tc.rec_pos) 2 tc.rec_vars } in
+      ce_heap = positions (3 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
+      ce_rec = positions (-3 * tc.rec_pos) 3 tc.rec_vars } in
   let cont =
     comp_block env tc.body arity (Kreturn arity :: cont) in
   if arity > 1 then

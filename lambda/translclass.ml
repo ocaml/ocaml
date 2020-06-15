@@ -30,7 +30,8 @@ exception Error of Location.t * error
 let lfunction params body =
   if params = [] then body else
   match body with
-  | Lfunction {kind = Curried; params = params'; body = body'; attr; loc} ->
+  | Lfunction {kind = Curried; params = params'; body = body'; attr; loc}
+    when List.length params + List.length params' <= Lambda.max_arity() ->
       Lfunction {kind = Curried; params = params @ params';
                  return = Pgenval;
                  body = body'; attr;
@@ -49,12 +50,14 @@ let lapply ap =
       Lapply ap
 
 let mkappl (func, args) =
-  Lapply {ap_should_be_tailcall=false;
-          ap_loc=Loc_unknown;
-          ap_func=func;
-          ap_args=args;
-          ap_inlined=Default_inline;
-          ap_specialised=Default_specialise};;
+  Lapply {
+    ap_loc=Loc_unknown;
+    ap_func=func;
+    ap_args=args;
+    ap_tailcall=Default_tailcall;
+    ap_inlined=Default_inline;
+    ap_specialised=Default_specialise;
+  };;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -64,7 +67,7 @@ let lfield v i = Lprim(Pfield i, [Lvar v], Loc_unknown)
 let transl_label l = share (Const_immstring l)
 
 let transl_meth_list lst =
-  if lst = [] then Lconst (Const_pointer 0) else
+  if lst = [] then Lconst (const_int 0) else
   share (Const_block
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
@@ -379,7 +382,7 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
            Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
                         [path_lam;
-                         Lconst(Const_pointer(if top then 1 else 0))]),
+                         Lconst(const_int (if top then 1 else 0))]),
                  Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
       | _ ->
           let core cl_init =
@@ -487,12 +490,14 @@ let transl_class_rebind ~scopes cl vf =
     let obj_init = Ident.create_local "obj_init"
     and self = Ident.create_local "self" in
     let obj_init0 =
-      lapply {ap_should_be_tailcall=false;
-              ap_loc=Loc_unknown;
-              ap_func=Lvar obj_init;
-              ap_args=[Lvar self];
-              ap_inlined=Default_inline;
-              ap_specialised=Default_specialise}
+      lapply {
+        ap_loc=Loc_unknown;
+        ap_func=Lvar obj_init;
+        ap_args=[Lvar self];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      }
     in
     let _, path_lam, obj_init' =
       transl_class_rebind_0 ~scopes self obj_init0 cl vf in
@@ -547,7 +552,7 @@ let rec builtin_meths self env env2 body =
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e], _) when Ident.same e env ->
-        "env", [Lvar env2; Lconst(Const_pointer n)]
+        "env", [Lvar env2; Lconst(const_int n)]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
@@ -618,7 +623,7 @@ module M = struct
     | "send_env"   -> SendEnv
     | "send_meth"  -> SendMeth
     | _ -> assert false
-    in Lconst(Const_pointer(Obj.magic tag)) :: args
+    in Lconst(const_int (Obj.magic tag)) :: args
 end
 open M
 

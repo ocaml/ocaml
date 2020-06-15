@@ -75,7 +75,7 @@ Process \var{file} as a ".ml" file.
 Process \var{file} as a ".mli" file.
 
 \item["-map" \var{file}]
-Read an propagate the delayed dependencies for module aliases in
+Read and propagate the delayed dependencies for module aliases in
 \var{file}, so that the following files will depend on the
 exported aliased modules if they use them. See the example below.
 

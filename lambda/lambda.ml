@@ -207,10 +207,13 @@ let equal_value_kind x y =
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
+
+type tailcall_attribute =
+  | Should_be_tailcall (* [@tailcall] *)
+  | Default_tailcall (* no [@tailcall] attribute *)
 
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
@@ -312,7 +315,7 @@ and lambda_apply =
   { ap_func : lambda;
     ap_args : lambda list;
     ap_loc : scoped_location;
-    ap_should_be_tailcall : bool;
+    ap_tailcall : tailcall_attribute;
     ap_inlined : inline_attribute;
     ap_specialised : specialise_attribute; }
 
@@ -342,7 +345,9 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_unit = Const_pointer 0
+let const_int n = Const_base (Const_int n)
+
+let const_unit = const_int 0
 
 let lambda_unit = Lconst const_unit
 
@@ -764,13 +769,13 @@ let rename idmap lam =
 let shallow_map f = function
   | Lvar _
   | Lconst _ as lam -> lam
-  | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
+  | Lapply { ap_func; ap_args; ap_loc; ap_tailcall;
              ap_inlined; ap_specialised } ->
       Lapply {
         ap_func = f ap_func;
         ap_args = List.map f ap_args;
         ap_loc;
-        ap_should_be_tailcall;
+        ap_tailcall;
         ap_inlined;
         ap_specialised;
       }
@@ -891,6 +896,11 @@ let function_is_curried func =
   match func.kind with
   | Curried -> true
   | Tupled -> false
+
+let max_arity () =
+  if !Clflags.native_code then 126 else max_int
+  (* 126 = 127 (the maximal number of parameters supported in C--)
+           - 1 (the hidden parameter containing the environment) *)
 
 let reset () =
   raise_count := 0

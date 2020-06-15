@@ -20,6 +20,8 @@
 
 type t
 
+type raw_data = nativeint  (* @since 4.12 *)
+
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
@@ -60,6 +62,13 @@ external set_tag : t -> int -> unit = "caml_obj_set_tag"
 val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
 val [@inline always] set_double_field : t -> int -> float -> unit
   (* @since 3.11.2 *)
+
+external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
+  (* @since 4.12 *)
+external set_raw_field : t -> int -> raw_data -> unit
+                                          = "caml_obj_set_raw_field"
+  (* @since 4.12 *)
+
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"

@@ -105,8 +105,8 @@ EOF
       pass)
           echo "CheckDepend: success";;
       fail)
-          echo "CheckDepend: failure on the following files:"
-          git --no-pager diff --ignore-all-space --name-only **.depend
+          echo "CheckDepend: failure with the following differences:"
+          git --no-pager diff --ignore-all-space **.depend
           exit 1;;
   esac
 }

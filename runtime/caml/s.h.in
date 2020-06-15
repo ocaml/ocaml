@@ -188,6 +188,10 @@
 
 /* Define HAS_PUTENV if you have putenv(). */
 
+#undef HAS_SETENV_UNSETENV
+
+/* Define HAS_SETENV_UNSETENV if you have setenv() and unsetenv(). */
+
 #undef HAS_LOCALE_H
 
 /* Define HAS_LOCALE_H if you have the include file <locale.h> and the
@@ -242,6 +246,8 @@
 #undef HAS_SYS_SHM_H
 
 #undef HAS_EXECVPE
+
+#undef HAS_POSIX_SPAWN
 
 #undef HAS_FFS
 #undef HAS_BITSCANFORWARD
