@@ -208,8 +208,8 @@ constraints, the variance properties of the type constructor
 are inferred from its definition, and the variance annotations are
 only checked for conformance with the definition.
 
-Injectivity annotations only make sense for abstract types and private
-row types, since they can otherwise be deduced from the type
+Injectivity annotations are only necessary for abstract types and
+private row types, since they can otherwise be deduced from the type
 declaration: all parameters are injective for record and variant type
 declarations (including extensible types); for type abbreviations a
 parameter is injective if it has an injective occurrence in its

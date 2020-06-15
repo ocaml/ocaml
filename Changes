@@ -11,6 +11,7 @@ Working version
   parameters. Since all parameters of record and sum types are by definition
   injective, this only makes sense for type abbreviations:
     type !'a t = 'a list
+  (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
 ### Runtime system:
 
