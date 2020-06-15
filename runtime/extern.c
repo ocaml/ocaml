@@ -698,13 +698,11 @@ static void extern_rec(value v)
   if (Is_long(v)) {
     extern_int(Long_val(v));
   }
-#ifndef NO_NAKED_POINTERS
-  else if (! (Is_in_value_area(v) || caml_extern_allow_out_of_heap)) {
+  else if (Is_naked_pointer(v) && !caml_extern_allow_out_of_heap) {
     /* Naked pointer outside the heap: try to marshal it as a code pointer,
        otherwise fail. */
     extern_code_pointer((char *) v);
   }
-#endif
   else {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);

@@ -44,6 +44,14 @@
 
 #define Is_in_static_data(a) (Classify_addr(a) & In_static_data)
 
+#ifndef NO_NAKED_POINTERS
+/* We overapproximate naked pointers by any pointer not in the value area,
+   which *may* be a naked pointer. */
+#define Is_naked_pointer(a) (!(Is_in_value_area(a)))
+#else
+#define Is_naked_pointer(a) 0
+#endif
+
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
 
