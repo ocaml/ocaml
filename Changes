@@ -48,7 +48,6 @@ Working version
   (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
   Stephen Dolan)
 
-
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
@@ -153,6 +152,10 @@ Working version
 - #9442: refactor the implementation of the [@tailcall] attribute
   to allow for a structured attribute payload
   (Gabriel Scherer, review by Vladimir Keleshev and Nicolás Ojeda Bär)
+
+- #9685: introduce and use an Is_naked_pointer(v) macro for runtime code
+  to work in either naked-pointers or no-naked-pointers mode.
+  (Gabriel Scherer, review by ???)
 
 ### Build system:
 
