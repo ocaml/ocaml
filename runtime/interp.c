@@ -538,7 +538,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, num_args + 3, Closure_tag);
         Field(accu, 2) = env;
         for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
-        CAMLassert(!Is_in_value_area(pc-3));
         Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
         Closinfo_val(accu) = Make_closinfo(0, 2);
         sp += num_args;
@@ -567,7 +566,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       }
       /* The code pointer is not in the heap, so no need to go through
          caml_initialize. */
-      CAMLassert(!Is_in_value_area(pc + *pc));
       Code_val(accu) = pc + *pc;
       Closinfo_val(accu) = Make_closinfo(0, 2);
       pc++;
