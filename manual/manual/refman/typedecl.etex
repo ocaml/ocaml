@@ -36,11 +36,17 @@ type-params:
         | '(' type-param { "," type-param } ')'
 ;
 type-param:
-          [variance] "'" ident
+          [ext-variance] "'" ident
+;
+ext-variance:
+          variance [injectivity]
+        | injectivity [variance]
 ;
 variance:
           '+'
         | '-'
+;
+injectivity: '!'
 ;
 record-decl:
          '{' field-decl { ';' field-decl } [';'] '}'
@@ -88,7 +94,9 @@ for type constructors with one parameter, or a list of type variables
 @"('"ident_1,\ldots,"'"ident_n")"@, for type constructors with several
 parameters. Each type parameter may be prefixed by a variance
 constraint @"+"@ (resp. @"-"@) indicating that the parameter is
-covariant (resp. contravariant).  These type parameters can appear in
+covariant (resp. contravariant), and an injectivity annotation @"!"@
+indicating that the parameter can be deduced from the whole type.
+These type parameters can appear in
 the type expressions of the right-hand side of the definition,
 optionally restricted by a variance constraint ; {\em i.e.\/} a
 covariant parameter may only appear on the right side of a functional
@@ -199,6 +207,18 @@ Otherwise, for abbreviations, variant and record types without type
 constraints, the variance properties of the type constructor
 are inferred from its definition, and the variance annotations are
 only checked for conformance with the definition.
+
+Injectivity annotations are only necessary for abstract types and
+private row types, since they can otherwise be deduced from the type
+declaration: all parameters are injective for record and variant type
+declarations (including extensible types); for type abbreviations a
+parameter is injective if it has an injective occurrence in its
+defining equation (be it private or not). For constrained type
+parameters in type abbreviations, they are injective if either they
+appear at an injective position in the body, or if all their type
+variables are injective; in particular, if a constrained type
+parameter contains a variable that doesn't appear in the body, it
+cannot be injective.
 
 \ikwd{constraint\@\texttt{constraint}}
 The construct @ 'constraint' "'" ident '=' typexpr @ allows the

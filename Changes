@@ -3,6 +3,16 @@ Working version
 
 ### Language features:
 
+* #9500: Injectivity annotations
+  One can now mark type parameters as injective, which is useful for
+  abstract types:
+    module Vec : sig type !'a t end = struct type 'a t = 'a array end
+  On non-abstract types, this can be used to check the injectivity of
+  parameters. Since all parameters of record and sum types are by definition
+  injective, this only makes sense for type abbreviations:
+    type !'a t = 'a list
+  (Jacques Garrigue, review by Jeremy Yallop and Leo White)
+
 ### Runtime system:
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
