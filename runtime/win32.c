@@ -539,7 +539,7 @@ static LONG CALLBACK
   DWORD *ctx_ip = &(ctx->Eip);
   DWORD *ctx_sp = &(ctx->Esp);
 
-  if (code == EXCEPTION_STACK_OVERFLOW && 
+  if (code == EXCEPTION_STACK_OVERFLOW &&
       caml_find_code_fragment_by_pc((char *) (*ctx_ip)) != NULL)
     {
       uintnat faulting_address;
@@ -568,7 +568,7 @@ static LONG CALLBACK
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
 
-  if (code == EXCEPTION_STACK_OVERFLOW && 
+  if (code == EXCEPTION_STACK_OVERFLOW &&
       caml_find_code_fragment_by_pc((char *) (ctx->Rip)) != NULL)
     {
       uintnat faulting_address;
