@@ -338,6 +338,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
     caml_plat_mutex_init(&dom->domain_lock);
     caml_plat_cond_init(&dom->domain_cond, &dom->domain_lock);
+    dom->backup_thread_running = 0;
 
     caml_plat_mutex_init(&dom->interruptor.lock);
     caml_plat_cond_init(&dom->interruptor.cond,
@@ -887,11 +888,10 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 CAMLexport void caml_leave_blocking_section() {
   dom_internal* self = domain_self;
 
+  Assert(caml_domain_alone() || self->backup_thread_running);
   atomic_store_rel(&self->backup_thread_msg, MSG_ENTERING_OCAML);
 
   if (self->backup_thread_running) {
-    /* Lock is necessary here to avoid races with the backup thread
-     * [backup_thread_func]. */
     caml_plat_lock(&self->interruptor.lock);
     caml_plat_signal(&self->interruptor.cond);
     caml_plat_unlock(&self->interruptor.lock);
@@ -904,6 +904,8 @@ CAMLexport void caml_leave_blocking_section() {
 
 CAMLexport void caml_enter_blocking_section() {
   dom_internal* self = domain_self;
+
+  Assert(caml_domain_alone() || self->backup_thread_running);
 
   caml_process_pending_signals();
   caml_enter_blocking_section_hook();
@@ -1163,6 +1165,7 @@ static void domain_terminate()
     acknowledge_all_pending_interrupts();
   }
 
+  Assert (domain_self->backup_thread_running);
   atomic_store_rel(&domain_self->backup_thread_msg, MSG_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
