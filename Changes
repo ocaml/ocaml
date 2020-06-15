@@ -604,6 +604,9 @@ OCaml 4.11
 - #7817, #9546: Unsound inclusion check for polymorphic variant
   (Jacques Garrigue, report by Mikhail Mandrykin, review by Gabriel Scherer)
 
+- #7902, #9556: Type-checker infers recursive type, eventhough -rectypes is off.
+  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
+
 - #7917, #9426: Use GCC option -fexcess-precision=standard when available,
   avoiding a problem with x87 excess precision in Float.round.
   (Xavier Leroy, review by Sébastien Hinderer)

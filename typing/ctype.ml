@@ -304,12 +304,15 @@ type unification_mode =
 let umode = ref Expression
 let generate_equations = ref false
 let assume_injective = ref false
+let allow_recursive_equation = ref false
 
-let set_mode_pattern ~generate ~injective f =
+let set_mode_pattern ~generate ~injective ~allow_recursive f =
   Misc.protect_refs
-    [Misc.R (umode, Pattern);
-     Misc.R (generate_equations, generate);
-     Misc.R (assume_injective, injective)] f
+    [ Misc.R (umode, Pattern);
+      Misc.R (generate_equations, generate);
+      Misc.R (assume_injective, injective);
+      Misc.R (allow_recursive_equation, allow_recursive);
+    ] f
 
 (*** Checks for type definitions ***)
 
@@ -1796,7 +1799,8 @@ let type_changed = ref false (* trace possible changes to the studied type *)
 let merge r b = if b then r := true
 
 let occur env ty0 ty =
-  let allow_recursive = !Clflags.recursive_types || !umode = Pattern  in
+  let allow_recursive =
+    !Clflags.recursive_types || !umode = Pattern && !allow_recursive_equation in
   let old = !type_changed in
   try
     while
@@ -1819,18 +1823,18 @@ let occur_in env ty0 t =
 (* PR#6992: we actually need it for contractiveness *)
 (* This is a simplified version of occur, only for the rectypes case *)
 
-let rec local_non_recursive_abbrev strict visited env p ty =
+let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
   (*Format.eprintf "@[Check %s =@ %a@]@." (Path.name p) !Btype.print_raw ty;*)
   let ty = repr ty in
   if not (List.memq ty visited) then begin
     match ty.desc with
       Tconstr(p', args, _abbrev) ->
         if Path.same p p' then raise Occur;
-        if not strict && is_contractive env p' then () else
+        if allow_rec && not strict && is_contractive env p' then () else
         let visited = ty :: visited in
         begin try
           (* try expanding, since [p] could be hidden *)
-          local_non_recursive_abbrev strict visited env p
+          local_non_recursive_abbrev ~allow_rec strict visited env p
             (try_expand_head try_expand_once_opt env ty)
         with Cannot_expand ->
           let params =
@@ -1840,19 +1844,24 @@ let rec local_non_recursive_abbrev strict visited env p ty =
           List.iter2
             (fun tv ty ->
               let strict = strict || not (is_Tvar (repr tv)) in
-              local_non_recursive_abbrev strict visited env p ty)
+              local_non_recursive_abbrev ~allow_rec strict visited env p ty)
             params args
         end
+    | Tobject _ | Tvariant _ when not strict ->
+        ()
     | _ ->
-        if strict then (* PR#7374 *)
+        if strict || not allow_rec then (* PR#7374 *)
           let visited = ty :: visited in
-          iter_type_expr (local_non_recursive_abbrev true visited env p) ty
+          iter_type_expr
+            (local_non_recursive_abbrev ~allow_rec true visited env p) ty
   end
 
 let local_non_recursive_abbrev env p ty =
+  let allow_rec =
+    !Clflags.recursive_types || !umode = Pattern && !allow_recursive_equation in
   try (* PR#7397: need to check trace_gadt_instances *)
     wrap_trace_gadt_instances env
-      (local_non_recursive_abbrev false [] env p) ty;
+      (local_non_recursive_abbrev ~allow_rec false [] env p) ty;
     true
   with Occur -> false
 
@@ -2660,7 +2669,8 @@ and unify3 env t1 t1' t2 t2' =
             unify_list env tl1 tl2
           else if !assume_injective then
             set_mode_pattern ~generate:true ~injective:false
-                             (fun () -> unify_list env tl1 tl2)
+              ~allow_recursive:!allow_recursive_equation
+              (fun () -> unify_list env tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
                   || List.exists (expands_to_datatype !env) [t1'; t1; t2] then
             unify_list env tl1 tl2
@@ -2674,6 +2684,7 @@ and unify3 env t1 t1' t2 t2' =
               (fun i (t1, t2) ->
                 if i then unify env t1 t2 else
                 set_mode_pattern ~generate:false ~injective:false
+                  ~allow_recursive:!allow_recursive_equation
                   begin fun () ->
                     let snap = snapshot () in
                     try unify env t1 t2 with Unify _ ->
@@ -3047,11 +3058,11 @@ let unify env ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_trace !env trace))
 
-let unify_gadt ~equations_level:lev (env:Env.t ref) ty1 ty2 =
+let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
     gadt_equations_level := Some lev;
-    set_mode_pattern ~generate:true ~injective:true
+    set_mode_pattern ~generate:true ~injective:true ~allow_recursive
                      (fun () -> unify env ty1 ty2);
     gadt_equations_level := None;
     TypePairs.clear unify_eq_set;

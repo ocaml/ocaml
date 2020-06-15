@@ -252,7 +252,8 @@ val enforce_constraints: Env.t -> type_expr -> unit
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
-        equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+        equations_level:int -> allow_recursive:bool ->
+        Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
