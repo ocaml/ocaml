@@ -43,9 +43,10 @@
 #include "caml/finalise.h"
 #include "caml/gc_ctrl.h"
 
-#define MSG_IN_BLOCKING_SECTION 0
-#define MSG_ENTERING_OCAML 1
-#define MSG_TERMINATE 2
+#define BT_INIT 0
+#define BT_IN_BLOCKING_SECTION 1
+#define BT_ENTERING_OCAML 2
+#define BT_TERMINATE 3
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -284,7 +285,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto create_root_failure;
     }
 
-    atomic_store_rel(&d->backup_thread_msg, MSG_ENTERING_OCAML);
+    atomic_store_rel(&d->backup_thread_msg, BT_INIT);
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
@@ -336,10 +337,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     struct dom_internal* dom = &all_domains[i];
     uintnat domain_minor_heap_base;
 
-    caml_plat_mutex_init(&dom->domain_lock);
-    caml_plat_cond_init(&dom->domain_cond, &dom->domain_lock);
-    dom->backup_thread_running = 0;
-
     caml_plat_mutex_init(&dom->interruptor.lock);
     caml_plat_cond_init(&dom->interruptor.cond,
                         &dom->interruptor.lock);
@@ -348,6 +345,10 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     dom->interruptor.terminating = 0;
     dom->interruptor.unique_id = i;
     dom->id = i;
+
+    caml_plat_mutex_init(&dom->domain_lock);
+    caml_plat_cond_init(&dom->domain_cond, &dom->domain_lock);
+    dom->backup_thread_running = 0;
 
     domain_minor_heap_base = minor_heaps_base +
       (uintnat)(1 << Minor_heap_align_bits) * (uintnat)i;
@@ -396,17 +397,17 @@ static void* backup_thread_func(void* v)
   caml_plat_lock (&di->domain_lock);
   while (1) { /* loop1 */
     msg = atomic_load_acq (&di->backup_thread_msg);
-    Assert (msg <= MSG_TERMINATE);
-    if (msg == MSG_ENTERING_OCAML) {
+    Assert (msg <= BT_TERMINATE);
+    if (msg == BT_ENTERING_OCAML) {
       /* Main thread wants to enter OCaml */
       caml_plat_wait(&di->domain_cond);
-    } else if (msg == MSG_IN_BLOCKING_SECTION) {
+    } else if (msg == BT_IN_BLOCKING_SECTION) {
       /* Handle interrupts on behalf of the main thread */
       caml_plat_lock(&s->lock);
       /* Both [s->lock] and [di->domain_lock] held here */
       while (1) { /* loop2 */
         msg = atomic_load_acq (&di->backup_thread_msg);
-        if (msg == MSG_ENTERING_OCAML) {
+        if (msg == BT_ENTERING_OCAML) {
           /* Main thread is leaving blocking section and entering OCaml */
           caml_plat_unlock (&s->lock);
           break; /* break loop2 and goto loop1 */
@@ -414,8 +415,9 @@ static void* backup_thread_func(void* v)
           caml_plat_wait(&s->cond);
         }
       }
-    } else if (msg == MSG_TERMINATE) {
+    } else if (msg == BT_TERMINATE) {
       caml_plat_unlock (&di->domain_lock);
+      atomic_store_rel(&di->backup_thread_msg, BT_INIT);
       break;
     }
   }
@@ -427,6 +429,8 @@ static void install_backup_thread (dom_internal* di)
   int err;
 
   if (di->backup_thread_running == 0) {
+    Assert (di->backup_thread_msg == BT_INIT);
+    atomic_store_rel(&di->backup_thread_msg, BT_ENTERING_OCAML);
     err = pthread_create (&di->backup_thread, 0, backup_thread_func, (void*)di);
     if (err)
       caml_failwith("failed to create domain backup thread");
@@ -889,9 +893,9 @@ CAMLexport void caml_leave_blocking_section() {
   dom_internal* self = domain_self;
 
   Assert(caml_domain_alone() || self->backup_thread_running);
-  atomic_store_rel(&self->backup_thread_msg, MSG_ENTERING_OCAML);
 
   if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
     caml_plat_lock(&self->interruptor.lock);
     caml_plat_signal(&self->interruptor.cond);
     caml_plat_unlock(&self->interruptor.lock);
@@ -909,9 +913,11 @@ CAMLexport void caml_enter_blocking_section() {
 
   caml_process_pending_signals();
   caml_enter_blocking_section_hook();
-  atomic_store_rel(&self->backup_thread_msg, MSG_IN_BLOCKING_SECTION);
-  /* Wakeup backup thread if it is sleeping */
-  caml_plat_signal(&self->domain_cond);
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
+    /* Wakeup backup thread if it is sleeping */
+    caml_plat_signal(&self->domain_cond);
+  }
   caml_plat_unlock(&self->domain_lock);
 }
 
@@ -1142,6 +1148,16 @@ static void domain_terminate()
       s->terminating = 0;
       s->running = 0;
       s->unique_id += Max_domains;
+
+      Assert (domain_self->backup_thread_running);
+      domain_self->backup_thread_running = 0;
+      atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
+      caml_plat_signal(&domain_self->domain_cond);
+      caml_plat_unlock(&domain_self->domain_lock);
+
+      while (atomic_load_acq(&domain_self->backup_thread_msg) != BT_INIT)
+        cpu_relax ();
+
     }
     caml_plat_unlock(&s->lock);
   }
@@ -1165,11 +1181,6 @@ static void domain_terminate()
     acknowledge_all_pending_interrupts();
   }
 
-  Assert (domain_self->backup_thread_running);
-  atomic_store_rel(&domain_self->backup_thread_msg, MSG_TERMINATE);
-  caml_plat_signal(&domain_self->domain_cond);
-  caml_plat_unlock(&domain_self->domain_lock);
-  domain_self->backup_thread_running = 0;
 
   caml_plat_assert_all_locks_unlocked();
   /* This is the last thing we do because we need to be able to rely
