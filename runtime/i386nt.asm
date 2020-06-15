@@ -26,9 +26,14 @@
         EXTERN  _caml_stash_backtrace: PROC
         EXTERN  _Caml_state: DWORD
 
+        .CODE
+
+        PUBLIC  _caml_system__code_begin
+_caml_system__code_begin:
+        ret  ; just one instruction, so that debuggers don't display
+             ; caml_system__code_begin instead of caml_call_gc
 ; Allocation
 
-        .CODE
         PUBLIC  _caml_call_gc
         PUBLIC  _caml_alloc1
         PUBLIC  _caml_alloc2
@@ -291,6 +296,9 @@ _caml_ml_array_bound_error:
     ; Branch to caml_array_bound_error
         mov     eax, offset _caml_array_bound_error
         jmp     _caml_c_call
+
+        PUBLIC _caml_system__code_end
+_caml_system__code_end:
 
         .DATA
         PUBLIC  _caml_system__frametable
