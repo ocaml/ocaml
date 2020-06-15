@@ -91,8 +91,10 @@ static enum gc_root_class classify_gc_root(value v)
 {
   if(!Is_block(v)) return UNTRACKED;
   if(Is_young(v)) return YOUNG;
-  if(Is_in_heap(v)) return OLD;
-  return UNTRACKED;
+#ifndef NO_NAKED_POINTERS
+  if(!Is_in_heap(v)) return UNTRACKED;
+#endif
+  return OLD;
 }
 
 /* Register a global C root of the generational kind */
