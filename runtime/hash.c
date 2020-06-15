@@ -236,7 +236,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
            Forward_tag links being followed */
         for (i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
           v = Forward_val(v);
-          if (Is_long(v) || !Is_in_value_area(v) || Tag_val(v) != Forward_tag)
+          if (Is_long(v) || Is_naked_pointer(v) || Tag_val(v) != Forward_tag)
             goto again;
         }
         /* Give up on this object and move to the next */

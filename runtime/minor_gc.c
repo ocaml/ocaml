@@ -246,13 +246,15 @@ void caml_oldify_one (value v, value *p)
             vv = 1;
             ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
           }else{
-            vv = Is_in_value_area(f);
+            vv = !Is_naked_pointer(f);
             if (vv){
               ft = Tag_val (f);
             }
           }
         }
-        if (!vv || ft == Forward_tag || ft == Lazy_tag
+        if (!vv
+            || ft == Forward_tag
+            || ft == Lazy_tag
 #ifdef FLAT_FLOAT_ARRAY
             || ft == Double_tag
 #endif

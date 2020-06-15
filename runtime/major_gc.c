@@ -247,7 +247,8 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
       value f = Forward_val (child);
       if ((in_ephemeron && Is_long(f)) ||
           (Is_block (f)
-           && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+           && (Is_naked_pointer(f)
+               || Tag_val (f) == Forward_tag
                || Tag_val (f) == Lazy_tag
 #ifdef FLAT_FLOAT_ARRAY
                || Tag_val (f) == Double_tag
@@ -319,7 +320,8 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
           value f = Forward_val (key);
           if (Is_long (f) ||
               (Is_block (f) &&
-               (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+               (Is_naked_pointer(f)
+                || Tag_val (f) == Forward_tag
                 || Tag_val (f) == Lazy_tag
 #ifdef FLAT_FLOAT_ARRAY
                 || Tag_val (f) == Double_tag

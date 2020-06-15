@@ -221,7 +221,7 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 
 CAMLprim value caml_lazy_follow_forward (value v)
 {
-  if (Is_block (v) && Is_in_value_area(v)
+  if (Is_block (v) && !Is_naked_pointer(v)
       && Tag_val (v) == Forward_tag){
     return Forward_val (v);
   }else{
