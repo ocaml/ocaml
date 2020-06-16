@@ -284,8 +284,14 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
      into the backtrace buffer. */
   for (/*nothing*/; sp < Caml_state->trapsp; sp++) {
     code_t p;
+    /* Code pointers in the stack are tagged 1 in NO_NAKED_POINTER mode
+       and 0 otherwise */
+#ifdef NO_NAKED_POINTERS
+    if (! Is_long(*sp)) continue;
+#else
     if (Is_long(*sp)) continue;
-    p = (code_t) *sp;
+#endif
+    p = (code_t) Foreign_ptr_val(*sp);
     if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
       Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = p;
@@ -296,22 +302,33 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
    updates *sp to point to the following one, and *trsp to the next
    trap frame, which we will skip when we reach it  */
 
-code_t caml_next_frame_pointer(value ** sp, value ** trsp)
+code_t caml_next_frame_pointer(value ** sp_inout, value ** trsp_inout)
 {
-  while (*sp < Caml_state->stack_high) {
-    value *spv = (*sp)++;
-    code_t *p;
-    if (Is_long(*spv)) continue;
-    p = (code_t*) spv;
-    if(&Trap_pc(*trsp) == p) {
-      *trsp = *trsp + Long_val(Trap_link_offset(*trsp));
+  value * sp = *sp_inout;
+  value * tr = *trsp_inout;
+  value v;
+  code_t p;
+
+  while (sp < Caml_state->stack_high) {
+    if (sp == tr) {
+      tr = tr + Long_val(Trap_link_offset(tr));
+      sp += 4;
       continue;
     }
-
-    if (find_debug_info(*p) != NULL)
-      return *p;
+    v = *sp++;
+    /* Code pointers in the stack are tagged 1 in NO_NAKED_POINTER mode
+       and 0 otherwise */
+#ifdef NO_NAKED_POINTERS
+    if (! Is_long(v)) continue;
+#else
+    if (Is_long(v)) continue;
+#endif
+    p = (code_t) Foreign_ptr_val(v);
+    if (find_debug_info(p) != NULL) {
+      *sp_inout = sp; *trsp_inout = tr; return p;
+    }
   }
-  return NULL;
+  *sp_inout = sp; *trsp_inout = tr; return NULL;
 }
 
 #define Default_callstack_size 32

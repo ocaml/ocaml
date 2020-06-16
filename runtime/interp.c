@@ -71,7 +71,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 // Do call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
-  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
+  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = Val_foreign_ptr(pc); \
     Caml_state->extern_sp = sp; }
 #define Restore_after_gc \
   { sp = Caml_state->extern_sp; accu = sp[0]; env = sp[1]; sp += 3; }
@@ -80,7 +80,8 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
    first backtrace slot points to the event following the C call
    instruction. */
 #define Setup_for_c_call \
-  { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); Caml_state->extern_sp = sp; }
+  { sp -= 2; sp[0] = env; sp[1] = Val_foreign_ptr(pc + 1); \
+    Caml_state->extern_sp = sp; }
 #define Restore_after_c_call \
   { sp = Caml_state->extern_sp; env = *sp; sp += 2; }
 
@@ -93,20 +94,21 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
     sp[0] = accu; /* accu */ \
     sp[1] = Val_unit; /* C_CALL frame: dummy environment */ \
     sp[2] = Val_unit; /* RETURN frame: dummy local 0 */ \
-    sp[3] = (value) pc; /* RETURN frame: saved return address */ \
+    sp[3] = Val_foreign_ptr(pc); /* RETURN frame: saved return address */ \
     sp[4] = env; /* RETURN frame: saved environment */ \
     sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
     Caml_state->extern_sp = sp; }
 #define Restore_after_event \
   { sp = Caml_state->extern_sp; accu = sp[0]; \
-    pc = (code_t) sp[3]; env = sp[4]; extra_args = Long_val(sp[5]); \
+    pc = (code_t) Foreign_ptr_val(sp[3]); \
+    env = sp[4]; extra_args = Long_val(sp[5]); \
     sp += 6; }
 
 /* Debugger interface */
 
 #define Setup_for_debugger \
    { sp -= 4; \
-     sp[0] = accu; sp[1] = (value)(pc - 1); \
+     sp[0] = accu; sp[1] = Val_foreign_ptr(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
      Caml_state->extern_sp = sp; }
 #define Restore_after_debugger \
@@ -400,7 +402,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSH_RETADDR): {
       sp -= 3;
-      sp[0] = (value) (pc + *pc);
+      sp[0] = Val_foreign_ptr(pc + *pc);
       sp[1] = env;
       sp[2] = Val_long(extra_args);
       pc++;
@@ -416,7 +418,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       value arg1 = sp[0];
       sp -= 3;
       sp[0] = arg1;
-      sp[1] = (value)pc;
+      sp[1] = Val_foreign_ptr(pc);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -430,7 +432,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp -= 3;
       sp[0] = arg1;
       sp[1] = arg2;
-      sp[2] = (value)pc;
+      sp[2] = Val_foreign_ptr(pc);
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -446,7 +448,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp[0] = arg1;
       sp[1] = arg2;
       sp[2] = arg3;
-      sp[3] = (value)pc;
+      sp[3] = Val_foreign_ptr(pc);
       sp[4] = env;
       sp[5] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -510,7 +512,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         pc = Code_val(accu);
         env = accu;
       } else {
-        pc = (code_t)(sp[0]);
+        pc = (code_t) Foreign_ptr_val(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
         sp += 3;
@@ -542,7 +544,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
         Closinfo_val(accu) = Make_closinfo(0, 2);
         sp += num_args;
-        pc = (code_t)(sp[0]);
+        pc = (code_t) Foreign_ptr_val(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
         sp += 3;
@@ -849,7 +851,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHTRAP):
       sp -= 4;
-      Trap_pc(sp) = pc + *pc;
+      Trap_pc(sp) = Val_foreign_ptr(pc + *pc);
       Trap_link_offset(sp) = Val_long(Caml_state->trapsp - sp);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
@@ -876,7 +878,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(RERAISE):
       Check_trap_barrier;
       if (Caml_state->backtrace_active) {
-        *--sp = (value)(pc - 1);
+        *--sp = Val_foreign_ptr(pc - 1);
         caml_stash_backtrace(accu, sp, 1);
       }
       goto raise_notrace;
@@ -884,7 +886,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(RAISE):
       Check_trap_barrier;
       if (Caml_state->backtrace_active) {
-        *--sp = (value)(pc - 1);
+        *--sp = Val_foreign_ptr(pc - 1);
         caml_stash_backtrace(accu, sp, 0);
       }
     raise_notrace:
@@ -897,7 +899,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         return Make_exception_result(accu);
       }
       sp = Caml_state->trapsp;
-      pc = Trap_pc(sp);
+      pc = (code_t) Foreign_ptr_val(Trap_pc(sp));
       Caml_state->trapsp = sp + Long_val(Trap_link_offset(sp));
       env = sp[2];
       extra_args = Long_val(sp[3]);
