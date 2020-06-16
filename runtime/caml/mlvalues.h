@@ -88,6 +88,30 @@ typedef uintnat mark_t;
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
+/* Pointers outside the OCaml heap that are used as values.
+   (E.g. code pointers.)  Must be 2-aligned. */
+
+Caml_inline value Val_foreign_ptr(void * p)
+{
+  CAMLassert(((value) p & 1) == 0);
+#ifdef NO_NAKED_POINTERS
+  return (value) p + 1;
+#else
+  return (value) p;
+#endif
+}
+
+Caml_inline void * Foreign_ptr_val(value v)
+{
+#ifdef NO_NAKED_POINTERS
+  CAMLassert((v & 1) == 1);
+  return (void *) (v - 1);
+#else
+  CAMLassert((v & 1) == 0);
+  return (void *) v;
+#endif
+}
+
 /* Structure of the header:
 
 For 16-bit and 32-bit architectures:
