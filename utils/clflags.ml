@@ -497,7 +497,7 @@ let print_arguments usage =
 let parse_arguments argv f msg =
   try
     let argv = ref argv in
-    let current = ref (!Arg.current) in
+    let current = ref 0 in
     Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
   with
   | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
