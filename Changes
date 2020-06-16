@@ -63,9 +63,6 @@ Working version
 
 ### Code generation and optimizations:
 
-- #9441: Add RISC-V RV64G native-code backend.
-  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
-
 - #9620: Limit the number of parameters for an uncurried or untupled
    function.  Functions with more parameters than that are left
    partially curried or tupled.
@@ -326,6 +323,9 @@ OCaml 4.11
 
 - #9392: Visit registers at most once in Coloring.iter_preferred.
   (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
+
+- #9441: Add RISC-V RV64G native-code backend.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 ### Standard library:
 
