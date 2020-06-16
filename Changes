@@ -171,6 +171,10 @@ Working version
   to allow for a structured attribute payload
   (Gabriel Scherer, review by Vladimir Keleshev and Nicolás Ojeda Bär)
 
+- #9684: document in address_class.h the runtime value model in
+  naked-pointers and no-naked-pointers mode
+  (Xavier Leroy and Gabriel Scherer)
+
 ### Build system:
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
