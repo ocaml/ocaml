@@ -643,7 +643,7 @@ let main () =
     Printf.sprintf "Usage: %s [options] <source files>\nOptions are:"
                    (Filename.basename Sys.argv.(0))
   in
-  Clflags.parse_arguments file_dependencies usage;
+  Clflags.parse_arguments Sys.argv file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);

@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(*
-  this "empty" file is here to speed up garbage collection in ocamlopt.opt
-*)
+(* [main argv ppf] runs the compiler with arguments [argv], printing any
+   errors encountered to [ppf], and returns the exit code.
+
+   NB: Due to internal state in the compiler, calling [main] twice during
+   the same process is unsupported. *)
+val main : string array -> Format.formatter -> int

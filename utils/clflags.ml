@@ -494,9 +494,9 @@ let print_arguments usage =
 (* This function is almost the same as [Arg.parse_expand], except
    that [Arg.parse_expand] could not be used because it does not take a
    reference for [arg_spec].*)
-let parse_arguments f msg =
+let parse_arguments argv f msg =
   try
-    let argv = ref Sys.argv in
+    let argv = ref argv in
     let current = ref (!Arg.current) in
     Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
   with
