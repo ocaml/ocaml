@@ -253,6 +253,19 @@ CAMLexport void caml_unmask(caml_mask_kind old_mask)
   }
 }
 
+// ML, noalloc
+CAMLprim value caml_sys_set_mask(value unit)
+{
+  return Val_bool(caml_mask(CAML_MASK_UNINTERRUPTIBLE) == CAML_MASK_NONE);
+}
+
+// ML, noalloc
+CAMLprim value caml_sys_unset_mask(value unit)
+{
+  caml_unmask(CAML_MASK_NONE);
+  return Val_unit;
+}
+
 /* Execute a signal handler immediately */
 
 static value caml_signal_handlers = 0;

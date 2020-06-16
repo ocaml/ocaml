@@ -121,6 +121,23 @@ let catch_break on =
     set_signal sigint Signal_default
 
 
+external set_mask : unit -> bool = "caml_sys_set_mask" [@@noalloc]
+external unset_mask : unit -> unit = "caml_sys_unset_mask" [@@noalloc]
+
+let mask f (* BEGIN ATOMIC *) x =
+  if set_mask () then (
+    (* END ATOMIC *)
+    match f x with
+    | y -> (* BEGIN ATOMIC *) unset_mask () ; y (* END ATOMIC *)
+    | exception e -> (
+        (* BEGIN ATOMIC *)
+        unset_mask () ;
+        raise e
+        (* END ATOMIC *)
+      )
+  ) else f x
+
+
 external enable_runtime_warnings: bool -> unit =
   "caml_ml_enable_runtime_warnings"
 external runtime_warnings_enabled: unit -> bool =
