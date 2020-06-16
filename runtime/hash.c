@@ -205,7 +205,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       h = caml_hash_mix_intnat(h, v);
       num--;
     }
-    else if (Is_in_value_area(v)) {
+#ifndef NO_NAKED_POINTERS
+    else if (!Is_in_value_area(v)) {
+      /* v is a pointer outside the heap, probably a code pointer.
+         Shall we count it?  Let's say yes by compatibility with old code. */
+      h = caml_hash_mix_intnat(h, v);
+      num--;
+    }
+#endif
+    else {
       switch (Tag_val(v)) {
       case String_tag:
         h = caml_hash_mix_string(h, v);
@@ -254,6 +262,28 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
           num--;
         }
         break;
+#ifdef NO_NAKED_POINTERS
+      case Closure_tag: {
+        mlsize_t startenv;
+        len = Wosize_val(v);
+        startenv = Start_env_closinfo(Closinfo_val(v));
+        CAMLassert (startenv <= len);
+        /* Mix in the tag and size, but do not count this towards [num] */
+        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        /* Mix the code pointers, closure info fields, and infix headers */
+        for (i = 0; i < startenv; i++) {
+          h = caml_hash_mix_intnat(h, Field(v, i));
+          num--;
+        }
+        /* Copy environment fields into queue,
+           not exceeding the total size [sz] */
+        for (/*nothing*/; i < len; i++) {
+          if (wr >= sz) break;
+          queue[wr++] = Field(v, i);
+        }
+        break;
+      }
+#endif
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
         h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
@@ -264,11 +294,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         }
         break;
       }
-    } else {
-      /* v is a pointer outside the heap, probably a code pointer.
-         Shall we count it?  Let's say yes by compatibility with old code. */
-      h = caml_hash_mix_intnat(h, v);
-      num--;
     }
   }
   /* Final mixing of bits */
@@ -319,12 +344,17 @@ static void hash_aux(struct hash_state* h, value obj)
     Combine(Long_val(obj));
     return;
   }
-
+#ifndef NO_NAKED_POINTERS
+  if (! Is_in_value_area(obj)) {
+    /* obj is a pointer outside the heap, to an object with
+       a priori unknown structure. Use its physical address as hash key. */
+    Combine((intnat) obj);
+    return;
+  }
+#endif
   /* Pointers into the heap are well-structured blocks. So are atoms.
      We can inspect the block contents. */
-
-  CAMLassert (Is_block (obj));
-  if (Is_in_value_area(obj)) {
+  /* The code needs reindenting later. Leaving as is to facilitate review. */
     tag = Tag_val(obj);
     switch (tag) {
     case String_tag:
@@ -384,6 +414,25 @@ static void hash_aux(struct hash_state* h, value obj)
         Combine(Custom_ops_val(obj)->hash(obj));
       }
       break;
+#ifdef NO_NAKED_POINTERS
+    case Closure_tag:
+      h->univ_count--;
+      Combine_small(tag);
+      /* Recursively hash the environment fields */
+      i = Wosize_val(obj);
+      j = Start_env_closinfo(Closinfo_val(obj));
+      while (i > j) {
+        i--;
+        hash_aux(h, Field(obj, i));
+      }
+      /* Combine the code pointers, closure info fields, and infix headers */
+      while (i > 0) {
+        i--;
+        Combine(Field(obj, i));
+        h->univ_count--;
+      }
+      break;
+#endif
     default:
       h->univ_count--;
       Combine_small(tag);
@@ -394,12 +443,6 @@ static void hash_aux(struct hash_state* h, value obj)
       }
       break;
     }
-    return;
-  }
-
-  /* Otherwise, obj is a pointer outside the heap, to an object with
-     a priori unknown structure. Use its physical address as hash key. */
-  Combine((intnat) obj);
 }
 
 /* Hashing variant tags */
