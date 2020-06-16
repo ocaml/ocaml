@@ -28,7 +28,7 @@ let main () =
   Clflags.add_arguments __LOC__
     ["-depend", Arg.Unit Makedepend.main_from_option,
      "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
-  try
+  match
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_clflags_from_env ();
@@ -106,11 +106,15 @@ let main () =
       Bytelink.link (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
-  with x ->
+  with
+  | exception (Compenv.Exit_compiler n) ->
+    n
+  | exception x ->
     Location.report_exception ppf x;
-    exit 2
+    2
+  | () ->
+    Profile.print Format.std_formatter !Clflags.profile_columns;
+    0
 
 let () =
-  main ();
-  Profile.print Format.std_formatter !Clflags.profile_columns;
-  exit 0
+  exit (main ())

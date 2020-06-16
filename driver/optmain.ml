@@ -40,7 +40,7 @@ module Options = Main_args.Make_optcomp_options (Main_args.Default.Optmain)
 let main () =
   native_code := true;
   let ppf = Format.err_formatter in
-  try
+  match
     readenv ppf Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.add_arguments __LOC__
@@ -129,11 +129,15 @@ let main () =
         Asmlink.link ~ppf_dump (get_objfiles ~with_ocamlparam:true) target);
       Warnings.check_fatal ();
     end;
-  with x ->
-      Location.report_exception ppf x;
-      exit 2
+  with
+  | exception (Exit_compiler n) ->
+    n
+  | exception x ->
+    Location.report_exception ppf x;
+    2
+  | () ->
+    Profile.print Format.std_formatter !Clflags.profile_columns;
+    0
 
 let () =
-  main ();
-  Profile.print Format.std_formatter !Clflags.profile_columns;
-  exit 0
+  exit (main ())
