@@ -47,8 +47,8 @@
    corresponds to a simpler model where a valid value is either:
    - a tagged integer (Is_long)
    - a pointer to the minor heap (Is_young)
-   - a pointer to the a well-formed block
-     (it may be on the major heap, or static, or a foreign pointer,
+   - a pointer to a well-formed block outside the minor heap
+     (it may be in the major heap, or static, or a foreign pointer,
       without a check to distinguish the various cases).
 
    (To create a well-formed block outside the heap that the GC will
