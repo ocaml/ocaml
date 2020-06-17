@@ -1,6 +1,5 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/parsing"
-   include ocamlcommon
+   flags = "-I ${ocamlsrcdir}/parsing -I ${ocamlsrcdir}/compilerlibs -open Ocamlcommon"
    * expect
 *)
 [@@@alert "-deprecated"]
@@ -8,7 +7,7 @@
 module L = Longident
 
 [%%expect {|
-module L = Longident
+module L = Ocamlcommon.Longident
 |}]
 
 let flatten_ident = L.flatten (L.Lident "foo")
@@ -22,7 +21,7 @@ val flatten_dot : string list = ["M"; "foo"]
 let flatten_apply = L.flatten (L.Lapply (L.Lident "F", L.Lident "X"))
 [%%expect {|
 >> Fatal error: Longident.flat
-Exception: Misc.Fatal_error.
+Exception: Ocamlcommon.Misc.Fatal_error.
 |}]
 
 let unflatten_empty = L.unflatten []
@@ -50,7 +49,7 @@ val last_dot : string = "foo"
 let last_apply = L.last (L.Lapply (L.Lident "F", L.Lident "X"))
 [%%expect {|
 >> Fatal error: Longident.last
-Exception: Misc.Fatal_error.
+Exception: Ocamlcommon.Misc.Fatal_error.
 |}]
 let last_dot_apply = L.last
     (L.Ldot (L.Lapply (L.Lident "F", L.Lident "X"), "foo"))
@@ -73,9 +72,9 @@ type parse_result = { flat : L.t; spec : L.t; any_is_correct : bool; }
 val test : (Lexing.lexbuf -> L.t) -> string -> parse_result = <fun>
 val parse_empty : L.t = L.Lident ""
 Exception:
-Syntaxerr.Error
- (Syntaxerr.Other
-   {Location.loc_start =
+Ocamlcommon.Syntaxerr.Error
+ (Ocamlcommon.Syntaxerr.Other
+   {Ocamlcommon.Location.loc_start =
      {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 0};
     loc_end =
      {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 0};
@@ -167,7 +166,7 @@ val mod_ext : parse_result =
 
 let string_of_longident lid = Format.asprintf "%a" Pprintast.longident lid
 [%%expect{|
-val string_of_longident : Longident.t -> string = <fun>
+val string_of_longident : Ocamlcommon.Longident.t -> string = <fun>
 |}]
 let str_empty   = string_of_longident parse_empty
 [%%expect {|

@@ -1,7 +1,6 @@
 (* TEST
-  include config
+  include ocamlcommon
   * native
-    flags = "config.cmx"
 *)
 
 (* Check the effectiveness of structured constant propagation and
