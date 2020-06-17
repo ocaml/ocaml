@@ -106,12 +106,23 @@ CAMLprim value caml_obj_block(value tag, value size)
    * reason, the blocks with [String_tag] cannot be of size [0]. We initialise
    * the last byte to [0] such that the length returned by [String.length] and
    * [Bytes.length] is non-negative number.
+   *
+   * [Closure_tag] is below [no_scan_tag], but closures have more
+   * structure with in particular a "closure information" that
+   * indicates where the environment start. We initialize this to
+   * a sane value, as it may be accessed by runtime functions.
    */
   res = caml_alloc(sz, tg);
 
   if (tg == String_tag) {
     if (sz == 0) caml_invalid_argument ("Obj.new_block");
     Field (res, sz - 1) = 0;
+  }
+
+  if (tg == Closure_tag) {
+    /* Closinfo_val is the seconnd field, so we need size at least 2 */
+    if (sz < 2) caml_invalid_argument ("Obj.new_block");
+    Closinfo_val(res) = Make_closinfo(0, 2);
   }
 
   return res;
