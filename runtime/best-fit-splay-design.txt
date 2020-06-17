@@ -1,0 +1,156 @@
+* needed functions:
+
+- bf_search for insertion (free, add memory)
+- bf_search_no_splay for is_in_tree (debug, no change to the data structure)
+- bf_search for remove (merge)
+- bf_search_best for remove (allocate)
+
+* Generalized bf_search:
+Assuming the tree is non-empty, this function will search and splay,
+and return enough information to satisfy all three
+use cases. The returned data is the state of the top-down splaying just
+before the tree reconstruction, with the right subtree decomposed into:
+- the leftmost node (with its right subtree) [as a stub]
+- a stub that contains the rest of the right subtree
+The stub may be empty, and if it is, the leftmost "node" may be an empty
+stub too.
+
+Note on stubs: a stub is a "subtree with a hole". It is represented as a
+node* (root) and a node** (hole). It may be empty (root = NULL, hole = &root).
+To use a stub, the hole must be filled first, then the root can be used as
+a normal (sub)tree pointer.
+
+** arguments: a size s
+** return values: a record
+** precondition: the tree must be non-empty
+
+- Sl: left stub (root and bottom-right hole)
+       Sl
+       /\
+      L  o
+- Tx: current subtree
+       v
+      / \
+     Tl Tr
+- nr: right node (root and bottom-left hole)
+       nr
+       /\
+      o  R1
+- Sr: right stub (root and bottom-left hole)
+       Sr
+       /\
+      o  R2
+
+These are listed in key order. The normal splaying algorithm would
+rebuild the tree as:
+
+                ___v___
+               /       \
+              Sl       Sr
+              /\       /\
+             L  Tl    nr R2
+                      /\
+                     Tr R1
+
+But we are stopping at this intermediate state because we want to merge
+this rebuild operation with the operation that will be done immediately
+thereafter.
+
+There are two cases:
+
+1. s is found in the tree.
+   In this case, V is of size s.
+
+2. s is not found in the tree.
+   In this case, Tr is empty and s lies between the size of V and the size
+   of Nr (and there is no other node between these sizes).
+
+
+* usage
+
+** search for insertion
+
+1. s found at V
+   add the block to V's list and rebuild the tree normally:
+                  __v__
+                 /     \
+                Sl     Sr
+                /\     /\
+               L  Tl  nr R2
+                      /\
+                     Tr R1
+
+2. s not found
+   create a new node x and rebuild the tree as:
+
+                  __x__
+                 /     \
+                Sl     Sr
+                /\     /\
+               L  v   nr R2
+                 /     \
+                Tl      R1
+
+   This is [almost] the same as inserting x as the right child of v, then
+   splaying on x.
+
+** search for remove
+   This search is guaranteed to find the node of size s, so there is only one
+   case:
+
+1. s found at v
+
+   If v's list is non-empty, we just replace v with another block of the
+   list, and rebuild the tree normally.
+
+   Otherwise we need to remove v and there are 2 subcases:
+
+   a. Tr or Tl is empty
+      Let Tx be the other one (which may be empty), we use nr for the new root:
+                  __nr__
+                 /      \
+                Sl      Sr
+                /\      /\
+               L  Tx   R1 R2
+
+   b. Tr and Tl are both non-empty
+      We have to call splay_least on Tr, which yields
+                    u
+                     \
+                     Ur
+      and rebuild:
+                  __u__
+                 /     \
+                Sl     Sr
+                /\     /\
+               L  Tl  Nr R2
+                      /\
+                     Ur R1
+
+2. s not found: this case is impossible
+
+** search_best:
+
+   Again two cases:
+
+1. s found at v
+
+   If v's list is non-empty, we just take a block from it and rebuild the
+   tree normally.
+
+   Otherwise, we remove v and we have the same subcases as in
+   "search for remove" above.
+
+2. s not found
+
+   If nr's list is non-empty, we just remove a block from it and rebuild
+   the tree normally.
+
+   Otherwise, we just remove nr (and Tr, which is empty) by replacing it
+   with its right child and rebuild as:
+
+                ___v___
+               /       \
+              Sl       Sr
+              /\       /\
+             L  Tl    R1 R2
