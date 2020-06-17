@@ -72,7 +72,7 @@ OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
 
 ifeq ($(SUPPORTS_SHARED_LIBRARIES),false)
-  CUSTOM = -custom
+  CUSTOM = -output-complete-exe -ccopt -I$(OTOPDIR)/runtime
 else
   CUSTOM =
 endif
@@ -89,7 +89,7 @@ else
 	                            $(WINTOPDIR)/flexdll/flexlink.exe" $(EMPTY)
   endif
 endif
-OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) \
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(OCFLAGS) \
        $(RUNTIME_VARIANT)
 OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) \
          $(RUNTIME_VARIANT)

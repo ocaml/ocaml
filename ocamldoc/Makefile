@@ -202,8 +202,15 @@ OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 OCAMLDOC_BCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cma)
 OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)
 
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+CUSTOM=
+else
+CUSTOM=-ccopt -I$(ROOTDIR)/runtime -output-complete-exe
+endif
+
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
+	$(OCAMLC) -o $@ -linkall $(CUSTOM) $(LINKFLAGS) \
+	  $(OCAMLDOC_BCLIBRARIES) $^
 
 $(OCAMLDOC_OPT): $(EXECMXFILES)
 	$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^

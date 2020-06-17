@@ -62,6 +62,9 @@ let caml_ld_library_path =
 let compare_programs = make ("compare_programs",
   "Set to \"false\" to disable program comparison")
 
+let compare_byte_programs = make ("compare_byte_programs",
+  "Set to \"false\" to disable bytecode program comparison")
+
 let compiler_directory_suffix = make ("compiler_directory_suffix",
   "Suffix to add to the directory where the test will be compiled")
 
@@ -238,6 +241,7 @@ let _ = List.iter register_variable
     c_preprocessor;
     caml_ld_library_path;
     compare_programs;
+    compare_byte_programs;
     compiler_directory_suffix;
     compiler_reference;
     compiler_reference2;

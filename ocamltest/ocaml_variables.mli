@@ -32,6 +32,8 @@ val caml_ld_library_path : Variables.t
 
 val compare_programs : Variables.t
 
+val compare_byte_programs : Variables.t
+
 val compiler_directory_suffix : Variables.t
 
 val compiler_reference : Variables.t

@@ -82,7 +82,7 @@ let mk_config_var f =
 ;;
 
 let mk_custom f =
-  "-custom", Arg.Unit f, " Link in custom mode"
+  "-custom", Arg.Unit f, " Link in custom mode (deprecated)"
 ;;
 
 let mk_dllib f =

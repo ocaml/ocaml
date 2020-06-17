@@ -62,14 +62,14 @@ not referenced anywhere in the program, then it is not linked in.
 \item
 Arguments ending in ".c" are passed to the C compiler, which generates
 a ".o" object file (".obj" under Windows). This object file is linked
-with the program if the "-custom" flag is set (see the description of
-"-custom" below).
+with the program if the "-output-complete-exe" flag is set (see the description of
+"-output-complete-exe" below).
 
 \item
 Arguments ending in ".o" or ".a" (".obj" or ".lib" under Windows)
 are assumed to be C object files and libraries. They are passed to the
-C linker when linking in "-custom" mode (see the description of
-"-custom" below).
+C linker when linking in "-output-complete-exe" mode (see the description of
+"-output-complete-exe" below).
 
 \item
 Arguments ending in ".so" (".dll" under Windows)

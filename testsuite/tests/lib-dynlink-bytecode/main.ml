@@ -45,7 +45,7 @@ reference = "${test_source_directory}/static.reference"
 
 ******** ocamlc.byte
 program = "${test_build_directory}/custom.exe"
-flags = "-custom -linkall -I ."
+flags = "-output-complete-exe -linkall -I ."
 all_modules = "registry.cmo plug2.cma plug1.cma"
 use_runtime = "false"
 ********* run

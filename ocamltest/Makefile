@@ -182,6 +182,7 @@ directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
 include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
+  -ccopt -I$(ROOTDIR)/runtime \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
@@ -214,7 +215,7 @@ compdeps_byte=$(addsuffix .cma,$(compdeps_paths))
 compdeps_opt=$(addsuffix .cmxa,$(compdeps_paths))
 
 ocamltest$(EXE): $(compdeps_byte) $(bytecode_modules)
-	$(ocamlc_cmd) -custom -o $@ $^
+	$(ocamlc_cmd) -output-complete-exe -o $@ $^
 
 %.cmo: %.ml $(compdeps_byte)
 	$(ocamlc) -c $<

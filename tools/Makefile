@@ -47,7 +47,7 @@ define byte_and_opt_
 $(and $(filter-out 1,$(words $1)),$(error \
    cannot build file with whitespace in name))
 $1: $3 $2
-	$$(CAMLC) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ $2
+	$$(CAMLC) $$(CUSTOM) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ $2
 
 $1.opt: $3 $$(call byte2native,$2)
 	$$(CAMLOPT_CMD) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ \
