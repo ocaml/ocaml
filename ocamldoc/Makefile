@@ -25,7 +25,7 @@ STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 OCAMLDEP = $(BEST_OCAMLDEP)
-DEPFLAGS = -slash
+DEPFLAGS = -slash $(OPENS)
 OCAMLLEX = $(BEST_OCAMLLEX)
 
 # For installation
@@ -94,11 +94,11 @@ INCLUDES_DEP=\
   -I $(ROOTDIR)/typing \
   -I $(ROOTDIR)/driver \
   -I $(ROOTDIR)/bytecomp \
-  -I $(ROOTDIR)/toplevel
+  -I $(ROOTDIR)/toplevel \
+  -I $(ROOTDIR)/compilerlibs
 
 INCLUDES_NODEP=\
   -I $(ROOTDIR)/stdlib \
-  -I $(ROOTDIR)/compilerlibs \
   -I $(ROOTDIR)/otherlibs/str \
   -I $(ROOTDIR)/otherlibs/dynlink \
   -I $(ROOTDIR)/otherlibs/dynlink/native \
@@ -106,9 +106,10 @@ INCLUDES_NODEP=\
 
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
-
+OPENS=-open Ocamlcommon
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
-  -safe-string -strict-sequence -strict-formats -bin-annot -principal
+  -safe-string -strict-sequence -strict-formats -bin-annot -principal \
+  -no-alias-deps $(OPENS)
 
 LINKFLAGS=$(INCLUDES) -nostdlib
 
@@ -509,7 +510,8 @@ depend:
 	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_lexer.mll
 	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_ocamlhtml.mll
 	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_see_lexer.mll
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend.tmp
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend.tmp
+	sed -Ef ../compilerlibs/compilerlibs.sed < .depend.tmp > .depend
 
 include .depend
