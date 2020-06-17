@@ -99,7 +99,6 @@ let compilerlibs_subdirs =
 [
   "asmcomp";
   "bytecomp";
-  "compilerlibs";
   "driver";
   "file_formats";
   "lambda";
@@ -108,13 +107,18 @@ let compilerlibs_subdirs =
   "toplevel";
   "typing";
   "utils";
+  "compilerlibs";
 ]
 
 let add_compiler_subdir subdir =
   Append (Ocaml_variables.directories, (wrap (compiler_subdir [subdir])))
 
+let add_open archive =
+  Append (Ocaml_variables.flags, " -no-alias-deps -open " ^ String.capitalize_ascii archive ^ " ")
+
 let compilerlibs_archive archive =
   (Append (Ocaml_variables.libraries, wrap archive)) ::
+  add_open archive ::
   (List.map add_compiler_subdir compilerlibs_subdirs)
 
 let debugger = [add_compiler_subdir "debugger"]

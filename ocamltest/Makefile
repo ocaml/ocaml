@@ -181,16 +181,19 @@ directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
 
 include_directories := $(addprefix -I , $(directories))
 
+opens=-open Ocamlcommon
+
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-41-42-44-45-48 -warn-error A -no-alias-deps \
+  $(opens)
 
 ocamlc := $(BEST_OCAMLC) $(flags)
 
 ocamlopt :=  $(BEST_OCAMLOPT) $(flags)
 
 ocamldep := $(BEST_OCAMLDEP)
-depflags := -slash
+depflags := -slash $(opens)
 depincludes :=
 
 ocamllex := $(BEST_OCAMLLEX)
