@@ -13,6 +13,205 @@
 #*                                                                        *
 #**************************************************************************
 
+COMPILERLIBSDIR=compilerlibs/
+
+# Variables
+
+# DO_NOT_PREFIX
+#
+# This variable keeps track of those compilation units that should *not* be
+# prefixed (eg. toplevel/topdirs.cmo).
+
+DO_NOT_PREFIX=
+
+# Begin Transitional
+
+# IMPLEMENTATION_ONLY
+#
+# This variable lists all unit names consisting of an .ml file without a
+# corresponding .mli. It is used to state the right dependencies for deprecated
+# unit names below, without having to run `ocamldep`. See below for the
+# compilation rules of deprecated units.
+
+IMPLEMENTATION_ONLY=\
+	typing/cmt2annot.cmo \
+	asmcomp/branch_relaxation_intf.cmo \
+	asmcomp/debug/compute_ranges_intf.cmo \
+	asmcomp/arch.cmo \
+	asmcomp/CSE.cmo
+
+# End Transitional
+
+# Utility macros: these macros are used below to ...
+
+# $(call deprecated-file,LIST)
+#
+# Map each element of LIST of the form <dir>/<file> to compilerlibs/<file> *if*
+# <dir>/<file> does not appear in $(DO_NOT_PREFIX).  Otherwise, the element is
+# mapped to the empty string.
+
+define deprecated-file
+$(addprefix $(COMPILERLIBSDIR),$(notdir $(filter-out $(DO_NOT_PREFIX),$(1))))
+endef
+
+# $(call prefix-file,PREFIX,LIST)
+
+# Map each element of LIST of the form <dir>/<file> to <dir>/PREFIX<file> *if*
+# <dir>/<file> does not appear in $(DO_NOT_PREFIX).  Otherwise, the element is
+# returned unchanged.
+
+define prefix-file
+$(foreach x,$(2),$(if $(filter $(DO_NOT_PREFIX),$(x)),$(x),$(dir $(x))$(1)$(notdir $(x))))
+endef
+
+# $(call compile-impl,PREFIX,NAME)
+#
+# If NAME belongs to $(DO_NOT_PREFIX), do nothing. Otherwise, define compilation
+# rules for unit NAME with target prefix PREFIX.  NAME is assumed to be a unit
+# name ending in .cmo. Additionally in this case, define a rule to generate a
+# compatibility shim, and define a compilation rule for it.
+#
+# For example, $(call compile-impl,ocamlcommon__,bytecomp/meta.cmo) generates
+# the following rules:
+#
+#   bytecomp/ocamlcommon__meta.cmo: bytecomp/meta.ml
+#   	$(CAMLC) $(COMPFLAGS) -o $@ -c $<
+#
+#   bytecomp/ocamlcommon__meta.cmi: bytecomp/meta.mli
+#   	$(CAMLC) $(COMPFLAGS) -o $@ -c $<
+#
+#   bytecomp/ocamlcommon_meta.cmx: bytecomp/meta.ml
+#   	$(CAMLC) $(COMPFLAGS) $(OPTCOMPFLAGS) -o $@ -c $<
+#
+#   compilerlibs/meta.ml: compilerlibs/Makefile.compilerlibs
+#       ....
+#
+#   compilerlibs/meta.cmo: bytecomp/ocamlcommon__meta.cmi
+#
+#   compilerlibs/meta.cmx: bytecomp/ocamlcommon__meta.cmx bytecomp/ocamlcommon__meta.cmi
+#
+# The dependencies for the deprecated units could be obtained by using ocamldep,
+# but a manual approach is preferred to avoid polluting the .depend file
+# (especially as these units will be removed once the transitional period is
+# over and the dependencies are very simple.
+
+define compile-impl
+ifneq ($(filter-out $(DO_NOT_PREFIX),$(2)),)
+$(call prefix-file,$(1),$(2)): $(2:.cmo=.ml)
+	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
+
+$(call prefix-file,$(1),$(2:.cmo=.cmi)): $(2:.cmo=.mli)
+	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
+
+$(call prefix-file,$(1),$(2:.cmo=.cmx)): $(2:.cmo=.ml)
+	$$(CAMLOPT) $$(COMPFLAGS) $$(OPTCOMPFLAGS) -o $$@ -c $$<
+
+# Begin Transitional
+$(call deprecated-file,$(2:.cmo=.ml)): $(COMPILERLIBSDIR)Makefile.compilerlibs
+	$$(AWK) -f $(COMPILERLIBSDIR)generate_deprecated.awk -v PREFIX=$(1:__=) -v NAME=$(2) > $$@
+
+$(call deprecated-file,$(2)): $(call prefix-file,$(1),$(if $(filter $(2),$(IMPLEMENTATION_ONLY)),$(2),$(2:.cmo=.cmi)))
+
+$(call deprecated-file,$(2:.cmo=.cmx)): $(call prefix-file,$(1),$(2:.cmo=.cmx) $(if $(filter $(2),$(IMPLEMENTATION_ONLY)),,$(2:.cmo=.cmi)))
+# End Transitional
+endif
+endef
+
+# $(call compile-intf,PREFIX,NAME)
+#
+# If NAME belongs to $(DO_NOT_PREFIX), do nothing. Otherwise, define compilation
+# rules for unit NAME with target prefix PREFIX.  NAME is assumed to be a unit
+# name ending in .cmi. Additionally in this case, define a rule to generate a
+# compatibility shim, and define a compilation rule for it.
+#
+# For example, $(call compile-intf,ocamlcommon__,parsing/parsetree.cmi)
+# generates the following rules:
+#
+#   parsing/ocamlcommon__parsetree.cmi: bytecomp/meta.mli
+#   	$(CAMLC) $(COMPFLAGS) -o $@ -c $<
+#
+#   compilerlibs/parsetree.mli: compilerlibs/Makefile.compilerlibs
+#       ....
+#
+#   compilerlibs/parsetree.cmi: parsing/ocamlcommon__parsetree.cmi
+#
+# The dependencies for the deprecated units could be obtained by using ocamldep,
+# but a manual approach is preferred to avoid polluting the .depend file
+# (especially as these units will be removed once the transitional period is
+# over and the dependencies are very simple.
+
+define compile-intf
+ifneq ($(filter-out $(DO_NOT_PREFIX),$(2)),)
+$(call prefix-file,$(1),$(2)): $(2:.cmi=.mli)
+	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
+
+# Begin Transitional
+$(call deprecated-file,$(2:.cmi=.mli)): $(COMPILERLIBSDIR)Makefile.compilerlibs
+	$$(AWK) -f $(COMPILERLIBSDIR)generate_deprecated.awk -v PREFIX=$(1:__=) -v NAME=$(2) > $$@
+
+$(call deprecated-file,$(2)): $(call prefix-file,$(1),$(2))
+# End Transitional
+endif
+endef
+
+define NEWLINE
+
+
+endef
+
+# $(call declare-library,PREFIX,LIST-CMOS,LIST-CMIS)
+#
+# Use above macros to define compilation rules and .depend postprocessing script
+# for a library corresponding to PREFIX consisting of LIST-CMOS and LIST-CMIS.
+#
+# The .depend postprocessing script consists of a sed script that rewrites
+# each "short" path into a "long" path.
+#
+# For example, for bytecomp/meta.cmo, the generated script will contain the line
+#
+#   s#bytecomp/meta[.]#bytecomp/ocamlbytecomp__meta.#g
+#
+# Note that there is one sed script per library; these are all concatenated
+# together into a single sed script compilerlibs/compilerlibs.sed further below.
+
+define declare-library
+$(foreach cmo,$(2),$(eval $(call compile-impl,$(1),$(cmo))))
+$(foreach cmi,$(3),$(eval $(call compile-intf,$(1),$(cmi))))
+
+$(COMPILERLIBSDIR)$(1:__=.sed): $(COMPILERLIBSDIR)Makefile.compilerlibs
+	rm -f $$@
+	$(foreach x,$(basename $(filter-out $(DO_NOT_PREFIX),$(2) $(3))),echo "s#$(x)[.]#$(call prefix-file,$(1),$(x)).#g" >> $$@ $$(NEWLINE))
+endef
+
+# $(call declare-map,PREFIX,LIST-UNITS)
+#
+# Define rules to generate and compile a "map" file for a library corresponding
+# to PREFIX, mapping short names to long names for every unit in LIST-UNITS.
+#
+# For example, $(call declare-map,ocamlcommon__,$(COMMON)) will
+# generate rules:
+#
+#   compilerlibs/ocamlcommon.mli: compilerlibs/Makefile.compilerlibs \
+#     compilerlibs/generate_module_aliases.awk
+#   	...
+#
+#   compilerlibs/ocamlcommon.cmi: compierlibs/ocamlcommon.mli
+#   	$(CAMLC) -no-alias-deps -w -49 -c $<
+
+define declare-map
+$(COMPILERLIBSDIR)$(1:__=.mli): $(COMPILERLIBSDIR)Makefile.compilerlibs $(COMPILERLIBSDIR)generate_module_aliases.awk
+	echo $(sort $(basename $(notdir $(filter-out $(DO_NOT_PREFIX),$(2))))) | \
+	  $$(AWK) -f $(COMPILERLIBSDIR)generate_module_aliases.awk > $$@
+
+$(COMPILERLIBSDIR)$(1:__=.cmi): $(COMPILERLIBSDIR)$(1:__=.mli)
+	$$(CAMLC) -no-alias-deps -w -49 -c $$<
+endef
+
+partialclean::
+	rm -f $(COMPILERLIBSDIR)*.ml* $(COMPILERLIBSDIR)*.cm* \
+	  $(COMPILERLIBSDIR)*.o $(COMPILERLIBSDIR)*.a $(COMPILERLIBSDIR).lib \
+	  $(COMPILERLIBSDIR)*.obj $(COMPILERLIBSDIR)*.sed
+
 # Targets and dependencies for compilerlibs archives
 
 # This file is meant to be included from the root Makefile, not to be
@@ -93,14 +292,33 @@ COMP_CMI=\
 # ocamlcommon library so that ocamlobjinfo can depend on them.
 
 COMMON_CMI=$(UTILS_CMI) $(PARSING_CMI) $(TYPING_CMI) $(LAMBDA_CMI) $(COMP_CMI)
-
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
+
+COMMON_PREFIX=ocamlcommon__
+
+PREFIXED_COMMON=$(call prefix-file,$(COMMON_PREFIX),$(COMMON))
+PREFIXED_COMMON_CMI=$(call prefix-file,$(COMMON_PREFIX),$(COMMON_CMI))
+
+DEPRECATED_COMMON=$(call deprecated-file,$(COMMON))
+DEPRECATED_COMMON_CMI=$(call deprecated-file,$(COMMON_CMI))
+
+$(eval $(call declare-map,$(COMMON_PREFIX),$(PREFIXED_COMMON) $(PREFIXED_COMMON_CMI)))
+$(eval $(call declare-library,$(COMMON_PREFIX),$(COMMON),$(COMMON_CMI)))
 
 BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/emitcode.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 BYTECOMP_CMI=
+
+BYTECOMP_PREFIX=ocamlbytecomp__
+PREFIXED_BYTECOMP=$(call prefix-file,$(BYTECOMP_PREFIX),$(BYTECOMP))
+PREFIXED_BYTECOMP_CMI=$(call prefix-file,$(BYTECOMP_PREFIX),$(BYTECOMP_CMI))
+DEPRECATED_BYTECOMP=$(call deprecated-file,$(BYTECOMP))
+DEPRECATED_BYTECOMP_CMI=$(call deprecated-file,$(BYTECOMP_CMI))
+
+$(eval $(call declare-map,$(BYTECOMP_PREFIX),$(PREFIXED_BYTECOMP) $(PREFIXED_BYTECOMP_CMI)))
+$(eval $(call declare-library,$(BYTECOMP_PREFIX),$(BYTECOMP),$(BYTECOMP_CMI)))
 
 INTEL_ASM=\
   asmcomp/x86_proc.cmo \
@@ -256,50 +474,99 @@ MIDDLE_END_CMI=\
   $(MIDDLE_END_CLOSURE_CMI) \
   $(MIDDLE_END_FLAMBDA_CMI)
 
+MIDDLE_END_PREFIX=ocamlmiddleend__
+
+PREFIXED_MIDDLE_END=$(call prefix-file,$(OPTCOMP_PREFIX),$(MIDDLE_END))
+PREFIXED_MIDDLE_END_CMI=$(call prefix-file,$(OPTCOMP_PREFIX),$(MIDDLE_END_CMI))
+
+DEPRECATED_MIDDLE_END=$(call deprecated-file,$(MIDDLE_END))
+DEPRECATED_MIDDLE_END_CMI=$(call deprecated-file,$(MIDDLE_END_CMI))
+
 OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
 OPTCOMP_CMI=$(MIDDLE_END_CMI) $(ASMCOMP_CMI)
 
-TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
-  toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
+OPTCOMP_PREFIX=ocamloptcomp__
+
+PREFIXED_OPTCOMP=$(call prefix-file,$(OPTCOMP_PREFIX),$(OPTCOMP))
+PREFIXED_OPTCOMP_CMI=$(call prefix-file,$(OPTCOMP_PREFIX),$(OPTCOMP_CMI))
+
+DEPRECATED_OPTCOMP=$(call deprecated-file,$(OPTCOMP))
+DEPRECATED_OPTCOMP_CMI=$(call deprecated-file,$(OPTCOMP_CMI))
+
+$(eval $(call declare-map,$(MIDDLE_END_PREFIX),$(PREFIXED_MIDDLE_END) $(PREFIXED_MIDDLE_END_CMI)))
+$(eval $(call declare-map,$(OPTCOMP_PREFIX),$(PREFIXED_OPTCOMP) $(PREFIXED_OPTCOMP_CMI)))
+$(eval $(call declare-library,$(OPTCOMP_PREFIX),$(OPTCOMP),$(OPTCOMP_CMI)))
+
+GENPRINTVAL=toplevel/genprintval.cmo
+TOPDIRS=toplevel/topdirs.cmo
+TOPLEVEL=$(GENPRINTVAL) toplevel/toploop.cmo \
+  toplevel/trace.cmo $(TOPDIRS) toplevel/topmain.cmo
 TOPLEVEL_CMI=
 
-OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
-  toplevel/opttopdirs.cmo toplevel/opttopmain.cmo
+DO_NOT_PREFIX += $(TOPDIRS)
+
+TOPLEVEL_PREFIX=ocamltoplevel__
+
+PREFIXED_TOPLEVEL=$(call prefix-file,$(TOPLEVEL_PREFIX),$(TOPLEVEL))
+PREFIXED_TOPLEVEL_CMI=$(call prefix-file,$(TOPLEVEL_PREFIX),$(TOPLEVEL_CMI))
+
+DEPRECATED_TOPLEVEL=$(call deprecated-file,$(TOPLEVEL))
+DEPRECATED_TOPLEVEL_CMI=$(call deprecated-file,$(TOPLEVEL_CMI))
+
+$(eval $(call declare-map,$(TOPLEVEL_PREFIX),$(PREFIXED_TOPLEVEL) $(PREFIXED_TOPLEVEL_CMI)))
+$(eval $(call declare-library,$(TOPLEVEL_PREFIX),$(TOPLEVEL),$(TOPLEVEL_CMI)))
+
+OPTTOPDIRS=toplevel/opttopdirs.cmo
+OPTTOPLEVEL_NO_GENPRINTVAL=toplevel/opttoploop.cmo \
+  $(OPTTOPDIRS) toplevel/opttopmain.cmo
+OPTTOPLEVEL=$(GENPRINTVAL) $(OPTTOPLEVEL_NO_GENPRINTVAL)
 OPTTOPLEVEL_CMI=
 
+DO_NOT_PREFIX += $(OPTTOPDIRS)
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
-$(OPTTOPLEVEL:.cmo=.cmx): ocamlopt
+OPTTOPLEVEL_PREFIX=ocamlopttoplevel__
 
+PREFIXED_OPTTOPLEVEL=$(call prefix-file,$(TOPLEVEL_PREFIX),$(GENPRINTVAL)) \
+	$(call prefix-file,$(OPTTOPLEVEL_PREFIX),$(OPTTOPLEVEL_NO_GENPRINTVAL))
+PREFIXED_OPTTOPLEVEL_CMI=$(call prefix-file,$(OPTTOPLEVEL_PREFIX),$(OPTTOPLEVEL_CMI))
 
-compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(COMMON)
-	$(CAMLC) -a -linkall -o $@ $(COMMON)
+DEPRECATED_OPTTOPLEVEL=$(call deprecated-file,$(OPTTOPLEVEL))
+DEPRECATED_OPTTOPLEVEL_CMI=$(call deprecated-file,$(OPTTOPLEVEL_CMI))
+
+$(eval $(call declare-map,$(OPTTOPLEVEL_PREFIX),$(PREFIXED_OPTTOPLEVEL) $(PREFIXED_OPTTOPLEVEL_CMI)))
+$(eval $(call declare-library,$(OPTTOPLEVEL_PREFIX),$(OPTTOPLEVEL_NO_GENPRINTVAL),$(OPTTOPLEVEL_CMI)))
+
+$(PREFIXED_COMMON:.cmo=.cmx) $(PREFIXED_BYTECOMP:.cmo=.cmx) $(PREFIXED_OPTCOMP:.cmo=.cmx): ocamlopt
+$(PREFIXED_OPTTOPLEVEL:.cmo=.cmx): ocamlopt
+
+compilerlibs/ocamlcommon.cma: $(PREFIXED_COMMON_CMI) $(PREFIXED_COMMON) $(DEPRECATED_COMMON_CMI) $(DEPRECATED_COMMON)
+	$(CAMLC) -a -linkall -o $@ $(PREFIXED_COMMON) $(DEPRECATED_COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
-compilerlibs/ocamlcommon.cmxa: $(COMMON_CMI) $(COMMON:.cmo=.cmx)
-	$(CAMLOPT) -a -linkall -o $@ $(COMMON:.cmo=.cmx)
+compilerlibs/ocamlcommon.cmxa: $(PREFIXED_COMMON_CMI) $(PREFIXED_COMMON:.cmo=.cmx) $(DEPRECATED_COMMON_CMI) $(DEPRECATED_COMMON:.cmo=.cmx)
+	$(CAMLOPT) -a -linkall -o $@ $(PREFIXED_COMMON:.cmo=.cmx) $(DEPRECATED_COMMON:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cmxa \
 	      compilerlibs/ocamlcommon.a compilerlibs/ocamlcommon.lib
 
 
-compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMI) $(BYTECOMP)
-	$(CAMLC) -a -o $@ $(BYTECOMP)
+compilerlibs/ocamlbytecomp.cma: $(PREFIXED_BYTECOMP_CMI) $(PREFIXED_BYTECOMP) $(DEPRECATED_BYTECOMP_CMI) $(DEPRECATED_BYTECOMP)
+	$(CAMLC) -a -o $@ $(PREFIXED_BYTECOMP) $(DEPRECATED_BYTECOMP)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
-compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMI) $(BYTECOMP:.cmo=.cmx)
-	$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $(BYTECOMP:.cmo=.cmx)
+compilerlibs/ocamlbytecomp.cmxa: $(PREFIXED_BYTECOMP_CMI) $(PREFIXED_BYTECOMP:.cmo=.cmx) $(DEPRECATED_BYTECOMP_CMI) $(DEPRECATED_BYTECOMP:.cmo=.cmx)
+	$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $(PREFIXED_BYTECOMP:.cmo=.cmx) $(DEPRECATED_BYTECOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa \
 	      compilerlibs/ocamlbytecomp.a compilerlibs/ocamlbytecomp.lib
 
 
-compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END_CMI) $(MIDDLE_END)
-	$(CAMLC) -a -o $@ $(MIDDLE_END)
-compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END_CMI) $(MIDDLE_END:%.cmo=%.cmx)
-	$(CAMLOPT) -a -o $@ $(MIDDLE_END:%.cmo=%.cmx)
+compilerlibs/ocamlmiddleend.cma: $(PREFIXED_MIDDLE_END_CMI) $(PREFIXED_MIDDLE_END) $(DEPRECATED_MIDDLE_END_CMI) $(DEPRECATED_MIDDLE_END)
+	$(CAMLC) -a -o $@ $(PREFIXED_MIDDLE_END) $(DEPRECATED_MIDDLE_END)
+compilerlibs/ocamlmiddleend.cmxa: $(PREFIXED_MIDDLE_END_CMI) $(PREFIXED_MIDDLE_END:.cmo=.cmx) $(DEPRECATED_MIDDLE_END_CMI) $(DEPRECATED_MIDDLE_END:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(PREFIXED_MIDDLE_END:.cmo=.cmx) $(DEPRECATED_MIDDLE_END:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma \
 	      compilerlibs/ocamlmiddleend.cmxa \
@@ -307,25 +574,30 @@ partialclean::
 	      compilerlibs/ocamlmiddleend.lib
 
 
-compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMI) $(OPTCOMP)
-	$(CAMLC) -a -o $@ $(OPTCOMP)
+compilerlibs/ocamloptcomp.cma: $(PREFIXED_OPTCOMP_CMI) $(PREFIXED_OPTCOMP) $(DEPRECATED_OPTCOMP_CMI) $(DEPRECATED_OPTCOMP)
+	$(CAMLC) -a -o $@ $(PREFIXED_OPTCOMP) $(DEPRECATED_OPTCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
-compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP_CMI) $(OPTCOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(OPTCOMP:.cmo=.cmx)
+compilerlibs/ocamloptcomp.cmxa: $(PREFIXED_OPTCOMP_CMI) $(PREFIXED_OPTCOMP:.cmo=.cmx) $(DEPRECATED_OPTCOMP_CMI) $(DEPRECATED_OPTCOMP:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(PREFIXED_OPTCOMP:.cmo=.cmx) $(DEPRECATED_OPTCOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa \
 	      compilerlibs/ocamloptcomp.a compilerlibs/ocamloptcomp.lib
 
 
-compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMI) $(TOPLEVEL)
-	$(CAMLC) -a -o $@ $(TOPLEVEL)
+compilerlibs/ocamltoplevel.cma: $(PREFIXED_TOPLEVEL_CMI) $(PREFIXED_TOPLEVEL) $(DEPRECATED_TOPLEVEL_CMI) $(DEPRECATED_TOPLEVEL)
+	$(CAMLC) -a -o $@ $(PREFIXED_TOPLEVEL) $(DEPRECATED_TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
-compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+compilerlibs/ocamlopttoplevel.cmxa: $(PREFIXED_OPTTOPLEVEL_CMI) $(PREFIXED_OPTTOPLEVEL:.cmo=.cmx) $(DEPRECATED_OPTTOPLEVEL_CMI) $(DEPRECATED_OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(PREFIXED_OPTTOPLEVEL:.cmo=.cmx) $(DEPRECATED_OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa \
 	  compilerlibs/ocamlopttoplevel.a compilerlibs/ocamlopttoplevel.lib
+
+$(COMPILERLIBSDIR)compilerlibs.sed: $(addprefix $(COMPILERLIBSDIR),$(addsuffix .sed,ocamlcommon ocamlbytecomp ocamloptcomp ocamltoplevel ocamlopttoplevel))
+	cat $^ > $@
+
+beforedepend:: $(COMPILERLIBSDIR)compilerlibs.sed
