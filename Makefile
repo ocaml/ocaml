@@ -40,11 +40,16 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
         -I lambda -I middle_end -I middle_end/closure \
         -I middle_end/flambda -I middle_end/flambda/base_types \
         -I asmcomp -I asmcomp/debug \
-        -I driver -I toplevel
+        -I driver -I toplevel -I compilerlibs
+OPENS=-open Ocamlcommon \
+	-open Ocamlbytecomp \
+	-open Ocamloptcomp \
+	-open Ocamltoplevel \
+	-open Ocamlopttoplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
-	  -warn-error A \
-          -bin-annot -safe-string -strict-formats $(INCLUDES)
+	  -warn-error A -no-alias-deps \
+          -bin-annot -safe-string -strict-formats $(INCLUDES) $(OPENS)
 LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -56,7 +61,7 @@ endif
 YACCFLAGS=-v --strict
 CAMLLEX=$(CAMLRUN) boot/ocamllex
 CAMLDEP=$(CAMLRUN) boot/ocamlc -depend
-DEPFLAGS=-slash
+DEPFLAGS=-slash $(OPENS)
 DEPINCLUDES=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
@@ -1065,7 +1070,8 @@ depend: beforedepend
          middle_end/flambda/base_types asmcomp/debug \
          driver toplevel; \
          do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
-         done) > .depend
+         done) > .depend.tmp
+	sed -Ef compilerlibs/compilerlibs.sed < .depend.tmp > .depend
 
 .PHONY: distclean
 distclean: clean
