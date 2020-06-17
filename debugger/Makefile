@@ -25,20 +25,22 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
-          -safe-string -strict-sequence -strict-formats
+	  -no-alias-deps $(OPENS) \
+	  -safe-string -strict-sequence -strict-formats
+OPENS=-open Ocamlcommon -open Ocamlbytecomp -open Ocamltoplevel
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 YACCFLAGS=
 CAMLLEX=$(BEST_OCAMLLEX)
 CAMLDEP=$(BEST_OCAMLDEP)
-DEPFLAGS=-slash
+DEPFLAGS=-slash $(OPENS)
 DEPINCLUDES=$(INCLUDES)
 
 DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
-  utils parsing typing bytecomp toplevel driver file_formats lambda)
+  utils parsing typing bytecomp toplevel driver file_formats lambda compilerlibs)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-compiler_modules := $(ROOTDIR)/toplevel/genprintval
+compiler_modules := $(ROOTDIR)/toplevel/ocamltoplevel__genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters debugger_lexer \
@@ -77,7 +79,8 @@ clean::
 
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
-	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
+	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend.tmp
+	sed -Ef ../compilerlibs/compilerlibs.sed < .depend.tmp > .depend
 
 debugger_lexer.ml: debugger_lexer.mll
 	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
