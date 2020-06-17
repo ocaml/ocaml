@@ -135,8 +135,10 @@ ocamlmklib.cmx : \
 ocamlmklibconfig.cmo :
 ocamlmklibconfig.cmx :
 ocamlmktop.cmo : \
+    ../utils/config.cmi \
     ../utils/ccomp.cmi
 ocamlmktop.cmx : \
+    ../utils/config.cmx \
     ../utils/ccomp.cmx
 ocamloptp.cmo : \
     ../driver/main_args.cmi
