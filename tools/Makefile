@@ -75,9 +75,11 @@ CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
                        middle_end middle_end/closure middle_end/flambda \
                        middle_end/flambda/base_types driver toplevel \
-                       file_formats lambda)
+                       file_formats lambda compilerlibs)
+OPENS = -open Ocamlcommon -open Ocamlbytecomp -open Ocamloptcomp -open Ocamltoplevel
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
- -principal -safe-string -strict-formats -bin-annot $(INCLUDES)
+ -no-alias-deps \
+ -principal -safe-string -strict-formats -bin-annot $(INCLUDES) $(OPENS)
 LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
@@ -101,21 +103,21 @@ clean::
 # The profiler
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
+CSLPROF_IMPORTS=$(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo \
   camlinternalMenhirLib.cmo parser.cmo \
   pprintast.cmo \
-  lexer.cmo parse.cmo
+  lexer.cmo parse.cmo)
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
+ocamlcp_cmos = $(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
                clflags.cmo \
                terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
-               main_args.cmo
+               main_args.cmo)
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
 $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
@@ -139,8 +141,8 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
-	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo $(addprefix ocamlcommon__,config.cmo \
+	         build_path_prefix_map.cmo misc.cmo) ocamlmklib.cmo,)
 
 
 ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
@@ -159,9 +161,9 @@ clean::
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
+OCAMLMKTOP_IMPORTS=$(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo misc.cmo \
        identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-       load_path.cmo profile.cmo ccomp.cmo
+       load_path.cmo profile.cmo ccomp.cmo)
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
@@ -349,7 +351,7 @@ $(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
 $(caml_tex): $(caml_tex_files)
 	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(ROOTDIR)/ocamlc$(EXE) -nostdlib \
 	                            -I $(ROOTDIR)/stdlib $(LINKFLAGS) -linkall \
-	                            -o $@ -no-alias-deps $^
+	                            -o $@ -no-alias-deps $(OPENS) $^
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage
@@ -377,10 +379,11 @@ clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
 CAMLDEP=$(BOOT_OCAMLC) -depend
-DEPFLAGS=-slash
+DEPFLAGS=-slash $(OPENS)
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend.tmp
+	sed -Ef ../compilerlibs/compilerlibs.sed < .depend.tmp > .depend
 
 .PHONY: clean install beforedepend depend
 
