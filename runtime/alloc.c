@@ -227,6 +227,12 @@ CAMLprim value caml_alloc_dummy_infix(value vsize, value voffset)
 {
   mlsize_t wosize = Long_val(vsize), offset = Long_val(voffset);
   value v = caml_alloc(wosize, Closure_tag);
+  /* The following choice of closure info causes the GC to skip
+     the whole block contents.  This is correct since the dummy
+     block contains no pointers into the heap.  However, the block
+     cannot be marshaled or hashed, because not all closinfo fields
+     and infix header fields are correctly initialized. */
+  Closinfo_val(v) = Make_closinfo(0, wosize);
   if (offset > 0) {
     v += Bsize_wsize(offset);
     Hd_val(v) = Make_header(offset, Infix_tag, Caml_white);
@@ -257,6 +263,10 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     dummy = dummy - Infix_offset_val(dummy);
     size = Wosize_val(clos);
     CAMLassert (size == Wosize_val(dummy));
+    /* It is safe to use [caml_modify] to copy code pointers
+       from [clos] to [dummy], because the value being overwritten is
+       an integer, and the new "value" is a pointer outside the minor
+       heap. */
     for (i = 0; i < size; i++) {
       caml_modify (&Field(dummy, i), Field(clos, i));
     }
@@ -266,6 +276,8 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     Tag_val(dummy) = tag;
     size = Wosize_val(newval);
     CAMLassert (size == Wosize_val(dummy));
+    /* See comment above why this is safe even if [tag == Closure_tag]
+       and some of the "values" being copied are actually code pointers. */
     for (i = 0; i < size; i++){
       caml_modify (&Field(dummy, i), Field(newval, i));
     }
