@@ -397,6 +397,16 @@ endif
 	$(INSTALL_DATA) \
 	  compilerlibs/*.cma \
 	  "$(INSTALL_COMPLIBDIR)"
+# Transitional: install compiler-libs compatibility shims
+	$(INSTALL_DATA) \
+	  compilerlibs/*.cmi \
+	  "$(INSTALL_COMPLIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  compilerlibs/*.cmt compilerlibs/*.cmti compilerlibs/*.mli \
+	  $(INSTALL_COMPLIBDIR)
+endif
+# End Transitional
 	$(INSTALL_DATA) \
 	   $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
@@ -540,6 +550,11 @@ installoptopt:
 	$(INSTALL_DATA) \
 	   compilerlibs/*.cmxa compilerlibs/*.$(A) \
 	   "$(INSTALL_COMPLIBDIR)"
+# Transitional: install compiler-libs compatibility shims
+	$(INSTALL_DATA) \
+	  compilerlibs/*.cmx \
+	  $(INSTALL_COMPLIBDIR)
+# End Transitional
 	$(INSTALL_DATA) \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
