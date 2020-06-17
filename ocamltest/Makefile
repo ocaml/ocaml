@@ -195,7 +195,7 @@ depincludes :=
 
 ocamllex := $(BEST_OCAMLLEX)
 
-ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
+ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 ocamlcdefaultflags :=
 
@@ -213,11 +213,15 @@ compdeps_paths=$(addprefix $(ROOTDIR)/compilerlibs/,$(compdeps_names))
 compdeps_byte=$(addsuffix .cma,$(compdeps_paths))
 compdeps_opt=$(addsuffix .cmxa,$(compdeps_paths))
 
+$(eval $(call PROGRAM_SYNONYM,ocamltest))
+
 ocamltest$(EXE): $(compdeps_byte) $(bytecode_modules)
 	$(ocamlc_cmd) -custom -o $@ $^
 
 %.cmo: %.ml $(compdeps_byte)
 	$(ocamlc) -c $<
+
+$(eval $(call PROGRAM_SYNONYM,ocamltest.opt))
 
 ocamltest.opt$(EXE): $(compdeps_opt) $(native_modules)
 	$(ocamlopt_cmd) -o $@ $^

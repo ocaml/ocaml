@@ -40,7 +40,7 @@ FLEXDLL_SUBMODULE_PRESENT =
 endif
 
 # Use boot/ocamlc.opt if available
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 ifeq (0,$(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
   echo $$?))
@@ -117,3 +117,12 @@ endif
 
 $(DEPDIR):
 	$(MKDIR) $@
+
+# When executable files have an extension (e.g. ".exe"),
+# provide phony synonyms
+define PROGRAM_SYNONYM
+ifneq ($(EXE),)
+.PHONY: $(1)
+$(1): $(1)$(EXE)
+endif
+endef # PROGRAM_SYNONYM

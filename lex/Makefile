@@ -19,11 +19,11 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
+CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
-CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
@@ -36,19 +36,23 @@ DEPINCLUDES =
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
+programs := ocamllex ocamllex.opt
+
+$(foreach program, $(programs), $(eval $(call PROGRAM_SYNONYM,$(program))))
+
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamllex
 allopt: ocamllex.opt
 opt.opt: allopt
 
-ocamllex: $(OBJS)
+ocamllex$(EXE): $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
-ocamllex.opt: $(OBJS:.cmo=.cmx)
+ocamllex.opt$(EXE): $(OBJS:.cmo=.cmx)
 	$(CAMLOPT_CMD) -o $@ $^
 
 clean::
-	rm -f ocamllex ocamllex.opt
+	rm -f $(programs) $(programs:=.exe)
 	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.o *.obj
 
 parser.ml parser.mli: parser.mly

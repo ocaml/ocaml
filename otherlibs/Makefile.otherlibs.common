@@ -30,7 +30,7 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(EXTRACPPFLAGS)
 # Compilation options
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
           -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
-MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
 
 # Variables that must be defined by individual libraries:
 # LIBNAME

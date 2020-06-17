@@ -247,8 +247,8 @@ _build
 /tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
 /tools/objinfo_helper
-/tools/read_cmt
-/tools/read_cmt.opt
+/tools/ocamlcmt
+/tools/ocamlcmt.opt
 /tools/cmpbyt
 /tools/cmpbyt.opt
 /tools/stripdebug
