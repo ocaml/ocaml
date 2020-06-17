@@ -260,6 +260,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,SO) \
 	    $(call SUBST_STRING,CSC) \
 	    $(call SUBST_STRING,CSCFLAGS) \
+	    $(call SUBST_STRING,EXE) \
 	    $(call SUBST_STRING,MKDLL) \
 	    $(call SUBST_STRING,mkexe) \
 	    $(call SUBST_STRING,BYTECCLIBS) \

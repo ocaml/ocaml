@@ -70,6 +70,8 @@ let csc = "%%CSC%%"
 
 let csc_flags = "%%CSCFLAGS%%"
 
+let exe = "%%EXE%%"
+
 let mkdll = "%%MKDLL%%"
 let mkexe = "%%mkexe%%"
 
