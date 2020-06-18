@@ -42,10 +42,7 @@ module Filename = struct
 
   let make_path components = List.fold_left Filename.concat "" components
 
-  let mkexe =
-    if Sys.win32
-    then fun name -> make_filename name "exe"
-    else fun name -> name
+  let mkexe filename = filename ^ Ocamltest_config.exe
 end
 
 module List = struct

@@ -244,7 +244,8 @@ let dump_byte ic =
     toc
 
 let find_dyn_offset filename =
-  let helper = Filename.concat Config.standard_library "objinfo_helper" in
+  let helper_name = "objinfo_helper" ^ Config.ext_exe in
+  let helper = Filename.concat Config.standard_library helper_name in
   let tempfile = Filename.temp_file "objinfo" ".out" in
   match
     Fun.protect

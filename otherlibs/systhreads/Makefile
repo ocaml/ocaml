@@ -32,7 +32,7 @@ LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 CAMLC=$(BEST_OCAMLC) $(LIBS)
 CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
 
-MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 
 LIBNAME=threads
@@ -109,8 +109,7 @@ INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
 install:
 	if test -f dllthreads$(EXT_DLL); then \
-	  $(INSTALL_PROG) \
-	    dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/dllthreads$(EXT_DLL)"; \
+	  $(INSTALL_PROG) dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)

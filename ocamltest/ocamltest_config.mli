@@ -100,6 +100,9 @@ val csc : string
 val csc_flags : string
 (** Flags for the CSharp compiler *)
 
+val exe : string
+(** Extension of executable files *)
+
 val mkdll : string
 val mkexe : string
 
