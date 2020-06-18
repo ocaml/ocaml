@@ -98,12 +98,8 @@ $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
 ocamldep.opt: depend.cmi
 
-# ocamldep is precious: sometimes we are stuck in the middle of a
-# bootstrap and we need to remake the dependencies
 clean::
-	if test -f ocamldep; then mv -f ocamldep ocamldep.bak; else :; fi
-	rm -f ocamldep.opt
-
+	rm -f ocamldep ocamldep.exe ocamldep.opt ocamldep.opt.exe
 
 # The profiler
 
@@ -211,14 +207,8 @@ CVT_EMIT=cvt_emit.cmo
 cvt_emit: $(CVT_EMIT)
 	$(CAMLC) $(LINKFLAGS) -o cvt_emit $(CVT_EMIT)
 
-# cvt_emit is precious: sometimes we are stuck in the middle of a
-# bootstrap and we need to remake the dependencies
-.PRECIOUS: cvt_emit
 clean::
-	if test -f cvt_emit; then mv -f cvt_emit cvt_emit.bak; else :; fi
-
-clean::
-	rm -f cvt_emit.ml
+	rm -f cvt_emit.ml cvt_emit cvt_emit.exe
 
 beforedepend:: cvt_emit.ml
 
