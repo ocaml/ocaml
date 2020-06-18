@@ -171,22 +171,23 @@ static inline void log_gc_value(const char* prefix, value v)
 #define Is_update_in_progress(hd) ((hd) == In_progress_update_val)
 
 /* TODO: Probably a better spinlock needed here though doesn't happen often */
-static inline void spin_on_header(value v) {
+static void spin_on_header(value v) {
   while (atomic_load(Hp_atomic_val(v)) != 0) {
     cpu_relax();
   }
 }
 
-int get_header_val(value v) {
-  if (caml_domain_alone())
-    return Hd_val(v);
-
+static inline header_t get_header_val(value v) {
   header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_relaxed);
   if (!Is_update_in_progress(hd))
     return hd;
 
   spin_on_header(v);
   return 0;
+}
+
+header_t caml_get_header_val(value v) {
+  return get_header_val(v);
 }
 
 static int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
