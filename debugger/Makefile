@@ -79,8 +79,8 @@ clean::
 
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
-	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend.tmp
-	sed -Ef ../compilerlibs/compilerlibs.sed < .depend.tmp > .depend
+	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend.new
+	../runtime/ocamlrun ../tools/postprocess_depend ../compilerlibs/*.sed < .depend.new > .depend
 
 debugger_lexer.ml: debugger_lexer.mll
 	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<

@@ -95,6 +95,11 @@ endef
 # (especially as these units will be removed once the transitional period is
 # over and the dependencies are very simple.
 
+# Begin Transitional
+tools/generate_deprecated: tools/generate_deprecated.ml
+	$(MAKE) -C tools generate_deprecated
+# End Transitional
+
 define compile-impl
 ifneq ($(filter-out $(DO_NOT_PREFIX),$(2)),)
 $(call prefix-file,$(1),$(2)): $(2:.cmo=.ml)
@@ -107,8 +112,8 @@ $(call prefix-file,$(1),$(2:.cmo=.cmx)): $(2:.cmo=.ml)
 	$$(CAMLOPT) $$(COMPFLAGS) $$(OPTCOMPFLAGS) -o $$@ -c $$<
 
 # Begin Transitional
-$(call deprecated-file,$(2:.cmo=.ml)): $(COMPILERLIBSDIR)Makefile.compilerlibs
-	$$(AWK) -f $(COMPILERLIBSDIR)generate_deprecated.awk -v PREFIX=$(1:__=) -v NAME=$(2) > $$@
+$(call deprecated-file,$(2:.cmo=.ml)): tools/generate_deprecated $(COMPILERLIBSDIR)Makefile.compilerlibs
+	./runtime/ocamlrun $$< $(1:__=) $(2) > $$@
 
 $(call deprecated-file,$(2)): $(call prefix-file,$(1),$(if $(filter $(2),$(IMPLEMENTATION_ONLY)),$(2),$(2:.cmo=.cmi)))
 
@@ -146,17 +151,12 @@ $(call prefix-file,$(1),$(2)): $(2:.cmi=.mli)
 	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
 
 # Begin Transitional
-$(call deprecated-file,$(2:.cmi=.mli)): $(COMPILERLIBSDIR)Makefile.compilerlibs
-	$$(AWK) -f $(COMPILERLIBSDIR)generate_deprecated.awk -v PREFIX=$(1:__=) -v NAME=$(2) > $$@
+$(call deprecated-file,$(2:.cmi=.mli)): tools/generate_deprecated $(COMPILERLIBSDIR)Makefile.compilerlibs
+	./runtime/ocamlrun $$< $(1:__=) $(2) > $$@
 
 $(call deprecated-file,$(2)): $(call prefix-file,$(1),$(2))
 # End Transitional
 endif
-endef
-
-define NEWLINE
-
-
 endef
 
 # $(call declare-library,PREFIX,LIST-CMOS,LIST-CMIS)
@@ -179,8 +179,9 @@ $(foreach cmo,$(2),$(eval $(call compile-impl,$(1),$(cmo))))
 $(foreach cmi,$(3),$(eval $(call compile-intf,$(1),$(cmi))))
 
 $(COMPILERLIBSDIR)$(1:__=.sed): $(COMPILERLIBSDIR)Makefile.compilerlibs
-	rm -f $$@
-	$(foreach x,$(basename $(filter-out $(DO_NOT_PREFIX),$(2) $(3))),echo "s#$(x)[.]#$(call prefix-file,$(1),$(x)).#g" >> $$@ $$(NEWLINE))
+	echo $(filter-out $(DO_NOT_PREFIX),$(2) $(3)) > $$@
+
+beforedepend:: $(COMPILERLIBSDIR)$(1:__=.sed)
 endef
 
 # $(call declare-map,PREFIX,LIST-UNITS)
@@ -198,13 +199,17 @@ endef
 #   compilerlibs/ocamlcommon.cmi: compierlibs/ocamlcommon.mli
 #   	$(CAMLC) -no-alias-deps -w -49 -c $<
 
+tools/generate_module_aliases: tools/generate_module_aliases.ml
+	$(MAKE) -C tools generate_module_aliases
+
 define declare-map
-$(COMPILERLIBSDIR)$(1:__=.mli): $(COMPILERLIBSDIR)Makefile.compilerlibs $(COMPILERLIBSDIR)generate_module_aliases.awk
-	echo $(sort $(basename $(notdir $(filter-out $(DO_NOT_PREFIX),$(2))))) | \
-	  $$(AWK) -f $(COMPILERLIBSDIR)generate_module_aliases.awk > $$@
+$(COMPILERLIBSDIR)$(1:__=.mli): tools/generate_module_aliases $(COMPILERLIBSDIR)Makefile.compilerlibs
+	echo $(filter-out $(DO_NOT_PREFIX),$(2)) | ./runtime/ocamlrun $$< > $$@
 
 $(COMPILERLIBSDIR)$(1:__=.cmi): $(COMPILERLIBSDIR)$(1:__=.mli)
 	$$(CAMLC) -no-alias-deps -w -49 -c $$<
+
+beforedepend:: $(COMPILERLIBSDIR)$(1:__=.mli)
 endef
 
 partialclean::
@@ -596,8 +601,3 @@ compilerlibs/ocamlopttoplevel.cmxa: $(PREFIXED_OPTTOPLEVEL_CMI) $(PREFIXED_OPTTO
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa \
 	  compilerlibs/ocamlopttoplevel.a compilerlibs/ocamlopttoplevel.lib
-
-$(COMPILERLIBSDIR)compilerlibs.sed: $(addprefix $(COMPILERLIBSDIR),$(addsuffix .sed,ocamlcommon ocamlbytecomp ocamloptcomp ocamltoplevel ocamlopttoplevel))
-	cat $^ > $@
-
-beforedepend:: $(COMPILERLIBSDIR)compilerlibs.sed

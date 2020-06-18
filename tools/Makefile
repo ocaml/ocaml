@@ -252,6 +252,15 @@ $(make_opcodes): make_opcodes.ml
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(make_opcodes) -opnames < $< > $@
 
+generate_module_aliases: generate_module_aliases.ml
+	$(CAMLC) $< -o $@
+
+generate_deprecated: generate_deprecated.ml
+	$(CAMLC) $< -o $@
+
+postprocess_depend: postprocess_depend.ml
+	$(CAMLC) $< -o $@
+
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml
 
@@ -382,8 +391,8 @@ CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash $(OPENS)
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend.tmp
-	sed -Ef ../compilerlibs/compilerlibs.sed < .depend.tmp > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml | \
+	../runtime/ocamlrun ../tools/postprocess_depend ../compilerlibs/*.sed > .depend
 
 .PHONY: clean install beforedepend depend
 

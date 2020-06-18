@@ -1078,6 +1078,8 @@ partialclean::
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
+beforedepend:: tools/postprocess_depend
+
 .PHONY: depend
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
@@ -1085,8 +1087,8 @@ depend: beforedepend
          middle_end/flambda/base_types asmcomp/debug \
          driver toplevel; \
          do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
-         done) > .depend.tmp
-	sed -Ef compilerlibs/compilerlibs.sed < .depend.tmp > .depend
+         done) | \
+	./runtime/ocamlrun tools/postprocess_depend compilerlibs/*.sed > .depend.new
 
 .PHONY: distclean
 distclean: clean

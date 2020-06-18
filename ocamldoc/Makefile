@@ -512,6 +512,6 @@ depend:
 	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_see_lexer.mll
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend.tmp
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend.tmp
-	sed -Ef ../compilerlibs/compilerlibs.sed < .depend.tmp > .depend
+	../runtime/ocamlrun ../tools/postprocess_depend ../compilerlibs/*.sed < .depend.tmp > .depend
 
 include .depend
