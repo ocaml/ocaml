@@ -106,7 +106,7 @@ INCLUDES_NODEP=\
 
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
-OPENS=-open Ocamlcommon
+OPENS=-open OCaml
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal \
   -no-alias-deps $(OPENS)
@@ -512,6 +512,6 @@ depend:
 	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_see_lexer.mll
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend.tmp
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend.tmp
-	../runtime/ocamlrun ../tools/postprocess_depend ../compilerlibs/*.sed < .depend.tmp > .depend
+	../runtime/ocamlrun ../tools/postprocess_depend < .depend.tmp > .depend
 
 include .depend

@@ -27,7 +27,7 @@ CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
 	  -no-alias-deps $(OPENS) \
 	  -safe-string -strict-sequence -strict-formats
-OPENS=-open Ocamlcommon -open Ocamlbytecomp -open Ocamltoplevel
+OPENS=-open OCaml
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 YACCFLAGS=
 CAMLLEX=$(BEST_OCAMLLEX)
@@ -79,8 +79,8 @@ clean::
 
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
-	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend.new
-	../runtime/ocamlrun ../tools/postprocess_depend ../compilerlibs/*.sed < .depend.new > .depend
+	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' | \
+	../runtime/ocamlrun ../tools/postprocess_depend > .depend
 
 debugger_lexer.ml: debugger_lexer.mll
 	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<

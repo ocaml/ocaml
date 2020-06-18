@@ -41,11 +41,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
         -I middle_end/flambda -I middle_end/flambda/base_types \
         -I asmcomp -I asmcomp/debug \
         -I driver -I toplevel -I compilerlibs
-OPENS=-open Ocamlcommon \
-	-open Ocamlbytecomp \
-	-open Ocamloptcomp \
-	-open Ocamltoplevel \
-	-open Ocamlopttoplevel
+OPENS=-open OCaml
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
 	  -warn-error A -no-alias-deps \
@@ -1078,10 +1074,11 @@ partialclean::
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
-tools/postprocess_depend: tools/postprocess_depend.mll
+.PHONY: postprocess_depend
+postprocess_depend: compilerlibs/postprocess_depend_data.ml
 	$(MAKE) -C tools postprocess_depend
 
-beforedepend:: tools/postprocess_depend
+beforedepend:: postprocess_depend
 
 .PHONY: depend
 depend: beforedepend
@@ -1091,7 +1088,7 @@ depend: beforedepend
          driver toplevel; \
          do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
          done) | \
-	./runtime/ocamlrun tools/postprocess_depend compilerlibs/*.sed > .depend
+	./runtime/ocamlrun tools/postprocess_depend > .depend
 
 .PHONY: distclean
 distclean: clean

@@ -76,7 +76,7 @@ INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
                        middle_end middle_end/closure middle_end/flambda \
                        middle_end/flambda/base_types driver toplevel \
                        file_formats lambda compilerlibs)
-OPENS = -open Ocamlcommon -open Ocamlbytecomp -open Ocamloptcomp -open Ocamltoplevel
+OPENS = -open OCaml
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -no-alias-deps \
  -principal -safe-string -strict-formats -bin-annot $(INCLUDES) $(OPENS)
@@ -258,8 +258,8 @@ generate_module_aliases: generate_module_aliases.ml
 generate_deprecated: generate_deprecated.ml
 	$(CAMLC) $< -o $@
 
-postprocess_depend: postprocess_depend.ml
-	$(CAMLC) $< -o $@
+postprocess_depend: ../compilerlibs/postprocess_depend_data.ml postprocess_depend.ml
+	$(CAMLC) -I ../compilerlibs -o $@ $^
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml
@@ -392,7 +392,7 @@ DEPFLAGS=-slash $(OPENS)
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml | \
-	../runtime/ocamlrun ../tools/postprocess_depend ../compilerlibs/*.sed > .depend
+	../runtime/ocamlrun ./postprocess_depend > .depend
 
 .PHONY: clean install beforedepend depend
 

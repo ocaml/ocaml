@@ -13,42 +13,34 @@
 (*                                                                        *)
 (**************************************************************************)
 
-rule replace subst = parse
+{
+module SMap = Map.Make (String)
+
+let addprefix s =
+  Filename.dirname s ^ "/compilerlibs__" ^ Filename.basename s
+
+let map =
+  Postprocess_depend_data.v
+  |> String.split_on_char ' '
+  |> List.map String.trim
+  |> List.filter ((<>) "")
+  |> List.map Filename.remove_extension
+  |> List.fold_left (fun map s -> SMap.add s (addprefix s) map) SMap.empty
+
+let subst s =
+  Option.value ~default:s (SMap.find_opt s map)
+}
+
+rule replace = parse
 | ("../"* as pre) (['/''a'-'z''A'-'Z''_''0'-'9''$''('')']+ as s) ('.' as post)
     { print_string pre;
       print_string (subst s);
       print_char post;
-      replace subst lexbuf }
-| _ as c { print_char c; replace subst lexbuf }
+      replace lexbuf }
+| _ as c { print_char c; replace lexbuf }
 | eof { () }
 
 {
-let with_open_in fn f =
-  let ic = open_in fn in
-  Fun.protect ~finally:(fun () -> close_in_noerr ic)
-    (fun () -> f ic)
-
-module SMap = Map.Make (String)
-
-let subst = ref SMap.empty
-
-let readlist fn =
-  let addprefix s =
-    Filename.dirname s ^ "/compilerlibs__" ^ Filename.basename s in
-  let entries =
-    with_open_in fn input_line
-    |> String.split_on_char ' '
-    |> List.map String.trim
-    |> List.filter ((<>) "")
-    |> List.map Filename.remove_extension
-  in
-  subst :=
-    List.fold_left (fun map s -> SMap.add s (addprefix s) map)
-      !subst entries
-
 let () =
-  List.iter readlist @@ List.tl @@ Array.to_list Sys.argv;
-  let lexbuf = Lexing.from_channel stdin in
-  let f s = Option.value ~default:s (SMap.find_opt s !subst) in
-  replace f lexbuf
+  replace @@ Lexing.from_channel stdin
 }

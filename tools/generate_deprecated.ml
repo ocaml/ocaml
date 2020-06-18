@@ -14,10 +14,9 @@
 (**************************************************************************)
 
 let _ =
-  let prefix = Sys.argv.(1) in
-  let name = Filename.basename (Filename.remove_extension Sys.argv.(2)) in
-  let cmo = Filename.check_suffix Sys.argv.(2) ".cmo" in
-  let s = String.capitalize_ascii prefix ^ "." ^ String.capitalize_ascii name in
+  let name = Filename.basename (Filename.remove_extension Sys.argv.(1)) in
+  let cmo = Filename.check_suffix Sys.argv.(1) ".cmo" in
+  let s = "OCaml." ^ String.capitalize_ascii name in
   Printf.printf "[@@@ocaml.deprecated \"Use %s instead.\"]\n" s;
   if cmo then
     Printf.printf "include %s\n" s

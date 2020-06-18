@@ -13,18 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let short name =
-  let rec loop i =
-    if i + 1 >= String.length name then
-      0
-    else
-    if name.[i] = '_' && name.[i+1] = '_' then
-      i+2
-    else
-      loop (i + 1)
-  in
-  let pos = loop 0 in
-  String.sub name pos (String.length name - pos)
+let cmp s1 s2 =
+  String.compare (String.capitalize_ascii s1) (String.capitalize_ascii s2)
 
 let _ =
   let names =
@@ -34,16 +24,14 @@ let _ =
     |> List.filter ((<>) "")
     |> List.map Filename.basename
     |> List.map Filename.remove_extension
-    |> List.map (fun s -> s, short s)
-    |> List.sort_uniq (fun (_, s1) (_, s2) -> String.compare s1 s2)
+    |> List.sort_uniq cmp
   in
   let maxlen =
-    let f accu (_, short) = max accu (String.length short) in
+    let f accu s = max accu (String.length s) in
     List.fold_left f 0 names
   in
-  let f (long, short) =
-    Printf.printf "module %*s = %s\n" maxlen
-      (String.capitalize_ascii short)
-      (String.capitalize_ascii long)
+  let f s =
+    Printf.printf "module %*s = Compilerlibs__%s\n" maxlen
+      (String.capitalize_ascii s) s
   in
   List.iter f names

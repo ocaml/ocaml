@@ -145,7 +145,7 @@ clean-menhir: partialclean-menhir
 depend-menhir:
 	$(MENHIR) --depend --ocamldep "$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES)" \
           parsing/parser.mly | \
-	./runtime/ocamlrun tools/postprocess_depend compilerlibs/*.sed > .depend.menhir
+	./runtime/ocamlrun tools/postprocess_depend > .depend.menhir
 
 include .depend.menhir
 
