@@ -33,9 +33,8 @@ module SMap = Map.Make (String)
 let subst = ref SMap.empty
 
 let readlist fn =
-  let prefix = Filename.basename (Filename.remove_extension fn) in
   let addprefix s =
-    Filename.dirname s ^ "/" ^ prefix ^ "__" ^ Filename.basename s in
+    Filename.dirname s ^ "/compilerlibs__" ^ Filename.basename s in
   let entries =
     with_open_in fn input_line
     |> String.split_on_char ' '

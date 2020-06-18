@@ -103,7 +103,7 @@ clean::
 # The profiler
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=$(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
+CSLPROF_IMPORTS=$(addprefix compilerlibs__,config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo \
@@ -113,7 +113,7 @@ CSLPROF_IMPORTS=$(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo m
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos = $(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
+ocamlcp_cmos = $(addprefix compilerlibs__,config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
                clflags.cmo \
                terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
@@ -141,7 +141,7 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo $(addprefix ocamlcommon__,config.cmo \
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo $(addprefix compilerlibs__,config.cmo \
 	         build_path_prefix_map.cmo misc.cmo) ocamlmklib.cmo,)
 
 
@@ -161,7 +161,7 @@ clean::
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=$(addprefix ocamlcommon__,config.cmo build_path_prefix_map.cmo misc.cmo \
+OCAMLMKTOP_IMPORTS=$(addprefix compilerlibs__,config.cmo build_path_prefix_map.cmo misc.cmo \
        identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
        load_path.cmo profile.cmo ccomp.cmo)
 

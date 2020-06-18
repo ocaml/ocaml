@@ -40,7 +40,7 @@ DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-compiler_modules := $(ROOTDIR)/toplevel/ocamltoplevel__genprintval
+compiler_modules := $(ROOTDIR)/toplevel/compilerlibs__genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters debugger_lexer \

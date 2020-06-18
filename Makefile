@@ -1078,6 +1078,9 @@ partialclean::
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
+tools/postprocess_depend: tools/postprocess_depend.mll
+	$(MAKE) -C tools postprocess_depend
+
 beforedepend:: tools/postprocess_depend
 
 .PHONY: depend
@@ -1088,7 +1091,7 @@ depend: beforedepend
          driver toplevel; \
          do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
          done) | \
-	./runtime/ocamlrun tools/postprocess_depend compilerlibs/*.sed > .depend.new
+	./runtime/ocamlrun tools/postprocess_depend compilerlibs/*.sed > .depend
 
 .PHONY: distclean
 distclean: clean

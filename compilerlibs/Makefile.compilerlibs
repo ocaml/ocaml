@@ -14,6 +14,7 @@
 #**************************************************************************
 
 COMPILERLIBSDIR=compilerlibs/
+COMPLIBPREFIX=compilerlibs__
 
 # Variables
 
@@ -54,14 +55,14 @@ define deprecated-file
 $(addprefix $(COMPILERLIBSDIR),$(notdir $(filter-out $(DO_NOT_PREFIX),$(1))))
 endef
 
-# $(call prefix-file,PREFIX,LIST)
+# $(call prefix-file,LIST)
 
-# Map each element of LIST of the form <dir>/<file> to <dir>/PREFIX<file> *if*
-# <dir>/<file> does not appear in $(DO_NOT_PREFIX).  Otherwise, the element is
-# returned unchanged.
+# Map each element of LIST of the form <dir>/<file> to
+# <dir>/$(COMPLIBPREFIX)<file> *if* <dir>/<file> does not appear in
+# $(DO_NOT_PREFIX).  Otherwise, the element is returned unchanged.
 
 define prefix-file
-$(foreach x,$(2),$(if $(filter $(DO_NOT_PREFIX),$(x)),$(x),$(dir $(x))$(1)$(notdir $(x))))
+$(foreach x,$(1),$(if $(filter $(DO_NOT_PREFIX),$(x)),$(x),$(dir $(x))$(COMPLIBPREFIX)$(notdir $(x))))
 endef
 
 # $(call compile-impl,PREFIX,NAME)
@@ -102,22 +103,22 @@ tools/generate_deprecated: tools/generate_deprecated.ml
 
 define compile-impl
 ifneq ($(filter-out $(DO_NOT_PREFIX),$(2)),)
-$(call prefix-file,$(1),$(2)): $(2:.cmo=.ml)
+$(call prefix-file,$(2)): $(2:.cmo=.ml)
 	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
 
-$(call prefix-file,$(1),$(2:.cmo=.cmi)): $(2:.cmo=.mli)
+$(call prefix-file,$(2:.cmo=.cmi)): $(2:.cmo=.mli)
 	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
 
-$(call prefix-file,$(1),$(2:.cmo=.cmx)): $(2:.cmo=.ml)
+$(call prefix-file,$(2:.cmo=.cmx)): $(2:.cmo=.ml)
 	$$(CAMLOPT) $$(COMPFLAGS) $$(OPTCOMPFLAGS) -o $$@ -c $$<
 
 # Begin Transitional
 $(call deprecated-file,$(2:.cmo=.ml)): tools/generate_deprecated $(COMPILERLIBSDIR)Makefile.compilerlibs
 	./runtime/ocamlrun $$< $(1:__=) $(2) > $$@
 
-$(call deprecated-file,$(2)): $(call prefix-file,$(1),$(if $(filter $(2),$(IMPLEMENTATION_ONLY)),$(2),$(2:.cmo=.cmi)))
+$(call deprecated-file,$(2)): $(call prefix-file,$(if $(filter $(2),$(IMPLEMENTATION_ONLY)),$(2),$(2:.cmo=.cmi)))
 
-$(call deprecated-file,$(2:.cmo=.cmx)): $(call prefix-file,$(1),$(2:.cmo=.cmx) $(if $(filter $(2),$(IMPLEMENTATION_ONLY)),,$(2:.cmo=.cmi)))
+$(call deprecated-file,$(2:.cmo=.cmx)): $(call prefix-file,$(2:.cmo=.cmx) $(if $(filter $(2),$(IMPLEMENTATION_ONLY)),,$(2:.cmo=.cmi)))
 # End Transitional
 endif
 endef
@@ -147,14 +148,14 @@ endef
 
 define compile-intf
 ifneq ($(filter-out $(DO_NOT_PREFIX),$(2)),)
-$(call prefix-file,$(1),$(2)): $(2:.cmi=.mli)
+$(call prefix-file,$(2)): $(2:.cmi=.mli)
 	$$(CAMLC) $$(COMPFLAGS) -o $$@ -c $$<
 
 # Begin Transitional
 $(call deprecated-file,$(2:.cmi=.mli)): tools/generate_deprecated $(COMPILERLIBSDIR)Makefile.compilerlibs
 	./runtime/ocamlrun $$< $(1:__=) $(2) > $$@
 
-$(call deprecated-file,$(2)): $(call prefix-file,$(1),$(2))
+$(call deprecated-file,$(2)): $(call prefix-file,$(2))
 # End Transitional
 endif
 endef
@@ -301,8 +302,8 @@ COMMON=$(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
 
 COMMON_PREFIX=ocamlcommon__
 
-PREFIXED_COMMON=$(call prefix-file,$(COMMON_PREFIX),$(COMMON))
-PREFIXED_COMMON_CMI=$(call prefix-file,$(COMMON_PREFIX),$(COMMON_CMI))
+PREFIXED_COMMON=$(call prefix-file,$(COMMON))
+PREFIXED_COMMON_CMI=$(call prefix-file,$(COMMON_CMI))
 
 DEPRECATED_COMMON=$(call deprecated-file,$(COMMON))
 DEPRECATED_COMMON_CMI=$(call deprecated-file,$(COMMON_CMI))
@@ -317,8 +318,8 @@ BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
 BYTECOMP_CMI=
 
 BYTECOMP_PREFIX=ocamlbytecomp__
-PREFIXED_BYTECOMP=$(call prefix-file,$(BYTECOMP_PREFIX),$(BYTECOMP))
-PREFIXED_BYTECOMP_CMI=$(call prefix-file,$(BYTECOMP_PREFIX),$(BYTECOMP_CMI))
+PREFIXED_BYTECOMP=$(call prefix-file,$(BYTECOMP))
+PREFIXED_BYTECOMP_CMI=$(call prefix-file,$(BYTECOMP_CMI))
 DEPRECATED_BYTECOMP=$(call deprecated-file,$(BYTECOMP))
 DEPRECATED_BYTECOMP_CMI=$(call deprecated-file,$(BYTECOMP_CMI))
 
@@ -481,8 +482,8 @@ MIDDLE_END_CMI=\
 
 MIDDLE_END_PREFIX=ocamlmiddleend__
 
-PREFIXED_MIDDLE_END=$(call prefix-file,$(OPTCOMP_PREFIX),$(MIDDLE_END))
-PREFIXED_MIDDLE_END_CMI=$(call prefix-file,$(OPTCOMP_PREFIX),$(MIDDLE_END_CMI))
+PREFIXED_MIDDLE_END=$(call prefix-file,$(MIDDLE_END))
+PREFIXED_MIDDLE_END_CMI=$(call prefix-file,$(MIDDLE_END_CMI))
 
 DEPRECATED_MIDDLE_END=$(call deprecated-file,$(MIDDLE_END))
 DEPRECATED_MIDDLE_END_CMI=$(call deprecated-file,$(MIDDLE_END_CMI))
@@ -492,8 +493,8 @@ OPTCOMP_CMI=$(MIDDLE_END_CMI) $(ASMCOMP_CMI)
 
 OPTCOMP_PREFIX=ocamloptcomp__
 
-PREFIXED_OPTCOMP=$(call prefix-file,$(OPTCOMP_PREFIX),$(OPTCOMP))
-PREFIXED_OPTCOMP_CMI=$(call prefix-file,$(OPTCOMP_PREFIX),$(OPTCOMP_CMI))
+PREFIXED_OPTCOMP=$(call prefix-file,$(OPTCOMP))
+PREFIXED_OPTCOMP_CMI=$(call prefix-file,$(OPTCOMP_CMI))
 
 DEPRECATED_OPTCOMP=$(call deprecated-file,$(OPTCOMP))
 DEPRECATED_OPTCOMP_CMI=$(call deprecated-file,$(OPTCOMP_CMI))
@@ -512,8 +513,8 @@ DO_NOT_PREFIX += $(TOPDIRS)
 
 TOPLEVEL_PREFIX=ocamltoplevel__
 
-PREFIXED_TOPLEVEL=$(call prefix-file,$(TOPLEVEL_PREFIX),$(TOPLEVEL))
-PREFIXED_TOPLEVEL_CMI=$(call prefix-file,$(TOPLEVEL_PREFIX),$(TOPLEVEL_CMI))
+PREFIXED_TOPLEVEL=$(call prefix-file,$(TOPLEVEL))
+PREFIXED_TOPLEVEL_CMI=$(call prefix-file,$(TOPLEVEL_CMI))
 
 DEPRECATED_TOPLEVEL=$(call deprecated-file,$(TOPLEVEL))
 DEPRECATED_TOPLEVEL_CMI=$(call deprecated-file,$(TOPLEVEL_CMI))
@@ -531,9 +532,9 @@ DO_NOT_PREFIX += $(OPTTOPDIRS)
 
 OPTTOPLEVEL_PREFIX=ocamlopttoplevel__
 
-PREFIXED_OPTTOPLEVEL=$(call prefix-file,$(TOPLEVEL_PREFIX),$(GENPRINTVAL)) \
-	$(call prefix-file,$(OPTTOPLEVEL_PREFIX),$(OPTTOPLEVEL_NO_GENPRINTVAL))
-PREFIXED_OPTTOPLEVEL_CMI=$(call prefix-file,$(OPTTOPLEVEL_PREFIX),$(OPTTOPLEVEL_CMI))
+PREFIXED_OPTTOPLEVEL=$(call prefix-file,$(GENPRINTVAL)) \
+	$(call prefix-file,$(OPTTOPLEVEL_NO_GENPRINTVAL))
+PREFIXED_OPTTOPLEVEL_CMI=$(call prefix-file,$(OPTTOPLEVEL_CMI))
 
 DEPRECATED_OPTTOPLEVEL=$(call deprecated-file,$(OPTTOPLEVEL))
 DEPRECATED_OPTTOPLEVEL_CMI=$(call deprecated-file,$(OPTTOPLEVEL_CMI))
