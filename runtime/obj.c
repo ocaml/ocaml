@@ -85,26 +85,23 @@ CAMLprim value caml_obj_block(value tag, value size)
   sz = Long_val(size);
   tg = Long_val(tag);
 
-  /* It is difficult to correctly use custom objects allocated through
-   * [Obj.new_block]. The first field of a custom object must contain a valid
-   * pointer to a block of custom operations. Without initialisation, hashing,
-   * finalising or serialising this custom object will lead to crashes. See
-   * GPR#9513 for more details.
-   *
-   * Note: we fail here before the allocation happens, to ensure that
-   * no ill-formed block is created even in the failure case. This would
-   * cause a segfault when the GC will try to use the custom finalization operation
-   * when it notices the value is dead.
-   */
-  if (tg == Custom_tag)
-    caml_invalid_argument ("Obj.new_block");
-
   /* When [tg < No_scan_tag], [caml_alloc] returns an object whose fields are
    * initialised to [Val_unit]. Otherwise, the fields are uninitialised. We aim
-   * to avoid inconsistent states in other cases. */
-  res = caml_alloc(sz, tg);
-
+   * to avoid inconsistent states in other cases, on a best-effort basis --
+   * by default there is no initialization. */
   switch (tg) {
+  default: {
+      res = caml_alloc(sz, tg);
+      break;
+  }
+  case Abstract_tag:
+  case Double_tag:
+  case Double_array_tag: {
+    /* In these cases, the initial content is irrelevant,
+       no specific initialization needed. */
+    res = caml_alloc(sz, tg);
+    break;
+  }
   case Closure_tag: {
     /* [Closure_tag] is below [no_scan_tag], but closures have more
        structure with in particular a "closure information" that
@@ -112,14 +109,8 @@ CAMLprim value caml_obj_block(value tag, value size)
        a sane value, as it may be accessed by runtime functions. */
     /* Closinfo_val is the second field, so we need size at least 2 */
     if (sz < 2) caml_invalid_argument ("Obj.new_block");
-    Closinfo_val(res) = Make_closinfo(0, 2);
-    break;
-  }
-  case Abstract_tag:
-  case Double_tag:
-  case Double_array_tag: {
-   /* For [Abstract_tag], [Double_tag] and [Double_array_tag], the initial
-      content is irrelevant. */
+    res = caml_alloc(sz, tg);
+    Closinfo_val(res) = Make_closinfo(0, 2); /* does not allocate */
     break;
   }
   case String_tag: {
@@ -130,8 +121,18 @@ CAMLprim value caml_obj_block(value tag, value size)
        length returned by [String.length] and [Bytes.length] is
        a non-negative number. */
     if (sz == 0) caml_invalid_argument ("Obj.new_block");
+    res = caml_alloc(sz, tg);
     Field (res, sz - 1) = 0;
     break;
+  }
+  case Custom_tag: {
+    /* It is difficult to correctly use custom objects allocated
+       through [Obj.new_block], so we disallow it completely. The
+       first field of a custom object must contain a valid pointer to
+       a block of custom operations. Without initialisation, hashing,
+       finalising or serialising this custom object will lead to
+       crashes.  See #9513 for more details. */
+    caml_invalid_argument ("Obj.new_block");
   }
   }
 
