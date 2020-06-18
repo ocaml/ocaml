@@ -110,7 +110,8 @@ static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
-static atomic_uintnat num_domains_running;
+
+CAMLexport atomic_uintnat caml_num_domains_running;
 
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
@@ -233,7 +234,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       }
       Assert(s->qhead == NULL);
       s->running = 1;
-      atomic_fetch_add(&num_domains_running, 1);
+      atomic_fetch_add(&caml_num_domains_running, 1);
     }
     caml_plat_unlock(&s->lock);
   }
@@ -533,11 +534,6 @@ CAMLprim value caml_ml_domain_join(value domain)
 struct domain* caml_domain_self()
 {
   return domain_self ? &domain_self->state : 0;
-}
-
-int caml_domain_alone()
-{
-  return atomic_load_acq(&num_domains_running) == 1;
 }
 
 struct domain* caml_owner_of_young_block(value v) {
@@ -1189,9 +1185,9 @@ static void domain_terminate()
 
   caml_plat_assert_all_locks_unlocked();
   /* This is the last thing we do because we need to be able to rely
-     on caml_domain_alone (which uses num_domains_running) in at least
+     on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
-  atomic_fetch_add(&num_domains_running, -1);
+  atomic_fetch_add(&caml_num_domains_running, -1);
 }
 
 void caml_handle_incoming_interrupts()

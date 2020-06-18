@@ -28,6 +28,7 @@ extern "C" {
 #include "domain_state.h"
 #include "memory.h"
 #include "major_gc.h"
+#include "platform.h"
 
 struct domain {
   struct dom_internal* internals;
@@ -91,7 +92,12 @@ struct domain* caml_domain_of_id(int);
 typedef struct interrupt interrupt;
 typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
-int caml_domain_alone();
+CAMLextern atomic_uintnat caml_num_domains_running;
+
+INLINE intnat caml_domain_alone()
+{
+  return atomic_load_acq(&caml_num_domains_running) == 1;
+}
 
 CAMLcheckresult
 int caml_domain_rpc(struct domain*,
