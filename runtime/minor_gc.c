@@ -166,25 +166,27 @@ static inline void log_gc_value(const char* prefix, value v)
 }
 #endif
 
-#define Color_hd(v) ((color_t)(((v) >> 8) & 3))
+/* in progress updates are zeros except for the lowest color bit set to 1 */
+#define In_progress_update_val ((header_t)0x100)
+#define Is_update_in_progress(hd) ((hd) == In_progress_update_val)
 
-int get_header_val(value v) {
-  if( caml_domain_alone() ) {
-    return Hd_val(v);
-  } else {
-    header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_relaxed);
-
-    if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
-      while( atomic_load_explicit(Hp_atomic_val(v), memory_order_acquire) != 0 ) {}
-      return 0;
-    }
-
-    return hd;
+/* TODO: Probably a better spinlock needed here though doesn't happen often */
+static inline void spin_on_header(value v) {
+  while (atomic_load(Hp_atomic_val(v)) != 0) {
+    cpu_relax();
   }
 }
 
-static inline void spin_on_header(value v) {
-  while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+int get_header_val(value v) {
+  if (caml_domain_alone())
+    return Hd_val(v);
+
+  header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_relaxed);
+  if (!Is_update_in_progress(hd))
+    return hd;
+
+  spin_on_header(v);
+  return 0;
 }
 
 static int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
@@ -200,16 +202,15 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
       // in this case this has been updated by another domain, throw away result
       // and return the one in the object
       result = Op_val(v)[0];
-    } else if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
+    } else if( Is_update_in_progress(hd) ) {
       // here we've caught a domain in the process of moving a minor heap object
       // we need to wait for it to finish
-      // TODO: Probably a better spinlock needed here though doesn't happen often
       spin_on_header(v);
       // Also throw away result and use the one from the other domain
       result = Op_val(v)[0];
     } else {
       // Here the header is neither zero nor an in-progress update
-      header_t desired_hd = 1 << 8; // set the lowest color bit - this should probably be in a macro
+      header_t desired_hd = In_progress_update_val;
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
         // Success
         // Now we can write the forwarding pointer
