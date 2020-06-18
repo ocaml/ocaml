@@ -1,0 +1,22 @@
+---Control 1---
+Passed
+---Control 2---
+Failed
+---Test inside=id, outside=id---
+Passed
+---Test inside=id, outside=print---
+Passed
+---Test inside=id, outside=openclose---
+Passed
+---Test inside=print, outside=id---
+Passed
+---Test inside=print, outside=print---
+Passed
+---Test inside=print, outside=openclose---
+Passed
+---Test inside=openclose, outside=id---
+Passed
+---Test inside=openclose, outside=print---
+Passed
+---Test inside=openclose, outside=openclose---
+Passed
