@@ -166,7 +166,8 @@ static inline void log_gc_value(const char* prefix, value v)
 }
 #endif
 
-/* in progress updates are zeros except for the lowest color bit set to 1 */
+/* in progress updates are zeros except for the lowest color bit set to 1
+   that is a header with: wosize == 0 && color == 1 && tag == 0 */
 #define In_progress_update_val ((header_t)0x100)
 #define Is_update_in_progress(hd) ((hd) == In_progress_update_val)
 
