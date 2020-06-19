@@ -15,7 +15,7 @@ mmap_ba.$(O): mmap_ba.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
   ../../runtime/caml/custom.h ../../runtime/caml/memory.h \
   ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
   ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
-  ../../runtime/caml/domain.h
+  ../../runtime/caml/domain.h ../../runtime/caml/platform.h
 unix.cmo : \
     unix.cmi
 unix.cmx : \
