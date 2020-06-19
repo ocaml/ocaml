@@ -205,6 +205,11 @@ Working version
   be ignored (eg `ocamlrunparam`).
   (Nicolás Ojeda Bär, review by Sébastien Hinderer)
 
+- #9681, #9690, #9693: small runtime changes
+  for the new closure representation (#9619)
+  (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
+   review by Xavier Leroy and Jacques-Henri Jourdan)
+
 OCaml 4.11
 ----------
 

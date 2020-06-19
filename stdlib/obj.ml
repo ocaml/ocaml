@@ -74,6 +74,33 @@ let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
 
+module Closure = struct
+  type info = {
+    arity: int;
+    start_env: int;
+  }
+
+  let info_of_raw (info : nativeint) =
+    let open Nativeint in
+    let arity =
+      (* signed: negative for tupled functions *)
+      if Sys.word_size = 64 then
+        to_int (shift_right info 56)
+      else
+        to_int (shift_right info 24)
+    in
+    let start_env =
+      (* start_env is unsigned, but we know it can always fit an OCaml
+         integer so we use [to_int] instead of [unsigned_to_int]. *)
+      to_int (shift_right_logical (shift_left info 8) 9) in
+    { arity; start_env }
+
+  (* note: we expect a closure, not an infix pointer *)
+  let info (obj : t) =
+    assert (tag obj = closure_tag);
+    info_of_raw (raw_field obj 1)
+end
+
 module Extension_constructor =
 struct
   type t = extension_constructor
