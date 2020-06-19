@@ -488,7 +488,7 @@ CFI_STARTPROC
         .cfi_signal_frame
         SAVE_ALL_REGS
      /* Build a caml_context */
-        pushq   %r15
+        pushq   %r15; CFI_ADJUST(8)
         PUSH_EXN_HANDLER
         SWITCH_OCAML_TO_C_NO_CTXT(16)
         movq    %rax, C_ARG_1
@@ -496,11 +496,11 @@ CFI_STARTPROC
         C_call (GCALL(caml_read_barrier))
         SWITCH_C_TO_OCAML_NO_CTXT
         POP_EXN_HANDLER
-        popq    %r15
+        popq    %r15; CFI_ADJUST(-8)
     /* Preserve the current value of %rax */
-        pushq   %rax
+        pushq   %rax; CFI_ADJUST(8)
         RESTORE_ALL_REGS
-        popq    %rax
+        popq    %rax; CFI_ADJUST(-8)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_call_read_barrier))
@@ -601,13 +601,13 @@ LBL(caml_allocN):
 LBL(call_gc_and_retry_alloc):
         addq    %rax, %r15
         SAVE_ALL_REGS
-        pushq   %r15
+        pushq   %r15; CFI_ADJUST(8)
         PUSH_EXN_HANDLER
         SWITCH_OCAML_TO_C_NO_CTXT(16)
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML_NO_CTXT
         POP_EXN_HANDLER
-        popq    %r15
+        popq    %r15; CFI_ADJUST(-8)
         RESTORE_ALL_REGS
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
@@ -617,13 +617,13 @@ FUNCTION(G(caml_call_poll))
 CFI_STARTPROC
 LBL(caml_call_poll):
         SAVE_ALL_REGS
-        pushq   %r15
+        pushq   %r15; CFI_ADJUST(8)
         PUSH_EXN_HANDLER
         SWITCH_OCAML_TO_C_NO_CTXT(16)
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML_NO_CTXT
         POP_EXN_HANDLER
-        popq    %r15
+        popq    %r15; CFI_ADJUST(-8)
         RESTORE_ALL_REGS
         ret
 CFI_ENDPROC
