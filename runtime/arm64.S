@@ -24,7 +24,7 @@
 #define TRAP_PTR x26
 #define ALLOC_PTR x27
 #define ALLOC_LIMIT x28
-#define ADDITIONAL_ARG x15
+#define ADDITIONAL_ARG x8
 #define TMP x16
 #define TMP2 x17
 

@@ -41,7 +41,7 @@ let reg_trap_ptr = phys_reg 23
 let reg_alloc_ptr = phys_reg 24
 let reg_alloc_limit = phys_reg 25
 let reg_tmp1 = phys_reg 26
-let reg_x15 = phys_reg 15
+let reg_x8 = phys_reg 8
 
 (* Output a label *)
 
@@ -587,7 +587,7 @@ let assembly_code_for_allocation ~label_after_call_gc i ~n ~far ~dbginfo =
     | 16 -> `	bl	{emit_symbol "caml_alloc1"}\n`
     | 24 -> `	bl	{emit_symbol "caml_alloc2"}\n`
     | 32 -> `	bl	{emit_symbol "caml_alloc3"}\n`
-    | _  -> emit_intconst reg_x15 (Nativeint.of_int n);
+    | _  -> emit_intconst reg_x8 (Nativeint.of_int n);
             `	bl	{emit_symbol "caml_allocN"}\n`
     end;
     `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
@@ -685,7 +685,7 @@ let emit_instr i =
     | Lop(Iextcall { func; alloc = false; label_after = _; }) ->
         `	bl	{emit_symbol func}\n`
     | Lop(Iextcall { func; alloc = true; label_after; }) ->
-        emit_load_symbol_addr reg_x15 func;
+        emit_load_symbol_addr reg_x8 func;
         `	bl	{emit_symbol "caml_c_call"}\n`;
         `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
     | Lop(Istackoffset n) ->
