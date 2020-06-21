@@ -28,6 +28,7 @@
 
 /* Bytecode callbacks */
 
+#include "caml/codefrag.h"
 #include "caml/interp.h"
 #include "caml/instruct.h"
 #include "caml/fix_code.h"
@@ -37,24 +38,19 @@ CAMLexport int caml_callback_depth = 0;
 
 #ifndef LOCAL_CALLBACK_BYTECODE
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
-#endif
 
+static int callback_code_inited = 0;
 
-#ifdef THREADED_CODE
-
-static int callback_code_threaded = 0;
-
-static void thread_callback(void)
+static void init_callback_code(void)
 {
+  caml_register_code_fragment((char *) callback_code,
+                              (char *) callback_code + sizeof(callback_code),
+                              DIGEST_IGNORE, NULL);
+#ifdef THREADED_CODE
   caml_thread_code(callback_code, sizeof(callback_code));
-  callback_code_threaded = 1;
+#endif
+  callback_code_inited = 1;
 }
-
-#define Init_callback() if (!callback_code_threaded) thread_callback()
-
-#else
-
-#define Init_callback()
 
 #endif
 
@@ -79,7 +75,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   Caml_state->extern_sp[narg + 1] = Val_unit;    /* environment */
   Caml_state->extern_sp[narg + 2] = Val_long(0); /* extra args */
   Caml_state->extern_sp[narg + 3] = closure;
-  Init_callback();
+  if (!callback_code_inited) init_callback_code();
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
   res = caml_interprete(callback_code, sizeof(callback_code));
@@ -96,6 +92,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   local_callback_code[4] = POP;
   local_callback_code[5] =  1;
   local_callback_code[6] = STOP;
+  /* Not registering the code fragment, as code fragment management
+     would need to be revised thoroughly for an hypothetical JIT */
 #ifdef THREADED_CODE
   caml_thread_code(local_callback_code, sizeof(local_callback_code));
 #endif /*THREADED_CODE*/

@@ -304,7 +304,7 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
     if (Is_long(*spv)) continue;
     p = (code_t*) spv;
     if(&Trap_pc(*trsp) == p) {
-      *trsp = Trap_link(*trsp);
+      *trsp = *trsp + Long_val(Trap_link_offset(*trsp));
       continue;
     }
 
