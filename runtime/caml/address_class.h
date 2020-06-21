@@ -72,13 +72,18 @@
 
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)
 
+#ifdef NO_NAKED_POINTERS
+
+#define Is_in_heap_or_young(a) 1
+#define Is_in_value_area(a) 1
+
+#else
+
 #define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
 
-#ifdef NO_NAKED_POINTERS
-#define Is_in_value_area(a) 1
-#else
 #define Is_in_value_area(a)                                     \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
+
 #endif
 
 #define Is_in_static_data(a) (Classify_addr(a) & In_static_data)
