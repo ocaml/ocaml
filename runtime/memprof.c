@@ -183,7 +183,7 @@ static void rand_batch(void) {
   for(i = 0; i < RAND_BLOCK_SIZE; i++) {
     double f = B[i];
     CAMLassert (f >= 1);
-    if(f > Max_long) rand_geom_buff[i] = Max_long;
+    if(f > (double)Max_long) rand_geom_buff[i] = Max_long;
     else rand_geom_buff[i] = (uintnat)f;
   }
 
