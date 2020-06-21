@@ -24,6 +24,8 @@ include Identifiable.S with type t := t
    - [compare] compares identifiers by binding location
 *)
 
+exception No_scope of t
+
 val print_with_scope : Format.formatter -> t -> unit
         (** Same as {!print} except that it will also add a "[n]" suffix
             if the scope of the argument is [n]. *)
@@ -33,6 +35,7 @@ val create_scoped: scope:int -> string -> t
 val create_local: string -> t
 val create_persistent: string -> t
 val create_predef: string -> t
+val create_unscoped: string -> t
 
 val rename: t -> t
         (** Creates an identifier with the same name as the input, a fresh
@@ -56,6 +59,7 @@ val global: t -> bool
 val is_predef: t -> bool
 
 val scope: t -> int
+        (** @raise [No_scope] if called on an unscoped identifier. *)
 
 val lowest_scope : int
 val highest_scope: int
