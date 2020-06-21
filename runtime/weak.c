@@ -386,7 +386,7 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     if(is_ephe_key_none(ar, offset)) CAMLreturn(0);
     v = Field (ar, offset);
     /** Don't copy custom_block #7279 */
-    if(!(Is_block (v) && Is_in_heap_or_young(v)  && Tag_val(v) != Custom_tag)) {
+    if(!(Is_block (v) && Is_in_value_area(v) && Tag_val(v) != Custom_tag)) {
       if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
         caml_darken (v, NULL);
       };
@@ -445,7 +445,7 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     v = Field (ar, CAML_EPHE_DATA_OFFSET);
     if (v == caml_ephe_none) CAMLreturn(0);
     /** Don't copy custom_block #7279 */
-    if (!(Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag)) {
+    if (!(Is_block (v) && Is_in_value_area(v) && Tag_val(v) != Custom_tag)) {
       if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
         caml_darken (v, NULL);
       };

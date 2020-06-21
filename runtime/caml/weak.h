@@ -176,7 +176,7 @@ Caml_inline void caml_ephe_clean_partial (value v,
     child = Field (v, i);
   ephemeron_again:
     if (child != caml_ephe_none
-        && Is_block (child) && Is_in_heap_or_young (child)){
+        && Is_block (child) && Is_in_value_area (child)){
       if (Tag_val (child) == Forward_tag){
         value f = Forward_val (child);
         if (Is_block (f)) {
