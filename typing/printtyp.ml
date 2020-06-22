@@ -2068,6 +2068,11 @@ let explain_escape intro prev ctx e =
         "%t@,@[The module type@;<1 2>%a@ would escape its scope@]"
         pre path p
     )
+  | Trace.Module p -> Some(
+      dprintf
+        "%t@,@[The module@;<1 2>%a@ would escape its scope@]"
+        pre path p
+    )
   | Trace.Equation (_,t) -> Some(
       dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
         pre type_expr t

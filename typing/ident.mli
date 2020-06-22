@@ -57,6 +57,7 @@ val compare: t -> t -> int
 
 val global: t -> bool
 val is_predef: t -> bool
+val is_unscoped: t -> bool
 
 val scope: t -> int
         (** @raise [No_scope] if called on an unscoped identifier. *)

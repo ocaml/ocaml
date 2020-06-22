@@ -149,6 +149,10 @@ let is_predef = function
   | Predef _ -> true
   | _ -> false
 
+let is_unscoped = function
+  | Unscoped _ -> true
+  | _ -> false
+
 let print ~with_scope ppf =
   let open Format in
   function

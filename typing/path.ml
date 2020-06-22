@@ -100,6 +100,33 @@ let rec scope_subst id_pairs = function
   | Pdot(p, _s) -> scope_subst id_pairs p
   | Papply(p1, p2) -> max (scope_subst id_pairs p1) (scope_subst id_pairs p2)
 
+let rec find_unscoped = function
+  | Pident id when Ident.is_unscoped id -> Some id
+  | Pident _ -> None
+  | Pdot(p, _s) -> find_unscoped p
+  | Papply(p1, p2) ->
+      begin match find_unscoped p1 with
+      | Some id -> Some id
+      | None -> find_unscoped p2
+      end
+
+(* Non-allocating equivalent to [find_unscoped (subst id_pairs t)]. *)
+let rec find_unscoped_subst id_pairs = function
+  | Pident id when Ident.is_unscoped (subst_id_pair id_pairs id) ->
+      (* Do not substitute the returned identifier; the substituted identifier
+         is the one exposed to the user via the type. *)
+      Some id
+  | Pident _ -> None
+  | Pdot(p, _s) -> find_unscoped_subst id_pairs p
+  | Papply(p1, p2) ->
+      begin match find_unscoped_subst id_pairs p1 with
+      | Some id -> Some id
+      | None -> find_unscoped_subst id_pairs p2
+      end
+
+let find_unscoped_subst id_pairs p =
+  if id_pairs = [] then find_unscoped p else find_unscoped_subst id_pairs p
+
 (* Non-allocating equivalent to
    [same (subst id_pairs1 p1) (subst id_pairs2 p2)]. *)
 let rec same_subst id_pairs1 id_pairs2 p1 p2 =

@@ -73,6 +73,7 @@ module Unification_trace = struct
        we keep a [type_expr] to track renaming in {!Printtyp} *)
     | Self
     | Module_type of Path.t
+    | Module of Path.t
     | Equation of 'a
 
   type fixed_row_case =
@@ -112,7 +113,7 @@ module Unification_trace = struct
     | Diff x -> Diff (map_diff f x)
     | Escape {kind=Equation x; context} -> Escape {kind=Equation(f x); context}
     | Rec_occur (_,_)
-    | Escape {kind=(Univ _ | Self|Constructor _ | Module_type _ ); _}
+    | Escape {kind=(Univ _ | Self|Constructor _ | Module_type _ | Module _); _}
     | Variant _ | Obj _
     | Incompatible_fields _ as x -> x
   let map f = List.map (map_elt f)
@@ -854,15 +855,25 @@ let rec check_scope_escape env id_pairs level ty =
 let check_scope_escape env level ty =
   let snap = snapshot () in
   try check_scope_escape env [] level ty; backtrack snap
-  with Unify [Trace.Escape x] ->
-    backtrack snap;
-    raise Trace.(Unify[Escape { x with context = Some ty }])
+  with
+  | Unify [Trace.Escape x] ->
+      backtrack snap;
+      raise Trace.(Unify[Escape { x with context = Some ty }])
+  | Ident.No_scope x ->
+      backtrack snap;
+      raise
+        Trace.(Unify[Escape { context = Some ty; kind = Module (Pident x) }])
 
 let update_scope scope ty =
   let ty = repr ty in
   let scope = max scope ty.scope in
   if ty.level < scope then raise (Trace.scope_escape ty);
   set_scope ty scope
+
+(* Paths with unscoped identifiers after substitution represent an escape. *)
+let path_scope_subst id_pairs p =
+  try Path.scope_subst id_pairs p
+  with Ident.No_scope x -> raise Trace.(Unify [escape(Module (Pident x))])
 
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
@@ -877,7 +888,7 @@ let rec update_level env id_pairs level expand ty =
   if ty.level > level then begin
     if level < ty.scope then raise (Trace.scope_escape ty);
     match ty.desc with
-      Tconstr(p, _tl, _abbrev) when level < Path.scope_subst id_pairs p ->
+      Tconstr(p, _tl, _abbrev) when level < path_scope_subst id_pairs p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           link_type ty (!forward_try_expand_once env id_pairs ty);
@@ -903,7 +914,7 @@ let rec update_level env id_pairs level expand ty =
           set_level ty level;
           iter_type_expr (update_level env id_pairs level expand) ty
         end
-    | Tpackage (p, nl, tl) when level < Path.scope_subst id_pairs p ->
+    | Tpackage (p, nl, tl) when level < path_scope_subst id_pairs p ->
         let p' =
           p |> Path.subst id_pairs
             |> normalize_package_path env
@@ -913,13 +924,16 @@ let rec update_level env id_pairs level expand ty =
         set_type_desc ty (Tpackage (p', nl, tl));
         update_level env id_pairs level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
-      when level < Path.scope_subst id_pairs p ->
+      when level < path_scope_subst id_pairs p ->
         set_name nm None;
         update_level env id_pairs level expand ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
-        | Some (p, _tl) when level < Path.scope_subst id_pairs p ->
+        | Some (p, _tl)
+          when
+              try level < Path.scope_subst id_pairs p
+              with Ident.No_scope _ -> true ->
             set_type_desc ty (Tvariant {row with row_name = None})
         | _ -> ()
         end;
@@ -2242,7 +2256,20 @@ let reify env id_pairs t =
           iter_row (iterator env id_pairs) r
       | Tconstr (p, _, _) when is_object_type p ->
           iter_type_expr (iterator env id_pairs) (full_expand !env id_pairs ty)
-      (* TODO: Throw an error here if a type refers to an unscoped identifier. *)
+      | Tconstr (p, _, _)
+        when Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+        (* Unscoped identifier, attempt to expand. *)
+        let raise_identifier_escape () =
+          match Path.find_unscoped_subst id_pairs p with
+          | Some id -> raise Trace.(Unify [escape (Module (Pident id))])
+          | None -> assert false
+        in
+        let ty' =
+          try try_expand_safe !env id_pairs ty
+          with Cannot_expand -> raise_identifier_escape ()
+        in
+        if ty == ty' then raise_identifier_escape ()
+        else iterator env id_pairs ty'
       | _ ->
           iter_type_expr (iterator env id_pairs) ty
     end
@@ -2873,24 +2900,49 @@ and unify3 env id_pairs1 id_pairs2 t1 t1' t2 t2' =
          Tconstr (path',[],_))
         when is_instantiable !env path && is_instantiable !env path'
         && can_generate_equations () ->
-          let source, destination =
-            if Path.scope path > Path.scope path'
-            then  path , t2'
-            else  path', t1'
-          in
-          (* No [id_pairs]: reify will throw if we require a substitution. *)
-          reify env [] destination;
-          record_equation t1' t2';
-          add_gadt_equation env [] source destination
+          begin try
+            let source, destination =
+              if Path.scope path > Path.scope path'
+              then  path , t2'
+              else  path', t1'
+            in
+            (* No [id_pairs]: reify will throw if we require a substitution. *)
+            reify env [] destination;
+            record_equation t1' t2';
+            add_gadt_equation env [] source destination
+          with Ident.No_scope id ->
+            (* Attempt to expand, erasing the identifier. *)
+            let t1'' =
+              try try_expand_once !env id_pairs1 t1'
+              with Cannot_expand -> t1'
+            in
+            let t2'' =
+              try try_expand_once !env id_pairs2 t2'
+              with Cannot_expand -> t2'
+            in
+            if t1' == t1'' && t2' == t2'' then
+              (* Cannot erase the identifier by expanding. This should not be
+                 possible.
+              *)
+              raise Trace.(Unify [escape (Module (Pident id))])
+            else
+              unify env id_pairs1 id_pairs2 t1' t2'
+          end
       | (Tconstr (path,[],_), _)
         when is_instantiable !env path && can_generate_equations () ->
-          (* No [id_pairs]: reify will throw if we require a substitution. *)
+          (* TODO: This currently raises an escape if there is an unscoped
+             identifier. We should expand the heads on both sides if there is
+             a suspected escape and try again.
+          *)
           reify env [] t2';
           record_equation t1' t2';
           add_gadt_equation env [] path t2'
       | (_, Tconstr (path,[],_))
         when is_instantiable !env path && can_generate_equations () ->
-          (* No [id_pairs]: reify will throw if we require a substitution. *)
+          (* TODO: This currently raises an escape if there is an unscoped
+             identifier. We should expand the heads on both sides if there is
+             a suspected escape and try again.
+          *)
           reify env [] t1';
           record_equation t1' t2';
           add_gadt_equation env [] path t1'
