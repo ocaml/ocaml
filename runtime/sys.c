@@ -442,13 +442,13 @@ CAMLprim value caml_sys_system_command(value command)
     caml_sys_error(command);
   }
   buf = caml_stat_strdup_to_os(String_val(command));
-  caml_enter_blocking_section ();
   #if HAS_SYSTEM
+    caml_enter_blocking_section ();
     status = system_os(buf);
+    caml_leave_blocking_section ();
   #else
     caml_invalid_argument("Sys.command not implemented");
   #endif /* HAS_SYSTEM */
-  caml_leave_blocking_section ();
   caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
   if (WIFEXITED(status))
