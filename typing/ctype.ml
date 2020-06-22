@@ -2270,18 +2270,18 @@ let reify env ?(pre_id_pairs = []) id_pairs t =
       | Tconstr (p, _, _)
         when pre_id_pairs <> [] &&
              Option.is_some (Path.find_unscoped_subst id_pairs p) ->
-        (* Unscoped identifier, attempt to expand. *)
-        let raise_identifier_escape () =
-          match Path.find_unscoped_subst id_pairs p with
-          | Some id -> raise Trace.(Unify [escape (Module (Pident id))])
-          | None -> assert false
-        in
-        let ty' =
-          try try_expand_safe !env (pre_id_pairs @ id_pairs) ty
-          with Cannot_expand -> raise_identifier_escape ()
-        in
-        if ty == ty' then raise_identifier_escape ()
-        else iterator env id_pairs ty'
+          (* Unscoped identifier, attempt to expand. *)
+          let raise_identifier_escape () =
+            match Path.find_unscoped_subst id_pairs p with
+            | Some id -> raise Trace.(Unify [escape (Module (Pident id))])
+            | None -> assert false
+          in
+          let ty' =
+            try try_expand_safe !env (pre_id_pairs @ id_pairs) ty
+            with Cannot_expand -> raise_identifier_escape ()
+          in
+          if ty == ty' then raise_identifier_escape ()
+          else iterator env id_pairs ty'
       | _ ->
           iter_type_expr (iterator env id_pairs) ty
     end
