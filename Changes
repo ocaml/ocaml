@@ -65,6 +65,11 @@ Working version
 - #9675: Remove the caml_static_{alloc,free,resize} primitives, now unused.
   (Xavier Leroy, review by Gabriel Scherer)
 
+- #9678: Reimplement `Obj.reachable_words` using a hash table to
+  detect sharing, instead of temporary in-place modifications.  This
+  is a prerequisite for Multicore OCaml.
+  (Xavier Leroy, review by Jacques-Henri Jourdan and Sébastien Hinderer)
+
 * #9697: Remove the Is_in_code_area macro and the registration of DLL code
   areas in the page table, subsumed by the new code fragment management API
   (Xavier Leroy, review by Jacques-Henri Jourdan)
