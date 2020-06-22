@@ -126,11 +126,9 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
 
   sym = optsym("__code_begin");
   sym2 = optsym("__code_end");
-  if (NULL != sym && NULL != sym2) {
-    caml_page_table_add(In_code_area, sym, sym2);
+  if (NULL != sym && NULL != sym2)
     caml_register_code_fragment((char *) sym, (char *) sym2,
                                 DIGEST_LATER, NULL);
-  }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
 
