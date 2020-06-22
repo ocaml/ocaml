@@ -2213,7 +2213,11 @@ let get_gadt_equations_level () =
 (* a local constraint can be added only if the rhs
    of the constraint does not contain any Tvars.
    They need to be removed using this function *)
-let reify env id_pairs t =
+(* [pre_id_pairs] describes the identifier substitutions that apply to the
+   type in the current environment, but for which the identifiers will not be
+   valid in the reified type.
+*)
+let reify env ?(pre_id_pairs = []) id_pairs t =
   let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
@@ -2265,7 +2269,7 @@ let reify env id_pairs t =
           | None -> assert false
         in
         let ty' =
-          try try_expand_safe !env id_pairs ty
+          try try_expand_safe !env (pre_id_pairs @ id_pairs) ty
           with Cannot_expand -> raise_identifier_escape ()
         in
         if ty == ty' then raise_identifier_escape ()
@@ -2901,13 +2905,12 @@ and unify3 env id_pairs1 id_pairs2 t1 t1' t2 t2' =
         when is_instantiable !env path && is_instantiable !env path'
         && can_generate_equations () ->
           begin try
-            let source, destination =
+            let source, destination, pre_id_pairs =
               if Path.scope path > Path.scope path'
-              then  path , t2'
-              else  path', t1'
+              then  path , t2', id_pairs2
+              else  path', t1', id_pairs1
             in
-            (* No [id_pairs]: reify will throw if we require a substitution. *)
-            reify env [] destination;
+            reify env ~pre_id_pairs [] destination;
             record_equation t1' t2';
             add_gadt_equation env [] source destination
           with Ident.No_scope id ->
@@ -2930,20 +2933,12 @@ and unify3 env id_pairs1 id_pairs2 t1 t1' t2 t2' =
           end
       | (Tconstr (path,[],_), _)
         when is_instantiable !env path && can_generate_equations () ->
-          (* TODO: This currently raises an escape if there is an unscoped
-             identifier. We should expand the heads on both sides if there is
-             a suspected escape and try again.
-          *)
-          reify env [] t2';
+          reify env ~pre_id_pairs:id_pairs2 [] t2';
           record_equation t1' t2';
           add_gadt_equation env [] path t2'
       | (_, Tconstr (path,[],_))
         when is_instantiable !env path && can_generate_equations () ->
-          (* TODO: This currently raises an escape if there is an unscoped
-             identifier. We should expand the heads on both sides if there is
-             a suspected escape and try again.
-          *)
-          reify env [] t1';
+          reify env ~pre_id_pairs:id_pairs1 [] t1';
           record_equation t1' t2';
           add_gadt_equation env [] path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
