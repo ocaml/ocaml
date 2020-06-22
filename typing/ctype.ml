@@ -3496,7 +3496,6 @@ let moregen_occur env id_pairs level ty =
     unmark_type ty; raise (Unify [])
   end;
   (* also check for free univars *)
-  (* TODO: Check that [ty] doesn't contain any unscoped identifiers. *)
   occur_univar_or_unscoped env ~pre_id_pairs:id_pairs [] ty;
   update_level env [] level ty
 
