@@ -6,7 +6,7 @@ spacetime_offline.$(O): spacetime_offline.c ../../runtime/caml/alloc.h \
   ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/fail.h \
   ../../runtime/caml/gc.h ../../runtime/caml/intext.h \
   ../../runtime/caml/io.h ../../runtime/caml/platform.h \
-  ../../runtime/caml/memory.h ../../runtime/caml/major_gc.h \
+  ../../runtime/caml/major_gc.h ../../runtime/caml/memory.h \
   ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
   ../../runtime/caml/domain.h ../../runtime/caml/roots.h \
   ../../runtime/caml/signals.h ../../runtime/caml/stack.h \

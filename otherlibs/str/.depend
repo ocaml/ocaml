@@ -4,8 +4,8 @@ strstubs.$(O): strstubs.c ../../runtime/caml/mlvalues.h \
   ../../runtime/caml/camlatomic.h ../../runtime/caml/domain_state.h \
   ../../runtime/caml/domain_state.tbl \
   ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/alloc.h \
-  ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
-  ../../runtime/caml/domain.h ../../runtime/caml/fail.h
+  ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+  ../../runtime/caml/fail.h
 str.cmo : \
     str.cmi
 str.cmx : \
