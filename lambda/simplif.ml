@@ -119,56 +119,60 @@ let simplify_exits lam =
         Hashtbl.add exits i r
   in
 
-  let rec count try_depth = function
+  let rec count ~try_depth = function
   | (Lvar _| Lmutvar _ | Lconst _) -> ()
-  | Lapply ap -> count try_depth ap.ap_func; List.iter (count try_depth) ap.ap_args
-  | Lfunction {body} -> count try_depth body
+  | Lapply ap -> count ~try_depth ap.ap_func; List.iter (count ~try_depth) ap.ap_args
+  | Lfunction {body} -> count ~try_depth body
   | Llet(_str, _kind, _v, l1, l2)
   | Lmutlet(_kind, _v, l1, l2) ->
-      count try_depth l2; count try_depth l1
+      count ~try_depth l2; count ~try_depth l1
   | Lletrec(bindings, body) ->
-      List.iter (fun (_v, l) -> count try_depth l) bindings;
-      count try_depth body
-  | Lprim(_p, ll, _) -> List.iter (count try_depth) ll
+      List.iter (fun (_v, l) -> count ~try_depth l) bindings;
+      count ~try_depth body
+  | Lprim(_p, ll, _) -> List.iter (count ~try_depth) ll
   | Lswitch(l, sw, _loc) ->
-      count_default try_depth sw ;
-      count try_depth l;
-      List.iter (fun (_, l) -> count try_depth l) sw.sw_consts;
-      List.iter (fun (_, l) -> count try_depth l) sw.sw_blocks
+      count_default ~try_depth sw ;
+      count ~try_depth l;
+      List.iter (fun (_, l) -> count ~try_depth l) sw.sw_consts;
+      List.iter (fun (_, l) -> count ~try_depth l) sw.sw_blocks
   | Lstringswitch(l, sw, d, _) ->
-      count try_depth l;
-      List.iter (fun (_, l) -> count try_depth l) sw;
+      count ~try_depth l;
+      List.iter (fun (_, l) -> count ~try_depth l) sw;
       begin match  d with
       | None -> ()
       | Some d -> match sw with
-        | []|[_] -> count try_depth d
-        | _ -> count try_depth d; count try_depth d (* default will get replicated *)
+        | []|[_] -> count ~try_depth d
+        | _ -> count ~try_depth d;
+        count ~try_depth d (* default will get replicated *)
       end
-  | Lstaticraise (i,ls) -> incr_exit i 1 try_depth; List.iter (count try_depth) ls
+  | Lstaticraise (i,ls) -> incr_exit i 1 try_depth;
+  List.iter (count ~try_depth) ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
       (* i will be replaced by j in l1, so each occurrence of i in l1
          increases j's ref count *)
-      count try_depth l1 ;
+      count ~try_depth l1 ;
       let ic = get_exit i in
       incr_exit j ic.count (max try_depth ic.max_depth)
   | Lstaticcatch(l1, (i,_), l2) ->
-      count try_depth l1;
+      count ~try_depth l1;
       (* If l1 does not contain (exit i),
          l2 will be removed, so don't count its exits *)
       if (get_exit i).count > 0 then
-        count try_depth l2
-  | Ltrywith(l1, _v, l2) -> 
-    count (try_depth+1) l1; count try_depth l2;
-  | Lifthenelse(l1, l2, l3) -> count try_depth l1; count try_depth l2; count try_depth l3
-  | Lsequence(l1, l2) -> count try_depth l1; count try_depth l2
-  | Lwhile(l1, l2) -> count try_depth l1; count try_depth l2
-  | Lfor(_, l1, l2, _dir, l3) -> count try_depth l1; count try_depth l2; count try_depth l3
-  | Lassign(_v, l) -> count try_depth l
-  | Lsend(_k, m, o, ll, _) -> List.iter (count try_depth) (m::o::ll)
-  | Levent(l, _) -> count try_depth l
-  | Lifused(_v, l) -> count try_depth l
+        count ~try_depth l2
+  | Ltrywith(l1, _v, l2) -> count ~try_depth:(try_depth+1) l1;
+  count ~try_depth l2;
+  | Lifthenelse(l1, l2, l3) -> count ~try_depth l1;
+  count ~try_depth l2; count ~try_depth l3
+  | Lsequence(l1, l2) -> count ~try_depth l1; count ~try_depth l2
+  | Lwhile(l1, l2) -> count ~try_depth l1; count ~try_depth l2
+  | Lfor(_, l1, l2, _dir, l3) -> count ~try_depth l1;
+  count ~try_depth l2; count ~try_depth l3
+  | Lassign(_v, l) -> count ~try_depth l
+  | Lsend(_k, m, o, ll, _) -> List.iter (count ~try_depth) (m::o::ll)
+  | Levent(l, _) -> count ~try_depth l
+  | Lifused(_v, l) -> count ~try_depth l
 
-  and count_default try_depth sw = match sw.sw_failaction with
+  and count_default ~try_depth sw = match sw.sw_failaction with
   | None -> ()
   | Some al ->
       let nconsts = List.length sw.sw_consts
@@ -176,14 +180,13 @@ let simplify_exits lam =
       if
         nconsts < sw.sw_numconsts && nblocks < sw.sw_numblocks
       then begin (* default action will occur twice in native code *)
-        count try_depth al ; count try_depth al
+        count ~try_depth al ; count ~try_depth al
       end else begin (* default action will occur once *)
         assert (nconsts < sw.sw_numconsts || nblocks < sw.sw_numblocks) ;
-        count try_depth al
+        count ~try_depth al
       end
   in
-  count 0 lam; 
-
+  count ~try_depth:0 lam;
 
   (*
      Second pass simplify  ``catch body with (i ...) handler''
@@ -203,19 +206,20 @@ let simplify_exits lam =
   *)
 
   let subst = Hashtbl.create 17 in
-  let rec simplif try_depth = function
+  let rec simplif ~try_depth = function
   | (Lvar _| Lmutvar _ | Lconst _) as l -> l
   | Lapply ap ->
-      Lapply{ap with ap_func = simplif try_depth ap.ap_func;
-                     ap_args = List.map (simplif try_depth) ap.ap_args}
+      Lapply{ap with ap_func = simplif ~try_depth ap.ap_func;
+                     ap_args = List.map (simplif ~try_depth) ap.ap_args}
   | Lfunction{kind; params; return; body = l; attr; loc} ->
-     Lfunction{kind; params; return; body = simplif try_depth l; attr; loc}
-  | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif try_depth l1, simplif try_depth l2)
-  | Lmutlet(kind, v, l1, l2) -> Lmutlet(kind, v, simplif try_depth l1, simplif try_depth l2)
+     Lfunction{kind; params; return; body = simplif ~try_depth l; attr; loc}
+  | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
+  | Lmutlet(kind, v, l1, l2) -> Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lletrec(bindings, body) ->
-      Lletrec(List.map (fun (v, l) -> (v, simplif try_depth l)) bindings, simplif try_depth body)
+      Lletrec(List.map (fun (v, l) -> (v, simplif ~try_depth l)) bindings,
+      simplif ~try_depth body)
   | Lprim(p, ll, loc) -> begin
-    let ll = List.map (simplif try_depth) ll in
+    let ll = List.map (simplif ~try_depth) ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
       | Prevapply, [x; Lapply ap]
@@ -259,10 +263,12 @@ let simplify_exits lam =
       | _ -> Lprim(p, ll, loc)
      end
   | Lswitch(l, sw, loc) ->
-      let new_l = simplif try_depth l
-      and new_consts =  List.map (fun (n, e) -> (n, simplif try_depth e)) sw.sw_consts
-      and new_blocks =  List.map (fun (n, e) -> (n, simplif try_depth e)) sw.sw_blocks
-      and new_fail = Option.map (simplif try_depth) sw.sw_failaction in
+      let new_l = simplif ~try_depth l
+      and new_consts =
+      List.map (fun (n, e) -> (n, simplif ~try_depth e)) sw.sw_consts
+      and new_blocks =
+      List.map (fun (n, e) -> (n, simplif ~try_depth e)) sw.sw_blocks
+      and new_fail = Option.map (simplif ~try_depth) sw.sw_failaction in
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
@@ -270,8 +276,8 @@ let simplify_exits lam =
          loc)
   | Lstringswitch(l,sw,d,loc) ->
       Lstringswitch
-        (simplif try_depth l,List.map (fun (s,l) -> s,simplif try_depth l) sw,
-         Option.map (simplif try_depth) d,loc)
+        (simplif ~try_depth l,List.map (fun (s,l) -> s,simplif ~try_depth l) sw,
+         Option.map (simplif ~try_depth) d,loc)
   | Lstaticraise (i,[]) as l ->
       begin try
         let _,handler =  Hashtbl.find subst i in
@@ -280,7 +286,7 @@ let simplify_exits lam =
       | Not_found -> l
       end
   | Lstaticraise (i,ls) ->
-      let ls = List.map (simplif try_depth) ls in
+      let ls = List.map (simplif ~try_depth) ls in
       begin try
         let xs,handler =  Hashtbl.find subst i in
         let ys = List.map (fun (x, k) -> Ident.rename x, k) xs in
@@ -302,37 +308,40 @@ let simplify_exits lam =
       | Not_found -> Lstaticraise (i,ls)
       end
   | Lstaticcatch (l1,(i,[]),(Lstaticraise (_j,[]) as l2)) ->
-      Hashtbl.add subst i ([],simplif try_depth l2) ;
-      simplif try_depth l1
+      Hashtbl.add subst i ([],simplif ~try_depth l2) ;
+      simplif ~try_depth l1
   | Lstaticcatch (l1,(i,xs),l2) ->
       let {count; max_depth} = get_exit i in
       if count = 0 then
         (* Discard staticcatch: not matching exit *)
-        simplif try_depth l1
-      else if 
+        simplif ~try_depth l1
+      else if
       count = 1 && max_depth <= try_depth then begin
         (* Inline handler if there is a single occurrence and it is not
            nested within an inner try..with *)
         assert(max_depth = try_depth);
-        Hashtbl.add subst i (xs,simplif try_depth l2);
-        simplif try_depth l1
+        Hashtbl.add subst i (xs,simplif ~try_depth l2);
+        simplif ~try_depth l1
       end else
-        Lstaticcatch (simplif try_depth l1, (i,xs), simplif try_depth l2)
+        Lstaticcatch (simplif ~try_depth l1, (i,xs), simplif ~try_depth l2)
   | Ltrywith(l1, v, l2) ->
-      let l1 = simplif (try_depth + 1) l1 in
-      Ltrywith(l1, v, simplif try_depth l2)
-  | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif try_depth l1, simplif try_depth l2, simplif try_depth l3)
-  | Lsequence(l1, l2) -> Lsequence(simplif try_depth l1, simplif try_depth l2)
-  | Lwhile(l1, l2) -> Lwhile(simplif try_depth l1, simplif try_depth l2)
+      let l1 = simplif ~try_depth:(try_depth + 1) l1 in
+      Ltrywith(l1, v, simplif ~try_depth l2)
+  | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif ~try_depth l1,
+    simplif ~try_depth l2, simplif ~try_depth l3)
+  | Lsequence(l1, l2) -> Lsequence(simplif ~try_depth l1, simplif ~try_depth l2)
+  | Lwhile(l1, l2) -> Lwhile(simplif ~try_depth l1, simplif ~try_depth l2)
   | Lfor(v, l1, l2, dir, l3) ->
-      Lfor(v, simplif try_depth l1, simplif try_depth l2, dir, simplif try_depth l3)
-  | Lassign(v, l) -> Lassign(v, simplif try_depth l)
+      Lfor(v, simplif ~try_depth l1, simplif ~try_depth l2, dir,
+      simplif ~try_depth l3)
+  | Lassign(v, l) -> Lassign(v, simplif ~try_depth l)
   | Lsend(k, m, o, ll, loc) ->
-      Lsend(k, simplif try_depth m, simplif try_depth o, List.map (simplif try_depth) ll, loc)
-  | Levent(l, ev) -> Levent(simplif try_depth l, ev)
-  | Lifused(v, l) -> Lifused (v,simplif try_depth l)
+      Lsend(k, simplif ~try_depth m, simplif ~try_depth o,
+      List.map (simplif ~try_depth) ll, loc)
+  | Levent(l, ev) -> Levent(simplif ~try_depth l, ev)
+  | Lifused(v, l) -> Lifused (v,simplif ~try_depth l)
   in
-  simplif 0 lam
+  simplif ~try_depth:0 lam
 
 (* Compile-time beta-reduction of functions immediately applied:
       Lapply(Lfunction(Curried, params, body), args, loc) ->
