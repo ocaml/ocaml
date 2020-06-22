@@ -11,10 +11,10 @@ files = "sigint.c"
 
 program = "${test_build_directory}/delayintr.byte"
 
-**** ocamlc.byte
+**** cc
 
 program = "sigint"
-all_modules = "sigint.c"
+modules = "sigint.c"
 
 ***** ocamlc.byte
 
@@ -29,10 +29,10 @@ all_modules = "delayintr.ml"
 
 program = "${test_build_directory}/delayintr.opt"
 
-**** ocamlopt.byte
+**** cc
 
 program = "sigint"
-all_modules = "sigint.c"
+modules = "sigint.c"
 
 ***** ocamlopt.byte
 

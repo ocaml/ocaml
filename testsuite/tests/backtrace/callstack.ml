@@ -5,7 +5,8 @@
    compare_programs = "false"
    ** no-flambda
    *** native
-   *** bytecode
+   *** shared-libraries
+   **** bytecode
 *)
 
 let[@inline never] f0 () =

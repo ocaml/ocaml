@@ -31,16 +31,27 @@ let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
   | Ocaml_files.Debug -> " -runtime-variant d"
   | Ocaml_files.Instrumented -> " -runtime-variant i"
 
-let runtime_flags env backend c_files =
+let runtime_flags env backend needs_custom =
   let runtime_library_flags = "-I " ^
     Ocaml_directories.runtime in
+  let runtime_library_flags =
+    if needs_custom then
+      runtime_library_flags ^ " " ^ c_includes
+    else
+      runtime_library_flags
+  in
   let rt_flags = match backend with
     | Ocaml_backends.Native -> runtime_variant_flags ()
     | Ocaml_backends.Bytecode ->
       begin
-        if c_files then begin (* custom mode *)
-          "-custom " ^ (runtime_variant_flags ())
-        end else begin (* non-custom mode *)
+        let compile_only =
+          match Environments.lookup_as_bool Ocaml_variables.compile_only env with
+          | Some true -> true
+          | _ -> false
+        in
+        if needs_custom && not compile_only then begin
+          "-output-complete-exe " ^ (runtime_variant_flags ())
+        end else begin
           let use_runtime =
             Environments.lookup_as_bool Ocaml_variables.use_runtime env
           in

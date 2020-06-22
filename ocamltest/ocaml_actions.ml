@@ -189,7 +189,7 @@ let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
 let cmas_need_dynamic_loading directories libraries =
   let loads_c_code library =
     let library = Misc.find_in_path directories library in
-    let ic = open_in_bin library in
+    Sys.with_input_file ~bin:true library @@ fun ic ->
     try
       let len_magic_number = String.length Config.cma_magic_number in
       let magic_number = really_input_string ic len_magic_number in
@@ -197,16 +197,21 @@ let cmas_need_dynamic_loading directories libraries =
         let toc_pos = input_binary_int ic in
         seek_in ic toc_pos;
         let toc = (input_value ic : Cmo_format.library) in
-        close_in ic;
-        if toc.Cmo_format.lib_dllibs <> [] then Some (Ok ()) else None
+        if toc.Cmo_format.lib_dllibs <> [] then Ok true else Ok false
       else
         raise End_of_file
-    with End_of_file
-       | Sys_error _ ->
-         begin try close_in ic with Sys_error _ -> () end;
-         Some (Error ("Corrupt or non-CMA file: " ^ library))
+    with End_of_file | Sys_error _ ->
+      Error ("Corrupt or non-CMA file: " ^ library)
   in
-  List.find_map loads_c_code (String.words libraries)
+  let rec loop = function
+    | [] -> Ok false
+    | lib :: libs ->
+        begin match loads_c_code lib with
+        | Ok true | Error _ as r -> r
+        | Ok false -> loop libs
+        end
+  in
+  loop (String.words libraries)
 
 let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
@@ -216,6 +221,7 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let output_variable = compiler#output_variable in
   let prepare = prepare_module output_variable log env in
   let modules =
+    (* NOTE: [prepare] performs side effects. *)
     List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
   let has_c_file = List.exists is_c_file modules in
   let c_headers_flags =
@@ -241,18 +247,17 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
        compiler#target = Ocaml_backends.Bytecode then
       cmas_need_dynamic_loading (directories env) libraries
     else
-      None
+      Ok false
   in
   match cmas_need_dynamic_loading with
-    | Some (Error reason) ->
+    | Error reason ->
         (Result.fail_with_reason reason, env)
-    | _ ->
-      let bytecode_links_c_code = (cmas_need_dynamic_loading = Some (Ok ())) in
+    | Ok bytecode_links_c_code ->
+      let needs_custom = has_c_file || bytecode_links_c_code in
       let commandline =
       [
         compiler#name;
-        Ocaml_flags.runtime_flags env compiler#target
-                                  (has_c_file || bytecode_links_c_code);
+        Ocaml_flags.runtime_flags env compiler#target needs_custom;
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
@@ -274,6 +279,13 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
           ~stderr_variable:compiler#output_variable
           ~append:true
           log env commandline in
+      let env =
+        (* In custom mode, bytecode executables are native binaries *)
+        if needs_custom then
+          Environments.add Ocaml_variables.compare_programs "false" env
+        else
+          env
+      in
       if exit_status=expected_exit_status
       then (Result.pass, env)
       else begin
@@ -1003,11 +1015,11 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
     (Result.skip, env)
   else
     match cmas_need_dynamic_loading (directories env) libraries with
-      | Some (Error reason) ->
+      | Error reason ->
         (Result.fail_with_reason reason, env)
-      | Some (Ok ()) ->
+      | Ok true ->
         (Result.skip, env)
-      | None ->
+      | Ok false ->
         let testfile = Actions_helpers.testfile env in
         let expected_exit_status =
           Ocaml_tools.expected_exit_status env (toplevel :> Ocaml_tools.tool) in
