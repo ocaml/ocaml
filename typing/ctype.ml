@@ -2035,6 +2035,14 @@ let occur_univar ?(inj_only=false) env id_pairs ty =
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound env id_pairs ty
+      | Tconstr (p, _, _)
+        when Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+          begin match Path.find_unscoped_subst id_pairs p with
+          | Some id ->
+              raise Trace.(Unify [escape (Module (Pident id))])
+          | None ->
+              assert false
+          end
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
           begin try
