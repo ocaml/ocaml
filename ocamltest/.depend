@@ -8,8 +8,8 @@ run_stubs.$(O): run_stubs.c run.h ../runtime/caml/misc.h \
   ../runtime/caml/byte_domain_state.tbl ../runtime/caml/memory.h \
   ../runtime/caml/gc.h ../runtime/caml/major_gc.h \
   ../runtime/caml/minor_gc.h ../runtime/caml/addrmap.h \
-  ../runtime/caml/domain.h ../runtime/caml/alloc.h ../runtime/caml/io.h \
-  ../runtime/caml/platform.h ../runtime/caml/osdeps.h
+  ../runtime/caml/domain.h ../runtime/caml/platform.h \
+  ../runtime/caml/alloc.h ../runtime/caml/io.h ../runtime/caml/osdeps.h
 ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
   ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
   ../runtime/caml/mlvalues.h ../runtime/caml/misc.h \
@@ -18,8 +18,8 @@ ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
   ../runtime/caml/memory.h ../runtime/caml/gc.h \
   ../runtime/caml/major_gc.h ../runtime/caml/minor_gc.h \
   ../runtime/caml/addrmap.h ../runtime/caml/domain.h \
-  ../runtime/caml/alloc.h ../runtime/caml/signals.h \
-  ../runtime/caml/osdeps.h
+  ../runtime/caml/platform.h ../runtime/caml/alloc.h \
+  ../runtime/caml/signals.h ../runtime/caml/osdeps.h
 actions.cmo : \
     variables.cmi \
     result.cmi \
