@@ -59,7 +59,7 @@ extern int caml_try_stw_empty_minor_heap_on_all_domains(); /* out STW */
 extern void caml_empty_minor_heaps_once(); /* out STW */
 CAMLextern void caml_minor_collection (void);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
-int get_header_val(value v);
+header_t caml_get_header_val(value v);
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
