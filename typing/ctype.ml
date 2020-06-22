@@ -2922,7 +2922,8 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
               inj (List.combine tl1 tl2)
       | (Tconstr (path,[],_),
          Tconstr (path',[],_))
-        when is_instantiable !env path && is_instantiable !env path'
+        when is_instantiable !env (Path.subst id_pairs1 path)
+        && is_instantiable !env (Path.subst id_pairs2 path')
         && can_generate_equations () ->
           begin try
             let source, destination, pre_id_pairs =
@@ -2934,7 +2935,7 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
             record_equation t1' t2';
             add_gadt_equation env [] source destination
           with Ident.No_scope id ->
-            (* Attempt to expand, erasing the identifier. *)
+            (* Found an unscoped identifier. Expand and re-try unification. *)
             let t1'' =
               try try_expand_once !env id_pairs1 t1'
               with Cannot_expand -> t1'
@@ -2952,15 +2953,45 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
               unify env id_pairs1 id_pairs2 t1' t2'
           end
       | (Tconstr (path,[],_), _)
-        when is_instantiable !env path && can_generate_equations () ->
-          reify env ~pre_id_pairs:id_pairs2 [] t2';
-          record_equation t1' t2';
-          add_gadt_equation env [] path t2'
+        when is_instantiable !env (Path.subst id_pairs1 path)
+        && can_generate_equations () ->
+          begin match Path.find_unscoped path with
+          | None ->
+              reify env ~pre_id_pairs:id_pairs2 [] t2';
+              record_equation t1' t2';
+              add_gadt_equation env [] path t2'
+          | Some id ->
+              (* Expand to erase the unscoped identifier before adding eqn. *)
+              let t1' =
+                try try_expand_once !env id_pairs1 t1'
+                with Cannot_expand ->
+                  (* Cannot erase the identifier by expanding. This should not
+                     be possible.
+                  *)
+                  raise Trace.(Unify [escape (Module (Pident id))])
+              in
+              unify env id_pairs1 id_pairs2 t1' t2'
+          end
       | (_, Tconstr (path,[],_))
-        when is_instantiable !env path && can_generate_equations () ->
-          reify env ~pre_id_pairs:id_pairs1 [] t1';
-          record_equation t1' t2';
-          add_gadt_equation env [] path t1'
+        when is_instantiable !env (Path.subst id_pairs2 path)
+        && can_generate_equations () ->
+          begin match Path.find_unscoped path with
+          | None ->
+              reify env ~pre_id_pairs:id_pairs1 [] t1';
+              record_equation t1' t2';
+              add_gadt_equation env [] path t1'
+          | Some id ->
+              (* Expand to erase the unscoped identifier before adding eqn. *)
+              let t2' =
+                try try_expand_once !env id_pairs2 t2'
+                with Cannot_expand ->
+                  (* Cannot erase the identifier by expanding. This should not
+                     be possible.
+                  *)
+                  raise Trace.(Unify [escape (Module (Pident id))])
+              in
+              unify env id_pairs1 id_pairs2 t1' t2'
+          end
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env id_pairs1 t1';
           reify env id_pairs2 t2';
