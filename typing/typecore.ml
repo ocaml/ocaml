@@ -3675,7 +3675,7 @@ and type_expect_
             match (expand_head env xty).desc with
             | Tobject (fi, _) ->
                 begin match (repr fi).desc with
-                | Tfield ("poly", _, t, _) ->
+                | Tfield ("app", _, t, _) ->
                     begin match (repr t).desc with
                     | Tpoly (t, vars) ->
                         (* Need also to check principality *)
@@ -3700,13 +3700,13 @@ and type_expect_
           generalize ty;
           let ty_poly = reify_univars env ty in
           let ty_self =
-            newgenty (Tobject (newgenty (Tfield ("poly", Fpresent, ty_poly,
+            newgenty (Tobject (newgenty (Tfield ("app", Fpresent, ty_poly,
                                                  newgenty Tnil)),
                                ref None)) in
           let csig =
             {csig_self = ty_self;
              csig_vars = Vars.empty;
-             csig_concr = Concr.singleton "poly";
+             csig_concr = Concr.singleton "app";
              csig_inher = []} in
           let pat () =
             {pat_desc = Tpat_any;
@@ -3731,9 +3731,9 @@ and type_expect_
             {cstr_self = pat ();
              cstr_type = csig;
              cstr_meths =
-               Meths.add "poly" (Ident.create_local "poly") Meths.empty;
+               Meths.add "app" (Ident.create_local "app") Meths.empty;
              cstr_fields = [{cf_desc = Tcf_method
-                               (Location.mknoloc "poly", Public,
+                               (Location.mknoloc "app", Public,
                                 Tcfk_concrete (Fresh, met));
                              cf_loc = exp.exp_loc;
                              cf_attributes = []} ]} in
