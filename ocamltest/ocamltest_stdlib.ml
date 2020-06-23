@@ -107,6 +107,7 @@ module Sys = struct
       (fun () -> f ic)
 
   let file_is_empty filename =
+    not (Sys.file_exists filename) ||
     with_input_file filename in_channel_length = 0
 
   let string_of_file filename =
