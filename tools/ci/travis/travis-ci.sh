@@ -58,7 +58,14 @@ fi
 
 set -x
 
-PREFIX=~/local
+# This is designed to exercise the build system's resilience to funny names:
+#  - It contains spaces
+#  - It contains both characters properly escaped for make
+#  - It contains characters designed to test C escaping
+PREFIX="$HOME/local/a \"tortuous\" t\$st #n'a'me"
+# configure expects input to make-escaped in order to allow things like
+# --bindir='${exec_prefix}/funnybin'
+ESCAPED_PREFIX=$(echo "$PREFIX" | sed -e 's/"/\\"/g;s/#/\\#/g;s/\$/\\$$/g')
 
 MAKE="make $MAKE_ARG"
 SHELL=dash
@@ -112,7 +119,7 @@ EOF
 }
 
 BuildAndTest () {
-  mkdir -p $PREFIX
+  mkdir -p "$PREFIX"
   cat<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request
@@ -129,7 +136,6 @@ EOF
 
   if [ "$MIN_BUILD" = "1" ] ; then
     configure_flags="\
-      --prefix=$PREFIX \
       --disable-shared \
       --disable-debug-runtime \
       --disable-instrumented-runtime \
@@ -144,7 +150,6 @@ EOF
       $CONFIG_ARG"
   else
     configure_flags="\
-      --prefix=$PREFIX \
       --enable-flambda-invariants \
       --enable-ocamltest \
       --disable-dependency-generation \
@@ -152,10 +157,11 @@ EOF
   fi
   case $XARCH in
   x64)
-    ./configure $configure_flags
+    ./configure --prefix="$ESCAPED_PREFIX" $configure_flags
     ;;
   i386)
     ./configure --build=x86_64-pc-linux-gnu --host=i386-linux \
+      --prefix="$ESCAPED_PREFIX" \
       CC='gcc -m32' AS='as --32' ASPP='gcc -m32 -c' \
       PARTIALLD='ld -r -melf_i386' \
       $configure_flags
@@ -166,7 +172,7 @@ EOF
     ;;
   esac
 
-  export PATH=$PREFIX/bin:$PATH
+  export PATH="$PREFIX/bin:$PATH"
   if [ "$MIN_BUILD" = "1" ] ; then
     if $MAKE world.opt ; then
       echo "world.opt is not supposed to work!"
@@ -193,6 +199,18 @@ EOF
     $MAKE -C ocamldoc html_doc pdf_doc texi_doc
   fi
   $MAKE install
+  if [[ ! -d $PREFIX ]] ; then
+    echo "install did not create $PREFIX?!"
+    exit 1
+  fi
+  pushd "$PREFIX/.." &> /dev/null
+  # There should be exactly one directory here
+  if [[ $(find . -maxdepth 1 -mindepth 1 -type d | wc -l) != '1' ]] ; then
+    echo "More than one directory found in ~/local: Makefile escaping problem?!"
+    ls -la "$HOME/local"
+    exit 1
+  fi
+  popd &> /dev/null
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
