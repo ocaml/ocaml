@@ -1,0 +1,5 @@
+let bindir = "%%BINDIR%%"
+let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
+let default_rpath = "%%RPATH%%"
+let mksharedlibrpath = "%%MKSHAREDLIBRPATH%"
+let toolpref = "%%TOOLPREF%"
