@@ -155,7 +155,7 @@ let run_cmd
   let dump_file s fn =
     if not (Sys.file_is_empty fn) then begin
       Printf.fprintf log "### begin %s ###\n" s;
-      Sys.with_input_file fn (fun ic -> Sys.copy_chan ic log);
+      Sys.dump_file log fn;
       Printf.fprintf log "### end %s ###\n" s
     end
   in

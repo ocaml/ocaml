@@ -130,8 +130,8 @@ module Sys = struct
     in
     with_input_file filename go
 
-  let dump_file oc filename =
-    let f s = output_string oc "> "; output_string oc s; output_char oc '\n' in
+  let dump_file oc ?(prefix = "") filename =
+    let f s = output_string oc prefix; output_string oc s; output_char oc '\n' in
     iter_lines_of_file f filename
 
   let with_output_file ?(bin=false) x f =
