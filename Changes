@@ -62,6 +62,9 @@ Working version
   (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
   Stephen Dolan)
 
+- #9670: Report full major collections in Gc stats.
+  (Leo White, review by Gabriel Scherer)
+
 - #9675: Remove the caml_static_{alloc,free,resize} primitives, now unused.
   (Xavier Leroy, review by Gabriel Scherer)
 
