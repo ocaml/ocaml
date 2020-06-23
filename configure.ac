@@ -28,7 +28,12 @@ AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 # Configuration variables
 
 ## Command-line arguments passed to configure
-CONFIGURE_ARGS="$*"
+CONFIGURE_ARGS=''
+for arg in "$@" ; do
+  CONFIGURE_ARGS="$CONFIGURE_ARGS${CONFIGURE_ARGS:+ }'$arg'"
+done
+# Escape CONFIGURE_ARGS for including in a Makefile
+CONFIGURE_ARGS=$(echo "$CONFIGURE_ARGS" | sed -e 's/\$/$$/g;s/#/\\#/g')
 
 # Command-line tools section of the Unix manual
 programs_man_section=1
