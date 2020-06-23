@@ -65,6 +65,16 @@ extern void caml_shrink_heap (char *);              /* memory.c */
 #endif
 #define Ecolor(w) ((w) & 3)
 
+#ifdef NO_NAKED_POINTERS
+/* We cannot use the page table to test for pointers within the major heap.
+   Instead we roll our own data structure here. */
+static int init_chunk_table(void);
+static void free_chunk_table(void);
+static int is_in_heap(void * addr);
+#undef Is_in_heap
+#define Is_in_heap(a) is_in_heap((void *) a)
+#endif
+
 typedef uintnat word;
 
 static void invert_pointer_at (word *p)
@@ -168,6 +178,13 @@ static void do_compaction (intnat new_allocation_policy)
 
 #ifdef DEBUG
   caml_heap_check ();
+#endif
+#ifdef NO_NAKED_POINTERS
+  if (init_chunk_table() == -1) {
+    /* out of memory for the table of chunks; what to do? */
+    caml_gc_message (0x10, "Out of memory during compaction\n");
+    return;
+  }
 #endif
 
   /* First pass: encode all noninfix headers. */
@@ -429,6 +446,10 @@ static void do_compaction (intnat new_allocation_policy)
   }
   ++ Caml_state->stat_compactions;
   caml_gc_message (0x10, "done.\n");
+
+#ifdef NO_NAKED_POINTERS
+  free_chunk_table();
+#endif
 }
 
 uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
@@ -448,6 +469,7 @@ void caml_compact_heap (intnat new_allocation_policy)
   CAML_EV_BEGIN(EV_COMPACT_MAIN);
   do_compaction (new_allocation_policy);
   CAML_EV_END(EV_COMPACT_MAIN);
+
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
      is at the beginning of the heap, everything gets moved to
@@ -575,3 +597,56 @@ void caml_compact_heap_maybe (void)
 
   }
 }
+
+#ifdef NO_NAKED_POINTERS
+
+/* This is the reimplementation of the "is in major heap" test
+   without the page table.  We use binary search in an array
+   of heap chunks sorted by increasing start address. */
+
+struct heap_chunk { char * start, * end; };
+
+static uintnat num_heap_chunks;
+static struct heap_chunk * heap_chunks_table; /* of size [num_heap_chunks] */
+
+static int init_chunk_table(void)
+{
+  char * c;
+  uintnat n, i;
+
+  n = 0;
+  for (c = caml_heap_start; c != NULL; c = Chunk_next(c)) n++;
+  num_heap_chunks = n;
+  heap_chunks_table = caml_stat_calloc_noexc(n, sizeof(struct heap_chunk));
+  if (heap_chunks_table == NULL) return -1;
+  for (c = caml_heap_start, i = 0; c != NULL; c = Chunk_next(c), i++) {
+    CAMLassert(i == 0 || c >= heap_chunks_table[i - 1].end);
+    heap_chunks_table[i].start = c;
+    heap_chunks_table[i].end = c + Chunk_size(c);
+  }
+  return 0;
+}
+
+static void free_chunk_table(void)
+{
+  caml_stat_free(heap_chunks_table);
+}
+
+static int is_in_heap(void * addr)
+{
+  uintnat lo, hi, mid;
+
+  for (lo = 0, hi = num_heap_chunks; lo < hi; ) {
+    mid = (lo + hi) / 2;        /* no risk of overflow */
+    if ((char *) addr < heap_chunks_table[mid].start)
+      hi = mid;
+    else if ((char *) addr >= heap_chunks_table[mid].end)
+      lo = mid + 1;
+    else
+      return 1;
+  }
+  return 0;
+}
+
+#endif
+
