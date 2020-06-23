@@ -712,8 +712,8 @@ OCaml 4.11
   (Gabriel Scherer, review by Jacques Garrigue and Leo White,
    report by Hugo Heuzard)
 
-- #9695: no error when opening an alias to a missing module
-  (Jacques Garrigue, report by Gabriel Scherer)
+- #9695, #9702: no error when opening an alias to a missing module
+  (Jacques Garrigue, report and review by Gabriel Scherer)
 
 OCaml 4.10 maintenance branch
 -----------------------------
