@@ -295,7 +295,13 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
   CAMLassert(Tag_val (v) == Abstract_tag);
   data = Field(v,CAML_EPHE_DATA_OFFSET);
   if ( data != caml_ephe_none &&
-       Is_block (data) && Is_in_heap (data) && Is_white_val (data)){
+       Is_block (data) &&
+#ifdef NO_NAKED_POINTERS
+       !Is_young(data) &&
+#else
+       Is_in_heap (data) &&
+#endif
+       Is_white_val (data)){
 
     int alive_data = 1;
 
@@ -308,7 +314,13 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
       key = Field (v, i);
     ephemeron_again:
       if (key != caml_ephe_none &&
-          Is_block (key) && Is_in_heap (key)){
+          Is_block (key) &&
+#ifdef NO_NAKED_POINTERS
+          !Is_young(key)
+#else
+          Is_in_heap(key)
+#endif
+          ){
         if (Tag_val (key) == Forward_tag){
           value f = Forward_val (key);
           if (Is_long (f) ||

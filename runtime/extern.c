@@ -698,13 +698,11 @@ static void extern_rec(value v)
   if (Is_long(v)) {
     extern_int(Long_val(v));
   }
-#ifndef NO_NAKED_POINTERS
   else if (! (Is_in_value_area(v) || caml_extern_allow_out_of_heap)) {
     /* Naked pointer outside the heap: try to marshal it as a code pointer,
        otherwise fail. */
     extern_code_pointer((char *) v);
   }
-#endif
   else {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
@@ -1144,13 +1142,12 @@ CAMLprim value caml_obj_reachable_words(value v)
   while (1) {
     if (Is_long(v)) {
       /* Tagged integers contribute 0 to the size, nothing to do */
-#ifndef NO_NAKED_POINTERS
     } else if (! Is_in_heap_or_young(v)) {
       /* Out-of-heap blocks contribute 0 to the size, nothing to do */
-      /* However, once we get rid of the page table, we will no longer
-         be able to distinguish major heap blocks and out-of-heap blocks,
-         so we will need to count out-of-heap blocks too. */
-#endif
+      /* However, in no-naked-pointers mode, we don't distinguish
+         between major heap blocks and out-of-heap blocks,
+         and the test above is always false,
+         so we end up counting out-of-heap blocks too. */
     } else if (extern_lookup_position(v, &pos, &h)) {
       /* Already seen and counted, nothing to do */
     } else {

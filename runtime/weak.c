@@ -60,13 +60,17 @@ CAMLexport mlsize_t caml_ephemeron_num_keys(value eph)
 }
 
 /** The minor heap is considered alive. */
-#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
+
 /** Outside minor and major heap, x must be black. */
 Caml_inline int Is_Dead_during_clean(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
+#ifdef NO_NAKED_POINTERS
   return Is_block (x) && !Is_young (x) && Is_white_val(x);
+#else
+  return Is_block (x) && Is_in_heap (x) && Is_white_val(x);
+#endif
 }
 /** The minor heap doesn't have to be marked, outside they should
     already be black
@@ -75,22 +79,12 @@ Caml_inline int Must_be_Marked_during_mark(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
+#ifdef NO_NAKED_POINTERS
   return Is_block (x) && !Is_young (x);
-}
 #else
-Caml_inline int Is_Dead_during_clean(value x)
-{
-  CAMLassert (x != caml_ephe_none);
-  CAMLassert (caml_gc_phase == Phase_clean);
-  return Is_block (x) && Is_in_heap (x) && Is_white_val(x);
-}
-Caml_inline int Must_be_Marked_during_mark(value x)
-{
-  CAMLassert (x != caml_ephe_none);
-  CAMLassert (caml_gc_phase == Phase_mark);
   return Is_block (x) && Is_in_heap (x);
-}
 #endif
+}
 
 /* [len] is a number of words (fields) */
 CAMLexport value caml_ephemeron_create (mlsize_t len)
@@ -386,7 +380,7 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     if(is_ephe_key_none(ar, offset)) CAMLreturn(0);
     v = Field (ar, offset);
     /** Don't copy custom_block #7279 */
-    if(!(Is_block (v) && Is_in_heap_or_young(v)  && Tag_val(v) != Custom_tag)) {
+    if(!(Is_block (v) && Is_in_value_area(v) && Tag_val(v) != Custom_tag)) {
       if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
         caml_darken (v, NULL);
       };
@@ -445,7 +439,7 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     v = Field (ar, CAML_EPHE_DATA_OFFSET);
     if (v == caml_ephe_none) CAMLreturn(0);
     /** Don't copy custom_block #7279 */
-    if (!(Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag)) {
+    if (!(Is_block (v) && Is_in_value_area(v) && Tag_val(v) != Custom_tag)) {
       if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
         caml_darken (v, NULL);
       };
