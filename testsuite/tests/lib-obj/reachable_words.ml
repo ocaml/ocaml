@@ -1,11 +1,6 @@
 (* TEST
 *)
 
-let native =
-  match Sys.backend_type with
-  | Sys.Native -> true
-  | Sys.Bytecode -> false
-  | Sys.Other s -> print_endline s; assert false
 
 
 let size x = Obj.reachable_words (Obj.repr x)
@@ -22,7 +17,6 @@ type t =
 let f () =
   let x = Random.int 10 in
   expect_size 0 42;
-  expect_size (if native then 0 else 3) (1, 2);
   expect_size 2 [| x |];
   expect_size 3 [| x; 0 |];
 

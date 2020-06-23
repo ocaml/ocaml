@@ -749,6 +749,7 @@ build_os
 build_vendor
 build_cpu
 build
+naked_pointers
 compute_deps
 stdlib_manpages
 PACKLD
@@ -2864,6 +2865,7 @@ VERSION=4.12.0+dev0-2020-04-22
 
 
  # TODO: rename this variable
+
 
 
 
@@ -16863,8 +16865,11 @@ fi
 ## No naked pointers
 
 if test x"$enable_naked_pointers" = "xno" ; then :
-  $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
+  naked_pointers=false
+   $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
 
+else
+  naked_pointers=true
 fi
 
 ## Check for mmap support for huge pages and contiguous heap
