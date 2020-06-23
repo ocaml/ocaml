@@ -143,13 +143,12 @@ $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
 	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 
-ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
-	(echo 'let bindir = "$(BINDIR)"'; \
-         echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let default_rpath = "$(RPATH)"'; \
-         echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
-         echo 'let toolpref = "$(TOOLPREF)"';) \
-        > ocamlmklibconfig.ml
+ocamlmklibconfig.ml: ocamlmklibconfig.ml.in $(ROOTDIR)/Makefile.config Makefile
+	sed $(call SUBST_STRING,BINDIR) \
+	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
+	    $(call SUBST_STRING,RPATH) \
+	    $(call SUBST_STRING,MKSHAREDLIBRPATH) \
+	    $(call SUBST_STRING,TOOLPREF) $< > $@
 
 beforedepend:: ocamlmklibconfig.ml
 
