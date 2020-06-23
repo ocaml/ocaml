@@ -207,8 +207,7 @@ let test_file test_filename =
   begin match summary with
   | Some_failure ->
       if not Options.log_to_stderr then
-        let f s = prerr_string "> "; prerr_endline s in
-        Sys.iter_lines_of_file f log_filename
+        Sys.dump_file stderr log_filename
   | No_failure ->
       if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
