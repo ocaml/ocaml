@@ -139,17 +139,29 @@ let run_cmd
       environment
       (Environments.to_system_env env)
   in
-  Run_command.run {
-    Run_command.progname = progname;
-    Run_command.argv = arguments;
-    Run_command.envp = systemenv;
-    Run_command.stdin_filename = stdin_filename;
-    Run_command.stdout_filename = stdout_filename;
-    Run_command.stderr_filename = stderr_filename;
-    Run_command.append = append;
-    Run_command.timeout = timeout;
-    Run_command.log = log
-  }
+  let n =
+    Run_command.run {
+      Run_command.progname = progname;
+      Run_command.argv = arguments;
+      Run_command.envp = systemenv;
+      Run_command.stdin_filename = stdin_filename;
+      Run_command.stdout_filename = stdout_filename;
+      Run_command.stderr_filename = stderr_filename;
+      Run_command.append = append;
+      Run_command.timeout = timeout;
+      Run_command.log = log
+    }
+  in
+  let dump_file s fn =
+    if not (Sys.file_is_empty fn) then begin
+      Printf.fprintf log "### begin %s ###\n" s;
+      Sys.dump_file log fn;
+      Printf.fprintf log "### end %s ###\n" s
+    end
+  in
+  dump_file "stdout" stdout_filename;
+  if stdout_filename <> stderr_filename then dump_file "stderr" stderr_filename;
+  n
 
 let run
     (log_message : string)

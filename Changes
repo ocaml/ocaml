@@ -185,6 +185,11 @@ Working version
   naked-pointers and no-naked-pointers mode
   (Xavier Leroy and Gabriel Scherer)
 
+- #9696: ocamltest now shows its log when a test fails. In addition, the log
+  contains the output of executed programs.
+  (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
+  Scherer)
+
 ### Build system:
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
