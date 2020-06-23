@@ -134,8 +134,8 @@ let extract_sig_open env loc mty =
 let type_open_ ?used_slot ?toplevel ovf env loc lid =
   let path = Env.lookup_module_path ~load:true ~loc:lid.loc lid.txt env in
   match Env.open_signature ~loc ?used_slot ?toplevel ovf path env with
-  | Some env -> path, env
-  | None ->
+  | Ok env -> path, env
+  | Error _ ->
       let md = Env.find_module path env in
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false

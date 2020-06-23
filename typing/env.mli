@@ -306,9 +306,9 @@ val open_signature:
     ?used_slot:bool ref ->
     ?loc:Location.t -> ?toplevel:bool ->
     Asttypes.override_flag -> Path.t ->
-      t -> t option
+    t -> (t, [`Not_found | `Functor]) result
 
-val open_pers_signature: string -> t -> t
+val open_pers_signature: string -> t -> (t, [`Not_found]) result
 
 (* Insertion by name *)
 
