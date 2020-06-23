@@ -1020,20 +1020,22 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
+  [AS_CASE(["$arch,$CC,$system,$model"],
+    [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
+    [amd64,gcc*,solaris,*], [PACKLD_FLAGS=' -m elf_x86_64'],
+    [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
+    [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
+    [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
+    [PACKLD_FLAGS=''])
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick).
-  [AS_CASE(["$arch,$CC,$system,$model"],
-    [amd64,gcc*,macosx,*], [PACKLD='ld -r -arch x86_64 -o $(EMPTY)'],
-    [amd64,gcc*,solaris,*], [PACKLD='ld -r -m elf_x86_64 -o $(EMPTY)'],
-    [power,gcc*,elf,ppc], [PACKLD='ld -r -m elf32ppclinux -o $(EMPTY)'],
-    [power,gcc*,elf,ppc64], [PACKLD='ld -r -m elf64ppc -o $(EMPTY)'],
-    [power,gcc*,elf,ppc64le], [PACKLD='ld -r -m elf64lppc -o $(EMPTY)'],
+   AS_IF([test x"$CC" = "xcl"],
     # For the Microsoft C compiler there must be no space at the end of the
     # string.
-    [*,cl,*,*], [PACKLD="link -lib -nologo $machine -out:"],
-    [PACKLD="$DIRECT_LD -r -o \$(EMPTY)"])],
+    [PACKLD="link -lib -nologo $machine -out:"],
+    [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o \$(EMPTY)"])],
   [PACKLD="$PARTIALLD -o \$(EMPTY)"])
 
 AS_IF([test $arch != "none" && $arch64 ],
