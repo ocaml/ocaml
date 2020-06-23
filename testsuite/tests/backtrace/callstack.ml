@@ -2,7 +2,6 @@
    flags = "-g"
    * hassysthreads
    include systhreads
-   compare_programs = "false"
    ** no-flambda
    *** native
    *** bytecode

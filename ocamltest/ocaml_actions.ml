@@ -846,35 +846,16 @@ let really_compare_programs backend comparison_tool log env =
     Filecompare.reference_filename = program;
     Filecompare.output_filename = program2
   } in
-  if Ocamltest_config.flambda && backend = Ocaml_backends.Native
-  then begin
-    let reason =
-      "flambda temporarily disables comparison of native programs" in
-    (Result.pass_with_reason reason, env)
-  end else
-  if backend = Ocaml_backends.Native && (Sys.win32 || Sys.cygwin)
-  then begin
-    let reason =
-      "comparison of native programs temporarily disabled under Windows" in
-    (Result.pass_with_reason reason, env)
-  end else begin
-    let comparison_tool =
-      if backend=Ocaml_backends.Native && (Sys.win32 || Sys.cygwin)
-        then
-          let bytes_to_ignore = 512 (* comparison_start_address program *) in
-          Filecompare.(make_cmp_tool ~ignore:{bytes=bytes_to_ignore; lines=0})
-        else comparison_tool in
-    match Filecompare.compare_files ~tool:comparison_tool files with
-      | Filecompare.Same -> (Result.pass, env)
-      | Filecompare.Different ->
-        let reason = Printf.sprintf "Files %s and %s are different"
-          program program2 in
-        (Result.fail_with_reason reason, env)
-      | Filecompare.Unexpected_output -> assert false
-      | Filecompare.Error (commandline, exitcode) ->
-        let reason = Actions_helpers.mkreason what commandline exitcode in
-        (Result.fail_with_reason reason, env)
-  end
+  match Filecompare.compare_files ~tool:comparison_tool files with
+  | Filecompare.Same -> (Result.pass, env)
+  | Filecompare.Different ->
+    let reason = Printf.sprintf "Files %s and %s are different"
+      program program2 in
+    (Result.fail_with_reason reason, env)
+  | Filecompare.Unexpected_output -> assert false
+  | Filecompare.Error (commandline, exitcode) ->
+    let reason = Actions_helpers.mkreason what commandline exitcode in
+    (Result.fail_with_reason reason, env)
 
 let compare_programs backend comparison_tool log env =
   let compare_programs =
@@ -904,10 +885,10 @@ let compare_bytecode_programs =
       "compare-bytecode-programs"
       compare_bytecode_programs_code)
 
-let compare_native_programs =
+let compare_binary_files =
   native_action
     (Actions.make
-      "compare-native-programs"
+      "compare-binary-files"
       (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
 
 let compile_module compiler compilername compileroutput log env
@@ -1385,7 +1366,7 @@ let _ =
     check_ocamlopt_opt_output;
     run_expect;
     compare_bytecode_programs;
-    compare_native_programs;
+    compare_binary_files;
     setup_ocaml_build_env;
     ocaml;
     check_ocaml_output;
