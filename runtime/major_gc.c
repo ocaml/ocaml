@@ -601,6 +601,8 @@ again:
               mark_entry child = {v, 0, Wosize_hd(hd)};
               budget -= mark_stack_push(stk, e);
               e = child;
+            } else {
+              budget -= Whsize_hd(hd);
             }
           }
         }
