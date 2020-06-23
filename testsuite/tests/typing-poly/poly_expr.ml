@@ -9,8 +9,8 @@ type nat = < poly : 'a. ('a -> 'a) -> 'a -> 'a >
 type 'a nat' = ('a -> 'a) -> 'a -> 'a
 |}]
 
-let zero : nat = [%poly (fun f x -> x : _ nat')]
-let one : nat = [%poly (fun f x -> f x : _ nat')]
+let zero : nat = [%poly fun f x -> x]
+let one : nat = [%poly fun f x -> f x]
 let suc : nat -> nat = fun n -> [%poly fun f x -> n#poly f (f x)]
 [%%expect{|
 val zero : nat = <obj>

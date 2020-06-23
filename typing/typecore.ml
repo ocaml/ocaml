@@ -3670,8 +3670,31 @@ and type_expect_
                     payload) ->
       begin match payload with
       | PStr [ { pstr_desc = Pstr_eval (sexp, attrs) } ] ->
+          let xty = instance ty_expected in
+          let xpl =
+            match (expand_head env xty).desc with
+            | Tobject (fi, _) ->
+                begin match (repr fi).desc with
+                | Tfield ("poly", _, t, _) ->
+                    begin match (repr t).desc with
+                    | Tpoly (t, vars) ->
+                        (* Need also to check principality *)
+                        Some (t, vars)
+                    | _ -> None
+                    end
+                | _ -> None
+                end
+            | _ -> None
+          in
           begin_def();
-          let exp = type_exp env sexp in
+          let exp =
+            match xpl with
+            | Some (t, vars) ->
+                let (_, xty) = instance_poly true vars t in
+                type_expect env sexp (mk_expected xty)
+            | None ->
+                type_exp env sexp
+          in
           end_def();
           let ty = exp.exp_type in
           generalize ty;
