@@ -122,6 +122,14 @@ module Sys = struct
         failwith ("Got unexpected end of file while reading " ^ filename)
     end
 
+  let iter_lines_of_file f filename =
+    let rec go ic =
+      match input_line ic with
+      | exception End_of_file -> ()
+      | l -> f l; go ic
+    in
+    with_input_file filename go
+
   let with_output_file ?(bin=false) x f =
     let oc = (if bin then open_out_bin else open_out) x in
     Fun.protect ~finally:(fun () -> close_out_noerr oc)
