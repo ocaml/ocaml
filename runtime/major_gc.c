@@ -508,10 +508,10 @@ static void realloc_mark_stack (struct mark_stack* stk)
   mark_stack_prune(stk);
 }
 
-static void mark_stack_push(struct mark_stack* stk, mark_entry e)
+static intnat mark_stack_push(struct mark_stack* stk, mark_entry e)
 {
   value v;
-  int i;
+  intnat work;
 
   CAMLassert(Is_block(e.block) && !Is_minor(e.block));
   CAMLassert(Tag_val(e.block) != Infix_tag);
@@ -519,10 +519,10 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
   CAMLassert(Tag_val(e.block) < No_scan_tag);
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
-  for (i = 0; i < 16; i++) {
+  for (work = 0; work < 16; work++) {
     if (e.offset == e.end)
-      /* nothing left to mark */
-      return;
+      /* nothing left to mark and credit header */
+      return work+1;
     v = Op_val(e.block)[e.offset];
 
     if (Is_markable(v))
@@ -534,13 +534,14 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
   }
 
   if (e.offset == e.end)
-    /* nothing left to mark */
-    return;
+    /* nothing left to mark and credit header */
+    return work+1;
 
   if (stk->count == stk->size)
     realloc_mark_stack(stk);
 
   stk->stack[stk->count++] = e;
+  return work;
 }
 
 /* to fit scanning_action */
@@ -552,62 +553,60 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 
 void caml_darken_cont(value cont);
 static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
-  mark_entry e = {0};
-  while (1) {
-    value v;
-    if (e.offset == e.end) {
-      if (stk->count == 0)
-        break;
-      e = stk->stack[--stk->count];
-    }
-    if (budget <= 0) {
-      mark_stack_push(stk, e);
-      break;
-    }
-    budget--;
-    CAMLassert(Is_markable(e.block) &&
-               Has_status_hd(Hd_val(e.block), global.MARKED) &&
-               Tag_val(e.block) < No_scan_tag &&
-               Tag_val(e.block) != Cont_tag);
-    v = Op_val(e.block)[e.offset++];
-    if (Is_markable(v)) {
-      header_t hd = Hd_val(v);
-      if (Tag_hd(hd) == Infix_tag) {
-        v -= Infix_offset_hd(hd);
-        hd = Hd_val(v);
+  while (stk->count > 0) {
+    mark_entry e = stk->stack[--stk->count];
+    while (e.offset != e.end) {
+      value v;
+      if (budget <= 0) {
+        budget -= mark_stack_push(stk, e);
+        return budget;
       }
-      CAMLassert (!Has_status_hd(hd, global.GARBAGE));
-      if (Has_status_hd(hd, global.UNMARKED)) {
-        Caml_state->stat_blocks_marked++;
-        if (Tag_hd(hd) == Cont_tag) {
-          mark_stack_push(stk, e);
-          caml_darken_cont(v);
-          e = (mark_entry){0};
-          budget -= Whsize_hd(hd);
-        } else {
+      budget--;
+      CAMLassert(Is_markable(e.block) &&
+                 Has_status_hd(Hd_val(e.block), global.MARKED) &&
+                 Tag_val(e.block) < No_scan_tag &&
+                 Tag_val(e.block) != Cont_tag);
+      v = Op_val(e.block)[e.offset++];
+      if (Is_markable(v)) {
+        header_t hd = Hd_val(v);
+        if (Tag_hd(hd) == Infix_tag) {
+          v -= Infix_offset_hd(hd);
+          hd = Hd_val(v);
+        }
+        CAMLassert (!Has_status_hd(hd, global.GARBAGE));
+        if (Has_status_hd(hd, global.UNMARKED)) {
+          Caml_state->stat_blocks_marked++;
+          if (Tag_hd(hd) == Cont_tag) {
+            budget -= mark_stack_push(stk, e);
+            caml_darken_cont(v);
+            e = (mark_entry){0};
+            budget -= Wosize_hd(hd); /* credit for header, done with mark_entry */
+          } else {
 again:
-          if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
-            if (!atomic_compare_exchange_strong(
-                  Hp_atomic_val(v), &hd,
-                  With_status_hd(hd, global.MARKED))) {
-              hd = Hd_val(v);
-              goto again;
+            if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
+              if (!atomic_compare_exchange_strong(
+                    Hp_atomic_val(v), &hd,
+                    With_status_hd(hd, global.MARKED))) {
+                hd = Hd_val(v);
+                goto again;
+              }
             }
-          }
-          else {
-            atomic_store_explicit(
-              Hp_atomic_val(v),
-              With_status_hd(hd, global.MARKED),
-              memory_order_relaxed);
-          }
-          if (Tag_hd(hd) < No_scan_tag) {
-            mark_entry child = {v, 0, Wosize_hd(hd)};
-            mark_stack_push(stk, e);
-            e = child;
+            else {
+              atomic_store_explicit(
+                Hp_atomic_val(v),
+                With_status_hd(hd, global.MARKED),
+                memory_order_relaxed);
+            }
+            if (Tag_hd(hd) < No_scan_tag) {
+              mark_entry child = {v, 0, Wosize_hd(hd)};
+              budget -= mark_stack_push(stk, e);
+              e = child;
+            }
           }
         }
       }
     }
+    budget--; /* credit for header */
   }
   return budget;
 }
