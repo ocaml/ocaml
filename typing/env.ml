@@ -2002,9 +2002,10 @@ let add_components slot root env0 comps =
   }
 
 let open_signature slot root env0 =
-  match get_components (find_module_components root env0) with
-  | Functor_comps _ -> None
-  | Structure_comps comps ->
+  match get_components_res (find_module_components root env0) with
+  | Error _
+  | Ok (Functor_comps _) -> None
+  | Ok (Structure_comps comps) ->
     Some (add_components slot root env0 comps)
 
 
