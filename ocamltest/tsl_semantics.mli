@@ -28,11 +28,12 @@ val interprete_environment_statements :
   Environments.t
 
 type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
+  {
+    env: Tsl_ast.environment_statement located list;
+    test: Tests.t;
+    modifiers: string located list;
+    subtrees: test_tree list;
+  }
 
 val test_trees_of_tsl_block :
   Tsl_ast.tsl_block ->

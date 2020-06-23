@@ -31,11 +31,9 @@ let modifier_of_string str =
   | `Append value -> Environments.Append (variable, value)
 
 let modifiers_of_file filename =
-  let ic = open_in filename in
+  Sys.with_input_file filename @@ fun ic ->
   let rec modifiers_of_lines acc = match input_line_opt ic with
-    | None -> acc
+    | None -> List.rev acc
     | Some line ->
       modifiers_of_lines ((modifier_of_string (String.trim line)) :: acc) in
-  let modifiers = modifiers_of_lines [] in
-  close_in ic;
-  List.rev modifiers
+  modifiers_of_lines []

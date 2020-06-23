@@ -148,14 +148,12 @@ let compare_files ?(tool = default_comparison_tool) files =
             compare_binary_files ignore.bytes
                                  files.reference_filename files.output_filename
 
-let check_file ?(tool = default_comparison_tool) files =
+let check_file ?tool files =
   if Sys.file_exists files.reference_filename
-  then compare_files ~tool:tool files
-  else begin
-    if Sys.file_is_empty files.output_filename
-    then Same
-    else Unexpected_output
-  end
+  then compare_files ?tool files
+  else if Sys.file_is_empty files.output_filename
+  then Same
+  else Unexpected_output
 
 let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in

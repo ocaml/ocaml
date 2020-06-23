@@ -32,7 +32,7 @@ let pass_or_skip test pass_reason skip_reason _log env =
     else skip_with_reason skip_reason in
   (result, env)
 
-let mkreason what commandline exitcode =
+let mkreason ~what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
     what commandline exitcode
 
@@ -96,6 +96,9 @@ let run_cmd
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
     ?(timeout=0)
+    ?(expected_exit_status=0)
+    ?skip_exit_status
+    ~what
     log env original_cmd
   =
   let log_redirection std filename =
@@ -127,29 +130,38 @@ let run_cmd
   let cmd' = String.concat " " quoted_lst in
   Printf.fprintf log "Commandline: %s\n" cmd';
   let progname = List.hd quoted_lst in
-  let arguments = Array.of_list quoted_lst in
+  let argv = Array.of_list quoted_lst in
   let stdin_filename = Environments.safe_lookup stdin_variable env in
   let stdout_filename = Environments.safe_lookup stdout_variable env in
   let stderr_filename = Environments.safe_lookup stderr_variable env in
   log_redirection "stdin" stdin_filename;
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
-  let systemenv =
+  let envp =
     Array.append
       environment
       (Environments.to_system_env env)
   in
-  Run_command.run {
-    Run_command.progname = progname;
-    Run_command.argv = arguments;
-    Run_command.envp = systemenv;
-    Run_command.stdin_filename = stdin_filename;
-    Run_command.stdout_filename = stdout_filename;
-    Run_command.stderr_filename = stderr_filename;
-    Run_command.append = append;
-    Run_command.timeout = timeout;
-    Run_command.log = log
-  }
+  let exit_status =
+    Run_command.run {
+      Run_command.progname;
+      Run_command.argv;
+      Run_command.envp;
+      Run_command.stdin_filename;
+      Run_command.stdout_filename;
+      Run_command.stderr_filename;
+      Run_command.append;
+      Run_command.timeout;
+      Run_command.log
+    }
+  in
+  let reason = mkreason ~what cmd' exit_status in
+  if exit_status = expected_exit_status then
+    Result.pass
+  else if Some exit_status = skip_exit_status then
+    Result.skip_with_reason reason
+  else
+    Result.fail_with_reason reason
 
 let run
     (log_message : string)
@@ -187,15 +199,13 @@ let run
     let expected_exit_status =
       exit_status_of_variable env Builtin_variables.exit_status
     in
-    let exit_status = run_cmd log env commandline in
-    if exit_status=expected_exit_status
-    then (Result.pass, env)
-    else begin
-      let reason = mkreason what (String.concat " " commandline) exit_status in
-      if exit_status = 125 && can_skip
-      then (Result.skip_with_reason reason, env)
-      else (Result.fail_with_reason reason, env)
-    end
+    let result =
+      let skip_exit_status = if can_skip then Some 125 else None in
+      run_cmd
+        ~expected_exit_status
+        ?skip_exit_status
+        ~what log env commandline in
+    result, env
 
 let run_program =
   run

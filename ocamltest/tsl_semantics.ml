@@ -79,11 +79,12 @@ let interprete_environment_statements env l =
   List.fold_left interprete_environment_statement env l
 
 type test_tree =
-  | Node of
-    (Tsl_ast.environment_statement located list) *
-    Tests.t *
-    string located list *
-    (test_tree list)
+  {
+    env: Tsl_ast.environment_statement located list;
+    test: Tests.t;
+    modifiers: string located list;
+    subtrees: test_tree list;
+  }
 
 let too_deep testname max_level real_level =
   Printf.eprintf "Test %s should have depth atmost %d but has depth %d\n%!"
@@ -112,24 +113,24 @@ let test_trees_of_tsl_block tsl_block =
     | line::remaining_lines as l ->
       begin match line with
         | Environment_statement s -> unexpected_environment_statement s
-        | Test (test_depth, located_name, env_modifiers) ->
+        | Test (test_depth, located_name, modifiers) ->
           begin
             let name = located_name.node in
             if test_depth > depth then too_deep name depth test_depth
             else if test_depth < depth then (None, l)
             else
               let (env, rem) = env_of_lines remaining_lines in
-              let (trees, rem) = trees_of_lines (depth+1) rem in
+              let (subtrees, rem) = trees_of_lines (depth+1) rem in
               match Tests.lookup name with
-                | None ->
+              | None ->
                   begin match Actions.lookup name with
-                    | None -> no_such_test_or_action located_name
-                    | Some action ->
+                  | None -> no_such_test_or_action located_name
+                  | Some action ->
                       let test = Tests.test_of_action action in
-                      (Some (Node (env, test, env_modifiers, trees)), rem)
+                      (Some {env; test; modifiers; subtrees}, rem)
                   end
-                | Some test ->
-                  (Some (Node (env, test, env_modifiers, trees)), rem)
+              | Some test ->
+                  (Some {env; test; modifiers; subtrees}, rem)
           end
       end
   and trees_of_lines depth lines =
@@ -151,7 +152,7 @@ let test_trees_of_tsl_block tsl_block =
     | (Environment_statement s)::_ -> unexpected_environment_statement s
     | _ -> assert false
 
-let rec tests_in_tree_aux set = function Node (_, test, _, subtrees) ->
+let rec tests_in_tree_aux set {test; subtrees; _} =
   let set' = List.fold_left tests_in_tree_aux set subtrees in
   Tests.TestSet.add test set'
 

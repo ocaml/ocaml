@@ -165,7 +165,7 @@ Working version
 - #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
-- #9604: refactoring of the ocamltest codebase.
+- #9604, #9614: refactoring of the ocamltest codebase.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Sébastien Hinderer)
 
 - #9498, #9511: make the pattern-matching analyzer more robust to
