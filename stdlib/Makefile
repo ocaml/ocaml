@@ -59,22 +59,22 @@ opt.opt: allopt
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
-	  "$(INSTALL_LIBDIR)"
+	  '$(INSTALL_LIBDIR)'
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  *.cmt *.cmti *.mli *.ml \
-	  "$(INSTALL_LIBDIR)"
+	  '$(INSTALL_LIBDIR)'
 endif
-	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
+	$(INSTALL_DATA) target_camlheader '$(INSTALL_LIBDIR)/camlheader'
 
 ifeq "$(RUNTIMED)" "true"
 install::
-	$(INSTALL_DATA) target_camlheaderd "$(INSTALL_LIBDIR)/camlheaderd"
+	$(INSTALL_DATA) target_camlheaderd '$(INSTALL_LIBDIR)/camlheaderd'
 endif
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	$(INSTALL_DATA) target_camlheaderi "$(INSTALL_LIBDIR)/camlheaderi"
+	$(INSTALL_DATA) target_camlheaderi '$(INSTALL_LIBDIR)/camlheaderi'
 endif
 
 .PHONY: installopt
@@ -84,8 +84,8 @@ installopt: installopt-default
 installopt-default:
 	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
-	  "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
+	  '$(INSTALL_LIBDIR)'
+	cd '$(INSTALL_LIBDIR)'; $(RANLIB) stdlib.$(A)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 HEADERPROGRAM = header

@@ -125,17 +125,17 @@ opt:: profiling.cmx
 install::
 	$(INSTALL_DATA) \
 	  profiling.cmi profiling.cmo \
-	  "$(INSTALL_LIBDIR)"
+	  '$(INSTALL_LIBDIR)'
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  profiling.cmt profiling.cmti \
-	  "$(INSTALL_LIBDIR)"
+	  '$(INSTALL_LIBDIR)'
 endif
 
 installopt::
 	$(INSTALL_DATA) \
           profiling.cmx profiling.$(O) \
-	  "$(INSTALL_LIBDIR)"
+	  '$(INSTALL_LIBDIR)'
 
 # To help building mixed-mode libraries (OCaml + C)
 
@@ -179,20 +179,20 @@ install::
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	for i in $(install_files); \
 	do \
-	  $(INSTALL_PROG) "$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)"; \
+	  $(INSTALL_PROG) "$$i$(EXE)" '$(INSTALL_BINDIR)'/$$i.byte$(EXE); \
 	  if test -f "$$i".opt$(EXE); then \
-	    $(INSTALL_PROG) "$$i.opt$(EXE)" "$(INSTALL_BINDIR)" && \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	    $(INSTALL_PROG) "$$i.opt$(EXE)" '$(INSTALL_BINDIR)' && \
+	    (cd '$(INSTALL_BINDIR)' && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  else \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
+	    (cd '$(INSTALL_BINDIR)' && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
 else
 	for i in $(install_files); \
 	do \
 	  if test -f "$$i".opt$(EXE); then \
-	    $(INSTALL_PROG) "$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	    $(INSTALL_PROG) "$$i.opt$(EXE)" '$(INSTALL_BINDIR)'; \
+	    (cd '$(INSTALL_BINDIR)' && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
 endif
@@ -225,9 +225,9 @@ $(call byte_and_opt,ocamlcmt,$(ocamlcmt_objects),)
 install::
 	if test -f ocamlcmt.opt$(EXE); then \
 	  $(INSTALL_PROG)\
-	    ocamlcmt.opt$(EXE) "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	    ocamlcmt.opt$(EXE) '$(INSTALL_BINDIR)/ocamlcmt$(EXE)'; \
 	else \
-	  $(INSTALL_PROG) ocamlcmt$(EXE) "$(INSTALL_BINDIR)"; \
+	  $(INSTALL_PROG) ocamlcmt$(EXE) '$(INSTALL_BINDIR)'; \
 	fi
 
 # The bytecode disassembler
@@ -283,7 +283,7 @@ OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
 
 install::
-	$(INSTALL_PROG) objinfo_helper$(EXE) "$(INSTALL_LIBDIR)"
+	$(INSTALL_PROG) objinfo_helper$(EXE) '$(INSTALL_LIBDIR)'
 
 primreq=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
@@ -315,7 +315,7 @@ clean::
 install::
 	$(INSTALL_DATA) \
 	  eventlog_metadata \
-	  "$(INSTALL_LIBDIR)"
+	  '$(INSTALL_LIBDIR)'
 
 # Copy a bytecode executable, stripping debug info
 
