@@ -3670,7 +3670,7 @@ and type_expect_
                     payload) ->
       begin match payload with
       | PStr [ { pstr_desc = Pstr_eval (sexp, attrs) } ] ->
-          let xty = instance ty_expected in
+          (*let xty = instance ty_expected in
           let xpl =
             match (expand_head env xty).desc with
             | Tobject (fi, _) ->
@@ -3685,14 +3685,14 @@ and type_expect_
                 | _ -> None
                 end
             | _ -> None
-          in
+          in*)
           begin_def();
           let exp =
-            match xpl with
+            (*match xpl with
             | Some (t, vars) ->
                 let (_, xty) = instance_poly true vars t in
                 type_expect env sexp (mk_expected xty)
-            | None ->
+            | None ->*)
                 type_exp env sexp
           in
           end_def();
