@@ -163,6 +163,11 @@ CAMLexport void caml_enter_blocking_section(void)
   }
 }
 
+CAMLexport void caml_enter_blocking_section_no_pending(void)
+{
+  caml_enter_blocking_section_hook ();
+}
+
 CAMLexport void caml_leave_blocking_section(void)
 {
   int saved_errno;
@@ -183,7 +188,7 @@ CAMLexport void caml_leave_blocking_section(void)
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   signals_are_pending = 1;
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  //caml_raise_if_exception(caml_process_pending_signals_exn());
 
   errno = saved_errno;
 }
@@ -320,6 +325,12 @@ Caml_inline value process_pending_actions_with_root_exn(value extra_root)
     CAMLdrop;
   }
   return extra_root;
+}
+
+CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
+int caml_check_pending_actions()
+{
+  return caml_something_to_do;
 }
 
 value caml_process_pending_actions_with_root(value extra_root)

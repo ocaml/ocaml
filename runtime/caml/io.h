@@ -64,8 +64,15 @@ enum {
      [offset] is the absolute position of the logical end of the buffer, [max].
 */
 
-/* Functions and macros that can be called from C.  Take arguments of
-   type struct channel *.  The channel must be locked before calling these. */
+/* Creating and closing channels from C */
+
+CAMLextern struct channel * caml_open_descriptor_in (int);
+CAMLextern struct channel * caml_open_descriptor_out (int);
+CAMLextern void caml_close_channel (struct channel *);
+
+
+/* I/O on channels from C. The channel must be locked (see below) before
+   calling any of the functions and macros below */
 
 #define caml_putch(channel, ch) do{                                       \
   if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
@@ -77,11 +84,8 @@ enum {
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
-CAMLextern void caml_close_channel (struct channel *);
-CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);
+CAMLextern int caml_channel_binary_mode (struct channel *);
 
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
