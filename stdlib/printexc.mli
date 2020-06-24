@@ -123,7 +123,7 @@ type raw_backtrace = private raw_backtrace_entry array
     A [raw_backtrace_entry] can be converted to a usable form using
     [backtrace_slots_of_raw_entry] below. Note that, due to inlining, a
     single [raw_backtrace_entry] may convert to several [backtrace_slot]s.
-    Since the values of a [raw_bcaktrace_entry] are not stable, they cannot
+    Since the values of a [raw_backtrace_entry] are not stable, they cannot
     be marshalled. If they are to be converted, the conversion must be done
     by the process that generated them.
 
