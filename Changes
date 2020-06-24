@@ -653,6 +653,12 @@ OCaml 4.11
   avoiding a problem with x87 excess precision in Float.round.
   (Xavier Leroy, review by Sébastien Hinderer)
 
+* #9011: Do not create .a/.lib files when creating a .cmxa with no modules.
+  macOS ar doesn't support creating empty .a files (#1094) and MSVC doesn't
+  permit .lib files to contain no objects. When linking with a .cmxa containing
+  no modules, it is now not an error for there to be no .a/.lib file.
+  (David Allsopp, report by Dimitry Bely, review by Xavier Leroy)
+
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 

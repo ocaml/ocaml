@@ -128,36 +128,18 @@ let compile_file ?output ?(opt="") ?stable_name name =
   then display_msvc_output file name;
   exit
 
-let macos_create_empty_archive ~quoted_archive =
-  let result =
-    command (Printf.sprintf "%s rc %s /dev/null" Config.ar quoted_archive)
-  in
-  if result <> 0 then result
-  else
-    let result =
-      command (Printf.sprintf "%s %s 2> /dev/null" Config.ranlib quoted_archive)
-    in
-    if result <> 0 then result
-    else
-      command (Printf.sprintf "%s d %s /dev/null" Config.ar quoted_archive)
-
 let create_archive archive file_list =
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
-  match Config.ccomp_type with
-    "msvc" ->
-      command(Printf.sprintf "link /lib /nologo /out:%s %s"
-                             quoted_archive (quote_files file_list))
-  | _ ->
-      assert(String.length Config.ar > 0);
-      let is_macosx =
-        match Config.system with
-        | "macosx" -> true
-        | _ -> false
-      in
-      if is_macosx && file_list = [] then  (* PR#6550 *)
-        macos_create_empty_archive ~quoted_archive
-      else
+  if file_list = [] then
+    0 (* Don't call the archiver: #6550/#1094/#9011 *)
+  else
+    match Config.ccomp_type with
+      "msvc" ->
+        command(Printf.sprintf "link /lib /nologo /out:%s %s"
+                               quoted_archive (quote_files file_list))
+    | _ ->
+        assert(String.length Config.ar > 0);
         let r1 =
           command(Printf.sprintf "%s rc %s %s"
                   Config.ar quoted_archive (quote_files file_list)) in
