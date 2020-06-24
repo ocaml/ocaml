@@ -65,7 +65,7 @@ enum {
 */
 
 /* Functions and macros that can be called from C.  Take arguments of
-   type struct channel *.  No locking is performed. */
+   type struct channel *.  The channel must be locked before calling these. */
 
 #define caml_putch(channel, ch) do{                                       \
   if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
