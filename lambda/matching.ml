@@ -1863,9 +1863,9 @@ let get_mod_field modname field =
        Env.add_persistent_structure mod_ident Env.initial_safe_string
      in
      match Env.open_pers_signature modname env with
-     | exception Not_found ->
+     | Error `Not_found ->
          fatal_error ("Module " ^ modname ^ " unavailable.")
-     | env -> (
+     | Ok env -> (
          match Env.find_value_by_name (Longident.Lident field) env with
          | exception Not_found ->
              fatal_error ("Primitive " ^ modname ^ "." ^ field ^ " not found.")
