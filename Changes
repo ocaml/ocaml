@@ -111,6 +111,10 @@ Working version
    and more generally all other data that is not a well-formed OCaml value
    (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
 
+- #9533: Added String.starts_with and String.ends_with.
+  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
+  Alain Frisch)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
