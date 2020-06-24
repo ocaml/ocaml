@@ -116,7 +116,7 @@ Working version
   Alain Frisch)
 
 - #9663: Extend Printexc API for raw backtrace entries.
-  (Stephen Dolan, review by Nicolás Ojeda Bär)
+  (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 ### Other libraries:
 

@@ -95,6 +95,8 @@ type raw_backtrace_slot
 type raw_backtrace_entry = private int
 type raw_backtrace = raw_backtrace_entry array
 
+let raw_backtrace_entries bt = bt
+
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
 

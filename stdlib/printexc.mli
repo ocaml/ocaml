@@ -109,12 +109,20 @@ val use_printers: exn -> string option
 
 (** {1 Raw backtraces} *)
 
-type raw_backtrace_entry = private int
-(** @since 4.12.0 *)
-
-type raw_backtrace = private raw_backtrace_entry array
+type raw_backtrace
 (** The type [raw_backtrace] stores a backtrace in a low-level format,
-    as an array of [raw_backtrace_entry] values.
+    which can be converted to usable form using [raw_backtrace_entries]
+    and [backtrace_slots_of_raw_entry] below.
+
+    Converting backtraces to [backtrace_slot]s is slower than capturing the
+    backtraces. If an application processes many backtraces, it can be useful
+    to use [raw_backtrace] to avoid or delay conversion.
+
+    @since 4.01.0
+*)
+
+type raw_backtrace_entry = private int
+(** A [raw_backtrace_entry] is an element of a [raw_backtrace].
 
     Each [raw_backtrace_entry] is an opaque integer, whose value is not stable
     between different programs, or even between different runs of the same
@@ -132,13 +140,10 @@ type raw_backtrace = private raw_backtrace_entry array
     [raw_backtrace_entry]s are equal as integers, then they represent the same
     [backtrace_slot]s.
 
-    Converting backtraces to [backtrace_slot]s is slower than capturing the
-    backtraces. If an application processes many backtraces, it can be useful
-    to use [raw_backtrace] to avoid or delay conversion.
+    @since 4.12.0 *)
 
-    @since 4.01.0
-    @since 4.12.0 (definition as raw_backtrace_entry array)
-*)
+val raw_backtrace_entries : raw_backtrace -> raw_backtrace_entry array
+(** @since 4.12.0 *)
 
 val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
@@ -321,7 +326,7 @@ end
 (** {1 Raw backtrace slots} *)
 
 type raw_backtrace_slot
-(** This type is used to iterate over the slots of a [raw_backtrace_entry].
+(** This type is used to iterate over the slots of a [raw_backtrace].
     For most purposes, [backtrace_slots_of_raw_entry] is easier to use.
 
     Like [raw_backtrace_entry], values of this type are process-specific and
