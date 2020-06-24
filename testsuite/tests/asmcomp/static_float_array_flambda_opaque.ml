@@ -3,7 +3,8 @@
    flags = "-opaque"
    * flambda
    ** flat-float-array
-   *** native
+   *** naked_pointers
+   **** native
 *)
 
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"
