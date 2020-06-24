@@ -331,7 +331,6 @@ let destroyed_at_oper = function
   | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
       [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
-  | Iop Iloadmut -> [| rax; rdx |]
   | Itrywith _ -> [| r11 |]
   | _ ->
     if fp then
