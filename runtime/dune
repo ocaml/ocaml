@@ -45,6 +45,7 @@
      gc_ctrl.c  md5.c obj.c
    lexing.c callback.c debugger.c weak.c compact.c finalise.c custom.c dynlink.c
    spacetime_byt.c afl.c unix.c win32.c bigarray.c main.c memprof.c domain.c
+   skiplist.c codefrag.c
  )
  (action
    (progn
