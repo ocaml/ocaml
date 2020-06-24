@@ -136,33 +136,18 @@ CAMLno_tsan void caml_record_signal(int signal_number)
 
 /* Management of blocking sections. */
 
-static intnat volatile caml_async_signal_mode = 0;
-
 static void caml_enter_blocking_section_default(void)
 {
-  CAMLassert (caml_async_signal_mode == 0);
-  caml_async_signal_mode = 1;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
-  CAMLassert (caml_async_signal_mode == 1);
-  caml_async_signal_mode = 0;
-}
-
-static int caml_try_leave_blocking_section_default(void)
-{
-  intnat res;
-  Read_and_clear(res, caml_async_signal_mode);
-  return res;
 }
 
 CAMLexport void (*caml_enter_blocking_section_hook)(void) =
    caml_enter_blocking_section_default;
 CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
-CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
-   caml_try_leave_blocking_section_default;
 
 CAMLno_tsan /* The read of [caml_something_to_do] is not synchronized. */
 CAMLexport void caml_enter_blocking_section(void)

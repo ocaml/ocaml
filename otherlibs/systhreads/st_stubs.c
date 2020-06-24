@@ -253,15 +253,6 @@ static void caml_thread_leave_blocking_section(void)
   caml_thread_restore_runtime_state();
 }
 
-static int caml_thread_try_leave_blocking_section(void)
-{
-  /* Disable immediate processing of signals (PR#3659).
-     try_leave_blocking_section always fails, forcing the signal to be
-     recorded and processed at the next leave_blocking_section or
-     polling. */
-  return 0;
-}
-
 /* Hooks for I/O locking */
 
 static void caml_io_mutex_free(struct channel *chan)
@@ -496,7 +487,6 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
-  caml_try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
 #ifdef NATIVE_CODE
   caml_termination_hook = st_thread_exit;
 #endif

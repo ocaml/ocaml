@@ -86,7 +86,6 @@ void caml_setup_stack_overflow_detection(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
-CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 #ifdef POSIX_SIGNALS
 CAMLextern int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *);
 #endif
