@@ -2001,19 +2001,22 @@ let add_components slot root env0 comps =
     modules;
   }
 
-let open_signature slot root env0 =
-  match get_components (find_module_components root env0) with
-  | Functor_comps _ -> None
-  | Structure_comps comps ->
-    Some (add_components slot root env0 comps)
+let open_signature slot root env0 : (_,_) result =
+  match get_components_res (find_module_components root env0) with
+  | Error _ -> Error `Not_found
+  | exception Not_found -> Error `Not_found
+  | Ok (Functor_comps _) -> Error `Functor
+  | Ok (Structure_comps comps) ->
+    Ok (add_components slot root env0 comps)
 
 
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
   match open_signature None (Pident(Ident.create_persistent name)) env with
-  | Some env -> env
-  | None -> assert false (* a compilation unit cannot refer to a functor *)
+  | (Ok _ | Error `Not_found as res) -> res
+  | Error `Functor -> assert false
+        (* a compilation unit cannot refer to a functor *)
 
 let open_signature
     ?(used_slot = ref false)
