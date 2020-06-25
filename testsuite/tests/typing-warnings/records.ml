@@ -670,3 +670,59 @@ Line 5, characters 12-15:
 Error: The field M.x belongs to the record type M.t
        but a field was expected belonging to the record type u
 |}]
+
+(* PR#8747 *)
+module M = struct type t = { x : int; y: char } end
+let f (x : M.t) = { x with y = 'a' }
+let g (x : M.t) = { x with y = 'a' } :: []
+let h (x : M.t) = { x with y = 'a' } :: { x with y = 'b' } :: [];;
+[%%expect{|
+module M : sig type t = { x : int; y : char; } end
+Line 2, characters 27-28:
+2 | let f (x : M.t) = { x with y = 'a' }
+                               ^
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+Line 2, characters 18-36:
+2 | let f (x : M.t) = { x with y = 'a' }
+                      ^^^^^^^^^^^^^^^^^^
+Warning 40: this record of type M.t contains fields that are
+not visible in the current scope: y.
+They will not be selected if the type becomes unknown.
+val f : M.t -> M.t = <fun>
+Line 3, characters 27-28:
+3 | let g (x : M.t) = { x with y = 'a' } :: []
+                               ^
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+Line 3, characters 18-36:
+3 | let g (x : M.t) = { x with y = 'a' } :: []
+                      ^^^^^^^^^^^^^^^^^^
+Warning 40: this record of type M.t contains fields that are
+not visible in the current scope: y.
+They will not be selected if the type becomes unknown.
+val g : M.t -> M.t list = <fun>
+Line 4, characters 27-28:
+4 | let h (x : M.t) = { x with y = 'a' } :: { x with y = 'b' } :: [];;
+                               ^
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+Line 4, characters 18-36:
+4 | let h (x : M.t) = { x with y = 'a' } :: { x with y = 'b' } :: [];;
+                      ^^^^^^^^^^^^^^^^^^
+Warning 40: this record of type M.t contains fields that are
+not visible in the current scope: y.
+They will not be selected if the type becomes unknown.
+Line 4, characters 49-50:
+4 | let h (x : M.t) = { x with y = 'a' } :: { x with y = 'b' } :: [];;
+                                                     ^
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+Line 4, characters 40-58:
+4 | let h (x : M.t) = { x with y = 'a' } :: { x with y = 'b' } :: [];;
+                                            ^^^^^^^^^^^^^^^^^^
+Warning 40: this record of type M.t contains fields that are
+not visible in the current scope: y.
+They will not be selected if the type becomes unknown.
+val h : M.t -> M.t list = <fun>
+|}]

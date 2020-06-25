@@ -2836,23 +2836,26 @@ and type_expect_
             Some (p0, p, principal)
           with Not_found -> None
         in
-        match get_path ty_expected with
-          None ->
+        let opath = get_path ty_expected in
+        match opath with
+          None | Some (_, _, false) ->
+            let ty = if opath = None then newvar () else ty_expected in
             begin match opt_exp with
-              None -> newvar (), None
+              None -> ty, opath
             | Some exp ->
                 match get_path exp.exp_type with
-                  None -> newvar (), None
-                | Some (_, p', _) as op ->
+                  None ->
+                    ty, opath
+                | Some (_, p', _) as opath ->
                     let decl = Env.find_type p' env in
                     begin_def ();
                     let ty =
                       newconstr p' (instance_list decl.type_params) in
                     end_def ();
                     generalize_structure ty;
-                    ty, op
+                    ty, opath
             end
-        | op -> ty_expected, op
+        | _ -> ty_expected, opath
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
