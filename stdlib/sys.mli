@@ -320,10 +320,12 @@ val catch_break : bool -> unit
 
 val ocaml_version : string
 (** [ocaml_version] is the version of OCaml.
-    It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
+    It is a string of the form
+      ["major.minor[.patchlevel][(+|~)additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
-    [additional-info] is an arbitrary string. The [[.patchlevel]] and
-    [[+additional-info]] parts may be absent. *)
+    [additional-info] is an arbitrary string.
+    The [[.patchlevel]] part is absent for versions anterior to 3.08.0.
+    The [[(+|~)additional-info]] part may be absent. *)
 
 
 val enable_runtime_warnings: bool -> unit
