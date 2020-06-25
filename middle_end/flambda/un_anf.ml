@@ -129,7 +129,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
          [const] cannot contain any variables that are bound in the current
          scope, so we do not need to count them here.  (The function bodies
          of the closures will be traversed when this function is called from
-         [Cmmgen.transl_function].) *)
+         [Flambda_to_clambda.to_clambda_closed_set_of_closures].) *)
       ignore_uconstant const
     | Udirect_apply (label, args, dbg) ->
       ignore_function_label label;
