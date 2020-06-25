@@ -172,6 +172,12 @@ Working version
   corresponding core_type.
   (Etienne Millon, review by Thomas Refis)
 
+- #6633, #9673: Add hint when a module is used instead of a module type or
+  when a module type is used instead of a module or when a class type is used
+  instead of a class.
+  (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
+  and Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
