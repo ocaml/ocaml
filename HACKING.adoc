@@ -338,15 +338,17 @@ everytime you want to run `dune` after you built something with `make`;
 otherwise dune will complain that build artefacts are present among the sources.
 
 Finally, there will be times where the compiler simply cannot be built with an
-older version of itself. Then you will have to either live without merlin, or
-develop on an older branch of the compiler, for example the maintenance branch
-of the last released version. Developing a patch from a release branch can later
-introduce a substantial amount of extra work, when you rebase to the current
-development version. But it also makes it a lot easier to test the impact of
-your work on third-party code, by installing a local <<opam-switch,opam
-switch>>: opam packages tend to be compatible with released versions of the
-compiler, whereas most packages are incompatible with the in-progress
-development version.
+older version of itself. One example of this is when a new primitive is added to
+the runtime, and then used in the standard library straightaway, since the rest
+of the compiler requires the `stdlib` library to build, nothing can be build. In
+such situations, you will have to either live without merlin, or develop on an
+older branch of the compiler, for example the maintenance branch of the last
+released version. Developing a patch from a release branch can later introduce a
+substantial amount of extra work, when you rebase to the current development
+version. But it also makes it a lot easier to test the impact of your work on
+third-party code, by installing a local <<opam-switch,opam switch>>: opam
+packages tend to be compatible with released versions of the compiler, whereas
+most packages are incompatible with the in-progress development version.
 
 === Continuous integration
 
