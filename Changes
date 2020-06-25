@@ -147,6 +147,8 @@ Working version
 
 ### Manual and documentation:
 
+- #9468: HACKING.adoc: using dune to get merlin's support
+  (Thomas Refis, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
