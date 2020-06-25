@@ -714,6 +714,9 @@ OCaml 4.11
 - #9375, #9477: add forgotten substitution when compiling anonymous modules
   (Thomas Refis, review by Frédéric Bour, report by Andreas Hauptmann)
 
+- #9384, #9385: Fix copy scope bugs in substitutions
+  (Leo White, review by Thomas Refis, report by Nick Roberts)
+
 * #9388: Prohibit signature local types with constraints
   (Leo White, review by Jacques Garrigue)
 
