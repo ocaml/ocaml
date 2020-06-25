@@ -32,11 +32,11 @@ type mark =
       (** Do not mark definitions used from either argument *)
 
 val modtypes:
-  loc:Location.t -> Env.t -> ?mark:mark ->
+  loc:Location.t -> Env.t -> mark:mark ->
   module_type -> module_type -> module_coercion
 
 val strengthened_module_decl:
-  loc:Location.t -> aliasable:bool -> Env.t -> ?mark:mark ->
+  loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
 
 val check_modtype_inclusion :
@@ -46,15 +46,15 @@ val check_modtype_inclusion :
     functor application F(M) is well typed, where mty2 is the type of
     the argument of F and path1/mty1 is the path/unstrenghened type of M. *)
 
-val signatures: Env.t -> ?mark:mark ->
+val signatures: Env.t -> mark:mark ->
   signature -> signature -> module_coercion
 
 val compunit:
-      Env.t -> ?mark:mark -> string -> signature ->
+      Env.t -> mark:mark -> string -> signature ->
       string -> signature -> module_coercion
 
 val type_declarations:
-  loc:Location.t -> Env.t -> ?mark:mark ->
+  loc:Location.t -> Env.t -> mark:mark ->
   Ident.t -> type_declaration -> type_declaration -> unit
 
 val print_coercion: formatter -> module_coercion -> unit
