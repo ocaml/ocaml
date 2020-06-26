@@ -432,6 +432,9 @@ OCaml 4.11
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
 
+- #9163: Treat loops properly in un_anf
+  (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
+
 - #9189, #9281: fix a conflict with Gentoo build system
   by removing an one-letter Makefile variable.
   (Florian Angeletti, report by Ralph Seichter, review by David Allsopp
