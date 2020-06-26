@@ -229,12 +229,6 @@ Working version
 
 ### Bug fixes:
 
-- #7897, #9537: Fix warning 38 for rebound extension constructors
-  (Leo White, review by Florian Angeletti)
-
-- #9163: Treat loops properly in un_anf
-  (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
-
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
 
@@ -673,6 +667,9 @@ OCaml 4.11
 - #7817, #9546: Unsound inclusion check for polymorphic variant
   (Jacques Garrigue, report by Mikhail Mandrykin, review by Gabriel Scherer)
 
+- #7897, #9537: Fix warning 38 for rebound extension constructors
+  (Leo White, review by Florian Angeletti)
+
 - #7902, #9556: Type-checker infers recursive type, eventhough -rectypes is off.
   (Jacques Garrigue, report by Francois Pottier, review by Leo White)
 
@@ -689,6 +686,9 @@ OCaml 4.11
 
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
+
+- #9163: Treat loops properly in un_anf
+  (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
 
 - #9189, #9281: fix a conflict with Gentoo build system
   by removing an one-letter Makefile variable.
