@@ -226,6 +226,9 @@ Working version
 
 ### Bug fixes:
 
+- #9163: Treat loops properly in un_anf
+  (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
+
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
 
