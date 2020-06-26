@@ -45,3 +45,39 @@ Line 1, characters 26-36:
 Error: Signature mismatch:
        Modules do not match: sig end is not included in Original.T
 |}]
+
+let foo (x : Middle.pack1) =
+  let module M = (val x) in
+  ()
+[%%expect {|
+Line 2, characters 17-24:
+2 |   let module M = (val x) in
+                     ^^^^^^^
+Error: This module type is not a signature
+|}]
+
+let foo (x : Middle.pack2) =
+  let module M = (val x) in
+  ()
+[%%expect {|
+Line 2, characters 17-24:
+2 |   let module M = (val x) in
+                     ^^^^^^^
+Error: This module type is not a signature
+|}]
+
+module type T1 = sig type t = int end
+let foo x = (x : Middle.pack1 :> (module T1))
+[%%expect {|
+module type T1 = sig type t = int end
+File "_none_", line 1:
+Error: This module type is not a signature
+|}]
+
+module type T2 = sig module M : sig type t = int end end
+let foo x = (x : Middle.pack2 :> (module T2))
+[%%expect {|
+module type T2 = sig module M : sig type t = int end end
+File "_none_", line 1:
+Error: This module type is not a signature
+|}]
