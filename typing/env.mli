@@ -370,8 +370,11 @@ val imports: unit -> crcs
 (* may raise Persistent_env.Consistbl.Inconsistency *)
 val import_crcs: source:string -> crcs -> unit
 
-(* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
+(* [is_imported_opaque md] returns true if [md] is an opaque imported module *)
 val is_imported_opaque: modname -> bool
+
+(* [register_import_as_opaque md] registers [md] as an opaque imported module *)
+val register_import_as_opaque: modname -> unit
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)

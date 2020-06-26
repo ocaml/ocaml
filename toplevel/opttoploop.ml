@@ -359,7 +359,7 @@ let execute_phrase print_outcome ppf phr =
           | Result _ ->
               if Config.flambda then
                 (* CR-someday trefis: *)
-                ()
+                Env.register_import_as_opaque (Ident.name module_ident)
               else
                 Compilenv.record_global_approx_toplevel ();
               if print_outcome then
