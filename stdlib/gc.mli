@@ -72,6 +72,10 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words. @since 3.12.0 *)
+
+    forced_major_collections: int;
+    (** Number of forced full major collections completed since the program
+        was started. @since 4.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record.
 

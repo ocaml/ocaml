@@ -71,6 +71,7 @@ DOMAIN_STATE(intnat, stat_major_collections)
 DOMAIN_STATE(intnat, stat_heap_wsz)
 DOMAIN_STATE(intnat, stat_top_heap_wsz)
 DOMAIN_STATE(intnat, stat_compactions)
+DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(intnat, stat_heap_chunks)
 /* See gc_ctrl.c */
 
