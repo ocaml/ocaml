@@ -93,3 +93,8 @@ let f = function
 [%%expect{|
 val f : t -> unit = <fun>
 |}]
+
+let f = function (`A, _ : _ * int) as x -> x;;
+[%%expect{|
+val f : [< `A ] * int -> [> `A ] * int = <fun>
+|}]
