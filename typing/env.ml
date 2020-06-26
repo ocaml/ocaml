@@ -46,15 +46,20 @@ type constructor_usages =
      mutable cu_pattern: bool;
      mutable cu_privatize: bool;
     }
-let add_constructor_usage priv cu usage =
-  match priv with
-  | Asttypes.Private -> cu.cu_positive <- true
-  | Asttypes.Public -> begin
-      match usage with
-      | Positive -> cu.cu_positive <- true
-      | Pattern -> cu.cu_pattern <- true
-      | Privatize -> cu.cu_privatize <- true
-    end
+let add_constructor_usage ~rebind priv cu usage =
+  let private_or_rebind =
+    match priv with
+    | Asttypes.Private -> true
+    | Asttypes.Public -> rebind
+  in
+  if private_or_rebind then begin
+    cu.cu_positive <- true
+  end else begin
+    match usage with
+    | Positive -> cu.cu_positive <- true
+    | Pattern -> cu.cu_pattern <- true
+    | Privatize -> cu.cu_privatize <- true
+  end
 
 let constructor_usages () =
   {cu_positive = false; cu_pattern = false; cu_privatize = false}
@@ -1693,7 +1698,7 @@ and store_type ~check id info env =
         if not (Types.Uid.Tbl.mem used_constructors k) then
           let used = constructor_usages () in
           Types.Uid.Tbl.add used_constructors k
-            (add_constructor_usage priv used);
+            (add_constructor_usage ~rebind:false priv used);
           if not (ty_name = "" || ty_name.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
@@ -1729,7 +1734,7 @@ and store_type_infos id info env =
     types = IdTbl.add id tda env.types;
     summary = Env_type(env.summary, id, info) }
 
-and store_extension ~check id addr ext env =
+and store_extension ~check ~rebind id addr ext env =
   let loc = ext.ext_loc in
   let cstr =
     Datarepr.extension_descr ~current_unit:(get_unit_name ()) (Pident id) ext
@@ -1744,7 +1749,8 @@ and store_extension ~check id addr ext env =
     let k = cstr.cstr_uid in
     if not (Types.Uid.Tbl.mem used_constructors k) then begin
       let used = constructor_usages () in
-      Types.Uid.Tbl.add used_constructors k (add_constructor_usage priv used);
+      Types.Uid.Tbl.add used_constructors k
+        (add_constructor_usage ~rebind priv used);
       !add_delayed_check_forward
         (fun () ->
           if not (is_in_signature env) && not used.cu_positive then
@@ -1848,9 +1854,9 @@ let add_value ?check id desc env =
 let add_type ~check id info env =
   store_type ~check id info env
 
-and add_extension ~check id ext env =
+and add_extension ~check ~rebind id ext env =
   let addr = extension_declaration_address env id ext in
-  store_extension ~check id addr ext env
+  store_extension ~check ~rebind id addr ext env
 
 and add_module_declaration ?(arg=false) ~check id presence md env =
   let check =
@@ -1896,10 +1902,10 @@ let enter_type ~scope name info env =
   let env = store_type ~check:true id info env in
   (id, env)
 
-let enter_extension ~scope name ext env =
+let enter_extension ~scope ~rebind name ext env =
   let id = Ident.create_scoped ~scope name in
   let addr = extension_declaration_address env id ext in
-  let env = store_extension ~check:true id addr ext env in
+  let env = store_extension ~check:true ~rebind id addr ext env in
   (id, env)
 
 let enter_module_declaration ~scope ?arg s presence md env =
@@ -1931,7 +1937,8 @@ let add_item comp env =
   match comp with
     Sig_value(id, decl, _)    -> add_value id decl env
   | Sig_type(id, decl, _, _)  -> add_type ~check:false id decl env
-  | Sig_typext(id, ext, _, _) -> add_extension ~check:false id ext env
+  | Sig_typext(id, ext, _, _) ->
+      add_extension ~check:false ~rebind:false id ext env
   | Sig_module(id, presence, md, _, _) ->
       add_module_declaration ~check:false id presence md env
   | Sig_modtype(id, decl, _)  -> add_modtype id decl env
@@ -2129,7 +2136,7 @@ let save_signature_with_imports ~alerts sg modname filename imports =
 let (initial_safe_string, initial_unsafe_string) =
   Predef.build_initial_env
     (add_type ~check:false)
-    (add_extension ~check:false)
+    (add_extension ~check:false ~rebind:false)
     empty
 
 (* Tracking usage *)
