@@ -229,6 +229,9 @@ Working version
 
 ### Bug fixes:
 
+- #7897, #9537: Fix warning 38 for rebound extension constructors
+  (Leo White, review by Florian Angeletti)
+
 - #9163: Treat loops properly in un_anf
   (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
 
