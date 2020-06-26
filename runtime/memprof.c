@@ -188,7 +188,9 @@ static void rand_batch(void)
   for (i = 0; i < RAND_BLOCK_SIZE; i++) {
     double f = B[i];
     CAMLassert (f >= 1);
-    if (f > (double)Max_long) rand_geom_buff[i] = Max_long;
+    /* [Max_long+1] is a power of two => no rounding in the test. */
+    if (f >= Max_long+1)
+      rand_geom_buff[i] = Max_long;
     else rand_geom_buff[i] = (uintnat)f;
   }
 
