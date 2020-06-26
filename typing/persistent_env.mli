@@ -77,6 +77,10 @@ val is_imported : 'a t -> modname -> bool
    in [penv] as an opaque module *)
 val is_imported_opaque : 'a t -> modname -> bool
 
+(* [register_import_as_opaque penv md] registers [md] in [penv] as an
+   opaque module *)
+val register_import_as_opaque : 'a t -> modname -> unit
+
 val make_cmi : 'a t -> modname -> Types.signature -> alerts
   -> Cmi_format.cmi_infos
 

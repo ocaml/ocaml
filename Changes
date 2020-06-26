@@ -739,6 +739,9 @@ OCaml 4.11
 - #9415: Treat `open struct` as `include struct` in toplevel
   (Leo White, review by Thomas Refis)
 
+- #9416: Avoid warning 58 in flambda ocamlnat
+  (Leo White, review by Florian Angeletti)
+
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
 
