@@ -545,3 +545,84 @@ module Memprof :
         Calling [stop] when a callback is running can lead to
         callbacks not being called even though some events happened. *)
 end
+
+(** {1 Debugging memory leaks} *)
+
+external print_reachable : int -> unit = "caml_gc_print_reachable"
+(** [print_reachable min] examines all heap roots and prints
+   the number of words reachable for those that reach at least [min] words.
+   See {!Obj.reachable_words}.
+
+   There are several types of roots.  The most useful ones are
+   global roots, dynamic global roots and stack roots, which often can be mapped
+   back to specific variables in the source code.  For these, the filename can
+   be read from the [print_reachable] output. For global and dynamic global
+   roots, {!field_path} provides a way to identify the associated variable.
+
+   The output shows the number of reachable words for each root on the left.
+   To the right is identification information, such as the linker symbol that
+   identifies the source file plus a "field number" that distinguishes
+   global variables defined in the file.
+
+   {b {i Global roots}} correspond to global variables defined in
+   statically-loaded code.  For example, the following line gives the reachable
+   words for a variable defined in the source file [stm.ml]:
+
+   {v    3249706 field  64 camlStm__gc_roots v}
+
+   {b {i Dynamic roots}} correspond to global variables defined in
+   dynamically-loaded code.  For example, the following line gives the
+   reachable words for a variable defined in the source file [ssrvernac.ml]:
+
+   {v     203154 field  19 Ssreflect_plugin__Ssrvernac v}
+
+   {b {i Stack roots}} correspond to local variables in function invocations in
+   the call stack.  For example, the following lines give the reachable words
+   for an invocation of [Test.f].  "[(frame n)]" refers to the {i n}th
+   call stack frame, in which frame 0 is the top of the stack.  Only frames
+   that have roots with the specified minimum number of reachable words are
+   shown.
+
+   {v Called from Test.f in file "test.ml", line 26, characters 2-22
+      4001 field   1 (frame 0) v}
+
+   The other, less common, types of roots are: "Global C", "Finalized values",
+   "Memprof" and "Hook".  [print_reachable] isn't able to associate these with
+   specific files.
+
+   [print_reachable] works only when the object code is in ELF format.
+   ELF format is used on Linux systems.  Byte-compiled
+   code is not supported.  "stripped" object code can't be processed.
+
+   Keep in mind that data may be reachable from more than one global root, so
+   adding the amounts reachable from multiple roots is not meaningful.
+
+   @since 4.12
+   *)
+
+external field_path : 'a -> int array = "caml_gc_field_path"
+(** [field_path obj] helps to associate field numbers printed by
+   {!print_reachable} with specific variables in the source code.
+
+   Each top-level global variable in a source file that's not in an embedded
+   module definition is a heap root.  (Although some heap roots correspond to
+   other things, such as module definitions.)  With some trial and error you
+   can verify that a field number is associated with a particular variable
+   by adding a call to [Gc.field_path(varj)] immediately after the
+   definition of [var], printing the return value in an expression in
+   the form [let _ = ...].
+
+   The field path returned for global variables not inside a module definition
+   is a single integer.  Globals defined within some module definitions contain
+   two integers: the first is the field number associated with the module
+   definition while the second is the ordinal number of the global variable
+   within the module definition.
+
+   [field_path] returns an empty list when it doesn't find the associated heap
+   root, in particular if the passed [obj] is a function-local variable.
+
+   flambda optimizations may make it harder to relate a field number to a
+   specific variable in a source file.
+
+   @since 4.12
+   *)

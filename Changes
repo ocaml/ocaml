@@ -130,6 +130,9 @@ Working version
 
 ### Standard library:
 
+- #9818: add Gc.print_reachable for reporting how much memory is used
+  by each heap root.  (Jim Fehrle, review by XXXX)
+
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
 

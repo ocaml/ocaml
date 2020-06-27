@@ -27,6 +27,9 @@ void caml_oldify_local_roots (void);
 void caml_darken_all_roots_start (void);
 intnat caml_darken_all_roots_slice (intnat);
 void caml_do_roots (scanning_action, int);
+void caml_do_print_reachable (long);
+void caml_do_stack_roots (long);
+int caml_do_field_path (value, int *, int);
 extern uintnat caml_incremental_roots_count;
 #ifndef NATIVE_CODE
 CAMLextern void caml_do_local_roots (scanning_action, value *, value *,

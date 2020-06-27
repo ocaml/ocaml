@@ -1,0 +1,12 @@
+Field path of u = 2
+Field path of v = 3
+Field path of Foo.junk = 4 0
+Field path of Foo.junk2 = 4 1
+Globals:
+       101 field   2 camlTestopt__gc_roots
+       201 field   3 camlTestopt__gc_roots
+
+Called from Testopt.g in file "testopt.ml", line 94, characters 2-6
+      3001 field   0 (frame 0)
+      2001 field   1 (frame 0)
+      1001 field   2 (frame 0)

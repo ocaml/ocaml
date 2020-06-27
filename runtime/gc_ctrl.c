@@ -355,6 +355,31 @@ CAMLprim value caml_gc_huge_fallback_count (value v)
   return Val_long (caml_huge_fallback_count);
 }
 
+CAMLprim value caml_gc_print_reachable (value min_)
+{
+  int min = Long_val(min_);
+
+  caml_do_print_reachable(min);
+  return Val_unit;
+}
+
+CAMLprim value caml_gc_field_path (value sym)
+{
+  CAMLparam1 (sym);
+  CAMLlocal1 (res);
+  int j;
+
+  int items[2];
+  const int max = sizeof items/sizeof(int);
+
+  int rem_depth = caml_do_field_path(sym, items, max);
+  value rv_len = rem_depth >= 0 ? 1 + max - rem_depth : 0;
+  res = caml_alloc(rv_len, 0);
+  for (j = 0; j < rv_len; j++)
+    Field(res, j) = Val_long(items[j]);
+  CAMLreturn (res);
+}
+
 CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */

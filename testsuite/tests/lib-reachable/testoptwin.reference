@@ -1,0 +1,5 @@
+Field path of u = 2
+Field path of v = 3
+Field path of Foo.junk = 4 0
+Field path of Foo.junk2 = 4 1
+Gc.print_reachable: ELF setup error: not an ELF file

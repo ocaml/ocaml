@@ -18,6 +18,7 @@
 /* To walk the memory roots for garbage collection */
 
 #include "caml/finalise.h"
+#include "caml/elf.h"
 #include "caml/globroots.h"
 #include "caml/memory.h"
 #include "caml/major_gc.h"
@@ -49,6 +50,21 @@ typedef struct link {
 static link *cons(void *data, link *tl) {
   link *lnk = caml_stat_alloc(sizeof(link));
   lnk->data = data;
+  lnk->next = tl;
+  return lnk;
+}
+
+typedef struct dyn_root_link {
+  void *data;
+  char *symname;
+  struct dyn_root_link *next;
+} dyn_root_link;
+
+static dyn_root_link *dyn_root_cons(void *data, const char *symname,
+    dyn_root_link *tl) {
+  dyn_root_link *lnk = caml_stat_alloc(sizeof(dyn_root_link));
+  lnk->data = data;
+  lnk->symname = strcpy(caml_stat_alloc(strlen(symname)+1), symname);
   lnk->next = tl;
   return lnk;
 }
@@ -232,10 +248,10 @@ void caml_unregister_frametable(intnat *table) {
 
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
-static link * caml_dyn_globals = NULL;
+dyn_root_link * caml_dyn_globals = NULL;
 
-void caml_register_dyn_global(void *v) {
-  caml_dyn_globals = cons((void*) v,caml_dyn_globals);
+void caml_register_dyn_global(void *v, const char *unit) {
+  caml_dyn_globals = dyn_root_cons((void*) v, unit, caml_dyn_globals);
 }
 
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
@@ -253,7 +269,7 @@ void caml_oldify_local_roots (void)
   value * glob;
   value * root;
   struct caml__roots_block *lr;
-  link *lnk;
+  dyn_root_link *lnk;
 
   /* The global roots */
   for (i = caml_globals_scanned;
@@ -400,7 +416,7 @@ void caml_do_roots (scanning_action f, int do_globals)
 {
   int i, j;
   value * glob;
-  link *lnk;
+  dyn_root_link *lnk;
 
   CAML_EV_BEGIN(EV_MAJOR_ROOTS_DYNAMIC_GLOBAL);
   if (do_globals){
@@ -445,6 +461,8 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_EV_END(EV_MAJOR_ROOTS_HOOK);
 }
 
+extern Stack_roots caml_stack_roots;
+
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
                          uintnat last_retaddr, value * gc_regs,
                          struct caml__roots_block * local_roots)
@@ -480,6 +498,8 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
           } else {
             root = (value *)(sp + ofs);
           }
+          caml_stack_roots.cur_descr = d;
+          caml_stack_roots.frame_item = d->num_live - n;
           f (*root, root);
         }
         /* Move to next frame */
@@ -501,6 +521,7 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
     }
   }
   /* Local C roots */
+  caml_stack_roots.cur_descr = NULL;
   for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){

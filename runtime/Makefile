@@ -35,7 +35,7 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   lexing $(UNIX_OR_WIN32) printexc callback weak compact finalise custom \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
   dynlink clambda_checks spacetime_nat spacetime_snapshot afl bigarray \
-  memprof domain skiplist codefrag)
+  memprof domain skiplist codefrag reachable)
 
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
 CONFIG_HEADERS := caml/m.h caml/s.h

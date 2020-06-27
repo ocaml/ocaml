@@ -32,6 +32,17 @@
 
 CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
+
+void caml_do_print_reachable(long min) {
+  printf(
+      "Error: Gc.print_reachable not supported with byte code compilation\n");
+}
+
+int caml_do_field_path(value sym, int *items, int max) {
+  printf("Error: Gc.field_path not supported with byte code compilation\n");
+  return -1;
+}
+
 /* FIXME should rename to [caml_oldify_minor_roots] and synchronise with
    roots_nat.c */
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor

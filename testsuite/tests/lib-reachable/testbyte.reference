@@ -1,0 +1,2 @@
+Error: Gc.field_path not supported with byte code compilation
+Error: Gc.print_reachable not supported with byte code compilation

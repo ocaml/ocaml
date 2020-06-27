@@ -65,7 +65,7 @@ CAMLprim value caml_backtrace_status(value vunit)
    0, then li->loc_is_raise is always 1, so the latter test is
    useless. We kept it to keep code identical to the runtime/
    implementation. */
-static void print_location(struct caml_loc_info * li, int index)
+void caml_print_location(FILE *stream, struct caml_loc_info * li, int index)
 {
   char * info;
   char * inlined;
@@ -91,9 +91,9 @@ static void print_location(struct caml_loc_info * li, int index)
     inlined = "";
   }
   if (! li->loc_valid) {
-    fprintf(stderr, "%s unknown location%s\n", info, inlined);
+    fprintf(stream, "%s unknown location%s\n", info, inlined);
   } else {
-    fprintf (stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
+    fprintf (stream, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
              info, li->loc_defname, li->loc_filename, inlined, li->loc_lnum,
              li->loc_startchr, li->loc_endchr);
   }
@@ -118,7 +118,7 @@ CAMLexport void caml_print_exception_backtrace(void)
          dbg = caml_debuginfo_next(dbg))
     {
       caml_debuginfo_location(dbg, &li);
-      print_location(&li, i);
+      caml_print_location(stderr, &li, i);
     }
   }
 }
