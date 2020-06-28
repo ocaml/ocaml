@@ -807,6 +807,7 @@ let check_scope_escape env level ty =
   let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
+      let orig_level = ty.level in
       ty.level <- pivot_level - ty.level;
       if level < ty.scope then
         raise(Trace.scope_escape ty);
@@ -820,7 +821,11 @@ let check_scope_escape env level ty =
       | Tpackage (p, nl, tl) when level < Path.scope p ->
           let p' = normalize_package_path env p in
           if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-          aux { ty with desc = Tpackage (p', nl, tl) }
+          aux
+            { ty with
+              desc = Tpackage (p', nl, tl)
+              (* Use the original level, so that we check again. *)
+            ; level= orig_level }
       | _ ->
         iter_type_expr loop ty
       end;
