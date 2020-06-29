@@ -558,7 +558,8 @@ and transl_type_aux env policy styp =
           (Subst.add_module scoped_ident (Path.Pident ident) Subst.identity)
           cty.ctyp_type
       in
-      let ty = newty (Tfunctor (ident, pack_ty, ctyp_type)) in
+      let ty = Btype.newgenty (Tfunctor (ident, pack_ty, ctyp_type)) in
+      unify_var env (newvar()) ty;
       (* Use [scoped_ident] in the AST, for consistency with nodes below. *)
       ctyp (Ttyp_functor (Location.mkloc scoped_ident name.loc, pack, cty)) ty
 
