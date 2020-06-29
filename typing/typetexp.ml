@@ -544,10 +544,10 @@ and transl_type_aux env policy styp =
           ; pack_txt = p }
         , ty )
       in
+      begin_def();
       let scoped_ident =
         Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
       in
-      begin_def();
       let env = Env.add_module scoped_ident Mp_present mty.mty_type env in
       let cty = transl_type env policy st in
       end_def();
