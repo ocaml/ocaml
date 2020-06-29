@@ -1349,11 +1349,11 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
   struct interruptor* target =
     &all_domains[unique_id % Max_domains].interruptor;
 
-  caml_ev_begin("domain/idle_wait");
+  caml_ev_begin("domain/send_interrupt");
   if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, &unique_id)) {
     /* the domain might have terminated, but that's fine */
   }
-  caml_ev_end("domain/idle_wait");
+  caml_ev_end("domain/send_interrupt");
 
   CAMLreturn (Val_unit);
 }
