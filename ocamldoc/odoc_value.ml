@@ -77,6 +77,12 @@ let parameter_list_from_arrows typ =
         (l, t1) :: (iter t2)
     | Types.Tlink texp
     | Types.Tpoly (texp, _) -> iter texp
+    | Types.Tfunctor (_id, _, t) ->
+        (* Could expose this as an argument too, but there is currently no
+           elegant way to represent it, so we just describe the remaining
+           arguments.
+        *)
+        iter t
     | Types.Tvar _
     | Types.Ttuple _
     | Types.Tconstr _

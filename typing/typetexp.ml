@@ -528,35 +528,39 @@ and transl_type_aux env policy styp =
       let z = narrow () in
       let mty = !transl_modtype env mty in
       widen z;
-      let pack =
+      let pack, pack_ty =
         let ptys = List.map (fun (s, pty) ->
                                s, transl_type env policy pty
                             ) l in
         let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
-        let ty = newty (Tpackage (path,
-                         List.map (fun (s, _pty) -> s.txt) l,
-                         List.map (fun (_, cty) -> cty.ctyp_type) ptys))
+        let ty =
+          ( path
+          , List.map (fun (s, _pty) -> s.txt) l
+          , List.map (fun (_, cty) -> cty.ctyp_type) ptys )
         in
-        ignore ty;
-        { pack_path = path
-        ; pack_type = mty.mty_type
-        ; pack_fields = ptys
-        ; pack_txt = p }
+        ( { pack_path = path
+          ; pack_type = mty.mty_type
+          ; pack_fields = ptys
+          ; pack_txt = p }
+        , ty )
       in
       let scoped_ident =
         Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
       in
+      begin_def();
       let env = Env.add_module scoped_ident Mp_present mty.mty_type env in
       let cty = transl_type env policy st in
-      let ty =
-        (* TODO: Dummy type. *)
-        if policy = Univars then new_pre_univar () else
-          if policy = Fixed then
-            raise (Error (styp.ptyp_loc, env, Unbound_type_variable "_"))
-          else newvar ()
+      end_def();
+      let ident = Ident.create_unscoped name.txt in
+      (* Substitute [scoped_ident] for [ident]. *)
+      let ctyp_type =
+        Subst.type_expr
+          (Subst.add_module scoped_ident (Path.Pident ident) Subst.identity)
+          cty.ctyp_type
       in
-      let name = Location.mkloc (Ident.create_unscoped name.txt) name.loc in
-      ctyp (Ttyp_functor (name, pack, cty)) ty
+      let ty = newty (Tfunctor (ident, pack_ty, ctyp_type)) in
+      (* Use [scoped_ident] in the AST, for consistency with nodes below. *)
+      ctyp (Ttyp_functor (Location.mkloc scoped_ident name.loc, pack, cty)) ty
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)

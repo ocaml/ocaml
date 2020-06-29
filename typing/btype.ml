@@ -327,6 +327,9 @@ let rec fold_type_expr f init ty =
     let result = f init ty in
     List.fold_left f result tyl
   | Tpackage (_, _, l)  -> List.fold_left f init l
+  | Tfunctor (_, (_, _, l), ty) ->
+    let result = List.fold_left f init l in
+    f result ty
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -511,6 +514,7 @@ let rec copy_type_desc ?(keep_names=false) f id_pairs = function
   | Tpackage (p, n, l)  ->
       let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
       Tpackage (p', n, List.map f l)
+  | Tfunctor _          -> assert false (* must be handled by caller *)
 
 (* Utilities for copying *)
 

@@ -505,7 +505,8 @@ let remove_option typ =
     | Types.Tfield _
     | Types.Tnil
     | Types.Tvariant _
-    | Types.Tpackage _ -> t
+    | Types.Tpackage _
+    | Types.Tfunctor _ -> t
     | Types.Tlink t2 -> iter t2.Types.desc
     | Types.Tsubst _ -> assert false
   in

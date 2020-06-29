@@ -319,11 +319,30 @@ let ident_name namespace id =
   end;
   ident_name_simple namespace id
 
+(** Remove the association of the identifier [id] with [namespace]. *)
+let remove_ident_name namespace id =
+  if !enabled then
+  let name = Ident.name id in
+  match M.find name (get namespace) with
+  | Uniquely_associated_to (id', _r) ->
+      if Ident.same id id' then
+        set namespace @@ M.remove name (get namespace)
+  | Need_unique_name map ->
+      let map = Ident.Map.remove id map in
+      if Ident.Map.is_empty map then
+        set namespace @@ M.remove name (get namespace)
+      else
+        set namespace @@ M.add name (Need_unique_name map) (get namespace)
+  | Associated_to_pervasives _
+  | exception Not_found ->
+      ()
+
 let reset () =
   Array.iteri ( fun i _ -> map.(i) <- M.empty ) map
 
 end
 let ident_name = Naming_context.ident_name
+let remove_ident_name = Naming_context.remove_ident_name
 let reset_naming_context = Naming_context.reset
 
 let ident ppf id = pp_print_string ppf
@@ -544,6 +563,9 @@ and raw_type_desc ppf = function
   | Tpackage (p, _, tl) ->
       fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
         raw_type_list tl
+  | Tfunctor (id, (p, _, tl), t) ->
+      fprintf ppf "@[<hov1>Tfunctor(@,%s@,%a@,%a@,%a)@]" (Ident.name id) path p
+        raw_type_list tl raw_type t
 and raw_row_fixed ppf = function
 | None -> fprintf ppf "None"
 | Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
@@ -923,6 +945,8 @@ let rec mark_loops_rec visited ty =
         List.iter (fun t -> add_alias t) tyl;
         mark_loops_rec visited ty
     | Tunivar _ -> add_named_var ty
+    | Tfunctor (_id, (_p, _nl, tyl), ty) ->
+        List.iter (mark_loops_rec visited) tyl; mark_loops_rec visited ty
 
 let mark_loops ty =
   normalize_type ty;
@@ -1049,16 +1073,24 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar _ ->
         Otyp_var (false, name_of_type new_name ty)
-    | Tpackage (p, n, tyl) ->
-        let n =
-          List.map (fun li -> String.concat "." (Longident.flatten li)) n in
-        Otyp_module (tree_of_path Module_type p, n, tree_of_typlist sch tyl)
+    | Tpackage pack ->
+        Otyp_module (tree_of_package_type sch pack)
+    | Tfunctor (id, pack, ty) ->
+        let pack = tree_of_package_type sch pack in
+        let ident = ident_name Module id in
+        let ty = tree_of_typexp sch ty in
+        remove_ident_name Module id;
+        Otyp_functor (ident, pack, ty)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin
     check_name_of_type px;
     Otyp_alias (pr_typ (), name_of_type new_name px) end
   else pr_typ ()
+
+and tree_of_package_type sch (p, n, tyl) =
+  let n = List.map (fun li -> String.concat "." (Longident.flatten li)) n in
+  (tree_of_path Module_type p, n, tree_of_typlist sch tyl)
 
 and tree_of_row_field sch (l, f) =
   match row_field_repr f with

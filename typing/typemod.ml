@@ -1861,6 +1861,12 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
 
 let () = Ctype.package_subtype := package_subtype
 
+let () =
+  let mkmty env (p, nl, tl) =
+    modtype_of_package env Location.none p nl tl
+  in
+  Ctype.mty_of_package' := mkmty
+
 let wrap_constraint env mark arg mty explicit =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion =

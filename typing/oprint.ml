@@ -280,7 +280,7 @@ and print_out_type_1 ppf =
       print_out_type_1 ppf ty2;
       pp_close_box ppf ()
   | Otyp_functor (name, pack, t) ->
-      fprintf ppf "@[@[<1>{%a :@ %a}@] ->@ %a@]" print_ident name
+      fprintf ppf "@[@[<1>{%s :@ %a}@] ->@ %a@]" name.printed_name
         print_package_type pack print_out_type_2 t
   | ty -> print_out_type_2 ppf ty
 and print_out_type_2 ppf =

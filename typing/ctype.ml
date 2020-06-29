@@ -538,6 +538,14 @@ let rec filter_row_fields erase = function
       | Reither(_,_,false,e) when erase -> set_row_field e Rabsent; fi
       | _ -> p :: fi
 
+                   (****************************************)
+                   (*  Utility functions for type modules  *)
+                   (****************************************)
+
+let mty_of_package' = ref (fun _ _ -> assert false)
+
+let mty_of_package = !mty_of_package'
+
                     (**************************************)
                     (*  Check genericity of type schemes  *)
                     (**************************************)
@@ -594,6 +602,16 @@ let rec free_vars_rec real ty =
         let row = row_repr row in
         iter_row (free_vars_rec true) row;
         if not (static_row row) then free_vars_rec false row.row_more
+    | Tfunctor (id, (p, nl, tl), t), Some env ->
+        List.iter (free_vars_rec true) tl;
+        (* We don't care about identifier scopes here, so we use the unscoped
+           [id] directly in the environment and avoid making any substitutions.
+        *)
+        really_closed :=
+          Some
+            (Env.add_module id Mp_present (mty_of_package env (p, nl, tl)) env);
+        free_vars_rec true t;
+        really_closed := Some env
     | _    ->
         iter_type_expr (free_vars_rec true) ty
 
@@ -788,6 +806,10 @@ let rec generalize_spine ty =
       set_level ty generic_level;
       memo := Mnil;
       List.iter generalize_spine tyl
+  | Tfunctor (_id, (_p, _nl, tyl), ty') ->
+      set_level ty generic_level;
+      List.iter generalize_spine tyl;
+      generalize_spine ty'
   | _ -> ()
 
 let forward_try_expand_once = (* Forward declaration *)
@@ -846,9 +868,33 @@ let rec check_scope_escape env id_pairs level ty =
         mark ty;
         check_scope_escape env id_pairs level
           (Btype.newty2 orig_level (Tpackage (p', nl, tl)))
+    | Tfunctor (id, (p, nl, tl), t) when level < Path.scope_subst id_pairs p ->
+        let p' =
+          p |> Path.subst id_pairs
+            |> normalize_package_path env
+            |> Path.unsubst id_pairs
+        in
+        if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+        let orig_level = ty.level in
+        mark ty;
+        check_scope_escape env id_pairs level
+          (Btype.newty2 orig_level (Tfunctor (id, (p', nl, tl), t)))
+    | Tfunctor (id, (p, _nl, tl), t) ->
+        let p = Path.subst id_pairs p in
+        List.iter (check_scope_escape env id_pairs level) tl;
+        let scoped_id = Ident.create_scoped ~scope:level (Ident.name id) in
+        (* We know that the module's substituted types don't escape, so
+           there is no need to place them in the environment.
+        *)
+        let env =
+          Env.add_module scoped_id Mp_present (mty_of_package env (p, [], []))
+            env
+        in
+        let id_pairs' = (id, scoped_id) :: id_pairs in
+        check_scope_escape env id_pairs' level t
     | _ ->
-      mark ty;
-      iter_type_expr (check_scope_escape env id_pairs level) ty
+        mark ty;
+        iter_type_expr (check_scope_escape env id_pairs level) ty
     end;
   end
 
@@ -923,6 +969,35 @@ let rec update_level env id_pairs level expand ty =
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
         set_type_desc ty (Tpackage (p', nl, tl));
         update_level env id_pairs level expand ty
+    | Tfunctor (id, (p, nl, tl), t) when level < path_scope_subst id_pairs p ->
+        let p' =
+          p |> Path.subst id_pairs
+            |> normalize_package_path env
+            |> Path.unsubst id_pairs
+        in
+        if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+        set_type_desc ty (Tfunctor (id, (p', nl, tl), t));
+        update_level env id_pairs level expand ty
+    | Tfunctor (id, (p, _nl, tl), t) ->
+        set_level ty level;
+        let p = Path.subst id_pairs p in
+        List.iter (update_level env id_pairs level expand) tl;
+        let scoped_id = Ident.create_scoped ~scope:level (Ident.name id) in
+        (* We know here that
+           * the identifier's scope is at the correct level
+           * the substituted types in the module take no parameters
+           and thus expanding the paths [nl] to the types [tl] will never
+           affect level lowering.
+           To avoid substituting unnecessarily, we omit the substitutions in
+           [mty_of_package] below, which will treat the types as abstract
+           instead of expanding them.
+        *)
+        let env =
+          Env.add_module scoped_id Mp_present (mty_of_package env (p, [], []))
+            env
+        in
+        let id_pairs' = (id, scoped_id) :: id_pairs in
+        update_level env id_pairs' level expand t
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
       when level < path_scope_subst id_pairs p ->
         set_name nm None;
@@ -963,7 +1038,7 @@ let update_level env id_pairs level ty =
 
 (* Lower level of type variables inside contravariant branches *)
 
-let rec lower_contravariant env var_level visited id_pairs contra ty =
+let rec lower_contravariant env id_pairs var_level visited contra ty =
   let ty = repr ty in
   let must_visit =
     ty.level > var_level &&
@@ -973,7 +1048,7 @@ let rec lower_contravariant env var_level visited id_pairs contra ty =
   in
   if must_visit then begin
     Hashtbl.add visited ty.id contra;
-    let lower_rec = lower_contravariant env var_level visited in
+    let lower_rec = lower_contravariant env id_pairs var_level visited in
     match ty.desc with
       Tvar _ -> if contra then set_level ty var_level
     | Tconstr (_, [], _) -> ()
@@ -994,26 +1069,40 @@ let rec lower_contravariant env var_level visited id_pairs contra ty =
               (fun v t ->
                 if v = Variance.null then () else
                   if Variance.(mem May_weak v)
-                  then lower_rec id_pairs true t
-                  else lower_rec id_pairs contra t)
+                  then lower_rec true t
+                  else lower_rec contra t)
               variance tyl in
           if maybe_expand then (* we expand cautiously to avoid missing cmis *)
             match !forward_try_expand_once env id_pairs ty with
-            | ty -> lower_rec id_pairs contra ty
+            | ty -> lower_rec contra ty
             | exception Cannot_expand -> not_expanded ()
           else not_expanded ()
     | Tpackage (_, _, tyl) ->
-        List.iter (lower_rec id_pairs true) tyl
+        List.iter (lower_rec true) tyl
     | Tarrow (_, t1, t2, _) ->
-        lower_rec id_pairs true t1;
-        lower_rec id_pairs contra t2
+        lower_rec true t1;
+        lower_rec contra t2
+    | Tfunctor (id, (p, _nl, tl), t) ->
+        let p = Path.subst id_pairs p in
+        List.iter (lower_rec true) tl;
+        let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+        (* We have already lowered the module's substituted types, and the
+           expansion of types without parameters are never used.
+           There is no need to place them in the environment, so we omit them.
+        *)
+        let env =
+          Env.add_module scoped_id Mp_present (mty_of_package env (p, [], []))
+            env
+        in
+        let id_pairs' = (id, scoped_id) :: id_pairs in
+        lower_contravariant env id_pairs' var_level visited contra t
     | _ ->
-        iter_type_expr (lower_rec id_pairs contra) ty
+        iter_type_expr (lower_rec contra) ty
   end
 
 let lower_contravariant env ty =
   simple_abbrevs := Mnil;
-  lower_contravariant env !nongen_level (Hashtbl.create 7) [] false ty
+  lower_contravariant env [] !nongen_level (Hashtbl.create 7) false ty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
@@ -1158,6 +1247,7 @@ let rec copy ?partial ?keep_names scope id_pairs ty =
   match ty.desc with
     Tsubst (ty, _) -> ty
   | _ ->
+    (* TODO: If we've hit a Tfunctor, make sure we substitute. *)
     if ty.level <> generic_level && partial = None then ty else
     (* We only forget types that are non generic and do not contain
        free univars *)
@@ -1194,7 +1284,7 @@ let rec copy ?partial ?keep_names scope id_pairs ty =
              ation can be released by changing the content of just
              one reference.
           *)
-              Tconstr (Path.unsubst id_pairs p, List.map (copy id_pairs) tl,
+              Tconstr (Path.unsubst id_pairs p', List.map (copy id_pairs) tl,
                        ref (match !(!abbreviations) with
                               Mcons _ -> Mlink !abbreviations
                             | abbrev  -> abbrev))
@@ -1272,6 +1362,18 @@ let rec copy ?partial ?keep_names scope id_pairs ty =
           end
       | Tobject (ty1, _) when partial <> None ->
           Tobject (copy id_pairs ty1, ref None)
+      | Tfunctor (id, (p, n, tl), t) ->
+          let id' = Ident.create_unscoped (Ident.name id) in
+          let p = Path.unsubst id_pairs (Path.subst id_pairs p) in
+          let tl = List.map (copy id_pairs) tl in
+          let id_pairs' =
+            (* One-way substitution: we want to substitute [id] for [id'], but
+               [id'] should not be substituted back for [id].
+            *)
+            (id', id') :: (id, id') :: id_pairs
+          in
+          let t = copy id_pairs' t in
+          Tfunctor (id', (p, n, tl), t)
       | _ -> copy_type_desc ?keep_names (copy id_pairs) id_pairs desc
       end;
     t
@@ -1368,10 +1470,12 @@ let instance_constructor ?in_pattern cstr =
     (ty_args, ty_res, ty_ex)
   )
 
-let instance_parameterized_type ?keep_names sch_args sch =
+let instance_parameterized_type ?keep_names id_pairs sch_args sch =
   For_copy.with_scope (fun scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names scope t) sch_args in
-    let ty = copy scope sch in
+    let ty_args =
+      List.map (fun t -> copy' ?keep_names scope id_pairs t) sch_args
+    in
+    let ty = copy' scope id_pairs sch in
     (ty_args, ty)
   )
 
@@ -1462,6 +1566,7 @@ let delayed_copy = ref []
 let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
   let ty = repr ty in
   let univars = free ty in
+  (* TODO: If we've hit a Tfunctor, make sure we substitute. *)
   if TypeSet.is_empty univars then
     if ty.level <> generic_level then ty else
     let t = newvar () in
@@ -1480,7 +1585,8 @@ let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
     let t = newvar() in          (* Stub *)
     let visited =
       match ty.desc with
-        Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
+        Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _
+      | Tfunctor _ ->
           (ty,(t,bound)) :: visited
       | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
           visited
@@ -1507,6 +1613,18 @@ let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
           Tpoly
             (copy_sep cleanup_scope fixed free bound visited id_pairs t1, tl')
+      | Tfunctor (id, (p, n, tl), t) ->
+          let id' = Ident.create_unscoped (Ident.name id) in
+          let p = Path.unsubst id_pairs (Path.subst id_pairs p) in
+          let tl = List.map (copy_rec id_pairs) tl in
+          let id_pairs' =
+            (* One-way substitution: we want to substitute [id] for [id'], but
+               [id'] should not be substituted back for [id].
+            *)
+            (id', id') :: (id, id') :: id_pairs
+          in
+          let t = copy_rec id_pairs' t in
+          Tfunctor (id', (p, n, tl), t)
       | _ -> copy_type_desc (copy_rec id_pairs) id_pairs ty.desc
       end;
     t
@@ -1569,7 +1687,9 @@ let subst env id_pairs level priv abbrev ty params args body =
         assert false
     end;
     abbreviations := abbrev;
-    let (params', body') = instance_parameterized_type params body in
+    let (params', body') =
+      instance_parameterized_type id_pairs params body
+    in
     abbreviations := ref Mnil;
     !unify' env id_pairs id_pairs body0 body';
     List.iter2 (!unify' env id_pairs id_pairs) params' args;
@@ -1892,11 +2012,21 @@ let rec occur_rec env id_pairs allow_recursive visited ty0 = function
       end
   | Tobject _ | Tvariant _ ->
       ()
+  | _ when allow_recursive || TypeSet.mem ty visited -> ()
+  | Tfunctor (id, (p, nl, tl), t) ->
+      let visited = TypeSet.add ty visited in
+      List.iter (occur_rec env id_pairs allow_recursive visited ty0) tl;
+      let p = Path.subst id_pairs p in
+      let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+      let env =
+        Env.add_module scoped_id Mp_present (mty_of_package env (p, nl, tl))
+          env
+      in
+      let id_pairs' = (id, scoped_id) :: id_pairs in
+      occur_rec env id_pairs' allow_recursive visited ty0 t
   | _ ->
-      if allow_recursive ||  TypeSet.mem ty visited then () else begin
-        let visited = TypeSet.add ty visited in
-        iter_type_expr (occur_rec env id_pairs allow_recursive visited ty0) ty
-      end
+      let visited = TypeSet.add ty visited in
+      iter_type_expr (occur_rec env id_pairs allow_recursive visited ty0) ty
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
@@ -1934,9 +2064,10 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env id_pairs p ty =
     match ty.desc with
       Tconstr(p', args, _abbrev) ->
         if Path.same p p' then raise Occur;
-        if allow_rec && not strict && is_contractive env p' then () else
+        let p' = Path.subst id_pairs p' in
+        if not (allow_rec && not strict && is_contractive env p') then begin
         let visited = ty :: visited in
-        begin try
+        try
           (* try expanding, since [p] could be hidden *)
           local_non_recursive_abbrev ~allow_rec strict visited env id_pairs p
             (try_expand_head try_expand_once_opt env id_pairs ty)
@@ -1954,6 +2085,29 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env id_pairs p ty =
         end
     | Tobject _ | Tvariant _ when not strict ->
         ()
+    | Tfunctor (id, (p, _nl, tl), t) when strict || not allow_rec ->
+        let visited = ty :: visited in
+        List.iter
+          (local_non_recursive_abbrev ~allow_rec true visited env id_pairs p)
+          tl;
+        let p = Path.subst id_pairs p in
+        let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+        (* We know here that
+           * the substituted types in the module take no parameters
+           * the substituted types do not contain [p]
+           and thus expanding the paths [nl] to the types [tl] will never
+           reveal an instance of [p] that would be otherwise concealed, or
+           erase an instance of [p] within a type parameter.
+           To avoid substituting unnecessarily, we omit the substitutions in
+           [mty_of_package] below, which will treat the types as abstract and
+           avoid expanding them to check their contents.
+        *)
+        let env =
+          Env.add_module scoped_id Mp_present (mty_of_package env (p, [], []))
+            env
+        in
+        let id_pairs' = (id, scoped_id) :: id_pairs in
+        local_non_recursive_abbrev ~allow_rec true visited env id_pairs' p t
     | _ ->
         if strict || not allow_rec then (* PR#7374 *)
           let visited = ty :: visited in
@@ -2059,6 +2213,26 @@ let occur_univar_or_unscoped ?(inj_only=false) env ?(pre_id_pairs = [])
           with Not_found ->
             if not inj_only then List.iter (occur_rec bound env id_pairs) tl
           end
+      | Tfunctor (id, (p, _nl, tl), t) ->
+          List.iter (occur_rec bound env id_pairs) tl;
+          let p = Path.subst id_pairs p in
+          let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+          (* We know here that
+             * the substituted types in the module take no parameters
+             * the substituted types do not contain free univars or unscoped
+               identifiers
+             and thus expanding the paths [nl] to the types [tl] will never
+             change the outcome of either of these checks.
+             To avoid substituting unnecessarily, we omit the substitutions in
+             [mty_of_package] below, which will treat the types as abstract and
+             skip re-checking their expansions.
+          *)
+          let env =
+            Env.add_module scoped_id Mp_present
+              (mty_of_package env (p, [], [])) env
+          in
+          let id_pairs' = (id, scoped_id) :: id_pairs in
+          occur_rec bound env id_pairs' t
       | _ -> iter_type_expr (occur_rec bound env id_pairs) ty
   in
   Misc.try_finally (fun () ->
@@ -2093,14 +2267,14 @@ let get_univar_family univar_pairs univars =
 let univars_escape env id_pairs univar_pairs vl ty =
   let family = get_univar_family univar_pairs vl in
   let visited = ref TypeSet.empty in
-  let rec occur t =
+  let rec occur env id_pairs t =
     let t = repr t in
     if TypeSet.mem t !visited then () else begin
       visited := TypeSet.add t !visited;
       match t.desc with
         Tpoly (t, tl) ->
           if List.exists (fun t -> TypeSet.mem (repr t) family) tl then ()
-          else occur t
+          else occur env id_pairs t
       | Tunivar _ ->
           if TypeSet.mem t family then raise Trace.(Unify [escape(Univ t)])
       | Tconstr (_, [], _) -> ()
@@ -2109,16 +2283,35 @@ let univars_escape env id_pairs univar_pairs vl ty =
             let td = Env.find_type (Path.subst id_pairs p) env in
             List.iter2
               (* see occur_univar_or_unscoped *)
-              (fun t v -> if not Variance.(eq v null) then occur t)
+              (fun t v ->
+                if not Variance.(eq v null) then occur env id_pairs t)
               tl td.type_variance
           with Not_found ->
-            List.iter occur tl
+            List.iter (occur env id_pairs) tl
           end
+      | Tfunctor (id, (p, _nl, tl), t) ->
+          List.iter (occur env id_pairs) tl;
+          let p = Path.subst id_pairs p in
+          let scoped_id =
+            Ident.create_scoped ~scope:ty.level (Ident.name id)
+          in
+          (* The substituted types in this module take no parameters, and so
+             will never be expanded as part of these checks.
+             To avoid substituting unnecessarily, we omit the substitutions in
+             [mty_of_package] below, which will treat the types as abstract and
+             avoid attempting to expand them.
+          *)
+          let env =
+            Env.add_module scoped_id Mp_present
+              (mty_of_package env (p, [], [])) env
+          in
+          let id_pairs' = (id, scoped_id) :: id_pairs in
+          occur env id_pairs' t
       | _ ->
-          iter_type_expr occur t
+          iter_type_expr (occur env id_pairs) t
     end
   in
-  occur ty
+  occur env id_pairs ty
 
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
 let enter_poly env id_pairs1 id_pairs2 univar_pairs t1 tl1 t2 tl2 f =
@@ -2266,27 +2459,71 @@ let reify env ?(pre_id_pairs = []) id_pairs t =
           end;
           iter_row (iterator env id_pairs) r
       | Tconstr (p, _, _) when is_object_type p ->
-          iter_type_expr (iterator env id_pairs) (full_expand !env id_pairs ty)
+          iter_type_expr (iterator env id_pairs) (full_expand env id_pairs ty)
       | Tconstr (p, _, _)
         when pre_id_pairs <> [] &&
              Option.is_some (Path.find_unscoped_subst id_pairs p) ->
           (* Unscoped identifier, attempt to expand. *)
-          let raise_identifier_escape () =
-            match Path.find_unscoped_subst id_pairs p with
-            | Some id -> raise Trace.(Unify [escape (Module (Pident id))])
-            | None -> assert false
-          in
           let ty' =
-            try try_expand_safe !env (pre_id_pairs @ id_pairs) ty
-            with Cannot_expand -> raise_identifier_escape ()
+            try try_expand_safe env (id_pairs @ pre_id_pairs) ty
+            with Cannot_expand -> raise Trace.(Unify [escape (Constructor p)])
           in
-          if ty == ty' then raise_identifier_escape ()
-          else iterator env id_pairs ty'
+          if ty == ty' then raise Trace.(Unify [escape (Constructor p)]);
+          link_type ty ty';
+          iterator env id_pairs ty'
+      | Tpackage (p, nl, tl)
+        when pre_id_pairs <> []
+             && Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+          (* Unscoped identifier, attempt to expand. *)
+          let full_id_pairs = id_pairs @ pre_id_pairs in
+          let p' =
+            p |> Path.subst full_id_pairs
+              |> normalize_package_path env
+              |> Path.unsubst full_id_pairs
+          in
+          if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+          set_type_desc ty (Tpackage (p', nl, tl));
+          visited := TypeSet.remove ty !visited;
+          iterator env id_pairs ty
+      | Tfunctor (id, (p, nl, tl), t)
+        when pre_id_pairs <> []
+             && Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+          (* Unscoped identifier, attempt to expand. *)
+          let full_id_pairs = id_pairs @ pre_id_pairs in
+          let p' =
+            p |> Path.subst full_id_pairs
+              |> normalize_package_path env
+              |> Path.unsubst full_id_pairs
+          in
+          if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+          set_type_desc ty (Tfunctor (id, (p', nl, tl), t));
+          visited := TypeSet.remove ty !visited;
+          iterator env id_pairs ty
+      | Tfunctor (id, (p, _nl, tl), t) ->
+          List.iter (iterator env id_pairs) tl;
+          let p = Path.subst id_pairs p in
+          let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+          (* We know here that
+             * the substituted types in the module take no parameters
+             * the substituted types do not contain variables or unscoped
+               identifiers
+             and thus expanding the paths [nl] to the types [tl] will never
+             reveal any additional type variables or unscoped identifiers.
+             To avoid substituting unnecessarily, we omit the substitutions in
+             [mty_of_package] below, which will treat the types as abstract and
+             avoid rechecking these substituted types.
+          *)
+          let env =
+            Env.add_module scoped_id Mp_present
+              (mty_of_package env (p, [], [])) env
+          in
+          let id_pairs' = (id, scoped_id) :: id_pairs in
+          iterator env id_pairs' t
       | _ ->
           iter_type_expr (iterator env id_pairs) ty
     end
   in
-  iterator env id_pairs t
+  iterator !env id_pairs t
 
 let is_newtype env p =
   try
@@ -2329,6 +2566,25 @@ let rec expands_to_datatype env id_pairs ty =
       with Not_found | Cannot_expand -> false
       end
   | _ -> false
+
+let substitute_ident_pairs_for_env id_pairs ts =
+  (* Tail-recursive [List.concat (List.rev_map List.rev l)]. *)
+  let rec rev_concat acc l =
+    match l with
+    | [] -> acc
+    | [] :: l -> rev_concat acc l
+    | (x :: xs) :: l -> rev_concat (x :: acc) (xs :: l)
+  in
+  let id_pairs =
+    (* Generate a series of 1-way substitutions in [id_pairs]. Concretely,
+       [[(id1, id2); (id3, id4); ...]]
+       becomes
+       [[(id2, id2); (id1, id2); (id4, id4); (id3, id4); ...]].
+    *)
+    rev_concat []
+      (List.rev_map (fun (id1, id2) -> [(id1, id2); (id2, id2)]) id_pairs)
+  in
+  For_copy.with_scope (fun scope -> List.map (copy' scope id_pairs) ts)
 
 (* mcomp type_pairs subst env t1 t2 does not raise an
    exception if it is possible that t1 and t2 are actually
@@ -2396,6 +2652,28 @@ let rec mcomp type_pairs env id_pairs1 id_pairs2 t1 t2 =
             mcomp_list type_pairs env tl1 tl2
         *)
         | (Tpackage _, Tpackage _) -> ()
+        | ( Tfunctor (id1, (p1, nl1, tl1), ty1)
+          , Tfunctor (id2, (p2, nl2, tl2), ty2)) ->
+            let tl1 = substitute_ident_pairs_for_env id_pairs1 tl1 in
+            let tl2 = substitute_ident_pairs_for_env id_pairs2 tl2 in
+            let p1 = Path.subst id_pairs1 p1 in
+            let p2 = Path.subst id_pairs2 p2 in
+            let scoped_id1 =
+              Ident.create_scoped ~scope:t1.level (Ident.name id1)
+            in
+            let scoped_id2 =
+              Ident.create_scoped ~scope:t2.level (Ident.name id2)
+            in
+            let env =
+              env
+              |> Env.add_module scoped_id1 Mp_present
+                  (mty_of_package env (p1, nl1, tl1))
+              |> Env.add_module scoped_id2 Mp_present
+                  (mty_of_package env (p2, nl2, tl2))
+            in
+            let id_pairs1 = (id1, scoped_id1) :: id_pairs1 in
+            let id_pairs2 = (id2, scoped_id2) :: id_pairs2 in
+            mcomp type_pairs env id_pairs1 id_pairs2 ty1 ty2
         | (Tvariant row1, Tvariant row2) ->
             mcomp_row type_pairs env id_pairs1 id_pairs2 row1 row2
         | (Tobject (fi1, _), Tobject (fi2, _)) ->
@@ -2692,8 +2970,8 @@ let unify1_var ~stub_unify env id_pairs t1 t2 =
   let d1 = t1.desc in
   link_type t1 t2;
   try
-    (* We need not pass [id_pairs] here: the check above guarantees that the
-       substituted identifiers do not appear in [t2].
+    (* We need not pass [pre_id_pairs] here: the check above guarantees that
+       the substituted identifiers do not appear in [t2].
     *)
     update_level env id_pairs t1.level t2;
     update_scope t1.scope t2
@@ -2749,7 +3027,7 @@ let unify3_var ~stub_unify env id_pairs t1' t2 t2' =
       abbreviated.  It would be possible to check whether some
       information is indeed lost, but it probably does not worth it.
 *)
-(* The [stub_unify] argument disables identifier escope checks. This argument
+(* The [stub_unify] argument disables identifier escape checks. This argument
    is shallow: it should only be used when one of the arguments is a stub
    [Tvar], and so is not passed to recursive calls to [unify] and friends.
 *)
@@ -3028,6 +3306,34 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
             List.iter (reify env id_pairs2) tl2;
             (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
           end
+      | ( Tfunctor (id1, (p1, nl1, tl1), ty1)
+        , Tfunctor (id2, (p2, nl2, tl2), ty2) ) ->
+          begin try
+            unify_package !env (unify_list env id_pairs1 id_pairs2)
+              t1.level (Path.subst id_pairs1 p1) nl1 tl1
+              t2.level (Path.subst id_pairs2 p2) nl2 tl2
+          with Not_found ->
+            if !umode = Expression then raise (Unify []);
+            List.iter (reify env id_pairs1) tl1;
+            List.iter (reify env id_pairs2) tl2;
+          end;
+          (* The module types are the same, arbitrarily choose the first to
+             represent them in the environment.
+          *)
+          let tl = substitute_ident_pairs_for_env id_pairs1 tl1 in
+          let p = Path.subst id_pairs1 p1 in
+          let scoped_id =
+            Ident.create_scoped ~scope:t1'.level (Ident.name id1)
+          in
+          let env' =
+            ref
+              (Env.add_module scoped_id Mp_present
+                (mty_of_package !env (p, nl1, tl)) !env)
+          in
+          let id_pairs1 = (id1, scoped_id) :: id_pairs1 in
+          let id_pairs2 = (id2, scoped_id) :: id_pairs2 in
+          unify env' id_pairs1 id_pairs2 ty1 ty2 ;
+          env := Env.copy_local ~from:!env' !env
       | (Tnil,  Tconstr _ ) -> raise (Unify Trace.[Obj(Abstract_row Second)])
       | (Tconstr _,  Tnil ) -> raise (Unify Trace.[Obj(Abstract_row First)])
       | (_, _) -> raise (Unify [])
@@ -3548,6 +3854,32 @@ let rec moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2 =
                   t2'.level (Path.subst id_pairs2 p2) n2 tl2
               with Not_found -> raise (Unify [])
               end
+          | ( Tfunctor (id1, (p1, nl1, tl1), ty1)
+            , Tfunctor (id2, (p2, nl2, tl2), ty2) ) ->
+              begin try
+                unify_package env
+                  (moregen_list inst_nongen type_pairs env id_pairs1 id_pairs2)
+                  t1'.level (Path.subst id_pairs1 p1) nl1 tl1
+                  t2'.level (Path.subst id_pairs2 p2) nl2 tl2
+              with Not_found -> raise (Unify [])
+              end;
+              (* The module types are the same except at the substitution
+                 points. We choose the first (i.e. more general) one, not least
+                 because we may modify variables present in [t1], and we don't
+                 want to put the variables in [t2] at risk of modification.
+              *)
+              let tl = substitute_ident_pairs_for_env id_pairs1 tl1 in
+              let p = Path.subst id_pairs1 p1 in
+              let scoped_id =
+                Ident.create_scoped ~scope:t1.level (Ident.name id1)
+              in
+              let env =
+                Env.add_module scoped_id Mp_present
+                 (mty_of_package env (p, nl1, tl)) env
+              in
+              let id_pairs1 = (id1, scoped_id) :: id_pairs1 in
+              let id_pairs2 = (id2, scoped_id) :: id_pairs2 in
+              moregen inst_nongen type_pairs env id_pairs1 id_pairs2 ty1 ty2
           | (Tvariant row1, Tvariant row2) ->
               moregen_row inst_nongen type_pairs env id_pairs1 id_pairs2 row1
                 row2
@@ -3824,7 +4156,7 @@ let rec eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2 =
               eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1
                 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-                when Path.same p1 p2 ->
+                when Path.same_subst id_pairs1 id_pairs2 p1 p2 ->
               eqtype_list rename type_pairs subst env id_pairs1 id_pairs2 tl1
                 tl2
           | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) ->
@@ -3835,6 +4167,33 @@ let rec eqtype rename type_pairs subst env id_pairs1 id_pairs2 t1 t2 =
                   t2'.level (Path.subst id_pairs2 p2) n2 tl2
               with Not_found -> raise (Unify [])
               end
+          | ( Tfunctor (id1, (p1, nl1, tl1), ty1)
+            , Tfunctor (id2, (p2, nl2, tl2), ty2) ) ->
+              begin try
+                unify_package env
+                  (eqtype_list rename type_pairs subst env id_pairs1 id_pairs2)
+                  t1'.level (Path.subst id_pairs1 p1) nl1 tl1
+                  t2'.level (Path.subst id_pairs2 p2) nl2 tl2
+              with Not_found -> raise (Unify [])
+              end;
+              (* The module types are the same except at the substitution
+                 points. We arbitrarily choose the first to represent them in
+                 the environment.
+                 This is safe because we preserve either the [subst] relation
+                 or physical equality for [Tvar]s (and similar for univars).
+              *)
+              let tl = substitute_ident_pairs_for_env id_pairs1 tl1 in
+              let p = Path.subst id_pairs1 p1 in
+              let scoped_id =
+                Ident.create_scoped ~scope:t1.level (Ident.name id1)
+              in
+              let env =
+                Env.add_module scoped_id Mp_present
+                 (mty_of_package env (p, nl1, tl)) env
+              in
+              let id_pairs1 = (id1, scoped_id) :: id_pairs1 in
+              let id_pairs2 = (id2, scoped_id) :: id_pairs2 in
+              eqtype rename type_pairs subst env id_pairs1 id_pairs2 ty1 ty2
           | (Tvariant row1, Tvariant row2) ->
               eqtype_row rename type_pairs subst env id_pairs1 id_pairs2 row1
                 row2
@@ -4355,15 +4714,16 @@ let rec build_subtype env id_pairs visited loops posi level t =
       let level' = pred_expand level in
       begin try match t'.desc with
         Tobject _ when posi && not (opened_object t') ->
-          let cl_abbr, body = find_cltype_for_path env p in
+          let p' = Path.subst id_pairs p in
+          let p'' = Path.unsubst id_pairs p' in
+          let cl_abbr, body = find_cltype_for_path env p' in
           let ty =
             subst env id_pairs !current_level Public abbrev None
               cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
             match ty.desc with
-              Tobject(ty1,{contents=Some(p',tl1)})
-              when Path.same_subst id_pairs id_pairs p p' ->
+              Tobject(ty1,{contents=Some(p',tl1)}) when Path.same p'' p' ->
                 ty1, tl1
             | _ -> raise Not_found
           in
@@ -4382,9 +4742,7 @@ let rec build_subtype env id_pairs visited loops posi level t =
           assert (is_Tvar t'');
           let nm =
             if c > Equiv || deep_occur ty ty1' then None
-            else
-              let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
-              if p' == p then Some (p, tl1) else None
+            else Some (p'', tl1)
           in
           set_type_desc t'' (Tobject (ty1', ref nm));
           (try unify_var env id_pairs id_pairs ty t with
@@ -4502,7 +4860,38 @@ let rec build_subtype env id_pairs visited loops posi level t =
       let (t1', c) = build_subtype env id_pairs visited loops posi level t1 in
       if c > Unchanged then (newty (Tpoly(t1', tl)), c)
       else (t, Unchanged)
-  | Tunivar _ | Tpackage _ ->
+  | Tpackage (p, n, tl) ->
+      let p' = Path.unsubst id_pairs (Path.subst id_pairs p) in
+      let tl' =
+        List.map (build_subtype env id_pairs visited loops posi level) tl
+      in
+      let c = collect tl' in
+      let c = max c (if p == p' then Unchanged else Path_subst) in
+      if c > Unchanged then (newty (Tpackage (p', n, List.map fst tl')), c)
+      else (t, Unchanged)
+  | Tfunctor (id, (p, n, tl), t1) ->
+      if memq_warn t visited then (t, Unchanged) else
+      let visited = t :: visited in
+      let p' = Path.subst id_pairs p in
+      let tl' =
+        List.map (build_subtype env id_pairs visited loops posi level) tl
+      in
+      let c = collect tl' in
+      let tl = List.map fst tl' in
+      let scoped_id = Ident.create_scoped ~scope:t.level (Ident.name id) in
+      let env =
+        Env.add_module scoped_id Mp_present (mty_of_package env (p', n, tl))
+          env
+      in
+      let id' = Ident.create_unscoped (Ident.name id) in
+      let id_pairs' = (id', scoped_id) :: (id, scoped_id) :: id_pairs in
+      let (t1, c') = build_subtype env id_pairs' visited loops posi level t1 in
+      let p' = Path.unsubst id_pairs p' in
+      let c = max (max c c') (if p == p' then Unchanged else Path_subst) in
+      if c > Path_subst || (c = Path_subst && id_pairs <> []) then
+        (newty (Tfunctor (id', (Path.unsubst id_pairs p, n, tl), t1)), c)
+      else (t, Unchanged)
+  | Tunivar _ ->
       (t, Unchanged)
 
 let enlarge_type env ty =
@@ -4544,7 +4933,7 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
     TypePairs.add subtypes (t1, t2) ();
     match (t1.desc, t2.desc) with
       (Tvar _, _) | (_, Tvar _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
     | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         let cstrs =
@@ -4576,7 +4965,8 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
               if co then
                 if cn then
                   (trace, newty2 t1.level (Ttuple[t1]),
-                   newty2 t2.level (Ttuple[t2]), !univar_pairs) :: cstrs
+                   newty2 t2.level (Ttuple[t2]), !univar_pairs,
+                   id_pairs1, id_pairs2, env) :: cstrs
                 else
                   subtype_rec env id_pairs1 id_pairs2 (Trace.diff t1 t2::trace)
                     t1 t2 cstrs
@@ -4587,7 +4977,7 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
                 else cstrs)
             cstrs decl.type_variance (List.combine tl1 tl2)
         with Not_found ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
         end
     | (Tconstr(p1, _, _), _) when generic_private_abbrev env id_pairs1 p1 ->
         subtype_rec env id_pairs1 id_pairs2 trace
@@ -4597,14 +4987,14 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
     | (Tobject (f1, _), Tobject (f2, _))
       when is_Tvar (object_row f1) && is_Tvar (object_row f2) ->
         (* Same row variable implies same object. *)
-        (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
     | (Tobject (f1, _), Tobject (f2, _)) ->
         subtype_fields env id_pairs1 id_pairs2 trace f1 f2 cstrs
     | (Tvariant row1, Tvariant row2) ->
         begin try
           subtype_row env id_pairs1 id_pairs2 trace row1 row2 cstrs
         with Exit ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env id_pairs1 id_pairs2 trace u1 u2 cstrs
@@ -4617,7 +5007,7 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
             (fun t1 t2 ->
               subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs)
         with Unify _ ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
         end
     | (Tpackage (p1, nl1, tl1), Tpackage (p2, nl2, tl2)) ->
         begin try
@@ -4628,7 +5018,9 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
               ~allow_absent:true in
           let cstrs' =
             List.map
-              (fun (n2,t2) -> (trace, List.assoc n2 ntl1, t2, !univar_pairs))
+              (fun (n2,t2) ->
+                (trace, List.assoc n2 ntl1, t2, !univar_pairs,
+                 id_pairs1, id_pairs2, env))
               ntl2
           in
           if eq_package_path env p1 p2 then cstrs' @ cstrs
@@ -4637,7 +5029,8 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
             let snap = Btype.snapshot () in
             try
               List.iter
-                (fun (_, t1, t2, _) -> unify env id_pairs1 id_pairs2 t1 t2)
+                (fun (_, t1, t2, _, id_pairs1, id_pairs2, env) ->
+                  unify env id_pairs1 id_pairs2 t1 t2 )
                 cstrs';
               if !package_subtype env p1 nl1 tl1 p2 nl2 tl2
               then (Btype.backtrack snap; cstrs' @ cstrs)
@@ -4646,10 +5039,71 @@ let rec subtype_rec env id_pairs1 id_pairs2 trace t1 t2 cstrs =
               Btype.backtrack snap; raise Not_found
           end
         with Not_found ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
         end
+    | ( Tfunctor (id1, (p1, nl1, tl1), ty1)
+      , Tfunctor (id2, (p2, nl2, tl2), ty2) ) ->
+        let cstrs =
+          (* Check that the second package is a subtype of the first. *)
+          try
+            let p1 = Path.subst id_pairs1 p1 in
+            let p2 = Path.subst id_pairs2 p2 in
+            let ntl1 =
+              complete_type_list env nl2 t1.level (Mty_ident p1) nl1 tl1
+                ~allow_absent:true
+            and ntl2 =
+              complete_type_list env nl1 t2.level (Mty_ident p2) nl2 tl2
+            in
+            let cstrs' =
+              List.map
+                (fun (n1,t1) ->
+                  (trace, t1, List.assoc n1 ntl2, !univar_pairs,
+                   id_pairs1, id_pairs2, env))
+                ntl1
+            in
+            if eq_package_path env p1 p2 then cstrs' @ cstrs
+            else begin
+              (* need to check module subtyping *)
+              let snap = Btype.snapshot () in
+              try
+                List.iter
+                  (fun (_, t1, t2, _, id_pairs1, id_pairs2, env) ->
+                    unify env id_pairs1 id_pairs2 t1 t2 )
+                  cstrs';
+                if !package_subtype env p2 nl2 tl2 p1 nl1 tl1
+                then (Btype.backtrack snap; cstrs' @ cstrs)
+                else raise (Unify [])
+              with Unify _ ->
+                Btype.backtrack snap; raise Not_found
+            end
+          with Not_found ->
+            (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
+        in
+        (* Insert the second (less general) module type into the environment.
+           This ensures that
+           * names declared in [p2] but not in [p1] still resolve
+           * any additional information exposed on the second module type
+             constrains the first type.
+           In other words,
+           [(({M : S1} -> t1(M)) :> ({M : S2} -> t2(M)))]
+           is equivalent to
+           [S2 :> S1 /\ forall (M : S2), t1(M) :> t2(M)].
+        *)
+        let tl = substitute_ident_pairs_for_env id_pairs2 tl2 in
+        let p = Path.subst id_pairs2 p2 in
+        let scoped_id =
+          Ident.create_scoped ~scope:t2.level (Ident.name id2)
+        in
+        let env =
+          Env.add_module scoped_id Mp_present (mty_of_package env (p, nl2, tl))
+            env
+        in
+        let id_pairs1 = (id1, scoped_id) :: id_pairs1 in
+        let id_pairs2 = (id2, scoped_id) :: id_pairs2 in
+        subtype_rec env id_pairs1 id_pairs2 (Trace.diff t1 t2::trace) ty1 ty2
+          cstrs
     | (_, _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs, id_pairs1, id_pairs2, env)::cstrs
   end
 
 and subtype_list env id_pairs1 id_pairs2 trace tl1 tl2 cstrs =
@@ -4673,12 +5127,12 @@ and subtype_fields env id_pairs1 id_pairs2 trace ty1 ty2 cstrs =
         rest1 rest2 cstrs
     else
       (trace, build_fields (repr ty1).level miss1 rest1, rest2,
-       !univar_pairs) :: cstrs
+       !univar_pairs, id_pairs1, id_pairs2, env) :: cstrs
   in
   let cstrs =
     if miss2 = [] then cstrs else
     (trace, rest1, build_fields (repr ty2).level miss2 (newvar ()),
-     !univar_pairs) :: cstrs
+     !univar_pairs, id_pairs1, id_pairs2, env) :: cstrs
   in
   List.fold_left
     (fun cstrs (_, _k1, t1, _k2, t2) ->
@@ -4746,10 +5200,13 @@ let subtype env ty1 ty2 =
   (* Enforce constraints. *)
   function () ->
     List.iter
-      (function (trace0, t1, t2, pairs) ->
-         try unify_pairs (ref env) [] [] t1 t2 pairs with Unify trace ->
-           raise (Subtype (expand_trace env [] (List.rev trace0),
-                           List.tl trace)))
+      (function (trace0, t1, t2, pairs, id_pairs1, id_pairs2, env) ->
+         try unify_pairs (ref env) id_pairs1 id_pairs2 t1 t2 pairs
+         with Unify trace ->
+           let expanded_trace =
+             expand_trace env (id_pairs1 @ id_pairs2) (List.rev trace0)
+           in
+           raise (Subtype (expanded_trace, List.tl trace)))
       (List.rev cstrs)
 
                               (*******************)
@@ -4839,6 +5296,20 @@ let rec closed_schema_rec env id_pairs ty =
         iter_row (closed_schema_rec env id_pairs) row;
         if not (static_row row) then
           closed_schema_rec env id_pairs row.row_more
+    | Tfunctor (id, (p, _nl, tl), t) ->
+        let p = Path.subst id_pairs p in
+        List.iter (closed_schema_rec env id_pairs) tl;
+        let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+        (* We have already checked the module's substituted types, and their
+           expansions will never be used. No need to place them in the
+           environment.
+        *)
+        let env =
+          Env.add_module scoped_id Mp_present (mty_of_package env (p, [], []))
+            env
+        in
+        let id_pairs' = (id, scoped_id) :: id_pairs in
+        closed_schema_rec env id_pairs' t
     | _ ->
         iter_type_expr (closed_schema_rec env id_pairs) ty
   end
@@ -4916,6 +5387,11 @@ let rec normalize_type_rec id_pairs visited ty =
         let fields, row = flatten_fields fi in
         let fi' = build_fields fi.level fields row in
         set_type_desc fi fi'.desc
+    | Tfunctor (id, (_p, _nl, tl), ty1) ->
+        List.iter (normalize_type_rec id_pairs visited) tl;
+        let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+        let id_pairs = (id, scoped_id) :: id_pairs in
+        normalize_type_rec id_pairs visited ty1
     | _ -> ()
     end;
     iter_type_expr (normalize_type_rec id_pairs visited) ty
@@ -5030,6 +5506,18 @@ let rec nondep_type_rec ?(expand_private=false) env id_pairs ids ty =
                 Tvariant {row with row_name = None}
             | _ -> Tvariant row
           end
+      | Tfunctor (id, (p, nl, tl), t) ->
+          let p = Path.subst id_pairs p in
+          let tl = List.map (nondep_type_rec env id_pairs ids) tl in
+          let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+          let env =
+            Env.add_module scoped_id Mp_present
+              (mty_of_package env (p, nl, tl)) env
+          in
+          let id' = Ident.create_unscoped (Ident.name id) in
+          let id_pairs' = (id', scoped_id) :: (id, scoped_id) :: id_pairs in
+          let t = nondep_type_rec env id_pairs' ids t in
+          Tfunctor (id', (Path.unsubst id_pairs p, nl, tl), t)
       | _ -> copy_type_desc (nondep_type_rec env id_pairs ids) id_pairs ty.desc
       end;
     ty'
@@ -5268,3 +5756,5 @@ let mcomp env ty1 ty2 = mcomp env [] [] ty1 ty2
 let unify env ty1 ty2 = unify env [] [] ty1 ty2
 let unify_var env ty1 ty2 = unify_var env [] [] ty1 ty2
 let equal env rename tyl1 tyl2 = equal env rename [] [] tyl1 tyl2
+let instance_parameterized_type ?keep_names sch_args sch =
+  instance_parameterized_type ?keep_names [] sch_args sch

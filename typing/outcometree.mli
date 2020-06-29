@@ -77,7 +77,7 @@ type out_type =
   | Otyp_poly of string list * out_type
   | Otyp_module of out_package_type
   | Otyp_attribute of out_type * out_attribute
-  | Otyp_functor of out_ident * out_package_type * out_type
+  | Otyp_functor of out_name * out_package_type * out_type
 
 and out_package_type = out_ident * string list * out_type list
 
