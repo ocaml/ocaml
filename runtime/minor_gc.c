@@ -217,8 +217,8 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
         // Success
         // Now we can write the forwarding pointer
         atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
-        // And can update the header too
-        atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_relaxed);
+        // And update header ('release' to ensure after update of fwd pointer)
+        atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_release);
         // Let the caller know we were responsible for the update
         success = 1;
       } else {
