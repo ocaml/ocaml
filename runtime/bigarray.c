@@ -81,7 +81,7 @@ CAMLexport struct custom_operations caml_ba_ops = {
 
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
    If [data] is NULL, the memory for the contents is also allocated
-   (with [malloc]) by [caml_ba_alloc].
+   (with [calloc]) by [caml_ba_alloc].
    [data] cannot point into the OCaml heap.
    [dim] may point into an object in the OCaml heap.
 */
@@ -104,11 +104,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
       if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
         caml_raise_out_of_memory();
     }
-    if (caml_umul_overflow(num_elts,
-                           caml_ba_element_size[flags & CAML_BA_KIND_MASK],
-                           &size))
-      caml_raise_out_of_memory();
-    data = malloc(size);
+    data = calloc(num_elts, caml_ba_element_size[flags & CAML_BA_KIND_MASK]);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
   }
@@ -468,7 +464,8 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
                          caml_ba_element_size[b->flags & CAML_BA_KIND_MASK],
                          &size))
     caml_deserialize_error("input_value: size overflow for bigarray");
-  /* Allocate room for data */
+  /* Allocate room for data, we don't need to zero-initialize, since it's overwritten
+   * right away */
   b->data = malloc(size);
   if (b->data == NULL)
     caml_deserialize_error("input_value: out of memory for bigarray");
