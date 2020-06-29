@@ -229,6 +229,10 @@ Working version
 
 ### Bug fixes:
 
+- #7902, #9556: Type-checker infers recursive type, even though -rectypes is
+  off.
+  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
+
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
 
@@ -672,9 +676,6 @@ OCaml 4.11
 
 - #7897, #9537: Fix warning 38 for rebound extension constructors
   (Leo White, review by Florian Angeletti)
-
-- #7902, #9556: Type-checker infers recursive type, eventhough -rectypes is off.
-  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
 
 - #7917, #9426: Use GCC option -fexcess-precision=standard when available,
   avoiding a problem with x87 excess precision in Float.round.
