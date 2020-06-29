@@ -3677,7 +3677,7 @@ let unify_var env id_pairs1 id_pairs2 t1 t2 =
         raise (Unify expanded_trace)
       end
   | _ ->
-      unify ~stub_unify:true (ref env) id_pairs1 id_pairs2 t1 t2
+      unify (ref env) id_pairs1 id_pairs2 t1 t2
 
 let _ = unify' := unify_var
 
