@@ -314,7 +314,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     - [c]: reads a single character. To test the current input character
       without reading it, specify a null field width, i.e. use
       specification [%0c].
-   @raise Invalid_argument, if the field width
+    - Raise [Invalid_argument], if the field width
       specification is greater than 1.
     - [C]: reads a single delimited character (delimiters and special
       escaped characters follow the lexical conventions of OCaml).
@@ -451,15 +451,12 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 
     - Raise {!Scanf.Scan_failure} if the input does not match the format.
 
-    -
-   @raise Failure if a conversion to a number is not possible.
+    - Raise [Failure] if a conversion to a number is not possible.
 
-    -
-   @raise End_of_file if the end of input is encountered while some more
+    - Raise [End_of_file] if the end of input is encountered while some more
       characters are needed to read the current conversion specification.
 
-    -
-   @raise Invalid_argument if the format string is invalid.
+    - Raise [Invalid_argument] if the format string is invalid.
 
     Note:
 
