@@ -88,7 +88,7 @@ CAMLexport struct custom_operations caml_ba_ops = {
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
-  uintnat num_elts, asize, size;
+  uintnat num_elts, asize, size, elt_size;
   int i;
   value res;
   struct caml_ba_array * b;
@@ -99,16 +99,15 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
+    elt_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
     num_elts = 1;
     for (i = 0; i < num_dims; i++) {
       if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
         caml_raise_out_of_memory();
     }
-    if (caml_umul_overflow(num_elts,
-                           caml_ba_element_size[flags & CAML_BA_KIND_MASK],
-                           &size))
+    if (caml_umul_overflow(num_elts, elt_size, &size))
       caml_raise_out_of_memory();
-    data = calloc(num_elts, caml_ba_element_size[flags & CAML_BA_KIND_MASK]);
+    data = calloc(num_elts, elt_size);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
   }
