@@ -137,7 +137,7 @@ val concat : bytes -> bytes list -> bytes
 
 val cat : bytes -> bytes -> bytes
 (** [cat s1 s2] concatenates [s1] and [s2] and returns the result
-    as new byte sequence.
+    as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 

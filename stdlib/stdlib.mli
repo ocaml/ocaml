@@ -361,12 +361,13 @@ external ( * ) : int -> int -> int = "%mulint"
 
 external ( / ) : int -> int -> int = "%divint"
 (** Integer division.
-   @raise Division_by_zero if the second argument is 0.
    Integer division rounds the real quotient of its arguments towards zero.
    More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
    less than or equal to the real quotient of [x] by [y].  Moreover,
    [(- x) / y = x / (- y) = - (x / y)].
    Left-associative operator, see {!Ocaml_operators} for more information.
+
+   @raise Division_by_zero if the second argument is 0.
 *)
 
 external ( mod ) : int -> int -> int = "%modint"
@@ -376,8 +377,9 @@ external ( mod ) : int -> int -> int = "%modint"
    [abs(x mod y) <= abs(y) - 1].
    If [y = 0], [x mod y] raises [Division_by_zero].
    Note that [x mod y] is negative only if [x < 0].
-   @raise Division_by_zero if [y] is zero.
    Left-associative operator, see {!Ocaml_operators} for more information.
+
+   @raise Division_by_zero if [y] is zero.
 *)
 
 val abs : int -> int

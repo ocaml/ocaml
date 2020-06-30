@@ -166,7 +166,7 @@ val index_from_opt: string -> int -> char -> int option
     or [None] if [c] does not occur in [s] after position [i].
 
     [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
-   @raise Invalid_argument if [i] is not a valid position in [s].
+    @raise Invalid_argument if [i] is not a valid position in [s].
 
     @since 4.05
 *)
