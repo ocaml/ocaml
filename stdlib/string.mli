@@ -81,8 +81,8 @@ val init : int -> (int -> char) -> string
 (** [String.init n f] returns a string of length [n], with character
     [i] initialized to the result of [f i] (called in increasing
     index order).
-   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
 
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
     @since 4.02.0
 *)
 
@@ -114,7 +114,7 @@ val blit : string -> int -> bytes -> int -> int -> unit
 val concat : string -> string list -> string
 (** [String.concat sep sl] concatenates the list of strings [sl],
     inserting the separator string [sep] between each.
-   @raise Invalid_argument if the result is longer than
+    @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
 val iter : (char -> unit) -> string -> unit
@@ -157,7 +157,7 @@ val escaped : string -> string
 
     If there is no special character in the argument that needs
     escaping, return the original string itself, not a copy.
-   @raise Invalid_argument if the result is longer than
+    @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
@@ -199,7 +199,7 @@ val index_from_opt: string -> int -> char -> int option
     or [None] if [c] does not occur in [s] after position [i].
 
     [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
-   @raise Invalid_argument if [i] is not a valid position in [s].
+    @raise Invalid_argument if [i] is not a valid position in [s].
 
     @since 4.05
 *)

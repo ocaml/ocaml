@@ -53,7 +53,7 @@ val cons : 'a -> 'a list -> 'a list
 
 val hd : 'a list -> 'a
 (** Return the first element of the given list.
-   @raise Failure if the list is empty. *)
+    @raise Failure if the list is empty. *)
 
 val tl : 'a list -> 'a list
 (** Return the given list without its first element.

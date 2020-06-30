@@ -50,7 +50,7 @@ val to_bytes : t -> bytes
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns a copy of [len] bytes from the
     current contents of the buffer [b], starting at offset [off].
-   @raise Invalid_argument if [srcoff] and [len] do not designate a valid
+    @raise Invalid_argument if [srcoff] and [len] do not designate a valid
     range of [b]. *)
 
 val blit : t -> int -> bytes -> int -> int -> unit
@@ -65,7 +65,7 @@ val blit : t -> int -> bytes -> int -> int -> unit
 
 val nth : t -> int -> char
 (** Get the n-th character of the buffer.
-   @raise Invalid_argument if
+    @raise Invalid_argument if
     index out of bounds *)
 
 val length : t -> int
@@ -154,7 +154,7 @@ val output_buffer : out_channel -> t -> unit
 val truncate : t -> int -> unit
 (** [truncate b len] truncates the length of [b] to [len]
   Note: the internal byte sequence is not shortened.
-   @raise Invalid_argument if [len < 0] or [len > length b].
+  @raise Invalid_argument if [len < 0] or [len > length b].
   @since 4.05.0 *)
 
 (** {1 Iterators} *)

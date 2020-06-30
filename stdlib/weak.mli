@@ -144,7 +144,7 @@ module type S = sig
 
   val find : t -> data -> data
     (** [find t x] returns an instance of [x] found in [t].
-   @raise Not_found if there is no such element. *)
+        @raise Not_found if there is no such element. *)
 
   val find_opt: t -> data -> data option
     (** [find_opt t x] returns an instance of [x] found in [t]

@@ -310,7 +310,7 @@ module Genarray :
      Bigarray [a].  The first dimension corresponds to [n = 0];
      the second dimension corresponds to [n = 1]; the last dimension,
      to [n = Genarray.num_dims a - 1].
-   @raise Invalid_argument if [n] is less than 0 or greater or equal than
+     @raise Invalid_argument if [n] is less than 0 or greater or equal than
      [Genarray.num_dims a]. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
@@ -347,7 +347,7 @@ module Genarray :
      and strictly less than the corresponding dimensions of [a].
      If [a] has Fortran layout, the coordinates must be greater or equal
      than 1 and less or equal than the corresponding dimensions of [a].
-   @raise Invalid_argument if the array [a] does not have exactly [N]
+     @raise Invalid_argument if the array [a] does not have exactly [N]
      dimensions, or if the coordinates are outside the array bounds.
 
      If [N > 3], alternate syntax is provided: you can write
@@ -389,7 +389,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_left] applies only to Bigarrays in C layout.
-   @raise Invalid_argument if [ofs] and [len] do not designate
+     @raise Invalid_argument if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 0], or [len < 0],
      or [ofs + len > Genarray.nth_dim a 0]. *)
 
@@ -409,7 +409,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_right] applies only to Bigarrays in Fortran layout.
-   @raise Invalid_argument if [ofs] and [len] do not designate
+     @raise Invalid_argument if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 1], or [len < 0],
      or [ofs + len > Genarray.nth_dim a (Genarray.num_dims a - 1)]. *)
 
@@ -428,7 +428,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_left] applies only to Bigarrays in C layout.
-   @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
+     @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external slice_right:
@@ -446,7 +446,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_right] applies only to Bigarrays in Fortran layout.
-   @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
+     @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
