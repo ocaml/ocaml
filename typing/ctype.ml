@@ -1184,7 +1184,9 @@ let rec inv_type hash pty ty =
   with Not_found ->
     let inv = { inv_type = ty; inv_parents = pty } in
     TypeHash.add hash ty inv;
-    iter_type_expr (inv_type hash [inv]) ty
+    match ty.desc with
+    | Tsubst _ -> () (* Don't attempt to iterate into substituted nodes. *)
+    | _ -> iter_type_expr (inv_type hash [inv]) ty
 
 let compute_univars ty =
   let inverted = TypeHash.create 17 in
@@ -1208,6 +1210,53 @@ let compute_univars ty =
     inverted;
   fun ty ->
     try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
+
+(** Tail-recursive [List.concat (List.rev_map List.rev l)]. *)
+let rec rev_concat acc l =
+  match l with
+  | [] -> acc
+  | [] :: l -> rev_concat acc l
+  | (x :: xs) :: l -> rev_concat (x :: acc) (xs :: l)
+
+let compute_required_substitutions id_pairs ty =
+  let inverted = TypeHash.create 17 in
+  inv_type inverted [] ty;
+  let nodes = ref TypeSet.empty in
+  let rec add_node ids inv =
+    if TypeSet.mem inv.inv_type !nodes then ()
+    else
+      match inv.inv_type.desc with
+      | Tfunctor (id', _, _) ->
+          let ids = List.filter (Ident.same id') ids in
+          if ids = [] then ()
+          else begin
+            nodes := TypeSet.add inv.inv_type !nodes;
+            List.iter (add_node ids) inv.inv_parents
+          end
+      | _ ->
+          nodes := TypeSet.add inv.inv_type !nodes;
+          List.iter (add_node ids) inv.inv_parents
+  in
+  TypeHash.iter
+    (fun ty inv ->
+      match ty.desc with
+      | Tfunctor (_, (p, _, _), _)
+      | Tconstr (p, _, _)
+      | Tobject (_, {contents = Some (p, _)})
+      | Tpackage (p, _, _)  ->
+          let ids =
+            List.filter
+              (fun id ->
+                Ident.is_unscoped id ||
+                List.exists
+                  (fun (id1, id2) -> Ident.same id1 id || Ident.same id2 id)
+                  id_pairs )
+              (Path.heads p)
+          in
+          if ids = [] then () else add_node ids inv
+      | _ -> () )
+    inverted;
+  fun ty -> TypeSet.mem ty !nodes
 
 
 let fully_generic ty =
@@ -1254,29 +1303,38 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names scope id_pairs ty =
-  let copy = copy ?partial ?keep_names scope in
+let rec copy ?partial ?keep_names ?required_subst scope id_pairs ty =
+  let copy' ?required_subst id_pairs ty =
+    copy ?partial ?keep_names ?required_subst scope id_pairs ty
+  in
+  let copy = copy' ?required_subst in
   let ty = repr ty in
   match ty.desc with
     Tsubst (ty, _) -> ty
   | _ ->
-    (* TODO: If we've hit a Tfunctor, make sure we substitute. *)
-    if ty.level <> generic_level && partial = None then ty else
+    let must_copy =
+      match required_subst with
+        None -> false
+      | Some f -> f ty
+    in
+    if ty.level <> generic_level && partial = None && not must_copy
+    then ty else
     (* We only forget types that are non generic and do not contain
        free univars *)
     let forget =
       if ty.level = generic_level then generic_level else
       match partial with
-        None -> assert false
+        None -> ty.level
       | Some (free_univars, keep) ->
           if TypeSet.is_empty (free_univars ty) then
             if keep then ty.level else !current_level
           else generic_level
     in
-    if forget <> generic_level then newty2 forget (Tvar None) else
+    if forget <> generic_level && not must_copy then newvar2 forget else
     let desc = ty.desc in
     For_copy.save_desc scope ty desc;
-    let t = newvar() in          (* Stub *)
+    let level = if forget = generic_level then !current_level else forget in
+    let t = newvar2 level in          (* Stub *)
     set_scope t ty.scope;
     Private_type_expr.set_desc ty (Tsubst (t, None));
     Private_type_expr.set_desc t
@@ -1385,16 +1443,28 @@ let rec copy ?partial ?keep_names scope id_pairs ty =
             *)
             (id', id') :: (id, id') :: id_pairs
           in
-          let t = copy id_pairs' t in
+          let required_subst =
+            match required_subst with
+            | None -> Some (compute_required_substitutions id_pairs' t)
+            | Some _ as x -> x
+          in
+          let t = copy' ?required_subst id_pairs' t in
           Tfunctor (id', (p, n, tl), t)
       | _ -> copy_type_desc ?keep_names (copy id_pairs) id_pairs desc
       end;
     t
 
-let copy' ?partial ?keep_names scope id_pairs ty =
-  copy ?partial ?keep_names scope id_pairs ty
+let copy' ?partial ?keep_names ?required_subst scope id_pairs ty =
+  let required_subst =
+    match required_subst with
+    | None ->
+        if id_pairs = [] then None
+        else Some (compute_required_substitutions id_pairs ty)
+    | Some _ as x -> x
+  in
+  copy ?partial ?keep_names ?required_subst scope id_pairs ty
 
-let copy ?partial ?keep_names scope ty = copy ?partial ?keep_names scope [] ty
+let copy ?partial ?keep_names scope ty = copy' ?partial ?keep_names scope [] ty
 
 (**** Variants of instantiations ****)
 
@@ -1576,17 +1646,22 @@ let delayed_copy = ref []
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
-let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
+let rec copy_sep ?required_subst cleanup_scope fixed free bound visited
+    id_pairs ty =
   let ty = repr ty in
   let univars = free ty in
-  (* TODO: If we've hit a Tfunctor, make sure we substitute. *)
   if TypeSet.is_empty univars then
-    if ty.level <> generic_level then ty else
+    let must_copy =
+      match required_subst with
+        None -> false
+      | Some f -> f ty
+    in
+    if ty.level <> generic_level && not must_copy then ty else
     let t = newvar () in
     delayed_copy :=
       lazy
         (Private_type_expr.set_desc t
-          (Tlink (copy' cleanup_scope id_pairs ty)))
+          (Tlink (copy' ?required_subst cleanup_scope id_pairs ty)))
       :: !delayed_copy;
     t
   else try
@@ -1606,7 +1681,9 @@ let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
       | Tlink _ | Tsubst _ ->
           assert false
     in
-    let copy_rec = copy_sep cleanup_scope fixed free bound visited in
+    let copy_rec =
+      copy_sep ?required_subst cleanup_scope fixed free bound visited id_pairs
+    in
     Private_type_expr.set_desc t
       begin match ty.desc with
       | Tvariant row0 ->
@@ -1614,9 +1691,9 @@ let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
           let more = repr row.row_more in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && more.level <> generic_level in
-          let more' = copy_rec id_pairs more in
+          let more' = copy_rec more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
-          let row = copy_row (copy_rec id_pairs) fixed' row keep more' in
+          let row = copy_row copy_rec fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl = List.map repr tl in
@@ -1625,20 +1702,29 @@ let rec copy_sep cleanup_scope fixed free bound visited id_pairs ty =
           let visited =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
           Tpoly
-            (copy_sep cleanup_scope fixed free bound visited id_pairs t1, tl')
+            (copy_sep ?required_subst cleanup_scope fixed free bound visited
+              id_pairs t1, tl')
       | Tfunctor (id, (p, n, tl), t) ->
           let id' = Ident.create_unscoped (Ident.name id) in
           let p = Path.unsubst id_pairs (Path.subst id_pairs p) in
-          let tl = List.map (copy_rec id_pairs) tl in
+          let tl = List.map copy_rec tl in
           let id_pairs' =
             (* One-way substitution: we want to substitute [id] for [id'], but
                [id'] should not be substituted back for [id].
             *)
             (id', id') :: (id, id') :: id_pairs
           in
-          let t = copy_rec id_pairs' t in
+          let required_subst =
+            match required_subst with
+            | None -> Some (compute_required_substitutions id_pairs' t)
+            | Some _ as x -> x
+          in
+          let t =
+            copy_sep ?required_subst cleanup_scope fixed free bound visited
+              id_pairs' t
+          in
           Tfunctor (id', (p, n, tl), t)
-      | _ -> copy_type_desc (copy_rec id_pairs) id_pairs ty.desc
+      | _ -> copy_type_desc copy_rec id_pairs ty.desc
       end;
     t
   end
@@ -2581,13 +2667,6 @@ let rec expands_to_datatype env id_pairs ty =
   | _ -> false
 
 let substitute_ident_pairs_for_env id_pairs ts =
-  (* Tail-recursive [List.concat (List.rev_map List.rev l)]. *)
-  let rec rev_concat acc l =
-    match l with
-    | [] -> acc
-    | [] :: l -> rev_concat acc l
-    | (x :: xs) :: l -> rev_concat (x :: acc) (xs :: l)
-  in
   let id_pairs =
     (* Generate a series of 1-way substitutions in [id_pairs]. Concretely,
        [[(id1, id2); (id3, id4); ...]]
