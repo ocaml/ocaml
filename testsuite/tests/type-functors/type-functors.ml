@@ -409,3 +409,10 @@ Error: This expression has type {M : T'} -> M.u
        but an expression was expected of type {M : T'} -> M.t
        Type M/1.u is not compatible with type M/2.t
 |}]
+
+(* Substitutions are opened if there would be a variable escape. *)
+
+type ('a, 'b) t = 'a -> {M : S with type t = 'b} -> (M.t as 'a);;
+[%%expect{|
+type ('a, 'b) t = 'a -> {M : S with type t = 'a} -> 'a constraint 'b = 'a
+|}]
