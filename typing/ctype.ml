@@ -4098,7 +4098,8 @@ and moregen_row inst_nongen type_pairs env id_pairs1 id_pairs2 row1 row2 =
               t2 :: _ ->
                 List.iter
                   (fun t1 ->
-                    moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2)
+                    moregen inst_nongen type_pairs env id_pairs1 id_pairs2
+                      t1 t2)
                   tl1
             | [] ->
                 if tl1 <> [] then raise (Unify [])

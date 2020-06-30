@@ -564,8 +564,8 @@ and raw_type_desc ppf = function
       fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
         raw_type_list tl
   | Tfunctor (id, (p, _, tl), t) ->
-      fprintf ppf "@[<hov1>Tfunctor(@,%s,@,%a,@,%a,@,%a)@]" (Ident.name id) path p
-        raw_type_list tl raw_type t
+      fprintf ppf "@[<hov1>Tfunctor(@,%s,@,%a,@,%a,@,%a)@]" (Ident.name id)
+        path p raw_type_list tl raw_type t
 and raw_row_fixed ppf = function
 | None -> fprintf ppf "None"
 | Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
