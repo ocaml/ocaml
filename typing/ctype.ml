@@ -3415,7 +3415,7 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
           let tl = substitute_ident_pairs_for_env id_pairs1 tl1 in
           let p = Path.subst id_pairs1 p1 in
           let scoped_id =
-            Ident.create_scoped ~scope:t1'.level (Ident.name id1)
+            Ident.create_scoped ~scope:t1.level (Ident.name id1)
           in
           let env' =
             ref
