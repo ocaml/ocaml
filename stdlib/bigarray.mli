@@ -347,14 +347,16 @@ module Genarray :
      and strictly less than the corresponding dimensions of [a].
      If [a] has Fortran layout, the coordinates must be greater or equal
      than 1 and less or equal than the corresponding dimensions of [a].
-     @raise Invalid_argument if the array [a] does not have exactly [N]
-     dimensions, or if the coordinates are outside the array bounds.
 
      If [N > 3], alternate syntax is provided: you can write
      [a.{i1, i2, ..., iN}] instead of [Genarray.get a [|i1; ...; iN|]].
      (The syntax [a.{...}] with one, two or three coordinates is
      reserved for accessing one-, two- and three-dimensional arrays
-     as described below.) *)
+     as described below.)
+
+     @raise Invalid_argument if the array [a] does not have exactly [N]
+     dimensions, or if the coordinates are outside the array bounds.
+  *)
 
   external set: ('a, 'b, 'c) t -> int array -> 'a -> unit
     = "caml_ba_set_generic"
