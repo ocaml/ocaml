@@ -830,7 +830,7 @@ let rec check_scope_escape env level ty =
         let orig_level = ty.level in
         mark ty;
         check_scope_escape env level
-          {ty with desc= Tpackage (p', nl, tl); level= orig_level}
+          (Btype.newty2 orig_level (Tpackage (p', nl, tl)))
     | _ ->
       mark ty;
       iter_type_expr (check_scope_escape env level) ty
