@@ -71,10 +71,11 @@ val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
     result.  If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
-    @raise Undefined if the forcing of [x] tries to force [x] itself
-    recursively.
+
     If the computation of [x] raises an exception, it is unspecified
     whether [force_val x] raises the same exception or {!Undefined}.
+    @raise Undefined if the forcing of [x] tries to force [x] itself
+    recursively.
 *)
 
 val from_fun : (unit -> 'a) -> 'a t

@@ -56,10 +56,10 @@ external mul : int32 -> int32 -> int32 = "%int32_mul"
 (** Multiplication. *)
 
 external div : int32 -> int32 -> int32 = "%int32_div"
-(** Integer division.
+(** Integer division. This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Stdlib.(/)}.
    @raise Division_by_zero if the second
-   argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+   argument is zero.  *)
 
 val unsigned_div : int32 -> int32 -> int32
 (** Same as {!div}, except that arguments and result are interpreted as {e

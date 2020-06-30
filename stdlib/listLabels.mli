@@ -46,7 +46,7 @@ val length : 'a list -> int
 
 val hd : 'a list -> 'a
 (** Return the first element of the given list.
-   @raise Failure ["hd"] if the list is empty.
+   @raise Failure if the list is empty.
  *)
 
 val compare_lengths : 'a list -> 'b list -> int
@@ -70,7 +70,7 @@ val cons : 'a -> 'a list -> 'a list
 
 val tl : 'a list -> 'a list
 (** Return the given list without its first element.
-   @raise Failure ["tl"] if the list is empty.
+   @raise Failure if the list is empty.
  *)
 
 val nth : 'a list -> int -> 'a

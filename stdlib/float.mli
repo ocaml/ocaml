@@ -437,8 +437,8 @@ module Array : sig
       containing the elements number [start] to [start + len - 1]
       of floatarray [a].
       @raise Invalid_argument if [start] and [len] do not
-     designate a valid subarray of [a]; that is, if
-     [start < 0], or [len < 0], or [start + len > length a]. *)
+      designate a valid subarray of [a]; that is, if
+      [start < 0], or [len < 0], or [start + len > length a]. *)
 
   val copy : t -> t
   (** [copy a] returns a copy of [a], that is, a fresh floatarray
@@ -448,7 +448,7 @@ module Array : sig
   (** [fill a ofs len x] modifies the floatarray [a] in place,
       storing [x] in elements number [ofs] to [ofs + len - 1].
       @raise Invalid_argument if [ofs] and [len] do not
-     designate a valid subarray of [a]. *)
+      designate a valid subarray of [a]. *)
 
   val blit : t -> int -> t -> int -> int -> unit
   (** [blit v1 o1 v2 o2 len] copies [len] elements

@@ -448,7 +448,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 (** Scanners may raise the following exceptions when the input cannot be read
     according to the format string:
 
-    - Raise [Scan_failure] if the input does not match the format.
+    - Raise {!Scanf.Scan_failure} if the input does not match the format.
 
     - Raise [Failure] if a conversion to a number is not possible.
 
