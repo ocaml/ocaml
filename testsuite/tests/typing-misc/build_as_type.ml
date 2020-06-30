@@ -10,7 +10,7 @@ Line 1, characters 8-42:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 _::_
-val f : int list -> 'a list = <fun>
+val f : int list -> int list = <fun>
 |}]
 
 let f =
@@ -23,7 +23,7 @@ Line 2, characters 11-44:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 _::_
-val f : ('a list -> 'b list) * ('a list -> 'c list) = (<fun>, <fun>)
+val f : ('a list -> 'a list) * ('a list -> 'a list) = (<fun>, <fun>)
 |}]
 
 let f =
@@ -51,7 +51,7 @@ val f : [< `A | `B ] -> [> `A ] = <fun>
 
 let f = function (`A : t) as x -> x | `B -> `A;;
 [%%expect{|
-val f : t -> [> `A ] = <fun>
+val f : t -> t = <fun>
 |}]
 
 let f : t -> _ = function `A as x -> x | `B -> `A;;
@@ -66,6 +66,13 @@ let f = function
     end
   | `B -> ();;
 [%%expect{|
+Lines 3-5, characters 4-7:
+3 | ....begin match x with
+4 |     | `A -> ()
+5 |     end
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+`B
 val f : t -> unit = <fun>
 |}]
 
@@ -91,7 +98,12 @@ let f = function
     end
   | `B -> ();;
 [%%expect{|
-val f : t -> unit = <fun>
+Line 6, characters 6-8:
+6 |     | `C -> ()
+          ^^
+Error: This pattern matches values of type [? `C ]
+       but a pattern was expected which matches values of type t
+       The second variant type does not allow tag(s) `C
 |}]
 
 let f = function (`A, _ : _ * int) as x -> x;;
