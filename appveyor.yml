@@ -26,7 +26,7 @@ environment:
     CYG_ROOT: C:/cygwin64
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin64/var/cache/setup
-    FLEXDLL_VERSION: 0.37
+    FLEXDLL_VERSION: 0.38
     OCAMLRUNPARAM: v=0,b
   matrix:
     - PORT: mingw32

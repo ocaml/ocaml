@@ -58,8 +58,8 @@ if "%PORT%" equ "mingw32" (
 )
 
 cd "%APPVEYOR_BUILD_FOLDER%"
-appveyor DownloadFile "https://github.com/alainfrisch/flexdll/archive/0.37.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
-appveyor DownloadFile "https://github.com/alainfrisch/flexdll/releases/download/0.37/flexdll-bin-0.37.zip" -FileName "flexdll.zip" || exit /b 1
+appveyor DownloadFile "https://github.com/alainfrisch/flexdll/archive/%FLEXDLL_VERSION%.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
+appveyor DownloadFile "https://github.com/alainfrisch/flexdll/releases/download/%FLEXDLL_VERSION%/flexdll-bin-%FLEXDLL_VERSION%.zip" -FileName "flexdll.zip" || exit /b 1
 rem flexdll.zip is processed here, rather than in appveyor_build.sh because the
 rem unzip command comes from MSYS2 (via Git for Windows) and it has to be
 rem invoked via cmd /c in a bash script which is weird(er).
