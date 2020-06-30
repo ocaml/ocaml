@@ -60,7 +60,7 @@ let rec scope = function
 
 let rec subst_aux find = function
     Pident id -> Pident (find id)
-  | Pdot(p, s) -> Pdot (p, s)
+  | Pdot(p, s) -> Pdot (subst_aux find p, s)
   | Papply(p1, p2) ->
       let p1, found1 =
         try subst_aux find p1, true
