@@ -157,7 +157,7 @@ external of_string : string -> float = "caml_float_of_string"
     and is ignored.
     Depending on the execution platforms, other representations of
     floating-point numbers can be accepted, but should not be relied upon.
-    Raise [Failure "float_of_string"] if the given string is not a valid
+    @raise Failure if the given string is not a valid
     representation of a float. *)
 
 val of_string_opt: string -> float option

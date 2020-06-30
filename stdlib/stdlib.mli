@@ -682,7 +682,7 @@ external int_of_char : char -> int = "%identity"
 
 val char_of_int : int -> char
 (** Return the character with the given ASCII code.
-   Raise [Invalid_argument "char_of_int"] if the argument is
+   @raise Invalid_argument if the argument is
    outside the range 0--255. *)
 
 
@@ -958,7 +958,7 @@ val output_bytes : out_channel -> bytes -> unit
 val output : out_channel -> bytes -> int -> int -> unit
 (** [output oc buf pos len] writes [len] characters from byte sequence [buf],
    starting at offset [pos], to the given output channel [oc].
-   Raise [Invalid_argument "output"] if [pos] and [len] do not
+   @raise Invalid_argument if [pos] and [len] do not
    designate a valid range of [buf]. *)
 
 val output_substring : out_channel -> string -> int -> int -> unit
@@ -1077,7 +1077,7 @@ val really_input : in_channel -> bytes -> int -> int -> unit
    storing them in byte sequence [buf], starting at character number [pos].
    @raise End_of_file if the end of file is reached before [len]
    characters have been read.
-   Raise [Invalid_argument "really_input"] if
+   @raise Invalid_argument if
    [pos] and [len] do not designate a valid range of [buf]. *)
 
 val really_input_string : in_channel -> int -> string

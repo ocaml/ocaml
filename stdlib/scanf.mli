@@ -449,7 +449,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 (** Scanners may raise the following exceptions when the input cannot be read
     according to the format string:
 
-    - Raise {!Scanf.Scan_failure} if the input does not match the format.
+    - Raise [Scan_failure] if the input does not match the format.
 
     - Raise [Failure] if a conversion to a number is not possible.
 
@@ -499,7 +499,7 @@ val bscanf_format :
 (** [bscanf_format ic fmt f] reads a format string token from the formatted
     input channel [ic], according to the given format string [fmt], and
     applies [f] to the resulting format string value.
-    Raise {!Scan_failure} if the format string value read does not have the
+    @raise Scan_failure if the format string value read does not have the
     same type as [fmt].
     @since 3.09.0
 *)
@@ -516,7 +516,7 @@ val format_from_string :
     ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ('a, 'b, 'c, 'd, 'e, 'f) format6
 (** [format_from_string s fmt] converts a string argument to a format string,
     according to the given format string [fmt].
-    Raise {!Scan_failure} if [s], considered as a format string, does not
+    @raise Scan_failure if [s], considered as a format string, does not
     have the same type as [fmt].
     @since 3.10.0
 *)
@@ -530,7 +530,7 @@ val unescaped : string -> string
 
     Always return a copy of the argument, even if there is no escape sequence
     in the argument.
-    Raise {!Scan_failure} if [s] is not properly escaped (i.e. [s] has invalid
+    @raise Scan_failure if [s] is not properly escaped (i.e. [s] has invalid
     escape sequences or special characters that are not properly escaped).
     For instance, [Scanf.unescaped "\""] will fail.
     @since 4.00.0
