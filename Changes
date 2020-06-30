@@ -509,6 +509,9 @@ OCaml 4.11
 
 ### Manual and documentation:
 
+- #8644: fix formatting comment about @raise in stdlib's mli files
+  (Élie Brami, review by David Allsopp)
+
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
 
