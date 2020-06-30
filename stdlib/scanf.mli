@@ -313,8 +313,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
       escaped characters follow the lexical conventions of OCaml).
     - [c]: reads a single character. To test the current input character
       without reading it, specify a null field width, i.e. use
-      specification [%0c].
-    - Raise [Invalid_argument], if the field width
+      specification [%0c]. Raise [Invalid_argument], if the field width
       specification is greater than 1.
     - [C]: reads a single delimited character (delimiters and special
       escaped characters follow the lexical conventions of OCaml).

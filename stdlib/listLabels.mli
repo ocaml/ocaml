@@ -84,7 +84,7 @@ val nth_opt: 'a list -> int -> 'a option
 (** Return the [n]-th element of the given list.
     The first element (head of the list) is at position 0.
     Return [None] if the list is too short.
-    @raise Invalid_argument ["List.nth"] if [n] is negative.
+    @raise Invalid_argument if [n] is negative.
     @since 4.05
  *)
 
