@@ -50,23 +50,22 @@ val to_bytes : t -> bytes
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns a copy of [len] bytes from the
     current contents of the buffer [b], starting at offset [off].
-
-    Raise [Invalid_argument] if [srcoff] and [len] do not designate a valid
+    @raise Invalid_argument if [srcoff] and [len] do not designate a valid
     range of [b]. *)
 
 val blit : t -> int -> bytes -> int -> int -> unit
 (** [Buffer.blit src srcoff dst dstoff len] copies [len] characters from
    the current contents of the buffer [src], starting at offset [srcoff]
    to [dst], starting at character [dstoff].
-
-   Raise [Invalid_argument] if [srcoff] and [len] do not designate a valid
+   @raise Invalid_argument if [srcoff] and [len] do not designate a valid
    range of [src], or if [dstoff] and [len] do not designate a valid
    range of [dst].
    @since 3.11.2
 *)
 
 val nth : t -> int -> char
-(** Get the n-th character of the buffer. Raise [Invalid_argument] if
+(** Get the n-th character of the buffer.
+    @raise Invalid_argument if
     index out of bounds *)
 
 val length : t -> int
@@ -134,7 +133,7 @@ val add_substitute : t -> (string -> string) -> string -> unit
    matching parentheses or curly brackets.
    An escaped [$] character is a [$] that immediately follows a backslash
    character; it then stands for a plain [$].
-   Raise [Not_found] if the closing character of a parenthesized variable
+   @raise Not_found if the closing character of a parenthesized variable
    cannot be found. *)
 
 val add_buffer : t -> t -> unit
@@ -144,7 +143,7 @@ val add_buffer : t -> t -> unit
 val add_channel : t -> in_channel -> int -> unit
 (** [add_channel b ic n] reads at most [n] characters from the
    input channel [ic] and stores them at the end of buffer [b].
-   Raise [End_of_file] if the channel contains fewer than [n]
+   @raise End_of_file if the channel contains fewer than [n]
    characters. In this case, the characters are still added to
    the buffer, so as to avoid loss of data. *)
 
@@ -155,7 +154,7 @@ val output_buffer : out_channel -> t -> unit
 val truncate : t -> int -> unit
 (** [truncate b len] truncates the length of [b] to [len]
   Note: the internal byte sequence is not shortened.
-  Raise [Invalid_argument] if [len < 0] or [len > length b].
+  @raise Invalid_argument if [len < 0] or [len > length b].
   @since 4.05.0 *)
 
 (** {1 Iterators} *)

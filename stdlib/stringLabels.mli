@@ -30,16 +30,14 @@ external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
 (** [String.get s n] returns the character at index [n] in string [s].
    You can also write [s.[n]] instead of [String.get s n].
-
-   Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+   @raise Invalid_argument if [n] not a valid index in [s]. *)
 
 external set : bytes -> int -> char -> unit = "%string_safe_set"
   [@@ocaml.deprecated "Use BytesLabels.set instead."]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
-
-   Raise [Invalid_argument] if [n] is not a valid index in [s].
+   @raise Invalid_argument if [n] is not a valid index in [s].
 
    @deprecated This is a deprecated alias of {!BytesLabels.set}. *)
 
@@ -47,22 +45,19 @@ external create : int -> bytes = "caml_create_string"
   [@@ocaml.deprecated "Use BytesLabels.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
-
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
 
    @deprecated This is a deprecated alias of {!BytesLabels.create}. *)
 
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
    filled with the character [c].
-
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> f:(int -> char) -> string
 (** [init n f] returns a string of length [n],
     with character [i] initialized to the result of [f i].
-
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
    @since 4.02.0 *)
 
 val copy : string -> string  [@@ocaml.deprecated]
@@ -72,16 +67,14 @@ val sub : string -> pos:int -> len:int -> string
 (** [String.sub s start len] returns a fresh string of length [len],
    containing the substring of [s] that starts at position [start] and
    has length [len].
-
-   Raise [Invalid_argument] if [start] and [len] do not
+   @raise Invalid_argument if [start] and [len] do not
    designate a valid substring of [s]. *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
   [@@ocaml.deprecated "Use BytesLabels.fill instead."]
 (** [String.fill s start len c] modifies byte sequence [s] in place,
    replacing [len] bytes by [c], starting at [start].
-
-   Raise [Invalid_argument] if [start] and [len] do not
+   @raise Invalid_argument if [start] and [len] do not
    designate a valid substring of [s].
 
    @deprecated This is a deprecated alias of {!BytesLabels.fill}. *)
@@ -92,8 +85,7 @@ val blit :
 (** [String.blit src srcoff dst dstoff len] copies [len] bytes
    from the string [src], starting at index [srcoff],
    to byte sequence [dst], starting at character number [dstoff].
-
-   Raise [Invalid_argument] if [srcoff] and [len] do not
+   @raise Invalid_argument if [srcoff] and [len] do not
    designate a valid range of [src], or if [dstoff] and [len]
    do not designate a valid range of [dst]. *)
 
@@ -142,8 +134,7 @@ val escaped : string -> string
 val index : string -> char -> int
 (** [String.index s c] returns the index of the first
    occurrence of character [c] in string [s].
-
-   Raise [Not_found] if [c] does not occur in [s]. *)
+   @raise Not_found if [c] does not occur in [s]. *)
 
 val index_opt: string -> char -> int option
 (** [String.index_opt s c] returns the index of the first
@@ -154,8 +145,7 @@ val index_opt: string -> char -> int option
 val rindex : string -> char -> int
 (** [String.rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
-
-   Raise [Not_found] if [c] does not occur in [s]. *)
+   @raise Not_found if [c] does not occur in [s]. *)
 
 val rindex_opt: string -> char -> int option
 (** [String.rindex_opt s c] returns the index of the last occurrence
@@ -167,9 +157,8 @@ val index_from : string -> int -> char -> int
 (** [String.index_from s i c] returns the index of the
    first occurrence of character [c] in string [s] after position [i].
    [String.index s c] is equivalent to [String.index_from s 0 c].
-
-   Raise [Invalid_argument] if [i] is not a valid position in [s].
-   Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
+   @raise Invalid_argument if [i] is not a valid position in [s].
+   @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: string -> int -> char -> int option
 (** [String.index_from_opt s i c] returns the index of the
@@ -177,7 +166,7 @@ val index_from_opt: string -> int -> char -> int option
     or [None] if [c] does not occur in [s] after position [i].
 
     [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
-    Raise [Invalid_argument] if [i] is not a valid position in [s].
+    @raise Invalid_argument if [i] is not a valid position in [s].
 
     @since 4.05
 *)
@@ -187,9 +176,8 @@ val rindex_from : string -> int -> char -> int
    last occurrence of character [c] in string [s] before position [i+1].
    [String.rindex s c] is equivalent to
    [String.rindex_from s (String.length s - 1) c].
-
-   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
-   Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+   @raise Invalid_argument if [i+1] is not a valid position in [s].
+   @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
 
 val rindex_from_opt: string -> int -> char -> int option
 (** [String.rindex_from_opt s i c] returns the index of the
@@ -198,8 +186,7 @@ val rindex_from_opt: string -> int -> char -> int option
 
    [String.rindex_opt s c] is equivalent to
    [String.rindex_from_opt s (String.length s - 1) c].
-
-   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+   @raise Invalid_argument if [i+1] is not a valid position in [s].
 
     @since 4.05
 *)
@@ -213,14 +200,12 @@ val contains_from : string -> int -> char -> bool
    appears in [s] after position [start].
    [String.contains s c] is equivalent to
    [String.contains_from s 0 c].
-
-   Raise [Invalid_argument] if [start] is not a valid position in [s]. *)
+   @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
 (** [String.rcontains_from s stop c] tests if character [c]
    appears in [s] before position [stop+1].
-
-   Raise [Invalid_argument] if [stop < 0] or [stop+1] is not a valid
+   @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
    position in [s]. *)
 
 val uppercase : string -> string

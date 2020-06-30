@@ -31,33 +31,28 @@ external length : bytes -> int = "%bytes_length"
 
 external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
-
-    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
+    @raise Invalid_argument if [n] is not a valid index in [s]. *)
 
 
 external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
     with [c].
-
-    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
+    @raise Invalid_argument if [n] is not a valid index in [s]. *)
 
 external create : int -> bytes = "caml_create_bytes"
 (** [create n] returns a new byte sequence of length [n]. The
     sequence is uninitialized and contains arbitrary bytes.
-
-    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val make : int -> char -> bytes
 (** [make n c] returns a new byte sequence of length [n], filled with
     the byte [c].
-
-    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> f:(int -> char) -> bytes
 (** [init n f] returns a fresh byte sequence of length [n],
     with character [i] initialized to the result of [f i].
-
-    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val empty : bytes
 (** A byte sequence of size 0. *)
@@ -78,8 +73,7 @@ val sub : bytes -> pos:int -> len:int -> bytes
 (** [sub s start len] returns a new byte sequence of length [len],
     containing the subsequence of [s] that starts at position [start]
     and has length [len].
-
-    Raise [Invalid_argument] if [start] and [len] do not designate a
+    @raise Invalid_argument if [start] and [len] do not designate a
     valid range of [s]. *)
 
 val sub_string : bytes -> pos:int -> len:int -> string
@@ -91,16 +85,14 @@ val extend : bytes -> left:int -> right:int -> bytes
     [right] uninitialized bytes appended to it. If [left] or [right]
     is negative, then bytes are removed (instead of appended) from
     the corresponding side of [s].
-
-    Raise [Invalid_argument] if the result length is negative or
+    @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
     @since 4.05.0 *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
 (** [fill s start len c] modifies [s] in place, replacing [len]
     characters with [c], starting at [start].
-
-    Raise [Invalid_argument] if [start] and [len] do not designate a
+    @raise Invalid_argument if [start] and [len] do not designate a
     valid range of [s]. *)
 
 val blit :
@@ -111,8 +103,7 @@ val blit :
     index [dstoff]. It works correctly even if [src] and [dst] are the
     same byte sequence, and the source and destination intervals
     overlap.
-
-    Raise [Invalid_argument] if [srcoff] and [len] do not
+    @raise Invalid_argument if [srcoff] and [len] do not
     designate a valid range of [src], or if [dstoff] and [len]
     do not designate a valid range of [dst]. *)
 
@@ -122,8 +113,7 @@ val blit_string :
 (** [blit src srcoff dst dstoff len] copies [len] bytes from string
     [src], starting at index [srcoff], to byte sequence [dst],
     starting at index [dstoff].
-
-    Raise [Invalid_argument] if [srcoff] and [len] do not
+    @raise Invalid_argument if [srcoff] and [len] do not
     designate a valid range of [src], or if [dstoff] and [len]
     do not designate a valid range of [dst].
     @since 4.05.0 *)
@@ -135,9 +125,8 @@ val concat : sep:bytes -> bytes list -> bytes
 
 val cat : bytes -> bytes -> bytes
 (** [cat s1 s2] concatenates [s1] and [s2] and returns the result
-     as new byte sequence.
-
-    Raise [Invalid_argument] if the result is longer than
+    as new byte sequence.
+    @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
     @since 4.05.0 *)
 
@@ -173,8 +162,7 @@ val escaped : bytes -> bytes
 val index : bytes -> char -> int
 (** [index s c] returns the index of the first occurrence of byte [c]
     in [s].
-
-    Raise [Not_found] if [c] does not occur in [s]. *)
+    @raise Not_found if [c] does not occur in [s]. *)
 
 val index_opt: bytes -> char -> int option
 (** [index_opt s c] returns the index of the first occurrence of byte [c]
@@ -184,8 +172,7 @@ val index_opt: bytes -> char -> int option
 val rindex : bytes -> char -> int
 (** [rindex s c] returns the index of the last occurrence of byte [c]
     in [s].
-
-    Raise [Not_found] if [c] does not occur in [s]. *)
+    @raise Not_found if [c] does not occur in [s]. *)
 
 val rindex_opt: bytes -> char -> int option
 (** [rindex_opt s c] returns the index of the last occurrence of byte [c]
@@ -196,34 +183,30 @@ val index_from : bytes -> int -> char -> int
 (** [index_from s i c] returns the index of the first occurrence of
     byte [c] in [s] after position [i].  [Bytes.index s c] is
     equivalent to [Bytes.index_from s 0 c].
-
-    Raise [Invalid_argument] if [i] is not a valid position in [s].
-    Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
+    @raise Invalid_argument if [i] is not a valid position in [s].
+    @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: bytes -> int -> char -> int option
 (** [index_from _opts i c] returns the index of the first occurrence of
     byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
     after position [i].
     [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
-
-    Raise [Invalid_argument] if [i] is not a valid position in [s].
+    @raise Invalid_argument if [i] is not a valid position in [s].
     @since 4.05 *)
 
 val rindex_from : bytes -> int -> char -> int
 (** [rindex_from s i c] returns the index of the last occurrence of
     byte [c] in [s] before position [i+1].  [rindex s c] is equivalent
     to [rindex_from s (Bytes.length s - 1) c].
-
-    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
-    Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+    @raise Invalid_argument if [i+1] is not a valid position in [s].
+    @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
 
 val rindex_from_opt: bytes -> int -> char -> int option
 (** [rindex_from_opt s i c] returns the index of the last occurrence
     of byte [c] in [s] before position [i+1] or [None] if [c] does not
     occur in [s] before position [i+1].  [rindex_opt s c] is equivalent to
     [rindex_from s (Bytes.length s - 1) c].
-
-    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+    @raise Invalid_argument if [i+1] is not a valid position in [s].
     @since 4.05 *)
 
 val contains : bytes -> char -> bool
@@ -233,14 +216,12 @@ val contains_from : bytes -> int -> char -> bool
 (** [contains_from s start c] tests if byte [c] appears in [s] after
     position [start].  [contains s c] is equivalent to [contains_from
     s 0 c].
-
-    Raise [Invalid_argument] if [start] is not a valid position in [s]. *)
+    @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : bytes -> int -> char -> bool
 (** [rcontains_from s stop c] tests if byte [c] appears in [s] before
     position [stop+1].
-
-    Raise [Invalid_argument] if [stop < 0] or [stop+1] is not a valid
+    @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
     position in [s]. *)
 
 val uppercase : bytes -> bytes

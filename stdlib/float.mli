@@ -157,7 +157,7 @@ external of_string : string -> float = "caml_float_of_string"
     and is ignored.
     Depending on the execution platforms, other representations of
     floating-point numbers can be accepted, but should not be relied upon.
-    Raise [Failure "float_of_string"] if the given string is not a valid
+    @raise Failure if the given string is not a valid
     representation of a float. *)
 
 val of_string_opt: string -> float option
@@ -398,54 +398,47 @@ module Array : sig
 
   val get : t -> int -> float
   (** [get a n] returns the element number [n] of floatarray [a].
-
-      Raise [Invalid_argument] if [n] is outside the range 0 to
+      @raise Invalid_argument if [n] is outside the range 0 to
       [(length a - 1)]. *)
 
   val set : t -> int -> float -> unit
   (** [set a n x] modifies floatarray [a] in place, replacing element
       number [n] with [x].
-
-      Raise [Invalid_argument] if [n] is outside the range 0 to
+      @raise Invalid_argument if [n] is outside the range 0 to
       [(length a - 1)]. *)
 
   val make : int -> float -> t
   (** [make n x] returns a fresh floatarray of length [n], initialized with [x].
-
-      Raise [Invalid_argument] if [n < 0] or [n > Sys.max_floatarray_length]. *)
+      @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
   val create : int -> t
   (** [create n] returns a fresh floatarray of length [n],
       with uninitialized data.
-
-      Raise [Invalid_argument] if [n < 0] or [n > Sys.max_floatarray_length]. *)
+      @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
   val init : int -> (int -> float) -> t
   (** [init n f] returns a fresh floatarray of length [n],
-     with element number [i] initialized to the result of [f i].
-     In other terms, [init n f] tabulates the results of [f]
-     applied to the integers [0] to [n-1].
-
-     Raise [Invalid_argument] if [n < 0] or [n > Sys.max_floatarray_length]. *)
+      with element number [i] initialized to the result of [f i].
+      In other terms, [init n f] tabulates the results of [f]
+      applied to the integers [0] to [n-1].
+      @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
   val append : t -> t -> t
   (** [append v1 v2] returns a fresh floatarray containing the
-     concatenation of the floatarrays [v1] and [v2].
-
-     Raise [Invalid_argument] if
-     [length v1 + length v2 > Sys.max_floatarray_length]. *)
+      concatenation of the floatarrays [v1] and [v2].
+      @raise Invalid_argument if
+      [length v1 + length v2 > Sys.max_floatarray_length]. *)
 
   val concat : t list -> t
   (** Same as {!append}, but concatenates a list of floatarrays. *)
 
   val sub : t -> int -> int -> t
   (** [sub a start len] returns a fresh floatarray of length [len],
-     containing the elements number [start] to [start + len - 1]
-     of floatarray [a].
-
-     Raise [Invalid_argument] if [start] and [len] do not
-     designate a valid subarray of [a]; that is, if
-     [start < 0], or [len < 0], or [start + len > length a]. *)
+      containing the elements number [start] to [start + len - 1]
+      of floatarray [a].
+      @raise Invalid_argument if [start] and [len] do not
+      designate a valid subarray of [a]; that is, if
+      [start < 0], or [len < 0], or [start + len > length a]. *)
 
   val copy : t -> t
   (** [copy a] returns a copy of [a], that is, a fresh floatarray
@@ -453,10 +446,9 @@ module Array : sig
 
   val fill : t -> int -> int -> float -> unit
   (** [fill a ofs len x] modifies the floatarray [a] in place,
-     storing [x] in elements number [ofs] to [ofs + len - 1].
-
-     Raise [Invalid_argument] if [ofs] and [len] do not
-     designate a valid subarray of [a]. *)
+      storing [x] in elements number [ofs] to [ofs + len - 1].
+      @raise Invalid_argument if [ofs] and [len] do not
+      designate a valid subarray of [a]. *)
 
   val blit : t -> int -> t -> int -> int -> unit
   (** [blit v1 o1 v2 o2 len] copies [len] elements
@@ -464,8 +456,7 @@ module Array : sig
       starting at element number [o2]. It works correctly even if
       [v1] and [v2] are the same floatarray, and the source and
       destination chunks overlap.
-
-      Raise [Invalid_argument] if [o1] and [len] do not
+      @raise Invalid_argument if [o1] and [len] do not
       designate a valid subarray of [v1], or if [o2] and [len] do not
       designate a valid subarray of [v2]. *)
 
@@ -475,8 +466,7 @@ module Array : sig
   val of_list : float list -> t
   (** [of_list l] returns a fresh floatarray containing the elements
       of [l].
-
-      Raise [Invalid_argument] if the length of [l] is greater than
+      @raise Invalid_argument if the length of [l] is greater than
       [Sys.max_floatarray_length].*)
 
   (** {2 Iterators} *)
@@ -515,13 +505,13 @@ module Array : sig
   val iter2 : (float -> float -> unit) -> t -> t -> unit
   (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
       and [b].
-      Raise [Invalid_argument] if the floatarrays are not the same size. *)
+      @raise Invalid_argument if the floatarrays are not the same size. *)
 
   val map2 : (float -> float -> float) -> t -> t -> t
   (** [map2 f a b] applies function [f] to all the elements of [a]
       and [b], and builds a floatarray with the results returned by [f]:
       [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
-      Raise [Invalid_argument] if the floatarrays are not the same size. *)
+      @raise Invalid_argument if the floatarrays are not the same size. *)
 
   (** {2 Array scanning} *)
 
