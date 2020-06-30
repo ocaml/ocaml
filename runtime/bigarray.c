@@ -464,8 +464,8 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
                          caml_ba_element_size[b->flags & CAML_BA_KIND_MASK],
                          &size))
     caml_deserialize_error("input_value: size overflow for bigarray");
-  /* Allocate room for data, we don't need to zero-initialize, since it's overwritten
-   * right away */
+  /* Allocate room for data, we don't need to zero-initialize, since it's
+   * overwritten right away */
   b->data = malloc(size);
   if (b->data == NULL)
     caml_deserialize_error("input_value: out of memory for bigarray");
