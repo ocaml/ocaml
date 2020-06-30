@@ -3903,6 +3903,12 @@ let rec moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2 =
         moregen_occur env id_pairs2 t1.level t2;
         update_scope t1.scope t2;
         occur env id_pairs2 t1 t2;
+        if id_pairs2 <> [] then begin
+          (* Any unscoped identifiers in [t2] may escape through [t1], so we
+             check for them here.
+          *)
+          check_scope_escape env t2.level t2
+        end;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
       when Path.same_subst id_pairs1 id_pairs2 p1 p2 ->
@@ -3921,6 +3927,12 @@ let rec moregen inst_nongen type_pairs env id_pairs1 id_pairs2 t1 t2 =
             (Tvar _, _) when may_instantiate inst_nongen t1' ->
               moregen_occur env id_pairs2 t1'.level t2;
               update_scope t1'.scope t2;
+              if id_pairs2 <> [] then begin
+                (* Any unscoped identifiers in [t2] may escape through [t1], so
+                   we check for them here.
+                *)
+                check_scope_escape env t2.level t2
+              end;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
@@ -4049,6 +4061,12 @@ and moregen_row inst_nongen type_pairs env id_pairs1 id_pairs2 row1 row2 =
       in
       moregen_occur env id_pairs2 rm1.level ext;
       update_scope rm1.scope ext;
+      if id_pairs2 <> [] then begin
+        (* Any unscoped identifiers in [ext] may escape through [rm1], so
+           we check for them here.
+        *)
+        check_scope_escape env ext.level ext
+      end;
       link_type rm1 ext
   | Tconstr _, Tconstr _ ->
       moregen inst_nongen type_pairs env id_pairs1 id_pairs2 rm1 rm2
