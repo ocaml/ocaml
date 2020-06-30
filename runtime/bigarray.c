@@ -104,6 +104,10 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
       if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
         caml_raise_out_of_memory();
     }
+    if (caml_umul_overflow(num_elts,
+                           caml_ba_element_size[flags & CAML_BA_KIND_MASK],
+                           &size))
+      caml_raise_out_of_memory();
     data = calloc(num_elts, caml_ba_element_size[flags & CAML_BA_KIND_MASK]);
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
