@@ -53,23 +53,23 @@ val cons : 'a -> 'a list -> 'a list
 
 val hd : 'a list -> 'a
 (** Return the first element of the given list.
-   @raise Failure ["hd"] if the list is empty. *)
+   @raise Failure if the list is empty. *)
 
 val tl : 'a list -> 'a list
 (** Return the given list without its first element.
-    @raise Failure ["tl"] if the list is empty. *)
+    @raise Failure if the list is empty. *)
 
 val nth: 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
-   @raise Failure ["nth"] if the list is too short.
-   @raise Invalid_argument ["List.nth"] if [n] is negative. *)
+   @raise Failure if the list is too short.
+   @raise Invalid_argument if [n] is negative. *)
 
 val nth_opt: 'a list -> int -> 'a option
 (** Return the [n]-th element of the given list.
     The first element (head of the list) is at position 0.
     Return [None] if the list is too short.
-    @raise Invalid_argument ["List.nth"] if [n] is negative.
+    @raise Invalid_argument if [n] is negative.
     @since 4.05
 *)
 
