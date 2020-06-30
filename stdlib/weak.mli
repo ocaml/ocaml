@@ -39,7 +39,8 @@ type 'a t
 
 val create : int -> 'a t
 (** [Weak.create n] returns a new weak array of length [n].
-   All the pointers are initially empty.  Raise [Invalid_argument]
+   All the pointers are initially empty.
+   @raise Invalid_argument
    if [n] is not comprised between zero and
    {!Obj.Ephemeron.max_ephe_length} (limits included).*)
 
@@ -142,7 +143,7 @@ module type S = sig
 
   val find : t -> data -> data
     (** [find t x] returns an instance of [x] found in [t].
-        Raise [Not_found] if there is no such element. *)
+   @raise Not_found if there is no such element. *)
 
   val find_opt: t -> data -> data option
     (** [find_opt t x] returns an instance of [x] found in [t]
