@@ -1,10 +1,10 @@
 parsing/compilerlibs__parser.cmo : \
     parsing/compilerlibs__syntaxerr.cmi \
     parsing/compilerlibs__parsetree.cmi \
-    compilerlibs/OCaml.cmi \
     parsing/compilerlibs__longident.cmi \
     parsing/compilerlibs__location.cmi \
     parsing/compilerlibs__docstrings.cmi \
+    compilerlibs/compilerlibs.cmi \
     utils/compilerlibs__clflags.cmi \
     parsing/compilerlibs__asttypes.cmi \
     parsing/compilerlibs__ast_helper.cmi \
@@ -12,18 +12,18 @@ parsing/compilerlibs__parser.cmo : \
 parsing/compilerlibs__parser.cmx : \
     parsing/compilerlibs__syntaxerr.cmx \
     parsing/compilerlibs__parsetree.cmi \
-    compilerlibs/OCaml.cmi \
     parsing/compilerlibs__longident.cmx \
     parsing/compilerlibs__location.cmx \
     parsing/compilerlibs__docstrings.cmx \
+    compilerlibs/compilerlibs.cmi \
     utils/compilerlibs__clflags.cmx \
     parsing/compilerlibs__asttypes.cmi \
     parsing/compilerlibs__ast_helper.cmx \
     parsing/compilerlibs__parser.cmi
 parsing/compilerlibs__parser.cmi : \
     parsing/compilerlibs__parsetree.cmi \
-    compilerlibs/OCaml.cmi \
     parsing/compilerlibs__longident.cmi \
     parsing/compilerlibs__location.cmi \
-    parsing/compilerlibs__docstrings.cmi
-parsing/compilerlibs__parser.ml parsing/compilerlibs__parser.mli: parsing/compilerlibs__ast_helper.cmi parsing/compilerlibs__asttypes.cmi utils/compilerlibs__clflags.cmi parsing/compilerlibs__docstrings.cmi parsing/compilerlibs__location.cmi parsing/compilerlibs__longident.cmi compilerlibs/OCaml.cmi parsing/compilerlibs__parsetree.cmi parsing/compilerlibs__syntaxerr.cmi
+    parsing/compilerlibs__docstrings.cmi \
+    compilerlibs/compilerlibs.cmi
+parsing/compilerlibs__parser.ml parsing/compilerlibs__parser.mli: parsing/compilerlibs__ast_helper.cmi parsing/compilerlibs__asttypes.cmi utils/compilerlibs__clflags.cmi compilerlibs/compilerlibs.cmi parsing/compilerlibs__docstrings.cmi parsing/compilerlibs__location.cmi parsing/compilerlibs__longident.cmi parsing/compilerlibs__parsetree.cmi parsing/compilerlibs__syntaxerr.cmi

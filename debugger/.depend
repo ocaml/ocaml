@@ -2,48 +2,48 @@ breakpoints.cmo : \
     symbols.cmi \
     pos.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     exec.cmi \
     events.cmi \
     debugger_config.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     breakpoints.cmi
 breakpoints.cmx : \
     symbols.cmx \
     pos.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     exec.cmx \
     events.cmx \
     debugger_config.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     breakpoints.cmi
 breakpoints.cmi : \
-    ../compilerlibs/OCaml.cmi \
     events.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 checkpoints.cmo : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
     int64ops.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi
 checkpoints.cmx : \
     primitives.cmx \
-    ../compilerlibs/OCaml.cmi \
     int64ops.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi
 checkpoints.cmi : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 command_line.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \
@@ -61,7 +61,6 @@ command_line.cmo : \
     pos.cmi \
     parser_aux.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmi \
     ../parsing/compilerlibs__location.cmi \
     loadprinter.cmi \
@@ -80,6 +79,7 @@ command_line.cmo : \
     debugger_config.cmi \
     debugcom.cmi \
     ../typing/compilerlibs__ctype.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     breakpoints.cmi \
     command_line.cmi
@@ -100,7 +100,6 @@ command_line.cmx : \
     pos.cmx \
     parser_aux.cmi \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmx \
     ../parsing/compilerlibs__location.cmx \
     loadprinter.cmx \
@@ -119,72 +118,73 @@ command_line.cmx : \
     debugger_config.cmx \
     debugcom.cmx \
     ../typing/compilerlibs__ctype.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     breakpoints.cmx \
     command_line.cmi
 command_line.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 debugcom.cmo : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     int64ops.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     input_handling.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     debugcom.cmi
 debugcom.cmx : \
     primitives.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     int64ops.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     input_handling.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     debugcom.cmi
 debugcom.cmi : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
-    ../bytecomp/compilerlibs__instruct.cmi
+    ../bytecomp/compilerlibs__instruct.cmi \
+    ../compilerlibs/compilerlibs.cmi
 debugger_config.cmo : \
-    ../compilerlibs/OCaml.cmi \
     int64ops.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     debugger_config.cmi
 debugger_config.cmx : \
-    ../compilerlibs/OCaml.cmi \
     int64ops.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     debugger_config.cmi
 debugger_config.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 debugger_lexer.cmo : \
-    ../compilerlibs/OCaml.cmi \
     debugger_parser.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     debugger_lexer.cmi
 debugger_lexer.cmx : \
-    ../compilerlibs/OCaml.cmi \
     debugger_parser.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     debugger_lexer.cmi
 debugger_lexer.cmi : \
-    ../compilerlibs/OCaml.cmi \
-    debugger_parser.cmi
+    debugger_parser.cmi \
+    ../compilerlibs/compilerlibs.cmi
 debugger_parser.cmo : \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmi \
     int64ops.cmi \
     input_handling.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     debugger_parser.cmi
 debugger_parser.cmx : \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmx \
     int64ops.cmx \
     input_handling.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     debugger_parser.cmi
 debugger_parser.cmi : \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
-    ../parsing/compilerlibs__longident.cmi
+    ../parsing/compilerlibs__longident.cmi \
+    ../compilerlibs/compilerlibs.cmi
 eval.cmo : \
     ../typing/compilerlibs__types.cmi \
     ../bytecomp/compilerlibs__symtable.cmi \
@@ -194,7 +194,6 @@ eval.cmo : \
     ../typing/compilerlibs__predef.cmi \
     ../typing/compilerlibs__path.cmi \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../parsing/compilerlibs__longident.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
@@ -204,6 +203,7 @@ eval.cmo : \
     ../typing/compilerlibs__env.cmi \
     debugcom.cmi \
     ../typing/compilerlibs__ctype.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../typing/compilerlibs__btype.cmi \
     eval.cmi
 eval.cmx : \
@@ -215,7 +215,6 @@ eval.cmx : \
     ../typing/compilerlibs__predef.cmx \
     ../typing/compilerlibs__path.cmx \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../parsing/compilerlibs__longident.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
@@ -225,97 +224,98 @@ eval.cmx : \
     ../typing/compilerlibs__env.cmx \
     debugcom.cmx \
     ../typing/compilerlibs__ctype.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../typing/compilerlibs__btype.cmx \
     eval.cmi
 eval.cmi : \
     ../typing/compilerlibs__types.cmi \
     ../typing/compilerlibs__path.cmi \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmi \
     ../typing/compilerlibs__ident.cmi \
     events.cmi \
     ../typing/compilerlibs__env.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 events.cmo : \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     events.cmi
 events.cmx : \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     events.cmi
 events.cmi : \
-    ../compilerlibs/OCaml.cmi \
-    ../bytecomp/compilerlibs__instruct.cmi
+    ../bytecomp/compilerlibs__instruct.cmi \
+    ../compilerlibs/compilerlibs.cmi
 exec.cmo : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     exec.cmi
 exec.cmx : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     exec.cmi
 exec.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 frames.cmo : \
     symbols.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     events.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     frames.cmi
 frames.cmx : \
     symbols.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     events.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     frames.cmi
 frames.cmi : \
-    ../compilerlibs/OCaml.cmi \
-    events.cmi
+    events.cmi \
+    ../compilerlibs/compilerlibs.cmi
 history.cmo : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
     int64ops.cmi \
     debugger_config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     history.cmi
 history.cmx : \
     primitives.cmx \
-    ../compilerlibs/OCaml.cmi \
     int64ops.cmx \
     debugger_config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     history.cmi
 history.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 input_handling.cmo : \
     $(UNIXDIR)/unix.cmi \
     primitives.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     input_handling.cmi
 input_handling.cmx : \
     $(UNIXDIR)/unix.cmx \
     primitives.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     input_handling.cmi
 input_handling.cmi : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 int64ops.cmo : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     int64ops.cmi
 int64ops.cmx : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     int64ops.cmi
 int64ops.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 loadprinter.cmo : \
     ../typing/compilerlibs__types.cmi \
     ../bytecomp/compilerlibs__symtable.cmi \
@@ -323,7 +323,6 @@ loadprinter.cmo : \
     ../typing/compilerlibs__printtyp.cmi \
     ../typing/compilerlibs__path.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../parsing/compilerlibs__longident.cmi \
     ../utils/compilerlibs__load_path.cmi \
@@ -331,6 +330,7 @@ loadprinter.cmo : \
     ../typing/compilerlibs__env.cmi \
     ../otherlibs/dynlink/dynlink.cmi \
     ../typing/compilerlibs__ctype.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     loadprinter.cmi
 loadprinter.cmx : \
     ../typing/compilerlibs__types.cmx \
@@ -339,7 +339,6 @@ loadprinter.cmx : \
     ../typing/compilerlibs__printtyp.cmx \
     ../typing/compilerlibs__path.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../parsing/compilerlibs__longident.cmx \
     ../utils/compilerlibs__load_path.cmx \
@@ -347,11 +346,12 @@ loadprinter.cmx : \
     ../typing/compilerlibs__env.cmx \
     ../otherlibs/dynlink/dynlink.cmi \
     ../typing/compilerlibs__ctype.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     loadprinter.cmi
 loadprinter.cmi : \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmi \
-    ../otherlibs/dynlink/dynlink.cmi
+    ../otherlibs/dynlink/dynlink.cmi \
+    ../compilerlibs/compilerlibs.cmi
 main.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \
@@ -362,7 +362,6 @@ main.cmo : \
     primitives.cmi \
     ../typing/compilerlibs__persistent_env.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     loadprinter.cmi \
     ../utils/compilerlibs__load_path.cmi \
@@ -371,6 +370,7 @@ main.cmo : \
     exec.cmi \
     debugger_config.cmi \
     ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     command_line.cmi \
     ../file_formats/compilerlibs__cmi_format.cmi \
     ../utils/compilerlibs__clflags.cmi \
@@ -385,7 +385,6 @@ main.cmx : \
     primitives.cmx \
     ../typing/compilerlibs__persistent_env.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     loadprinter.cmx \
     ../utils/compilerlibs__load_path.cmx \
@@ -394,79 +393,80 @@ main.cmx : \
     exec.cmx \
     debugger_config.cmx \
     ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     command_line.cmx \
     ../file_formats/compilerlibs__cmi_format.cmx \
     ../utils/compilerlibs__clflags.cmx \
     checkpoints.cmx
 parameters.cmo : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__load_path.cmi \
     ../typing/compilerlibs__envaux.cmi \
     debugger_config.cmi \
     ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     parameters.cmi
 parameters.cmx : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__load_path.cmx \
     ../typing/compilerlibs__envaux.cmx \
     debugger_config.cmx \
     ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     parameters.cmi
 parameters.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 parser_aux.cmi : \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 pattern_matching.cmo : \
     ../typing/compilerlibs__typedtree.cmi \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     debugger_config.cmi \
     debugcom.cmi \
     ../typing/compilerlibs__ctype.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     pattern_matching.cmi
 pattern_matching.cmx : \
     ../typing/compilerlibs__typedtree.cmx \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     debugger_config.cmx \
     debugcom.cmx \
     ../typing/compilerlibs__ctype.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     pattern_matching.cmi
 pattern_matching.cmi : \
     ../typing/compilerlibs__typedtree.cmi \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 pos.cmo : \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     events.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     pos.cmi
 pos.cmx : \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     events.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     pos.cmi
 pos.cmi : \
-    ../compilerlibs/OCaml.cmi \
-    events.cmi
+    events.cmi \
+    ../compilerlibs/compilerlibs.cmi
 primitives.cmo : \
     $(UNIXDIR)/unix.cmi \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     primitives.cmi
 primitives.cmx : \
     $(UNIXDIR)/unix.cmx \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     primitives.cmi
 primitives.cmi : \
     $(UNIXDIR)/unix.cmi \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 printval.cmo : \
     ../typing/compilerlibs__types.cmi \
     ../bytecomp/compilerlibs__symtable.cmi \
@@ -474,10 +474,10 @@ printval.cmo : \
     parser_aux.cmi \
     ../typing/compilerlibs__outcometree.cmi \
     ../typing/compilerlibs__oprint.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../toplevel/compilerlibs__genprintval.cmi \
     ../typing/compilerlibs__env.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     printval.cmi
 printval.cmx : \
     ../typing/compilerlibs__types.cmx \
@@ -486,39 +486,39 @@ printval.cmx : \
     parser_aux.cmi \
     ../typing/compilerlibs__outcometree.cmi \
     ../typing/compilerlibs__oprint.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../toplevel/compilerlibs__genprintval.cmx \
     ../typing/compilerlibs__env.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     printval.cmi
 printval.cmi : \
     ../typing/compilerlibs__types.cmi \
     ../typing/compilerlibs__path.cmi \
     parser_aux.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../typing/compilerlibs__env.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 program_loading.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \
     primitives.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     input_handling.cmi \
     debugger_config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     program_loading.cmi
 program_loading.cmx : \
     unix_tools.cmx \
     $(UNIXDIR)/unix.cmx \
     primitives.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     input_handling.cmx \
     debugger_config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     program_loading.cmi
 program_loading.cmi : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 program_management.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \
@@ -528,13 +528,13 @@ program_management.cmo : \
     program_loading.cmi \
     primitives.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__load_path.cmi \
     int64ops.cmi \
     input_handling.cmi \
     history.cmi \
     ../typing/compilerlibs__envaux.cmi \
     debugger_config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     breakpoints.cmi \
     program_management.cmi
 program_management.cmx : \
@@ -546,43 +546,43 @@ program_management.cmx : \
     program_loading.cmx \
     primitives.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__load_path.cmx \
     int64ops.cmx \
     input_handling.cmx \
     history.cmx \
     ../typing/compilerlibs__envaux.cmx \
     debugger_config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     breakpoints.cmx \
     program_management.cmi
 program_management.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 question.cmo : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
     input_handling.cmi \
     debugger_lexer.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     question.cmi
 question.cmx : \
     primitives.cmx \
-    ../compilerlibs/OCaml.cmi \
     input_handling.cmx \
     debugger_lexer.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     question.cmi
 question.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 show_information.cmo : \
     symbols.cmi \
     source.cmi \
     show_source.cmi \
     printval.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     frames.cmi \
     events.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     breakpoints.cmi \
     show_information.cmi
@@ -592,93 +592,92 @@ show_information.cmx : \
     show_source.cmx \
     printval.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     frames.cmx \
     events.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     breakpoints.cmx \
     show_information.cmi
 show_information.cmi : \
-    ../compilerlibs/OCaml.cmi \
-    events.cmi
+    events.cmi \
+    ../compilerlibs/compilerlibs.cmi
 show_source.cmo : \
     source.cmi \
     primitives.cmi \
     parameters.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     events.cmi \
     debugger_config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     show_source.cmi
 show_source.cmx : \
     source.cmx \
     primitives.cmx \
     parameters.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     events.cmx \
     debugger_config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     show_source.cmi
 show_source.cmi : \
-    ../compilerlibs/OCaml.cmi \
-    ../bytecomp/compilerlibs__instruct.cmi
+    ../bytecomp/compilerlibs__instruct.cmi \
+    ../compilerlibs/compilerlibs.cmi
 source.cmo : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../utils/compilerlibs__load_path.cmi \
     debugger_config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     source.cmi
 source.cmx : \
     primitives.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../utils/compilerlibs__load_path.cmx \
     debugger_config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     source.cmi
 source.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 symbols.cmo : \
     ../bytecomp/compilerlibs__symtable.cmi \
     program_loading.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     events.cmi \
     debugger_config.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     ../bytecomp/compilerlibs__bytesections.cmi \
     symbols.cmi
 symbols.cmx : \
     ../bytecomp/compilerlibs__symtable.cmx \
     program_loading.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     events.cmx \
     debugger_config.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     ../bytecomp/compilerlibs__bytesections.cmx \
     symbols.cmi
 symbols.cmi : \
-    ../compilerlibs/OCaml.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     events.cmi \
-    debugcom.cmi
+    debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi
 time_travel.cmo : \
     trap_barrier.cmi \
     symbols.cmi \
     question.cmi \
     program_loading.cmi \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     int64ops.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
@@ -687,6 +686,7 @@ time_travel.cmo : \
     events.cmi \
     debugger_config.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     breakpoints.cmi \
     time_travel.cmi
@@ -696,7 +696,6 @@ time_travel.cmx : \
     question.cmx \
     program_loading.cmx \
     primitives.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     int64ops.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
@@ -705,36 +704,37 @@ time_travel.cmx : \
     events.cmx \
     debugger_config.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     breakpoints.cmx \
     time_travel.cmi
 time_travel.cmi : \
     primitives.cmi \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 trap_barrier.cmo : \
-    ../compilerlibs/OCaml.cmi \
     exec.cmi \
     debugcom.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmi \
     trap_barrier.cmi
 trap_barrier.cmx : \
-    ../compilerlibs/OCaml.cmi \
     exec.cmx \
     debugcom.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     checkpoints.cmx \
     trap_barrier.cmi
 trap_barrier.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 unix_tools.cmo : \
     $(UNIXDIR)/unix.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     unix_tools.cmi
 unix_tools.cmx : \
     $(UNIXDIR)/unix.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     unix_tools.cmi
 unix_tools.cmi : \
     $(UNIXDIR)/unix.cmi \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi

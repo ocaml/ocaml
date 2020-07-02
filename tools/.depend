@@ -3,11 +3,11 @@ caml_tex.cmo : \
     ../parsing/compilerlibs__syntaxerr.cmi \
     ../parsing/compilerlibs__parsetree.cmi \
     ../parsing/compilerlibs__parse.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../parsing/compilerlibs__location.cmi \
     ../parsing/compilerlibs__lexer.cmi \
     ../driver/compilerlibs__compmisc.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../driver/compilerlibs__compenv.cmi \
     ../utils/compilerlibs__clflags.cmi \
     ../parsing/compilerlibs__ast_iterator.cmi \
@@ -17,35 +17,35 @@ caml_tex.cmx : \
     ../parsing/compilerlibs__syntaxerr.cmx \
     ../parsing/compilerlibs__parsetree.cmi \
     ../parsing/compilerlibs__parse.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../parsing/compilerlibs__location.cmx \
     ../parsing/compilerlibs__lexer.cmx \
     ../driver/compilerlibs__compmisc.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../driver/compilerlibs__compenv.cmx \
     ../utils/compilerlibs__clflags.cmx \
     ../parsing/compilerlibs__ast_iterator.cmx \
     ../parsing/compilerlibs__ast_helper.cmx
 cmpbyt.cmo : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../bytecomp/compilerlibs__bytesections.cmi
 cmpbyt.cmx : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../bytecomp/compilerlibs__bytesections.cmx
 cvt_emit.cmo : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 cvt_emit.cmx : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 dumpobj.cmo : \
     ../bytecomp/compilerlibs__symtable.cmi \
     opnames.cmo \
     ../bytecomp/compilerlibs__opcodes.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmi \
     ../lambda/compilerlibs__lambda.cmi \
     ../bytecomp/compilerlibs__instruct.cmi \
     ../typing/compilerlibs__ident.cmi \
     ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../file_formats/compilerlibs__cmo_format.cmi \
     ../bytecomp/compilerlibs__bytesections.cmi \
     ../parsing/compilerlibs__asttypes.cmi
@@ -53,69 +53,69 @@ dumpobj.cmx : \
     ../bytecomp/compilerlibs__symtable.cmx \
     opnames.cmx \
     ../bytecomp/compilerlibs__opcodes.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmx \
     ../lambda/compilerlibs__lambda.cmx \
     ../bytecomp/compilerlibs__instruct.cmx \
     ../typing/compilerlibs__ident.cmx \
     ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../file_formats/compilerlibs__cmo_format.cmi \
     ../bytecomp/compilerlibs__bytesections.cmx \
     ../parsing/compilerlibs__asttypes.cmi
 eqparsetree.cmo : \
     ../parsing/compilerlibs__parsetree.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmi \
     ../parsing/compilerlibs__location.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../parsing/compilerlibs__asttypes.cmi
 eqparsetree.cmx : \
     ../parsing/compilerlibs__parsetree.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__longident.cmx \
     ../parsing/compilerlibs__location.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../parsing/compilerlibs__asttypes.cmi
 generate_deprecated.cmo : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 generate_deprecated.cmx : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 generate_module_aliases.cmo : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 generate_module_aliases.cmx : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 lintapidiff.cmo : \
     ../typing/compilerlibs__printtyp.cmi \
     ../driver/compilerlibs__pparse.cmi \
     ../typing/compilerlibs__path.cmi \
     ../parsing/compilerlibs__parsetree.cmi \
     ../parsing/compilerlibs__parse.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../parsing/compilerlibs__location.cmi \
-    ../typing/compilerlibs__ident.cmi
+    ../typing/compilerlibs__ident.cmi \
+    ../compilerlibs/compilerlibs.cmi
 lintapidiff.cmx : \
     ../typing/compilerlibs__printtyp.cmx \
     ../driver/compilerlibs__pparse.cmx \
     ../typing/compilerlibs__path.cmx \
     ../parsing/compilerlibs__parsetree.cmi \
     ../parsing/compilerlibs__parse.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../parsing/compilerlibs__location.cmx \
-    ../typing/compilerlibs__ident.cmx
+    ../typing/compilerlibs__ident.cmx \
+    ../compilerlibs/compilerlibs.cmi
 make_opcodes.cmo : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 make_opcodes.cmx : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 objinfo.cmo : \
     ../bytecomp/compilerlibs__symtable.cmi \
     ../middle_end/compilerlibs__symbol.cmi \
     ../middle_end/compilerlibs__printclambda.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../middle_end/compilerlibs__linkage_name.cmi \
     ../typing/compilerlibs__ident.cmi \
     ../middle_end/flambda/compilerlibs__export_info.cmi \
     ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../middle_end/compilerlibs__compilation_unit.cmi \
     ../file_formats/compilerlibs__cmxs_format.cmi \
     ../file_formats/compilerlibs__cmx_format.cmi \
@@ -127,12 +127,12 @@ objinfo.cmx : \
     ../bytecomp/compilerlibs__symtable.cmx \
     ../middle_end/compilerlibs__symbol.cmx \
     ../middle_end/compilerlibs__printclambda.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../middle_end/compilerlibs__linkage_name.cmx \
     ../typing/compilerlibs__ident.cmx \
     ../middle_end/flambda/compilerlibs__export_info.cmx \
     ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../middle_end/compilerlibs__compilation_unit.cmx \
     ../file_formats/compilerlibs__cmxs_format.cmi \
     ../file_formats/compilerlibs__cmx_format.cmi \
@@ -144,11 +144,11 @@ ocamlcmt.cmo : \
     ../typing/compilerlibs__untypeast.cmi \
     ../typing/compilerlibs__stypes.cmi \
     ../parsing/compilerlibs__pprintast.cmi \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmi \
     ../utils/compilerlibs__load_path.cmi \
     ../typing/compilerlibs__envaux.cmi \
     ../driver/compilerlibs__compmisc.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../file_formats/compilerlibs__cmt_format.cmi \
     ../typing/compilerlibs__cmt2annot.cmo \
     ../utils/compilerlibs__clflags.cmi \
@@ -157,100 +157,100 @@ ocamlcmt.cmx : \
     ../typing/compilerlibs__untypeast.cmx \
     ../typing/compilerlibs__stypes.cmx \
     ../parsing/compilerlibs__pprintast.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../parsing/compilerlibs__location.cmx \
     ../utils/compilerlibs__load_path.cmx \
     ../typing/compilerlibs__envaux.cmx \
     ../driver/compilerlibs__compmisc.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../file_formats/compilerlibs__cmt_format.cmx \
     ../typing/compilerlibs__cmt2annot.cmx \
     ../utils/compilerlibs__clflags.cmx \
     ../typing/compilerlibs__annot.cmi
 ocamlcp.cmo : \
-    ../compilerlibs/OCaml.cmi \
-    ../driver/compilerlibs__main_args.cmi
+    ../driver/compilerlibs__main_args.cmi \
+    ../compilerlibs/compilerlibs.cmi
 ocamlcp.cmx : \
-    ../compilerlibs/OCaml.cmi \
-    ../driver/compilerlibs__main_args.cmx
+    ../driver/compilerlibs__main_args.cmx \
+    ../compilerlibs/compilerlibs.cmi
 ocamldep.cmo : \
-    ../compilerlibs/OCaml.cmi \
-    ../driver/compilerlibs__makedepend.cmi
+    ../driver/compilerlibs__makedepend.cmi \
+    ../compilerlibs/compilerlibs.cmi
 ocamldep.cmx : \
-    ../compilerlibs/OCaml.cmi \
-    ../driver/compilerlibs__makedepend.cmx
+    ../driver/compilerlibs__makedepend.cmx \
+    ../compilerlibs/compilerlibs.cmi
 ocamlmklib.cmo : \
     ocamlmklibconfig.cmo \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
-    ../utils/compilerlibs__config.cmi
+    ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi
 ocamlmklib.cmx : \
     ocamlmklibconfig.cmx \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
-    ../utils/compilerlibs__config.cmx
+    ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi
 ocamlmklibconfig.cmo : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 ocamlmklibconfig.cmx : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 ocamlmktop.cmo : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../utils/compilerlibs__ccomp.cmi
 ocamlmktop.cmx : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../utils/compilerlibs__ccomp.cmx
 ocamloptp.cmo : \
-    ../compilerlibs/OCaml.cmi \
-    ../driver/compilerlibs__main_args.cmi
+    ../driver/compilerlibs__main_args.cmi \
+    ../compilerlibs/compilerlibs.cmi
 ocamloptp.cmx : \
-    ../compilerlibs/OCaml.cmi \
-    ../driver/compilerlibs__main_args.cmx
+    ../driver/compilerlibs__main_args.cmx \
+    ../compilerlibs/compilerlibs.cmi
 ocamlprof.cmo : \
     ../utils/compilerlibs__warnings.cmi \
     ../parsing/compilerlibs__parsetree.cmi \
     ../parsing/compilerlibs__parse.cmi \
-    ../compilerlibs/OCaml.cmi \
-    ../parsing/compilerlibs__location.cmi
+    ../parsing/compilerlibs__location.cmi \
+    ../compilerlibs/compilerlibs.cmi
 ocamlprof.cmx : \
     ../utils/compilerlibs__warnings.cmx \
     ../parsing/compilerlibs__parsetree.cmi \
     ../parsing/compilerlibs__parse.cmx \
-    ../compilerlibs/OCaml.cmi \
-    ../parsing/compilerlibs__location.cmx
+    ../parsing/compilerlibs__location.cmx \
+    ../compilerlibs/compilerlibs.cmi
 opnames.cmo : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 opnames.cmx : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 postprocess_depend.cmo : \
     ../compilerlibs/postprocess_depend_data.cmo \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 postprocess_depend.cmx : \
     ../compilerlibs/postprocess_depend_data.cmx \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 primreq.cmo : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
     ../utils/compilerlibs__config.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../file_formats/compilerlibs__cmo_format.cmi
 primreq.cmx : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
     ../utils/compilerlibs__config.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../file_formats/compilerlibs__cmo_format.cmi
 profiling.cmo : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     profiling.cmi
 profiling.cmx : \
-    ../compilerlibs/OCaml.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     profiling.cmi
 profiling.cmi : \
-    ../compilerlibs/OCaml.cmi
+    ../compilerlibs/compilerlibs.cmi
 stripdebug.cmo : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmi \
+    ../compilerlibs/compilerlibs.cmi \
     ../bytecomp/compilerlibs__bytesections.cmi
 stripdebug.cmx : \
-    ../compilerlibs/OCaml.cmi \
     ../utils/compilerlibs__misc.cmx \
+    ../compilerlibs/compilerlibs.cmi \
     ../bytecomp/compilerlibs__bytesections.cmx
