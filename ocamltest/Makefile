@@ -181,7 +181,7 @@ directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
 
 include_directories := $(addprefix -I , $(directories))
 
-opens=-open OCaml
+opens=-open Compilerlibs
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \

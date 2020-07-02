@@ -106,7 +106,7 @@ INCLUDES_NODEP=\
 
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
-OPENS=-open OCaml
+OPENS=-open Compilerlibs
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal \
   -no-alias-deps $(OPENS)

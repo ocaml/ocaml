@@ -23,7 +23,7 @@ ASPPFLAGS ?=
 
 include $(TOPDIR)/Makefile.tools
 
-OPENS=-open OCaml
+OPENS=-open Compilerlibs
 
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)

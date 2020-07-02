@@ -27,7 +27,7 @@ CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
 	  -no-alias-deps $(OPENS) \
 	  -safe-string -strict-sequence -strict-formats
-OPENS=-open OCaml
+OPENS=-open Compilerlibs
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 YACCFLAGS=
 CAMLLEX=$(BEST_OCAMLLEX)

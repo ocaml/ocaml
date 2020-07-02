@@ -13,9 +13,11 @@
 #*                                                                        *
 #**************************************************************************
 
-COMPILERLIBSDIR=compilerlibs/
+COMPILERLIBSDIR:=compilerlibs/
 
-COMPLIBPREFIX=compilerlibs__
+COMPLIBPREFIX:=compilerlibs__
+
+TOPLEVELMODULE:=compilerlibs
 
 # Variables
 
@@ -137,14 +139,14 @@ tools/generate_deprecated: tools/generate_deprecated.ml
 define deprecated-compilation-rule
 ifeq ($(filter %.cmi,$(1)),) # .cmo case
 $(call deprecated-file,$(1:.cmo=.ml)): tools/generate_deprecated $(COMPILERLIBSDIR)Makefile.compilerlibs
-	./runtime/ocamlrun $$< $(1) > $$@
+	./runtime/ocamlrun $$< $(TOPLEVELMODULE) $(1) > $$@
 
 $(call deprecated-file,$(1)): $(call prefix-file,$(if $(filter $(1),$(IMPLEMENTATION_ONLY)),$(1),$(1:.cmo=.cmi)))
 
 $(call deprecated-file,$(1:.cmo=.cmx)): $(call prefix-file,$(1:.cmo=.cmx) $(if $(filter $(1),$(IMPLEMENTATION_ONLY)),,$(1:.cmo=.cmi)))
 else
 $(call deprecated-file,$(1:.cmi=.mli)): tools/generate_deprecated $(COMPILERLIBSDIR)Makefile.compilerlibs
-	./runtime/ocamlrun $$< $(1) > $$@
+	./runtime/ocamlrun $$< $(TOPLEVELMODULE) $(1) > $$@
 
 $(call deprecated-file,$(1)): $(call prefix-file,$(1))
 endif
@@ -466,13 +468,13 @@ $(foreach x,$(PREFIXED_COMPLIB_MODULES),$(eval $(call compilation-rule,$(x))))
 $(COMPILERLIBSDIR)postprocess_depend_data.ml: $(COMPILERLIBSDIR)Makefile.compilerlibs
 	echo "let v = \"$(PREFIXED_COMPLIB_MODULES)\"" > $@
 
-$(COMPILERLIBSDIR)OCaml.mli: tools/generate_module_aliases $(COMPILERLIBSDIR)Makefile.compilerlibs
+$(COMPILERLIBSDIR)$(TOPLEVELMODULE).mli: tools/generate_module_aliases $(COMPILERLIBSDIR)Makefile.compilerlibs
 	echo $(PREFIXED_COMPLIB_MODULES) | ./runtime/ocamlrun $< > $@
 
-$(COMPILERLIBSDIR)OCaml.cmi: $(COMPILERLIBSDIR)OCaml.mli
+$(COMPILERLIBSDIR)$(TOPLEVELMODULE).cmi: $(COMPILERLIBSDIR)compilerlibs.mli
 	$(CAMLC) -no-alias-deps -w -49 -c $<
 
-beforedepend:: $(COMPILERLIBSDIR)OCaml.mli
+beforedepend:: $(COMPILERLIBSDIR)$(TOPLEVELMODULE).mli
 
 $(PREFIXED_COMMON:.cmo=.cmx) $(PREFIXED_BYTECOMP:.cmo=.cmx) $(PREFIXED_OPTCOMP:.cmo=.cmx): ocamlopt
 $(PREFIXED_OPTTOPLEVEL:.cmo=.cmx): ocamlopt
