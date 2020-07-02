@@ -232,6 +232,9 @@ Working version
 - #9163: Treat loops properly in un_anf
   (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
 
+- #9433: Fix package constraints for module aliases
+  (Leo White, review by Jacques Garrigue)
+
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
 
