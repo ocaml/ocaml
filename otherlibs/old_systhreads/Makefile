@@ -43,13 +43,19 @@ endif
 
 LIBNAME=threads
 
-# Note: the header on which object files produced from decs.c
+ifeq "$(UNIX_OR_WIN32)" "unix"
+HEADER = st_posix.h
+else # Windows
+HEADER = st_win32.h
+endif
+
+# Note: the header on which object files produced from st_stubs.c
 # should actually depend is known for sure only at compile-time.
 # That's why this dependency is handled in the Makefile directly
 # and removed from the output of the C compiler during make depend
 
-BYTECODE_C_OBJS=decs_b.$(O)
-NATIVECODE_C_OBJS=decs_n.$(O)
+BYTECODE_C_OBJS=st_stubs_b.$(O)
+NATIVECODE_C_OBJS=st_stubs_n.$(O)
 
 THREADS_SOURCES = thread.ml mutex.ml condition.ml event.ml threadUnix.ml
 
@@ -91,16 +97,16 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # which itself will pass -lunix to the C linker.  It seems more
 # modular to me this way. -- Alain
 
-# The following lines produce two object files decs_b.$(O) and
-# decs_n.$(O) from the same source file decs.c (it is compiled
+# The following lines produce two object files st_stubs_b.$(O) and
+# st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
 
-decs_n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
+st_stubs_n.$(O): OC_CPPFLAGS += $(NATIVE_CPPFLAGS)
 
-decs_b.$(O): decs.c
+st_stubs_b.$(O): st_stubs.c $(HEADER)
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
-decs_n.$(O): decs.c
+st_stubs_n.$(O): st_stubs.c $(HEADER)
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 partialclean:
@@ -155,11 +161,11 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend:
-	$(CC) -MM $(OC_CPPFLAGS) decs.c \
-	  | sed -e 's/decs\.o/decs_b.$$(O)/' \
+	$(CC) -MM $(OC_CPPFLAGS) st_stubs.c \
+	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
 	$(CC) -MM $(OC_CPPFLAGS) $(NATIVE_CPPFLAGS) \
-	  decs.c | sed -e 's/decs\.o/decs_n.$$(O)/' \
+	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml >> .depend
 endif

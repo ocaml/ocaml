@@ -1,34 +1,39 @@
-st_stubs_b.$(O): st_stubs.c ../../runtime/caml/alloc.h \
-  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
-  ../../runtime/caml/m.h ../../runtime/caml/s.h \
-  ../../runtime/caml/camlatomic.h ../../runtime/caml/mlvalues.h \
-  ../../runtime/caml/domain_state.h ../../runtime/caml/domain_state.tbl \
-  ../../runtime/caml/byte_domain_state.tbl \
-  ../../runtime/caml/backtrace.h ../../runtime/caml/exec.h \
-  ../../runtime/caml/callback.h ../../runtime/caml/memory.h \
-  ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
-  ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
-  ../../runtime/caml/domain.h ../../runtime/caml/platform.h \
-  ../../runtime/caml/custom.h ../../runtime/caml/fail.h \
-  ../../runtime/caml/fiber.h ../../runtime/caml/roots.h \
-  ../../runtime/caml/io.h ../../runtime/caml/printexc.h \
-  ../../runtime/caml/signals.h ../../runtime/caml/sys.h threads.h \
-  st_posix.h
-st_stubs_n.$(O): st_stubs.c ../../runtime/caml/alloc.h \
-  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
-  ../../runtime/caml/m.h ../../runtime/caml/s.h \
-  ../../runtime/caml/camlatomic.h ../../runtime/caml/mlvalues.h \
-  ../../runtime/caml/domain_state.h ../../runtime/caml/domain_state.tbl \
-  ../../runtime/caml/backtrace.h ../../runtime/caml/exec.h \
-  ../../runtime/caml/callback.h ../../runtime/caml/memory.h \
-  ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
-  ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
-  ../../runtime/caml/domain.h ../../runtime/caml/platform.h \
-  ../../runtime/caml/custom.h ../../runtime/caml/fail.h \
-  ../../runtime/caml/fiber.h ../../runtime/caml/roots.h \
-  ../../runtime/caml/io.h ../../runtime/caml/printexc.h \
-  ../../runtime/caml/signals.h ../../runtime/caml/stack.h \
-  ../../runtime/caml/sys.h threads.h st_posix.h
+decs_b.$(O): decs.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/camlatomic.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/domain_state.h \
+ ../../runtime/caml/domain_state.tbl \
+ ../../runtime/caml/byte_domain_state.tbl \
+ ../../runtime/caml/domain_state.h ../../runtime/caml/platform.h \
+ ../../runtime/caml/custom.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
+ ../../runtime/caml/domain.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/platform.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/startup.h \
+ ../../runtime/caml/exec.h ../../runtime/caml/startup_aux.h \
+ ../../runtime/caml/fiber.h ../../runtime/caml/roots.h \
+ ../../runtime/caml/callback.h ../../runtime/caml/weak.h \
+ ../../runtime/caml/finalise.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/printexc.h ../../runtime/caml/backtrace.h \
+ ../../runtime/caml/signals.h
+decs_n.$(O): decs.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/camlatomic.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/domain_state.h \
+ ../../runtime/caml/domain_state.tbl ../../runtime/caml/domain_state.h \
+ ../../runtime/caml/platform.h ../../runtime/caml/custom.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/addrmap.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/platform.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/fail.h \
+ ../../runtime/caml/startup.h ../../runtime/caml/exec.h \
+ ../../runtime/caml/startup_aux.h ../../runtime/caml/fiber.h \
+ ../../runtime/caml/roots.h ../../runtime/caml/callback.h \
+ ../../runtime/caml/weak.h ../../runtime/caml/finalise.h \
+ ../../runtime/caml/domain.h ../../runtime/caml/printexc.h \
+ ../../runtime/caml/backtrace.h ../../runtime/caml/signals.h
 condition.cmo : \
     mutex.cmi \
     condition.cmi

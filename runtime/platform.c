@@ -50,8 +50,7 @@ void caml_plat_mutex_free(caml_plat_mutex* m)
   check_err("mutex_free", pthread_mutex_destroy(m));
 }
 
-/* Condition variables */
-void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+static void caml_plat_cond_init_aux(caml_plat_cond *cond)
 {
   pthread_condattr_t attr;
   pthread_condattr_init(&attr);
@@ -59,7 +58,25 @@ void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
   pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 #endif
   pthread_cond_init(&cond->cond, &attr);
+}
+
+/* Condition variables */
+void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+{
+  caml_plat_cond_init_aux(cond);
   cond->mutex = m;
+}
+
+void caml_plat_cond_init_no_mutex(caml_plat_cond* cond)
+{
+  caml_plat_cond_init_aux(cond);
+  cond->mutex = NULL;
+}
+
+void caml_plat_cond_set_mutex(caml_plat_cond *cond, caml_plat_mutex* m)
+{
+  if (cond->mutex == NULL)
+    cond->mutex = m;
 }
 
 void caml_plat_wait(caml_plat_cond* cond)

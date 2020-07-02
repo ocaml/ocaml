@@ -1,0 +1,65 @@
+st_stubs_b.$(O): st_stubs.c ../../runtime/caml/alloc.h \
+  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
+  ../../runtime/caml/m.h ../../runtime/caml/s.h \
+  ../../runtime/caml/camlatomic.h ../../runtime/caml/mlvalues.h \
+  ../../runtime/caml/domain_state.h ../../runtime/caml/domain_state.tbl \
+  ../../runtime/caml/byte_domain_state.tbl \
+  ../../runtime/caml/backtrace.h ../../runtime/caml/exec.h \
+  ../../runtime/caml/callback.h ../../runtime/caml/memory.h \
+  ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+  ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
+  ../../runtime/caml/domain.h ../../runtime/caml/platform.h \
+  ../../runtime/caml/custom.h ../../runtime/caml/fail.h \
+  ../../runtime/caml/fiber.h ../../runtime/caml/roots.h \
+  ../../runtime/caml/io.h ../../runtime/caml/printexc.h \
+  ../../runtime/caml/signals.h ../../runtime/caml/sys.h threads.h \
+  st_posix.h
+st_stubs_n.$(O): st_stubs.c ../../runtime/caml/alloc.h \
+  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
+  ../../runtime/caml/m.h ../../runtime/caml/s.h \
+  ../../runtime/caml/camlatomic.h ../../runtime/caml/mlvalues.h \
+  ../../runtime/caml/domain_state.h ../../runtime/caml/domain_state.tbl \
+  ../../runtime/caml/backtrace.h ../../runtime/caml/exec.h \
+  ../../runtime/caml/callback.h ../../runtime/caml/memory.h \
+  ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+  ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
+  ../../runtime/caml/domain.h ../../runtime/caml/platform.h \
+  ../../runtime/caml/custom.h ../../runtime/caml/fail.h \
+  ../../runtime/caml/fiber.h ../../runtime/caml/roots.h \
+  ../../runtime/caml/io.h ../../runtime/caml/printexc.h \
+  ../../runtime/caml/signals.h ../../runtime/caml/stack.h \
+  ../../runtime/caml/sys.h threads.h st_posix.h
+condition.cmo : \
+    mutex.cmi \
+    condition.cmi
+condition.cmx : \
+    mutex.cmx \
+    condition.cmi
+condition.cmi : \
+    mutex.cmi
+event.cmo : \
+    mutex.cmi \
+    condition.cmi \
+    event.cmi
+event.cmx : \
+    mutex.cmx \
+    condition.cmx \
+    event.cmi
+event.cmi :
+mutex.cmo : \
+    mutex.cmi
+mutex.cmx : \
+    mutex.cmi
+mutex.cmi :
+thread.cmo : \
+    thread.cmi
+thread.cmx : \
+    thread.cmi
+thread.cmi :
+threadUnix.cmo : \
+    thread.cmi \
+    threadUnix.cmi
+threadUnix.cmx : \
+    thread.cmx \
+    threadUnix.cmi
+threadUnix.cmi :

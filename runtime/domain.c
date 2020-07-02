@@ -906,13 +906,46 @@ void caml_handle_gc_interrupt() {
   }
 }
 
+CAMLexport void caml_bt_leave_blocking_section_hook(void)
+{
+  dom_internal* self = domain_self;
+
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
+    caml_plat_lock(&self->interruptor.lock);
+    caml_plat_signal(&self->interruptor.cond);
+    caml_plat_unlock(&self->interruptor.lock);
+  }
+
+  caml_plat_lock(&self->domain_lock);
+
+  return;
+}
+
+CAMLexport void caml_bt_enter_blocking_section_hook(void)
+{
+  dom_internal* self = domain_self;
+
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
+    /* Wakeup backup thread if it is sleeping */
+    caml_plat_signal(&self->domain_cond);
+  }
+
+  caml_plat_unlock(&self->domain_lock);
+
+  return;
+}
+
 static void caml_enter_blocking_section_default(void)
 {
+  caml_bt_enter_blocking_section_hook();
   return;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
+  caml_bt_leave_blocking_section_hook();
   return;
 }
 
@@ -923,35 +956,14 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
 
 CAMLexport void caml_leave_blocking_section() {
-  dom_internal* self = domain_self;
-
-  Assert(caml_domain_alone() || self->backup_thread_running);
-
-  if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
-    caml_plat_lock(&self->interruptor.lock);
-    caml_plat_signal(&self->interruptor.cond);
-    caml_plat_unlock(&self->interruptor.lock);
-  }
-
-  caml_plat_lock(&self->domain_lock);
   caml_leave_blocking_section_hook();
   caml_process_pending_signals();
 }
 
 CAMLexport void caml_enter_blocking_section() {
-  dom_internal* self = domain_self;
-
-  Assert(caml_domain_alone() || self->backup_thread_running);
 
   caml_process_pending_signals();
   caml_enter_blocking_section_hook();
-  if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
-    /* Wakeup backup thread if it is sleeping */
-    caml_plat_signal(&self->domain_cond);
-  }
-  caml_plat_unlock(&self->domain_lock);
 }
 
 void caml_print_stats () {
