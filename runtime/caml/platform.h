@@ -79,6 +79,8 @@ void caml_plat_mutex_free(caml_plat_mutex*);
 typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
 void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
+void caml_plat_cond_init_no_mutex(caml_plat_cond* cond);
+void caml_plat_cond_set_mutex(caml_plat_cond *cond, caml_plat_mutex* m);
 void caml_plat_wait(caml_plat_cond*);
 /* like caml_plat_wait, but if caml_time_counter() surpasses the second parameter
    without a signal, then this function returns 1. */
