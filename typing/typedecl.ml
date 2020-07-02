@@ -114,7 +114,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
-      type_variance = List.map (fun _ -> Variance.may_inv) sdecl.ptype_params;
+      type_variance = Variance.unknown_signature ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
@@ -403,7 +403,7 @@ let transl_declaration env sdecl (id, uid) =
         type_kind = kind;
         type_private = sdecl.ptype_private;
         type_manifest = man;
-        type_variance = List.map (fun _ -> Variance.may_inv) params;
+        type_variance = Variance.unknown_signature ~arity;
         type_separability = Types.Separability.default_signature ~arity;
         type_is_newtype = false;
         type_expansion_scope = Btype.lowest_level;
@@ -1541,7 +1541,7 @@ let abstract_type_decl arity =
       type_kind = Type_abstract;
       type_private = Public;
       type_manifest = None;
-      type_variance = replicate_list Variance.may_inv arity;
+      type_variance = Variance.unknown_signature ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;

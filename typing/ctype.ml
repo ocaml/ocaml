@@ -863,7 +863,7 @@ let rec update_level env level expand ty =
     | Tconstr(p, (_ :: _ as tl), _) ->
         let variance =
           try (Env.find_type p env).type_variance
-          with Not_found -> List.map (fun _ -> Variance.may_inv) tl in
+          with Not_found -> List.map (fun _ -> Variance.unknown) tl in
         let needs_expand =
           expand ||
           List.exists2
@@ -942,7 +942,7 @@ let rec lower_contravariant env var_level visited contra ty =
            typ.type_kind = Type_abstract
           with Not_found ->
             (* See testsuite/tests/typing-missing-cmi-2 for an example *)
-            List.map (fun _ -> Variance.may_inv) tyl,
+            List.map (fun _ -> Variance.unknown) tyl,
             false
         in
         if List.for_all ((=) Variance.null) variance then () else
