@@ -740,7 +740,6 @@ AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
 AC_CHECK_HEADER([math.h])
 AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD])])
 AC_CHECK_HEADER([stdint.h],[AC_DEFINE([HAS_STDINT_H])])
-AC_CHECK_HEADER([sys/shm.h],[AC_DEFINE([HAS_SYS_SHM_H])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
   [#include <sys/types.h>])
 
@@ -1563,6 +1562,13 @@ AC_CHECK_FUNC([accept4], [AC_DEFINE([HAS_ACCEPT4])])
 ## getauxval
 
 AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL])])
+
+## shmat
+AC_CHECK_HEADER([sys/shm.h],
+  [
+    AC_DEFINE([HAS_SYS_SHM_H])
+    AC_CHECK_FUNC([shmat], [AC_DEFINE([HAS_SHMAT])])
+  ])
 
 ## execvpe
 
