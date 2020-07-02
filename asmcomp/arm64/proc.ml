@@ -47,8 +47,6 @@ let word_addressed = false
     d16 - d31             general purpose (caller-save)
 *)
 
-let is_macosx = Config.system = "macosx"
-
 let int_reg_name =
   [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";
      "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15";
@@ -167,7 +165,7 @@ let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
    Return values in r0...r15 or d0...d15. *)
 
 let max_arguments_for_tailcalls = 16
-let last_int_register = if is_macosx then 7 else 15
+let last_int_register = if macosx then 7 else 15
 
 let loc_arguments arg =
   calling_conventions 0 last_int_register 100 115 outgoing arg

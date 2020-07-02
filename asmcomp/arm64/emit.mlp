@@ -27,9 +27,6 @@ open Mach
 open Linear
 open Emitaux
 
-let is_macosx =
-  Config.system = "macosx"
-
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -46,7 +43,7 @@ let reg_x8 = phys_reg 8
 (* Output a label *)
 
 let label_prefix =
-  if is_macosx then "L" else ".L"
+  if macosx then "L" else ".L"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
@@ -54,19 +51,19 @@ let emit_label lbl =
 (* Symbols *)
 
 let emit_symbol s =
-  if is_macosx then emit_string "_";
+  if macosx then emit_string "_";
   Emitaux.emit_symbol '$' s
 
 (* Object types *)
 
 let emit_symbol_type emit_lbl_or_sym lbl_or_sym ty =
-  if not is_macosx then begin
+  if not macosx then begin
     `	.type	{emit_lbl_or_sym lbl_or_sym}, %{emit_string ty}\n`
   end
 
 
 let emit_symbol_size sym =
-  if not is_macosx then begin
+  if not macosx then begin
     `	.size	{emit_symbol sym}, .-{emit_symbol sym}\n`
   end
 
@@ -340,7 +337,7 @@ let float_literal f =
 (* Emit all pending literals *)
 let emit_literals() =
   if !float_literals <> [] then begin
-    if is_macosx then
+    if macosx then
       `	.section	__TEXT,__literal8,8byte_literals\n`;
     `	.align	3\n`;
     List.iter
@@ -353,7 +350,7 @@ let emit_literals() =
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if is_macosx then begin
+  if macosx then begin
     `	adrp	{emit_reg dst}, {emit_symbol s}@GOTPAGE\n`;
     `	ldr	{emit_reg dst}, [{emit_reg dst}, {emit_symbol s}@GOTPAGEOFF]\n`
   end else if not !Clflags.dlcode then begin
@@ -605,7 +602,7 @@ let emit_named_text_section func_name =
 (* Emit code to load an emitted literal *)
 
 let emit_load_literal dst lbl =
-  if is_macosx then begin
+  if macosx then begin
     `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}@PAGE\n`;
     `	ldr	{emit_reg dst}, [{emit_reg reg_tmp1}, {emit_label lbl}@PAGEOFF]\n`
   end else begin
