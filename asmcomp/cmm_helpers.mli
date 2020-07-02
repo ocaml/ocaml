@@ -47,8 +47,9 @@ val black_block_header : int -> int -> nativeint
 val white_closure_header : int -> nativeint
 val black_closure_header : int -> nativeint
 
-(** Infix header at the given offset *)
-val infix_header : int -> nativeint
+(** Infix headers at the given offset *)
+val white_infix_header : int -> nativeint
+val black_infix_header : int -> nativeint
 
 (** Header for a boxed float value *)
 val float_header : nativeint

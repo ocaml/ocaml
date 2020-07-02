@@ -55,7 +55,8 @@ let block_header tag sz =
 let black_block_header tag sz = Nativeint.logor (block_header tag sz) caml_black
 let white_closure_header sz = block_header Obj.closure_tag sz
 let black_closure_header sz = black_block_header Obj.closure_tag sz
-let infix_header ofs = block_header Obj.infix_tag ofs
+let white_infix_header ofs = block_header Obj.infix_tag ofs
+let black_infix_header ofs = black_block_header Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
 let floatarray_header len =
   (* Zero-sized float arrays have tag zero for consistency with
@@ -85,7 +86,7 @@ let closure_info ~arity ~startenv =
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
 let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
 let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
-let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
+let alloc_infix_header ofs dbg = Cblockheader (white_infix_header ofs, dbg)
 let alloc_closure_info ~arity ~startenv dbg =
   Cblockheader (closure_info ~arity ~startenv, dbg)
 let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
@@ -2733,13 +2734,13 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
           [] -> clos_vars @ cont
       | (f2 : Clambda.ufunction) :: rem ->
           if f2.arity = 1 || f2.arity = 0 then
-            Cint(infix_header pos) ::
+            Cint(black_infix_header pos) ::
             (closure_symbol f2) @
             Csymbol_address f2.label ::
             Cint(closure_info ~arity:f2.arity ~startenv:(startenv - pos)) ::
             emit_others (pos + 3) rem
           else
-            Cint(infix_header pos) ::
+            Cint(black_infix_header pos) ::
             (closure_symbol f2) @
             Csymbol_address(curry_function_sym f2.arity) ::
             Cint(closure_info ~arity:f2.arity ~startenv:(startenv - pos)) ::
