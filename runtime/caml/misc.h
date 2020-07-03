@@ -101,6 +101,8 @@ CAMLdeprecated_typedef(addr, char *);
 /* we need to be able to compute the exact offset of each member. */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define CAMLalign(n) _Alignas(n)
+#elif defined(__cplusplus) && _MSC_VER >= 1900
+#define CAMLalign(n) alignas(n)
 #elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
 #elif _MSC_VER >= 1500

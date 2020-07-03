@@ -27,6 +27,10 @@ OCaml 4.10 maintenance branch
   output channels would not be flushed).
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #9714, #9724: Use the C++ alignas keyword when compiling in C++ in MSVC.
+  Fixes a bug with MSVC C++ 2015 onwards.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+
 ### Tools:
 
 - #9552: restore ocamloptp build and installation
