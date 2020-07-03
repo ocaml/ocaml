@@ -237,7 +237,7 @@ val system : string -> process_status
    therefore can contain redirections, quotes, variables, etc.
    To properly quote whitespace and shell special characters occurring
    in file names or command arguments, the use of
-   {!Filename.FILENAME.quote_command} is recommended.
+   {!Filename.S.quote_command} is recommended.
    The result [WEXITED 127] indicates that the shell couldn't be
    executed. *)
 
@@ -784,7 +784,7 @@ val open_process_in : string -> in_channel
    which can be read via the returned input channel.
    The command is interpreted by the shell [/bin/sh]
    (or [cmd.exe] on Windows), cf. {!Unix.system}.
-   The {!Filename.FILENAME.quote_command} function can be used to
+   The {!Filename.S.quote_command} function can be used to
    quote the command and its arguments as appropriate for the shell being
    used.  If the command does not need to be run through the shell,
    {!Unix.open_process_args_in} can be used as a more robust and

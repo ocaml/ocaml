@@ -15,13 +15,13 @@
 
 (** Operations on file names. *)
 
-(** {1 Common interface} 
+(** {1 Common interface}
 
     @since 4.12
 *)
 
-module type FILENAME = sig
-  
+module type S = sig
+
   val current_dir_name : string
   (** The conventional name for the current directory (e.g. [.] in Unix). *)
 
@@ -106,8 +106,8 @@ module type FILENAME = sig
 
   val chop_extension : string -> string
   (** Same as {!val:remove_extension}, but raise [Invalid_argument]
-    if the given name has an empty extension. 
-    @raise Invalid_argument
+    if the given name has an empty extension.
+    @raise Invalid_argument if the given name has an empty extension.
   *)
 
 
@@ -133,14 +133,31 @@ module type FILENAME = sig
 
     @since 4.10.0 *)
 
+
+  val get_temp_dir_name : unit -> string
+  (** The name of the temporary directory:
+    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
+    if the variable is not set.
+    Under Windows, the value of the [TEMP] environment variable, or "."
+    if the variable is not set.
+    The temporary directory can be changed with {!val:set_temp_dir_name}.
+    @since 4.00.0
+  *)
+
+  val set_temp_dir_name : string -> unit
+  (** Change the temporary directory returned by {!val:get_temp_dir_name}
+    and used by {!val:temp_file} and {!val:open_temp_file}.
+    @since 4.00.0
+  *)
+
+
   val temp_file : ?temp_dir: string -> string -> string -> string
   (** [temp_file prefix suffix] returns the name of a
    fresh temporary file in the temporary directory.
    The base name of the temporary file is formed by concatenating
    [prefix], then a suitably chosen integer number, then [suffix].
    The optional argument [temp_dir] indicates the temporary directory
-   to use, defaulting to the current result of 
-   {!val:get_temp_dir_name}.
+   to use, defaulting to the current result of {!val:get_temp_dir_name}.
    The temporary file is created empty, with permissions [0o600]
    (readable and writable only by the file owner).  The file is
    guaranteed to be different from any other file that existed when
@@ -166,34 +183,7 @@ module type FILENAME = sig
    @raise Sys_error if the file could not be opened.
    @before 4.03.0 no ?perms optional argument
    @before 3.11.2 no ?temp_dir optional argument
-   *)
-
-  val get_temp_dir_name : unit -> string
-  (** The name of the temporary directory:
-    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
-    if the variable is not set.
-    Under Windows, the value of the [TEMP] environment variable, or "."
-    if the variable is not set.
-    The temporary directory can be changed with {!val:set_temp_dir_name}.
-    @since 4.00.0
-   *)
-
-  val set_temp_dir_name : string -> unit
-  (** Change the temporary directory returned by {!val:get_temp_dir_name}
-    and used by {!val:temp_file} and {!val:open_temp_file}.
-    @since 4.00.0
-   *)
-
-  val temp_dir_name : string
-  [@@ocaml.deprecated "Use Filename.get_temp_dir_name instead"]
-  (** The name of the initial temporary directory:
-    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
-    if the variable is not set.
-    Under Windows, the value of the [TEMP] environment variable, or "."
-    if the variable is not set.
-    @deprecated You should use {!val:get_temp_dir_name} instead.
-    @since 3.09.1
-   *)
+  *)
 
   val quote : string -> string
   (** Return a quoted version of a file name, suitable for use as
@@ -206,7 +196,7 @@ module type FILENAME = sig
   val quote_command :
     string -> ?stdin:string -> ?stdout:string -> ?stderr:string
     -> string list -> string
-(** [quote_command cmd args] returns a quoted command line, suitable
+  (** [quote_command cmd args] returns a quoted command line, suitable
     for use as an argument to {!Sys.command}, {!Unix.system}, and the
     {!Unix.open_process} functions.
 
@@ -237,21 +227,32 @@ end
 
 (** {1 Operation on file names} *)
 
-include FILENAME
+include S
+
+val temp_dir_name : string
+[@@ocaml.deprecated "Use get_temp_dir_name instead"]
+(** The name of the initial temporary directory:
+    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
+    if the variable is not set.
+    Under Windows, the value of the [TEMP] environment variable, or "."
+    if the variable is not set.
+    @deprecated You should use {!val:S.get_temp_dir_name} instead.
+    @since 3.09.1
+*)
 
 (** {1 Specific implementation} *)
 
 (** Filename for Unix.
     @since 4.12
 *)
-module Unix : FILENAME
+module Unix : S
 
 (** Filename for Win32.
     @since 4.12
 *)
-module Win32 : FILENAME
+module Win32 : S
 
 (** Filename for Cygwin.
     @since 4.12
 *)
-module Cygwin : FILENAME
+module Cygwin : S

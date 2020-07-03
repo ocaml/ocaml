@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module type FILENAME = sig
+module type S = sig
   val current_dir_name : string
 
   val parent_dir_name : string
@@ -44,18 +44,15 @@ module type FILENAME = sig
 
   val null : string
 
+  val get_temp_dir_name : unit -> string
+
+  val set_temp_dir_name : string -> unit
+
   val temp_file : ?temp_dir: string -> string -> string -> string
 
   val open_temp_file :
     ?mode: open_flag list -> ?perms: int -> ?temp_dir: string -> string ->
     string -> string * out_channel
-
-  val get_temp_dir_name : unit -> string
-
-  val set_temp_dir_name : string -> unit
-
-  val temp_dir_name : string
-  [@@ocaml.deprecated "Use Filename.get_temp_dir_name instead"]
 
   val quote : string -> string
 
@@ -121,6 +118,11 @@ let generic_dirname is_dir_sep current_dir_name name =
   then current_dir_name
   else trailing_sep (String.length name - 1)
 
+external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
+external close_desc: int -> unit = "caml_sys_close"
+
+let prng = lazy(Random.State.make_self_init ())
+
 module type SYSDEPS = sig
   val null : string
   val current_dir_name : string
@@ -140,8 +142,8 @@ module type SYSDEPS = sig
   val dirname : string -> string
 end
 
-module Make (S : SYSDEPS) : FILENAME = struct
-  include S
+module Make (Deps : SYSDEPS) : S = struct
+  include Deps
 
   let concat dirname filename =
     let l = String.length dirname in
@@ -178,11 +180,6 @@ module Make (S : SYSDEPS) : FILENAME = struct
   let remove_extension name =
     let l = extension_len name in
     if l = 0 then name else String.sub name 0 (String.length name - l)
-
-  external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
-  external close_desc: int -> unit = "caml_sys_close"
-
-  let prng = lazy(Random.State.make_self_init ())
 
   let temp_file_name temp_dir prefix suffix =
     let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
@@ -412,10 +409,13 @@ module Win32 = Make (Win32_deps)
 
 module Cygwin = Make (Cygwin_deps)
 
-module Current =
+include
   (val (match Sys.os_type with
-        | "Win32" -> (module Win32: FILENAME)
-        | "Cygwin" -> (module Cygwin: FILENAME)
-        | _ -> (module Unix: FILENAME)))
+        | "Win32" -> (module Win32: S)
+        | "Cygwin" -> (module Cygwin: S)
+        | _ -> (module Unix: S)))
 
-include Current
+include
+  (val (match Sys.os_type with
+        | "Win32" -> (module Win32_deps : SYSDEPS)
+        | _ -> (module Unix_deps : SYSDEPS)))
