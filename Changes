@@ -549,6 +549,12 @@ OCaml 4.10 maintenance branch
   output channels would not be flushed).
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #9714, #9724: Use the C++ alignas keyword when compiling in C++.
+  Fixes a bug with MSVC C++ 2015/2017. Add a terminator to the
+  `caml_domain_state` structure to better ensure that members are
+  correctly spaced.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 
