@@ -1630,6 +1630,7 @@ AS_IF([test x"$enable_systhreads" = "xno"],
       AS_CASE([$host],
         [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
         [*-*-haiku*], [pthread_link=""],
+        [*-*-android*], [pthread_link=""],
         [pthread_link="-lpthread"])
       common_cppflags="$common_cppflags -D_REENTRANT"
       AC_MSG_NOTICE([the POSIX threads library is supported])

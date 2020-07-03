@@ -16348,6 +16348,8 @@ if test "x$ax_pthread_ok" = "xyes"; then
     pthread_link="-lpthread -lposix4" ;; #(
   *-*-haiku*) :
     pthread_link="" ;; #(
+  *-*-android*) :
+    pthread_link="" ;; #(
   *) :
     pthread_link="-lpthread" ;;
 esac
