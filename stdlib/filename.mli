@@ -240,7 +240,7 @@ end
 include FILENAME
 
 (** {1 Specific implementation} *)
-          
+
 (** Filename for Unix.
     @since 4.12
 *)
@@ -253,5 +253,5 @@ module Win32 : FILENAME
 
 (** Filename for Cygwin.
     @since 4.12
-*)     
+*)
 module Cygwin : FILENAME
