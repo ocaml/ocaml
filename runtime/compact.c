@@ -71,9 +71,15 @@ static void invert_pointer_at (word *p)
     h = Hd_val (q);
     switch (Color_hd (h)){
     case Caml_white:
-      CAMLassert (Is_in_heap (q));
       if (Tag_hd (h) == Infix_tag){
-        if (Is_black_val ((value) q - Infix_offset_val (q))) break;
+        value realvalue = (value) q - Infix_offset_val (q);
+        if (Is_black_val (realvalue)){
+          break;
+        }else{
+          CAMLassert (Is_in_heap (realvalue));
+        }
+      }else{
+        CAMLassert (Is_in_heap (q));
       }
       /* FALL THROUGH */
     case Caml_gray:
@@ -95,6 +101,7 @@ static void invert_pointer_at (word *p)
 
 void caml_invert_root (value v, value *p)
 {
+  CAMLassert (Is_long (*p) || Is_in_heap (*p) || Is_black_val (*p));
   invert_pointer_at ((word *) p);
 }
 
@@ -161,11 +168,11 @@ static void do_compaction (intnat new_allocation_policy)
 
       while ((char *) p < chend){
         word q = *p;
-        mlsize_t sz, i, first_field;
+        mlsize_t wosz, i, first_field;
         tag_t t;
 
         while (Is_gray_hd (q)) q = * dptr (q);
-        sz = Whsize_hd (q);
+        wosz = Wosize_hd (q);
         if (Is_white_hd (q)){
           t = Tag_hd (q);
           CAMLassert (t != Infix_tag);
@@ -176,12 +183,12 @@ static void do_compaction (intnat new_allocation_policy)
             }else{
               first_field = 0;
             }
-            for (i = first_field; i < Wosize_whsize (sz); i++){
+            for (i = first_field; i < wosz; i++){
               invert_pointer_at ((word *) &Field (v,i));
             }
           }
         }
-        p += sz;
+        p += Whsize_wosize (wosz);
       }
       ch = Chunk_next (ch);
     }
@@ -221,7 +228,7 @@ static void do_compaction (intnat new_allocation_policy)
 
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
-        header_t h = * (header_t *) p;
+        header_t h = Hd_hp (p);
         size_t sz;
 
         while (Is_gray_hd (h)) h = * dptr (h);
@@ -249,13 +256,14 @@ static void do_compaction (intnat new_allocation_policy)
 
           if (t == Closure_tag){
             /* Revert the infix pointers. */
-            mlsize_t i, startenv, v;
+            mlsize_t i, startenv;
+            value v;
 
             v = Val_hp (p);
             startenv = Start_env_closinfo (Closinfo_val (v));
             i = 0;
             while (1){
-              mlsize_t arity = Arity_closinfo (Field (v, i+1));
+              int arity = Arity_closinfo (Field (v, i+1));
               i += 2 + (arity != 0 && arity != 1);
               if (i >= startenv) break;
 
