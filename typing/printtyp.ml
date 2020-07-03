@@ -1584,8 +1584,18 @@ let cltype_declaration id ppf cl =
 
 let wrap_env fenv ftree arg =
   let env = !printing_env in
+  let old_depth = !printing_depth in
+  let old_cont = !printing_cont in
+  let old_pers = !printing_pers in
+  let old_map = !printing_map in
   set_printing_env (fenv env);
   let tree = ftree arg in
+  printing_depth := old_depth;
+  printing_cont := old_cont;
+  printing_pers := old_pers;
+  printing_map := old_map;
+  printing_old := env;
+  (* set_printing_env checks that persistent modules did not change *)
   set_printing_env env;
   tree
 
