@@ -583,6 +583,13 @@ OCaml 4.11
 - #9486: Fix configuration for the Haiku operating system
   (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
 
+- #9712: Update the version format to allow "~".
+  The new format is "major.minor[.patchlevel][(+|~)additional-info]",
+  for instance "4.12.0~beta1+flambda".
+  This is a documentation-only change for the 4.11 branch, the new format
+  will be used starting with the 4.12 branch.
+  (Florian Angeletti, review by Damien Doligez and Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
  - #463: a new Misc.Magic_number module for user-friendly parsing
