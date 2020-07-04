@@ -118,6 +118,10 @@ Working version
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
   Alain Frisch)
 
+- #6287, #9719: Export Filename.{Unix, Win32, Cygwin}.
+  (Xavier Van de Woestyne, report by Jun Furuse, review by David Allsopp
+  and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;

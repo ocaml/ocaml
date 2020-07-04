@@ -82,7 +82,7 @@ external command : string -> int = "caml_sys_system_command"
   command names or in their arguments must be quoted or escaped
   so that the shell does not interpret them.  The quoting rules vary
   between the POSIX shell and the Windows shell.
-  The {!val:Filename.S.quote_command} performs the appropriate quoting
+  The {!val:Filename.quote_command} performs the appropriate quoting
   given a command name, a list of arguments, and optional file redirections.
 *)
 
