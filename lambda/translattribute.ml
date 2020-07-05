@@ -85,6 +85,21 @@ let get_int_from_exp =
         end
     | _ -> Result.Error ()
 
+let get_construct_from_exp =
+  let open Parsetree in
+  function
+    | { pexp_desc =
+          Pexp_construct ({ txt = Longident.Lident constr }, None) } ->
+        Result.Ok constr
+    | _ -> Result.Error ()
+
+let get_bool_from_exp exp =
+  Result.bind (get_construct_from_exp exp)
+    (function
+      | "true" -> Result.Ok true
+      | "false" -> Result.Ok false
+      | _ -> Result.Error ())
+
 let parse_id_payload txt loc ~default ~empty cases payload =
   let[@local] warn () =
     let ( %> ) f g x = g (f x) in
@@ -289,14 +304,11 @@ let get_tailcall_attribute e =
         | {Parsetree.attr_name = {txt;loc}; _} :: _ ->
             Location.prerr_warning loc (Warnings.Duplicated_attribute txt)
         end;
-        let payload_result : (_, _) result = match payload with
-          | PStr [] -> Ok Should_be_tailcall
-          | _ -> Error ()
-        in
-        match payload_result with
-        | Ok tailcall_attribute -> tailcall_attribute
+        match get_optional_payload get_bool_from_exp payload with
+        | Ok (None | Some true) -> Tailcall_expectation true
+        | Ok (Some false) -> Tailcall_expectation false
         | Error () ->
-            let msg = "No payload is currently supported." in
+            let msg = "Only an optional boolean literal is supported." in
             Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg));
             Default_tailcall
       in

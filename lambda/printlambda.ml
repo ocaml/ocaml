@@ -475,8 +475,10 @@ let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
 
 let apply_tailcall_attribute ppf = function
   | Default_tailcall -> ()
-  | Should_be_tailcall ->
+  | Tailcall_expectation true ->
     fprintf ppf " tailcall"
+  | Tailcall_expectation false ->
+    fprintf ppf " tailcall(false)"
 
 let apply_inlined_attribute ppf = function
   | Default_inline -> ()
