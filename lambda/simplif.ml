@@ -603,9 +603,6 @@ let simplify_lets lam =
 
 (* Tail call info in annotation files *)
 
-let is_tail_native_heuristic : (int -> bool) ref =
-  ref (fun _ -> true)
-
 let rec emit_tail_infos is_tail lambda =
   match lambda with
   | Lvar _ -> ()
@@ -614,10 +611,13 @@ let rec emit_tail_infos is_tail lambda =
       begin match ap.ap_tailcall with
       | Default_tailcall -> ()
       | Should_be_tailcall ->
-          (* Note: we may want to instead check the call_kind,
-             which takes [is_tail_native_heuristic] into account.
-             But then this means getting different warnings depending
-             on whether the native or bytecode compiler is used. *)
+          (* Note: is_tail does not take backend-specific logic into
+             account (maximum number of parameters, etc.)  so it may
+             over-approximate tail-callness.
+
+             Trying to do something more fine-grained would result in
+             different warnings depending on whether the native or
+             bytecode compiler is used. *)
           if not is_tail
           && Warnings.is_active Warnings.Tailcall_expected
           then Location.prerr_warning (to_location ap.ap_loc)
