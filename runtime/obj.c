@@ -276,44 +276,6 @@ CAMLprim value caml_get_public_method (value obj, value tag)
   return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
 
-/* these two functions might be useful to an hypothetical JIT */
-
-#ifdef CAML_JIT
-#ifdef NATIVE_CODE
-#define MARK 1
-#else
-#define MARK 0
-#endif
-value caml_cache_public_method (value meths, value tag, value *cache)
-{
-  int li = 3, hi = Field(meths,0), mi;
-  while (li < hi) {
-    mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
-    else li = mi;
-  }
-  *cache = (li-3)*sizeof(value) + MARK;
-  return Field (meths, li-1);
-}
-
-value caml_cache_public_method2 (value *meths, value tag, value *cache)
-{
-  value ofs = *cache & meths[1];
-  if (*(value*)(((char*)(meths+3)) + ofs - MARK) == tag)
-    return *(value*)(((char*)(meths+2)) + ofs - MARK);
-  {
-    int li = 3, hi = meths[0], mi;
-    while (li < hi) {
-      mi = ((li+hi) >> 1) | 1;
-      if (tag < meths[mi]) hi = mi-2;
-      else li = mi;
-    }
-    *cache = (li-3)*sizeof(value) + MARK;
-    return meths[li-1];
-  }
-}
-#endif /*CAML_JIT*/
-
 static value oo_last_id = Val_int(0);
 
 CAMLprim value caml_set_oo_id (value obj) {

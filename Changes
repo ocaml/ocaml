@@ -77,6 +77,10 @@ Working version
   areas in the page table, subsumed by the new code fragment management API
   (Xavier Leroy, review by Jacques-Henri Jourdan)
 
+- #9710: Drop "support" for an hypothetical JIT for OCaml bytecode
+   which has never existed.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9620: Limit the number of parameters for an uncurried or untupled
