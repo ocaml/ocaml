@@ -107,6 +107,7 @@ type t =
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
+  | Unused_tmc_attribute                    (* 71 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}

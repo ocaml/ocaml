@@ -811,6 +811,10 @@ and traverse_binding ctx (var, def) =
   | Some lfun ->
   let special = Ident.Map.find var ctx.specialized in
   let fun_choice = choice ctx lfun.body in
+  if not fun_choice.Choice.has_tmc_calls then
+    Location.prerr_warning
+      (Debuginfo.Scoped_location.to_location lfun.loc)
+      Warnings.Unused_tmc_attribute;
   let direct =
     Lfunction { lfun with body = Choice.direct fun_choice } in
   let dps =
