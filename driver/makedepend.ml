@@ -575,7 +575,7 @@ let print_version_num () =
   exit 0;
 ;;
 
-let main () =
+let run_main argv =
   Clflags.classic := false;
   Compenv.readenv ppf Before_args;
   Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
@@ -643,11 +643,14 @@ let main () =
     Printf.sprintf "Usage: %s [options] <source files>\nOptions are:"
                    (Filename.basename Sys.argv.(0))
   in
-  Clflags.parse_arguments file_dependencies usage;
+  Clflags.parse_arguments argv file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);
   exit (if Error_occurred.get () then 2 else 0)
+
+let main () =
+  run_main Sys.argv
 
 let main_from_option () =
   if Sys.argv.(1) <> "-depend" then begin
@@ -655,7 +658,8 @@ let main_from_option () =
       "Fatal error: argument -depend must be used as first argument.\n%!";
     exit 2;
   end;
-  incr Arg.current;
-  Sys.argv.(0) <- Sys.argv.(0) ^ " -depend";
-  Sys.argv.(!Arg.current) <- Sys.argv.(0);
-  main ()
+  let args =
+    Array.concat [ [| Sys.argv.(0) ^ " -depend" |];
+                   Array.sub Sys.argv 2 (Array.length Sys.argv - 2) ] in
+  Sys.argv.(0) <- args.(0);
+  run_main args

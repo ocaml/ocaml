@@ -218,6 +218,9 @@ Working version
   (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
   Scherer)
 
+- #9688: Expose the main entrypoint in compilerlibs
+  (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
