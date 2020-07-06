@@ -191,6 +191,7 @@ Caml_inline void caml_ephe_clean_partial (value v,
           }
         }
       }
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
       if (Is_white_val (child) && !Is_young (child)){
         release_data = 1;
         Field (v, i) = caml_ephe_none;

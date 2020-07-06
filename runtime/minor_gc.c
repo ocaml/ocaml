@@ -284,9 +284,9 @@ Caml_inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
   for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++){
     child = Field (re->ephe, i);
     if(child != caml_ephe_none
-       && Is_block (child) && Is_young (child)
-       && Hd_val (child) != 0){ /* Value not copied to major heap */
-      return 0;
+       && Is_block (child) && Is_young (child)) {
+      if(Tag_val(child) == Infix_tag) child -= Infix_offset_val(child);
+      if(Hd_val (child) != 0) return 0; /* Value not copied to major heap */
     }
   }
   return 1;
@@ -301,7 +301,10 @@ void caml_oldify_mopup (void)
   value v, new_v, f;
   mlsize_t i;
   struct caml_ephe_ref_elt *re;
-  int redo = 0;
+  int redo;
+
+  again:
+  redo = 0;
 
   while (oldify_todo_list != 0){
     v = oldify_todo_list;                /* Get the head. */
@@ -329,10 +332,12 @@ void caml_oldify_mopup (void)
        re < Caml_state->ephe_ref_table->ptr; re++){
     /* look only at ephemeron with data in the minor heap */
     if (re->offset == 1){
-      value *data = &Field(re->ephe,1);
-      if (*data != caml_ephe_none && Is_block (*data) && Is_young (*data)){
-        if (Hd_val (*data) == 0){ /* Value copied to major heap */
-          *data = Field (*data, 0);
+      value *data = &Field(re->ephe,1), v = *data;
+      if (v != caml_ephe_none && Is_block (v) && Is_young (v)){
+        mlsize_t offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;
+        v -= offs;
+        if (Hd_val (v) == 0){ /* Value copied to major heap */
+          *data = Field (v, 0) + offs;
         } else {
           if (ephe_check_alive_data(re)){
             caml_oldify_one(*data,data);
@@ -343,7 +348,7 @@ void caml_oldify_mopup (void)
     }
   }
 
-  if (redo) caml_oldify_mopup ();
+  if (redo) goto again;
 }
 
 /* Make sure the minor heap is empty by performing a minor collection
@@ -379,10 +384,12 @@ void caml_empty_minor_heap (void)
          re < Caml_state->ephe_ref_table->ptr; re++){
       if(re->offset < Wosize_val(re->ephe)){
         /* If it is not the case, the ephemeron has been truncated */
-        value *key = &Field(re->ephe,re->offset);
-        if (*key != caml_ephe_none && Is_block (*key) && Is_young (*key)){
-          if (Hd_val (*key) == 0){ /* Value copied to major heap */
-            *key = Field (*key, 0);
+        value *key = &Field(re->ephe,re->offset), v = *key;
+        if (v != caml_ephe_none && Is_block (v) && Is_young (v)){
+          mlsize_t offs = Tag_val (v) == Infix_tag ? Infix_offset_val (v) : 0;
+          v -= offs;
+          if (Hd_val (v) == 0){ /* Value copied to major heap */
+            *key = Field (v, 0) + offs;
           }else{ /* Value not copied so it's dead */
             CAMLassert(!ephe_check_alive_data(re));
             *key = caml_ephe_none;
