@@ -118,6 +118,10 @@ type raw_backtrace
     backtraces. If an application processes many backtraces, it can be useful
     to use [raw_backtrace] to avoid or delay conversion.
 
+    Raw backtraces cannot be marshalled. If you need marshalling, you
+    should use the array returned by the [backtrace_slots] function of
+    the next section.
+
     @since 4.01.0
 *)
 
@@ -251,7 +255,10 @@ val backtrace_slots_of_raw_entry :
 
     Slots are returned in the same order as [backtrace_slots]: the slot
     at index [0] is the most recent call, raise, or primitive, and
-    subsequent slots represent callers. *)
+    subsequent slots represent callers.
+
+    @since 4.12
+*)
 
 
 type location = {

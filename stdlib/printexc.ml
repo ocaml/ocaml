@@ -294,7 +294,7 @@ let uncaught_exception_handler = ref default_uncaught_exception_handler
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
-let empty_backtrace : raw_backtrace = Obj.obj (Obj.new_block Obj.abstract_tag 0)
+let empty_backtrace : raw_backtrace = [| |]
 
 let try_get_raw_backtrace () =
   try
