@@ -466,6 +466,11 @@ module Genarray :
      the Bigarray [a].  Setting only some elements of [a] to [v]
      can be achieved by applying [Genarray.fill] to a sub-array
      or a slice of [a]. *)
+
+  val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t ->
+                   (int * int array * int array) option
+  (** [overlap a b] returns length and position of a physical area shared
+     between [a] and [b] if it exists. *)
   end
 
 (** {1 Zero-dimensional arrays} *)
@@ -522,6 +527,10 @@ module Array0 : sig
   (** Build a zero-dimensional Bigarray initialized from the
      given value.  *)
 
+  val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> bool
+  (** [overlap a b] returns [true] if [a] and [b] physiscally
+     share the same memory area such as [set a v] will set [b]
+     too. Otherwise, it returns [false]. *)
 end
 
 
@@ -622,6 +631,11 @@ module Array1 : sig
       Use with caution and only when the program logic guarantees that
       the access is within bounds. *)
 
+  val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t ->
+                   (int * int * int) option
+  (** [overlap a b] returns how many elements into [a] and [b]
+     share the same physical memory area, which indices into [a]
+     and which indices into [b]. Otherwise, it returns [None].
 end
 
 
@@ -739,6 +753,8 @@ module Array2 :
   (** Like {!Bigarray.Array2.set}, but bounds checking is not always
       performed. *)
 
+  val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t ->
+                   (int * (int * int) * (int * int)) option
 end
 
 (** {1 Three-dimensional arrays} *)
@@ -880,6 +896,8 @@ module Array3 :
   (** Like {!Bigarray.Array3.set}, but bounds checking is not always
       performed. *)
 
+  val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t ->
+                   (int * (int * int * int) * (int * int * int)) option
 end
 
 (** {1 Coercions between generic Bigarrays and fixed-dimension Bigarrays} *)

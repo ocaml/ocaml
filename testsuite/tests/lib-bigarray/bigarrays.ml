@@ -28,6 +28,162 @@ let test test_number answer correct_answer =
    printf " %d..." test_number
  end
 
+module Make (B : sig
+        type layout
+
+        val layout : layout Bigarray.layout
+        val sub1 : ('a, 'b, layout) Array1.t -> int -> int -> ('a, 'b, layout) Array1.t
+        val sub2 : ('a, 'b, layout) Array2.t -> int -> int -> ('a, 'b, layout) Array2.t
+        val sub3 : ('a, 'b, layout) Array3.t -> int -> int -> ('a, 'b, layout) Array3.t
+ end) = struct
+  let tests () =
+    let a = Array0.create Int B.layout in
+    let b = Array0.create Int B.layout in
+
+    testing_function "overlap" ;
+    test 1 (Array0.overlap a b) false ;
+    test 2 (Array0.overlap b a) false ;
+    test 3 (Array0.overlap a a) true ;
+    test 4 (Array0.overlap b b) true ;
+
+    let v = Array1.create Int B.layout 10 in
+
+    let ab = B.sub1 v 5 5 in
+    let cd = B.sub1 v 0 5 in
+    test 5 (Array1.overlap ab cd) None ;
+
+    let ab = B.sub1 v 0 5 in
+    let cd = B.sub1 v 5 5 in
+    test 6 (Array1.overlap ab cd) None ;
+
+    let ab = B.sub1 v 0 6 in
+    let cd = B.sub1 v 5 5 in
+    test 7 (Array1.overlap ab cd) (Some (1, 5, 0)) ;
+
+    let ab = B.sub1 v 5 5 in
+    let cd = B.sub1 v 0 6 in
+    test 8 (Array1.overlap ab cd) (Some (1, 0, 5)) ;
+
+    let ab = B.sub1 v 0 8 in
+    let cd = B.sub1 v 2 8 in
+    test 9 (Array1.overlap ab cd) (Some (6, 2, 0)) ;
+
+    let ab = B.sub1 v 0 10 in
+    let cd = B.sub1 v 2 8 in
+    test 10 (Array1.overlap ab cd) (Some (8, 2, 0)) ;
+
+    let ab = B.sub1 v 0 10 in
+    let cd = B.sub1 v 2 6 in
+    test 11 (Array1.overlap ab cd) (Some (6, 2, 0)) ;
+
+    let ab = B.sub1 v 0 8 in
+    let cd = B.sub1 v 0 10 in
+    test 12 (Array1.overlap ab cd) (Some (8, 0, 0)) ;
+
+    let ab = B.sub1 v 0 10 in
+    let cd = B.sub1 v 0 10 in
+    test 13 (Array1.overlap ab cd) (Some (10, 0, 0)) ;
+
+    let ab = B.sub1 v 0 10 in
+    let cd = B.sub1 v 0 8 in
+    test 14 (Array1.overlap ab cd) (Some (8, 0, 0)) ;
+
+    let ab = B.sub1 v 2 6 in
+    let cd = B.sub1 v 0 10 in
+    test 15 (Array1.overlap ab cd) (Some (6, 0, 2)) ;
+
+    let ab = B.sub1 v 2 8 in
+    let cd = B.sub1 v 0 10 in
+    test 16 (Array1.overlap ab cd) (Some (8, 0, 2)) ;
+
+    let ab = B.sub1 v 2 8 in
+    let cd = B.sub1 v 0 8 in
+    test 17 (Array1.overlap ab cd) (Some (6, 0, 2)) ;
+
+    let v = Array2.create Int B.layout 10 10 in
+
+    let ab = B.sub2 v 5 5 in
+    let cd = B.sub2 v 0 5 in
+    test 18 (Array2.overlap ab cd) None ;
+    let ab = B.sub2 v 0 5 in
+    let cd = B.sub2 v 5 5 in
+    test 19 (Array2.overlap ab cd) None ;
+    let ab = B.sub2 v 0 6 in
+    let cd = B.sub2 v 5 5 in
+    test 20 (Array2.overlap ab cd) (Some (10, (5, 0), (0, 0))) ;
+    let ab = B.sub2 v 5 5 in
+    let cd = B.sub2 v 0 6 in
+    test 21 (Array2.overlap ab cd) (Some (10, (0, 0), (5, 0))) ;
+    let ab = B.sub2 v 0 8 in
+    let cd = B.sub2 v 2 8 in
+    test 22 (Array2.overlap ab cd) (Some (60, (2, 0), (0, 0))) ;
+    let ab = B.sub2 v 0 10 in
+    let cd = B.sub2 v 2 8 in
+    test 23 (Array2.overlap ab cd) (Some (80, (2, 0), (0, 0))) ;
+    let ab = B.sub2 v 0 10 in
+    let cd = B.sub2 v 2 6 in
+    test 24 (Array2.overlap ab cd) (Some (60, (2, 0), (0, 0))) ;
+    let ab = B.sub2 v 0 8 in
+    let cd = B.sub2 v 0 10 in
+    test 25 (Array2.overlap ab cd) (Some (80, (0, 0), (0, 0))) ;
+    let ab = B.sub2 v 0 10 in
+    let cd = B.sub2 v 0 10 in
+    test 26 (Array2.overlap ab cd) (Some (100, (0, 0), (0, 0))) ;
+    let ab = B.sub2 v 0 10 in
+    let cd = B.sub2 v 0 8 in
+    test 27 (Array2.overlap ab cd) (Some (80, (0, 0), (0, 0))) ;
+    let ab = B.sub2 v 2 6 in
+    let cd = B.sub2 v 0 10 in
+    test 28 (Array2.overlap ab cd) (Some (60, (0, 0), (2, 0))) ;
+    let ab = B.sub2 v 2 8 in
+    let cd = B.sub2 v 0 10 in
+    test 29 (Array2.overlap ab cd) (Some (80, (0, 0), (2, 0))) ;
+    let ab = B.sub2 v 2 8 in
+    let cd = B.sub2 v 0 8 in
+    test 30 (Array2.overlap ab cd) (Some (60, (0, 0), (2, 0))) ;
+
+    let v = Array3.create Int B.layout 10 10 10 in
+    let ab = B.sub3 v 5 5 in
+    let cd = B.sub3 v 0 5 in
+    test 31 (Array3.overlap ab cd) None ;
+    let ab = B.sub3 v 0 5 in
+    let cd = B.sub3 v 5 5 in
+    test 32 (Array3.overlap ab cd) None ;
+    let ab = B.sub3 v 0 6 in
+    let cd = B.sub3 v 5 5 in
+    test 33 (Array3.overlap ab cd) (Some (100, (5, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 5 5 in
+    let cd = B.sub3 v 0 6 in
+    test 34 (Array3.overlap ab cd) (Some (100, (0, 0, 0), (5, 0, 0))) ;
+    let ab = B.sub3 v 0 8 in
+    let cd = B.sub3 v 2 8 in
+    test 35 (Array3.overlap ab cd) (Some (600, (2, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 0 10 in
+    let cd = B.sub3 v 2 8 in
+    test 36 (Array3.overlap ab cd) (Some (800, (2, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 0 10 in
+    let cd = B.sub3 v 2 6 in
+    test 37 (Array3.overlap ab cd) (Some (600, (2, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 0 8 in
+    let cd = B.sub3 v 0 10 in
+    test 38 (Array3.overlap ab cd) (Some (800, (0, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 0 10 in
+    let cd = B.sub3 v 0 10 in
+    test 39 (Array3.overlap ab cd) (Some (1000, (0, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 0 10 in
+    let cd = B.sub3 v 0 8 in
+    test 40 (Array3.overlap ab cd) (Some (800, (0, 0, 0), (0, 0, 0))) ;
+    let ab = B.sub3 v 2 6 in
+    let cd = B.sub3 v 0 10 in
+    test 41 (Array3.overlap ab cd) (Some (600, (0, 0, 0), (2, 0, 0))) ;
+    let ab = B.sub3 v 2 8 in
+    let cd = B.sub3 v 0 10 in
+    test 42 (Array3.overlap ab cd) (Some (800, (0, 0, 0), (2, 0, 0))) ;
+    let ab = B.sub3 v 2 8 in
+    let cd = B.sub3 v 0 8 in
+    test 43 (Array3.overlap ab cd) (Some (600, (0, 0, 0), (2, 0, 0))) ;
+end
+
 (* One-dimensional arrays *)
 
 (* flambda can cause some of these values not to be reclaimed by the Gc, which
@@ -978,6 +1134,21 @@ let tests () =
   test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
   test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
                                      makecomplex);
+
+  let module C_overlap = Make(struct
+          type layout = c_layout
+          let layout = C_layout
+          let sub1 = Array1.sub
+          let sub2 = Array2.sub_left
+          let sub3 = Array3.sub_left end) in
+  let module Fortran_overlap = Make(struct
+          type layout = fortran_layout
+          let layout = Fortran_layout
+          let sub1 t a b = Array1.sub t (a+1) b
+          let sub2 t a b = Array2.sub_right t (a+1) b
+          let sub3 t a b = Array3.sub_right t (a+1) b end) in
+  C_overlap.tests () ;
+  Fortran_overlap.tests () ;
 
   ()
   [@@inline never]

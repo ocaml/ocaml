@@ -129,10 +129,64 @@ module Genarray = struct
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+
+  external ptr : ('a, 'b, 'c) t -> nativeint = "caml_ba_ptr"
+
+  let c_nth_dims a i = nth_dim a i
+  let fortran_nth_dims a i = nth_dim a (num_dims a - i - 1)
+
+  let overlap
+    : type c.
+      ('a, 'b, c) t ->
+      ('a, 'b, c) t ->
+      (int * int array * int array) option
+    = fun a b ->
+    let nth_dim = match layout a (* = layout b *) with
+      | C_layout -> c_nth_dims
+      | Fortran_layout -> fortran_nth_dims in
+    if (num_dims a) <> (num_dims b)
+    then invalid_arg "Bigarray.Genarray.overlap" ;
+
+    let src_a = ptr a in
+    let src_b = ptr b in
+    let len_a = Nativeint.of_int (size_in_bytes a) in
+    let len_b = Nativeint.of_int (size_in_bytes b) in
+
+    let len =
+      let ( + ) = Nativeint.add in
+      let ( - ) = Nativeint.sub in
+      max 0n (min (src_a + len_a) (src_b + len_b) - max src_a src_b) in
+    let len = Nativeint.to_int len in
+    let len = len / kind_size_in_bytes (kind a) in
+
+    if src_a >= src_b && src_a < Nativeint.add src_b len_b
+    then begin
+      let offset = ref ((Nativeint.to_int (Nativeint.sub src_a src_b))
+                        / kind_size_in_bytes (kind a)) in
+      let points = Array.make (num_dims b) 0 in
+      for i = num_dims b - 1 downto 0
+      do
+        points.(i) <- !offset mod (nth_dim b i);
+        offset := !offset / (nth_dim b i);
+      done ;
+      Some (len, Array.make (num_dims a) 0, points)
+    end else if src_b >= src_a && src_b < Nativeint.add src_a len_a
+    then begin
+      let offset = ref ((Nativeint.to_int (Nativeint.sub src_b src_a))
+                        / kind_size_in_bytes (kind b)) in
+      let points = Array.make (num_dims a) 0 in
+      for i = num_dims a - 1 downto 0
+      do
+        points.(i) <- !offset mod (nth_dim a i);
+        offset := !offset / (nth_dim a i);
+      done ;
+      Some (len, points, Array.make (num_dims b) 0)
+    end else None
 end
 
 module Array0 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+
   let create kind layout =
     Genarray.create kind layout [||]
   let get arr = Genarray.get arr [||]
@@ -152,6 +206,10 @@ module Array0 = struct
     let a = create kind layout in
     set a v;
     a
+  let overlap a b = match Genarray.overlap a b with
+    | Some (1, [||], [||]) -> true
+    | Some _ -> assert false
+    | None -> false
 end
 
 module Array1 = struct
@@ -189,6 +247,10 @@ module Array1 = struct
     in
     for i = 0 to Array.length data - 1 do unsafe_set ba (i + ofs) data.(i) done;
     ba
+  let overlap a b = match Genarray.overlap a b with
+    | Some (len, [| x |], [| y |]) -> Some (len, x, y)
+    | Some _ -> assert false
+    | None -> None
 end
 
 module Array2 = struct
@@ -239,6 +301,10 @@ module Array2 = struct
       done
     done;
     ba
+  let overlap a b = match Genarray.overlap a b with
+    | Some (len, [| xa; ya |], [| xb; yb |]) -> Some (len, (xa, ya), (xb, yb))
+    | Some _ -> assert false
+    | None -> None
 end
 
 module Array3 = struct
@@ -299,6 +365,11 @@ module Array3 = struct
       done
     done;
     ba
+  let overlap a b = match Genarray.overlap a b with
+    | Some (len, [| xa; ya; za |], [| xb; yb; zb |]) ->
+        Some (len, (xa, ya, za), (xb, yb, zb))
+    | Some _ -> assert false
+    | None -> None
 end
 
 external genarray_of_array0: ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t
