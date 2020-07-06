@@ -3757,7 +3757,9 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
   try
     let next, nexts = split_and_precompile ~arg pm1 in
     let size = List.length paraml
-    and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
+    and idl = List.map (function
+      | Lvar id -> id
+      | _ -> Ident.create_local "*match*") paraml in
     let args = List.map (fun id -> (Lvar id, Alias)) idl in
     let flat_next = flatten_precompiled size args next
     and flat_nexts =
