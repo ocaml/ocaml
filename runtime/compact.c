@@ -47,7 +47,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
    Encoded pointers:
    Pointers always have their two low-order bits clear. We make use of
    this to encode pointers by shifting bits 2-9 to 0-7:
-   ...XXXyyyyyyyy00 becomes ...XXX01yyyyyy
+   ...XXXyyyyyyyy00 becomes ...XXX01yyyyyyyy
    Note that 01 corresponds to the "gray" color of the GC, so we can now
    mix pointers and headers because there are no gray headers anywhere in
    the heap (or outside) when we start a compaction (which must be done at
