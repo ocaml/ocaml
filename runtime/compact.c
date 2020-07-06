@@ -67,19 +67,13 @@ static void invert_pointer_at (word *p)
 
   CAMLassert (((uintnat) p & 3) == 0);
 
-  if (Is_block (q)){
+  if (Is_block (q) && Is_in_value_area (q)){
     h = Hd_val (q);
     switch (Color_hd (h)){
     case Caml_white:
       if (Tag_hd (h) == Infix_tag){
         value realvalue = (value) q - Infix_offset_val (q);
-        if (Is_black_val (realvalue)){
-          break;
-        }else{
-          CAMLassert (Is_in_heap (realvalue));
-        }
-      }else{
-        CAMLassert (Is_in_heap (q));
+        if (Is_black_val (realvalue)) break;
       }
       /* FALL THROUGH */
     case Caml_gray:
@@ -256,7 +250,7 @@ static void do_compaction (intnat new_allocation_policy)
           *p = q;
 
           if (t == Closure_tag){
-            /* Revert the infix pointers. */
+            /* Revert the infix pointers to this block. */
             mlsize_t i, startenv;
             value v;
 

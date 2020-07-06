@@ -83,7 +83,7 @@ Working version
 
 - #9728: Take advantage of the new closure representation to simplify the
   compaction algorithm and remove its dependence on the page table
-  (Damien Doligez, review by ?? and Xavier Leroy)
+  (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
 
 ### Code generation and optimizations:
 

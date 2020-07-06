@@ -122,12 +122,16 @@ CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
   int i, j;
 
   for (sp = stack_low; sp < stack_high; sp++) {
+#ifdef NO_NAKED_POINTERS
     /* Code pointers inside the stack are naked pointers.
        We must avoid passing them to function [f]. */
     value v = *sp;
     if (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL) {
       f(v, sp);
     }
+#else
+    f (*sp, sp);
+#endif
   }
   for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
