@@ -91,7 +91,7 @@ static void invert_pointer_at (word *p)
     case Caml_black:
       /* [q] points to an out-of-heap value. Leave it alone. */
       break;
-    case Caml_blue:
+    default: /* Caml_blue */
       /* We found a pointer to a free block. This cannot happen. */
       CAMLassert (0);
       break;
