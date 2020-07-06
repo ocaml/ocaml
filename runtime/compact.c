@@ -101,7 +101,8 @@ static void invert_pointer_at (word *p)
 
 void caml_invert_root (value v, value *p)
 {
-  CAMLassert (Is_long (*p) || Is_in_heap (*p) || Is_black_val (*p));
+  CAMLassert (Is_long (*p) || Is_in_heap (*p) || Is_black_val (*p)
+              || Tag_val (*p) == Infix_tag);
   invert_pointer_at ((word *) p);
 }
 
