@@ -132,6 +132,9 @@ Working version
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #9743 Filename.with_extension and Filename.add_extension
+  (Andrew Jeffery, review by ...)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;

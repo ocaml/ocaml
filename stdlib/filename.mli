@@ -101,6 +101,15 @@ val chop_extension : string -> string
 (** Same as {!Filename.remove_extension}, but raise [Invalid_argument]
     if the given name has an empty extension. *)
 
+val with_extension : string -> string -> string
+(** [with_extension name ext] is [name] with the extension set to [ext]. If
+    there is an existing extension this is removed before adding the extension.
+*)
+
+val add_extension : string -> string -> string
+(** [add_extension name ext] is [name] with the added extension [ext]. Any
+    current extension is not removed.
+*)
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.

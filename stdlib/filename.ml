@@ -322,6 +322,35 @@ let remove_extension name =
   let l = extension_len name in
   if l = 0 then name else String.sub name 0 (String.length name - l)
 
+let with_extension name ext =
+  let rec non_dot_exists s i =
+    if i < 0 || is_dir_sep s i then false
+    else if s.[i] = '.' then non_dot_exists s (i - 1)
+    else true
+  in
+  let name_has_non_dot = non_dot_exists name (String.length name - 1) in
+  if not name_has_non_dot then name else
+  let ext_has_non_dot = non_dot_exists ext (String.length ext - 1) in
+  let f = remove_extension name in
+  if not ext_has_non_dot then f else
+  let ext_starts_with_dot = ext.[0] = '.' in
+  let ext_sep = if ext_starts_with_dot then "" else "." in
+  f ^ ext_sep ^ ext
+
+let add_extension name ext =
+  let rec non_dot_exists s i =
+    if i < 0 || is_dir_sep s i then false
+    else if s.[i] = '.' then non_dot_exists s (i - 1)
+    else true
+  in
+  let name_has_non_dot = non_dot_exists name (String.length name - 1) in
+  if not name_has_non_dot then name else
+  let ext_has_non_dot = non_dot_exists ext (String.length ext - 1) in
+  if not ext_has_non_dot then name else
+  let ext_starts_with_dot = ext.[0] = '.' in
+  let ext_sep = if ext_starts_with_dot then "" else "." in
+  name ^ ext_sep ^ ext
+
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
