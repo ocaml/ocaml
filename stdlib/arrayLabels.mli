@@ -13,10 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* NOTE: When updating arrayLabels.mli, run tools/unlabel to generate
+   array.mli
+ *)
+
 (** Array operations
 
-   This module is intended to be used via {!StdLabels} which replaces
-   {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts
+   The labeled version of this module, {!ArrayLabels}, is intended to be used
+   via {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and {!String}
+   with their labeled counterparts
 
    For example:
    {[
@@ -63,12 +68,21 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
   [@@ocaml.deprecated "Use Array.make instead."]
-(** @deprecated [create] is an alias for {!make}. *)
+(** @deprecated [Array.create] is an alias for {!Array.make}. *)
+
+external create_float: int -> float array = "caml_make_float_vect"
+(** [Array.create_float n] returns a fresh float array of length [n],
+    with uninitialized data.
+    @since 4.03 *)
+
+val make_float: int -> float array
+  [@@ocaml.deprecated "Use Array.create_float instead."]
+(** @deprecated [Array.make_float] is an alias for {!Array.create_float}. *)
 
 val init : int -> f:(int -> 'a) -> 'a array
-(** [init n ~f] returns a fresh array of length [n],
+(** [init n f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
-   In other terms, [init n ~f] tabulates the results of [f]
+   In other terms, [init n f] tabulates the results of [f]
    applied to the integers [0] to [n-1].
 
    @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
@@ -76,7 +90,7 @@ val init : int -> f:(int -> 'a) -> 'a array
    size is only [Sys.max_array_length / 2].*)
 
 val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-(** [make_matrix ~dimx ~dimy e] returns a two-dimensional array
+(** [make_matrix dimx dimy e] returns a two-dimensional array
    (an array of arrays) with first dimension [dimx] and
    second dimension [dimy]. All the elements of this new matrix
    are initially physically equal to [e].
@@ -90,17 +104,19 @@ val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
 
 val create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
   [@@ocaml.deprecated "Use Array.make_matrix instead."]
-(** @deprecated [create_matrix] is an alias for {!make_matrix}. *)
+(** @deprecated [Array.create_matrix] is an alias for {!Array.make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
 (** [append v1 v2] returns a fresh array containing the
-   concatenation of the arrays [v1] and [v2]. *)
+   concatenation of the arrays [v1] and [v2].
+   @raise Invalid_argument if
+   [Array.length v1 + Array.length v2 > Sys.max_array_length]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as {!append}, but concatenates a list of arrays. *)
+(** Same as {!Array.append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> pos:int -> len:int -> 'a array
-(** [sub a ~pos ~len] returns a fresh array of length [len],
+(** [sub a pos len] returns a fresh array of length [len],
    containing the elements number [pos] to [pos + len - 1]
    of array [a].
 
@@ -113,7 +129,7 @@ val copy : 'a array -> 'a array
    containing the same elements as [a]. *)
 
 val fill : 'a array -> pos:int -> len:int -> 'a -> unit
-(** [fill a ~pos ~len x] modifies the array [a] in place,
+(** [fill a pos len x] modifies the array [a] in place,
    storing [x] in elements number [pos] to [pos + len - 1].
 
    @raise Invalid_argument if [pos] and [len] do not
@@ -122,7 +138,7 @@ val fill : 'a array -> pos:int -> len:int -> 'a -> unit
 val blit :
   src:'a array -> src_pos:int -> dst:'a array -> dst_pos:int -> len:int ->
     unit
-(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] elements
+(** [blit src src_pos dst dst_pos len] copies [len] elements
    from array [src], starting at element number [src_pos], to array [dst],
    starting at element number [dst_pos]. It works correctly even if
    [src] and [dst] are the same array, and the source and
@@ -139,33 +155,35 @@ val of_list : 'a list -> 'a array
 (** [of_list l] returns a fresh array containing the elements
    of [l]. *)
 
+(** {1 Iterators} *)
+
 val iter : f:('a -> unit) -> 'a array -> unit
-(** [iter ~f a] applies function [f] in turn to all
+(** [iter f a] applies function [f] in turn to all
    the elements of [a].  It is equivalent to
    [f a.(0); f a.(1); ...; f a.(length a - 1); ()]. *)
 
 val map : f:('a -> 'b) -> 'a array -> 'b array
-(** [map ~f a] applies function [f] to all the elements of [a],
+(** [map f a] applies function [f] to all the elements of [a],
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
 val iteri : f:(int -> 'a -> unit) -> 'a array -> unit
-(** Same as {!iter}, but the
+(** Same as {!Array.iter}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a array -> 'b array
-(** Same as {!map}, but the
+(** Same as {!Array.map}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
 
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b array -> 'a
-(** [fold_left ~f ~init a] computes
+(** [fold_left f init a] computes
    [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
    where [n] is the length of the array [a]. *)
 
 val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
-(** [fold_right ~f a ~init] computes
+(** [fold_right f a init] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
    where [n] is the length of the array [a]. *)
 
@@ -174,64 +192,53 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-(** [iter2 ~f a b] applies function [f] to all the elements of [a]
+(** [iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.05.0 *)
+   @since 4.05.0 labeled, or 4.03.0 unlabeled *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-(** [map2 ~f a b] applies function [f] to all the elements of [a]
+(** [map2 f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.05.0 *)
+   @since 4.05.0 labeled, or 4.03.0 unlabeled *)
 
 
 (** {1 Array scanning} *)
 
-
-val exists : f:('a -> bool) -> 'a array -> bool
-(** [exists ~f [|a1; ...; an|]] checks if at least one element of
-    the array satisfies the predicate [f]. That is, it returns
-    [(f a1) || (f a2) || ... || (f an)].
-    @since 4.03.0 *)
-
 val for_all : f:('a -> bool) -> 'a array -> bool
-(** [for_all ~f [|a1; ...; an|]] checks if all elements
+(** [for_all f [|a1; ...; an|]] checks if all elements
    of the array satisfy the predicate [f]. That is, it returns
    [(f a1) && (f a2) && ... && (f an)].
    @since 4.03.0 *)
 
+val exists : f:('a -> bool) -> 'a array -> bool
+(** [exists f [|a1; ...; an|]] checks if at least one element of
+    the array satisfies the predicate [f]. That is, it returns
+    [(f a1) || (f a2) || ... || (f an)].
+    @since 4.03.0 *)
+
 val for_all2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-(** Same as {!ArrayLabels.for_all}, but for a two-argument predicate.
+(** Same as {!Array.for_all}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
    @since 4.11.0 *)
 
 val exists2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-(** Same as {!ArrayLabels.exists}, but for a two-argument predicate.
+(** Same as {!Array.exists}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
    @since 4.11.0 *)
 
 val mem : 'a -> set:'a array -> bool
-(** [mem x ~set] is true if and only if [x] is equal
-   to an element of [set].
-   @since 4.03.0 *)
+(** [mem a set] is true if and only if [a] is structurally equal
+    to an element of [l] (i.e. there is an [x] in [l] such that
+    [compare a x = 0]).
+    @since 4.03.0 *)
 
 val memq : 'a -> set:'a array -> bool
-(** Same as {!mem}, but uses physical equality
+(** Same as {!Array.mem}, but uses physical equality
    instead of structural equality to compare list elements.
    @since 4.03.0 *)
-
-external create_float: int -> float array = "caml_make_float_vect"
-(** [create_float n] returns a fresh float array of length [n],
-    with uninitialized data.
-    @since 4.03 *)
-
-val make_float: int -> float array
-  [@@ocaml.deprecated "Use Array.create_float instead."]
-(** @deprecated {!make_float} is an alias for
-    {!create_float}. *)
-
 
 (** {1 Sorting} *)
 
@@ -263,7 +270,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 *)
 
 val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!sort}, but the sorting algorithm is stable (i.e.
+(** Same as {!Array.sort}, but the sorting algorithm is stable (i.e.
    elements that compare equal are kept in their original order) and
    not guaranteed to run in constant heap space.
 
@@ -273,17 +280,20 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!sort} or {!stable_sort}, whichever is faster on typical input. *)
+(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is faster on typical input. *)
 
 
 (** {1 Iterators} *)
 
 val to_seq : 'a array -> 'a Seq.t
-(** Iterate on the array, in increasing order
+(** Iterate on the array, in increasing order. Modifications of the
+    array during iteration will be reflected in the iterator.
     @since 4.07 *)
 
 val to_seqi : 'a array -> (int * 'a) Seq.t
-(** Iterate on the array, in increasing order, yielding indices along elements
+(** Iterate on the array, in increasing order, yielding indices along elements.
+    Modifications of the array during iteration will be reflected in the
+    iterator.
     @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a array

@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Byte sequence operations.
+(* NOTE: When updating bytesLabels.mli, run tools/unlabel to generate
+   bytes.mli
+ *)
 
+(** Byte sequence operations.
+ 
    A byte sequence is a mutable data structure that contains a
    fixed-length sequence of bytes. Each byte can be indexed in
    constant time for reading or writing.
@@ -39,8 +43,22 @@
 
    Bytes are represented by the OCaml type [char].
 
+
+
+   The labeled version of this module, {!BytesLabels}, is intended to be used
+   through {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and
+   {!String} with their labeled counterparts.
+
+   For example:
+   {[
+      open StdLabels
+
+      let first = Bytes.sub ~pos:0 ~len:1
+   ]}
+
    @since 4.02.0
- *)
+
+   *)
 
 external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
@@ -48,6 +66,7 @@ external length : bytes -> int = "%bytes_length"
 external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
     @raise Invalid_argument if [n] is not a valid index in [s]. *)
+
 
 external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
@@ -65,8 +84,8 @@ val make : int -> char -> bytes
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> bytes
-(** [Bytes.init n f] returns a fresh byte sequence of length [n], with
-    character [i] initialized to the result of [f i] (in increasing
+(** [init n f] returns a fresh byte sequence of length [n],
+    with character [i] initialized to the result of [f i] (in increasing
     index order).
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
@@ -86,10 +105,10 @@ val to_string : bytes -> string
     sequence. *)
 
 val sub : bytes -> int -> int -> bytes
-(** [sub s start len] returns a new byte sequence of length [len],
-    containing the subsequence of [s] that starts at position [start]
+(** [sub s pos len] returns a new byte sequence of length [len],
+    containing the subsequence of [s] that starts at position [pos]
     and has length [len].
-    @raise Invalid_argument if [start] and [len] do not designate a
+    @raise Invalid_argument if [pos] and [len] do not designate a
     valid range of [s]. *)
 
 val sub_string : bytes -> int -> int -> string
@@ -102,44 +121,49 @@ val extend : bytes -> int -> int -> bytes
     is negative, then bytes are removed (instead of appended) from
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
-    longer than {!Sys.max_string_length} bytes. *)
+    longer than {!Sys.max_string_length} bytes.
+    @since 4.05.0 *)
 
 val fill : bytes -> int -> int -> char -> unit
-(** [fill s start len c] modifies [s] in place, replacing [len]
-    characters with [c], starting at [start].
-    @raise Invalid_argument if [start] and [len] do not designate a
+(** [fill s pos len c] modifies [s] in place, replacing [len]
+    characters with [c], starting at [pos].
+    @raise Invalid_argument if [pos] and [len] do not designate a
     valid range of [s]. *)
 
-val blit : bytes -> int -> bytes -> int -> int -> unit
-(** [blit src srcoff dst dstoff len] copies [len] bytes from sequence
-    [src], starting at index [srcoff], to sequence [dst], starting at
-    index [dstoff]. It works correctly even if [src] and [dst] are the
+val blit :
+  bytes -> int -> bytes -> int -> int
+  -> unit
+(** [blit src src_pos dst dst_pos len] copies [len] bytes from sequence
+    [src], starting at index [src_pos], to sequence [dst], starting at
+    index [dst_pos]. It works correctly even if [src] and [dst] are the
     same byte sequence, and the source and destination intervals
     overlap.
-    @raise Invalid_argument if [srcoff] and [len] do not
-    designate a valid range of [src], or if [dstoff] and [len]
+    @raise Invalid_argument if [src_pos] and [len] do not
+    designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst]. *)
 
-val blit_string : string -> int -> bytes -> int -> int -> unit
-(** [blit_string src srcoff dst dstoff len] copies [len] bytes from
-    string [src], starting at index [srcoff], to byte sequence [dst],
-    starting at index [dstoff].
-    @raise Invalid_argument if [srcoff] and [len] do not
-    designate a valid range of [src], or if [dstoff] and [len]
-    do not designate a valid range of [dst]. *)
+val blit_string :
+  string -> int -> bytes -> int -> int
+  -> unit
+(** [blit src src_pos dst dst_pos len] copies [len] bytes from string
+    [src], starting at index [src_pos], to byte sequence [dst],
+    starting at index [dst_pos].
+    @raise Invalid_argument if [src_pos] and [len] do not
+    designate a valid range of [src], or if [dst_pos] and [len]
+    do not designate a valid range of [dst].
+    @since 4.05.0 *)
 
 val concat : bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
     inserting the separator byte sequence [sep] between each, and
-    returns the result as a new byte sequence.
-    @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes. *)
+    returns the result as a new byte sequence. *)
 
 val cat : bytes -> bytes -> bytes
 (** [cat s1 s2] concatenates [s1] and [s2] and returns the result
-    as a new byte sequence.
+    as new byte sequence.
     @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes. *)
+    {!Sys.max_string_length} bytes.
+    @since 4.05.0 *)
 
 val iter : (char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].
@@ -147,14 +171,14 @@ val iter : (char -> unit) -> bytes -> unit
     (length s - 1)); ()]. *)
 
 val iteri : (int -> char -> unit) -> bytes -> unit
-(** Same as {!Bytes.iter}, but the function is applied to the index of
+(** Same as [iter], but the function is applied to the index of
     the byte as first argument and the byte itself as second
     argument. *)
 
 val map : (char -> char) -> bytes -> bytes
-(** [map f s] applies function [f] in turn to all the bytes of [s]
-    (in increasing index order) and stores the resulting bytes in
-    a new sequence that is returned as the result. *)
+(** [map f s] applies function [f] in turn to all the bytes of [s] and
+    stores the resulting bytes in a new sequence that is returned as
+    the result. *)
 
 val mapi : (int -> char -> char) -> bytes -> bytes
 (** [mapi f s] calls [f] with each character of [s] and its
@@ -202,7 +226,7 @@ val index_from : bytes -> int -> char -> int
     @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: bytes -> int -> char -> int option
-(** [index_from_opt s i c] returns the index of the first occurrence of
+(** [index_from _opts i c] returns the index of the first occurrence of
     byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
     after position [i].
     [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
@@ -268,22 +292,22 @@ val uncapitalize : bytes -> bytes
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -296,7 +320,7 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.03.0 *)
+    @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 (** {1:unsafe Unsafe conversions (for advanced users)}
 
@@ -426,6 +450,7 @@ let s = Bytes.of_string "hello"
     (for example {!Marshal.from_bytes}) and previously used the
     [string] type for this purpose.
 *)
+
 
 (** {1 Iterators} *)
 
@@ -638,7 +663,6 @@ val set_int64_le : bytes -> int -> int64 -> unit
 *)
 
 
-
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
@@ -646,8 +670,8 @@ val set_int64_le : bytes -> int -> int64 -> unit
 external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
-  bytes -> int -> bytes -> int -> int -> unit
-  = "caml_blit_bytes" [@@noalloc]
+  bytes -> int -> bytes -> int -> int ->
+    unit = "caml_blit_bytes" [@@noalloc]
 external unsafe_blit_string :
   string -> int -> bytes -> int -> int -> unit
   = "caml_blit_string" [@@noalloc]

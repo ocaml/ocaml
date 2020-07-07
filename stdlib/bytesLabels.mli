@@ -13,18 +13,52 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* NOTE: When updating bytesLabels.mli, run tools/unlabel to generate
+   bytes.mli
+ *)
+
 (** Byte sequence operations.
-    @since 4.02.0
+ 
+   A byte sequence is a mutable data structure that contains a
+   fixed-length sequence of bytes. Each byte can be indexed in
+   constant time for reading or writing.
 
-    This module is intended to be used through {!StdLabels} which replaces
-    {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts.
+   Given a byte sequence [s] of length [l], we can access each of the
+   [l] bytes of [s] via its index in the sequence. Indexes start at
+   [0], and we will call an index valid in [s] if it falls within the
+   range [[0...l-1]] (inclusive). A position is the point between two
+   bytes or at the beginning or end of the sequence.  We call a
+   position valid in [s] if it falls within the range [[0...l]]
+   (inclusive). Note that the byte at index [n] is between positions
+   [n] and [n+1].
 
-    For example:
-    {[
-       open StdLabels
+   Two parameters [start] and [len] are said to designate a valid
+   range of [s] if [len >= 0] and [start] and [start+len] are valid
+   positions in [s].
 
-       let first = Bytes.sub ~pos:0 ~len:1
-    ]} *)
+   Byte sequences can be modified in place, for instance via the [set]
+   and [blit] functions described below.  See also strings (module
+   {!String}), which are almost the same data structure, but cannot be
+   modified in place.
+
+   Bytes are represented by the OCaml type [char].
+
+
+
+   The labeled version of this module, {!BytesLabels}, is intended to be used
+   through {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and
+   {!String} with their labeled counterparts.
+
+   For example:
+   {[
+      open StdLabels
+
+      let first = Bytes.sub ~pos:0 ~len:1
+   ]}
+
+   @since 4.02.0
+
+   *)
 
 external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
@@ -51,7 +85,8 @@ val make : int -> char -> bytes
 
 val init : int -> f:(int -> char) -> bytes
 (** [init n f] returns a fresh byte sequence of length [n],
-    with character [i] initialized to the result of [f i].
+    with character [i] initialized to the result of [f i] (in increasing
+    index order).
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val empty : bytes
@@ -70,10 +105,10 @@ val to_string : bytes -> string
     sequence. *)
 
 val sub : bytes -> pos:int -> len:int -> bytes
-(** [sub s start len] returns a new byte sequence of length [len],
-    containing the subsequence of [s] that starts at position [start]
+(** [sub s pos len] returns a new byte sequence of length [len],
+    containing the subsequence of [s] that starts at position [pos]
     and has length [len].
-    @raise Invalid_argument if [start] and [len] do not designate a
+    @raise Invalid_argument if [pos] and [len] do not designate a
     valid range of [s]. *)
 
 val sub_string : bytes -> pos:int -> len:int -> string
@@ -90,31 +125,31 @@ val extend : bytes -> left:int -> right:int -> bytes
     @since 4.05.0 *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
-(** [fill s start len c] modifies [s] in place, replacing [len]
-    characters with [c], starting at [start].
-    @raise Invalid_argument if [start] and [len] do not designate a
+(** [fill s pos len c] modifies [s] in place, replacing [len]
+    characters with [c], starting at [pos].
+    @raise Invalid_argument if [pos] and [len] do not designate a
     valid range of [s]. *)
 
 val blit :
   src:bytes -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit src srcoff dst dstoff len] copies [len] bytes from sequence
-    [src], starting at index [srcoff], to sequence [dst], starting at
-    index [dstoff]. It works correctly even if [src] and [dst] are the
+(** [blit src src_pos dst dst_pos len] copies [len] bytes from sequence
+    [src], starting at index [src_pos], to sequence [dst], starting at
+    index [dst_pos]. It works correctly even if [src] and [dst] are the
     same byte sequence, and the source and destination intervals
     overlap.
-    @raise Invalid_argument if [srcoff] and [len] do not
-    designate a valid range of [src], or if [dstoff] and [len]
+    @raise Invalid_argument if [src_pos] and [len] do not
+    designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst]. *)
 
 val blit_string :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit src srcoff dst dstoff len] copies [len] bytes from string
-    [src], starting at index [srcoff], to byte sequence [dst],
-    starting at index [dstoff].
-    @raise Invalid_argument if [srcoff] and [len] do not
-    designate a valid range of [src], or if [dstoff] and [len]
+(** [blit src src_pos dst dst_pos len] copies [len] bytes from string
+    [src], starting at index [src_pos], to byte sequence [dst],
+    starting at index [dst_pos].
+    @raise Invalid_argument if [src_pos] and [len] do not
+    designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
     @since 4.05.0 *)
 
@@ -136,7 +171,7 @@ val iter : f:(char -> unit) -> bytes -> unit
     (length s - 1)); ()]. *)
 
 val iteri : f:(int -> char -> unit) -> bytes -> unit
-(** Same as {!Bytes.iter}, but the function is applied to the index of
+(** Same as [iter], but the function is applied to the index of
     the byte as first argument and the byte itself as second
     argument. *)
 
@@ -157,7 +192,11 @@ val trim : bytes -> bytes
 
 val escaped : bytes -> bytes
 (** Return a copy of the argument, with special characters represented
-    by escape sequences, following the lexical conventions of OCaml. *)
+    by escape sequences, following the lexical conventions of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash and double-quote.
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
 val index : bytes -> char -> int
 (** [index s c] returns the index of the first occurrence of byte [c]
@@ -253,22 +292,22 @@ val uncapitalize : bytes -> bytes
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.05.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.05.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.05.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.05.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -281,7 +320,137 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.05.0 *)
+    @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
+
+(** {1:unsafe Unsafe conversions (for advanced users)}
+
+    This section describes unsafe, low-level conversion functions
+    between [bytes] and [string]. They do not copy the internal data;
+    used improperly, they can break the immutability invariant on
+    strings provided by the [-safe-string] option. They are available for
+    expert library authors, but for most purposes you should use the
+    always-correct {!Bytes.to_string} and {!Bytes.of_string} instead.
+*)
+
+val unsafe_to_string : bytes -> string
+(** Unsafely convert a byte sequence into a string.
+
+    To reason about the use of [unsafe_to_string], it is convenient to
+    consider an "ownership" discipline. A piece of code that
+    manipulates some data "owns" it; there are several disjoint ownership
+    modes, including:
+    - Unique ownership: the data may be accessed and mutated
+    - Shared ownership: the data has several owners, that may only
+      access it, not mutate it.
+
+    Unique ownership is linear: passing the data to another piece of
+    code means giving up ownership (we cannot write the
+    data again). A unique owner may decide to make the data shared
+    (giving up mutation rights on it), but shared data may not become
+    uniquely-owned again.
+
+   [unsafe_to_string s] can only be used when the caller owns the byte
+   sequence [s] -- either uniquely or as shared immutable data. The
+   caller gives up ownership of [s], and gains ownership of the
+   returned string.
+
+   There are two valid use-cases that respect this ownership
+   discipline:
+
+   1. Creating a string by initializing and mutating a byte sequence
+   that is never changed after initialization is performed.
+
+   {[
+let string_init len f : string =
+  let s = Bytes.create len in
+  for i = 0 to len - 1 do Bytes.set s i (f i) done;
+  Bytes.unsafe_to_string s
+   ]}
+
+   This function is safe because the byte sequence [s] will never be
+   accessed or mutated after [unsafe_to_string] is called. The
+   [string_init] code gives up ownership of [s], and returns the
+   ownership of the resulting string to its caller.
+
+   Note that it would be unsafe if [s] was passed as an additional
+   parameter to the function [f] as it could escape this way and be
+   mutated in the future -- [string_init] would give up ownership of
+   [s] to pass it to [f], and could not call [unsafe_to_string]
+   safely.
+
+   We have provided the {!String.init}, {!String.map} and
+   {!String.mapi} functions to cover most cases of building
+   new strings. You should prefer those over [to_string] or
+   [unsafe_to_string] whenever applicable.
+
+   2. Temporarily giving ownership of a byte sequence to a function
+   that expects a uniquely owned string and returns ownership back, so
+   that we can mutate the sequence again after the call ended.
+
+   {[
+let bytes_length (s : bytes) =
+  String.length (Bytes.unsafe_to_string s)
+   ]}
+
+   In this use-case, we do not promise that [s] will never be mutated
+   after the call to [bytes_length s]. The {!String.length} function
+   temporarily borrows unique ownership of the byte sequence
+   (and sees it as a [string]), but returns this ownership back to
+   the caller, which may assume that [s] is still a valid byte
+   sequence after the call. Note that this is only correct because we
+   know that {!String.length} does not capture its argument -- it could
+   escape by a side-channel such as a memoization combinator.
+
+   The caller may not mutate [s] while the string is borrowed (it has
+   temporarily given up ownership). This affects concurrent programs,
+   but also higher-order functions: if {!String.length} returned
+   a closure to be called later, [s] should not be mutated until this
+   closure is fully applied and returns ownership.
+*)
+
+val unsafe_of_string : string -> bytes
+(** Unsafely convert a shared string to a byte sequence that should
+    not be mutated.
+
+    The same ownership discipline that makes [unsafe_to_string]
+    correct applies to [unsafe_of_string]: you may use it if you were
+    the owner of the [string] value, and you will own the return
+    [bytes] in the same mode.
+
+    In practice, unique ownership of string values is extremely
+    difficult to reason about correctly. You should always assume
+    strings are shared, never uniquely owned.
+
+    For example, string literals are implicitly shared by the
+    compiler, so you never uniquely own them.
+
+    {[
+let incorrect = Bytes.unsafe_of_string "hello"
+let s = Bytes.of_string "hello"
+    ]}
+
+    The first declaration is incorrect, because the string literal
+    ["hello"] could be shared by the compiler with other parts of the
+    program, and mutating [incorrect] is a bug. You must always use
+    the second version, which performs a copy and is thus correct.
+
+    Assuming unique ownership of strings that are not string
+    literals, but are (partly) built from string literals, is also
+    incorrect. For example, mutating [unsafe_of_string ("foo" ^ s)]
+    could mutate the shared string ["foo"] -- assuming a rope-like
+    representation of strings. More generally, functions operating on
+    strings will assume shared ownership, they do not preserve unique
+    ownership. It is thus incorrect to assume unique ownership of the
+    result of [unsafe_of_string].
+
+    The only case we have reasonable confidence is safe is if the
+    produced [bytes] is shared -- used as an immutable byte
+    sequence. This is possibly useful for incremental migration of
+    low-level programs that manipulate immutable sequences of bytes
+    (for example {!Marshal.from_bytes}) and previously used the
+    [string] type for this purpose.
+*)
+
 
 (** {1 Iterators} *)
 
@@ -508,5 +677,3 @@ external unsafe_blit_string :
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> pos:int -> len:int -> char -> unit = "caml_fill_bytes" [@@noalloc]
-val unsafe_to_string : bytes -> string
-val unsafe_of_string : string -> bytes

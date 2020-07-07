@@ -13,6 +13,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* NOTE: When updating stringLabels.mli, run tools/unlabel to generate
+   string.mli
+ *)
+
 (** String operations.
 
   A string is an immutable data structure that contains a
@@ -44,41 +48,50 @@
   4.02, and the "unsafe-string" compatibility mode was the default
   until OCaml 4.05. Starting with 4.06, the compatibility mode is
   opt-in; we intend to remove the option in the future.
-*)
+
+  The labeled version of this module, {!StringLabels}, is intended to be used
+  through {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and
+  {!String} with their labeled counterparts
+
+  For example:
+  {[
+     open StdLabels
+
+     let to_upper = String.map ~f:Char.uppercase_ascii
+  ]} *)
 
 external length : string -> int = "%string_length"
 (** Return the length (number of characters) of the given string. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [String.get s n] returns the character at index [n] in string [s].
+(** [get s n] returns the character at index [n] in string [s].
    You can also write [s.[n]] instead of [String.get s n].
    @raise Invalid_argument if [n] not a valid index in [s]. *)
 
-
 external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated "Use Bytes.set instead."]
-(** [String.set s n c] modifies byte sequence [s] in place,
+  [@@ocaml.deprecated "Use Bytes.set/BytesLabels.set instead."]
+(** [set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
    @raise Invalid_argument if [n] is not a valid index in [s].
 
-   @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
+   @deprecated This is a deprecated alias of {!Bytes.set}. *)
 
 external create : int -> bytes = "caml_create_string"
-  [@@ocaml.deprecated "Use Bytes.create instead."]
-(** [String.create n] returns a fresh byte sequence of length [n].
+  [@@ocaml.deprecated "Use Bytes.create/BytesLabels.create instead."]
+(** [create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
 
-   @deprecated This is a deprecated alias of {!Bytes.create}.[ ] *)
+   @deprecated This is a deprecated alias of {!Bytes.create}. *)
 
 val make : int -> char -> string
-(** [String.make n c] returns a fresh string of length [n],
+(** [make n c] returns a fresh string of length [n],
    filled with the character [c].
    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> string
-(** [String.init n f] returns a string of length [n], with character
+(** [init n f] returns a string of length [n], with character
     [i] initialized to the result of [f i] (called in increasing
     index order).
 
@@ -86,39 +99,46 @@ val init : int -> (int -> char) -> string
     @since 4.02.0
 *)
 
-val copy : string -> string [@@ocaml.deprecated]
+val copy : string -> string  [@@ocaml.deprecated]
 (** Return a copy of the given string.
 
     @deprecated Because strings are immutable, it doesn't make much
     sense to make identical copies of them. *)
 
 val sub : string -> int -> int -> string
-(** [String.sub s start len] returns a fresh string of length [len],
-   containing the substring of [s] that starts at position [start] and
+(** [sub s pos len] returns a fresh string of length [len],
+   containing the substring of [s] that starts at position [pos] and
    has length [len].
-   @raise Invalid_argument if [start] and [len] do not
+   @raise Invalid_argument if [pos] and [len] do not
    designate a valid substring of [s]. *)
 
 val fill : bytes -> int -> int -> char -> unit
-  [@@ocaml.deprecated "Use Bytes.fill instead."]
-(** [String.fill s start len c] modifies byte sequence [s] in place,
-   replacing [len] bytes with [c], starting at [start].
-   @raise Invalid_argument if [start] and [len] do not
-   designate a valid range of [s].
+  [@@ocaml.deprecated "Use Bytes.fill/BytesLabels.fill instead."]
+(** [fill s pos len c] modifies byte sequence [s] in place,
+   replacing [len] bytes by [c], starting at [pos].
+   @raise Invalid_argument if [pos] and [len] do not
+   designate a valid substring of [s].
 
-   @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
+   @deprecated This is a deprecated alias of {!Bytes.fill}. *)
 
-val blit : string -> int -> bytes -> int -> int -> unit
-(** Same as {!Bytes.blit_string}. *)
+val blit :
+  string -> int -> bytes -> int -> int
+  -> unit
+(** [blit src src_pos dst dst_pos len] copies [len] bytes
+   from the string [src], starting at index [src_pos],
+   to byte sequence [dst], starting at character number [dst_pos].
+   @raise Invalid_argument if [src_pos] and [len] do not
+   designate a valid range of [src], or if [dst_pos] and [len]
+   do not designate a valid range of [dst]. *)
 
 val concat : string -> string list -> string
-(** [String.concat sep sl] concatenates the list of strings [sl],
+(** [concat sep sl] concatenates the list of strings [sl],
     inserting the separator string [sep] between each.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
 val iter : (char -> unit) -> string -> unit
-(** [String.iter f s] applies function [f] in turn to all
+(** [iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
    [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
 
@@ -129,13 +149,13 @@ val iteri : (int -> char -> unit) -> string -> unit
    @since 4.00.0 *)
 
 val map : (char -> char) -> string -> string
-(** [String.map f s] applies function [f] in turn to all the
-    characters of [s] (in increasing index order) and stores the
-    results in a new string that is returned.
-    @since 4.00.0 *)
+(** [map f s] applies function [f] in turn to all
+   the characters of [s] and stores the results in a new string that
+   is returned.
+   @since 4.00.0 *)
 
 val mapi : (int -> char -> char) -> string -> string
-(** [String.mapi f s] calls [f] with each character of [s] and its
+(** [mapi f s] calls [f] with each character of [s] and its
     index (in increasing index order) and stores the results in a new
     string that is returned.
     @since 4.02.0 *)
@@ -143,7 +163,7 @@ val mapi : (int -> char -> char) -> string -> string
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
    whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is no leading nor
    trailing whitespace character in the argument, return the original
    string itself, not a copy.
    @since 4.00.0 *)
@@ -165,36 +185,36 @@ val escaped : string -> string
     [escape s] fails). *)
 
 val index : string -> char -> int
-(** [String.index s c] returns the index of the first
+(** [index s c] returns the index of the first
    occurrence of character [c] in string [s].
    @raise Not_found if [c] does not occur in [s]. *)
 
 val index_opt: string -> char -> int option
-(** [String.index_opt s c] returns the index of the first
+(** [index_opt s c] returns the index of the first
     occurrence of character [c] in string [s], or
     [None] if [c] does not occur in [s].
     @since 4.05 *)
 
 val rindex : string -> char -> int
-(** [String.rindex s c] returns the index of the last
+(** [rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
    @raise Not_found if [c] does not occur in [s]. *)
 
 val rindex_opt: string -> char -> int option
-(** [String.rindex_opt s c] returns the index of the last occurrence
-    of character [c] in string [s], or [None] if [c] does not occur in
-    [s].
+(** [index_opt s c] returns the index of the first
+    occurrence of character [c] in string [s], or
+    [None] if [c] does not occur in [s].
     @since 4.05 *)
 
 val index_from : string -> int -> char -> int
-(** [String.index_from s i c] returns the index of the
+(** [index_from s i c] returns the index of the
    first occurrence of character [c] in string [s] after position [i].
    [String.index s c] is equivalent to [String.index_from s 0 c].
    @raise Invalid_argument if [i] is not a valid position in [s].
    @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: string -> int -> char -> int option
-(** [String.index_from_opt s i c] returns the index of the
+(** [index_from_opt s i c] returns the index of the
     first occurrence of character [c] in string [s] after position [i]
     or [None] if [c] does not occur in [s] after position [i].
 
@@ -205,7 +225,7 @@ val index_from_opt: string -> int -> char -> int option
 *)
 
 val rindex_from : string -> int -> char -> int
-(** [String.rindex_from s i c] returns the index of the
+(** [rindex_from s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1].
    [String.rindex s c] is equivalent to
    [String.rindex_from s (String.length s - 1) c].
@@ -213,7 +233,7 @@ val rindex_from : string -> int -> char -> int
    @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
 
 val rindex_from_opt: string -> int -> char -> int option
-(** [String.rindex_from_opt s i c] returns the index of the
+(** [rindex_from_opt s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1]
    or [None] if [c] does not occur in [s] before position [i+1].
 
@@ -225,18 +245,18 @@ val rindex_from_opt: string -> int -> char -> int option
 *)
 
 val contains : string -> char -> bool
-(** [String.contains s c] tests if character [c]
+(** [contains s c] tests if character [c]
    appears in the string [s]. *)
 
 val contains_from : string -> int -> char -> bool
-(** [String.contains_from s start c] tests if character [c]
+(** [contains_from s start c] tests if character [c]
    appears in [s] after position [start].
    [String.contains s c] is equivalent to
    [String.contains_from s 0 c].
    @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
-(** [String.rcontains_from s stop c] tests if character [c]
+(** [rcontains_from s stop c] tests if character [c]
    appears in [s] before position [stop+1].
    @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
    position in [s]. *)
@@ -270,22 +290,45 @@ val uncapitalize : string -> string
 val uppercase_ascii : string -> string
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val lowercase_ascii : string -> string
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val capitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
 val uncapitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
+
+val starts_with : string -> string -> bool
+(** [String.starts_with prefix s] tests if [s] starts with [prefix]
+    @since 4.12.0 *)
+
+val ends_with : string -> string -> bool
+(** [ends_with suffix s] tests if [s] ends with [suffix]
+    @since 4.12.0 *)
+
+val split_on_char: char -> string -> string list
+(** [split_on_char sep s] returns the list of all (possibly empty)
+    substrings of [s] that are delimited by the [sep] character.
+
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      string equal to the input ([String.concat (String.make 1 sep)
+      (String.split_on_char sep s) = s]).
+    - No string in the result contains the [sep] character.
+
+    @since 4.05.0 in labeled module, or 4.04.0 in unlabeled
+*)
 
 type t = string
 (** An alias for the type of strings. *)
@@ -298,30 +341,8 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for strings.
-    @since 4.03.0 *)
+    @since 4.05.0 in labeled module, or 4.30.0 in unlabeled *)
 
-val starts_with : prefix:t -> t -> bool
-(** [String.starts_with prefix s] tests if [s] starts with [prefix]
-    @since 4.12.0 *)
-
-val ends_with : suffix:t -> t -> bool
-(** [String.ends_with suffix s] tests if [s] ends with [suffix]
-    @since 4.12.0 *)
-
-val split_on_char: char -> string -> string list
-(** [String.split_on_char sep s] returns the list of all (possibly empty)
-    substrings of [s] that are delimited by the [sep] character.
-
-    The function's output is specified by the following invariants:
-
-    - The list is not empty.
-    - Concatenating its elements using [sep] as a separator returns a
-      string equal to the input ([String.concat (String.make 1 sep)
-      (String.split_on_char sep s) = s]).
-    - No string in the result contains the [sep] character.
-
-    @since 4.04.0
-*)
 
 (** {1 Iterators} *)
 
@@ -346,8 +367,8 @@ external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
-  string -> int -> bytes -> int -> int -> unit
-  = "caml_blit_string" [@@noalloc]
+  string -> int -> bytes -> int -> int ->
+    unit = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]
