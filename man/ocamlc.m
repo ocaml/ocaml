@@ -697,7 +697,7 @@ Enable, disable, or mark as fatal the warnings specified by the argument
 Each warning can be
 .IR enabled \ or\  disabled ,
 and each warning can be
-.IR fatal or
+.IR fatal \ or
 .IR non-fatal .
 If a warning is disabled, it isn't displayed and doesn't affect
 compilation in any way (even if it is fatal).  If a warning is enabled,
