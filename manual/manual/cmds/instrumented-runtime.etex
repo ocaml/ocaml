@@ -4,11 +4,10 @@
 This chapter describes the OCaml instrumented runtime, a runtime variant
 allowing the collection of events and metrics.
 
-Collected metrics include time spent executing the {\em garbage collector},
-allowing the overall execution time of individual pauses to be measured
-down to the time spent in specific parts of the garbage collection algorithm.
-
-Insight is also given on memory allocation and motion, recording
+Collected metrics include time spent executing the {\em garbage collector}.
+The overall execution time of individual pauses are measured
+down to the time spent in specific parts of the garbage collection.
+Insight is also given on memory allocation and motion by recording
 the size of allocated memory blocks, as well as value promotions from the
 {\em minor heap} to the {\em major heap}.
 
@@ -18,8 +17,8 @@ Once compiled and linked with the instrumented runtime, any OCaml program
 can generate {\em trace files} that can then be read
 and analyzed by users in order to understand specific runtime behaviors.
 
-The {\em Common Trace Format} is the general purpose binary
-format used to encode traces.
+The generated trace files are stored using the {\em Common Trace Format}, which
+is general purpose binary tracing format.
 A complete trace is comprised of:
 \begin{itemize}
 \item a {\em metadata file}, part of the OCaml distribution
@@ -28,37 +27,32 @@ A complete trace is comprised of:
 \end{itemize}
 
 For more information on the {\em Common Trace Format}, see
-\ifouthtml
-\ahref{https://diamon.org/ctf/}{https://diamon.org/ctf/}.
-\else
-{\tt https://diamon.org/ctf/}
-\fi
+\href{https://diamon.org/ctf/}{https://diamon.org/ctf/}.
 
 \section{s:instr-runtime-enabling}{Enabling runtime instrumentation}
 
 
 For the following examples, we will use the following example program:
 
-\begin{verbatim}
-       module SMap = Map.Make(String)
+\begin{caml_example*}{verbatim}
+module SMap = Map.Make(String)
 
-       let s i = String.make 512 (Char.chr (i mod 256))
+let s i = String.make 512 (Char.chr (i mod 256))
 
-       let clear map = SMap.fold (fun k _ m -> SMap.remove k m) map map
+let clear map = SMap.fold (fun k _ m -> SMap.remove k m) map map
 
-       let rec seq i =
-         if i = 0 then Seq.empty else fun () -> (Seq.Cons (i, seq (i - 1)))
+let rec seq i =
+  if i = 0 then Seq.empty else fun () -> (Seq.Cons (i, seq (i - 1)))
 
-       let () =
-         seq 1_000_000
-         |> Seq.fold_left (fun m i -> SMap.add (s i) i m) SMap.empty
-         |> clear
-         |> ignore
-
-\end{verbatim}
+let () =
+  seq 1_000_000
+  |> Seq.fold_left (fun m i -> SMap.add (s i) i m) SMap.empty
+  |> clear
+  |> ignore
+\end{caml_example*}
 
 The next step is to compile and link the program with the instrumented runtime.
-This can be done by using the {\tt -runtime-variant} flag:
+This can be done by using the "-runtime-variant" flag:
 
 \begin{verbatim}
        ocamlopt -runtime-variant i program.ml -o program
@@ -70,7 +64,7 @@ executable. This means that the compilation stage does not need to be altered
 to enable instrumentation.
 
 The resulting program can then be traced by running it with the environment
-variable {\tt OCAML\_EVENTLOG\_ENABLED}:
+variable "OCAML_EVENTLOG_ENABLED":
 
 \begin{verbatim}
         OCAML_EVENTLOG_ENABLED=1 ./program
@@ -91,8 +85,8 @@ replicated using the {\tt flags} {\tt stanza} when building an executable.
 \end{verbatim}
 
 The instrumented runtime can also be used with the OCaml bytecode interpreter.
-This can be done by either compiling the program using the
-{\tt -runtime-variant=i} flag when linking the program {\tt ocamlc}, or by running the generated
+This can be done by either using the
+"-runtime-variant=i" flag when linking the program with {\tt ocamlc}, or by running the generated
 bytecode through {\tt ocamlruni}:
 
 \begin{verbatim}
@@ -113,17 +107,11 @@ Two simple ways to work with the traces are the {\em eventlog-tools} and
 {\em babeltrace} libraries.
 
 \subsection{ss:instr-runtime-tools}{eventlog-tools}
-{\em eventlog-tools} is a set of libraries and tools written in OCaml
-that allow to decode and perform basic format conversions and analysis.
+{\em eventlog-tools} is a library implementing a parser, as well as a
+a set of tools that allows to perform basic format conversions and analysis.
 
 For more information about {\em eventlog-tools}, refer to the project's
-main page:
-\ifouthtml
-\ahref{https://github.com/ocaml-multicore/eventlog-tools}
-      {https://github.com/ocaml-multicore/eventlog-tools}.
-\else
-{\tt https://github.com/ocaml-multicore/eventlog-tools}
-\fi
+main page: \href{https://github.com/ocaml-multicore/eventlog-tools}{https://github.com/ocaml-multicore/eventlog-tools}
 
 \subsection{ss:instr-runtime-babeltrace}{babeltrace}
 
@@ -147,7 +135,7 @@ Its location can be obtained using the following command:
 
 The {\em eventlog_metadata} file can be found at this path and
 copied in the same directory as the generated trace file.
-However, {\em babeltrace} expect the file to be named
+However, {\em babeltrace} expects the file to be named
 {\tt metadata} in order to process the trace.
 Thus, it will need to be renamed when copied to the trace's directory.
 
@@ -207,12 +195,7 @@ trace file. It will then copy the {\em CTF} metadata file to the trace's
 directory, and then decode the trace, printing each event in the process.
 
 For more information on {\em babeltrace}, see the website at:
-\ifouthtml
-\ahref{https://babeltrace.org/}
-      {https://babeltrace.org/}.
-\else
-{\tt https://babeltrace.org/}
-\fi
+\href{https://babeltrace.org/}{https://babeltrace.org/}
 
 \section{s:instr-runtime-more}{Controlling instrumentation and limitations}
 
@@ -222,7 +205,7 @@ The default trace filename is {\tt caml-\{PID\}.eventlog}, where {\tt \{PID\}}
 is the process identifier of the traced program.
 
 This filename can also be specified using the
-{\tt OCAML\_EVENTLOG\_PREFIX} environment variable.
+"OCAML_EVENTLOG_PREFIX" environment variable.
 The given path will be suffixed with {\tt \{.PID\}.eventlog}.
 
 \begin{verbatim}
@@ -238,7 +221,7 @@ This restriction is in place to make room for future improvements to the
 instrumented runtime, where the single trace file per session design
 may be replaced.
 
-For scripting purpose, matching against `\{PID\}` as well as the
+For scripting purpose, matching against `\{PID\}`, as well as the
 {\tt .eventlog} file extension should provide enough control over
 the generated files.
 
@@ -250,7 +233,7 @@ fail to start if this requirement isn't met.
 \subsection{ss:instr-runtime-pause}{Pausing and resuming tracing}
 Mechanisms are available to control event collection at runtime.
 
-{\tt OCAML\_EVENTLOG\_ENABLED} can be set to the {\tt p} flag in order
+"OCAML_EVENTLOG_ENABLED" can be set to the {\tt p} flag in order
 to start the program with event collection paused.
 
 \begin{verbatim}
@@ -262,16 +245,16 @@ Starting and stopping event collection programmatically can be done by calling
 {\tt Gc.eventlog_resume} and {\tt Gc.eventlog_pause}) from within the program.
 Refer to the {\stdmoduleref{Gc}} module documentation for more information.
 
-Running the program provided earlier with {\tt OCAML\_EVENTLOG\_ENABLED=p}
+Running the program provided earlier with "OCAML_EVENTLOG_ENABLED=p"
 will for example yield the following result.
 
 \begin{verbatim}
-        $ OCAML_EVENTLOG_ENABLED=p ./program
-        $ ocaml-eventlog-report caml-{PID}.eventlog
-        ==== eventlog/flush
-        median flush time: 58ns
-        total flush time: 58ns
-        flush count: 1
+$ OCAML_EVENTLOG_ENABLED=p ./program
+$ ocaml-eventlog-report caml-{PID}.eventlog
+==== eventlog/flush
+median flush time: 58ns
+total flush time: 58ns
+flush count: 1
 \end{verbatim}
 
 The resulting trace contains only one event payload, namely a {\em flush} event,
@@ -281,7 +264,7 @@ However, if the program is changed to include a call to
 {\tt Gc.eventlog_resume}, events payloads can be seen again
 in the trace file.
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
        let () =
          Gc.eventlog_resume();
          seq 1_000_000
@@ -289,7 +272,7 @@ in the trace file.
          |> clear
          |> ignore
 
-\end{verbatim}
+\end{caml_example*}
 
 The resulting trace will contain all events encountered during
 the program's execution:

@@ -18,7 +18,7 @@ FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
 WITH_TRANSF = top.tex intf-c.tex flambda.tex spacetime-chapter.tex \
   afl-fuzz.tex lexyacc.tex debugger.tex
 
-WITH_CAMLEXAMPLE = ocamldoc.tex
+WITH_CAMLEXAMPLE = instrumented-runtime.tex ocamldoc.tex
 
 
 etex-files: $(FILES)
