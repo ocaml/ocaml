@@ -165,7 +165,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let float = ref first_float in
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -234,7 +234,7 @@ let win64_loc_external_arguments arg =
   let reg = ref 0
   and ofs = ref 32 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !reg < 4 then begin
           loc.(i) <- phys_reg win64_int_external_arguments.(!reg);
@@ -254,15 +254,14 @@ let win64_loc_external_arguments arg =
   done;
   (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let loc_external_arguments arg =
-  let arg =
-    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
-  in
-  let loc, alignment =
-    if win64 then win64_loc_external_arguments arg
+let loc_external_arguments ty_args =
+  let arg = Cmm.machtype_of_exttype_list ty_args in
+  let loc, stack_ofs =
+    if win64
+    then win64_loc_external_arguments arg
     else unix_loc_external_arguments arg
   in
-  Array.map (fun reg -> [|reg|]) loc, alignment
+  Array.map (fun reg -> [|reg|]) loc, stack_ofs
 
 let loc_exn_bucket = rax
 

@@ -49,7 +49,7 @@ val createv: Cmm.machtype -> t array
 val createv_like: t array -> t array
 val clone: t -> t
 val at_location: Cmm.machtype_component -> location -> t
-
+val typv: t array -> Cmm.machtype
 val anonymous : t -> bool
 
 (* Name for printing *)
