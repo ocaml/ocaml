@@ -3,7 +3,7 @@ Working version
 
 ### Language features:
 
-* #9500: Injectivity annotations
+* #9500, #9727: Injectivity annotations
   One can now mark type parameters as injective, which is useful for
   abstract types:
     module Vec : sig type !'a t end = struct type 'a t = 'a array end
