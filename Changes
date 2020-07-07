@@ -77,6 +77,10 @@ Working version
   areas in the page table, subsumed by the new code fragment management API
   (Xavier Leroy, review by Jacques-Henri Jourdan)
 
+- #9710: Drop "support" for an hypothetical JIT for OCaml bytecode
+   which has never existed.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 - #9725: Zero-initialize bigarrays in caml_ba_alloc
   (Stefan Muenzel, review by ???)
 
@@ -186,6 +190,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9216: add Lambda.duplicate which refreshes bound identifiers
+  (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
+
 - #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
@@ -214,6 +221,9 @@ Working version
   (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
   Scherer)
 
+- #9688: Expose the main entrypoint in compilerlibs
+  (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
@@ -231,6 +241,10 @@ Working version
   (Gabriel Scherer, review by David Allsopp)
 
 ### Bug fixes:
+
+- #7902, #9556: Type-checker infers recursive type, even though -rectypes is
+  off.
+  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
 
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
@@ -255,6 +269,12 @@ Working version
   for the new closure representation (#9619)
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
+
+- #9714, #9724: Use the C++ alignas keyword when compiling in C++.
+  Fixes a bug with MSVC C++ 2015/2017. Add a terminator to the
+  `caml_domain_state` structure to better ensure that members are
+  correctly spaced.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
 OCaml 4.11
 ----------
@@ -508,6 +528,9 @@ OCaml 4.11
 
 ### Manual and documentation:
 
+- #8644: fix formatting comment about @raise in stdlib's mli files
+  (Élie Brami, review by David Allsopp)
+
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
 
@@ -575,6 +598,13 @@ OCaml 4.11
 
 - #9486: Fix configuration for the Haiku operating system
   (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
+
+- #9712: Update the version format to allow "~".
+  The new format is "major.minor[.patchlevel][(+|~)additional-info]",
+  for instance "4.12.0~beta1+flambda".
+  This is a documentation-only change for the 4.11 branch, the new format
+  will be used starting with the 4.12 branch.
+  (Florian Angeletti, review by Damien Doligez and Xavier Leroy)
 
 ### Internal/compiler-libs changes:
 
@@ -675,9 +705,6 @@ OCaml 4.11
 
 - #7897, #9537: Fix warning 38 for rebound extension constructors
   (Leo White, review by Florian Angeletti)
-
-- #7902, #9556: Type-checker infers recursive type, eventhough -rectypes is off.
-  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
 
 - #7917, #9426: Use GCC option -fexcess-precision=standard when available,
   avoiding a problem with x87 excess precision in Float.round.

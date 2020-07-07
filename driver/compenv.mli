@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+exception Exit_compiler of int
+
 val module_of_filename : string -> string -> string
 
 val output_prefix : string -> string
