@@ -256,7 +256,7 @@ method select_logical op = function
       (Iintop op, args)
 
 method! insert_move_extcall_arg env ty_arg src dst =
-  if ty_arg = XInt32 && abi = AppleABI && is_stack_slot dst
+  if macosx && ty_arg = XInt32 && is_stack_slot dst
   then self#insert env (Iop (Ispecific Imove32)) src dst
   else self#insert_moves env src dst
 end

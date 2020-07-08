@@ -19,14 +19,7 @@
 
 open Format
 
-type abi =
-  | AAPCS64     (* ARM's Procedure Call Standard for AArch64 *)
-  | AppleABI    (* Apple's variant for iOS and macOS *)
-
-let abi =
-  match Config.system with
-  | "macosx" -> AppleABI
-  | _        -> AAPCS64
+let macosx = (Config.system = "macosx")
 
 (* Machine-specific command-line options *)
 
