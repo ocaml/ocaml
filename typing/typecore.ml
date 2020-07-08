@@ -467,6 +467,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
 
 let rec build_as_type env p =
   let as_ty = build_as_type_aux env p in
+  (* Cf. #1655 *)
   List.fold_left (fun as_ty (extra, _loc, _attrs) ->
     match extra with
     | Tpat_type _ | Tpat_open _ | Tpat_unpack -> as_ty
