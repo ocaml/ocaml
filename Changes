@@ -157,12 +157,6 @@ Working version
 - #9468: HACKING.adoc: using dune to get merlin's support
   (Thomas Refis, review by Gabriel Scherer)
 
-- #9541: Add a documentation page for the instrumented runtime;
-  additional changes to option names in the instrumented runtime.
-  (Enguerrand Decorne, review by Anil Madhavapeddy, Gabriel Scherer,
-   Daniel Bünzli, David Allsopp, Florian Angeletti,
-   and Sébastien Hinderer)
-
 ### Compiler user-interface and warnings:
 
 - #1931: rely on levels to enforce principality in patterns
@@ -557,6 +551,12 @@ OCaml 4.11
 
 - #7708, #9580: Ensure Stdlib documentation index refers to Stdlib.
   (Stephen Dolan, review by Florian Angeletti, report by Hannes Mehnert)
+
+- #9541: Add a documentation page for the instrumented runtime;
+  additional changes to option names in the instrumented runtime.
+  (Enguerrand Decorne, review by Anil Madhavapeddy, Gabriel Scherer,
+   Daniel Bünzli, David Allsopp, Florian Angeletti,
+   and Sébastien Hinderer)
 
 - #9610: manual, C FFI: naked pointers are deprecated, detail the
   forward-compatible options for handling out-of-heap pointers.
