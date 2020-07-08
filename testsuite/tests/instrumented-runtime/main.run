@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export OCAML_EVENTLOG_ENABLED=1
-export OCAML_EVENTLOG_FILE=${program}
+export OCAML_EVENTLOG_PREFIX=${program}
 
 if [ "${os_type}" = "Win32" ] ; then
   program=$(cygpath "$program")
