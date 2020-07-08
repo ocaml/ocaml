@@ -180,6 +180,11 @@ CAMLexport value caml_enter_blocking_section_exn(void)
   return Val_unit;
 }
 
+void caml_enter_blocking_section_noexn(void)
+{
+  caml_enter_blocking_section_hook ();
+}
+
 CAMLexport void caml_enter_blocking_section(void)
 {
   caml_raise_if_exception(caml_enter_blocking_section_exn());
@@ -210,6 +215,15 @@ CAMLexport value caml_leave_blocking_section_exn(void)
 
   errno = saved_errno;
   return exn;
+}
+
+void caml_leave_blocking_section_noexn(void)
+{
+  int saved_errno;
+  saved_errno = errno;
+  caml_leave_blocking_section_hook ();
+  signals_are_pending = 1;
+  errno = saved_errno;
 }
 
 CAMLexport void caml_leave_blocking_section(void)

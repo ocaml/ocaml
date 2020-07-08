@@ -101,9 +101,11 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   CAMLreturn(res);
 
  cleanup2:
-  // TODO: blocking section with masking
-  if (dlhandle)
+  if (dlhandle) {
+    caml_enter_blocking_section_noexn();
     caml_dlclose(dlhandle);
+    caml_leave_blocking_section_noexn();
+  }
  cleanup1:
   caml_stat_free(p);
   caml_raise(Extract_exception(exn));
@@ -183,9 +185,11 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
   CAMLreturn(res);
 
  cleanup2:
-  // TODO: blocking section with masking
-  if (handle)
+  if (handle) {
+    caml_enter_blocking_section_noexn();
     caml_dlclose(handle);
+    caml_leave_blocking_section_noexn();
+  }
  cleanup1:
   caml_stat_free(p);
   caml_raise(Extract_exception(exn));

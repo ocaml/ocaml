@@ -93,6 +93,9 @@ value caml_process_pending_actions_with_root (value extra_root); // raises
 int caml_set_signal_action(int signo, int action);
 void caml_setup_stack_overflow_detection(void);
 
+void caml_enter_blocking_section_noexn (void);
+void caml_leave_blocking_section_noexn (void);
+
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
 CAMLextern int (*caml_try_leave_blocking_section_hook)(void);

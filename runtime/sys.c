@@ -218,9 +218,9 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLreturn(Val_long(fd));
 
  cleanup2:
-  // FIXME: inside blocking section with masking
+  caml_enter_blocking_section_noexn();
   close(fd);
-  // fall through
+  caml_leave_blocking_section_noexn();
  cleanup1:
   caml_stat_free(p);
   caml_raise(Extract_exception(exn));
@@ -237,8 +237,9 @@ CAMLprim value caml_sys_close(value fd_v)
   return Val_unit;
 
  cleanup:
-  // TODO: blocking & masked
+  caml_enter_blocking_section_noexn();
   close(fd);
+  caml_leave_blocking_section_noexn();
   caml_raise(Extract_exception(exn));
 }
 

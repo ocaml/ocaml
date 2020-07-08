@@ -36,6 +36,7 @@
 #include "caml/exec.h"
 #include "caml/fix_code.h"
 #include "caml/memory.h"
+#include "caml/signals.h"
 #include "caml/startup.h"
 #include "caml/stacks.h"
 #include "caml/sys.h"
@@ -412,7 +413,9 @@ static void read_main_debug_info(struct debug_info *di)
   CAMLreturn0;
 
  cleanup:
+  caml_enter_blocking_section_noexn();
   close(fd);
+  caml_leave_blocking_section_noexn();
   CAMLreturn0;
 }
 

@@ -97,7 +97,9 @@ CAMLexport struct channel * caml_open_descriptor_in_exn(int fd, value * exn)
 
  cleanup:
   caml_stat_free(channel);
+  caml_enter_blocking_section_noexn();
   close(fd);
+  caml_leave_blocking_section_noexn();
   return NULL;
 }
 
