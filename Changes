@@ -282,6 +282,12 @@ OCaml 4.11
   limit
   (Florian Angeletti, review by Josh Berdine)
 
+- #9541: Add a documentation page for the instrumented runtime;
+  additional changes to option names in the instrumented runtime.
+  (Enguerrand Decorne, review by Anil Madhavapeddy, Gabriel Scherer,
+   Daniel Bünzli, David Allsopp, Florian Angeletti,
+   and Sébastien Hinderer)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
