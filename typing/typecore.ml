@@ -302,20 +302,26 @@ let get_gadt_equations_level () =
     Some y -> y
   | None -> assert false
 
+let nothing_equated = TypePairs.create 0
+
 (* unification inside type_pat*)
-let unify_pat_types ?(refine = None) loc env ty ty' =
+let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
   try
     match refine with
     | Some allow_recursive ->
         unify_gadt ~equations_level:(get_gadt_equations_level ())
           ~allow_recursive env ty ty'
     | None ->
-        unify !env ty ty'
+        unify !env ty ty';
+        nothing_equated
   with
   | Unify trace ->
       raise(Error(loc, !env, Pattern_type_clash(trace, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
+
+let unify_pat_types ?refine loc env ty ty' =
+  ignore (unify_pat_types_return_equated_pairs ?refine loc env ty ty')
 
 let unify_pat ?refine env pat expected_ty =
   try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
@@ -1495,7 +1501,10 @@ and type_pat_aux
       let expected_type =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
-            Some (p0, p, true)
+          let principal =
+            (repr expected_ty).level = generic_level || not !Clflags.principal
+          in
+            Some (p0, p, principal)
         with Not_found -> None
       in
       let constr =
@@ -1556,12 +1565,36 @@ and type_pat_aux
       (* PR#7214: do not use gadt unification for toplevel lets *)
       let refine =
         if refine = None && constr.cstr_generalized && no_existentials = None
-        then Some false else refine in
-      unify_pat_types ~refine loc env ty_res expected_ty;
+        then Some false
+        else refine
+      in
+      let equated_types =
+        unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
+      in
       end_def ();
       generalize_structure expected_ty;
       generalize_structure ty_res;
       List.iter generalize_structure ty_args;
+      if !Clflags.principal then (
+        let exception Warn_only_once in
+        try
+          TypePairs.iter (fun (t1, t2) () ->
+            generalize_structure t1;
+            generalize_structure t2;
+            if not (fully_generic t1 && fully_generic t2) then
+              let msg =
+                Format.asprintf
+                  "typing this pattern requires considering@ %a@ and@ %a@ as \
+                   equal.@,\
+                   But the knowledge of these types"
+                  Printtyp.type_expr t1
+                  Printtyp.type_expr t2
+              in
+              Location.prerr_warning loc (Warnings.Not_principal msg);
+              raise Warn_only_once
+          ) equated_types
+        with Warn_only_once -> ()
+      );
 
       let rec check_non_escaping p =
         match p.ppat_desc with
@@ -1627,7 +1660,10 @@ and type_pat_aux
           let ty = instance expected_ty in
           end_def ();
           generalize_structure ty;
-          Some (p0, p, true), ty
+          let principal =
+            (repr expected_ty).level = generic_level || not !Clflags.principal
+          in
+          Some (p0, p, principal), ty
         with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) k =
@@ -4568,7 +4604,7 @@ and type_cases
     get_current_level ()
   in
   let take_partial_instance =
-    if !Clflags.principal || erase_either
+    if erase_either
     then Some false else None
   in
   begin_def (); (* propagation of the argument *)

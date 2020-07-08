@@ -382,6 +382,35 @@ Warning 57: Ambiguous or-pattern variables under guard;
 variables x,y may match different arguments. (See manual section 9.5)
 val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t2 -> int =
   <fun>
+|}, Principal{|
+Line 2, characters 4-5:
+2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+        ^
+Warning 41: A belongs to several types: t2 t
+The first one was selected. Please disambiguate if this is wrong.
+Line 2, characters 24-25:
+2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+                            ^
+Warning 41: A belongs to several types: t2 t
+The first one was selected. Please disambiguate if this is wrong.
+Line 2, characters 42-43:
+2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+                                              ^
+Warning 41: B belongs to several types: t2 t
+The first one was selected. Please disambiguate if this is wrong.
+Lines 1-3, characters 41-10:
+1 | .........................................function
+2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+3 |   | _ -> 2
+Warning 4: this pattern-matching is fragile.
+It will remain exhaustive when constructors are added to type t2.
+Line 2, characters 4-56:
+2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 57: Ambiguous or-pattern variables under guard;
+variables x,y may match different arguments. (See manual section 9.5)
+val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t2 -> int =
+  <fun>
 |}]
 
 (* Regression test against an erroneous simplification of the algorithm
