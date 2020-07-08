@@ -467,14 +467,10 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
 
 let rec build_as_type env p =
   let as_ty = build_as_type_aux env p in
-  match
-    List.find_opt (function
-      | Tpat_constraint _, _, _ -> true
-      | _ -> false
-    ) p.pat_extra
-  with
-  | None -> as_ty
-  | Some (Tpat_constraint cty, _, _) ->
+  List.fold_left (fun as_ty (extra, _loc, _attrs) ->
+    match extra with
+    | Tpat_type _ | Tpat_open _ | Tpat_unpack -> as_ty
+    | Tpat_constraint cty ->
       begin_def ();
       let ty = instance cty.ctyp_type in
       end_def ();
@@ -482,7 +478,7 @@ let rec build_as_type env p =
       (* This call to unify can't fail since the pattern is well typed. *)
       unify !env (instance as_ty) (instance ty);
       ty
-  | Some _ -> assert false
+  ) as_ty p.pat_extra
 
 and build_as_type_aux env p =
   match p.pat_desc with
