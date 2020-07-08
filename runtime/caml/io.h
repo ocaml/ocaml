@@ -77,8 +77,14 @@ enum {
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
+CAMLextern struct channel * caml_open_descriptor_in (int); //raises
+CAMLextern struct channel * caml_open_descriptor_out (int); //raises
+CAMLextern struct channel * caml_open_descriptor_in_exn (int, value * exn);
+CAMLextern struct channel * caml_open_descriptor_out_exn (int, value * exn);
+/* These functions take ownership of the file descriptor. The [*_exn]
+   variants return NULL and set [exn] to an exception value if an
+   exception arises. */
+
 CAMLextern void caml_close_channel (struct channel *);
 CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);

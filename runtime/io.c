@@ -69,15 +69,17 @@ CAMLexport struct channel * caml_all_opened_channels = NULL;
 
 /* Functions shared between input and output */
 
-CAMLexport struct channel * caml_open_descriptor_in(int fd)
+CAMLexport struct channel * caml_open_descriptor_in_exn(int fd, value * exn)
 {
   struct channel * channel;
 
   channel = (struct channel *) caml_stat_alloc(sizeof(struct channel));
   channel->fd = fd;
-  caml_enter_blocking_section();
+  *exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(*exn)) goto cleanup;
   channel->offset = lseek(fd, 0, SEEK_CUR);
-  caml_leave_blocking_section();
+  *exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(*exn)) goto cleanup;
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
@@ -92,15 +94,38 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
     caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
   return channel;
+
+ cleanup:
+  caml_stat_free(channel);
+  close(fd);
+  return NULL;
+}
+
+CAMLexport struct channel * caml_open_descriptor_in(int fd)
+{
+  value exn = Val_unit;
+  struct channel * chan = caml_open_descriptor_in_exn(fd, &exn);
+  caml_raise_if_exception(exn);
+  return chan;
+}
+
+CAMLexport struct channel * caml_open_descriptor_out_exn(int fd, value * exn)
+{
+  struct channel * channel;
+
+  channel = caml_open_descriptor_in_exn(fd, exn);
+  if (channel) {
+    channel->max = NULL;
+  }
+  return channel;
 }
 
 CAMLexport struct channel * caml_open_descriptor_out(int fd)
 {
-  struct channel * channel;
-
-  channel = caml_open_descriptor_in(fd);
-  channel->max = NULL;
-  return channel;
+  value exn = Val_unit;
+  struct channel * chan = caml_open_descriptor_out_exn(fd, &exn);
+  caml_raise_if_exception(exn);
+  return chan;
 }
 
 static void unlink_channel(struct channel *channel)

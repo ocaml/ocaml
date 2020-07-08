@@ -354,6 +354,7 @@ static void read_main_debug_info(struct debug_info *di)
 {
   CAMLparam0();
   CAMLlocal3(events, evl, l);
+  value exn = Val_unit;
   char_os *exec_name;
   int fd, num_events, orig, i;
   struct channel *chan;
@@ -384,7 +385,8 @@ static void read_main_debug_info(struct debug_info *di)
 
   caml_read_section_descriptors(fd, &trail);
   if (caml_seek_optional_section(fd, &trail, "DBUG") != -1) {
-    chan = caml_open_descriptor_in(fd);
+    chan = caml_open_descriptor_in_exn(fd, &exn);
+    if (Is_exception_result(exn)) goto cleanup;
 
     num_events = caml_getword(chan);
     events = caml_alloc(num_events, 0);
@@ -402,11 +404,15 @@ static void read_main_debug_info(struct debug_info *di)
       Store_field(events, i, evl);
     }
 
-    caml_close_channel(chan);
+    caml_close_channel(chan); // closes fd
 
     di->events = process_debug_events(caml_start_code, events, &di->num_events);
-  }
+  } else goto cleanup;
 
+  CAMLreturn0;
+
+ cleanup:
+  close(fd);
   CAMLreturn0;
 }
 
