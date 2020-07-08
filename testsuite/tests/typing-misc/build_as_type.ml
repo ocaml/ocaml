@@ -2,41 +2,41 @@
    * expect
 *)
 
-let f = function ([] : int list) as x -> x ;;
+let f = function
+  | ([] : int list) as x -> x
+  | _ :: _ -> assert false;;
 [%%expect{|
-Line 1, characters 8-42:
-1 | let f = function ([] : int list) as x -> x ;;
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-_::_
 val f : int list -> int list = <fun>
 |}]
 
 let f =
-  let f' = function ([] : 'a list) as x -> x in
+  let f' = function
+    | ([] : 'a list) as x -> x
+    | _ :: _ -> assert false
+  in
   f', f';;
 [%%expect{|
-Line 2, characters 11-44:
-2 |   let f' = function ([] : 'a list) as x -> x in
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-_::_
 val f : ('a list -> 'a list) * ('a list -> 'a list) = (<fun>, <fun>)
 |}]
 
 let f =
-  let f' = function ([] : _ list) as x -> x in
+  let f' = function
+    | ([] : _ list) as x -> x 
+    | _ :: _ -> assert false
+  in
   f', f';;
 [%%expect{|
-Line 2, characters 11-43:
-2 |   let f' = function ([] : _ list) as x -> x in
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-_::_
 val f : ('a list -> 'b list) * ('c list -> 'd list) = (<fun>, <fun>)
+|}]
+
+let f =
+  let f' (type a) = function
+    | ([] : a list) as x -> x 
+    | _ :: _ -> assert false
+  in
+  f', f';;
+[%%expect{|
+val f : ('a list -> 'a list) * ('b list -> 'b list) = (<fun>, <fun>)
 |}]
 
 type t = [ `A | `B ];;
@@ -61,15 +61,17 @@ val f : t -> [> `A ] = <fun>
 
 let f = function
   | (`A : t) as x ->
+    (* This should be flagged as non-exhaustive: because of the constraint [x]
+       is of type [t]. *)
     begin match x with
     | `A -> ()
     end
   | `B -> ();;
 [%%expect{|
-Lines 3-5, characters 4-7:
-3 | ....begin match x with
-4 |     | `A -> ()
-5 |     end
+Lines 5-7, characters 4-7:
+5 | ....begin match x with
+6 |     | `A -> ()
+7 |     end
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `B
