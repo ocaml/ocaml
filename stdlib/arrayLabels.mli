@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: When updating arrayLabels.mli, run tools/unlabel to generate
-   array.mli
+(* NOTE:
+   If this file is arrayLabels.mli, run tools/unlabel after editing it to
+   generate array.mli.
+
+   If this file is array.mli, do not edit it directly -- edit
+   arrayLabels.mli instead.
  *)
 
 (** Array operations

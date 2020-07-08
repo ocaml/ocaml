@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: When updating stringLabels.mli, run tools/unlabel to generate
-   string.mli
+(* NOTE:
+   If this file is stringLabels.mli, run tools/unlabel after editing it to
+   generate string.mli.
+
+   If this file is string.mli, do not edit it directly -- edit
+   stringLabels.mli instead.
  *)
 
 (** String operations.
