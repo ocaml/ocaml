@@ -18,7 +18,11 @@
 #an alphabetic character or ( or '. This should avoid altering the contents of
 #comments.
 
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/listLabels.mli > ../stdlib/list.mli
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/arrayLabels.mli > ../stdlib/array.mli
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/stringLabels.mli > ../stdlib/string.mli
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/bytesLabels.mli > ../stdlib/bytes.mli
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/listLabels.mli > ../stdlib/list.mli
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/arrayLabels.mli > ../stdlib/array.mli
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/stringLabels.mli > ../stdlib/string.mli
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/bytesLabels.mli > ../stdlib/bytes.mli

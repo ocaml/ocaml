@@ -22,7 +22,7 @@
  *)
 
 (** Byte sequence operations.
- 
+
    A byte sequence is a mutable data structure that contains a
    fixed-length sequence of bytes. Each byte can be indexed in
    constant time for reading or writing.
