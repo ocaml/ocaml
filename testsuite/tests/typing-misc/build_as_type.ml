@@ -112,3 +112,37 @@ let f = function (`A, _ : _ * int) as x -> x;;
 [%%expect{|
 val f : [< `A ] * int -> [> `A ] * int = <fun>
 |}]
+
+(* Make sure *all* the constraints are respected: *)
+
+let f = function
+  | ((`A : _) : t) as x ->
+    (* This should be flagged as non-exhaustive: because of the constraint [x]
+       is of type [t]. *)
+    begin match x with
+    | `A -> ()
+    end
+  | `B -> ();;
+[%%expect{|
+Lines 5-7, characters 4-7:
+5 | ....begin match x with
+6 |     | `A -> ()
+7 |     end
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+`B
+val f : t -> unit = <fun>
+|}]
+
+let f = function
+  | ((`A : t) : _) as x ->
+    (* This should be flagged as non-exhaustive: because of the constraint [x]
+       is of type [t]. *)
+    begin match x with
+    | `A -> ()
+    end
+  | `B -> ();;
+
+[%%expect{|
+val f : t -> unit = <fun>
+|}]
