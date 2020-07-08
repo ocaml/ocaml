@@ -187,6 +187,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLparam3(path, vflags, vperm);
   int fd, flags, perm;
   char_os * p;
+  value exn;
 
 #if defined(O_CLOEXEC)
   flags = O_CLOEXEC;
@@ -201,7 +202,8 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   flags |= caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#8005) */
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup1;
   fd = open_os(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/
 #if defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(_WIN32) \
@@ -209,10 +211,19 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   if (fd != -1)
     fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup2;
   caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
   CAMLreturn(Val_long(fd));
+
+ cleanup2:
+  // FIXME: inside blocking section with masking
+  close(fd);
+  // fall through
+ cleanup1:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_close(value fd_v)
