@@ -697,7 +697,7 @@ let transl_simple_type_delayed env styp =
   let force = globalize_used_variables env false in
   (* Generalizes everything except the variables that were just globalized. *)
   generalize typ.ctyp_type;
-  (typ, force)
+  (typ, instance typ.ctyp_type, force)
 
 let transl_type_scheme env styp =
   reset_type_variables();

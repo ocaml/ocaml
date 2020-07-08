@@ -1439,8 +1439,7 @@ and type_pat_aux
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
       assert construction_not_used_in_counterexamples;
-      let cty, force = Typetexp.transl_simple_type_delayed !env sty in
-      let ty = instance cty.ctyp_type in
+      let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
       unify_pat_types ~refine lloc env ty (instance expected_ty);
       pattern_force := force :: !pattern_force;
       begin match ty.desc with
@@ -1829,8 +1828,7 @@ and type_pat_aux
   | Ppat_constraint(sp, sty) ->
       (* Pretend separate = true *)
       begin_def();
-      let cty, force = Typetexp.transl_simple_type_delayed !env sty in
-      let ty = instance cty.ctyp_type in
+      let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
       end_def();
       generalize_structure ty;
       let ty, expected_ty' = instance ty, ty in
@@ -3143,10 +3141,9 @@ and type_expect_
       let (arg, ty',cty,cty') =
         match sty with
         | None ->
-            let (cty', force) =
+            let (cty', ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let ty' = instance cty'.ctyp_type in
             begin_def ();
             let arg = type_exp env sarg in
             end_def ();
@@ -3190,13 +3187,11 @@ and type_expect_
             (arg, ty', None, cty')
         | Some sty ->
             begin_def ();
-            let (cty, force) =
+            let (cty, ty, force) =
               Typetexp.transl_simple_type_delayed env sty
-            and (cty', force') =
+            and (cty', ty', force') =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let ty = instance cty.ctyp_type in
-            let ty' = instance cty'.ctyp_type in
             begin try
               let force'' = subtype env ty ty' in
               force (); force' (); force'' ()
