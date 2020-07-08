@@ -197,7 +197,7 @@ let capitalize_ascii s =
 let uncapitalize_ascii s =
   B.uncapitalize_ascii (bos s) |> bts
 
-let starts_with prefix s =
+let starts_with ~prefix s =
   let len_s = length s
   and len_pre = length prefix in
   let rec aux i =
@@ -206,7 +206,7 @@ let starts_with prefix s =
     else aux (i + 1)
   in len_s >= len_pre && aux 0
 
-let ends_with suffix s =
+let ends_with ~suffix s =
   let len_s = length s
   and len_suf = length suffix in
   let diff = len_s - len_suf in
