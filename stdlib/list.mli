@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: When updating listLabels.mli, run tools/unlabel to generate
-   list.mli
+(* NOTE:
+   If this file is listLabels.mli, run tools/unlabel after editing it to
+   generate list.mli.
+
+   If this file is list.mli, do not edit it directly -- edit
+   listLabels.mli instead.
  *)
 
 (** List operations.

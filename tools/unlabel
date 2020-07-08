@@ -1,4 +1,18 @@
-#!/bin/sh
+#! /bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                            John Whitington                             *
+#*                                                                        *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
+#*     en automatique                                                     *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 #Removes a label, i.e a space, a variable name, followed by a colon followed by
 #an alphabetic character or ( or '. This should avoid altering the contents of
@@ -8,4 +22,3 @@ perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/listLabels.mli > ../stdlib/li
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/arrayLabels.mli > ../stdlib/array.mli
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/stringLabels.mli > ../stdlib/string.mli
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" ../stdlib/bytesLabels.mli > ../stdlib/bytes.mli
-

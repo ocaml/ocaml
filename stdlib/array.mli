@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: When updating arrayLabels.mli, run tools/unlabel to generate
-   array.mli
+(* NOTE:
+   If this file is arrayLabels.mli, run tools/unlabel after editing it to
+   generate array.mli.
+
+   If this file is array.mli, do not edit it directly -- edit
+   arrayLabels.mli instead.
  *)
 
 (** Array operations
@@ -280,7 +284,8 @@ val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
 *)
 
 val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is faster on typical input. *)
+(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is
+    faster on typical input. *)
 
 
 (** {1 Iterators} *)

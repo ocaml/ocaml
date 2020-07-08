@@ -284,7 +284,8 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is faster on typical input. *)
+(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is
+    faster on typical input. *)
 
 
 (** {1 Iterators} *)

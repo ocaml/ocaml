@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: When updating stringLabels.mli, run tools/unlabel to generate
-   string.mli
+(* NOTE:
+   If this file is stringLabels.mli, run tools/unlabel after editing it to
+   generate string.mli.
+
+   If this file is string.mli, do not edit it directly -- edit
+   stringLabels.mli instead.
  *)
 
 (** String operations.
@@ -307,11 +311,13 @@ val uncapitalize_ascii : string -> string
    using the US-ASCII character set.
    @since 4.05.0 in labeled module, 4.03.0 in unlabeled *)
 
-val starts_with : prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
+val starts_with :
+  prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
 (** [String.starts_with prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
-val ends_with : suffix (* comment thwarts tools/unlabel *) :string -> string -> bool
+val ends_with :
+  suffix (* comment thwarts tools/unlabel *) :string -> string -> bool
 (** [ends_with suffix s] tests if [s] ends with [suffix]
     @since 4.12.0 *)
 

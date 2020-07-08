@@ -13,8 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: When updating bytesLabels.mli, run tools/unlabel to generate
-   bytes.mli
+(* NOTE:
+   If this file is bytesLabels.mli, run tools/unlabel after editing it to
+   generate bytes.mli.
+
+   If this file is bytes.mli, do not edit it directly -- edit
+   bytesLabels.mli instead.
  *)
 
 (** Byte sequence operations.
