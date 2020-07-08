@@ -434,44 +434,6 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   caml_acknowledge_interrupt(done);
 }
 
-/* Return domain_id of victim if success. Otherwise, return -1. */
-static int steal_mark_work () {
-  struct steal_payload pl;
-  struct domain* domain_self = caml_domain_self ();
-  int my_id = domain_self->state->id;
-  struct domain* victim;
-  int i;
-
-  pl.thief = Caml_state;
-  pl.major_cycle = caml_major_cycles_completed;
-
-  if (atomic_load_acq(&num_domains_to_mark) == 0)
-    return -1;
-
-  Caml_state->stealing = 1;
-  for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
-    victim = caml_domain_of_id(i);
-
-    if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
-      if (pl.result == Shared) {
-        caml_gc_log("Stolen mark work (size=%"ARCH_INTNAT_PRINTF_FORMAT"u) from domain %d",
-                    domain_self->state->mark_stack->count, i);
-        Caml_state->stealing = 0;
-        return i;
-      }
-    }
-
-    /* Abort stealing if marking was done or a major cycle was completed. */
-    if (atomic_load_acq(&num_domains_to_mark) == 0 ||
-        pl.major_cycle != caml_major_cycles_completed)
-      break;
-  }
-
-  caml_gc_log("Mark work stealing failure");
-  Caml_state->stealing = 0;
-  return -1;
-}
-
 static void mark_stack_prune(struct mark_stack* stk);
 static struct pool* find_pool_to_rescan();
 
@@ -1092,7 +1054,6 @@ static intnat major_collection_slice(intnat howmuch,
   intnat sweep_work = 0, mark_work = 0;
   intnat available, left;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
-  int steal_result;
   int was_marking = 0;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
@@ -1157,31 +1118,6 @@ mark_again:
       available = budget > Chunk_size ? Chunk_size : budget;
       left = mark(available);
       budget -= available - left;
-      /*
-        Disabled to avoid high pausetimes
-
-        FIXME: we would like to handle steal interrupts regularly,
-        but bad things happen if the GC cycles ends via an STW
-        interrupt here.
-      caml_handle_incoming_interrupts();
-      if( saved_major_cycle != caml_major_cycles_completed ) {
-        if (log_events) {
-          caml_ev_end("major_gc/mark");
-          caml_ev_end("major_gc/slice");
-        }
-        if (budget_left) *budget_left = budget;
-        return computed_work;
-      }
-      */
-    } else if (0) {
-      if (was_marking) {
-        if (log_events) caml_ev_end("major_gc/mark");
-        was_marking = 0;
-      }
-      if (log_events) caml_ev_begin("major_gc/steal");
-      steal_result = steal_mark_work();
-      if (log_events) caml_ev_end("major_gc/steal");
-      if (steal_result == -1) break;
     } else {
       break;
     }
