@@ -1671,7 +1671,11 @@ let group_syntactic_items x =
         remove_row (s_elt :: acc) rem
     | Sig_class_type _ as src :: tydecl1 :: tydecl2 :: rem ->
         remove_row ({src; ghosts = ghosts @ [tydecl1; tydecl2]}::acc) rem
-    | src :: rem -> remove_row ({src; ghosts} :: acc) rem
+    | [Sig_class _] | [Sig_class _; _ ] | [Sig_class _; _;_ ] -> assert false
+    | [Sig_class_type _] | [Sig_class_type _; _ ] -> assert false
+    | (Sig_module _ | Sig_value _ | Sig_type _ | Sig_typext _
+      | Sig_modtype _ as src)  :: rem ->
+        remove_row ({src; ghosts} :: acc) rem
     | [] -> List.rev acc
   and remove_row acc = function
     | Sig_type(id,_,_,_) as row :: rest when is_row_name (Ident.name id) ->
@@ -1685,7 +1689,7 @@ let add_sigitem env x =
 let recursive_sigitem = function
   | Sig_class(id,_,rs,_) | Sig_class_type (id,_,rs,_) | Sig_type(id, _, rs, _)
   | Sig_module(id, _, _, rs, _) -> Some (id,rs)
-  | _ -> None
+  | Sig_value _ | Sig_modtype _ | Sig_typext _  -> None
 
 let group_recursive_items x =
   let rec_group ids group = Rec_group( List.rev ids, List.rev group) in
@@ -1697,13 +1701,11 @@ let group_recursive_items x =
       | Some (id, (Trec_first | Trec_next) )  -> in_group [id] [elt] acc rest
   and in_group ids group acc = function
   | [] ->  List.rev (rec_group ids group :: acc)
-  | elt :: rest ->
+  | elt :: rest as all ->
       match recursive_sigitem elt.src with
-      | None | Some (_,Trec_not) ->
-          not_in_group (Not_rec elt::rec_group ids group::acc) rest
-      | Some (id, Trec_first)  ->
-          in_group [id] [elt] (rec_group ids group :: acc) rest
-      | Some (id, Trec_next) -> in_group (id::ids) (elt::group) acc rest in
+      | Some (id, Trec_next) -> in_group (id::ids) (elt::group) acc rest
+      | None | Some (_,(Trec_not|Trec_first)) ->
+          not_in_group (rec_group ids group::acc) all in
   not_in_group [] x
 
 let rec tree_of_modtype ?(ellipsis=false) = function
