@@ -3,6 +3,9 @@ Working version
 
 ### Language features:
 
+- #1655: pattern aliases do not ignore type constraints
+  (Thomas Refis, review by Jacques Garrigue and Gabriel Scherer)
+
 * #9500, #9727: Injectivity annotations
   One can now mark type parameters as injective, which is useful for
   abstract types:

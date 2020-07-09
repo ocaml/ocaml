@@ -466,6 +466,22 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   unify_vars p1_vs p2_vs
 
 let rec build_as_type env p =
+  let as_ty = build_as_type_aux env p in
+  (* Cf. #1655 *)
+  List.fold_left (fun as_ty (extra, _loc, _attrs) ->
+    match extra with
+    | Tpat_type _ | Tpat_open _ | Tpat_unpack -> as_ty
+    | Tpat_constraint cty ->
+      begin_def ();
+      let ty = instance cty.ctyp_type in
+      end_def ();
+      generalize_structure ty;
+      (* This call to unify can't fail since the pattern is well typed. *)
+      unify !env (instance as_ty) (instance ty);
+      ty
+  ) as_ty p.pat_extra
+
+and build_as_type_aux env p =
   match p.pat_desc with
     Tpat_alias(p1,_, _) -> build_as_type env p1
   | Tpat_tuple pl ->
@@ -1420,8 +1436,7 @@ and type_pat_aux
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
       assert construction_not_used_in_counterexamples;
-      let cty, force = Typetexp.transl_simple_type_delayed !env sty in
-      let ty = cty.ctyp_type in
+      let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
       unify_pat_types ~refine lloc env ty (instance expected_ty);
       pattern_force := force :: !pattern_force;
       begin match ty.desc with
@@ -1810,8 +1825,7 @@ and type_pat_aux
   | Ppat_constraint(sp, sty) ->
       (* Pretend separate = true *)
       begin_def();
-      let cty, force = Typetexp.transl_simple_type_delayed !env sty in
-      let ty = cty.ctyp_type in
+      let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
       end_def();
       generalize_structure ty;
       let ty, expected_ty' = instance ty, ty in
@@ -3124,10 +3138,9 @@ and type_expect_
       let (arg, ty',cty,cty') =
         match sty with
         | None ->
-            let (cty', force) =
+            let (cty', ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let ty' = cty'.ctyp_type in
             begin_def ();
             let arg = type_exp env sarg in
             end_def ();
@@ -3171,13 +3184,11 @@ and type_expect_
             (arg, ty', None, cty')
         | Some sty ->
             begin_def ();
-            let (cty, force) =
+            let (cty, ty, force) =
               Typetexp.transl_simple_type_delayed env sty
-            and (cty', force') =
+            and (cty', ty', force') =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let ty = cty.ctyp_type in
-            let ty' = cty'.ctyp_type in
             begin try
               let force'' = subtype env ty ty' in
               force (); force' (); force'' ()

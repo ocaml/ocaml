@@ -304,12 +304,6 @@ let u = function
 ;;
 [%%expect{|
 val u : M.r ref -> int = <fun>
-|}, Principal{|
-Line 3, characters 7-10:
-3 |     !x.lbl
-           ^^^
-Warning 18: this type-based field disambiguation is not principal.
-val u : M.r ref -> int = <fun>
 |}]
 
 
