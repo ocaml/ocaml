@@ -28,7 +28,6 @@ extern asize_t caml_fl_cur_wsz;
 /* See [freelist.c] for usage info on these functions. */
 extern header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz);
 extern void (*caml_fl_p_init_merge) (void);
-extern void (*caml_fl_p_reset) (void);
 extern header_t *(*caml_fl_p_merge_block) (value bp, char *limit);
 extern void (*caml_fl_p_add_blocks) (value bp);
 extern void (*caml_fl_p_make_free_blocks)
@@ -43,9 +42,6 @@ static inline header_t *caml_fl_allocate (mlsize_t wo_sz)
 static inline void caml_fl_init_merge (void)
   { (*caml_fl_p_init_merge) (); }
 
-static inline void caml_fl_reset (void)
-  { (*caml_fl_p_reset) (); }
-
 static inline header_t *caml_fl_merge_block (value bp, char *limit)
   { return (*caml_fl_p_merge_block) (bp, limit); }
 
@@ -57,6 +53,7 @@ static inline void caml_make_free_blocks
   { (*caml_fl_p_make_free_blocks) (p, size, do_merge, color); }
 
 extern void caml_set_allocation_policy (intnat);
+extern void caml_fl_reset_and_switch_policy (intnat);
 
 #ifdef DEBUG
 static inline void caml_fl_check (void)

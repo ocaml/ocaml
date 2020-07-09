@@ -246,12 +246,16 @@ static void nf_init_merge (void)
 #endif
 }
 
-static void nf_reset (void)
+static void nf_init (void)
 {
   Next_small (Nf_head) = Val_NULL;
   nf_prev = Nf_head;
   caml_fl_cur_wsz = 0;
-  nf_init_merge ();
+}
+
+static void nf_reset (void)
+{
+  nf_init ();
 }
 
 /* Note: the [limit] parameter is unused because we merge blocks one by one. */
@@ -693,12 +697,16 @@ static void ff_truncate_flp (value changed)
   }
 }
 
-static void ff_reset (void)
+static void ff_init (void)
 {
   Next_small (Ff_head) = Val_NULL;
   ff_truncate_flp (Ff_head);
   caml_fl_cur_wsz = 0;
-  ff_init_merge ();
+}
+
+static void ff_reset (void)
+{
+  ff_init ();
 }
 
 /* Note: the [limit] parameter is unused because we merge blocks one by one. */
@@ -1661,7 +1669,7 @@ static void bf_init_merge (void)
   }
 }
 
-static void bf_reset (void)
+static void bf_init (void)
 {
   mlsize_t i;
 
@@ -1673,7 +1681,30 @@ static void bf_reset (void)
   bf_large_tree = NULL;
   bf_large_least = NULL;
   caml_fl_cur_wsz = 0;
-  bf_init_merge ();
+}
+
+/* Make sure all free blocks are blue and tear down the BF data structures. */
+static void bf_reset (void)
+{
+  mlsize_t i;
+
+  for (i = 1; i <= BF_NUM_SMALL; i++){
+    /* At the beginning of each small free list is a segment of remnants
+       that were pushed back to the list after splitting. These are white
+       and they are not in order. We must make them blue before we can
+       compact or change the allocator policy.
+    */
+    value p = bf_small_fl[i].free;
+    while (1){
+      if (p == Val_NULL || Color_val (p) == Caml_blue) break;
+      CAMLassert (Color_val (p) == Caml_white);
+      Hd_val (p) = Bluehd_hd (Hd_val (p));
+      p = Next_small (p);
+    }
+  }
+  /* We have no malloced data structures, so we can just call [bf_init] to
+     clear all our pointers. */
+  bf_init ();
 }
 
 static header_t *bf_merge_block (value bp, char *limit)
@@ -1812,8 +1843,9 @@ header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz) = &nf_allocate;
 /* Initialize the merge_block machinery (at start of sweeping). */
 void (*caml_fl_p_init_merge) (void) = &nf_init_merge;
 
-/* This is called by caml_compact_heap. */
-void (*caml_fl_p_reset) (void) = &nf_reset;
+/* These are called internally. */
+static void (*caml_fl_p_init) (void) = &nf_init;
+static void (*caml_fl_p_reset) (void) = &nf_reset;
 
 /* [caml_fl_merge_block] returns the head pointer of the next block after [bp],
    because merging blocks may change the size of [bp]. */
@@ -1851,6 +1883,7 @@ void caml_set_allocation_policy (intnat p)
     caml_fl_p_allocate = &nf_allocate;
     caml_fl_p_init_merge = &nf_init_merge;
     caml_fl_p_reset = &nf_reset;
+    caml_fl_p_init = &nf_init;
     caml_fl_p_merge_block = &nf_merge_block;
     caml_fl_p_add_blocks = &nf_add_blocks;
     caml_fl_p_make_free_blocks = &nf_make_free_blocks;
@@ -1863,6 +1896,7 @@ void caml_set_allocation_policy (intnat p)
     caml_fl_p_allocate = &ff_allocate;
     caml_fl_p_init_merge = &ff_init_merge;
     caml_fl_p_reset = &ff_reset;
+    caml_fl_p_init = &ff_init;
     caml_fl_p_merge_block = &ff_merge_block;
     caml_fl_p_add_blocks = &ff_add_blocks;
     caml_fl_p_make_free_blocks = &ff_make_free_blocks;
@@ -1875,6 +1909,7 @@ void caml_set_allocation_policy (intnat p)
     caml_fl_p_allocate = &bf_allocate;
     caml_fl_p_init_merge = &bf_init_merge;
     caml_fl_p_reset = &bf_reset;
+    caml_fl_p_init = &bf_init;
     caml_fl_p_merge_block = &bf_merge_block;
     caml_fl_p_add_blocks = &bf_add_blocks;
     caml_fl_p_make_free_blocks = &bf_make_free_blocks;
@@ -1882,5 +1917,16 @@ void caml_set_allocation_policy (intnat p)
     caml_fl_p_check = &bf_check;
 #endif
     break;
+  }
+}
+
+/* This is called by caml_compact_heap. */
+void caml_fl_reset_and_switch_policy (intnat new_allocation_policy)
+{
+  /* reset the fl data structures */
+  (*caml_fl_p_reset) ();
+  if (new_allocation_policy != -1){
+    caml_set_allocation_policy (new_allocation_policy);
+    (*caml_fl_p_init) (); /* initialize the new allocation policy */
   }
 }

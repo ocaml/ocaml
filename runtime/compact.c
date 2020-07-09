@@ -168,6 +168,13 @@ static void do_compaction (intnat new_allocation_policy)
   caml_heap_check ();
 #endif
 
+  /* Make sure the heap is in the right state for compaction:
+     - all free blocks are blue
+     - all other blocks are white and contain valid pointers
+  */
+  caml_fl_reset_and_switch_policy (new_allocation_policy);
+
+
   /* First pass: encode all noninfix headers. */
   {
     ch = caml_heap_start;
@@ -410,10 +417,7 @@ static void do_compaction (intnat new_allocation_policy)
      structures from scratch. */
   {
     ch = caml_heap_start;
-    if (new_allocation_policy != -1){
-      caml_set_allocation_policy (new_allocation_policy);
-    }
-    caml_fl_reset ();
+    caml_fl_init_merge ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
         caml_make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
