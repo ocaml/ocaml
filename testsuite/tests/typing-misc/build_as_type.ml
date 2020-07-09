@@ -21,7 +21,7 @@ val f : ('a list -> 'a list) * ('a list -> 'a list) = (<fun>, <fun>)
 
 let f =
   let f' = function
-    | ([] : _ list) as x -> x 
+    | ([] : _ list) as x -> x
     | _ :: _ -> assert false
   in
   f', f';;
@@ -31,7 +31,7 @@ val f : ('a list -> 'b list) * ('c list -> 'd list) = (<fun>, <fun>)
 
 let f =
   let f' (type a) = function
-    | ([] : a list) as x -> x 
+    | ([] : a list) as x -> x
     | _ :: _ -> assert false
   in
   f', f';;
