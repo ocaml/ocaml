@@ -1734,20 +1734,20 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       Omty_alias (tree_of_path Module p)
 
 and tree_of_signature sg =
-  wrap_env (fun env -> env)
-    (tree_of_signature_rec (fun _ (_,x) -> x) !printing_env) sg
+  wrap_env (fun env -> env)(fun sg ->
+      let tree_groups = tree_of_signature_rec !printing_env sg in
+      List.concat_map (fun (_env,l) -> List.map snd l) tree_groups
+    ) sg
 
-and tree_of_signature_rec : 'r. (_->_->'r) -> _ -> _ -> 'r list
-  = fun decorate env' sg ->
+and tree_of_signature_rec env' sg =
   let structured = group_recursive_items (group_syntactic_items sg) in
   let collect_trees_of_rec_group (env,trees) group =
     let env', more_trees = trees_of_recursive_sigitem_group env group in
-    let more_trees = List.map (decorate env) more_trees in
     set_printing_env env';
-    env', more_trees :: trees in
+    env', (env, more_trees) :: trees in
   let _, rev_trees =
     List.fold_left collect_trees_of_rec_group (env',[]) structured in
-  List.flatten (List.rev rev_trees)
+  List.rev rev_trees
 
 and trees_of_recursive_sigitem_group env group =
   let display x =
@@ -1823,7 +1823,8 @@ let print_items showval env x =
   reset_naming_context ();
   Conflicts.reset ();
   let extend_val env (sigitem,outcome) = outcome, showval env sigitem in
-  tree_of_signature_rec extend_val env x
+  let post_process (env,l) = List.map (extend_val env) l in
+  List.concat_map post_process @@ tree_of_signature_rec env x
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 
