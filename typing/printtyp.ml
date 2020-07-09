@@ -1661,8 +1661,7 @@ type syntactic_sig_item =
   { src: Types.signature_item; ghosts: Types.signature_item list }
 type rec_item_group =
   | Not_rec of syntactic_sig_item
-  | Rec_group of (Ident.t list * syntactic_sig_item list)
-
+  | Rec_group of ( (bool * Ident.t) list * syntactic_sig_item list)
 
 let group_syntactic_items x =
   let rec group ~ghosts ~acc = function
@@ -1687,8 +1686,9 @@ let add_sigitem env x =
   Env.add_signature (x.src :: x.ghosts) env
 
 let recursive_sigitem = function
-  | Sig_class(id,_,rs,_) | Sig_class_type (id,_,rs,_) | Sig_type(id, _, rs, _)
-  | Sig_module(id, _, _, rs, _) -> Some (id,rs)
+  | Sig_type(id, _, rs, _) -> Some((true,id),rs)
+  | Sig_class(id,_,rs,_) | Sig_class_type (id,_,rs,_)
+  | Sig_module(id, _, _, rs, _) -> Some ((false,id),rs)
   | Sig_value _ | Sig_modtype _ | Sig_typext _  -> None
 
 let group_recursive_items x =
@@ -1756,11 +1756,9 @@ and trees_of_recursive_sigitem_group env group =
   match group with
   | Not_rec x -> add_sigitem env x, [display x]
   | Rec_group (ids,items) ->
-      let is_type = match items with
-        | {src=Sig_type _; _ } :: _ -> true
-        | _ -> false  in
-      List.iter Naming_context.add_protected ids;
-      if is_type then hide_rec_items ids;
+      List.iter (fun (_,x) -> Naming_context.add_protected x) ids;
+      let type_id (is_type,x) = if is_type then Some x else None in
+      hide_rec_items (List.filter_map type_id ids);
       let r = List.map display items in
       Naming_context.reset_protected ();
       List.fold_left add_sigitem env items,
