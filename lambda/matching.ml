@@ -263,12 +263,11 @@ module Simple : sig
   val head : pattern -> Patterns.Head.t
 
   val explode_or_pat :
-    Half_simple.pattern * Typedtree.pattern list ->
     arg:lambda ->
+    Half_simple.pattern ->
     mk_action:(vars:Ident.t list -> lambda) ->
     vars:Ident.t list ->
-    clause list ->
-    clause list
+    (pattern * lambda) list
 end = struct
   include Patterns.Simple
 
@@ -319,8 +318,8 @@ end = struct
      compiling in [do_for_multiple_match] where it is a tuple of
      variables.
   *)
-  let explode_or_pat ((p : Half_simple.pattern), patl) ~arg ~mk_action ~vars
-      (rem : clause list) : clause list =
+  let explode_or_pat ~arg (p : Half_simple.pattern) ~mk_action ~vars
+      : (pattern * lambda) list =
     let rec explode p aliases rem =
       let split_explode p aliases rem = explode (General.view p) aliases rem in
       match p.pat_desc with
@@ -374,10 +373,9 @@ end = struct
                   pat, bind_alias pat id ~arg ~action
               end
           in
-          let (pat, action) = fresh_clause None [] [] vars in
-          ((pat, patl), action) :: rem
+          fresh_clause None [] [] vars :: rem
     in
-    explode (p : Half_simple.pattern :> General.pattern) [] rem
+    explode (p : Half_simple.pattern :> General.pattern) [] []
 end
 
 let expand_record_simple : Simple.pattern -> Simple.pattern =
@@ -1584,11 +1582,10 @@ and precompile_or ~arg (cls : Simple.clause list) ors args def k =
             let mk_new_action ~vars =
               Lstaticraise (or_num, List.map (fun v -> Lvar v) vars)
             in
-            let rem_cases, rem_handlers = do_cases rem in
-            let cases =
-              Simple.explode_or_pat (p, new_patl) ~arg
-                ~mk_action:mk_new_action ~vars:(List.map fst vars) rem_cases
-            in
+            let new_cases =
+              Simple.explode_or_pat ~arg p
+                ~mk_action:mk_new_action ~vars:(List.map fst vars)
+              |> List.map (fun (p, act) -> ((p, new_patl), act)) in
             let handler =
               { provenance = [ [ orp ] ];
                 exit = or_num;
@@ -1596,7 +1593,8 @@ and precompile_or ~arg (cls : Simple.clause list) ors args def k =
                 pm = orpm
               }
             in
-            (cases, handler :: rem_handlers)
+            let rem_cases, rem_handlers = do_cases rem in
+            (new_cases @ rem_cases, handler :: rem_handlers)
       )
   in
   let cases, handlers = do_cases ors in
