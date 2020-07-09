@@ -186,6 +186,15 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
 
 /* Output */
 
+CAMLexport int caml_write_fd(int fd, int flags, void * buf, int n)
+{
+  value exn = Val_unit;
+  int retcode = caml_write_fd_exn(fd, flags, buf, n, &exn);
+  caml_raise_if_exception(exn);
+  CAMLassert(retcode > 0);
+  return retcode;
+}
+
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer.
@@ -282,6 +291,15 @@ CAMLexport file_offset caml_pos_out(struct channel *channel)
 }
 
 /* Input */
+
+CAMLexport int caml_read_fd(int fd, int flags, void * buf, int n)
+{
+  value exn = Val_unit;
+  int retcode = caml_read_fd_exn(fd, flags, buf, n, &exn);
+  caml_raise_if_exception(exn);
+  CAMLassert(retcode >= 0);
+  return retcode;
+}
 
 /* caml_do_read is exported for Cash */
 CAMLexport int caml_do_read(int fd, char *p, unsigned int n)

@@ -72,7 +72,7 @@ static char * error_message(void)
 #define EWOULDBLOCK (-1)
 #endif
 
-CAMLexport void caml_sys_error(value arg)
+CAMLexport value caml_sys_error_exn(value arg)
 {
   CAMLparam1 (arg);
   char * err;
@@ -89,16 +89,20 @@ CAMLexport void caml_sys_error(value arg)
     memmove(&Byte(str, arg_len), ": ", 2);
     memmove(&Byte(str, arg_len + 2), err, err_len);
   }
-  caml_raise_sys_error(str);
-  CAMLnoreturn;
+  CAMLreturn (caml_raise_sys_error_exn(str));
 }
 
-CAMLexport void caml_sys_io_error(value arg)
+CAMLexport void caml_sys_error(value arg)
+{
+  caml_raise(Extract_exception(caml_sys_error_exn(arg)));
+}
+
+CAMLexport value caml_sys_io_error_exn(value arg)
 {
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
-    caml_raise_sys_blocked_io();
+    return caml_raise_sys_blocked_io_exn();
   } else {
-    caml_sys_error(arg);
+    return caml_sys_error_exn(arg);
   }
 }
 

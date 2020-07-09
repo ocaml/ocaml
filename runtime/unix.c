@@ -71,19 +71,22 @@
 #define EWOULDBLOCK (-1)
 #endif
 
-int caml_read_fd(int fd, int flags, void * buf, int n)
+int caml_read_fd_exn(int fd, int flags, void * buf, int n, value * exn)
 {
   int retcode;
   do {
-    caml_enter_blocking_section();
+    *exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(*exn)) return -1;
     retcode = read(fd, buf, n);
-    caml_leave_blocking_section();
+    *exn = caml_leave_blocking_section_exn();
+    if (Is_exception_result(*exn)) return retcode;
   } while (retcode == -1 && errno == EINTR);
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
+  if (retcode == -1)
+    *exn = caml_sys_io_error_exn(NO_ARG);
   return retcode;
 }
 
-int caml_write_fd(int fd, int flags, void * buf, int n)
+int caml_write_fd_exn(int fd, int flags, void * buf, int n, value * exn)
 {
   int retcode;
  again:
@@ -92,9 +95,11 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
     retcode = write(fd, buf, n);
   } else {
 #endif
-  caml_enter_blocking_section();
+  *exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(*exn)) return -1;
   retcode = write(fd, buf, n);
-  caml_leave_blocking_section();
+  *exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(*exn)) return retcode;
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   }
 #endif
@@ -109,8 +114,8 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
       n = 1; goto again;
     }
   }
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  CAMLassert (retcode > 0);
+  if (retcode == -1)
+    *exn = caml_sys_io_error_exn(NO_ARG);
   return retcode;
 }
 

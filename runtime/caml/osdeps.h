@@ -34,16 +34,30 @@ extern unsigned short caml_win32_revision;
    [flags] indicates whether [fd] is a socket
    (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
    (This distinction matters for Win32, but not for Unix.)
-   Return number of bytes read.
-   In case of error, raises [Sys_error] or [Sys_blocked_io]. */
+   Return number of bytes read or -1.
+   In case of error, sets [exn] to an encoded exception value
+   [Sys_error], [Sys_blocked_io] or an exception raised from a signal
+   handler, if any. If the return value is -1 then [exn] contains an
+   encoded exception.  */
+extern int caml_read_fd_exn(int fd, int flags, void * buf, int n, value * exn);
+
+/* Same as [caml_read_fd_exn], but immediately raises the exception
+   if any, and never returns -1. */
 extern int caml_read_fd(int fd, int flags, void * buf, int n);
 
 /* Write at most [n] bytes from buffer [buf] onto file descriptor [fd].
    [flags] indicates whether [fd] is a socket
    (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
    (This distinction matters for Win32, but not for Unix.)
-   Return number of bytes written.
-   In case of error, raises [Sys_error] or [Sys_blocked_io]. */
+   Return number of bytes written or -1.
+   In case of error, sets [exn] to an encoded exception value
+   [Sys_error], [Sys_blocked_io] or an exception raised from a signal
+   handler, if any. If the return value is -1 then [exn] contains an
+   encoded exception. */
+extern int caml_write_fd_exn(int fd, int flags, void * buf, int n, value * exn);
+
+/* Same as [caml_write_fd_exn], but immediately raises the exception
+   if any, and never returns -1. */
 extern int caml_write_fd(int fd, int flags, void * buf, int n);
 
 /* Decompose the given path into a list of directories, and add them
