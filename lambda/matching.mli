@@ -25,7 +25,7 @@ val for_function:
         int ref option -> lambda -> (pattern * lambda) list -> partial ->
         lambda
 val for_trywith:
-        scopes:scopes ->
+        scopes:scopes -> Location.t ->
         lambda -> (pattern * lambda) list ->
         lambda
 val for_let:
