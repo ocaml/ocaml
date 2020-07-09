@@ -383,57 +383,6 @@ static uintnat default_slice_budget() {
   return computed_work;
 }
 
-enum steal_result { Shared, Not_shared, No_work };
-
-struct steal_payload {
-  caml_domain_state* thief;
-  /* The major cycle at which the stealing was initiated. */
-  uintnat major_cycle;
-  enum steal_result result;
-};
-
-static void handle_steal_req (struct domain* targetd, void* plv,
-                              interrupt* done) {
-  struct steal_payload* pl = plv;
-  uintnat steal_size, new_size;
-  caml_domain_state* target = targetd->state;
-
-  if (pl->major_cycle != caml_major_cycles_completed) {
-    pl->result = Not_shared;
-  } else if (target->stealing || target->mark_stack == NULL || target->mark_stack->count == 0) {
-    pl->result = No_work;
-  } else {
-    CAMLassert(pl->thief->mark_stack->count == 0);
-
-    if (target->mark_stack->count < 16) {
-      steal_size = target->mark_stack->count;
-    } else {
-      steal_size = target->mark_stack->count / 2
-                 + target->mark_stack->count % 2;
-    }
-    new_size = target->mark_stack->count - steal_size;
-    memcpy(pl->thief->mark_stack->stack, &target->mark_stack->stack[new_size],
-           steal_size * sizeof(mark_entry));
-    target->mark_stack->count = new_size;
-
-    /* Mark stack size and domain local marking_done flag are updated in
-     * steal_mark_work(). */
-    CAMLassert (pl->thief->marking_done);
-    atomic_fetch_add(&num_domains_to_mark, 1);
-
-    if (new_size == 0) {
-      CAMLassert(!target->marking_done);
-      atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
-      target->marking_done = 1;
-    }
-
-    pl->thief->mark_stack->count = steal_size;
-    pl->thief->marking_done = 0;
-    pl->result = Shared;
-  }
-  caml_acknowledge_interrupt(done);
-}
-
 static void mark_stack_prune(struct mark_stack* stk);
 static struct pool* find_pool_to_rescan();
 
