@@ -295,6 +295,30 @@ end = struct
     in
     { p with pat_desc }
 
+  (* Consider the following matching problem involving a half-simple pattern,
+     with an or-pattern and as-patterns below it:
+
+       match arg, other-args with
+       | (Foo(y, z) as x | Bar(x, y) as z), other-pats -> action[x,y,z]
+
+     (action[x,y,z] is some right-hand-side expression using x, y and z,
+      but we assume that it uses no variables from [other-pats]).
+
+     [explode_or_pat] explodes this into the following:
+
+       match arg, other-args with
+       | Foo(y1, z1), other-pats -> let x1 = arg in action[x1,y1,z1]
+       | Bar(x2, y2), other-pats -> let z2 = arg in action[x2,y2,z2]
+
+     notice that the binding occurrences of x,y,z are alpha-renamed with
+     fresh variables x1,y1,z1 and x2,y2,z2.
+
+     We assume that it is fine to duplicate the argument [arg] in each
+     exploded branch; in most cases it is a variable (in which case
+     the bindings [let x1 = arg] are inlined on the fly), except when
+     compiling in [do_for_multiple_match] where it is a tuple of
+     variables.
+  *)
   let explode_or_pat ((p : Half_simple.pattern), patl) ~arg ~mk_action ~vars
       (rem : clause list) : clause list =
     let rec explode p aliases rem =
