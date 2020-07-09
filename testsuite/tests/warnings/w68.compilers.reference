@@ -1,0 +1,4 @@
+File "w68.ml", line 14, characters 10-13:
+14 | let alloc {a} b = a + b
+               ^^^
+Warning 68: matching on this mutable field will allocate closure
