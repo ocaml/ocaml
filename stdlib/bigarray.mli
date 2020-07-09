@@ -291,8 +291,7 @@ module Genarray :
      having three dimensions, the three dimensions being 4, 6 and 8
      respectively.
 
-     Bigarrays returned by [Genarray.create] are not initialized:
-     the initial values of array elements is unspecified.
+     Bigarrays returned by [Genarray.create] are initialized to zero.
 
      [Genarray.create] raises [Invalid_argument] if the number of dimensions
      is not in the range 0 to 16 inclusive, or if one of the dimensions

@@ -84,6 +84,9 @@ Working version
    which has never existed.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+- #9725: Zero-initialize bigarrays in caml_ba_alloc
+  (Stefan Muenzel, review by ???)
+
 ### Code generation and optimizations:
 
 - #9620: Limit the number of parameters for an uncurried or untupled
