@@ -336,8 +336,8 @@ end = struct
              - we freshen the variables of the pattern, to
                avoid reusing the same identifier in distinct exploded
                branches
-             - we bind the variables in [alias] to the argument [arg]
-               (the other variables are bound in [view]); to avoid
+             - we bind the variables in [aliases] to the argument [arg]
+               (the other variables are bound by [view]); to avoid
                code duplication if [arg] is itself not a variable, we
                generate a binding for it, but only if the binding is
                needed.
@@ -347,27 +347,35 @@ end = struct
              compile a tuple pattern [match e1, .. en with ...]
              without allocating the tuple [(e1, .., en)].
           *)
-          let env = List.map (fun id -> id, Ident.rename id) vars in
-          let fresh_clause = (alpha env { p with pat_desc = view }, patl) in
-          let rec action arg_id acc_args = function
-            | [] -> mk_action ~vars:(List.rev acc_args)
-            | (pat_id, fresh_pat_id) :: env_rem ->
-              if not (List.mem pat_id aliases)
-              then action arg_id (fresh_pat_id :: acc_args) env_rem
-              else begin
-                match arg_id, arg with
+          let rec fresh_clause arg_id action_vars renaming_env = function
+            | [] ->
+                let fresh_pat = alpha renaming_env { p with pat_desc = view } in
+                let fresh_action = mk_action ~vars:(List.rev action_vars) in
+                (fresh_pat, fresh_action)
+            | pat_id :: rem_vars ->
+              if not (List.mem pat_id aliases) then begin
+                let fresh_id = Ident.rename pat_id in
+                let action_vars = fresh_id :: action_vars in
+                let renaming_env = ((pat_id, fresh_id) :: renaming_env) in
+                fresh_clause arg_id action_vars renaming_env rem_vars
+              end else begin match arg_id, arg with
                 | Some id, _
-                | None, Lvar id -> action arg_id (id :: acc_args) env_rem
+                | None, Lvar id ->
+                  let action_vars = id :: action_vars in
+                  fresh_clause arg_id action_vars renaming_env rem_vars
                 | None, _ ->
                   (* [pat_id] is a name used locally to refer to the argument,
                      so it makes sense to reuse it (refreshed) *)
                   let id = Ident.rename pat_id in
-                  bind_alias p id ~arg
-                    ~action:(action (Some id) (id :: acc_args) env_rem)
+                  let action_vars = (id :: action_vars) in
+                  let pat, action =
+                    fresh_clause (Some id) action_vars renaming_env rem_vars
+                  in
+                  pat, bind_alias pat id ~arg ~action
               end
           in
-          (fresh_clause, action None [] env)
-          :: rem
+          let (pat, action) = fresh_clause None [] [] vars in
+          ((pat, patl), action) :: rem
     in
     explode (p : Half_simple.pattern :> General.pattern) [] rem
 end
