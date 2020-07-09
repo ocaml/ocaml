@@ -1311,7 +1311,9 @@ CAMLprim value caml_ml_domain_yield(value unused)
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0 && !found_work) {
+      caml_ev_begin("domain/idle_wait");
       caml_plat_wait(&s->cond);
+      caml_ev_end("domain/idle_wait");
     } else {
       caml_plat_unlock(&s->lock);
       caml_opportunistic_major_collection_slice(Chunk_size, &left);
@@ -1347,9 +1349,12 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
   struct interruptor* target =
     &all_domains[unique_id % Max_domains].interruptor;
 
+  caml_ev_begin("domain/send_interrupt");
   if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, &unique_id)) {
     /* the domain might have terminated, but that's fine */
   }
+  caml_ev_end("domain/send_interrupt");
+
   CAMLreturn (Val_unit);
 }
 
@@ -1384,7 +1389,9 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       ret = Val_int(0); /* Domain.Sync.Timeout */
       break;
     } else if (handle_incoming(s) == 0 && !found_work) {
+      caml_ev_begin("domain/idle_wait");
       res = caml_plat_timedwait(&s->cond, ts);
+      caml_ev_end("domain/idle_wait");
       if (res) {
         ret = Val_int(0); /* Domain.Sync.Timeout */
         break;
@@ -1410,5 +1417,3 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
   handle_incoming_otherwise_relax (Caml_state, self);
   return Val_unit;
 }
-
-
