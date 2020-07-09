@@ -92,6 +92,7 @@ type t =
   | Redefining_unit of string               (* 65 *)
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
+  | Match_on_mutable_will_allocate_closure  (* 68 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -169,9 +170,10 @@ let number = function
   | Redefining_unit _ -> 65
   | Unused_open_bang _ -> 66
   | Unused_functor_parameter _ -> 67
+  | Match_on_mutable_will_allocate_closure -> 68
 ;;
 
-let last_warning_number = 67
+let last_warning_number = 68
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -805,6 +807,7 @@ let message = function
          which shadows the existing one.\n\
          Hint: Did you mean 'type %s = unit'?" name
   | Unused_functor_parameter s -> "unused functor parameter " ^ s ^ "."
+  | Match_on_mutable_will_allocate_closure -> "matching on this mutable field will allocate closure"
 ;;
 
 let nerrors = ref 0;;
