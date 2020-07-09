@@ -301,7 +301,25 @@ CAMLexport int caml_read_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-/* caml_do_read is exported for Cash */
+// raises
+static int read_fd_into_channel(struct channel * channel, char * buf)
+{
+  int n;
+  value exn = Val_unit;
+  n = caml_read_fd_exn(channel->fd, channel->flags, buf,
+                       channel->end - buf, &exn);
+  if (n <= 0) {
+    caml_raise_if_exception(exn);
+    CAMLassert(n == 0);
+    return n;
+  }
+  channel->offset += n;
+  channel->max = buf + n;
+  caml_raise_if_exception(exn);
+  return n;
+}
+
+/* caml_do_read is exported for Cash. Raises. */
 CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 {
   return caml_read_fd(fd, 0, p, n);
@@ -310,12 +328,8 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 CAMLexport unsigned char caml_refill(struct channel *channel)
 {
   int n;
-
-  n = caml_read_fd(channel->fd, channel->flags,
-                   channel->buff, channel->end - channel->buff);
+  n = read_fd_into_channel(channel, channel->buff);
   if (n == 0) caml_raise_end_of_file();
-  channel->offset += n;
-  channel->max = channel->buff + n;
   channel->curr = channel->buff + 1;
   return (unsigned char)(channel->buff[0]);
 }
@@ -349,10 +363,7 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
     channel->curr += avail;
     return avail;
   } else {
-    nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
-                         channel->end - channel->buff);
-    channel->offset += nread;
-    channel->max = channel->buff + nread;
+    nread = read_fd_into_channel(channel, channel->buff);
     if (n > nread) n = nread;
     memmove(p, channel->buff, n);
     channel->curr = channel->buff + n;
@@ -421,16 +432,13 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
         return -(channel->max - channel->curr);
       }
       /* Fill the buffer as much as possible */
-      n = caml_read_fd(channel->fd, channel->flags,
-                       channel->max, channel->end - channel->max);
+      n = read_fd_into_channel(channel, channel->max);
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered
            a newline. */
         return -(channel->max - channel->curr);
       }
-      channel->offset += n;
-      channel->max += n;
     }
   } while (*p++ != '\n');
   /* Found a newline. Return the length of the line, newline included. */
