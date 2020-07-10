@@ -74,7 +74,7 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string * string option   (* 49 *)
-  | Bad_docstring of bool                   (* 50 *)
+  | Unexpected_docstring of bool            (* 50 *)
   | Expect_tailcall                         (* 51 *)
   | Fragile_literal_pattern                 (* 52 *)
   | Misplaced_attribute of string           (* 53 *)
@@ -151,7 +151,7 @@ let number = function
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
-  | Bad_docstring _ -> 50
+  | Unexpected_docstring _ -> 50
   | Expect_tailcall -> 51
   | Fragile_literal_pattern -> 52
   | Misplaced_attribute _ -> 53
@@ -291,7 +291,7 @@ let descriptions =
     49, "Absent cmi file when looking up module alias.",
     ["no-cmi-file"];
     50, "Unexpected documentation comment.",
-    ["bad-docstring"];
+    ["unexpected-docstring"];
     51, "Warning on non-tail calls if @tailcall present.",
     ["expect-tailcall"];
     52, "Fragile constant pattern.",
@@ -736,7 +736,7 @@ let message = function
       Printf.sprintf
         "no valid cmi file was found in path for module %s. %s"
         name msg
-  | Bad_docstring unattached ->
+  | Unexpected_docstring unattached ->
       if unattached then "unattached documentation comment (ignored)"
       else "ambiguous documentation comment"
   | Expect_tailcall ->
