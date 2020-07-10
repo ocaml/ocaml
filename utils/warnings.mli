@@ -108,6 +108,7 @@ type t =
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
   | Unused_tmc_attribute                    (* 71 *)
+  | Tmc_breaks_tailcall                     (* 72 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}
