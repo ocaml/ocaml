@@ -755,62 +755,62 @@ and transl_function0
 and transl_function1
       ~scopes loc return untuplify_fn max_arity
       repr partial (param:Ident.t) cases =
-  match cases with
-  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
-    when untuplify_fn && List.length pl <= max_arity ->
-      begin try
-        let size = List.length pl in
-        let pats_expr_list =
-          List.map
-            (fun {c_lhs; c_guard; c_rhs} ->
-              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
-            cases in
-        let kinds =
-          (* All the patterns might not share the same types. We must take the
-             union of the patterns types *)
-          match pats_expr_list with
-          | [] -> assert false
-          | (pats, _, _) :: cases ->
-              let first_case_kinds =
-                List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
-              in
-              List.fold_left
-                (fun kinds (pats, _, _) ->
-                   List.map2 (fun kind pat ->
-                       value_kind_union kind
-                         (value_kind pat.pat_env pat.pat_type))
-                     kinds pats)
-                first_case_kinds cases
-        in
-        let tparams =
-          List.map (fun kind -> Ident.create_local "param", kind) kinds
-        in
-        let params = List.map fst tparams in
-        ((Tupled, tparams, return),
-         Matching.for_tupled_function ~scopes loc params
-           (transl_tupled_cases ~scopes pats_expr_list) partial)
-      with Matching.Cannot_flatten ->
-        ((Curried, [param, Pgenval], return),
-         Matching.for_function ~scopes loc repr (Lvar param)
-           (transl_cases ~scopes cases) partial)
-      end
-  | {c_lhs=pat} :: other_cases ->
-      let kind =
+  let exception Default in
+  try
+    match cases with
+    | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
+      when untuplify_fn && List.length pl <= max_arity ->
+        begin try
+          let size = List.length pl in
+          let pats_expr_list =
+            List.map
+              (fun {c_lhs; c_guard; c_rhs} ->
+                (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
+              cases in
+          let kinds =
+            (* All the patterns might not share the same types. We must take the
+               union of the patterns types *)
+            match pats_expr_list with
+            | [] -> assert false
+            | (pats, _, _) :: cases ->
+                let first_case_kinds =
+                  List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
+                in
+                List.fold_left
+                  (fun kinds (pats, _, _) ->
+                     List.map2 (fun kind pat ->
+                         value_kind_union kind
+                           (value_kind pat.pat_env pat.pat_type))
+                       kinds pats)
+                  first_case_kinds cases
+          in
+          let tparams =
+            List.map (fun kind -> Ident.create_local "param", kind) kinds
+          in
+          let params = List.map fst tparams in
+          ((Tupled, tparams, return),
+           Matching.for_tupled_function ~scopes loc params
+             (transl_tupled_cases ~scopes pats_expr_list) partial)
+        with Matching.Cannot_flatten -> raise Default
+        end
+    | _ -> raise Default
+  with Default ->
+    let kind =
+      match cases with
+      | [] ->
+        (* With Camlp4, a pattern matching might be empty *)
+        Pgenval
+      | {c_lhs=pat} :: other_cases ->
         (* All the patterns might not share the same types. We must take the
            union of the patterns types *)
         List.fold_left (fun k {c_lhs=pat} ->
-            Typeopt.value_kind_union k
-              (value_kind pat.pat_env pat.pat_type))
+          Typeopt.value_kind_union k
+            (value_kind pat.pat_env pat.pat_type))
           (value_kind pat.pat_env pat.pat_type) other_cases
-      in
-      ((Curried, [param, kind], return),
-       Matching.for_function ~scopes loc repr (Lvar param)
-         (transl_cases ~scopes cases) partial)
-  | [] ->
-      (* With Camlp4, a pattern matching might be empty *)
-      ((Curried, [param, Pgenval], return),
-       Matching.for_function ~scopes loc repr (Lvar param)
-         (transl_cases ~scopes cases) partial)
+    in
+    ((Curried, [param, kind], return),
+     Matching.for_function ~scopes loc repr (Lvar param)
+       (transl_cases ~scopes cases) partial)
 
 and transl_function ~scopes e param cases partial =
   let ((kind, params, return), body) =
