@@ -733,68 +733,88 @@ and transl_apply ~scopes
                                 sargs)
      : Lambda.lambda)
 
-and transl_function0
-      ~scopes loc return untuplify_fn max_arity
+and transl_curried_function
+      ~scopes loc return
+      repr partial (param:Ident.t) cases =
+  let max_arity = Lambda.max_arity () in
+  let rec loop ~scopes loc return ~arity partial (param:Ident.t) cases =
+    match cases with
+      [{c_lhs=pat; c_guard=None;
+        c_rhs={exp_desc =
+                 Texp_function
+                   { arg_label = _; param = param'; cases = cases';
+                     partial = partial'; }; exp_env; exp_type;exp_loc}}]
+      when arity <  max_arity ->
+      if  Parmatch.inactive ~partial pat
+      then
+        let kind = value_kind pat.pat_env pat.pat_type in
+        let return_kind = function_return_value_kind exp_env exp_type in
+        let ((_, params, return), body) =
+          loop ~scopes exp_loc return_kind ~arity:(arity + 1)
+            partial' param' cases'
+        in
+        ((Curried, (param, kind) :: params, return),
+         Matching.for_function ~scopes loc None (Lvar param)
+           [pat, body] partial)
+      else begin
+        Location.prerr_warning pat.pat_loc
+          Match_on_mutable_will_allocate_closure;
+        transl_tupled_function ~scopes ~arity
+          loc return repr partial param cases
+      end
+    | cases ->
+      transl_tupled_function ~scopes ~arity
+        loc return repr partial param cases
+  in
+  loop ~scopes loc return ~arity:1 partial param cases
+
+and transl_tupled_function
+      ~scopes ~arity loc return
       repr partial (param:Ident.t) cases =
   match cases with
-    [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
-        partial = partial'; }; exp_env; exp_type} as exp}]
-    when max_arity > 1 && Parmatch.inactive ~partial pat ->
-      let kind = value_kind pat.pat_env pat.pat_type in
-      let return_kind = function_return_value_kind exp_env exp_type in
-      let ((_, params, return), body) =
-        transl_function0 ~scopes exp.exp_loc return_kind false (max_arity - 1)
-          repr partial' param' cases
-      in
-      ((Curried, (param, kind) :: params, return),
-       Matching.for_function ~scopes loc None (Lvar param)
-         [pat, body] partial)
-  | cases -> transl_function1 ~scopes loc return untuplify_fn max_arity repr partial param cases
+  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
+    when !Clflags.native_code
+      && arity = 1
+      && List.length pl <= (Lambda.max_arity ()) ->
+      begin try
+        let size = List.length pl in
+        let pats_expr_list =
+          List.map
+            (fun {c_lhs; c_guard; c_rhs} ->
+              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
+            cases in
+        let kinds =
+          (* All the patterns might not share the same types. We must take the
+             union of the patterns types *)
+          match pats_expr_list with
+          | [] -> assert false
+          | (pats, _, _) :: cases ->
+              let first_case_kinds =
+                List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
+              in
+              List.fold_left
+                (fun kinds (pats, _, _) ->
+                   List.map2 (fun kind pat ->
+                       value_kind_union kind
+                         (value_kind pat.pat_env pat.pat_type))
+                     kinds pats)
+                first_case_kinds cases
+        in
+        let tparams =
+          List.map (fun kind -> Ident.create_local "param", kind) kinds
+        in
+        let params = List.map fst tparams in
+        ((Tupled, tparams, return),
+         Matching.for_tupled_function ~scopes loc params
+           (transl_tupled_cases ~scopes pats_expr_list) partial)
+    with Matching.Cannot_flatten ->
+      transl_function0 ~scopes loc return repr partial param cases
+      end
+  | _ -> transl_function0 ~scopes loc return repr partial param cases
 
-and transl_function1
-      ~scopes loc return untuplify_fn max_arity
+and transl_function0
+      ~scopes loc return
       repr partial (param:Ident.t) cases =
-  let exception Default in
-  try
-    match cases with
-    | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
-      when untuplify_fn && List.length pl <= max_arity ->
-        begin try
-          let size = List.length pl in
-          let pats_expr_list =
-            List.map
-              (fun {c_lhs; c_guard; c_rhs} ->
-                (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
-              cases in
-          let kinds =
-            (* All the patterns might not share the same types. We must take the
-               union of the patterns types *)
-            match pats_expr_list with
-            | [] -> assert false
-            | (pats, _, _) :: cases ->
-                let first_case_kinds =
-                  List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
-                in
-                List.fold_left
-                  (fun kinds (pats, _, _) ->
-                     List.map2 (fun kind pat ->
-                         value_kind_union kind
-                           (value_kind pat.pat_env pat.pat_type))
-                       kinds pats)
-                  first_case_kinds cases
-          in
-          let tparams =
-            List.map (fun kind -> Ident.create_local "param", kind) kinds
-          in
-          let params = List.map fst tparams in
-          ((Tupled, tparams, return),
-           Matching.for_tupled_function ~scopes loc params
-             (transl_tupled_cases ~scopes pats_expr_list) partial)
-        with Matching.Cannot_flatten -> raise Default
-        end
-    | _ -> raise Default
-  with Default ->
     let kind =
       match cases with
       | [] ->
@@ -818,8 +838,7 @@ and transl_function ~scopes e param cases partial =
       (function repr ->
          let pl = push_defaults e.exp_loc [] cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
-         transl_function0 ~scopes e.exp_loc return_kind
-           !Clflags.native_code (Lambda.max_arity())
+         transl_curried_function ~scopes e.exp_loc return_kind
            repr partial param pl)
   in
   let attr = default_function_attribute in
@@ -1113,8 +1132,7 @@ and transl_letop ~scopes loc env let_ ands param case partial =
     let (kind, params, return), body =
       event_function ~scopes case.c_rhs
         (function repr ->
-           transl_function0 ~scopes case.c_rhs.exp_loc return_kind
-             !Clflags.native_code (Lambda.max_arity())
+           transl_curried_function ~scopes case.c_rhs.exp_loc return_kind
              repr partial param [case])
     in
     let attr = default_function_attribute in
