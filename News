@@ -1,3 +1,67 @@
+OCaml 4.10.0 (21 February 2020)
+-------------------------------
+
+- New best-fit allocator for the major heap
+- Preliminary runtime work for OCaml multicore
+- Immutable strings are now enforced at configuration time
+- User-defined indexing operators for multidimensional arrays
+- Coming soon: statmemprof, a new statistical memory profiler.
+- The external API will be released next version.
+- Various improvements to the manual
+- More precise exhaustiveness check for GADTs
+- Many bug fixes
+
+
+OCaml 4.09.1 (18 March 2020)
+----------------------------
+
+Bug fixes.
+
+OCaml 4.09.0 (18 September 2019)
+--------------------------------
+
+- New optimisations, in particular for affine functions in matches, for instance:
+
+     type t = A | B | C
+     let affine = function
+       | A -> 4
+       | B -> 3
+       | C -> 2
+
+- The `graphics` library was moved out of the compiler distribution.
+- The `vmthread` library was removed.
+- Support for compiler plugins was removed.
+- Many bug fixes.
+
+OCaml 4.08.1 (5 August 2019)
+----------------------------
+
+Bug fixes.
+
+OCaml 4.08.0 (14 June 2019)
+---------------------------
+
+- Binding operators (let*, let+, and*, etc). They can be used to
+  streamline monadic code.
+
+- `open` now applies to arbitrary module expression in structures and
+  to applicative paths in signatures.
+
+- A new notion of (user-defined) "alerts" generalizes the deprecated
+  warning.
+
+- New modules in the standard library: Fun, Bool, Int, Option, Result.
+
+- A significant number of new functions in Float, including FMA
+  support, and a new Float.Array submodule.
+
+- Source highlighting for errors and warnings in batch mode.
+
+- Many error messages were improved.
+
+- Improved AFL instrumentation for objects and lazy values.
+
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
