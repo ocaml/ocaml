@@ -960,6 +960,10 @@ mutually recursive types.
 67
 \ \ Unused functor parameter.
 
+68
+\ \ Pattern-matching depending on mutable state prevents the remaining
+arguments from being uncurried.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

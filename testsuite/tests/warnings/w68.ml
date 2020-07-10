@@ -28,4 +28,7 @@ let measure name f =
 
 let () =
   measure "noalloc" (fun ~a ~b -> noalloc b a);
-  measure "alloc" (fun ~a ~b -> alloc a b);
+  measure "alloc" (fun ~a ~b -> alloc a b)
+
+
+let dont_warn_with_partial_match None x = x

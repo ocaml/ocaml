@@ -329,6 +329,9 @@ let descriptions =
     ["unused-open-bang"];
     67, "Unused functor parameter.",
     ["unused-functor-parameter"];
+    68, "Pattern-matching depending on mutable state prevents the remaining arguments from \
+         being uncurried.",
+    [""];
   ]
 ;;
 
@@ -807,7 +810,10 @@ let message = function
          which shadows the existing one.\n\
          Hint: Did you mean 'type %s = unit'?" name
   | Unused_functor_parameter s -> "unused functor parameter " ^ s ^ "."
-  | Match_on_mutable_will_allocate_closure -> "matching on this mutable field will allocate closure"
+  | Match_on_mutable_will_allocate_closure ->
+    "This pattern depends on mutable state.\n\
+     It prevents the remaining arguments from being uncurried, which will cause \
+     additional closure allocations."
 ;;
 
 let nerrors = ref 0;;

@@ -757,8 +757,12 @@ and transl_curried_function
          Matching.for_function ~scopes loc None (Lvar param)
            [pat, body] partial)
       else begin
-        Location.prerr_warning pat.pat_loc
-          Match_on_mutable_will_allocate_closure;
+        begin match partial with
+        | Total ->
+          Location.prerr_warning pat.pat_loc
+            Match_on_mutable_will_allocate_closure
+        | Partial -> ()
+        end;
         transl_tupled_function ~scopes ~arity
           loc return repr partial param cases
       end
