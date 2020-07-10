@@ -37,7 +37,7 @@ type t =
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)
   | Non_unit_statement                      (* 10 *)
-  | Unused_match                            (* 11 *)
+  | Unused_case                             (* 11 *)
   | Unused_pat                              (* 12 *)
   | Instance_variable_override of string list (* 13 *)
   | Illegal_backslash                       (* 14 *)
