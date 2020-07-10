@@ -439,8 +439,6 @@ static inline value Field_imm(value x, int i) {
   return v;
 }
 
-CAMLextern value caml_read_barrier(value, intnat);
-
 static inline void caml_read_field(value x, intnat i, value* ret) {
   Assert (Hd_val(x));
   /* See Note [MM] in memory.c */
