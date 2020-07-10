@@ -476,13 +476,6 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
 
 //*****************************************************************************
 
-CAMLexport value caml_promote(struct domain* domain, value root)
-{
-  return root;
-}
-
-//*****************************************************************************
-
 
 
 void caml_minor_heap_domain_finalizers_admin (struct domain* domain, void* unused)
