@@ -43,10 +43,10 @@
         sp         the stack pointer (grows downward)
         accu       the accumulator
         env        heap-allocated environment
-        caml_trapsp pointer to the current trap frame
+        Caml_state->trap_sp_off offset to the current trap frame
         extra_args number of extra arguments provided by the caller
 
-sp is a local copy of the global variable caml_extern_sp. */
+sp is a local copy of the global variable Caml_state->extern_sp. */
 
 /* Instruction decoding */
 
@@ -79,12 +79,19 @@ sp is a local copy of the global variable caml_extern_sp. */
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 2; }
 #define Enter_gc \
   { Setup_for_gc; caml_handle_gc_interrupt(); Restore_after_gc; }
-#define Setup_for_c_call \
-  { saved_pc = pc; *--sp = env; domain_state->current_stack->sp = sp; }
-#define Restore_after_c_call \
-  { sp = domain_state->current_stack->sp; env = *sp++; saved_pc = NULL; }
 
-/* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
+/* We store [pc+1] in the stack so that, in case of an exception, the
+   first backtrace slot points to the event following the C call
+   instruction. */
+#define Setup_for_c_call \
+  { sp -= 2; sp[0] = env; sp[1] = Val_pc(pc + 1); domain_state->current_stack->sp = sp; }
+#define Restore_after_c_call \
+  { sp = domain_state->current_stack->sp; env = *sp; sp += 2; }
+
+/* For VM threads purposes, an event frame must look like accu + a
+   C_CALL frame + a RETURN 1 frame.
+   TODO: now that VM threads are gone, we could get rid of that. But
+   we need to make sure that this is not used elsewhere. */
 #define Setup_for_event \
   { sp -= 6; \
     sp[0] = accu; /* accu */ \
@@ -128,6 +135,10 @@ sp is a local copy of the global variable caml_extern_sp. */
     value field_contents = Op_val(accu)[idx]; \
     accu = field_contents;                    \
   } while (0)
+
+#define Check_trap_barrier \
+  if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \
+      caml_debugger(TRAP_BARRIER, Val_unit)
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
@@ -236,7 +247,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   struct caml_exception_context * initial_external_raise;
   int initial_stack_words;
   intnat initial_trap_sp_off;
-  volatile code_t saved_pc = NULL;
   volatile value raise_exn_bucket = Val_unit;
   struct longjmp_buffer raise_buf;
   caml_domain_state* domain_state = Caml_state;
@@ -276,16 +286,20 @@ value caml_interprete(code_t prog, asize_t prog_size)
   initial_stack_words = Stack_high(domain_state->current_stack) - domain_state->current_stack->sp;
   initial_external_raise = domain_state->external_raise;
   caml_incr_callback_depth ();
-  saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
     /* no non-volatile local variables read here */
     sp = domain_state->current_stack->sp;
     accu = raise_exn_bucket;
-    pc = saved_pc; saved_pc = NULL;
-    if (pc != NULL) pc += 2;
-        /* +2 adjustment for the sole purpose of backtraces */
-    goto raise_exception;
+
+    Check_trap_barrier;
+    if (domain_state->backtrace_active) {
+         /* pc has already been pushed on the stack when calling the C
+         function that raised the exception. No need to push it again
+         here. */
+      caml_stash_backtrace(accu, sp, 0);
+    }
+    goto raise_notrace;
   }
   domain_state->external_raise = &exception_ctx;
 
@@ -929,21 +943,24 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(RAISE_NOTRACE):
-      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off)
-        caml_debugger(TRAP_BARRIER, Val_unit);
+      Check_trap_barrier;
       goto raise_notrace;
 
     Instruct(RERAISE):
-      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off)
-        caml_debugger(TRAP_BARRIER, Val_unit);
-      if (domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
+      Check_trap_barrier;
+      if (domain_state->backtrace_active) {
+        *--sp = Val_pc(pc - 1);
+        caml_stash_backtrace(accu, sp, 1);
+      }
       goto raise_notrace;
 
     Instruct(RAISE):
     raise_exception:
-      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off)
-        caml_debugger(TRAP_BARRIER, Val_unit);
-      if (domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
+      Check_trap_barrier;
+      if (domain_state->backtrace_active) {
+        *--sp = Val_pc(pc - 1);
+        caml_stash_backtrace(accu, sp, 0);
+      }
     raise_notrace:
       if (domain_state->trap_sp_off > 0) {
         if (Stack_parent(domain_state->current_stack) == NULL) {
@@ -1018,28 +1035,28 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     Instruct(C_CALL2):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[1]);
+      accu = Primitive(*pc)(accu, sp[2]);
       Restore_after_c_call;
       sp += 1;
       pc++;
       Next;
     Instruct(C_CALL3):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[1], sp[2]);
+      accu = Primitive(*pc)(accu, sp[2], sp[3]);
       Restore_after_c_call;
       sp += 2;
       pc++;
       Next;
     Instruct(C_CALL4):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3]);
+      accu = Primitive(*pc)(accu, sp[2], sp[3], sp[4]);
       Restore_after_c_call;
       sp += 3;
       pc++;
       Next;
     Instruct(C_CALL5):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3], sp[4]);
+      accu = Primitive(*pc)(accu, sp[2], sp[3], sp[4], sp[5]);
       Restore_after_c_call;
       sp += 4;
       pc++;
@@ -1048,7 +1065,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nargs = *pc++;
       *--sp = accu;
       Setup_for_c_call;
-      accu = Primitive(*pc)(sp + 1, nargs);
+      accu = Primitive(*pc)(sp + 2, nargs);
       Restore_after_c_call;
       sp += nargs;
       pc++;
