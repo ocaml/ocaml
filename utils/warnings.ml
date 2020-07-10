@@ -83,7 +83,7 @@ type t =
   | Unreachable_case                        (* 56 *)
   | Ambiguous_var_in_pattern_guard of string list (* 57 *)
   | No_cmx_file of string                   (* 58 *)
-  | Assignment_to_non_mutable_value         (* 59 *)
+  | Flambda_assignment_to_non_mutable_value (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
@@ -160,7 +160,7 @@ let number = function
   | Unreachable_case -> 56
   | Ambiguous_var_in_pattern_guard _ -> 57
   | No_cmx_file _ -> 58
-  | Assignment_to_non_mutable_value -> 59
+  | Flambda_assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
@@ -309,7 +309,7 @@ let descriptions =
     58, "Missing cmx file.",
     ["no-cmx-file"];
     59, "Assignment to non-mutable value.",
-    ["assignment-to-non-mutable-value"];
+    ["flambda-assignment-to-non-mutable-value"];
     60, "Unused module declaration.",
     ["unused-module"];
     61, "Unboxable type in primitive declaration.",
@@ -773,7 +773,7 @@ let message = function
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
-  | Assignment_to_non_mutable_value ->
+  | Flambda_assignment_to_non_mutable_value ->
       "A potential assignment to a non-mutable value was detected \n\
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
