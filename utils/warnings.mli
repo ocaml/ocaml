@@ -38,7 +38,7 @@ type t =
   | Non_closed_record_pattern of string     (*  9 *)
   | Non_unit_statement                      (* 10 *)
   | Unused_case                             (* 11 *)
-  | Unused_pat                              (* 12 *)
+  | Unused_subpat                           (* 12 *)
   | Instance_variable_override of string list (* 13 *)
   | Illegal_backslash                       (* 14 *)
   | Implicit_public_methods of string list  (* 15 *)
