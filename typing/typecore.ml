@@ -988,7 +988,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
         else defined.(label.lbl_pos) <- true in
       List.iter check_defined lbl_pat_list;
       if closed = Closed
-      && Warnings.is_active (Warnings.Non_closed_record_pattern "")
+      && Warnings.is_active (Warnings.Missing_record_field_pattern "")
       then begin
         let undefined = ref [] in
         for i = 0 to Array.length all - 1 do
@@ -996,7 +996,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
         done;
         if !undefined <> [] then begin
           let u = String.concat ", " (List.rev !undefined) in
-          Location.prerr_warning loc (Warnings.Non_closed_record_pattern u)
+          Location.prerr_warning loc (Warnings.Missing_record_field_pattern u)
         end
       end
 

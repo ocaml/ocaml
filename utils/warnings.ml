@@ -33,7 +33,7 @@ type t =
   | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
-  | Non_closed_record_pattern of string     (*  9 *)
+  | Missing_record_field_pattern of string  (*  9 *)
   | Non_unit_statement                      (* 10 *)
   | Unused_case                             (* 11 *)
   | Unused_subpat                           (* 12 *)
@@ -110,7 +110,7 @@ let number = function
   | Labels_omitted _ -> 6
   | Method_override _ -> 7
   | Partial_match _ -> 8
-  | Non_closed_record_pattern _ -> 9
+  | Missing_record_field_pattern _ -> 9
   | Non_unit_statement -> 10
   | Unused_case -> 11
   | Unused_subpat -> 12
@@ -199,7 +199,7 @@ let descriptions =
     7, "Method overridden.",
     ["partial-match"];
     8, "Partial match: missing cases in pattern-matching.",
-    ["non-closed-record-pattern"];
+    ["missing-record-field-pattern"];
     9, "Missing fields in a record pattern.",
     ["non-unit-statement"];
     10, "Expression on the left-hand side of a sequence that doesn't have \
@@ -609,7 +609,7 @@ let message = function
   | Partial_match s ->
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a case that is not matched:\n" ^ s
-  | Non_closed_record_pattern s ->
+  | Missing_record_field_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
   | Non_unit_statement ->
