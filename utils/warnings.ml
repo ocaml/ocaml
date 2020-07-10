@@ -36,7 +36,7 @@ type t =
   | Missing_record_field_pattern of string  (*  9 *)
   | Non_unit_statement                      (* 10 *)
   | Redundant_case                          (* 11 *)
-  | Unused_subpat                           (* 12 *)
+  | Redundant_subpat                        (* 12 *)
   | Instance_variable_override of string list (* 13 *)
   | Illegal_backslash                       (* 14 *)
   | Implicit_public_methods of string list  (* 15 *)
@@ -113,7 +113,7 @@ let number = function
   | Missing_record_field_pattern _ -> 9
   | Non_unit_statement -> 10
   | Redundant_case -> 11
-  | Unused_subpat -> 12
+  | Redundant_subpat -> 12
   | Instance_variable_override _ -> 13
   | Illegal_backslash -> 14
   | Implicit_public_methods _ -> 15
@@ -209,7 +209,7 @@ let descriptions =
     11, "Redundant case in a pattern matching (unused match case).",
     ["redundant-case"];
     12, "Redundant sub-pattern in a pattern-matching.",
-    ["unused-subpat"];
+    ["redundant-subpat"];
     13, "Instance variable overridden.",
     ["instance-variable-override"];
     14, "Illegal backslash escape in a string constant.",
@@ -615,7 +615,7 @@ let message = function
   | Non_unit_statement ->
       "this expression should have type unit."
   | Redundant_case -> "this match case is unused."
-  | Unused_subpat -> "this sub-pattern is unused."
+  | Redundant_subpat -> "this sub-pattern is unused."
   | Instance_variable_override [lab] ->
       "the instance variable " ^ lab ^ " is overridden.\n" ^
       "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"

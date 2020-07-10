@@ -2139,7 +2139,7 @@ let check_unused pred casel =
                   List.iter
                     (fun p ->
                       Location.prerr_warning
-                        p.pat_loc Warnings.Unused_subpat)
+                        p.pat_loc Warnings.Redundant_subpat)
                     ps
               | Used -> ()
             with Empty | Not_found -> assert false
