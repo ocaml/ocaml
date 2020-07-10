@@ -44,7 +44,7 @@ type t =
   | Undeclared_virtual_method of string     (* 17 *)
   | Not_principal of string                 (* 18 *)
   | Non_principal_labels of string          (* 19 *)
-  | Unreachable_argument                         (* 20 *)
+  | Ignored_argument                        (* 20 *)
   | Nonreturning_statement                  (* 21 *)
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
@@ -121,7 +121,7 @@ let number = function
   | Undeclared_virtual_method _ -> 17
   | Not_principal _ -> 18
   | Non_principal_labels _ -> 19
-  | Unreachable_argument -> 20
+  | Ignored_argument -> 20
   | Nonreturning_statement -> 21
   | Preprocessor _ -> 22
   | Useless_record_with -> 23
@@ -225,7 +225,7 @@ let descriptions =
     19, "Type without principality.",
     ["non-principal-labels"];
     20, "Unused function argument.",
-    ["unreachable-argument"];
+    ["ignored-argument"];
     21, "Non-returning statement.",
     ["nonreturning-statement"];
     22, "Preprocessor warning.",
@@ -633,7 +633,7 @@ let message = function
   | Undeclared_virtual_method m -> "the virtual method "^m^" is not declared."
   | Not_principal s -> s^" is not principal."
   | Non_principal_labels s -> s^" without principality."
-  | Unreachable_argument -> "this argument will not be used by the function."
+  | Ignored_argument -> "this argument will not be used by the function."
   | Nonreturning_statement ->
       "this statement never returns (or has an unsound type.)"
   | Preprocessor s -> s

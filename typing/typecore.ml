@@ -4262,7 +4262,7 @@ and type_application env funct sargs =
           if ty_fun.level >= t1.level &&
              not (is_prim ~name:"%identity" funct)
           then
-            Location.prerr_warning sarg.pexp_loc Warnings.Unreachable_argument;
+            Location.prerr_warning sarg.pexp_loc Warnings.Ignored_argument;
           unify env ty_fun (newty (Tarrow(lbl,t1,t2,Clink(ref Cunknown))));
           (t1, t2)
       | Tarrow (l,t1,t2,_) when l = lbl

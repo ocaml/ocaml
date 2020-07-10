@@ -46,7 +46,7 @@ type t =
   | Undeclared_virtual_method of string     (* 17 *)
   | Not_principal of string                 (* 18 *)
   | Non_principal_labels of string          (* 19 *)
-  | Unreachable_argument                    (* 20 *)
+  | Ignored_argument                        (* 20 *)
   | Nonreturning_statement                  (* 21 *)
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
