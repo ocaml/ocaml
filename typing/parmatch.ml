@@ -2083,7 +2083,7 @@ let do_check_fragile loc casel pss =
 (********************************)
 
 let check_unused pred casel =
-  if Warnings.is_active Warnings.Unused_case
+  if Warnings.is_active Warnings.Redundant_case
   || List.exists (fun c -> c.c_rhs.exp_desc = Texp_unreachable) casel then
     let rec do_rec pref = function
       | [] -> ()
@@ -2134,7 +2134,7 @@ let check_unused pred casel =
               match r with
               | Unused ->
                   Location.prerr_warning
-                    q.pat_loc Warnings.Unused_case
+                    q.pat_loc Warnings.Redundant_case
               | Upartial ps ->
                   List.iter
                     (fun p ->

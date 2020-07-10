@@ -35,7 +35,7 @@ type t =
   | Partial_match of string                 (*  8 *)
   | Missing_record_field_pattern of string  (*  9 *)
   | Non_unit_statement                      (* 10 *)
-  | Unused_case                             (* 11 *)
+  | Redundant_case                          (* 11 *)
   | Unused_subpat                           (* 12 *)
   | Instance_variable_override of string list (* 13 *)
   | Illegal_backslash                       (* 14 *)
@@ -112,7 +112,7 @@ let number = function
   | Partial_match _ -> 8
   | Missing_record_field_pattern _ -> 9
   | Non_unit_statement -> 10
-  | Unused_case -> 11
+  | Redundant_case -> 11
   | Unused_subpat -> 12
   | Instance_variable_override _ -> 13
   | Illegal_backslash -> 14
@@ -207,7 +207,7 @@ let descriptions =
         \    \"unit\" (and that is not a function, see warning number 5).",
     ["statement-type"];
     11, "Redundant case in a pattern matching (unused match case).",
-    ["unused-case"];
+    ["redundant-case"];
     12, "Redundant sub-pattern in a pattern-matching.",
     ["unused-subpat"];
     13, "Instance variable overridden.",
@@ -614,7 +614,7 @@ let message = function
       "\nEither bind these labels explicitly or add '; _' to the pattern."
   | Non_unit_statement ->
       "this expression should have type unit."
-  | Unused_case -> "this match case is unused."
+  | Redundant_case -> "this match case is unused."
   | Unused_subpat -> "this sub-pattern is unused."
   | Instance_variable_override [lab] ->
       "the instance variable " ^ lab ^ " is overridden.\n" ^
