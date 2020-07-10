@@ -750,6 +750,12 @@ and transl_function0
       ((Curried, (param, kind) :: params, return),
        Matching.for_function ~scopes loc None (Lvar param)
          [pat, body] partial)
+  | cases -> transl_function1 ~scopes loc return untuplify_fn max_arity repr partial param cases
+
+and transl_function1
+      ~scopes loc return untuplify_fn max_arity
+      repr partial (param:Ident.t) cases =
+  match cases with
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
     when untuplify_fn && List.length pl <= max_arity ->
       begin try
