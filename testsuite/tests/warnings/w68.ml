@@ -5,8 +5,8 @@ flags = "-w A"
 * setup-ocamlopt.byte-build-env
 ** ocamlopt.byte
 *** check-ocamlopt.byte-output
-*** run
-
+**** run
+***** check-program-output
 *)
 
 type a = { mutable a : int }
