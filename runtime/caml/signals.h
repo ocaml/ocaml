@@ -38,12 +38,6 @@ void caml_init_signal_handling(void);
 CAMLextern void caml_enter_blocking_section (void);
 CAMLextern void caml_leave_blocking_section (void);
 
-/* <private> */
-extern int volatile caml_requested_major_slice;
-extern int volatile caml_requested_minor_gc;
-
-void caml_request_major_slice (void);
-void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
 void caml_record_signal(int signal_number);

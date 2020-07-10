@@ -46,7 +46,9 @@ void caml_handle_gc_interrupt(void);
 
 void caml_handle_incoming_interrupts(void);
 
-void caml_urge_major_slice (void);
+void caml_request_major_slice (void);
+
+void caml_request_minor_gc (void);
 
 void caml_interrupt_self(void);
 

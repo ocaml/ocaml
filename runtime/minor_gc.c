@@ -829,7 +829,7 @@ static void realloc_generic_table
     CAML_INSTR_INT (msg_intr_int, 1);
     caml_gc_message (0x08, msg_threshold, 0);
     tbl->limit = tbl->end;
-    caml_urge_major_slice ();
+    caml_request_minor_gc ();
   }else{
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
