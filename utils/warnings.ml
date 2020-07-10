@@ -34,7 +34,7 @@ type t =
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)
-  | Statement_type                          (* 10 *)
+  | Non_unit_statement                      (* 10 *)
   | Unused_match                            (* 11 *)
   | Unused_pat                              (* 12 *)
   | Instance_variable_override of string list (* 13 *)
@@ -111,7 +111,7 @@ let number = function
   | Method_override _ -> 7
   | Partial_match _ -> 8
   | Non_closed_record_pattern _ -> 9
-  | Statement_type -> 10
+  | Non_unit_statement -> 10
   | Unused_match -> 11
   | Unused_pat -> 12
   | Instance_variable_override _ -> 13
@@ -201,7 +201,7 @@ let descriptions =
     8, "Partial match: missing cases in pattern-matching.",
     ["non-closed-record-pattern"];
     9, "Missing fields in a record pattern.",
-    ["statement-type"];
+    ["non-unit-statement"];
     10, "Expression on the left-hand side of a sequence that doesn't have \
          type\n\
         \    \"unit\" (and that is not a function, see warning number 5).",
@@ -612,7 +612,7 @@ let message = function
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
-  | Statement_type ->
+  | Non_unit_statement ->
       "this expression should have type unit."
   | Unused_match -> "this match case is unused."
   | Unused_pat   -> "this sub-pattern is unused."

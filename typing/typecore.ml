@@ -2367,7 +2367,7 @@ let check_partial_application statement exp =
                     | Some (_, loc, _) -> loc
                     | None -> exp_loc
                   in
-                  Location.prerr_warning loc Warnings.Statement_type
+                  Location.prerr_warning loc Warnings.Non_unit_statement
             in
             loop exp
     in
