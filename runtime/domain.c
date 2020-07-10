@@ -842,11 +842,19 @@ void caml_interrupt_self() {
   interrupt_domain(domain_self);
 }
 
-/* Arrange for a garbage collection to be performed on the current domain
+/* Arrange for a major GC slice to be performed on the current domain
    as soon as possible */
-void caml_urge_major_slice (void)
+void caml_request_major_slice (void)
 {
-  Caml_state->force_major_slice = 1;
+  Caml_state->requested_major_slice = 1;
+  caml_interrupt_self();
+}
+
+/* Arrange for a minor GC to be performed on the current domain
+   as soon as possible */
+void caml_request_minor_gc (void)
+{
+  Caml_state->requested_minor_gc = 1;
   caml_interrupt_self();
 }
 
@@ -869,12 +877,19 @@ void caml_handle_gc_interrupt() {
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
        (uintnat)Caml_state->young_start) ||
-      Caml_state->force_major_slice) {
-    caml_ev_begin("dispatch");
+      Caml_state->requested_minor_gc) {
     /* out of minor heap or collection forced */
-    Caml_state->force_major_slice = 0;
+    caml_ev_begin("dispatch_minor_gc");
+    Caml_state->requested_minor_gc = 0;
     caml_minor_collection();
-    caml_ev_end("dispatch");
+    caml_ev_end("dispatch_minor_gc");
+  }
+
+  if (Caml_state->requested_major_slice) {
+    caml_ev_begin("dispatch_major_slice");
+    Caml_state->requested_major_slice = 0;
+    caml_major_collection_slice (0, 0);
+    caml_ev_end("dispatch_major_slice");
   }
 }
 
