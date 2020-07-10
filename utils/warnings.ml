@@ -81,7 +81,7 @@ type t =
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
-  | Ambiguous_pattern of string list        (* 57 *)
+  | Ambiguous_var_in_pattern_guard of string list (* 57 *)
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
@@ -158,7 +158,7 @@ let number = function
   | Duplicated_attribute _ -> 54
   | Inlining_impossible _ -> 55
   | Unreachable_case -> 56
-  | Ambiguous_pattern _ -> 57
+  | Ambiguous_var_in_pattern_guard _ -> 57
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
@@ -305,7 +305,7 @@ let descriptions =
     56, "Unreachable case in a pattern-matching (based on type information).",
     ["unreachable-case"];
     57, "Ambiguous or-pattern variables under guard.",
-    ["ambiguous-pattern"];
+    ["ambiguous-var-in-pattern-guard"];
     58, "Missing cmx file.",
     ["no-cmx-file"];
     59, "Assignment to non-mutable value.",
@@ -757,7 +757,7 @@ let message = function
         attr_name
   | Inlining_impossible reason ->
       Printf.sprintf "Cannot inline: %s" reason
-  | Ambiguous_pattern vars ->
+  | Ambiguous_var_in_pattern_guard vars ->
       let msg =
         let vars = List.sort String.compare vars in
         match vars with

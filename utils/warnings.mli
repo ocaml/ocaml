@@ -83,7 +83,7 @@ type t =
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
-  | Ambiguous_pattern of string list        (* 57 *)
+  | Ambiguous_var_in_pattern_guard of string list (* 57 *)
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
