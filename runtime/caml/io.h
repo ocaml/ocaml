@@ -72,6 +72,7 @@ enum {
   *((channel)->curr)++ = (ch);                                            \
 }while(0)
 
+// raises
 #define caml_getch(channel)                                                 \
   ((channel)->curr >= (channel)->max                                        \
    ? caml_refill(channel)                                                   \
@@ -95,10 +96,15 @@ CAMLextern void caml_putword (struct channel *, uint32_t);
 CAMLextern int caml_putblock (struct channel *, char *, intnat);
 CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 
-CAMLextern unsigned char caml_refill (struct channel *);
-CAMLextern uint32_t caml_getword (struct channel *);
-CAMLextern int caml_getblock (struct channel *, char *, intnat);
-CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
+CAMLextern unsigned char caml_refill (struct channel *); // raises
+CAMLextern uint32_t caml_getword (struct channel *); //raises
+CAMLextern int caml_getblock (struct channel *, char *, intnat); // raises
+CAMLextern int caml_getblock_exn (struct channel *, char *, intnat,
+                                  value * exn);
+CAMLextern intnat caml_really_getblock (struct channel *, char *,
+                                        intnat); // raises
+CAMLextern intnat caml_really_getblock_exn (struct channel *, char *,
+                                            intnat, value * exn);
 
 /* Extract a struct channel * from the heap object representing it */
 

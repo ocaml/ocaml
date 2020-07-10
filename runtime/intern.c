@@ -774,6 +774,7 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
   struct marshal_header h;
   char * block;
   value res;
+  value exn = Val_unit;
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("input_value: not a binary channel");
@@ -797,9 +798,11 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
      can take place (via signal handlers or context switching in systhreads),
      and [intern_input] may change.  So, wait until [caml_really_getblock]
      is over before using [intern_input] and the other global vars. */
-  if (caml_really_getblock(chan, block, h.data_len) < h.data_len) {
-    caml_stat_free(block);
-    caml_failwith("input_value: truncated object");
+  r = caml_really_getblock_exn(chan, block, h.data_len, &exn);
+  if (Is_exception_result(exn)) goto cleanup;
+  if (r < h.data_len) {
+    exn = caml_failwith_exn("input_value: truncated object");
+    goto cleanup;
   }
   /* Initialize global state */
   intern_init(block, block);
@@ -816,6 +819,10 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
     intern_cleanup();
     return caml_check_urgent_gc(res);
   }
+
+ cleanup:
+  caml_stat_free(block);
+  caml_raise(Extract_exception(exn));
 }
 
 value caml_input_val(struct channel* chan)

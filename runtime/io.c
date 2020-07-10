@@ -308,21 +308,25 @@ CAMLexport int caml_read_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-// raises
+static int read_fd_into_channel_exn(struct channel * channel, char * buf,
+                                    value * exn)
+{
+  int n;
+  n = caml_read_fd_exn(channel->fd, channel->flags, buf,
+                       channel->end - buf, exn);
+  if (n <= 0) return n;
+  channel->offset += n;
+  channel->max = buf + n;
+  return n;
+}
+
 static int read_fd_into_channel(struct channel * channel, char * buf)
 {
   int n;
   value exn = Val_unit;
-  n = caml_read_fd_exn(channel->fd, channel->flags, buf,
-                       channel->end - buf, &exn);
-  if (n <= 0) {
-    caml_raise_if_exception(exn);
-    CAMLassert(n == 0);
-    return n;
-  }
-  channel->offset += n;
-  channel->max = buf + n;
+  n = read_fd_into_channel_exn(channel, buf, &exn);
   caml_raise_if_exception(exn);
+  CAMLassert(n >= 0);
   return n;
 }
 
@@ -355,7 +359,8 @@ CAMLexport uint32_t caml_getword(struct channel *channel)
   return res;
 }
 
-CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
+CAMLexport int caml_getblock_exn(struct channel *channel, char *p, intnat len,
+                                 value * exn)
 {
   int n, avail, nread;
 
@@ -370,7 +375,8 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
     channel->curr += avail;
     return avail;
   } else {
-    nread = read_fd_into_channel(channel, channel->buff);
+    nread = read_fd_into_channel_exn(channel, channel->buff, exn);
+    if (Is_exception_result(*exn)) return n;
     if (n > nread) n = nread;
     memmove(p, channel->buff, n);
     channel->curr = channel->buff + n;
@@ -378,18 +384,36 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
   }
 }
 
+CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
+{
+  value exn = Val_unit;
+  int r = caml_getblock_exn(channel, p, len, &exn);
+  caml_raise_if_exception(exn);
+  return r;
+}
+
+
 /* Returns the number of bytes read. */
-CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
+CAMLexport intnat caml_really_getblock_exn(struct channel *chan, char *p,
+                                           intnat n, value * exn)
 {
   intnat k = n;
   int r;
   while (k > 0) {
-    r = caml_getblock(chan, p, k);
-    if (r == 0) break;
+    r = caml_getblock_exn(chan, p, k, exn);
+    if (Is_exception_result(*exn) || r == 0) break;
     p += r;
     k -= r;
   }
   return n - k;
+}
+
+CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
+{
+  value exn = Val_unit;
+  intnat r = caml_really_getblock_exn(chan, p, n, &exn);
+  caml_raise_if_exception(exn);
+  return r;
 }
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
