@@ -29,7 +29,7 @@ type t =
   | Comment_not_end                         (*  2 *)
 (*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
-  | Partial_application                     (*  5 *)
+  | Ignored_partial_application             (*  5 *)
   | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
@@ -106,7 +106,7 @@ let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
   | Fragile_match _ -> 4
-  | Partial_application -> 5
+  | Ignored_partial_application -> 5
   | Labels_omitted _ -> 6
   | Method_override _ -> 7
   | Partial_match _ -> 8
@@ -190,7 +190,7 @@ let descriptions =
     4, "Fragile pattern matching: matching that will remain complete even\n\
        \    if additional constructors are added to one of the variant types\n\
        \    matched.",
-    ["partial-application"];
+    ["ignored-partial-application"];
     5, "Partially applied function: expression whose result has function\n\
        \    type and is ignored.",
     ["labels-omitted"];
@@ -589,7 +589,7 @@ let message = function
   | Fragile_match s ->
       "this pattern-matching is fragile.\n\
        It will remain exhaustive when constructors are added to type " ^ s ^ "."
-  | Partial_application ->
+  | Ignored_partial_application ->
       "this function application is partial,\n\
        maybe some arguments are missing."
   | Labels_omitted [] -> assert false

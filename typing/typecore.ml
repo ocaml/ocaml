@@ -2398,7 +2398,8 @@ let check_partial_application statement exp =
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
-                Location.prerr_warning exp_loc Warnings.Partial_application
+                Location.prerr_warning exp_loc
+                  Warnings.Ignored_partial_application
           end
         in
         check exp

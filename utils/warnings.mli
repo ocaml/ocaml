@@ -31,7 +31,7 @@ type t =
   | Comment_not_end                         (*  2 *)
 (*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
-  | Partial_application                     (*  5 *)
+  | Ignored_partial_application             (*  5 *)
   | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
