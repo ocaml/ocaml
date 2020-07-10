@@ -43,7 +43,7 @@ type t =
   | Unerasable_optional_argument            (* 16 *)
   | Undeclared_virtual_method of string     (* 17 *)
   | Not_principal of string                 (* 18 *)
-  | Without_principality of string          (* 19 *)
+  | Non_principal_labels of string          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
   | Preprocessor of string                  (* 22 *)
@@ -120,7 +120,7 @@ let number = function
   | Unerasable_optional_argument -> 16
   | Undeclared_virtual_method _ -> 17
   | Not_principal _ -> 18
-  | Without_principality _ -> 19
+  | Non_principal_labels _ -> 19
   | Unused_argument -> 20
   | Nonreturning_statement -> 21
   | Preprocessor _ -> 22
@@ -223,7 +223,7 @@ let descriptions =
     18, "Non-principal type.",
     ["not-principal"];
     19, "Type without principality.",
-    ["without-principality"];
+    ["non-principal-labels"];
     20, "Unused function argument.",
     ["unused-argument"];
     21, "Non-returning statement.",
@@ -632,7 +632,7 @@ let message = function
   | Unerasable_optional_argument -> "this optional argument cannot be erased."
   | Undeclared_virtual_method m -> "the virtual method "^m^" is not declared."
   | Not_principal s -> s^" is not principal."
-  | Without_principality s -> s^" without principality."
+  | Non_principal_labels s -> s^" without principality."
   | Unused_argument -> "this argument will not be used by the function."
   | Nonreturning_statement ->
       "this statement never returns (or has an unsound type.)"

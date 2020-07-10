@@ -45,7 +45,7 @@ type t =
   | Unerasable_optional_argument            (* 16 *)
   | Undeclared_virtual_method of string     (* 17 *)
   | Not_principal of string                 (* 18 *)
-  | Without_principality of string          (* 19 *)
+  | Non_principal_labels of string          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
   | Preprocessor of string                  (* 22 *)

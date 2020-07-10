@@ -4223,7 +4223,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         (Warnings.Eliminated_optional_arguments
            (List.map (fun (l, _) -> Printtyp.string_of_label l) args));
       if warn then Location.prerr_warning texp.exp_loc
-          (Warnings.Without_principality "eliminated optional argument");
+          (Warnings.Non_principal_labels "eliminated optional argument");
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
@@ -4339,7 +4339,7 @@ and type_application env funct sargs =
         in
         let eliminate_optional_arg () =
           may_warn funct.exp_loc
-            (Warnings.Without_principality "eliminated optional argument");
+            (Warnings.Non_principal_labels "eliminated optional argument");
           eliminated_optional_arguments :=
             (l,ty,lv) :: !eliminated_optional_arguments;
           Some (fun () -> option_none env (instance ty) Location.none)
@@ -4384,7 +4384,7 @@ and type_application env funct sargs =
                   (* No argument was given for this parameter, we abstract over
                      it. *)
                   may_warn funct.exp_loc
-                    (Warnings.Without_principality "commuted an argument");
+                    (Warnings.Non_principal_labels "commuted an argument");
                   omitted_parameters := (l,ty,lv) :: !omitted_parameters;
                   None
                 end
