@@ -402,51 +402,6 @@ CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
   return Val_hp(v);
 }
 
-struct read_fault_req {
-  value obj;
-  int field;
-  caml_root* ret;
-};
-
-static void send_read_fault(struct read_fault_req*);
-
-static void handle_read_fault(struct domain* target, void* reqp, interrupt* done) {
-  CAMLparam0();
-  CAMLlocal1(ret);
-  struct read_fault_req* req = reqp;
-  value v = Op_val(req->obj)[req->field];
-
-  if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
-    caml_modify_root(*req->ret, ret);
-    /* Update the field so that future requests don't fault. We must
-       use a CAS here, since another thread may modify the field and
-       we must avoid overwriting its update */
-    caml_atomic_cas_field(req->obj, req->field, v, ret);
-  } else {
-    /* Race condition: by the time we handled the fault, the field was
-       already modified and no longer points to our heap.  We recurse
-       into the read barrier. This always terminates: in the worst
-       case, all domains get tied up servicing one fault and then
-       there are no more left running to win the race */
-    send_read_fault(req);
-  }
-  caml_acknowledge_interrupt(done);
-  CAMLreturn0;
-}
-
-static void send_read_fault(struct read_fault_req* req)
-{
-  value v = Op_val(req->obj)[req->field];
-  if (Is_minor(v)) {
-    if (!caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req)) {
-      send_read_fault(req);
-    }
-    Assert(!Is_minor(*req->ret));
-  } else {
-    caml_modify_root (*req->ret, v);
-  }
-}
-
 CAMLexport value caml_read_barrier(value obj, intnat field)
 {
   /* ctk21: no-op the read barrier as part of experiment */
