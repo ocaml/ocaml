@@ -1,5 +1,10 @@
 open Lambda
 
+type error =
+  |  Ambiguous_constructor_arguments of lambda list
+
+exception Error of Location.t * error
+
 (** TMC (Tail Modulo Cons) is a code transformation that
     rewrites transformed functions in destination-passing-style, in
     such a way that certain calls that were not in tail position in the
@@ -364,6 +369,7 @@ module Choice = struct
     direct : unit -> 'a;
     has_tmc_calls : bool;
     benefits_from_dps: bool;
+    explicit_tailcall_request: bool;
   }
   (**
      An ['a Choice.t] represents code that may be written
@@ -389,6 +395,12 @@ module Choice = struct
      - [benefits_from_dps] is true when the [dps] calls strictly more
        TMC functions than the [direct] version. See the
        {!choice_makeblock} case.
+
+     - [explicit_tailcall_request] is true when the user
+       used a [@tailcall] annotation on the optimizable callsite.
+       When one of several calls could be optimized, we expect that
+       exactly one of them will be annotated by the user, or fail
+       because the situation is ambiguous.
    *)
 
   let return (v : lambda) : lambda t = {
@@ -396,6 +408,7 @@ module Choice = struct
     direct = (fun () -> v);
     has_tmc_calls = false;
     benefits_from_dps = false;
+    explicit_tailcall_request = false;
   }
 
   let map f s = {
@@ -403,10 +416,11 @@ module Choice = struct
     direct = (fun () -> f (s.direct ()));
     has_tmc_calls = s.has_tmc_calls;
     benefits_from_dps = s.benefits_from_dps;
+    explicit_tailcall_request = s.explicit_tailcall_request;
   }
   (** Apply function [f] to the transformed term. *)
 
-  let direct (c : lambda t) : lambda =
+  let direct (c : 'a t) : 'a =
     c.direct ()
 
   let dps (c : lambda t) ~tail ~dst =
@@ -419,6 +433,8 @@ module Choice = struct
       c1.has_tmc_calls || c2.has_tmc_calls;
     benefits_from_dps =
       c1.benefits_from_dps || c2.benefits_from_dps;
+    explicit_tailcall_request =
+      c1.explicit_tailcall_request || c2.explicit_tailcall_request;
   }
 
   let unit = {
@@ -426,6 +442,7 @@ module Choice = struct
     direct = (fun () -> ());
     has_tmc_calls = false;
     benefits_from_dps = false;
+    explicit_tailcall_request = false;
   }
 
   module Syntax = struct
@@ -447,20 +464,52 @@ module Choice = struct
         and+ vs = list cs
         in v :: vs
 
-  (** Finds the first [Choice.t] in a list that [has_tmc_calls] *)
-  type 'a zipper = {
+  (** The [find_*] machinery is used to locate a single subterm
+      to optimize among a list of subterms. If there are several possible choices,
+      we require that exactly one of them be annotated with [@tailcall], or
+      we report an ambiguity. *)
+  type 'a tmc_call_search =
+    | No_tmc_call of 'a list
+    | Nonambiguous of 'a zipper
+    | Ambiguous of 'a t list
+
+  and 'a zipper = {
     rev_before : 'a list;
     choice : 'a t;
-    after: 'a t list
+    after: 'a list
   }
-  let find_tmc_calls : 'a t list -> ('a zipper, 'a list) result =
-    let rec find rev_before = function
-      | [] -> Error (List.rev rev_before)
-      | choice :: after ->
-          if choice.has_tmc_calls
-          then Ok { rev_before; choice; after }
-          else find (choice.direct () :: rev_before) after
-    in find []
+
+  let find_nonambiguous_tmc_call choices =
+    let is_explicit s = s.explicit_tailcall_request in
+    let nonambiguous ~explicit choices =
+      (* here is how we will compute the result once we know that there
+         is an unambiguously-determined tmc call, and whether
+         an explicit request was necessary to disambiguate *)
+      let rec split rev_before : 'a t list -> 'a zipper = function
+        | [] -> assert false (* we know there is at least one choice *)
+        | c :: rest ->
+          if c.has_tmc_calls && (not explicit || is_explicit c) then
+            { rev_before; choice = c; after = List.map direct rest }
+          else
+            split (direct c :: rev_before) rest
+      in split [] choices
+    in
+    let tmc_call_subterms =
+      List.filter (fun c -> c.has_tmc_calls) choices
+    in
+    match tmc_call_subterms with
+    | [] ->
+        No_tmc_call (List.map direct choices)
+    | [ _one ] ->
+        Nonambiguous (nonambiguous ~explicit:false choices)
+    | several_subterms ->
+        let explicit_subterms = List.filter is_explicit several_subterms in
+        begin match explicit_subterms with
+        | [] -> Ambiguous several_subterms
+        | [ _one ] ->
+            Nonambiguous (nonambiguous ~explicit:true choices)
+        | several_explicit_subterms -> Ambiguous several_explicit_subterms
+        end
 end
 
 open Choice.Syntax
@@ -581,7 +630,15 @@ let rec choice ctx t =
     try
       match apply.ap_func with
       | Lvar f ->
-          (* TODO: if [@tailcall false] then raise No_tmc; *)
+          let explicit_tailcall_request =
+            match apply.ap_tailcall with
+            | Default_tailcall -> false
+            | Tailcall_expectation true -> true
+            | Tailcall_expectation false ->
+                (* [@tailcall false] disables TMC optimization
+                   on this tailcall *)
+                raise No_tmc
+          in
           let specialized =
             try Ident.Map.find f ctx.specialized
             with Not_found ->
@@ -603,6 +660,7 @@ let rec choice ctx t =
                          else Default_tailcall;
                      });
             direct = (fun () -> Lapply apply);
+            explicit_tailcall_request;
             has_tmc_calls = true;
             benefits_from_dps = true;
           }
@@ -611,23 +669,20 @@ let rec choice ctx t =
 
   and choice_makeblock ctx (tag, flag, shape) blockargs loc =
     let choices = List.map (choice ctx) blockargs in
-    match Choice.find_tmc_calls choices with
-    | Error args ->
+    match Choice.find_nonambiguous_tmc_call choices with
+    | Choice.Ambiguous subterms ->
+        let subterms = List.map Choice.direct subterms in
+        raise (Error (Debuginfo.Scoped_location.to_location loc,
+                      Ambiguous_constructor_arguments subterms))
+    | Choice.No_tmc_call args ->
         Choice.return @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
-    | Ok { Choice.rev_before; choice; after } ->
-        begin
-          (* fail if this settable position is not unique *)
-          match Choice.find_tmc_calls after with
-          | Error _ -> ()
-          | Ok _another_choice ->
-              failwith "TODO proper error/warning: ambiguous settable position"
-        end;
+    | Choice.Nonambiguous { Choice.rev_before; choice; after } ->
         let con = Constr.{
             tag;
             flag;
             shape;
             before = List.rev rev_before;
-            after = List.map Choice.direct after;
+            after;
             loc;
         } in
         assert choice.has_tmc_calls;
@@ -648,8 +703,10 @@ let rec choice ctx t =
           dps = Dps.delay_constructor con choice.dps;
           has_tmc_calls =
             (* [choice] must have TMC calls, because that is what the
-               [find_tmc_call] function looks for. *)
+               [find_nonambiguous_tmc_call] function looks for. *)
             true;
+          explicit_tailcall_request =
+            choice.explicit_tailcall_request;
         }
 
   and choice_prim ctx prim primargs loc =
@@ -776,3 +833,21 @@ and traverse_list ctx terms =
 let rewrite t =
   let ctx = { specialized = Ident.Map.empty } in
   traverse ctx t
+
+let report_error ppf = function
+  | Ambiguous_constructor_arguments subterms ->
+      ignore subterms; (* TODO: find locations for each subterm *)
+      Format.pp_print_text ppf
+        "[@tail_mod_cons]: this constructor application may be \
+         TMC-transformed in several different ways. Please disambiguate \
+         by adding an explicit [@tailcall] attribute to the call that \
+         should be made tail-recursive, or a [@tailcall false] attribute \
+         on calls that should not be transformed."
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, err) ->
+          Some (Location.error_of_printer ~loc report_error err)
+      | _ ->
+        None
+    )
