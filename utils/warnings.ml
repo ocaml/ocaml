@@ -235,7 +235,7 @@ let descriptions =
     24, "Bad module name: the source file name is not a valid OCaml module \
          name.",
     ["bad-module-name"];
-    25, "Deprecated: now part of warning 8.",
+    25, "Ignored: now part of warning 8.",
     [];
     26, "Suspicious unused variable: unused variable that is bound\n\
         \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
