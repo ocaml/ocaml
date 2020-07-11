@@ -87,7 +87,7 @@ CAMLextern struct channel * caml_open_descriptor_out_exn (int, value * exn);
    variants return NULL and set [exn] to an exception value if an
    exception arises. */
 
-CAMLextern void caml_close_channel (struct channel *);
+CAMLextern void caml_close_channel (struct channel *); // raises
 CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);
 
@@ -115,15 +115,17 @@ CAMLextern intnat caml_really_getblock_exn (struct channel *, char *,
 
 /* The locking machinery */
 
-CAMLextern void (*caml_channel_mutex_free) (struct channel *);
-CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
+CAMLextern void (*caml_channel_mutex_lock) (struct channel *); // may raise
+CAMLextern void (*caml_channel_mutex_free) (struct channel *); // non-raising
+CAMLextern void (*caml_channel_mutex_unlock) (struct channel *); // non-raising
+CAMLextern void (*caml_channel_mutex_unlock_exn) (void); // non-raising
 
 CAMLextern struct channel * caml_all_opened_channels;
 
+// raises
 #define Lock(channel) \
   if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)
+
 #define Unlock(channel) \
   if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
 #define Unlock_exn() \

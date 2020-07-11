@@ -303,16 +303,19 @@ CAMLexport void caml_really_putblock(struct channel *channel,
   caml_raise_if_exception(caml_really_putblock_exn(channel, p, len));
 }
 
+// raises
 CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
 {
+  value exn;
   caml_flush(channel);
   caml_enter_blocking_section();
   if (lseek(channel->fd, dest, SEEK_SET) != dest) {
     caml_leave_blocking_section();
     caml_sys_error(NO_ARG);
   }
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
   channel->offset = dest;
+  caml_raise_if_exception(exn);
 }
 
 CAMLexport file_offset caml_pos_out(struct channel *channel)
@@ -441,6 +444,7 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
 {
+  value exn;
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
@@ -450,9 +454,10 @@ CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
       caml_leave_blocking_section();
       caml_sys_error(NO_ARG);
     }
-    caml_leave_blocking_section();
+    exn = caml_leave_blocking_section_exn();
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
+    caml_raise_if_exception(exn);
   }
 }
 
@@ -635,6 +640,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
   int result;
   int do_syscall;
   int fd;
+  value exn;
 
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
@@ -652,13 +658,22 @@ CAMLprim value caml_ml_close_channel(value vchannel)
   channel->curr = channel->max = channel->end;
 
   if (do_syscall) {
-    caml_enter_blocking_section();
+    exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(exn)) goto cleanup;
     result = close(fd);
     caml_leave_blocking_section();
   }
 
   if (result == -1) caml_sys_error (NO_ARG);
   return Val_unit;
+
+ cleanup:
+  // At this point the channel is an invalid state, so we must close
+  // fd at all costs.
+  caml_enter_blocking_section_noexn();
+  close(fd);
+  caml_leave_blocking_section_noexn();
+  caml_raise(Extract_exception(exn));
 }
 
 /* EOVERFLOW is the Unix98 error indicating that a file position or file

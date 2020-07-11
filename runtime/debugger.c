@@ -156,6 +156,7 @@ static void open_connection(void)
 
 static void close_connection(void)
 {
+  // FIXME prevent leak with masking
   caml_close_channel(dbg_in);
   caml_close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by caml_close_channel */
