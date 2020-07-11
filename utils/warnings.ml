@@ -176,7 +176,7 @@ let last_warning_number = 67
 
 (* Third component of each tuple is the list of names for each warning. The
    first element of the list is the current name, any following ones are
-   deprecated. They current name should always be derived mechanically from the
+   deprecated. The current name should always be derived mechanically from the
    constructor name. *)
 
 let descriptions =
