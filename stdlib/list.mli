@@ -321,6 +321,13 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
 (** Same as {!List.remove_assoc}, but uses physical equality instead
    of structural equality to compare keys.  Not tail-recursive. *)
 
+val iter_assoc : ('k -> 'v -> unit) -> ('k * 'v) list -> unit
+(** [List.iter_assoc f [(k1, v1); (k2, v2); ...; (kn, vn)]] is
+    [f k1 v1; f k2 v2; ...; f kn vn].
+
+    @since 4.12.0
+*)
+
 val fold_assoc_left : ('a -> 'k -> 'v -> 'a) -> 'a -> ('k * 'v) list -> 'a
 (** [List.fold_assoc_left f a [(k1,v1); ...; (kn,vn)]] is
     [f (... (f (f a k1 v1) k2 v2) ...) kn vn].

@@ -220,6 +220,11 @@ let rec remove_assq x = function
   | [] -> []
   | (a, _ as pair) :: l -> if a == x then l else pair :: remove_assq x l
 
+let rec iter_assoc f l =
+  match l with
+  | [] -> ()
+  | (k, v) :: l -> f k v; iter_assoc f l
+
 let rec fold_assoc_left f accu l =
   match l with
   | [] -> accu
