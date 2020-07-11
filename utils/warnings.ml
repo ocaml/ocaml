@@ -237,9 +237,10 @@ let descriptions =
     ["bad-module-name"];
     25, "Ignored: now part of warning 8.",
     [];
-    26, "Suspicious unused variable: unused variable that is bound\n\
-        \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
-        \    character.",
+    26,
+    "Suspicious unused variable: unused variable that is bound\n\
+    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
+    \    character.",
     ["unused-var"];
     27, "Innocuous unused variable: unused variable that is not bound with\n\
         \    \"let\" nor \"as\", and doesn't start with an underscore (\"_\")\n\
