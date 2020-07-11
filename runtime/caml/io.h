@@ -67,6 +67,7 @@ enum {
 /* Functions and macros that can be called from C.  Take arguments of
    type struct channel *.  No locking is performed. */
 
+// raises
 #define caml_putch(channel, ch) do{                                       \
   if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
   *((channel)->curr)++ = (ch);                                            \
@@ -90,11 +91,13 @@ CAMLextern void caml_close_channel (struct channel *);
 CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);
 
-CAMLextern int caml_flush_partial (struct channel *);
-CAMLextern void caml_flush (struct channel *);
-CAMLextern void caml_putword (struct channel *, uint32_t);
-CAMLextern int caml_putblock (struct channel *, char *, intnat);
-CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
+CAMLextern int caml_flush_partial (struct channel *); // raises
+CAMLextern void caml_flush (struct channel *); // raises
+CAMLextern void caml_putword (struct channel *, uint32_t); // raises
+CAMLextern int caml_putblock (struct channel *, char *, intnat); // raises
+CAMLextern int caml_putblock_exn(struct channel *, char *, intnat, value * exn);
+CAMLextern void caml_really_putblock(struct channel *, char *, intnat);// raises
+CAMLextern value caml_really_putblock_exn(struct channel *, char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *); // raises
 CAMLextern uint32_t caml_getword (struct channel *); //raises

@@ -103,7 +103,7 @@
 /* The entry points */
 
 void caml_output_val (struct channel * chan, value v, value flags);
-  /* Output [v] with flags [flags] on the channel [chan]. */
+  /* Output [v] with flags [flags] on the channel [chan]. Raises. */
 
 #endif /* CAML_INTERNALS */
 

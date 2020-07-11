@@ -195,22 +195,27 @@ CAMLexport int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-//raises
-static void write_channel_to_fd(struct channel * channel, int towrite)
+static value write_channel_to_fd_exn(struct channel * channel, int towrite)
 {
   int written;
   value exn = Val_unit;
   written = caml_write_fd_exn(channel->fd, channel->flags,
                               channel->buff, towrite, &exn);
   if (written < 0) {
-    caml_raise_if_exception(exn);
-    CAMLassert(0);
+    CAMLassert(Is_exception_result(exn));
+    return exn;
   }
   if (written < towrite)
     memmove(channel->buff, channel->buff + written, towrite - written);
   channel->offset += written;
   channel->curr = channel->buff + towrite - written;
-  caml_raise_if_exception(exn);
+  return exn;
+}
+
+//raises
+static void write_channel_to_fd(struct channel * channel, int towrite)
+{
+  caml_raise_if_exception(write_channel_to_fd_exn(channel, towrite));
 }
 
 /* Attempt to flush the buffer. This will make room in the buffer for
@@ -249,7 +254,8 @@ CAMLexport void caml_putword(struct channel *channel, uint32_t w)
   caml_putch(channel, w);
 }
 
-CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+CAMLexport int caml_putblock_exn(struct channel *channel, char *p, intnat len,
+                                 value * exn)
 {
   int n, free;
 
@@ -264,20 +270,37 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
     /* Write request overflows buffer (or just fills it up): transfer whatever
        fits to buffer and write the buffer */
     memmove(channel->curr, p, free);
-    write_channel_to_fd(channel, channel->end - channel->buff);
+    *exn = write_channel_to_fd_exn(channel, channel->end - channel->buff);
     return free;
   }
+}
+
+CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+{
+  value exn = Val_unit;
+  int res = caml_putblock_exn(channel, p, len, &exn);
+  caml_raise_if_exception(exn);
+  return res;
+}
+
+CAMLexport value caml_really_putblock_exn(struct channel *channel,
+                                          char *p, intnat len)
+{
+  int written;
+  value exn = Val_unit;
+  while (len > 0) {
+    written = caml_putblock_exn(channel, p, len, &exn);
+    if (Is_exception_result(exn)) return exn;
+    p += written;
+    len -= written;
+  }
+  return Val_unit;
 }
 
 CAMLexport void caml_really_putblock(struct channel *channel,
                                      char *p, intnat len)
 {
-  int written;
-  while (len > 0) {
-    written = caml_putblock(channel, p, len);
-    p += written;
-    len -= written;
-  }
+  caml_raise_if_exception(caml_really_putblock_exn(channel, p, len));
 }
 
 CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
