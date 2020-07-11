@@ -186,26 +186,26 @@ let descriptions =
     2, "Suspicious-looking end-of-comment mark.",
     ["comment-not-end"];
     3, "Deprecated synonym for the 'deprecated' alert.",
-    ["fragile-match"];
+    [];
     4, "Fragile pattern matching: matching that will remain complete even\n\
        \    if additional constructors are added to one of the variant types\n\
        \    matched.",
-    ["ignored-partial-application"];
+    ["fragile-match"];
     5, "Partially applied function: expression whose result has function\n\
        \    type and is ignored.",
-    ["labels-omitted"];
+    ["ignored-partial-application"];
     6, "Label omitted in function application.",
-    ["method-override"];
+    ["labels-omitted"];
     7, "Method overridden.",
-    ["partial-match"];
+    ["method-override"];
     8, "Partial match: missing cases in pattern-matching.",
-    ["missing-record-field-pattern"];
+    ["partial-match"];
     9, "Missing fields in a record pattern.",
-    ["non-unit-statement"];
+    ["missing-record-field-pattern"];
     10, "Expression on the left-hand side of a sequence that doesn't have \
          type\n\
         \    \"unit\" (and that is not a function, see warning number 5).",
-    ["statement-type"];
+    ["non-unit-statement"];
     11, "Redundant case in a pattern matching (unused match case).",
     ["redundant-case"];
     12, "Redundant sub-pattern in a pattern-matching.",
@@ -231,12 +231,12 @@ let descriptions =
     22, "Preprocessor warning.",
     ["preprocessor"];
     23, "Useless record \"with\" clause.",
-    ["unless-record-with"];
+    ["useless-record-with"];
     24, "Bad module name: the source file name is not a valid OCaml module \
          name.",
     ["bad-module-name"];
     25, "Deprecated: now part of warning 8.",
-    ["all-clauses-guarded"];
+    [];
     26, "Suspicious unused variable: unused variable that is bound\n\
         \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
         \    character.",
@@ -332,7 +332,6 @@ let descriptions =
 let name_to_number =
   let h = Hashtbl.create last_warning_number in
   List.iter (fun (num, _, names) ->
-      assert (names <> []);
       List.iter (fun name -> Hashtbl.add h name num) names
     ) descriptions;
   fun s -> Hashtbl.find_opt h s
@@ -872,7 +871,13 @@ let check_fatal () =
 
 let help_warnings () =
   List.iter
-    (fun (i, s, names) -> Printf.printf "%3i [%s] %s\n" i (List.hd names) s)
+    (fun (i, s, names) ->
+       let name =
+         match names with
+         | s :: _ -> " [" ^ s ^ "]"
+         | [] -> ""
+       in
+       Printf.printf "%3i%s %s\n" i name s)
     descriptions;
   print_endline "  A all warnings";
   for i = Char.code 'b' to Char.code 'z' do
