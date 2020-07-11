@@ -195,6 +195,24 @@ CAMLexport int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
+//raises
+static void write_channel_to_fd(struct channel * channel, int towrite)
+{
+  int written;
+  value exn = Val_unit;
+  written = caml_write_fd_exn(channel->fd, channel->flags,
+                              channel->buff, towrite, &exn);
+  if (written < 0) {
+    caml_raise_if_exception(exn);
+    CAMLassert(0);
+  }
+  if (written < towrite)
+    memmove(channel->buff, channel->buff + written, towrite - written);
+  channel->offset += written;
+  channel->curr = channel->buff + towrite - written;
+  caml_raise_if_exception(exn);
+}
+
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer.
@@ -202,17 +220,12 @@ CAMLexport int caml_write_fd(int fd, int flags, void * buf, int n)
 
 CAMLexport int caml_flush_partial(struct channel *channel)
 {
-  int towrite, written;
+  int towrite;
 
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
   if (towrite > 0) {
-    written = caml_write_fd(channel->fd, channel->flags,
-                            channel->buff, towrite);
-    channel->offset += written;
-    if (written < towrite)
-      memmove(channel->buff, channel->buff + written, towrite - written);
-    channel->curr -= written;
+    write_channel_to_fd(channel, towrite);
   }
   return (channel->curr == channel->buff);
 }
@@ -238,7 +251,7 @@ CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 
 CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
 {
-  int n, free, towrite, written;
+  int n, free;
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
   free = channel->end - channel->curr;
@@ -251,13 +264,7 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
     /* Write request overflows buffer (or just fills it up): transfer whatever
        fits to buffer and write the buffer */
     memmove(channel->curr, p, free);
-    towrite = channel->end - channel->buff;
-    written = caml_write_fd(channel->fd, channel->flags,
-                            channel->buff, towrite);
-    if (written < towrite)
-      memmove(channel->buff, channel->buff + written, towrite - written);
-    channel->offset += written;
-    channel->curr = channel->end - written;
+    write_channel_to_fd(channel, channel->end - channel->buff);
     return free;
   }
 }
