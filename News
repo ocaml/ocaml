@@ -20,7 +20,8 @@ Bug fixes.
 OCaml 4.09.0 (18 September 2019)
 --------------------------------
 
-- New optimisations, in particular for affine functions in matches, for instance:
+- New optimisations, in particular for affine functions in matches,
+  for instance:
 
      type t = A | B | C
      let affine = function
