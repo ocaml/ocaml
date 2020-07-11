@@ -187,6 +187,8 @@ let rec memq x = function
     [] -> false
   | a::l -> a == x || memq x l
 
+let cons_assoc k v l = (k, v) :: l
+
 let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if compare a x = 0 then b else assoc x l

@@ -276,8 +276,6 @@ val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
 
 
 (** {1 Association lists} *)
-
-
 val assoc : 'a -> ('a * 'b) list -> 'b
 (** [assoc a l] returns the value associated with key [a] in the list of
    pairs [l]. That is,
@@ -320,6 +318,10 @@ val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
 val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
 (** Same as {!List.remove_assoc}, but uses physical equality instead
    of structural equality to compare keys.  Not tail-recursive. *)
+
+val cons_assoc : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+(** [cons_assoc k v li] is [(k, v) :: li]. This function is useful
+    to populate association lists *)
 
 val iter_assoc : ('k -> 'v -> unit) -> ('k * 'v) list -> unit
 (** [List.iter_assoc f [(k1, v1); (k2, v2); ...; (kn, vn)]] is
