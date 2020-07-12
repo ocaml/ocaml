@@ -88,6 +88,18 @@ Working version
   compaction algorithm and remove its dependence on the page table
   (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
 
+- #8997: Introduce new `_exn` variants of current functions in the public
+  API, to help clean-up after an asynchronous exception arises.
+
+   - `caml_{enter,leave}_blocking_section_exn` in caml/signals.h.
+
+   - Functions from caml/fail.h that raise exceptions, e.g.
+     `caml_failwith_exn` and many others.
+
+  Use them to fix various resource leaks in functions from `caml/io.h`,
+  dynlink, and marshalling.
+  (Guillaume Munch-Maccagnoni, review by)
+
 ### Code generation and optimizations:
 
 - #9620: Limit the number of parameters for an uncurried or untupled
