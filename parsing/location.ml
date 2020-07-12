@@ -640,6 +640,7 @@ type report = {
   kind : report_kind;
   main : msg;
   sub : msg list;
+  info : (t * Warnings.reporting_information) option;
 }
 
 type report_printer = {
@@ -813,7 +814,7 @@ let report_error ppf err =
   print_report ppf err
 
 let mkerror loc sub txt =
-  { kind = Report_error; main = { loc; txt }; sub }
+  { kind = Report_error; main = { loc; txt }; sub; info = None }
 
 let errorf ?(loc = none) ?(sub = []) =
   Format.kdprintf (mkerror loc sub)
@@ -834,14 +835,14 @@ let error_of_printer_file print x =
 let default_warning_alert_reporter report mk (loc: t) w : report option =
   match report w with
   | `Inactive -> None
-  | `Active { Warnings.id; message; is_error; sub_locs } ->
+  | `Active ({ Warnings.id; message; is_error; sub_locs } as info) ->
       let msg_of_str str = fun ppf -> Format.pp_print_string ppf str in
       let kind = mk is_error id in
       let main = { loc; txt = msg_of_str message } in
       let sub = List.map (fun (loc, sub_message) ->
         { loc; txt = msg_of_str sub_message }
       ) sub_locs in
-      Some { kind; main; sub }
+      Some { kind; main; sub; info = Some (loc, info) }
 
 
 let default_warning_reporter =
@@ -857,10 +858,16 @@ let report_warning loc w = !warning_reporter loc w
 
 let formatter_for_warnings = ref Format.err_formatter
 
+let reported = ref []
+
 let print_warning loc ppf w =
   match report_warning loc w with
   | None -> ()
-  | Some report -> print_report ppf report
+  | Some report ->
+      if !Clflags.warn_json <> None then
+        reported := report :: !reported
+      else
+        print_report ppf report
 
 let prerr_warning loc w = print_warning loc !formatter_for_warnings w
 
@@ -878,7 +885,11 @@ let report_alert loc w = !alert_reporter loc w
 let print_alert loc ppf w =
   match report_alert loc w with
   | None -> ()
-  | Some report -> print_report ppf report
+  | Some report ->
+      if !Clflags.warn_json <> None then
+        reported := report :: !reported
+      else
+        print_report ppf report
 
 let prerr_alert loc w = print_alert loc !formatter_for_warnings w
 
@@ -941,3 +952,95 @@ let () =
 
 let raise_errorf ?(loc = none) ?(sub = []) =
   Format.kdprintf (fun txt -> raise (Error (mkerror loc sub txt)))
+
+module Json : sig
+  type t =
+    | Bool of bool
+    | Int of int
+    | String of string
+    | Array of t list
+    | Object of (string * t) list
+
+  val pp: Format.formatter -> t -> unit
+end = struct
+  type t =
+    | Bool of bool
+    | Int of int
+    | String of string
+    | Array of t list
+    | Object of (string * t) list
+
+  open Format
+
+  let pp_sep ppf () = fprintf ppf ",@,"
+
+  let rec pp ppf = function
+    | Bool b -> pp_print_bool ppf b
+    | Int n -> pp_print_int ppf n
+    | String s -> fprintf ppf "%S" s (* FIXME *)
+    | Array [] -> pp_print_string ppf "[]"
+    | Array l ->
+        fprintf ppf "[@;<0 2>@[<v>%a@]@,]"
+          (pp_print_list ~pp_sep pp) l
+    | Object [] -> pp_print_string ppf "{}"
+    | Object l ->
+        let pp ppf (s, x) = fprintf ppf "@[<v>%S: %a@]" s pp x in
+        fprintf ppf "{@;<0 2>@[<v>%a@]@,}"
+          (pp_print_list ~pp_sep pp) l
+
+  let pp ppf x = fprintf ppf "@[<v>%a@]" pp x
+end
+
+open Json
+
+let json_of_position {Lexing.pos_fname; pos_lnum; pos_bol; pos_cnum} =
+  Object
+    [
+      "pos_fname", String pos_fname;
+      "pos_lnum", Int pos_lnum;
+      "pos_bol", Int pos_bol;
+      "pos_cnum", Int pos_cnum;
+    ]
+
+let json_of_t {loc_start; loc_end; loc_ghost} =
+  Object
+    [
+      "loc_start", json_of_position loc_start;
+      "loc_end", json_of_position loc_end;
+      "loc_ghost", Bool loc_ghost;
+    ]
+
+let json_of_report (loc, {Warnings.id; message; is_error; sub_locs}) =
+  Object
+    [
+      "id", String id;
+      "message", String message;
+      "is_error", Bool is_error;
+      "loc", json_of_t loc;
+      "sub_locs",
+      Array (List.map (fun (loc, s) ->
+          Object
+            [
+              "loc", json_of_t loc;
+              "msg", String s;
+            ]
+        ) sub_locs)
+    ]
+
+let warn_json ppf =
+  let json =
+    Array
+      (List.filter_map
+         (fun {info; _} -> Option.map json_of_report info) !reported)
+  in
+  Format.fprintf ppf "%a@." pp json
+
+let warn_json ppf =
+  match !Clflags.warn_json with
+  | None -> ()
+  | Some "-" ->
+      warn_json ppf
+  | Some s ->
+      let oc = open_out s in
+      Fun.protect ~finally:(fun () -> close_out_noerr oc)
+        (fun () -> warn_json (Format.formatter_of_out_channel oc))

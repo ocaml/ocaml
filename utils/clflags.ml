@@ -231,6 +231,8 @@ let unbox_closures_factor =
   ref default_unbox_closures_factor      (* -unbox-closures-factor *)
 let remove_unused_arguments = ref false (* -remove-unused-arguments *)
 
+let warn_json = ref None (* -warn-json *)
+
 type inlining_arguments = {
   inline_call_cost : int option;
   inline_alloc_cost : int option;

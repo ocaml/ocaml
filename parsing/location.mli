@@ -135,6 +135,7 @@ type report = {
   kind : report_kind;
   main : msg;
   sub : msg list;
+  info : (t * Warnings.reporting_information) option;
 }
 
 type report_printer = {
@@ -285,3 +286,6 @@ val raise_errorf: ?loc:t -> ?sub:msg list ->
 
 val report_exception: formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)
+
+val warn_json: formatter -> unit
+(** Print reported warnings to the given formatter in JSON format. *)

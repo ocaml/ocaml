@@ -635,6 +635,10 @@ let mk_warn_help f =
   "-warn-help", Arg.Unit f, " Show description of warning numbers"
 ;;
 
+let mk_warn_json f =
+  "-warn-json", Arg.String f, " Output warnings in JSON format"
+;;
+
 let mk_color f =
   "-color", Arg.Symbol (["auto"; "always"; "never"], f),
   Printf.sprintf
@@ -927,6 +931,7 @@ module type Core_options = sig
   val _unsafe : unit -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
+  val _warn_json : string -> unit
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
@@ -1218,6 +1223,7 @@ struct
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
+    mk_warn_json F._warn_json;
     mk_where F._where;
     mk__ F.anonymous;
 
@@ -1286,6 +1292,7 @@ struct
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
+    mk_warn_json F._warn_json;
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
@@ -1415,6 +1422,7 @@ struct
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
+    mk_warn_json F._warn_json;
     mk_where F._where;
     mk__ F.anonymous;
 
@@ -1530,6 +1538,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
+    mk_warn_json F._warn_json;
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
@@ -1712,6 +1721,7 @@ module Default = struct
     let _unsafe = set unsafe
     let _warn_error s = Warnings.parse_options true s
     let _warn_help = Warnings.help_warnings
+    let _warn_json s = warn_json := Some s
   end
 
   module Native = struct

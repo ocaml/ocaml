@@ -105,10 +105,13 @@ let main argv ppf =
     end;
   with
   | exception (Compenv.Exit_compiler n) ->
+    Location.warn_json ppf;
     n
   | exception x ->
+    Location.warn_json ppf;
     Location.report_exception ppf x;
     2
   | () ->
+    Location.warn_json ppf;
     Profile.print Format.std_formatter !Clflags.profile_columns;
     0

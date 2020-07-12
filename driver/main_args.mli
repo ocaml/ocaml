@@ -57,6 +57,7 @@ module type Core_options = sig
   val _unsafe : unit -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
+  val _warn_json : string -> unit
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
