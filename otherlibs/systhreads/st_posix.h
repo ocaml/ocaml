@@ -37,10 +37,20 @@ typedef int st_retcode;
 
 /* OS-specific initialization */
 
+static pthread_mutexattr_t lock_attr;
+
 static int st_initialize(void)
 {
+  if (pthread_mutexattr_init(&lock_attr) != 0)
+    caml_failwith("st_initialize");
+  pthread_mutexattr_settype(&lock_attr, PTHREAD_MUTEX_ERRORCHECK);
   caml_sigmask_hook = pthread_sigmask;
   return 0;
+}
+
+static void st_cleanup(void)
+{
+  pthread_mutexattr_destroy(&lock_attr);
 }
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
@@ -199,7 +209,7 @@ static int st_mutex_create(st_mutex * res)
   int rc;
   st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
   if (m == NULL) return ENOMEM;
-  rc = pthread_mutex_init(m, NULL);
+  rc = pthread_mutex_init(m, &lock_attr);
   if (rc != 0) { caml_stat_free(m); return rc; }
   *res = m;
   return 0;

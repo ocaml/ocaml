@@ -36,7 +36,8 @@ val lock : t -> unit
 (** Lock the given mutex. Only one thread can have the mutex locked
    at any time. A thread that attempts to lock a mutex already locked
    by another thread will suspend until the other thread unlocks
-   the mutex. *)
+   the mutex. Attempting to lock the mutex from a thread that already
+   owns the lock results in a [Sys_error] exception. *)
 
 val try_lock : t -> bool
 (** Same as {!Mutex.lock}, but does not suspend the calling thread if

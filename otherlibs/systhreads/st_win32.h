@@ -52,6 +52,10 @@ static DWORD st_initialize(void)
     return 0;
 }
 
+static void st_cleanup(void)
+{
+}
+
 /* Thread creation.  Created in detached mode if [res] is NULL. */
 
 typedef HANDLE st_thread_id;
@@ -160,29 +164,29 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 /* Mutexes */
 
-typedef CRITICAL_SECTION * st_mutex;
+/* Win32 Critical Sections are recursive mutexes. We use a flag to
+   enforce that they are not locked recursively. */
+typedef struct {
+  CRITICAL_SECTION mutex;         /* to protect contents  */
+  int taken;                      /* 0 = free, 1 = taken */
+} st_errorcheck_mutex;
+
+typedef st_errorcheck_mutex * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(st_errorcheck_mutex));
   if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
-  InitializeCriticalSection(m);
+  InitializeCriticalSection(&m->mutex);
+  m->taken = 0;
   *res = m;
   return 0;
 }
 
 static DWORD st_mutex_destroy(st_mutex m)
 {
-  DeleteCriticalSection(m);
+  DeleteCriticalSection(&m->mutex);
   caml_stat_free(m);
-  return 0;
-}
-
-Caml_inline DWORD st_mutex_lock(st_mutex m)
-{
-  TRACE1("st_mutex_lock", m);
-  EnterCriticalSection(m);
-  TRACE1("st_mutex_lock (done)", m);
   return 0;
 }
 
@@ -191,22 +195,43 @@ Caml_inline DWORD st_mutex_lock(st_mutex m)
 #define PREVIOUSLY_UNLOCKED 0
 #define ALREADY_LOCKED (1<<29)
 
-Caml_inline DWORD st_mutex_trylock(st_mutex m)
+Caml_inline DWORD st_mutex_lock(st_mutex m)
 {
-  TRACE1("st_mutex_trylock", m);
-  if (TryEnterCriticalSection(m)) {
-    TRACE1("st_mutex_trylock (success)", m);
-    return PREVIOUSLY_UNLOCKED;
-  } else {
-    TRACE1("st_mutex_trylock (failure)", m);
+  TRACE1("st_mutex_lock", &m->mutex);
+  EnterCriticalSection(&m->mutex);
+  if (m->taken == 1) {
+    TRACE1("st_mutex_lock (recursive)", &m->mutex);
+    LeaveCriticalSection(&m->mutex);
     return ALREADY_LOCKED;
   }
+  m->taken = 1;
+  TRACE1("st_mutex_lock (done)", &m->mutex);
+  return PREVIOUSLY_UNLOCKED;
+}
+
+Caml_inline DWORD st_mutex_trylock(st_mutex m)
+{
+  TRACE1("st_mutex_trylock", &m->mutex);
+  if (TryEnterCriticalSection(&m->mutex)) {
+    TRACE1("st_mutex_trylock (success)", &m->mutex);
+    if (m->taken == 1) {
+      TRACE1("st_mutex_trylock (recursive)", &m->mutex);
+      LeaveCriticalSection(&m->mutex);
+      return ALREADY_LOCKED;
+    }
+    m->taken = 1;
+    return PREVIOUSLY_UNLOCKED;
+  }
+  TRACE1("st_mutex_trylock (failure)", &m->mutex);
+  return ALREADY_LOCKED;
 }
 
 Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
   TRACE1("st_mutex_unlock", m);
-  LeaveCriticalSection(m);
+  CAMLassert(m->taken);
+  m->taken = 0;
+  LeaveCriticalSection(&m->mutex);
   return 0;
 }
 
@@ -308,7 +333,8 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
   c->waiters = &wait;
   LeaveCriticalSection(&c->lock);
   /* Release the mutex m */
-  LeaveCriticalSection(m);
+  m->taken = 0;
+  LeaveCriticalSection(&m->mutex);
   /* Wait for our event to be signaled.  There is no risk of lost
      wakeup, since we inserted ourselves on the waiting list of c
      before releasing m */
@@ -316,9 +342,10 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
   if (WaitForSingleObject(ev, INFINITE) == WAIT_FAILED)
     return GetLastError();
   /* Reacquire the mutex m */
-  TRACE1("st_condvar_wait: restarted, acquiring mutex", m);
-  EnterCriticalSection(m);
-  TRACE1("st_condvar_wait: acquired mutex", m);
+  TRACE1("st_condvar_wait: restarted, acquiring mutex", &m->mutex);
+  EnterCriticalSection(&m->mutex);
+  m->taken = 1;
+  TRACE1("st_condvar_wait: acquired mutex", &m->mutex);
   return 0;
 }
 
@@ -373,16 +400,22 @@ static void st_check_error(DWORD retcode, char * msg)
 
   if (retcode == 0) return;
   if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
-  ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                      NULL,
-                      retcode,
-                      0,
-                      err,
-                      sizeof(err)/sizeof(wchar_t),
-                      NULL);
-  if (! ret) {
-    ret =
-      swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
+  if (retcode == ALREADY_LOCKED) {
+    ret = swprintf(err, sizeof(err)/sizeof(wchar_t),
+                   L"Resource deadlock avoided");
+  } else {
+    ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+                        FORMAT_MESSAGE_IGNORE_INSERTS,
+                        NULL,
+                        retcode,
+                        0,
+                        err,
+                        sizeof(err)/sizeof(wchar_t),
+                        NULL);
+    if (! ret) {
+      ret = swprintf(err, sizeof(err)/sizeof(wchar_t),
+                     L"error code %lx", retcode);
+    }
   }
   msglen = strlen(msg);
   errlen = win_wide_char_to_multi_byte(err, ret, NULL, 0);

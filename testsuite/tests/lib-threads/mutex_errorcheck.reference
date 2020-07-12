@@ -1,0 +1,3 @@
+start
+Sys_error("Mutex.lock: Resource deadlock avoided")
+end

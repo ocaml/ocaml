@@ -84,6 +84,15 @@ Working version
    which has never existed.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+* #9757: With systhread, mutexes now raise an exception when
+  attempting to lock recursively, instead of deadlocking. This is
+  meant to improve the failure mode when locking a mutex or a channel
+  in a finaliser or a signal handler, that are already locked by the
+  thread. On Windows, mutexes used to be accidentally recursive, so
+  this might break Windows-specific programs that relied on this
+  behaviour.
+  (Guillaume Munch-Maccagnoni, review by)
+
 ### Code generation and optimizations:
 
 - #9620: Limit the number of parameters for an uncurried or untupled
