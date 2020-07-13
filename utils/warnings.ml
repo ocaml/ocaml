@@ -816,13 +816,21 @@ type reporting_information =
   ; sub_locs : (loc * string) list;
   }
 
+let id_name w =
+  let n = number w in
+  match List.find_opt (fun (m, _, _) -> m = n) descriptions with
+  | Some (_, _, s :: _) ->
+      Printf.sprintf "%d [%s]" n s
+  | _ ->
+      string_of_int n
+
 let report w =
   match is_active w with
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
      `Active
-       { id = string_of_int (number w);
+       { id = id_name w;
          message = message w;
          is_error = is_error w;
          sub_locs = [];
