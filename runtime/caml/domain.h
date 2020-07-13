@@ -89,15 +89,15 @@ struct domain* caml_domain_self();
 struct domain* caml_owner_of_young_block(value);
 struct domain* caml_domain_of_id(int);
 
-typedef struct interrupt interrupt;
-typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
-
 CAMLextern atomic_uintnat caml_num_domains_running;
 
 INLINE intnat caml_domain_alone()
 {
   return atomic_load_acq(&caml_num_domains_running) == 1;
 }
+
+typedef struct interrupt interrupt;
+typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
 CAMLcheckresult
 int caml_domain_rpc(struct domain*,
