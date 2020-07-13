@@ -35,88 +35,59 @@
 extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
 
-/* Encoded headers: the color is stored in the 2 least significant bits.
-   (For pointer inversion, we need to distinguish headers from pointers.)
-   s is a Wosize, t is a tag, and c is a color (a two-bit number)
+/* Colors
 
-   For the purpose of compaction, "colors" are:
-   0: pointers (direct or inverted)
-   1: integer or (unencoded) infix header
-   2: inverted pointer for infix header
-   3: integer or encoded (noninfix) header
+   We use the GC's color bits in the following way:
 
-  XXX Should be fixed:
-  XXX The above assumes that all roots are aligned on a 4-byte boundary,
-  XXX which is not always guaranteed by C.
-  XXX (see [caml_register_global_roots])
-  XXX Should be able to fix it to only assume 2-byte alignment.
+   - White words are headers of live blocks.
+   - Blue words are headers of free blocks.
+   - Black words are headers of out-of-heap "blocks".
+   - Gray words are the encoding of pointers in inverted lists.
+
+   Encoded pointers:
+   Pointers always have their two low-order bits clear. We make use of
+   this to encode pointers by shifting bits 2-9 to 0-7:
+   ...XXXyyyyyyyy00 becomes ...XXX01yyyyyyyy
+   Note that 01 corresponds to the "gray" color of the GC, so we can now
+   mix pointers and headers because there are no gray headers anywhere in
+   the heap (or outside) when we start a compaction (which must be done at
+   the end of a sweep phase).
 */
-#ifdef WITH_PROFINFO
-#define Make_ehd(s,t,c,p) \
-  (((s) << 10) | (t) << 2 | (c) | ((p) << PROFINFO_SHIFT))
-#else
-#define Make_ehd(s,t,c,p) (((s) << 10) | (t) << 2 | (c))
-#endif
-#define Whsize_ehd(h) Whsize_hd (h)
-#define Wosize_ehd(h) Wosize_hd (h)
-#define Tag_ehd(h) (((h) >> 2) & 0xFF)
-#ifdef WITH_PROFINFO
-#define Profinfo_ehd(hd) Profinfo_hd(hd)
-#endif
-#define Ecolor(w) ((w) & 3)
 
 typedef uintnat word;
+
+#define eptr(p) \
+  (((word) (p) & ~0x3FF) | ((((word) p) & 0x3FF) >> 2) | Caml_gray)
+#define dptr(p) ((word *) (((word) (p) & ~0x3FF) | ((((word) p) & 0xFF) << 2)))
 
 static void invert_pointer_at (word *p)
 {
   word q = *p;
-  CAMLassert (Ecolor ((intnat) p) == 0);
+  header_t h;
 
-  /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
-     inverted pointer for an infix header (with Ecolor == 2). */
-  if (Ecolor (q) == 0 && Is_in_heap (q)){
-    switch (Ecolor (Hd_val (q))){
-    case 0:
-    case 3: /* Pointer or header: insert in inverted list. */
-      *p = Hd_val (q);
-      Hd_val (q) = (header_t) p;
-      break;
-    case 1: /* Infix header: make inverted infix list. */
-      /* Double inversion: the last of the inverted infix list points to
-         the next infix header in this block.  The last of the last list
-         contains the original block header. */
-      {
-        /* This block as a value. */
-        value val = (value) q - Infix_offset_val (q);
-        /* Get the block header. */
-        word *hp = (word *) Hp_val (val);
+  CAMLassert (((uintnat) p & 3) == 0);
 
-        while (Ecolor (*hp) == 0) hp = (word *) *hp;
-        CAMLassert (Ecolor (*hp) == 3);
-        if (Tag_ehd (*hp) == Closure_tag){
-          /* This is the first infix found in this block. */
-          /* Save original header. */
-          *p = *hp;
-          /* Link inverted infix list. */
-          Hd_val (q) = (header_t) ((word) p | 2);
-          /* Change block header's tag to Infix_tag, and change its size
-             to point to the infix list. */
-          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, (uintnat) 0);
-        }else{
-          CAMLassert (Tag_ehd (*hp) == Infix_tag);
-          /* Point the last of this infix list to the current first infix
-             list of the block. */
-          *p = (word) &Field (val, Wosize_ehd (*hp)) | 1;
-          /* Point the head of this infix list to the above. */
-          Hd_val (q) = (header_t) ((word) p | 2);
-          /* Change block header's size to point to this infix list. */
-          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, (uintnat) 0);
-        }
+  if (Is_block (q) && Is_in_value_area (q)){
+    h = Hd_val (q);
+    switch (Color_hd (h)){
+    case Caml_white:
+      if (Tag_hd (h) == Infix_tag){
+        value realvalue = (value) q - Infix_offset_val (q);
+        if (Is_black_val (realvalue)) break;
       }
+      /* FALL THROUGH */
+    case Caml_gray:
+      CAMLassert (Is_in_heap (q));
+      /* [q] points to some inverted list, insert it. */
+      *p = h;
+      Hd_val (q) = eptr (p);
       break;
-    case 2: /* Inverted infix list: insert. */
-      *p = Hd_val (q);
-      Hd_val (q) = (header_t) ((word) p | 2);
+    case Caml_black:
+      /* [q] points to an out-of-heap value. Leave it alone. */
+      break;
+    default: /* Caml_blue */
+      /* We found a pointer to a free block. This cannot happen. */
+      CAMLassert (0);
       break;
     }
   }
@@ -124,6 +95,13 @@ static void invert_pointer_at (word *p)
 
 void caml_invert_root (value v, value *p)
 {
+#ifdef NO_NAKED_POINTERS
+  /* Note: this assertion will become tautological and should be removed when
+     we finally get rid of the page table in NNP mode.
+  */
+  CAMLassert (Is_long (*p) || Is_in_heap (*p) || Is_black_val (*p)
+              || Tag_val (*p) == Infix_tag);
+#endif
   invert_pointer_at ((word *) p);
 }
 
@@ -170,39 +148,13 @@ static void do_compaction (intnat new_allocation_policy)
   caml_heap_check ();
 #endif
 
-  /* First pass: encode all noninfix headers. */
-  {
-    ch = caml_heap_start;
-    while (ch != NULL){
-      header_t *p = (header_t *) ch;
-
-      chend = ch + Chunk_size (ch);
-      while ((char *) p < chend){
-        header_t hd = Hd_hp (p);
-        mlsize_t sz = Wosize_hd (hd);
-
-        if (Is_blue_hd (hd)){
-          /* Free object.  Give it a string tag. */
-          Hd_hp (p) = Make_ehd (sz, String_tag, 3, (uintnat) 0);
-        }else{
-          CAMLassert (Is_white_hd (hd));
-          /* Live object.  Keep its tag. */
-          Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3, Profinfo_hd (hd));
-        }
-        p += Whsize_wosize (sz);
-      }
-      ch = Chunk_next (ch);
-    }
-  }
+  /* First pass: removed in 4.12 thanks to the new closure representation. */
 
 
   /* Second pass: invert pointers.
-     Link infix headers in each block in an inverted list of inverted lists.
-     Don't forget roots and weak pointers. */
+     Don't forget roots and weak pointers.
+     This is a mark-like pass. */
   {
-    /* Invert roots first because the threads library needs some heap
-       data structures to find its roots.  Fortunately, it doesn't need
-       the headers (see above). */
     caml_do_roots (caml_invert_root, 1);
     /* The values to be finalised are not roots but should still be inverted */
     caml_final_invert_finalisable_values ();
@@ -216,27 +168,27 @@ static void do_compaction (intnat new_allocation_policy)
 
       while ((char *) p < chend){
         word q = *p;
-        size_t sz, i;
+        mlsize_t wosz, i, first_field;
         tag_t t;
-        word *infixes;
 
-        while (Ecolor (q) == 0) q = * (word *) q;
-        sz = Whsize_ehd (q);
-        t = Tag_ehd (q);
-
-        if (t == Infix_tag){
-          /* Get the original header of this block. */
-          infixes = p + sz;
-          q = *infixes;
-          while (Ecolor (q) != 3) q = * (word *) (q & ~(uintnat)3);
-          sz = Whsize_ehd (q);
-          t = Tag_ehd (q);
+        while (Is_gray_hd (q)) q = * dptr (q);
+        wosz = Wosize_hd (q);
+        if (Is_white_hd (q)){
+          t = Tag_hd (q);
+          CAMLassert (t != Infix_tag);
+          if (t < No_scan_tag){
+            value v = Val_hp (p);
+            if (t == Closure_tag){
+              first_field = Start_env_closinfo (Closinfo_val (v));
+            }else{
+              first_field = 0;
+            }
+            for (i = first_field; i < wosz; i++){
+              invert_pointer_at ((word *) &Field (v,i));
+            }
+          }
         }
-
-        if (t < No_scan_tag){
-          for (i = 1; i < sz; i++) invert_pointer_at (&(p[i]));
-        }
-        p += sz;
+        p += Whsize_wosize (wosz);
       }
       ch = Chunk_next (ch);
     }
@@ -251,8 +203,9 @@ static void do_compaction (intnat new_allocation_policy)
         p = *pp;
         if (p == (value) NULL) break;
         q = Hd_val (p);
-        while (Ecolor (q) == 0) q = * (word *) q;
-        sz = Wosize_ehd (q);
+        while (Is_gray_hd (q)) q = * dptr (q);
+        CAMLassert (Is_white_hd (q));
+        sz = Wosize_hd (q);
         for (i = 1; i < sz; i++){
           if (Field (p,i) != caml_ephe_none){
             invert_pointer_at ((word *) &(Field (p,i)));
@@ -265,8 +218,8 @@ static void do_compaction (intnat new_allocation_policy)
   }
 
 
-  /* Third pass: reallocate virtually; revert pointers; decode headers.
-     Rebuild infix headers. */
+  /* Third pass: reallocate virtually; revert pointers.
+     This is a sweep-like pass. */
   {
     init_compact_allocate ();
     ch = caml_heap_start;
@@ -275,75 +228,59 @@ static void do_compaction (intnat new_allocation_policy)
 
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
-        word q = *p;
+        header_t h = Hd_hp (p);
+        size_t sz;
 
-        if (Ecolor (q) == 0 || Tag_ehd (q) == Infix_tag){
-          /* There were (normal or infix) pointers to this block. */
-          size_t sz;
+        while (Is_gray_hd (h)) h = * dptr (h);
+        sz = Whsize_hd (h);
+
+        CAMLassert (!Is_black_hd (h));
+        CAMLassert (!Is_gray_hd (h));
+        if (Is_white_hd (h)){
+          word q;
           tag_t t;
           char *newadr;
-#ifdef WITH_PROFINFO
-          uintnat profinfo;
-#endif
-          word *infixes = NULL;
 
-          while (Ecolor (q) == 0) q = * (word *) q;
-          sz = Whsize_ehd (q);
-          t = Tag_ehd (q);
-#ifdef WITH_PROFINFO
-          profinfo = Profinfo_ehd (q);
-#endif
-          if (t == Infix_tag){
-            /* Get the original header of this block. */
-            infixes = p + sz;
-            q = *infixes;
-            CAMLassert (Ecolor (q) == 2);
-            while (Ecolor (q) != 3) q = * (word *) (q & ~(uintnat)3);
-            sz = Whsize_ehd (q);
-            t = Tag_ehd (q);
-          }
+          t = Tag_hd (h);
+          CAMLassert (t != Infix_tag);
 
           newadr = compact_allocate (Bsize_wsize (sz));
           q = *p;
-          while (Ecolor (q) == 0){
-            word next = * (word *) q;
-            * (word *) q = (word) Val_hp (newadr);
-            q = next;
+          while (Is_gray_hd (q)){
+            word *pp = dptr (q);
+            q = *pp;
+            *pp = (word) Val_hp (newadr);
           }
-          *p = Make_header_with_profinfo (Wosize_whsize (sz), t, Caml_white,
-            profinfo);
+          CAMLassert (q == h);
+          *p = q;
 
-          if (infixes != NULL){
-            /* Rebuild the infix headers and revert the infix pointers. */
-            while (Ecolor ((word) infixes) != 3){
-              infixes = (word *) ((word) infixes & ~(uintnat) 3);
-              q = *infixes;
-              while (Ecolor (q) == 2){
-                word next;
-                q = (word) q & ~(uintnat) 3;
-                next = * (word *) q;
-                * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
-                q = next;
+          if (t == Closure_tag){
+            /* Revert the infix pointers to this block. */
+            mlsize_t i, startenv;
+            value v;
+
+            v = Val_hp (p);
+            startenv = Start_env_closinfo (Closinfo_val (v));
+            i = 0;
+            while (1){
+              int arity = Arity_closinfo (Field (v, i+1));
+              i += 2 + (arity != 0 && arity != 1);
+              if (i >= startenv) break;
+
+              /* Revert the inverted list for infix header at offset [i]. */
+              q = Field (v, i);
+              while (Is_gray_hd (q)){
+                word *pp = dptr (q);
+                q = *pp;
+                *pp = (word) Val_hp ((header_t *) &Field (Val_hp (newadr), i));
               }
-              CAMLassert (Ecolor (q) == 1 || Ecolor (q) == 3);
-              /* No need to preserve any profinfo value on the [Infix_tag]
-                 headers; the Spacetime profiling heap snapshot code doesn't
-                 look at them. */
-              *infixes = Make_header (infixes - p, Infix_tag, Caml_white);
-              infixes = (word *) q;
+              CAMLassert (Tag_hd (q) == Infix_tag);
+              Field (v, i) = q;
+              ++i;
             }
           }
-          p += sz;
-        }else{
-          CAMLassert (Ecolor (q) == 3);
-          /* This is guaranteed only if caml_compact_heap was called after a
-             nonincremental major GC:    CAMLassert (Tag_ehd (q) == String_tag);
-          */
-          /* No pointers to the header and no infix header:
-             the object was free. */
-          *p = Make_header (Wosize_ehd (q), Tag_ehd (q), Caml_blue);
-          p += Whsize_ehd (q);
         }
+        p += sz;
       }
       ch = Chunk_next (ch);
     }

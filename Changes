@@ -84,6 +84,10 @@ Working version
    which has never existed.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+- #9728: Take advantage of the new closure representation to simplify the
+  compaction algorithm and remove its dependence on the page table
+  (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9620: Limit the number of parameters for an uncurried or untupled
