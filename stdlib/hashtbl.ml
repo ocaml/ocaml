@@ -112,39 +112,43 @@ let copy h = { h with data = Array.map copy_bucketlist h.data }
 
 let length h = h.size
 
+let insert_all_buckets indexfun inplace odata ndata =
+  let nsize = Array.length ndata in
+  let ndata_tail = Array.make nsize Empty in
+  let rec insert_bucket = function
+    | Empty -> ()
+    | Cons {key; data; next} as cell ->
+        let cell =
+          if inplace then cell
+          else Cons {key; data; next = Empty}
+        in
+        let nidx = indexfun key in
+        begin match ndata_tail.(nidx) with
+        | Empty -> ndata.(nidx) <- cell;
+        | Cons tail -> tail.next <- cell;
+        end;
+        ndata_tail.(nidx) <- cell;
+        insert_bucket next
+  in
+  for i = 0 to Array.length odata - 1 do
+    insert_bucket odata.(i)
+  done;
+  if inplace then
+    for i = 0 to nsize - 1 do
+      match ndata_tail.(i) with
+      | Empty -> ()
+      | Cons tail -> tail.next <- Empty
+    done
+
 let resize indexfun h =
   let odata = h.data in
   let osize = Array.length odata in
   let nsize = osize * 2 in
   if nsize < Sys.max_array_length then begin
     let ndata = Array.make nsize Empty in
-    let ndata_tail = Array.make nsize Empty in
     let inplace = not (ongoing_traversal h) in
     h.data <- ndata;          (* so that indexfun sees the new bucket count *)
-    let rec insert_bucket = function
-      | Empty -> ()
-      | Cons {key; data; next} as cell ->
-          let cell =
-            if inplace then cell
-            else Cons {key; data; next = Empty}
-          in
-          let nidx = indexfun h key in
-          begin match ndata_tail.(nidx) with
-          | Empty -> ndata.(nidx) <- cell;
-          | Cons tail -> tail.next <- cell;
-          end;
-          ndata_tail.(nidx) <- cell;
-          insert_bucket next
-    in
-    for i = 0 to osize - 1 do
-      insert_bucket odata.(i)
-    done;
-    if inplace then
-      for i = 0 to nsize - 1 do
-        match ndata_tail.(i) with
-        | Empty -> ()
-        | Cons tail -> tail.next <- Empty
-      done;
+    insert_all_buckets (indexfun h) inplace odata ndata
   end
 
 let iter f h =
@@ -611,3 +615,19 @@ let of_seq i =
   let tbl = create 16 in
   replace_seq tbl i;
   tbl
+
+let rebuild ?(random = !randomized) h =
+  let s = power_2_above 16 (Array.length h.data) in
+  let seed =
+    if random then Random.State.bits (Lazy.force prng)
+    else if Obj.size (Obj.repr h) >= 4 then h.seed
+    else 0 in
+  let h' = {
+    size = h.size;
+    data = Array.make s Empty;
+    seed = seed;
+    initial_size = if Obj.size (Obj.repr h) >= 4 then h.initial_size else s
+  } in
+  insert_all_buckets (key_index h') false h.data h'.data;
+  h'
+
