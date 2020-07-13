@@ -95,6 +95,9 @@ Working version
    partially curried or tupled.
    (Xavier Leroy, review by Mark Shinwell)
 
+- #9761: Optimise Lazy.from_val
+  (Stephen Dolan, review by ??)
+
 ### Standard library:
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
