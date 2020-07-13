@@ -129,6 +129,9 @@ Working version
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
   Alain Frisch)
 
+- #9663: Extend Printexc API for raw backtrace entries.
+  (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
