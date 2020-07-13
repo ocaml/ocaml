@@ -68,12 +68,11 @@ CAMLexport value caml_raise_if_exception(value val)
   return val;
 }
 
-
 CAMLnoreturn_start
-static inline void raise_encoded(value)
+Caml_inline void raise_encoded(value)
 CAMLnoreturn_end;
 
-static inline void raise_encoded(value exn)
+Caml_inline void raise_encoded(value exn)
 {
   CAMLassert(Is_exception_result(exn));
   caml_raise(Extract_exception(exn));
