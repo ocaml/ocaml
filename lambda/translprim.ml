@@ -84,6 +84,7 @@ type prim =
   | Raise of Lambda.raise_kind
   | Raise_with_backtrace
   | Lazy_force
+  | Lazy_from_val
   | Loc of loc_kind
   | Send
   | Send_self
@@ -204,6 +205,7 @@ let primitives_table =
     "%floatarray_unsafe_set", Primitive ((Parraysetu Pfloatarray), 3);
     "%obj_is_int", Primitive (Pisint, 1);
     "%lazy_force", Lazy_force;
+    "%lazy_from_val", Lazy_from_val;
     "%nativeint_of_int", Primitive ((Pbintofint Pnativeint), 1);
     "%nativeint_to_int", Primitive ((Pintofbint Pnativeint), 1);
     "%nativeint_neg", Primitive ((Pnegbint Pnativeint), 1);
@@ -594,6 +596,16 @@ let comparison_primitive comparison comparison_kind =
   | Compare, Compare_int32s -> Pcompare_bints Pint32
   | Compare, Compare_int64s -> Pcompare_bints Pint64
 
+let lazy_from_val env pty arg loc =
+  match is_function_type env pty with
+  | None ->
+     Matching.lazy_from_val arg loc
+  | Some (argty, _) ->
+     if Typeopt.lazy_val_requires_forward env argty then
+       Matching.lazy_from_val arg loc
+     else
+       arg
+
 let lambda_of_loc kind sloc =
   let loc = to_location sloc in
   let loc_start = loc.Location.loc_start in
@@ -639,7 +651,7 @@ let add_exception_ident id =
 let remove_exception_ident id =
   Hashtbl.remove try_ids id
 
-let lambda_of_prim prim_name prim loc args arg_exps =
+let lambda_of_prim env prim_name prim loc ty args arg_exps =
   match prim, args with
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
@@ -680,6 +692,8 @@ let lambda_of_prim prim_name prim loc args arg_exps =
                      Lprim(Praise Raise_reraise, [raise_arg], loc)))
   | Lazy_force, [arg] ->
       Matching.inline_lazy_force arg loc
+  | Lazy_from_val, [arg] ->
+      lazy_from_val env ty arg loc
   | Loc kind, [] ->
       lambda_of_loc kind loc
   | Loc kind, [arg] ->
@@ -692,7 +706,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Send_cache, [obj; meth; cache; pos] ->
       Lsend(Cached, meth, obj, [cache; pos], loc)
   | (Raise _ | Raise_with_backtrace
-    | Lazy_force | Loc _ | Primitive _ | Comparison _
+    | Lazy_force | Lazy_from_val | Loc _ | Primitive _ | Comparison _
     | Send | Send_self | Send_cache), _ ->
       raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
@@ -706,6 +720,7 @@ let check_primitive_arity loc p =
     | Raise _ -> p.prim_arity = 1
     | Raise_with_backtrace -> p.prim_arity = 2
     | Lazy_force -> p.prim_arity = 1
+    | Lazy_from_val -> p.prim_arity = 1
     | Loc _ -> p.prim_arity = 1 || p.prim_arity = 0
     | Send | Send_self -> p.prim_arity = 2
     | Send_cache -> p.prim_arity = 4
@@ -728,7 +743,7 @@ let transl_primitive loc p env ty path =
   in
   let params = make_params p.prim_arity in
   let args = List.map (fun (id, _) -> Lvar id) params in
-  let body = lambda_of_prim p.prim_name prim loc args None in
+  let body = lambda_of_prim env p.prim_name prim loc ty args None in
   match params with
   | [] -> body
   | _ ->
@@ -777,7 +792,7 @@ let primitive_needs_event_after = function
   | External _ -> true
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
-  | Lazy_force | Send | Send_self | Send_cache -> true
+  | Lazy_force | Lazy_from_val | Send | Send_self | Send_cache -> true
   | Raise _ | Raise_with_backtrace | Loc _ -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
@@ -796,7 +811,7 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
     | None -> prim
     | Some prim -> prim
   in
-  let lam = lambda_of_prim p.prim_name prim loc args (Some arg_exps) in
+  let lam = lambda_of_prim env p.prim_name prim loc ty args (Some arg_exps) in
   let lam =
     if primitive_needs_event_after prim then begin
       match exp with

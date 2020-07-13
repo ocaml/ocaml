@@ -21,7 +21,7 @@ exception Undefined
 
 let raise_undefined = Obj.repr (fun () -> raise Undefined)
 
-external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
+external set_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
 
 (* Assume [blk] is a block with tag lazy *)
 let force_lazy_block (blk : 'arg lazy_t) =
@@ -29,7 +29,7 @@ let force_lazy_block (blk : 'arg lazy_t) =
   Obj.set_field (Obj.repr blk) 0 raise_undefined;
   try
     let result = closure () in
-    make_forward (Obj.repr blk) (Obj.repr result);
+    set_forward (Obj.repr blk) (Obj.repr result);
     result
   with e ->
     Obj.set_field (Obj.repr blk) 0 (Obj.repr (fun () -> raise e));
@@ -41,7 +41,7 @@ let force_val_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
   Obj.set_field (Obj.repr blk) 0 raise_undefined;
   let result = closure () in
-  make_forward (Obj.repr blk) (Obj.repr result);
+  set_forward (Obj.repr blk) (Obj.repr result);
   result
 
 
@@ -63,3 +63,13 @@ let force_val (lzv : 'arg lazy_t) =
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
   if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else force_val_lazy_block lzv
+
+external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward"
+
+let from_val (v : 'arg) =
+  let t = Obj.tag (Obj.repr v) in
+  if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
+    make_forward v
+  end else begin
+    (Obj.magic v : 'arg t)
+  end

@@ -1791,6 +1791,15 @@ let get_mod_field modname field =
          | path, _ -> transl_value_path Loc_unknown env path
        ))
 
+let code_lazy_from_val = get_mod_field "CamlinternalLazy" "from_val"
+let lazy_from_val arg loc =
+  Lapply { ap_tailcall = Default_tailcall;
+           ap_loc = loc;
+           ap_func = Lazy.force code_lazy_from_val;
+           ap_args = [ arg ];
+           ap_inlined = Default_inline;
+           ap_specialised = Default_specialise }
+
 let code_force_lazy_block = get_mod_field "CamlinternalLazy" "force_lazy_block"
 
 let code_force_lazy = get_mod_field "CamlinternalLazy" "force"

@@ -31,6 +31,7 @@ val bigarray_type_kind_and_layout :
 val value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
 val function_return_value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
 
+val lazy_val_requires_forward : Env.t -> Types.type_expr -> bool
 val classify_lazy_argument : Typedtree.expression ->
                              [ `Constant_or_function
                              | `Float_that_cannot_be_shortcut
