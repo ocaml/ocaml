@@ -493,18 +493,15 @@ module Make(H: HashedType): (S with type key = H.t) =
 
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
-external old_hash_param :
-  int -> int -> 'a -> int = "caml_hash_univ_param" [@@noalloc]
 
 let hash x = seeded_hash_param 10 100 0 x
 let hash_param n1 n2 x = seeded_hash_param n1 n2 0 x
 let seeded_hash seed x = seeded_hash_param 10 100 seed x
 
 let key_index h key =
-  (* compatibility with old hash tables *)
-  if Obj.size (Obj.repr h) >= 3
+  if Obj.size (Obj.repr h) >= 4
   then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
-  else (old_hash_param 10 100 key) mod (Array.length h.data)
+  else invalid_arg "Hashtbl: unsupported hash table format"
 
 let add h key data =
   let i = key_index h key in
@@ -630,4 +627,3 @@ let rebuild ?(random = !randomized) h =
   } in
   insert_all_buckets (key_index h') false h.data h'.data;
   h'
-
