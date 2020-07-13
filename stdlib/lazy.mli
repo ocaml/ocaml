@@ -87,7 +87,7 @@ val from_fun : (unit -> 'a) -> 'a t
 
     @since 4.00.0 *)
 
-val from_val : 'a -> 'a t
+external from_val : 'a -> 'a t = "%lazy_from_val"
 (** [from_val v] returns an already-forced suspension of [v].
     This is for special purposes only and should not be confused with
     [lazy (v)].
