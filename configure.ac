@@ -789,7 +789,7 @@ AC_MSG_NOTICE([Target is a $bits bits architecture])
 
 AC_C_BIGENDIAN(
   [
-    AC_DEFINE([ARCH_BIG_ENDIAN], [1]),
+    AC_DEFINE([ARCH_BIG_ENDIAN], [1])
     [endianness="be"]
   ],
   [endianness="le"],

@@ -13455,7 +13455,7 @@ $as_echo "$ac_cv_c_bigendian" >&6; }
    yes)
 
     $as_echo "#define ARCH_BIG_ENDIAN 1" >>confdefs.h
-,
+
     endianness="be"
   ;; #(
    no)
