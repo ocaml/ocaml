@@ -110,3 +110,12 @@ module Sync : sig
   external poll : unit -> unit = "%poll"
   (** poll for interrupts *)
 end
+
+module TLS :
+  sig
+    type 'a key = int ref
+    (* val store : (int ref * Obj.t) list ref *)
+    val new_key : unit -> int ref
+    val set : 'a key -> 'b -> unit
+    val get : 'a key -> Obj.t option
+  end
