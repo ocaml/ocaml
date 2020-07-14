@@ -112,8 +112,6 @@ case $NODE_NAME in
   ocaml-ppc-64)
     CCOMP="CC='gcc -m64'"
     OCAML_CONFIGURE_OPTIONS=;;
-  ocaml-freebsd-64|ocaml-openbsd-64)
-    OCAML_CONFIGURE_OPTIONS='--with-bfd'
 esac
 
 #########################################################################
@@ -137,9 +135,6 @@ bootstrap=false
 case "${OCAML_ARCH}" in
   bsd)
     make=gmake
-  ;;
-  macos)
-    confoptions="$confoptions --with-bfd "
   ;;
   linux)
     check_make_alldepend=true
