@@ -224,7 +224,6 @@ let destroyed_at_oper = function
       else destroyed_at_c_call
   | Iop(Ialloc _) ->
       [| reg_x15 |]
-  | Iop Iloadmut -> [| reg_x0; reg_x1 |]
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
@@ -252,7 +251,7 @@ let max_register_pressure = function
 
 let op_is_pure = function
   | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Iloadmut
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
   | Ispecific(Ishiftcheckbound _) -> false
   | _ -> true

@@ -53,7 +53,6 @@ type operation =
   | Iextcall of { func : string; alloc : bool; label_after : label; stack_ofs : int; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
-  | Iloadmut
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
   | Ialloc of { bytes : int; label_after_call_gc : label option;
         spacetime_index : int; }
@@ -193,7 +192,7 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Ispecific specific_op ->
       Arch.spacetime_node_hole_pointer_is_live_before specific_op
     | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
-    | Iconst_symbol _ | Istackoffset _ | Iload _ | Iloadmut | Istore _
+    | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
     | Ifloatofint | Iintoffloat
     | Iname_for_debugger _ | Ipoll -> false
