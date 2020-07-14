@@ -32,10 +32,6 @@
 #include "caml/memprof.h"
 #include "caml/eventlog.h"
 
-#define Caml_gray (1 << 8)
-#define Is_gray_hd(hd) (Color_hd (hd) == Caml_gray)
-#define Grayhd_hd(hd)  (((hd)  & ~Caml_black)  | Caml_gray)
-
 extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
 
