@@ -62,7 +62,6 @@ let oper_result_type = function
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
-  | Cloadmut _ -> typ_val
   | Calloc -> typ_val
   | Cstore (_c, _) -> typ_void
   | Cpoll -> typ_void
@@ -316,7 +315,7 @@ method is_simple_expr = function
   | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Cloadmut _ | Cpoll | Calloc | Cstore _ | Craise _ -> false
+      | Capply _ | Cextcall _ | Cpoll | Calloc | Cstore _ | Craise _ -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
@@ -361,7 +360,7 @@ method effects_of exp =
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload {mutability = Asttypes.Immutable} -> EC.none
-      | Cloadmut _ | Cload {mutability = Asttypes.Mutable} ->
+      | Cload {mutability = Asttypes.Mutable} ->
           EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
@@ -447,7 +446,6 @@ method select_operation op args _dbg =
   | (Cload {memory_chunk}, [arg]) ->
       let (addr, eloc) = self#select_addressing memory_chunk arg in
       (Iload(memory_chunk, addr), [eloc])
-  | (Cloadmut _, _) -> (Iloadmut, args)
   | (Cstore (chunk, init), [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       let is_assign =
