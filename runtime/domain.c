@@ -1432,3 +1432,14 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
   handle_incoming_otherwise_relax (Caml_state, self);
   return Val_unit;
 }
+
+CAMLprim value caml_domain_tls_set(value t)
+{
+  Caml_state->tls = t;
+  return Val_unit;
+}
+
+CAMLprim value caml_domain_tls_get()
+{
+  return Caml_state->tls;
+}
