@@ -79,6 +79,12 @@ Working version
 
 ### Code generation and optimizations:
 
+- #9551: ocamlc no longer loads DLLs at link time to check that
+  external functions referenced from OCaml code are defined.
+  Instead, .so/.dll files are parsed directly by pure OCaml code.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer,
+   Anil Madhavapeddy, and Xavier Leroy)
+
 - #9620: Limit the number of parameters for an uncurried or untupled
    function.  Functions with more parameters than that are left
    partially curried or tupled.
@@ -142,6 +148,11 @@ Working version
   (David Allsopp, review by Xavier Leroy)
 
 ### Tools:
+
+- #9551: ocamlobjinfo is now able to display information on .cmxs shared
+  libraries natively; it no longer requires libbfd to do so
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer,
+   Anil Madhavapeddy, and Xavier Leroy)
 
 - #9606, #9635, #9637: fix performance regression in the debugger
   (behaviors quadratic in the size of the debugged program)
