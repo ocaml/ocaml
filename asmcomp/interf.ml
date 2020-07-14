@@ -61,17 +61,7 @@ let build_graph fundecl =
     for i = 0 to Array.length v - 1 do
       let r1 = v.(i) in
       Reg.Set.iter (add_interf r1) s
-    done
-  in
-
-  let add_interf_arr v a =
-    for i = 0 to Array.length v - 1 do
-      let ri = v.(i) in
-      for j = 0 to Array.length a - 1 do
-        add_interf ri a.(j)
-      done
-    done
-  in
+    done in
 
   (* Record interferences between elements of an array *)
   let add_interf_self v =
@@ -80,8 +70,7 @@ let build_graph fundecl =
       for j = i+1 to Array.length v - 1 do
         add_interf ri v.(j)
       done
-    done
-  in
+    done in
 
   (* Record interferences between the destination of a move and a set
      of live registers. Since the destination is equal to the source,
@@ -103,13 +92,7 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind _) -> ()
     | Iop(Itailcall_imm _) -> ()
-    | Iop op ->
-        begin match op with
-        | Iloadmut ->
-            add_interf_arr i.arg i.res;
-            add_interf_arr destroyed (Array.concat [i.arg; i.res])
-        | _ -> ()
-        end;
+    | Iop _ ->
         add_interf_set i.res i.live;
         add_interf_self i.res;
         interf i.next
