@@ -4726,7 +4726,7 @@ and type_cases
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt then
+          else if does_contain_gadt then
             (* Even though we've already done that, apparently we need to do it
                again.
                stdlib/camlinternalFormat.ml:2288 is an example of use of this
