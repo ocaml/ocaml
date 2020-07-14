@@ -136,6 +136,9 @@ case "${OCAML_ARCH}" in
   bsd)
     make=gmake
   ;;
+  macos)
+    # Nothing special but we must not fall through the "arch_error" case
+  ;;
   linux)
     check_make_alldepend=true
   ;;
