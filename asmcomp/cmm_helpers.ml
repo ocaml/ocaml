@@ -585,9 +585,6 @@ let rec remove_unit = function
 let mk_load_mut memory_chunk =
   Cload {memory_chunk; mutability=Mutable; is_atomic=false}
 
-let get_mut_field ptr n dbg =
-  Cop (Cloadmut {is_atomic=false}, [ptr; n], dbg)
-
 let field_address ptr n dbg =
   if n = 0
   then ptr
@@ -692,8 +689,8 @@ let array_indexing ?typ log2size ptr ofs dbg =
                     Cconst_int((-1) lsl (log2size - 1), dbg)], dbg)
 
 let addr_array_ref arr ofs dbg =
-  Cop(Cloadmut {is_atomic=false},
-    [arr; untag_int ofs dbg], dbg)
+  Cop(mk_load_mut Word_val,
+    [array_indexing log2_size_addr arr ofs dbg], dbg)
 let int_array_ref arr ofs dbg =
   Cop(mk_load_mut Word_int,
     [array_indexing log2_size_addr arr ofs dbg], dbg)
@@ -749,9 +746,7 @@ let lookup_tag obj tag dbg =
 
 let lookup_label obj lab dbg =
   bind "lab" lab (fun lab ->
-    let table =
-      Cop (Cloadmut {is_atomic=false}, [obj; Cconst_int (0, dbg)], dbg) in
-                     (* Should this be Cloadmut? *)
+    let table = Cop (mk_load_mut Word_val, [obj], dbg) in
     addr_array_ref table lab dbg)
 
 let call_cached_method obj tag cache pos args dbg =
@@ -1805,13 +1800,13 @@ let send_function arity =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = V.create_local "meths" and cached = V.create_local "cached" in
     let real = V.create_local "real" in
-    let mask = get_mut_field (Cvar meths) (cconst_int (1)) (dbg ()) in
+    let mask = get_field_gen Asttypes.Mutable (Cvar meths) 1 (dbg ()) in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
                               cconst_int(3*size_addr-1)], dbg ()) in
     let tag' = Cop(mk_load_mut Word_int, [tag_pos], dbg ()) in
     Clet (
-    VP.create meths, get_mut_field obj (cconst_int (0)) (dbg ()),
+    VP.create meths, Cop(mk_load_mut Word_val, [obj], dbg ()),
     Clet (
     VP.create cached,
       Cop(Cand, [Cop(mk_load_mut Word_int, [cache], dbg ()); mask],
@@ -1824,13 +1819,9 @@ let send_function arity =
                 dbg (),
                 cached_pos,
                 dbg ()),
-    get_mut_field
-                (Cvar meths)
-                (Cop(Casr, [Cop (Cadda,
-                                 [Cvar real;
-                                  cconst_int (2*size_addr - 1)],
-                                 dbg ());
-                            cconst_int log2_size_addr], dbg ())) (dbg ()))))
+    Cop(mk_load_mut Word_val,
+      [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg ());
+       cconst_int(2*size_addr-1)], dbg ())], dbg ()))))
 
   in
   let body = Clet(VP.create clos', clos, body) in
