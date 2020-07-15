@@ -4715,9 +4715,6 @@ and type_cases
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt then
-            (* allow propagation from preceding branches *)
-            correct_levels ty_res
           else ty_res in
         let guard =
           match pc_guard with
