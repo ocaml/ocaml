@@ -2917,7 +2917,7 @@ and type_expect_
           (fun x -> x)
       in
       with_explanation (fun () ->
-        unify_exp_types loc env ty_record (instance ty_expected));
+        unify_exp_types loc env (instance ty_record) (instance ty_expected));
 
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
