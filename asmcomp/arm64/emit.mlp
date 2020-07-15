@@ -483,7 +483,6 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
-    | Lop Iloadmut -> 6
     | Lop (Ialloc {bytes = num_bytes}) when !fastcode_flag ->
       if num_bytes <= 0xFFF then 4 else 5
     | Lop (Ispecific (Ifar_alloc {bytes = num_bytes})) when !fastcode_flag ->
@@ -727,27 +726,6 @@ let emit_instr i =
         | Word_int | Word_val | Double | Double_u ->
             `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
         end
-    | Lop Iloadmut ->
-        `	ldr	{emit_reg i.res.(0)}, [{emit_reg i.arg.(0)},{emit_reg i.arg.(1)}, lsl 3]\n`;
-        `	eor {emit_reg reg_x0}, {emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}\n`;
-        let s = Nativeint.(shift_left one Domainstate.minor_heap_align_bits) in
-        `	mov {emit_reg reg_x1}, #{emit_nativeint s}\n`;
-        `	sub	{emit_reg reg_x0}, {emit_reg reg_x0}, {emit_reg reg_x1}\n`;
-        let bits = Domainstate.minor_heap_align_bits + Domainstate.minor_heap_sel_bits in
-        let minor_val_bitmask = Nativeint.(logor one (shift_left minus_one bits)) in
-        `	tst	{emit_reg reg_x0}, #{emit_nativeint minor_val_bitmask}\n`;
-        let lbl_call_read_barrier = new_label () in
-        let lbl_return = new_label () in
-        let lbl_frame = record_frame_label i.live Debuginfo.none in
-        `	b.eq	{emit_label lbl_call_read_barrier}\n`;
-        `{emit_label lbl_return}:\n`;
-        read_barrier_call_sites :=
-          { rb_base = i.arg.(0);
-            rb_off = i.arg.(1);
-            rb_dest = i.res.(0);
-            rb_lbl = lbl_call_read_barrier;
-            rb_return_lbl = lbl_return;
-            rb_frame = lbl_frame } :: !read_barrier_call_sites
     | Lop(Istore(size, addr, _)) ->
         let src = i.arg.(0) in
         let base =

@@ -61,7 +61,6 @@ type operation =
                   stack_ofs : int}
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
-  | Iloadmut
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of { bytes : int; label_after_call_gc : label option;
