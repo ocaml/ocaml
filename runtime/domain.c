@@ -122,9 +122,8 @@ struct interrupt {
   /* immutable fields */
   domain_rpc_handler handler;
   void* data;
-  struct interruptor* sender;
 
-  atomic_uintnat completed;
+  atomic_uintnat acknowledged;
 
   /* accessed only when target's lock held */
   struct interrupt* next;
@@ -711,12 +710,12 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
-static int caml_send_partial_interrupt(struct interruptor* self,
+static int caml_send_partial_interrupt(
                          struct interruptor* target,
                          domain_rpc_handler handler,
                          void* data,
                          struct interrupt* req);
-static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req);
+static void caml_wait_interrupt_acknowledged(struct interruptor* self, struct interrupt* req);
 
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(struct domain*, void*, int, struct domain**), void* data,
@@ -775,7 +774,7 @@ int caml_try_run_on_all_domains_with_spin_work(
         domains_participating++;
         continue;
       }
-      if (caml_send_partial_interrupt(&domain_self->interruptor,
+      if (caml_send_partial_interrupt(
                               &all_domains[i].interruptor,
                               stw_handler,
                               0,
@@ -787,7 +786,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
     for(i = 0; i < domains_participating ; i++) {
       if( participating[i] && &domain_self->state != participating[i] ) {
-        caml_wait_interrupt_completed(&domain_self->interruptor, &reqs[i]);
+        caml_wait_interrupt_acknowledged(&domain_self->interruptor, &reqs[i]);
       }
     }
   }
@@ -1070,7 +1069,7 @@ static uintnat handle_incoming(struct interruptor* s)
 
 void caml_acknowledge_interrupt(struct interrupt* req)
 {
-  atomic_store_rel(&req->completed, 1);
+  atomic_store_rel(&req->acknowledged, 1);
 }
 
 static void acknowledge_all_pending_interrupts()
@@ -1226,7 +1225,7 @@ static void handle_incoming_otherwise_relax (caml_domain_state* domain_state,
   }
 }
 
-static void caml_wait_interrupt_completed (struct interruptor* self,
+static void caml_wait_interrupt_acknowledged (struct interruptor* self,
                                            struct interrupt* req)
 {
   int i;
@@ -1234,19 +1233,19 @@ static void caml_wait_interrupt_completed (struct interruptor* self,
 
   /* Often, interrupt handlers are fast, so spin for a bit before waiting */
   for (i=0; i<1000; i++) {
-    if (atomic_load_acq(&req->completed)) {
+    if (atomic_load_acq(&req->acknowledged)) {
       return;
     }
     cpu_relax();
   }
 
-  while (!atomic_load_acq(&req->completed))
+  while (!atomic_load_acq(&req->acknowledged))
     handle_incoming_otherwise_relax(domain_state, self);
 
   return;
 }
 
-int caml_send_partial_interrupt(struct interruptor* self,
+int caml_send_partial_interrupt(
                          struct interruptor* target,
                          domain_rpc_handler handler,
                          void* data,
@@ -1254,8 +1253,7 @@ int caml_send_partial_interrupt(struct interruptor* self,
 {
   req->handler = handler;
   req->data = data;
-  req->sender = self;
-  atomic_store_rel(&req->completed, 0);
+  atomic_store_rel(&req->acknowledged, 0);
   req->next = NULL;
 
   caml_plat_lock(&target->lock);
@@ -1290,9 +1288,9 @@ int caml_send_interrupt(struct interruptor* self,
                          void* data)
 {
   struct interrupt req;
-  if (!caml_send_partial_interrupt(self, target, handler, data, &req))
+  if (!caml_send_partial_interrupt(target, handler, data, &req))
     return 0;
-  caml_wait_interrupt_completed(self, &req);
+  caml_wait_interrupt_acknowledged(self, &req);
   return 1;
 }
 
