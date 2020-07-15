@@ -298,6 +298,10 @@ Working version
   correctly spaced.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
+- #9736, #9749: Compaction must start in a heap where all free blocks are
+  blue, which was not the case with the best-fit allocator.
+  (Damien Doligez, report by Leo White, review by ???)
+
 OCaml 4.11
 ----------
 
