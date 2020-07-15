@@ -2812,10 +2812,13 @@ and type_expect_
         exp_env = env }
   | Pexp_tuple sexpl ->
       assert (List.length sexpl >= 2);
-      let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
-      let to_unify = newgenty (Ttuple subtypes) in
+      begin_def ();
+      let subtypes = List.map (fun _ -> newvar ()) sexpl in
+      let to_unify = newty (Ttuple subtypes) in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify ty_expected);
+        unify_exp_types loc env to_unify (instance ty_expected));
+      end_def ();
+      List.iter generalize_structure subtypes;
       let expl =
         List.map2 (fun body ty -> type_expect env body (mk_expected ty))
           sexpl subtypes
@@ -3031,10 +3034,13 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
-      let ty = newgenvar() in
-      let to_unify = Predef.type_array ty in
+      begin_def ();
+      let ty = newvar() in
+      let to_unify = instance (Predef.type_array ty) in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify ty_expected);
+        unify_exp_types loc env to_unify (instance ty_expected));
+      end_def ();
+      generalize_structure ty;
       let argl =
         List.map (fun sarg -> type_expect env sarg (mk_expected ty)) sargl in
       re {
@@ -3475,10 +3481,13 @@ and type_expect_
         exp_env = env;
       }
   | Pexp_lazy e ->
-      let ty = newgenvar () in
+      begin_def ();
+      let ty = newvar () in
       let to_unify = Predef.type_lazy_t ty in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify ty_expected);
+        unify_exp_types loc env (instance to_unify) (instance ty_expected));
+      end_def ();
+      generalize_structure ty;
       let arg = type_expect env e (mk_expected ty) in
       re {
         exp_desc = Texp_lazy arg;
@@ -4726,15 +4735,10 @@ and type_cases
             end_def ();
             generalize_structure ty; ty
           end
-          else if does_contain_gadt then
-            (* Even though we've already done that, apparently we need to do it
-               again.
-               stdlib/camlinternalFormat.ml:2288 is an example of use of this
-               call to [correct_levels]... *)
+          else if contains_gadt then
+            (* allow propagation from preceding branches *)
             correct_levels ty_res
           else ty_res in
-(*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
-          Printtyp.raw_type_expr ty_res'; *)
         let guard =
           match pc_guard with
           | None -> None
