@@ -4395,9 +4395,6 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt then
-            (* allow propagation from preceding branches *)
-            correct_levels ty_res
           else ty_res in
         let guard =
           match pc_guard with
