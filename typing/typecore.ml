@@ -4724,15 +4724,10 @@ and type_cases
             end_def ();
             generalize_structure ty; ty
           end
-          else if does_contain_gadt then
-            (* Even though we've already done that, apparently we need to do it
-               again.
-               stdlib/camlinternalFormat.ml:2288 is an example of use of this
-               call to [correct_levels]... *)
+          else if contains_gadt then
+            (* allow propagation from preceding branches *)
             correct_levels ty_res
           else ty_res in
-(*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
-          Printtyp.raw_type_expr ty_res'; *)
         let guard =
           match pc_guard with
           | None -> None
