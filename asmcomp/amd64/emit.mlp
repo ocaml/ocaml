@@ -679,9 +679,6 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
-      if Config.stats then begin
-        I.inc (domain_field Domainstate.Domain_immutable_loads);
-      end;
       begin match chunk with
       | Word_int | Word_val ->
           I.mov (addressing addr QWORD i 0) dest
@@ -702,11 +699,6 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (addressing addr REAL8 i 0) dest
       end
-  | Lop Iloadmut ->
-      if Config.stats then begin
-        I.inc (domain_field Domainstate.Domain_mutable_loads);
-      end;
-      I.mov (mem64 QWORD 0 ~base:(arg64 i 0) (arg64 i 1) ~scale:8) (reg i.res.(0))
   | Lop(Istore(chunk, addr, is_assignment)) ->
       if Config.stats && is_assignment then begin
         I.inc (domain_field Domainstate.Domain_immutable_stores);

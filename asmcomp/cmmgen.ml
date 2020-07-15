@@ -117,9 +117,6 @@ let mut_from_env env ptr =
       else Mutable
     | _ -> Mutable
 
-let get_mut_field ptr n dbg =
-  Cop (Cloadmut {is_atomic=false}, [ptr; n], dbg)
-
 let get_field env ptr n dbg =
   let mut = mut_from_env env ptr in
   get_field_gen mut ptr n dbg
@@ -781,8 +778,6 @@ and transl_prim_1 env p arg dbg =
     Popaque ->
       transl env arg
   (* Heap operations *)
-  | Pfield(n, Pointer, Mutable) ->
-      get_mut_field (transl env arg) (Cconst_int (n, dbg)) dbg
   | Pfield(n, _, _) ->
       get_field env (transl env arg) n dbg
   | Pfloatfield n ->
@@ -846,17 +841,8 @@ and transl_prim_1 env p arg dbg =
           dbg)
   | Ppoll ->
       Cop(Cpoll, [transl env arg], dbg)
-  | Patomic_load {immediate_or_pointer} ->
-      let ptr = transl env arg
-      in
-      ( match immediate_or_pointer with
-        | Immediate ->
-            Cop (Cload {memory_chunk=Word_int ;
-                        mutability=Mutable ; is_atomic=true},
-                 [ptr], dbg)
-        | Pointer ->
-            Cop (Cloadmut {is_atomic=true},
-                 [ptr; Cconst_int (0, dbg)], dbg))
+  | Patomic_load _ ->
+      Cop(mk_load_mut Word_int, [transl env arg], dbg)
   | (Pfield_computed | Psequand | Psequor
     | Prunstack | Presume | Preperform
     | Patomic_exchange | Patomic_cas | Patomic_fetch_add

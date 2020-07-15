@@ -131,7 +131,6 @@ and operation =
       { memory_chunk: memory_chunk
       ; mutability: Asttypes.mutable_flag
       ; is_atomic: bool }
-  | Cloadmut of {is_atomic : bool}
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
