@@ -209,8 +209,8 @@ static void realloc_mark_stack (struct mark_stack* stk)
   mark_stack_prune(stk);
 }
 
-/* This function pushes the provided mark_entry [me] on to the current mark
-   stk [stk]. It first checks, if the block is small enough, whether there
+/* This function pushes the provided mark_entry [me] onto the current mark
+   stack [stk]. It first checks, if the block is small enough, whether there
    are any fields we would actually do mark work on. If so then it enqueues
    the entry. */
 Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
