@@ -488,10 +488,8 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
     *work -= Whsize_wosize(i);
 
     if (alive_data){
-      mark_slice_darken(stk, v,
-                                        CAML_EPHE_DATA_OFFSET,
-                                        /*in_ephemeron=*/1,
-                                        slice_pointers, work);
+      mark_slice_darken(stk, v, CAML_EPHE_DATA_OFFSET, /*in_ephemeron=*/1,
+                          slice_pointers, work);
     } else { /* not triggered move to the next one */
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
       return;
