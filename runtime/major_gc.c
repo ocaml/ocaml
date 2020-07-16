@@ -525,7 +525,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
 
 static void mark_slice (intnat work)
 {
-  mark_entry me = {0};
+  mark_entry me = {0, 0};
   mlsize_t me_end = 0;
 #ifdef CAML_INSTR
   int slice_fields = 0; /** eventlog counters */
