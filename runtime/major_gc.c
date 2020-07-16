@@ -165,8 +165,6 @@ static void mark_stack_prune (struct mark_stack* stk)
         Chunk_redarken_end(chunk_addr) = block_op;
       }
 
-      Chunk_requires_redarken(chunk_addr) = 1;
-
       if( redarken_first_chunk == NULL
           || redarken_first_chunk > (char*)chunk_addr ) {
         redarken_first_chunk = (char*)chunk_addr;
@@ -322,7 +320,6 @@ static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
     p += Whsize_hp(Hp_op(p));
   }
 
-  Chunk_requires_redarken(heap_chunk) = 0;
   Chunk_redarken_start(heap_chunk) =
       (value*)(heap_chunk + Chunk_size(heap_chunk));
 
@@ -569,10 +566,7 @@ static void mark_slice (intnat work)
       /* There are chunks that need to be redarkened because we
          overflowed our mark stack */
       if( redarken_chunk(redarken_first_chunk, stk) ) {
-        do {
-          redarken_first_chunk = Chunk_next(redarken_first_chunk);
-        } while( redarken_first_chunk != NULL
-                  && !Chunk_requires_redarken(redarken_first_chunk) );
+        redarken_first_chunk = Chunk_next(redarken_first_chunk);
       }
     } else if (caml_gc_subphase == Subphase_mark_roots) {
       work = caml_darken_all_roots_slice (work);
