@@ -1008,9 +1008,8 @@ void caml_init_major_heap (asize_t heap_size)
   Caml_state->mark_stack->stack =
     caml_stat_alloc_noexc(MARK_STACK_INIT_SIZE * sizeof(mark_entry));
 
-  if(Caml_state->mark_stack->stack == NULL) {
+  if(Caml_state->mark_stack->stack == NULL)
     caml_fatal_error("not enough memory for the mark stack");
-  }
 
   Caml_state->mark_stack->count = 0;
   Caml_state->mark_stack->size = MARK_STACK_INIT_SIZE;
