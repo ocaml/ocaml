@@ -570,7 +570,9 @@ static void mark_slice (intnat work)
         redarken_first_chunk = Chunk_next(redarken_first_chunk);
       }
     } else if (caml_gc_subphase == Subphase_mark_roots) {
+      CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
       work = caml_darken_all_roots_slice (work);
+      CAML_EV_END(EV_MAJOR_MARK_ROOTS);
       if (work > 0){
         caml_gc_subphase = Subphase_mark_main;
       }
@@ -586,6 +588,7 @@ static void mark_slice (intnat work)
       case Subphase_mark_main: {
           /* Subphase_mark_main is done.
              Mark finalised values. */
+          CAML_EV_BEGIN(EV_MAJOR_MARK_MAIN);
           caml_final_update_mark_phase ();
           /* Complete the marking */
           ephes_to_check = ephes_checked_if_pure;
