@@ -546,6 +546,9 @@ static void mark_slice (intnat work)
     if (work <= 0) {
       if( can_mark ) {
         mark_stack_push(stk, me, NULL);
+        CAML_EVENTLOG_DO({
+          CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_REMAIN, me_end - me.offset);
+        });
       }
       break;
     }
@@ -559,6 +562,10 @@ static void mark_slice (intnat work)
                                               &slice_pointers, &work);
 
       work--;
+
+      CAML_EVENTLOG_DO({
+        slice_fields++;
+      });
 
       if( me.offset == me_end ) {
         work--; /* Include header word */
