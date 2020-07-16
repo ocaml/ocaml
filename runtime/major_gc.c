@@ -140,9 +140,7 @@ static void mark_stack_prune (struct mark_stack* stk)
   mark_entry* mark_stack = stk->stack;
 
   char* heap_chunk = caml_heap_start;
-  struct skiplist chunk_sklist = {0};
-
-  caml_skiplist_init(&chunk_sklist);
+  struct skiplist chunk_sklist = SKIPLIST_STATIC_INITIALIZER;
 
   do {
     caml_skiplist_insert(&chunk_sklist, (uintnat)heap_chunk,
