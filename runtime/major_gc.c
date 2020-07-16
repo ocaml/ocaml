@@ -212,7 +212,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
                                   intnat* work)
 {
   value v;
-  int i, block_end = Wosize_val(me.block), end;
+  int i, block_wsz = Wosize_val(me.block), end;
 
   CAMLassert(Is_block(me.block) && Is_in_heap (me.block) && Is_black_val(me.block));
   CAMLassert(Tag_val(me.block) != Infix_tag);
@@ -227,7 +227,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
   }
 #endif
 
-  end = (block_end < 8 ? block_end : 8);
+  end = (block_wsz < 8 ? block_wsz : 8);
 
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
@@ -239,11 +239,11 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
       break;
   }
 
-  if (i == block_end) {
+  if (i == block_wsz) {
     /* nothing left to mark */
     if( work != NULL ) {
       /* we should take credit for it though */
-      *work -= Whsize_wosize(block_end - me.offset);
+      *work -= Whsize_wosize(block_wsz - me.offset);
     }
     return;
   }
