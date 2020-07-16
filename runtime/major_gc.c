@@ -340,7 +340,7 @@ static void start_cycle (void)
   CAMLassert (caml_gc_phase == Phase_idle);
   CAMLassert (Caml_state->mark_stack->count == 0);
   CAMLassert (redarken_first_chunk == NULL);
-  caml_gc_message (0x01, "starting new major GC cycle\n");
+  caml_gc_message (0x01, "Starting new major GC cycle\n");
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
   caml_gc_subphase = Subphase_mark_roots;
