@@ -561,8 +561,8 @@ static void mark_slice (intnat work)
 
     if( can_mark ) {
       CAMLassert(Is_block(me.block) &&
-                Is_black_val (me.block) &&
-                Tag_val(me.block) < No_scan_tag);
+                 Is_black_val (me.block) &&
+                 Tag_val(me.block) < No_scan_tag);
 
       mark_slice_darken(stk, me.block, me.offset++, /*in_ephemeron=*/ 0,
                                               &slice_pointers, &work);
