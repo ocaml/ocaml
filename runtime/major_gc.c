@@ -148,8 +148,6 @@ static void mark_stack_prune (struct mark_stack* stk)
     heap_chunk = Chunk_next(heap_chunk);
   } while( heap_chunk != NULL );
 
-  heap_chunk = caml_heap_start;
-
   for( entry = 0; entry < mark_stack_count ; entry++ ) {
     mark_entry me = mark_stack[entry];
     value* block_op = Op_val(me.block);
