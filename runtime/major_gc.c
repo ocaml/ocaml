@@ -153,10 +153,8 @@ static void mark_stack_prune (struct mark_stack* stk)
     value* block_op = Op_val(me.block);
     uintnat chunk_addr = 0, chunk_addr_below = 0;
 
-    caml_skiplist_find_below(&chunk_sklist, (uintnat)me.block, &chunk_addr,
-                              &chunk_addr_below);
-
-    if( chunk_addr != 0 && me.block >= chunk_addr
+    if( caml_skiplist_find_below(&chunk_sklist, (uintnat)me.block,
+          &chunk_addr, &chunk_addr_below)
         && me.block < chunk_addr_below ) {
 
       if( Chunk_redarken_start(chunk_addr) > block_op ) {
