@@ -212,7 +212,8 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
   value v;
   int i, block_wsz = Wosize_val(me.block), end;
 
-  CAMLassert(Is_block(me.block) && Is_in_heap (me.block) && Is_black_val(me.block));
+  CAMLassert(Is_block(me.block) && Is_in_heap (me.block)
+            && Is_black_val(me.block));
   CAMLassert(Tag_val(me.block) != Infix_tag);
   CAMLassert(Tag_val(me.block) < No_scan_tag);
 
