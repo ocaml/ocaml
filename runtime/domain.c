@@ -686,6 +686,11 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   }
 
   caml_ev_end("stw/handler");
+
+  /* poll the GC to check for deferred work
+     we do this here because blocking or waiting threads only execute
+     the interrupt handler and do not poll for deferred work*/
+  caml_handle_gc_interrupt();
 }
 
 /* This runs the passed handler on all running domains but must only be run on *one* domain
@@ -880,8 +885,18 @@ void caml_handle_gc_interrupt() {
     /* out of minor heap or collection forced */
     caml_ev_begin("dispatch_minor_gc");
     Caml_state->requested_minor_gc = 0;
-    caml_minor_collection();
+    caml_empty_minor_heaps_once();
     caml_ev_end("dispatch_minor_gc");
+
+    /* FIXME: a domain will only ever call finalizers if its minor
+      heap triggers the minor collection
+      Care may be needed with finalizers running when the domain
+      is waiting in a critical_section or in a blocking section
+      and serviced by the backup thread.
+      */
+    caml_ev_begin("dispatch_final_do_calls");
+    caml_final_do_calls();
+    caml_ev_end("dispatch_final_do_calls");
   }
 
   if (Caml_state->requested_major_slice) {

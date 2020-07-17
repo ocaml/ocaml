@@ -727,6 +727,9 @@ static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int 
   caml_empty_minor_heap_domain_clear(domain, 0);
   caml_ev_end("minor_gc/clear");
   caml_gc_log("finished stw empty_minor_heap");
+
+  /* schedule a major collection slice for this domain */
+  caml_request_major_slice();
 }
 
 /* must be called within a STW section  */
@@ -784,23 +787,11 @@ void caml_empty_minor_heaps_once ()
   } while (saved_minor_cycle == atomic_load(&caml_minor_cycles_started));
 }
 
-/* Do a minor collection and a slice of major collection, call finalisation
-   functions, etc.
-   Leave the minor heap empty.
+/* Request a minor collection and enter as if it were an interrupt.
 */
 CAMLexport void caml_minor_collection (void)
 {
-  caml_ev_pause(EV_PAUSE_GC);
-
-  caml_handle_incoming_interrupts ();
-  caml_empty_minor_heaps_once();
-  caml_handle_incoming_interrupts ();
-  caml_major_collection_slice (0, 0);
-  caml_final_do_calls();
-
-  caml_ev_resume();
-
-  /* If the major slice triggered a STW, do that now */
+  caml_request_minor_gc();
   caml_handle_gc_interrupt();
 }
 
