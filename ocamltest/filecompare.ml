@@ -71,13 +71,22 @@ let read_text_file lines_to_drop fn =
       loop []
     else
       let stop = try ignore (input_line ic); false with End_of_file -> true in
-      if stop then [] else drop (k-1)
+      if stop then ([], 'x') else drop (k-1)
   and loop acc =
     match input_line ic with
     | s -> loop (s :: acc)
     | exception End_of_file ->
-        try List.rev_map drop_cr acc
-        with Exit -> List.rev acc
+        let lines =
+          try List.rev_map drop_cr acc
+          with Exit -> List.rev acc
+        in
+        let last_char =
+          if lines = [] then 'x' else begin
+            seek_in ic (in_channel_length ic - 1);
+            input_char ic
+          end
+        in
+        (lines, last_char)
   in
   drop lines_to_drop
 
@@ -161,7 +170,7 @@ let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
   let diff_commandline =
     Filename.quote_command "diff" ~stdout:temporary_file
-      [ "-u";
+      [ "--strip-trailing-cr"; "-u";
         files.reference_filename;
         files.output_filename ]
   in

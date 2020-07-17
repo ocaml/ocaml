@@ -300,6 +300,10 @@ Working version
   correctly spaced.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
+- #???: Fix ocamltest to notice when the only difference between output and
+  reference is the presence of newline on the last line of the file.
+  (Damien Doligez, review by ???)
+
 OCaml 4.11
 ----------
 
