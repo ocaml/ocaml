@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -18,6 +18,7 @@
 #an alphabetic character or ( or '. This should avoid altering the contents of
 #comments.
 
+#Stdlib
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
   ../stdlib/listLabels.mli > ../stdlib/list.mli
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
@@ -26,3 +27,62 @@ perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
   ../stdlib/stringLabels.mli > ../stdlib/string.mli
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
   ../stdlib/bytesLabels.mli > ../stdlib/bytes.mli
+
+#Unix
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../otherlibs/unix/unixLabels.mli > ../otherlibs/unix/unix.mli
+
+#Remove type equivalences from unix.mli
+
+#If one name is a prefix of another, must be after it in this list.
+#e.g interval_timer_status and interval_timer
+declare -a arr=("error"
+                "process_status"
+                "wait_flag"
+                "file_descr"
+                "open_flag"
+                "seek_command"
+                "file_kind"
+                "stats"
+                "LargeFile.stats"
+                "access_permission"
+                "dir_handle"
+                "lock_command"
+                "sigprocmask_command"
+                "process_times"
+                "tm"
+                "interval_timer_status"
+                "interval_timer"
+                "passwd_entry"
+                "group_entry"
+                "inet_addr"
+                "socket_domain"
+                "socket_type"
+                "sockaddr"
+                "shutdown_command"
+                "msg_flag"
+                "host_entry"
+                "protocol_entry"
+                "service_entry"
+                "terminal_io"
+                "setattr_when"
+                "flush_queue"
+                "flow_action"
+                "socket_bool_option"
+                "socket_int_option"
+                "socket_optint_option"
+                "socket_float_option"
+                "addr_info"
+                "getaddrinfo_option"
+                "name_info"
+                "getnameinfo_option")
+
+for typ in "${arr[@]}"
+do
+    export typ
+    tmpfile=$(mktemp)
+    perl -p -e 's/ = Unix.$ENV{'typ'}//' ../otherlibs/unix/unix.mli > ${tmpfile}
+    cat ${tmpfile} > ../otherlibs/unix/unix.mli
+    rm -f ${tmpfile}
+done
+
