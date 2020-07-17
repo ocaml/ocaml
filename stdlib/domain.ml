@@ -116,31 +116,26 @@ module TLS = struct
 
   type 'a key = int ref
 
-  external get_primitive : unit -> (int ref * Obj.t) list
+  external get_tls_list : unit -> (int ref * Obj.t) list
     = "caml_domain_tls_get"
 
-  external set_primitive : (int ref * Obj.t) list  -> unit
+  external set_tls_list : (int ref * Obj.t) list  -> unit
     = "caml_domain_tls_set"
 
-  let new_key () = let v = ref 0 in v
+  let new_key () = ref 0
 
   let set k x =
     let cs = Obj.repr x in
-    let old = get_primitive () in
-    set_primitive @@ (k,cs)::old
+    let old = get_tls_list () in
+    set_tls_list @@ (k,cs)::old
 
   let get k =
-    let check k1 k2 =
-      let a1 : int = Obj.magic k1 in
-      let a2 : int = Obj.magic k2 in
-      (a1 = a2)
-    in
     let rec search k l =
       match l with
       | [] -> None
-      | (k', v')::tl -> if (check k k') then (Some v') else search k tl
+      | (k', v')::tl -> if k == k' then (Some v') else search k tl
       in
-    let vals = get_primitive () in
+    let vals = get_tls_list () in
     Obj.magic @@ search k vals
 
 end

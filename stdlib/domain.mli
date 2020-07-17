@@ -112,7 +112,7 @@ module Sync : sig
 end
 
 module TLS : sig
-(** Thread Local Storage *)
+(** Thread-local Storage *)
 
     type 'a key
     (** Type of a TLS key *)
@@ -125,11 +125,11 @@ module TLS : sig
         let k1 : int Domain.TLS.key = Domain.TLS.new_key () *)
 
     val set : 'a key -> 'a -> unit
-    (** [set k v] updates the calling domain's thread local state to
+    (** [set k v] updates the calling domain's thread-local state to
         associate the key [k] with value [v] *)
 
     val get : 'a key -> 'a option
     (** [get k] returns [Some v] if a value was previously associated with
-        the key [k] on the calling domain. Otherwise returns [None].  *)
+        the key [k] in the calling domain's thread-local state. Otherwise returns [None].  *)
 
   end
