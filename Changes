@@ -298,10 +298,6 @@ Working version
   correctly spaced.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
-- #9736, #9749: Compaction must start in a heap where all free blocks are
-  blue, which was not the case with the best-fit allocator.
-  (Damien Doligez, report by Leo White, review by ???)
-
 OCaml 4.11
 ----------
 
@@ -858,6 +854,10 @@ OCaml 4.10 maintenance branch
   would not execute `at_exit` hooks at program termination (in particular,
   output channels would not be flushed).
   (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #9736, #9749: Compaction must start in a heap where all free blocks are
+  blue, which was not the case with the best-fit allocator.
+  (Damien Doligez, report by Leo White, review by ???)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
