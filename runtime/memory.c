@@ -429,7 +429,7 @@ void caml_shrink_heap (char *chunk)
 
   Caml_state->stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
   caml_gc_message (0x04, "Shrinking heap to %"
-                   ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
+                   ARCH_INTNAT_PRINTF_FORMAT "dk words\n",
                    Caml_state->stat_heap_wsz / 1024);
 
 #ifdef DEBUG
