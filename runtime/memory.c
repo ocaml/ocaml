@@ -52,7 +52,7 @@ extern uintnat caml_percent_free;                   /* major_gc.c */
 /* Page table management */
 
 #define Page(p) ((uintnat) (p) >> Page_log)
-#define Page_mask ((uintnat) -1 << Page_log)
+#define Page_mask ((~(uintnat)0) << Page_log)
 
 #ifdef ARCH_SIXTYFOUR
 
