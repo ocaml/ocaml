@@ -131,8 +131,8 @@ module TLS = struct
 
   let get k =
     let check k1 k2 =
-      let a1 = Obj.magic k1 in
-      let a2 = Obj.magic k2 in
+      let a1 : int = Obj.magic k1 in
+      let a2 : int = Obj.magic k2 in
       (a1 = a2)
     in
     let rec search k l =
