@@ -286,6 +286,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto create_root_failure;
     }
 
+    domain_state->tls_root = Val_unit;
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
     domain_state->external_raise = NULL;
@@ -1175,6 +1176,7 @@ static void domain_terminate()
     caml_plat_unlock(&s->lock);
   }
 
+  domain_state->tls_root = Val_unit;
   caml_delete_root(domain_state->read_fault_ret_val);
   caml_stat_free(domain_state->final_info);
   caml_stat_free(domain_state->ephe_info);
@@ -1435,11 +1437,11 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
 
 CAMLprim value caml_domain_tls_set(value t)
 {
-  Caml_state->tls = t;
+  Caml_state->tls_root = t;
   return Val_unit;
 }
 
-CAMLprim value caml_domain_tls_get()
+CAMLprim value caml_domain_tls_get(value unused)
 {
-  return Caml_state->tls;
+  return Caml_state->tls_root;
 }
