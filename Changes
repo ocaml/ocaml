@@ -41,8 +41,10 @@ Working version
   (KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer,
    and Xavier Leroy)
 
-- #9569: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`, `caml_alloc_some`,
-  and `Tag_some`.
+* #5154, #9569, #9734: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`,
+  `caml_alloc_some`, and `Tag_some`. As these macros are sometimes defined by
+  authors of C bindings, this change may cause warnings/errors in case of
+  redefinition.
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
 
