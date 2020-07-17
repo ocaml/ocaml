@@ -221,13 +221,15 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
   if (Tag_val(me.block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
         start scanning at the first word of the environment part. */
-  /* It might be the case that [mark_stack_push] has been called 
+  /* It might be the case that [mark_stack_push] has been called
       while we are traversing a closure block but have not enough
       budget to finish the block. In that specific case, we should not
       update [m.offset] */
     if (me.offset == 0)
       me.offset = Start_env_closinfo(Closinfo_val(me.block));
-    CAMLassert(me.offset <= Wosize_val(me.block) && me.offset >= Start_env_closinfo(Closinfo_val(me.block)));
+
+    CAMLassert(me.offset <= Wosize_val(me.block)
+      && me.offset >= Start_env_closinfo(Closinfo_val(me.block)));
   }
 #endif
 
