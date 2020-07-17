@@ -227,7 +227,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
       update [m.offset] */
     if (me.offset == 0)
       me.offset = Start_env_closinfo(Closinfo_val(me.block));
-    CAMLassert(me.offset <= Wosize_val(me.block));
+    CAMLassert(me.offset <= Wosize_val(me.block) && me.offset >= Start_env_closinfo(Closinfo_val(me.block)));
   }
 #endif
 
