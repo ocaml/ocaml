@@ -22,7 +22,7 @@
 (** {1 Generic interface} *)
 
 
-type ('a, 'b) t
+type (!'a, !'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
 val create : ?random:bool -> int -> ('a, 'b) t
@@ -310,7 +310,7 @@ module type HashedType =
 module type S =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit (** @since 4.00.0 *)
@@ -386,7 +386,7 @@ module type SeededHashedType =
 module type SeededS =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
