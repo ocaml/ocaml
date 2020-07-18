@@ -28,6 +28,27 @@ perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
   ../stdlib/bytesLabels.mli > ../stdlib/bytes.mli
 
+#Stdlib - MoreLabels
+#Two rounds required to deal with f:(key:key
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/templates/hashtbl.template.mli > ../stdlib/hashtbl.temp.mli
+perl -p -e "s/\([a-z_]+:([a-z\('])/\(\1/g" \
+  ../stdlib/hashtbl.temp.mli > ../stdlib/hashtbl.mli
+rm -f ../stdlib/hashtbl.temp.mli
+
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/templates/map.template.mli > ../stdlib/map.temp.mli
+perl -p -e "s/\([a-z_]+:([a-z\('])/\(\1/g" \
+  ../stdlib/map.temp.mli > ../stdlib/map.mli
+rm -f ../stdlib/map.temp.mli
+
+perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+  ../stdlib/templates/set.template.mli > ../stdlib/set.temp.mli
+perl -p -e "s/\([a-z_]+:([a-z\('])/\(\1/g" \
+  ../stdlib/set.temp.mli > ../stdlib/set.mli
+rm -f ../stdlib/set.temp.mli
+
+
 #Unix
 perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
   ../otherlibs/unix/unixLabels.mli > ../otherlibs/unix/unix.mli

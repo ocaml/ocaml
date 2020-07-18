@@ -25,7 +25,7 @@ Error: The type of M does not match Set.Make's parameter
        is not included in
          Set.OrderedType
        The value `compare' is required but not provided
-       File "set.mli", line 52, characters 4-31: Expected declaration
+       File "set.mli", line 55, characters 4-31: Expected declaration
 |} ]
 
 

@@ -116,7 +116,7 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
    This is functionally equivalent to {!Hashtbl.remove}[ tbl x]
    followed by {!Hashtbl.add}[ tbl x y]. *)
 
-val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
+val iter : f:(key:'a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
    as second argument. Each binding is presented exactly once to [f].
@@ -136,7 +136,7 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
    by [f] during the iteration.
 *)
 
-val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
+val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
 (** [Hashtbl.filter_map_inplace f tbl] applies [f] to all bindings in
     table [tbl] and update each binding depending on the result of
     [f].  If [f] returns [None], the binding is discarded.  If it
@@ -146,7 +146,7 @@ val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
     Other comments for {!Hashtbl.iter} apply as well.
     @since 4.03.0 *)
 
-val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
+val fold : f:(key:'a -> data:'b -> 'c -> 'c) -> ('a, 'b) t -> init:'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
@@ -319,20 +319,20 @@ module type S =
     val reset : 'a t -> unit (** @since 4.00.0 *)
 
     val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
+    val add : 'a t -> key:key -> data:'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
     (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
+    val replace : 'a t -> key:key -> data:'a -> unit
     val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+    val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+    val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
     (** @since 4.03.0 *)
 
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics (** @since 4.00.0 *)
 
@@ -394,19 +394,19 @@ module type SeededS =
     val clear : 'a t -> unit
     val reset : 'a t -> unit
     val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
+    val add : 'a t -> key:key -> data:'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
+    val replace : 'a t -> key:key -> data:'a -> unit
     val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+    val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+    val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
     (** @since 4.03.0 *)
 
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
 
