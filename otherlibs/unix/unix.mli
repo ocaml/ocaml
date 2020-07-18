@@ -27,7 +27,7 @@
   *)
 
 (** Interface to the Unix system.
- 
+
    To use the labeled version of this module, add [module Unix = UnixLabels]
    in your implementation.
 
@@ -588,7 +588,8 @@ val rename : string -> string -> unit
     owner, etc) of [dst] can either be preserved or be replaced by
     those of [src].  *)
 
-val link : ?follow (* thwart tools/unlabel*) :bool -> string -> string -> unit
+val link : ?follow (* thwart tools/unlabel*) :bool ->
+           string -> string -> unit
 (** [link ?follow src dst] creates a hard link named [dst] to the file
    named [src].
 
@@ -650,7 +651,8 @@ val dup : ?cloexec: (* thwart tools/unlabel *) bool -> file_descr -> file_descr
    See {!Unix.set_close_on_exec} for documentation on the [cloexec]
    optional argument. *)
 
-val dup2 : ?cloexec: (* thwart tools/unlabel *) bool -> file_descr -> file_descr -> unit
+val dup2 : ?cloexec: (* thwart tools/unlabel *) bool ->
+           file_descr -> file_descr -> unit
 (** [dup2 src dst] duplicates [src] to [dst], closing [dst] if already
    opened.
    See {!Unix.set_close_on_exec} for documentation on the [cloexec]
@@ -760,7 +762,8 @@ val closedir : dir_handle -> unit
 (** {1 Pipes and redirections} *)
 
 
-val pipe : ?cloexec: (* thwart tools/unlabel *) bool -> unit -> file_descr * file_descr
+val pipe : ?cloexec: (* thwart tools/unlabel *) bool ->
+           unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
    opened for writing, that's the entrance to the pipe.
@@ -927,7 +930,8 @@ val close_process_full :
 (** {1 Symbolic links} *)
 
 
-val symlink : ?to_dir: (* thwart tools/unlabel*) bool -> string -> string -> unit
+val symlink : ?to_dir: (* thwart tools/unlabel*) bool ->
+              string -> string -> unit
 (** [symlink ?to_dir src dst] creates the file [dst] as a symbolic link
    to the file [src]. On Windows, [~to_dir] indicates if the symbolic link
    points to a directory or a file; if omitted, [symlink] examines [src]
@@ -956,8 +960,8 @@ val symlink : ?to_dir: (* thwart tools/unlabel*) bool -> string -> string -> uni
    SeCreateSymbolicLinkPrivilege via Local Security Policy (secpol.msc) or via
    Active Directory.
 
-   {!Unix.has_symlink} can be used to check that a process is able to create symbolic
-   links. *)
+   {!Unix.has_symlink} can be used to check that a process is able to create
+   symbolic links. *)
 
 val has_symlink : unit -> bool
 (** Returns [true] if the user is able to create symbolic links. On Windows,
@@ -1024,7 +1028,7 @@ val lockf : file_descr -> lock_command -> int -> unit
    Finally, the [F_TEST] command tests whether a write lock can be
    acquired on the specified region, without actually putting a lock.
    It returns immediately if successful, or fails otherwise.
-   
+
    What happens when a process tries to lock a region of a file that is
    already locked by the same process depends on the OS.  On POSIX-compliant
    systems, the second lock operation succeeds and may "promote" the older
@@ -1355,8 +1359,8 @@ type sockaddr =
    [port] is the port number. *)
 
 val socket :
-  ?cloexec: (* thwart tools/unlabel *) bool -> socket_domain -> socket_type -> int ->
-     file_descr
+  ?cloexec: (* thwart tools/unlabel *) bool ->
+    socket_domain -> socket_type -> int -> file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
    the default protocol for that kind of sockets.
@@ -1367,11 +1371,13 @@ val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
 val socketpair :
-  ?cloexec: (* thwart toosl/unlabel *) bool -> socket_domain -> socket_type -> int ->
+  ?cloexec: (* thwart toosl/unlabel *) bool ->
+    socket_domain -> socket_type -> int ->
     file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together. *)
 
-val accept : ?cloexec: (* thwart tools/unlabel *) bool -> file_descr -> file_descr * sockaddr
+val accept : ?cloexec: (* thwart tools/unlabel *) bool ->
+             file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
    the address of the connecting client. *)
