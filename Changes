@@ -250,7 +250,7 @@ Working version
 
 - #9778: Fix printing for bindings where polymorphic type annotations and
   attributes are present.
-  (Matthew Ryan)
+  (Matthew Ryan, review by Nicolás Ojeda Bär)
 
 ### Build system:
 
