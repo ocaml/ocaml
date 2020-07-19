@@ -140,6 +140,12 @@ Working version
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #9763: Add function Hashtbl.rebuild to convert from old hash table
+  formats (that may have been saved to persistent storage) to the
+  current hash table format.  Remove leftover support for the hash
+  table format and generic hash function that were in use before OCaml 4.00.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
