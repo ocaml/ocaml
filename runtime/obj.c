@@ -31,12 +31,6 @@
 #include "caml/signals.h"
 #include "caml/spacetime.h"
 
-/* unused since GPR#427 */
-CAMLprim value caml_obj_is_block(value arg)
-{
-  return Val_bool(Is_block(arg));
-}
-
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
