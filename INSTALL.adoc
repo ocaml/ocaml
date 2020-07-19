@@ -2,20 +2,23 @@
 
 == Prerequisites
 
-* The GNU C Compiler (gcc) is recommended, as the bytecode interpreter takes
+* A C Compiler is required.
+  The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
   advantage of GCC-specific features to enhance performance. gcc is the standard
-  compiler under Linux, OS X, and many other systems.
+  compiler under Linux and many other systems.
+  However `clang` - used in Mac OS, BSDs and others - also works fine.
+
+* GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
+
+* A POSIX-compatible `diff` is necessary to run the test suite.
 
 * If you do not have write access to `/tmp`, you should set the environment
   variable `TMPDIR` to the name of some other temporary directory.
 
-* Under HP/UX, the GNU C Compiler (gcc), the GNU Assembler (gas), and GNU Make
-  are all *required*.  The vendor-provided compiler, assembler and make tools
-  have major problems.
+== Prerequisites (special cases)
 
-* Under Cygwin, the `gcc-core` and `make` packages are required.  `flexdll` is
-  necessary for shared library support.  `libX11-devel` is necessary for graph
-  library support.  `diffutils` is necessary to run the test suite.
+* Under Cygwin, the `gcc-core` package is required. `flexdll` is also necessary
+  for shared library support.
 
 == Configuration
 
