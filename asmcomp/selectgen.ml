@@ -889,7 +889,7 @@ method private bind_let (env:environment) v r1 =
   end
 
 method private bind_let_mut (env:environment) v k r1 =
-  let rv = Reg.createv k in
+  let rv = self#regs_for k in
   name_regs v rv;
   self#insert_moves env r1 rv;
   env_add ~mut:Mutable v rv env
