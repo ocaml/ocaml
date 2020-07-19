@@ -206,30 +206,31 @@ static void realloc_mark_stack (struct mark_stack* stk)
    stack [stk]. It first checks, if the block is small enough, whether there
    are any fields we would actually do mark work on. If so then it enqueues
    the entry. */
-Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
-                                  intnat* work)
+Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
+                                  uintnat offset, intnat* work)
 {
   value v;
-  int i, block_wsz = Wosize_val(me.block), end;
+  int i, block_wsz = Wosize_val(block), end;
+  mark_entry* me;
 
-  CAMLassert(Is_block(me.block) && Is_in_heap (me.block)
-            && Is_black_val(me.block));
-  CAMLassert(Tag_val(me.block) != Infix_tag);
-  CAMLassert(Tag_val(me.block) < No_scan_tag);
+  CAMLassert(Is_block(block) && Is_in_heap (block)
+            && Is_black_val(block));
+  CAMLassert(Tag_val(block) != Infix_tag);
+  CAMLassert(Tag_val(block) < No_scan_tag);
 
 #ifdef NO_NAKED_POINTERS
-  if (Tag_val(me.block) == Closure_tag) {
+  if (Tag_val(block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
         start scanning at the first word of the environment part. */
   /* It might be the case that [mark_stack_push] has been called
       while we are traversing a closure block but have not enough
       budget to finish the block. In that specific case, we should not
       update [m.offset] */
-    if (me.offset == 0)
-      me.offset = Start_env_closinfo(Closinfo_val(me.block));
+    if (offset == 0)
+      offset = Start_env_closinfo(Closinfo_val(block));
 
-    CAMLassert(me.offset <= Wosize_val(me.block)
-      && me.offset >= Start_env_closinfo(Closinfo_val(me.block)));
+    CAMLassert(offset <= Wosize_val(block)
+      && offset >= Start_env_closinfo(Closinfo_val(block)));
   }
 #endif
 
@@ -237,8 +238,8 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
 
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
-  for (i = me.offset; i < end; i++) {
-    v = Field(me.block, i);
+  for (i = offset; i < end; i++) {
+    v = Field(block, i);
 
     if (Is_block(v) && !Is_black_val(v))
       /* found something to mark */
@@ -249,7 +250,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
     /* nothing left to mark */
     if( work != NULL ) {
       /* we should take credit for it though */
-      *work -= Whsize_wosize(block_wsz - me.offset);
+      *work -= Whsize_wosize(block_wsz - offset);
     }
     return;
   }
@@ -257,15 +258,18 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, mark_entry me,
   if( work != NULL ) {
     /* take credit for the work we skipped due to the optimisation.
        we will take credit for the header later as part of marking. */
-    *work -= (i - me.offset);
+    *work -= (i - offset);
   }
 
-  me.offset = i;
+  offset = i;
 
   if (stk->count == stk->size)
     realloc_mark_stack(stk);
 
-  stk->stack[stk->count++] = me;
+  me = &stk->stack[stk->count++];
+
+  me->block = block;
+  me->offset = offset;
 }
 
 
@@ -294,8 +298,7 @@ void caml_darken (value v, value *p /* not used */)
       ephe_list_pure = 0;
       Hd_val (v) = Blackhd_hd (h);
       if (t < No_scan_tag){
-        mark_entry me = {v, 0};
-        mark_stack_push(Caml_state->mark_stack, me, NULL);
+        mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
       }
     }
   }
@@ -315,8 +318,7 @@ static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
 
     if( Is_black_hd(hd) && Tag_hd(hd) < No_scan_tag ) {
       if( stk->count < stk->size/4 ) {
-        mark_entry me = { Val_op(p), 0 };
-        mark_stack_push(stk, me, NULL);
+        mark_stack_push(stk, Val_op(p), 0, NULL);
       } else {
         /* Only fill up a quarter of the mark stack, we can resume later
            for more if we need to */
@@ -419,8 +421,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       ephe_list_pure = 0;
       Hd_val (child) = Blackhd_hd (chd);
       if( Tag_hd(chd) < No_scan_tag ) {
-        mark_entry me = {child, 0};
-        mark_stack_push(stk, me, work);
+        mark_stack_push(stk, child, 0, work);
       }
       else {
         *work -= 1; /* Account for header */
@@ -552,7 +553,7 @@ static void mark_slice (intnat work)
 
     if (work <= 0) {
       if( can_mark ) {
-        mark_stack_push(stk, me, NULL);
+        mark_stack_push(stk, me.block, me.offset, NULL);
         CAML_EVENTLOG_DO({
           CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_REMAIN, me_end - me.offset);
         });
