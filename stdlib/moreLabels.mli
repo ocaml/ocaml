@@ -90,11 +90,12 @@ val reset : ('a, 'b) t -> unit
 val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
 
-val add : ('a, 'b) t -> 'a -> 'b -> unit
-(** [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
-   Previous bindings for [x] are not removed, but simply
-   hidden. That is, after performing {!Hashtbl.remove}[ tbl x],
-   the previous binding for [x], if any, is restored.
+val add : ('a, 'b) t -> key:'a -> data:'b -> unit
+(** [Hashtbl.add tbl key data] adds a binding of [key] to [data]
+   in table [tbl].
+   Previous bindings for [key] are not removed, but simply
+   hidden. That is, after performing {!Hashtbl.remove}[ tbl key],
+   the previous binding for [key], if any, is restored.
    (Same behavior as with association lists.) *)
 
 val find : ('a, 'b) t -> 'a -> 'b
@@ -120,14 +121,14 @@ val remove : ('a, 'b) t -> 'a -> unit
    restoring the previous binding if it exists.
    It does nothing if [x] is not bound in [tbl]. *)
 
-val replace : ('a, 'b) t -> 'a -> 'b -> unit
-(** [Hashtbl.replace tbl x y] replaces the current binding of [x]
-   in [tbl] by a binding of [x] to [y].  If [x] is unbound in [tbl],
-   a binding of [x] to [y] is added to [tbl].
-   This is functionally equivalent to {!Hashtbl.remove}[ tbl x]
-   followed by {!Hashtbl.add}[ tbl x y]. *)
+val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
+(** [Hashtbl.replace tbl key data] replaces the current binding of [key]
+   in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
+   a binding of [key] to [data] is added to [tbl].
+   This is functionally equivalent to {!Hashtbl.remove}[ tbl key]
+   followed by {!Hashtbl.add}[ tbl key data]. *)
 
-val iter : f:(key:'a -> 'b -> unit) -> ('a, 'b) t -> unit
+val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
    as second argument. Each binding is presented exactly once to [f].
@@ -568,21 +569,21 @@ module type S =
        and [false] otherwise. *)
 
     val add: key:key -> data:'a -> 'a t -> 'a t
-    (** [add x y m] returns a map containing the same bindings as
-       [m], plus a binding of [x] to [y]. If [x] was already bound
-       in [m] to a value that is physically equal to [y],
+    (** [add key data m] returns a map containing the same bindings as
+       [m], plus a binding of [key] to [data]. If [key] was already bound
+       in [m] to a value that is physically equal to [data],
        [m] is returned unchanged (the result of the function is
        then physically equal to [m]). Otherwise, the previous binding
-       of [x] in [m] disappears.
+       of [key] in [m] disappears.
        @before 4.03 Physical equality was not ensured. *)
 
-    val update: key:key -> ('a option -> 'a option) -> 'a t -> 'a t
-    (** [update x f m] returns a map containing the same bindings as
-        [m], except for the binding of [x]. Depending on the value of
-        [y] where [y] is [f (find_opt x m)], the binding of [x] is
+    val update: key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
+    (** [update key f m] returns a map containing the same bindings as
+        [m], except for the binding of [key]. Depending on the value of
+        [y] where [y] is [f (find_opt key m)], the binding of [key] is
         added, removed or updated. If [y] is [None], the binding is
-        removed if it exists; otherwise, if [y] is [Some z] then [x]
-        is associated to [z] in the resulting map.  If [x] was already
+        removed if it exists; otherwise, if [y] is [Some z] then [key]
+        is associated to [z] in the resulting map.  If [key] was already
         bound in [m] to a value that is physically equal to [z], [m]
         is returned unchanged (the result of the function is then
         physically equal to [m]).
@@ -644,25 +645,25 @@ module type S =
        order with respect to the ordering over the type of the keys. *)
 
     val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
-    (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
+    (** [fold f m init] computes [(f kN dN ... (f k1 d1 init)...)],
        where [k1 ... kN] are the keys of all bindings in [m]
        (in increasing order), and [d1 ... dN] are the associated data. *)
 
     val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
-    (** [for_all p m] checks if all the bindings of the map
-        satisfy the predicate [p].
+    (** [for_all f m] checks if all the bindings of the map
+        satisfy the predicate [f].
         @since 3.12.0
      *)
 
     val exists: f:(key -> 'a -> bool) -> 'a t -> bool
-    (** [exists p m] checks if at least one binding of the map
-        satisfies the predicate [p].
+    (** [exists f m] checks if at least one binding of the map
+        satisfies the predicate [f].
         @since 3.12.0
      *)
 
     val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
-    (** [filter p m] returns the map with all the bindings in [m]
-        that satisfy predicate [p]. If every binding in [m] satisfies [p],
+    (** [filter f m] returns the map with all the bindings in [m]
+        that satisfy predicate [p]. If every binding in [m] satisfies [f],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
         @since 3.12.0
@@ -690,10 +691,10 @@ module type S =
      *)
 
     val partition: f:(key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-    (** [partition p m] returns a pair of maps [(m1, m2)], where
+    (** [partition f m] returns a pair of maps [(m1, m2)], where
         [m1] contains all the bindings of [m] that satisfy the
-        predicate [p], and [m2] is the map with all the bindings of
-        [m] that do not satisfy [p].
+        predicate [f], and [m2] is the map with all the bindings of
+        [m] that do not satisfy [f].
         @since 3.12.0
      *)
 
@@ -972,21 +973,21 @@ module type S =
        input, the returned set is physically equal to [s].)
        @since 4.04.0 *)
 
-    val fold: f:(elt -> 'a -> 'a) -> t -> 'a -> 'a
-    (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
+    val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+    (** [fold f s init] computes [(f xN ... (f x2 (f x1 init))...)],
        where [x1 ... xN] are the elements of [s], in increasing order. *)
 
     val for_all: f:(elt -> bool) -> t -> bool
-    (** [for_all p s] checks if all elements of the set
-       satisfy the predicate [p]. *)
+    (** [for_all f s] checks if all elements of the set
+       satisfy the predicate [f]. *)
 
     val exists: f:(elt -> bool) -> t -> bool
-    (** [exists p s] checks if at least one element of
-       the set satisfies the predicate [p]. *)
+    (** [exists f s] checks if at least one element of
+       the set satisfies the predicate [f]. *)
 
     val filter: f:(elt -> bool) -> t -> t
-    (** [filter p s] returns the set of all elements in [s]
-       that satisfy predicate [p]. If [p] satisfies every element in [s],
+    (** [filter f s] returns the set of all elements in [s]
+       that satisfy predicate [f]. If [f] satisfies every element in [s],
        [s] is returned unchanged (the result of the function is then
        physically equal to [s]).
        @before 4.03 Physical equality was not ensured.*)
@@ -1008,10 +1009,10 @@ module type S =
      *)
 
     val partition: f:(elt -> bool) -> t -> t * t
-    (** [partition p s] returns a pair of sets [(s1, s2)], where
+    (** [partition f s] returns a pair of sets [(s1, s2)], where
        [s1] is the set of all the elements of [s] that satisfy the
-       predicate [p], and [s2] is the set of all the elements of
-       [s] that do not satisfy [p]. *)
+       predicate [f], and [s2] is the set of all the elements of
+       [s] that do not satisfy [f]. *)
 
     val cardinal: t -> int
     (** Return the number of elements of a set. *)

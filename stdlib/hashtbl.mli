@@ -80,10 +80,11 @@ val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
 
 val add : ('a, 'b) t -> 'a -> 'b -> unit
-(** [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
-   Previous bindings for [x] are not removed, but simply
-   hidden. That is, after performing {!Hashtbl.remove}[ tbl x],
-   the previous binding for [x], if any, is restored.
+(** [Hashtbl.add tbl key data] adds a binding of [key] to [data]
+   in table [tbl].
+   Previous bindings for [key] are not removed, but simply
+   hidden. That is, after performing {!Hashtbl.remove}[ tbl key],
+   the previous binding for [key], if any, is restored.
    (Same behavior as with association lists.) *)
 
 val find : ('a, 'b) t -> 'a -> 'b
@@ -110,11 +111,11 @@ val remove : ('a, 'b) t -> 'a -> unit
    It does nothing if [x] is not bound in [tbl]. *)
 
 val replace : ('a, 'b) t -> 'a -> 'b -> unit
-(** [Hashtbl.replace tbl x y] replaces the current binding of [x]
-   in [tbl] by a binding of [x] to [y].  If [x] is unbound in [tbl],
-   a binding of [x] to [y] is added to [tbl].
-   This is functionally equivalent to {!Hashtbl.remove}[ tbl x]
-   followed by {!Hashtbl.add}[ tbl x y]. *)
+(** [Hashtbl.replace tbl key data] replaces the current binding of [key]
+   in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
+   a binding of [key] to [data] is added to [tbl].
+   This is functionally equivalent to {!Hashtbl.remove}[ tbl key]
+   followed by {!Hashtbl.add}[ tbl key data]. *)
 
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
