@@ -1523,7 +1523,7 @@ static header_t *bf_allocate (mlsize_t wosz)
       return Hp_val (block);
     }else{
       /* allocate from the next available size */
-      mlsize_t s = ffs (bf_small_map & ((-1) << wosz));
+      mlsize_t s = ffs (bf_small_map & ((~0U) << wosz));
       FREELIST_DEBUG_bf_check ();
       if (s != 0){
         block = bf_small_fl[s].free;
