@@ -19,7 +19,7 @@
    modules_before_stdlib used in stdlib/dune does not support the
    Stdlib__ prefix trick. *)
 
-type 'a t
+type !'a t
 val make : 'a -> 'a t
 val get : 'a t -> 'a
 val set : 'a t -> 'a -> unit

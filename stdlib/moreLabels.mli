@@ -59,7 +59,7 @@ module Hashtbl : sig
   module type S =
     sig
       type key
-      and 'a t
+      and !'a t
       val create : int -> 'a t
       val clear : 'a t -> unit
       val reset : 'a t -> unit
@@ -89,7 +89,7 @@ module Hashtbl : sig
   module type SeededS =
     sig
       type key
-      and 'a t
+      and !'a t
       val create : ?random:bool -> int -> 'a t
       val clear : 'a t -> unit
       val reset : 'a t -> unit
@@ -133,7 +133,7 @@ module Map : sig
   module type S =
     sig
       type key
-      and (+'a) t
+      and (!+'a) t
       val empty : 'a t
       val is_empty: 'a t -> bool
       val mem : key -> 'a t -> bool
