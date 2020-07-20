@@ -226,7 +226,8 @@ export LC_ALL=C
 git clean -q -f -d -x
 
 if $flambda; then
-  confoptions="$confoptions --enable-flambda --enable-flambda-invariants"
+  confoptions="$confoptions --enable-flambda --enable-flambda-invariants \
+--disable-naked-pointers"
 fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
