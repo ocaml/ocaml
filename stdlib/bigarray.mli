@@ -322,7 +322,9 @@ module Genarray :
 
       [Genarray.init] raises [Invalid_argument] if the number of dimensions
       is not in the range 0 to 16 inclusive, or if one of the dimensions
-      is negative. *)
+      is negative.
+
+      @since 4.12.0 *)
 
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
   (** Return the number of dimensions of the given Bigarray. *)
@@ -514,7 +516,9 @@ module Array0 : sig
 
   val init: ('a, 'b) kind -> 'c layout -> 'a -> ('a, 'b, 'c) t
   (** [Array0.init kind layout v] behaves like [Array0.create kind layout]
-     except that the element is additionally initialized to the value [v]. *)
+     except that the element is additionally initialized to the value [v].
+
+     @since 4.12.0 *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   (** Return the kind of the given Bigarray. *)
@@ -587,7 +591,9 @@ module Array1 : sig
 
      In other words, [Array1.init kind layout dimensions f] tabulates
      the results of [f] applied to the indexes of a new big array whose
-     layout is described by [kind], [layout] and [dim]. *)
+     layout is described by [kind], [layout] and [dim].
+
+     @since 4.12.0 *)
 
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
@@ -700,7 +706,9 @@ module Array2 :
 
      In other words, [Array2.init kind layout dim1 dim2 f] tabulates
      the results of [f] applied to the indexes of a new Bigarray whose
-     layout is described by [kind], [layout], [dim1] and [dim2]. *)
+     layout is described by [kind], [layout], [dim1] and [dim2].
+
+     @since 4.12.0 *)
 
   external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given two-dimensional Bigarray. *)
@@ -831,7 +839,9 @@ module Array3 :
 
      In other words, [Array3.init kind layout dim1 dim2 dim3 f] tabulates
      the results of [f] applied to the indexes of a new Bigarray whose
-     layout is described by [kind], [layout], [dim1], [dim2] and [dim3]. *)
+     layout is described by [kind], [layout], [dim1], [dim2] and [dim3].
+
+     @since 4.12.0 *)
 
   external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given three-dimensional Bigarray. *)
