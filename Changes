@@ -380,7 +380,7 @@ OCaml 4.11
 - #9280: Micro-optimise allocations on amd64 to save a register.
   (Stephen Dolan, review by Xavier Leroy)
 
-- #9316, #9443, #9463: Use typing information from Clambda
+- #9316, #9443, #9463, #9782: Use typing information from Clambda
   for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
   and Gabriel Scherer; temporary bug report by Richard Jones)
