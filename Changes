@@ -109,7 +109,7 @@ Working version
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
 
 * #9765: add init functions to Bigarray.
-  (Jeremy Yallop, review by ?)
+  (Jeremy Yallop, review by Gabriel Scherer)
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
   or function, including any enclosing module or class.

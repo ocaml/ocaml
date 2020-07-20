@@ -101,27 +101,17 @@ module Genarray = struct
      = "caml_ba_set_generic"
 
   let rec cloop arr idx f col max =
-    if col = pred (Array.length idx) then
-      for i = 0 to pred max.(col) do
-        idx.(col) <- i;
-        set arr idx (f idx)
-      done
-    else
-      for j = 0 to pred max.(col) do
-        idx.(col) <- j;
-        cloop arr idx f (succ col) max
-      done
+    if col = Array.length idx then set arr idx (f idx)
+    else for j = 0 to pred max.(col) do
+           idx.(col) <- j;
+           cloop arr idx f (succ col) max
+         done
   let rec floop arr idx f col max =
-    if col = 0 then
-      for i = 1 to max.(col) do
-        idx.(col) <- i;
-        set arr idx (f idx)
-      done
-    else
-      for j = 1 to max.(col) do
-        idx.(col) <- j;
-        floop arr idx f (pred col) max
-      done
+    if col < 0 then set arr idx (f idx)
+    else for j = 1 to max.(col) do
+           idx.(col) <- j;
+           floop arr idx f (pred col) max
+         done
   let init (type t) kind (layout : t layout) dims f =
     let arr = create kind layout dims in
     match Array.length dims, layout with
