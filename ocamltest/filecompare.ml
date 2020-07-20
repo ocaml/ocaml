@@ -72,21 +72,21 @@ let read_text_file lines_to_drop fn =
 
   (* 2. Scan the data and check if *every* '\n' is preceded by a '\r' *)
   let has_crlf_eols =
-    let rec loop has_crlf_eols last_was_lf i =
+    let rec loop last_was_lf i =
       if i < 0 then
         (* Guard against the first character of the file being '\n' *)
-        has_crlf_eols && not last_was_lf
+        not last_was_lf
       else if last_was_lf then
         (* Check that '\n' iss preceded by '\r': fast path to false if not *)
         if Bytes.get data i = '\r' then
-          loop true false (i - 1)
+          loop false (i - 1)
         else
           false
       else
         (* Scan the file, noting if '\n' just seen *)
-        loop has_crlf_eols (Bytes.get data i = '\n') (i - 1)
+        loop (Bytes.get data i = '\n') (i - 1)
     in
-      loop true false (ic_len - 1)
+      loop false (ic_len - 1)
   in
 
   (* [extract_string start length] returns a string from data, but strips the CR
