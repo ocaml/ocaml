@@ -233,6 +233,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #8983: don't ignore EOL-at-EOF differences in ocamltest.
+  (David Allsopp, review by Damien Doligez)
+
 - #9216: add Lambda.duplicate which refreshes bound identifiers
   (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
 
