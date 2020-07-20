@@ -248,6 +248,10 @@ Working version
 - #9688: Expose the main entrypoint in compilerlibs
   (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
 
+- #9778: Fix printing for bindings where polymorphic type annotations and
+  attributes are present.
+  (Matthew Ryan, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
