@@ -45,6 +45,7 @@ module Hashtbl : sig
   val length : ('a, 'b) t -> int
   val randomize : unit -> unit
   val is_randomized : unit -> bool
+  val rebuild : ?random:bool -> ('a, 'b) t -> ('a, 'b) t
   type statistics = Hashtbl.statistics
   val stats : ('a, 'b) t -> statistics
   val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
