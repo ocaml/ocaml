@@ -111,25 +111,25 @@ module Sync : sig
   (** poll for interrupts *)
 end
 
-module TLS : sig
-(** Thread-local Storage *)
+module DLS : sig
+(** Domain-local Storage *)
 
     type 'a key
-    (** Type of a TLS key *)
+    (** Type of a DLS key *)
 
     val new_key : unit -> 'a key
-    (** Returns a new key for accessing thread-local variable. The type of
+    (** Returns a new key for accessing domain-local variable. The type of
         the variable which will be stored with the key needs to be specified
         during invocation. For example, to generate a key associated to an
         integer:
-        let k1 : int Domain.TLS.key = Domain.TLS.new_key () *)
+        let k1 : int Domain.DLS.key = Domain.DLS.new_key () *)
 
     val set : 'a key -> 'a -> unit
-    (** [set k v] updates the calling domain's thread-local state to
+    (** [set k v] updates the calling domain's domain-local state to
         associate the key [k] with value [v] *)
 
     val get : 'a key -> 'a option
     (** [get k] returns [Some v] if a value was previously associated with
-        the key [k] in the calling domain's thread-local state. Otherwise returns [None].  *)
+        the key [k] in the calling domain's domain-local state. Otherwise returns [None].  *)
 
   end
