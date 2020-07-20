@@ -202,9 +202,9 @@ let descriptions =
     ["partial-match"];
     9, "Missing fields in a record pattern.",
     ["missing-record-field-pattern"];
-    10, "Expression on the left-hand side of a sequence that doesn't have \
-         type\n\
-        \    \"unit\" (and that is not a function, see warning number 5).",
+    10,
+    "Expression on the left-hand side of a sequence that doesn't have type\n\
+    \    \"unit\" (and that is not a function, see warning number 5).",
     ["non-unit-statement"];
     11, "Redundant case in a pattern matching (unused match case).",
     ["redundant-case"];
@@ -232,8 +232,8 @@ let descriptions =
     ["preprocessor"];
     23, "Useless record \"with\" clause.",
     ["useless-record-with"];
-    24, "Bad module name: the source file name is not a valid OCaml module \
-         name.",
+    24,
+    "Bad module name: the source file name is not a valid OCaml module name.",
     ["bad-module-name"];
     25, "Ignored: now part of warning 8.",
     [];
