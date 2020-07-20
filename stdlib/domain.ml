@@ -112,25 +112,25 @@ let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
 
-module TLS = struct
+module DLS = struct
 
   type 'a key = int ref
 
-  external get_tls_list : unit -> (int ref * Obj.t) list
-    = "caml_domain_tls_get"
+  external get_dls_list : unit -> (int ref * Obj.t) list
+    = "caml_domain_dls_get"
 
-  external set_tls_list : (int ref * Obj.t) list  -> unit
-    = "caml_domain_tls_set"
+  external set_dls_list : (int ref * Obj.t) list  -> unit
+    = "caml_domain_dls_set"
 
   let new_key () = ref 0
 
   let set k x =
     let cs = Obj.repr x in
-    let old = get_tls_list () in
-    set_tls_list @@ (k,cs)::(List.remove_assq k old)
+    let old = get_dls_list () in
+    set_dls_list @@ (k,cs)::(List.remove_assq k old)
 
   let get k =
-    let vals = get_tls_list () in
+    let vals = get_dls_list () in
     Obj.magic @@ List.assq_opt k vals
 
 end
