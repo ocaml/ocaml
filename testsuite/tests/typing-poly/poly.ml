@@ -52,7 +52,7 @@ Lines 1-4, characters 0-24:
 2 | | {pv=[]} -> "OK"
 3 | | {pv=5::_} -> "int"
 4 | | {pv=true::_} -> "bool"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=false::_}
 - : string = "OK"
@@ -69,7 +69,7 @@ Lines 1-4, characters 0-20:
 2 | | {pv=[]} -> "OK"
 3 | | {pv=true::_} -> "bool"
 4 | | {pv=5::_} -> "int"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=0::_}
 - : string = "OK"
@@ -304,7 +304,7 @@ class ['a] ostream1 :
 Line 8, characters 4-16:
 8 |     self#tl#fold ~f ~init:(f self#hd init)
         ^^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 class ['a] ostream1 :
   hd:'a ->
   tl:'b ->
@@ -1089,7 +1089,7 @@ val f : unit -> c = <fun>
 Line 4, characters 11-60:
 4 | let f () = object method private n = 1 method m = {<>}#n end;;
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 15: the following private methods were made public implicitly:
+Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
 Line 5, characters 11-56:
@@ -1259,19 +1259,19 @@ val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 Line 2, characters 9-16:
 2 | fun x -> (f x)#m;; (* Warning 18 *)
              ^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
 Line 4, characters 9-20:
 4 | fun x -> (f (x,x))#m;; (* Warning 18 *)
              ^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
 Line 6, characters 9-20:
 6 | fun x -> (f x).(0)#m;; (* Warning 18 *)
              ^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 |}];;
 
@@ -1300,12 +1300,12 @@ val just : 'a option -> 'a = <fun>
 Line 4, characters 42-62:
 4 | let f x = let l = [Some x; (None : u)] in (just(List.hd l))#id;;
                                               ^^^^^^^^^^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 val f : c -> 'a -> 'a = <fun>
 Line 7, characters 36-47:
 7 |   let x = List.hd [Some x; none] in (just x)#id;;
                                         ^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 val g : c -> 'a -> 'a = <fun>
 val h : < id : 'a; .. > -> 'a = <fun>
 |}];;

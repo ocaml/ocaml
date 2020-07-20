@@ -57,7 +57,7 @@ module Runner : sig val ac : f:((unit, 'a, unit) t -> unit) -> unit end
 Lines 16-17, characters 8-18:
 16 | ........match abc with
 17 |         | A _ -> 1
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C ()
 val f : unit -> unit = <fun>
@@ -72,7 +72,7 @@ type 'b t = A | B of 'b | C
 Line 3, characters 22-42:
 3 | let g (x:nothing t) = match x with A -> ()
                           ^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C
 val g : nothing t -> unit = <fun>
