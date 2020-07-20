@@ -127,15 +127,10 @@ module TLS = struct
   let set k x =
     let cs = Obj.repr x in
     let old = get_tls_list () in
-    set_tls_list @@ (k,cs)::old
+    set_tls_list @@ (k,cs)::(List.remove_assq k old)
 
   let get k =
-    let rec search k l =
-      match l with
-      | [] -> None
-      | (k', v')::tl -> if k == k' then (Some v') else search k tl
-      in
     let vals = get_tls_list () in
-    Obj.magic @@ search k vals
+    Obj.magic @@ List.assq_opt k vals
 
 end
