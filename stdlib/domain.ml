@@ -116,10 +116,12 @@ module DLS = struct
 
   type 'a key = int ref
 
-  external get_dls_list : unit -> (int ref * Obj.t) list
+  type entry = {key: int ref; slot: Obj.t ref}
+
+  external get_dls_list : unit -> entry list
     = "caml_domain_dls_get"
 
-  external set_dls_list : (int ref * Obj.t) list  -> unit
+  external set_dls_list : entry list  -> unit
     = "caml_domain_dls_set"
 
   let new_key () = ref 0
@@ -127,10 +129,23 @@ module DLS = struct
   let set k x =
     let cs = Obj.repr x in
     let old = get_dls_list () in
-    set_dls_list @@ (k,cs)::(List.remove_assq k old)
+    let rec add_or_update_entry k v l l' =
+      match l' with
+      | [] -> {key = k; slot = ref v}::l
+      | hd::tl -> if (hd.key == k) then begin
+        hd.slot := v;
+        l
+      end else add_or_update_entry k v l tl
+    in
+    set_dls_list @@ add_or_update_entry k cs old old
 
   let get k =
     let vals = get_dls_list () in
-    Obj.magic @@ List.assq_opt k vals
+    let rec search k l =
+      match l with
+      | [] -> None
+      | hd::tl -> if hd.key == k then Some !(hd.slot) else search k tl
+    in
+    Obj.magic @@ search k vals
 
 end

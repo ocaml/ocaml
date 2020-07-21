@@ -46,7 +46,7 @@ CAMLexport void (*caml_scan_roots_hook)(scanning_action, void* fdata, struct dom
 
 void caml_do_roots (scanning_action f, void* fdata, struct domain* d, int do_final_val)
 {
-  //f (fdata, d->state->dls_root, &d->state->dls_root);
+  f (fdata, d->state->dls_root, &d->state->dls_root);
   caml_do_local_roots(f, fdata, d, do_final_val);
   caml_scan_stack(f, fdata, d->state->current_stack);
   caml_scan_global_roots(f, fdata);
