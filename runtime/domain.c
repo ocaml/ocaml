@@ -901,7 +901,7 @@ void caml_handle_gc_interrupt() {
   if (Caml_state->requested_major_slice) {
     caml_ev_begin("dispatch_major_slice");
     Caml_state->requested_major_slice = 0;
-    caml_major_collection_slice(0);
+    caml_major_collection_slice(-1);
     caml_ev_end("dispatch_major_slice");
   }
 }

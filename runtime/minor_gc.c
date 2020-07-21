@@ -728,6 +728,9 @@ static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int 
 
   /* schedule a major collection slice for this domain */
   caml_request_major_slice();
+
+  /* can change how we account clock in future, here just do raw count */
+  domain->state->major_gc_clock += 1.0;
 }
 
 /* must be called within a STW section  */

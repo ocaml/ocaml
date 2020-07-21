@@ -25,6 +25,19 @@ typedef enum {
 } gc_phase_t;
 extern gc_phase_t caml_gc_phase;
 
+static inline char caml_gc_phase_char(gc_phase_t phase) {
+  switch (phase) {
+    case Phase_sweep_and_mark_main:
+      return 'M';
+    case Phase_mark_final:
+      return 'F';
+    case Phase_sweep_ephe:
+      return 'E';
+    default:
+      return 'U';
+  }
+}
+
 intnat caml_opportunistic_major_work_available ();
 intnat caml_opportunistic_major_collection_slice (intnat);
 intnat caml_major_collection_slice (intnat);
