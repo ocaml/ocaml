@@ -334,6 +334,21 @@ CAMLprim value caml_sys_mkdir(value path, value perm)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_sys_rmdir(value path)
+{
+  CAMLparam1(path);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = rmdir_os(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_sys_getcwd(value unit)
 {
   char_os buff[4096];

@@ -178,7 +178,7 @@ Working version
   table format and generic hash function that were in use before OCaml 4.00.
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
-- #9797: Add Sys.mkdir.
+- #9797: Add Sys.mkdir and Sys.rmdir.
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
 

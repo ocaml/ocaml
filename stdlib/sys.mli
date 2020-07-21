@@ -100,6 +100,12 @@ external mkdir : string -> int -> unit = "caml_sys_mkdir"
     @since 4.12.0
 *)
 
+external rmdir : string -> unit = "caml_sys_rmdir"
+(** Remove an empty directory.
+
+    @since 4.12.0
+*)
+
 external getcwd : unit -> string = "caml_sys_getcwd"
 (** Return the current working directory of the process. *)
 

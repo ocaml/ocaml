@@ -67,6 +67,7 @@ external time: unit -> (float [@unboxed]) =
   "caml_sys_time" "caml_sys_time_unboxed" [@@noalloc]
 external chdir: string -> unit = "caml_sys_chdir"
 external mkdir: string -> int -> unit = "caml_sys_mkdir"
+external rmdir: string -> unit = "caml_sys_rmdir"
 external getcwd: unit -> string = "caml_sys_getcwd"
 external readdir : string -> string array = "caml_sys_read_directory"
 
