@@ -26,8 +26,8 @@ typedef enum {
 extern gc_phase_t caml_gc_phase;
 
 intnat caml_opportunistic_major_work_available ();
-intnat caml_opportunistic_major_collection_slice (intnat, intnat* left /* out */);
-intnat caml_major_collection_slice (intnat, intnat* left /* out */);
+intnat caml_opportunistic_major_collection_slice (intnat);
+intnat caml_major_collection_slice (intnat);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 uintnat caml_get_num_domains_to_mark(void);
