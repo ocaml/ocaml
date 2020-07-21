@@ -185,7 +185,7 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
-Before including any of these files, you should define the "OCAML_NAME_SPACE"
+Before including any of these files, you should define the "CAML_NAME_SPACE"
 macro. For instance,
 \begin{verbatim}
 #define CAML_NAME_SPACE
