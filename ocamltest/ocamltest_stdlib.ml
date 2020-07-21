@@ -112,15 +112,6 @@ module Sys = struct
           erase_file path
       else ()
 
-  let run_system_command prog args =
-    let command = Filename.quote_command prog args in
-    match Sys.command command with
-    | 0 -> ()
-    | _ as exitcode ->
-      Printf.eprintf "System command %s failed with status %d\n%!"
-        command exitcode;
-      exit 3
-
   let rec make_directory dir =
     if Sys.file_exists dir then ()
     else let () = make_directory (Filename.dirname dir) in

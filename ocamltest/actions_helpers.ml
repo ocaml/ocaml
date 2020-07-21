@@ -60,15 +60,29 @@ let exit_status_of_variable env variable =
 
 let files env = words_of_variable env Builtin_variables.files
 
+external symlink : bool -> string -> string -> unit = "caml_sys_symlink"
+
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
+    (* Emulate ln -sfT *)
     let src = Filename.concat test_source_directory filename in
-    Sys.run_system_command "ln" ["-sf"; src; build_directory] in
+    let dst = Filename.concat build_directory filename in
+    let () =
+      if Sys.file_exists dst then
+        if Sys.is_directory dst && (Sys.win32 || Sys.cygwin) then
+          (* Native symbolic links to directories don't disappear with unlink;
+             doing rmdir here is technically slightly more than ln -sfT would
+             do *)
+          Sys.rmdir dst
+        else
+          Sys.remove dst
+    in
+      symlink false src dst in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
     Sys.copy_file src dst in
-  let f = if Sys.win32 then copy else symlink in
+  let f = if Sys.has_symlink () then symlink else copy in
   Sys.make_directory build_directory;
   List.iter f files
 

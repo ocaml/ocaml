@@ -46,7 +46,6 @@ end
 module Sys : sig
   include module type of Sys
   val file_is_empty : string -> bool
-  val run_system_command : string -> string list -> unit
   val make_directory : string -> unit
   val rm_rf : string -> unit
   val string_of_file : string -> string
