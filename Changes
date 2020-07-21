@@ -220,6 +220,12 @@ Working version
   (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
   and Gabriel Scherer)
 
+- #9657: Warnings can now be referred to by their mnemonic name. The names are
+  displayed using `-warn-help` and can be utilized anywhere where a warning list
+  specification is expected, e.g. `[@@@ocaml.warning ...]`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Florian Angeletti and Leo
+  White)
+
 ### Internal/compiler-libs changes:
 
 - #9216: add Lambda.duplicate which refreshes bound identifiers

@@ -1026,7 +1026,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         [block_approx; _field_approx; value_approx] ->
         if A.warn_on_mutation block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
-            Warnings.Assignment_to_non_mutable_value
+            Warnings.Flambda_assignment_to_non_mutable_value
         end;
         let kind =
           let check () =
@@ -1055,7 +1055,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | Psetfield _, _block::_, block_approx::_ ->
         if A.warn_on_mutation block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
-            Warnings.Assignment_to_non_mutable_value
+            Warnings.Flambda_assignment_to_non_mutable_value
         end;
         tree, ret r (A.value_unknown Other)
       | (Psetfield _ | Parraysetu _ | Parraysets _), _, _ ->

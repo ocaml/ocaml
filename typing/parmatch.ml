@@ -2083,7 +2083,7 @@ let do_check_fragile loc casel pss =
 (********************************)
 
 let check_unused pred casel =
-  if Warnings.is_active Warnings.Unused_match
+  if Warnings.is_active Warnings.Redundant_case
   || List.exists (fun c -> c.c_rhs.exp_desc = Texp_unreachable) casel then
     let rec do_rec pref = function
       | [] -> ()
@@ -2134,12 +2134,12 @@ let check_unused pred casel =
               match r with
               | Unused ->
                   Location.prerr_warning
-                    q.pat_loc Warnings.Unused_match
+                    q.pat_loc Warnings.Redundant_case
               | Upartial ps ->
                   List.iter
                     (fun p ->
                       Location.prerr_warning
-                        p.pat_loc Warnings.Unused_pat)
+                        p.pat_loc Warnings.Redundant_subpat)
                     ps
               | Used -> ()
             with Empty | Not_found -> assert false
@@ -2478,7 +2478,7 @@ let all_rhs_idents exp =
 
 let check_ambiguous_bindings =
   let open Warnings in
-  let warn0 = Ambiguous_pattern [] in
+  let warn0 = Ambiguous_var_in_pattern_guard [] in
   fun cases ->
     if is_active warn0 then
       let check_case ns case = match case with
@@ -2494,7 +2494,7 @@ let check_ambiguous_bindings =
                   if not (Ident.Set.is_empty ambiguous) then begin
                     let pps =
                       Ident.Set.elements ambiguous |> List.map Ident.name in
-                    let warn = Ambiguous_pattern pps in
+                    let warn = Ambiguous_var_in_pattern_guard pps in
                     Location.prerr_warning p.pat_loc warn
                   end
             end;
