@@ -32,16 +32,12 @@ external unsafe_blit : string -> int ->  bytes -> int -> int -> unit
 external unsafe_fill : bytes -> int -> int -> char -> unit
                      = "caml_fill_string" [@@noalloc]
 
-module B = Bytes
-
-let bts = B.unsafe_to_string
-
 let make n c =
-  B.make n c |> bts
+  Bytes.make n c |> Bytes.unsafe_to_string
 let init n f =
-  B.init n f |> bts
+  Bytes.init n f |> Bytes.unsafe_to_string
 
-let copy s = bts (B.of_string s)
+let copy s = Bytes.unsafe_to_string (Bytes.of_string s)
 
 let sub s ofs len =
   if ofs < 0 || len < 0 || ofs > length s - len
@@ -49,13 +45,13 @@ let sub s ofs len =
   else begin
     let r = create len in
     unsafe_blit s ofs r 0 len;
-    bts r
+    Bytes.unsafe_to_string r
   end
 
 let fill =
-  B.fill
+  Bytes.fill
 let blit =
-  B.blit_string
+  Bytes.blit_string
 
 let ensure_ge (x:int) y = if x >= y then x else invalid_arg "String.concat"
 
@@ -65,9 +61,9 @@ let rec sum_lengths acc seplen = function
   | hd :: tl -> sum_lengths (ensure_ge (length hd + seplen + acc) acc) seplen tl
 
 let rec unsafe_blits dst pos sep seplen = function
-    [] -> dst
+    [] -> ()
   | hd :: [] ->
-    unsafe_blit hd 0 dst pos (length hd); dst
+    unsafe_blit hd 0 dst pos (length hd)
   | hd :: tl ->
     unsafe_blit hd 0 dst pos (length hd);
     unsafe_blit sep 0 dst (pos + length hd) seplen;
@@ -75,10 +71,13 @@ let rec unsafe_blits dst pos sep seplen = function
 
 let concat sep = function
     [] -> ""
-  | l -> let seplen = length sep in bts @@
-          unsafe_blits
-            (create (sum_lengths 0 seplen l))
-            0 sep seplen l
+  | l ->
+      let seplen = length sep in
+      let len = sum_lengths 0 seplen l in
+      let bytes = create len in
+      unsafe_blits bytes 0 sep seplen l;
+      Bytes.unsafe_to_string bytes
+
 
 (* duplicated in bytes.ml *)
 let iter f s =
@@ -94,7 +93,7 @@ let map f s =
   if l = 0 then s else begin
       let r = create l in
       for i = 0 to l - 1 do unsafe_set r i (f (unsafe_get s i)) done;
-      bts r
+      Bytes.unsafe_to_string r
     end
 
 (* duplicated in bytes.ml *)
@@ -103,7 +102,7 @@ let mapi f s =
   if l = 0 then s else begin
       let r = create l in
       for i = 0 to l - 1 do unsafe_set r i (f i (unsafe_get s i)) done;
-      bts r
+      Bytes.unsafe_to_string r
     end
 
 external char_code: char -> int = "%identity"
@@ -171,7 +170,7 @@ let escaped s =
       end;
       incr n
     done;
-    bts s'
+    Bytes.unsafe_to_string s'
   end
 
 (* duplicated in bytes.ml *)
@@ -259,9 +258,9 @@ let lowercase_ascii s = map Char.lowercase_ascii s
 (* duplicated in bytes.ml *)
 let apply1 f s =
   if length s = 0 then s else begin
-    let r = B.of_string s in
+    let r = Bytes.of_string s in
     unsafe_set r 0 (f(unsafe_get s 0));
-    bts r
+    Bytes.unsafe_to_string r
   end
 
 (* duplicated in bytes.ml *)
@@ -315,4 +314,4 @@ let to_seqi s =
   in
   aux 0
 
-let of_seq s = B.of_seq s |> bts
+let of_seq s = Bytes.of_seq s |> Bytes.unsafe_to_string
