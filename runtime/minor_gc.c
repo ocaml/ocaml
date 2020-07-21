@@ -691,7 +691,7 @@ void caml_empty_minor_heap_setup(struct domain* domain) {
 }
 
 /* must be called within a STW section */
-static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
@@ -727,13 +727,18 @@ static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int 
   caml_empty_minor_heap_domain_clear(domain, 0);
   caml_ev_end("minor_gc/clear");
   caml_gc_log("finished stw empty_minor_heap");
+}
+
+static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+{
+  caml_stw_empty_minor_heap_no_major_slice(domain, unused, participating_count, participating);
 
   /* schedule a major collection slice for this domain */
   caml_request_major_slice();
 }
 
 /* must be called within a STW section  */
-void caml_empty_minor_heap_from_stw (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+void caml_empty_minor_heap_no_major_slice_from_stw (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
   barrier_status b = caml_global_barrier_begin();
   if( caml_global_barrier_is_final(b) ) {
@@ -741,7 +746,9 @@ void caml_empty_minor_heap_from_stw (struct domain* domain, void* unused, int pa
   }
   caml_global_barrier_end(b);
 
-  caml_stw_empty_minor_heap(domain, (void*)0, participating_count, participating);
+  /* if we are entering from within a major GC STW section then
+     we do not schedule another major collection slice */
+  caml_stw_empty_minor_heap_no_major_slice(domain, (void*)0, participating_count, participating);
 }
 
 void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
