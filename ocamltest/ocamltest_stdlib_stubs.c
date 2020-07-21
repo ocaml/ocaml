@@ -140,9 +140,6 @@ CAMLprim value caml_has_symlink(value unit)
 
 #else /* HAS_SYMLINK */
 
-CAMLprim value unix_symlink(value to_dir, value path1, value path2)
-{ caml_invalid_argument("symlink not implemented"); }
-
 CAMLprim value caml_has_symlink(value unit)
 {
   CAMLparam0();
