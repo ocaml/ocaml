@@ -84,6 +84,34 @@ end
 module Sys = struct
   include Sys
 
+  external chmod : string -> int -> unit = "caml_sys_chmod"
+
+  let erase_file path =
+    try Sys.remove path
+    with Sys_error _ when Sys.win32 || Sys.cygwin ->
+      (* Deal with read-only attribute on Windows *)
+      chmod path 0o666;
+      Sys.remove path
+
+  let rm_rf path =
+    let rec erase_directory dir =
+      let remove_entry entry =
+        let path = Filename.concat dir entry in
+        if Sys.is_directory path then
+          erase_directory path
+        else
+          erase_file path
+      in
+        Array.iter remove_entry (Sys.readdir dir);
+        Sys.rmdir dir
+    in
+      if Sys.file_exists path then
+        if Sys.is_directory path then
+          erase_directory path
+        else
+          erase_file path
+      else ()
+
   let run_system_command prog args =
     let command = Filename.quote_command prog args in
     match Sys.command command with
