@@ -676,3 +676,14 @@ CAMLprim value caml_sys_isatty(value chan)
 
   return ret;
 }
+
+CAMLprim value caml_sys_has_symlink(value unit)
+{
+#ifdef _WIN32
+  return Val_bool(caml_win32_has_symlink());
+#elif HAS_SYMLINK
+  return Val_true;
+#else
+  return Val_false;
+#endif
+}

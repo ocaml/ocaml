@@ -26,6 +26,7 @@
 #include <wtypes.h>
 #include <winbase.h>
 #include <winsock2.h>
+#include <process.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -1020,4 +1021,76 @@ CAMLexport int caml_win32_isatty(int fd)
 int caml_num_rows_fd(int fd)
 {
   return -1;
+}
+
+#define APP_MODEL_UNLOCK \
+          L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock"
+
+// Developer Mode allows the creation of symlinks without elevation - see
+// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
+static int developer_mode_enabled(void)
+{
+  HKEY hKey;
+  LSTATUS result;
+  DWORD setting, size;
+
+  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, APP_MODEL_UNLOCK,
+                    0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS)
+    return FALSE;
+
+  if (RegQueryValueExW(hKey, L"AllowDevelopmentWithoutDevLicense", NULL, NULL,
+                       (LPBYTE)&setting, &size) != ERROR_SUCCESS)
+    setting = 0;
+
+  RegCloseKey(hKey);
+
+  return setting != 0;
+}
+
+#define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
+
+CAMLexport int caml_win32_has_symlink(void)
+{
+  HANDLE hProcess;
+  int result = 0;
+
+  if (developer_mode_enabled())
+    return 1;
+
+  if (OpenProcessToken(GetCurrentProcess(), TOKEN_READ, &hProcess)) {
+    LUID seCreateSymbolicLinkPrivilege;
+
+    if (LookupPrivilegeValue(NULL,
+                             SE_CREATE_SYMBOLIC_LINK_NAME,
+                             &seCreateSymbolicLinkPrivilege)) {
+      DWORD length;
+
+      if (!GetTokenInformation(hProcess, TokenPrivileges, NULL, 0, &length)) {
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+          TOKEN_PRIVILEGES* privileges = (TOKEN_PRIVILEGES*)malloc(length);
+          if (GetTokenInformation(hProcess,
+                                  TokenPrivileges,
+                                  privileges,
+                                  length,
+                                  &length)) {
+            DWORD count = privileges->PrivilegeCount;
+
+            if (count) {
+              LUID_AND_ATTRIBUTES* privs = privileges->Privileges;
+              while (count-- &&
+                     !(result = luid_eq(privs->Luid,
+                                        seCreateSymbolicLinkPrivilege)))
+                privs++;
+            }
+          }
+
+          free(privileges);
+        }
+      }
+    }
+
+    CloseHandle(hProcess);
+  }
+
+  return result;
 }
