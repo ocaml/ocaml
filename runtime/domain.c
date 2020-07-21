@@ -901,7 +901,7 @@ void caml_handle_gc_interrupt() {
   if (Caml_state->requested_major_slice) {
     caml_ev_begin("dispatch_major_slice");
     Caml_state->requested_major_slice = 0;
-    caml_major_collection_slice (0, 0);
+    caml_major_collection_slice(0);
     caml_ev_end("dispatch_major_slice");
   }
 }
@@ -1343,7 +1343,7 @@ CAMLprim value caml_ml_domain_yield(value unused)
       caml_ev_end("domain/idle_wait");
     } else {
       caml_plat_unlock(&s->lock);
-      caml_opportunistic_major_collection_slice(Chunk_size, &left);
+      left = caml_opportunistic_major_collection_slice(Chunk_size);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);
@@ -1425,7 +1425,7 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       }
     } else {
       caml_plat_unlock(&s->lock);
-      caml_opportunistic_major_collection_slice(Chunk_size, &left);
+      left = caml_opportunistic_major_collection_slice(Chunk_size);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);

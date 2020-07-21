@@ -301,7 +301,7 @@ double caml_mean_space_overhead ()
 
 static uintnat default_slice_budget() {
   double p, heap_words;
-  intnat computed_work, opportunistic_credit;
+  intnat computed_work, opportunistic_credit, opportunistic_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = heap_words * caml_percent_free
@@ -352,6 +352,7 @@ static uintnat default_slice_budget() {
   computed_work = (intnat) (p * (heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free))));
 
   /* adjust computed work for opportunistic_work done by this domain already */
+  opportunistic_work = Caml_state->opportunistic_work;
   if ( Caml_state->opportunistic_work > computed_work ) {
     /* bound the credit that opportunistic_work can have vs computed_work */
     if (Caml_state->opportunistic_work > 2*computed_work) {
@@ -376,7 +377,7 @@ static uintnat default_slice_budget() {
   caml_gc_message (0x40, "amount of work to do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (p * 1000000));
-  caml_gc_message (0x40, "ordered work = %ld words\n", (intnat)-1);
+  caml_gc_message (0x40, "opportunistic work = %ld words\n", opportunistic_work);
   caml_gc_message (0x40, "opportunistic work credit = %ld words\n", opportunistic_credit);
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
 
@@ -993,8 +994,7 @@ intnat caml_opportunistic_major_work_available ()
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
                                      struct domain** barrier_participants,
-                                     intnat opportunistic,
-                                     intnat* budget_left /* out */)
+                                     intnat opportunistic)
 {
   struct domain* d = caml_domain_self();
   caml_domain_state* domain_state = d->state;
@@ -1011,8 +1011,7 @@ static intnat major_collection_slice(intnat howmuch,
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
   if (opportunistic && !caml_opportunistic_major_work_available()) {
-    if (budget_left) *budget_left = budget;
-    return computed_work;
+    return budget;
   }
 
   if (log_events) caml_ev_begin("major_gc/slice");
@@ -1045,8 +1044,7 @@ static intnat major_collection_slice(intnat howmuch,
           caml_ev_end("major_gc/sweep");
           caml_ev_end("major_gc/slice");
         }
-        if (budget_left) *budget_left = budget;
-        return computed_work;
+        return budget;
       }
       */
     /* need to check if sweeping_done by the incoming interrupt */
@@ -1134,14 +1132,11 @@ mark_again:
 
   if (log_events) caml_ev_end("major_gc/slice");
 
-  if (budget_left)
-    *budget_left = budget;
-
-  caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks), %lu opp work",
+  caml_gc_log("Major slice [%ld]: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
+              opportunistic,
               (unsigned long)domain_state->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
-              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before),
-              (unsigned long)domain_state->opportunistic_work);
+              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before));
   domain_state->stat_major_words += domain_state->allocated_words;
   domain_state->allocated_words = 0;
   if (opportunistic) {
@@ -1165,18 +1160,18 @@ mark_again:
     }
   }
 
-  return computed_work;
+  return budget;
 }
 
 
-intnat caml_opportunistic_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
+intnat caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  return major_collection_slice(howmuch, 0, 0, 1, budget_left);
+  return major_collection_slice(howmuch, 0, 0, 1);
 }
 
-intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
+intnat caml_major_collection_slice(intnat howmuch)
 {
-  return major_collection_slice(howmuch, 0, 0, 0, budget_left);
+  return major_collection_slice(howmuch, 0, 0, 0);
 }
 
 static void finish_major_cycle_callback (struct domain* domain, void* arg,
@@ -1188,7 +1183,7 @@ static void finish_major_cycle_callback (struct domain* domain, void* arg,
   caml_empty_minor_heap_no_major_slice_from_stw(domain, (void*)0, participating_count, participating);
 
   while (saved_major_cycles == caml_major_cycles_completed) {
-    major_collection_slice(10000000, participating_count, participating, 0, 0);
+    major_collection_slice(10000000, participating_count, participating, 0);
   }
 }
 
