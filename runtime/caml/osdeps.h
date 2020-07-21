@@ -154,6 +154,7 @@ extern value caml_copy_string_of_utf16(const wchar_t *s);
 extern int caml_win32_isatty(int fd);
 
 extern int caml_win32_has_symlink(void);
+extern int caml_win32_developer_mode_enabled(void);
 
 #endif /* _WIN32 */
 

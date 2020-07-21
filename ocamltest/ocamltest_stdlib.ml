@@ -161,7 +161,7 @@ module Sys = struct
   let force_remove file =
     if file_exists file then remove file
 
-  external has_symlink : unit -> bool = "caml_has_symlink"
+  external has_symlink : unit -> bool = "caml_sys_has_symlink"
 
   let with_chdir path f =
     let oldcwd = Sys.getcwd () in

@@ -517,7 +517,7 @@ let symlink ?to_dir source dest =
   let source = normalize_slashes source in
   symlink_stub to_dir source dest
 
-external has_symlink : unit -> bool = "unix_has_symlink"
+external has_symlink : unit -> bool = "caml_sys_has_symlink"
 
 (* Locking *)
 

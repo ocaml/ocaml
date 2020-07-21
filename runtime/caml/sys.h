@@ -46,6 +46,8 @@ CAMLextern value caml_sys_get_argv(value unit);
 
 extern char_os * caml_exe_name;
 
+CAMLextern value caml_sys_has_symlink(value);
+
 #ifdef __cplusplus
 }
 #endif

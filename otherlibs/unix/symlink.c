@@ -18,6 +18,8 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
+#define CAML_INTERNALS
+#include <caml/sys.h>
 
 #ifdef HAS_SYMLINK
 
@@ -41,21 +43,14 @@ CAMLprim value unix_symlink(value to_dir, value path1, value path2)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value unix_has_symlink(value unit)
-{
-  CAMLparam0();
-  CAMLreturn(Val_true);
-}
-
 #else
 
 CAMLprim value unix_symlink(value to_dir, value path1, value path2)
 { caml_invalid_argument("symlink not implemented"); }
 
+#endif
+
 CAMLprim value unix_has_symlink(value unit)
 {
-  CAMLparam0();
-  CAMLreturn(Val_false);
+  return caml_sys_has_symlink(unit);
 }
-
-#endif

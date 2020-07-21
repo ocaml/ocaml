@@ -1028,7 +1028,7 @@ int caml_num_rows_fd(int fd)
 
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
-static int developer_mode_enabled(void)
+CAMLexport int caml_win32_developer_mode_enabled(void)
 {
   HKEY hKey;
   LSTATUS result;
@@ -1054,7 +1054,7 @@ CAMLexport int caml_win32_has_symlink(void)
   HANDLE hProcess;
   int result = 0;
 
-  if (developer_mode_enabled())
+  if (caml_win32_developer_mode_enabled())
     return 1;
 
   if (OpenProcessToken(GetCurrentProcess(), TOKEN_READ, &hProcess)) {
