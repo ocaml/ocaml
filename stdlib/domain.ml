@@ -129,15 +129,15 @@ module DLS = struct
   let set k x =
     let cs = Obj.repr x in
     let old = get_dls_list () in
-    let rec add_or_update_entry k v l l' =
-      match l' with
-      | [] -> {key = k; slot = ref v}::l
+    let rec add_or_update_entry k v l =
+      match l with
+      | [] -> {key = k; slot = ref v}::old
       | hd::tl -> if (hd.key == k) then begin
         hd.slot := v;
-        l
-      end else add_or_update_entry k v l tl
+        old
+      end else add_or_update_entry k v tl
     in
-    set_dls_list @@ add_or_update_entry k cs old old
+    set_dls_list @@ add_or_update_entry k cs old
 
   let get k =
     let vals = get_dls_list () in
