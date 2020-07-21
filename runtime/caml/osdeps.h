@@ -156,6 +156,9 @@ extern int caml_win32_isatty(int fd);
 extern int caml_win32_has_symlink(void);
 extern int caml_win32_developer_mode_enabled(void);
 
+extern int caml_win32_init_symlink(void);
+extern int caml_win32_symlink(int, wchar_t *, wchar_t *);
+
 #endif /* _WIN32 */
 
 #endif /* CAML_INTERNALS */

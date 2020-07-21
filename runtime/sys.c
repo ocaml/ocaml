@@ -364,6 +364,37 @@ CAMLprim value caml_sys_chmod(value path, value perm)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_sys_symlink(value to_dir, value path1, value path2)
+{
+#if !defined(HAS_SYMLINK) && !defined(_WIN32)
+  caml_invalid_argument("symlink not implemented");
+#else
+  CAMLparam3(to_dir, path1, path2);
+  char_os * p1;
+  char_os * p2;
+  int ret;
+  caml_sys_check_path(path1);
+  caml_sys_check_path(path2);
+#ifdef _WIN32
+  if (!caml_win32_init_symlink())
+    caml_invalid_argument("symlink not available");
+#endif
+  p1 = caml_stat_strdup_to_os(String_val(path1));
+  p2 = caml_stat_strdup_to_os(String_val(path2));
+  caml_enter_blocking_section();
+#ifdef _WIN32
+  ret = caml_win32_symlink(Bool_val(to_dir), p1, p2);
+#else
+  ret = symlink(p1, p2);
+#endif
+  caml_leave_blocking_section();
+  caml_stat_free(p1);
+  caml_stat_free(p2);
+  if (ret == -1) caml_sys_error(path2);
+  CAMLreturn(Val_unit);
+#endif
+}
+
 CAMLprim value caml_sys_getcwd(value unit)
 {
   char_os buff[4096];

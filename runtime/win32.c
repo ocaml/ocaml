@@ -1094,3 +1094,39 @@ CAMLexport int caml_win32_has_symlink(void)
 
   return result;
 }
+
+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)
+#endif
+
+typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
+
+static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
+static int no_symlink = 0;
+static DWORD additional_symlink_flags = 0;
+
+CAMLexport int caml_win32_init_symlink(void)
+{
+  if (no_symlink) return 0;
+
+  if (!pCreateSymbolicLink) {
+    pCreateSymbolicLink =
+      (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"),
+                                              "CreateSymbolicLinkW");
+    if (!pCreateSymbolicLink) {
+      no_symlink = 1;
+    } else if (caml_win32_developer_mode_enabled()) {
+      additional_symlink_flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    }
+  }
+
+  return !no_symlink;
+}
+
+CAMLexport int caml_win32_symlink(int to_dir, wchar_t *source, wchar_t *dest)
+{
+  DWORD flags = additional_symlink_flags;
+  if (to_dir)
+    flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
+  return pCreateSymbolicLink(dest, source, flags);
+}
