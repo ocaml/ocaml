@@ -130,6 +130,7 @@ module DLS : sig
 
     val get : 'a key -> 'a option
     (** [get k] returns [Some v] if a value was previously associated with
-        the key [k] in the calling domain's domain-local state. Otherwise returns [None].  *)
+        the key [k] in the calling domain's domain-local state. Otherwise
+        returns [None].  *)
 
   end
