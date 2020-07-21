@@ -93,13 +93,17 @@ module Sys = struct
         command exitcode;
       exit 3
 
-  let mkdir dir =
-    if not (Sys.file_exists dir) then
-      run_system_command "mkdir" [dir]
-
   let rec make_directory dir =
     if Sys.file_exists dir then ()
-    else (make_directory (Filename.dirname dir); mkdir dir)
+    else let () = make_directory (Filename.dirname dir) in
+         if not (Sys.file_exists dir) then
+           Sys.mkdir dir 0o777
+         else ()
+
+  let make_directory dir =
+    try make_directory dir
+    with Sys_error err ->
+      raise (Sys_error (Printf.sprintf "Failed to create %S (%s)" dir err))
 
   let with_input_file ?(bin=false) x f =
     let ic = (if bin then open_in_bin else open_in) x in
