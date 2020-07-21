@@ -163,6 +163,7 @@ _build
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
 /otherlibs/win32unix/fsync.c
+/otherlibs/win32unix/mkdir.c
 
 /parsing/parser.ml
 /parsing/parser.mli

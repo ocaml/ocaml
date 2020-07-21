@@ -259,6 +259,7 @@ extern double caml_log1p(double);
 #define unlink_os _wunlink
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
+#define mkdir_os(path, perm) _wmkdir(path)
 #define getcwd_os _wgetcwd
 #define system_os _wsystem
 #define rmdir_os _wrmdir
@@ -294,6 +295,7 @@ extern double caml_log1p(double);
 #define unlink_os unlink
 #define rename_os rename
 #define chdir_os chdir
+#define mkdir_os mkdir
 #define getcwd_os getcwd
 #define system_os system
 #define rmdir_os rmdir
