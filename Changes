@@ -384,6 +384,10 @@ Working version
   (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
 
 
+- #9753: fix build for Android
+  (Github user @EduardoRFS, review by Xavier Leroy)
+
+
 OCaml 4.11
 ----------
 
