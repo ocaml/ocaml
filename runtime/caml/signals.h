@@ -31,7 +31,12 @@ extern "C" {
 #endif
 
 CAMLextern void caml_enter_blocking_section (void);
+/* This function polls asynchronous callbacks, and, as such, may raise
+   asynchronous exceptions. */
+
 CAMLextern void caml_leave_blocking_section (void);
+/* This function *does not* poll asynchronous callbacks, and, as such,
+   *cannot* asynchronous exceptions. */
 
 CAMLextern void caml_process_pending_actions (void);
 /* Checks for pending actions and executes them. This includes pending

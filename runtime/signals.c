@@ -198,7 +198,6 @@ CAMLexport void caml_leave_blocking_section(void)
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   signals_are_pending = 1;
-  caml_raise_if_exception(caml_process_pending_signals_exn());
 
   errno = saved_errno;
 }
