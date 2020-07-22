@@ -200,25 +200,43 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
   s->pool_words += POOL_WSIZE;
 }
 
-/* Allocating an object from a pool */
+/* Initialize a pool and its object freelist */
+static inline void pool_initialize(pool* r, sizeclass sz, struct domain* owner)
+{
+  mlsize_t wh = wsize_sizeclass[sz];
+  value* p = (value*)((char*)r + POOL_HEADER_SZ);
+  value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
+
+  r->next = 0;
+  r->owner = owner;
+  r->next_obj = 0;
+  r->sz = sz;
+
+  p[0] = 0;
+  p[1] = 0;
+  p += wh;
+
+  while (p + wh <= end) {
+    p[0] = 0; /* zero header indicates free object */
+    p[1] = (value)(p - wh);
+    p += wh;
+  }
+  r->next_obj = p - wh;
+}
+
 static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
-static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
-  pool* r;
+
+/* Adopt pool from the pool_freelist avail and full pools
+   to satisfy an alloction */
+static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
+{
+  pool* r = NULL;
   int adopted_pool = 0;
 
-  /* Hopefully we have a pool we can use directly */
-  r = local->avail_pools[sz];
-  if (r) return r;
-
-  /* Otherwise, try to sweep until we find one */
-  while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
-    caml_domain_state* domain_state = caml_domain_self()->state;
-    domain_state->opportunistic_work +=
-      pool_sweep(local, &local->unswept_avail_pools[sz], sz);
-  }
-
-  r = local->avail_pools[sz];
-  if (r) return r;
+  /* probably no available pools out there to be had */
+  if( !pool_freelist.global_avail_pools[sz] &&
+      !pool_freelist.global_full_pools[sz] )
+    return NULL;
 
   /* Haven't managed to find a pool locally, try the global ones */
   caml_plat_lock(&pool_freelist.lock);
@@ -279,12 +297,32 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   caml_plat_unlock(&pool_freelist.lock);
 
   if( !r && adopted_pool ) {
-    caml_domain_state* domain_state = caml_domain_self()->state;
-    domain_state->opportunistic_work +=
+    Caml_state->opportunistic_work +=
       pool_sweep(local, &local->full_pools[sz], sz);
     r = local->avail_pools[sz];
   }
+  return r;
+}
 
+/* Allocating an object from a pool */
+static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
+  pool* r;
+
+  /* Hopefully we have a pool we can use directly */
+  r = local->avail_pools[sz];
+  if (r) return r;
+
+  /* Otherwise, try to sweep until we find one */
+  while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
+    Caml_state->opportunistic_work +=
+      pool_sweep(local, &local->unswept_avail_pools[sz], sz);
+  }
+
+  r = local->avail_pools[sz];
+  if (r) return r;
+
+  /* Haven't managed to find a pool locally, try the global ones */
+  r = pool_global_adopt(local, sz);
   if (r) return r;
 
   /* Failing that, we need to allocate a new pool */
@@ -298,25 +336,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
 
   /* Having allocated a new pool, set it up for size sz */
   local->avail_pools[sz] = r;
-  r->next = 0;
-  r->owner = local->owner;
-  r->next_obj = 0;
-  r->sz = sz;
-  mlsize_t wh = wsize_sizeclass[sz];
-  value* p = (value*)((char*)r + POOL_HEADER_SZ);
-  value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
-
-  p[0] = 0;
-  p[1] = 0;
-  p += wh;
-
-  while (p + wh <= end) {
-    p[0] = 0; /* zero header indicates free object */
-    p[1] = (value)(p - wh);
-    p += wh;
-  }
-
-  r->next_obj = p - wh;
+  pool_initialize(r, sz, local->owner);
 
   return r;
 }
