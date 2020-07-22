@@ -61,6 +61,11 @@ CAMLnoreturn_end;
 CAMLno_asan
 void caml_raise(value v)
 {
+  /* An asynchronous callback may have been delayed until now. If that
+     callback raises an exception, we want that exception to have
+     priority over [v]. */
+  caml_process_pending_actions();
+
   Unlock_exn();
   if (Caml_state->exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 

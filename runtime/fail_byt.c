@@ -33,6 +33,11 @@
 
 CAMLexport void caml_raise(value v)
 {
+  /* An asynchronous callback may have been delayed until now. If that
+     callback raises an exception, we want that exception to have
+     priority over [v]. */
+  caml_process_pending_actions();
+
   Unlock_exn();
   Caml_state->exn_bucket = v;
   if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
