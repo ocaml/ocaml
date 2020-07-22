@@ -1,0 +1,5 @@
+${program} > ${output} 2>&1 &
+pid=$!
+sleep 2
+./sigint $pid
+wait
