@@ -127,12 +127,13 @@ module DLS : sig
     val set : 'a key -> 'a -> unit
     (** [set k v] updates the calling domain's domain-local state to associate
         the key [k] with value [v]. It overwrites any previous values associated
-        to [k], which cannot be restored later. [set] is a linear-time
-        operation. *)
+        to [k], which cannot be restored later. [set] is an [O(n)] operation
+        where [n] is the number of keys set on the calling domain. *)
 
     val get : 'a key -> 'a option
     (** [get k] returns [Some v] if a value [v] is associated to the key [k] in
         the calling domain's domain-local state. Returns [None] otherwise.
-        [get] is a linear-time operation. *)
+        [get] is an [O(n)] operation where [n] is the number of keys set on the
+        calling domain *)
 
   end
