@@ -1219,6 +1219,11 @@ static void domain_terminate()
   atomic_fetch_add(&caml_num_domains_running, -1);
 }
 
+int caml_incoming_interrupts_queued()
+{
+  return domain_self->interruptor.qhead != NULL;
+}
+
 static inline void handle_incoming_interrupts(struct interruptor* s, int otherwise_relax)
 {
   if (s->qhead != NULL) {
