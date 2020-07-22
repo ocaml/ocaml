@@ -740,7 +740,6 @@ AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
 AC_CHECK_HEADER([math.h])
 AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD])])
 AC_CHECK_HEADER([stdint.h],[AC_DEFINE([HAS_STDINT_H])])
-AC_CHECK_HEADER([sys/shm.h],[AC_DEFINE([HAS_SYS_SHM_H])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
   [#include <sys/types.h>])
 
@@ -1564,6 +1563,13 @@ AC_CHECK_FUNC([accept4], [AC_DEFINE([HAS_ACCEPT4])])
 
 AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL])])
 
+## shmat
+AC_CHECK_HEADER([sys/shm.h],
+  [
+    AC_DEFINE([HAS_SYS_SHM_H])
+    AC_CHECK_FUNC([shmat], [AC_DEFINE([HAS_SHMAT])])
+  ])
+
 ## execvpe
 
 AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
@@ -1624,6 +1630,7 @@ AS_IF([test x"$enable_systhreads" = "xno"],
       AS_CASE([$host],
         [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
         [*-*-haiku*], [pthread_link=""],
+        [*-*-android*], [pthread_link=""],
         [pthread_link="-lpthread"])
       common_cppflags="$common_cppflags -D_REENTRANT"
       AC_MSG_NOTICE([the POSIX threads library is supported])
