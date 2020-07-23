@@ -33,8 +33,16 @@ else
 endif
 
 ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+  ocamltest_unix := dummy
+  unix_name :=
+  unix_path :=
   unix := None
+  unix_include :=
 else
+  ocamltest_unix := real
+  unix_name := unix
+  unix_path := $(ROOTDIR)/otherlibs/$(UNIXLIB)
+  unix_include := -I $(unix_path) $(EMPTY)
   ifeq "$(UNIX_OR_WIN32)" "win32"
     unix := Some false
   else
@@ -97,8 +105,8 @@ endif
 
 core := \
   $(run_source) run_stubs.c \
-  ocamltest_stdlib_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
+  ocamltest_unix.mli ocamltest_unix.ml \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
   filecompare.mli filecompare.ml \
@@ -166,6 +174,7 @@ parsers := $(filter %.mly,$(sources))
 config_files := $(filter %.ml.in,$(sources))
 
 dependencies_generated_prereqs := \
+  ocamltest_unix.ml \
   $(config_files:.ml.in=.ml) \
   $(lexers:.mll=.ml) \
   $(parsers:.mly=.mli) $(parsers:.mly=.ml)
@@ -185,9 +194,9 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := $(BEST_OCAMLC) $(flags)
+ocamlc = $(BEST_OCAMLC) $(flags)
 
-ocamlopt :=  $(BEST_OCAMLOPT) $(flags)
+ocamlopt = $(BEST_OCAMLOPT) $(flags)
 
 ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
@@ -210,26 +219,29 @@ opt.opt: allopt
 
 compdeps_names=ocamlcommon ocamlbytecomp
 compdeps_paths=$(addprefix $(ROOTDIR)/compilerlibs/,$(compdeps_names))
-compdeps_byte=$(addsuffix .cma,$(compdeps_paths))
-compdeps_opt=$(addsuffix .cmxa,$(compdeps_paths))
+deps_paths=$(compdeps_paths) $(addprefix $(unix_path)/,$(unix_name))
+deps_byte=$(addsuffix .cma,$(deps_paths))
+deps_opt=$(addsuffix .cmxa,$(deps_paths))
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest))
 
-ocamltest$(EXE): $(compdeps_byte) $(bytecode_modules)
-	$(ocamlc_cmd) -custom -o $@ $^
+ocamltest_unix.%: flags+=$(unix_include) -opaque
 
-%.cmo: %.ml $(compdeps_byte)
+ocamltest$(EXE): $(deps_byte) $(bytecode_modules)
+	$(ocamlc_cmd) $(unix_include)-custom -o $@ $^
+
+%.cmo: %.ml $(deps_byte)
 	$(ocamlc) -c $<
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest.opt))
 
-ocamltest.opt$(EXE): $(compdeps_opt) $(native_modules)
-	$(ocamlopt_cmd) -o $@ $^
+ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
+	$(ocamlopt_cmd) $(unix_include)-o $@ $^
 
-%.cmx: %.ml $(compdeps_opt)
+%.cmx: %.ml $(deps_opt)
 	$(ocamlopt) -c $<
 
-%.cmi: %.mli $(compdeps_byte)
+%.cmi: %.mli $(deps_byte)
 	$(ocamlc) -c $<
 
 %.ml %.mli: %.mly
@@ -237,6 +249,10 @@ ocamltest.opt$(EXE): $(compdeps_opt) $(native_modules)
 
 %.ml: %.mll
 	$(ocamllex) $(OCAMLLEX_FLAGS) $<
+
+ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
+	echo '# 1 "$^"' > $@
+	cat $^ >> $@
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \

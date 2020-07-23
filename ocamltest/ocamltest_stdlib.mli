@@ -54,10 +54,13 @@ module Sys : sig
   val copy_chan : in_channel -> out_channel -> unit
   val copy_file : string -> string -> unit
   val force_remove : string -> unit
-  val has_symlink : unit -> bool
   val with_chdir : string -> (unit -> 'a) -> 'a
   val getenv_with_default_value : string -> string -> string
   val safe_getenv : string -> string
   val with_input_file : ?bin:bool -> string -> (in_channel -> 'a) -> 'a
   val with_output_file : ?bin:bool -> string -> (out_channel -> 'a) -> 'a
+end
+
+module Unix : sig
+  include module type of Ocamltest_unix
 end
