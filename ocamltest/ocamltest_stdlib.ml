@@ -86,6 +86,25 @@ end
 module Sys = struct
   include Sys
 
+  let erase_file path =
+    try Sys.remove path
+    with Sys_error _ when Sys.win32 && Ocamltest_config.libunix <> None ->
+      (* Deal with read-only attribute on Windows. Ignore any error from chmod
+         so that the message always come from Sys.remove *)
+      let () = try Unix.chmod path 0o666 with Sys_error _ -> () in
+      Sys.remove path
+
+  let rm_rf path =
+    let rec erase path =
+      if Sys.is_directory path
+      then Array.iter (fun entry -> erase (Filename.concat path entry))
+                      (Sys.readdir path)
+      else erase_file path
+    in
+      try if Sys.file_exists path then erase path
+      with Sys_error err ->
+        raise (Sys_error (Printf.sprintf "Failed to remove %S (%s)" path err))
+
   let run_system_command prog args =
     let command = Filename.quote_command prog args in
     match Sys.command command with

@@ -12,6 +12,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* It's tempting just to have include Unix, but the binary is then quite a bit
-   bigger. *)
+(* Unix.has_symlink never raises *)
 let has_symlink = Unix.has_symlink
+
+(* Convert Unix_error to Sys_error *)
+let wrap f x =
+  try f x
+  with Unix.Unix_error(err, fn_name, arg) ->
+    let msg =
+      Printf.sprintf "%s failed on %S with %s"
+                     fn_name arg (Unix.error_message err)
+    in
+      raise (Sys_error msg)
+
+let chmod file = wrap (Unix.chmod file)

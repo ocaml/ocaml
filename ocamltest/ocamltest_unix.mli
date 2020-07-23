@@ -16,3 +16,4 @@
     temptation to use the Unix module directly in ocamltest. *)
 
 val has_symlink : unit -> bool
+val chmod : string -> int -> unit

@@ -14,3 +14,4 @@
 
 (* Dummy implementations for when the Unix library isn't built *)
 let has_symlink () = false
+let chmod _ _ = invalid_arg "chmod not available"
