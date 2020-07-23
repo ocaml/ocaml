@@ -515,6 +515,10 @@ OCaml 4.11
 
 ### Tools:
 
+* #9299: ocamldep: do not process files during cli parsing. Fixes
+  various broken cli behaviours.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär)
+
 - #6969: Argument -nocwd added to ocamldep
   (Muskan Garg, review by Florian Angeletti)
 

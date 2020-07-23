@@ -562,6 +562,18 @@ let parse_map fname =
   module_map := String.Map.add modname mm !module_map
 ;;
 
+(* Dependency processing *)
+
+type dep_arg =
+  | Map of Misc.filepath (* -map option *)
+  | Src of Misc.filepath * file_kind option (* -impl, -intf or anon arg *)
+
+let process_dep_arg = function
+  | Map file -> parse_map file
+  | Src (file, None) -> file_dependencies file
+  | Src (file, (Some file_kind)) -> file_dependencies_as file_kind file
+
+let process_dep_args dep_args = List.iter process_dep_arg dep_args
 
 (* Entry point *)
 
@@ -575,7 +587,10 @@ let print_version_num () =
   exit 0;
 ;;
 
+
 let run_main argv =
+  let dep_args_rev : dep_arg list ref = ref [] in
+  let add_dep_arg f s = dep_args_rev := (f s) :: !dep_args_rev in
   Clflags.classic := false;
   Compenv.readenv ppf Before_args;
   Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
@@ -596,11 +611,11 @@ let run_main argv =
      "-nocwd", Arg.Set nocwd,
         " Do not add current working directory to \
           the list of include directories";
-     "-impl", Arg.String (file_dependencies_as ML),
+     "-impl", Arg.String (add_dep_arg (fun f -> Src (f, Some ML))),
         "<f>  Process <f> as a .ml file";
-     "-intf", Arg.String (file_dependencies_as MLI),
+     "-intf", Arg.String (add_dep_arg (fun f -> Src (f, Some MLI))),
         "<f>  Process <f> as a .mli file";
-     "-map", Arg.String parse_map,
+     "-map", Arg.String (add_dep_arg (fun f -> Map f)),
         "<f>  Read <f> and propagate delayed dependencies to following files";
      "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
         "<e>  Consider <e> as a synonym of the .ml extension";
@@ -643,7 +658,8 @@ let run_main argv =
     Printf.sprintf "Usage: %s [options] <source files>\nOptions are:"
                    (Filename.basename Sys.argv.(0))
   in
-  Clflags.parse_arguments argv file_dependencies usage;
+  Clflags.parse_arguments argv (add_dep_arg (fun f -> Src (f, None))) usage;
+  process_dep_args (List.rev !dep_args_rev);
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);
