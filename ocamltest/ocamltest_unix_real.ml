@@ -25,4 +25,5 @@ let wrap f x =
     in
       raise (Sys_error msg)
 
+let symlink ?to_dir source = wrap (Unix.symlink ?to_dir source)
 let chmod file = wrap (Unix.chmod file)
