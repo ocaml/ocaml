@@ -226,7 +226,6 @@ method class_of_operation op =
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
-  | Iloadmut -> assert false                   (* treated speacially *)
   | Istore(_,_,asg) -> Op_store asg
   | Ialloc _ -> assert false                   (* treated specially *)
   | Iintop(Icheckbound _) -> Op_checkbound
@@ -290,13 +289,9 @@ method private cse n i =
          of arbitrary Caml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
          Hence, all equations over loads must be removed. *)
-      let n1 = kill_addr_regs (self#kill_loads n) in
-      let n2 = set_unknown_regs n1 i.res in
-      {i with next = self#cse n2 i.next}
-  | Iop Iloadmut ->
-      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
-      let n2 = set_unknown_regs n1 i.res in
-      {i with next = self#cse n2 i.next}
+       let n1 = kill_addr_regs (self#kill_loads n) in
+       let n2 = set_unknown_regs n1 i.res in
+       {i with next = self#cse n2 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
       | (Op_pure | Op_checkbound | Op_load) as op_class ->

@@ -5,7 +5,7 @@
 
    Initial build:
 
-      opam pin add --inplace-build ocaml-variants.4.10.0+multicore file://`pwd`
+      opam pin add -k path --inplace-build ocaml-variants.4.10.0+multicore .
 
    This installs the compiler for the new opam switch. Subsequent builds can be
    done locally with:
