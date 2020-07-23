@@ -423,14 +423,11 @@ and transl_type_aux env policy styp =
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
               | _                        -> None
             in
-            begin try
-              (* Set name if there are no fields yet *)
-              Hashtbl.iter (fun _ _ -> raise Exit) hfields;
+            if Hashtbl.length hfields <> 0 then 
+              name := None 
+            else   
               name := nm
-            with Exit ->
-              (* Unset it otherwise *)
-              name := None
-            end;
+            ;
             let fl = match expand_head env cty.ctyp_type, nm with
               {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Btype.row_repr row in
