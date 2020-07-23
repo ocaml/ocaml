@@ -12,7 +12,8 @@ let check () =
   Domain.DLS.set k2 200.0;
   let v1 = Option.get (Domain.DLS.get k1) in
   let v2 = Option.get (Domain.DLS.get k2) in
-  v1 + (int_of_float v2) |> ignore
+  assert (v1 = 100);
+  assert (v2 = 200.0)
 
 let _ =
   let domains = Array.init 3 (fun _ -> Domain.spawn(check)) in
