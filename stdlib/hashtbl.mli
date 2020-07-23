@@ -314,7 +314,7 @@ module type HashedType =
 module type S =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit (** @since 4.00.0 *)
@@ -390,7 +390,7 @@ module type SeededHashedType =
 module type SeededS =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : ?random (* thwart tools/unlabel *) :bool -> int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
