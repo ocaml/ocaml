@@ -17,8 +17,6 @@
 
 module Unix = Ocamltest_unix
 
-(* Pervaisive *)
-
 let input_line_opt ic =
   try Some (input_line ic) with End_of_file -> None
 
