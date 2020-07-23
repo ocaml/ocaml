@@ -347,43 +347,19 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
   CAMLreturn0;
 }
 
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+static inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
 {
-  caml_domain_state* dom_st = Caml_state;
-  value* v = caml_shared_try_alloc(dom_st->shared_heap, wosize, tag, 0);
-  if (v == NULL) {
-    caml_raise_out_of_memory ();
-  }
-  dom_st->allocated_words += Whsize_wosize (wosize);
-  if (dom_st->allocated_words > dom_st->minor_heap_wsz) {
-    caml_urge_major_slice();
-  }
-
-  if (tag < No_scan_tag) {
-    mlsize_t i;
-    for (i = 0; i < wosize; i++) {
-      value init_val = Val_unit;
-      #ifdef DEBUG
-      init_val = Debug_uninit_major;
-      #endif
-      Op_hp(v)[i] = init_val;
-    }
-  }
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-  dom_st->allocations++;
-#endif
-  return Val_hp(v);
-}
-
-CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
   caml_domain_state *dom_st = Caml_state;
   value *v = caml_shared_try_alloc(dom_st->shared_heap, wosize, tag, 0);
   if (v == NULL) {
-    return (value)NULL;
+    if (!noexc)
+      caml_raise_out_of_memory();
+    else
+      return (value)NULL;
   }
   dom_st->allocated_words += Whsize_wosize(wosize);
   if (dom_st->allocated_words > dom_st->minor_heap_wsz) {
-    caml_urge_major_slice();
+    caml_request_major_slice();
   }
 
   if (tag < No_scan_tag) {
@@ -400,6 +376,15 @@ CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
   dom_st->allocations++;
 #endif
   return Val_hp(v);
+}
+
+CAMLexport value caml_alloc_shr(mlsize_t wosize, tag_t tag)
+{
+  return alloc_shr(wosize, tag, 0);
+}
+
+CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
+  return alloc_shr(wosize, tag, 1);
 }
 
 #ifdef DEBUG

@@ -132,9 +132,6 @@ and operation =
       { memory_chunk: memory_chunk
       ; mutability: Asttypes.mutable_flag
       ; is_atomic: bool }
-  | Cloadmut of {is_atomic : bool}
-    (* Mutable loads = Cload {Word_val; Mutable; _}. It is a separate op since we
-     * need the address of the object for read barrier. *)
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi

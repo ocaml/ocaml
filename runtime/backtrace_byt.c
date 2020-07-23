@@ -233,9 +233,8 @@ int caml_alloc_backtrace_buffer(void){
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
-void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
+void caml_stash_backtrace(value exn, value * sp, int reraise)
 {
-  if (pc != NULL) pc = pc - 1;
   if (exn != caml_read_root(Caml_state->backtrace_last_exn) || !reraise) {
     Caml_state->backtrace_pos = 0;
     caml_modify_root(Caml_state->backtrace_last_exn, exn);
@@ -244,11 +243,6 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
   if (Caml_state->backtrace_buffer == NULL &&
       caml_alloc_backtrace_buffer() == -1)
     return;
-
-  if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-  /* testing the code region is needed: PR#8026 */
-  if (find_debug_info(pc) != NULL)
-    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = pc;
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */

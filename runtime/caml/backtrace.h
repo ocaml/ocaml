@@ -107,7 +107,7 @@ CAMLextern char_os * caml_cds_file;
 /* Primitive called _only_ by runtime to record unwinded frames to
  * backtrace.  A similar primitive exists for native code, but with a
  * different prototype. */
-extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
+extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
 #endif
 

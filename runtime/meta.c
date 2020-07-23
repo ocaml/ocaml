@@ -200,6 +200,7 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
        arg1 to call_original_code (codeptr)
        arg3 to call_original_code (arg)
        arg2 to call_original_code (env)
+       saved pc
        saved env */
 
   /* Stack layout on exit:
@@ -209,11 +210,12 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
          extra_args = 0
          environment = env
          PC = codeptr
-       arg3 to call_original_code (arg)                   same 6 bottom words as
+       arg3 to call_original_code (arg)                   same 7 bottom words as
        arg2 to call_original_code (env)                   on entrance, but
        arg1 to call_original_code (codeptr)               shifted down 4 words
        arg3 to call_original_code (arg)
        arg2 to call_original_code (env)
+       saved pc
        saved env */
 
   value * osp, * nsp;
@@ -222,11 +224,11 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
   osp = Caml_state->current_stack->sp;
   Caml_state->current_stack->sp -= 4;
   nsp = Caml_state->current_stack->sp;
-  for (i = 0; i < 6; i++) nsp[i] = osp[i];
-  nsp[6] = codeptr;
-  nsp[7] = env;
-  nsp[8] = Val_int(0);
-  nsp[9] = arg;
+  for (i = 0; i < 7; i++) nsp[i] = osp[i];
+  nsp[7] = codeptr;
+  nsp[8] = env;
+  nsp[9] = Val_int(0);
+  nsp[10] = arg;
   return Val_unit;
 }
 
