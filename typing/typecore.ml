@@ -1442,9 +1442,9 @@ and type_pat_aux
       begin match ty.desc with
       | Tpoly (body, tyl) ->
           begin_def ();
+          init_def generic_level;
           let _, ty' = instance_poly ~keep_names:true false tyl body in
           end_def ();
-          generalize ty';
           let id = enter_variable lloc name ty' attrs in
           rvp k {
             pat_desc = Tpat_var (id, name);
@@ -1500,10 +1500,7 @@ and type_pat_aux
       assert (List.length spl >= 2);
       let spl_ann = List.map (fun p -> (p,newgenvar ())) spl in
       let ty = newgenty (Ttuple(List.map snd spl_ann)) in
-      begin_def ();
-      let expected_ty = instance expected_ty in
-      end_def ();
-      generalize_structure expected_ty;
+      let expected_ty = generic_instance expected_ty in
       unify_pat_types ~refine loc env ty expected_ty;
       map_fold_cont (fun (p,t) -> type_pat Value p t) spl_ann (fun pl ->
         rvp k {
@@ -1644,10 +1641,7 @@ and type_pat_aux
                   row_more = newgenvar ();
                   row_fixed = None;
                   row_name = None } in
-      begin_def ();
-      let expected_ty = instance expected_ty in
-      end_def ();
-      generalize_structure expected_ty;
+      let expected_ty = generic_instance expected_ty in
       (* PR#7404: allow some_private_tag blindly, as it would not unify with
          the abstract row variable *)
       if l = Parmatch.some_private_tag
@@ -1671,10 +1665,7 @@ and type_pat_aux
       let expected_type, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
-          begin_def ();
-          let ty = instance expected_ty in
-          end_def ();
-          generalize_structure ty;
+          let ty = generic_instance expected_ty in
           let principal =
             (repr expected_ty).level = generic_level || not !Clflags.principal
           in
@@ -1720,10 +1711,7 @@ and type_pat_aux
       end
   | Ppat_array spl ->
       let ty_elt = newgenvar() in
-      begin_def ();
-      let expected_ty = instance expected_ty in
-      end_def ();
-      generalize_structure expected_ty;
+      let expected_ty = generic_instance expected_ty in
       unify_pat_types ~refine
         loc env (Predef.type_array ty_elt) expected_ty;
       map_fold_cont (fun p -> type_pat Value p ty_elt) spl (fun pl ->
@@ -2812,13 +2800,10 @@ and type_expect_
         exp_env = env }
   | Pexp_tuple sexpl ->
       assert (List.length sexpl >= 2);
-      begin_def ();
-      let subtypes = List.map (fun _ -> newvar ()) sexpl in
-      let to_unify = newty (Ttuple subtypes) in
+      let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
+      let to_unify = newgenty (Ttuple subtypes) in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify (instance ty_expected));
-      end_def ();
-      List.iter generalize_structure subtypes;
+        unify_exp_types loc env to_unify (generic_instance ty_expected));
       let expl =
         List.map2 (fun body ty -> type_expect env body (mk_expected ty))
           sexpl subtypes
@@ -3034,13 +3019,10 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
-      begin_def ();
-      let ty = newvar() in
-      let to_unify = instance (Predef.type_array ty) in
+      let ty = newgenvar() in
+      let to_unify = Predef.type_array ty in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify (instance ty_expected));
-      end_def ();
-      generalize_structure ty;
+        unify_exp_types loc env to_unify (generic_instance ty_expected));
       let argl =
         List.map (fun sarg -> type_expect env sarg (mk_expected ty)) sargl in
       re {
@@ -3481,13 +3463,10 @@ and type_expect_
         exp_env = env;
       }
   | Pexp_lazy e ->
-      begin_def ();
-      let ty = newvar () in
+      let ty = newgenvar () in
       let to_unify = Predef.type_lazy_t ty in
       with_explanation (fun () ->
-        unify_exp_types loc env (instance to_unify) (instance ty_expected));
-      end_def ();
-      generalize_structure ty;
+        unify_exp_types loc env to_unify (generic_instance ty_expected));
       let arg = type_expect env e (mk_expected ty) in
       re {
         exp_desc = Texp_lazy arg;
