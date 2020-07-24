@@ -387,14 +387,6 @@ CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
   return alloc_shr(wosize, tag, 1);
 }
 
-CAMLexport value caml_read_barrier(value obj, intnat field)
-{
-  /* ctk21: no-op the read barrier as part of experiment */
-  CAMLparam1(obj);
-  value orig = Op_val(obj)[field];
-  CAMLreturn (orig);
-}
-
 #ifdef DEBUG
 header_t hd_val (value v) {
   return (header_t)Hd_val(v);
