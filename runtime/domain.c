@@ -280,6 +280,11 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto alloc_main_stack_failure;
     }
 
+    domain_state->dls_root = caml_create_root_noexc(Val_unit);
+    if(Caml_state->dls_root == NULL) {
+      goto create_root_failure;
+    }
+
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
     domain_state->external_raise = NULL;
@@ -1128,7 +1133,9 @@ static void domain_terminate()
 
   caml_gc_log("Domain terminating");
   caml_ev_pause(EV_PAUSE_YIELD);
+  caml_delete_root(domain_state->dls_root);
   s->terminating = 1;
+
   while (!finished) {
     caml_orphan_allocated_words();
     caml_finish_sweeping();
@@ -1422,4 +1429,15 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
   struct interruptor* self = &domain_self->interruptor;
   handle_incoming_otherwise_relax (Caml_state, self);
   return Val_unit;
+}
+
+CAMLprim value caml_domain_dls_set(value t)
+{
+  caml_modify_root(Caml_state->dls_root, t);
+  return Val_unit;
+}
+
+CAMLprim value caml_domain_dls_get(value unused)
+{
+  return caml_read_root(Caml_state->dls_root);
 }
