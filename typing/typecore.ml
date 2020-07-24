@@ -1801,7 +1801,8 @@ and type_pat_aux
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
-      unify_pat_types ~refine loc env (Predef.type_lazy_t nv) expected_ty;
+      unify_pat_types ~refine loc env (Predef.type_lazy_t nv)
+        (generic_instance expected_ty);
       (* do not explode under lazy: PR#7421 *)
       type_pat Value ~mode:(no_explosion mode) sp1 nv (fun p1 ->
         rvp k {
