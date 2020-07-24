@@ -319,6 +319,9 @@ Working version
   correctly spaced.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
+- #9759, #9767: Spurious GADT ambiguity without -principal
+  (Jacques Garrigue, report by Thomas Refis)
+
 OCaml 4.11
 ----------
 
@@ -854,10 +857,6 @@ OCaml 4.11
 
 - #9695, #9702: no error when opening an alias to a missing module
   (Jacques Garrigue, report and review by Gabriel Scherer)
-
-- #9759: Typing without -principal is broken in 4.11 and trunk
-  (Jacques Garrigue, report by Thomas Refis)
-
 
 OCaml 4.10 maintenance branch
 -----------------------------
