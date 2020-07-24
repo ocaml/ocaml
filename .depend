@@ -2173,6 +2173,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/printlinear.cmi \
     asmcomp/printcmm.cmi \
     typing/primitive.cmi \
+    asmcomp/polling.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     parsing/location.cmi \
@@ -2215,6 +2216,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/printlinear.cmx \
     asmcomp/printcmm.cmx \
     typing/primitive.cmx \
+    asmcomp/polling.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     parsing/location.cmx \
@@ -2386,10 +2388,12 @@ asmcomp/branch_relaxation.cmi : \
 asmcomp/branch_relaxation_intf.cmo : \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
+    asmcomp/cmm.cmi \
     asmcomp/arch.cmo
 asmcomp/branch_relaxation_intf.cmx : \
     asmcomp/linear.cmx \
     lambda/debuginfo.cmx \
+    asmcomp/cmm.cmx \
     asmcomp/arch.cmx
 asmcomp/cmm.cmo : \
     utils/targetint.cmi \
@@ -2783,6 +2787,17 @@ asmcomp/mach.cmi : \
     asmcomp/cmm.cmi \
     parsing/asttypes.cmi \
     asmcomp/arch.cmo
+asmcomp/polling.cmo : \
+    utils/misc.cmi \
+    asmcomp/mach.cmi \
+    asmcomp/polling.cmi
+asmcomp/polling.cmx : \
+    utils/misc.cmx \
+    asmcomp/mach.cmx \
+    asmcomp/polling.cmi
+asmcomp/polling.cmi : \
+    utils/misc.cmi \
+    asmcomp/mach.cmi
 asmcomp/printcmm.cmo : \
     utils/targetint.cmi \
     lambda/lambda.cmi \
@@ -2945,6 +2960,7 @@ asmcomp/scheduling.cmi : \
 asmcomp/selectgen.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
+    asmcomp/polling.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
@@ -2958,6 +2974,7 @@ asmcomp/selectgen.cmo : \
 asmcomp/selectgen.cmx : \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
+    asmcomp/polling.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
@@ -2970,6 +2987,7 @@ asmcomp/selectgen.cmx : \
     asmcomp/selectgen.cmi
 asmcomp/selectgen.cmi : \
     asmcomp/reg.cmi \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
@@ -2993,6 +3011,7 @@ asmcomp/selection.cmx : \
     asmcomp/arch.cmx \
     asmcomp/selection.cmi
 asmcomp/selection.cmi : \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi
 asmcomp/spill.cmo : \

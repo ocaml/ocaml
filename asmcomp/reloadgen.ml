@@ -113,7 +113,7 @@ method private reload i =
       let newarg = self#makeregs i.arg in
       insert_moves i.arg newarg
         (instr_cons (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
-          (self#reload i.next))
+        (self#reload i.next))
   | Icatch(rec_flag, handlers, body) ->
       let new_handlers = List.map
           (fun (nfail, handler) -> nfail, self#reload handler)
@@ -133,6 +133,7 @@ method fundecl f num_stack_slots =
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
+    fun_suppress_polls = f.fun_suppress_polls;
     fun_contains_calls = f.fun_contains_calls;
     fun_num_stack_slots = Array.copy num_stack_slots;
    },

@@ -354,6 +354,8 @@ let num_call_gc_and_check_bound_points env =
     | Lend -> totals
     | Lop (Ialloc _) when env.f.fun_fast ->
       loop instr.next (call_gc + 1, check_bound)
+    | Lop (Ipoll _) ->
+      loop instr.next (call_gc + 1, check_bound)
     | Lop (Iintop Icheckbound)
     | Lop (Iintop_imm (Icheckbound, _))
     | Lop (Ispecific (Ishiftcheckbound _)) ->
@@ -366,6 +368,7 @@ let num_call_gc_and_check_bound_points env =
     (* The following four should never be seen, since this function is run
        before branch relaxation. *)
     | Lop (Ispecific (Ifar_alloc _))
+    | Lop (Ispecific (Ifar_poll _))
     | Lop (Ispecific Ifar_intop_checkbound)
     | Lop (Ispecific (Ifar_intop_imm_checkbound _))
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> assert false
@@ -412,6 +415,7 @@ module BR = Branch_relaxation.Make (struct
 
     let classify_instr = function
       | Lop (Ialloc _)
+      | Lop (Ipoll _)
       | Lop (Iintop Icheckbound)
       | Lop (Iintop_imm (Icheckbound, _))
       | Lop (Ispecific (Ishiftcheckbound _)) -> Some Bcc
@@ -459,6 +463,8 @@ module BR = Branch_relaxation.Make (struct
       based + begin match size with Single -> 2 | _ -> 1 end
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ifar_alloc _)) when f.fun_fast -> 6
+    | Lop (Ipoll _) -> 3
+    | Lop (Ispecific (Ifar_poll _)) -> 4
     | Lop (Ialloc { bytes = num_bytes; _ })
     | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
       begin match num_bytes with
@@ -517,6 +523,9 @@ module BR = Branch_relaxation.Make (struct
       | Lambda.Raise_notrace -> 4
       end
 
+  let relax_poll ~return_label =
+    Lop (Ispecific (Ifar_poll { return_label }))
+
   let relax_allocation ~num_bytes ~dbginfo =
     Lop (Ispecific (Ifar_alloc { bytes = num_bytes; dbginfo }))
 
@@ -573,6 +582,38 @@ let assembly_code_for_allocation env i ~n ~far ~dbginfo =
     end;
     `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
   end
+
+let assembly_code_for_poll env i ~far ~return_label =
+  let lbl_frame =
+    record_frame_label env i.live (Dbg_alloc [])
+  in
+  let lbl_call_gc = new_label() in
+  let lbl_after_poll = match return_label with
+  | None -> new_label()
+  | Some lbl -> lbl in
+  let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+    `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
+    `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp1}\n`;
+  if not far then begin
+    match return_label with
+    | None -> `	b.ls	{emit_label lbl_call_gc}\n`
+    | Some return_label ->
+      begin
+        ` b.hi {emit_label return_label}\n`;
+        ` b    {emit_label lbl_call_gc}\n`;
+      end
+  end else begin
+    `	b.hi	{emit_label lbl_after_poll}\n`;
+    ` b     {emit_label lbl_call_gc}\n`
+  end;
+  begin match return_label with
+  | None -> `{emit_label lbl_after_poll}:`
+  | _ -> ()
+  end;
+  env.call_gc_sites <-
+    { gc_lbl = lbl_call_gc;
+      gc_return_lbl = lbl_after_poll;
+      gc_frame_lbl = lbl_frame; } :: env.call_gc_sites
 
 (* Output .text section directive, or named .text.caml.<name> if enabled. *)
 
@@ -727,6 +768,10 @@ let emit_instr env i =
         assembly_code_for_allocation env i ~n ~far:false ~dbginfo
     | Lop(Ispecific (Ifar_alloc { bytes = n; dbginfo })) ->
         assembly_code_for_allocation env i ~n ~far:true ~dbginfo
+    | Lop(Ipoll { return_label }) ->
+        assembly_code_for_poll env i ~far:false ~return_label
+    | Lop(Ispecific (Ifar_poll { return_label })) ->
+        assembly_code_for_poll env i ~far:true ~return_label
     | Lop(Iintop_imm(Iadd, n)) ->
         emit_addimm i.res.(0) i.arg.(0) n
     | Lop(Iintop_imm(Isub, n)) ->

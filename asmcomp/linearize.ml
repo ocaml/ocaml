@@ -142,6 +142,19 @@ let linear i n contains_calls =
     | Iop(Imove | Ireload | Ispill)
       when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
         linear i.Mach.next n
+    | Iop((Ipoll { return_label = None; _ }) as op) ->
+        (* If the poll call does not already specify where to jump to after
+           the poll (the expected situation in the current implementation),
+           absorb any branch after the poll call into the poll call itself.
+           This, in particular, optimises polls at the back edges of loops. *)
+        let n = linear i.Mach.next n in
+        let op, n =
+          match n.desc with
+          | Lbranch lbl ->
+            Mach.Ipoll { return_label = Some lbl }, n.next
+          | _ -> op, n
+        in
+        copy_instr (Lop op) i n
     | Iop op ->
         copy_instr (Lop op) i (linear i.Mach.next n)
     | Ireturn ->

@@ -354,6 +354,24 @@ let emit_instr env i =
         { gc_lbl = lbl_call_gc;
           gc_return_lbl = lbl_after_alloc;
           gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
+  | Lop(Ipoll { return_label }) ->
+      let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc []) in
+      let lbl_after_poll = match return_label with
+                  | None -> new_label()
+                  | Some(lbl) -> lbl in
+      let lbl_call_gc = new_label () in
+      let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+      `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
+      begin match return_label with
+      | None -> `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
+                `{emit_label lbl_after_poll}:\n`;
+      | Some lbl -> ` bgeu  {emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl}\n`;
+                    ` j {emit_label lbl_call_gc}\n`
+      end;
+      env.call_gc_sites <-
+        { gc_lbl = lbl_call_gc;
+          gc_return_lbl = lbl_after_poll;
+          gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
   | Lop(Iintop(Icomp cmp)) ->
       begin match cmp with
       | Isigned Clt ->

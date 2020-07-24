@@ -614,6 +614,27 @@ let emit_instr env fallthrough i =
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
+  | Lop(Ipoll { return_label }) ->
+      I.cmp (domain_field Domainstate.Domain_young_limit) r15;
+      let gc_call_label = new_label () in
+      let lbl_after_poll = match return_label with
+                  | None -> new_label()
+                  | Some(lbl) -> lbl in
+      let lbl_frame =
+        record_frame_label env i.live (Dbg_alloc [])
+      in
+      begin match return_label with
+      | None -> I.jbe (label gc_call_label)
+      | Some return_label -> I.ja (label return_label)
+      end;
+      env.call_gc_sites <-
+        { gc_lbl = gc_call_label;
+          gc_return_lbl = lbl_after_poll;
+          gc_frame_lbl = lbl_frame; } :: env.call_gc_sites;
+      begin match return_label with
+      | None -> def_label lbl_after_poll
+      | Some _ -> I.jmp (label gc_call_label)
+      end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1) (arg i 0);
       I.set (cond cmp) al;
@@ -763,7 +784,8 @@ let emit_instr env fallthrough i =
 
       begin match system with
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
-      | S_macosx | S_win64 -> () (* with LLVM/OS X and MASM, use the text segment *)
+      | S_macosx | S_win64 -> ()
+        (* with LLVM/OS X and MASM, use the text segment *)
       | _ -> D.section [".rodata"] None []
       end;
       D.align 4;

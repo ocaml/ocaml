@@ -208,6 +208,7 @@ ASMCOMP = \
   asmcomp/cmm_invariants.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo \
+  asmcomp/polling.cmo \
   asmcomp/selectgen.cmo \
   asmcomp/selection.cmo \
   asmcomp/dataflow.cmo \

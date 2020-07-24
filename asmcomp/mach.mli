@@ -25,6 +25,9 @@ type integer_operation =
   | Icomp of integer_comparison
   | Icheckbound
 
+type poll_test_direction =
+  Ipending | Inotpending
+
 type float_comparison = Cmm.float_comparison
 
 type test =
@@ -61,6 +64,7 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Iopaque
   | Ispecific of Arch.specific_operation
+  | Ipoll of { return_label: Cmm.label option }
 
 type instruction =
   { desc: instruction_desc;
@@ -88,6 +92,7 @@ type fundecl =
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
+    fun_suppress_polls: bool;
     fun_num_stack_slots: int array;
     fun_contains_calls: bool;
   }
