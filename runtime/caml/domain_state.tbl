@@ -82,9 +82,6 @@ DOMAIN_STATE(uintnat, requested_major_slice)
 
 DOMAIN_STATE(uintnat, requested_minor_gc)
 
-DOMAIN_STATE(caml_root, read_fault_ret_val)
-/* Global root for return value of a read fault */
-
 DOMAIN_STATE(intnat, critical_section_nesting)
 
 DOMAIN_STATE(struct interrupt*, pending_interrupts)
