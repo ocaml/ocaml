@@ -23,6 +23,11 @@ Working version
 
 ### Bug fixes:
 
+- #9793: Fix Sys.file_exists and Sys.is_directory for symlinks and Windows and
+  harden those and Unix.stat against "zombie" files (files marked for deletion
+  but not yet removed).
+  (David Allsopp, review by ???)
+
 OCaml 4.14.0
 ----------------
 

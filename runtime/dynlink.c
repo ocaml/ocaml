@@ -35,6 +35,7 @@
 #include "caml/osdeps.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
+#include "caml/io.h"
 
 #include "build_config.h"
 
@@ -90,16 +91,20 @@ CAMLexport char_os * caml_parse_ld_conf(void)
 {
   char_os * stdlib, * ldconfname, * wconfig, * p, * q;
   char * config;
-#ifdef _WIN32
-  struct _stati64 st;
-#else
+#ifndef _WIN32
   struct stat st;
 #endif
   int ldconf, nread;
+  file_offset length;
 
   stdlib = caml_get_stdlib_location();
   ldconfname = caml_stat_strconcat_os(3, stdlib, T("/"), LD_CONF_NAME);
-  if (stat_os(ldconfname, &st) == -1) {
+
+#ifdef _WIN32
+  if (caml_win32_get_attributes(ldconfname) == -1) {
+#else
+  if (stat(ldconfname, &st) == -1) {
+#endif
     caml_stat_free(ldconfname);
     return NULL;
   }
@@ -107,8 +112,17 @@ CAMLexport char_os * caml_parse_ld_conf(void)
   if (ldconf == -1)
     caml_fatal_error("cannot read loader config file %s",
                          caml_stat_strdup_of_os(ldconfname));
-  config = caml_stat_alloc(st.st_size + 1);
-  nread = read(ldconf, config, st.st_size);
+#ifdef _WIN32
+  length = lseek(ldconf, 0, SEEK_END);
+  if (length == -1 || lseek(ldconf, 0, SEEK_SET) != 0) {
+    caml_fatal_error("cannot read loader config file %s",
+                         caml_stat_strdup_of_os(ldconfname));
+  }
+#else
+  length = st.st_size;
+#endif
+  config = caml_stat_alloc(length + 1);
+  nread = read(ldconf, config, length);
   if (nread == -1)
     caml_fatal_error
       ("error while reading loader config file %s",

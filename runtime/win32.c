@@ -60,8 +60,8 @@
 #include <flexdll.h>
 #endif
 
-#ifndef S_ISREG
-#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+#ifndef ERROR_SYMLINK_CLASS_DISABLED
+#define ERROR_SYMLINK_CLASS_DISABLED 1463
 #endif
 
 unsigned short caml_win32_major = 0;
@@ -156,7 +156,7 @@ wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
   char * u8;
   const wchar_t * p;
   int i;
-  struct _stati64 st;
+  int attributes;
 
   for (p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
@@ -169,7 +169,9 @@ wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
     u8 = caml_stat_strdup_of_utf16(fullname);
     caml_gc_message(0x100, "Searching %s\n", u8);
     caml_stat_free(u8);
-    if (_wstati64(fullname, &st) == 0 && S_ISREG(st.st_mode))
+    attributes = caml_win32_get_attributes(fullname);
+    if ((attributes != INVALID_FILE_ATTRIBUTES) &&
+        (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
       return fullname;
     caml_stat_free(fullname);
   }
@@ -1090,4 +1092,76 @@ CAMLexport clock_t caml_win32_clock(void)
 
 void caml_increase_native_stack_size(void)
 {
+}
+
+CAMLexport int caml_win32_get_attributes(wchar_t *p)
+{
+  int ret = GetFileAttributes(p);
+  DWORD error;
+  if (ret == INVALID_FILE_ATTRIBUTES)
+  {
+    error = GetLastError();
+    /* GetFileAttributes fails for files marked for deletion. FindFirstFile
+       does not, but the call is much more expensive, so we use it only if
+       needed. We're in good company (see FileSystem.Attributes.Windows.cs) */
+    if (error == ERROR_ACCESS_DENIED ||
+        error == ERROR_SHARING_VIOLATION ||
+        error == ERROR_SEM_TIMEOUT)
+    {
+      WIN32_FIND_DATA findData;
+      HANDLE h = FindFirstFile(p, &findData);
+      if (h == INVALID_HANDLE_VALUE) {
+        ret = -1;
+      } else {
+        if ((ret = findData.dwFileAttributes) & FILE_ATTRIBUTE_REPARSE_POINT) {
+          /* Assuming symbolic links can in fact be marked for deletion, we
+             should return that the file doesn't exist (see also Unix.stat) */
+          ret = -1;
+        }
+      }
+    }
+  } else if (ret & FILE_ATTRIBUTE_REPARSE_POINT) {
+    /* GetFileAttributes behaves like lstat - i.e. we get the attributes of the
+       symbolic link. Following symlinks is hard, so we do the more expensive
+       GetFileInformationByHandle at this point to allow the system to evaluate
+       the symlink */
+    /* COMBAK in #8797 to remove the FILE_FLAG_BACKUP_SEMANTICS */
+    HANDLE h =
+      CreateFile(p, FILE_READ_ATTRIBUTES,
+                 FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                 NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h != INVALID_HANDLE_VALUE) {
+      BY_HANDLE_FILE_INFORMATION info;
+      if (GetFileInformationByHandle(h, &info)) {
+        ret = info.dwFileAttributes;
+      } else {
+        /* This is highly unsatisfactory, but we can't return -1 for a file we
+           know exists. This, as they say, shouldn't happen. */
+        ret = 0;
+      }
+      CloseHandle(h);
+    } else {
+      error = GetLastError();
+      if (error == ERROR_SYMLINK_CLASS_DISABLED) {
+        /* The computer's policy dictates that this file should be treated as if
+           it didn't exist. */
+        ret = -1;
+      } else {
+        /* XXX Symbolic links to files marked for deletion not dealt with. The
+               crustimoney proseedcake is quite involved:
+                 - read the symbolic link
+                 - determine symlink evaluation policy from
+                   HKLM\SOFTWARE\Policies\Microsoft\Windows\Filesystems\NTFS
+                   (SymlinkLocalToLocalEvaluation, etc.)
+                 - determine symbolic link type (L2L, L2R, etc.) with the aid of
+                   GetFullPathName, GetVolumePathName and GetDriveType
+                 - if evaluation is permitted, call FindFirstFile on the link
+           @dra27 will address this as part of Unix.readlink fixes for absolute
+                  paths, since it's related */
+        ret = -1;
+      }
+    }
+  }
+
+  return ret;
 }
