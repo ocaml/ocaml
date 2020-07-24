@@ -110,3 +110,30 @@ module Sync : sig
   external poll : unit -> unit = "%poll"
   (** poll for interrupts *)
 end
+
+module DLS : sig
+(** Domain-local Storage *)
+
+    type 'a key
+    (** Type of a DLS key *)
+
+    val new_key : unit -> 'a key
+    (** Returns a new key for accessing domain-local variable. The type of the
+        variable associated with the key can be specified during invocation.
+        For example, to generate a key which is associated to an integer:
+
+        let k : int Domain.DLS.key = Domain.DLS.new_key () *)
+
+    val set : 'a key -> 'a -> unit
+    (** [set k v] updates the calling domain's domain-local state to associate
+        the key [k] with value [v]. It overwrites any previous values associated
+        to [k], which cannot be restored later. [set] is an [O(n)] operation
+        where [n] is the number of keys set on the calling domain. *)
+
+    val get : 'a key -> 'a option
+    (** [get k] returns [Some v] if a value [v] is associated to the key [k] in
+        the calling domain's domain-local state. Returns [None] otherwise.
+        [get] is an [O(n)] operation where [n] is the number of keys set on the
+        calling domain *)
+
+  end
