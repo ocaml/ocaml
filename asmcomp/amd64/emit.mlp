@@ -667,6 +667,27 @@ let emit_instr fallthrough i =
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
+  | Lop(Ipoll { return_label }) ->
+      I.cmp (domain_field Domainstate.Domain_young_limit) r15;
+      let gc_call_label = new_label () in
+      let lbl_after_poll = match return_label with
+                  | None -> new_label()
+                  | Some(lbl) -> lbl in
+      let lbl_frame =
+        record_frame_label i.live (Dbg_alloc [])
+      in
+      begin match return_label with
+      | None -> I.jbe (label gc_call_label)
+      | Some return_label -> I.ja (label return_label)
+      end;
+      call_gc_sites :=
+        { gc_lbl = gc_call_label;
+          gc_return_lbl = lbl_after_poll;
+          gc_frame = lbl_frame; } :: !call_gc_sites;
+      begin match return_label with
+      | None -> def_label lbl_after_poll
+      | Some _ -> I.jmp (label gc_call_label)
+      end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1) (arg i 0);
       I.set (cond cmp) al;
@@ -742,24 +763,9 @@ let emit_instr fallthrough i =
       I.movsxd (arg32 i 0) (res i 0)
   | Lop(Ispecific(Izextend32)) ->
       I.mov (arg32 i 0) (res32 i 0)
-  | Lop (Iname_for_debugger _) -> ()
   | Lop (Inop) -> I.nop ()
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
-  | Lop (Ipoll) ->
-      I.cmp (domain_field Domainstate.Domain_young_limit) r15;
-      let lbl_call_gc = new_label() in
-      let lbl_frame =
-        record_frame_label i.live (Dbg_alloc [])
-      in
-      I.jb (label lbl_call_gc);
-      let lbl_after_poll = new_label() in
-      def_label lbl_after_poll;
-      call_gc_sites :=
-        { gc_lbl = lbl_call_gc;
-          gc_return_lbl = lbl_after_poll;
-          gc_frame = lbl_frame; } :: !call_gc_sites;
-      ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -831,7 +837,8 @@ let emit_instr fallthrough i =
 
       begin match system with
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
-      | S_macosx | S_win64 -> () (* with LLVM/OS X and MASM, use the text segment *)
+      | S_macosx | S_win64 -> ()
+        (* with LLVM/OS X and MASM, use the text segment *)
       | _ -> D.section [".rodata"] None []
       end;
       D.align 4;
@@ -909,7 +916,7 @@ let preproc_fun fun_body _fun_name =
           | Lop (Istackoffset n) -> (upd_size r n, a+n)
           | Lpushtrap _ -> (upd_size r 16, a+16)
           | Lpoptrap -> (r, a-16)
-          | Lop (Iextcall _ | Ialloc _ | Ipoll | Iintop (Icheckbound)
+          | Lop (Iextcall _ | Ialloc _ | Ipoll _ | Iintop (Icheckbound)
                  | Iintop_imm (Icheckbound, _)) ->
               ({r with contains_external_calls = true;
                        (* +24 bytes for caml_context *)

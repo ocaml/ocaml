@@ -165,7 +165,6 @@ and operation =
                    then the index.
                    It results in a bounds error if the index is greater than
                    or equal to the bound. *)
-  | Cpoll
   | Cnop
   | Cdls_get
 
@@ -209,6 +208,7 @@ type fundecl =
     fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
+    fun_suppress_polls: bool;
     fun_dbg : Debuginfo.t;
   }
 

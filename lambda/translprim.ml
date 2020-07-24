@@ -364,7 +364,6 @@ let primitives_table =
     "%atomic_fetch_add", Primitive (Patomic_fetch_add, 2);
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 3);
-    "%poll", Primitive (Ppoll, 1);
     "%nop", Primitive (Pnop, 1);
     "%dls_get", Primitive (Pdls_get, 1);
   ]
@@ -778,7 +777,7 @@ let lambda_primitive_needs_event_after = function
   | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _ | Pbytes_set_64 _
   | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
-  | Prunstack | Pperform | Preperform | Presume | Ppoll
+  | Prunstack | Pperform | Preperform | Presume
   | Pbbswap _ -> true
 
   | Pidentity | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _

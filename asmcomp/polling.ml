@@ -2,149 +2,193 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
+(*                Sadiq Jaffer, OCaml Labs Consultancy Ltd                *)
+(*                                                                        *)
+(*   Copyright 2020 OCaml Labs Consultancy Ltd                            *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
-open Mach
-open Reg
 
-(* constants *)
-let lmax = 50
-let k = 10
-let e = lmax/k
+open Mach
 
 let is_addr_live i =
   not (Reg.Set.is_empty (Reg.Set.filter (fun f -> f.typ = Cmm.Addr) i))
 
-let insert_poll_instr instr =
-    { desc = Iop (Ipoll);
-      next = instr;
-      arg = instr.arg;
-      res = [||];
-      dbg = Debuginfo.none;
-      live = instr.live;
-      available_before = instr.available_before;
-      available_across = instr.available_across;
-    }
+(* replace with starts_with when it arrives *)
+let isprefix s1 s2 =
+  String.length s1 <= String.length s2
+  && String.sub s2 0 (String.length s1) = s1
 
-let rec insert_poll_aux delta instr =
-    if (is_addr_live instr.live) then begin
-        { instr with next = (insert_poll_aux delta instr.next) }
-    end else begin
-        match instr.desc with
-        (* terminating condition *)
-        | Iend -> instr
+let is_assume_suppressed_poll_fun s =
+  isprefix "caml_apply" s
 
-        (* reset counter *)
-        | Iop (Ipoll)
-        | Iop (Ialloc _) ->
-            { instr with next = (insert_poll_aux 0 instr.next) }
+(* Detection of recursive handlers that are not guaranteed to poll
+   at every loop iteration. *)
 
-        (* | Iop (Imove) *)
-        (* | Iop (Ispill) *)
-        (* | Iop (Ireload) *)
-        (*
-        ->
-            if (instr.Mach.arg.(0).loc = instr.Mach.res.(0).loc) then begin
-                { instr with next = (insert_poll_aux delta instr.next) }
-            end else begin
-                let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
-                insert_poll_instr updated_instr
-            end
-        *)
+(* The result of the analysis is a mapping from handlers H
+   (= loop heads) to Booleans b.
 
-        (* call type *)
-        (*
-        | Iop (Icall_imm _) ->
-            let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
-            let poll_instr = insert_poll_instr updated_instr in
-            (poll_instr.live <- Reg.Set.add ({Reg.dummy with loc = Reg.Reg 0 ; typ = Cmm.Val}) poll_instr.live);
-            poll_instr
-        *)
+   b is true if every path starting from H goes through an Ialloc,
+   Ipoll, Ireturn, Itailcall_ind or Itailcall_imm instruction.
+   In this case, we say that H is "safe".
 
-        | Iop (Iconst_int _)
-        | Iop (Iconst_float _)
-        | Iop (Iconst_symbol _)
-        (* | Iop (Icall_ind _) *)
-        (* | Iop (Itailcall_ind _) *)
-        (* | Iop (Itailcall_imm _) *)
-        (* | Iop (Iextcall _) *)
-        | Iop (Istackoffset _)
-        (* | Iop (Iload _) *)
-        (* | Iop (Iintop _) (* signal_alloc.ml *) *)
-        | Iop (Inegf)
-        | Iop (Iabsf)
-        | Iop (Iaddf)
-        | Iop (Isubf)
-        | Iop (Imulf)
-        | Iop (Idivf)
-        | Iop (Ifloatofint)
-        | Iop (Iintoffloat)
-        (* | Iop (Iname_for_debugger _) *)
-        ->
-            if (delta > lmax-e) then begin
-                let updated_instr = { instr with next = insert_poll_aux 0 instr.next} in
-                insert_poll_instr updated_instr
-            end else begin
-                { instr with next = insert_poll_aux (delta+1) instr.next}
-            end
+   b is false, therefore, if starting from H we can loop infinitely
+   without crossing an Ialloc or Ipoll instruction.
+   In this case, we say that H is "unsafe".
+*)
 
-        (* other *)
-        (* | Iop (Iintop_imm (_, _, is_addr_upd)) -> (* signals_alloc failing *)
-            if (is_addr_upd) then begin
-                { instr with next = (insert_poll_aux delta instr.next) }
-            end else begin
-                let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
-                insert_poll_instr updated_instr
-            end *)
-        (*
-        | Iop (Istore (_, _, is_assign)) ->
-            if (is_assign) then begin
-                let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
-                insert_poll_instr updated_instr
-            end else begin
-                { instr with next = (insert_poll_aux delta instr.next) }
-            end
-        | Iop (Ispecific (Istore_int _)) ->
-            { instr with next = (insert_poll_aux delta instr.next) }
-        *)
-        (* signal_alloc failing
-        | Iop (Ispecific _) ->
-            let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
-            insert_poll_instr updated_instr
-        *)
-        (* pass through - temp until all instructions handled *)
-        | Iifthenelse (t, ifso, ifnot) ->
-           { instr with
-             desc = Iifthenelse(t,
-                                insert_poll_aux delta ifso,
-                                insert_poll_aux delta ifnot);
-             next = insert_poll_aux delta instr.next }
-        | Iswitch (vals, cases) ->
-           { instr with
-             desc = Iswitch(vals, Array.map (insert_poll_aux delta) cases);
-             next = insert_poll_aux delta instr.next }
-        | Icatch (isrec, handlers, body) ->
-           { instr with
-             desc = Icatch(isrec,
-                           List.map (fun (i,c) -> i, insert_poll_aux delta c) handlers,
-                           insert_poll_aux delta body);
-             next = insert_poll_aux delta instr.next }
-        | Itrywith (e, h) ->
-           { instr with
-             desc = Itrywith(insert_poll_aux delta e,
-                             insert_poll_aux delta h);
-             next = insert_poll_aux delta instr.next }
-        | _ -> { instr with next = (insert_poll_aux delta instr.next) }
-    end
+(* The analysis is a backward dataflow analysis starting from false,
+   using && (Boolean "and") as the join operator,
+   and with the following transfer function:
 
-let insert_poll fun_body =
-    insert_poll_aux (lmax-e) fun_body
+   TRANSF(Ialloc | Ipoll | Itailcall_ind | Itailcall_imm _ | Ireturn) = true
+   TRANSF(all other operations, x) = x
+*)
 
-let fundecl f =
-    let new_body =
-        insert_poll f.fun_body
-    in
-      { f with fun_body = new_body }
+module PolledLoopsAnalysis = Dataflow.Backward(struct
+  type t = bool
+  let bot = false
+  let join = (&&)
+  let lessequal a b = (not a) || b
+end)
+
+let polled_loops_analysis funbody =
+  let transfer i ~next ~exn =
+    match i.desc with
+    | Iend -> next
+    | Iop (Ialloc _ | Ipoll _) -> true
+    | Iop (Itailcall_ind | Itailcall_imm _) -> true
+    | Iop op ->
+        if operation_can_raise op
+        then next && exn
+        else next
+    | Ireturn -> true
+    | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ | Itrywith _ -> next
+    | Iraise _ -> exn
+  in
+    snd (PolledLoopsAnalysis.analyze ~exnescape:true ~transfer funbody)
+
+(* Detection of functions that can loop via a tail-call without going
+   through a poll point. *)
+
+(* The result of the analysis is a single Boolean b.
+
+   b is true if there exists a path from the function entry to a
+   Potentially Recursive Tail Call (an Itailcall_ind or
+   Itailcall_imm to a forward function)
+   that does not go through an Ialloc or Ipoll instruction.
+
+   b is false, therefore, if the function always polls (via Ialloc or Ipoll)
+   before doing a PRTC.
+
+   To compute b, we do a backward dataflow analysis starting from
+   false, using || (Boolean "or") as the join operator, and with the
+   following transfer function:
+
+   TRANSF(Ialloc | Ipoll, x) = false
+   TRANSF(Itailcall_ind, x) = true
+   TRANSF(Itailcall_imm f, x) = f is a forward function
+   TRANSF(all other operations, x) = x
+*)
+
+module PTRCAnalysis = Dataflow.Backward(struct
+  type t = bool
+  let bot = false
+  let join = (||)
+  let lessequal a b = (not a) || b
+end)
+
+let potentially_recursive_tailcall ~fwd_func funbody =
+  let transfer i ~next ~exn =
+    match i.desc with
+    | Iend -> next
+    | Iop (Ialloc _ | Ipoll _) -> false
+    | Iop (Itailcall_ind) -> true
+    | Iop (Itailcall_imm { func }) ->
+      String.Set.mem func fwd_func ||
+      is_assume_suppressed_poll_fun func
+    | Iop op ->
+        if operation_can_raise op
+        then next || exn
+        else next
+    | Ireturn -> false
+    | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ | Itrywith _ -> next
+    | Iraise _ -> exn
+  in
+    fst (PTRCAnalysis.analyze ~transfer funbody)
+
+(* Given the result of the analysis of recursive handlers,
+   add polls to make sure that every loop polls or allocate or ...
+
+   [Ipoll] instructions are added before unguarded back edges
+   ([Iexit] instructions that go back to a recursive handler that
+   needs extra polling).
+*)
+
+let add_poll i =
+  Mach.instr_cons (Iop (Ipoll { return_label = None })) [||] [||] i
+
+let instr_body handler_safe i =
+  (* [ube] (unguarded back edges) is the set of recursive handler labels
+     that need extra polling. *)
+  let add_unsafe_handler ube (k, _) =
+    if handler_safe k then ube else IntSet.add k ube in
+  let rec instr ube i =
+    match i.desc with
+    | Iifthenelse (test, i0, i1) ->
+      { i with
+        desc = Iifthenelse (test, instr ube i0, instr ube i1);
+        next = instr ube i.next;
+      }
+    | Iswitch (index, cases) ->
+      { i with
+        desc = Iswitch (index, Array.map (instr ube) cases);
+        next = instr ube i.next;
+      }
+    | Icatch (rc, hdl, body) ->
+      let ube' =
+        if rc = Cmm.Recursive
+        then List.fold_left add_unsafe_handler ube hdl
+        else ube in
+      let instr_handler (k, i0) =
+        let i1 = instr ube' i0 in
+        (k, i1) in
+      { i with
+        desc = Icatch (rc,
+                       List.map instr_handler hdl,
+                       instr ube body);
+        next = instr ube i.next;
+      }
+    | Iexit k ->
+        if IntSet.mem k ube
+        then add_poll i
+        else i
+    | Itrywith (body, hdl) ->
+      { i with
+        desc = Itrywith (instr ube body, instr ube hdl);
+        next = instr ube i.next;
+      }
+    | Iend | Ireturn | Iraise _ -> i
+    | Iop _ -> { i with next = instr ube i.next }
+
+  in
+  instr IntSet.empty i
+
+let contains_poll instr =
+  let poll = ref false in
+  Mach.instr_iter
+      (fun i -> match i.desc with Iop (Ipoll _) -> poll := true | _ -> ())
+      instr;
+  !poll
+
+let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
+  let handler_needs_poll = polled_loops_analysis f.fun_body in
+  let new_body = instr_body handler_needs_poll f.fun_body in
+  let new_contains_calls = f.fun_contains_calls || contains_poll new_body in
+  { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
+
+let requires_prologue_poll ~future_funcnames i =
+  potentially_recursive_tailcall ~fwd_func:future_funcnames i

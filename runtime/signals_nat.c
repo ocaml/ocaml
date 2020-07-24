@@ -87,31 +87,39 @@ void caml_garbage_collection()
        including allocations combined by Comballoc */
     unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
     int i, nallocs = *alloc_len++;
-    for (i = 0; i < nallocs; i++) {
-      allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
+
+    if (nallocs == 0) {
+      /* This is a poll */
+      caml_handle_gc_interrupt(); // process pending actions?
     }
-    /* We have computed whsize (including header), but need wosize (without) */
-    allocsz -= 1;
+    else
+    {
+      for (i = 0; i < nallocs; i++) {
+        allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
+      }
+      /* We have computed whsize (including header), but need wosize (without) */
+      allocsz -= 1;
+    }
+
+    whsize = Whsize_wosize(allocsz);
+
+    alloc_bsize = whsize * sizeof(value);
+
+    /* Put the young pointer back to what is was before our tiggering allocation */
+    Caml_state->young_ptr += alloc_bsize;
+
+    /* When caml_garbage_collection returns, we assume there is enough space in
+      the minor heap for the triggering allocation. Due to finalisers in the
+      major heap, it is possible for there to be a sequence of events where a
+      single call to caml_handle_gc_interrupt does not lead to that. We do it
+      in a loop to ensure it. */
+    do {
+      caml_handle_gc_interrupt();
+    } while( Caml_state->young_ptr - alloc_bsize <= (char*)Caml_state->young_limit );
+
+    /* Re-do the allocation: we now have enough space in the minor heap. */
+    Caml_state->young_ptr -= alloc_bsize;
   }
-
-  whsize = Whsize_wosize(allocsz);
-
-  alloc_bsize = whsize * sizeof(value);
-
-  /* Put the young pointer back to what is was before our tiggering allocation */
-  Caml_state->young_ptr += alloc_bsize;
-
-  /* When caml_garbage_collection returns, we assume there is enough space in
-     the minor heap for the triggering allocation. Due to finalisers in the
-     major heap, it is possible for there to be a sequence of events where a
-     single call to caml_handle_gc_interrupt does not lead to that. We do it
-     in a loop to ensure it. */
-  do {
-    caml_handle_gc_interrupt();
-  } while( Caml_state->young_ptr - alloc_bsize <= (char*)Caml_state->young_limit );
-
-  /* Re-do the allocation: we now have enough space in the minor heap. */
-  Caml_state->young_ptr -= alloc_bsize;
 
   caml_raise_if_exception(caml_process_pending_signals_exn());
 }

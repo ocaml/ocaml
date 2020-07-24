@@ -2281,10 +2281,12 @@ asmcomp/branch_relaxation.cmi : \
 asmcomp/branch_relaxation_intf.cmo : \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
+    asmcomp/cmm.cmi \
     asmcomp/arch.cmo
 asmcomp/branch_relaxation_intf.cmx : \
     asmcomp/linear.cmx \
     lambda/debuginfo.cmx \
+    asmcomp/cmm.cmx \
     asmcomp/arch.cmx
 asmcomp/cmm.cmo : \
     utils/targetint.cmi \
@@ -2644,7 +2646,6 @@ asmcomp/mach.cmo : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
-    middle_end/backend_var.cmi \
     asmcomp/arch.cmo \
     asmcomp/mach.cmi
 asmcomp/mach.cmx : \
@@ -2654,7 +2655,6 @@ asmcomp/mach.cmx : \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
-    middle_end/backend_var.cmx \
     asmcomp/arch.cmx \
     asmcomp/mach.cmi
 asmcomp/mach.cmi : \
@@ -2663,21 +2663,17 @@ asmcomp/mach.cmi : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
-    middle_end/backend_var.cmi \
     asmcomp/arch.cmo
 asmcomp/polling.cmo : \
-    asmcomp/reg.cmi \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
-    lambda/debuginfo.cmi \
-    asmcomp/cmm.cmi \
     asmcomp/polling.cmi
 asmcomp/polling.cmx : \
-    asmcomp/reg.cmx \
+    utils/misc.cmx \
     asmcomp/mach.cmx \
-    lambda/debuginfo.cmx \
-    asmcomp/cmm.cmx \
     asmcomp/polling.cmi
 asmcomp/polling.cmi : \
+    utils/misc.cmi \
     asmcomp/mach.cmi
 asmcomp/printcmm.cmo : \
     utils/targetint.cmi \
@@ -2729,7 +2725,6 @@ asmcomp/printmach.cmo : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
-    middle_end/backend_var.cmi \
     asmcomp/arch.cmo \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmx : \
@@ -2743,7 +2738,6 @@ asmcomp/printmach.cmx : \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
-    middle_end/backend_var.cmx \
     asmcomp/arch.cmx \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmi : \
@@ -2845,6 +2839,7 @@ asmcomp/scheduling.cmi : \
 asmcomp/selectgen.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
+    asmcomp/polling.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
@@ -2858,6 +2853,7 @@ asmcomp/selectgen.cmo : \
 asmcomp/selectgen.cmx : \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
+    asmcomp/polling.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
@@ -2870,6 +2866,7 @@ asmcomp/selectgen.cmx : \
     asmcomp/selectgen.cmi
 asmcomp/selectgen.cmi : \
     asmcomp/reg.cmi \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
@@ -2893,6 +2890,7 @@ asmcomp/selection.cmx : \
     asmcomp/arch.cmx \
     asmcomp/selection.cmi
 asmcomp/selection.cmi : \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi
 asmcomp/spill.cmo : \
@@ -5683,7 +5681,6 @@ asmcomp/debug/available_regs.cmo : \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     utils/clflags.cmi \
-    middle_end/backend_var.cmi \
     asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmx : \
     asmcomp/debug/reg_with_debug_info.cmx \
@@ -5694,7 +5691,6 @@ asmcomp/debug/available_regs.cmx : \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     utils/clflags.cmx \
-    middle_end/backend_var.cmx \
     asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : \
     asmcomp/mach.cmi

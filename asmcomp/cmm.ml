@@ -168,7 +168,6 @@ and operation =
   | Ccmpf of float_comparison
   | Craise of Lambda.raise_kind
   | Ccheckbound
-  | Cpoll
   | Cnop
   | Cdls_get
 
@@ -209,6 +208,7 @@ type fundecl =
     fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
+    fun_suppress_polls: bool;
     fun_dbg : Debuginfo.t;
   }
 

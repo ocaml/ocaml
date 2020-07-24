@@ -74,7 +74,7 @@ external timer_ticks : unit -> (int64 [@unboxed]) =
 
 module Sync = struct
   let cpu_relax () = Raw.cpu_relax ()
-  external poll : unit -> unit = "%poll"
+  let poll () = ()
 end
 
 type id = Raw.t
