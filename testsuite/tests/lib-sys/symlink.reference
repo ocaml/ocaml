@@ -1,0 +1,12 @@
+Sys.file_exists "realdir": true
+Sys.file_exists "realfile": true
+Sys.is_directory "realdir": true
+Sys.is_directory "realfile": false
+Sys.file_exists "linkdir": true
+Sys.file_exists "linkfile": true
+Sys.is_directory "linkdir": true
+Sys.is_directory "linkfile": false
+Sys.file_exists "deadlinkdir": false
+Sys.file_exists "deadlinkfile": false
+Sys.is_directory "deadlinkdir" raises Sys_error: true
+Sys.is_directory "deadlinkfile" raises Sys_error: true
