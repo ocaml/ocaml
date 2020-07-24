@@ -73,8 +73,6 @@ extern int caml_debug_is_minor(value val);
 extern int caml_debug_is_major(value val);
 #endif
 
-CAMLextern value caml_promote(struct domain*, value root);
-
 #define Ref_table_add(ref_table, x) do {                                \
     struct caml_ref_table* ref = (ref_table);                           \
     if (ref->ptr >= ref->limit) {                                       \

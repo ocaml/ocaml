@@ -482,29 +482,6 @@ CFI_STARTPROC
 CFI_ENDPROC
 ENDFUNCTION(G(caml_call_realloc_stack))
 
-/* Arguments: %rax = base; %rdx = offset. */
-FUNCTION(G(caml_call_read_barrier))
-CFI_STARTPROC
-        .cfi_signal_frame
-        SAVE_ALL_REGS
-     /* Build a caml_context */
-        pushq   %r15; CFI_ADJUST(8)
-        PUSH_EXN_HANDLER
-        SWITCH_OCAML_TO_C_NO_CTXT(16)
-        movq    %rax, C_ARG_1
-        movq    %rdx, C_ARG_2
-        C_call (GCALL(caml_read_barrier))
-        SWITCH_C_TO_OCAML_NO_CTXT
-        POP_EXN_HANDLER
-        popq    %r15; CFI_ADJUST(-8)
-    /* Preserve the current value of %rax */
-        pushq   %rax; CFI_ADJUST(8)
-        RESTORE_ALL_REGS
-        popq    %rax; CFI_ADJUST(-8)
-        ret
-CFI_ENDPROC
-ENDFUNCTION(G(caml_call_read_barrier))
-
 /* runs on C stack with C calling convention.
    optimisation: use ocaml calling convention and SAVE_ALL_REGS?
    args: C_ARG_1: object, C_ARG_2: field idx, C_ARG_3: new value */
