@@ -361,13 +361,11 @@ module Propagation = struct
 end
 ;;
 [%%expect{|
-Line 13, characters 19-20:
-13 |     | BoolLit b -> b
-                        ^
-Error: This expression has type bool but an expression was expected of type
-         s = bool
-       This instance of bool is ambiguous:
-       it would escape the scope of its equation
+module Propagation :
+  sig
+    type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val check : 's t -> 's
+  end
 |}, Principal{|
 Line 13, characters 19-20:
 13 |     | BoolLit b -> b
