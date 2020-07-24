@@ -292,8 +292,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 #endif
     goto domain_init_complete;
 
-  if(Caml_state->current_stack != NULL)
-    caml_free_stack(Caml_state->current_stack);
+create_root_failure:
+  caml_free_stack(Caml_state->current_stack);
 alloc_main_stack_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
