@@ -32,6 +32,9 @@ let abi =
   | "ppc64le" -> ELF64v2
   | _ -> assert false
 
+type cmm_label = int
+(* Do not introduce a dependency to Cmm *)
+
 (* Machine-specific command-line options *)
 
 let big_toc = ref true
@@ -50,6 +53,7 @@ type specific_operation =
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Ipoll_far of { return_label : cmm_label option }
 
 (* Addressing modes *)
 

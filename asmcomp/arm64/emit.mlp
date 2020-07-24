@@ -408,6 +408,8 @@ let num_call_gc_and_check_bound_points instr =
     | Lend -> totals
     | Lop (Ialloc _) when !fastcode_flag ->
       loop instr.next (call_gc + 1, check_bound)
+    | Lop (Ipoll _) ->
+      loop instr.next (call_gc + 1, check_bound)
     | Lop (Iintop Icheckbound)
     | Lop (Iintop_imm (Icheckbound, _))
     | Lop (Ispecific (Ishiftcheckbound _)) ->
@@ -420,6 +422,7 @@ let num_call_gc_and_check_bound_points instr =
     (* The following four should never be seen, since this function is run
        before branch relaxation. *)
     | Lop (Ispecific (Ifar_alloc _))
+    | Lop (Ispecific (Ifar_poll _))
     | Lop (Ispecific Ifar_intop_checkbound)
     | Lop (Ispecific (Ifar_intop_imm_checkbound _))
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> assert false
@@ -466,6 +469,7 @@ module BR = Branch_relaxation.Make (struct
 
     let classify_instr = function
       | Lop (Ialloc _)
+      | Lop (Ipoll _)
       | Lop (Iintop Icheckbound)
       | Lop (Iintop_imm (Icheckbound, _))
       | Lop (Ispecific (Ishiftcheckbound _)) -> Some Bcc
@@ -513,10 +517,10 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
-    | Lop (Ialloc {bytes = num_bytes}) when !fastcode_flag ->
-      if num_bytes <= 0xFFF then 4 else 5
-    | Lop (Ispecific (Ifar_alloc {bytes = num_bytes})) when !fastcode_flag ->
-      if num_bytes <= 0xFFF then 5 else 6
+    | Lop (Ialloc _) when f.fun_fast -> 5
+    | Lop (Ispecific (Ifar_alloc _)) when f.fun_fast -> 6
+    | Lop (Ipoll _) -> 3
+    | Lop (Ispecific (Ifar_poll _)) -> 4
     | Lop (Ialloc { bytes = num_bytes; _ })
     | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
       begin match num_bytes with
@@ -543,7 +547,6 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Ibswap 16)) -> 2
     | Lop (Ispecific (Ibswap _)) -> 1
     | Lop (Ispecific Imove32) -> 1
-    | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size ()
     | Llabel _ -> 0
@@ -572,6 +575,9 @@ module BR = Branch_relaxation.Make (struct
       | Cmm.Raise_withtrace -> 1
       | Cmm.Raise_notrace -> 5
       end
+
+  let relax_poll ~return_label =
+    Lop (Ispecific (Ifar_poll { return_label }))
 
   let relax_allocation ~num_bytes ~dbginfo =
     Lop (Ispecific (Ifar_alloc { bytes = num_bytes; dbginfo }))
@@ -903,7 +909,6 @@ let emit_instr i =
         | _ ->
             assert false
         end
-    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         ()
     | Lreturn ->

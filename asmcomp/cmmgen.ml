@@ -538,7 +538,7 @@ let rec transl env e =
           fatal_error "Cmmgen.transl:prim, wrong arity"
       | ((Pfield_computed|Psequand
          | Prunstack | Pperform | Presume | Preperform
-         | Ppoll | Pnop | Pdls_get
+         | Pnop | Pdls_get
          | Patomic_load _ | Patomic_exchange
          | Patomic_cas | Patomic_fetch_add
          | Psequor | Pnot | Pnegint | Paddint | Psubint
@@ -852,8 +852,6 @@ and transl_prim_1 env p arg dbg =
       let cont = make_alloc dbg Obj.cont_tag [int_const dbg 0] in
       Cop(Capply typ_val, [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
           dbg)
-  | Ppoll ->
-      Cop(Cpoll, [transl env arg], dbg)
   | Pnop ->
       Cop(Cnop, [transl env arg], dbg)
   | Pdls_get ->
@@ -1054,7 +1052,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Patomic_fetch_add ->
      Cop (Cextcall ("caml_atomic_fetch_add", typ_int, [], false),
           [transl env arg1; transl env arg2], dbg)
-  | Prunstack | Pperform | Presume | Preperform | Ppoll | Pnop | Pdls_get
+  | Prunstack | Pperform | Presume | Preperform | Pnop | Pdls_get
   | Patomic_cas | Patomic_load _
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
@@ -1127,7 +1125,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                             transl env arg2; transl env arg3],
            dbg)
 
-  | Pperform | Ppoll | Pnop | Pdls_get
+  | Pperform | Pnop | Pdls_get
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
@@ -1422,6 +1420,7 @@ let transl_function f =
              fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_codegen_options;
+             fun_suppress_polls = false;
              fun_dbg  = f.dbg}
 
 (* Translate all function definitions *)
@@ -1523,6 +1522,7 @@ let compunit (ulam, preallocated_blocks, constants) =
                            No_CSE;
                          ]
                          else [ Reduce_code_size ];
+                       fun_suppress_polls = false;
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_clambda_constants constants c1 in
   let c3 = transl_all_functions c2 in

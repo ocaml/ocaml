@@ -142,6 +142,19 @@ let linear i n contains_calls =
     | Iop(Imove | Ireload | Ispill)
       when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
         linear i.Mach.next n
+    | Iop((Ipoll { return_label = None; _ }) as op) ->
+        (* If the poll call does not already specify where to jump to after
+           the poll (the expected situation in the current implementation),
+           absorb any branch after the poll call into the poll call itself.
+           This, in particular, optimises polls at the back edges of loops. *)
+        let n = linear i.Mach.next n in
+        let op, n =
+          match n.desc with
+          | Lbranch lbl ->
+            Mach.Ipoll { return_label = Some lbl }, n.next
+          | _ -> op, n
+        in
+        copy_instr (Lop op) i n
     | Iop op ->
         copy_instr (Lop op) i (linear i.Mach.next n)
     | Ireturn ->
@@ -259,14 +272,8 @@ let linear i n contains_calls =
   in linear i n
 
 let add_prologue first_insn prologue_required =
-  (* The prologue needs to come after any [Iname_for_debugger] operations that
-     refer to parameters.  (Such operations always come in a contiguous
-     block, cf. [Selectgen].) *)
-  let rec skip_naming_ops (insn : instruction) : label * instruction =
+  let skip_naming_ops (insn : instruction) : label * instruction =
     match insn.desc with
-    | Lop (Iname_for_debugger _) ->
-      let tailrec_entry_point_label, next = skip_naming_ops insn.next in
-      tailrec_entry_point_label, { insn with next; }
     | _ ->
       let tailrec_entry_point_label = Cmm.new_label () in
       let tailrec_entry_point =

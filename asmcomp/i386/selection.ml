@@ -322,4 +322,5 @@ method! emit_extcall_args env _ty_args args =
 
 end
 
-let fundecl f = (new selector)#emit_fundecl f
+let fundecl ~future_funcnames f = (new selector)#emit_fundecl
+                                            ~future_funcnames f

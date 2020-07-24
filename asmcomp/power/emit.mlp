@@ -415,6 +415,7 @@ module BR = Branch_relaxation.Make (struct
 
     let classify_instr = function
       | Lop (Ialloc _)
+      | Lop (Ipoll _)
       (* [Ialloc_far] does not need to be here, since its code sequence
          never involves any conditional branches that might need relaxing. *)
       | Lcondbranch _
@@ -486,8 +487,12 @@ module BR = Branch_relaxation.Make (struct
       then load_store_size addr + 1
       else load_store_size addr
     | Lop(Istore(_chunk, addr, _)) -> load_store_size addr
-    | Lop(Ialloc _) -> 4
-    | Lop(Ispecific(Ialloc_far _)) -> 5
+    | Lop(Ialloc _) -> 5
+    | Lop(Ispecific(Ialloc_far _)) -> 6
+    | Lop(Ipoll { return_label = Some(_) }) -> 5
+    | Lop(Ipoll { return_label = None }) -> 3
+    | Lop(Ispecific(Ipoll_far { return_label = Some(_) } )) -> 5
+    | Lop(Ispecific(Ipoll_far { return_label = None } )) -> 4
     | Lop(Iintop Imod) -> 3
     | Lop(Iintop(Icomp _)) -> 4
     | Lop(Iintop _) -> 1
@@ -497,7 +502,6 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ifloatofint) -> 9
     | Lop(Iintoffloat) -> 4
     | Lop(Ispecific _) -> 1
-    | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 2
     | Lreturn -> 2
     | Llabel _ -> 0
@@ -517,12 +521,67 @@ module BR = Branch_relaxation.Make (struct
   let relax_allocation ~num_bytes:bytes ~dbginfo =
     Lop (Ispecific (Ialloc_far { bytes; dbginfo }))
 
+  let relax_poll ~return_label =
+    Lop (Ispecific (Ipoll_far { return_label }))
+
   (* [classify_addr], above, never identifies these instructions as needing
      relaxing.  As such, these functions should never be called. *)
   let relax_specific_op _ = assert false
   let relax_intop_checkbound () = assert false
   let relax_intop_imm_checkbound ~bound:_ = assert false
 end)
+
+(* Assembly code for inlined allocation *)
+
+let emit_alloc env i bytes dbginfo far =
+  if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
+  let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+  `	{emit_string lg}	0, {emit_int offset}(30)\n`;
+  `	addi    31, 31, {emit_int(-bytes)}\n`;
+  `	{emit_string cmplg}	31, 0\n`;
+  if not far then begin
+    `	bltl	{emit_label env.call_gc_label}\n`;
+    record_frame env i.live (Dbg_alloc dbginfo);
+    `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+  end else begin
+    let lbl = new_label() in
+    `	bge	{emit_label lbl}\n`;
+    `	bl	{emit_label env.call_gc_label}\n`;
+    record_frame env i.live (Dbg_alloc dbginfo);
+    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+  end
+
+let emit_poll env i return_label far =
+  if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
+  let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+  `	{emit_string lg}	0, {emit_int offset}(30)\n`;
+  `	{emit_string cmplg}	31, 0\n`;
+  if not far then begin
+    begin match return_label with
+    | None ->
+    begin
+      `	bltl	{emit_label env.call_gc_label}\n`;
+      record_frame env i.live (Dbg_alloc [])
+    end
+    | Some return_label ->
+      begin
+        ` bltl  {emit_label env.call_gc_label}\n`;
+        record_frame env i.live (Dbg_alloc []);
+        ` b   {emit_label return_label}\n`
+      end
+    end;
+  end else begin
+    let lbl = match return_label with
+      | None -> new_label()
+      | Some lbl -> lbl
+    in
+    `	bge	{emit_label lbl}\n`;
+    `	bl	{emit_label env.call_gc_label}\n`;
+    record_frame env i.live (Dbg_alloc []);
+    match return_label with
+    | None ->   ` {emit_label lbl}:	\n`;
+    | Some _ -> ` b   {emit_label lbl}\n`;
+  end
 
 (* Output the assembly code for an instruction *)
 
@@ -754,22 +813,14 @@ let emit_instr i =
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc { bytes = n; dbginfo }) ->
-        if !call_gc_label = 0 then call_gc_label := new_label ();
-        `	addi    31, 31, {emit_int(-n)}\n`;
-        `	{emit_string cmplg}	31, 30\n`;
-        `	bltl	{emit_label !call_gc_label}\n`;
-        record_frame i.live (Dbg_alloc dbginfo);
-        `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
-    | Lop(Ispecific(Ialloc_far { bytes = n; dbginfo })) ->
-        if !call_gc_label = 0 then call_gc_label := new_label ();
-        let lbl = new_label() in
-        `	addi    31, 31, {emit_int(-n)}\n`;
-        `	{emit_string cmplg}	31, 30\n`;
-        `	bge	{emit_label lbl}\n`;
-        `	bl	{emit_label !call_gc_label}\n`;
-        record_frame i.live (Dbg_alloc dbginfo);
-        `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    | Lop(Ialloc { bytes; dbginfo }) ->
+        emit_alloc env i bytes dbginfo false
+    | Lop(Ispecific(Ialloc_far { bytes; dbginfo })) ->
+        emit_alloc env i bytes dbginfo true
+    | Lop(Ipoll { return_label }) ->
+        emit_poll env i return_label false
+    | Lop(Ispecific(Ipoll_far { return_label })) ->
+        emit_poll env i return_label true
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop Imod) ->
@@ -850,7 +901,6 @@ let emit_instr i =
     | Lop(Ispecific sop) ->
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
-    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         `	{emit_string lg}	11, {emit_int(retaddr_offset())}(1)\n`;
         `	mtlr	11\n`
