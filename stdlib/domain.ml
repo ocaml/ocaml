@@ -112,3 +112,42 @@ let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
 
+module DLS = struct
+
+  type 'a key = int ref
+
+  type entry = {key: int ref; slot: Obj.t ref}
+
+  external get_dls_list : unit -> entry list
+    = "caml_domain_dls_get"
+
+  external set_dls_list : entry list  -> unit
+    = "caml_domain_dls_set"
+
+  let new_key () = ref 0
+
+  let set k x =
+    let cs = Obj.repr x in
+    let old = get_dls_list () in
+    let rec add_or_update_entry k v l =
+      match l with
+      | [] -> Some {key = k; slot = ref v}
+      | hd::tl -> if (hd.key == k) then begin
+        hd.slot := v;
+        None
+      end else add_or_update_entry k v tl
+    in
+    match add_or_update_entry k cs old with
+    | None -> ()
+    | Some e -> set_dls_list (e::old)
+
+  let get k =
+    let vals = get_dls_list () in
+    let rec search k l =
+      match l with
+      | [] -> None
+      | hd::tl -> if hd.key == k then Some !(hd.slot) else search k tl
+    in
+    Obj.magic @@ search k vals
+
+end
