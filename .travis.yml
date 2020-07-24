@@ -22,7 +22,7 @@ script:
   - >
     mkdir ~/inst && ./configure --prefix ~/inst --enable-debug-runtime &&
     make -j4 world.opt &&
-    OCAMLRUNPARAM=v=0,V=1 make -C testsuite all-enabled
+    make -C testsuite all-enabled
 
 # For speed, only run a few compiler/OS combinations
 matrix:
@@ -31,5 +31,6 @@ matrix:
     os: linux
     env:
     - USE_RUNTIME: d
+    - OCAMLRUNPARAM: v=0,V=1
   - compiler: clang
     os: osx
