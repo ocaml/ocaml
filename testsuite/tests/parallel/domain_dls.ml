@@ -13,7 +13,8 @@ let check () =
   let v1 = Option.get (Domain.DLS.get k1) in
   let v2 = Option.get (Domain.DLS.get k2) in
   assert (v1 = 100);
-  assert (v2 = 200.0)
+  assert (v2 = 200.0);
+  Gc.major ()
 
 let _ =
   let domains = Array.init 3 (fun _ -> Domain.spawn(check)) in
