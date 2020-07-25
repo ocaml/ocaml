@@ -103,6 +103,11 @@ Working version
    partially curried or tupled.
    (Xavier Leroy, review by Mark Shinwell)
 
+- #9752: Revised handling of calling conventions for external C functions.
+   Provide a more precise description of the types of unboxed arguments,
+   so that the ARM64 iOS/macOS calling conventions can be honored.
+   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
+
 ### Standard library:
 
 - #9781: add injectivity annotations to parameterized abstract types
