@@ -185,3 +185,13 @@ module Sys = struct
     try Sys.getenv variable with Not_found -> default_value
   let safe_getenv variable = getenv_with_default_value variable ""
 end
+
+module Seq = struct
+  include Seq
+
+  let rec equal s1 s2 =
+    match s1 (), s2 () with
+    | Nil, Nil -> true
+    | Cons(e1, s1), Cons(e2, s2) -> e1 = e2 && equal s1 s2
+    | _, _ -> false
+end
