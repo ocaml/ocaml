@@ -481,6 +481,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Imuladd | Imulsub)) -> 1
     | Lop (Ispecific (Ibswap 16)) -> 2
     | Lop (Ispecific (Ibswap _)) -> 1
+    | Lop (Ispecific Imove32) -> 1
     | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size ()
@@ -607,6 +608,19 @@ let emit_instr i =
               `	str	{emit_reg src}, {emit_stack dst}\n`
           | {loc = Stack _}, {loc = Reg _} ->
               `	ldr	{emit_reg dst}, {emit_stack src}\n`
+          | _ ->
+              assert false
+        end
+    | Lop(Ispecific Imove32) ->
+        let src = i.arg.(0) and dst = i.res.(0) in
+        if src.loc <> dst.loc then begin
+          match (src, dst) with
+          | {loc = Reg _}, {loc = Reg _} ->
+              `	mov	{emit_wreg dst}, {emit_wreg src}\n`
+          | {loc = Reg _}, {loc = Stack _} ->
+              `	str	{emit_wreg src}, {emit_stack dst}\n`
+          | {loc = Stack _}, {loc = Reg _} ->
+              `	ldr	{emit_wreg dst}, {emit_stack src}\n`
           | _ ->
               assert false
         end

@@ -100,6 +100,9 @@ let at_location ty loc =
   incr currstamp;
   r
 
+let typv rv =
+  Array.map (fun r -> r.typ) rv
+
 let anonymous t =
   match Raw_name.to_string t.raw_name with
   | None -> true

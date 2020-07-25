@@ -19,6 +19,10 @@
 
 open Format
 
+let macosx = (Config.system = "macosx")
+
+(* Machine-specific command-line options *)
+
 let command_line_options = []
 
 (* Addressing modes *)
@@ -55,6 +59,7 @@ type specific_operation =
   | Inegmulsubf   (* floating-point negate, multiply and subtract *)
   | Isqrtf        (* floating-point square root *)
   | Ibswap of int (* endianness conversion *)
+  | Imove32       (* 32-bit integer move *)
 
 and arith_operation =
     Ishiftadd
@@ -64,7 +69,7 @@ let spacetime_node_hole_pointer_is_live_before = function
   | Ifar_alloc _ | Ifar_intop_checkbound _ | Ifar_intop_imm_checkbound _
   | Ishiftarith _ | Ishiftcheckbound _ | Ifar_shiftcheckbound _ -> false
   | Imuladd | Imulsub | Inegmulf | Imuladdf | Inegmuladdf | Imulsubf
-  | Inegmulsubf | Isqrtf | Ibswap _ -> false
+  | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 -> false
 
 (* Sizes, endianness *)
 
@@ -168,4 +173,7 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(0)
   | Ibswap n ->
       fprintf ppf "bswap%i %a" n
+        printreg arg.(0)
+  | Imove32 ->
+      fprintf ppf "move32 %a"
         printreg arg.(0)
