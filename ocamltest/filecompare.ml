@@ -231,13 +231,15 @@ let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
   let diff_commandline =
     Filename.quote_command "diff" ~stdout:temporary_file
-      [ "-u";
+      [ "--strip-trailing-cr"; "-u";
         files.reference_filename;
         files.output_filename ]
   in
   let result =
-    if (Sys.command diff_commandline) = 2 then Stdlib.Error "diff"
-    else Ok (Sys.string_of_file temporary_file)
+    match Sys.command diff_commandline with
+    | 0 -> Ok "Inconsistent LF/CRLF line-endings"
+    | 2 -> Stdlib.Error "diff"
+    | _ -> Ok (Sys.string_of_file temporary_file)
   in
   Sys.force_remove temporary_file;
   result
