@@ -282,7 +282,6 @@ FUNCTION(caml_allocN)
 
 FUNCTION(caml_c_call)
         CFI_STARTPROC
-    /* I think using x19 here should be a bug */
     /* Preserve return address in callee-save register x19 */
         mov     x19, x30
         CFI_REGISTER(30, 19)
