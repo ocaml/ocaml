@@ -431,6 +431,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
 
+#ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
@@ -442,13 +443,9 @@ CAMLprim value caml_sys_system_command(value command)
     caml_sys_error(command);
   }
   buf = caml_stat_strdup_to_os(String_val(command));
-  #if HAS_SYSTEM
-    caml_enter_blocking_section ();
-    status = system_os(buf);
-    caml_leave_blocking_section ();
-  #else
-    caml_invalid_argument("Sys.command not implemented");
-  #endif /* HAS_SYSTEM */
+  caml_enter_blocking_section ();
+  status = system_os(buf);
+  caml_leave_blocking_section ();
   caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
   if (WIFEXITED(status))
@@ -457,6 +454,12 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = 255;
   CAMLreturn (Val_int(retcode));
 }
+#else
+CAMLprim value caml_sys_system_command(value command)
+{
+  caml_invalid_argument("Sys.command not implemented");
+}
+#endif
 
 double caml_sys_time_include_children_unboxed(value include_children)
 {
