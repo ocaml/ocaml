@@ -1881,11 +1881,8 @@ and type_pat_aux
 let type_pat category ?no_existentials ?(mode=Normal)
     ?(lev=get_current_level()) env sp expected_ty =
   Misc.protect_refs [Misc.R (gadt_equations_level, Some lev)] (fun () ->
-      let r =
         type_pat category ~no_existentials ~mode
           ~env sp expected_ty (fun x -> x)
-      in
-      map_general_pattern { f = fun p -> { p with pat_env = !env } } r
     )
 
 (* this function is passed to Partial.parmatch

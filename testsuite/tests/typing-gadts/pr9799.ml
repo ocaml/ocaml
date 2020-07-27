@@ -18,6 +18,5 @@ let fn: type a. a t -> a -> int = fun x y ->
   | (B, `z) -> 1
 ;;
 [%%expect{|
-Uncaught exception: File "typing/patterns.ml", line 199, characters 21-27: Assertion failed
-
+val fn : 'a t -> 'a -> int = <fun>
 |}];;
