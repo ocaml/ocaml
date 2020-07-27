@@ -188,7 +188,7 @@ let check_consistency file_name cu =
   begin try
     let source = List.assoc cu.cu_name !implementations_defined in
     Location.prerr_warning (Location.in_file file_name)
-      (Warnings.Multiple_definition(cu.cu_name,
+      (Warnings.Module_linked_twice(cu.cu_name,
                                     Location.show_filename file_name,
                                     Location.show_filename source))
   with Not_found -> ()

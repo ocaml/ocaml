@@ -1310,7 +1310,7 @@ let temp_abbrev loc env id arity uid =
        type_kind = Type_abstract;
        type_private = Public;
        type_manifest = Some ty;
-       type_variance = Misc.replicate_list Variance.full arity;
+       type_variance = Variance.unknown_signature ~arity;
        type_separability = Types.Separability.default_signature ~arity;
        type_is_newtype = false;
        type_expansion_scope = Btype.lowest_level;
@@ -1488,7 +1488,8 @@ let class_infos define_class kind
   end;
 
   (* Class and class type temporary definitions *)
-  let cty_variance = List.map (fun _ -> Variance.full) params in
+  let cty_variance =
+    Variance.unknown_signature ~arity:(List.length params) in
   let cltydef =
     {clty_params = params; clty_type = class_body typ;
      clty_variance = cty_variance;
@@ -1570,7 +1571,7 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some obj_ty;
-     type_variance = List.map (fun _ -> Variance.full) obj_params;
+     type_variance = Variance.unknown_signature ~arity;
      type_separability = Types.Separability.default_signature ~arity;
      type_is_newtype = false;
      type_expansion_scope = Btype.lowest_level;
@@ -1594,7 +1595,7 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some cl_ty;
-     type_variance = List.map (fun _ -> Variance.full) cl_params;
+     type_variance = Variance.unknown_signature ~arity;
      type_separability = Types.Separability.default_signature ~arity;
      type_is_newtype = false;
      type_expansion_scope = Btype.lowest_level;

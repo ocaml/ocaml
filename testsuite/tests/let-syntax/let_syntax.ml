@@ -587,7 +587,8 @@ val let_not_principal : unit = ()
 Line 3, characters 9-10:
 3 |     let+ A = A.A in
              ^
-Error: Unbound constructor A
+Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+val let_not_principal : unit = ()
 |}];;
 
 module And_not_principal = struct
@@ -615,7 +616,8 @@ val and_not_principal : A.t -> A.t -> unit = <fun>
 Line 5, characters 11-12:
 5 |       and+ A = y in
                ^
-Error: Unbound constructor A
+Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+val and_not_principal : A.t -> A.t -> unit = <fun>
 |}];;
 
 module Let_not_propagated = struct
@@ -713,12 +715,16 @@ let bad_location =
 [%%expect{|
 val bad_location : 'a GADT_ordering.is_point -> 'a -> int = <fun>
 |}, Principal{|
-Line 4, characters 6-10:
+Line 4, characters 11-19:
 4 |       let+ Is_point = is_point
-          ^^^^
-Error: This pattern matches values of type
-         GADT_ordering.point GADT_ordering.is_point * GADT_ordering.point
-       but a pattern was expected which matches values of type
-         a GADT_ordering.is_point * a
-       Type GADT_ordering.point is not compatible with type a
+               ^^^^^^^^
+Warning 18 [not-principal]: typing this pattern requires considering GADT_ordering.point and a as equal.
+But the knowledge of these types is not principal.
+Line 5, characters 13-14:
+5 |       and+ { x; y } = a in
+                 ^
+Error: The record field x belongs to the type GADT_ordering.point
+       but is mixed here with fields of type a = GADT_ordering.point
+       This instance of GADT_ordering.point is ambiguous:
+       it would escape the scope of its equation
 |}];;

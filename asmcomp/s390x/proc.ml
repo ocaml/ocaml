@@ -105,7 +105,7 @@ let calling_conventions
   let float = ref first_float in
   let ofs = ref stack_ofs in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -145,11 +145,9 @@ let loc_results res =
      Always reserve 160 bytes at bottom of stack, plus whatever is needed
      to hold the overflow arguments. *)
 
-let loc_external_arguments arg =
-  let arg =
-    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg in
-  let (loc, ofs) =
-    calling_conventions 0 4 100 103 outgoing 160 arg in
+let loc_external_arguments ty_args =
+  let arg = Cmm.machtype_of_exttype_list ty_args in
+  let (loc, ofs) = calling_conventions 0 4 100 103 outgoing 160 arg in
   (Array.map (fun reg -> [|reg|]) loc, ofs)
 
 (* Results are in GPR 2 and FPR 0 *)

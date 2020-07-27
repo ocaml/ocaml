@@ -92,14 +92,14 @@ objinfo.cmo : \
     ../middle_end/linkage_name.cmi \
     ../typing/ident.cmi \
     ../middle_end/flambda/export_info.cmi \
-    ../utils/config.cmi \
     ../middle_end/compilation_unit.cmi \
     ../file_formats/cmxs_format.cmi \
     ../file_formats/cmx_format.cmi \
     ../file_formats/cmt_format.cmi \
     ../file_formats/cmo_format.cmi \
     ../file_formats/cmi_format.cmi \
-    ../bytecomp/bytesections.cmi
+    ../bytecomp/bytesections.cmi \
+    ../utils/binutils.cmi
 objinfo.cmx : \
     ../bytecomp/symtable.cmx \
     ../middle_end/symbol.cmx \
@@ -108,14 +108,14 @@ objinfo.cmx : \
     ../middle_end/linkage_name.cmx \
     ../typing/ident.cmx \
     ../middle_end/flambda/export_info.cmx \
-    ../utils/config.cmx \
     ../middle_end/compilation_unit.cmx \
     ../file_formats/cmxs_format.cmi \
     ../file_formats/cmx_format.cmi \
     ../file_formats/cmt_format.cmx \
     ../file_formats/cmo_format.cmi \
     ../file_formats/cmi_format.cmx \
-    ../bytecomp/bytesections.cmx
+    ../bytecomp/bytesections.cmx \
+    ../utils/binutils.cmx
 ocamlcmt.cmo : \
     ../typing/untypeast.cmi \
     ../typing/stypes.cmi \

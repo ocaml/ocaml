@@ -36,7 +36,7 @@ Lines 4-8, characters 2-18:
 6 |   | MAB, _, A -> 2
 7 |   | _,  AB, B -> 3
 8 |   | _, MAB, B -> 4
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (AB, MAB, A)
 val f : 'x M.t -> 'x M.t -> 'x -> int = <fun>
@@ -137,7 +137,7 @@ let f (type x) (t1 : x t) (t2 : x t) (x : x) =
 Line 7, characters 4-22:
 7 |   | _,  AB,  { a = _ } -> 3
         ^^^^^^^^^^^^^^^^^^
-Warning 11: this match case is unused.
+Warning 11 [redundant-case]: this match case is unused.
 val f : 'x M.t -> 'x M.t -> 'x -> int = <fun>
 |}]
 
@@ -167,7 +167,7 @@ Lines 9-11, characters 2-37:
  9 | ..match a, a_or_b, x with
 10 |   | Not_A, A_or_B, `B i -> print_int i
 11 |   | _, A_or_B, `A s -> print_string s
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A_or_B, `B _)
 val f : 'x a -> 'x a_or_b -> 'x -> unit = <fun>
@@ -198,7 +198,7 @@ Lines 9-11, characters 2-18:
  9 | ..match b, x, y with
 10 |   | B, `B String_option, Some s -> print_string s
 11 |   | A, `A, _ -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (B, `B String_option, None)
 val f : ('x, 'y ty) b -> 'x -> 'y -> unit = <fun>
@@ -218,7 +218,7 @@ type 'a a = private [< `A of 'a ]
 Line 2, characters 18-44:
 2 | let f (x : _ a) = match x with `A None -> ();;
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `A (Some _)
 val f : 'a option a -> unit = <fun>
@@ -229,7 +229,7 @@ let f (x : [> `A] a) = match x with `A `B -> ();;
 Line 1, characters 23-47:
 1 | let f (x : [> `A] a) = match x with `A `B -> ();;
                            ^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `A `A
 val f : [< `A | `B > `A ] a -> unit = <fun>

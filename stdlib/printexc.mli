@@ -110,13 +110,13 @@ val use_printers: exn -> string option
 (** {1 Raw backtraces} *)
 
 type raw_backtrace
-(** The abstract type [raw_backtrace] stores a backtrace in
-    a low-level format, instead of directly exposing them as string as
-    the [get_backtrace()] function does.
+(** The type [raw_backtrace] stores a backtrace in a low-level format,
+    which can be converted to usable form using [raw_backtrace_entries]
+    and [backtrace_slots_of_raw_entry] below.
 
-    This allows delaying the formatting of backtraces to when they are
-    actually printed, which may be useful if you record more
-    backtraces than you print.
+    Converting backtraces to [backtrace_slot]s is slower than capturing the
+    backtraces. If an application processes many backtraces, it can be useful
+    to use [raw_backtrace] to avoid or delay conversion.
 
     Raw backtraces cannot be marshalled. If you need marshalling, you
     should use the array returned by the [backtrace_slots] function of
@@ -124,6 +124,30 @@ type raw_backtrace
 
     @since 4.01.0
 *)
+
+type raw_backtrace_entry = private int
+(** A [raw_backtrace_entry] is an element of a [raw_backtrace].
+
+    Each [raw_backtrace_entry] is an opaque integer, whose value is not stable
+    between different programs, or even between different runs of the same
+    binary.
+
+    A [raw_backtrace_entry] can be converted to a usable form using
+    [backtrace_slots_of_raw_entry] below. Note that, due to inlining, a
+    single [raw_backtrace_entry] may convert to several [backtrace_slot]s.
+    Since the values of a [raw_backtrace_entry] are not stable, they cannot
+    be marshalled. If they are to be converted, the conversion must be done
+    by the process that generated them.
+
+    Again due to inlining, there may be multiple distinct raw_backtrace_entry
+    values that convert to equal [backtrace_slot]s. However, if two
+    [raw_backtrace_entry]s are equal as integers, then they represent the same
+    [backtrace_slot]s.
+
+    @since 4.12.0 *)
+
+val raw_backtrace_entries : raw_backtrace -> raw_backtrace_entry array
+(** @since 4.12.0 *)
 
 val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
@@ -224,6 +248,19 @@ val backtrace_slots : raw_backtrace -> backtrace_slot array option
     @since 4.02.0
 *)
 
+val backtrace_slots_of_raw_entry :
+  raw_backtrace_entry -> backtrace_slot array option
+(** Returns the slots of a single raw backtrace entry, or [None] if this
+    entry lacks debug information.
+
+    Slots are returned in the same order as [backtrace_slots]: the slot
+    at index [0] is the most recent call, raise, or primitive, and
+    subsequent slots represent callers.
+
+    @since 4.12
+*)
+
+
 type location = {
   filename : string;
   line_number : int;
@@ -296,17 +333,17 @@ end
 (** {1 Raw backtrace slots} *)
 
 type raw_backtrace_slot
-(** This type allows direct access to raw backtrace slots, without any
-    conversion in an OCaml-usable data-structure. Being
-    process-specific, they must absolutely not be marshalled, and are
-    unsafe to use for this reason (marshalling them may not fail, but
-    un-marshalling and using the result will result in
-    undefined behavior).
+(** This type is used to iterate over the slots of a [raw_backtrace].
+    For most purposes, [backtrace_slots_of_raw_entry] is easier to use.
 
-    Elements of this type can still be compared and hashed: when two
-    elements are equal, then they represent the same source location
-    (the converse is not necessarily true in presence of inlining,
-    for example).
+    Like [raw_backtrace_entry], values of this type are process-specific and
+    must absolutely not be marshalled, and are unsafe to use for this reason
+    (marshalling them may not fail, but un-marshalling and using the result
+    will result in undefined behavior).
+
+    Elements of this type can still be compared and hashed: when two elements
+    are equal, then they represent the same source location (the converse is not
+    necessarily true in presence of inlining, for example).
 
     @since 4.02.0
 *)

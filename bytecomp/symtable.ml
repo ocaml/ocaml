@@ -98,12 +98,14 @@ let of_prim name =
     then
       PrimMap.enter c_prim_table name
     else begin
-      let symb =
-        try Dll.find_primitive name
-        with Not_found -> raise(Error(Unavailable_primitive name)) in
-      let num = PrimMap.enter c_prim_table name in
-      Dll.synchronize_primitive num symb;
-      num
+      match Dll.find_primitive name with
+      | None -> raise(Error(Unavailable_primitive name))
+      | Some Prim_exists ->
+          PrimMap.enter c_prim_table name
+      | Some (Prim_loaded symb) ->
+          let num = PrimMap.enter c_prim_table name in
+          Dll.synchronize_primitive num symb;
+          num
     end
 
 let require_primitive name =

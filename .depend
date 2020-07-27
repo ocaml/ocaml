@@ -3,6 +3,11 @@ utils/arg_helper.cmo : \
 utils/arg_helper.cmx : \
     utils/arg_helper.cmi
 utils/arg_helper.cmi :
+utils/binutils.cmo : \
+    utils/binutils.cmi
+utils/binutils.cmx : \
+    utils/binutils.cmi
+utils/binutils.cmi :
 utils/build_path_prefix_map.cmo : \
     utils/build_path_prefix_map.cmi
 utils/build_path_prefix_map.cmx : \
@@ -1131,7 +1136,6 @@ typing/typeclass.cmo : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/oprint.cmi \
-    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/includeclass.cmi \
@@ -1159,7 +1163,6 @@ typing/typeclass.cmx : \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/oprint.cmx \
-    utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/includeclass.cmx \
@@ -1859,10 +1862,12 @@ bytecomp/bytesections.cmi :
 bytecomp/dll.cmo : \
     utils/misc.cmi \
     utils/config.cmi \
+    utils/binutils.cmi \
     bytecomp/dll.cmi
 bytecomp/dll.cmx : \
     utils/misc.cmx \
     utils/config.cmx \
+    utils/binutils.cmx \
     bytecomp/dll.cmi
 bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : \
@@ -2271,6 +2276,7 @@ asmcomp/cmm.cmo : \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
+    asmcomp/arch.cmo \
     asmcomp/cmm.cmi
 asmcomp/cmm.cmx : \
     utils/targetint.cmx \
@@ -2278,6 +2284,7 @@ asmcomp/cmm.cmx : \
     lambda/debuginfo.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
+    asmcomp/arch.cmx \
     asmcomp/cmm.cmi
 asmcomp/cmm.cmi : \
     utils/targetint.cmi \
@@ -2728,7 +2735,8 @@ asmcomp/proc.cmx : \
     asmcomp/proc.cmi
 asmcomp/proc.cmi : \
     asmcomp/reg.cmi \
-    asmcomp/mach.cmi
+    asmcomp/mach.cmi \
+    asmcomp/cmm.cmi
 asmcomp/reg.cmo : \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
@@ -5856,36 +5864,9 @@ driver/errors.cmx : \
     driver/errors.cmi
 driver/errors.cmi :
 driver/main.cmo : \
-    utils/warnings.cmi \
-    utils/profile.cmi \
-    driver/makedepend.cmi \
-    driver/main_args.cmi \
-    parsing/location.cmi \
-    utils/config.cmi \
-    driver/compmisc.cmi \
-    driver/compile.cmi \
-    driver/compenv.cmi \
-    utils/clflags.cmi \
-    bytecomp/bytepackager.cmi \
-    bytecomp/bytelink.cmi \
-    bytecomp/bytelibrarian.cmi \
-    driver/main.cmi
+    driver/maindriver.cmi
 driver/main.cmx : \
-    utils/warnings.cmx \
-    utils/profile.cmx \
-    driver/makedepend.cmx \
-    driver/main_args.cmx \
-    parsing/location.cmx \
-    utils/config.cmx \
-    driver/compmisc.cmx \
-    driver/compile.cmx \
-    driver/compenv.cmx \
-    utils/clflags.cmx \
-    bytecomp/bytepackager.cmx \
-    bytecomp/bytelink.cmx \
-    bytecomp/bytelibrarian.cmx \
-    driver/main.cmi
-driver/main.cmi :
+    driver/maindriver.cmx
 driver/main_args.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -5903,6 +5884,37 @@ driver/main_args.cmx : \
     utils/clflags.cmx \
     driver/main_args.cmi
 driver/main_args.cmi :
+driver/maindriver.cmo : \
+    utils/warnings.cmi \
+    utils/profile.cmi \
+    driver/makedepend.cmi \
+    driver/main_args.cmi \
+    parsing/location.cmi \
+    utils/config.cmi \
+    driver/compmisc.cmi \
+    driver/compile.cmi \
+    driver/compenv.cmi \
+    utils/clflags.cmi \
+    bytecomp/bytepackager.cmi \
+    bytecomp/bytelink.cmi \
+    bytecomp/bytelibrarian.cmi \
+    driver/maindriver.cmi
+driver/maindriver.cmx : \
+    utils/warnings.cmx \
+    utils/profile.cmx \
+    driver/makedepend.cmx \
+    driver/main_args.cmx \
+    parsing/location.cmx \
+    utils/config.cmx \
+    driver/compmisc.cmx \
+    driver/compile.cmx \
+    driver/compenv.cmx \
+    utils/clflags.cmx \
+    bytecomp/bytepackager.cmx \
+    bytecomp/bytelink.cmx \
+    bytecomp/bytelibrarian.cmx \
+    driver/maindriver.cmi
+driver/maindriver.cmi :
 driver/makedepend.cmo : \
     driver/pparse.cmi \
     parsing/parsetree.cmi \
@@ -5972,6 +5984,10 @@ driver/opterrors.cmx : \
     driver/opterrors.cmi
 driver/opterrors.cmi :
 driver/optmain.cmo : \
+    driver/optmaindriver.cmi
+driver/optmain.cmx : \
+    driver/optmaindriver.cmx
+driver/optmaindriver.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
     asmcomp/proc.cmi \
@@ -5990,8 +6006,8 @@ driver/optmain.cmo : \
     asmcomp/asmlink.cmi \
     asmcomp/asmlibrarian.cmi \
     asmcomp/arch.cmo \
-    driver/optmain.cmi
-driver/optmain.cmx : \
+    driver/optmaindriver.cmi
+driver/optmaindriver.cmx : \
     utils/warnings.cmx \
     utils/profile.cmx \
     asmcomp/proc.cmx \
@@ -6010,8 +6026,8 @@ driver/optmain.cmx : \
     asmcomp/asmlink.cmx \
     asmcomp/asmlibrarian.cmx \
     asmcomp/arch.cmx \
-    driver/optmain.cmi
-driver/optmain.cmi :
+    driver/optmaindriver.cmi
+driver/optmaindriver.cmi :
 driver/pparse.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \

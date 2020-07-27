@@ -14,7 +14,7 @@ type +'a t = T : [< `Conj of 'a & sub | `Other of string ] -> 'a t
 Line 4, characters 6-47:
 4 | let f (T (`Other msg) : s t) = print_string msg;;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 T (`Conj _)
 val f : s t -> unit = <fun>
@@ -42,7 +42,7 @@ module M :
 Line 11, characters 12-59:
 11 | let () = M.(match x with T (`Other msg) -> print_string msg);; (* warn *)
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 T (`Conj _)
 Exception: Match_failure ("", 11, 12).
@@ -74,7 +74,7 @@ module M :
 Line 13, characters 21-57:
 13 | let () = M.(e { ex = fun (`Other msg) -> print_string msg });; (* warn *)
                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `Conj _
 Exception: Match_failure ("", 13, 21).

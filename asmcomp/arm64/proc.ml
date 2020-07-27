@@ -109,6 +109,36 @@ let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
 
 (* Calling conventions *)
 
+let loc_int last_int make_stack int ofs =
+  if !int <= last_int then begin
+    let l = phys_reg !int in
+    incr int; l
+  end else begin
+    ofs := Misc.align !ofs size_int;
+    let l = stack_slot (make_stack !ofs) Int in
+    ofs := !ofs + size_int; l
+  end
+
+let loc_float last_float make_stack float ofs =
+  if !float <= last_float then begin
+    let l = phys_reg !float in
+    incr float; l
+  end else begin
+    ofs := Misc.align !ofs size_float;
+    let l = stack_slot (make_stack !ofs) Float in
+    ofs := !ofs + size_float; l
+  end
+
+let loc_int32 last_int make_stack int ofs =
+  if !int <= last_int then begin
+    let l = phys_reg !int in
+    incr int; l
+  end else begin
+    let l = stack_slot (make_stack !ofs) Int in
+    ofs := !ofs + (if macosx then 4 else 8);
+    l
+  end
+
 let calling_conventions
     first_int last_int first_float last_float make_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
@@ -116,23 +146,11 @@ let calling_conventions
   let float = ref first_float in
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
-    | Val | Int | Addr as ty ->
-        if !int <= last_int then begin
-          loc.(i) <- phys_reg !int;
-          incr int
-        end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) ty;
-          ofs := !ofs + size_int
-        end
+    match arg.(i) with
+    | Val | Int | Addr ->
+        loc.(i) <- loc_int last_int make_stack int ofs
     | Float ->
-        if !float <= last_float then begin
-          loc.(i) <- phys_reg !float;
-          incr float
-        end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
-          ofs := !ofs + size_float
-        end
+        loc.(i) <- loc_float last_float make_stack float ofs
   done;
   (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
@@ -159,14 +177,31 @@ let loc_results res =
      first integer args in r0...r7
      first float args in d0...d7
      remaining args on stack.
+   macOS/iOS peculiarity: int32 arguments passed on stack occupy 4 bytes,
+   while the AAPCS64 says 8 bytes.
    Return values in r0...r1 or d0. *)
 
-let loc_external_arguments arg =
-  let arg =
-    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
-  in
-  let loc, alignment = calling_conventions 0 7 100 107 outgoing arg in
-  Array.map (fun reg -> [|reg|]) loc, alignment
+let external_calling_conventions
+    first_int last_int first_float last_float make_stack ty_args =
+  let loc = Array.make (List.length ty_args) [| Reg.dummy |] in
+  let int = ref first_int in
+  let float = ref first_float in
+  let ofs = ref 0 in
+  List.iteri (fun i ty_arg ->
+    begin match ty_arg with
+    | XInt | XInt64 ->
+        loc.(i) <- [| loc_int last_int make_stack int ofs |]
+    | XInt32 ->
+        loc.(i) <- [| loc_int32 last_int make_stack int ofs |]
+    | XFloat ->
+        loc.(i) <- [| loc_float last_float make_stack float ofs |]
+    end)
+    ty_args;
+  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
+
+let loc_external_arguments ty_args =
+  external_calling_conventions 0 7 100 107 outgoing ty_args
+
 let loc_external_results res =
   let (loc, _) = calling_conventions 0 1 100 100 not_supported res in loc
 
