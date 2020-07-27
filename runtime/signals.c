@@ -62,12 +62,20 @@ CAMLexport int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *)
   = sigprocmask_wrapper;
 #endif
 
+static int check_for_pending_signals(void)
+{
+  int i;
+  for (i = 0; i < NSIG; i++) {
+    if (caml_pending_signals[i]) return 1;
+  }
+  return 0;
+}
+
 /* Execute all pending signals */
 
 value caml_process_pending_signals_exn(void)
 {
   int i;
-  int really_pending;
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
@@ -78,13 +86,7 @@ value caml_process_pending_signals_exn(void)
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
-  really_pending = 0;
-  for (i = 0; i < NSIG; i++)
-    if (caml_pending_signals[i]) {
-      really_pending = 1;
-      break;
-    }
-  if(!really_pending)
+  if (!check_for_pending_signals())
     return Val_unit;
 
 #ifdef POSIX_SIGNALS
@@ -187,8 +189,10 @@ CAMLexport void caml_leave_blocking_section(void)
      examined by [caml_process_pending_signals_exn], then
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
-  signals_are_pending = 1;
-  //caml_raise_if_exception(caml_process_pending_signals_exn());
+  if (check_for_pending_signals()) {
+    signals_are_pending = 1;
+    caml_set_action_pending();
+  }
 
   errno = saved_errno;
 }
