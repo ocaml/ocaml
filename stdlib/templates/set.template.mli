@@ -61,7 +61,7 @@ module type OrderedType =
           Example: a suitable ordering function is the generic structural
           comparison function {!Stdlib.compare}. *)
   end
-(** Input signature of the functor {!Set.Make}. *)
+(** Input signature of the functor {!Make}. *)
 
 module type S =
   sig
@@ -186,7 +186,7 @@ module type S =
     (** Return the list of all elements of the given set.
        The returned list is sorted in increasing order with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Set.Make}. *)
+       given to {!Make}. *)
 
     val min_elt: t -> elt
     (** Return the smallest element of the given set
@@ -201,11 +201,11 @@ module type S =
     *)
 
     val max_elt: t -> elt
-    (** Same as {!Set.S.min_elt}, but returns the largest element of the
+    (** Same as {!S.min_elt}, but returns the largest element of the
        given set. *)
 
     val max_elt_opt: t -> elt option
-    (** Same as {!Set.S.min_elt_opt}, but returns the largest element of the
+    (** Same as {!S.min_elt_opt}, but returns the largest element of the
         given set.
         @since 4.05
     *)
@@ -306,7 +306,7 @@ module type S =
     (** Build a set from the given bindings
         @since 4.07 *)
   end
-(** Output signature of the functor {!Set.Make}. *)
+(** Output signature of the functor {!Make}. *)
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t
 (** Functor building an implementation of the set structure

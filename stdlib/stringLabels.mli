@@ -41,7 +41,7 @@
   valid positions in [s].
 
   Note: OCaml strings used to be modifiable in place, for instance via
-  the {!String.set} and {!String.blit} functions described below. This
+  the {!set} and {!blit} functions described below. This
   usage is only possible when the compiler is put in "unsafe-string"
   mode by giving the [-unsafe-string] command-line option. This
   compatibility mode makes the types [string] and [bytes] (see module
@@ -69,14 +69,14 @@ external length : string -> int = "%string_length"
 
 external get : string -> int -> char = "%string_safe_get"
 (** [get s n] returns the character at index [n] in string [s].
-   You can also write [s.[n]] instead of [String.get s n].
+   You can also write [s.[n]] instead of [get s n].
    @raise Invalid_argument if [n] not a valid index in [s]. *)
 
 external set : bytes -> int -> char -> unit = "%string_safe_set"
   [@@ocaml.deprecated "Use Bytes.set/BytesLabels.set instead."]
 (** [set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
-   You can also write [s.[n] <- c] instead of [String.set s n c].
+   You can also write [s.[n] <- c] instead of [set s n c].
    @raise Invalid_argument if [n] is not a valid index in [s].
 
    @deprecated This is a deprecated alias of {!Bytes.set}. *)
@@ -144,10 +144,10 @@ val concat : sep:string -> string list -> string
 val iter : f:(char -> unit) -> string -> unit
 (** [iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
-   [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
+   [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
 
 val iteri : f:(int -> char -> unit) -> string -> unit
-(** Same as {!String.iter}, but the
+(** Same as {!iter}, but the
    function is applied to the index of the element as first argument
    (counting from 0), and the character itself as second argument.
    @since 4.00.0 *)
@@ -213,7 +213,7 @@ val rindex_opt: string -> char -> int option
 val index_from : string -> int -> char -> int
 (** [index_from s i c] returns the index of the
    first occurrence of character [c] in string [s] after position [i].
-   [String.index s c] is equivalent to [String.index_from s 0 c].
+   [index s c] is equivalent to [index_from s 0 c].
    @raise Invalid_argument if [i] is not a valid position in [s].
    @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
@@ -222,7 +222,7 @@ val index_from_opt: string -> int -> char -> int option
     first occurrence of character [c] in string [s] after position [i]
     or [None] if [c] does not occur in [s] after position [i].
 
-    [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
+    [index_opt s c] is equivalent to [index_from_opt s 0 c].
     @raise Invalid_argument if [i] is not a valid position in [s].
 
     @since 4.05
@@ -231,8 +231,8 @@ val index_from_opt: string -> int -> char -> int option
 val rindex_from : string -> int -> char -> int
 (** [rindex_from s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1].
-   [String.rindex s c] is equivalent to
-   [String.rindex_from s (String.length s - 1) c].
+   [rindex s c] is equivalent to
+   [rindex_from s (length s - 1) c].
    @raise Invalid_argument if [i+1] is not a valid position in [s].
    @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
 
@@ -241,8 +241,8 @@ val rindex_from_opt: string -> int -> char -> int option
    last occurrence of character [c] in string [s] before position [i+1]
    or [None] if [c] does not occur in [s] before position [i+1].
 
-   [String.rindex_opt s c] is equivalent to
-   [String.rindex_from_opt s (String.length s - 1) c].
+   [rindex_opt s c] is equivalent to
+   [rindex_from_opt s (length s - 1) c].
    @raise Invalid_argument if [i+1] is not a valid position in [s].
 
     @since 4.05
@@ -255,8 +255,8 @@ val contains : string -> char -> bool
 val contains_from : string -> int -> char -> bool
 (** [contains_from s start c] tests if character [c]
    appears in [s] after position [start].
-   [String.contains s c] is equivalent to
-   [String.contains_from s 0 c].
+   [contains s c] is equivalent to
+   [contains_from s 0 c].
    @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
@@ -313,7 +313,7 @@ val uncapitalize_ascii : string -> string
 
 val starts_with :
   prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
-(** [String.starts_with prefix s] tests if [s] starts with [prefix]
+(** [starts_with prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
 val ends_with :
@@ -329,8 +329,8 @@ val split_on_char: sep:char -> string -> string list
 
     - The list is not empty.
     - Concatenating its elements using [sep] as a separator returns a
-      string equal to the input ([String.concat (String.make 1 sep)
-      (String.split_on_char sep s) = s]).
+      string equal to the input ([concat (make 1 sep)
+      (split_on_char sep s) = s]).
     - No string in the result contains the [sep] character.
 
     @since 4.05.0 in labeled module, or 4.04.0 in unlabeled

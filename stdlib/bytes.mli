@@ -224,8 +224,8 @@ val rindex_opt: bytes -> char -> int option
 
 val index_from : bytes -> int -> char -> int
 (** [index_from s i c] returns the index of the first occurrence of
-    byte [c] in [s] after position [i].  [Bytes.index s c] is
-    equivalent to [Bytes.index_from s 0 c].
+    byte [c] in [s] after position [i].  [index s c] is
+    equivalent to [index_from s 0 c].
     @raise Invalid_argument if [i] is not a valid position in [s].
     @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
@@ -233,14 +233,14 @@ val index_from_opt: bytes -> int -> char -> int option
 (** [index_from _opts i c] returns the index of the first occurrence of
     byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
     after position [i].
-    [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
+    [index_opt s c] is equivalent to [index_from_opt s 0 c].
     @raise Invalid_argument if [i] is not a valid position in [s].
     @since 4.05 *)
 
 val rindex_from : bytes -> int -> char -> int
 (** [rindex_from s i c] returns the index of the last occurrence of
     byte [c] in [s] before position [i+1].  [rindex s c] is equivalent
-    to [rindex_from s (Bytes.length s - 1) c].
+    to [rindex_from s (length s - 1) c].
     @raise Invalid_argument if [i+1] is not a valid position in [s].
     @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
 
@@ -248,7 +248,7 @@ val rindex_from_opt: bytes -> int -> char -> int option
 (** [rindex_from_opt s i c] returns the index of the last occurrence
     of byte [c] in [s] before position [i+1] or [None] if [c] does not
     occur in [s] before position [i+1].  [rindex_opt s c] is equivalent to
-    [rindex_from s (Bytes.length s - 1) c].
+    [rindex_from s (length s - 1) c].
     @raise Invalid_argument if [i+1] is not a valid position in [s].
     @since 4.05 *)
 
@@ -333,7 +333,7 @@ val equal: t -> t -> bool
     used improperly, they can break the immutability invariant on
     strings provided by the [-safe-string] option. They are available for
     expert library authors, but for most purposes you should use the
-    always-correct {!Bytes.to_string} and {!Bytes.of_string} instead.
+    always-correct {!to_string} and {!of_string} instead.
 *)
 
 val unsafe_to_string : bytes -> string

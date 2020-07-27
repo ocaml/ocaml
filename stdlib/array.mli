@@ -72,16 +72,16 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
   [@@ocaml.deprecated "Use Array.make instead."]
-(** @deprecated [Array.create] is an alias for {!Array.make}. *)
+(** @deprecated [create] is an alias for {!make}. *)
 
 external create_float: int -> float array = "caml_make_float_vect"
-(** [Array.create_float n] returns a fresh float array of length [n],
+(** [create_float n] returns a fresh float array of length [n],
     with uninitialized data.
     @since 4.03 *)
 
 val make_float: int -> float array
   [@@ocaml.deprecated "Use Array.create_float instead."]
-(** @deprecated [Array.make_float] is an alias for {!Array.create_float}. *)
+(** @deprecated [make_float] is an alias for {!create_float}. *)
 
 val init : int -> (int -> 'a) -> 'a array
 (** [init n f] returns a fresh array of length [n],
@@ -108,16 +108,16 @@ val make_matrix : int -> int -> 'a -> 'a array array
 
 val create_matrix : int -> int -> 'a -> 'a array array
   [@@ocaml.deprecated "Use Array.make_matrix instead."]
-(** @deprecated [Array.create_matrix] is an alias for {!Array.make_matrix}. *)
+(** @deprecated [create_matrix] is an alias for {!make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
 (** [append v1 v2] returns a fresh array containing the
    concatenation of the arrays [v1] and [v2].
    @raise Invalid_argument if
-   [Array.length v1 + Array.length v2 > Sys.max_array_length]. *)
+   [length v1 + length v2 > Sys.max_array_length]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as {!Array.append}, but concatenates a list of arrays. *)
+(** Same as {!append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> int -> int -> 'a array
 (** [sub a pos len] returns a fresh array of length [len],
@@ -172,12 +172,12 @@ val map : ('a -> 'b) -> 'a array -> 'b array
    [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
 val iteri : (int -> 'a -> unit) -> 'a array -> unit
-(** Same as {!Array.iter}, but the
+(** Same as {!iter}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
 
 val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
-(** Same as {!Array.map}, but the
+(** Same as {!map}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
 
@@ -224,12 +224,12 @@ val exists : ('a -> bool) -> 'a array -> bool
     @since 4.03.0 *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-(** Same as {!Array.for_all}, but for a two-argument predicate.
+(** Same as {!for_all}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
    @since 4.11.0 *)
 
 val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-(** Same as {!Array.exists}, but for a two-argument predicate.
+(** Same as {!exists}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
    @since 4.11.0 *)
 
@@ -240,7 +240,7 @@ val mem : 'a -> 'a array -> bool
     @since 4.03.0 *)
 
 val memq : 'a -> 'a array -> bool
-(** Same as {!Array.mem}, but uses physical equality
+(** Same as {!mem}, but uses physical equality
    instead of structural equality to compare list elements.
    @since 4.03.0 *)
 
@@ -274,7 +274,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
 *)
 
 val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!Array.sort}, but the sorting algorithm is stable (i.e.
+(** Same as {!sort}, but the sorting algorithm is stable (i.e.
    elements that compare equal are kept in their original order) and
    not guaranteed to run in constant heap space.
 
@@ -284,7 +284,7 @@ val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
 *)
 
 val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!Array.sort} or {!Array.stable_sort}, whichever is
+(** Same as {!sort} or {!stable_sort}, whichever is
     faster on typical input. *)
 
 

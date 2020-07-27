@@ -112,7 +112,7 @@ val append : 'a list -> 'a list -> 'a list
 
 val rev_append : 'a list -> 'a list -> 'a list
 (** [rev_append l1 l2] reverses [l1] and concatenates it with [l2].
-   This is equivalent to [(]{!List.rev}[ l1) @ l2], but [rev_append] is
+   This is equivalent to [(]{!rev}[ l1) @ l2], but [rev_append] is
    tail-recursive and more efficient.
  *)
 
@@ -124,7 +124,7 @@ val concat : 'a list list -> 'a list
  *)
 
 val flatten : 'a list list -> 'a list
-(** Same as {!List.concat}. Not tail-recursive
+(** Same as {!concat}. Not tail-recursive
    (length of the argument + length of the longest sub-list).
  *)
 
@@ -139,7 +139,7 @@ val iter : f:('a -> unit) -> 'a list -> unit
  *)
 
 val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
-(** Same as {!List.iter}, but the function is applied to the index of
+(** Same as {!iter}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
    @since 4.00.0
@@ -152,7 +152,7 @@ val map : f:('a -> 'b) -> 'a list -> 'b list
  *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
-(** Same as {!List.map}, but the function is applied to the index of
+(** Same as {!map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument. Not tail-recursive.
    @since 4.00.0
@@ -160,7 +160,7 @@ val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
 (** [rev_map f l] gives the same result as
-   {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
+   {!rev}[ (]{!map}[ f l)], but is tail-recursive and
    more efficient.
  *)
 
@@ -173,7 +173,7 @@ val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
 
 val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
 (** [concat_map f l] gives the same result as
-    {!List.concat}[ (]{!List.map}[ f l)]. Tail-recursive.
+    {!concat}[ (]{!map}[ f l)]. Tail-recursive.
     @since 4.10.0
 *)
 
@@ -214,7 +214,7 @@ val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [rev_map2 f l1 l2] gives the same result as
-   {!List.rev}[ (]{!List.map2}[ f l1 l2)], but is tail-recursive and
+   {!rev}[ (]{!map2}[ f l1 l2)], but is tail-recursive and
    more efficient.
  *)
 
@@ -253,13 +253,13 @@ val exists : f:('a -> bool) -> 'a list -> bool
  *)
 
 val for_all2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-(** Same as {!List.for_all}, but for a two-argument predicate.
+(** Same as {!for_all}, but for a two-argument predicate.
    @raise Invalid_argument if the two lists are determined
    to have different lengths.
  *)
 
 val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-(** Same as {!List.exists}, but for a two-argument predicate.
+(** Same as {!exists}, but for a two-argument predicate.
    @raise Invalid_argument if the two lists are determined
    to have different lengths.
  *)
@@ -270,7 +270,7 @@ val mem : 'a -> set:'a list -> bool
  *)
 
 val memq : 'a -> set:'a list -> bool
-(** Same as {!List.mem}, but uses physical equality instead of structural
+(** Same as {!mem}, but uses physical equality instead of structural
    equality to compare list elements.
  *)
 
@@ -307,11 +307,11 @@ val filter : f:('a -> bool) -> 'a list -> 'a list
  *)
 
 val find_all : f:('a -> bool) -> 'a list -> 'a list
-(** [find_all] is another name for {!List.filter}.
+(** [find_all] is another name for {!filter}.
  *)
 
 val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
-(** Same as {!List.filter}, but the predicate is applied to the index of
+(** Same as {!filter}, but the predicate is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
    @since 4.11.0
@@ -349,23 +349,23 @@ val assoc_opt : 'a -> ('a * 'b) list -> 'b option
  *)
 
 val assq : 'a -> ('a * 'b) list -> 'b
-(** Same as {!List.assoc}, but uses physical equality instead of
+(** Same as {!assoc}, but uses physical equality instead of
    structural equality to compare keys.
  *)
 
 val assq_opt : 'a -> ('a * 'b) list -> 'b option
-(** Same as {!List.assoc_opt}, but uses physical equality instead of
+(** Same as {!assoc_opt}, but uses physical equality instead of
    structural equality to compare keys.
    @since 4.05.0
  *)
 
 val mem_assoc : 'a -> map:('a * 'b) list -> bool
-(** Same as {!List.assoc}, but simply return [true] if a binding exists,
+(** Same as {!assoc}, but simply return [true] if a binding exists,
    and [false] if no bindings exist for the given key.
  *)
 
 val mem_assq : 'a -> map:('a * 'b) list -> bool
-(** Same as {!List.mem_assoc}, but uses physical equality instead of
+(** Same as {!mem_assoc}, but uses physical equality instead of
    structural equality to compare keys.
  *)
 
@@ -376,7 +376,7 @@ val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
  *)
 
 val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
-(** Same as {!List.remove_assoc}, but uses physical equality instead
+(** Same as {!remove_assoc}, but uses physical equality instead
    of structural equality to compare keys. Not tail-recursive.
  *)
 
@@ -410,7 +410,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    a complete specification). For example,
    {!Stdlib.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
-   [List.sort] is guaranteed to run in constant heap space
+   {!sort} is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
 
@@ -419,7 +419,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
  *)
 
 val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!List.sort}, but the sorting algorithm is guaranteed to
+(** Same as {!sort}, but the sorting algorithm is guaranteed to
    be stable (i.e. elements that compare equal are kept in their
    original order).
 
@@ -428,12 +428,12 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
  *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!List.sort} or {!List.stable_sort}, whichever is
+(** Same as {!sort} or {!stable_sort}, whichever is
     faster on typical input.
  *)
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!List.sort}, but also remove duplicates.
+(** Same as {!sort}, but also remove duplicates.
     @since 4.03.0 in labeled module or 4.02.0 in unlabeled module
  *)
 
