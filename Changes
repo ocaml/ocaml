@@ -90,7 +90,7 @@ Working version
   compaction algorithm and remove its dependence on the page table
   (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
 
-- #9742: Ephemerons are now compatible with infix pointers occuring
+- #9742: Ephemerons are now compatible with infix pointers occurring
    when using mutually recursive functions.
    (Jacques-Henri Jourdan, review François Bobot)
 
