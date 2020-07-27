@@ -18,6 +18,10 @@ ROOTDIR=../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
+ifneq "$(CCOMPTYPE)" "msvc"
+OC_CFLAGS += -g
+endif
+
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
