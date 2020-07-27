@@ -30,9 +30,9 @@ CAMLnoreturn_start
 CAMLextern void caml_sys_error (value)
 CAMLnoreturn_end;
 
-CAMLnoreturn_start
-CAMLextern void caml_sys_io_error (value)
-CAMLnoreturn_end;
+CAMLextern value caml_sys_error_exn (value);
+
+CAMLextern value caml_sys_io_error_exn (value);
 
 CAMLextern double caml_sys_time_unboxed(value);
 CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);

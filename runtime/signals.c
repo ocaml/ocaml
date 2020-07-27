@@ -165,21 +165,34 @@ CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
    caml_try_leave_blocking_section_default;
 
 CAMLno_tsan /* The read of [caml_something_to_do] is not synchronized. */
-CAMLexport void caml_enter_blocking_section(void)
+CAMLexport value caml_enter_blocking_section_exn(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_raise_if_exception(caml_process_pending_signals_exn());
+    value exn = caml_process_pending_signals_exn();
+    if (Is_exception_result(exn)) return exn;
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
     if (! signals_are_pending) break;
     caml_leave_blocking_section_hook ();
   }
+  return Val_unit;
 }
 
-CAMLexport void caml_leave_blocking_section(void)
+void caml_enter_blocking_section_noexn(void)
 {
+  caml_enter_blocking_section_hook ();
+}
+
+CAMLexport void caml_enter_blocking_section(void)
+{
+  caml_raise_if_exception(caml_enter_blocking_section_exn());
+}
+
+CAMLexport value caml_leave_blocking_section_exn(void)
+{
+  value exn;
   int saved_errno;
   /* Save the value of errno (PR#5982). */
   saved_errno = errno;
@@ -198,9 +211,24 @@ CAMLexport void caml_leave_blocking_section(void)
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   signals_are_pending = 1;
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  exn = caml_process_pending_signals_exn();
 
   errno = saved_errno;
+  return exn;
+}
+
+void caml_leave_blocking_section_noexn(void)
+{
+  int saved_errno;
+  saved_errno = errno;
+  caml_leave_blocking_section_hook ();
+  signals_are_pending = 1;
+  errno = saved_errno;
+}
+
+CAMLexport void caml_leave_blocking_section(void)
+{
+  caml_raise_if_exception(caml_leave_blocking_section_exn());
 }
 
 /* Execute a signal handler immediately */

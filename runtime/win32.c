@@ -65,7 +65,7 @@ CAMLnoreturn_start
 static void caml_win32_sys_error (int errnum)
 CAMLnoreturn_end;
 
-static void caml_win32_sys_error(int errnum)
+static value caml_win32_sys_error_exn(int errnum)
 {
   wchar_t buffer[512];
   value msg;
@@ -80,32 +80,43 @@ static void caml_win32_sys_error(int errnum)
   } else {
     msg = caml_alloc_sprintf("unknown error #%d", errnum);
   }
-  caml_raise_sys_error(msg);
+  return caml_raise_sys_error_exn(msg);
 }
 
-int caml_read_fd(int fd, int flags, void * buf, int n)
+static void caml_win32_sys_error (int errnum)
+{
+  caml_raise(Extract_exception(caml_win32_sys_error_exn(errnum)));
+}
+
+int caml_read_fd_exn(int fd, int flags, void * buf, int n, value * exn)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
-    caml_enter_blocking_section();
+    *exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(*exn)) return -1;
     retcode = read(fd, buf, n);
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
     if (retcode == -1 && errno == ENOMEM && n > 16384) {
       retcode = read(fd, buf, 16384);
     }
-    caml_leave_blocking_section();
-    if (retcode == -1) caml_sys_io_error(NO_ARG);
+    *exn = caml_leave_blocking_section_exn();
+    if (Is_exception_result(*exn)) return retcode;
+    if (retcode == -1)
+      *exn = caml_sys_io_error_exn(NO_ARG);
   } else {
-    caml_enter_blocking_section();
+    *exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(*exn)) return -1;
     retcode = recv((SOCKET) _get_osfhandle(fd), buf, n, 0);
-    caml_leave_blocking_section();
-    if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
+    *exn = caml_leave_blocking_section_exn();
+    if (Is_exception_result(*exn)) return retcode;
+    if (retcode == -1)
+      *exn = caml_win32_sys_error_exn(WSAGetLastError());
   }
   return retcode;
 }
 
-int caml_write_fd(int fd, int flags, void * buf, int n)
+int caml_write_fd_exn(int fd, int flags, void * buf, int n, value * exn)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
@@ -114,20 +125,25 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
     retcode = write(fd, buf, n);
   } else {
 #endif
-    caml_enter_blocking_section();
+    *exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(*exn)) return 0;
     retcode = write(fd, buf, n);
-    caml_leave_blocking_section();
+    *exn = caml_leave_blocking_section_exn();
+    if (Is_exception_result(*exn)) return retcode;
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   }
 #endif
-    if (retcode == -1) caml_sys_io_error(NO_ARG);
+    if (retcode == -1)
+      *exn = caml_sys_io_error_exn(NO_ARG);
   } else {
-    caml_enter_blocking_section();
+    *exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(*exn)) return 0;
     retcode = send((SOCKET) _get_osfhandle(fd), buf, n, 0);
-    caml_leave_blocking_section();
-    if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
+    *exn = caml_leave_blocking_section_exn();
+    if (Is_exception_result(*exn)) return retcode;
+    if (retcode == -1)
+      *exn = caml_win32_sys_error_exn(WSAGetLastError());
   }
-  CAMLassert (retcode > 0);
   return retcode;
 }
 

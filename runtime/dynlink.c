@@ -133,9 +133,9 @@ static void open_shared_lib(char_os * name)
   u8 = caml_stat_strdup_of_os(realname);
   caml_gc_message(0x100, "Loading shared library %s\n", u8);
   caml_stat_free(u8);
-  caml_enter_blocking_section();
+  caml_enter_blocking_section(); // abort on error
   handle = caml_dlopen(realname, 1, 1);
-  caml_leave_blocking_section();
+  caml_leave_blocking_section(); // abort on error
   if (handle == NULL)
     caml_fatal_error
     (
@@ -231,18 +231,25 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
   void * handle;
   value result;
   char_os * p;
+  value exn;
 
   caml_gc_message(0x100, "Opening shared library %s\n",
                   String_val(filename));
   p = caml_stat_strdup_to_os(String_val(filename));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   handle = caml_dlopen(p, Int_val(mode), 1);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   caml_stat_free(p);
   if (handle == NULL) caml_failwith(caml_dlerror());
   result = caml_alloc_small(1, Abstract_tag);
   Handle_val(result) = handle;
   return result;
+
+ cleanup:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_dynlink_close_lib(value handle)

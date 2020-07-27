@@ -67,32 +67,47 @@ enum {
 /* Functions and macros that can be called from C.  Take arguments of
    type struct channel *.  No locking is performed. */
 
+// raises
 #define caml_putch(channel, ch) do{                                       \
   if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
   *((channel)->curr)++ = (ch);                                            \
 }while(0)
 
+// raises
 #define caml_getch(channel)                                                 \
   ((channel)->curr >= (channel)->max                                        \
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
-CAMLextern void caml_close_channel (struct channel *);
+CAMLextern struct channel * caml_open_descriptor_in (int); //raises
+CAMLextern struct channel * caml_open_descriptor_out (int); //raises
+CAMLextern struct channel * caml_open_descriptor_in_exn (int, value * exn);
+CAMLextern struct channel * caml_open_descriptor_out_exn (int, value * exn);
+/* These functions take ownership of the file descriptor. The [*_exn]
+   variants return NULL and set [exn] to an exception value if an
+   exception arises. */
+
+CAMLextern void caml_close_channel (struct channel *); // raises
 CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);
 
-CAMLextern int caml_flush_partial (struct channel *);
-CAMLextern void caml_flush (struct channel *);
-CAMLextern void caml_putword (struct channel *, uint32_t);
-CAMLextern int caml_putblock (struct channel *, char *, intnat);
-CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
+CAMLextern int caml_flush_partial (struct channel *); // raises
+CAMLextern void caml_flush (struct channel *); // raises
+CAMLextern void caml_putword (struct channel *, uint32_t); // raises
+CAMLextern int caml_putblock (struct channel *, char *, intnat); // raises
+CAMLextern int caml_putblock_exn(struct channel *, char *, intnat, value * exn);
+CAMLextern void caml_really_putblock(struct channel *, char *, intnat);// raises
+CAMLextern value caml_really_putblock_exn(struct channel *, char *, intnat);
 
-CAMLextern unsigned char caml_refill (struct channel *);
-CAMLextern uint32_t caml_getword (struct channel *);
-CAMLextern int caml_getblock (struct channel *, char *, intnat);
-CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
+CAMLextern unsigned char caml_refill (struct channel *); // raises
+CAMLextern uint32_t caml_getword (struct channel *); //raises
+CAMLextern int caml_getblock (struct channel *, char *, intnat); // raises
+CAMLextern int caml_getblock_exn (struct channel *, char *, intnat,
+                                  value * exn);
+CAMLextern intnat caml_really_getblock (struct channel *, char *,
+                                        intnat); // raises
+CAMLextern intnat caml_really_getblock_exn (struct channel *, char *,
+                                            intnat, value * exn);
 
 /* Extract a struct channel * from the heap object representing it */
 
@@ -100,15 +115,17 @@ CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
 
 /* The locking machinery */
 
-CAMLextern void (*caml_channel_mutex_free) (struct channel *);
-CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
+CAMLextern void (*caml_channel_mutex_lock) (struct channel *); // may raise
+CAMLextern void (*caml_channel_mutex_free) (struct channel *); // non-raising
+CAMLextern void (*caml_channel_mutex_unlock) (struct channel *); // non-raising
+CAMLextern void (*caml_channel_mutex_unlock_exn) (void); // non-raising
 
 CAMLextern struct channel * caml_all_opened_channels;
 
+// raises
 #define Lock(channel) \
   if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)
+
 #define Unlock(channel) \
   if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
 #define Unlock_exn() \

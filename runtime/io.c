@@ -69,15 +69,17 @@ CAMLexport struct channel * caml_all_opened_channels = NULL;
 
 /* Functions shared between input and output */
 
-CAMLexport struct channel * caml_open_descriptor_in(int fd)
+CAMLexport struct channel * caml_open_descriptor_in_exn(int fd, value * exn)
 {
   struct channel * channel;
 
   channel = (struct channel *) caml_stat_alloc(sizeof(struct channel));
   channel->fd = fd;
-  caml_enter_blocking_section();
+  *exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(*exn)) goto cleanup;
   channel->offset = lseek(fd, 0, SEEK_CUR);
-  caml_leave_blocking_section();
+  *exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(*exn)) goto cleanup;
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
@@ -92,15 +94,40 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
     caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
   return channel;
+
+ cleanup:
+  caml_stat_free(channel);
+  caml_enter_blocking_section_noexn();
+  close(fd);
+  caml_leave_blocking_section_noexn();
+  return NULL;
+}
+
+CAMLexport struct channel * caml_open_descriptor_in(int fd)
+{
+  value exn = Val_unit;
+  struct channel * chan = caml_open_descriptor_in_exn(fd, &exn);
+  caml_raise_if_exception(exn);
+  return chan;
+}
+
+CAMLexport struct channel * caml_open_descriptor_out_exn(int fd, value * exn)
+{
+  struct channel * channel;
+
+  channel = caml_open_descriptor_in_exn(fd, exn);
+  if (channel) {
+    channel->max = NULL;
+  }
+  return channel;
 }
 
 CAMLexport struct channel * caml_open_descriptor_out(int fd)
 {
-  struct channel * channel;
-
-  channel = caml_open_descriptor_in(fd);
-  channel->max = NULL;
-  return channel;
+  value exn = Val_unit;
+  struct channel * chan = caml_open_descriptor_out_exn(fd, &exn);
+  caml_raise_if_exception(exn);
+  return chan;
 }
 
 static void unlink_channel(struct channel *channel)
@@ -159,6 +186,38 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
 
 /* Output */
 
+CAMLexport int caml_write_fd(int fd, int flags, void * buf, int n)
+{
+  value exn = Val_unit;
+  int retcode = caml_write_fd_exn(fd, flags, buf, n, &exn);
+  caml_raise_if_exception(exn);
+  CAMLassert(retcode > 0);
+  return retcode;
+}
+
+static value write_channel_to_fd_exn(struct channel * channel, int towrite)
+{
+  int written;
+  value exn = Val_unit;
+  written = caml_write_fd_exn(channel->fd, channel->flags,
+                              channel->buff, towrite, &exn);
+  if (written < 0) {
+    CAMLassert(Is_exception_result(exn));
+    return exn;
+  }
+  if (written < towrite)
+    memmove(channel->buff, channel->buff + written, towrite - written);
+  channel->offset += written;
+  channel->curr = channel->buff + towrite - written;
+  return exn;
+}
+
+//raises
+static void write_channel_to_fd(struct channel * channel, int towrite)
+{
+  caml_raise_if_exception(write_channel_to_fd_exn(channel, towrite));
+}
+
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer.
@@ -166,17 +225,12 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
 
 CAMLexport int caml_flush_partial(struct channel *channel)
 {
-  int towrite, written;
+  int towrite;
 
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
   if (towrite > 0) {
-    written = caml_write_fd(channel->fd, channel->flags,
-                            channel->buff, towrite);
-    channel->offset += written;
-    if (written < towrite)
-      memmove(channel->buff, channel->buff + written, towrite - written);
-    channel->curr -= written;
+    write_channel_to_fd(channel, towrite);
   }
   return (channel->curr == channel->buff);
 }
@@ -200,9 +254,10 @@ CAMLexport void caml_putword(struct channel *channel, uint32_t w)
   caml_putch(channel, w);
 }
 
-CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+CAMLexport int caml_putblock_exn(struct channel *channel, char *p, intnat len,
+                                 value * exn)
 {
-  int n, free, towrite, written;
+  int n, free;
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
   free = channel->end - channel->curr;
@@ -215,38 +270,52 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
     /* Write request overflows buffer (or just fills it up): transfer whatever
        fits to buffer and write the buffer */
     memmove(channel->curr, p, free);
-    towrite = channel->end - channel->buff;
-    written = caml_write_fd(channel->fd, channel->flags,
-                            channel->buff, towrite);
-    if (written < towrite)
-      memmove(channel->buff, channel->buff + written, towrite - written);
-    channel->offset += written;
-    channel->curr = channel->end - written;
+    *exn = write_channel_to_fd_exn(channel, channel->end - channel->buff);
     return free;
   }
+}
+
+CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+{
+  value exn = Val_unit;
+  int res = caml_putblock_exn(channel, p, len, &exn);
+  caml_raise_if_exception(exn);
+  return res;
+}
+
+CAMLexport value caml_really_putblock_exn(struct channel *channel,
+                                          char *p, intnat len)
+{
+  int written;
+  value exn = Val_unit;
+  while (len > 0) {
+    written = caml_putblock_exn(channel, p, len, &exn);
+    if (Is_exception_result(exn)) return exn;
+    p += written;
+    len -= written;
+  }
+  return Val_unit;
 }
 
 CAMLexport void caml_really_putblock(struct channel *channel,
                                      char *p, intnat len)
 {
-  int written;
-  while (len > 0) {
-    written = caml_putblock(channel, p, len);
-    p += written;
-    len -= written;
-  }
+  caml_raise_if_exception(caml_really_putblock_exn(channel, p, len));
 }
 
+// raises
 CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
 {
+  value exn;
   caml_flush(channel);
   caml_enter_blocking_section();
   if (lseek(channel->fd, dest, SEEK_SET) != dest) {
     caml_leave_blocking_section();
     caml_sys_error(NO_ARG);
   }
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
   channel->offset = dest;
+  caml_raise_if_exception(exn);
 }
 
 CAMLexport file_offset caml_pos_out(struct channel *channel)
@@ -256,7 +325,38 @@ CAMLexport file_offset caml_pos_out(struct channel *channel)
 
 /* Input */
 
-/* caml_do_read is exported for Cash */
+CAMLexport int caml_read_fd(int fd, int flags, void * buf, int n)
+{
+  value exn = Val_unit;
+  int retcode = caml_read_fd_exn(fd, flags, buf, n, &exn);
+  caml_raise_if_exception(exn);
+  CAMLassert(retcode >= 0);
+  return retcode;
+}
+
+static int read_fd_into_channel_exn(struct channel * channel, char * buf,
+                                    value * exn)
+{
+  int n;
+  n = caml_read_fd_exn(channel->fd, channel->flags, buf,
+                       channel->end - buf, exn);
+  if (n <= 0) return n;
+  channel->offset += n;
+  channel->max = buf + n;
+  return n;
+}
+
+static int read_fd_into_channel(struct channel * channel, char * buf)
+{
+  int n;
+  value exn = Val_unit;
+  n = read_fd_into_channel_exn(channel, buf, &exn);
+  caml_raise_if_exception(exn);
+  CAMLassert(n >= 0);
+  return n;
+}
+
+/* caml_do_read is exported for Cash. Raises. */
 CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 {
   return caml_read_fd(fd, 0, p, n);
@@ -265,12 +365,8 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 CAMLexport unsigned char caml_refill(struct channel *channel)
 {
   int n;
-
-  n = caml_read_fd(channel->fd, channel->flags,
-                   channel->buff, channel->end - channel->buff);
+  n = read_fd_into_channel(channel, channel->buff);
   if (n == 0) caml_raise_end_of_file();
-  channel->offset += n;
-  channel->max = channel->buff + n;
   channel->curr = channel->buff + 1;
   return (unsigned char)(channel->buff[0]);
 }
@@ -289,7 +385,8 @@ CAMLexport uint32_t caml_getword(struct channel *channel)
   return res;
 }
 
-CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
+CAMLexport int caml_getblock_exn(struct channel *channel, char *p, intnat len,
+                                 value * exn)
 {
   int n, avail, nread;
 
@@ -304,10 +401,8 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
     channel->curr += avail;
     return avail;
   } else {
-    nread = caml_read_fd(channel->fd, channel->flags, channel->buff,
-                         channel->end - channel->buff);
-    channel->offset += nread;
-    channel->max = channel->buff + nread;
+    nread = read_fd_into_channel_exn(channel, channel->buff, exn);
+    if (Is_exception_result(*exn)) return n;
     if (n > nread) n = nread;
     memmove(p, channel->buff, n);
     channel->curr = channel->buff + n;
@@ -315,22 +410,41 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
   }
 }
 
+CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
+{
+  value exn = Val_unit;
+  int r = caml_getblock_exn(channel, p, len, &exn);
+  caml_raise_if_exception(exn);
+  return r;
+}
+
+
 /* Returns the number of bytes read. */
-CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
+CAMLexport intnat caml_really_getblock_exn(struct channel *chan, char *p,
+                                           intnat n, value * exn)
 {
   intnat k = n;
   int r;
   while (k > 0) {
-    r = caml_getblock(chan, p, k);
-    if (r == 0) break;
+    r = caml_getblock_exn(chan, p, k, exn);
+    if (Is_exception_result(*exn) || r == 0) break;
     p += r;
     k -= r;
   }
   return n - k;
 }
 
+CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
+{
+  value exn = Val_unit;
+  intnat r = caml_really_getblock_exn(chan, p, n, &exn);
+  caml_raise_if_exception(exn);
+  return r;
+}
+
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
 {
+  value exn;
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
@@ -340,9 +454,10 @@ CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
       caml_leave_blocking_section();
       caml_sys_error(NO_ARG);
     }
-    caml_leave_blocking_section();
+    exn = caml_leave_blocking_section_exn();
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
+    caml_raise_if_exception(exn);
   }
 }
 
@@ -376,16 +491,13 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
         return -(channel->max - channel->curr);
       }
       /* Fill the buffer as much as possible */
-      n = caml_read_fd(channel->fd, channel->flags,
-                       channel->max, channel->end - channel->max);
+      n = read_fd_into_channel(channel, channel->max);
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered
            a newline. */
         return -(channel->max - channel->curr);
       }
-      channel->offset += n;
-      channel->max += n;
     }
   } while (*p++ != '\n');
   /* Found a newline. Return the length of the line, newline included. */
@@ -528,6 +640,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
   int result;
   int do_syscall;
   int fd;
+  value exn;
 
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
@@ -545,13 +658,22 @@ CAMLprim value caml_ml_close_channel(value vchannel)
   channel->curr = channel->max = channel->end;
 
   if (do_syscall) {
-    caml_enter_blocking_section();
+    exn = caml_enter_blocking_section_exn();
+    if (Is_exception_result(exn)) goto cleanup;
     result = close(fd);
     caml_leave_blocking_section();
   }
 
   if (result == -1) caml_sys_error (NO_ARG);
   return Val_unit;
+
+ cleanup:
+  // At this point the channel is an invalid state, so we must close
+  // fd at all costs.
+  caml_enter_blocking_section_noexn();
+  close(fd);
+  caml_leave_blocking_section_noexn();
+  caml_raise(Extract_exception(exn));
 }
 
 /* EOVERFLOW is the Unix98 error indicating that a file position or file

@@ -72,7 +72,7 @@ static char * error_message(void)
 #define EWOULDBLOCK (-1)
 #endif
 
-CAMLexport void caml_sys_error(value arg)
+CAMLexport value caml_sys_error_exn(value arg)
 {
   CAMLparam1 (arg);
   char * err;
@@ -89,16 +89,20 @@ CAMLexport void caml_sys_error(value arg)
     memmove(&Byte(str, arg_len), ": ", 2);
     memmove(&Byte(str, arg_len + 2), err, err_len);
   }
-  caml_raise_sys_error(str);
-  CAMLnoreturn;
+  CAMLreturn (caml_raise_sys_error_exn(str));
 }
 
-CAMLexport void caml_sys_io_error(value arg)
+CAMLexport void caml_sys_error(value arg)
+{
+  caml_raise(Extract_exception(caml_sys_error_exn(arg)));
+}
+
+CAMLexport value caml_sys_io_error_exn(value arg)
 {
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
-    caml_raise_sys_blocked_io();
+    return caml_raise_sys_blocked_io_exn();
   } else {
-    caml_sys_error(arg);
+    return caml_sys_error_exn(arg);
   }
 }
 
@@ -187,6 +191,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLparam3(path, vflags, vperm);
   int fd, flags, perm;
   char_os * p;
+  value exn;
 
 #if defined(O_CLOEXEC)
   flags = O_CLOEXEC;
@@ -201,7 +206,8 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   flags |= caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#8005) */
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup1;
   fd = open_os(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/
 #if defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(_WIN32) \
@@ -209,19 +215,36 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   if (fd != -1)
     fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup2;
   caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
   CAMLreturn(Val_long(fd));
+
+ cleanup2:
+  caml_enter_blocking_section_noexn();
+  close(fd);
+  caml_leave_blocking_section_noexn();
+ cleanup1:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_close(value fd_v)
 {
   int fd = Int_val(fd_v);
-  caml_enter_blocking_section();
+  value exn;
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   close(fd);
   caml_leave_blocking_section();
   return Val_unit;
+
+ cleanup:
+  caml_enter_blocking_section_noexn();
+  close(fd);
+  caml_leave_blocking_section_noexn();
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_file_exists(value name)
@@ -233,15 +256,22 @@ CAMLprim value caml_sys_file_exists(value name)
 #endif
   char_os * p;
   int ret;
+  value exn;
 
   if (! caml_string_is_c_safe(name)) return Val_false;
   p = caml_stat_strdup_to_os(String_val(name));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   ret = stat_os(p, &st);
-  caml_leave_blocking_section();
-  caml_stat_free(p);
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
 
+  caml_stat_free(p);
   return Val_bool(ret == 0);
+
+ cleanup:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_is_directory(value name)
@@ -254,12 +284,16 @@ CAMLprim value caml_sys_is_directory(value name)
 #endif
   char_os * p;
   int ret;
+  value exn;
 
   caml_sys_check_path(name);
   p = caml_stat_strdup_to_os(String_val(name));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   ret = stat_os(p, &st);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
+
   caml_stat_free(p);
 
   if (ret == -1) caml_sys_error(name);
@@ -268,6 +302,10 @@ CAMLprim value caml_sys_is_directory(value name)
 #else
   CAMLreturn(Val_bool(st.st_mode & S_IFDIR));
 #endif
+
+ cleanup:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_remove(value name)
@@ -275,14 +313,22 @@ CAMLprim value caml_sys_remove(value name)
   CAMLparam1(name);
   char_os * p;
   int ret;
+  value exn;
+
   caml_sys_check_path(name);
   p = caml_stat_strdup_to_os(String_val(name));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   ret = unlink_os(p);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(name);
   CAMLreturn(Val_unit);
+
+ cleanup:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_rename(value oldname, value newname)
@@ -290,18 +336,26 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   char_os * p_old;
   char_os * p_new;
   int ret;
+  value exn;
   caml_sys_check_path(oldname);
   caml_sys_check_path(newname);
   p_old = caml_stat_strdup_to_os(String_val(oldname));
   p_new = caml_stat_strdup_to_os(String_val(newname));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   ret = rename_os(p_old, p_new);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   caml_stat_free(p_new);
   caml_stat_free(p_old);
   if (ret != 0)
     caml_sys_error(NO_ARG);
   return Val_unit;
+
+ cleanup:
+  caml_stat_free(p_new);
+  caml_stat_free(p_old);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_chdir(value dirname)
@@ -309,14 +363,21 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLparam1(dirname);
   char_os * p;
   int ret;
+  value exn;
   caml_sys_check_path(dirname);
   p = caml_stat_strdup_to_os(String_val(dirname));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   ret = chdir_os(p);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(dirname);
   CAMLreturn(Val_unit);
+
+ cleanup:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_sys_getcwd(value unit)
@@ -627,13 +688,16 @@ CAMLprim value caml_sys_read_directory(value path)
   struct ext_table tbl;
   char_os * p;
   int ret;
+  value exn;
 
   caml_sys_check_path(path);
   caml_ext_table_init(&tbl, 50);
   p = caml_stat_strdup_to_os(String_val(path));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   ret = caml_read_directory(p, &tbl);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup;
   caml_stat_free(p);
   if (ret == -1){
     caml_ext_table_free(&tbl, 1);
@@ -643,6 +707,11 @@ CAMLprim value caml_sys_read_directory(value path)
   result = caml_copy_string_array((char const **) tbl.contents);
   caml_ext_table_free(&tbl, 1);
   CAMLreturn(result);
+
+ cleanup:
+  caml_stat_free(p);
+  caml_ext_table_free(&tbl, 1);
+  caml_raise(Extract_exception(exn));
 }
 
 /* Return true if the value is a filedescriptor (int) that is

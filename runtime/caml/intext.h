@@ -103,7 +103,7 @@
 /* The entry points */
 
 void caml_output_val (struct channel * chan, value v, value flags);
-  /* Output [v] with flags [flags] on the channel [chan]. */
+  /* Output [v] with flags [flags] on the channel [chan]. Raises. */
 
 #endif /* CAML_INTERNALS */
 
@@ -126,12 +126,12 @@ CAMLextern intnat caml_output_value_to_block(value v, value flags,
 
 #ifdef CAML_INTERNALS
 value caml_input_val (struct channel * chan);
-  /* Read a structured value from the channel [chan]. */
+  /* Read a structured value from the channel [chan]. Raises. */
 
 extern value caml_input_value_to_outside_heap (value channel);
   /* As for [caml_input_value], but the value is unmarshalled into
      malloc blocks that are not added to the heap.  Not for the
-     casual user. */
+     casual user. Raises */
 
 extern int caml_extern_allow_out_of_heap;
   /* Permit the marshaller to traverse structures that look like OCaml

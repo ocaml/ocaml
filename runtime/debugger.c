@@ -102,6 +102,7 @@ static struct skiplist event_points_table = SKIPLIST_STATIC_INITIALIZER;
 
 static void open_connection(void)
 {
+  int dbg_socket_in;
 #ifdef _WIN32
   /* Set socket to synchronous mode so that file descriptor-oriented
      functions (read()/write() etc.) can be used */
@@ -139,7 +140,10 @@ static void open_connection(void)
   if (dbg_socket == -1)
     caml_fatal_error("_open_osfhandle failed");
 #endif
-  dbg_in = caml_open_descriptor_in(dbg_socket);
+  dbg_socket_in = dup(dbg_socket);
+  if (dbg_socket_in == -1)
+    caml_fatal_error("dup failed");
+  dbg_in = caml_open_descriptor_in(dbg_socket_in);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
@@ -152,6 +156,7 @@ static void open_connection(void)
 
 static void close_connection(void)
 {
+  // FIXME prevent leak with masking
   caml_close_channel(dbg_in);
   caml_close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by caml_close_channel */

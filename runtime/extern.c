@@ -885,6 +885,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
   char header[32];
   int header_len;
   struct output_block * blk, * nextblk;
+  value exn;
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("output_value: not a binary channel");
@@ -894,13 +895,22 @@ void caml_output_val(struct channel *chan, value v, value flags)
      can take place (via signal handlers or context switching in systhreads),
      and [extern_output_first] may change. So, save it in a local variable. */
   blk = extern_output_first;
-  caml_really_putblock(chan, header, header_len);
+  exn = caml_really_putblock_exn(chan, header, header_len);
+  if (Is_exception_result(exn)) goto cleanup;
   while (blk != NULL) {
-    caml_really_putblock(chan, blk->data, blk->end - blk->data);
+    exn = caml_really_putblock_exn(chan, blk->data, blk->end - blk->data);
+    if (Is_exception_result(exn)) goto cleanup;
     nextblk = blk->next;
     caml_stat_free(blk);
     blk = nextblk;
   }
+
+ cleanup:
+  for (; blk != NULL; blk = nextblk) {
+    nextblk = blk->next;
+    caml_stat_free(blk);
+  }
+  caml_raise_if_exception(exn);
 }
 
 CAMLprim value caml_output_value(value vchan, value v, value flags)

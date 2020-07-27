@@ -65,8 +65,6 @@ struct longjmp_buffer {
 
 int caml_is_special_exception(value exn);
 
-value caml_raise_if_exception(value res);
-
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
@@ -75,71 +73,96 @@ extern "C" {
 
 CAMLnoreturn_start
 CAMLextern void caml_raise (value bucket)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_constant (value tag)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_with_arg (value tag, value arg)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[])
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_with_string (value tag, char const * msg)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_failwith (char const *msg)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_failwith_value (value msg)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_invalid_argument (char const *msg)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_invalid_argument_value (value msg)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_out_of_memory (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_stack_overflow (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_sys_error (value)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_end_of_file (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_zero_divide (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_not_found (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_array_bound_error (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
 
 CAMLnoreturn_start
 CAMLextern void caml_raise_sys_blocked_io (void)
-CAMLnoreturn_end;
+CAMLnoreturn_end; // raises
+
+/* Non-raising variants of the above functions. The result is an
+   encoded exception to use with Is_exception_result and
+   Extract_exception. */
+
+CAMLextern value caml_raise_with_arg_exn (value tag, value arg);
+CAMLextern value caml_raise_with_args_exn (value tag, int nargs, value arg[]);
+CAMLextern value caml_raise_with_string_exn (value tag, char const * msg);
+CAMLextern value caml_failwith_exn (char const *msg);
+CAMLextern value caml_failwith_value_exn (value msg);
+CAMLextern value caml_invalid_argument_exn (char const *msg);
+CAMLextern value caml_invalid_argument_value_exn (value msg);
+CAMLextern value caml_raise_out_of_memory_exn (void);
+CAMLextern value caml_raise_stack_overflow_exn (void);
+CAMLextern value caml_raise_sys_error_exn (value msg);
+CAMLextern value caml_raise_end_of_file_exn (void);
+CAMLextern value caml_raise_zero_divide_exn (void);
+CAMLextern value caml_raise_not_found_exn (void);
+CAMLextern value caml_array_bound_error_exn (void);
+CAMLextern value caml_raise_sys_blocked_io_exn (void);
+
+CAMLextern value caml_raise_if_exception (value val);
+/* If [val] is an encoded exception as returned by _exn functions,
+   raise the exception it encodes. Otherwise, [val] is returned
+   unchanged with the guarantee that it is a regular value. Raises. */
 
 #ifdef __cplusplus
 }

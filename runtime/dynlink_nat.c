@@ -71,21 +71,25 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   void *sym;
   void *dlhandle;
   char_os *p;
-
-  /* TODO: dlclose in case of error... */
+  value exn;
 
   p = caml_stat_strdup_to_os(String_val(filename));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup1;
   dlhandle = caml_dlopen(p, 1, Int_val(global));
-  caml_leave_blocking_section();
-  caml_stat_free(p);
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup2;
 
-  if (NULL == dlhandle)
-    caml_failwith(caml_dlerror());
+  if (NULL == dlhandle) {
+    exn = caml_failwith_exn(caml_dlerror());
+    goto cleanup2;
+  }
 
   sym = caml_dlsym(dlhandle, "caml_plugin_header");
-  if (NULL == sym)
-    caml_failwith("not an OCaml plugin");
+  if (NULL == sym) {
+    exn = caml_failwith_exn("not an OCaml plugin");
+    goto cleanup2;
+  }
 
   handle = Val_handle(dlhandle);
   header = caml_input_value_from_block(sym, INT_MAX);
@@ -93,7 +97,18 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   res = caml_alloc_tuple(2);
   Field(res, 0) = handle;
   Field(res, 1) = header;
+  caml_stat_free(p);
   CAMLreturn(res);
+
+ cleanup2:
+  if (dlhandle) {
+    caml_enter_blocking_section_noexn();
+    caml_dlclose(dlhandle);
+    caml_leave_blocking_section_noexn();
+  }
+ cleanup1:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
@@ -147,13 +162,14 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
   CAMLlocal3 (res, v, handle_v);
   void *handle;
   char_os *p;
-
-  /* TODO: dlclose in case of error... */
+  value exn;
 
   p = caml_stat_strdup_to_os(String_val(filename));
-  caml_enter_blocking_section();
+  exn = caml_enter_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup1;
   handle = caml_dlopen(p, 1, 1);
-  caml_leave_blocking_section();
+  exn = caml_leave_blocking_section_exn();
+  if (Is_exception_result(exn)) goto cleanup2;
   caml_stat_free(p);
 
   if (NULL == handle) {
@@ -167,6 +183,16 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
     Store_field(res, 0, v);
   }
   CAMLreturn(res);
+
+ cleanup2:
+  if (handle) {
+    caml_enter_blocking_section_noexn();
+    caml_dlclose(handle);
+    caml_leave_blocking_section_noexn();
+  }
+ cleanup1:
+  caml_stat_free(p);
+  caml_raise(Extract_exception(exn));
 }
 
 CAMLprim value caml_natdynlink_loadsym(value symbol)
