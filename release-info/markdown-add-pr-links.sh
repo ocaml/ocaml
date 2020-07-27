@@ -15,20 +15,16 @@
 #*                                                                        *
 #**************************************************************************
 
-# This script performs a series of transformation on standard input to
+# This script performs a series of transformation on its argument to
 # turn ASCII references into Markdown-format links:
-# - GPR#NNNN links to Github
-# - MPR#NNNN and PR#NNNN link to Mantis
+# - #NNNN links to Github
 # - (Changes#VERSION) link to the Changes file
+# Breaking change list bullet are converted into annotations
 
 # It was only tested with GNU sed. Sorry!
 
 GITHUB=https://github.com/ocaml/ocaml
-MANTIS=https://caml.inria.fr/mantis
 
-cat \
-| sed "s,GPR#\\([0-9]*\\),[GPR~#~\\1]($GITHUB/pull/\\1),g"\
-| sed "s,MPR#\\([0-9]*\\),[PR~#~\\1]($MANTIS/view.php?id=\\1),g"\
-| sed "s,PR#\\([0-9]*\\),[PR~#~\\1]($MANTIS/view.php?id=\\1),g"\
-| sed "s,(Changes#\\(.*\\)),[Changes file for \\1]($GITHUB/blob/\\1/Changes),g"\
-| sed "s,PR~#~,PR#,g" \
+sed "s,(Changes#\(.*\)),[Changes file for \\1]($GITHUB/blob/\\1/Changes),g" $1 \
+| sed "s,#\([0-9]\+\),[#\\1]($GITHUB/issues/\\1),g" \
+| sed "s/^*/* [*breaking change*]/g"
