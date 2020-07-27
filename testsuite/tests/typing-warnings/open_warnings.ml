@@ -10,11 +10,11 @@ end;;
 Line 2, characters 20-26:
 2 |   module M = struct type t end  (* unused type t *)
                         ^^^^^^
-Warning 34: unused type t.
+Warning 34 [unused-type-declaration]: unused type t.
 Line 3, characters 2-8:
 3 |   open M  (* unused open *)
       ^^^^^^
-Warning 33: unused open M.
+Warning 33 [unused-open]: unused open M.
 module T1 : sig end
 |}]
 
@@ -38,15 +38,15 @@ end;;
 Line 4, characters 2-8:
 4 |   open M (* used by line below; shadow constructor A *)
       ^^^^^^
-Warning 45: this open statement shadows the constructor A (which is later used)
+Warning 45 [open-shadow-label-constructor]: this open statement shadows the constructor A (which is later used)
 Line 2, characters 2-13:
 2 |   type t0 = A  (* unused type and constructor *)
       ^^^^^^^^^^^
-Warning 34: unused type t0.
+Warning 34 [unused-type-declaration]: unused type t0.
 Line 2, characters 12-13:
 2 |   type t0 = A  (* unused type and constructor *)
                 ^
-Warning 37: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor A.
 module T3 : sig end
 |}]
 
@@ -60,15 +60,15 @@ end;;
 Line 3, characters 20-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
                         ^^^^^^^^^^
-Warning 34: unused type t.
+Warning 34 [unused-type-declaration]: unused type t.
 Line 3, characters 29-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
                                  ^
-Warning 37: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor A.
 Line 4, characters 2-8:
 4 |   open M (* unused open; no shadowing (A below refers to the one in t0) *)
       ^^^^^^
-Warning 33: unused open M.
+Warning 33 [unused-open]: unused open M.
 module T4 : sig end
 |}]
 
@@ -82,15 +82,15 @@ end;;
 Line 4, characters 2-8:
 4 |   open M (* shadow constructor A *)
       ^^^^^^
-Warning 45: this open statement shadows the constructor A (which is later used)
+Warning 45 [open-shadow-label-constructor]: this open statement shadows the constructor A (which is later used)
 Line 2, characters 2-13:
 2 |   type t0 = A (* unused type and constructor *)
       ^^^^^^^^^^^
-Warning 34: unused type t0.
+Warning 34 [unused-type-declaration]: unused type t0.
 Line 2, characters 12-13:
 2 |   type t0 = A (* unused type and constructor *)
                 ^
-Warning 37: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor A.
 module T5 : sig end
 |}]
 
@@ -103,11 +103,11 @@ end;;
 Line 2, characters 20-26:
 2 |   module M = struct type t end  (* unused type t *)
                         ^^^^^^
-Warning 34: unused type t.
+Warning 34 [unused-type-declaration]: unused type t.
 Line 3, characters 2-9:
 3 |   open! M  (* unused open *)
       ^^^^^^^
-Warning 66: unused open! M.
+Warning 66 [unused-open-bang]: unused open! M.
 module T1_bis : sig end
 |}]
 
@@ -130,11 +130,11 @@ end;;
 Line 2, characters 2-13:
 2 |   type t0 = A  (* unused type and constructor *)
       ^^^^^^^^^^^
-Warning 34: unused type t0.
+Warning 34 [unused-type-declaration]: unused type t0.
 Line 2, characters 12-13:
 2 |   type t0 = A  (* unused type and constructor *)
                 ^
-Warning 37: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor A.
 module T3_bis : sig end
 |}]
 
@@ -148,15 +148,15 @@ end;;
 Line 3, characters 20-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
                         ^^^^^^^^^^
-Warning 34: unused type t.
+Warning 34 [unused-type-declaration]: unused type t.
 Line 3, characters 29-30:
 3 |   module M = struct type t = A end (* unused type and constructor *)
                                  ^
-Warning 37: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor A.
 Line 4, characters 2-9:
 4 |   open! M (* unused open; no shadowing (A below refers to the one in t0) *)
       ^^^^^^^
-Warning 66: unused open! M.
+Warning 66 [unused-open-bang]: unused open! M.
 module T4_bis : sig end
 |}]
 
@@ -170,11 +170,11 @@ end;;
 Line 2, characters 2-13:
 2 |   type t0 = A (* unused type and constructor *)
       ^^^^^^^^^^^
-Warning 34: unused type t0.
+Warning 34 [unused-type-declaration]: unused type t0.
 Line 2, characters 12-13:
 2 |   type t0 = A (* unused type and constructor *)
                 ^
-Warning 37: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor A.
 module T5_bis : sig end
 |}]
 

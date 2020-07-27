@@ -839,6 +839,7 @@ module type S =
     val of_seq : (key * 'a) Seq.t -> 'a t
     (** Build a map from the given bindings
         @since 4.07 *)
+
   end
 (** Output signature of the functor {!Make}. *)
 

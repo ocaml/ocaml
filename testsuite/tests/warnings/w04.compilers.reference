@@ -2,5 +2,5 @@ File "w04.ml", lines 21-23, characters 10-8:
 21 | ..........match x with
 22 | | A -> 0
 23 | | _ -> 1
-Warning 4: this pattern-matching is fragile.
+Warning 4 [fragile-match]: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t.

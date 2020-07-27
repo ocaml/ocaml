@@ -245,6 +245,8 @@
 
 #undef HAS_SYS_SHM_H
 
+#undef HAS_SHMAT
+
 #undef HAS_EXECVPE
 
 #undef HAS_POSIX_SPAWN
@@ -255,8 +257,6 @@
 #undef HAS_STACK_OVERFLOW_DETECTION
 
 #undef HAS_SIGWAIT
-
-#undef HAS_LIBBFD
 
 #undef HAS_HUGE_PAGES
 

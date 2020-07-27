@@ -1,5 +1,5 @@
 File "pr6323.ml", line 1:
-Warning 63: The printed interface differs from the inferred interface.
+Warning 63 [erroneous-printed-signature]: The printed interface differs from the inferred interface.
 The inferred interface contained items which could not be printed
 properly due to name collisions between identifiers.
 File "pr6323.ml", line 15, characters 2-24:

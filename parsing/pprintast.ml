@@ -1255,7 +1255,16 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
       Some (p, pt_tyvars, e_ct, e) else None
     | _ -> None in
   if x.pexp_attributes <> []
-  then pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x else
+  then
+    match p with
+    | {ppat_desc=Ppat_constraint({ppat_desc=Ppat_var _; _} as pat,
+                                 ({ptyp_desc=Ptyp_poly _; _} as typ));
+       ppat_attributes=[]; _} ->
+        pp f "%a@;: %a@;=@;%a"
+          (simple_pattern ctxt) pat (core_type ctxt) typ (expression ctxt) x
+    | _ ->
+        pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
+  else
   match is_desugared_gadt p x with
   | Some (p, [], ct, e) ->
       pp f "%a@;: %a@;=@;%a"
