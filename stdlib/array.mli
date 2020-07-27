@@ -264,7 +264,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
 
    Specification of the comparison function:
    Let [a] be the array and [cmp] the comparison function.  The following
-   must be true for all x, y, z in a :
+   must be true for all [x], [y], [z] in [a] :
 -   [cmp x y] > 0 if and only if [cmp y x] < 0
 -   if [cmp x y] >= 0 and [cmp y z] >= 0 then [cmp x z] >= 0
 
