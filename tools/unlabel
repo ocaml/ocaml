@@ -70,7 +70,7 @@ rm -f stdlib/moreLabels.temp.mli stdlib/moreLabels.temp2.mli
 #Fix up
 perl -p -e "s/type statistics =/type statistics = Hashtbl\.statistics =/" \
   stdlib/moreLabels.mli > stdlib/moreLabels.temp.mli
-perl -p -e "s/type \('a, 'b\) t/type \('a, 'b\) t = \('a, 'b) Hashtbl.t/" \
+perl -p -e "s/type \(!'a, !'b\) t/type \(!'a, !'b\) t = \('a, 'b) Hashtbl.t/" \
   stdlib/moreLabels.temp.mli > stdlib/moreLabels.temp2.mli
 perl -p -e\
   "s/module Make \(H : HashedType\) : S with type key = H.t\
