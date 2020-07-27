@@ -199,7 +199,8 @@ val is_randomized : unit -> bool
      by default, [false] otherwise.
     @since 4.03.0 *)
 
-val rebuild : ?random (* thwart tools/unlabel *) :bool -> ('a, 'b) t -> ('a, 'b) t
+val rebuild : ?random (* thwart tools/unlabel *) :bool ->
+    ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable.  Unlike {!copy},
     [{!rebuild} h] re-hashes all the (key, value) entries of
     the original table [h].  The returned hash table is randomized if
