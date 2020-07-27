@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include <signal.h>
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
@@ -66,4 +67,10 @@ value mycamlparam (value v, value fun, value arg)
   y = caml_callback (fun, arg);
   v = x;
   CAMLreturn (v);
+}
+
+value raise_sigusr1(value unused)
+{
+  raise(SIGUSR1);
+  return Val_unit;
 }
