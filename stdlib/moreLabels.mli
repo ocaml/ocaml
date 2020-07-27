@@ -36,7 +36,7 @@ module Hashtbl : sig
 (** {1 Generic interface} *)
 
 
-type ('a, 'b) t = ('a, 'b) Hashtbl.t
+type (!'a, !'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
 val create : ?random: (* thwart tools/unlabel *) bool -> int -> ('a, 'b) t
@@ -555,7 +555,7 @@ module type S =
     type key
     (** The type of the map keys. *)
 
-    type (!+'a) t
+    and (!+'a) t
     (** The type of maps from type [key] to type ['a]. *)
 
     val empty: 'a t

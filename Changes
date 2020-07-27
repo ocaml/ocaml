@@ -154,7 +154,8 @@ Working version
   (Thomas Refis, review by Gabriel Scherer)
 
 - #9745: Manual: Standard Library labeled and unlabeled documentation unified
-  (John Whitington, review by Nicolás Ojeda Bär)
+  (John Whitington, review by Nicolás Ojeda Bär, David Allsopp
+   and Thomas Refis)
 
 ### Compiler user-interface and warnings:
 

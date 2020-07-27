@@ -25,7 +25,7 @@
 (** {1 Generic interface} *)
 
 
-type ('a, 'b) t
+type (!'a, !'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
 val create : ?random: (* thwart tools/unlabel *) bool -> int -> ('a, 'b) t
