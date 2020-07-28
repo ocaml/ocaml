@@ -71,8 +71,10 @@ static void logToChannel(void *voidchannel, const char *fmt, va_list ap)
     if (text == NULL) return;
     if (vsnprintf(text, length, fmt, ap) != length) goto end;
   }
+  Lock(channel);
   caml_putblock(channel, text, length);
   caml_flush(channel);
+  Unlock(channel);
 end:
   free(text);
 }

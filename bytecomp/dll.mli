@@ -34,9 +34,14 @@ val close_all_dlls: unit -> unit
 (* The abstract type representing C function pointers *)
 type dll_address
 
+type primitive_address =
+  | Prim_loaded of dll_address (* Primitive found in a DLL opened
+                                  "for execution" *)
+  | Prim_exists (* Primitive found in a DLL opened "for checking" *)
+
 (* Find a primitive in the currently opened DLLs and return its address.
-   Raise [Not_found] if not found. *)
-val find_primitive: string -> dll_address
+   Return [None] if the primitive is not found. *)
+val find_primitive: string -> primitive_address option
 
 (* If linking in core (dynlink or toplevel), synchronize the VM
    table of primitive with the linker's table of primitive

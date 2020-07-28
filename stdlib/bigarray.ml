@@ -92,7 +92,7 @@ let c_layout = C_layout
 let fortran_layout = Fortran_layout
 
 module Genarray = struct
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   external create: ('a, 'b) kind -> 'c layout -> int array -> ('a, 'b, 'c) t
      = "caml_ba_create"
   external get: ('a, 'b, 'c) t -> int array -> 'a
@@ -132,7 +132,7 @@ module Genarray = struct
 end
 
 module Array0 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout =
     Genarray.create kind layout [||]
   let get arr = Genarray.get arr [||]
@@ -155,7 +155,7 @@ module Array0 = struct
 end
 
 module Array1 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim =
     Genarray.create kind layout [|dim|]
   external get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
@@ -192,7 +192,7 @@ module Array1 = struct
 end
 
 module Array2 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim1 dim2 =
     Genarray.create kind layout [|dim1; dim2|]
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%caml_ba_ref_2"
@@ -242,7 +242,7 @@ module Array2 = struct
 end
 
 module Array3 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim1 dim2 dim3 =
     Genarray.create kind layout [|dim1; dim2; dim3|]
   external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%caml_ba_ref_3"

@@ -615,13 +615,13 @@ let rec emit_tail_infos is_tail lambda =
       | Default_tailcall -> ()
       | Should_be_tailcall ->
           (* Note: we may want to instead check the call_kind,
-             which takes [is_tail_native_heuristic] into accout.
+             which takes [is_tail_native_heuristic] into account.
              But then this means getting different warnings depending
              on whether the native or bytecode compiler is used. *)
           if not is_tail
-          && Warnings.is_active Warnings.Expect_tailcall
+          && Warnings.is_active Warnings.Tailcall_expected
           then Location.prerr_warning (to_location ap.ap_loc)
-                 Warnings.Expect_tailcall;
+                 Warnings.Tailcall_expected;
       end;
       emit_tail_infos false ap.ap_func;
       list_emit_tail_infos false ap.ap_args
@@ -887,6 +887,6 @@ let simplify_lambda lam =
     |> simplify_exits
     |> simplify_lets
   in
-  if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
+  if !Clflags.annotations || Warnings.is_active Warnings.Tailcall_expected
     then emit_tail_infos true lam;
   lam

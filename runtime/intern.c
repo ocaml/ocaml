@@ -868,11 +868,6 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   CAMLreturn (intern_end(obj, h.whsize));
 }
 
-CAMLprim value caml_input_value_from_string(value str, value ofs)
-{
-  return caml_input_val_from_bytes(str, Long_val(ofs));
-}
-
 CAMLprim value caml_input_value_from_bytes(value str, value ofs)
 {
   return caml_input_val_from_bytes(str, Long_val(ofs));

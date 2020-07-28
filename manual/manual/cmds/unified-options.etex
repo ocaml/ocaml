@@ -753,8 +753,18 @@ to \var{uppercase-letter}.
 to \var{lowercase-letter}.
 \end{options}
 
-Warning numbers and letters which are out of the range of warnings
-that are currently defined are ignored. The warnings are as follows.
+Alternatively, \var{warning-list} can specify a single warning using its
+mnemonic name (see below), as follows:
+
+\begin{options}
+\item["+"\var{name}] Enable warning \var{name}.
+\item["-"\var{name}] Disable warning \var{name}.
+\item["@"\var{name}] Enable and mark as fatal warning \var{name}.
+\end{options}
+
+Warning numbers, letters and names which are not currently defined are
+ignored. The warnings are as follows (the name following each number specifies
+the mnemonic for that warning).
 \begin{options}
 \input{warnings-help.tex}
 \end{options}

@@ -114,7 +114,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
-      type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
+      type_variance = Variance.unknown_signature ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
@@ -403,7 +403,7 @@ let transl_declaration env sdecl (id, uid) =
         type_kind = kind;
         type_private = sdecl.ptype_private;
         type_manifest = man;
-        type_variance = List.map (fun _ -> Variance.full) params;
+        type_variance = Variance.unknown_signature ~arity;
         type_separability = Types.Separability.default_signature ~arity;
         type_is_newtype = false;
         type_expansion_scope = Btype.lowest_level;
@@ -1434,7 +1434,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
         raise(Error(cty.ctyp_loc, Inconsistent_constraint (env, tr)))
     ) tparams sig_decl.type_params;
   List.iter (fun (cty, cty', loc) ->
-    (* Note: contraints must also be enforced in [sig_env] because
+    (* Note: constraints must also be enforced in [sig_env] because
        they may contain parameter variables from [tparams]
        that have now be unified in [sig_env]. *)
     try Ctype.unify env cty.ctyp_type cty'.ctyp_type
@@ -1541,7 +1541,7 @@ let abstract_type_decl arity =
       type_kind = Type_abstract;
       type_private = Public;
       type_manifest = None;
-      type_variance = replicate_list Variance.full arity;
+      type_variance = Variance.unknown_signature ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;

@@ -44,18 +44,18 @@ let docstrings : docstring list ref = ref []
 (* Warn for unused and ambiguous docstrings *)
 
 let warn_bad_docstrings () =
-  if Warnings.is_active (Warnings.Bad_docstring true) then begin
+  if Warnings.is_active (Warnings.Unexpected_docstring true) then begin
     List.iter
       (fun ds ->
          match ds.ds_attached with
          | Info -> ()
          | Unattached ->
-           prerr_warning ds.ds_loc (Warnings.Bad_docstring true)
+           prerr_warning ds.ds_loc (Warnings.Unexpected_docstring true)
          | Docs ->
              match ds.ds_associated with
              | Zero | One -> ()
              | Many ->
-               prerr_warning ds.ds_loc (Warnings.Bad_docstring false))
+               prerr_warning ds.ds_loc (Warnings.Unexpected_docstring false))
       (List.rev !docstrings)
 end
 

@@ -179,7 +179,7 @@ module Variance = struct
     if b then v lor single x else  v land (lnot (single x))
   let mem x = subset (single x)
   let null = 0
-  let may_inv = 7
+  let unknown = 7
   let full = 127
   let covariant = single May_pos lor single Pos lor single Inj
   let swap f1 f2 v =
@@ -187,6 +187,8 @@ module Variance = struct
   let conjugate v = swap May_pos May_neg (swap Pos Neg v)
   let get_upper v = (mem May_pos v, mem May_neg v)
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
+  let unknown_signature ~arity =
+    Misc.replicate_list unknown arity
 end
 
 module Separability = struct
@@ -212,7 +214,7 @@ module Separability = struct
 
   let default_signature ~arity =
     let default_mode = if Config.flat_float_array then Deepsep else Ind in
-    List.init arity (fun _ -> default_mode)
+    Misc.replicate_list default_mode arity
 end
 
 (* Type definitions *)

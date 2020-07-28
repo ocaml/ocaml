@@ -352,7 +352,7 @@ module Output = struct
   let catch_warning =
     function
     | [] -> None
-    | s :: _ when string_match ~!{|Warning \([0-9]+\):|} s 0 ->
+    | s :: _ when string_match ~!{|Warning \([0-9]+\)\( \[[a-z-]+\]\)?:|} s 0 ->
         Some (Warning (int_of_string @@ matched_group 1 s))
     | _ -> None
 

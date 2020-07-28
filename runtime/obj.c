@@ -31,12 +31,6 @@
 #include "caml/signals.h"
 #include "caml/spacetime.h"
 
-/* unused since GPR#427 */
-CAMLprim value caml_obj_is_block(value arg)
-{
-  return Val_bool(Is_block(arg));
-}
-
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
@@ -234,20 +228,10 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
   return v + (unsigned long) Int32_val (offset);
 }
 
-/* The following functions are used in stdlib/lazy.ml.
-   They are not written in OCaml because they must be atomic with respect
+/* The following function is used in stdlib/lazy.ml.
+   It is not written in OCaml because it must be atomic with respect
    to the GC.
  */
-
-CAMLprim value caml_lazy_follow_forward (value v)
-{
-  if (Is_block (v) && Is_in_value_area(v)
-      && Tag_val (v) == Forward_tag){
-    return Forward_val (v);
-  }else{
-    return v;
-  }
-}
 
 CAMLprim value caml_lazy_make_forward (value v)
 {
@@ -275,44 +259,6 @@ CAMLprim value caml_get_public_method (value obj, value tag)
   /* return 0 if tag is not there */
   return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
-
-/* these two functions might be useful to an hypothetical JIT */
-
-#ifdef CAML_JIT
-#ifdef NATIVE_CODE
-#define MARK 1
-#else
-#define MARK 0
-#endif
-value caml_cache_public_method (value meths, value tag, value *cache)
-{
-  int li = 3, hi = Field(meths,0), mi;
-  while (li < hi) {
-    mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
-    else li = mi;
-  }
-  *cache = (li-3)*sizeof(value) + MARK;
-  return Field (meths, li-1);
-}
-
-value caml_cache_public_method2 (value *meths, value tag, value *cache)
-{
-  value ofs = *cache & meths[1];
-  if (*(value*)(((char*)(meths+3)) + ofs - MARK) == tag)
-    return *(value*)(((char*)(meths+2)) + ofs - MARK);
-  {
-    int li = 3, hi = meths[0], mi;
-    while (li < hi) {
-      mi = ((li+hi) >> 1) | 1;
-      if (tag < meths[mi]) hi = mi-2;
-      else li = mi;
-    }
-    *cache = (li-3)*sizeof(value) + MARK;
-    return meths[li-1];
-  }
-}
-#endif /*CAML_JIT*/
 
 static value oo_last_id = Val_int(0);
 

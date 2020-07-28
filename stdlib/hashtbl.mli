@@ -22,7 +22,7 @@
 (** {1 Generic interface} *)
 
 
-type ('a, 'b) t
+type (!'a, !'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
 val create : ?random:bool -> int -> ('a, 'b) t
@@ -191,9 +191,26 @@ val randomize : unit -> unit
     @since 4.00.0 *)
 
 val is_randomized : unit -> bool
-(** return if the tables are currently created in randomized mode by default
+(** Return [true] if the tables are currently created in randomized mode
+    by default, [false] otherwise.
 
     @since 4.03.0 *)
+
+val rebuild : ?random:bool -> ('a, 'b) t -> ('a, 'b) t
+(** Return a copy of the given hashtable.  Unlike {!Hashtbl.copy},
+    [{!Hashtbl.rebuild} h] re-hashes all the (key, value) entries of
+    the original table [h].  The returned hash table is randomized if
+    [h] was randomized, or the optional [random] parameter is true, or
+    if the default is to create randomized hash tables; see
+    {!Hashtbl.create} for more information.
+
+    {!Hashtbl.rebuild} can safely be used to import a hash table built
+    by an old version of the {!Hashtbl} module, then marshaled to
+    persistent storage.  After unmarshaling, apply {!Hashtbl.rebuild}
+    to produce a hash table for the current version of the {!Hashtbl}
+    module.
+
+    @since 4.12.0 *)
 
 (** @since 4.00.0 *)
 type statistics = {
@@ -310,7 +327,7 @@ module type HashedType =
 module type S =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit (** @since 4.00.0 *)
@@ -386,7 +403,7 @@ module type SeededHashedType =
 module type SeededS =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit

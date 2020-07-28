@@ -26,16 +26,14 @@ external get : 'a array -> int -> 'a = "%array_safe_get"
    The first element has number 0.
    The last element has number [Array.length a - 1].
    You can also write [a.(n)] instead of [Array.get a n].
-
-   Raise [Invalid_argument]
+   @raise Invalid_argument
    if [n] is outside the range 0 to [(Array.length a - 1)]. *)
 
 external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
 (** [Array.set a n x] modifies array [a] in place, replacing
    element number [n] with [x].
    You can also write [a.(n) <- x] instead of [Array.set a n x].
-
-   Raise [Invalid_argument]
+   @raise Invalid_argument
    if [n] is outside the range 0 to [Array.length a - 1]. *)
 
 external make : int -> 'a -> 'a array = "caml_make_vect"
@@ -46,8 +44,7 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    Consequently, if [x] is mutable, it is shared among all elements
    of the array, and modifying [x] through one of the array entries
    will modify all other entries at the same time.
-
-   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
+   @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
@@ -69,8 +66,7 @@ val init : int -> (int -> 'a) -> 'a array
    with element number [i] initialized to the result of [f i].
    In other terms, [Array.init n f] tabulates the results of [f]
    applied to the integers [0] to [n-1].
-
-   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
+   @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
    If the return type of [f] is [float], then the maximum
    size is only [Sys.max_array_length / 2].*)
 
@@ -81,8 +77,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    are initially physically equal to [e].
    The element ([x,y]) of a matrix [m] is accessed
    with the notation [m.(x).(y)].
-
-   Raise [Invalid_argument] if [dimx] or [dimy] is negative or
+   @raise Invalid_argument if [dimx] or [dimy] is negative or
    greater than {!Sys.max_array_length}.
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
@@ -94,8 +89,7 @@ val create_matrix : int -> int -> 'a -> 'a array array
 val append : 'a array -> 'a array -> 'a array
 (** [Array.append v1 v2] returns a fresh array containing the
    concatenation of the arrays [v1] and [v2].
-
-   Raise [Invalid_argument] if
+   @raise Invalid_argument if
    [Array.length v1 + Array.length v2 > Sys.max_array_length]. *)
 
 val concat : 'a array list -> 'a array
@@ -105,8 +99,7 @@ val sub : 'a array -> int -> int -> 'a array
 (** [Array.sub a start len] returns a fresh array of length [len],
    containing the elements number [start] to [start + len - 1]
    of array [a].
-
-   Raise [Invalid_argument] if [start] and [len] do not
+   @raise Invalid_argument if [start] and [len] do not
    designate a valid subarray of [a]; that is, if
    [start < 0], or [len < 0], or [start + len > Array.length a]. *)
 
@@ -117,8 +110,7 @@ val copy : 'a array -> 'a array
 val fill : 'a array -> int -> int -> 'a -> unit
 (** [Array.fill a ofs len x] modifies the array [a] in place,
    storing [x] in elements number [ofs] to [ofs + len - 1].
-
-   Raise [Invalid_argument] if [ofs] and [len] do not
+   @raise Invalid_argument if [ofs] and [len] do not
    designate a valid subarray of [a]. *)
 
 val blit : 'a array -> int -> 'a array -> int -> int -> unit
@@ -127,8 +119,7 @@ val blit : 'a array -> int -> 'a array -> int -> int -> unit
    starting at element number [o2]. It works correctly even if
    [v1] and [v2] are the same array, and the source and
    destination chunks overlap.
-
-   Raise [Invalid_argument] if [o1] and [len] do not
+   @raise Invalid_argument if [o1] and [len] do not
    designate a valid subarray of [v1], or if [o2] and [len] do not
    designate a valid subarray of [v2]. *)
 
@@ -138,8 +129,7 @@ val to_list : 'a array -> 'a list
 val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
    of [l].
-
-   Raise [Invalid_argument] if the length of [l] is greater than
+   @raise Invalid_argument if the length of [l] is greater than
    [Sys.max_array_length].*)
 
 
@@ -183,14 +173,14 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
-   Raise [Invalid_argument] if the arrays are not the same size.
+   @raise Invalid_argument if the arrays are not the same size.
    @since 4.03.0 *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 (** [Array.map2 f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
-   Raise [Invalid_argument] if the arrays are not the same size.
+   @raise Invalid_argument if the arrays are not the same size.
    @since 4.03.0 *)
 
 
@@ -211,12 +201,12 @@ val exists : ('a -> bool) -> 'a array -> bool
 
 val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!Array.for_all}, but for a two-argument predicate.
-   Raise [Invalid_argument] if the two arrays have different lengths.
+   @raise Invalid_argument if the two arrays have different lengths.
    @since 4.11.0 *)
 
 val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!Array.exists}, but for a two-argument predicate.
-   Raise [Invalid_argument] if the two arrays have different lengths.
+   @raise Invalid_argument if the two arrays have different lengths.
    @since 4.11.0 *)
 
 val mem : 'a -> 'a array -> bool

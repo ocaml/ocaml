@@ -92,7 +92,10 @@ let catch fct arg =
     exit 2
 
 type raw_backtrace_slot
-type raw_backtrace
+type raw_backtrace_entry = private int
+type raw_backtrace = raw_backtrace_entry array
+
+let raw_backtrace_entries bt = bt
 
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
@@ -234,6 +237,9 @@ let backtrace_slots raw_backtrace =
       then Some backtrace
       else None
 
+let backtrace_slots_of_raw_entry entry =
+  backtrace_slots [| entry |]
+
 module Slot = struct
   type t = backtrace_slot
   let format = format_backtrace_slot
@@ -243,8 +249,7 @@ module Slot = struct
   let name = backtrace_slot_defname
 end
 
-external raw_backtrace_length :
-  raw_backtrace -> int = "caml_raw_backtrace_length" [@@noalloc]
+let raw_backtrace_length bt = Array.length bt
 
 external get_raw_backtrace_slot :
   raw_backtrace -> int -> raw_backtrace_slot = "caml_raw_backtrace_slot"
@@ -289,7 +294,7 @@ let uncaught_exception_handler = ref default_uncaught_exception_handler
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
-let empty_backtrace : raw_backtrace = Obj.obj (Obj.new_block Obj.abstract_tag 0)
+let empty_backtrace : raw_backtrace = [| |]
 
 let try_get_raw_backtrace () =
   try

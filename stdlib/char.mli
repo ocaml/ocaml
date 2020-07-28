@@ -20,7 +20,7 @@ external code : char -> int = "%identity"
 
 val chr : int -> char
 (** Return the character with the given ASCII code.
-   Raise [Invalid_argument "Char.chr"] if the argument is
+   @raise Invalid_argument if the argument is
    outside the range 0--255. *)
 
 val escaped : char -> string
