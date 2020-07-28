@@ -65,6 +65,7 @@ value ml_perform_stack_walk() {
         printf("TEST FAILED\n");
         /* Re-run the test to produce a trace */
         perform_stack_walk(1);
+        exit(1);
     }
     return Val_unit;
 }
