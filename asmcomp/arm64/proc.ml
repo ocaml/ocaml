@@ -99,7 +99,7 @@ let all_phys_regs =
 let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
-let reg_x15 = phys_reg 15
+let reg_x8 = phys_reg 8
 let reg_d7 = phys_reg 107
 
 let stack_slot slot ty =
@@ -165,13 +165,14 @@ let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
    Return values in r0...r15 or d0...d15. *)
 
 let max_arguments_for_tailcalls = 16
+let last_int_register = if macosx then 7 else 15
 
 let loc_arguments arg =
-  calling_conventions 0 15 100 115 outgoing arg
+  calling_conventions 0 last_int_register 100 115 outgoing arg
 let loc_parameters arg =
-  let (loc, _) = calling_conventions 0 15 100 115 incoming arg in loc
+  let (loc, _) = calling_conventions 0 last_int_register 100 115 incoming arg in loc
 let loc_results res =
-  let (loc, _) = calling_conventions 0 15 100 115 not_supported res in loc
+  let (loc, _) = calling_conventions 0 last_int_register 100 115 not_supported res in loc
 
 (* C calling convention:
      first integer args in r0...r7
@@ -252,7 +253,7 @@ let destroyed_at_oper = function
   | Iop(Iextcall { alloc = false; }) ->
       destroyed_at_c_call
   | Iop(Ialloc _) ->
-      [| reg_x15 |]
+      [| reg_x8 |]
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
