@@ -100,6 +100,16 @@ Working version
    when using mutually recursive functions.
    (Jacques-Henri Jourdan, review François Bobot)
 
+* #1128, #7503, #9036, #9722: EINTR-based signal handling.
+  When a signal arrives, avoid running its OCaml handler in the middle
+  of a blocking section. Instead, allow control to return quickly to
+  a polling point where the signal handler can safely run, ensuring that
+  I/O locks are not held while it runs. A polling point was removed from
+  caml_leave_blocking_section, and one added to caml_raise.
+  (Stephen Dolan, review by Goswin von Brederlow, Xavier Leroy, Damien
+   Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
+   Henri Jourdan)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
