@@ -98,7 +98,7 @@ static uintnat mt_generate_geom()
      bounded by the entropy provided by [mt_generate_uniform], which
      is 32bits. */
   double res = 1 + logf(mt_generate_uniform()) * one_log1m_lambda;
-  if (res > Max_long) return Max_long;
+  if (res > (double)Max_long) return Max_long;
   return (uintnat)res;
 }
 

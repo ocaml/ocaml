@@ -83,7 +83,7 @@ let inline_ops =
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
 let use_direct_addressing _symb =
-  not !Clflags.dlcode
+  (not !Clflags.dlcode) && (not Arch.macosx)
 
 let is_stack_slot rv =
   Reg.(match rv with

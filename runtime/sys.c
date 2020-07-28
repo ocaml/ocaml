@@ -428,6 +428,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
 
+#ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
@@ -450,6 +451,12 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = 255;
   CAMLreturn (Val_int(retcode));
 }
+#else
+CAMLprim value caml_sys_system_command(value command)
+{
+  caml_invalid_argument("Sys.command not implemented");
+}
+#endif
 
 double caml_sys_time_include_children_unboxed(value include_children)
 {
