@@ -95,6 +95,7 @@ default:
 	GNU parallel"
 	@echo "  list FILE=f     launch the tests listed in f (one per line)"
 	@echo "  one DIR=p       launch the tests located in path p"
+	@echo "  just TEST=f     launch just this single test"
 	@echo "  promote DIR=p   promote the reference files for the tests in p"
 	@echo "  lib             build library modules"
 	@echo "  tools           build test tools"
@@ -232,6 +233,18 @@ exec-ocamltest:
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
 	done) || echo directory "$(DIR)" >>$(failstamp)
+
+.PHONY:
+just: lib tools
+	@if [ -z "$(TEST)" ]; then \
+	  echo "No value set for variable 'TEST'."; \
+	  exit 1; \
+	fi
+	@if [ ! -e $(TEST) ]; then \
+	  echo "Test '$(TEST)' does not exist."; \
+	  exit 1; \
+	fi
+	@TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST)
 
 .PHONY: clean-one
 clean-one:
