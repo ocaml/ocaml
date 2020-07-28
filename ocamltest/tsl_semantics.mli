@@ -19,11 +19,11 @@ open Tsl_ast
 
 val apply_modifiers : Environments.t -> string located -> Environments.t
 
-val interprete_environment_statement :
+val interpret_environment_statement :
   Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
   Environments.t
 
-val interprete_environment_statements :
+val interpret_environment_statements :
   Environments.t -> Tsl_ast.environment_statement Tsl_ast.located list ->
   Environments.t
 

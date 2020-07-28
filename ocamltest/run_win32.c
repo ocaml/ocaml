@@ -178,18 +178,40 @@ static LPVOID prepare_environment(WCHAR **localenv)
   }
   r = env;
   p = process_env;
+  /* Copy process_env to env only if the given names are not in localenv */
   while (*p != L'\0') {
+    wchar_t *pos_eq = wcschr(p, L'=');
+    int copy = 1;
     l = wcslen(p) + 1; /* also count terminating '\0' */
-    memcpy(r, p, l * sizeof(WCHAR));
+    /* Temporarily change the = to \0 for wcscmp */
+    *pos_eq = L'\0';
+    q = localenv;
+    while (*q != NULL) {
+      wchar_t *pos_eq2 = wcschr(*q, L'=');
+      /* Compare this name in localenv with the current one in processenv */
+      if (pos_eq2) *pos_eq2 = L'\0';
+      if (!wcscmp(*q, p)) copy = 0;
+      if (pos_eq2) *pos_eq2 = L'=';
+      q++;
+    }
+    if (copy) {
+      /* This name is not marked for deletion/update in localenv, so copy */
+      *pos_eq = L'=';
+      memcpy(r, p, l * sizeof(WCHAR));
+      r += l;
+    }
     p += l;
-    r += l;
   }
   FreeEnvironmentStrings(process_env);
   q = localenv;
   while (*q != NULL) {
-    l = wcslen(*q) + 1;
-    memcpy(r, *q, l * sizeof(WCHAR));
-    r += l;
+    /* A string in localenv without '=' signals deletion, which has been done */
+    wchar_t *pos_eq = wcschr(*q, L'=');
+    if (pos_eq) {
+      l = wcslen(*q) + 1;
+      memcpy(r, *q, l * sizeof(WCHAR));
+      r += l;
+    }
     q++;
   }
   *r = L'\0';

@@ -22,6 +22,7 @@ val empty : t
 val from_bindings : (Variables.t * string) list -> t
 val to_bindings : t -> (Variables.t * string) list
 val to_system_env : t -> string array
+val append_to_system_env : string array -> t -> string array
 
 val lookup : Variables.t -> t -> string option
 val lookup_nonempty : Variables.t -> t -> string option
@@ -41,6 +42,8 @@ val lookup_as_int : Variables.t -> t -> int option
 val add : Variables.t -> string -> t -> t
 val add_if_undefined : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t
+
+val remove : Variables.t -> t -> t
 
 val append : Variables.t -> string -> t -> t
 

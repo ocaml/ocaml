@@ -17,7 +17,7 @@
 
 type value = string
 
-type exporter = value -> string
+type exporter = value -> string * string
 
 type t = {
   variable_name : string;
@@ -33,7 +33,7 @@ exception Variable_already_registered of string
 
 exception No_such_variable of string
 
-let default_exporter varname value = Printf.sprintf "%s=%s" varname value
+let default_exporter varname value = (varname, value)
 
 let make (name, description) =
   if name="" then raise Empty_variable_name else {
@@ -65,7 +65,8 @@ let find_variable variable_name =
   with Not_found -> None
 
 let string_of_binding variable value =
-  variable.variable_exporter value
+  let (varname, value) = variable.variable_exporter value in
+  Printf.sprintf "%s=%s" varname value
 
 let get_registered_variables () =
   let f _variable_name variable variable_list = variable::variable_list in
