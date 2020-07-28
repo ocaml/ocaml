@@ -551,13 +551,11 @@ show_source.cmi : \
     ../bytecomp/instruct.cmi
 source.cmo : \
     primitives.cmi \
-    ../utils/misc.cmi \
     ../utils/load_path.cmi \
     debugger_config.cmi \
     source.cmi
 source.cmx : \
     primitives.cmx \
-    ../utils/misc.cmx \
     ../utils/load_path.cmx \
     debugger_config.cmx \
     source.cmi

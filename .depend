@@ -6417,6 +6417,7 @@ toplevel/byte/topmain.cmo : \
     utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     driver/compmisc.cmi \
@@ -6434,6 +6435,7 @@ toplevel/byte/topmain.cmx : \
     utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
+    utils/load_path.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     driver/compmisc.cmx \
