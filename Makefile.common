@@ -109,7 +109,8 @@ REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 
 %.$(O): %.c $(REQUIRED_HEADERS)
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
 
 $(DEPDIR):
 	$(MKDIR) $@

@@ -304,7 +304,7 @@ include $(addprefix $(DEPDIR)/, $(c_files:.c=.$(D)))
 endif
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)

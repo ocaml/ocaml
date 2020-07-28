@@ -927,13 +927,16 @@ endif
 
 # Check that the stack limit is reasonable (Unix-only)
 .PHONY: checkstack
-checkstack:
 ifeq "$(UNIX_OR_WIN32)" "unix"
-	if $(MKEXE) $(OUTPUTEXE)tools/checkstack$(EXE) tools/checkstack.c; \
-	  then tools/checkstack$(EXE); \
-	fi
-	rm -f tools/checkstack$(EXE)
+checkstack := tools/checkstack
+checkstack: $(checkstack)$(EXE)
+	$<
+
+.INTERMEDIATE: $(checkstack)$(EXE) $(checkstack).$(O)
+$(checkstack)$(EXE): $(checkstack).$(O)
+	$(MKEXE) $(OUTPUTEXE)$@ $<
 else
+checkstack:
 	@
 endif
 
