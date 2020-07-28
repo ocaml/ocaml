@@ -305,18 +305,18 @@ module Genarray :
       [float32], [float64], [int8_signed], etc) and whose layout is
       determined by the parameter [layout] (one of [c_layout] or
       [fortran_layout]).  The [dimensions] parameter is an array of
-      integers that indicate the size of the big array in each dimension.
+      integers that indicate the size of the Bigarray in each dimension.
       The length of [dimensions] determines the number of dimensions
       of the Bigarray.
 
       Each element [Genarray.get b i] is initialized to the result of [f i].
       In other words, [Genarray.init kind layout dimensions f] tabulates
-      the results of [f] applied to the indexes of a new big array whose
+      the results of [f] applied to the indices of a new Bigarray whose
       layout is described by [kind], [layout] and [dimensions].  The index
       array [i] may be shared and mutated between calls to f.
 
       For instance, [Genarray.init int c_layout [|2; 1; 3|]
-      (Array.fold_left (+) 0)] returns a fresh big array of integers, in C
+      (Array.fold_left (+) 0)] returns a fresh Bigarray of integers, in C
       layout, having three dimensions (2, 1, 3, respectively), with the
       element values 0, 1, 2, 1, 2, 3.
 
@@ -590,7 +590,7 @@ module Array1 : sig
      result of [f i].
 
      In other words, [Array1.init kind layout dimensions f] tabulates
-     the results of [f] applied to the indexes of a new big array whose
+     the results of [f] applied to the indices of a new Bigarray whose
      layout is described by [kind], [layout] and [dim].
 
      @since 4.12.0 *)
@@ -705,7 +705,7 @@ module Array2 :
      the result of [f i j].
 
      In other words, [Array2.init kind layout dim1 dim2 f] tabulates
-     the results of [f] applied to the indexes of a new Bigarray whose
+     the results of [f] applied to the indices of a new Bigarray whose
      layout is described by [kind], [layout], [dim1] and [dim2].
 
      @since 4.12.0 *)
@@ -838,7 +838,7 @@ module Array3 :
      the result of [f i j k].
 
      In other words, [Array3.init kind layout dim1 dim2 dim3 f] tabulates
-     the results of [f] applied to the indexes of a new Bigarray whose
+     the results of [f] applied to the indices of a new Bigarray whose
      layout is described by [kind], [layout], [dim1], [dim2] and [dim3].
 
      @since 4.12.0 *)
