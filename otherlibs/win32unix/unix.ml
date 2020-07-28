@@ -204,6 +204,25 @@ external getenv: string -> string = "caml_sys_getenv"
 external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
+let setenv ?(overwrite=true) name value =
+  (* name cannot be empty or contain = *)
+  if name = "" || String.index_opt name '=' <> None then
+    raise (Unix_error(EINVAL, "setenv", name));
+  (* Windows doesn't support empty environment variables *)
+  if value = "" then
+    raise (Unix_error(EINVAL, "setenv", ""));
+  (* Convert setenv to putenv *)
+  if overwrite ||
+     (try ignore (getenv name); value with Not_found -> "") <> value then
+    putenv name value
+
+let unsetenv name =
+  (* name cannot be empty or contain = *)
+  if name = "" || String.index_opt name '=' <> None then
+    raise (Unix_error(EINVAL, "unsetenv", name))
+  else
+    putenv name ""
+
 type process_status =
     WEXITED of int
   | WSIGNALED of int

@@ -34,10 +34,10 @@ COBJS=accept.o access.o addrofstr.o alarm.o bind.o channels.o chdir.o \
   mkdir.o mkfifo.o mmap.o mmap_ba.o \
   nice.o open.o opendir.o pipe.o putenv.o read.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
-  setgid.o setgroups.o setsid.o setuid.o shutdown.o signals.o \
+  setenv.o setgid.o setgroups.o setsid.o setuid.o shutdown.o signals.o \
   sleep.o socket.o socketaddr.o \
   socketpair.o sockopt.o spawn.o stat.o strofaddr.o symlink.o termios.o \
-  time.o times.o truncate.o umask.o unixsupport.o unlink.o \
+  time.o times.o truncate.o umask.o unixsupport.o unlink.o unsetenv.o \
   utimes.o wait.o write.o
 
 CAMLOBJS=unix.cmo unixLabels.cmo

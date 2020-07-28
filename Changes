@@ -200,6 +200,9 @@ Working version
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
+- #9810: Add Unix.setenv and Unix.unsetenv.
+  (David Allsopp, review by ???)
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared

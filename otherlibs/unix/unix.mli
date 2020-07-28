@@ -161,6 +161,19 @@ val putenv : string -> string -> unit
    [name] is the name of the environment variable,
    and [value] its new associated value. *)
 
+val setenv : ?overwrite:bool -> string -> string -> unit
+(** [Unix.setenv ?overwrite name value] sets the value associated to a variable
+   in the process environment. If [~overwrite] is [false] (the default is
+   [true]) and [name] is already present in the process environment, then the
+   value is not updated.
+
+   @since 4.12.0 *)
+
+val unsetenv : string -> unit
+(** [Unix.unsetenv name] ensures [name] is no longer defined in the environment.
+   [name] does not have to be bound in the environment.
+
+   @since 4.12.0 *)
 
 (** {1 Process handling} *)
 
