@@ -16,6 +16,12 @@ Working version
     type !'a t = 'a list
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
+### Supported platforms:
+
+- #9699: add support for iOS and macOS on ARM 64 bits
+  (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
+   and Anil Madhavapeddy, additional testing by Michael Schmidt)
+
 ### Runtime system:
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
