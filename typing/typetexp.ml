@@ -685,7 +685,7 @@ let transl_simple_type_delayed env styp =
   end_def ();
   make_fixed_univars typ.ctyp_type;
   (* This brings the used variables to the global level, but doesn't link them
-     to their other occurences just yet. This will be done when [force] is
+     to their other occurrences just yet. This will be done when [force] is
      called. *)
   let force = globalize_used_variables env false in
   (* Generalizes everything except the variables that were just globalized. *)
