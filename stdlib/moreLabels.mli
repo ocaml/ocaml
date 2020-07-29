@@ -50,7 +50,7 @@ val create : ?random: (* thwart tools/unlabel *) bool -> int -> ('a, 'b) t
    the internal organization of the hash table is randomized at each
    execution of [Hashtbl.create] or deterministic over all executions.
 
-   A hash table that is created with [~random:false] uses a
+   A hash table that is created with [random] set to [false] uses a
    fixed hash function ({!hash}) to distribute keys among
    buckets.  As a consequence, collisions between keys happen
    deterministically.  In Web-facing applications or other
@@ -59,18 +59,17 @@ val create : ?random: (* thwart tools/unlabel *) bool -> int -> ('a, 'b) t
    denial-of-service attack: the attacker sends input crafted to
    create many collisions in the table, slowing the application down.
 
-   A hash table that is created with [~random:true] uses the seeded
-   hash function {!seeded_hash} with a seed that is randomly
-   chosen at hash table creation time.  In effect, the hash function
-   used is randomly selected among [2^{30}] different hash functions.
-   All these hash functions have different collision patterns,
-   rendering ineffective the denial-of-service attack described above.
-   However, because of randomization, enumerating all elements of the
-   hash table using {!fold} or {!iter} is no longer
-   deterministic: elements are enumerated in different orders at
-   different runs of the program.
+   A hash table that is created with [random] set to [true] uses the seeded
+   hash function {!seeded_hash} with a seed that is randomly chosen at hash
+   table creation time.  In effect, the hash function used is randomly selected
+   among [2^{30}] different hash functions.  All these hash functions have
+   different collision patterns, rendering ineffective the denial-of-service
+   attack described above.  However, because of randomization, enumerating all
+   elements of the hash table using {!fold} or {!iter} is no longer
+   deterministic: elements are enumerated in different orders at different runs
+   of the program.
 
-   If no [~random] parameter is given, hash tables are created
+   If no [random] parameter is given, hash tables are created
    in non-random mode by default.  This default can be changed
    either programmatically by calling {!randomize} or by
    setting the [R] flag in the [OCAMLRUNPARAM] environment variable.

@@ -14,10 +14,7 @@
 #*                                                                        *
 #**************************************************************************
 
-#Removes a label, i.e a space, a variable name, followed by a colon followed by
-#an alphabetic character or ( or '. This should avoid altering the contents of
-#comments.
-
+#Allow to be run from outside tools/
 cd $(dirname "$0")/..
 
 if [[ ! -d stdlib || ! -d otherlibs ]] ; then
@@ -25,78 +22,86 @@ if [[ ! -d stdlib || ! -d otherlibs ]] ; then
   exit 1
 fi
 
+#Removes a label, i.e a space, a variable name, followed by a colon followed by
+#an alphabetic character or ( or '. This should avoid altering the contents of
+#comments.
+LABREGEX="s/ [a-z_]+:([a-z\('])/ \1/g"
+
+#A second, sligthly different round sometimes required to deal with f:(key:key
+LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
+
+#Remove a tilde if it is followed by some alphanumerics and a space or closing
+#OCamldoc code section with ]
+TILDEREGEX="s/~([a-z]*[ \]])/\1/g"
+
 #Stdlib
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
-  stdlib/listLabels.mli > stdlib/list.mli
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
-  stdlib/arrayLabels.mli > stdlib/array.mli
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
-  stdlib/stringLabels.mli > stdlib/string.mli
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
-  stdlib/bytesLabels.mli > stdlib/bytes.mli
+perl -p -e "$LABREGEX" stdlib/listLabels.mli > stdlib/list.temp.mli
+perl -p -e "$LABREGEX" stdlib/arrayLabels.mli > stdlib/array.temp.mli
+perl -p -e "$LABREGEX" stdlib/stringLabels.mli > stdlib/string.temp.mli
+perl -p -e "$LABREGEX" stdlib/bytesLabels.mli > stdlib/bytes.temp.mli
 
-#Stdlib - MoreLabels
+#Stdlib tildes
+perl -p -e "$TILDEREGEX" stdlib/list.temp.mli > stdlib/list.mli
+perl -p -e "$TILDEREGEX" stdlib/array.temp.mli > stdlib/bytes.mli
+perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.mli
+perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
 
-#The unlabeling
-#Two (slightly different) rounds required to deal with f:(key:key
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+#MoreLabels
+perl -p -e "$LABREGEX" \
   stdlib/templates/hashtbl.template.mli > stdlib/hashtbl.temp.mli
-perl -p -e "s/\([a-z_]+:([a-z\('])/\(\1/g" \
-  stdlib/hashtbl.temp.mli > stdlib/hashtbl.mli
-rm -f stdlib/hashtbl.temp.mli
-
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+perl -p -e "$LABLABREGEX" \
+  stdlib/hashtbl.temp.mli > stdlib/hashtbl.2temp.mli
+perl -p -e "$LABREGEX" \
   stdlib/templates/map.template.mli > stdlib/map.temp.mli
-perl -p -e "s/\([a-z_]+:([a-z\('])/\(\1/g" \
-  stdlib/map.temp.mli > stdlib/map.mli
-rm -f stdlib/map.temp.mli
-
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
+perl -p -e "$LABLABREGEX" \
+  stdlib/map.temp.mli > stdlib/map.2temp.mli
+perl -p -e "$LABREGEX" \
   stdlib/templates/set.template.mli > stdlib/set.temp.mli
-perl -p -e "s/\([a-z_]+:([a-z\('])/\(\1/g" \
-  stdlib/set.temp.mli > stdlib/set.mli
-rm -f stdlib/set.temp.mli
+perl -p -e "$LABLABREGEX" \
+  stdlib/set.temp.mli > stdlib/set.2temp.mli
+
+#MoreLabels tildes
+perl -p -e "$TILDEREGEX" stdlib/hashtbl.2temp.mli > stdlib/hashtbl.mli
+perl -p -e "$TILDEREGEX" stdlib/map.2temp.mli > stdlib/map.mli
+perl -p -e "$TILDEREGEX" stdlib/set.2temp.mli > stdlib/set.mli
 
 #Substitute the labeled modules in to moreLabels.mli
 perl -p -e\
   's/HASHTBL/`tail -n +19 stdlib\/templates\/hashtbl.template.mli`/e' \
   stdlib/templates/moreLabels.template.mli > stdlib/moreLabels.temp.mli
 perl -p -e 's/MAP/`tail -n +19 stdlib\/templates\/map.template.mli`/e' \
-  stdlib/moreLabels.temp.mli > stdlib/moreLabels.temp2.mli
+  stdlib/moreLabels.temp.mli > stdlib/moreLabels.2temp.mli
 perl -p -e 's/SET/`tail -n +19 stdlib\/templates\/set.template.mli`/e' \
-  stdlib/moreLabels.temp2.mli > stdlib/moreLabels.mli
-rm -f stdlib/moreLabels.temp.mli stdlib/moreLabels.temp2.mli
+  stdlib/moreLabels.2temp.mli > stdlib/moreLabels.mli
 
 #Fix up
 perl -p -e "s/type statistics =/type statistics = Hashtbl\.statistics =/" \
   stdlib/moreLabels.mli > stdlib/moreLabels.temp.mli
 perl -p -e "s/type \(!'a, !'b\) t/type \(!'a, !'b\) t = \('a, 'b) Hashtbl.t/" \
-  stdlib/moreLabels.temp.mli > stdlib/moreLabels.temp2.mli
+  stdlib/moreLabels.temp.mli > stdlib/moreLabels.2temp.mli
 perl -p -e\
   "s/module Make \(H : HashedType\) : S with type key = H.t\
 /`cat tools/unlabel-patches/1.mli`/" \
-  stdlib/moreLabels.temp2.mli > stdlib/moreLabels.temp3.mli
+  stdlib/moreLabels.2temp.mli > stdlib/moreLabels.3temp.mli
 perl -p -e\
   "s/module MakeSeeded \(H : SeededHashedType\) : SeededS with type key = H.t\
 /`cat tools/unlabel-patches/2.mli`/" \
-  stdlib/moreLabels.temp3.mli > stdlib/moreLabels.temp4.mli
+  stdlib/moreLabels.3temp.mli > stdlib/moreLabels.4temp.mli
 perl -p -e\
   "s/module Make \(Ord : OrderedType\) : S with type key = Ord.t\
 /`cat tools/unlabel-patches/3.mli`/" \
-  stdlib/moreLabels.temp4.mli > stdlib/moreLabels.temp5.mli
+  stdlib/moreLabels.4temp.mli > stdlib/moreLabels.5temp.mli
 perl -p -e\
   "s/module Make \(Ord : OrderedType\) : S with type elt = Ord.t\
 /`cat tools/unlabel-patches/4.mli`/" \
-  stdlib/moreLabels.temp5.mli > stdlib/moreLabels.mli
-rm -f stdlib/moreLabels.temp.mli
-rm -f stdlib/moreLabels.temp2.mli
-rm -f stdlib/moreLabels.temp3.mli
-rm -f stdlib/moreLabels.temp4.mli
-rm -f stdlib/moreLabels.temp5.mli
+  stdlib/moreLabels.5temp.mli > stdlib/moreLabels.mli
 
 #Unix
-perl -p -e "s/ [a-z_]+:([a-z\('])/ \1/g" \
-  otherlibs/unix/unixLabels.mli > otherlibs/unix/unix.mli
+perl -p -e "$LABREGEX" \
+  otherlibs/unix/unixLabels.mli > otherlibs/unix/unix.temp.mli
+#Tildes
+perl -p -e "$TILDEREGEX" \
+  otherlibs/unix/unix.temp.mli > otherlibs/unix/unix.mli
 
 #Remove type equivalences from unix.mli
 
@@ -151,3 +156,7 @@ do
     cat ${tmpfile} > otherlibs/unix/unix.mli
     rm -f ${tmpfile}
 done
+
+#Clean up
+rm -f stdlib/*temp.mli
+rm -f otherlibs/unix/*temp.mli
