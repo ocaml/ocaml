@@ -1453,5 +1453,6 @@ CAMLprim value caml_domain_dls_set(value t)
 
 CAMLprim value caml_domain_dls_get(value unused)
 {
+  CAMLnoalloc;
   return caml_read_root(Caml_state->dls_root);
 }
