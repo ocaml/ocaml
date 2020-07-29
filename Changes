@@ -308,6 +308,9 @@ Working version
   to avoid C dependency recomputation.
   (Gabriel Scherer, review by David Allsopp)
 
+- #9804: Build C stubs of libraries in otherlibs/ with debug info.
+  (Stephen Dolan, review by Sébastien Hinderer and David Allsopp)
+
 ### Bug fixes:
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
