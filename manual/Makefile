@@ -18,6 +18,9 @@ manual: tools
 html: tools
 	$(MAKE) -C manual html
 
+web: tools
+	$(MAKE) -C manual web
+
 release:
 	$(MAKE) -C manual release
 
