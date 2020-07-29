@@ -151,7 +151,7 @@ clean:
 	$(MAKE) -C html_processing clean
 	-rm -f texstuff/*
 	cd htmlman; rm -rf libref compilerlibref index.html \
-	manual*.html *.haux *.hind *.svg
+	*.html *.haux *.hind *.svg manual.*
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
 
