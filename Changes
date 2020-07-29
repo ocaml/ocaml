@@ -22,6 +22,14 @@ Working version
   (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
    and Anil Madhavapeddy, additional testing by Michael Schmidt)
 
+### Type system:
+
+* #??: remove propagation from previous branches
+  Type information inferred from previous branches was propagated in
+  non-principal mode. Revert this for better compatibility with
+  -principal mode.
+  (Jacques Garrigue, review by ??)
+
 ### Runtime system:
 
 - #9756: garbage collector colors change
