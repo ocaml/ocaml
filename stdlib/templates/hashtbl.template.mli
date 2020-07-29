@@ -79,7 +79,7 @@ val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
 
 val add : ('a, 'b) t -> key:'a -> data:'b -> unit
-(** [Hashtbl.add tbl key data] adds a binding of [key] to [data]
+(** [Hashtbl.add tbl ~key ~data] adds a binding of [key] to [data]
    in table [tbl].
    Previous bindings for [key] are not removed, but simply
    hidden. That is, after performing {!remove}[ tbl key],
@@ -110,14 +110,14 @@ val remove : ('a, 'b) t -> 'a -> unit
    It does nothing if [x] is not bound in [tbl]. *)
 
 val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
-(** [Hashtbl.replace tbl key data] replaces the current binding of [key]
+(** [Hashtbl.replace tbl ~key ~data] replaces the current binding of [key]
    in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
    a binding of [key] to [data] is added to [tbl].
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
 
 val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
-(** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
+(** [Hashtbl.iter ~f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
    as second argument. Each binding is presented exactly once to [f].
 
@@ -137,7 +137,7 @@ val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
 *)
 
 val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
-(** [Hashtbl.filter_map_inplace f tbl] applies [f] to all bindings in
+(** [Hashtbl.filter_map_inplace ~f tbl] applies [f] to all bindings in
     table [tbl] and update each binding depending on the result of
     [f].  If [f] returns [None], the binding is discarded.  If it
     returns [Some new_val], the binding is update to associate the key
@@ -147,7 +147,7 @@ val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
     @since 4.03.0 *)
 
 val fold : f:(key:'a -> data:'b -> 'c -> 'c) -> ('a, 'b) t -> init:'c -> 'c
-(** [Hashtbl.fold f tbl init] computes
+(** [Hashtbl.fold ~f tbl ~init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
    and [d1 ... dN] are the associated values.

@@ -99,7 +99,7 @@ val rev : 'a list -> 'a list
 (** List reversal.  *)
 
 val init : len:int -> f:(int -> 'a) -> 'a list
-(** [init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+(** [init ~len ~f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
     @raise Invalid_argument if [len < 0].
     @since 4.06.0
  *)
@@ -133,7 +133,7 @@ val flatten : 'a list list -> 'a list
 
 
 val iter : f:('a -> unit) -> 'a list -> unit
-(** [iter f [a1; ...; an]] applies function [f] in turn to
+(** [iter ~f [a1; ...; an]] applies function [f] in turn to
    [a1; ...; an]. It is equivalent to
    [begin f a1; f a2; ...; f an; () end].
  *)
@@ -146,7 +146,7 @@ val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
  *)
 
 val map : f:('a -> 'b) -> 'a list -> 'b list
-(** [map f [a1; ...; an]] applies function [f] to [a1, ..., an],
+(** [map ~f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
    with the results returned by [f]. Not tail-recursive.
  *)
@@ -159,20 +159,20 @@ val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
  *)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
-(** [rev_map f l] gives the same result as
+(** [rev_map ~f l] gives the same result as
    {!rev}[ (]{!map}[ f l)], but is tail-recursive and
    more efficient.
  *)
 
 val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
-(** [filter_map f l] applies [f] to every element of [l], filters
+(** [filter_map ~f l] applies [f] to every element of [l], filters
     out the [None] elements and returns the list of the arguments of
     the [Some] elements.
     @since 4.08.0
  *)
 
 val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
-(** [concat_map f l] gives the same result as
+(** [concat_map ~f l] gives the same result as
     {!concat}[ (]{!map}[ f l)]. Tail-recursive.
     @since 4.10.0
 *)
@@ -185,13 +185,13 @@ val fold_left_map :
 *)
 
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
-(** [fold_left f a [b1; ...; bn]] is
-   [f (... (f (f a b1) b2) ...) bn].
+(** [fold_left ~f ~init [b1; ...; bn]] is
+   [f (... (f (f init b1) b2) ...) bn].
  *)
 
 val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
-(** [fold_right f [a1; ...; an] b] is
-   [f a1 (f a2 (... (f an b) ...))]. Not tail-recursive.
+(** [fold_right ~f [a1; ...; an] ~init] is
+   [f a1 (f a2 (... (f an init) ...))]. Not tail-recursive.
  *)
 
 
@@ -199,28 +199,28 @@ val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
-(** [iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
+(** [iter2 ~f [a1; ...; an] [b1; ...; bn]] calls in turn
    [f a1 b1; ...; f an bn].
    @raise Invalid_argument if the two lists are determined
    to have different lengths.
  *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [map2 f [a1; ...; an] [b1; ...; bn]] is
+(** [map2 ~f [a1; ...; an] [b1; ...; bn]] is
    [[f a1 b1; ...; f an bn]].
    @raise Invalid_argument if the two lists are determined
    to have different lengths. Not tail-recursive.
  *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [rev_map2 f l1 l2] gives the same result as
+(** [rev_map2 ~f l1 l2] gives the same result as
    {!rev}[ (]{!map2}[ f l1 l2)], but is tail-recursive and
    more efficient.
  *)
 
 val fold_left2 :
   f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
-(** [fold_left2 f init [a1; ...; an] [b1; ...; bn]] is
+(** [fold_left2 ~f ~init [a1; ...; an] [b1; ...; bn]] is
    [f (... (f (f init a1 b1) a2 b2) ...) an bn].
    @raise Invalid_argument if the two lists are determined
    to have different lengths.
@@ -228,7 +228,7 @@ val fold_left2 :
 
 val fold_right2 :
   f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
-(** [fold_right2 f [a1; ...; an] [b1; ...; bn] init] is
+(** [fold_right2 ~f [a1; ...; an] [b1; ...; bn] ~init] is
    [f a1 b1 (f a2 b2 (... (f an bn init) ...))].
    @raise Invalid_argument if the two lists are determined
    to have different lengths. Not tail-recursive.
@@ -239,14 +239,14 @@ val fold_right2 :
 
 
 val for_all : f:('a -> bool) -> 'a list -> bool
-(** [for_all f [a1; ...; an]] checks if all elements of the list
+(** [for_all ~f [a1; ...; an]] checks if all elements of the list
    satisfy the predicate [f]. That is, it returns
    [(f a1) && (f a2) && ... && (f an)] for a non-empty list and
    [true] if the list is empty.
  *)
 
 val exists : f:('a -> bool) -> 'a list -> bool
-(** [exists f [a1; ...; an]] checks if at least one element of
+(** [exists ~f [a1; ...; an]] checks if at least one element of
    the list satisfies the predicate [f]. That is, it returns
    [(f a1) || (f a2) || ... || (f an)] for a non-empty list and
    [false] if the list is empty.
@@ -265,7 +265,7 @@ val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
  *)
 
 val mem : 'a -> set:'a list -> bool
-(** [mem a set] is true if and only if [a] is equal
+(** [mem a ~set] is true if and only if [a] is equal
    to an element of [set].
  *)
 
@@ -279,14 +279,14 @@ val memq : 'a -> set:'a list -> bool
 
 
 val find : f:('a -> bool) -> 'a list -> 'a
-(** [find f l] returns the first element of the list [l]
+(** [find ~f l] returns the first element of the list [l]
    that satisfies the predicate [f].
    @raise Not_found if there is no value that satisfies [f] in the
    list [l].
  *)
 
 val find_opt : f:('a -> bool) -> 'a list -> 'a option
-(** [find f l] returns the first element of the list [l]
+(** [find ~f l] returns the first element of the list [l]
    that satisfies the predicate [f].
    Returns [None] if there is no value that satisfies [f] in the
    list [l].
@@ -294,14 +294,14 @@ val find_opt : f:('a -> bool) -> 'a list -> 'a option
  *)
 
 val find_map : f:('a -> 'b option) -> 'a list -> 'b option
-(** [find_map f l] applies [f] to the elements of [l] in order,
+(** [find_map ~f l] applies [f] to the elements of [l] in order,
     and returns the first result of the form [Some v], or [None]
     if none exist.
     @since 4.10.0
 *)
 
 val filter : f:('a -> bool) -> 'a list -> 'a list
-(** [filter f l] returns all the elements of the list [l]
+(** [filter ~f l] returns all the elements of the list [l]
    that satisfy the predicate [f]. The order of the elements
    in the input list is preserved.
  *)
@@ -318,7 +318,7 @@ val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
 *)
 
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
-(** [partition f l] returns a pair of lists [(l1, l2)], where
+(** [partition ~f l] returns a pair of lists [(l1, l2)], where
    [l1] is the list of all the elements of [l] that
    satisfy the predicate [f], and [l2] is the list of all the
    elements of [l] that do not satisfy [f].
@@ -440,7 +440,7 @@ val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the
-    comparison function [cmp], [merge cmp l1 l2] will return a
+    comparison function [cmp], [merge ~cmp l1 l2] will return a
     sorted list containing all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].

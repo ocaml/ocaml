@@ -84,9 +84,9 @@ val make_float: int -> float array
 (** @deprecated [make_float] is an alias for {!create_float}. *)
 
 val init : int -> f:(int -> 'a) -> 'a array
-(** [init n f] returns a fresh array of length [n],
+(** [init n ~f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
-   In other terms, [init n f] tabulates the results of [f]
+   In other terms, [init n ~f] tabulates the results of [f]
    applied to the integers [0] to [n-1].
 
    @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
@@ -94,7 +94,7 @@ val init : int -> f:(int -> 'a) -> 'a array
    size is only [Sys.max_array_length / 2].*)
 
 val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-(** [make_matrix dimx dimy e] returns a two-dimensional array
+(** [make_matrix ~dimx ~dimy e] returns a two-dimensional array
    (an array of arrays) with first dimension [dimx] and
    second dimension [dimy]. All the elements of this new matrix
    are initially physically equal to [e].
@@ -120,7 +120,7 @@ val concat : 'a array list -> 'a array
 (** Same as {!append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> pos:int -> len:int -> 'a array
-(** [sub a pos len] returns a fresh array of length [len],
+(** [sub a ~pos ~len] returns a fresh array of length [len],
    containing the elements number [pos] to [pos + len - 1]
    of array [a].
 
@@ -133,7 +133,7 @@ val copy : 'a array -> 'a array
    containing the same elements as [a]. *)
 
 val fill : 'a array -> pos:int -> len:int -> 'a -> unit
-(** [fill a pos len x] modifies the array [a] in place,
+(** [fill a ~pos ~len x] modifies the array [a] in place,
    storing [x] in elements number [pos] to [pos + len - 1].
 
    @raise Invalid_argument if [pos] and [len] do not
@@ -142,7 +142,7 @@ val fill : 'a array -> pos:int -> len:int -> 'a -> unit
 val blit :
   src:'a array -> src_pos:int -> dst:'a array -> dst_pos:int -> len:int ->
     unit
-(** [blit src src_pos dst dst_pos len] copies [len] elements
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] elements
    from array [src], starting at element number [src_pos], to array [dst],
    starting at element number [dst_pos]. It works correctly even if
    [src] and [dst] are the same array, and the source and
@@ -162,12 +162,12 @@ val of_list : 'a list -> 'a array
 (** {1 Iterators} *)
 
 val iter : f:('a -> unit) -> 'a array -> unit
-(** [iter f a] applies function [f] in turn to all
+(** [iter ~f a] applies function [f] in turn to all
    the elements of [a].  It is equivalent to
    [f a.(0); f a.(1); ...; f a.(length a - 1); ()]. *)
 
 val map : f:('a -> 'b) -> 'a array -> 'b array
-(** [map f a] applies function [f] to all the elements of [a],
+(** [map ~f a] applies function [f] to all the elements of [a],
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
@@ -182,12 +182,12 @@ val mapi : f:(int -> 'a -> 'b) -> 'a array -> 'b array
    and the element itself as second argument. *)
 
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b array -> 'a
-(** [fold_left f init a] computes
+(** [fold_left ~f ~init a] computes
    [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
    where [n] is the length of the array [a]. *)
 
 val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
-(** [fold_right f a init] computes
+(** [fold_right ~f a ~init] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
    where [n] is the length of the array [a]. *)
 
@@ -196,13 +196,13 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-(** [iter2 f a b] applies function [f] to all the elements of [a]
+(** [iter2 ~f a b] applies function [f] to all the elements of [a]
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.05.0 labeled, or 4.03.0 unlabeled *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-(** [map2 f a b] applies function [f] to all the elements of [a]
+(** [map2 ~f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
@@ -212,13 +212,13 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 (** {1 Array scanning} *)
 
 val for_all : f:('a -> bool) -> 'a array -> bool
-(** [for_all f [|a1; ...; an|]] checks if all elements
+(** [for_all ~f [|a1; ...; an|]] checks if all elements
    of the array satisfy the predicate [f]. That is, it returns
    [(f a1) && (f a2) && ... && (f an)].
    @since 4.03.0 *)
 
 val exists : f:('a -> bool) -> 'a array -> bool
-(** [exists f [|a1; ...; an|]] checks if at least one element of
+(** [exists ~f [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [f]. That is, it returns
     [(f a1) || (f a2) || ... || (f an)].
     @since 4.03.0 *)
@@ -234,7 +234,7 @@ val exists2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
    @since 4.11.0 *)
 
 val mem : 'a -> set:'a array -> bool
-(** [mem a set] is true if and only if [a] is structurally equal
+(** [mem a ~set] is true if and only if [a] is structurally equal
     to an element of [l] (i.e. there is an [x] in [l] such that
     [compare a x = 0]).
     @since 4.03.0 *)

@@ -109,7 +109,7 @@ val to_string : bytes -> string
     sequence. *)
 
 val sub : bytes -> pos:int -> len:int -> bytes
-(** [sub s pos len] returns a new byte sequence of length [len],
+(** [sub s ~pos ~len] returns a new byte sequence of length [len],
     containing the subsequence of [s] that starts at position [pos]
     and has length [len].
     @raise Invalid_argument if [pos] and [len] do not designate a
@@ -119,7 +119,7 @@ val sub_string : bytes -> pos:int -> len:int -> string
 (** Same as [sub] but return a string instead of a byte sequence. *)
 
 val extend : bytes -> left:int -> right:int -> bytes
-(** [extend s left right] returns a new byte sequence that contains
+(** [extend s ~left ~right] returns a new byte sequence that contains
     the bytes of [s], with [left] uninitialized bytes prepended and
     [right] uninitialized bytes appended to it. If [left] or [right]
     is negative, then bytes are removed (instead of appended) from
@@ -129,7 +129,7 @@ val extend : bytes -> left:int -> right:int -> bytes
     @since 4.05.0 *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
-(** [fill s pos len c] modifies [s] in place, replacing [len]
+(** [fill s ~pos ~len c] modifies [s] in place, replacing [len]
     characters with [c], starting at [pos].
     @raise Invalid_argument if [pos] and [len] do not designate a
     valid range of [s]. *)
@@ -137,7 +137,7 @@ val fill : bytes -> pos:int -> len:int -> char -> unit
 val blit :
   src:bytes -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes from sequence
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes from sequence
     [src], starting at index [src_pos], to sequence [dst], starting at
     index [dst_pos]. It works correctly even if [src] and [dst] are the
     same byte sequence, and the source and destination intervals
@@ -149,7 +149,7 @@ val blit :
 val blit_string :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes from string
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes from string
     [src], starting at index [src_pos], to byte sequence [dst],
     starting at index [dst_pos].
     @raise Invalid_argument if [src_pos] and [len] do not
@@ -158,7 +158,7 @@ val blit_string :
     @since 4.05.0 *)
 
 val concat : sep:bytes -> bytes list -> bytes
-(** [concat sep sl] concatenates the list of byte sequences [sl],
+(** [concat ~sep sl] concatenates the list of byte sequences [sl],
     inserting the separator byte sequence [sep] between each, and
     returns the result as a new byte sequence. *)
 
@@ -170,7 +170,7 @@ val cat : bytes -> bytes -> bytes
     @since 4.05.0 *)
 
 val iter : f:(char -> unit) -> bytes -> unit
-(** [iter f s] applies function [f] in turn to all the bytes of [s].
+(** [iter ~f s] applies function [f] in turn to all the bytes of [s].
     It is equivalent to [f (get s 0); f (get s 1); ...; f (get s
     (length s - 1)); ()]. *)
 
@@ -180,12 +180,12 @@ val iteri : f:(int -> char -> unit) -> bytes -> unit
     argument. *)
 
 val map : f:(char -> char) -> bytes -> bytes
-(** [map f s] applies function [f] in turn to all the bytes of [s] and
+(** [map ~f s] applies function [f] in turn to all the bytes of [s] and
     stores the resulting bytes in a new sequence that is returned as
     the result. *)
 
 val mapi : f:(int -> char -> char) -> bytes -> bytes
-(** [mapi f s] calls [f] with each character of [s] and its
+(** [mapi ~f s] calls [f] with each character of [s] and its
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 

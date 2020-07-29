@@ -81,7 +81,7 @@ module type S =
        and [false] otherwise. *)
 
     val add: key:key -> data:'a -> 'a t -> 'a t
-    (** [add key data m] returns a map containing the same bindings as
+    (** [add ~key ~data m] returns a map containing the same bindings as
        [m], plus a binding of [key] to [data]. If [key] was already bound
        in [m] to a value that is physically equal to [data],
        [m] is returned unchanged (the result of the function is
@@ -90,7 +90,7 @@ module type S =
        @before 4.03 Physical equality was not ensured. *)
 
     val update: key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
-    (** [update key f m] returns a map containing the same bindings as
+    (** [update ~key ~f m] returns a map containing the same bindings as
         [m], except for the binding of [key]. Depending on the value of
         [y] where [y] is [f (find_opt key m)], the binding of [key] is
         added, removed or updated. If [y] is [None], the binding is
@@ -117,7 +117,7 @@ module type S =
 
     val merge:
          f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-    (** [merge f m1 m2] computes a map whose keys are a subset of the keys of
+    (** [merge ~f m1 m2] computes a map whose keys are a subset of the keys of
         [m1] and of [m2]. The presence of each such binding, and the
         corresponding value, is determined with the function [f].
         In terms of the [find_opt] operation, we have
@@ -127,7 +127,7 @@ module type S =
      *)
 
     val union: f:(key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-    (** [union f m1 m2] computes a map whose keys are a subset of the keys
+    (** [union ~f m1 m2] computes a map whose keys are a subset of the keys
         of [m1] and of [m2].  When the same binding is defined in both
         arguments, the function [f] is used to combine them.
         This is a special case of [merge]: [union f m1 m2] is equivalent
@@ -145,36 +145,36 @@ module type S =
         used to compare data associated with equal keys in the two maps. *)
 
     val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are
+    (** [equal ~cmp m1 m2] tests whether the maps [m1] and [m2] are
        equal, that is, contain equal keys and associate them with
        equal data.  [cmp] is the equality predicate used to compare
        the data associated with the keys. *)
 
     val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
-    (** [iter f m] applies [f] to all bindings in map [m].
+    (** [iter ~f m] applies [f] to all bindings in map [m].
        [f] receives the key as first argument, and the associated value
        as second argument.  The bindings are passed to [f] in increasing
        order with respect to the ordering over the type of the keys. *)
 
     val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
-    (** [fold f m init] computes [(f kN dN ... (f k1 d1 init)...)],
+    (** [fold ~f m ~init] computes [(f kN dN ... (f k1 d1 init)...)],
        where [k1 ... kN] are the keys of all bindings in [m]
        (in increasing order), and [d1 ... dN] are the associated data. *)
 
     val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
-    (** [for_all f m] checks if all the bindings of the map
+    (** [for_all ~f m] checks if all the bindings of the map
         satisfy the predicate [f].
         @since 3.12.0
      *)
 
     val exists: f:(key -> 'a -> bool) -> 'a t -> bool
-    (** [exists f m] checks if at least one binding of the map
+    (** [exists ~f m] checks if at least one binding of the map
         satisfies the predicate [f].
         @since 3.12.0
      *)
 
     val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
-    (** [filter f m] returns the map with all the bindings in [m]
+    (** [filter ~f m] returns the map with all the bindings in [m]
         that satisfy predicate [p]. If every binding in [m] satisfies [f],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
@@ -183,7 +183,7 @@ module type S =
      *)
 
     val filter_map: f:(key -> 'a -> 'b option) -> 'a t -> 'b t
-    (** [filter_map f m] applies the function [f] to every binding of
+    (** [filter_map ~f m] applies the function [f] to every binding of
         [m], and builds a map from the results. For each binding
         [(k, v)] in the input map:
         - if [f k v] is [None] then [k] is not in the result,
@@ -203,7 +203,7 @@ module type S =
      *)
 
     val partition: f:(key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-    (** [partition f m] returns a pair of maps [(m1, m2)], where
+    (** [partition ~f m] returns a pair of maps [(m1, m2)], where
         [m1] contains all the bindings of [m] that satisfy the
         predicate [f], and [m2] is the map with all the bindings of
         [m] that do not satisfy [f].
@@ -285,7 +285,7 @@ module type S =
     *)
 
     val find_first: f:(key -> bool) -> 'a t -> key * 'a
-    (** [find_first f m], where [f] is a monotonically increasing function,
+    (** [find_first ~f m], where [f] is a monotonically increasing function,
        returns the binding of [m] with the lowest key [k] such that [f k],
        or raises [Not_found] if no such key exists.
 
@@ -298,28 +298,28 @@ module type S =
        *)
 
     val find_first_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
-    (** [find_first_opt f m], where [f] is a monotonically increasing function,
+    (** [find_first_opt ~f m], where [f] is a monotonically increasing function,
        returns an option containing the binding of [m] with the lowest key [k]
        such that [f k], or [None] if no such key exists.
         @since 4.05
        *)
 
     val find_last: f:(key -> bool) -> 'a t -> key * 'a
-    (** [find_last f m], where [f] is a monotonically decreasing function,
+    (** [find_last ~f m], where [f] is a monotonically decreasing function,
        returns the binding of [m] with the highest key [k] such that [f k],
        or raises [Not_found] if no such key exists.
         @since 4.05
        *)
 
     val find_last_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
-    (** [find_last_opt f m], where [f] is a monotonically decreasing function,
+    (** [find_last_opt ~f m], where [f] is a monotonically decreasing function,
        returns an option containing the binding of [m] with the highest key [k]
        such that [f k], or [None] if no such key exists.
         @since 4.05
        *)
 
     val map: f:('a -> 'b) -> 'a t -> 'b t
-    (** [map f m] returns a map with same domain as [m], where the
+    (** [map ~f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
        replaced by the result of the application of [f] to [a].
        The bindings are passed to [f] in increasing order

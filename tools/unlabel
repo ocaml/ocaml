@@ -30,9 +30,9 @@ LABREGEX="s/ [a-z_]+:([a-z\('])/ \1/g"
 #A second, sligthly different round sometimes required to deal with f:(key:key
 LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
 
-#Remove a tilde if it is followed by some alphanumerics and a space or closing
+#Remove a tilde if it is followed by a label name and a space or closing
 #OCamldoc code section with ]
-TILDEREGEX="s/~([a-z]*[ \]])/\1/g"
+TILDEREGEX="s/~([a-z_]*[ \]])/\1/g"
 
 #Stdlib
 perl -p -e "$LABREGEX" stdlib/listLabels.mli > stdlib/list.temp.mli
@@ -74,7 +74,7 @@ perl -p -e 's/MAP/`tail -n +19 stdlib\/templates\/map.template.mli`/e' \
 perl -p -e 's/SET/`tail -n +19 stdlib\/templates\/set.template.mli`/e' \
   stdlib/moreLabels.2temp.mli > stdlib/moreLabels.mli
 
-#Fix up
+#Fix up with templates in tools/unlabel-patches
 perl -p -e "s/type statistics =/type statistics = Hashtbl\.statistics =/" \
   stdlib/moreLabels.mli > stdlib/moreLabels.temp.mli
 perl -p -e "s/type \(!'a, !'b\) t/type \(!'a, !'b\) t = \('a, 'b) Hashtbl.t/" \

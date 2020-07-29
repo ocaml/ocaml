@@ -797,7 +797,7 @@ val create_process :
 val create_process_env :
   string -> string array -> string array -> file_descr ->
     file_descr -> file_descr -> int
-(** [create_process_env prog args env new_stdin new_stdout new_stderr]
+(** [create_process_env prog args env stdin stdout stderr]
    works as {!create_process}, except that the extra argument
    [env] specifies the environment passed to the program. *)
 
@@ -933,11 +933,11 @@ val close_process_full :
 val symlink : ?to_dir: (* thwart tools/unlabel*) bool ->
               string -> string -> unit
 (** [symlink ?to_dir src dst] creates the file [dst] as a symbolic link
-   to the file [src]. On Windows, [~to_dir] indicates if the symbolic link
+   to the file [src]. On Windows, [to_dir] indicates if the symbolic link
    points to a directory or a file; if omitted, [symlink] examines [src]
    using [stat] and picks appropriately, if [src] does not exist then [false]
-   is assumed (for this reason, it is recommended that the [~to_dir] parameter
-   be specified in new code). On Unix, [~to_dir] is ignored.
+   is assumed (for this reason, it is recommended that the [to_dir] parameter
+   be specified in new code). On Unix, [to_dir] is ignored.
 
    Windows symbolic links are available in Windows Vista onwards. There are some
    important differences between Windows symlinks and their POSIX counterparts.

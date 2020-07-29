@@ -205,7 +205,7 @@ type wait_flag = Unix.wait_flag =
 (** Flags for {!waitpid}. *)
 
 val execv : prog:string -> args:string array -> 'a
-(** [execv prog args] execute the program in file [prog], with
+(** [execv ~prog ~args] execute the program in file [prog], with
    the arguments [args], and the current process environment.
    These [execv*] functions never return: on success, the current
    program is replaced by the new one;
@@ -331,12 +331,12 @@ val fsync : file_descr -> unit
 (** Flush file buffers to disk. *)
 
 val read : file_descr -> buf:bytes -> pos:int -> len:int -> int
-(** [read fd buf pos len] reads [len] bytes from descriptor [fd],
+(** [read fd ~buf ~pos ~len] reads [len] bytes from descriptor [fd],
     storing them in byte sequence [buf], starting at position [pos] in
     [buf]. Return the number of bytes actually read. *)
 
 val write : file_descr -> buf:bytes -> pos:int -> len:int -> int
-(** [write fd buf pos len] writes [len] bytes to descriptor [fd],
+(** [write fd ~buf ~pos ~len] writes [len] bytes to descriptor [fd],
     taking them from byte sequence [buf], starting at position [pos]
     in [buff]. Return the number of bytes actually written.  [write]
     repeats the writing operation until all bytes have been written or
@@ -521,7 +521,7 @@ val map_file :
   layout:'c Stdlib.Bigarray.layout -> shared:bool -> dims:int array ->
   ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
 (** Memory mapping of a file as a Bigarray.
-  [map_file fd kind layout shared dims]
+  [map_file fd ~kind ~layout ~shared ~dims]
   returns a Bigarray of kind [kind], layout [layout],
   and dimensions as specified in [dims].  The data contained in
   this Bigarray are the contents of the file referred to by
@@ -581,7 +581,7 @@ val unlink : string -> unit
 *)
 
 val rename : src:string -> dst:string -> unit
-(** [rename src dst] changes the name of a file from [src] to [dst],
+(** [rename ~src ~dst] changes the name of a file from [src] to [dst],
     moving it between directories if needed.  If [dst] already
     exists, its contents will be replaced with those of [src].
     Depending on the operating system, the metadata (permissions,
@@ -590,7 +590,7 @@ val rename : src:string -> dst:string -> unit
 
 val link : ?follow (* thwart tools/unlabel*) :bool ->
            src:string -> dst:string -> unit
-(** [link ?follow src dst] creates a hard link named [dst] to the file
+(** [link ?follow ~src ~dst] creates a hard link named [dst] to the file
    named [src].
 
    @param follow indicates whether a [src] symlink is followed or a
@@ -653,7 +653,7 @@ val dup : ?cloexec: (* thwart tools/unlabel *) bool -> file_descr -> file_descr
 
 val dup2 : ?cloexec: (* thwart tools/unlabel *) bool ->
            src:file_descr -> dst:file_descr -> unit
-(** [dup2 src dst] duplicates [src] to [dst], closing [dst] if already
+(** [dup2 ~src ~dst] duplicates [src] to [dst], closing [dst] if already
    opened.
    See {!set_close_on_exec} for documentation on the [cloexec]
    optional argument. *)
@@ -781,7 +781,7 @@ val mkfifo : string -> perm:file_perm -> unit
 val create_process :
   prog:string -> args:string array -> stdin:file_descr -> stdout:file_descr ->
     stderr:file_descr -> int
-(** [create_process prog args stdin stdout stderr]
+(** [create_process ~prog ~args ~stdin ~stdout ~stderr]
    forks a new process that executes the program
    in file [prog], with arguments [args]. The pid of the new
    process is returned immediately; the new process executes
@@ -797,7 +797,7 @@ val create_process :
 val create_process_env :
   prog:string -> args:string array -> env:string array -> stdin:file_descr ->
     stdout:file_descr -> stderr:file_descr -> int
-(** [create_process_env prog args env new_stdin new_stdout new_stderr]
+(** [create_process_env ~prog ~args ~env ~stdin ~stdout ~stderr]
    works as {!create_process}, except that the extra argument
    [env] specifies the environment passed to the program. *)
 
@@ -932,7 +932,7 @@ val close_process_full :
 
 val symlink : ?to_dir: (* thwart tools/unlabel*) bool ->
               src:string -> dst:string -> unit
-(** [symlink ?to_dir src dst] creates the file [dst] as a symbolic link
+(** [symlink ?to_dir ~src ~dst] creates the file [dst] as a symbolic link
    to the file [src]. On Windows, [~to_dir] indicates if the symbolic link
    points to a directory or a file; if omitted, [symlink] examines [src]
    using [stat] and picks appropriately, if [src] does not exist then [false]
@@ -1004,7 +1004,7 @@ type lock_command = Unix.lock_command =
 (** Commands for {!lockf}. *)
 
 val lockf : file_descr -> mode:lock_command -> len:int -> unit
-(** [lockf fd mode len] puts a lock on a region of the file opened
+(** [lockf fd ~mode ~len] puts a lock on a region of the file opened
    as [fd]. The region starts at the current read/write position for
    [fd] (as set by {!lseek}), and extends [len] bytes forward if
    [len] is positive, [len] bytes backwards if [len] is negative,
@@ -1042,7 +1042,7 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
 *)
 
 val kill : pid:int -> signal:int -> unit
-(** [kill pid signal] sends signal number [signal] to the process
+(** [kill ~pid ~signal] sends signal number [signal] to the process
    with id [pid].  On Windows, only the {!Sys.sigkill} signal
    is emulated. *)
 
@@ -1052,7 +1052,7 @@ type sigprocmask_command = Unix.sigprocmask_command =
   | SIG_UNBLOCK
 
 val sigprocmask : mode:sigprocmask_command -> int list -> int list
-(** [sigprocmask mode sigs] changes the set of blocked signals.
+(** [sigprocmask ~mode sigs] changes the set of blocked signals.
    If [mode] is [SIG_SETMASK], blocked signals are set to those in
    the list [sigs].
    If [mode] is [SIG_BLOCK], the signals in [sigs] are added to

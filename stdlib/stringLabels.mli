@@ -95,7 +95,7 @@ val make : int -> char -> string
    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> f:(int -> char) -> string
-(** [init n f] returns a string of length [n], with character
+(** [init n ~f] returns a string of length [n], with character
     [i] initialized to the result of [f i] (called in increasing
     index order).
 
@@ -110,7 +110,7 @@ val copy : string -> string  [@@ocaml.deprecated]
     sense to make identical copies of them. *)
 
 val sub : string -> pos:int -> len:int -> string
-(** [sub s pos len] returns a fresh string of length [len],
+(** [sub s ~pos ~len] returns a fresh string of length [len],
    containing the substring of [s] that starts at position [pos] and
    has length [len].
    @raise Invalid_argument if [pos] and [len] do not
@@ -118,7 +118,7 @@ val sub : string -> pos:int -> len:int -> string
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
   [@@ocaml.deprecated "Use Bytes.fill/BytesLabels.fill instead."]
-(** [fill s pos len c] modifies byte sequence [s] in place,
+(** [fill s ~pos ~len c] modifies byte sequence [s] in place,
    replacing [len] bytes by [c], starting at [pos].
    @raise Invalid_argument if [pos] and [len] do not
    designate a valid substring of [s].
@@ -128,7 +128,7 @@ val fill : bytes -> pos:int -> len:int -> char -> unit
 val blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes
    from the string [src], starting at index [src_pos],
    to byte sequence [dst], starting at character number [dst_pos].
    @raise Invalid_argument if [src_pos] and [len] do not
@@ -136,13 +136,13 @@ val blit :
    do not designate a valid range of [dst]. *)
 
 val concat : sep:string -> string list -> string
-(** [concat sep sl] concatenates the list of strings [sl],
+(** [concat ~sep sl] concatenates the list of strings [sl],
     inserting the separator string [sep] between each.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
 val iter : f:(char -> unit) -> string -> unit
-(** [iter f s] applies function [f] in turn to all
+(** [iter ~f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
    [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
 
@@ -153,13 +153,13 @@ val iteri : f:(int -> char -> unit) -> string -> unit
    @since 4.00.0 *)
 
 val map : f:(char -> char) -> string -> string
-(** [map f s] applies function [f] in turn to all
+(** [map ~f s] applies function [f] in turn to all
    the characters of [s] and stores the results in a new string that
    is returned.
    @since 4.00.0 *)
 
 val mapi : f:(int -> char -> char) -> string -> string
-(** [mapi f s] calls [f] with each character of [s] and its
+(** [mapi ~f s] calls [f] with each character of [s] and its
     index (in increasing index order) and stores the results in a new
     string that is returned.
     @since 4.02.0 *)
@@ -313,16 +313,16 @@ val uncapitalize_ascii : string -> string
 
 val starts_with :
   prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
-(** [starts_with prefix s] tests if [s] starts with [prefix]
+(** [starts_with ~prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
 val ends_with :
   suffix (* comment thwarts tools/unlabel *) :string -> string -> bool
-(** [ends_with suffix s] tests if [s] ends with [suffix]
+(** [ends_with ~suffix s] tests if [s] ends with [suffix]
     @since 4.12.0 *)
 
 val split_on_char: sep:char -> string -> string list
-(** [split_on_char sep s] returns the list of all (possibly empty)
+(** [split_on_char ~sep s] returns the list of all (possibly empty)
     substrings of [s] that are delimited by the [sep] character.
 
     The function's output is specified by the following invariants:

@@ -185,13 +185,13 @@ val fold_left_map :
 *)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
-(** [fold_left f a [b1; ...; bn]] is
-   [f (... (f (f a b1) b2) ...) bn].
+(** [fold_left f init [b1; ...; bn]] is
+   [f (... (f (f init b1) b2) ...) bn].
  *)
 
 val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
-(** [fold_right f [a1; ...; an] b] is
-   [f a1 (f a2 (... (f an b) ...))]. Not tail-recursive.
+(** [fold_right f [a1; ...; an] init] is
+   [f a1 (f a2 (... (f an init) ...))]. Not tail-recursive.
  *)
 
 
