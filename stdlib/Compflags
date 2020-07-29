@@ -34,5 +34,7 @@ case $1 in
   stdlib__scanf.cmx) echo ' -inline 9';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__float.cm[ox]) echo ' -nolabels -no-alias-deps';;
+  stdlib__oo.cmi) echo ' -no-principal';;
+    # preserve structure sharing in Oo.copy (PR#9767)
   *) echo ' ';;
 esac

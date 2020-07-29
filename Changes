@@ -344,6 +344,10 @@ Working version
   correctly spaced.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
+- #9759, #9767: Spurious GADT ambiguity without -principal
+  (Jacques Garrigue, report by Thomas Refis,
+   review by Thomas Refis and Gabriel Scherer)
+
 OCaml 4.11
 ----------
 
