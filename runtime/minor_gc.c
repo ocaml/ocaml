@@ -684,7 +684,7 @@ void caml_empty_minor_heap_setup(struct domain* domain) {
 }
 
 /* must be called within a STW section */
-static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
@@ -722,8 +722,16 @@ static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int 
   caml_gc_log("finished stw empty_minor_heap");
 }
 
+static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+{
+  caml_stw_empty_minor_heap_no_major_slice(domain, unused, participating_count, participating);
+
+  /* schedule a major collection slice for this domain */
+  caml_request_major_slice();
+}
+
 /* must be called within a STW section  */
-void caml_empty_minor_heap_from_stw (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+void caml_empty_minor_heap_no_major_slice_from_stw (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
   barrier_status b = caml_global_barrier_begin();
   if( caml_global_barrier_is_final(b) ) {
@@ -731,7 +739,9 @@ void caml_empty_minor_heap_from_stw (struct domain* domain, void* unused, int pa
   }
   caml_global_barrier_end(b);
 
-  caml_stw_empty_minor_heap(domain, (void*)0, participating_count, participating);
+  /* if we are entering from within a major GC STW section then
+     we do not schedule another major collection slice */
+  caml_stw_empty_minor_heap_no_major_slice(domain, (void*)0, participating_count, participating);
 }
 
 void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
@@ -777,23 +787,11 @@ void caml_empty_minor_heaps_once ()
   } while (saved_minor_cycle == atomic_load(&caml_minor_cycles_started));
 }
 
-/* Do a minor collection and a slice of major collection, call finalisation
-   functions, etc.
-   Leave the minor heap empty.
+/* Request a minor collection and enter as if it were an interrupt.
 */
 CAMLexport void caml_minor_collection (void)
 {
-  caml_ev_pause(EV_PAUSE_GC);
-
-  caml_handle_incoming_interrupts ();
-  caml_empty_minor_heaps_once();
-  caml_handle_incoming_interrupts ();
-  caml_major_collection_slice (0, 0);
-  caml_final_do_calls();
-
-  caml_ev_resume();
-
-  /* If the major slice triggered a STW, do that now */
+  caml_request_minor_gc();
   caml_handle_gc_interrupt();
 }
 
