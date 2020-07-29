@@ -35,6 +35,10 @@ OCaml 4.10 maintenance branch
   blue, which was not the case with the best-fit allocator.
   (Damien Doligez, report and review by Leo White)
 
+- #9759, #9767: Spurious GADT ambiguity without -principal
+  (Jacques Garrigue, report by Thomas Refis,
+   review by Thomas Refis and Gabriel Scherer)
+
 ### Tools:
 
 - #9552: restore ocamloptp build and installation

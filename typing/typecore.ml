@@ -1246,9 +1246,9 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
       begin match ty.desc with
       | Tpoly (body, tyl) ->
           begin_def ();
+          init_def generic_level;
           let _, ty' = instance_poly ~keep_names:true false tyl body in
           end_def ();
-          generalize ty';
           let id = enter_variable lloc name ty' attrs in
           rp k {
             pat_desc = Tpat_var (id, name);
@@ -1304,10 +1304,7 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
       assert (List.length spl >= 2);
       let spl_ann = List.map (fun p -> (p,newgenvar ())) spl in
       let ty = newgenty (Ttuple(List.map snd spl_ann)) in
-      begin_def ();
-      let expected_ty = instance expected_ty in
-      end_def ();
-      generalize_structure expected_ty;
+      let expected_ty = generic_instance expected_ty in
       unify_pat_types ~refine loc env ty expected_ty;
       map_fold_cont (fun (p,t) -> type_pat p t) spl_ann (fun pl ->
         rp k {
@@ -1416,10 +1413,7 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
                   row_more = newgenvar ();
                   row_fixed = None;
                   row_name = None } in
-      begin_def ();
-      let expected_ty = instance expected_ty in
-      end_def ();
-      generalize_structure expected_ty;
+      let expected_ty = generic_instance expected_ty in
       (* PR#7404: allow some_private_tag blindly, as it would not unify with
          the abstract row variable *)
       if l = Parmatch.some_private_tag
@@ -1443,11 +1437,11 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
       let opath, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
-          begin_def ();
-          let ty = instance expected_ty in
-          end_def ();
-          generalize_structure ty;
-          Some (p0, p, true), ty
+          let ty = generic_instance expected_ty in
+          let principal =
+            (repr expected_ty).level = generic_level || not !Clflags.principal
+          in
+          Some (p0, p, principal), ty
         with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) k =
@@ -1487,10 +1481,7 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
       end
   | Ppat_array spl ->
       let ty_elt = newgenvar() in
-      begin_def ();
-      let expected_ty = instance expected_ty in
-      end_def ();
-      generalize_structure expected_ty;
+      let expected_ty = generic_instance expected_ty in
       unify_pat_types ~refine
         loc env (Predef.type_array ty_elt) expected_ty;
       map_fold_cont (fun p -> type_pat p ty_elt) spl (fun pl ->
@@ -1571,7 +1562,8 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
-      unify_pat_types ~refine loc env (Predef.type_lazy_t nv) expected_ty;
+      unify_pat_types ~refine loc env (Predef.type_lazy_t nv)
+        (generic_instance expected_ty);
       (* do not explode under lazy: PR#7421 *)
       type_pat ~mode:(no_explosion mode) sp1 nv (fun p1 ->
         rp k {
@@ -2553,7 +2545,7 @@ and type_expect_
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
       let to_unify = newgenty (Ttuple subtypes) in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify ty_expected);
+        unify_exp_types loc env to_unify (generic_instance ty_expected));
       let expl =
         List.map2 (fun body ty -> type_expect env body (mk_expected ty))
           sexpl subtypes
@@ -2653,7 +2645,7 @@ and type_expect_
           (fun x -> x)
       in
       with_explanation (fun () ->
-        unify_exp_types loc env ty_record (instance ty_expected));
+        unify_exp_types loc env (instance ty_record) (instance ty_expected));
 
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
@@ -2770,7 +2762,7 @@ and type_expect_
       let ty = newgenvar() in
       let to_unify = Predef.type_array ty in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify ty_expected);
+        unify_exp_types loc env to_unify (generic_instance ty_expected));
       let argl =
         List.map (fun sarg -> type_expect env sarg (mk_expected ty)) sargl in
       re {
@@ -3210,7 +3202,7 @@ and type_expect_
       let ty = newgenvar () in
       let to_unify = Predef.type_lazy_t ty in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify ty_expected);
+        unify_exp_types loc env to_unify (generic_instance ty_expected));
       let arg = type_expect env e (mk_expected ty) in
       re {
         exp_desc = Texp_lazy arg;
@@ -4404,14 +4396,9 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
             generalize_structure ty; ty
           end
           else if contains_gadt then
-            (* Even though we've already done that, apparently we need to do it
-               again.
-               stdlib/camlinternalFormat.ml:2288 is an example of use of this
-               call to [correct_levels]... *)
+            (* allow propagation from preceding branches *)
             correct_levels ty_res
           else ty_res in
-(*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
-          Printtyp.raw_type_expr ty_res'; *)
         let guard =
           match pc_guard with
           | None -> None

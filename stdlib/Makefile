@@ -23,7 +23,7 @@ TARGET_BINDIR ?= $(BINDIR)
 COMPILER=$(ROOTDIR)/ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
-          -g -warn-error A -bin-annot -nostdlib \
+          -g -warn-error A -bin-annot -nostdlib -principal \
           -safe-string -strict-formats
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
