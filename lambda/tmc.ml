@@ -65,7 +65,11 @@ end
     with an attribute to request the transformation.
 *)
 
-type 'offset destination = { var: Ident.t; offset: 'offset; }
+type 'offset destination = {
+  var: Ident.t;
+  offset: 'offset;
+  loc : Debuginfo.Scoped_location.t;
+}
 and offset = lambda
 (** In the OCaml value model, interior pointers are not allowed.  To
     represent the "placeholder to mutate" in DPS code, we thus use a pair
@@ -85,9 +89,27 @@ let add_dst_params ({var; offset} : Ident.t destination) params =
 let add_dst_args ({var; offset} : offset destination) args =
   Lvar var :: offset :: args
 
-let assign_to_dst loc {var; offset} lam =
+let assign_to_dst {var; offset; loc} lam =
   Lprim(Psetfield_computed(Pointer, Heap_initialization),
         [Lvar var; offset; lam], loc)
+
+(** The type ['a Dps.t] (destination-passing-style) represents a
+    version of ['a] that is parametrized over a [lambda destination]. *)
+module Dps = struct
+  type 'a t =
+    tail:bool -> dst:lambda destination -> 'a
+  (** A term parameterized over a destination.  The [tail] argument
+      is passed by the caller to indicate whether the term will be placed
+      in tail-position -- this allows to generate correct @tailcall
+      annotations. *)
+
+  (** Create a new destination-passing-style term which is simply
+      setting the destination with the given [v], hence "returning"
+      it. *)
+  let return (v : lambda): lambda t =
+    fun ~tail:_ ~dst ->
+      assign_to_dst dst v
+end
 
 (** The TMC transformation requires information flows in two opposite
     directions: the information of which callsites can be rewritten in
@@ -102,69 +124,67 @@ let assign_to_dst loc {var; offset} lam =
 
     1. A function [choice t] that takes a term and processes it from
     leaves to root; it produces a "code choice", a piece of data of
-    type [choice], that contains information on how to transform the
+    type [Choice.t], that contains information on how to transform the
     input term [t] *parameterized* over the (still missing) contextual
     information.
 
     2. Code-production operators that have contextual information
     to transform a "code choice" into the final code.
 *)
+module Choice = struct
+  type t = {
+    dps : lambda Dps.t;
+    direct : unit -> lambda;
+    has_tmc_calls : bool;
+  }
+  (**
+     A [Choice.t] represents code that may be written in destination-passing style
+     if its usage context allows it. More precisely:
 
-type choice =
-  | Return of return
-  (** [Return t] means that there are no TMC opportunities in the subterm [t]:
-      no matter which context we are in,
-      we should evaluate [t] and "return" it. *)
-  | Set of settable
-  (** [Set t] represents a piece of code that does contain
-      TMC opportunities: if the context allows, we can write parts of
-      it in destination-passing-style to turn non-tail calls into tail
-      calls. See the type [settable] below. *)
+     - If the surrounding context is already in destination-passing
+       style, it has a destination available, we should produce the
+       code in [dps] -- a function parametrized over the destination.
 
-and return = lambda
+     - If the surrounding context is in direct style (no destination
+       is available), we should produce the fallback code from
+       [direct].
 
-and settable = {
-  dps: tail:bool -> offset destination -> lambda;
-  direct: unit -> return;
-}
-(**
-   A [{dps; direct}] record a code that may be written in destination-passing style
-   if its usage context allows it. More precisely:
+       (Note: [direct] is also a function (on [unit]) to ensure that any
+       effects performed during code production will only happen once we
+       do know that we want to produce the direct-style code.)
 
-   - If the surrounding context is already in destination-passing
-     style, it has a destination available, we should produce the
-     code in [dps] -- a function parametrized over the destination.
+     - [has_tmc_calls] is true when there are TMC opportunities
+       in the subterm -- if some calls are in tail-modulo-cons
+       position and are rewritten into tailcalls in the [dps] version.
+   *)
 
-  - If the surrounding context is in direct style (no destination
-    is available), we should produce the fallback code from
-    [direct].
+  let return v = {
+    dps = Dps.return v;
+    direct = (fun () -> v);
+    has_tmc_calls = false;
+  }
 
-    (Note: [direct] is also a function (on [unit]) to ensure that any
-    effects performed during code production will only happen once we
-    do know that we want to produce the direct-style code.)
- *)
+  let direct (c : t) : lambda =
+    c.direct ()
 
-(** Finds the first [settable] element in a list [choices];
-    - if it exists, it gives a record
-      [{rev_returns; settable; tail_choices}] such that
-      [choices =
-        List.rev_append
-          (List.map Return rev_returns)
-          (Settable settable :: tail_choices)]
-    - if there is no settable element, it gives a list [returns]
-      such that [choices = List.map Return returns]
-*)
-type settable_zipper = {
-  rev_returns : return list;
-  settable : settable;
-  tail_choices: choice list
-}
-let find_settable : choice list -> (settable_zipper, return list) result =
-  let rec find rev_returns = function
-    | [] -> Error (List.rev rev_returns)
-    | Return r :: rest -> find (r :: rev_returns) rest
-    | Set settable :: tail_choices -> Ok { rev_returns; settable; tail_choices }
-  in find []
+  let dps (c : t) ~tail ~dst =
+    c.dps ~tail:tail ~dst:dst
+
+  (** Finds the first [Choice.t] in a list that [has_tmc_calls] *)
+  type zipper = {
+    rev_before : lambda list;
+    choice : t;
+    after: t list
+  }
+  let find_tmc_calls : t list -> (zipper, lambda list) result =
+    let rec find rev_before = function
+      | [] -> Error (List.rev rev_before)
+      | choice :: after ->
+          if choice.has_tmc_calls
+          then Ok { rev_before; choice; after }
+          else find (choice.direct () :: rev_before) after
+    in find []
+end
 
 type context = {
   specialized: specialized Ident.Map.t;
@@ -173,16 +193,6 @@ and specialized = {
   arity: int;
   dps_id: Ident.t;
 }
-
-let set ~tail loc dst = function
-  | Return t ->
-      assign_to_dst loc dst t
-  | Set settable ->
-      settable.dps ~tail dst
-
-let return = function
-  | Return t -> t
-  | Set settable -> settable.direct ()
 
 let tmc_placeholder = Lconst (Const_base (Const_int 0))
 (* TODO consider using a more magical constant like 42, for debugging? *)
@@ -209,7 +219,7 @@ let rec choice ctx t =
       | (Lvar _ | Lconst _ | Lfunction _ | Lsend _
         | Lassign _ | Lfor _ | Lwhile _) ->
           let t = traverse ctx t in
-          Return t
+          Choice.return t
 
       (* [choice_prim] handles most primitives, but the important case of construction
          [Lprim(Pmakeblock(...), ...)] is handled by [choice_makeblock] *)
@@ -271,7 +281,7 @@ let rec choice ctx t =
                Lstringswitch (l1, cases, fail, loc))
       | Lstaticraise (id, ls) ->
           let ls = List.map (traverse ctx) ls in
-          Return (Lstaticraise (id, ls))
+          Choice.return (Lstaticraise (id, ls))
       | Ltrywith (l1, id, l2) ->
           (* in [try l1 with id -> l2], the term [l1] is
              not in tail-call position (after it returns
@@ -304,16 +314,14 @@ let rec choice ctx t =
   *)
   and lift ctx tail_terms context =
     let choices = List.map (choice ctx) tail_terms in
-    match find_settable choices with
-    | Error all_returns ->
-        Return (context all_returns)
-    | Ok _ ->
-        let noloc = Debuginfo.Scoped_location.Loc_unknown in
-        Set {
-          dps = (fun ~tail dst ->
-            context (List.map (set ~tail noloc dst) choices));
-          direct = (fun () -> context (List.map return choices));
-        }
+    {
+      Choice.dps = (fun ~tail ~dst ->
+        context (List.map (Choice.dps ~tail ~dst) choices));
+      direct = (fun () ->
+        context (List.map Choice.direct choices));
+      has_tmc_calls =
+        List.exists (fun choice -> choice.Choice.has_tmc_calls) choices;
+    }
 
   and choice_apply ctx apply =
     let exception No_tmc in
@@ -331,8 +339,8 @@ let rec choice ctx t =
                  that they are aware of this limitation. *)
               raise No_tmc
           in
-          Set {
-            dps = (fun ~tail dst ->
+          {
+            Choice.dps = (fun ~tail ~dst ->
               let f_dps = specialized.dps_id in
               Lapply { apply with
                        ap_func = Lvar f_dps;
@@ -343,60 +351,55 @@ let rec choice ctx t =
                          else Default_tailcall;
                      });
             direct = (fun () -> Lapply apply);
+            has_tmc_calls = true;
           }
       | _nontail -> raise No_tmc
-    with No_tmc -> Return (Lapply apply)
+    with No_tmc -> Choice.return (Lapply apply)
 
   and choice_makeblock ctx (tag, flag, shape) blockargs loc =
     let k new_flag new_block_args =
       Lprim (Pmakeblock (tag, new_flag, shape), new_block_args, loc) in
     let choices = List.map (choice ctx) blockargs in
-    match find_settable choices with
-    | Error all_returns -> Return (k flag all_returns)
-    | Ok { rev_returns; settable; tail_choices } ->
+    match Choice.find_tmc_calls choices with
+    | Error args -> Choice.return (k flag args)
+    | Ok { Choice.rev_before; choice; after } ->
         begin
           (* fail if this settable position is not unique *)
-          match find_settable tail_choices with
-          | Error _all_returns -> ()
-          | Ok _another_settable ->
+          match Choice.find_tmc_calls after with
+          | Error _ -> ()
+          | Ok _another_choice ->
               failwith "TODO proper error/warning: ambiguous settable position"
         end;
         let k_with_placeholder =
           k Mutable
-            (List.rev_append rev_returns @@
+            (List.rev_append rev_before @@
              tmc_placeholder ::
-             List.map return tail_choices)
+             List.map Choice.direct after)
         in
-        let placeholder_pos = List.length rev_returns in
+        let placeholder_pos = List.length rev_before in
         let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
-     (*
-        ∃k, uₖ = Set(dst.u', _) =>
-            Set(
-                (old_dst.
-                  let block = K(return(u₁), .., Placeholder, .., return(uₙ)) in
-                  old_dst <- block,
-                  u'[Dst(block, k)]),
-                (let block = K(return(u₁), .., Placeholderₖ, .., return(uₙ)) in
-                 u'[Dst(block, k)]; block)
-            )
-     *)
         let let_block_in body =
           let block_var = Ident.create_local "block" in
           Llet(Strict, Pgenval, block_var, k_with_placeholder,
                body block_var)
         in
-        let block_dst block_var = { var = block_var; offset = placeholder_pos_lam } in
-        Set {
-          dps = (fun ~tail old_dst ->
+        let block_dst block_var = {
+          var = block_var;
+          offset = placeholder_pos_lam;
+          loc;
+        } in
+        {
+          Choice.dps = (fun ~tail ~dst:old_dst ->
             let_block_in @@ fun block_var ->
-            Lsequence(assign_to_dst loc old_dst (Lvar block_var),
-                      settable.dps ~tail (block_dst block_var))
+            Lsequence(assign_to_dst old_dst (Lvar block_var),
+                      choice.dps ~tail ~dst:(block_dst block_var))
           );
           direct = (fun () ->
             let_block_in @@ fun block_var ->
-            Lsequence(settable.dps ~tail:false (block_dst block_var),
+            Lsequence(choice.dps ~tail:false ~dst:(block_dst block_var),
                       Lvar block_var)
           );
+          has_tmc_calls = choice.has_tmc_calls;
         }
 
   and choice_prim ctx prim primargs loc =
@@ -465,7 +468,7 @@ let rec choice ctx t =
       | Pbbswap _
       | Pint_as_pointer
         ->
-          Return (Lprim (prim, primargs, loc))
+          Choice.return (Lprim (prim, primargs, loc))
     end
   in choice ctx t
 
@@ -488,16 +491,17 @@ and traverse_binding ctx (var, def) =
   let special = Ident.Map.find var ctx.specialized in
   let fun_choice = choice ctx lfun.body in
   let direct =
-    Lfunction { lfun with body = return fun_choice } in
+    Lfunction { lfun with body = Choice.direct fun_choice } in
   let dps =
     let dst = {
       var = Ident.create_local "dst";
       offset = Ident.create_local "offset";
+      loc = lfun.loc;
     } in
     let dst_lam = { dst with offset = Lvar dst.offset } in
     Lambda.duplicate @@ Lfunction { lfun with (* TODO check function_kind *)
       params = add_dst_params dst lfun.params;
-      body = set ~tail:true lfun.loc dst_lam fun_choice;
+      body = Choice.dps ~tail:true ~dst:dst_lam fun_choice;
     } in
   let dps_var = special.dps_id in
   [(var, direct); (dps_var, dps)]
