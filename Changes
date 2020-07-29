@@ -1,49 +1,3 @@
-OCaml 4.10 maintenance branch
------------------------------
-
-### Runtime system:
-
-- #9344, #9368: Disable exception backtraces in bytecode programs
-  built with "-output-complete-exe". At the moment, such programs do
-  not embed debug information and exception backtraces where causing
-  them to crash.
-  (Jérémie Dimino, review by Nicolás Ojeda Bär)
-
-### Build system:
-
-- #9531: fix support for the BFD library on FreeBSD
-  (Hannes Mehnert, review by Gabriel Scherer and David Allsopp)
-
-### Bug fixes:
-
-- #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
-  (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
-
-- #9165: Add missing -function-sections and -O3 flags in Makefiles.
-  (Greta Yorsh, review by David Allsopp)
-
-- #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`
-  would not execute `at_exit` hooks at program termination (in particular,
-  output channels would not be flushed).
-  (Nicolás Ojeda Bär, review by David Allsopp)
-
-- #9714, #9724: Use the C++ alignas keyword when compiling in C++ in MSVC.
-  Fixes a bug with MSVC C++ 2015 onwards.
-  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
-
-- #9736, #9749: Compaction must start in a heap where all free blocks are
-  blue, which was not the case with the best-fit allocator.
-  (Damien Doligez, report and review by Leo White)
-
-- #9759, #9767: Spurious GADT ambiguity without -principal
-  (Jacques Garrigue, report by Thomas Refis,
-   review by Thomas Refis and Gabriel Scherer)
-
-### Tools:
-
-- #9552: restore ocamloptp build and installation
-  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
-
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 
@@ -68,6 +22,14 @@ OCaml 4.10.0 (21 February 2020)
 
 - #6662, #8908: allow writing "module _ = E" to ignore module expressions
   (Thomas Refis, review by Gabriel Radanne)
+
+### Type system:
+
+* #9811: remove propagation from previous branches
+  Type information inferred from previous branches was propagated in
+  non-principal mode. Revert this for better compatibility with
+  -principal mode.
+  (Jacques Garrigue, review by ??)
 
 ### Runtime system:
 
