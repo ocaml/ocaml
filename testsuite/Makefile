@@ -16,8 +16,6 @@
 .NOTPARALLEL:
 
 BASEDIR := $(shell pwd)
-NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
-	  && echo --no-print-directory`
 
 FIND=find
 TOPDIR := ..
@@ -110,8 +108,8 @@ default:
 .PHONY: all
 all:
 	@rm -f $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) new-without-report
-	@$(MAKE) $(NO_PRINT) report
+	@$(MAKE) --no-print-directory new-without-report
+	@$(MAKE) --no-print-directory report
 
 .PHONY: new-without-report
 new-without-report: lib tools
@@ -136,9 +134,9 @@ check-failstamp:
 .PHONY: all-%
 all-%: lib tools
 	@for dir in tests/$**; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
+	  $(MAKE) --no-print-directory exec-one DIR=$$dir; \
 	done 2>&1 | tee $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 # The targets below use GNU parallel to parallelize tests
@@ -177,9 +175,9 @@ parallel-%: lib tools
 	     exit 1)
 	@for dir in tests/$**; do echo $$dir; done \
 	 | parallel --gnu --no-notice --keep-order \
-	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
+	     "$(MAKE) --no-print-directory exec-one DIR={} 2>&1" \
 	 | tee $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 .PHONY: parallel
@@ -192,9 +190,9 @@ list: lib tools
 	  exit 1; \
 	fi
 	@while read LINE; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
+	  $(MAKE) --no-print-directory exec-one DIR=$$LINE; \
 	done <$(FILE) 2>&1 | tee $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 .PHONY: one
@@ -207,7 +205,7 @@ one: lib tools
 	  echo "Directory '$(DIR)' does not exist."; \
 	  exit 1; \
 	fi
-	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
+	@$(MAKE) --no-print-directory exec-one DIR=$(DIR)
 	@$(MAKE) check-failstamp
 
 .PHONY: exec-one
@@ -290,18 +288,17 @@ retry-list:
 	@while read LINE; do \
 	  if [ -n "$$LINE" ] ; then \
 	    echo re-ran $$LINE>> $(TESTLOG); \
-	    $(MAKE) $(NO_PRINT) clean-one DIR=$$LINE; \
-	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a $(TESTLOG) ; \
+	    $(MAKE) --no-print-directory clean-one DIR=$$LINE; \
+	    $(MAKE) --no-print-directory exec-one DIR=$$LINE 2>&1 \
+	      | tee -a $(TESTLOG) ; \
 	  fi \
 	done <_retries;
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 
 .PHONY: retries
 retries:
 	@$(AWK) -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
 	     -f ./summarize.awk < $(TESTLOG) > _retries
-	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
+	@test `cat _retries | wc -l` -eq 0 || \
+	  $(MAKE) --no-print-directory retry-list
 	@rm -f _retries
-
-.PHONY: empty
-empty:
