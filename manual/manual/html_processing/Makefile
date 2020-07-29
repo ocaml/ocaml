@@ -1,7 +1,60 @@
+DUNE_CMD := $(if $(wildcard dune/dune.exe),dune/dune.exe,dune)
+DUNE ?= $(DUNE_CMD)
+
 all:
-	dune exec src/process_manual.exe quiet
-	dune exec src/process_api.exe overwrite quiet
-	dune exec src/process_api.exe compiler overwrite quiet
+	$(DUNE) exec src/process_manual.exe quiet
+	$(DUNE) exec src/process_api.exe overwrite quiet
+	$(DUNE) exec src/process_api.exe compiler overwrite quiet
 
 clean:
 	rm -rf ../webman
+
+distclean::
+	rm -rf .sass-cache
+
+# We need Dune and Lambda Soup; Markup.ml and Uutf are dependencies
+DUNE_TAG = 2.6.2
+LAMBDASOUP_TAG = 0.7.1
+MARKUP_TAG = 0.8.2
+UUTF_TAG = v1.0.2
+
+# Duniverse rules - set-up dune and the dependencies in-tree for CI
+duniverse: dune/dune.exe markup.ml uutf lambdasoup
+
+dune/dune.exe: dune
+	cd dune; ocaml bootstrap.ml
+
+GIT_CHECKOUT = git -c advice.detachedHead=false checkout
+
+dune:
+	git clone https://github.com/ocaml/dune.git -n -o upstream
+	cd dune; $(GIT_CHECKOUT) $(DUNE_TAG)
+
+distclean::
+	rm -rf dune
+
+lambdasoup:
+	git clone https://github.com/aantron/lambdasoup.git -n -o upstream
+	cd lambdasoup; $(GIT_CHECKOUT) $(LAMBDASOUP_TAG)
+
+distclean::
+	rm -rf lambdasoup
+
+markup.ml:
+	git clone https://github.com/aantron/markup.ml.git -n -o upstream
+	cd markup.ml; $(GIT_CHECKOUT) $(MARKUP_TAG)
+
+distclean::
+	rm -rf markup.ml
+
+uutf:
+	git clone https://github.com/dbuenzli/uutf.git -n -o upstream
+	cd uutf; $(GIT_CHECKOUT) $(UUTF_TAG)
+	cd uutf; \
+  mv opam uutf.opam; \
+  echo '(lang dune 1.0)' > dune-project; \
+  echo '(name uutf)' >> dune-project; \
+  echo '(library (name uutf)(public_name uutf)(flags (:standard -w -3-27))(wrapped false))' > src/dune
+
+distclean::
+	rm -rf uutf
