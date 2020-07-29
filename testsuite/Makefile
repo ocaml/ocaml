@@ -116,7 +116,7 @@ all:
 new-without-report: lib tools
 	@rm -f $(failstamp)
 	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -find-test-dirs tests | while read dir; do \
+	$(ocamltest) -find-test-dirs tests | while IFS='' read -r dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV=""; \
@@ -190,7 +190,7 @@ list: lib tools
 	  then echo "No value set for variable 'FILE'."; \
 	  exit 1; \
 	fi
-	@while read LINE; do \
+	@while IFS='' read -r LINE; do \
 	  $(MAKE) --no-print-directory exec-one DIR=$$LINE; \
 	done <$(FILE) 2>&1 | tee $(TESTLOG)
 	@$(MAKE) --no-print-directory retries
@@ -228,7 +228,7 @@ exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
 	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -list-tests $(DIR) | while read testfile; do \
+	$(ocamltest) -list-tests $(DIR) | while IFS='' read -r testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
@@ -298,7 +298,7 @@ report:
 
 .PHONY: retry-list
 retry-list:
-	@while read LINE; do \
+	@while IFS='' read -r LINE; do \
 	  if [ -n "$$LINE" ] ; then \
 	    echo re-ran $$LINE>> $(TESTLOG); \
 	    $(MAKE) --no-print-directory clean-one DIR=$$LINE; \
