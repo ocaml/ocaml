@@ -2,12 +2,12 @@ DUNE_CMD := $(if $(wildcard dune/dune.exe),dune/dune.exe,dune)
 DUNE ?= $(DUNE_CMD)
 
 all:
-	$(DUNE) exec src/process_manual.exe quiet
-	$(DUNE) exec src/process_api.exe overwrite quiet
-	$(DUNE) exec src/process_api.exe compiler overwrite quiet
+	$(DUNE) exec --root=. src/process_manual.exe quiet
+	$(DUNE) exec --root=. src/process_api.exe overwrite quiet
+	$(DUNE) exec --root=. src/process_api.exe compiler overwrite quiet
 
 clean:
-	rm -rf ../webman
+	rm -rf ../webman src/.merlin _build
 
 distclean::
 	rm -rf .sass-cache
