@@ -197,6 +197,9 @@ Working version
   error handling when Unix.symlink is unavailable)
   (David Allsopp, review by Xavier Leroy)
 
+- #9802: Ensure signals are handled before Unix.kill returns
+  (Stephen Dolan, review by Jacques-Henri Jourdan)
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared
