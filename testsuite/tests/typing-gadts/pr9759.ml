@@ -26,6 +26,6 @@ let rec foo : type k . k general -> k general = fun g ->
 Line 9, characters 4-9:
 9 |   | indir ->
         ^^^^^
-Warning 11 [redundant-case]: this match case is unused.
+Warning 11: this match case is unused.
 val foo : 'k general -> 'k general = <fun>
 |}]

@@ -1438,10 +1438,7 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
           let ty = generic_instance expected_ty in
-          let principal =
-            (repr expected_ty).level = generic_level || not !Clflags.principal
-          in
-          Some (p0, p, principal), ty
+          Some (p0, p, true), ty
         with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) k =
