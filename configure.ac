@@ -1929,3 +1929,45 @@ AS_IF([test x"$enable_stdlib_manpages" != "xno"],
   [stdlib_manpages=true],[stdlib_manpages=false])
 
 AC_OUTPUT
+
+# Check for a $ not followed by [${(] - that will be expanded as a make
+# single-character variable, and is probably not what the user meant.
+unguarded_dollar="`echo "$prefix" | sed -ne 's/\$[[${(]]//g;/\\$/p'`"
+# Check for actual make variables - this is an advanced use-case
+mk_vars="`echo "$prefix" | sed -ne 's/\\$\\$//g;/\$\({[[^}]]*}\|([[^)]]*)\)/p'`"
+# Check for $$ not prefixed by \ - this is a seriously advanced use-case
+unescaped_dollardollar="`echo "$prefix" | sed -ne '/\(^\|[[^\\]]\)\\$\\$/p'`"
+# Check for " characters - an odd number is an error, the rest should be escaped
+double_quotes="`echo "$prefix" | sed -e 's/\\\\\"//g;s/[[^\"]]*//g'`"
+odd_quotes="`echo "$double_quotes" | sed -e 's/""//g'`"
+
+AS_IF([test -n "$unguarded_dollar"],[
+  AC_MSG_ERROR(m4_normalize([prefix contains a \$ not followed by \$, { or ( -
+                             this is probably not what you meant. A literal \$
+                             must be written \\\$\$. If you really did mean to
+                             refer to a make variable, use \${.} or \$(.)
+                             notation.]))
+])
+
+AS_IF([test -n "$mk_vars"],[
+  AC_MSG_WARN(m4_normalize([prefix contains make variables (\${..} or \$(..)) -
+                            we assume you know what you're doing]))
+])
+
+AS_IF([test -n "$unescaped_dollardollar"],[
+  AC_MSG_WARN(m4_normalize([prefix contains \$\$ without a preceding backslash -
+                            unless you really know what you're doing, you
+                            probably mean \\\$\$ which will pass literal \$ in
+                            prefix through the build system]))])
+
+AS_IF([test -n "$double_quotes"],[
+  AS_IF([test -n "$odd_quotes"],[
+    AC_MSG_ERROR(m4_normalize([prefix contains an odd number of " characters
+                               which will cause errors during make install. You
+                               need to escape at least one of them as \\".]))
+  ],[
+    AC_MSG_WARN(m4_normalize([prefix contains unescaped " characters - this is
+                              is probably not what you meant. A literal " must
+                              be preceded by a literal \\ (i.e. '\\"').]))
+  ])
+])
