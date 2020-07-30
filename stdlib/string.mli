@@ -154,8 +154,8 @@ val iteri : (int -> char -> unit) -> string -> unit
 
 val map : (char -> char) -> string -> string
 (** [map f s] applies function [f] in turn to all
-   the characters of [s] and stores the results in a new string that
-   is returned.
+   the characters of [s] (in increasing index order)
+   and stores the results in a new string that is returned.
    @since 4.00.0 *)
 
 val mapi : (int -> char -> char) -> string -> string
@@ -167,7 +167,7 @@ val mapi : (int -> char -> char) -> string -> string
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
    whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is no leading nor
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
    trailing whitespace character in the argument, return the original
    string itself, not a copy.
    @since 4.00.0 *)
@@ -205,9 +205,9 @@ val rindex : string -> char -> int
    @raise Not_found if [c] does not occur in [s]. *)
 
 val rindex_opt: string -> char -> int option
-(** [index_opt s c] returns the index of the first
-    occurrence of character [c] in string [s], or
-    [None] if [c] does not occur in [s].
+(** [String.rindex_opt s c] returns the index of the last occurrence
+    of character [c] in string [s], or [None] if [c] does not occur in
+    [s].
     @since 4.05 *)
 
 val index_from : string -> int -> char -> int
@@ -347,7 +347,7 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for strings.
-    @since 4.05.0 in labeled module, or 4.30.0 in unlabeled *)
+    @since 4.05.0 in labeled module, or 4.03.0 in unlabeled *)
 
 
 (** {1 Iterators} *)

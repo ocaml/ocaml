@@ -195,7 +195,7 @@ val randomize : unit -> unit
 
 val is_randomized : unit -> bool
 (** Return [true] if the tables are currently created in randomized mode
-     by default, [false] otherwise.
+    by default, [false] otherwise.
     @since 4.03.0 *)
 
 val rebuild : ?random (* thwart tools/unlabel *) :bool ->

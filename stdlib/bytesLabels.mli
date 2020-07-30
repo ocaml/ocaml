@@ -47,8 +47,6 @@
 
    Bytes are represented by the OCaml type [char].
 
-
-
    The labeled version of this module, {!BytesLabels}, is intended to be used
    through {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and
    {!String} with their labeled counterparts.
@@ -116,7 +114,7 @@ val sub : bytes -> pos:int -> len:int -> bytes
     valid range of [s]. *)
 
 val sub_string : bytes -> pos:int -> len:int -> string
-(** Same as [sub] but return a string instead of a byte sequence. *)
+(** Same as {!sub} but return a string instead of a byte sequence. *)
 
 val extend : bytes -> left:int -> right:int -> bytes
 (** [extend s ~left ~right] returns a new byte sequence that contains
@@ -126,7 +124,7 @@ val extend : bytes -> left:int -> right:int -> bytes
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
-    @since 4.05.0 *)
+    @since 4.05.0 in labeled module. *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
 (** [fill s ~pos ~len c] modifies [s] in place, replacing [len]
@@ -155,7 +153,7 @@ val blit_string :
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
-    @since 4.05.0 *)
+    @since 4.05.0 in labeled module *)
 
 val concat : sep:bytes -> bytes list -> bytes
 (** [concat ~sep sl] concatenates the list of byte sequences [sl],
@@ -164,10 +162,10 @@ val concat : sep:bytes -> bytes list -> bytes
 
 val cat : bytes -> bytes -> bytes
 (** [cat s1 s2] concatenates [s1] and [s2] and returns the result
-    as new byte sequence.
+    as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
-    @since 4.05.0 *)
+    @since 4.05.0 in labeled module *)
 
 val iter : f:(char -> unit) -> bytes -> unit
 (** [iter ~f s] applies function [f] in turn to all the bytes of [s].
@@ -175,14 +173,14 @@ val iter : f:(char -> unit) -> bytes -> unit
     (length s - 1)); ()]. *)
 
 val iteri : f:(int -> char -> unit) -> bytes -> unit
-(** Same as [iter], but the function is applied to the index of
+(** Same as {!iter}, but the function is applied to the index of
     the byte as first argument and the byte itself as second
     argument. *)
 
 val map : f:(char -> char) -> bytes -> bytes
-(** [map ~f s] applies function [f] in turn to all the bytes of [s] and
-    stores the resulting bytes in a new sequence that is returned as
-    the result. *)
+(** [map ~f s] applies function [f] in turn to all the bytes of [s] (in
+    increasing index order) and stores the resulting bytes in a new sequence
+    that is returned as the result. *)
 
 val mapi : f:(int -> char -> char) -> bytes -> bytes
 (** [mapi ~f s] calls [f] with each character of [s] and its
@@ -230,7 +228,7 @@ val index_from : bytes -> int -> char -> int
     @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: bytes -> int -> char -> int option
-(** [index_from _opts i c] returns the index of the first occurrence of
+(** [index_from_opt s i c] returns the index of the first occurrence of
     byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
     after position [i].
     [index_opt s c] is equivalent to [index_from_opt s 0 c].

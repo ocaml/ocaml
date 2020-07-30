@@ -140,7 +140,8 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 
 val environment : unit -> string array
 (** Return the process environment, as an array of strings
-    with the format ``variable=value''. *)
+    with the format ``variable=value''.  The returned array
+    is empty if the process has special privileges. *)
 
 val unsafe_environment : unit -> string array
 (** Return the process environment, as an array of strings with the
@@ -199,28 +200,28 @@ type process_status = Unix.process_status =
 
 
 type wait_flag = Unix.wait_flag =
-    WNOHANG (** do not block if no child has
-               died yet, but immediately return with a pid equal to 0.*)
-  | WUNTRACED (** report also the children that receive stop signals. *)
+    WNOHANG (** Do not block if no child has
+               died yet, but immediately return with a pid equal to 0. *)
+  | WUNTRACED (** Report also the children that receive stop signals. *)
 (** Flags for {!waitpid}. *)
 
 val execv : prog:string -> args:string array -> 'a
 (** [execv ~prog ~args] execute the program in file [prog], with
    the arguments [args], and the current process environment.
    These [execv*] functions never return: on success, the current
-   program is replaced by the new one;
+   program is replaced by the new one.
    @raise Unix_error on failure *)
 
 val execve : prog:string -> args:string array -> env:string array -> 'a
-(** Same as [execv], except that the third argument provides the
+(** Same as {!execv}, except that the third argument provides the
    environment to the program executed. *)
 
 val execvp : prog:string -> args:string array -> 'a
-(** Same as [execv], except that
+(** Same as {!execv}, except that
    the program is searched in the path. *)
 
 val execvpe : prog:string -> args:string array -> env:string array -> 'a
-(** Same as [execve], except that
+(** Same as {!execve}, except that
    the program is searched in the path. *)
 
 val fork : unit -> int
@@ -236,7 +237,7 @@ val wait : unit -> int * process_status
    On Windows: Not implemented, use {!waitpid}. *)
 
 val waitpid : mode:wait_flag list -> int -> int * process_status
-(** Same as [wait], but waits for the child process whose pid is given.
+(** Same as {!waitpid}, but waits for the child process whose pid is given.
    A pid of [-1] means wait for any child.
    A pid of [0] means wait for any child in the same process group
    as the current process.
@@ -328,7 +329,9 @@ val close : file_descr -> unit
 (** Close a file descriptor. *)
 
 val fsync : file_descr -> unit
-(** Flush file buffers to disk. *)
+(** Flush file buffers to disk.
+
+    @since 4.08.0 in unlabeled module, 4.12.0 in labeled *)
 
 val read : file_descr -> buf:bytes -> pos:int -> len:int -> int
 (** [read fd ~buf ~pos ~len] reads [len] bytes from descriptor [fd],
@@ -343,18 +346,18 @@ val write : file_descr -> buf:bytes -> pos:int -> len:int -> int
     an error occurs.  *)
 
 val single_write : file_descr -> buf:bytes -> pos:int -> len:int -> int
-(** Same as [write], but attempts to write only once.
+(** Same as {!write}, but attempts to write only once.
    Thus, if an error occurs, [single_write] guarantees that no data
    has been written. *)
 
 val write_substring : file_descr -> buf:string -> pos:int -> len:int -> int
-(** Same as [write], but take the data from a string instead of a byte
+(** Same as {!write}, but take the data from a string instead of a byte
     sequence.
     @since 4.02.0 *)
 
 val single_write_substring :
   file_descr -> buf:string -> pos:int -> len:int -> int
-(** Same as [single_write], but take the data from a string instead of
+(** Same as {!single_write}, but take the data from a string instead of
     a byte sequence.
     @since 4.02.0 *)
 
@@ -511,7 +514,6 @@ module LargeFile :
   regular integers (type [int]), thus allowing operating on files
   whose sizes are greater than [max_int]. *)
 
-
 (** {1 Mapping files into memory} *)
 
 val map_file :
@@ -623,11 +625,12 @@ val fchmod : file_descr -> perm:file_perm -> unit
     On Windows: not implemented. *)
 
 val chown : string -> uid:int -> gid:int -> unit
-(** Change the owner uid and owner gid of the named file. *)
+(** Change the owner uid and owner gid of the named file.
+    On Windows: not implemented. *)
 
 val fchown : file_descr -> uid:int -> gid:int -> unit
-(** Change the owner uid and owner gid of the named file.
-    On Windows: not implemented (make no sense on a DOS file system). *)
+(** Change the owner uid and owner gid of an opened file.
+    On Windows: not implemented. *)
 
 val umask : int -> int
 (** Set the process's file mode creation mask, and return the previous
@@ -636,10 +639,12 @@ val umask : int -> int
 
 val access : string -> perm:access_permission list -> unit
 (** Check that the process has the given permissions over the named file.
-   @raise Unix_error otherwise.
 
    On Windows, execute permission [X_OK], cannot be tested, it just
-   tests for read permission instead. *)
+   tests for read permission instead.
+
+   @raise Unix_error otherwise.
+   *)
 
 
 (** {1 Operations on file descriptors} *)
@@ -816,13 +821,13 @@ val open_process_in : string -> in_channel
    more efficient alternative to {!open_process_in}. *)
 
 val open_process_out : string -> out_channel
-(** same as {!open_process_in}, but redirect the standard input of
-   the command to a pipe.  data written to the returned output channel
+(** Same as {!open_process_in}, but redirect the standard input of
+   the command to a pipe.  Data written to the returned output channel
    is sent to the standard input of the command.
-   warning: writes on output channels are buffered, hence be careful
-   to call {!stdlib.flush} at the right times to ensure
+   Warning: writes on output channels are buffered, hence be careful
+   to call {!Stdlib.flush} at the right times to ensure
    correct synchronization.
-   if the command does not need to be run through the shell,
+   If the command does not need to be run through the shell,
    {!open_process_args_out} can be used instead of
    {!open_process_out}. *)
 
@@ -992,7 +997,6 @@ val select :
    component). *)
 
 (** {1 Locking} *)
-
 
 type lock_command = Unix.lock_command =
     F_ULOCK       (** Unlock a region *)
@@ -1336,8 +1340,8 @@ type socket_domain = Unix.socket_domain =
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
 (** The type of socket domains.  Not all platforms support
-    IPv6 sockets (type [PF_INET6]).  Windows does not support
-    [PF_UNIX]. *)
+    IPv6 sockets (type [PF_INET6]).  On Windows, [PF_UNIX]
+    is not implemented.  *)
 
 type socket_type = Unix.socket_type =
     SOCK_STREAM                 (** Stream socket *)
@@ -1380,7 +1384,9 @@ val accept : ?cloexec: (* thwart tools/unlabel *) bool ->
              file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
-   the address of the connecting client. *)
+   the address of the connecting client.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
 val bind : file_descr -> addr:sockaddr -> unit
 (** Bind a socket to an address. *)
@@ -1416,8 +1422,7 @@ type msg_flag = Unix.msg_flag =
     MSG_OOB
   | MSG_DONTROUTE
   | MSG_PEEK (**)
-(** The flags for {!recv},  {!recvfrom},
-   {!send} and {!sendto}. *)
+(** The flags for {!recv}, {!recvfrom}, {!send} and {!sendto}. *)
 
 val recv :
   file_descr -> buf:bytes -> pos:int -> len:int -> mode:msg_flag list -> int
@@ -1552,11 +1557,12 @@ val establish_server :
    The function given as first argument is called for each connection
    with two buffered channels connected to the client. A new process
    is created for each connection. The function {!establish_server}
-   never returns normally. *)
+   never returns normally.
+
+   On Windows, it is not implemented.  Use threads. *)
 
 
 (** {1 Host and protocol databases} *)
-
 
 type host_entry = Unix.host_entry =
   { h_name : string;
@@ -1586,27 +1592,27 @@ val gethostname : unit -> string
 
 val gethostbyname : string -> host_entry
 (** Find an entry in [hosts] with the given name.
-    @raise Not_found if no such entry exist. *)
+    @raise Not_found if no such entry exists. *)
 
 val gethostbyaddr : inet_addr -> host_entry
 (** Find an entry in [hosts] with the given address.
-    @raise Not_found if no such entry exist. *)
+    @raise Not_found if no such entry exists. *)
 
 val getprotobyname : string -> protocol_entry
 (** Find an entry in [protocols] with the given name.
-    @raise Not_found if no such entry exist. *)
+    @raise Not_found if no such entry exists. *)
 
 val getprotobynumber : int -> protocol_entry
 (** Find an entry in [protocols] with the given protocol number.
-    @raise Not_found if no such entry exist. *)
+    @raise Not_found if no such entry exists. *)
 
 val getservbyname : string -> protocol:string -> service_entry
 (** Find an entry in [services] with the given name.
-    @raise Not_found if no such entry exist. *)
+    @raise Not_found if no such entry exists. *)
 
 val getservbyport : int -> protocol:string -> service_entry
 (** Find an entry in [services] with the given service number.
-    @raise Not_found if no such entry exist. *)
+    @raise Not_found if no such entry exists. *)
 
 type addr_info = Unix.addr_info =
   { ai_family : socket_domain;          (** Socket domain *)
@@ -1729,7 +1735,9 @@ type terminal_io = Unix.terminal_io =
 
 val tcgetattr : file_descr -> terminal_io
 (** Return the status of the terminal referred to by the given
-   file descriptor. *)
+   file descriptor.
+
+   On Windows, not implemented.*)
 
 type setattr_when = Unix.setattr_when =
     TCSANOW
@@ -1744,7 +1752,9 @@ val tcsetattr : file_descr -> mode:setattr_when -> terminal_io -> unit
    or after flushing all input that has been received but not
    read ([TCSAFLUSH]). [TCSADRAIN] is recommended when changing
    the output parameters; [TCSAFLUSH], when changing the input
-   parameters. *)
+   parameters.
+
+   On Windows, not implemented. *)
 
 val tcsendbreak : file_descr -> duration:int -> unit
 (** Send a break condition on the given file descriptor.
@@ -1769,7 +1779,9 @@ val tcflush : file_descr -> mode:flush_queue -> unit
    transmitted, or data received but not yet read, depending on the
    second argument: [TCIFLUSH] flushes data received but not read,
    [TCOFLUSH] flushes data written but not transmitted, and
-   [TCIOFLUSH] flushes both. *)
+   [TCIOFLUSH] flushes both.
+
+   On Windows, not implemented. *)
 
 type flow_action = Unix.flow_action =
     TCOOFF

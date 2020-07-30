@@ -21,7 +21,7 @@
    arrayLabels.mli instead.
  *)
 
-(** Array operations
+(** Array operations.
 
    The labeled version of this module, {!ArrayLabels}, is intended to be used
    via {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and {!String}
@@ -157,7 +157,10 @@ val to_list : 'a array -> 'a list
 
 val of_list : 'a list -> 'a array
 (** [of_list l] returns a fresh array containing the elements
-   of [l]. *)
+   of [l].
+
+   @raise Invalid_argument if the length of [l] is greater than
+   [Sys.max_array_length]. *)
 
 (** {1 Iterators} *)
 
@@ -166,15 +169,15 @@ val iter : f:('a -> unit) -> 'a array -> unit
    the elements of [a].  It is equivalent to
    [f a.(0); f a.(1); ...; f a.(length a - 1); ()]. *)
 
-val map : f:('a -> 'b) -> 'a array -> 'b array
-(** [map ~f a] applies function [f] to all the elements of [a],
-   and builds an array with the results returned by [f]:
-   [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
-
 val iteri : f:(int -> 'a -> unit) -> 'a array -> unit
 (** Same as {!iter}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
+
+val map : f:('a -> 'b) -> 'a array -> 'b array
+(** [map ~f a] applies function [f] to all the elements of [a],
+   and builds an array with the results returned by [f]:
+   [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a array -> 'b array
 (** Same as {!map}, but the
