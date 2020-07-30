@@ -311,6 +311,9 @@ Working version
 - #9804: Build C stubs of libraries in otherlibs/ with debug info.
   (Stephen Dolan, review by Sébastien Hinderer and David Allsopp)
 
+- #9813: Harden the build system against prefixes with special characters.
+  (David Allsopp, review by ???)
+
 ### Bug fixes:
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
