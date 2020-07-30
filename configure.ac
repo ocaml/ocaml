@@ -1932,13 +1932,18 @@ AC_OUTPUT
 
 # Check for a $ not followed by [${(] - that will be expanded as a make
 # single-character variable, and is probably not what the user meant.
-unguarded_dollar="`echo "$prefix" | sed -ne 's/\$[[${(]]//g;/\\$/p'`"
+unguarded_dollar="`echo "$prefix" | \
+  sed -ne 's/\$[[${(]]//g;/\\$/p'`"
 # Check for actual make variables - this is an advanced use-case
-mk_vars="`echo "$prefix" | sed -ne 's/\\$\\$//g;/\$\({[[^}]]*}\|([[^)]]*)\)/p'`"
-# Check for $$ not prefixed by \ - this is a seriously advanced use-case
-unescaped_dollardollar="`echo "$prefix" | sed -ne '/\(^\|[[^\\]]\)\\$\\$/p'`"
+make_variables="`echo "$prefix" | \
+  sed -ne 's/\\$\\$//g;/\$\({[[^}]]*}\|([[^)]]*)\)/p'`"
+# Check for $$ not prefixed by odd number of \ - this is a seriously advanced
+# use-case
+unescaped_dollardollar="`echo "$prefix" | \
+  sed -ne '/\(^\|[[^\\]]\)\(\\\\\\\\\)*\\$\\$/p'`"
 # Check for " characters - an odd number is an error, the rest should be escaped
-double_quotes="`echo "$prefix" | sed -e 's/\\\\\"//g;s/[[^\"]]*//g'`"
+double_quotes="`echo "$prefix" | \
+  sed -e 's/\(^\|[[^\\]]\)\\\\\(\\\\\\\\\)*\"//g;s/[[^\"]]*//g'`"
 odd_quotes="`echo "$double_quotes" | sed -e 's/""//g'`"
 
 AS_IF([test -n "$unguarded_dollar"],[
@@ -1949,7 +1954,7 @@ AS_IF([test -n "$unguarded_dollar"],[
                              notation.]))
 ])
 
-AS_IF([test -n "$mk_vars"],[
+AS_IF([test -n "$make_variables"],[
   AC_MSG_WARN(m4_normalize([prefix contains make variables (\${..} or \$(..)) -
                             we assume you know what you're doing]))
 ])
@@ -1962,12 +1967,14 @@ AS_IF([test -n "$unescaped_dollardollar"],[
 
 AS_IF([test -n "$double_quotes"],[
   AS_IF([test -n "$odd_quotes"],[
-    AC_MSG_ERROR(m4_normalize([prefix contains an odd number of " characters
-                               which will cause errors during make install. You
-                               need to escape at least one of them as \\".]))
+    AC_MSG_NOTICE(m4_normalize([prefix appears to contain an odd number of "
+                              characters which will cause errors during
+                              `make install`. You may need to escape at least
+                              one of them as \\".]))
   ],[
-    AC_MSG_WARN(m4_normalize([prefix contains unescaped " characters - this is
-                              is probably not what you meant. A literal " must
-                              be preceded by a literal \\ (i.e. '\\"').]))
+    AC_MSG_NOTICE(m4_normalize([prefix appears to contain unescaped " characters
+                                - this is probably not what you meant. A literal
+                                " must be preceded by a literal \\
+                                (i.e. '\\"').]))
   ])
 ])
