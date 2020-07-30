@@ -150,7 +150,8 @@ val unsafe_environment : unit -> string array
     privileges.  See the documentation for {!unsafe_getenv} for more
     details.
 
-    @since 4.06.0 in unlabeled module, 4.12.0 in labeled *)
+    @since 4.12.0
+    @since 4.06.0 *)
 
 val getenv : string -> string
 (** Return the value associated to a variable in the process
@@ -331,7 +332,8 @@ val close : file_descr -> unit
 val fsync : file_descr -> unit
 (** Flush file buffers to disk.
 
-    @since 4.08.0 in unlabeled module, 4.12.0 in labeled *)
+    @since 4.12.0
+    @since 4.08.0 *)
 
 val read : file_descr -> bytes -> int -> int -> int
 (** [read fd buf pos len] reads [len] bytes from descriptor [fd],
@@ -890,25 +892,29 @@ val process_in_pid : in_channel -> int
 (** Return the pid of a process opened via {!open_process_in} or
    {!open_process_args_in}.
 
-    @since 4.08.0 in unlabeled module, 4.12.0 in labeled *)
+    @since 4.12.0
+    @since 4.08.0 *)
 
 val process_out_pid : out_channel -> int
 (** Return the pid of a process opened via {!open_process_out} or
    {!open_process_args_out}.
 
-    @since 4.08.0 in unlabeled module, 4.12.0 in labeled *)
+    @since 4.12.0
+    @since 4.08.0 *)
 
 val process_pid : in_channel * out_channel -> int
 (** Return the pid of a process opened via {!open_process} or
    {!open_process_args}.
 
-    @since 4.08.0 in unlabeled module, 4.12.0 in labeled *)
+    @since 4.12.0
+    @since 4.08.0 *)
 
 val process_full_pid : in_channel * out_channel * in_channel -> int
 (** Return the pid of a process opened via {!open_process_full} or
    {!open_process_args_full}.
 
-    @since 4.08.0 in unlabeled module, 4.12.0 in labeled *)
+    @since 4.12.0
+    @since 4.08.0 *)
 
 val close_process_in : in_channel -> process_status
 (** Close channels opened by {!open_process_in},
@@ -1154,7 +1160,8 @@ val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
     but fractions of seconds are supported.
 
-    @since 4.03.0 in labeled module, 4.12.0 in unlabeled *)
+    @since 4.03.0
+    @since 4.12.0 *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.
