@@ -122,7 +122,7 @@ module DLS = struct
     = "caml_domain_dls_get" [@@noalloc]
 
   external set_dls_list : entry list  -> unit
-    = "caml_domain_dls_set"
+    = "caml_domain_dls_set" [@@noalloc]
 
   let new_key () = ref 0
 

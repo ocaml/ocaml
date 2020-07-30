@@ -1447,6 +1447,7 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
 
 CAMLprim value caml_domain_dls_set(value t)
 {
+  CAMLnoalloc;
   caml_modify_root(Caml_state->dls_root, t);
   return Val_unit;
 }
