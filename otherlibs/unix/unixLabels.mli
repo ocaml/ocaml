@@ -28,7 +28,7 @@
 
 (** Interface to the Unix system.
 
-   To use the labeled version of this module, add [module Unix = UnixLabels]
+   To use the labeled version of this module, add [module Unix][ = ][UnixLabels]
    in your implementation.
 
    Note: all the functions of this module (except {!error_message} and
