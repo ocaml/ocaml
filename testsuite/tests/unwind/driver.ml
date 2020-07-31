@@ -4,7 +4,7 @@ script = "sh ${test_source_directory}/check-linker-version.sh"
 files = "mylib.mli mylib.ml stack_walker.c"
 
 * macos
-** amd64
+** arch_amd64
 *** script
 **** setup-ocamlopt.byte-build-env
 ***** ocamlopt.byte
