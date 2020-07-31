@@ -203,7 +203,7 @@ val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.05.0
-   @sinceunlabeled 4.03.0
+   @sinceunlabelednowarn 4.03.0
    *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -212,7 +212,7 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.05.0
-   @sinceunlabeled 4.03.0 *)
+   @sinceunlabelednowarn 4.03.0 *)
 
 
 (** {1 Array scanning} *)

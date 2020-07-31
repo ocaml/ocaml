@@ -517,7 +517,8 @@ class texi =
                   ( linebreak :: (f text) @ [ Newline ] ) :: acc
                 with
                Not_found ->
-                 Odoc_info.warning (Odoc_messages.tag_not_handled tag) ;
+                 if not (String.ends_with ~suffix:"nowarn" tag) then
+                   Odoc_info.warning (Odoc_messages.tag_not_handled tag) ;
                  acc
               ) [] c_l))
 
