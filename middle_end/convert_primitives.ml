@@ -148,7 +148,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Patomic_fetch_add -> Patomic_fetch_add
   | Popaque -> Popaque
   | Ppoll -> Ppoll
-
+  | Pnop -> Pnop
   | Pbytes_to_string
   | Pbytes_of_string
   | Pctconst _

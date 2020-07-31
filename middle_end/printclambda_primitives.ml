@@ -219,3 +219,4 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
   | Ppoll -> fprintf ppf "poll"
+  | Pnop -> fprintf ppf "nop"

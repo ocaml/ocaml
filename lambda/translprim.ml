@@ -362,6 +362,7 @@ let primitives_table =
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 3);
     "%poll", Primitive (Ppoll, 1);
+    "%nop", Primitive (Pnop, 1);
   ]
 
 
