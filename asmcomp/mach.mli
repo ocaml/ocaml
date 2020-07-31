@@ -81,6 +81,7 @@ type operation =
             that have been previously deemed to hold the value of that
             identifier is forgotten. *)
   | Ipoll
+  | Inop
 
 type instruction =
   { desc: instruction_desc;

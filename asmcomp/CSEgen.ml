@@ -237,6 +237,7 @@ method class_of_operation op =
   | Ispecific _ -> Op_other
   | Iname_for_debugger _ -> Op_pure
   | Ipoll -> Op_checkbound
+  | Inop -> Op_pure
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 

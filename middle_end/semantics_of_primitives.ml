@@ -33,6 +33,9 @@ let for_primitive (prim : Clambda_primitives.primitive) =
                ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
                | "caml_nativeint_format" | "caml_int64_format" ) } ->
       No_effects, No_coeffects
+  | Pnop -> Arbitrary_effects, Has_coeffects (* XXX KC: conservative so that
+                                                the optimiser will not move it
+                                                around. Is that right? *)
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
   | Prunstack | Pperform | Presume | Preperform -> Arbitrary_effects, Has_coeffects
