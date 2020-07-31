@@ -645,6 +645,11 @@ natruntop:
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/native/dynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
 
+# Readconfig
+
+utils/readconfig.ml: utils/readconfig.mll
+	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
+
 # The lexer
 
 parsing/lexer.ml: parsing/lexer.mll

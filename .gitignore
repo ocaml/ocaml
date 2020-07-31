@@ -260,6 +260,7 @@ _build
 /utils/config.ml
 /utils/domainstate.ml
 /utils/domainstate.mli
+/utils/readconfig.ml
 
 /yacc/ocamlyacc
 /yacc/version.h
