@@ -43,7 +43,7 @@ let nth l n =
   in nth_aux l n
 
 let nth_opt l n =
-  if n < 0 then invalid_arg "List.nth" else
+  if n < 0 then None else
   let rec nth_aux l n =
     match l with
     | [] -> None

@@ -28,6 +28,8 @@ let () =
   assert(float_of_string_opt (String.make 1000 '9') = Some infinity);
 
   assert(List.nth_opt [] 0 = None);
+  assert(List.nth_opt [] -1 = None);
+  assert(List.nth_opt [42] -1 = None);
   assert(List.nth_opt [42] 0 = Some 42);
   assert(List.nth_opt [42] 1 = None);
 
