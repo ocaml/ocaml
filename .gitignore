@@ -257,6 +257,7 @@ _build
 /tools/caml-tex
 /tools/eventlog_metadata
 
+/utils/ocaml.ini
 /utils/config.ml
 /utils/domainstate.ml
 /utils/domainstate.mli
