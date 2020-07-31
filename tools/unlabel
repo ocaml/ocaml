@@ -34,8 +34,11 @@ LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
 #OCamldoc code section with ]
 TILDEREGEX="s/~([a-z_]*[ \]])/\1/g"
 
-# @sinceunlabeled --> @since
+#@sinceunlabeled --> @since
 SINCEREGEX="s/sinceunlabeled/since/g"
+
+#Indent a non-blank line by two characters, for moreLabels templates
+INDENTREGEX="s/^(.+)$/  \1/m"
 
 #Stdlib
 perl -p -e "$LABREGEX" stdlib/listLabels.mli > stdlib/list.temp.mli
@@ -76,13 +79,21 @@ perl -p -e "$TILDEREGEX" stdlib/set.2temp.mli > stdlib/set.mli
 
 #(No @since problems in MoreLabels)
 
+#Indent the labeled modules
+perl -p -e "$INDENTREGEX" stdlib/templates/hashtbl.template.mli > \
+  stdlib/templates/hashtbl.template.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/map.template.mli > \
+  stdlib/templates/map.template.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/set.template.mli > \
+  stdlib/templates/set.template.temp.mli
+
 #Substitute the labeled modules in to moreLabels.mli
 perl -p -e\
-  's/HASHTBL/`tail -n +19 stdlib\/templates\/hashtbl.template.mli`/e' \
+  's/HASHTBL/`tail -n +19 stdlib\/templates\/hashtbl.template.temp.mli`/e' \
   stdlib/templates/moreLabels.template.mli > stdlib/moreLabels.temp.mli
-perl -p -e 's/MAP/`tail -n +19 stdlib\/templates\/map.template.mli`/e' \
+perl -p -e 's/MAP/`tail -n +19 stdlib\/templates\/map.template.temp.mli`/e' \
   stdlib/moreLabels.temp.mli > stdlib/moreLabels.2temp.mli
-perl -p -e 's/SET/`tail -n +19 stdlib\/templates\/set.template.mli`/e' \
+perl -p -e 's/SET/`tail -n +19 stdlib\/templates\/set.template.temp.mli`/e' \
   stdlib/moreLabels.2temp.mli > stdlib/moreLabels.mli
 
 #Fix up with templates in tools/unlabel-patches
@@ -126,3 +137,4 @@ perl -p -e 's/ = Unix.LargeFile.stats//' \
 #Clean up
 rm -f stdlib/*temp.mli
 rm -f otherlibs/unix/*temp.mli
+rm -f stdlib/templates/*temp.mli

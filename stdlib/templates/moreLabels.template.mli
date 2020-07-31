@@ -18,12 +18,18 @@
 
 (** Extra labeled libraries.
 
-   This meta-module provides labelized version of the {!Hashtbl},
-   {!Map} and {!Set} modules.
+   This meta-module provides labelized versions of the {!Hashtbl}, {!Map} and
+   {!Set} modules.
 
-   They only differ by their labels. They are provided to help
-   porting from previous versions of OCaml.
-   The contents of this module are subject to change.
+   This module is intended to be used through [open MoreLabels] which replaces
+   {!Hashtbl}, {!Map}, and {!Set} with their labeled counterparts.
+
+   For example:
+   {[
+      open MoreLabels
+
+      Hashtbl.iter ~f:(fun ~key ~data -> g key data) table
+   ]}
 *)
 
 module Hashtbl : sig

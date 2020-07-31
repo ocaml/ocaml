@@ -50,13 +50,13 @@ val create : ?random: (* thwart tools/unlabel *) bool -> int -> ('a, 'b) t
 
    A hash table that is created with [~random] set to [true] uses the seeded
    hash function {!seeded_hash} with a seed that is randomly chosen at hash
-   table creation time.  In effect, the hash function used is randomly selected
-   among [2^{30}] different hash functions.  All these hash functions have
-   different collision patterns, rendering ineffective the denial-of-service
-   attack described above.  However, because of randomization, enumerating all
-   elements of the hash table using {!fold} or {!iter} is no longer
-   deterministic: elements are enumerated in different orders at different runs
-   of the program.
+   table creation time.  In effect, the hash function used is randomly
+   selected among [2^{30}] different hash functions.  All these hash
+   functions have different collision patterns, rendering ineffective the
+   denial-of-service attack described above.  However, because of
+   randomization, enumerating all elements of the hash table using {!fold}
+   or {!iter} is no longer deterministic: elements are enumerated in
+   different orders at different runs of the program.
 
    If no [~random] parameter is given, hash tables are created
    in non-random mode by default.  This default can be changed
@@ -136,7 +136,8 @@ val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
    by [f] during the iteration.
 *)
 
-val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
+val filter_map_inplace: f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t ->
+    unit
 (** [Hashtbl.filter_map_inplace ~f tbl] applies [f] to all bindings in
     table [tbl] and update each binding depending on the result of
     [f].  If [f] returns [None], the binding is discarded.  If it
@@ -346,7 +347,8 @@ module type S =
     val replace : 'a t -> key:key -> data:'a -> unit
     val mem : 'a t -> key -> bool
     val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
+    val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t ->
+      unit
     (** @since 4.03.0 *)
 
     val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
@@ -420,7 +422,8 @@ module type SeededS =
     val replace : 'a t -> key:key -> data:'a -> unit
     val mem : 'a t -> key -> bool
     val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
+    val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t ->
+      unit
     (** @since 4.03.0 *)
 
     val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b

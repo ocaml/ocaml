@@ -257,9 +257,9 @@ module type S =
        *)
 
     val find_first_opt: f:(elt -> bool) -> t -> elt option
-    (** [find_first_opt ~f s], where [f] is a monotonically increasing function,
-       returns an option containing the lowest element [e] of [s] such that
-       [f e], or [None] if no such element exists.
+    (** [find_first_opt ~f s], where [f] is a monotonically increasing
+       function, returns an option containing the lowest element [e] of [s]
+       such that [f e], or [None] if no such element exists.
         @since 4.05
        *)
 
@@ -271,9 +271,9 @@ module type S =
        *)
 
     val find_last_opt: f:(elt -> bool) -> t -> elt option
-    (** [find_last_opt ~f s], where [f] is a monotonically decreasing function,
-       returns an option containing the highest element [e] of [s] such that
-       [f e], or [None] if no such element exists.
+    (** [find_last_opt ~f s], where [f] is a monotonically decreasing
+       function, returns an option containing the highest element [e] of [s]
+       such that [f e], or [None] if no such element exists.
         @since 4.05
        *)
 
