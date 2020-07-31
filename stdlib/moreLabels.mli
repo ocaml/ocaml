@@ -384,9 +384,9 @@ module type S =
   end
 (** The output signature of the functor {!Make}. *)
 
-module Make : functor (H : HashedType) -> S
-   with type key = H.t
-   and type 'a t = 'a Hashtbl.Make(H).t
+  module Make : functor (H : HashedType) -> S
+     with type key = H.t
+      and type 'a t = 'a Hashtbl.Make(H).t
 (** Functor building an implementation of the hashtable structure.
     The functor [Hashtbl.Make] returns a structure containing
     a type [key] of keys and a type ['a t] of hash tables
@@ -461,9 +461,9 @@ module type SeededS =
 (** The output signature of the functor {!MakeSeeded}.
     @since 4.00.0 *)
 
-module MakeSeeded (H : SeededHashedType) : SeededS
-   with type key = H.t
-   and type 'a t = 'a Hashtbl.MakeSeeded(H).t
+  module MakeSeeded (H : SeededHashedType) : SeededS
+    with type key = H.t
+     and type 'a t = 'a Hashtbl.MakeSeeded(H).t
 (** Functor building an implementation of the hashtable structure.
     The functor [Hashtbl.MakeSeeded] returns a structure containing
     a type [key] of keys and a type ['a t] of hash tables
@@ -858,9 +858,9 @@ module type S =
   end
 (** Output signature of the functor {!Make}. *)
 
-module Make : functor (Ord : OrderedType) -> S
-   with type key = Ord.t
-   and type 'a t = 'a Map.Make(Ord).t
+  module Make : functor (Ord : OrderedType) -> S
+    with type key = Ord.t
+     and type 'a t = 'a Map.Make(Ord).t
 (** Functor building an implementation of the map structure
    given a totally ordered type. *)
 
@@ -1159,9 +1159,9 @@ module type S =
   end
 (** Output signature of the functor {!Make}. *)
 
-module Make : functor (Ord : OrderedType) -> S
-  with type elt = Ord.t
-   and type t = Set.Make(Ord).t
+  module Make : functor (Ord : OrderedType) -> S
+    with type elt = Ord.t
+     and type t = Set.Make(Ord).t
 (** Functor building an implementation of the set structure
    given a totally ordered type. *)
 
