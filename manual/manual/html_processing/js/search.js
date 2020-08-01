@@ -135,12 +135,6 @@ function subsMinError (subs, line) {
     return errs.reduce(add,0) / subs.length;
 }
     
-// This should print "true" to the console
-//let line = ["abc", "123", "hello"];
-//console.log (hasSubString ("ell", line));
-
-//console.log(GENERAL_INDEX.filter(function (line) {
-//    return (hasSubString("iter", line)); })[0]);
 
 function formatLine (line) {
     let li = '<li>';
@@ -246,4 +240,3 @@ function mySearch (includeDescr) {
     }
     document.getElementById("search_results").innerHTML = html;
 }
-
