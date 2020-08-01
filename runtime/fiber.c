@@ -394,15 +394,25 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use (value cont)
 {
+#ifdef DEBUG
   caml_gc_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
+#endif
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
   value v;
   if (!Is_minor(cont) ) caml_darken_cont(cont);
 
   v = Op_val(cont)[0];
-  if (v != Val_ptr(NULL) &&
-      atomic_compare_exchange_strong(Op_atomic_val(cont), &v, Val_ptr(NULL))) {
+
+  if (v == Val_ptr(NULL))
+    caml_invalid_argument("continuation already taken");
+
+  if (caml_domain_alone()) {
+    Field(cont, 0) = Val_ptr(NULL);
+    return v;
+  }
+
+  if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, Val_ptr(NULL))) {
     return v;
   } else {
     caml_invalid_argument("continuation already taken");
