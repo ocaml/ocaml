@@ -127,13 +127,6 @@ function add (acc, a) {
     return acc + a;
 }
 
-// NOT used
-// return the mean of SubErrors for all substrings subs inside s
-function subsError (subs, s) {
-    let errs = subs.map(function (sub) { return subError (sub, s); });
-    return errs.reduce(add,0) / subs.length;
-}
-
 // for each sub we compute the minimal error within 'line', and then
 // take the average over all 'subs'. Thus it returns 0 if each sub has
 // an exact match with one of the strings in 'line'.
