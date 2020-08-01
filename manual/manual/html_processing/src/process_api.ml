@@ -344,9 +344,10 @@ let save_index file index =
   let outch = open_out file in
   output_string outch "var GENERAL_INDEX = [\n";
   index
-  |> List.iter (fun (mdule, value, infolist, signature) ->
+  |> List.iter (fun ((mod_name, mod_ref), (val_name, val_ref),
+                     (info_html, info_txt), signature) ->
       fprintf outch {|["%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s"],|}
-        (fst mdule) (snd mdule) (fst value) (snd value) (fst infolist) (snd infolist)
+        mod_name mod_ref val_name val_ref info_html info_txt
         (map_option fst signature |> string_of_opt)
         (map_option snd signature |> string_of_opt);
       output_string outch "\n");

@@ -44,7 +44,7 @@ let index part =
   part
 
 
-(* will be automatically updated *)
+(* TODO: update this automatically *)
 let copyright_text = ref "Copyright © 2020 Institut National de Recherche en Informatique et en Automatique"
 
 let copyright () =
@@ -54,10 +54,6 @@ let copyright () =
 let load_html file =
   pr file;
   (* First we perform some direct find/replace in the html string. *)
-  (* Warning charset = ascii for 4.05 and utf8 for >=4.09.  But the original
-     html is kind of buggy because 4.05 uses &#XA0; for non-breaking space in
-     us-ascii encoding, although &#XA0; is latin encoding...  Finally we decide
-     to force utf8 encoding.  *)
   let html =
     read_file (html_file file)
     (* Normalize non-break spaces: *)
