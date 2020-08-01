@@ -46,8 +46,10 @@ utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
 utils/config.cmo : \
+    utils/readconfig.cmi \
     utils/config.cmi
 utils/config.cmx : \
+    utils/readconfig.cmx \
     utils/config.cmi
 utils/config.cmi :
 utils/consistbl.cmo : \
@@ -109,6 +111,11 @@ utils/profile.cmx : \
     utils/misc.cmx \
     utils/profile.cmi
 utils/profile.cmi :
+utils/readconfig.cmo : \
+    utils/readconfig.cmi
+utils/readconfig.cmx : \
+    utils/readconfig.cmi
+utils/readconfig.cmi :
 utils/strongly_connected_components.cmo : \
     utils/numbers.cmi \
     utils/misc.cmi \
