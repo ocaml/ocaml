@@ -8,10 +8,6 @@ The process will create the `../webman` dir, and output the new html
 files (and assets) in `../webman/manual` (the manual) and `../webman/api` (the
 API).
 
-For processing the manual/api of OCaml versions <= 4.10, see
-https://github.com/sanette/ocaml-tutorial and
-https://github.com/sanette/ocaml-api
-
 ## manual and api
 
 There are two different scripts, `process_manual.ml` and

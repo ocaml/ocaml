@@ -74,42 +74,42 @@ let process ?(search=true) ~version file out =
   |> do_option delete;
 
   (* Create TOC with H2 and H3 elements *)
-  (* It would be much simpler to insert only H2 *)
+  (* Cf Scanf for an example with H3 elements *)
   let header = create_element "header" in
   prepend_child body header;
   let nav = create_element "nav" ~class_:"toc" in
   append_child header nav;
   let ul = create_element "ul" in
   append_child nav ul;
-  let h3_open = ref false in
-  let h3_current = ref (create_element "ul") in
-  let li_current = ref (create_element "li") in
   (* Create a "li" element inside "ul" from a header "h" (h2 or h3 typically) *)
   let li_of_h ul h =
-    li_current := create_element "li";
-    append_child ul !li_current;
-    match attribute "id" h with
-    | Some id ->
-        let href = "#" ^ id in
-        let a = create_element "a" ~inner_text:(texts h |> String.concat "") ~attributes:["href", href] in
-        append_child !li_current a
-    | None -> () in
+    let li_current = create_element "li" in
+    append_child ul li_current;
+    let () = match attribute "id" h with
+      | Some id ->
+          let href = "#" ^ id in
+          let a = create_element "a" ~inner_text:(texts h |> String.concat "") ~attributes:["href", href] in
+          append_child li_current a
+      | None -> () in
+    li_current in
 
   descendants body
   |> elements
-  |> iter (fun h -> match name h with
+  |> fold (fun (li_current, h3_current) h -> match name h with
       | "h2" ->
-          h3_open := false;
-          li_of_h ul h
-      | "h3" when !h3_open ->
-          li_of_h !h3_current h
-      | "h3" ->
-          h3_open := true;
-          h3_current := create_element "ul";
-          append_child ul !li_current;
-          append_child !li_current !h3_current;
-          li_of_h !h3_current h
-      | _ -> ());
+          li_of_h ul h, None
+      | "h3" -> begin match h3_current with
+          | Some h3 ->
+            li_of_h h3 h, h3_current
+          | None ->
+              let h3 = create_element "ul" in
+              append_child ul li_current;
+              append_child li_current h3;
+          li_of_h h3 h, Some h3
+        end
+      | _ -> li_current, h3_current) (create_element "li", None);
+  |> ignore;
+
   let title = soup $ "title" |> R.leaf_text in
   let href = let base = Filename.basename file in
     if String.sub base 0 5 = "type_"
