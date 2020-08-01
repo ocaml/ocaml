@@ -5,7 +5,7 @@ let debug = not (Array.mem "quiet" Sys.argv)
 
 let pr = if debug then print_endline else fun _ -> ()
 
-let with_dir = Filename.concat
+let ( // ) = Filename.concat
 
 let process_dir = Filename.current_dir_name
 
