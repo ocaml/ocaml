@@ -17,11 +17,22 @@
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 
-(* [builtin_config] is a value of type [string] containing a hard-coded copy of
-   the generated config file. Its definition is inserted at the top of the file
-   by the build system. *)
+let ini_name = "ocaml.ini"
+
 let () =
-  Readconfig.read_config_string builtin_config
+  let exe_dir = Filename.dirname Sys.executable_name in
+  let lib_dir =
+    Filename.concat (Filename.concat exe_dir Filename.parent_dir_name)
+      (Filename.concat "lib" "ocaml") in
+  let search_path = [exe_dir;lib_dir] in
+  let files = List.map (fun s -> Filename.concat s ini_name) search_path in
+  match List.find_opt Sys.file_exists files with
+  | Some filename -> Readconfig.read_config_file filename
+  | None ->
+      (* [builtin_config] is a value of type [string] containing a hard-coded
+         copy of the generated config file. Its definition is inserted at the
+         top of the file by the build system. *)
+      Readconfig.read_config_string builtin_config
 
 let get key =
   match Readconfig.key_val key with

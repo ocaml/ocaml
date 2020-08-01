@@ -354,7 +354,7 @@ install:
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	  VERSION \
+	  VERSION utils/ocaml.ini \
 	  "$(INSTALL_LIBDIR)"
 	$(MAKE) -C runtime install
 	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
