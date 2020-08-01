@@ -27,14 +27,14 @@ fi
 #comments.
 LABREGEX="s/ [a-z_]+:([a-z\('])/ \1/g"
 
-#A second, sligthly different round sometimes required to deal with f:(key:key
+#A second, slightly different round sometimes required to deal with f:(key:key
 LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
 
 #Remove a tilde if it is followed by a label name and a space or closing
 #OCamldoc code section with ]
 TILDEREGEX="s/~([a-z_]*[ \]])/\1/g"
 
-#@sinceunlabeled --> @since
+#@sinceunlabelednowarn --> @since
 SINCEREGEX="s/sinceunlabelednowarn/since/g"
 
 #Indent a non-blank line by two characters, for moreLabels templates

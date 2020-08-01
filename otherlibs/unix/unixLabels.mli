@@ -21,11 +21,6 @@
    unixLabels.mli instead.
  *)
 
-(* NOTE:
-   When adding a type to unixLabels.mli, you must also edit
-   tools/unlabel to add the type there.
-  *)
-
 (** Interface to the Unix system.
 
    To use the labeled version of this module, add [module Unix][ = ][UnixLabels]
