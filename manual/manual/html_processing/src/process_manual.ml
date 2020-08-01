@@ -336,7 +336,7 @@ let process version =
   ["colour-logo-gray.svg"]
   |> List.iter (fun file ->
       pr file;
-      sys_cp (with_dir "images" file |> with_dir process_dir) (docs_file file)
+      sys_cp (process_dir // "images" // file) (docs_file file)
     );
 
   (* special case of the "index.html" file *)

@@ -22,9 +22,8 @@ let src_dir = ref ""
 let set_dirs () =
   libref := if !compiler_libref then "compilerlibref" else "libref";
   dst_dir :=
-    if !compiler_libref then !libref |> with_dir api_dir
-    else api_dir;
-  src_dir := !libref |> with_dir html_maindir
+    if !compiler_libref then api_dir // !libref else api_dir;
+  src_dir := html_maindir // !libref
 
 let () = set_dirs ()
 
@@ -184,8 +183,7 @@ let parse_tdlist = function
 
 (* Generate the index using Lambdasoup ==> very slow, see below. *)
 let make_index () =
-  let html = read_file ("index_values.html"
-                        |> with_dir !src_dir) in
+  let html = read_file (!src_dir // "index_values.html") in
   let soup = parse html in
   soup $ "table"
   |> select "tr"
@@ -268,7 +266,7 @@ module Index = struct
   let get_sig ?mod_name ~id file  =
     sprintf "Looking for signature for %s in %s" id file |> pr;
     let anon_t_regexp = Str.regexp "\\bt\\b" in
-    let inch = open_in (file |> with_dir !src_dir) in
+    let inch = open_in (!src_dir // file) in
     let reg = Str.regexp_string (sprintf {|id="%s"|} id) in
     (* let reg_type = Str.regexp {|<code class="type">\(.+\)</code>|} in *)
     let rec loop () = try
@@ -301,8 +299,7 @@ module Index = struct
     with Not_found -> sprintf "Could not find id for %s" ref |> pr; None
 
   let make ?(with_sig = true) () =
-    let ch = Scanning.open_in ("index_values.html"
-                               |> with_dir !src_dir) in
+    let ch = Scanning.open_in (!src_dir // "index_values.html") in
     find ch "<table>";
     let rec loop list =
       if try find ch "<tr><td><a"; false with Not_found -> true
@@ -360,7 +357,7 @@ let process_index ?(fast=true) () =
   let index = if fast then Index.make ()
     else make_index () |> List.map (fun (a,b,c) -> (a,b,c,None)) in
   sprintf "Index created. Time = %f\n" (Unix.gettimeofday () -. t) |> pr;
-  save_index (with_dir !dst_dir "index.js") index;
+  save_index (!dst_dir // "index.js") index;
   sprintf "Index saved. Time = %f\n" (Unix.gettimeofday () -. t) |> pr
 
 let process_html overwrite version =
@@ -369,8 +366,8 @@ let process_html overwrite version =
   all_html_files ()
   |> List.iter (fun file ->
       match process ~overwrite ~version
-              (file |> with_dir !src_dir)
-              (file |> with_dir !dst_dir) with
+              (!src_dir // file)
+              (!dst_dir // file) with
       | Ok () -> incr processed
       | Error s -> pr s
     );
@@ -378,17 +375,17 @@ let process_html overwrite version =
     version !processed |> print_endline
 
 let copy_files () =
-  compile_css "scss/style.scss" (with_dir !dst_dir "style.css");
-  let ind = with_dir !dst_dir "index.js" in
+  compile_css "scss/style.scss" (!dst_dir // "style.css");
+  let ind = !dst_dir // "index.js" in
   if not (Sys.file_exists ind) then process_index ();
   ["search.js"; "scroll.js"]
   |> List.iter (fun src ->
-      let dst = with_dir !dst_dir src in
-      sys_cp (src |> with_dir "js" |> with_dir process_dir) dst);
+      let dst = !dst_dir // src in
+      sys_cp (process_dir // "js" // src) dst);
   ["favicon.ico"; "colour-logo-gray.svg"; "search_icon.svg"]
   |> List.iter (fun src ->
-      let dst = with_dir !dst_dir src in
-      sys_cp (src |> with_dir "images" |> with_dir process_dir) dst)
+      let dst = !dst_dir // src in
+      sys_cp (process_dir // "images" // src) dst)
 
 (******************************************************************************)
 
@@ -404,7 +401,7 @@ let () =
   let makecss = List.mem "css" args in
   if makehtml then process_html overwrite version;
   if makeindex then process_index ();
-  if makecss then compile_css "style.scss" (with_dir !dst_dir "style.css");
+  if makecss then compile_css "style.scss" (!dst_dir // "style.css");
   copy_files ();
   print_endline "DONE."
 

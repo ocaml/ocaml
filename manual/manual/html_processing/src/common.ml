@@ -10,14 +10,14 @@ let ( // ) = Filename.concat
 let process_dir = Filename.current_dir_name
 
 (* Output directory *)
-let web_dir = "../webman"
+let web_dir = Filename.parent_dir_name // "webman"
 
 (* Output for manual *)
-let docs_maindir = with_dir web_dir "manual"
-let docs_file = with_dir docs_maindir
+let docs_maindir = web_dir // "manual"
+let docs_file = ( // ) docs_maindir
 
 (* Ouput for API *)
-let api_dir = with_dir web_dir "api"
+let api_dir = web_dir // "api"
 
 (* How to go from manual to api *)
 let api_page_url = "../api"
@@ -29,7 +29,7 @@ let api_page_url = "../api"
 let html_maindir = "../htmlman"
 
 (* Where to get the original html files *)
-let html_file = with_dir html_maindir
+let html_file = ( // ) html_maindir
 
 let releases_url = "https://ocaml.org/releases/"
 
@@ -103,7 +103,7 @@ let sys_mv file dst =
 
 (* Compile scss with sass *)
 let compile_css src dst =
-  let src = with_dir process_dir src in
+  let src = process_dir // src in
   if Sys.command (sprintf "sass %s > %s" src dst) <> 0
   then sprintf "Could not compile %s to %s. Is sass installed?" src dst
        |> failwith
