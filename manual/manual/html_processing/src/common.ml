@@ -1,9 +1,7 @@
 open Soup
 open Printf
 
-let debug = Array.to_list Sys.argv
-            |> List.mem "quiet"
-            |> not
+let debug = not (Array.mem "quiet" Sys.argv)
 
 let pr = if debug then print_endline else fun _ -> ()
 
