@@ -29,6 +29,8 @@ val read_config_file: string -> unit
   (** Read (key, value) pairs from the given file name.  Raise [Error]
       if file is ill-formed. *)
 
+val read_config_string: string -> unit
+
 val key_val: string -> string list option
   (** [key_val k] returns the value associated with key [k], if any.
       Otherwise, [None] is returned. *)

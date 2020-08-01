@@ -40,58 +40,11 @@ SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
 
-config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
-	sed $(call SUBST,AFL_INSTRUMENT) \
-	    $(call SUBST,ARCH) \
-	    $(call SUBST_STRING,ARCMD) \
-	    $(call SUBST_STRING,ASM) \
-	    $(call SUBST,ASM_CFI_SUPPORTED) \
-	    $(call SUBST_STRING,BYTECCLIBS) \
-	    $(call SUBST_STRING,CC) \
-	    $(call SUBST_STRING,CCOMPTYPE) \
-	    $(call SUBST_STRING,OUTPUTOBJ) \
-	    $(call SUBST_STRING,EXT_ASM) \
-	    $(call SUBST_STRING,EXT_DLL) \
-	    $(call SUBST_STRING,EXE) \
-	    $(call SUBST_STRING,EXT_LIB) \
-	    $(call SUBST_STRING,EXT_OBJ) \
-	    $(call SUBST,FLAMBDA) \
-	    $(call SUBST,WITH_FLAMBDA_INVARIANTS) \
-	    $(call SUBST_STRING,FLEXLINK_FLAGS) \
-	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
-	    $(call SUBST,HOST) \
-	    $(call SUBST_STRING,LIBDIR) \
-	    $(call SUBST,LIBUNWIND_AVAILABLE) \
-	    $(call SUBST,LIBUNWIND_LINK_FLAGS) \
-	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,MKEXE) \
-	    $(call SUBST_STRING,FLEXLINK_LDFLAGS) \
-	    $(call SUBST_STRING,MKMAINDLL) \
-	    $(call SUBST,MODEL) \
-	    $(call SUBST_STRING,NATIVECCLIBS) \
-	    $(call SUBST_STRING,OCAMLC_CFLAGS) \
-	    $(call SUBST_STRING,OCAMLC_CPPFLAGS) \
-	    $(call SUBST_STRING,OCAMLOPT_CFLAGS) \
-	    $(call SUBST_STRING,OCAMLOPT_CPPFLAGS) \
-	    $(call SUBST_STRING,PACKLD) \
-	    $(call SUBST,PROFINFO_WIDTH) \
-	    $(call SUBST_STRING,RANLIBCMD) \
-	    $(call SUBST,FORCE_SAFE_STRING) \
-	    $(call SUBST,DEFAULT_SAFE_STRING) \
-	    $(call SUBST,WINDOWS_UNICODE) \
-	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
-	    $(call SUBST,SYSTEM) \
-	    $(call SUBST,SYSTHREAD_SUPPORT) \
-	    $(call SUBST,TARGET) \
-	    $(call SUBST,WITH_FRAME_POINTERS) \
-	    $(call SUBST,WITH_PROFINFO) \
-	    $(call SUBST,WITH_SPACETIME) \
-	    $(call SUBST,ENABLE_CALL_COUNTS) \
-	    $(call SUBST,FLAT_FLOAT_ARRAY) \
-	    $(call SUBST,FUNCTION_SECTIONS) \
-	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
-	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
-	    $< > $@
+config.ml: config.mlp ocaml.ini $(ROOTDIR)/Makefile.config Makefile
+	(echo "let builtin_config = {|#"; \
+	 cat ocaml.ini; \
+	 echo "|}"; \
+	 cat $<) > $@
 
 ocaml.ini: $(ROOTDIR)/Makefile.config Makefile
 	(echo "afl_instrument=$(AFL_INSTRUMENT)"; \

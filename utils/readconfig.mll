@@ -107,6 +107,12 @@ let read_config_file filename =
   with x ->
     close_in ic; raise x
 
+let read_config_string str =
+  let lexbuf = Lexing.from_string str in
+  Lexing.(lexbuf.lex_start_p <- {lexbuf.lex_start_p with pos_fname = "(built-in)"});
+  Hashtbl.clear key_val_tbl;
+  begline lexbuf
+
 (* Test harness *)
 (*
 open Printf

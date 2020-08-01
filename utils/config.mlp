@@ -17,7 +17,40 @@
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 
-let standard_library_default = "%%LIBDIR%%"
+(* [builtin_config] is a value of type [string] containing a hard-coded copy of
+   the generated config file. Its definition is inserted at the top of the file
+   by the build system. *)
+let () =
+  Readconfig.read_config_string builtin_config
+
+let get key =
+  match Readconfig.key_val key with
+  | Some v -> v
+  | None -> Printf.eprintf "Configuration option `%s' is not set\n" key; exit 2
+
+let bad_config key vl =
+  Printf.eprintf "Invalid value `%s' for configuration option `%s'\n"
+    (String.concat " " vl) key;
+  exit 2
+
+let get_string key =
+  match get key with
+  | [v] -> v
+  | vl -> bad_config key vl
+
+let get_bool key =
+  match get_string key with
+  | "true" -> true
+  | "false" -> false
+  | v -> bad_config key [v]
+
+let get_int key =
+  let v = get_string key in
+  match int_of_string_opt v with
+  | Some n -> n
+  | None -> bad_config key [v]
+
+let standard_library_default = get_string "libdir"
 
 let standard_library =
   try
@@ -28,18 +61,18 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let ccomp_type = "%%CCOMPTYPE%%"
-let c_compiler = "%%CC%%"
-let c_output_obj = "%%OUTPUTOBJ%%"
-let c_has_debug_prefix_map = %%CC_HAS_DEBUG_PREFIX_MAP%%
-let as_has_debug_prefix_map = %%AS_HAS_DEBUG_PREFIX_MAP%%
-let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
-let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
+let ccomp_type = get_string "ccomptype"
+let c_compiler = get_string "cc"
+let c_output_obj = get_string "outputobj"
+let c_has_debug_prefix_map = get_bool "cc_has_debug_prefix_map"
+let as_has_debug_prefix_map = get_bool "as_has_debug_prefix_map"
+let ocamlc_cflags = get_string "ocamlc_cflags"
+let ocamlc_cppflags = get_string "ocamlc_cppflags"
 (* #7678: ocamlopt uses these only to compile .c files, and the behaviour for
           the two drivers should be identical. *)
-let ocamlopt_cflags = "%%OCAMLC_CFLAGS%%"
-let ocamlopt_cppflags = "%%OCAMLOPT_CPPFLAGS%%"
-let bytecomp_c_libraries = "%%BYTECCLIBS%%"
+let ocamlopt_cflags = get_string "ocamlc_cflags"
+let ocamlopt_cppflags = get_string "ocamlopt_cppflags"
+let bytecomp_c_libraries = get_string "bytecclibs"
 (* bytecomp_c_compiler and native_c_compiler have been supported for a
    long time and are retained for backwards compatibility.
    For programs that don't need compatibility with older OCaml releases
@@ -50,10 +83,15 @@ let bytecomp_c_compiler =
   c_compiler ^ " " ^ ocamlc_cflags ^ " " ^ ocamlc_cppflags
 let native_c_compiler =
   c_compiler ^ " " ^ ocamlopt_cflags ^ " " ^ ocamlopt_cppflags
-let native_c_libraries = "%%NATIVECCLIBS%%"
-let native_pack_linker = "%%PACKLD%%"
-let ranlib = "%%RANLIBCMD%%"
-let ar = "%%ARCMD%%"
+let native_c_libraries = get_string "nativecclibs"
+let native_pack_linker = get_string "packld"
+let ranlib = get_string "ranlibcmd"
+let ar = get_string "arcmd"
+let flexlink_flags = get_string "flexlink_flags"
+let flexlink_ldflags = get_string "flexlink_ldflags"
+let mkdll = get_string "mkdll"
+let mkexe = get_string "mkexe"
+let mkmaindll = get_string "mkmaindll"
 let mkdll, mkexe, mkmaindll =
   (* @@DRA Cygwin - but only if shared libraries are enabled, which we
      should be able to detect? *)
@@ -64,26 +102,26 @@ let mkdll, mkexe, mkmaindll =
         let f i =
           let c = flexlink.[i] in
           if c = '/' then '\\' else c in
-        (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
+        (String.init (String.length flexlink) f) ^ " " ^ flexlink_flags in
       flexlink,
-      flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
+      flexlink ^ " -exe" ^ flexlink_ldflags,
       flexlink ^ " -maindll"
     with Not_found ->
-      "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+      mkdll, mkexe, mkmaindll
   else
-    "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+    mkdll, mkexe, mkmaindll
 
-let flambda = %%FLAMBDA%%
-let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
-let safe_string = %%FORCE_SAFE_STRING%%
-let default_safe_string = %%DEFAULT_SAFE_STRING%%
-let windows_unicode = %%WINDOWS_UNICODE%% != 0
-let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
+let flambda = get_bool "flambda"
+let with_flambda_invariants = get_bool "with_flambda_invariants"
+let safe_string = get_bool "force_safe_string"
+let default_safe_string = get_bool "default_safe_string"
+let windows_unicode = get_int "windows_unicode" != 0
+let supports_shared_libraries = get_bool "supports_shared_libraries"
 
-let flat_float_array = %%FLAT_FLOAT_ARRAY%%
+let flat_float_array = get_bool "flat_float_array"
 
-let function_sections = %%FUNCTION_SECTIONS%%
-let afl_instrument = %%AFL_INSTRUMENT%%
+let function_sections = get_bool "function_sections"
+let afl_instrument = get_bool "afl_instrument"
 
 let exec_magic_number = "Caml1999X027"
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
@@ -117,28 +155,28 @@ let max_young_wosize = 256
 let stack_threshold = 256 (* see runtime/caml/config.h *)
 let stack_safety_margin = 60
 
-let architecture = "%%ARCH%%"
-let model = "%%MODEL%%"
-let system = "%%SYSTEM%%"
+let architecture = get_string "arch"
+let model = get_string "model"
+let system = get_string "system"
 
-let asm = "%%ASM%%"
-let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
-let with_frame_pointers = %%WITH_FRAME_POINTERS%%
-let spacetime = %%WITH_SPACETIME%%
-let enable_call_counts = %%ENABLE_CALL_COUNTS%%
-let libunwind_available = %%LIBUNWIND_AVAILABLE%%
-let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
-let profinfo = %%WITH_PROFINFO%%
-let profinfo_width = %%PROFINFO_WIDTH%%
+let asm = get_string "asm"
+let asm_cfi_supported = get_bool "asm_cfi_supported"
+let with_frame_pointers = get_bool "with_frame_pointers"
+let spacetime = get_bool "with_spacetime"
+let enable_call_counts = get_bool "enable_call_counts"
+let libunwind_available = get_bool "libunwind_available"
+let libunwind_link_flags = get_string "libunwind_link_flags"
+let profinfo = get_bool "with_profinfo"
+let profinfo_width = get_int "profinfo_width"
 
-let ext_exe = "%%EXE%%"
-let ext_obj = "%%EXT_OBJ%%"
-let ext_asm = "%%EXT_ASM%%"
-let ext_lib = "%%EXT_LIB%%"
-let ext_dll = "%%EXT_DLL%%"
+let ext_exe = get_string "exe"
+let ext_obj = get_string "ext_obj"
+let ext_asm = get_string "ext_asm"
+let ext_lib = get_string "ext_lib"
+let ext_dll = get_string "ext_dll"
 
-let host = "%%HOST%%"
-let target = "%%TARGET%%"
+let host = get_string "host"
+let target = get_string "target"
 
 let default_executable_name =
   match Sys.os_type with
@@ -146,9 +184,12 @@ let default_executable_name =
   | "Win32" | "Cygwin" -> "camlprog.exe"
   | _ -> "camlprog"
 
-let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
+let systhread_supported = get_bool "systhread_support";;
 
-let flexdll_dirs = [%%FLEXDLL_DIR%%];;
+let flexdll_dirs =
+  let s = get_string "flexdll_dir" in
+  if s = "" then [] else [s]
+;;
 
 type configuration_value =
   | String of string
