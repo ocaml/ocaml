@@ -17,7 +17,7 @@
 
 (* Recording key=val bindings *)
 
-let key_val_tbl : (string, string list) Hashtbl.t = Hashtbl.create 17
+let key_val_tbl : (string, string) Hashtbl.t = Hashtbl.create 17
 
 let key_val key =
   Hashtbl.find_opt key_val_tbl key
@@ -26,13 +26,10 @@ let key_val key =
 
 let buf = Buffer.create 32
 
-let stash inword words =
-  if inword then begin
-    let w = Buffer.contents buf in
-    Buffer.clear buf;
-    w :: words
-  end else
-    words
+let contents () =
+  let s = Buffer.contents buf in
+  Buffer.clear buf;
+  s
 
 (* Error reporting *)
 
@@ -44,8 +41,6 @@ let error msg lexbuf =
                        msg)))
 
 let ill_formed_line lexbuf = error "ill-formed line" lexbuf
-let unterminated_quote lexbuf = error "unterminated quote" lexbuf
-let lone_backslash lexbuf = error "lone \\ (backslash) at end of file" lexbuf
 
 }
 
@@ -57,40 +52,17 @@ rule begline = parse
   | '#' [^ '\n']* ('\n' | eof)
       { Lexing.new_line lexbuf; begline lexbuf }
   | whitespace* (ident as key) whitespace* '='
-      { let words = unquoted false [] lexbuf in
-        Hashtbl.add key_val_tbl key (List.rev words);
+      { let value = unquoted lexbuf in
+        Hashtbl.add key_val_tbl key value;
         begline lexbuf }
   | eof
       { () }
   | _
       { ill_formed_line lexbuf }
 
-and unquoted inword words = parse
-  | '\n' | eof    { Lexing.new_line lexbuf; stash inword words }
-  | whitespace+   { unquoted false (stash inword words) lexbuf }
-  | '\\' newline  { Lexing.new_line lexbuf; unquoted inword words lexbuf }
-  | '\\' (_ as c) { Buffer.add_char buf c; unquoted true words lexbuf }
-  | '\\' eof      { lone_backslash lexbuf }
-  | '\''          { singlequote lexbuf; unquoted true words lexbuf }
-  | '\"'          { doublequote lexbuf; unquoted true words lexbuf }
-  | _ as c        { Buffer.add_char buf c; unquoted true words lexbuf }
-
-and singlequote = parse
-  | eof           { unterminated_quote lexbuf }
-  | '\''          { () }
-  | newline       { Lexing.new_line lexbuf;
-                    Buffer.add_char buf '\n'; singlequote lexbuf }
-  | _ as c        { Buffer.add_char buf c; singlequote lexbuf }
-
-and doublequote = parse
-  | eof           { unterminated_quote lexbuf }
-  | '\"'          { () }
-  | '\\' newline  { Lexing.new_line lexbuf; doublequote lexbuf }
-  | '\\' (['$' '`' '\"' '\\'] as c)
-                  { Buffer.add_char buf c; doublequote lexbuf }
-  | newline       { Lexing.new_line lexbuf;
-                    Buffer.add_char buf '\n'; doublequote lexbuf }
-  | _ as c        { Buffer.add_char buf c; doublequote lexbuf }
+and unquoted = parse
+  | '\n' | eof    { Lexing.new_line lexbuf; contents () }
+  | _ as c        { Buffer.add_char buf c; unquoted lexbuf }
 
 {
 

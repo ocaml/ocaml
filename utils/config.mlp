@@ -34,32 +34,26 @@ let () =
          top of the file by the build system. *)
       Readconfig.read_config_string builtin_config
 
-let get key =
+let get_string key =
   match Readconfig.key_val key with
   | Some v -> v
   | None -> Printf.eprintf "Configuration option `%s' is not set\n" key; exit 2
 
-let bad_config key vl =
-  Printf.eprintf "Invalid value `%s' for configuration option `%s'\n"
-    (String.concat " " vl) key;
+let bad_config key v =
+  Printf.eprintf "Invalid value `%s' for configuration option `%s'\n" v key;
   exit 2
-
-let get_string key =
-  match get key with
-  | [v] -> v
-  | vl -> bad_config key vl
 
 let get_bool key =
   match get_string key with
   | "true" -> true
   | "false" -> false
-  | v -> bad_config key [v]
+  | v -> bad_config key v
 
 let get_int key =
   let v = get_string key in
   match int_of_string_opt v with
   | Some n -> n
-  | None -> bad_config key [v]
+  | None -> bad_config key v
 
 let standard_library_default = get_string "libdir"
 

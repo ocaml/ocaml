@@ -17,12 +17,8 @@
 
 (* The format of a configuration file is a list of lines
       variable=value
-   The "value" on the right hand side is a list of whitespace-separated
-   words.  Quoting is honored with the same rules as POSIX shell:
-      \<newline>            for multi-line values
-      single quotes         no escapes within
-      double quotes         \$ \` \<doublequote> \\ \<newline> as escapes
-   Finally, lines starting with '#' are comments.
+   The "value" on the right hand side is taken literally.
+   Lines starting with '#' are comments.
 *)
 
 val read_config_file: string -> unit
@@ -31,7 +27,7 @@ val read_config_file: string -> unit
 
 val read_config_string: string -> unit
 
-val key_val: string -> string list option
+val key_val: string -> string option
   (** [key_val k] returns the value associated with key [k], if any.
       Otherwise, [None] is returned. *)
 
