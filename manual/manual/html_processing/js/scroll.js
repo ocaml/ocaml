@@ -21,6 +21,7 @@
 // don't use a smooth scrolling.
 
 const MAX_DISTANCE = 1000;
+const SCROLL_DURATION = 600;
 
 const url = window.location.pathname;
 var filename = url.substring(url.lastIndexOf('/')+1);
@@ -70,7 +71,7 @@ function setSmooth () {
 		    setTimeout(function () {
 		    	location.href = href;
 			// this will set the "target" property.
-		    }, 600);
+		    }, SCROLL_DURATION);
 		    return false;
 		    // so we don't follow the link immediately
 		}
