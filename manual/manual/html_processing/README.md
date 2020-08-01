@@ -5,7 +5,7 @@ and the API (from the `../htmlman` directory), including a quick
 search widget for the API.
 
 The process will create the `../webman` dir, and output the new html
-files (and assets) in `webman/manual` (the manual) and `webman/api` (the
+files (and assets) in `../webman/manual` (the manual) and `../webman/api` (the
 API).
 
 For processing the manual/api of OCaml versions <= 4.10, see
