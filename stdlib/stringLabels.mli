@@ -302,26 +302,22 @@ val uncapitalize : string -> string
 val uppercase_ascii : string -> string
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.05.0
-   @sinceunlabelednowarn 4.03.0 *)
+   @since 4.03.0 (4.05.0 in StringLabels) *)
 
 val lowercase_ascii : string -> string
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.05.0
-   @sinceunlabelednowarn 4.03.0 *)
+   @since 4.03.0 (4.05.0 in StringLabels) *)
 
 val capitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.05.0
-   @sinceunlabelednowarn 4.03.0 *)
+   @since 4.03.0 (4.05.0 in StringLabels) *)
 
 val uncapitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.05.0
-   @sinceunlabelednowarn 4.03.0 *)
+   @since 4.03.0 (4.05.0 in StringLabels) *)
 
 val starts_with :
   prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
@@ -345,8 +341,7 @@ val split_on_char: sep:char -> string -> string list
       (split_on_char sep s) = s]).
     - No string in the result contains the [sep] character.
 
-    @since 4.05.0
-    @sinceunlabelednowarn 4.04.0
+    @since 4.04.0 (4.05.0 in StringLabels)
 *)
 
 type t = string
@@ -360,8 +355,7 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for strings.
-    @since 4.05.0
-    @sinceunlabelednowarn 4.03.0 *)
+    @since 4.03.0 (4.05.0 in StringLabels) *)
 
 
 (** {1 Iterators} *)

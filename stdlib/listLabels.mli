@@ -67,8 +67,7 @@ val compare_length_with : 'a list -> len:int -> int
 
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
-    @since 4.05.0
-    @sinceunlabelednowarn 4.03.0
+    @since 4.03.0 (4.05.0 in ListLabels)
  *)
 
 val hd : 'a list -> 'a
@@ -435,8 +434,7 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!sort}, but also remove duplicates.
-    @since 4.03.0
-    @sinceunlabelednowarn 4.02.0
+    @since 4.02.0 (4.03.0 in ListLabels)
  *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list

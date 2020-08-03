@@ -298,26 +298,22 @@ val uncapitalize : bytes -> bytes
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.05.0
-   @since 4.03.0 *)
+   @since 4.03.0 (4.05.0 in BytesLabels) *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.05.0
-   @since 4.03.0 *)
+   @since 4.03.0 (4.05.0 in BytesLabels) *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.05.0
-   @since 4.03.0 *)
+   @since 4.03.0 (4.05.0 in BytesLabels) *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.05.0
-   @since 4.03.0 *)
+   @since 4.03.0 (4.05.0 in BytesLabels) *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -330,8 +326,7 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.05.0
-    @since 4.03.0 *)
+    @since 4.03.0 (4.05.0 in BytesLabels) *)
 
 (** {1:unsafe Unsafe conversions (for advanced users)}
 

@@ -204,8 +204,7 @@ val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.05.0
-   @since 4.03.0
+   @since 4.03.0 (4.05.0 in ArrayLabels)
    *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -213,8 +212,7 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.05.0
-   @since 4.03.0 *)
+   @since 4.03.0 (4.05.0 in ArrayLabels) *)
 
 
 (** {1 Array scanning} *)
