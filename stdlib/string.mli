@@ -205,7 +205,7 @@ val rindex : string -> char -> int
    @raise Not_found if [c] does not occur in [s]. *)
 
 val rindex_opt: string -> char -> int option
-(** [String.rindex_opt s c] returns the index of the last occurrence
+(** [rindex_opt s c] returns the index of the last occurrence
     of character [c] in string [s], or [None] if [c] does not occur in
     [s].
     @since 4.05 *)

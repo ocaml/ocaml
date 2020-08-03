@@ -233,7 +233,7 @@ val wait : unit -> int * process_status
    On Windows: Not implemented, use {!waitpid}. *)
 
 val waitpid : mode:wait_flag list -> int -> int * process_status
-(** Same as {!waitpid}, but waits for the child process whose pid is given.
+(** Same as {!wait}, but waits for the child process whose pid is given.
    A pid of [-1] means wait for any child.
    A pid of [0] means wait for any child in the same process group
    as the current process.
