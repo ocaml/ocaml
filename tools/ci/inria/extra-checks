@@ -59,6 +59,10 @@ set_config_var() {
 }
 
 #########################################################################
+
+# Print each command before its execution
+set -x
+
 # stop on error
 set -e
 
