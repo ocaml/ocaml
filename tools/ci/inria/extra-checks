@@ -253,5 +253,5 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 # export MSAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer
 
 # # Build the system (bytecode only) and test
-# make $jobs world
+# make $jobs
 # $run_testsuite
