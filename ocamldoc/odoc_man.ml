@@ -188,8 +188,7 @@ class virtual info =
              (Buffer.contents buf) :: acc
           with
             Not_found ->
-              if not (String.ends_with ~suffix:"nowarn" tag) then
-                Odoc_info.warning (Odoc_messages.tag_not_handled tag);
+              Odoc_info.warning (Odoc_messages.tag_not_handled tag);
               acc
         )
         [] l
