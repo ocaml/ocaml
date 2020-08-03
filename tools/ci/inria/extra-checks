@@ -185,7 +185,7 @@ set_config_var OC_CFLAGS "-O1 \
 
 OCAMLRUNPARAM="c=1" \
 LSAN_OPTIONS="suppressions=$(pwd)/tools/ci/inria/lsan-suppr.txt" \
-make $jobs world.opt
+make $jobs
 
 # Run the testsuite.
 # We deactivate leak detection for two reasons:
@@ -215,7 +215,7 @@ set_config_var OC_CFLAGS "-O1 \
 -fsanitize=thread"
 
 # Build the system
-make $jobs world.opt
+make $jobs
 
 # Run the testsuite.
 # ThreadSanitizer complains about fork() in threaded programs,
