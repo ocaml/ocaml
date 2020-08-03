@@ -300,12 +300,12 @@ val equal: t -> t -> bool
 (** The equal function for strings.
     @since 4.03.0 *)
 
-val starts_with : prefix:t -> t -> bool
-(** [String.starts_with prefix s] tests if [s] starts with [prefix]
+val starts_with : substr:t -> t -> bool
+(** [String.starts_with ~substr:prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
-val ends_with : suffix:t -> t -> bool
-(** [String.ends_with suffix s] tests if [s] ends with [suffix]
+val ends_with : substr:t -> t -> bool
+(** [String.ends_with ~substr:suffix s] tests if [s] ends with [suffix]
     @since 4.12.0 *)
 
 val split_on_char: char -> string -> string list
