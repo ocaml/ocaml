@@ -289,6 +289,6 @@ CAMLexport value caml_alloc_some(value v)
 {
   CAMLparam1(v);
   value some = caml_alloc_small(1, 0);
-  Store_field(some, 0, v);
+  Field(some, 0) = v;
   CAMLreturn(some);
 }
