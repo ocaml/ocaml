@@ -106,7 +106,7 @@ else
   run_testsuite="$make -C testsuite all"
 fi
 
-# A tool that make error backtrace nicer
+# A tool that makes error backtraces nicer
 # Need to pick the one that matches clang-9 and is named "llvm-symbolizer"
 # (/usr/bin/llvm-symbolizer-9 doesn't work, that would be too easy)
 export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-9/bin/llvm-symbolizer
