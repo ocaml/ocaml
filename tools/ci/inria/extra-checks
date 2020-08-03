@@ -248,7 +248,7 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 # -Wall -Werror \
 # -fsanitize=memory"
 
-# # A tool that make error backtrace nicer
+# # A tool that makes error backtraces nicer
 # # Need to pick the one that matches clang-6.0
 # export MSAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer
 
