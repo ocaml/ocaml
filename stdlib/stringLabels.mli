@@ -325,7 +325,7 @@ val uncapitalize_ascii : string -> string
 
 val starts_with :
   prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
-(** [starts_with ~prefix s] tests if [s] starts with [prefix]
+(** [starts_with ][~][prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
 val ends_with :
