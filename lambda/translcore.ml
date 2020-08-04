@@ -760,7 +760,7 @@ and transl_curried_function
         begin match partial with
         | Total ->
           Location.prerr_warning pat.pat_loc
-            Match_on_mutable_will_allocate_closure
+            Match_on_mutable_state_prevent_uncurry
         | Partial -> ()
         end;
         transl_tupled_function ~scopes ~arity
