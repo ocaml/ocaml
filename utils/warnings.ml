@@ -329,9 +329,9 @@ let descriptions =
     ["unused-open-bang"];
     67, "Unused functor parameter.",
     ["unused-functor-parameter"];
-    68, "Pattern-matching depending on mutable state prevents the remaining arguments from \
-         being uncurried.",
-    [""];
+    68, "Pattern-matching depending on mutable state prevents the remaining \
+         arguments from being uncurried.",
+    ["pattern-depend-on-mutable-state"];
   ]
 ;;
 
@@ -812,8 +812,8 @@ let message = function
   | Unused_functor_parameter s -> "unused functor parameter " ^ s ^ "."
   | Match_on_mutable_will_allocate_closure ->
     "This pattern depends on mutable state.\n\
-     It prevents the remaining arguments from being uncurried, which will cause \
-     additional closure allocations."
+     It prevents the remaining arguments from being uncurried, which will \
+     cause additional closure allocations."
 ;;
 
 let nerrors = ref 0;;
