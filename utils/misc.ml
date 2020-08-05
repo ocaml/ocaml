@@ -232,6 +232,119 @@ module Stdlib = struct
   external compare : 'a -> 'a -> int = "%compare"
 end
 
+(* JSON functions *)
+
+module Json = struct
+  let escape_string str =
+    let buf = Buffer.create (String.length str * 5 / 4) in
+    for i = 0 to String.length str - 1 do
+      match str.[i] with
+      | '\\' -> Buffer.add_string buf {|\\|}
+      | '\"' -> Buffer.add_string buf {|\"|}
+      | '\n' -> Buffer.add_string buf {|\n|}
+      | '\t' -> Buffer.add_string buf {|\t|}
+      | '\r' -> Buffer.add_string buf {|\r|}
+      | '\b' -> Buffer.add_string buf {|\b|}
+      | '\x00' .. '\x1F' | '\x7F' as c ->
+        Printf.bprintf buf "\\u%04X" (Char.code c)
+      | c -> Buffer.add_char buf c
+    done;
+    Buffer.contents buf
+  type t =
+    [
+      | `Int of int
+      | `String of string
+      | `Assoc of (string * t) list
+      | `List of t list
+    ]
+
+  let rec print ppf =
+    let comma ppf () = Format.fprintf ppf ",@ " in
+    function
+    | `Int i ->
+        (* we are following yojson convention for integers  *)
+        Format.fprintf ppf "%d" i
+    | `String s ->
+        Format.fprintf ppf "\"%s\"" (escape_string s)
+    | `Assoc obj ->
+        Format.fprintf ppf "@[{@[<hv 0>%a@]@;<0 0>}@]"
+          (Format.pp_print_list ~pp_sep:comma keyed_element) obj
+    | `List l ->
+        Format.fprintf ppf "@[[@[<hv>%a@]@;<0 0>]@]"
+          (Format.pp_print_list ~pp_sep:comma print ) l
+  and keyed_element ppf (key, (element:t)) =
+    Format.fprintf ppf "\"@[<2>%s\":@ %a@]" (escape_string key) print element
+end
+
+(* Log functions *)
+
+module Log = struct
+
+  type json_fragments =
+    {
+      toplevel_keys : Json.t Stdlib.String.Map.t ref;
+      error_key : Json.t list ref;
+      backend: Format.formatter
+    }
+
+  type t =
+    | Direct of Format.formatter
+    | Json of json_fragments
+
+  let add_toplevel json_log key value =
+    json_log.toplevel_keys :=
+      Stdlib.String.Map.add key value !(json_log.toplevel_keys)
+
+  let logf key log fmt =
+    match log with
+    | Direct ppf -> Format.fprintf ppf fmt
+    | Json json_log ->
+        Format.kasprintf (fun s -> add_toplevel json_log key (`String s)) fmt
+
+  let log_itemf key log fmt  =
+    match log with
+    | Direct ppf -> Format.fprintf ppf fmt
+    | Json json_log->
+        let update prev s =
+          add_toplevel json_log key (`List (`String s :: prev))
+        in
+        match Stdlib.String.Map.find key !(json_log.toplevel_keys) with
+        | `List x ->
+            Format.kasprintf (update x)  fmt
+        | `String _ as x -> Format.kasprintf (update [x]) fmt
+        | exception Not_found | _ ->
+            Format.kasprintf (update []) fmt
+
+  let flush log =
+    match log with
+    | Direct ppf -> Format.pp_print_flush ppf ()
+    | Json {toplevel_keys;error_key;backend} ->
+        let main_log = Stdlib.String.Map.bindings !toplevel_keys in
+        let error_log =
+          match !error_key with
+          | [] ->  []
+          | _ :: _ -> ["error_report", `List !error_key]
+        in
+        Format.fprintf backend "%a@."
+          Json.print (`Assoc (error_log @ main_log ))
+
+  let formatter log =
+    match log with
+    | Json json_log -> json_log.backend
+    | Direct ppf -> ppf
+
+  let make ~json ppf =
+      if json then
+        Json
+          {
+            toplevel_keys = ref Stdlib.String.Map.empty ;
+            error_key= ref [];
+            backend=ppf
+          }
+      else Direct ppf
+
+end
+
 (* File functions *)
 
 let find_in_path path name =
@@ -865,7 +978,6 @@ let debug_prefix_map_flags () =
 let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
   arg
-
 
 type filepath = string
 type modname = string
