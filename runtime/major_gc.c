@@ -57,7 +57,7 @@ uintnat caml_dependent_size, caml_dependent_allocated;
 double caml_extra_heap_resources;
 uintnat caml_fl_wsz_at_phase_change = 0;
 
-extern char *caml_fl_merge;  /* Defined in freelist.c. */
+extern value caml_fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 static double p_backlog = 0.0; /* backlog for the gc speedup parameter */
@@ -586,7 +586,7 @@ static void sweep_slice (intnat work)
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
-        caml_fl_merge = Bp_hp (hp);
+        caml_fl_merge = (value) Bp_hp (hp);
         break;
       default:          /* gray or black */
         CAMLassert (Color_hd (hd) == Caml_black);
