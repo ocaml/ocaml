@@ -178,6 +178,65 @@ module Stdlib : sig
   external compare : 'a -> 'a -> int = "%compare"
 end
 
+module Json : sig
+  type t =
+    [
+      | `Int of int
+      | `String of string
+      | `Assoc of (string * t) list
+      | `List of t list
+    ]
+  val print : Format.formatter -> t -> unit
+end
+
+module Log : sig
+  (** The log module provides an unified interface for logging in either
+      raw text format or json format.
+  *)
+
+  (** Store json fragments for the json output mode *)
+  type json_fragments =
+    {
+      toplevel_keys : Json.t Stdlib.String.Map.t ref;
+      error_key : Json.t list ref;
+      backend: Format.formatter
+    }
+
+  type t =
+    | Direct of Format.formatter
+      (** Direct mode: the log is printed directly on the formatter *)
+
+    | Json of json_fragments
+      (** Json mode: we are building a json output, and only print to the
+          underlying formatter once the logging session ends. *)
+
+  val logf : string ->
+    t -> ('a, Format.formatter, unit) format -> 'a
+    (** [logf key log fmt] records the output of [fmt] as
+        a string at key [key] in [log].
+        The key is ignored in the raw text mode.
+    *)
+
+  val log_itemf : string ->
+    t -> ('a, Format.formatter, unit) format -> 'a
+    (** [log_itemf key log fmt] appends the output of [fmt]
+        to the list at key [key] in [log].
+        The key is ignored in the raw text mode.
+    *)
+
+  val make: json:bool -> Format.formatter -> t
+
+  val flush : t -> unit
+    (**
+        In json mode, the json output is emitted to the underlying
+        backend formatter before flushing.
+     *)
+
+  val formatter : t -> Format.formatter
+    (** get the underlying formatter of the log *)
+
+end
+
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
 val find_in_path_rel: string list -> string -> string
