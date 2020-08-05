@@ -358,6 +358,7 @@ Working version
   caml_spacetime_my_profinfo (bytecode version) were declared and
   defined with different types.  This is undefined behavior and
   cancause link-time errors with link-time optimization (LTO).
+  (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
 
 
 OCaml 4.11
