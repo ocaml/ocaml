@@ -18,7 +18,8 @@ BEGIN { state=0 }
 NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
 /\(\*MODULE_ALIASES\*\)\r?/ { state=1 }
 { if (state==0)
-    print;
+    { if (FILENAME ~ /Labels/ &&
+          sub(/@since [^(]* \(/, "@since ")) sub(/ in [^)]*\)/, ""); print; }
   else if (state==1)
     state=2;
   else if ($1 == "module")
