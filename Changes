@@ -133,6 +133,10 @@ Working version
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
 
+* #9765: add init functions to Bigarray.
+  (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär, and
+   Xavier Leroy)
+
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
   or function, including any enclosing module or class.
   (Nicolás Ojeda Bär, Stephen Dolan, review by Stephen Dolan)
