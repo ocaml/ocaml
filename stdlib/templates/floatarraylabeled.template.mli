@@ -15,7 +15,9 @@
 (**************************************************************************)
 
 type t = floatarray
-(** The type of float arrays with packed representation.  @since 4.08.0 *)
+(** The type of float arrays with packed representation.
+    @since 4.08.0
+  *)
 
 val length : t -> int
 (** Return the length (number of elements) of the given floatarray. *)
@@ -57,7 +59,7 @@ val concat : t list -> t
 (** Same as {!append}, but concatenates a list of floatarrays. *)
 
 val sub : t -> pos:int -> len:int -> t
-(** [sub a pos ~len] returns a fresh floatarray of length [len],
+(** [sub a ~pos ~len] returns a fresh floatarray of length [len],
     containing the elements number [pos] to [pos + len - 1]
     of floatarray [a].
     @raise Invalid_argument if [pos] and [len] do not

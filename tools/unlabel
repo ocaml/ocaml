@@ -62,9 +62,11 @@ perl -p -e "$SINCEREGEX" stdlib/bytes.2temp.mli > stdlib/bytes.mli
 perl -p -e "$LABREGEX" \
   stdlib/templates/floatarraylabeled.template.mli > \
   stdlib/templates/floatarrayunlabeled.temp.mli
+perl -p -e "$TILDEREGEX" stdlib/templates/floatarrayunlabeled.temp.mli > \
+  stdlib/templates/floatarrayunlabeled.2temp.mli
 perl -p -e "$INDENTREGEX" stdlib/templates/floatarraylabeled.template.mli > \
   stdlib/templates/fal.indented.temp.mli
-perl -p -e "$INDENTREGEX" stdlib/templates/floatarrayunlabeled.temp.mli > \
+perl -p -e "$INDENTREGEX" stdlib/templates/floatarrayunlabeled.2temp.mli > \
   stdlib/templates/fau.indented.temp.mli
 perl -p -e\
   's/FLOATARRAYLAB/`tail -n +17 stdlib\/templates\/fal.indented.temp.mli`/e' \

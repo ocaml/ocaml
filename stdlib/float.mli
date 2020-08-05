@@ -398,7 +398,9 @@ val hash: t -> int
 
 module Array : sig
   type t = floatarray
-  (** The type of float arrays with packed representation.  @since 4.08.0 *)
+  (** The type of float arrays with packed representation.
+      @since 4.08.0
+    *)
 
   val length : t -> int
   (** Return the length (number of elements) of the given floatarray. *)
@@ -424,9 +426,9 @@ module Array : sig
       @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
   val init : int -> (int -> float) -> t
-  (** [init n ~f] returns a fresh floatarray of length [n],
+  (** [init n f] returns a fresh floatarray of length [n],
       with element number [i] initialized to the result of [f i].
-      In other terms, [init n ~f] tabulates the results of [f]
+      In other terms, [init n f] tabulates the results of [f]
       applied to the integers [0] to [n-1].
       @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
@@ -440,7 +442,7 @@ module Array : sig
   (** Same as {!append}, but concatenates a list of floatarrays. *)
 
   val sub : t -> int -> int -> t
-  (** [sub a pos ~len] returns a fresh floatarray of length [len],
+  (** [sub a pos len] returns a fresh floatarray of length [len],
       containing the elements number [pos] to [pos + len - 1]
       of floatarray [a].
       @raise Invalid_argument if [pos] and [len] do not
@@ -452,13 +454,13 @@ module Array : sig
       containing the same elements as [a]. *)
 
   val fill : t -> int -> int -> float -> unit
-  (** [fill a ~pos ~len x] modifies the floatarray [a] in place,
+  (** [fill a pos len x] modifies the floatarray [a] in place,
       storing [x] in elements number [pos] to [pos + len - 1].
       @raise Invalid_argument if [pos] and [len] do not
       designate a valid subarray of [a]. *)
 
   val blit : t -> int -> t -> int -> int -> unit
-  (** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] elements
+  (** [blit src src_pos dst dst_pos len] copies [len] elements
       from floatarray [src], starting at element number [src_pos],
       to floatarray [dst], starting at element number [dst_pos].
       It works correctly even if
@@ -480,7 +482,7 @@ module Array : sig
   (** {2 Iterators} *)
 
   val iter : (float -> unit) -> t -> unit
-  (** [iter ~f a] applies function [f] in turn to all
+  (** [iter f a] applies function [f] in turn to all
       the elements of [a].  It is equivalent to
       [f a.(0); f a.(1); ...; f a.(length a - 1); ()]. *)
 
@@ -490,7 +492,7 @@ module Array : sig
       and the element itself as second argument. *)
 
   val map : (float -> float) -> t -> t
-  (** [map ~f a] applies function [f] to all the elements of [a],
+  (** [map f a] applies function [f] to all the elements of [a],
       and builds a floatarray with the results returned by [f]. *)
 
   val mapi : (int -> float -> float) -> t -> t
@@ -499,7 +501,7 @@ module Array : sig
       and the element itself as second argument. *)
 
   val fold_left : ('a -> float -> 'a) -> 'a -> t -> 'a
-  (** [fold_left ~f x ~init] computes
+  (** [fold_left f x init] computes
       [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
       where [n] is the length of the floatarray [init]. *)
 
@@ -511,12 +513,12 @@ module Array : sig
   (** {2 Iterators on two arrays} *)
 
   val iter2 : (float -> float -> unit) -> t -> t -> unit
-  (** [Array.iter2 ~f a b] applies function [f] to all the elements of [a]
+  (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
       and [b].
       @raise Invalid_argument if the floatarrays are not the same size. *)
 
   val map2 : (float -> float -> float) -> t -> t -> t
-  (** [map2 ~f a b] applies function [f] to all the elements of [a]
+  (** [map2 f a b] applies function [f] to all the elements of [a]
       and [b], and builds a floatarray with the results returned by [f]:
       [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
       @raise Invalid_argument if the floatarrays are not the same size. *)
@@ -524,7 +526,7 @@ module Array : sig
   (** {2 Array scanning} *)
 
   val for_all : (float -> bool) -> t -> bool
-  (** [for_all ~f [|a1; ...; an|]] checks if all elements of the floatarray
+  (** [for_all f [|a1; ...; an|]] checks if all elements of the floatarray
       satisfy the predicate [f]. That is, it returns
       [(f a1) && (f a2) && ... && (f an)]. *)
 
@@ -534,7 +536,7 @@ module Array : sig
       [(f a1) || (f a2) || ... || (f an)]. *)
 
   val mem : float -> t -> bool
-  (** [mem a ~set] is true if and only if there is an element of [set] that is
+  (** [mem a set] is true if and only if there is an element of [set] that is
       structurally equal to [a], i.e. there is an [x] in [set] such
       that [compare a x = 0]. *)
 
@@ -597,12 +599,12 @@ module Array : sig
 
 
   val map_to_array : (float -> 'a) -> t -> 'a array
-  (** [map_to_array ~f a] applies function [f] to all the elements of [a],
+  (** [map_to_array f a] applies function [f] to all the elements of [a],
       and builds an array with the results returned by [f]:
       [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
   val map_from_array : ('a -> float) -> 'a array -> t
-  (** [map_from_array ~f a] applies function [f] to all the elements of [a],
+  (** [map_from_array f a] applies function [f] to all the elements of [a],
       and builds a floatarray with the results returned by [f]. *)
 
   (**/**)
@@ -617,7 +619,9 @@ end
 
 module ArrayLabels : sig
   type t = floatarray
-  (** The type of float arrays with packed representation.  @since 4.08.0 *)
+  (** The type of float arrays with packed representation.
+      @since 4.08.0
+    *)
 
   val length : t -> int
   (** Return the length (number of elements) of the given floatarray. *)
@@ -659,7 +663,7 @@ module ArrayLabels : sig
   (** Same as {!append}, but concatenates a list of floatarrays. *)
 
   val sub : t -> pos:int -> len:int -> t
-  (** [sub a pos ~len] returns a fresh floatarray of length [len],
+  (** [sub a ~pos ~len] returns a fresh floatarray of length [len],
       containing the elements number [pos] to [pos + len - 1]
       of floatarray [a].
       @raise Invalid_argument if [pos] and [len] do not
