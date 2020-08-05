@@ -58,6 +58,23 @@ perl -p -e "$SINCEREGEX" stdlib/array.2temp.mli > stdlib/array.mli
 perl -p -e "$SINCEREGEX" stdlib/string.2temp.mli > stdlib/string.mli
 perl -p -e "$SINCEREGEX" stdlib/bytes.2temp.mli > stdlib/bytes.mli
 
+#FloatArrayLabels
+perl -p -e "$LABREGEX" \
+  stdlib/templates/floatarraylabeled.template.mli > \
+  stdlib/templates/floatarrayunlabeled.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/floatarraylabeled.template.mli > \
+  stdlib/templates/fal.indented.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/floatarrayunlabeled.temp.mli > \
+  stdlib/templates/fau.indented.temp.mli
+perl -p -e\
+  's/FLOATARRAYLAB/`tail -n +17 stdlib\/templates\/fal.indented.temp.mli`/e' \
+  stdlib/templates/float.template.mli > \
+  stdlib/templates/float.template.temp.mli
+perl -p -e\
+  's/FLOATARRAY/`tail -n +17 stdlib\/templates\/fau.indented.temp.mli`/e' \
+  stdlib/templates/float.template.temp.mli > \
+  stdlib/float.mli
+
 #MoreLabels
 perl -p -e "$LABREGEX" \
   stdlib/templates/hashtbl.template.mli > stdlib/hashtbl.temp.mli
