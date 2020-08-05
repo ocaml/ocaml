@@ -32,6 +32,7 @@ case $1 in
   stdlib__printf.cm[io]|stdlib__format.cm[io]|stdlib__scanf.cm[io])
       echo ' -w Ae';;
   stdlib__scanf.cmx) echo ' -inline 9';;
+  *Labels.cmi) echo ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__float.cm[ox]) echo ' -nolabels -no-alias-deps';;
   *) echo ' ';;
