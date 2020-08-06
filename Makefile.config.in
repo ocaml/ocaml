@@ -179,7 +179,9 @@ UNIXLIB=@unixlib@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
+CFLAGS?=@CFLAGS@
 OC_CPPFLAGS=@oc_cppflags@
+CPPFLAGS?=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
 OCAMLC_CPPFLAGS=@ocamlc_cppflags@
@@ -252,10 +254,10 @@ ifeq "$(TOOLCHAIN)" "msvc"
   MERGEMANIFESTEXE=test ! -f $(1).manifest \
           || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
           && rm -f $(1).manifest
-  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
+  MKEXE_BOOT=$(CC) $(OUTPUTEXE)$(1) $(2) \
     /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
 else
-  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+  MKEXE_BOOT=$(CC) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
 endif # ifeq "$(TOOLCHAIN)" "msvc"
 
 # The following variables were defined only in the Windows-specific makefiles.

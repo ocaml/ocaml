@@ -144,4 +144,4 @@ endif
 endif
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@

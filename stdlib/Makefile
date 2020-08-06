@@ -148,7 +148,8 @@ $(HEADERPROGRAM)%$(O): \
   OC_CPPFLAGS += -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"'
 
 $(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $^
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $^
 
 camlheader_ur: camlheader
 	cp camlheader $@
@@ -159,7 +160,7 @@ tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
 	strip $@
 
 $(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	      -DRUNTIME_NAME='"$(HEADER_TARGET_PATH)ocamlrun$(subst .,,$*)"' \
 	      $(OUTPUTOBJ)$@ $^
 
