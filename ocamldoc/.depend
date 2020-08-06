@@ -35,6 +35,7 @@ odoc_analyse.cmo : \
     odoc_comments.cmi \
     odoc_class.cmo \
     odoc_ast.cmi \
+    ../utils/misc.cmi \
     ../parsing/location.cmi \
     ../parsing/lexer.cmi \
     ../typing/env.cmi \
@@ -63,6 +64,7 @@ odoc_analyse.cmx : \
     odoc_comments.cmx \
     odoc_class.cmx \
     odoc_ast.cmx \
+    ../utils/misc.cmx \
     ../parsing/location.cmx \
     ../parsing/lexer.cmx \
     ../typing/env.cmx \

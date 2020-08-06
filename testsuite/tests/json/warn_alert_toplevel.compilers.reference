@@ -1,0 +1,48 @@
+{"error_report":
+    [{"info": {"kind": "warning", "id": "8 [partial-match]"},
+      "msg":
+         {"location":
+             {"file": "//toplevel//", "lines": [6, 6], "characters": [4, 8]},
+          "content":
+             "this pattern-matching is not exhaustive.\nHere is an example of a case that is not matched:\nSome _"
+         },
+      "submsgs": []
+     }
+    ],
+ "phrases": [""]
+}
+{"error_report":
+    [{"info": {"kind": "warning", "id": "8 [partial-match]"},
+      "msg":
+         {"location":
+             {"file": "//toplevel//", "lines": [1, 3], "characters": [13, 29]
+             },
+          "content":
+             "this pattern-matching is not exhaustive.\nHere is an example of a case that is not matched:\n\"\""
+         },
+      "submsgs": []
+     },
+     {"info": {"kind": "alert", "id": "deprecated"},
+      "msg":
+         {"location":
+             {"file": "//toplevel//", "lines": [3, 3], "characters": [11, 27]
+             },
+          "content":
+             "Stdlib.String.lowercase\nUse String.lowercase_ascii/StringLabels.lowercase_ascii instead."
+         },
+      "submsgs": []
+     },
+     {"info": {"kind": "alert", "id": "deprecated"},
+      "msg":
+         {"location":
+             {"file": "//toplevel//", "lines": [2, 2], "characters": [11, 27]
+             },
+          "content":
+             "Stdlib.String.uppercase\nUse String.uppercase_ascii/StringLabels.uppercase_ascii instead."
+         },
+      "submsgs": []
+     }
+    ],
+ "phrases": ["val kas : string -> string = <fun>\n"]
+}
+

@@ -40,4 +40,4 @@ let () =
            not printed.@]";
     ]
   } in
-  print_report Format.std_formatter report
+  print_report (Misc.Log.Direct Format.std_formatter) report
