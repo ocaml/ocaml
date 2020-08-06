@@ -121,6 +121,11 @@ let create_alarm f =
 
 let delete_alarm a = a := false
 
+type event = int
+external new_event : string -> event = "caml_eventlog_new_event"
+external emit_begin_event : event -> unit = "caml_eventlog_emit_begin_event"
+external emit_end_event : event -> unit = "caml_eventlog_emit_end_event"
+
 module Memprof =
   struct
     type allocation =

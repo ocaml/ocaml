@@ -439,6 +439,13 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
    was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
    traces before the first event.) *)
 
+type event
+
+external new_event : string -> event = "caml_eventlog_new_event"
+
+external emit_begin_event : event -> unit = "caml_eventlog_emit_begin_event"
+
+external emit_end_event : event -> unit = "caml_eventlog_emit_end_event"
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
    allocated word has a probability of being sampled equal to a

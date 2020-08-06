@@ -80,6 +80,11 @@ typedef enum {
     EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
 } ev_gc_counter;
 
+typedef enum {
+    EV_USER_BEGIN,
+    EV_USER_END
+} ev_user_type;
+
 #ifdef CAML_INSTR
 
 #define CAML_EVENTLOG_DO(f) if (Caml_state->eventlog_enabled &&\
