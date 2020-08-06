@@ -381,7 +381,7 @@ proper tests, portability (yes, also Windows!), good justification for
 why the change is desirable and why it should go into stdlib.
 
 So: be prepared for some serious review process!  But yes, yes,
-contributions are welcome and appreciated.  Promised.
+contributions are welcome and appreciated.  Promised. Yes.
 
 ## Contributing optimizations
 
