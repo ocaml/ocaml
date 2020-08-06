@@ -12,13 +12,13 @@ cmm:
  "camlTest_locations__gc_roots":
  addr "camlTest_locations"
  int 0)
-(function{test_locations.ml:42,14-72} camlTest_locations__fib_81 (n: val)
+(function{test_locations.ml:43,14-72} camlTest_locations__fib_81 (n: val)
  (if (<a 3 n)
    (+
      (+
-       (app{test_locations.ml:44,9-20} "camlTest_locations__fib_81" (+ n -2)
+       (app{test_locations.ml:45,9-20} "camlTest_locations__fib_81" (+ n -2)
          val)
-       (app{test_locations.ml:44,23-34} "camlTest_locations__fib_81" 
+       (app{test_locations.ml:45,23-34} "camlTest_locations__fib_81" 
          (+ n -4) val))
      -1)
    3))
