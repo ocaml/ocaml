@@ -124,7 +124,7 @@ val extend : bytes -> int -> int -> bytes
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
-    @since 4.05.0 in labeled module *)
+    @since 4.05.0 in BytesLabels *)
 
 val fill : bytes -> int -> int -> char -> unit
 (** [fill s pos len c] modifies [s] in place, replacing [len]
@@ -153,19 +153,22 @@ val blit_string :
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
-    @since 4.05.0 in labeled module *)
+    @since 4.05.0 in BytesLabels *)
 
 val concat : bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
     inserting the separator byte sequence [sep] between each, and
-    returns the result as a new byte sequence. *)
+    returns the result as a new byte sequence.
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
+    *)
 
 val cat : bytes -> bytes -> bytes
 (** [cat s1 s2] concatenates [s1] and [s2] and returns the result
     as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
-    @since 4.05.0 in labeled module *)
+    @since 4.05.0 in BytesLabels *)
 
 val iter : (char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].

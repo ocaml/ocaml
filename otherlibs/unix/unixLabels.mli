@@ -229,7 +229,7 @@ val wait : unit -> int * process_status
 (** Wait until one of the children processes die, and return its pid
    and termination status.
 
-   On Windows: Not implemented, use {!waitpid}. *)
+   On Windows: not implemented, use {!waitpid}. *)
 
 val waitpid : mode:wait_flag list -> int -> int * process_status
 (** Same as {!wait}, but waits for the child process whose pid is given.
@@ -241,8 +241,7 @@ val waitpid : mode:wait_flag list -> int -> int * process_status
    immediately without waiting, and whether it should report stopped
    children.
 
-   On Windows, this function can only wait for a given PID, not any
-   child process. *)
+   On Windows: can only wait for a given PID, not any child process. *)
 
 val system : string -> process_status
 (** Execute the given command, wait until it terminates, and return
@@ -260,7 +259,8 @@ val getpid : unit -> int
 
 val getppid : unit -> int
 (** Return the pid of the parent process.
-   On Windows: not implemented (because it is meaningless). *)
+
+    On Windows: not implemented (because it is meaningless). *)
 
 val nice : int -> int
 (** Change the process priority. The integer argument is added to the
@@ -366,7 +366,8 @@ val in_channel_of_descr : file_descr -> in_channel
    [set_binary_mode_in ic false] if text mode is desired.
    Text mode is supported only if the descriptor refers to a file
    or pipe, but is not supported if it refers to a socket.
-   On Windows, [set_binary_mode_in] always fails on channels created
+
+   On Windows: [set_binary_mode_in] always fails on channels created
    with this function.
 
    Beware that channels are buffered so more characters may have been
@@ -383,7 +384,8 @@ val out_channel_of_descr : file_descr -> out_channel
    [set_binary_mode_out oc false] if text mode is desired.
    Text mode is supported only if the descriptor refers to a file
    or pipe, but is not supported if it refers to a socket.
-   On Windows, [set_binary_mode_out] always fails on channels created
+
+   On Windows: [set_binary_mode_out] always fails on channels created
    with this function.
 
    Beware that channels are buffered so you may have to [flush] them
@@ -617,25 +619,29 @@ val chmod : string -> perm:file_perm -> unit
 
 val fchmod : file_descr -> perm:file_perm -> unit
 (** Change the permissions of an opened file.
+
     On Windows: not implemented. *)
 
 val chown : string -> uid:int -> gid:int -> unit
 (** Change the owner uid and owner gid of the named file.
+
     On Windows: not implemented. *)
 
 val fchown : file_descr -> uid:int -> gid:int -> unit
 (** Change the owner uid and owner gid of an opened file.
+
     On Windows: not implemented. *)
 
 val umask : int -> int
 (** Set the process's file mode creation mask, and return the previous
     mask.
+
     On Windows: not implemented. *)
 
 val access : string -> perm:access_permission list -> unit
 (** Check that the process has the given permissions over the named file.
 
-   On Windows, execute permission [X_OK], cannot be tested, it just
+   On Windows: execute permission [X_OK] cannot be tested, just
    tests for read permission instead.
 
    @raise Unix_error otherwise.
@@ -739,6 +745,7 @@ val getcwd : unit -> string
 
 val chroot : string -> unit
 (** Change the process root directory.
+
     On Windows: not implemented. *)
 
 type dir_handle = Unix.dir_handle
@@ -772,6 +779,7 @@ val pipe : ?cloexec: (* thwart tools/unlabel *) bool ->
 
 val mkfifo : string -> perm:file_perm -> unit
 (** Create a named pipe with the given permissions (see {!umask}).
+
    On Windows: not implemented. *)
 
 
@@ -1042,8 +1050,9 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
 
 val kill : pid:int -> signal:int -> unit
 (** [kill ~pid ~signal] sends signal number [signal] to the process
-   with id [pid].  On Windows, only the {!Sys.sigkill} signal
-   is emulated. *)
+   with id [pid].
+
+   On Windows: only the {!Sys.sigkill} signal is emulated. *)
 
 type sigprocmask_command = Unix.sigprocmask_command =
     SIG_SETMASK
@@ -1153,7 +1162,8 @@ val sleepf : float -> unit
 
 val times : unit -> process_times
 (** Return the execution times of the process.
-   On Windows, it is partially implemented, will not report timings
+
+   On Windows: partially implemented, will not report timings
    for child processes. *)
 
 val utimes : string -> access:float -> modif:float -> unit
@@ -1204,36 +1214,44 @@ val setitimer :
 
 val getuid : unit -> int
 (** Return the user id of the user executing the process.
-   On Windows, always return [1]. *)
+
+   On Windows: always returns [1]. *)
 
 val geteuid : unit -> int
 (** Return the effective user id under which the process runs.
-   On Windows, always return [1]. *)
+
+   On Windows: always return [1]. *)
 
 val setuid : int -> unit
 (** Set the real user id and effective user id for the process.
+
    On Windows: not implemented. *)
 
 val getgid : unit -> int
 (** Return the group id of the user executing the process.
-   On Windows, always return [1]. *)
+
+   On Windows: always returns [1]. *)
 
 val getegid : unit -> int
 (** Return the effective group id under which the process runs.
-   On Windows, always return [1]. *)
+
+   On Windows: always returns [1]. *)
 
 val setgid : int -> unit
 (** Set the real group id and effective group id for the process.
+
    On Windows: not implemented. *)
 
 val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
    belongs.
+
    On Windows, always return [[|1|]]. *)
 
 val setgroups : int array -> unit
 (** [setgroups groups] sets the supplementary group IDs for the
     calling process. Appropriate privileges are required.
+
     On Windows: not implemented. *)
 
 val initgroups : string -> int -> unit
@@ -1241,6 +1259,7 @@ val initgroups : string -> int -> unit
     reading the group database /etc/group and using all groups of
     which [user] is a member. The additional group [group] is also
     added to the list.
+
     On Windows: not implemented. *)
 
 type passwd_entry = Unix.passwd_entry =
@@ -1267,27 +1286,22 @@ val getlogin : unit -> string
 
 val getpwnam : string -> passwd_entry
 (** Find an entry in [passwd] with the given name.
-   @raise Not_found if no such entry exist.
-
-   On Windows, always raise [Not_found]. *)
+   @raise Not_found if no such entry exists, or always on Windows. *)
 
 val getgrnam : string -> group_entry
 (** Find an entry in [group] with the given name.
-   @raise Not_found if no such entry exist.
 
-   On Windows, always raise [Not_found]. *)
+   @raise Not_found if no such entry exists, or always on Windows. *)
 
 val getpwuid : int -> passwd_entry
 (** Find an entry in [passwd] with the given user id.
-   @raise Not_found if no such entry exist.
 
-   On Windows, always raise [Not_found]. *)
+   @raise Not_found if no such entry exists, or always on Windows. *)
 
 val getgrgid : int -> group_entry
 (** Find an entry in [group] with the given group id.
-   @raise Not_found if no such entry exist.
 
-   On Windows, always raise [Not_found]. *)
+   @raise Not_found if no such entry exists, or always on Windows. *)
 
 
 (** {1 Internet addresses} *)
@@ -1335,8 +1349,9 @@ type socket_domain = Unix.socket_domain =
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
 (** The type of socket domains.  Not all platforms support
-    IPv6 sockets (type [PF_INET6]).  On Windows, [PF_UNIX]
-    is not implemented.  *)
+    IPv6 sockets (type [PF_INET6]).
+
+    On Windows: [PF_UNIX] not implemented.  *)
 
 type socket_type = Unix.socket_type =
     SOCK_STREAM                 (** Stream socket *)
@@ -1373,7 +1388,9 @@ val socketpair :
   ?cloexec: (* thwart toosl/unlabel *) bool ->
     domain:socket_domain -> kind:socket_type -> protocol:int ->
     file_descr * file_descr
-(** Create a pair of unnamed sockets, connected together. *)
+(** Create a pair of unnamed sockets, connected together.
+   See {!set_close_on_exec} for documentation on the [cloexec]
+   optional argument. *)
 
 val accept : ?cloexec: (* thwart tools/unlabel *) bool ->
              file_descr -> file_descr * sockaddr
@@ -1554,7 +1571,7 @@ val establish_server :
    is created for each connection. The function {!establish_server}
    never returns normally.
 
-   On Windows, it is not implemented.  Use threads. *)
+   On Windows: not implemented (use threads). *)
 
 
 (** {1 Host and protocol databases} *)
@@ -1732,7 +1749,7 @@ val tcgetattr : file_descr -> terminal_io
 (** Return the status of the terminal referred to by the given
    file descriptor.
 
-   On Windows, not implemented.*)
+   On Windows: not implemented. *)
 
 type setattr_when = Unix.setattr_when =
     TCSANOW
@@ -1749,20 +1766,20 @@ val tcsetattr : file_descr -> mode:setattr_when -> terminal_io -> unit
    the output parameters; [TCSAFLUSH], when changing the input
    parameters.
 
-   On Windows, not implemented. *)
+   On Windows: not implemented. *)
 
 val tcsendbreak : file_descr -> duration:int -> unit
 (** Send a break condition on the given file descriptor.
    The second argument is the duration of the break, in 0.1s units;
    0 means standard duration (0.25s).
 
-   On Windows, not implemented. *)
+   On Windows: not implemented. *)
 
 val tcdrain : file_descr -> unit
 (** Waits until all output written on the given file descriptor
    has been transmitted.
 
-   On Windows, not implemented. *)
+   On Windows: not implemented. *)
 
 type flush_queue = Unix.flush_queue =
     TCIFLUSH
@@ -1776,7 +1793,7 @@ val tcflush : file_descr -> mode:flush_queue -> unit
    [TCOFLUSH] flushes data written but not transmitted, and
    [TCIOFLUSH] flushes both.
 
-   On Windows, not implemented. *)
+   On Windows: not implemented. *)
 
 type flow_action = Unix.flow_action =
     TCOOFF
@@ -1791,10 +1808,10 @@ val tcflow : file_descr -> mode:flow_action -> unit
    [TCIOFF] transmits a STOP character to suspend input,
    and [TCION] transmits a START character to restart input.
 
-   On Windows, not implemented. *)
+   On Windows: not implemented. *)
 
 val setsid : unit -> int
 (** Put the calling process in a new session and detach it from
    its controlling terminal.
 
-   On Windows, not implemented. *)
+   On Windows: not implemented. *)

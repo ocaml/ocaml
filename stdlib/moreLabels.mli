@@ -219,7 +219,7 @@ module Hashtbl : sig
   val rebuild : ?random (* thwart tools/unlabel *) :bool ->
       ('a, 'b) t -> ('a, 'b) t
   (** Return a copy of the given hashtable.  Unlike {!copy},
-      [{!rebuild} h] re-hashes all the (key, value) entries of
+      {!rebuild}[ h] re-hashes all the (key, value) entries of
       the original table [h].  The returned hash table is randomized if
       [h] was randomized, or the optional [random] parameter is true, or
       if the default is to create randomized hash tables; see
@@ -481,7 +481,7 @@ module Hashtbl : sig
       interface, but use the seeded hashing and equality functions
       specified in the functor argument [H] instead of generic
       equality and hashing.  The [create] operation of the
-      result structure supports the [~random] optional parameter
+      result structure supports the [~][random] optional parameter
       and returns randomized hash tables if [~random:true] is passed
       or if randomization is globally on (see {!Hashtbl.randomize}).
       @since 4.00.0 *)
