@@ -43,7 +43,7 @@ let prepare ppf =
     Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
-    try Location.report_exception ppf x; false
+    try Location.report_exception (Direct ppf) x; false
     with x ->
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false
@@ -104,7 +104,7 @@ let main () =
   let ppf = Format.err_formatter in
   Clflags.native_code := true;
   let program = "ocamlnat" in
-  Compenv.readenv ppf Before_args;
+  Compenv.readenv (Direct ppf) Before_args;
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
   Compmisc.read_clflags_from_env ();

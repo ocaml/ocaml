@@ -20,6 +20,7 @@ open Format
 open Parsetree
 open Outcometree
 open Ast_helper
+module Log = Misc.Log
 
 (* Hooks for parsing functions *)
 
@@ -183,7 +184,8 @@ let record_backtrace () =
   if Printexc.backtrace_status ()
   then backtrace := Some (Printexc.get_backtrace ())
 
-let preprocess_phrase ppf phr =
+let preprocess_phrase_with_log log phr =
+  let ppf = Misc.Log.formatter log in
   let phr =
     match phr with
     | Ptop_def str ->
@@ -196,6 +198,12 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
+
+let preprocess_phrase ppf phr =
+  let log = Location.init_log ppf in
+  let ans = preprocess_phrase_with_log log phr in
+  Log.flush log;
+  ans
 
 (* Phrase buffer that stores the last toplevel phrase (see
    [Location.input_phrase_buffer]). *)

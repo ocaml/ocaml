@@ -37,6 +37,8 @@ val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
 val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
+val preprocess_phrase_with_log :
+      Misc.Log.t -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
 val preprocess_phrase :
       formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
@@ -159,8 +161,8 @@ val[@deprecated] directive_info_table : (string, directive_info) Hashtbl.t
 val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
-val print_error : formatter -> Location.error -> unit
-val print_warning : Location.t -> formatter -> Warnings.t -> unit
+val print_error : Misc.Log.t -> Location.error -> unit
+val print_warning : Location.t -> Misc.Log.t -> Warnings.t -> unit
 val input_name : string ref
 
 (* Hooks for external line editor *)

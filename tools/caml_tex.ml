@@ -178,7 +178,9 @@ module Toplevel = struct
       self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
 
   let init () =
-    Location.report_printer := (fun () -> report_printer);
+    let printer =
+      { (Location.default_report_printer ()) with direct =report_printer } in
+    Location.report_printer := (fun () -> printer);
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
@@ -194,7 +196,7 @@ module Toplevel = struct
       ignore @@ Toploop.execute_phrase true ppf p
     with exn ->
       let bt = Printexc.get_raw_backtrace () in
-      begin try Location.report_exception (snd error_fmt) exn
+      begin try Location.report_exception (Misc.Log.Direct(snd error_fmt)) exn
       with _ ->
         eprintf "Uncaught exception: %s\n%s\n"
           (Printexc.to_string exn)

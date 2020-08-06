@@ -681,6 +681,11 @@ let mk_error_style f =
     \  be set through the OCAML_ERROR_STYLE environment variable."
 ;;
 
+let mk_json f =
+  "-json", Arg.Unit f,
+  " Print the compiler messages in json format"
+;;
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 ;;
@@ -922,6 +927,7 @@ module type Common_options = sig
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
+  val _json : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
   val _unsafe_string : unit -> unit
@@ -1216,6 +1222,7 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
+    mk_json F._json;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
@@ -1288,6 +1295,7 @@ struct
     mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
+    mk_json F._json;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
@@ -1418,6 +1426,7 @@ struct
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
     mk_inline_max_unroll F._inline_max_unroll;
+    mk_json F._json;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
@@ -1532,6 +1541,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_strict_formats F._no_strict_formats;
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
+    mk_json F._json;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
@@ -1697,6 +1707,7 @@ module Default = struct
     let _short_paths = clear real_paths
     let _strict_formats = set strict_formats
     let _strict_sequence = set strict_sequence
+    let _json =  set json
     let _unboxed_types = set unboxed_types
     let _unsafe_string = set unsafe_string
     let _w s =

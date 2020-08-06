@@ -358,7 +358,8 @@ parsing/location.cmx : \
     utils/build_path_prefix_map.cmx \
     parsing/location.cmi
 parsing/location.cmi : \
-    utils/warnings.cmi
+    utils/warnings.cmi \
+    utils/misc.cmi
 parsing/longident.cmo : \
     utils/misc.cmi \
     parsing/longident.cmi
@@ -5843,6 +5844,7 @@ driver/compenv.cmx : \
     utils/ccomp.cmx \
     driver/compenv.cmi
 driver/compenv.cmi : \
+    utils/misc.cmi \
     utils/clflags.cmi
 driver/compile.cmo : \
     typing/typedtree.cmi \
@@ -5952,9 +5954,11 @@ driver/compmisc.cmi : \
     typing/env.cmi \
     utils/clflags.cmi
 driver/errors.cmo : \
+    utils/misc.cmi \
     parsing/location.cmi \
     driver/errors.cmi
 driver/errors.cmx : \
+    utils/misc.cmx \
     parsing/location.cmx \
     driver/errors.cmi
 driver/errors.cmi :
@@ -5984,6 +5988,7 @@ driver/main_args.cmi :
 driver/maindriver.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
+    utils/misc.cmi \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
@@ -5999,6 +6004,7 @@ driver/maindriver.cmo : \
 driver/maindriver.cmx : \
     utils/warnings.cmx \
     utils/profile.cmx \
+    utils/misc.cmx \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
@@ -6077,9 +6083,11 @@ driver/optcompile.cmi : \
     utils/clflags.cmi \
     middle_end/backend_intf.cmi
 driver/opterrors.cmo : \
+    utils/misc.cmi \
     parsing/location.cmi \
     driver/opterrors.cmi
 driver/opterrors.cmx : \
+    utils/misc.cmx \
     parsing/location.cmx \
     driver/opterrors.cmi
 driver/opterrors.cmi :
@@ -6092,6 +6100,7 @@ driver/optmaindriver.cmo : \
     utils/profile.cmi \
     asmcomp/proc.cmi \
     driver/optcompile.cmi \
+    utils/misc.cmi \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
@@ -6112,6 +6121,7 @@ driver/optmaindriver.cmx : \
     utils/profile.cmx \
     asmcomp/proc.cmx \
     driver/optcompile.cmx \
+    utils/misc.cmx \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
@@ -6265,6 +6275,7 @@ toplevel/topcommon.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
+    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
@@ -6322,7 +6333,8 @@ toplevel/topdirs.cmi : \
     parsing/longident.cmi
 toplevel/topeval.cmi : \
     toplevel/topcommon.cmi \
-    parsing/parsetree.cmi
+    parsing/parsetree.cmi \
+    utils/misc.cmi
 toplevel/toploop.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
@@ -6361,6 +6373,7 @@ toplevel/toploop.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
+    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/env.cmi
@@ -6446,7 +6459,8 @@ toplevel/byte/topeval.cmx : \
     toplevel/byte/topeval.cmi
 toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
-    parsing/parsetree.cmi
+    parsing/parsetree.cmi \
+    utils/misc.cmi
 toplevel/byte/topmain.cmo : \
     typing/types.cmi \
     toplevel/byte/trace.cmi \
@@ -6591,7 +6605,8 @@ toplevel/native/topeval.cmx : \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmi : \
     toplevel/topcommon.cmi \
-    parsing/parsetree.cmi
+    parsing/parsetree.cmi \
+    utils/misc.cmi
 toplevel/native/topmain.cmo : \
     toplevel/toploop.cmi \
     toplevel/native/topeval.cmi \

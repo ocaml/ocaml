@@ -12,7 +12,7 @@ let diff =
   | _ -> "diff -u"
 
 let report_err exn =
-  Location.report_exception Format.std_formatter exn
+  Location.report_exception (Misc.Log.Direct Format.std_formatter) exn
 
 let remove_locs =
   let open Ast_mapper in

@@ -1,0 +1,48 @@
+{"error_report":
+    [{"info": {"kind": "warning", "id": "8 [partial-match]"},
+      "msg":
+         {"location":
+             {"file": "warn_alert.ml",
+              "lines": [6, 8],
+              "characters": [12, 29]
+             },
+          "content":
+             "this pattern-matching is not exhaustive.\nHere is an example of a case that is not matched:\n\"\""
+         },
+      "submsgs": []
+     },
+     {"info": {"kind": "alert", "id": "deprecated"},
+      "msg":
+         {"location":
+             {"file": "warn_alert.ml",
+              "lines": [8, 8],
+              "characters": [11, 27]
+             },
+          "content":
+             "Stdlib.String.lowercase\nUse String.lowercase_ascii/StringLabels.lowercase_ascii instead."
+         },
+      "submsgs": []
+     },
+     {"info": {"kind": "alert", "id": "deprecated"},
+      "msg":
+         {"location":
+             {"file": "warn_alert.ml",
+              "lines": [7, 7],
+              "characters": [11, 27]
+             },
+          "content":
+             "Stdlib.String.uppercase\nUse String.uppercase_ascii/StringLabels.uppercase_ascii instead."
+         },
+      "submsgs": []
+     },
+     {"info": {"kind": "warning", "id": "8 [partial-match]"},
+      "msg":
+         {"location":
+             {"file": "warn_alert.ml", "lines": [5, 5], "characters": [4, 8]},
+          "content":
+             "this pattern-matching is not exhaustive.\nHere is an example of a case that is not matched:\nSome _"
+         },
+      "submsgs": []
+     }
+    ]
+}

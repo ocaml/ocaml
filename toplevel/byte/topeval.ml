@@ -111,7 +111,8 @@ let pr_item =
 
 (* Execute a toplevel phrase *)
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase_with_log print_outcome log phr =
+  let ppf = Misc.Log.formatter log in
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
@@ -158,7 +159,7 @@ let execute_phrase print_outcome ppf phr =
               in
               Ophr_exception (exn, outv)
         in
-        !print_out_phrase ppf out_phr;
+        Log.log_itemf "phrases" log "%a" !print_out_phrase out_phr;
         if Printexc.backtrace_status ()
         then begin
           match !backtrace with
@@ -178,8 +179,8 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
       try_run_directive ppf dir_name pdir_arg
 
-let execute_phrase print_outcome ppf phr =
-  try execute_phrase print_outcome ppf phr
+let execute_phrase_with_log print_outcome log phr =
+  try execute_phrase_with_log print_outcome log phr
   with exn ->
     Warnings.reset_fatal ();
     raise exn

@@ -44,7 +44,7 @@ type filename = string
 type readenv_position =
   Before_args | Before_compile of filename | Before_link
 
-val readenv : Format.formatter -> readenv_position -> unit
+val readenv : Misc.Log.t -> readenv_position -> unit
 
 (* [is_unit_name name] returns true only if [name] can be used as a
    correct module name *)
@@ -71,7 +71,7 @@ val impl : string -> unit
 val intf : string -> unit
 
 val process_deferred_actions :
-  Format.formatter *
+  Misc.Log.t *
   (start_from:Clflags.Compiler_pass.t ->
    source_file:string -> output_prefix:string -> unit) *
   (* compile implementation *)

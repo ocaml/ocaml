@@ -162,7 +162,14 @@ type report_printer = {
     existing ones.
 *)
 
+type json_report_printer = Misc.Log.json_fragments -> report -> unit
+
+type full_report_printer =
+  { direct: report_printer; json: json_report_printer }
+
 (** {2 Report printers used in the compiler} *)
+
+val init_log : Format.formatter -> Misc.Log.t
 
 val batch_mode_printer: report_printer
 
@@ -173,17 +180,17 @@ val best_toplevel_printer: unit -> report_printer
 
 (** {2 Printing a [report]} *)
 
-val print_report: formatter -> report -> unit
+val print_report: Misc.Log.t -> report -> unit
 (** Display an error or warning report. *)
 
-val report_printer: (unit -> report_printer) ref
+val report_printer: (unit -> full_report_printer) ref
 (** Hook for redefining the printer of reports.
 
     The hook is a [unit -> report_printer] and not simply a [report_printer]:
     this is useful so that it can detect the type of the output (a file, a
     terminal, ...) and select a printer accordingly. *)
 
-val default_report_printer: unit -> report_printer
+val default_report_printer: unit -> full_report_printer
 (** Original report printer for use in hooks. *)
 
 
@@ -203,9 +210,9 @@ val default_warning_reporter: t -> Warnings.t -> report option
 
 (** {2 Printing warnings} *)
 
-val formatter_for_warnings : formatter ref
+val log_for_warnings : Misc.Log.t ref
 
-val print_warning: t -> formatter -> Warnings.t -> unit
+val print_warning: t -> Misc.Log.t -> Warnings.t -> unit
 (** Prints a warning. This is simply the composition of [report_warning] and
    [print_report]. *)
 
@@ -229,12 +236,12 @@ val default_alert_reporter: t -> Warnings.alert -> report option
 
 (** {2 Printing alerts} *)
 
-val print_alert: t -> formatter -> Warnings.alert -> unit
+val print_alert: t -> Misc.Log.t -> Warnings.alert -> unit
 (** Prints an alert. This is simply the composition of [report_alert] and
    [print_report]. *)
 
 val prerr_alert: t -> Warnings.alert -> unit
-(** Same as [print_alert], but uses [!formatter_for_warnings] as output
+(** Same as [print_alert], but uses [!log_for_warnings] as output
    formatter. *)
 
 val deprecated: ?def:t -> ?use:t -> t -> string -> unit
@@ -283,5 +290,5 @@ exception Already_displayed_error
 val raise_errorf: ?loc:t -> ?sub:msg list ->
   ('a, Format.formatter, unit, 'b) format4 -> 'a
 
-val report_exception: formatter -> exn -> unit
+val report_exception: Misc.Log.t -> exn -> unit
 (** Reraise the exception if it is unknown. *)

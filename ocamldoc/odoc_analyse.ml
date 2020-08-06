@@ -89,7 +89,7 @@ let process_implementation_file sourcefile =
       begin match Location.error_of_exn exn with
       | Some (`Ok err) ->
           fprintf Format.err_formatter "@[%a@]@."
-            Location.print_report err
+            (fun ppf -> Location.print_report (Misc.Log.Direct ppf)) err
       | _ ->
           assert false
       end;
@@ -124,7 +124,7 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 (** Handle an error. *)
 
 let process_error exn =
-  try Location.report_exception Format.err_formatter exn
+  try Location.report_exception (Misc.Log.Direct Format.err_formatter) exn
   with exn ->
     fprintf Format.err_formatter
       "Compilation error(%s). Use the OCaml compiler to get more details.@."

@@ -152,7 +152,7 @@ let prepare ppf =
     Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
-    try Location.report_exception ppf x; false
+    try Location.report_exception (Direct ppf) x; false
     with x ->
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false
@@ -176,7 +176,7 @@ let input_argument name =
       let newargs = Array.sub !argv !current
                               (Array.length !argv - !current)
       in
-      Compenv.readenv ppf Before_link;
+      Compenv.readenv (Direct ppf) Before_link;
       Compmisc.read_clflags_from_env ();
       if prepare ppf && Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
@@ -211,10 +211,10 @@ let () =
 let main () =
   let ppf = Format.err_formatter in
   let program = "ocaml" in
-  Compenv.readenv ppf Before_args;
+  Compenv.readenv (Direct ppf) Before_args;
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
-  Compenv.readenv ppf Before_link;
+  Compenv.readenv (Direct ppf) Before_link;
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();

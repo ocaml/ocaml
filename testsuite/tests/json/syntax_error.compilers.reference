@@ -1,0 +1,14 @@
+{"error_report":
+    [{"info": {"kind": "error"},
+      "msg":
+         {"location":
+             {"file": "syntax_error.ml",
+              "lines": [13, 13],
+              "characters": [8, 10]
+             },
+          "content": "Syntax error"
+         },
+      "submsgs": []
+     }
+    ]
+}

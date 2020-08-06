@@ -82,11 +82,15 @@ val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 val print_exception_outcome : formatter -> exn -> unit
         (* Print an exception resulting from the evaluation of user code. *)
+val execute_phrase_with_log :
+  bool -> Misc.Log.t -> Parsetree.toplevel_phrase -> bool
 val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
         (* Execute the given toplevel phrase. Return [true] if the
            phrase executed with no errors and [false] otherwise.
            First bool says whether the values and types of the results
            should be printed. Uncaught exceptions are always printed. *)
+val preprocess_phrase_with_log :
+      Misc.Log.t -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
 val preprocess_phrase :
       formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
@@ -137,8 +141,8 @@ val max_printer_steps: int ref
 val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
-val print_error : formatter -> Location.error -> unit
-val print_warning : Location.t -> formatter -> Warnings.t -> unit
+val print_error : Misc.Log.t -> Location.error -> unit
+val print_warning : Location.t -> Misc.Log.t -> Warnings.t -> unit
 val input_name : string ref
 
 val print_out_value :

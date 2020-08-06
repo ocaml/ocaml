@@ -35,23 +35,25 @@ let backend = (module Backend : Backend_intf.S)
 
 
 module Options = Main_args.Make_optcomp_options (Main_args.Default.Optmain)
-let main argv ppf =
-  native_code := true;
-  let program = "ocamlopt" in
-  match
-    Compenv.readenv ppf Before_args;
-    Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
-    Clflags.add_arguments __LOC__
-      ["-depend", Arg.Unit Makedepend.main_from_option,
-       "<options> Compute dependencies \
-        (use 'ocamlopt -depend -help' for details)"];
-    Compenv.parse_arguments (ref argv) Compenv.anonymous program;
-    Compmisc.read_clflags_from_env ();
+
+let program = "ocamlopt"
+
+let process_arguments argv ppf =
+  Compenv.readenv (Direct ppf) Before_args;
+  Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+  Clflags.add_arguments __LOC__
+    ["-depend", Arg.Unit Makedepend.main_from_option,
+      "<options> Compute dependencies \
+      (use 'ocamlopt -depend -help' for details)"];
+  Compenv.parse_arguments (ref argv) Compenv.anonymous program;
+  Compmisc.read_clflags_from_env ()
+
+let process_main log =
     if !Clflags.plugin then
       Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
       Compenv.process_deferred_actions
-        (ppf,
+        (log,
          Optcompile.implementation ~backend,
          Optcompile.interface,
          ".cmx",
@@ -63,7 +65,7 @@ let main argv ppf =
         exit 2
       end
     end;
-    Compenv.readenv ppf Before_link;
+    Compenv.readenv log Before_link;
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;
@@ -128,13 +130,24 @@ let main argv ppf =
           let objs = Compenv.get_objfiles ~with_ocamlparam:true in
           Asmlink.link ~ppf_dump objs target);
       Warnings.check_fatal ();
-    end;
-  with
-  | exception (Compenv.Exit_with_status n) ->
-    n
-  | exception x ->
-    Location.report_exception ppf x;
-    2
+    end
+
+
+let main argv ppf =
+  native_code := true;
+  match process_arguments argv ppf with
+  | exception (Compenv.Exit_with_status n) -> n
   | () ->
-    Profile.print Format.std_formatter !Clflags.profile_columns;
-    0
+      let log = Location.init_log ppf in
+      match process_main log with
+      | exception (Compenv.Exit_with_status n) ->
+          Misc.Log.flush log;
+          n
+      | exception x ->
+          Location.report_exception log x;
+          Misc.Log.flush log;
+          2
+      | () ->
+          Profile.print Format.std_formatter !Clflags.profile_columns;
+          Misc.Log.flush log;
+          0

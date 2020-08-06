@@ -45,7 +45,7 @@ let check_file kind fn =
     try
       invariants kind ast
     with exn ->
-      Location.report_exception Format.std_formatter exn
+      Location.report_exception (Misc.Log.Direct Format.std_formatter) exn
 
 type file_kind =
   | Regular_file
