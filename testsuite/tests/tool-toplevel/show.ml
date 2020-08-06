@@ -40,7 +40,7 @@ type 'a option = None | Some of 'a
 
 #show option;;
 [%%expect {|
-type 'a option = None | Some of 'a
+type nonrec 'a option = None | Some of 'a
 |}];;
 
 #show Open_binary;;
@@ -59,7 +59,7 @@ type Stdlib.open_flag =
 
 #show open_flag;;
 [%%expect {|
-type open_flag =
+type nonrec open_flag =
     Open_rdonly
   | Open_wronly
   | Open_append
@@ -90,7 +90,7 @@ type extensible += B of int
 
 #show extensible;;
 [%%expect {|
-type extensible = ..
+type nonrec extensible = ..
 |}];;
 
 type 'a t = ..;;

@@ -556,7 +556,7 @@ let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
        let _path, desc = Env.lookup_type ~loc lid env in
-       [ Sig_type (id, desc, Trec_first, Exported) ]
+       [ Sig_type (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
 
