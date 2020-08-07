@@ -49,6 +49,8 @@ EXTRACAMLFLAGS=-nolabels
 EXTRACPPFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h
 
+unixLabels.cmi: \
+  EXTRACAMLFLAGS += -pp "$(AWK) -f $(ROOTDIR)/stdlib/expand_module_aliases.awk"
 
 include ../Makefile.otherlibs.common
 
