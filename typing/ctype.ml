@@ -2469,7 +2469,7 @@ let add_gadt_equation_decl env source destination decl =
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end
-  
+
 let rec occur_expand_head_opt env path ty =
   match try_expand_once_opt env ty with
   | {desc = Tconstr (path', _, _)} when Path.same path path' -> true
