@@ -325,6 +325,7 @@ let set_mode_pattern ~generate ~injective ~allow_recursive f =
 
 (*** Checks for type definitions ***)
 
+(*
 let in_current_module = function
   | Path.Pident _ -> true
   | Path.Pdot _ | Path.Papply _ -> false
@@ -333,6 +334,7 @@ let in_pervasives p =
   in_current_module p &&
   try ignore (Env.find_type p Env.initial_safe_string); true
   with Not_found -> false
+*)
 
 let is_datatype decl=
   match decl.type_kind with
@@ -1291,6 +1293,7 @@ let new_declaration expansion_scope manifest =
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
     type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+    type_ident = None;
   }
 
 let existential_name cstr ty = match repr ty with
@@ -1777,10 +1780,12 @@ let generic_private_abbrev env path =
     | _ -> false
   with Not_found -> false
 
-let is_contractive env p =
+let is_nominal decl = decl.type_ident <> None || is_datatype decl
+
+let is_nominal_path env p =
   try
     let decl = Env.find_type p env in
-    in_pervasives p && decl.type_manifest = None || is_datatype decl
+    is_nominal decl
   with Not_found -> false
 
 
@@ -1798,7 +1803,7 @@ let rec occur_rec env allow_recursive visited ty0 = function
   if ty == ty0  then raise Occur;
   match ty.desc with
     Tconstr(p, _tl, _abbrev) ->
-      if allow_recursive && is_contractive env p then () else
+      if allow_recursive && is_nominal_path env p then () else
       begin try
         if TypeSet.mem ty visited then raise Occur;
         let visited = TypeSet.add ty visited in
@@ -1855,7 +1860,7 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
     match ty.desc with
       Tconstr(p', args, _abbrev) ->
         if Path.same p p' then raise Occur;
-        if allow_rec && not strict && is_contractive env p' then () else
+        if allow_rec && not strict && is_nominal_path env p' then () else
         let visited = ty :: visited in
         begin try
           (* try expanding, since [p] could be hidden *)
@@ -2197,27 +2202,21 @@ let is_newtype env p =
     decl.type_private = Public
   with Not_found -> false
 
-let non_aliasable p decl =
-  (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
-
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
     decl.type_kind = Type_abstract &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
-    decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    decl.type_manifest = None
   with Not_found -> false
 
-
-(* PR#7113: -safe-string should be a global property *)
-let compatible_paths p1 p2 =
-  let open Predef in
-  Path.same p1 p2 ||
-  Path.same p1 path_bytes && Path.same p2 path_string ||
-  Path.same p1 path_string && Path.same p2 path_bytes
+let compatible_type_ident decl decl' =
+  match decl.type_ident, decl'.type_ident with
+  | Some (Some id1), Some (Some id2) -> id1 = id2
+  | Some (Some _), _ -> not (is_datatype decl')
+  | _, Some (Some _) -> not (is_datatype decl)
+  | _ -> true
 
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
@@ -2272,11 +2271,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
-            begin try
-              let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then raise (Unify [])
-            with Not_found -> ()
-            end
+            if is_nominal_path env p then raise (Unify [])
         (*
         | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
             mcomp_list type_pairs env tl1 tl2
@@ -2361,7 +2356,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if compatible_paths p1 p2 then begin
+    if Path.same p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2369,9 +2364,9 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
-      raise (Unify [])
-    else
+    end
+    else if not (compatible_type_ident decl decl') then raise (Unify [])
+    else begin
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2381,10 +2376,12 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract, Type_abstract -> ()
-      | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract when not (non_aliasable p2 decl') -> ()
+      | Type_abstract, _ | _, Type_abstract ->
+          if is_nominal decl && is_nominal decl'
+          && decl.type_params <> [] && decl'.type_params <> []
+          then mcomp_list type_pairs env tl1 tl2
       | _ -> raise (Unify [])
+    end
   with Not_found -> ()
 
 and mcomp_type_option type_pairs env t t' =
@@ -2458,6 +2455,27 @@ let add_gadt_equation env source destination =
     cleanup_abbrev ()
   end
 
+let add_gadt_equation_decl env source destination decl =
+  let expansion_scope =
+    max (Path.scope source) (get_gadt_equations_level ()) in
+  let ty = newgenty (Tconstr (destination, decl.type_params, ref Mnil)) in
+  let decl = { decl with
+               type_private = Public;
+               type_manifest = Some ty;
+               type_kind = Type_abstract;
+               type_is_newtype = true;
+               type_expansion_scope = expansion_scope } in
+  if local_non_recursive_abbrev !env source ty then begin
+    env := Env.add_local_type source decl !env;
+    cleanup_abbrev ()
+  end
+
+let rec occur_expand_head_opt env path ty =
+  match try_expand_once_opt env ty with
+  | {desc = Tconstr (path', _, _)} when Path.same path path' -> true
+  | ty -> occur_expand_head_opt env path ty
+  | exception Cannot_expand -> false
+
 let unify_eq_set = TypePairs.create 11
 
 let order_type_pair t1 t2 =
@@ -2470,6 +2488,7 @@ let eq_package_path env p1 p2 =
   Path.same p1 p2 ||
   Path.same (normalize_package_path env p1) (normalize_package_path env p2)
 
+let equal' = ref (fun _ _ _ _ -> assert false)
 let nondep_type' = ref (fun _ _ _ -> assert false)
 let package_subtype = ref (fun _ _ _ _ _ _ _ -> assert false)
 
@@ -2702,15 +2721,16 @@ and unify3 env t1 t1' t2 t2' =
             set_mode_pattern ~generate:!equations_generation ~injective:false
               ~allow_recursive:!allow_recursive_equation
               (fun () -> unify_list env tl1 tl2)
-          else if in_current_module p1 (* || in_pervasives p1 *)
-                  || List.exists (expands_to_datatype !env) [t1'; t1; t2] then
+          else let (ident, variance) =
+            try let decl = Env.find_type p1 !env in
+                (decl.type_ident, decl.type_variance)
+            with Not_found -> (None, List.map (fun _ -> Variance.unknown) tl1)
+          in
+          if ident <> None
+          || List.exists (expands_to_datatype !env) [t1'; t1; t2] then
             unify_list env tl1 tl2
           else
-            let inj =
-              try List.map Variance.(mem Inj)
-                    (Env.find_type p1 !env).type_variance
-              with Not_found -> List.map (fun _ -> false) tl1
-            in
+            let inj = List.map Variance.(mem Inj) variance in
             List.iter2
               (fun i (t1, t2) ->
                 if i then unify env t1 t2 else
@@ -2726,24 +2746,122 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (path,[],_),
          Tconstr (path',[],_))
         when is_instantiable !env path && is_instantiable !env path'
-        && can_generate_equations () ->
+        && can_generate_equations ()
+        && not (occur_expand_head_opt !env path t2' &&
+                occur_expand_head_opt !env path' t1') ->
+          (* incomplete w.r.t. failure: compatibility is not transitive *)
+          (* in particular we may forget a unique identifier *)
+          mcomp !env t1' t2';
           let source, destination =
             if Path.scope path > Path.scope path'
+            && not (occur_expand_head_opt !env path t2')
+            || occur_expand_head_opt !env path' t1'
             then  path , t2'
             else  path', t1'
           in
           record_equation t1' t2';
           add_gadt_equation env source destination
       | (Tconstr (path,[],_), _)
-        when is_instantiable !env path && can_generate_equations () ->
+        when is_instantiable !env path && can_generate_equations ()
+        && not (occur_expand_head_opt !env path t2') ->
           reify env t2';
+          mcomp !env t1' t2';
           record_equation t1' t2';
           add_gadt_equation env path t2'
       | (_, Tconstr (path,[],_))
-        when is_instantiable !env path && can_generate_equations () ->
+        when is_instantiable !env path && can_generate_equations ()
+        && not (occur_expand_head_opt !env path t1') ->
           reify env t1';
+          mcomp !env t1' t2';
           record_equation t1' t2';
           add_gadt_equation env path t1'
+      | (Tconstr (p1,tl1,_), Tconstr (p2,tl2,_))
+        when can_generate_equations () && List.length tl1 = List.length tl2 ->
+          reify env t1';
+          reify env t2';
+          mcomp !env t1' t2';
+          begin match Env.find_type p1 !env, Env.find_type p2 !env with
+          | decl1, decl2 ->
+              let newgenconstr p decl =
+                newgenty (Tconstr(p, decl.type_params, ref Mnil)) in
+              let is_abstract decl = decl.type_kind = Type_abstract in
+              (* Compute the real nominal status of a type *)
+              let get_ident p decl =
+                let ident = decl.type_ident in
+                if ident = None && not (is_abstract decl) then Some None else
+                let expand =
+                  ident = None && is_abstract decl &&
+                  decl.type_private = Private in
+                (* Only expand private abbreviations *)
+                if not expand then ident else
+                let t = newgenconstr p decl in
+                let t' = expand_head_opt !env t in
+                if t == t' then ident else
+                try match t'.desc with
+                | Tconstr (p', tyl, _) ->
+                    let decl' = Env.find_type p' !env in
+                    if is_nominal decl'
+                    && !equal' !env false decl.type_params tyl
+                    && !equal' !env true decl'.type_params tyl
+                    then decl'.type_ident else ident
+                | _ -> ident
+                with Not_found -> ident
+              in
+              let abs1 = is_abstract decl1 and abs2 = is_abstract decl2 in
+              let ident1 = get_ident p1 decl1 and ident2 = get_ident p2 decl2 in
+              if (abs1 || abs2)
+              && (decl1.type_arity = 0 || ident1 <> None && ident2 <> None)
+              then begin
+                unify_list env tl1 tl2;
+                let abs1, abs2, body1, body2 =
+                  match abs1, decl1.type_private, decl1.type_manifest,
+                    abs2, decl2.type_private, decl2.type_manifest with
+                  | true, Public, None, true, Public, None ->
+                      true, true, [], []
+                  | true, Public, None, true, Private, Some ty2 ->
+                      if occur_expand_head_opt !env p1 t2' then
+                        false, true, [newgenconstr p1 decl1], [ty2]
+                      else
+                        true, false, [], []
+                  | true, Private, Some ty1, true, Public, None ->
+                      if occur_expand_head_opt !env p2 t1' then
+                        true, false, [ty1], [newgenconstr p2 decl2]
+                      else
+                        false, true, [], []
+                  | true, Public, None, false, _, _ ->
+                      true, false, [], []
+                  | false, _, _, true, Public, None ->
+                      false, true, [], []
+                  | true, Private, Some ty1, true, Private, Some ty2 ->
+                      true, true, [ty1], [ty2]
+                  | true, Private, Some ty1, false, _, _ ->
+                      true, false, [ty1], [newgenconstr p2 decl2]
+                  | false, _, _, true, Private, Some ty2 ->
+                      false, true, [newgenconstr p1 decl1], [ty2]
+                  | _ -> assert false
+                in
+                let types1 = decl1.type_params @ body1
+                and types2 = decl2.type_params @ body2 in
+                if !equal' !env true types1 types2 then
+                let source, destination, decl =
+                  if abs1 && abs2 && decl1.type_ident = decl2.type_ident then
+                    if Path.scope p1 > Path.scope p2
+                    && not (occur_expand_head_opt !env p1 t2')
+                    || occur_expand_head_opt !env p2 t1'
+                    then  p1, p2, decl2
+                    else  p2, p1, decl1
+                  else
+                    if abs1 && not abs2 then p1, p2, decl2 else
+                    if abs2 && not abs1 then p2, p1, decl1 else
+                    match decl2.type_ident with
+                    | Some (Some _) -> p1, p2, decl2
+                    | Some _ when decl1.type_ident = None -> p1, p2, decl2
+                    | _             -> p2, p1, decl1
+                in
+                add_gadt_equation_decl env source destination decl
+              end
+          | exception Not_found -> ()
+          end
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
@@ -3695,6 +3813,8 @@ let equal env rename tyl1 tyl2 =
   with
     Unify _ -> false
 
+
+let () = equal' := equal
 
                           (*************************)
                           (*  Class type matching  *)
@@ -4730,6 +4850,7 @@ let nondep_type_decl env mid is_covariant decl =
       type_immediate = decl.type_immediate;
       type_unboxed = decl.type_unboxed;
       type_uid = decl.type_uid;
+      type_ident = decl.type_ident;
     }
   with Nondep_cannot_erase _ as exn ->
     clear_hash ();

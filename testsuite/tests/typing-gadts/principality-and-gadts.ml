@@ -132,13 +132,6 @@ let f1 t1 =
   | MAB -> false;;
 [%%expect{|
 val f1 : unit ab M.t -> bool = <fun>
-|}, Principal{|
-Line 4, characters 4-7:
-4 |   | MAB -> false;;
-        ^^^
-Warning 18 [not-principal]: typing this pattern requires considering unit M.mab and unit ab as equal.
-But the knowledge of these types is not principal.
-val f1 : unit ab M.t -> bool = <fun>
 |}]
 
 let f2 (type x) t1 =
@@ -169,13 +162,6 @@ let f3 t1 =
   | AB -> true
   | MAB -> false;;
 [%%expect{|
-val f3 : unit ab M.t -> bool = <fun>
-|}, Principal{|
-Line 5, characters 4-7:
-5 |   | MAB -> false;;
-        ^^^
-Warning 18 [not-principal]: typing this pattern requires considering unit M.mab and unit ab as equal.
-But the knowledge of these types is not principal.
 val f3 : unit ab M.t -> bool = <fun>
 |}]
 

@@ -4,8 +4,8 @@
 
 open Set.Make(String);;
 [%%expect{|
+type t = Set.Make(String).t [@@nominal "Set.Make.t"]
 type elt = String.t
-type t = Set.Make(String).t
 val empty : t = <abstr>
 val is_empty : t -> bool = <fun>
 val mem : elt -> t -> bool = <fun>

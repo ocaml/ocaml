@@ -496,6 +496,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             type_immediate = Unknown;
             type_unboxed = unboxed_false_default_false;
             type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+            type_ident = None;
           }
         and id_row = Ident.create_local (s^"#row") in
         let initial_env =

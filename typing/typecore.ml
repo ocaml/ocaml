@@ -3553,6 +3553,7 @@ and type_expect_
         type_immediate = Unknown;
         type_unboxed = unboxed_false_default_false;
         type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+        type_ident = None;
       }
       in
       let scope = create_scope () in

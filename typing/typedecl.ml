@@ -123,6 +123,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
       type_uid = uid;
+      type_ident = None;
     }
   in
   add_type ~check:true id decl env
@@ -396,6 +397,10 @@ let transl_declaration env sdecl (id, uid) =
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type
     in
+    let ident =
+      if man <> None && kind = Type_abstract then None else
+      Builtin_attributes.nominal sdecl.ptype_attributes
+    in
     let arity = List.length params in
     let decl =
       { type_params = params;
@@ -412,6 +417,7 @@ let transl_declaration env sdecl (id, uid) =
         type_immediate = Unknown;
         type_unboxed = unboxed_status;
         type_uid = uid;
+        type_ident = ident;
       } in
 
   (* Check constraints *)
@@ -620,7 +626,7 @@ let check_well_founded env loc path to_check ty =
     let rec_ok =
       match ty.desc with
         Tconstr(p,_,_) ->
-          !Clflags.recursive_types && Ctype.is_contractive env p
+          !Clflags.recursive_types && Ctype.is_nominal_path env p
       | Tobject _ | Tvariant _ -> true
       | _ -> !Clflags.recursive_types
     in
@@ -1413,11 +1419,13 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
     ) sdecl.ptype_cstrs
   in
   let no_row = not (is_fixed_type sdecl) in
-  let (tman, man) =  match sdecl.ptype_manifest with
-      None -> None, None
+  let (tman, man, ident) =  match sdecl.ptype_manifest with
+      None ->
+        None, None,
+        Builtin_attributes.nominal sdecl.ptype_attributes
     | Some sty ->
         let cty = transl_simple_type env no_row sty in
-        Some cty, Some cty.ctyp_type
+        Some cty, Some cty.ctyp_type, None
   in
   (* In the second part, we check the consistency between the two
      declarations and compute a "merged" declaration; we now need to
@@ -1470,6 +1478,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
       type_immediate = Unknown;
       type_unboxed;
       type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      type_ident = ident;
     }
   in
   begin match row_path with None -> ()
@@ -1509,6 +1518,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
       type_loc = new_sig_decl.type_loc;
       type_attributes = new_sig_decl.type_attributes;
       type_uid = new_sig_decl.type_uid;
+      type_ident = new_sig_decl.type_ident;
 
       type_variance = new_type_variance;
       type_immediate = new_type_immediate;
@@ -1550,6 +1560,7 @@ let abstract_type_decl arity =
       type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
       type_uid = Uid.internal_not_actually_unique;
+      type_ident = None;
      } in
   Ctype.end_def();
   generalize_decl decl;

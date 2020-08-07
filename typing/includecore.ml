@@ -167,6 +167,11 @@ type extension_constructor_mismatch =
                             * Types.extension_constructor
                             * constructor_mismatch
 
+type ident_mismatch =
+  | Ident_other of string * string
+  | Ident_added of string option
+  | Ident_removed of string
+
 type type_mismatch =
   | Arity
   | Privacy
@@ -178,6 +183,7 @@ type type_mismatch =
   | Variant_mismatch of variant_mismatch
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
+  | Ident_mismatch of ident_mismatch
 
 let report_label_mismatch first second ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -252,6 +258,21 @@ let report_extension_constructor_mismatch first second decl ppf err =
         (Printtyp.extension_only_constructor id) ext2
         (report_constructor_mismatch first second decl) err
 
+let report_ident_mismatch ppf err =
+  let pr fmt = Format.fprintf ppf fmt in
+  match err with
+  | Ident_other (id1, id2) ->
+      pr "@[<hv>%s:@;<1 2>\"%s\"@ %s@;<1 2>\"%s\"@]"
+        "Nominal identifiers do not match" id1 "is not compatible with" id2
+  | Ident_added (Some id) ->
+      pr "@[<hv>Nominal identifier@;<1 2>\"%s\"@ %s@]"
+        id "was not present in original declaration"
+  | Ident_added None ->
+      pr "The original declaration was not nominal"
+  | Ident_removed id ->
+      pr "@[<hv>Nominal identifier@;<1 2>\"%s\"@ %s@]"
+        id "was removed without abstracting the datatype"
+
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
@@ -267,6 +288,7 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s."
          (choose ord first second) decl
          "uses unboxed representation"
+  | Ident_mismatch err -> report_ident_mismatch ppf err
   | Immediate violation ->
       let first = StringLabels.capitalize_ascii first in
       match violation with
@@ -413,6 +435,38 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | _, true, false -> Some (Unboxed_representation First)
     | _, false, true -> Some (Unboxed_representation Second)
     | _ -> None
+  in
+  if err <> None then err else
+  let err =
+    let decl1 =
+      if decl1.type_kind <> Type_abstract then decl1 else
+      match decl1.type_manifest with
+      | None -> decl1
+      | Some ty ->
+          try match Ctype.expand_head_opt env ty with
+          | {desc=Tconstr (p, tl, _)} ->
+              let decl2 = Env.find_type p env in
+              if decl1.type_params = []
+              || Ctype.equal env false decl1.type_params tl
+              && Ctype.equal env true tl decl2.type_params then decl2
+              else decl1
+          | _ -> decl1
+          with Not_found -> decl1
+    in
+    match decl1.type_ident, decl2.type_ident with
+    | Some (Some id1), Some (Some id2) ->
+        if id1 = id2 then None else
+        Some (Ident_mismatch (Ident_other (id1, id2)))
+    | Some None, Some (Some id) ->
+        Some (Ident_mismatch (Ident_added (Some id)))
+    | Some (Some id), (None | Some None) when
+      decl1.type_kind <> Type_abstract && decl2.type_kind <> Type_abstract ->
+        Some (Ident_mismatch (Ident_removed id))
+    | Some _, Some None
+    | _, None -> None
+    | None, Some None when decl1.type_kind <> Type_abstract -> None
+    | None, Some id2 ->
+        Some (Ident_mismatch (Ident_added id2))
   in
   if err <> None then err else
   let err = match (decl1.type_kind, decl2.type_kind) with

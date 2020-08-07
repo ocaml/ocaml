@@ -24,7 +24,7 @@ type 'a t = {
   mutable length: int;
   mutable first: 'a cell;
   mutable last: 'a cell
-}
+} [@@nominal "Queue.t"]
 
 let create () = {
   length = 0;

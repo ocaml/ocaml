@@ -1241,7 +1241,7 @@ let rec tree_of_type_decl id decl =
             and (co, cn) = Variance.get_upper v in
             (if not cn then Covariant else
              if not co then Contravariant else NoVariance),
-            (if inj then Injective else NoInjectivity)
+            (if inj && decl.type_ident = None then Injective else NoInjectivity)
           else (NoVariance, NoInjectivity))
         decl.type_params decl.type_variance
     in
@@ -1280,7 +1280,8 @@ let rec tree_of_type_decl id decl =
       otype_private = priv;
       otype_immediate = Type_immediacy.of_attributes decl.type_attributes;
       otype_unboxed = decl.type_unboxed.unboxed;
-      otype_cstrs = constraints }
+      otype_cstrs = constraints;
+      otype_ident = decl.type_ident }
 
 and tree_of_constructor_arguments = function
   | Cstr_tuple l -> tree_of_typlist false l
@@ -1614,6 +1615,7 @@ let dummy =
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
     type_uid = Uid.internal_not_actually_unique;
+    type_ident = None;
   }
 
 let hide ids env = List.fold_right

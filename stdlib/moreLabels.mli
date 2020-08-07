@@ -178,6 +178,8 @@ module Map : sig
       val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
       val of_seq : (key * 'a) Seq.t -> 'a t
   end
+  module type S_nominal =
+    sig type +'a t [@@nominal "Map.Make.t"] include S with type 'a t := 'a t end
   module Make : functor (Ord : OrderedType) -> S
     with type key = Ord.t
      and type 'a t = 'a Map.Make(Ord).t
@@ -232,6 +234,8 @@ module Set : sig
       val add_seq : elt Seq.t -> t -> t
       val of_seq : elt Seq.t -> t
     end
+  module type S_nominal =
+    sig type t [@@nominal "Set.Make.t"] include S with type t := t end
   module Make : functor (Ord : OrderedType) -> S
     with type elt = Ord.t
      and type t = Set.Make(Ord).t
