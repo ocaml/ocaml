@@ -1220,7 +1220,7 @@ val getuid : unit -> int
 val geteuid : unit -> int
 (** Return the effective user id under which the process runs.
 
-   On Windows: always return [1]. *)
+   On Windows: always returns [1]. *)
 
 val setuid : int -> unit
 (** Set the real user id and effective user id for the process.
@@ -1246,7 +1246,7 @@ val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
    belongs.
 
-   On Windows, always return [[|1|]]. *)
+   On Windows: always returns [[|1|]]. *)
 
 val setgroups : int array -> unit
 (** [setgroups groups] sets the supplementary group IDs for the
