@@ -118,6 +118,7 @@ _build
 /ocamltest/ocamltest
 /ocamltest/ocamltest.opt
 /ocamltest/ocamltest_config.ml
+/ocamltest/ocamltest_unix.ml
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
@@ -163,6 +164,7 @@ _build
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
 /otherlibs/win32unix/fsync.c
+/otherlibs/win32unix/mkdir.c
 
 /parsing/parser.ml
 /parsing/parser.mli

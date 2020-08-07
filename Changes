@@ -178,6 +178,10 @@ Working version
   table format and generic hash function that were in use before OCaml 4.00.
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #9797: Add Sys.mkdir and Sys.rmdir.
+  (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
+   Xavier Leroy)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
@@ -298,6 +302,12 @@ Working version
 - #9778: Fix printing for bindings where polymorphic type annotations and
   attributes are present.
   (Matthew Ryan, review by Nicolás Ojeda Bär)
+
+- #9797: Eliminate the routine use of external commands in ocamltest. ocamltest
+  no longer calls the mkdir, rm and ln external commands (at present, the only
+  external command ocamltest uses is diff).
+  (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
+   Xavier Leroy)
 
 ### Build system:
 
