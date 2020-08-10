@@ -70,6 +70,5 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
       }
     }
   }
-  /* Hook */
   caml_scan_stack(f, fdata, current_stack);
 }
