@@ -328,7 +328,7 @@ Working version
 - #9804: Build C stubs of libraries in otherlibs/ with debug info.
   (Stephen Dolan, review by Sébastien Hinderer and David Allsopp)
 
-- #9824: Honour the CFLAGS and CPPFLAGS variables.
+- #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
   (Sébastien Hinderer, review by David Allsopp)
 
 ### Bug fixes:
