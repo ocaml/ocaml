@@ -111,12 +111,6 @@ export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 # Cleanup repository
 git clean -q -f -d -x
 
-# Ensure that the repo still passes the check-typo script
-if [ ! -x tools/check-typo ] ; then
-  error "tools/check-typo does not appear to be executable?"
-fi
-tools/check-typo
-
 #########################################################################
 
 echo "======== old school build =========="
