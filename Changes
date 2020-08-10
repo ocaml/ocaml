@@ -128,6 +128,10 @@ Working version
    so that the ARM64 iOS/macOS calling conventions can be honored.
    (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
 
+- #9838: Ensure that Cmm immediates are generated as Cconst_int where
+  possible, improving instruction selection.
+  (Stephen Dolan, review by Leo White and Xavier Leroy)
+
 ### Standard library:
 
 - #9781: add injectivity annotations to parameterized abstract types
