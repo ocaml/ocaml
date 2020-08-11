@@ -361,10 +361,6 @@ Working version
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
 
-- #9714, #9724: Add a terminator to the`caml_domain_state` structure
-  to better ensure that members are correctly spaced.
-  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
-
 - #9759, #9767: Spurious GADT ambiguity without -principal
   (Jacques Garrigue, report by Thomas Refis,
    review by Thomas Refis and Gabriel Scherer)
@@ -919,6 +915,10 @@ OCaml 4.11
 
 - #9695, #9702: no error when opening an alias to a missing module
   (Jacques Garrigue, report and review by Gabriel Scherer)
+
+- #9714, #9724: Add a terminator to the`caml_domain_state` structure
+  to better ensure that members are correctly spaced.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
 OCaml 4.10 maintenance branch
 -----------------------------
