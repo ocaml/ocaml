@@ -361,10 +361,8 @@ Working version
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
 
-- #9714, #9724: Use the C++ alignas keyword when compiling in C++.
-  Fixes a bug with MSVC C++ 2015/2017. Add a terminator to the
-  `caml_domain_state` structure to better ensure that members are
-  correctly spaced.
+- #9714, #9724: Add a terminator to the`caml_domain_state` structure
+  to better ensure that members are correctly spaced.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
 - #9759, #9767: Spurious GADT ambiguity without -principal
@@ -945,6 +943,10 @@ OCaml 4.10 maintenance branch
   would not execute `at_exit` hooks at program termination (in particular,
   output channels would not be flushed).
   (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #9714, #9724: Use the C++ alignas keyword when compiling in C++ in MSVC.
+  Fixes a bug with MSVC C++ 2015 onwards.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
 - #9736, #9749: Compaction must start in a heap where all free blocks are
   blue, which was not the case with the best-fit allocator.
