@@ -220,6 +220,10 @@ Working version
   (Xavier Leroy, report by Jacques Garrigue and Virgile Prevosto,
   review by David Allsopp and Jacques-Henri Jourdan)
 
+* #9299, #9795: ocamldep: do not process files during cli parsing. Fixes
+  various broken cli behaviours.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär)
+
 ### Manual and documentation:
 
 - #9468: HACKING.adoc: using dune to get merlin's support
@@ -567,10 +571,6 @@ OCaml 4.11
    review by Gabriel Scherer and David Allsopp)
 
 ### Tools:
-
-* #9299: ocamldep: do not process files during cli parsing. Fixes
-  various broken cli behaviours.
-  (Daniel Bünzli, review by Nicolás Ojeda Bär)
 
 - #6969: Argument -nocwd added to ocamldep
   (Muskan Garg, review by Florian Angeletti)
