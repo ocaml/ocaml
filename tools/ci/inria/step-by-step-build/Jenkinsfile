@@ -20,8 +20,9 @@
 pipeline {
   agent { label 'ocaml-linux-64' }
   stages {
-    stage('Building the OCaml compiler step by step ' +
-      + '(without using the world.opt target)') {
+    stage(
+      'Building the OCaml compiler step by step (without using world.opt)'
+    ) {
       steps {
         sh 'tools/ci/inria/step-by-step-build/script'
       }
