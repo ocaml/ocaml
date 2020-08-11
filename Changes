@@ -595,10 +595,6 @@ OCaml 4.11
   from a different (older or newer), incompatible compiler version.
   (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
-- #9181: make objinfo work on Cygwin and look for the caml_plugin_header
-  symbol in both the static and the dynamic symbol tables.
-  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
-
 * #9197: remove compatibility logic from #244 that was designed to
   synchronize toplevel printing margins with Format.std_formatter,
   but also resulted in unpredictable/fragile changes to formatter
@@ -1270,6 +1266,10 @@ OCaml 4.10.0 (21 February 2020)
 
 - #9127, #9130: ocamldoc: fix the formatting of closing brace in record types.
   (David Allsopp, report by San Vu Ngoc)
+
+- #9181: make objinfo work on Cygwin and look for the caml_plugin_header
+  symbol in both the static and the dynamic symbol tables.
+  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
 
 ### Build system:
 
