@@ -650,6 +650,9 @@ OCaml 4.11
 - #9325: documented base case for `List.for_all` and `List.exists`
   (Glenn Slotte, review by Florian Angeletti)
 
+- #9327, #9401: manual, fix infix attribute examples
+  (Florian Angeletti, report by David Cadé, review by Gabriel Scherer)
+
 - #9403: added a description for warning 67 and added a "." at the end of
   warnings for consistency.
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
@@ -1656,9 +1659,6 @@ OCaml 4.09.0 (19 September 2019)
 
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
-
-- #9327, #9401: manual, fix infix attribute examples
-  (Florian Angeletti, report by David Cadé, review by Gabriel Scherer)
 
 ### Tools:
 
