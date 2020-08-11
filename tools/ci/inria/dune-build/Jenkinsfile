@@ -25,7 +25,7 @@ pipeline {
     }
   }
   post {
-    failure {
+    regression {
       emailext (
         to: 'Sebastien.Hinderer@inria.fr, thomas.refis@gmail.com',
         subject: 'Job $JOB_NAME $BUILD_STATUS (build #$BUILD_NUMBER)',
