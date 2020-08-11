@@ -654,6 +654,9 @@ OCaml 4.11
   warnings for consistency.
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
+- #9410, #9422: replaced naive fibonacci example with gcd
+  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
+
 - #7708, #9580: Ensure Stdlib documentation index refers to Stdlib.
   (Stephen Dolan, review by Florian Angeletti, report by Hannes Mehnert)
 
@@ -2249,9 +2252,6 @@ OCaml 4.08.0 (13 June 2019)
 
 - #8508: refresh \moduleref macro
   (Florian Angeletti, review by Gabriel Scherer)
-
-- 9410: replaced fibonacci example with gcd of coreexamples manual
-  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
 
 ### Code generation and optimizations:
 
