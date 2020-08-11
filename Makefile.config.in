@@ -254,10 +254,10 @@ ifeq "$(TOOLCHAIN)" "msvc"
   MERGEMANIFESTEXE=test ! -f $(1).manifest \
           || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
           && rm -f $(1).manifest
-  MKEXE_BOOT=$(CC) $(OUTPUTEXE)$(1) $(2) \
+  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) \
     /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
 else
-  MKEXE_BOOT=$(CC) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
 endif # ifeq "$(TOOLCHAIN)" "msvc"
 
 # The following variables were defined only in the Windows-specific makefiles.
