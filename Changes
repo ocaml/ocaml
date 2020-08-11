@@ -205,6 +205,10 @@ Working version
   error handling when Unix.symlink is unavailable)
   (David Allsopp, review by Xavier Leroy)
 
+- #9338, #9790: Dynlink: make sure *_units () functions report accurate
+  information before the first load.
+  (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
+
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
@@ -548,10 +552,6 @@ OCaml 4.11
   (David Allsopp, report by Nathaniel Wesley Filardo, review by Xavier Leroy)
 
 ### Other libraries:
-
-- #9338: Dynlink: make sure *_units () functions report accurate information
-  before the first load.
-  (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann, review by David Allsopp)
