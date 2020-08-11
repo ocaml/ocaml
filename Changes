@@ -772,6 +772,9 @@ OCaml 4.11
   compilerlibs, dynlink, ocamltest.
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
 
+- #9275: Short circuit simple inclusion checks
+  (Leo White, review by Thomas Refis)
+
 - #9305: Avoid polymorphic compare in Ident
   (Leo White, review by Xavier Leroy and Gabriel Scherer)
 
@@ -1727,9 +1730,6 @@ OCaml 4.09.0 (19 September 2019)
 - #8598: Replace "not is_nonexpansive" by "maybe_expansive".
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)
-
-- #9275: Short circuit simple inclusion checks
-  (Leo White, review by Thomas Refis)
 
 ### Compiler distribution build system:
 
