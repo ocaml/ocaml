@@ -945,7 +945,7 @@ OCaml 4.10 maintenance branch
 
 - #9736, #9749: Compaction must start in a heap where all free blocks are
   blue, which was not the case with the best-fit allocator.
-  (Damien Doligez, report by Leo White, review by ???)
+  (Damien Doligez, report and review by Leo White)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
@@ -1488,14 +1488,14 @@ OCaml 4.09.1 (16 Mars 2020)
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
 
-- #9144, #9180: multiple definitions of global variables in the C runtime,
-  causing problems with GCC 10.0 and possibly with other C compilers
-  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
-
 - #9180: pass -fno-common option to C compiler when available,
   so as to detect problematic multiple definitions of global variables
   in the C runtime
   (Xavier Leroy, review by Mark Shinwell)
+
+- #9144, #9180: multiple definitions of global variables in the C runtime,
+  causing problems with GCC 10.0 and possibly with other C compilers
+  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
 
 - #9128: Fix a bug in bytecode mode which could lead to a segmentation
   fault. The bug was caused by the fact that the atom table shared a
