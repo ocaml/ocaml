@@ -705,6 +705,9 @@ OCaml 4.11
   from intermediate-representation dumps (-dfoo).
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #9349: Support [@inlined hint] attribute.
+  (Leo White, review by Stephen Dolan)
+
 - #9393: Improve recursive module usage warnings
   (Leo White, review by Thomas Refis)
 
@@ -2971,9 +2974,6 @@ OCaml 4.07.0 (10 July 2018)
   "-output-complete-obj". Previously, it was always linked in only on some
   platforms, making this option unusable on platforms where it wasn't.
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
-
-- #9349: Support [@inlined hint] attribute.
-  (Leo White, review by Stephen Dolan)
 
 ### Runtime system:
 
