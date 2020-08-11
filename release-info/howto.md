@@ -234,6 +234,9 @@ opam switch create --repo=local,beta=git+https://github.com/ocaml/ocaml-beta-rep
 ```
 The switch should build.
 
+For a production release, you also need to create new opam files for the ocaml-manual and
+ocaml-src packages.
+
 ## 6.1 Update OPAM dev packages after branching
 
 Create a new ocaml/ocaml.$NEXT/opam file.
