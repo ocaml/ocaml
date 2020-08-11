@@ -892,6 +892,9 @@ OCaml 4.11
 * #9388: Prohibit signature local types with constraints
   (Leo White, review by Jacques Garrigue)
 
+- #7141, #9389: returns exit_code for better user response on linking_error
+  (Anukriti Kumar, review by Gabriel Scherer and Valentin Gatien-Baron)
+
 - #9406, #9409: fix an error with packed module types from missing
   cmis.
   (Florian Angeletti, report by Thomas Leonard, review by Gabriel Radanne
@@ -1470,9 +1473,6 @@ OCaml 4.10.0 (21 February 2020)
 
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
-
-- #9389: returns exit_code for better user response on linking_error
-  (Anukriti Kumar, review by Gabriel Scherer and sliquister)
 
 OCaml 4.09 maintenance branch
 -----------------------------
