@@ -631,9 +631,6 @@ OCaml 4.11
   on length of Sys.command argument.
   (Xavier Leroy, report by Jérémie Dimino, review by David Allsopp)
 
-- #9552: restore ocamloptp build and installation
-  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
-
 ### Manual and documentation:
 
 - #8644: fix formatting comment about @raise in stdlib's mli files
@@ -951,6 +948,11 @@ OCaml 4.10 maintenance branch
 - #9736, #9749: Compaction must start in a heap where all free blocks are
   blue, which was not the case with the best-fit allocator.
   (Damien Doligez, report and review by Leo White)
+
+### Tools:
+
+- #9552: restore ocamloptp build and installation
+  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
