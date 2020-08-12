@@ -1213,7 +1213,7 @@ OCaml 4.10 maintenance branch
 - #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
   (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
 
-- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+- #9165, #9840: Add missing -function-sections flag in Makefiles.
   (Greta Yorsh, review by David Allsopp)
 
 - #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`
