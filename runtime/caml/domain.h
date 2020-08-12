@@ -78,11 +78,19 @@ struct detailed_stats {
 void caml_sample_gc_stats(struct gc_stats* buf);
 void caml_print_stats(void);
 
+CAMLexport int caml_bt_is_bt_working(void);
+CAMLexport void caml_bt_enter_ocaml(void);
+CAMLexport void caml_bt_exit_ocaml(void);
+CAMLexport void caml_bt_acquire_domain_lock(void);
+CAMLexport void caml_bt_release_domain_lock(void);
+
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
+
+CAMLextern void (*caml_domain_start_hook)(void);
 
 void caml_init_domains(uintnat minor_heap_size);
 void caml_init_domain_self(int);

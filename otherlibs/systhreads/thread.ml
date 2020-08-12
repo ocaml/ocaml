@@ -25,12 +25,12 @@ let create fn arg =
              flush stdout; flush stderr;
              dec_uncaught_exception exn)
 
-let () = dec_initialize ()
-
 let join = dec_join
 let yield = dec_yield
 let preempt signal = yield ()
 let delay = Unix.sleepf
+
+let () = dec_initialize ()
 
 let kill th = invalid_arg "Thread.kill: not implemented"
 
