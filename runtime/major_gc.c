@@ -397,20 +397,14 @@ static intnat get_major_slice_work(intnat howmuch) {
   intnat computed_work;
 
   /* calculate how much work to do now */
-  if (howmuch == -1) {
-    /* auto-triggered GC slice */
+  if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
+      howmuch == GC_CALCULATE_MAJOR_SLICE) {
     computed_work = (dom_st->major_work_todo > 0)
       ? dom_st->major_work_todo
       : 0;
   } else {
-    /* forced or opportunistic GC slice */
-    if (howmuch == 0) {
-      computed_work = (dom_st->major_work_todo > 0)
-        ? dom_st->major_work_todo
-        : 0;
-    } else {
-      computed_work = howmuch;
-    }
+    /* forced or opportunistic GC slice with explicit quantity */
+    computed_work = howmuch;
   }
 
   /* TODO: do we want to do anything more complex or simplify the above? */
@@ -1259,9 +1253,9 @@ intnat caml_major_collection_slice(intnat howmuch)
   intnat work_left;
 
   /* if this is an auto-triggered GC slice, make it interruptible */
-  if (howmuch == -1) {
-    work_left = major_collection_slice(-1, 0, 0, Slice_interruptible);
-    if (get_major_slice_work(-1) > 0) {
+  if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE) {
+    work_left = major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE, 0, 0, Slice_interruptible);
+    if (get_major_slice_work(AUTO_TRIGGERED_MAJOR_SLICE) > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
       caml_request_major_slice();
     }
