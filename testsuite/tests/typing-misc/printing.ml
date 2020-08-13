@@ -115,5 +115,4 @@ Line 4, characters 7-29:
            ^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type int but an expression was expected of type
          int list -> 'a
-       The type int occurs inside int list -> 'a
 |}]

@@ -2097,9 +2097,12 @@ let explanation intro prev env = function
                  marked_type_expr x marked_type_expr y)
       | _ ->
           (* We had a delayed unification of the type variable with
-           *  a non-variable after the occur check *)
-          Some(dprintf "@,@[<hov>The type %a occurs inside@ %a@]"
-                 marked_type_expr x marked_type_expr y)
+             a non-variable after the occur check. *)
+          Some ignore
+           (* There is no need to search further for an explanation, but
+              we don't want to print a message of the form:
+                {[ The type int occurs inside int list -> 'a |}
+           *)
       end
 
 let mismatch intro env trace =
