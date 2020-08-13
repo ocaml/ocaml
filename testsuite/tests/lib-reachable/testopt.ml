@@ -3,32 +3,34 @@
    include dynlink
    files = "plugin.ml"
 
-   * setup-ocamlopt.opt-build-env
-   ** ocamlopt.opt
+   * naked_pointers (* output is slightly but not meaningfully different in no-naked-pointers build *)
+   ** shared-libraries
+   *** setup-ocamlopt.opt-build-env
+   **** ocamlopt.opt
    program2 = "testopt.exe"
-   *** ocamlopt.opt
+   ***** ocamlopt.opt
    flags = "-shared"
    program2 = "plugin.cmxs"
    all_modules = "plugin.ml"
-   **** run
+   ****** run
    program = "./testopt.exe"
    output = "${test_build_directory}/ocamlopt.opt.output"
-   ***** no-flambda
-   ****** not-windows
-   ******* arch64
-   ******** check-program-output
+   ******* no-flambda
+   ******** not-windows
+   ********* arch64
+   ********** check-program-output
    reference = "${test_source_directory}/testopt64.reference"
 
-   ******* arch32
-   ******** check-program-output
+   ********* arch32
+   ********** check-program-output
    reference = "${test_source_directory}/testopt32.reference"
 
-   ***** flambda
-   ****** check-program-output
+   ******* flambda
+   ******** check-program-output
    reference = "${test_source_directory}/testoptflambda.reference"
 
-   ***** windows
-   ****** check-program-output
+   ******* windows
+   ******** check-program-output
    reference = "${test_source_directory}/testoptwin.reference"
 *)
 

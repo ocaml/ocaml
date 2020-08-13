@@ -10,7 +10,7 @@ Dynamic globals:
      60001 field   0 Plugin
      60001 field   0 Plugin
 
-Called from Testopt.g in file "testopt.ml", line 75, characters 2-6
+Called from Testopt.g in file "testopt.ml", line 77, characters 2-6
      50001 field   0 (frame 0)
      40001 field   1 (frame 0)
      30001 field   2 (frame 0)
