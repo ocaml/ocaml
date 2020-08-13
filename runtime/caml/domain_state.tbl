@@ -52,13 +52,20 @@ DOMAIN_STATE(uintnat, marking_done)
 DOMAIN_STATE(uintnat, sweeping_done)
 /* Is sweeping done for the current major cycle. */
 
-DOMAIN_STATE(uintnat, stealing)
-
 DOMAIN_STATE(uintnat, allocated_words)
 
 DOMAIN_STATE(uintnat, swept_words)
 
-DOMAIN_STATE(uintnat, opportunistic_work)
+DOMAIN_STATE(intnat, major_work_computed)
+/* total work accumulated in this GC clock cycle (in words) */
+
+DOMAIN_STATE(intnat, major_work_todo)
+/* balance of work to do in this GC clock cycle (in words)
+ *  positive: we need to do this amount of work to finish the slice
+ *  negative: we have done more than we need and this is credit
+ */
+
+DOMAIN_STATE(double, major_gc_clock)
 
 DOMAIN_STATE(struct caml__roots_block*, local_roots)
 
