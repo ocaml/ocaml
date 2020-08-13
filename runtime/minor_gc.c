@@ -675,10 +675,21 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
                (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
 }
 
+void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
+{
+  /* NB: need to put guard around the ev logs to prevent
+    spam when we poll */
+  if (caml_opportunistic_major_work_available()) {
+    int log_events = caml_params->verb_gc & 0x40;
+    if (log_events) caml_ev_begin("minor_gc/opportunistic_major_slice");
+    caml_opportunistic_major_collection_slice(0x200);
+    if (log_events) caml_ev_end("minor_gc/opportunistic_major_slice");
+  }
+}
+
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
 */
-
 void caml_empty_minor_heap_setup(struct domain* domain) {
   atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
 }
@@ -711,6 +722,8 @@ static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, voi
       if( atomic_load_explicit(&domains_finished_minor_gc, memory_order_acquire) == participating_count ) {
         break;
       }
+
+      caml_do_opportunistic_major_slice(domain, 0);
     }
     caml_ev_end("minor_gc/leave_barrier");
   }
@@ -728,6 +741,9 @@ static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int 
 
   /* schedule a major collection slice for this domain */
   caml_request_major_slice();
+
+  /* can change how we account clock in future, here just do raw count */
+  domain->state->major_gc_clock += 1.0;
 }
 
 /* must be called within a STW section  */
@@ -742,18 +758,6 @@ void caml_empty_minor_heap_no_major_slice_from_stw (struct domain* domain, void*
   /* if we are entering from within a major GC STW section then
      we do not schedule another major collection slice */
   caml_stw_empty_minor_heap_no_major_slice(domain, (void*)0, participating_count, participating);
-}
-
-void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
-{
-  /* NB: need to put guard around the ev logs to prevent
-    spam when we poll */
-  if (caml_opportunistic_major_work_available()) {
-    int log_events = caml_params->verb_gc & 0x40;
-    if (log_events) caml_ev_begin("minor_gc/opportunistic_major_slice");
-    caml_opportunistic_major_collection_slice(0x200, 0);
-    if (log_events) caml_ev_end("minor_gc/opportunistic_major_slice");
-  }
 }
 
 /* must be called outside a STW section */

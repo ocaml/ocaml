@@ -42,6 +42,8 @@ struct domain {
 asize_t caml_norm_minor_heap_size (intnat);
 int caml_reallocate_minor_heap(asize_t);
 
+int caml_incoming_interrupts_queued(void);
+
 void caml_handle_gc_interrupt(void);
 
 void caml_handle_incoming_interrupts(void);
