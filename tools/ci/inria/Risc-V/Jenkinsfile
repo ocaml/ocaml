@@ -26,7 +26,7 @@ pipeline {
     }
   }
   post {
-    always {
+    regression {
       emailext (
         to: 'ocaml-ci-notifications@inria.fr',
         subject: 'Job $JOB_NAME $BUILD_STATUS (build #$BUILD_NUMBER)',
