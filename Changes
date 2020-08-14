@@ -256,7 +256,7 @@ Working version
 
 - #9751: Add warning 68. Pattern-matching depending on mutable state
   prevents the remaining arguments from being uncurried.
-  (Hugo Heuzard, review by lwhite)
+  (Hugo Heuzard, review by Leo White)
 
 ### Internal/compiler-libs changes:
 
