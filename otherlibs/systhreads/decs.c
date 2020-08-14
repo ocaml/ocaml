@@ -358,9 +358,12 @@ static void caml_dec_reinitialize(void)
   Current_dec->prev = Current_dec;
   All_decs = Current_dec;
 
+  // within the child, the domain_lock needs to be reset
+  // and acquired.
+  caml_reset_domain_lock();
+  caml_bt_acquire_domain_lock();
+  // main_lock needs to be initialized and released.
   caml_dec_main_lock_init(&Dec_main_lock);
-  if (!caml_domain_alone())
-    caml_bt_acquire_domain_lock();
   caml_dec_main_lock_release(&Dec_main_lock);
 }
 

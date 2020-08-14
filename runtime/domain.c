@@ -313,6 +313,16 @@ domain_init_complete:
   caml_plat_unlock(&all_domains_lock);
 }
 
+CAMLexport void caml_reset_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  // This is only used to reset the domain_lock state on fork.
+  caml_plat_mutex_init(&self->domain_lock);
+  caml_plat_cond_init(&self->domain_cond, &self->domain_lock);
+
+  return;
+}
+
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
   uintnat size;
