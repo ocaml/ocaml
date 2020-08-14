@@ -171,6 +171,12 @@ val big_endian : bool
 (** Whether the machine currently executing the Caml program is big-endian.
     @since 4.00.0 *)
 
+val frame_pointers : bool
+(** Whether the currently executing OCaml program is a native-code program
+    built with frame pointers.
+
+    @since 4.12.0 *)
+
 val max_string_length : int
 (** Maximum length of strings and byte sequences. *)
 

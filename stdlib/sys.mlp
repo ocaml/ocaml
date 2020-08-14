@@ -45,6 +45,7 @@ let int_size = int_size ()
 let unix = unix ()
 let win32 = win32 ()
 let cygwin = cygwin ()
+let frame_pointers = %%WITH_FRAME_POINTERS%% && backend_type = Native
 let max_array_length = max_wosize ()
 let max_floatarray_length = max_array_length / (64 / word_size)
 let max_string_length = word_size / 8 * max_array_length - 1

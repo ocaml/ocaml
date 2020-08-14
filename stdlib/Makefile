@@ -180,8 +180,11 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
-sys.ml: $(ROOTDIR)/VERSION sys.mlp
-	sed -e "s|%%VERSION%%|`sed -e 1q $< | tr -d '\r'`|" sys.mlp > $@
+VERSION = $(shell sed -e 1q $(ROOTDIR)/VERSION | tr -d '\r')
+sys.ml: sys.mlp $(ROOTDIR)/VERSION
+	sed $(call SUBST_STRING,VERSION) \
+	    $(call SUBST,WITH_FRAME_POINTERS) \
+	    $< > $@
 
 .PHONY: clean
 clean::
