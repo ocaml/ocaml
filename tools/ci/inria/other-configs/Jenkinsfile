@@ -20,7 +20,7 @@
 pipeline {
   agent { label 'ocaml-linux-64' }
   stages {
-    stage('Testing various other compiler configurations')
+    stage('Testing various other compiler configurations') {
       steps {
         sh 'tools/ci/inria/other-configs/script'
       }
