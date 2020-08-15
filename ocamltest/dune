@@ -41,8 +41,9 @@
  (flags (:standard -nostdlib))
  (libraries ocamlcommon stdlib)
  (modules (:standard \ options main))
+ (modules_without_implementation ocamltest_unix)
  (c_flags (-DCAML_INTERNALS -I%{project_root}/runtime)) ; fixme
- (c_names run_unix run_stubs ocamltest_stdlib_stubs))
+ (c_names run_unix run_stubs))
 
 (rule
  (targets empty.ml)
