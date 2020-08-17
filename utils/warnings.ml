@@ -92,6 +92,7 @@ type t =
   | Redefining_unit of string               (* 65 *)
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
+  | Match_on_mutable_state_prevent_uncurry  (* 68 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -169,9 +170,10 @@ let number = function
   | Redefining_unit _ -> 65
   | Unused_open_bang _ -> 66
   | Unused_functor_parameter _ -> 67
+  | Match_on_mutable_state_prevent_uncurry -> 68
 ;;
 
-let last_warning_number = 67
+let last_warning_number = 68
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -327,6 +329,9 @@ let descriptions =
     ["unused-open-bang"];
     67, "Unused functor parameter.",
     ["unused-functor-parameter"];
+    68, "Pattern-matching depending on mutable state prevents the remaining \
+         arguments from being uncurried.",
+    ["match-on-mutable-state-prevent-uncurry"];
   ]
 ;;
 
@@ -567,7 +572,7 @@ let parse_options errflag s =
   current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66-67";;
+let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66-67-68";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
@@ -805,6 +810,10 @@ let message = function
          which shadows the existing one.\n\
          Hint: Did you mean 'type %s = unit'?" name
   | Unused_functor_parameter s -> "unused functor parameter " ^ s ^ "."
+  | Match_on_mutable_state_prevent_uncurry ->
+    "This pattern depends on mutable state.\n\
+     It prevents the remaining arguments from being uncurried, which will \
+     cause additional closure allocations."
 ;;
 
 let nerrors = ref 0;;

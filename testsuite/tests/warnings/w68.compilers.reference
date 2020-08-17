@@ -1,0 +1,11 @@
+File "w68.ml", line 34, characters 33-43:
+34 | let dont_warn_with_partial_match None x = x
+                                      ^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some _
+File "w68.ml", line 14, characters 10-13:
+14 | let alloc {a} b = a + b
+               ^^^
+Warning 68 [match-on-mutable-state-prevent-uncurry]: This pattern depends on mutable state.
+It prevents the remaining arguments from being uncurried, which will cause additional closure allocations.

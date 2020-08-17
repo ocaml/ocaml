@@ -270,6 +270,10 @@ Working version
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Florian Angeletti and Leo
   White)
 
+- #9751: Add warning 68. Pattern-matching depending on mutable state
+  prevents the remaining arguments from being uncurried.
+  (Hugo Heuzard, review by Leo White)
+
 ### Internal/compiler-libs changes:
 
 - #9216: add Lambda.duplicate which refreshes bound identifiers
