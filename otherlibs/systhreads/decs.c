@@ -127,11 +127,9 @@ static void caml_dec_main_lock_init(struct caml_dec_main_lock *m) {
 
 static void caml_dec_bt_lock_acquire(struct caml_dec_main_lock *m) {
 
-  if (!caml_domain_alone()) {
-    if (caml_bt_is_bt_working()) {
-      caml_bt_enter_ocaml();
-    }
-  };
+  if (caml_bt_is_bt_working()) {
+    caml_bt_enter_ocaml();
+  }
 
   caml_bt_acquire_domain_lock();
 
@@ -140,12 +138,10 @@ static void caml_dec_bt_lock_acquire(struct caml_dec_main_lock *m) {
 
 static void caml_dec_bt_lock_release(struct caml_dec_main_lock *m) {
 
-  if (!caml_domain_alone()) {
-    if (atomic_load_acq(&m->waiters) == 0 &&
-	caml_bt_is_bt_working() == 0) {
-      caml_bt_exit_ocaml();
-    }
-  };
+  if (atomic_load_acq(&m->waiters) == 0 &&
+      caml_bt_is_bt_working() == 0) {
+    caml_bt_exit_ocaml();
+  }
 
   caml_bt_release_domain_lock();
 
@@ -434,6 +430,14 @@ static void caml_dec_stop(void)
 {
   caml_decstatus_terminate(Terminated(Current_dec->descr));
   caml_dec_remove_info(Current_dec);
+  // FIXME: tricky bit with backup thread
+  // Normally we expect the next thread to kick in and resume operation
+  // by first setting Current_dec to the right TLS dec data.
+  // However it may very well be that there's no runnable dec next
+  // (eg: next dec is blocking.), so we set it to next for now to give a
+  // valid state to the backup thread.
+  Current_dec = Current_dec->next;
+  caml_dec_restore_runtime_state();
   caml_dec_main_lock_release(&Dec_main_lock);
 }
 
