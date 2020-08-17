@@ -182,6 +182,9 @@ Working version
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
 
+- #9842: Add Sys.frame_pointers.
+  (Leo White, review by Mark Shinwell and David Allsopp)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
