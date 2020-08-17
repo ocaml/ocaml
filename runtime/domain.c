@@ -392,34 +392,53 @@ static void* backup_thread_func(void* v)
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
 
-  caml_plat_lock (&di->domain_lock);
-  while (1) { /* loop1 */
-    msg = atomic_load_acq (&di->backup_thread_msg);
+  msg = atomic_load_acq (&di->backup_thread_msg);
+  while (msg != BT_TERMINATE) {
     Assert (msg <= BT_TERMINATE);
-    if (msg == BT_ENTERING_OCAML) {
-      /* Main thread wants to enter OCaml */
-      caml_plat_wait(&di->domain_cond);
-    } else if (msg == BT_IN_BLOCKING_SECTION) {
-      /* Handle interrupts on behalf of the main thread */
-      caml_plat_lock(&s->lock);
-      /* Both [s->lock] and [di->domain_lock] held here */
-      while (1) { /* loop2 */
-        msg = atomic_load_acq (&di->backup_thread_msg);
-        Assert (msg <= BT_TERMINATE);
-        if (msg == BT_ENTERING_OCAML) {
-          /* Main thread is leaving blocking section and entering OCaml */
-          caml_plat_unlock (&s->lock);
-          break; /* break loop2 and goto loop1 */
-        } else if (handle_incoming(s) == 0) {
-          caml_plat_wait(&s->cond);
+    switch (msg) {
+      case BT_IN_BLOCKING_SECTION:
+        /* Handle interrupts on behalf of the main thread:
+         *  - must hold domain_lock to handle interrupts
+         *  - need to guarantee no blocking so that backup thread
+         *    can be signalled from caml_leave_blocking_section
+         */
+        if (caml_incoming_interrupts_queued()) {
+          if (caml_plat_try_lock(&di->domain_lock)) {
+            caml_handle_incoming_interrupts();
+            caml_plat_unlock(&di->domain_lock);
+          }
         }
-      }
-    } else if (msg == BT_TERMINATE) {
-      atomic_store_rel(&di->backup_thread_msg, BT_INIT);
-      caml_plat_unlock (&di->domain_lock);
-      break;
-    }
+        /* Wait safely if there is nothing to do.
+         * Will be woken from caml_leave_blocking_section
+         */
+        caml_plat_lock(&s->lock);
+        msg = atomic_load_acq (&di->backup_thread_msg);
+        if (msg == BT_IN_BLOCKING_SECTION &&
+            !caml_incoming_interrupts_queued())
+          caml_plat_wait(&s->cond);
+        caml_plat_unlock(&s->lock);
+        break;
+      case BT_ENTERING_OCAML:
+        /* Main thread wants to enter OCaml
+         * Will be woken from caml_enter_blocking_section
+         * or domain_terminate
+         */
+        caml_plat_lock(&di->domain_lock);
+        msg = atomic_load_acq (&di->backup_thread_msg);
+        if (msg == BT_ENTERING_OCAML)
+          caml_plat_wait(&di->domain_cond);
+        caml_plat_unlock(&di->domain_lock);
+        break;
+      default:
+        cpu_relax();
+        break;
+    };
+    msg = atomic_load_acq (&di->backup_thread_msg);
   }
+
+  /* doing terminate */
+  atomic_store_rel(&di->backup_thread_msg, BT_INIT);
+
   return 0;
 }
 
