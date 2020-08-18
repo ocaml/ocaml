@@ -21,7 +21,7 @@ open Tsl_semantics
 type behavior =
   | Skip_all_tests
   | Run of Environments.t
-
+ 
 (*
 let first_token filename =
   let input_channel = open_in filename in
@@ -30,7 +30,6 @@ let first_token filename =
   let token =
     try Tsl_lexer.token lexbuf with e -> close_in input_channel; raise e
   in close_in input_channel; token
-
 let is_test filename =
   match first_token filename with
     | exception _ -> false
@@ -121,13 +120,9 @@ let get_test_build_directory_prefix test_dirname =
   if test_dirname = "." then root
   else Filename.concat root test_dirname
 
-let tests_to_skip = ref []
-
-let init_tests_to_skip () =
-  tests_to_skip := String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS")
-
 let test_file test_filename =
-  let skip_test = List.mem test_filename !tests_to_skip in
+  let tests_to_skip = String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS") in
+  let skip_test = List.mem test_filename tests_to_skip in
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
   let test_trees = match test_trees with
@@ -248,9 +243,6 @@ let list_tests dir =
       ) (Sys.readdir dir)
   end;
   List.rev !res
-
-let () =
-  init_tests_to_skip()
 
 let () =
   let failed = ref false in
