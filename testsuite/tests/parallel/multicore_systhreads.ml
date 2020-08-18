@@ -1,8 +1,6 @@
 (* TEST
 * hassysthreads
 include systhreads
-* hasunix
-include unix
 ** bytecode
 ** native
 *)
