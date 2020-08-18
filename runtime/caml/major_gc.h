@@ -25,9 +25,26 @@ typedef enum {
 } gc_phase_t;
 extern gc_phase_t caml_gc_phase;
 
+static inline char caml_gc_phase_char(gc_phase_t phase) {
+  switch (phase) {
+    case Phase_sweep_and_mark_main:
+      return 'M';
+    case Phase_mark_final:
+      return 'F';
+    case Phase_sweep_ephe:
+      return 'E';
+    default:
+      return 'U';
+  }
+}
+
 intnat caml_opportunistic_major_work_available ();
-intnat caml_opportunistic_major_collection_slice (intnat, intnat* left /* out */);
-intnat caml_major_collection_slice (intnat, intnat* left /* out */);
+intnat caml_opportunistic_major_collection_slice (intnat);
+/* auto-triggered slice from within the GC */
+#define AUTO_TRIGGERED_MAJOR_SLICE -1
+/* external triggered slice, but GC will compute the amount of work */
+#define GC_CALCULATE_MAJOR_SLICE 0
+intnat caml_major_collection_slice (intnat);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 uintnat caml_get_num_domains_to_mark(void);
@@ -85,6 +102,6 @@ extern uintnat caml_major_cycles_completed;
 
 double caml_mean_space_overhead(void);
 
-#endif /* CAML_INTERNALiS */
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_MAJOR_GC_H */

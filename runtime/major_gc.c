@@ -16,7 +16,6 @@
 #define CAML_INTERNALS
 
 #include <stdlib.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
@@ -299,9 +298,10 @@ double caml_mean_space_overhead ()
   return mean;
 }
 
-static uintnat default_slice_budget() {
+static void update_major_slice_work() {
   double p, heap_words;
-  intnat computed_work, opportunistic_credit;
+  intnat computed_work, limit;
+  caml_domain_state *dom_st = Caml_state;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = heap_words * caml_percent_free
@@ -314,8 +314,8 @@ static uintnat default_slice_budget() {
      (still assuming steady state).
 
      Proportion of G consumed since the previous slice:
-                 PH = Caml_state->allocated_words / G
-                    = Caml_state->allocated_words * 3 * (100 + caml_percent_free)
+                 PH = dom_st->allocated_words / G
+                    = dom_st->allocated_words * 3 * (100 + caml_percent_free)
                       / (2 * heap_words * caml_percent_free)
      Proportion of extra-heap resources consumed since the previous slice:
                  PE = caml_extra_heap_resources
@@ -335,7 +335,7 @@ static uintnat default_slice_budget() {
      for this slice is:
                  S = P * TW
   */
-  uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
+  uintnat heap_size = caml_heap_size(dom_st->shared_heap);
   heap_words = (double)Wsize_bsize(heap_size);
   uintnat heap_sweep_words = heap_words;
 
@@ -344,43 +344,114 @@ static uintnat default_slice_budget() {
     while(!atomic_compare_exchange_strong(&terminated_domains_allocated_words, &saved_terminated_words, 0));
   }
 
-  p = (double) (saved_terminated_words + Caml_state->allocated_words) * 3.0 * (100 + caml_percent_free)
-      / heap_words / caml_percent_free / 2.0;
+  p = (double) (saved_terminated_words + dom_st->allocated_words) * 3.0 * (100 + caml_percent_free) / heap_words / caml_percent_free / 2.0;
 
   if (p > 0.3) p = 0.3;
 
   computed_work = (intnat) (p * (heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free))));
 
-  /* adjust computed work for opportunistic_work done by this domain already */
-  if ( Caml_state->opportunistic_work > computed_work ) {
-    /* bound the credit that opportunistic_work can have vs computed_work */
-    if (Caml_state->opportunistic_work > 2*computed_work) {
-     Caml_state->opportunistic_work = 2*computed_work;
-    }
+  /* accumulate work */
+  dom_st->major_work_computed += computed_work;
+  dom_st->major_work_todo += computed_work;
 
-    opportunistic_credit = computed_work;
-    Caml_state->opportunistic_work -= computed_work;
-    computed_work = 0;
-  } else {
-    opportunistic_credit = Caml_state->opportunistic_work;
-    Caml_state->opportunistic_work = 0;
-    computed_work -= opportunistic_credit;
+  /* cap accumulated work todo to p = 0.3 */
+  limit = (intnat)(0.3 * (heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free))));
+  if (dom_st->major_work_todo > limit)
+  {
+    dom_st->major_work_todo = limit;
   }
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                         (uintnat)heap_words);
+                   (uintnat)heap_words);
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   Caml_state->allocated_words);
-  caml_gc_message (0x40, "amount of work to do = %"
+                   dom_st->allocated_words);
+  caml_gc_message (0x40, "raw work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (p * 1000000));
-  caml_gc_message (0x40, "ordered work = %ld words\n", (intnat)-1);
-  caml_gc_message (0x40, "opportunistic work credit = %ld words\n", opportunistic_credit);
-  caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
+  caml_gc_message (0x40, "computed work = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "d words\n",
+                   computed_work);
+
+  caml_gc_log("Updated major work: [%c] "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "u heap_words, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "u allocated, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d computed_work, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d work_computed, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d work_todo, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "u gc_clock",
+                         caml_gc_phase_char(caml_gc_phase),
+                         (uintnat)heap_words, dom_st->allocated_words,
+                         computed_work,
+                         dom_st->major_work_computed,
+                         dom_st->major_work_todo,
+                         (intnat)(dom_st->major_gc_clock*1000000));
+
+  dom_st->stat_major_words += dom_st->allocated_words;
+  dom_st->allocated_words = 0;
+}
+
+static intnat get_major_slice_work(intnat howmuch) {
+  caml_domain_state *dom_st = Caml_state;
+  intnat computed_work;
+
+  /* calculate how much work to do now */
+  if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
+      howmuch == GC_CALCULATE_MAJOR_SLICE) {
+    computed_work = (dom_st->major_work_todo > 0)
+      ? dom_st->major_work_todo
+      : 0;
+  } else {
+    /* forced or opportunistic GC slice with explicit quantity */
+    computed_work = howmuch;
+  }
+
+  /* TODO: do we want to do anything more complex or simplify the above? */
 
   return computed_work;
+}
+
+static void commit_major_slice_work(intnat words_done) {
+  caml_domain_state *dom_st = Caml_state;
+  intnat limit;
+
+  dom_st->major_work_todo -= words_done;
+
+  /* cap how far work todo can be in credit */
+  limit = -2*Wsize_bsize(caml_heap_size(dom_st->shared_heap));
+  if (dom_st->major_work_todo < limit)
+  {
+    dom_st->major_work_todo = limit;
+  }
+
+  /* check clock to close a cycle if need be */
+  if (dom_st->major_work_todo <= 0
+      && dom_st->major_gc_clock >= 1.0)
+  {
+    caml_gc_log("Major GC slice complete: "
+        " %"ARCH_INTNAT_PRINTF_FORMAT "d words_done, "
+        " %"ARCH_INTNAT_PRINTF_FORMAT "d todo, "
+        " %"ARCH_INTNAT_PRINTF_FORMAT "d computed, "
+        " %"ARCH_INTNAT_PRINTF_FORMAT "u clock",
+        words_done,
+        dom_st->major_work_todo,
+        dom_st->major_work_computed,
+        (uintnat)(dom_st->major_gc_clock * 1000000)
+      );
+
+    /* we have caught up */
+    while( dom_st->major_gc_clock >= 1.0 ) {
+      dom_st->major_gc_clock -= 1.;
+    }
+
+    /* limit amount of work credit that can go into next cycle */
+    limit = -2*dom_st->major_work_computed;
+    dom_st->major_work_todo = dom_st->major_work_todo < limit
+      ? limit
+      : dom_st->major_work_todo;
+    dom_st->major_work_computed = 0;
+  }
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
@@ -891,8 +962,9 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
 
   /* Mark roots for new cycle */
   domain->state->marking_done = 0;
-
-  domain->state->opportunistic_work = 0;
+  domain->state->major_work_computed = 0;
+  domain->state->major_work_todo = 0;
+  domain->state->major_gc_clock = 0.0;
 
   caml_ev_begin("major_gc/roots");
   caml_do_roots (&caml_darken, NULL, domain, 0);
@@ -977,11 +1049,8 @@ static void try_complete_gc_phase (struct domain* domain, void* unused,
     }
   }
   caml_global_barrier_end(b);
-  domain->state->opportunistic_work = 0;
   caml_ev_end("major_gc/phase_change");
 }
-
-#define Chunk_size 0x4000
 
 intnat caml_opportunistic_major_work_available ()
 {
@@ -990,29 +1059,53 @@ intnat caml_opportunistic_major_work_available ()
   return !domain_state->sweeping_done || !domain_state->marking_done;
 }
 
+typedef enum {
+  Slice_uninterruptible,
+  Slice_interruptible,
+  Slice_opportunistic
+} collection_slice_mode;
+
+static char collection_slice_mode_char(collection_slice_mode mode)
+{
+  switch(mode) {
+    case Slice_uninterruptible:
+      return 'u';
+    case Slice_interruptible:
+      return 'i';
+    case Slice_opportunistic:
+      return 'o';
+    default:
+      return ' ';
+  }
+}
+
+#define Chunk_size 0x400
+
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
                                      struct domain** barrier_participants,
-                                     intnat opportunistic,
-                                     intnat* budget_left /* out */)
+                                     collection_slice_mode mode)
 {
   struct domain* d = caml_domain_self();
   caml_domain_state* domain_state = d->state;
-  intnat computed_work = howmuch ? howmuch : default_slice_budget();
-  intnat budget = computed_work;
   intnat sweep_work = 0, mark_work = 0;
   intnat available, left;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   int was_marking = 0;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
-  int log_events = !opportunistic || (caml_params->verb_gc & 0x40);
+  int log_events = mode != Slice_opportunistic || (caml_params->verb_gc & 0x40);
+  intnat computed_work, budget, interrupted_budget = 0;
+
+  update_major_slice_work();
+  computed_work = get_major_slice_work(howmuch);
+  budget = computed_work;
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
-  if (opportunistic && !caml_opportunistic_major_work_available()) {
-    if (budget_left) *budget_left = budget;
-    return computed_work;
+  if (mode == Slice_opportunistic &&
+      !caml_opportunistic_major_work_available()) {
+    return budget;
   }
 
   if (log_events) caml_ev_begin("major_gc/slice");
@@ -1020,44 +1113,28 @@ static intnat major_collection_slice(intnat howmuch,
   if (!domain_state->sweeping_done) {
     if (log_events) caml_ev_begin("major_gc/sweep");
 
-    sweep_work = budget;
     do {
       available = budget > Chunk_size ? Chunk_size : budget;
       left = caml_sweep(domain_state->shared_heap, available);
       budget -= available - left;
+      sweep_work += available - left;
 
       if (budget > 0 && available == left) {
         domain_state->sweeping_done = 1;
         atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
       }
 
-      /*
-        Disabled to avoid high pausetimes
-
-        FIXME: we would like to handle steal interrupts regularly,
-        but bad things happen if the GC cycles ends via an STW
-        interrupt here.
-
-      caml_handle_incoming_interrupts();
-      // FIXME: Is this sufficient to deal with the above case?
-      if( saved_major_cycle != caml_major_cycles_completed ) {
-        if (log_events) {
-          caml_ev_end("major_gc/sweep");
-          caml_ev_end("major_gc/slice");
-        }
-        if (budget_left) *budget_left = budget;
-        return computed_work;
+      if (mode == Slice_interruptible && caml_incoming_interrupts_queued())
+      {
+        interrupted_budget = budget;
+        budget = 0;
       }
-      */
-    /* need to check if sweeping_done by the incoming interrupt */
-    } while (budget > 0 && available != left && !domain_state->sweeping_done);
+    } while (budget > 0 && available != left);
 
     if (log_events) caml_ev_end("major_gc/sweep");
-    sweep_work -= budget;
   }
 
 mark_again:
-  mark_work = budget;
   while (budget > 0) {
     if (!domain_state->marking_done) {
       if (!was_marking) {
@@ -1067,17 +1144,22 @@ mark_again:
       available = budget > Chunk_size ? Chunk_size : budget;
       left = mark(available);
       budget -= available - left;
+      mark_work += available - left;
     } else {
       break;
+    }
+
+    if (mode == Slice_interruptible && caml_incoming_interrupts_queued()) {
+      interrupted_budget = budget;
+      budget = 0;
     }
   }
   if (was_marking) {
     if (log_events) caml_ev_end("major_gc/mark");
     was_marking = 0;
   }
-  mark_work -= budget;
 
-  if (!opportunistic) {
+  if (mode != Slice_opportunistic) {
     /* Finalisers */
     if (caml_gc_phase == Phase_mark_final &&
         caml_final_update_first(d)) {
@@ -1134,24 +1216,17 @@ mark_again:
 
   if (log_events) caml_ev_end("major_gc/slice");
 
-  if (budget_left)
-    *budget_left = budget;
-
-  caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks), %lu opp work",
-              (unsigned long)domain_state->allocated_words,
+  caml_gc_log("Major slice [%c%c%c]: %ld work, %ld sweep, %ld mark (%lu blocks)",
+              collection_slice_mode_char(mode),
+              interrupted_budget == 0 ? '.' : '*',
+              caml_gc_phase_char(caml_gc_phase),
               (long)computed_work, (long)sweep_work, (long)mark_work,
-              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before),
-              (unsigned long)domain_state->opportunistic_work);
-  domain_state->stat_major_words += domain_state->allocated_words;
-  domain_state->allocated_words = 0;
-  if (opportunistic) {
-    domain_state->opportunistic_work += computed_work - budget;
-  } else {
-    if (budget < 0)
-      domain_state->opportunistic_work += -budget;
-  }
+              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before));
 
-  if (!opportunistic && is_complete_phase_sweep_ephe(d)) {
+  /* we did: work we were asked - interrupted_budget + any overwork */
+  commit_major_slice_work(computed_work - interrupted_budget + (budget < 0 ? -budget : 0));
+
+  if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe(d)) {
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
@@ -1165,18 +1240,31 @@ mark_again:
     }
   }
 
-  return computed_work;
+  return budget;
 }
 
-
-intnat caml_opportunistic_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
+intnat caml_opportunistic_major_collection_slice(intnat howmuch)
 {
-  return major_collection_slice(howmuch, 0, 0, 1, budget_left);
+  return major_collection_slice(howmuch, 0, 0, Slice_opportunistic);
 }
 
-intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
+intnat caml_major_collection_slice(intnat howmuch)
 {
-  return major_collection_slice(howmuch, 0, 0, 0, budget_left);
+  intnat work_left;
+
+  /* if this is an auto-triggered GC slice, make it interruptible */
+  if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE) {
+    work_left = major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE, 0, 0, Slice_interruptible);
+    if (get_major_slice_work(AUTO_TRIGGERED_MAJOR_SLICE) > 0) {
+      caml_gc_log("Major slice interrupted, rescheduling major slice");
+      caml_request_major_slice();
+    }
+  } else {
+    /* TODO: could make forced API slices interruptible, but would need to do accounting or pass up interrupt */
+    work_left = major_collection_slice(howmuch, 0, 0, Slice_uninterruptible);
+  }
+
+  return work_left;
 }
 
 static void finish_major_cycle_callback (struct domain* domain, void* arg,
@@ -1188,7 +1276,7 @@ static void finish_major_cycle_callback (struct domain* domain, void* arg,
   caml_empty_minor_heap_no_major_slice_from_stw(domain, (void*)0, participating_count, participating);
 
   while (saved_major_cycles == caml_major_cycles_completed) {
-    major_collection_slice(10000000, participating_count, participating, 0, 0);
+    major_collection_slice(10000000, participating_count, participating, 0);
   }
 }
 
@@ -1407,8 +1495,9 @@ int caml_init_major_gc(caml_domain_state* d) {
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
   d->marking_done = 1;
-  d->stealing = 0;
-  d->opportunistic_work = 0;
+  d->major_work_computed = 0;
+  d->major_work_todo = 0;
+  d->major_gc_clock = 0.0;
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
   if(d->final_info == NULL) {
