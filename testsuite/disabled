@@ -42,6 +42,9 @@ tests/callback/'signals_alloc.ml' with 1.2 (native)
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
+# TODO: preemption is not properly handled yet (no tick threads implemented)
+lib-systhreads
+
 # ocamldebug is broken (#34)
 tool-debugger
 
