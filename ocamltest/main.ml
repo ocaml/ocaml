@@ -121,7 +121,7 @@ let get_test_build_directory_prefix test_dirname =
   if test_dirname = "." then root
   else Filename.concat root test_dirname
 
-let tests_to_skip = String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS") in
+let tests_to_skip = String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS")
 let test_file test_filename tests_to_skip =
   let skip_test = List.mem test_filename tests_to_skip in
   let tsl_block = tsl_block_of_file_safe test_filename in
