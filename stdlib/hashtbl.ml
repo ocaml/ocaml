@@ -491,17 +491,28 @@ module Make(H: HashedType): (S with type key = H.t) =
 (* Code included below the functorial interface to guard against accidental
    use - see #2202 *)
 
-external seeded_hash_param :
+external murmurhash3 :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+external sip13 :
+  int -> int -> int -> 'a -> int = "caml_hash_sip13" [@@noalloc]
 
-let hash x = seeded_hash_param 10 100 0 x
-let hash_param n1 n2 x = seeded_hash_param n1 n2 0 x
-let seeded_hash seed x = seeded_hash_param 10 100 seed x
+(* We use SipHash-1-3 for randomized hash tables, because it is secure
+   against seed-independent collision attacks.
+   We use MurmurHash 3 for normal hash tables, because it is faster
+   (esp. on 32-bit platforms) and good enough statistically speaking.
+*)
+
+let hash x = murmurhash3 10 100 0 x
+let hash_param n1 n2 x = murmurhash3 n1 n2 0 x
+let seeded_hash seed x = sip13 10 100 seed x
+let seeded_hash_param = sip13
 
 let key_index h key =
-  if Obj.size (Obj.repr h) >= 4
-  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
-  else invalid_arg "Hashtbl: unsupported hash table format"
+  if Obj.size (Obj.repr h) < 4 then
+    invalid_arg "Hashtbl: unsupported hash table format";
+  let seed = h.seed in
+  (if seed = 0 then murmurhash3 10 100 0 key else sip13 10 100 seed key)
+    land (Array.length h.data - 1)
 
 let add h key data =
   let i = key_index h key in
