@@ -402,34 +402,53 @@ static void* backup_thread_func(void* v)
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
 
-  caml_plat_lock (&di->domain_lock);
-  while (1) { /* loop1 */
-    msg = atomic_load_acq (&di->backup_thread_msg);
+  msg = atomic_load_acq (&di->backup_thread_msg);
+  while (msg != BT_TERMINATE) {
     Assert (msg <= BT_TERMINATE);
-    if (msg == BT_ENTERING_OCAML) {
-      /* Main thread wants to enter OCaml */
-      caml_plat_wait(&di->domain_cond);
-    } else if (msg == BT_IN_BLOCKING_SECTION) {
-      /* Handle interrupts on behalf of the main thread */
-      caml_plat_lock(&s->lock);
-      /* Both [s->lock] and [di->domain_lock] held here */
-      while (1) { /* loop2 */
-        msg = atomic_load_acq (&di->backup_thread_msg);
-        Assert (msg <= BT_TERMINATE);
-        if (msg == BT_ENTERING_OCAML) {
-          /* Main thread is leaving blocking section and entering OCaml */
-          caml_plat_unlock (&s->lock);
-          break; /* break loop2 and goto loop1 */
-        } else if (handle_incoming(s) == 0) {
-          caml_plat_wait(&s->cond);
+    switch (msg) {
+      case BT_IN_BLOCKING_SECTION:
+        /* Handle interrupts on behalf of the main thread:
+         *  - must hold domain_lock to handle interrupts
+         *  - need to guarantee no blocking so that backup thread
+         *    can be signalled from caml_leave_blocking_section
+         */
+        if (caml_incoming_interrupts_queued()) {
+          if (caml_plat_try_lock(&di->domain_lock)) {
+            caml_handle_incoming_interrupts();
+            caml_plat_unlock(&di->domain_lock);
+          }
         }
-      }
-    } else if (msg == BT_TERMINATE) {
-      atomic_store_rel(&di->backup_thread_msg, BT_INIT);
-      caml_plat_unlock (&di->domain_lock);
-      break;
-    }
+        /* Wait safely if there is nothing to do.
+         * Will be woken from caml_leave_blocking_section
+         */
+        caml_plat_lock(&s->lock);
+        msg = atomic_load_acq (&di->backup_thread_msg);
+        if (msg == BT_IN_BLOCKING_SECTION &&
+            !caml_incoming_interrupts_queued())
+          caml_plat_wait(&s->cond);
+        caml_plat_unlock(&s->lock);
+        break;
+      case BT_ENTERING_OCAML:
+        /* Main thread wants to enter OCaml
+         * Will be woken from caml_enter_blocking_section
+         * or domain_terminate
+         */
+        caml_plat_lock(&di->domain_lock);
+        msg = atomic_load_acq (&di->backup_thread_msg);
+        if (msg == BT_ENTERING_OCAML)
+          caml_plat_wait(&di->domain_cond);
+        caml_plat_unlock(&di->domain_lock);
+        break;
+      default:
+        cpu_relax();
+        break;
+    };
+    msg = atomic_load_acq (&di->backup_thread_msg);
   }
+
+  /* doing terminate */
+  atomic_store_rel(&di->backup_thread_msg, BT_INIT);
+
   return 0;
 }
 
@@ -920,7 +939,7 @@ void caml_handle_gc_interrupt() {
   if (Caml_state->requested_major_slice) {
     caml_ev_begin("dispatch_major_slice");
     Caml_state->requested_major_slice = 0;
-    caml_major_collection_slice (0, 0);
+    caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     caml_ev_end("dispatch_major_slice");
   }
 }
@@ -1274,6 +1293,11 @@ static void domain_terminate()
   atomic_fetch_add(&caml_num_domains_running, -1);
 }
 
+int caml_incoming_interrupts_queued()
+{
+  return domain_self->interruptor.qhead != NULL;
+}
+
 static inline void handle_incoming_interrupts(struct interruptor* s, int otherwise_relax)
 {
   if (s->qhead != NULL) {
@@ -1398,7 +1422,7 @@ CAMLprim value caml_ml_domain_yield(value unused)
       caml_ev_end("domain/idle_wait");
     } else {
       caml_plat_unlock(&s->lock);
-      caml_opportunistic_major_collection_slice(Chunk_size, &left);
+      left = caml_opportunistic_major_collection_slice(Chunk_size);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);
@@ -1480,7 +1504,7 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       }
     } else {
       caml_plat_unlock(&s->lock);
-      caml_opportunistic_major_collection_slice(Chunk_size, &left);
+      left = caml_opportunistic_major_collection_slice(Chunk_size);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);
@@ -1502,11 +1526,13 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
 
 CAMLprim value caml_domain_dls_set(value t)
 {
+  CAMLnoalloc;
   caml_modify_root(Caml_state->dls_root, t);
   return Val_unit;
 }
 
 CAMLprim value caml_domain_dls_get(value unused)
 {
+  CAMLnoalloc;
   return caml_read_root(Caml_state->dls_root);
 }

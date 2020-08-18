@@ -119,10 +119,10 @@ module DLS = struct
   type entry = {key: int ref; slot: Obj.t ref}
 
   external get_dls_list : unit -> entry list
-    = "caml_domain_dls_get"
+    = "caml_domain_dls_get" [@@noalloc]
 
   external set_dls_list : entry list  -> unit
-    = "caml_domain_dls_set"
+    = "caml_domain_dls_set" [@@noalloc]
 
   let new_key () = ref 0
 
