@@ -518,6 +518,36 @@ OCaml 4.11
   -fsmall-toc to enable the previous behaviour.
   (David Allsopp, report by Nathaniel Wesley Filardo, review by Xavier Leroy)
 
+### Language features
+
+- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
+  [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
+  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
+   request by Bikal Lem)
+
+- #7364, #2188, #9592, #9609: improvement of the unboxability check for types
+  with a single constructor. Mutually-recursive type declarations can
+  now contain unboxed types. This is based on the paper
+    https://arxiv.org/abs/1811.02300
+  (Gabriel Scherer and Rodolphe Lepigre,
+   review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
+
+- #1154, #1706: spellchecker hints and type-directed disambiguation
+  for extensible sum type constructors
+  (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
+  and Leo White)
+
+
+- #6673, #1132, #9617: Relax the handling of explicit polymorphic types.
+  This improves error messages in some polymorphic recursive definition,
+  and requires less polymorphic annotations in some cases of
+  mutually-recursive definitions involving polymorphic recursion.
+  (Leo White, review by Jacques Garrigue and Gabriel Scherer)
+
+- #9232: allow any class type paths in #-types,
+  For instance, "val f: #F(X).t -> unit" is now allowed.
+  (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
+
 ### Standard library:
 
 - #9077: Add Seq.cons and Seq.append
@@ -578,36 +608,6 @@ OCaml 4.11
   Unix.stat, Unix.lstat, Unix.fstat.
   (Xavier Leroy and Guillaume Melquiond, report by David Brown,
    review by Gabriel Scherer and David Allsopp)
-
-### Language features
-
-- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
-  [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
-  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
-   request by Bikal Lem)
-
-- #7364, #2188, #9592, #9609: improvement of the unboxability check for types
-  with a single constructor. Mutually-recursive type declarations can
-  now contain unboxed types. This is based on the paper
-    https://arxiv.org/abs/1811.02300
-  (Gabriel Scherer and Rodolphe Lepigre,
-   review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
-
-- #1154, #1706: spellchecker hints and type-directed disambiguation
-  for extensible sum type constructors
-  (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
-  and Leo White)
-
-
-- #6673, #1132, #9617: Relax the handling of explicit polymorphic types.
-  This improves error messages in some polymorphic recursive definition,
-  and requires less polymorphic annotations in some cases of
-  mutually-recursive definitions involving polymorphic recursion.
-  (Leo White, review by Jacques Garrigue and Gabriel Scherer)
-
-- #9232: allow any class type paths in #-types,
-  For instance, "val f: #F(X).t -> unit" is now allowed.
-  (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
 
 ### Tools:
 
