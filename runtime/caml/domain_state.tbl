@@ -137,9 +137,7 @@ DOMAIN_STATE(uintnat, call_imm)
 DOMAIN_STATE(uintnat, call_ind)
 DOMAIN_STATE(uintnat, stackoverflow_checks)
 
-#ifdef DEBUG
 // whether or not a domain is inside of a stop-the-world handler
 // this is used for several debug assertions inside of methods that
 // can only be called from either in or outside this state.
 DOMAIN_STATE(int, inside_stw_handler)
-#endif
