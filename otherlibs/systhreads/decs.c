@@ -350,6 +350,7 @@ static value caml_dec_new_descriptor(value clos)
   CAMLreturn (descr);
 }
 
+// used to clean context after fork.
 static void caml_dec_reinitialize(void)
 {
   caml_dec_t dec, next;
