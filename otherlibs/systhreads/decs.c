@@ -404,7 +404,8 @@ CAMLprim value caml_dec_initialize(value unit)
   new_dec->exit_buf = &caml_termination_jmpbuf;
   #endif
 
-  // Hooks setup, if caml_scan_roots_hook is set, it was done already.
+  // Hooks setup, if caml_scan_roots_hook is set, it was done already
+  // by another domain.
   if (caml_scan_roots_hook != caml_dec_scan_roots) {
     prev_scan_roots_hook = caml_scan_roots_hook;
     caml_scan_roots_hook = caml_dec_scan_roots;
