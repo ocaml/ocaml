@@ -197,12 +197,25 @@ typedef pthread_mutex_t * st_mutex;
 static int st_mutex_create(st_mutex * res)
 {
   int rc;
-  st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) return ENOMEM;
-  rc = pthread_mutex_init(m, NULL);
-  if (rc != 0) { caml_stat_free(m); return rc; }
+  pthread_mutexattr_t attr;
+  st_mutex m;
+
+  rc = pthread_mutexattr_init(&attr);
+  if (rc != 0) goto error1;
+  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+  if (rc != 0) goto error2;
+  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
+  if (m == NULL) { rc = ENOMEM; goto error2; }
+  rc = pthread_mutex_init(m, &attr);
+  if (rc != 0) goto error3;
   *res = m;
   return 0;
+error3:
+  caml_stat_free(m);
+error2:
+  pthread_mutexattr_destroy(&attr);
+error1:
+  return rc;
 }
 
 static int st_mutex_destroy(st_mutex m)
@@ -213,18 +226,22 @@ static int st_mutex_destroy(st_mutex m)
   return rc;
 }
 
+#define MUTEX_DEADLOCK EDEADLK
+
 Caml_inline int st_mutex_lock(st_mutex m)
 {
   return pthread_mutex_lock(m);
 }
 
-#define PREVIOUSLY_UNLOCKED 0
-#define ALREADY_LOCKED EBUSY
+#define MUTEX_PREVIOUSLY_UNLOCKED 0
+#define MUTEX_ALREADY_LOCKED EBUSY
 
 Caml_inline int st_mutex_trylock(st_mutex m)
 {
   return pthread_mutex_trylock(m);
 }
+
+#define MUTEX_NOT_OWNED EPERM
 
 Caml_inline int st_mutex_unlock(st_mutex m)
 {

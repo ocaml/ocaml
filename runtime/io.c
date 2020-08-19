@@ -95,6 +95,15 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
 {
   struct channel * channel;
 
+  for (channel = caml_all_opened_channels; 
+       channel != NULL;
+       channel = channel->next) {
+    if (channel->fd == fd) {
+      int newfd = dup(fd);
+      if (newfd != -1) fd = newfd;
+      break;
+    }
+  }
   channel = (struct channel *) caml_stat_alloc(sizeof(struct channel));
   channel->fd = fd;
   caml_enter_blocking_section_no_pending();
