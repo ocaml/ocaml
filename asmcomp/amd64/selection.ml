@@ -81,21 +81,19 @@ let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
 let rxmm0 = phys_reg 100
-let rxmm1 = phys_reg 101
 
-let float_cond_and_swap cond a0 a1 =
-  let open X86_ast in
+let float_cond_swap cond =
   match cond with
-  | CFeq -> EQf, a0, a1
-  | CFneq -> NEQf, a0, a1
-  | CFlt -> LTf, a0, a1
-  | CFnlt -> NLTf, a0, a1
-  | CFgt -> LTf, a1, a0
-  | CFngt -> NLTf, a1, a0
-  | CFle -> LEf, a0, a1
-  | CFnle -> NLEf, a0, a1
-  | CFge -> LEf, a1 ,a0
-  | CFnge -> NLEf, a1, a0
+  | CFeq -> false
+  | CFneq -> false
+  | CFlt -> false
+  | CFnlt -> false
+  | CFgt -> true
+  | CFngt -> true
+  | CFle -> false
+  | CFnle -> false
+  | CFge -> true
+  | CFnge -> true
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -130,8 +128,9 @@ let pseudoregs_for_operation op arg res =
   | Iintop(Imod) ->
       ([| rax; rcx |], [| rdx |])
   | Icompf cond ->
-      let _, a0, a1 = float_cond_and_swap cond rxmm0 rxmm1 in
-      ([| a0; a1 |], res)
+      if float_cond_swap cond
+      then ([| arg.(0); rxmm0 |], res) 
+      else ([| rxmm0; arg.(1) |], res) 
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
