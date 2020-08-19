@@ -137,6 +137,7 @@ let rdx = phys_reg 4
 let r10 = phys_reg 10
 let r11 = phys_reg 11
 let rbp = phys_reg 12
+let rxmm0 = phys_reg 100
 let rxmm15 = phys_reg 115
 
 let destroyed_by_plt_stub =
@@ -323,6 +324,7 @@ let destroyed_at_oper = function
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | Itrywith _ -> [| r11 |]
+  | Iop(Icompf _) -> [| rxmm0 |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
@@ -357,6 +359,7 @@ let max_register_pressure = function
     if fp then [| 11; 16 |] else [| 12; 16 |]
   | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]
+  | Icompf _ -> if fp then [| 12; 15 |] else [| 13; 15 |]
   | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
 
 (* Layout of the stack frame *)

@@ -330,6 +330,19 @@ let cond = function
   | Iunsigned Cle -> BE  | Iunsigned Cgt -> A
   | Iunsigned Clt -> B   | Iunsigned Cge -> AE
 
+let float_cond_and_swap cond a0 a1 =
+  match cond with
+  | CFeq -> EQf, a0, a1
+  | CFneq -> NEQf, a0, a1
+  | CFlt -> LTf, a0, a1
+  | CFnlt -> NLTf, a0, a1
+  | CFgt -> LTf, a1, a0
+  | CFngt -> NLTf, a1, a0
+  | CFle -> LEf, a0, a1
+  | CFnle -> NLEf, a0, a1
+  | CFge -> LEf, a1 ,a0
+  | CFnge -> NLEf, a1, a0
+
 (* Output an = 0 or <> 0 test. *)
 
 let output_test_zero env arg =
@@ -698,6 +711,11 @@ let emit_instr env fallthrough i =
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
+  | Lop(Icompf cmp) ->
+      let cond, a0, a1 = float_cond_and_swap cmp (arg i 0) (arg i 1) in
+      I.cmpsd cond a1 a0;
+      I.movd a0 (res i 0);
+      I.neg (res i 0);
   | Lop(Inegf) ->
       I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->
