@@ -125,8 +125,15 @@ static void caml_dec_main_lock_init(struct caml_dec_main_lock *m) {
   return;
 };
 
+// For both these functions, we decide to signal the backup thread under
+// specific conditions. However the domain lock should always be owned
+// by the dec currently executing OCaml code.
+
 static void caml_dec_bt_lock_acquire(struct caml_dec_main_lock *m) {
 
+  // We do not want to signal the backup thread is it is not "working"
+  // as it may very well not be, because we could have just resumed
+  // execution from another dec right away.
   if (caml_bt_is_bt_working()) {
     caml_bt_enter_ocaml();
   }
@@ -138,6 +145,9 @@ static void caml_dec_bt_lock_acquire(struct caml_dec_main_lock *m) {
 
 static void caml_dec_bt_lock_release(struct caml_dec_main_lock *m) {
 
+  // Here we do want to signal the backup thread iff there's
+  // no dec waiting to be scheduled, and the backup thread is currently
+  // idle.
   if (atomic_load_acq(&m->waiters) == 0 &&
       caml_bt_is_bt_working() == 0) {
     caml_bt_exit_ocaml();
