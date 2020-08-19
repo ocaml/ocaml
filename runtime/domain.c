@@ -966,6 +966,8 @@ CAMLexport void caml_bt_enter_ocaml(void)
 {
   dom_internal* self = domain_self;
 
+  Assert(caml_domain_alone() || self->backup_thread_running);
+
   if (self->backup_thread_running) {
     atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
     caml_plat_lock(&self->interruptor.lock);
@@ -986,6 +988,8 @@ CAMLexport void caml_bt_release_domain_lock(void)
 CAMLexport void caml_bt_exit_ocaml(void)
 {
   dom_internal* self = domain_self;
+
+  Assert(caml_domain_alone() || self->backup_thread_running);
 
   if (self->backup_thread_running) {
     atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
