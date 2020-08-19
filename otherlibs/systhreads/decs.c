@@ -737,6 +737,23 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
 
 typedef caml_plat_cond * dec_cond;
 
+// TODO: refactor the condition part in a way that makes the Condition module
+// and platform code cohabit.
+// dec_cond_broadcast and dec_cond_signals are borrowed from platform
+// but do not assert on the mutex.
+// The main issue is that platform conditions do rely on explicitly binding a
+// mutex to the cond, which is not how Condition work.
+
+void caml_dec_cond_broadcast(caml_plat_cond* cond)
+{
+  check_err("dec_cond_broadcast", pthread_cond_broadcast(&cond->cond));
+}
+
+void caml_dec_cond_signal(caml_plat_cond* cond)
+{
+  check_err("dec_cond_signal", pthread_cond_signal(&cond->cond));
+}
+
 #define Condition_val(v) (* (dec_cond *) Data_custom_val(v))
 
 static void caml_condition_finalize(value wrapper)
@@ -797,13 +814,13 @@ CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
 
 CAMLprim value caml_condition_signal(value wrapper)           /* ML */
 {
-  caml_plat_signal(Condition_val(wrapper));
+  caml_dec_cond_signal(Condition_val(wrapper));
   return Val_unit;
 }
 
 CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 {
-  caml_plat_broadcast(Condition_val(wrapper));
+  caml_dec_cond_broadcast(Condition_val(wrapper));
   return Val_unit;
 }
 
