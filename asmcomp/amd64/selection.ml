@@ -81,19 +81,6 @@ let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
 
-let float_cond_swap cond =
-  match cond with
-  | CFeq -> false
-  | CFneq -> false
-  | CFlt -> false
-  | CFnlt -> false
-  | CFgt -> true
-  | CFngt -> true
-  | CFle -> false
-  | CFnle -> false
-  | CFge -> true
-  | CFnge -> true
-
 let pseudoregs_for_operation op arg res =
   match op with
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
@@ -132,7 +119,8 @@ let pseudoregs_for_operation op arg res =
          if we don't need to -- so we add a fresh register as both an
          input and output. *)
       let treg = Reg.create Float in
-      if float_cond_swap cond
+      let _,_,_,is_swapped = float_cond_and_swap cond () () in
+      if is_swapped
       then ([| arg.(0); treg |], [| res.(0); treg |])
       else ([| treg; arg.(1) |], [| res.(0); treg |])
   (* Other instructions are regular *)

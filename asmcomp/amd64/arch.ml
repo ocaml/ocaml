@@ -152,3 +152,19 @@ let operation_is_pure = function
 (* Specific operations that can raise *)
 
 let operation_can_raise _ = false
+
+open Cmm
+open X86_ast
+
+let float_cond_and_swap cond a0 a1 =
+  match cond with
+  | CFeq  -> EQf,  a0, a1, false
+  | CFneq -> NEQf, a0, a1, false
+  | CFlt  -> LTf,  a0, a1, false
+  | CFnlt -> NLTf, a0, a1, false
+  | CFgt  -> LTf,  a1, a0, true
+  | CFngt -> NLTf, a1, a0, true
+  | CFle  -> LEf,  a0, a1, false
+  | CFnle -> NLEf, a0, a1, false
+  | CFge  -> LEf,  a1 ,a0, true
+  | CFnge -> NLEf, a1, a0, true
