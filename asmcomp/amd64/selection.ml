@@ -80,7 +80,6 @@ exception Use_default
 let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
-let rxmm0 = phys_reg 100
 
 let float_cond_swap cond =
   match cond with
@@ -128,9 +127,14 @@ let pseudoregs_for_operation op arg res =
   | Iintop(Imod) ->
       ([| rax; rcx |], [| rdx |])
   | Icompf cond ->
+      (* We need to temporarily store the result of the comparison in a
+         float register, but we don't want to clobber any of the inputs
+         if we don't need to -- so we add a fresh register as both an
+         input and output. *)
+      let treg = Reg.create Float in
       if float_cond_swap cond
-      then ([| arg.(0); rxmm0 |], res) 
-      else ([| rxmm0; arg.(1) |], res) 
+      then ([| arg.(0); treg |], [| res.(0); treg |])
+      else ([| treg; arg.(1) |], [| res.(0); treg |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 

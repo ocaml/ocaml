@@ -137,7 +137,6 @@ let rdx = phys_reg 4
 let r10 = phys_reg 10
 let r11 = phys_reg 11
 let rbp = phys_reg 12
-let rxmm0 = phys_reg 100
 let rxmm15 = phys_reg 115
 
 let destroyed_by_plt_stub =
@@ -324,7 +323,6 @@ let destroyed_at_oper = function
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | Itrywith _ -> [| r11 |]
-  | Iop(Icompf _) -> [| rxmm0 |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
