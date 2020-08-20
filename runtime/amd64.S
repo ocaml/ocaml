@@ -191,13 +191,15 @@
         POP_EXN_HANDLER; \
         popq    %r11; CFI_ADJUST(-8); \
 
-/* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r10 and %r11. */
-#define RESTORE_EXN_HANDLER_OCAML \
+/* Load Caml_state->exn_handler into %rsp and loads prior exn_handler.
+   Clobbers * %r10 and %r11. */
+#define UNWIND_FOR_EXN \
         movq    Caml_state(exn_handler), %rsp; \
         .cfi_def_cfa_offset 16; \
         POP_EXN_HANDLER
 
-/* Switch between OCaml stacks. Clobbers %r10 and %r11. Expects target stack in %r10. */
+/* Switch between OCaml stacks. Clobbers %r10 and %r11.
+   Expects target stack in %r10. */
 #define SWITCH_OCAML_STACKS \
     /* Build caml_context at the bottom of the stack, \
        saving the exception pointer of the source stack */ \
@@ -206,6 +208,7 @@
     /* Save OCaml SP in the stack slot */ \
         movq    Caml_state(current_stack), %r11; \
         movq    %rsp, Stack_sp(%r11); \
+    /* Load the target stack and OCaml SP */ \
         movq    %r10, Caml_state(current_stack) ; \
         movq    Stack_sp(%r10), %rsp; \
         .cfi_def_cfa_offset 24 ; /* FIXME */ \
@@ -762,7 +765,7 @@ CFI_STARTPROC
 LBL(caml_raise_exn):
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(116)
-        RESTORE_EXN_HANDLER_OCAML
+        UNWIND_FOR_EXN
         ret
 LBL(116):
         movq    $0, Caml_state(backtrace_pos)
@@ -777,7 +780,7 @@ LBL(117):
                                   /* arg 4: sp of handler */
         C_call  (GCALL(caml_stash_backtrace))
         movq    %r12, %rax        /* Recover exception bucket */
-        RESTORE_EXN_HANDLER_OCAML
+        UNWIND_FOR_EXN
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exn))
@@ -786,7 +789,7 @@ FUNCTION(G(caml_reraise_exn))
 CFI_STARTPROC
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(117)
-        RESTORE_EXN_HANDLER_OCAML
+        UNWIND_FOR_EXN
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_reraise_exn))
