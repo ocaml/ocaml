@@ -2811,7 +2811,7 @@ instrumented_runtime_ldlibs=""
 ## Source directory
 
 
-## Directory containing auxiliary scripts used dugring build
+## Directory containing auxiliary scripts used during build
 ac_aux_dir=
 for ac_dir in build-aux "$srcdir"/build-aux; do
   if test -f "$ac_dir/install-sh"; then
