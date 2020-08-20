@@ -1,5 +1,3 @@
----- Asynchronous callbacks
-Deadlock avoided
 ---- Self deadlock
 Acquiring mutex
 Acquiring mutex again

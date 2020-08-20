@@ -59,31 +59,7 @@ let mutex_unlock_other_thread () =
     mutex_unlock_must_fail m in
   Thread.join (Thread.create f ())
 
-let async_callbacks () =
-  let m = Mutex.create () in
-  let on = ref true in
-  let create_finalised () =
-    let r = ref 0 in
-    Gc.finalise (fun _ ->
-      if !on then begin
-        Mutex.lock m ;
-        log "finalised" ;
-        Mutex.unlock m
-      end) r;
-    r in
-  begin try
-    Mutex.lock m ;
-    let x = create_finalised () in
-    Gc.full_major ();
-    Mutex.unlock m ;
-    ignore (Sys.opaque_identity x)
-  with
-    Sys_error _ -> on := false; log "Deadlock avoided"
-  end
-
 let _ =
-  log "---- Asynchronous callbacks";
-  async_callbacks();
   log "---- Self deadlock";
   mutex_deadlock();
   log "---- Unlock twice";
