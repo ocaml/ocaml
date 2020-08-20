@@ -208,6 +208,7 @@ static int st_mutex_create(st_mutex * res)
   if (m == NULL) { rc = ENOMEM; goto error2; }
   rc = pthread_mutex_init(m, &attr);
   if (rc != 0) goto error3;
+  pthread_mutexattr_destroy(&attr);
   *res = m;
   return 0;
 error3:
