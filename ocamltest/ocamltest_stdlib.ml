@@ -94,10 +94,11 @@ module Sys = struct
 
   let rm_rf path =
     let rec erase path =
-      if Sys.is_directory path
-      then Array.iter (fun entry -> erase (Filename.concat path entry))
-                      (Sys.readdir path)
-      else erase_file path
+      if Sys.is_directory path then begin
+        Array.iter (fun entry -> erase (Filename.concat path entry))
+                   (Sys.readdir path);
+        Sys.rmdir path
+      end else erase_file path
     in
       try if Sys.file_exists path then erase path
       with Sys_error err ->

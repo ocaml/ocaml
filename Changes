@@ -315,9 +315,9 @@ Working version
   attributes are present.
   (Matthew Ryan, review by Nicolás Ojeda Bär)
 
-- #9797: Eliminate the routine use of external commands in ocamltest. ocamltest
-  no longer calls the mkdir, rm and ln external commands (at present, the only
-  external command ocamltest uses is diff).
+- #9797, #9849: Eliminate the routine use of external commands in ocamltest.
+  ocamltest no longer calls the mkdir, rm and ln external commands (at present,
+  the only external command ocamltest uses is diff).
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
 
