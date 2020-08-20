@@ -1,3 +1,5 @@
+---- Asynchronous callbacks
+Deadlock avoided
 ---- Self deadlock
 Acquiring mutex
 Acquiring mutex again
@@ -18,5 +20,3 @@ Releasing mutex from another thread
 Error reported
 Releasing mutex from another thread (again)
 Error reported
----- Asynchronous callbacks
-Deadlock avoided

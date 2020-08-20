@@ -67,29 +67,26 @@ let async_callbacks () =
     Gc.finalise (fun _ ->
       if !on then begin
         Mutex.lock m ;
+        log "finalised" ;
         Mutex.unlock m
       end) r;
     r in
   begin try
-    while true do
-      Mutex.lock m ;
-      let x = create_finalised () in
-      Mutex.unlock m ;
-      ignore (Sys.opaque_identity x)
-    done
+    Mutex.lock m ;
+    let x = create_finalised () in
+    Gc.full_major ();
+    Mutex.unlock m ;
+    ignore (Sys.opaque_identity x)
   with
     Sys_error _ -> on := false; log "Deadlock avoided"
-  end;
-  (* Try to run all finalizers before m is deallocated *)
-  Gc.full_major();
-  ignore (Sys.opaque_identity m)
+  end
 
 let _ =
+  log "---- Asynchronous callbacks";
+  async_callbacks();
   log "---- Self deadlock";
   mutex_deadlock();
   log "---- Unlock twice";
   mutex_unlock_twice();
   log "---- Unlock in other thread";
-  mutex_unlock_other_thread();
-  log "---- Asynchronous callbacks";
-  async_callbacks()
+  mutex_unlock_other_thread()
