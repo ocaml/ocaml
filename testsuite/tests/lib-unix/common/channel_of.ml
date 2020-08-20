@@ -22,7 +22,8 @@ let shouldfail msg fn arg =
 let _ =
   (* Files *)
   begin
-    let fd = Unix.(openfile "file.tmp" [O_WRONLY;O_CREAT;O_TRUNC] 0o666) in
+    let fd = Unix.(openfile "file.tmp"
+                            [O_WRONLY;O_CREAT;O_TRUNC;O_SHARE_DELETE] 0o666) in
     shouldpass "File 1" Unix.in_channel_of_descr fd;
     shouldpass "File 2" Unix.out_channel_of_descr fd;
     Unix.close fd
@@ -57,7 +58,8 @@ let _ =
   end;
   (* A closed file descriptor should now fail *)
   begin
-    let fd = Unix.(openfile "file.tmp" [O_WRONLY;O_CREAT;O_TRUNC] 0o666) in
+    let fd = Unix.(openfile "file.tmp"
+                            [O_WRONLY;O_CREAT;O_TRUNC;O_SHARE_DELETE] 0o666) in
     Unix.close fd;
     shouldfail "Closed file 1" Unix.in_channel_of_descr fd;
     shouldfail "Closed file 2" Unix.out_channel_of_descr fd
