@@ -356,8 +356,8 @@ method effects_of exp =
   | Cop (op, args, _) ->
     let from_op =
       match op with
-      | Capply _ | Cextcall _ | Cpoll | Cnop -> EC.arbitrary
-      | Calloc -> EC.none
+      | Capply _ | Cextcall _ | Cnop -> EC.arbitrary
+      | Calloc | Cpoll -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload {mutability = Asttypes.Immutable} -> EC.none
