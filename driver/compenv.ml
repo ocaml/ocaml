@@ -458,17 +458,18 @@ let read_one_param ppf position name v =
 let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
-    let (before, after) =
-      try
-        parse_args s
-      with SyntaxError s ->
-        print_error ppf s;
-        [],[]
-    in
-    List.iter (fun (name, v) -> read_one_param ppf position name v)
-      (match position with
-         Before_args -> before
-       | Before_compile _ | Before_link -> after)
+    if String.length s <> 0 then
+      let (before, after) =
+        try
+          parse_args s
+        with SyntaxError s ->
+          print_error ppf s;
+          [],[]
+      in
+      List.iter (fun (name, v) -> read_one_param ppf position name v)
+        (match position with
+           Before_args -> before
+         | Before_compile _ | Before_link -> after)
   with Not_found -> ()
 
 (* OCAMLPARAM passed as file *)
