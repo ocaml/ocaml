@@ -192,30 +192,55 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 /* Mutexes */
 
-typedef pthread_mutex_t * st_mutex;
+struct st_mutex_struct {
+  pthread_mutex_t mut;          /* protect the data structure */
+  enum { UNLOCKED, LOCKED, LOCKED_WAITED } status;
+  pthread_cond_t free;          /* signaled when transitioning from
+                                   LOCKED_WAITER to UNLOCKED */
+};
+
+typedef struct st_mutex_struct * st_mutex;
 
 static int st_mutex_create(st_mutex * res)
 {
   int rc;
-  st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(struct st_mutex_struct));
   if (m == NULL) return ENOMEM;
-  rc = pthread_mutex_init(m, NULL);
-  if (rc != 0) { caml_stat_free(m); return rc; }
+  rc = pthread_mutex_init(&m->mut, NULL);
+  if (rc != 0) goto error1;
+  rc = pthread_cond_init(&m->free, NULL);
+  if (rc != 0) goto error2;
+  m->status = UNLOCKED;
   *res = m;
   return 0;
-}
-
-static int st_mutex_destroy(st_mutex m)
-{
-  int rc;
-  rc = pthread_mutex_destroy(m);
+error2:
+  pthread_mutex_destroy(&m->mut);
+error1:
   caml_stat_free(m);
   return rc;
 }
 
+static int st_mutex_destroy(st_mutex m)
+{
+  int rc1, rc2;
+  rc1 = pthread_mutex_destroy(&m->mut);
+  rc2 = pthread_cond_destroy(&m->free);
+  caml_stat_free(m);
+  return rc1 != 0 ? rc1 : rc2;
+}
+
 Caml_inline int st_mutex_lock(st_mutex m)
 {
-  return pthread_mutex_lock(m);
+  int rc;
+  rc = pthread_mutex_lock(&m->mut);
+  if (rc != 0) return rc;
+  while (m->status != UNLOCKED) {
+    m->status = LOCKED_WAITED;
+    pthread_cond_wait(&m->free, &m->mut);
+  }
+  m->status = LOCKED;
+  pthread_mutex_unlock(&m->mut);
+  return 0;
 }
 
 #define PREVIOUSLY_UNLOCKED 0
@@ -223,12 +248,36 @@ Caml_inline int st_mutex_lock(st_mutex m)
 
 Caml_inline int st_mutex_trylock(st_mutex m)
 {
-  return pthread_mutex_trylock(m);
+  int rc;
+  rc = pthread_mutex_lock(&m->mut);
+  if (rc != 0) return rc;
+  if (m->status == UNLOCKED) {
+    m->status = LOCKED;
+    rc = PREVIOUSLY_UNLOCKED;
+  } else {
+    rc = ALREADY_LOCKED;
+  }
+  pthread_mutex_unlock(&m->mut);
+  return rc;
 }
 
 Caml_inline int st_mutex_unlock(st_mutex m)
 {
-  return pthread_mutex_unlock(m);
+  int rc;
+  rc = pthread_mutex_lock(&m->mut);
+  if (rc != 0) return rc;
+  switch (m->status) {
+  case LOCKED_WAITED:
+    pthread_cond_broadcast(&m->free);
+    /* fallthrough */
+  case LOCKED:
+    m->status = UNLOCKED;
+    break;
+  case UNLOCKED:
+    break; /* we could return an error code */
+  }
+  pthread_mutex_unlock(&m->mut);
+  return 0;
 }
 
 /* Condition variables */
@@ -266,7 +315,30 @@ Caml_inline int st_condvar_broadcast(st_condvar c)
 
 Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
 {
-  return pthread_cond_wait(c, m);
+  int rc;
+  rc = pthread_mutex_lock(&m->mut);
+  if (rc != 0) return rc;
+  /* Start releasing the mutex */
+  switch (m->status) {
+  case LOCKED_WAITED:
+    pthread_cond_broadcast(&m->free);
+    /* fallthrough */
+  case LOCKED:
+    m->status = UNLOCKED;
+    break;
+  case UNLOCKED:
+    break; /* we could return an error code */
+  }
+  /* Atomically: finish releasing the mutex and wait for the condition */
+  rc = pthread_cond_wait(c, &m->mut);
+  /* Re-acquire the mutex */
+  while (m->status != UNLOCKED) {
+    m->status = LOCKED_WAITED;
+    pthread_cond_wait(&m->free, &m->mut);
+  }
+  m->status = LOCKED;
+  pthread_mutex_unlock(&m->mut);
+  return rc;
 }
 
 /* Triggered events */

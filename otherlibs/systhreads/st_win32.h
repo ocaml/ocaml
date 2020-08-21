@@ -158,30 +158,88 @@ Caml_inline void st_thread_yield(st_masterlock * m)
   EnterCriticalSection(m);
 }
 
+/* List of threads waiting on a mutex or on a condition variable.
+   Each thread is represented by its associated event. */
+
+struct st_wait_list {
+  HANDLE event;                  /* event of the first waiting thread */
+  struct st_wait_list * next;
+};
+
+/* Recover (or create) the event associated with the calling thread */
+static HANDLE st_event_for_current_thread(void)
+{
+  HANDLE ev = (HANDLE) TlsGetValue(st_thread_sem_key);
+  if (ev == 0) {
+    ev = CreateEvent(NULL,
+                     FALSE /*auto reset*/,
+                     FALSE /*initially unset*/,
+                     NULL);
+    if (ev == 0) return 0;
+    TlsSetValue(st_thread_sem_key, (void *) ev);
+  }
+  return ev;
+}
+
 /* Mutexes */
 
-typedef CRITICAL_SECTION * st_mutex;
+struct st_mutex_struct {
+  CRITICAL_SECTION lock;        /* protect the data structure */
+  enum { UNLOCKED, LOCKED } status;
+  struct st_wait_list * waiters; /* list of threads waiting to lock it */
+};
+
+typedef struct st_mutex_struct * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(struct st_mutex_struct));
   if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
-  InitializeCriticalSection(m);
+  InitializeCriticalSection(&m->lock);
+  m->status = UNLOCKED;
+  m->waiters = NULL;
   *res = m;
   return 0;
 }
 
 static DWORD st_mutex_destroy(st_mutex m)
 {
-  DeleteCriticalSection(m);
+  DeleteCriticalSection(&m->lock);
   caml_stat_free(m);
   return 0;
 }
 
 Caml_inline DWORD st_mutex_lock(st_mutex m)
 {
+  DWORD rc;
+  HANDLE ev;
+  struct st_wait_list wait;
+
   TRACE1("st_mutex_lock", m);
-  EnterCriticalSection(m);
+  EnterCriticalSection(&m->lock);
+  while (m->status != UNLOCKED) {
+    ev = st_event_for_current_thread();
+    if (ev == NULL) { 
+      rc = GetLastError();
+      LeaveCriticalSection(&m->lock);
+      return rc;
+    }
+    /* Insert the current thread in the waiting list (atomically) */
+    wait.event = ev;
+    wait.next = m->waiters;
+    m->waiters = &wait;
+    LeaveCriticalSection(&m->lock);
+    /* Wait for our event to be signaled.  There is no risk of lost
+       wakeup, since we inserted ourselves on the waiting list of m
+       before releasing m's critical section */
+    TRACE1("st_mutex_lock: blocking on event", ev);
+    if (WaitForSingleObject(ev, INFINITE) == WAIT_FAILED)
+      return GetLastError();
+    TRACE1("st_mutex_lock: restarted", m);
+    EnterCriticalSection(&m->lock);
+  }
+  m->status = LOCKED;
+  LeaveCriticalSection(&m->lock);
   TRACE1("st_mutex_lock (done)", m);
   return 0;
 }
@@ -193,20 +251,41 @@ Caml_inline DWORD st_mutex_lock(st_mutex m)
 
 Caml_inline DWORD st_mutex_trylock(st_mutex m)
 {
+  DWORD rc;
+
   TRACE1("st_mutex_trylock", m);
-  if (TryEnterCriticalSection(m)) {
+  EnterCriticalSection(&m->lock);
+  if (m->status == UNLOCKED) {
+    m->status = LOCKED;
+    rc = PREVIOUSLY_UNLOCKED;
     TRACE1("st_mutex_trylock (success)", m);
-    return PREVIOUSLY_UNLOCKED;
   } else {
+    rc = ALREADY_LOCKED;
     TRACE1("st_mutex_trylock (failure)", m);
-    return ALREADY_LOCKED;
   }
+  LeaveCriticalSection(&m->lock);
+  return rc;
 }
 
 Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
+  DWORD rc = 0;
+  struct st_wait_list * curr, * next;
+
   TRACE1("st_mutex_unlock", m);
-  LeaveCriticalSection(m);
+  EnterCriticalSection(&m->lock);
+  /* Wake up all waiting threads */
+  curr = m->waiters;
+  while (curr != NULL) {
+    next = curr->next;
+    TRACE1("st_mutex_unlock: waking up", curr->event);
+    if (! SetEvent(curr->event)) rc = GetLastError();
+    curr = next;
+  }
+  /* Remove them all from the waiting list */
+  m->waiters = NULL;
+  m->status = UNLOCKED;
+  LeaveCriticalSection(&m->lock);
   return 0;
 }
 
@@ -215,11 +294,6 @@ Caml_inline DWORD st_mutex_unlock(st_mutex m)
 /* A condition variable is just a list of threads currently
    waiting on this c.v.  Each thread is represented by its
    associated event. */
-
-struct st_wait_list {
-  HANDLE event;                  /* event of the first waiting thread */
-  struct st_wait_list * next;
-};
 
 typedef struct st_condvar_struct {
   CRITICAL_SECTION lock;         /* protect the data structure */
@@ -291,16 +365,8 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
   struct st_wait_list wait;
 
   TRACE1("st_condvar_wait", c);
-  /* Recover (or create) the event associated with the calling thread */
-  ev = (HANDLE) TlsGetValue(st_thread_sem_key);
-  if (ev == 0) {
-    ev = CreateEvent(NULL,
-                     FALSE /*auto reset*/,
-                     FALSE /*initially unset*/,
-                     NULL);
-    if (ev == NULL) return GetLastError();
-    TlsSetValue(st_thread_sem_key, (void *) ev);
-  }
+  ev = st_event_for_current_thread();
+  if (ev == 0) return GetLastError();
   EnterCriticalSection(&c->lock);
   /* Insert the current thread in the waiting list (atomically) */
   wait.event = ev;
@@ -308,7 +374,7 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
   c->waiters = &wait;
   LeaveCriticalSection(&c->lock);
   /* Release the mutex m */
-  LeaveCriticalSection(m);
+  st_mutex_unlock(m);
   /* Wait for our event to be signaled.  There is no risk of lost
      wakeup, since we inserted ourselves on the waiting list of c
      before releasing m */
@@ -317,7 +383,7 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
     return GetLastError();
   /* Reacquire the mutex m */
   TRACE1("st_condvar_wait: restarted, acquiring mutex", m);
-  EnterCriticalSection(m);
+  st_mutex_lock(m);
   TRACE1("st_condvar_wait: acquired mutex", m);
   return 0;
 }
