@@ -1026,7 +1026,7 @@ let preproc_fun fun_body _fun_name =
           | Lop (Istackoffset n) -> (upd_size r n, a+n)
           | Lpushtrap _ -> (upd_size r 16, a+16)
           | Lpoptrap -> (r, a-16)
-          | Lop (Iextcall _ | Ialloc _ | Iintop (Icheckbound _)
+          | Lop (Iextcall _ | Ialloc _ | Ipoll | Iintop (Icheckbound _)
                  | Iintop_imm (Icheckbound _, _)) ->
               ({r with contains_external_calls = true;
                        (* +24 bytes for caml_context *)
