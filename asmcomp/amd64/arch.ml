@@ -156,6 +156,9 @@ let operation_can_raise _ = false
 open Cmm
 open X86_ast
 
+(* Certain float conditions aren't represented directly in the opcode for
+   float comparison, so we have to swap the arguments. The swap information
+   is also needed downstream because one of the arguments is clobbered. *)
 let float_cond_and_swap cond a0 a1 =
   match cond with
   | CFeq  -> EQf,  a0, a1, false

@@ -116,8 +116,8 @@ let pseudoregs_for_operation op arg res =
   | Icompf cond ->
       (* We need to temporarily store the result of the comparison in a
          float register, but we don't want to clobber any of the inputs
-         if we don't need to -- so we add a fresh register as both an
-         input and output. *)
+         if we they would still be live after this operation -- so we
+         add a fresh register as both an input and output. *)
       let treg = Reg.create Float in
       let _,_,_,is_swapped = float_cond_and_swap cond () () in
       if is_swapped
