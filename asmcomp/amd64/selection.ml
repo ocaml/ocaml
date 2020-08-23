@@ -117,7 +117,10 @@ let pseudoregs_for_operation op arg res =
       (* We need to temporarily store the result of the comparison in a
          float register, but we don't want to clobber any of the inputs
          if we they would still be live after this operation -- so we
-         add a fresh register as both an input and output. *)
+         add a fresh register as both an input and output. We don't use
+         [destroyed_at_oper], because that forces us to choose a fixed
+         register, which makes it more likely an extra mov would be added
+         to transfer the argument to the fixed register. *)
       let treg = Reg.create Float in
       let _,_,_,is_swapped = float_cond_and_swap cond () () in
       if is_swapped

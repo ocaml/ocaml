@@ -355,8 +355,8 @@ let max_register_pressure =
       else consumes ~int:9 ~float:16
   | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
       consumes ~int:2 ~float:0
-  | Ialloc _ | Ipoll ->
-      consumes ~init:(1 + num_destroyed_by_plt_stub) ~float:0
+  | Ialloc _ | Ipoll _ ->
+      consumes ~int:(1 + num_destroyed_by_plt_stub) ~float:0
   | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
       consumes ~int:1 ~float:0
   | Istore(Single, _, _) ->
