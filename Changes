@@ -387,6 +387,9 @@ Working version
 - #9753: fix build for Android
   (Github user @EduardoRFS, review by Xavier Leroy)
 
+- #9848, #9855: Fix double free of bytecode in toplevel
+  (Stephen Dolan, report by Sampsa Kiiskinen, review by Gabriel Scherer)
+
 
 OCaml 4.11
 ----------
