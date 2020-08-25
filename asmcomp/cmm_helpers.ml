@@ -454,7 +454,7 @@ let rec div_int c1 c2 is_safe dbg =
               res = t + sign-bit(c1)
         *)
         bind "dividend" c1 (fun c1 ->
-          let t = Cop(Cmulhi, [c1; Cconst_natint (m, dbg)], dbg) in
+          let t = Cop(Cmulhi, [c1; natint_const_untagged dbg m], dbg) in
           let t = if m < 0n then Cop(Caddi, [t; c1], dbg) else t in
           let t =
             if p > 0 then Cop(Casr, [t; Cconst_int (p, dbg)], dbg) else t
@@ -995,7 +995,7 @@ let sign_extend_32 dbg e =
    (if the word size is 32, this is a no-op) *)
 let zero_extend_32 dbg e =
   if size_int = 4 then e else
-    Cop(Cand, [low_32 dbg e; Cconst_natint(0xFFFFFFFFn, dbg)], dbg)
+    Cop(Cand, [low_32 dbg e; natint_const_untagged dbg 0xFFFFFFFFn], dbg)
 
 (* Boxed integers *)
 
@@ -1074,21 +1074,23 @@ let unbox_int dbg bi =
       | Cconst_symbol (s, _dbg) as cmm ->
           begin match Cmmgen_state.structured_constant_of_sym s, bi with
           | Some (Uconst_nativeint n), Primitive.Pnativeint ->
-              Cconst_natint (n, dbg)
+              natint_const_untagged dbg n
           | Some (Uconst_int32 n), Primitive.Pint32 ->
-              Cconst_natint (Nativeint.of_int32 n, dbg)
+              natint_const_untagged dbg (Nativeint.of_int32 n)
           | Some (Uconst_int64 n), Primitive.Pint64 ->
               if size_int = 8 then
-                Cconst_natint (Int64.to_nativeint n, dbg)
+                natint_const_untagged dbg (Int64.to_nativeint n)
               else
                 let low = Int64.to_nativeint n in
                 let high =
                   Int64.to_nativeint (Int64.shift_right_logical n 32)
                 in
                 if big_endian then
-                  Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
+                  Ctuple [natint_const_untagged dbg high;
+                          natint_const_untagged dbg low]
                 else
-                  Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
+                  Ctuple [natint_const_untagged dbg low;
+                          natint_const_untagged dbg high]
           | _ ->
               default cmm
           end
