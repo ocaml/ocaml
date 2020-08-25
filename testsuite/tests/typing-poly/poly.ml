@@ -1859,7 +1859,11 @@ let f x =
   ref := Some x;
   Option.get !ref
 [%%expect{|
-val f : 'a -> 'b = <fun>
+Line 2, characters 6-44:
+2 |   let ref : type a . a option ref = ref None in
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This definition has type 'a option ref which is less general than
+         'a0. 'a0 option ref
 |}]
 
 type pr = { foo : 'a. 'a option ref }
