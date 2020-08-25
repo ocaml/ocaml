@@ -427,7 +427,8 @@ let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)
 let text_cstr pos = Cf.text (rhs_text pos)
 let text_csig pos = Ctf.text (rhs_text pos)
-let text_def pos = [Ptop_def (Str.text (rhs_text pos))]
+let text_def pos =
+  List.map (fun def -> Ptop_def [def]) (Str.text (rhs_text pos))
 
 let extra_text startpos endpos text items =
   match items with
@@ -445,7 +446,9 @@ let extra_sig p1 p2 items = extra_text p1 p2 Sig.text items
 let extra_cstr p1 p2 items = extra_text p1 p2 Cf.text items
 let extra_csig p1 p2 items = extra_text p1 p2 Ctf.text  items
 let extra_def p1 p2 items =
-  extra_text p1 p2 (fun txt -> [Ptop_def (Str.text txt)]) items
+  extra_text p1 p2
+    (fun txt -> List.map (fun def -> Ptop_def [def]) (Str.text txt))
+    items
 
 let extra_rhs_core_type ct ~pos =
   let docs = rhs_info pos in

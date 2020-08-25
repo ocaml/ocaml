@@ -283,6 +283,9 @@ Working version
 - #9216: add Lambda.duplicate which refreshes bound identifiers
   (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
 
+- #9376: Remove spurious Ptop_defs from #use
+  (Leo White, review by Damien Doligez)
+
 - #9464, #9493, #9520, #9563, #9599, #9608, #9647: refactor
   the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
