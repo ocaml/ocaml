@@ -54,6 +54,9 @@ Working version
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
 
+- #8807, #9503: Use different symbols for do_local_roots on bytecode and native
+  (Stephen Dolan, review by David Allsopp and Xavier Leroy)
+
 - #9619: Change representation of function closures so that code pointers
   can be easily distinguished from environment variables
   (Xavier Leroy, review by Mark Shinwell and Damien Doligez)
