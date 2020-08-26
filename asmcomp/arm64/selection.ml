@@ -108,7 +108,7 @@ method is_immediate_test _cmp n =
 
 method is_immediate op n =
   match op with
-  | Iadd | Isub  -> is_immediate n
+  | Iadd | Isub  -> n <= 0xFFF_FFF && n >= -0xFFF_FFF
   | Imul | Imulh -> false        (* no mul immediate instruction *)
   | Iand | Ior | Ixor -> is_logical_immediate n
   | Icomp _ | Icheckbound _ -> is_immediate n
