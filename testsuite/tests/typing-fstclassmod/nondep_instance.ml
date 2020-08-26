@@ -42,6 +42,10 @@ module Primitive(Linear_map : Linear_map) = struct
     Linear_map.scale s x
 end;;
 [%%expect{|
-Uncaught exception: Ctype.Nondep_cannot_erase(_)
-
+Line 3, characters 21-22:
+3 |     Linear_map.scale s x
+                         ^
+Error: This expression has type (module Scalar with type t = s)
+       but an expression was expected of type
+         (module Vector_space with type scalar = 'a and type t = 'b)
 |}];;
