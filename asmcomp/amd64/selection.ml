@@ -121,17 +121,26 @@ let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
+let is_immediate n =
+  n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
+  (* -1-.... : hack so that this can be compiled on 32-bit
+     (cf 'make check_all_arches') *)
+
+let is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
+
 (* The selector class *)
 
 class selector = object (self)
 
 inherit Spacetime_profiling.instruction_selection as super
 
-method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
-  (* -1-.... : hack so that this can be compiled on 32-bit
-     (cf 'make check_all_arches') *)
+method is_immediate op n =
+  match op with
+  (* AMD64 does not support immediate operands for multiply high signed *)
+  | Imulh -> false
+  | _ -> is_immediate n
 
-method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
+method is_immediate_test _cmp n = is_immediate n
 
 method! is_simple_expr e =
   match e with
@@ -153,7 +162,7 @@ method! effects_of e =
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
   (* PR#4625: displacement must be a signed 32-bit immediate *)
-  if not (self # is_immediate d)
+  if not (is_immediate d)
   then (Iindexed 0, exp)
   else match a with
     | Asymbol s ->
@@ -169,12 +178,12 @@ method select_addressing _chunk exp =
 
 method! select_store is_assign addr exp =
   match exp with
-    Cconst_int (n, _dbg) when self#is_immediate n ->
+    Cconst_int (n, _dbg) when is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint (n, _dbg)) when self#is_immediate_natint n ->
+  | (Cconst_natint (n, _dbg)) when is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | (Cblockheader(n, _dbg))
-      when self#is_immediate_natint n && not Config.spacetime ->
+      when is_immediate_natint n && not Config.spacetime ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
@@ -211,7 +220,7 @@ method! select_operation op args dbg =
   | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int (n, _dbg)], _)]
-        when loc = loc' && self#is_immediate n ->
+        when loc = loc' && is_immediate n ->
           let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
@@ -224,12 +233,9 @@ method! select_operation op args dbg =
   | Cextcall("caml_int64_direct_bswap", _, _, _, _)
   | Cextcall("caml_nativeint_direct_bswap", _, _, _, _) ->
       (Ispecific (Ibswap 64), args)
-  (* AMD64 does not support immediate operands for multiply high signed *)
-  | Cmulhi ->
-      (Iintop Imulh, args)
+  (* Recognize sign extension *)
   | Casr ->
       begin match args with
-        (* Recognize sign extension *)
         [Cop(Clsl, [k; Cconst_int (32, _)], _); Cconst_int (32, _)] ->
           (Ispecific Isextend32, [k])
         | _ -> super#select_operation op args dbg

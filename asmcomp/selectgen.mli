@@ -62,9 +62,12 @@ end
 class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)
-  method virtual is_immediate : int -> bool
+  method virtual is_immediate : Mach.integer_operation -> int -> bool
     (* Must be defined to indicate whether a constant is a suitable
-       immediate operand to arithmetic instructions *)
+       immediate operand to the given integer arithmetic instruction *)
+  method virtual is_immediate_test : Mach.integer_comparison -> int -> bool
+    (* Must be defined to indicate whether a constant is a suitable
+       immediate operand to the given integer test *)
   method virtual select_addressing :
     Cmm.memory_chunk -> Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)

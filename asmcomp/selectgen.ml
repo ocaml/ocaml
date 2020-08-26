@@ -379,9 +379,15 @@ method effects_of exp =
   | Cassign _ | Cswitch _ | Ccatch _ | Cexit _ | Ctrywith _ ->
     EC.arbitrary
 
-(* Says whether an integer constant is a suitable immediate argument *)
+(* Says whether an integer constant is a suitable immediate argument for
+   the given integer operation *)
 
-method virtual is_immediate : int -> bool
+method virtual is_immediate : integer_operation -> int -> bool
+
+(* Says whether an integer constant is a suitable immediate argument for
+   the given integer test *)
+
+method virtual is_immediate_test : integer_comparison -> int -> bool
 
 (* Selection of addressing modes *)
 
@@ -502,29 +508,30 @@ method select_operation op args _dbg =
   | _ -> Misc.fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
-    [arg; Cconst_int (n, _)] when self#is_immediate n ->
+  | [arg; Cconst_int (n, _)] when self#is_immediate op n ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int (n, _); arg] when self#is_immediate n ->
+  | [Cconst_int (n, _); arg] when self#is_immediate op n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith op = function
-    [arg; Cconst_int (n, _)] when self#is_immediate n ->
+  | [arg; Cconst_int (n, _)] when self#is_immediate op n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_shift op = function
-    [arg; Cconst_int (n, _)] when n >= 0 && n < Arch.size_int * 8 ->
+  | [arg; Cconst_int (n, _)] when n >= 0 && n < Arch.size_int * 8 ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith_comp cmp = function
-    [arg; Cconst_int (n, _)] when self#is_immediate n ->
+  | [arg; Cconst_int (n, _)] when self#is_immediate (Icomp cmp) n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [Cconst_int (n, _); arg] when self#is_immediate n ->
+  | [Cconst_int (n, _); arg] 
+    when self#is_immediate (Icomp(swap_intcomp cmp)) n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
       (Iintop(Icomp cmp), args)
@@ -532,15 +539,19 @@ method private select_arith_comp cmp = function
 (* Instruction selection for conditionals *)
 
 method select_condition = function
-    Cop(Ccmpi cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [arg1; Cconst_int (n, _)], _)
+    when self#is_immediate_test (Isigned cmp) n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_int (n, _); arg2], _)
+    when self#is_immediate_test (Isigned (swap_integer_comparison cmp)) n ->
       (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_int (n, _)], _)
+    when self#is_immediate_test (Iunsigned cmp) n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_int (n, _); arg2], _)
+    when self#is_immediate_test (Iunsigned (swap_integer_comparison cmp)) n ->
       (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)

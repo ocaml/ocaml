@@ -76,6 +76,13 @@ let rec run_automata nbits state input =
 let is_logical_immediate n =
   n <> 0 && n <> -1 && run_automata 64 0 n
 
+(* Signed immediates are simpler *)
+
+let is_immediate n =
+  let mn = -n in
+  n land 0xFFF = n || n land 0xFFF_000 = n
+  || mn land 0xFFF = mn || mn land 0xFFF_000 = mn
+
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
@@ -96,10 +103,16 @@ class selector = object(self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate n =
-  let mn = -n in
-  n land 0xFFF = n || n land 0xFFF_000 = n
-  || mn land 0xFFF = mn || mn land 0xFFF_000 = mn
+method is_immediate_test _cmp n = 
+  is_immediate n
+
+method is_immediate op n =
+  match op with
+  | Iadd | Isub  -> is_immediate n
+  | Imul | Imulh -> false        (* no mul immediate instruction *)
+  | Iand | Ior | Ixor -> is_logical_immediate n
+  | Icomp _ | Icheckbound _ -> is_immediate n
+  | _ -> assert false
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
@@ -135,13 +148,6 @@ method! select_operation op args dbg =
   (* Integer addition *)
   | Caddi | Caddv | Cadda ->
       begin match args with
-      (* Add immediate *)
-      | [arg; Cconst_int (n, _)] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
-           [arg])
-      | [Cconst_int (n, _); arg] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
-           [arg])
       (* Shift-add *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg1; arg2])
@@ -167,10 +173,6 @@ method! select_operation op args dbg =
   (* Integer subtraction *)
   | Csubi ->
       begin match args with
-      (* Sub immediate *)
-      | [arg; Cconst_int (n, _)] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Isub, n) else Iintop_imm(Iadd, -n)),
-           [arg])
       (* Shift-sub *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, n)), [arg1; arg2])
@@ -198,17 +200,6 @@ method! select_operation op args dbg =
       | _ ->
           super#select_operation op args dbg
       end
-  (* Integer multiplication *)
-  (* ARM does not support immediate operands for multiplication *)
-  | Cmuli ->
-      (Iintop Imul, args)
-  | Cmulhi ->
-      (Iintop Imulh, args)
-  (* Bitwise logical operations have a different range of immediate
-     operands than the other instructions *)
-  | Cand -> self#select_logical Iand args
-  | Cor -> self#select_logical Ior args
-  | Cxor -> self#select_logical Ixor args
   (* Recognize floating-point negate and multiply *)
   | Cnegf ->
       begin match args with
@@ -246,14 +237,6 @@ method! select_operation op args dbg =
   (* Other operations are regular *)
   | _ ->
       super#select_operation op args dbg
-
-method select_logical op = function
-  | [arg; Cconst_int (n, _)] when is_logical_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | [Cconst_int (n, _); arg] when is_logical_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | args ->
-      (Iintop op, args)
 
 method! insert_move_extcall_arg env ty_arg src dst =
   if macosx && ty_arg = XInt32 && is_stack_slot dst
