@@ -400,6 +400,9 @@ Working version
 - #9848, #9855: Fix double free of bytecode in toplevel
   (Stephen Dolan, report by Sampsa Kiiskinen, review by Gabriel Scherer)
 
+- #9860: wrong range constraint for subtract immediate on zSystems / s390x
+  (Xavier Leroy, review by Stephen Dolan)
+
 
 OCaml 4.11
 ----------
