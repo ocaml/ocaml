@@ -34,47 +34,8 @@ let is_offset chunk n =
     | Word_int | Word_val | Double | Double_u ->
         n land 7 = 0 && n lsr 3 < 0x1000)
 
-(* An automaton to recognize ( 0+1+0* | 1+0+1* )
-
-               0          1          0
-              / \        / \        / \
-              \ /        \ /        \ /
-        -0--> [1] --1--> [2] --0--> [3]
-       /
-     [0]
-       \
-        -1--> [4] --0--> [5] --1--> [6]
-              / \        / \        / \
-              \ /        \ /        \ /
-               1          0          1
-
-The accepting states are 2, 3, 5 and 6. *)
-
-let auto_table = [|   (* accepting?, next on 0, next on 1 *)
-  (* state 0 *) (false, 1, 4);
-  (* state 1 *) (false, 1, 2);
-  (* state 2 *) (true,  3, 2);
-  (* state 3 *) (true,  3, 7);
-  (* state 4 *) (false, 5, 4);
-  (* state 5 *) (true,  5, 6);
-  (* state 6 *) (true,  7, 6);
-  (* state 7 *) (false, 7, 7)   (* error state *)
-|]
-
-let rec run_automata nbits state input =
-  let (acc, next0, next1) = auto_table.(state) in
-  if nbits <= 0
-  then acc
-  else run_automata (nbits - 1)
-                    (if input land 1 = 0 then next0 else next1)
-                    (input asr 1)
-
-(* We are very conservative wrt what ARM64 supports: we don't support
-   repetitions of a 000111000 or 1110000111 pattern, just a single
-   pattern of this kind. *)
-
 let is_logical_immediate n =
-  n <> 0 && n <> -1 && run_automata 64 0 n
+  Arch.is_logical_immediate (Nativeint.of_int n)
 
 (* Signed immediates are simpler *)
 
