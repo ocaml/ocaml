@@ -5025,7 +5025,9 @@ and type_let
             so we do it anyway. *)
          generalize exp.exp_type
        | Some vars ->
-         generalize_and_check_univars env "definition" exp pat.pat_type vars)
+           if maybe_expansive exp then
+             lower_contravariant env exp.exp_type;
+           generalize_and_check_univars env "definition" exp pat.pat_type vars)
     pat_list exp_list;
   let l = List.combine pat_list exp_list in
   let l =

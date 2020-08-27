@@ -407,8 +407,17 @@ Working version
   (Xavier Leroy, review by Stephen Dolan)
 
 
-OCaml 4.11
-----------
+OCaml 4.11.1
+------------
+
+### Bug fixes:
+
+- #9856, #9857: Prevent polymorphic type annotations from generalizing
+  weak polymorphic variables.
+  (Leo White, review by Jacques Garrigue)
+
+OCaml 4.11.0 (19 August 2020)
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
