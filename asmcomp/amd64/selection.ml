@@ -121,12 +121,9 @@ let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
-let is_immediate n =
-  n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
-  (* -1-.... : hack so that this can be compiled on 32-bit
-     (cf 'make check_all_arches') *)
+let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
 
-let is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
+let is_immediate_natint n = n <= 0x7FFF_FFFFn && n >= -0x8000_0000n
 
 (* The selector class *)
 

@@ -58,11 +58,8 @@ let pseudoregs_for_operation op arg res =
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
-let is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
-let is_immediate_logical n = n <= (1 lsl 32) - 1 (* 0xFFFF_FFFF *) && n >= 0
-  (* -1-0x7FFF_FFFF and 1 lsl 32 - 1:
-      hack so that this can be compiled on 32-bit
-      (cf 'make check_all_arches') *)
+let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
+let is_immediate_logical n = n <= 0xFFFF_FFFF && n >= 0
 
 class selector = object (self)
 
@@ -78,7 +75,7 @@ method is_immediate op n =
   | Iadd | Imul -> is_immediate n
   | Isub -> is_immediate (-n)
   | Imulh -> false (* Z does not support immediate operands for mul high *)
-  | Iand -> n <= -1 && n >= (-1) lsl 32 (*-0x1_0000_0000*))
+  | Iand -> n <= -1 && n >= -0x1_0000_0000
   | Ior | Ixor -> is_immediate_logical n
   | Icomp c -> self#is_immediate_test c n
   | Icheckbound _ -> is_immediate_logical n
