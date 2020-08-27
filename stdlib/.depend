@@ -409,7 +409,8 @@ stdlib__listLabels.cmx : \
     stdlib__list.cmx \
     stdlib__listLabels.cmi
 stdlib__listLabels.cmi : \
-    stdlib__seq.cmi
+    stdlib__seq.cmi \
+    stdlib__either.cmi
 stdlib__map.cmo : \
     stdlib__seq.cmi \
     stdlib__map.cmi
