@@ -1852,3 +1852,27 @@ Error: This expression has type < x : 'b. 'b s list >
        'a list
        The universal variable 'b would escape its scope
 |}]
+
+(* #9856 *)
+let f x =
+  let ref : type a . a option ref = ref None in
+  ref := Some x;
+  Option.get !ref
+[%%expect{|
+Line 2, characters 6-44:
+2 |   let ref : type a . a option ref = ref None in
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This definition has type 'a option ref which is less general than
+         'a0. 'a0 option ref
+|}]
+
+type pr = { foo : 'a. 'a option ref }
+let x = { foo = ref None }
+[%%expect{|
+type pr = { foo : 'a. 'a option ref; }
+Line 2, characters 16-24:
+2 | let x = { foo = ref None }
+                    ^^^^^^^^
+Error: This field value has type 'b option ref which is less general than
+         'a. 'a option ref
+|}]
