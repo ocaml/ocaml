@@ -221,6 +221,23 @@ Error: The functor application is ill-typed.
   2. Modules do not match: Ctx.X : Ctx.t is not included in Ctx.u
 |}]
 
+(** Too many arguments *)
+module Ord = struct type t = unit let compare _ _ = 0 end
+module M = Map.Make(Ord)(Ord)
+[%%expect {|
+module Ord : sig type t = unit val compare : 'a -> 'b -> int end
+Line 2, characters 11-29:
+2 | module M = Map.Make(Ord)(Ord)
+               ^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         Ord Ord
+       do not match these parameters:
+         functor (Ord : Map.OrderedType)  -> ...
+  1. Module Ord matches the expected module type Map.OrderedType
+  2. The following extra argument is provided
+         Ord : sig type t = unit val compare : 'a -> 'b -> int end
+|}]
 
 
 (** Dependent types *)
