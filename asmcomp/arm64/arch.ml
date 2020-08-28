@@ -58,6 +58,7 @@ type specific_operation =
   | Isqrtf        (* floating-point square root *)
   | Ibswap of int (* endianness conversion *)
   | Imove32       (* 32-bit integer move *)
+  | Isignext of int (* sign extension *)
 
 and arith_operation =
     Ishiftadd
@@ -169,6 +170,9 @@ let print_specific_operation printreg op ppf arg =
   | Imove32 ->
       fprintf ppf "move32 %a"
         printreg arg.(0)
+  | Isignext n ->
+      fprintf ppf "signext%d %a"
+        n printreg arg.(0)
 
 (* Recognition of logical immediate arguments *)
 

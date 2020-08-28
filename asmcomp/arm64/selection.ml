@@ -160,6 +160,14 @@ method! select_operation op args dbg =
       | _ ->
           super#select_operation op args dbg
       end
+  (* Recognize sign extension *)
+  | Casr ->
+      begin match args with
+        [Cop(Clsl, [k; Cconst_int (n, _)], _); Cconst_int (n', _)]
+        when n' = n && 0 < n && n < 64 ->
+          (Ispecific (Isignext (64 - n)), [k])
+        | _ -> super#select_operation op args dbg
+      end
   (* Recognize floating-point negate and multiply *)
   | Cnegf ->
       begin match args with
