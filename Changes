@@ -137,6 +137,9 @@ Working version
 
 ### Standard library:
 
+- #9865: add Format.pp_print_seq
+  (Raphaël Proust)
+
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
 

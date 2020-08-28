@@ -258,6 +258,7 @@ stdlib__format.cmo : \
     stdlib__string.cmi \
     stdlib.cmi \
     stdlib__stack.cmi \
+    stdlib__seq.cmi \
     stdlib__queue.cmi \
     stdlib__list.cmi \
     stdlib__int.cmi \
@@ -269,6 +270,7 @@ stdlib__format.cmx : \
     stdlib__string.cmx \
     stdlib.cmx \
     stdlib__stack.cmx \
+    stdlib__seq.cmx \
     stdlib__queue.cmx \
     stdlib__list.cmx \
     stdlib__int.cmx \
@@ -278,6 +280,7 @@ stdlib__format.cmx : \
     stdlib__format.cmi
 stdlib__format.cmi : \
     stdlib.cmi \
+    stdlib__seq.cmi \
     stdlib__buffer.cmi
 stdlib__fun.cmo : \
     stdlib__printexc.cmi \
