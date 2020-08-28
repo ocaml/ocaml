@@ -37,7 +37,6 @@ type symptom =
   | Class_declarations of
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
-  | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
   | Invalid_module_alias of Path.t
 
@@ -68,7 +67,7 @@ type core_module_type_symptom =
   | Not_an_alias
   | Not_an_identifier
   | Incompatible_aliases
-  | Unbound_modtype_path of Path.t
+  | Abstract_module_type
   | Unbound_module_path of Path.t
   | Invalid_module_alias of Path.t
 
@@ -203,9 +202,8 @@ let class_declarations ~old_env:_ env  subst _id decl1 decl2 =
 
 let expand_modtype_path env path =
    match Env.(find_modtype path env).mtd_type with
-     | exception Not_found -> Error (E.Unbound_modtype_path path)
-     | None -> Error E.Incompatible_aliases
-     | Some x -> Ok x
+     | None | exception Not_found -> None
+     | Some x -> Some x
 
 let expand_module_alias env path =
   try Ok ((Env.find_module path env).md_type)
@@ -338,8 +336,8 @@ let retrieve_functor_params env x =
     function
   | Mty_ident p as res ->
       begin match expand_modtype_path env p with
-      | Ok mty -> retrieve_functor_params before env mty
-      | Error _ -> List.rev before, res
+      | Some mty -> retrieve_functor_params before env mty
+      | None -> List.rev before, res
       end
   | Mty_alias p as res ->
       begin match expand_module_alias env p with
@@ -389,32 +387,29 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
       if Path.same p1 p2 then Ok Tcoerce_none
       else
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
-        | Ok p1, Ok p2 ->
+        | Some p1, Some p2 ->
             try_modtypes ~loc env ~mark dont_match subst p1 p2
-        | Error e, _  | _, Error e -> dont_match (E.Mt_core e)
+        | None, _  | _, None -> dont_match (E.Mt_core Abstract_module_type)
         end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
       begin match expand_modtype_path env p1 with
-      | Ok p1 ->
+      | Some p1 ->
           try_modtypes ~loc env ~mark dont_match subst p1 mty2
-      | Error e -> dont_match (E.Mt_core e)
+      | None -> dont_match (E.Mt_core Abstract_module_type)
       end
   | (_, Mty_ident p2) ->
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
       begin match expand_modtype_path env p2 with
-      | Ok p2 -> try_modtypes ~loc env ~mark dont_match subst mty1 p2
-      | Error Incompatible_aliases ->
+      | Some p2 -> try_modtypes ~loc env ~mark dont_match subst mty1 p2
+      | None ->
           begin match mty1 with
           | Mty_functor _ ->
               let params1 = retrieve_functor_params env mty1 in
               let d = E.sdiff params1 ([],mty2) in
               dont_match E.(Functor (Params d))
-          | _ ->
-                dont_match E.(Mt_core Not_an_identifier)
-            end
-      | Error e ->
-          dont_match (E.Mt_core e)
+          | _ -> dont_match E.(Mt_core Not_an_identifier)
+          end
       end
   | (Mty_signature sig1, Mty_signature sig2) ->
       begin match signatures ~loc env ~mark subst sig1 sig2 with
@@ -1390,13 +1385,11 @@ module Pp = struct
 
   let core_module_type_symptom x  =
     match x with
-    | Not_an_alias | Not_an_identifier
+    | Not_an_alias | Not_an_identifier | Abstract_module_type
     | Incompatible_aliases ->
         if Printtyp.Conflicts.exists () then
           Some (Printtyp.Conflicts.print_explanations)
         else None
-    | Unbound_modtype_path path ->
-        Some(Format.dprintf "Unbound module type %a" Printtyp.path path)
     | Unbound_module_path path ->
         Some(Format.dprintf "Unbound module %a" Printtyp.path path)
     | Invalid_module_alias path ->
