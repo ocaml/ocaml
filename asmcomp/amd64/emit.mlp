@@ -450,12 +450,12 @@ let emit_float_test cmp i lbl =
 
 (* Deallocate the stack frame before a return or tail call *)
 
-let output_epilogue f =
+let output_epilogue ~tailcall f =
   if !frame_required then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
-      I.add (int n) rsp;
+      if not tailcall && n = 8 then (I.pop rbx) else (I.add (int n) rsp);
       cfi_adjust_cfa_offset (-n);
     end;
     if fp then I.pop rbp;
@@ -533,7 +533,7 @@ let emit_instr fallthrough i =
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0
       then begin
-        I.sub (int n) rsp;
+        if n = 8 then (I.push rax) else (I.sub (int n) rsp);
         cfi_adjust_cfa_offset n;
       end;
     end
@@ -583,7 +583,7 @@ let emit_instr fallthrough i =
       emit_call func;
       record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Itailcall_ind { label_after; }) ->
-      output_epilogue begin fun () ->
+      output_epilogue ~tailcall:true begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
           record_frame Reg.Set.empty (Dbg_other i.dbg) ~label:label_after
@@ -594,7 +594,7 @@ let emit_instr fallthrough i =
         if func = !function_name then
           I.jmp (label !tailrec_entry_point)
         else begin
-          output_epilogue begin fun () ->
+          output_epilogue ~tailcall:true begin fun () ->
             add_used_symbol func;
             emit_jump func
           end
@@ -800,7 +800,7 @@ let emit_instr fallthrough i =
   | Lreloadretaddr ->
       ()
   | Lreturn ->
-      output_epilogue begin fun () ->
+      output_epilogue ~tailcall:false begin fun () ->
         I.ret ()
       end
   | Llabel lbl ->
