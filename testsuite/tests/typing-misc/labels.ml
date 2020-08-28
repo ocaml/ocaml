@@ -90,3 +90,32 @@ Line 1, characters 45-46:
 Warning 19: commuted an argument without principality.
 val f : (x:int -> unit -> int) -> x:int -> int = <fun>
 |}];;
+
+(* 9859: inferred function types may appear in the right hand side of :> *)
+class setup = object
+  method with_ f = (f 0:unit)
+end
+class virtual fail = object (self)
+  method trigger = (self :> setup )
+end
+[%%expect {|
+class setup : object method with_ : (int -> unit) -> unit end
+class virtual fail :
+  object
+    method trigger : setup
+    method virtual with_ : (int -> unit) -> unit
+  end
+|}]
+
+module type T = sig type t  end
+let type_of (type x) (x: x) = (module struct type t = x end: T with type t = x)
+let f g = 1 + g ~x:0 ~y:0;;
+module E = (val type_of f)
+let g = ( (fun _ -> f) :> 'a -> E.t)
+[%%expect {|
+module type T = sig type t end
+val type_of : 'x -> (module T with type t = 'x) = <fun>
+val f : (x:int -> y:int -> int) -> int = <fun>
+module E : sig type t = (x:int -> y:int -> int) -> int end
+val g : 'a -> E.t = <fun>
+|}]
