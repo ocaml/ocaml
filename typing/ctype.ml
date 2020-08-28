@@ -4055,8 +4055,7 @@ let rec build_subtype env visited loops posi level t =
           (t, Unchanged)
       else
         (t, Unchanged)
-  | Tarrow(l, t1, t2, com) ->
-      assert (com = Cok);
+  | Tarrow(l, t1, t2, _) ->
       if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       let (t1', c1) = build_subtype env visited loops (not posi) level t1 in

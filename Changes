@@ -416,6 +416,10 @@ OCaml 4.11.1
   weak polymorphic variables.
   (Leo White, review by Jacques Garrigue)
 
+- #9859, #9862: Remove an erroneous assertion when inferred function types
+  appear in the right hand side of an explicit :> coercion
+  (Florian Angeletti, review by Thomas Refis)
+
 OCaml 4.11.0 (19 August 2020)
 ---------------------------
 
