@@ -1,10 +1,17 @@
 DUNE_CMD := $(if $(wildcard dune/dune.exe),dune/dune.exe,dune)
 DUNE ?= $(DUNE_CMD)
 
+DEBUG ?= 0
+ifeq ($(DEBUG), 1)
+    DBG=
+else
+    DBG=quiet
+endif
+
 all:
-	$(DUNE) exec --root=. src/process_manual.exe quiet
-	$(DUNE) exec --root=. src/process_api.exe overwrite quiet
-	$(DUNE) exec --root=. src/process_api.exe compiler overwrite quiet
+	$(DUNE) exec --root=. src/process_manual.exe $(DBG)
+	$(DUNE) exec --root=. src/process_api.exe overwrite $(DBG)
+	$(DUNE) exec --root=. src/process_api.exe compiler overwrite $(DBG)
 
 clean:
 	rm -rf ../webman src/.merlin _build

@@ -44,8 +44,9 @@ From the `html_processing` directory:
 
 ## Debug
 
-Look at the `Makefile`: the `quiet` keyword is optional. Remove it to
-have debug information.
+```
+make DEBUG=1
+```
 
 By default all html files are re-created by `make`, but the javascript
 index `webman/api/index.js` and `webman/api/compilerlibref/index.js`

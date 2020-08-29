@@ -110,9 +110,10 @@ let compile_css src dst =
 
 (* Detect OCaml version from version.tex *)
 let find_version () =
-  let versiontex = "../version.tex" in
-  Scanf.bscanf (Scanf.Scanning.from_file versiontex)
-    "\\def\\ocamlversion{%s@}" (fun a -> a)
+  let pp = Filename.parent_dir_name in
+  let version_file = pp // pp // pp // "VERSION" in
+  let major, minor = Scanf.bscanf (Scanf.Scanning.from_file version_file) "%u.%u" (fun x y -> x,y) in
+  sprintf "%u.%u" major minor
 
 (*
    Local Variables:

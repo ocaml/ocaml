@@ -44,7 +44,7 @@ let index part =
   part
 
 
-(* TODO: update this automatically *)
+(* This string is updated by [extract_date] *)
 let copyright_text = ref "Copyright © 2020 Institut National de Recherche en Informatique et en Automatique"
 
 let copyright () =
