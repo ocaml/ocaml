@@ -46,18 +46,18 @@ let search_widget with_description =
 
 let process ?(search=true) ~version file out =
 
-  sprintf "Processing %s..." file |> pr;
+  dbg "Processing %s..." file;
   let html = read_file file in
   let soup = parse html in
 
   (* Add javascript files *)
+  let head = soup $ "head" in
   if search then begin
-    let head = soup $ "head" in
     create_element "script" ~attributes:["src","search.js"]
-    |> append_child head;
-    create_element "script" ~attributes:["src","scroll.js"]
-    |> append_child head;
+    |> append_child head
   end;
+  create_element "script" ~attributes:["src","scroll.js"]
+  |> append_child head;
 
   (* Add favicon *)
   let head = soup $ "head" in
@@ -146,7 +146,7 @@ let process ?(search=true) ~version file out =
                           ((if !compiler_libref then "../" else "") ^
                            (manual_page_url ^ "/index.html")));
 
-  sprintf "Saving %s..." out |> pr;
+  dbg "Saving %s..." out;
 
   (* Save new html file *)
   let new_html = to_string soup in
@@ -169,7 +169,7 @@ let parse_pair = function
 
 let parse_tdlist = function
   | [alist, []] -> let mdule, value = parse_pair alist in
-    pr (fst value);
+    dbg "%s" (fst value);
     (mdule, value, ("",""))
   | [[], infolist; alist, []] ->
     let mdule, value = parse_pair alist in
@@ -177,7 +177,7 @@ let parse_tdlist = function
     let infohtml = infohtml |> List.map to_string |> String.concat " "
                    |> String.escaped in
     let infotext = infotext |> String.concat " " |> String.escaped in
-    pr (fst value);
+    dbg "%s" (fst value);
     (mdule, value, (infohtml, infotext))
   | _ -> raise (Invalid_argument "parse_tdlist")
 
@@ -264,7 +264,7 @@ module Index = struct
      - : string option = Some "int -> float"
   *)
   let get_sig ?mod_name ~id file  =
-    sprintf "Looking for signature for %s in %s" id file |> pr;
+    dbg "Looking for signature for %s in %s" id file;
     let anon_t_regexp = Str.regexp "\\bt\\b" in
     let inch = open_in (!src_dir // file) in
     let reg = Str.regexp_string (sprintf {|id="%s"|} id) in
@@ -284,7 +284,7 @@ module Index = struct
               Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
           (* let _ = Str.search_forward reg_type line 0 in
            * let the_sig = Str.matched_group 1 line |> strip_a_tag in *)
-          sprintf "Signature=[%s]" sig_txt |> pr;
+          dbg "Signature=[%s]" sig_txt;
           close_in inch; Some (to_string code |> String.escaped, sig_txt)
         with
         | Not_found -> loop ()
@@ -296,7 +296,7 @@ module Index = struct
   let get_id ref =
     try let i = String.index ref '#' in
       Some (String.sub ref (i+1) (String.length ref - i - 1))
-    with Not_found -> sprintf "Could not find id for %s" ref |> pr; None
+    with Not_found -> dbg "Could not find id for %s" ref; None
 
   let make ?(with_sig = true) () =
     let ch = Scanning.open_in (!src_dir // "index_values.html") in
@@ -328,7 +328,7 @@ module Index = struct
             let s = concat_before ch "</td></tr>" in
             "<div class=\"info\">" ^ s
           | s -> raise (Scan_failure s) in
-        pr val_ref;
+        dbg "%s" val_ref;
 
         let new_entry = ((mod_name, mod_ref), (val_name, val_ref), info, signature) in
         loop (new_entry :: list) in
@@ -352,13 +352,13 @@ let save_index file index =
   close_out outch
 
 let process_index ?(fast=true) () =
-  pr "Recreating index file, please wait...";
+  dbg "Recreating index file, please wait...";
   let t = Unix.gettimeofday () in
   let index = if fast then Index.make ()
     else make_index () |> List.map (fun (a,b,c) -> (a,b,c,None)) in
-  sprintf "Index created. Time = %f\n" (Unix.gettimeofday () -. t) |> pr;
+  dbg "Index created. Time = %f\n" (Unix.gettimeofday () -. t);
   save_index (!dst_dir // "index.js") index;
-  sprintf "Index saved. Time = %f\n" (Unix.gettimeofday () -. t) |> pr
+  dbg "Index saved. Time = %f\n" (Unix.gettimeofday () -. t)
 
 let process_html overwrite version =
   print_endline (sprintf "\nProcessing version %s into %s...\n" version !dst_dir);
@@ -369,7 +369,7 @@ let process_html overwrite version =
               (!src_dir // file)
               (!dst_dir // file) with
       | Ok () -> incr processed
-      | Error s -> pr s
+      | Error s -> dbg "%s" s
     );
   sprintf "Version %s, HTML processing done: %u files have been processed."
     version !processed |> print_endline

@@ -52,3 +52,20 @@ By default all html files are re-created by `make`, but the javascript
 index `webman/api/index.js` and `webman/api/compilerlibref/index.js`
 are kept if they already exist. You can use `make clean` to delete all
 generated files.
+
+The javascript files in the `html_processing/js` dir add functionality
+but the web-manual is still browsable without them:
+
+- `scroll.js`: adds smooth scrolling in the html page, but only for
+  near targets. The reason is that when you jump to another place in a
+  text, if the jump is immediate (no scrolling), you easily get lost;
+  for instance you usually don't even realize that the target of the
+  link is just half a page below! Thus smooth scrolling helps
+  _understanding the structure_ of the document. However, when the
+  target is very far, the browser will scroll a huge amount of text
+  very quickly, and this becomes useless, and even painful for the
+  eye. Hence we disable smooth scrolling for far targets.
+
+- `search.js`: adds an 'as-you-type quick search widget', which
+  recognize values, modules, and type signatures. It is very useful,
+  but of course not strictly necessary.

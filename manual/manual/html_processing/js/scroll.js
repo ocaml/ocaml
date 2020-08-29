@@ -33,9 +33,11 @@ function localLink (link) {
 	     || link.substring(0,filename.length) == filename));
 }
 
-//aaa.html#coucou --> coucou
+//aaa.html#s%3Adatatypes --> s:datatypes
 function getId (link) {
-    return link.substring(link.lastIndexOf('#')+1);
+    let uri = link.substring(link.lastIndexOf('#')+1);
+    return decodeURIComponent(uri)
+    // for instance decodeURIComponent("s%3Adatatypes") == 's:datatypes'
 }
 
 // Get absolute y position of element.
@@ -52,18 +54,26 @@ function getPosition(el) {
     return yPos;
 }
 
+// This function scans all "a" tags with a valid "href", and for those
+// that are local links (links within the same file) it adds a special
+// onclick function for smooth scrolling.
 function setSmooth () {
-    let x = document.getElementsByClassName("toc_title");
     let a = document.getElementsByTagName("a");
     let container = document.body.parentNode; 
     let i;
     for (i = 0; i < a.length; i++) {
 	let href = a[i].getAttribute("href");
-	if (localLink(href)) {
+	if (href != null && localLink(href)) {
 	    a[i].onclick = function () {
 		let id = getId(href);
-		let target = document.getElementById(id);
-		if (! target) { target = document.body.parentNode; }
+		let target = "";
+		if ( id == "" ) {
+		    target = container;
+		} else {
+		    target = document.getElementById(id); }
+		if (! target) {
+		    console.log ("Error, no target for id=" + id);
+		    target = container; }
 		let top = container.scrollTop;
 		let dist = top - getPosition(target)
 		if (Math.abs(dist) < MAX_DISTANCE) {

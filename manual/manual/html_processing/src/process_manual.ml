@@ -26,7 +26,7 @@ let remove_number s =
 
 (* Scan index.html and return the list of chapters (title, file) *)
 let index part =
-  sprintf "Reading part [%s]" part |> pr;
+  dbg "Reading part [%s]" part;
   let html = read_file (html_file "index.html") in
   let soup = parse html in
   (* Foreword. We do nothing. *)
@@ -52,7 +52,7 @@ let copyright () =
   |> parse
 
 let load_html file =
-  pr file;
+  dbg "%s" file;
   (* First we perform some direct find/replace in the html string. *)
   let html =
     read_file (html_file file)
@@ -91,12 +91,12 @@ let load_html file =
   (* Set utf8 encoding directly in the html string *)
   let charset_regexp = Str.regexp "charset=\\([-A-Za-z0-9]+\\)\\(\\b\\|;\\)" in
   match Str.search_forward charset_regexp html 0 with
-  | exception Not_found -> pr "Warning, no charset found in html."; html
+  | exception Not_found -> dbg "Warning, no charset found in html."; html
   | _ -> match (String.lowercase_ascii (Str.matched_group 1 html)) with
-    | "utf-8" -> pr "Charset is UTF-8; good."; html
-    | "us-ascii" -> pr "Charset is US-ASCII. We change it to UTF-8";
+    | "utf-8" -> dbg "Charset is UTF-8; good."; html
+    | "us-ascii" -> dbg "Charset is US-ASCII. We change it to UTF-8";
       Str.global_replace charset_regexp "charset=UTF-8\\2" html
-    | _ -> pr "Warning, charset not recognized."; html
+    | _ -> dbg "Warning, charset not recognized."; html
 
 (* Save new html file *)
 let save_to_file soup file =
@@ -141,7 +141,7 @@ let extract_date maintitle =
   txts
   |> List.filter (fun s -> List.exists (fun month -> starts_with month s) months)
   |> function | [s] -> Some s
-              | _ -> pr "Warning, date not found"; None
+              | _ -> dbg "Warning, date not found"; None
 
 (* Special treatment of the main index.html file *)
 let convert_index version soup =
@@ -164,7 +164,7 @@ let convert_index version soup =
    run for each "entry" [file] of the manual, making a "Chapter".  (the list of
    [chapters] corresponds to a "Part" of the manual) *)
 let convert version chapters (title, file) =
-  pr ((html_file file) ^ " ==> " ^ (docs_file file));
+  dbg "%s ==> %s" (html_file file) (docs_file file);
 
   (* Parse html *)
   let soup = parse (load_html file) in
@@ -174,12 +174,17 @@ let convert version chapters (title, file) =
   let new_title = create_element "title" ~inner_text:("OCaml - " ^ title) in
   replace title_tag new_title;
 
+  (* Add javascript *)
+  let head = soup $ "head" in
+  create_element "script" ~attributes:["src","scroll.js"]
+  |> append_child head;
+
   (* Wrap body. TODO use set_name instead *)
   let c = if file = "index.html" then ["manual"; "content"; "index"]
     else ["manual"; "content"] in
   let body = wrap_body ~classes:c soup in
 
-   remove_navigation soup;
+  remove_navigation soup;
 
   if file = "index.html" then convert_index version soup;
 
@@ -187,8 +192,8 @@ let convert version chapters (title, file) =
   let toc = match soup $? "ul" with
     | None -> None (* can be None, eg chapters 15,19...*)
     | Some t -> if classes t <> [] (* as in libthreads.html or parsing.html *)
-      then (sprintf "We don't promote <UL> to TOC for file %s" file |> pr; None)
-      else Some t in
+        then (dbg "We don't promote <UL> to TOC for file %s" file; None)
+        else Some t in
   let nav = create_element "nav" ~class_:"toc" in
   let () = match toc with
     | None -> prepend_child body nav
@@ -196,55 +201,55 @@ let convert version chapters (title, file) =
   let nav = soup $ "nav" in
   wrap nav (create_element "header");
   begin match toc with
-    | None -> sprintf "No TOC for %s" file |> pr
-    | Some toc -> begin
-        (* TOC - Create a title entry in the menu *)
-        let a = create_element "a" ~inner_text:title
-            ~attributes:["href", "#"] in
-        let li = create_element "li" ~class_:"top" in
-        append_child li a;
-        prepend_child toc li;
+  | None -> dbg "No TOC for %s" file
+  | Some toc -> begin
+      (* TOC - Create a title entry in the menu *)
+      let a = create_element "a" ~inner_text:title
+          ~attributes:["href", "#"] in
+      let li = create_element "li" ~class_:"top" in
+      append_child li a;
+      prepend_child toc li;
 
-        (* index of keywords *)
-        if file = "index.html"
-        then begin
-          let keywords =
-            body $$ "ul"
-            |> fold (fun key ul ->
-                match key with
-                | None -> begin
-                    match ul $$ "li" |> last with
-                    | None -> None
-                    | Some l -> begin match l $ "a" |> leaf_text with
-                        | Some text -> sprintf "[%s]" text |> pr;
+      (* index of keywords *)
+      if file = "index.html"
+      then begin
+        let keywords =
+          body $$ "ul"
+          |> fold (fun key ul ->
+              match key with
+              | None -> begin
+                  match ul $$ "li" |> last with
+                  | None -> None
+                  | Some l -> begin match l $ "a" |> leaf_text with
+                      | Some text -> dbg "[%s]" text;
                           if text = "Index of keywords"
                           then l $ "a" |> attribute "href" else None
-                        | None -> None
-                      end
-                  end
-                | _ -> key) None in
-          begin match keywords with
-            | None -> pr "Could not find Index of keywords"
-            | Some keywords ->
-              let a = create_element "a" ~inner_text:"Index of keywords"
-                  ~attributes:["href", keywords] in
-              let li = create_element "li" in
-              (append_child li a;
-               append_child toc li)
-          end;
-          (* Link to APIs *)
-          let a = create_element "a" ~inner_text:"OCaml API"
-              ~attributes:["href", api_page_url ^ "/index.html"] in
-          let li = create_element "li" in
-          (append_child li a;
-           append_child toc li);
-          let a = create_element "a" ~inner_text:"OCaml Compiler API"
-              ~attributes:["href", api_page_url ^ "/compilerlibref/index.html"] in
-          let li = create_element "li" in
-          (append_child li a;
-           append_child toc li)
-        end
+                      | None -> None
+                    end
+                end
+              | _ -> key) None in
+        begin match keywords with
+        | None -> dbg "Could not find Index of keywords"
+        | Some keywords ->
+            let a = create_element "a" ~inner_text:"Index of keywords"
+                ~attributes:["href", keywords] in
+            let li = create_element "li" in
+            (append_child li a;
+             append_child toc li)
+        end;
+        (* Link to APIs *)
+        let a = create_element "a" ~inner_text:"OCaml API"
+            ~attributes:["href", api_page_url ^ "/index.html"] in
+        let li = create_element "li" in
+        (append_child li a;
+         append_child toc li);
+        let a = create_element "a" ~inner_text:"OCaml Compiler API"
+            ~attributes:["href", api_page_url ^ "/compilerlibref/index.html"] in
+        let li = create_element "li" in
+        (append_child li a;
+         append_child toc li)
       end
+    end
   end;
 
   (* Add back link to "OCaml Manual" *)
@@ -275,8 +280,8 @@ let convert version chapters (title, file) =
 
   (* Add logo *)
   begin match soup $? "header" with
-    | None -> sprintf "Warning: no <header> for %s" file |> pr
-    | Some header -> prepend_child header (logo_html "https://ocaml.org/")
+  | None -> dbg "Warning: no <header> for %s" file
+  | Some header -> prepend_child header (logo_html "https://ocaml.org/")
   end;
 
   (* Move authors to the end. Versions >= 4.05 use c009. *)
@@ -287,29 +292,29 @@ let convert version chapters (title, file) =
           match leaf_text authors with
           | None -> ()
           | Some s ->
-            match Str.search_forward (Str.regexp "(.+written by.+)") s 0 with
-            | exception Not_found -> ()
-            | _ ->
-              pr "Moving authors";
-              delete authors;
-              add_class "authors" authors;
-              append_child body authors));
+              match Str.search_forward (Str.regexp "(.+written by.+)") s 0 with
+              | exception Not_found -> ()
+              | _ ->
+                  dbg "Moving authors";
+                  delete authors;
+                  add_class "authors" authors;
+                  append_child body authors));
 
   (* Get the list of external files linked by the current file *)
   let xfiles = match toc with
     | None -> []
     | Some toc ->
-      toc $$ "li"
-      |> fold (fun list li ->
-          let rf = li $ "a" |> R.attribute "href" in
-          sprintf "TOC reference = %s" rf |> pr;
-          if not (String.contains rf '#') &&
-             not (starts_with ".." rf) &&
-             not (starts_with "http" rf)
-          then begin
-            li $ "a" |> set_attribute "href" (rf ^ "#start-section");
-            rf::list
-          end else list) []
+        toc $$ "li"
+        |> fold (fun list li ->
+            let rf = li $ "a" |> R.attribute "href" in
+            dbg "TOC reference = %s" rf;
+            if not (String.contains rf '#') &&
+               not (starts_with ".." rf) &&
+               not (starts_with "http" rf)
+            then begin
+              li $ "a" |> set_attribute "href" (rf ^ "#start-section");
+              rf::list
+            end else list) []
   in
 
   (* Add copyright *)
@@ -326,28 +331,30 @@ let convert version chapters (title, file) =
 let process version =
   print_endline (sprintf "\nProcessing version %s into %s...\n" version docs_maindir);
 
-  pr (sprintf "Current directory is: %s" (Sys.getcwd ()));
+  dbg "Current directory is: %s" (Sys.getcwd ());
   sys_mkdir docs_maindir;
 
-  pr "* Generating css";
+  dbg "* Generating css";
   compile_css "scss/manual.scss" (docs_file "manual.css");
 
-  pr "* Copying logo";
+  dbg "* Copying files";
   ["colour-logo-gray.svg"]
   |> List.iter (fun file ->
-      pr file;
+      dbg "%s" file;
       sys_cp (process_dir // "images" // file) (docs_file file)
     );
+  let file = "scroll.js" in
+  sys_cp (process_dir // "js" // file) (docs_file file);
 
   (* special case of the "index.html" file *)
   convert version [] ("The OCaml Manual", "index.html");
 
   let parts = ["tutorials"; "refman"; "commands"; "library" ] in
   let main_files = List.fold_left (fun list part ->
-      pr "* Scanning index";
+      dbg "* Scanning index";
       let chapters = index part in
 
-      pr "* Processing chapters";
+      dbg "* Processing chapters";
       List.iter (convert version chapters) chapters;
       (snd (List.hd chapters)) :: list) [] parts in
 

@@ -3,7 +3,15 @@ open Printf
 
 let debug = not (Array.mem "quiet" Sys.argv)
 
-let pr = if debug then print_endline else fun _ -> ()
+let dbg =
+  let printf = Printf.(if debug then kfprintf else ikfprintf) in
+  let flush =
+    if debug then
+      fun ch -> output_char ch '\n'; flush ch
+    else
+      ignore
+  in
+  fun fmt -> printf flush stdout fmt
 
 let ( // ) = Filename.concat
 
