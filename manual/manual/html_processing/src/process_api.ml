@@ -1,12 +1,10 @@
-(* Post-processing the HTML of the OCaml API.
+(* ------------ Ocaml Web-manual -------------- *)
 
-   San Vu Ngoc, 2020
+(* Copyright San Vu Ngoc, 2020
 
-   requires Lambdasoup
+   file: process_api.ml
 
-   cd ..; make web
-
- *)
+   Post-processing the HTML of the OCaml API.  *)
 
 open Soup
 open Printf
@@ -15,15 +13,14 @@ open Common
 let compiler_libref = ref false
 (* set this to true to process compilerlibref instead of libref *)
 
-let libref = ref ""
 let dst_dir = ref ""
 let src_dir = ref ""
 
 let set_dirs () =
-  libref := if !compiler_libref then "compilerlibref" else "libref";
+  let libref = if !compiler_libref then "compilerlibref" else "libref" in
   dst_dir :=
-    if !compiler_libref then api_dir // !libref else api_dir;
-  src_dir := html_maindir // !libref
+    if !compiler_libref then api_dir // libref else api_dir;
+  src_dir := html_maindir // libref
 
 let () = set_dirs ()
 
@@ -61,8 +58,7 @@ let process ?(search=true) ~version file out =
 
   (* Add favicon *)
   let head = soup $ "head" in
-  {|<link rel="shortcut icon" type="image/x-icon" href="|} ^ favicon () ^ {|">|}
-  |> parse
+  parse ({|<link rel="shortcut icon" type="image/x-icon" href="|} ^ favicon () ^ {|">|})
   |> append_child head;
 
   (* Add api wrapper *)
@@ -99,12 +95,12 @@ let process ?(search=true) ~version file out =
           li_of_h ul h, None
       | "h3" -> begin match h3_current with
           | Some h3 ->
-            li_of_h h3 h, h3_current
+              li_of_h h3 h, h3_current
           | None ->
               let h3 = create_element "ul" in
               append_child ul li_current;
               append_child li_current h3;
-          li_of_h h3 h, Some h3
+              li_of_h h3 h, Some h3
         end
       | _ -> li_current, h3_current) (create_element "li", None);
   |> ignore;

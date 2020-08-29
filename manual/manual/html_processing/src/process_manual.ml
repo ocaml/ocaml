@@ -1,16 +1,12 @@
-(* Post-processing the HTML of the OCaml Manual.
+(* ------------ Ocaml Web-manual -------------- *)
 
-   San Vu Ngoc, 2020
+(* Copyright San Vu Ngoc, 2020
 
-   * Processed parts: ["tutorials"; "refman"; "commands"; "library" ]
+   file: process_api.ml
 
-   * The "API" side is treated by another script.
+   Post-processing the HTML of the OCaml Manual.
 
-   requires Lambdasoup
-
-   cd ..; make web
-
- *)
+   (The "API" side is treated by process_api.ml) *)
 
 open Soup
 open Printf
@@ -24,7 +20,9 @@ let archives =
 let remove_number s =
   Str.global_replace (Str.regexp ".+  ") "" s
 
-(* Scan index.html and return the list of chapters (title, file) *)
+(* Scan index.html and return the list of chapters (title, file)
+   Processed parts: ["tutorials"; "refman"; "commands"; "library" ]
+*)
 let index part =
   dbg "Reading part [%s]" part;
   let html = read_file (html_file "index.html") in
@@ -42,7 +40,6 @@ let index part =
         (R.leaf_text a |> remove_number, R.attribute "href" a) :: list) []
     |> List.rev in
   part
-
 
 (* This string is updated by [extract_date] *)
 let copyright_text = ref "Copyright © 2020 Institut National de Recherche en Informatique et en Automatique"
@@ -332,7 +329,7 @@ let process version =
   print_endline (sprintf "\nProcessing version %s into %s...\n" version docs_maindir);
 
   dbg "Current directory is: %s" (Sys.getcwd ());
-  
+
   (* special case of the "index.html" file *)
   convert version [] ("The OCaml Manual", "index.html");
 

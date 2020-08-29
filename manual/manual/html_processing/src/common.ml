@@ -1,3 +1,12 @@
+(* ------------ Ocaml Web-manual -------------- *)
+
+(* Copyright San Vu Ngoc, 2020
+
+   file: common.ml
+
+   This file contains functions that are used by process_api.ml and
+   process_manual.ml *)
+
 open Soup
 open Printf
 
