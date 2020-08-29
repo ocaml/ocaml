@@ -375,17 +375,8 @@ let process_html overwrite version =
     version !processed |> print_endline
 
 let copy_files () =
-  compile_css "scss/style.scss" (!dst_dir // "style.css");
   let ind = !dst_dir // "index.js" in
-  if not (Sys.file_exists ind) then process_index ();
-  ["search.js"; "scroll.js"]
-  |> List.iter (fun src ->
-      let dst = !dst_dir // src in
-      sys_cp (process_dir // "js" // src) dst);
-  ["favicon.ico"; "colour-logo-gray.svg"; "search_icon.svg"]
-  |> List.iter (fun src ->
-      let dst = !dst_dir // src in
-      sys_cp (process_dir // "images" // src) dst)
+  if not (Sys.file_exists ind) then process_index ()
 
 (******************************************************************************)
 
@@ -394,14 +385,11 @@ let () =
   let args = Sys.argv |> Array.to_list |> List.tl in
   compiler_libref := List.mem "compiler" args;
   set_dirs ();
-  sys_mkdir !dst_dir;
   let overwrite = List.mem "overwrite" args in
   let makeindex = List.mem "makeindex" args in
   let makehtml = List.mem "html" args || not makeindex in
-  let makecss = List.mem "css" args in
   if makehtml then process_html overwrite version;
   if makeindex then process_index ();
-  if makecss then compile_css "style.scss" (!dst_dir // "style.css");
   copy_files ();
   print_endline "DONE."
 

@@ -332,20 +332,7 @@ let process version =
   print_endline (sprintf "\nProcessing version %s into %s...\n" version docs_maindir);
 
   dbg "Current directory is: %s" (Sys.getcwd ());
-  sys_mkdir docs_maindir;
-
-  dbg "* Generating css";
-  compile_css "scss/manual.scss" (docs_file "manual.css");
-
-  dbg "* Copying files";
-  ["colour-logo-gray.svg"]
-  |> List.iter (fun file ->
-      dbg "%s" file;
-      sys_cp (process_dir // "images" // file) (docs_file file)
-    );
-  let file = "scroll.js" in
-  sys_cp (process_dir // "js" // file) (docs_file file);
-
+  
   (* special case of the "index.html" file *)
   convert version [] ("The OCaml Manual", "index.html");
 

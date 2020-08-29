@@ -96,27 +96,7 @@ let add_version_link nav text url =
   append_child vnum a;
   prepend_child nav vnum
 
-(* Some wrappers around linux system commands*)
-let sys_cp file dst =
-  if Sys.command (sprintf "cp %s %s" file dst) <> 0
-  then failwith ("Could not copy " ^ file)
-
-let sys_mkdir dir =
-  if Sys.command (sprintf "mkdir -p %s" dir) <> 0
-  then failwith ("Could not create directory" ^ dir)
-
-let sys_mv file dst =
-  if Sys.command (sprintf "mv %s %s" file dst) <> 0
-  then failwith ("Could not move " ^ file)
-
-(* Compile scss with sass *)
-let compile_css src dst =
-  let src = process_dir // src in
-  if Sys.command (sprintf "sass %s > %s" src dst) <> 0
-  then sprintf "Could not compile %s to %s. Is sass installed?" src dst
-       |> failwith
-
-(* Detect OCaml version from version.tex *)
+(* Detect OCaml version from VERSION file *)
 let find_version () =
   let pp = Filename.parent_dir_name in
   let version_file = pp // pp // pp // "VERSION" in
