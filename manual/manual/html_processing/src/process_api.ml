@@ -13,18 +13,13 @@ open Common
 let compiler_libref = ref false
 (* set this to true to process compilerlibref instead of libref *)
 
-let dst_dir = ref ""
-let src_dir = ref ""
+type config = {
+  src_dir : string;
+  dst_dir : string;
+  title : string
+}
 
-let set_dirs () =
-  let libref = if !compiler_libref then "compilerlibref" else "libref" in
-  dst_dir :=
-    if !compiler_libref then api_dir // libref else api_dir;
-  src_dir := html_maindir // libref
-
-let () = set_dirs ()
-
-let favicon () = if !compiler_libref then "../favicon.ico" else "favicon.ico"
+let favicon = "favicon.ico"
 
 (* HTML code for the search widget. We don't add the "onchange" event because it
    forces to click twice to an external link after entering text. *)
@@ -56,7 +51,7 @@ let parse_file file =
       Hashtbl.add parsed_files file soup;
       soup
 
-let process ?(search=true) ~version file out =
+let process ?(search=true) ~version config file out =
 
   dbg "Processing %s..." file;
   let soup = parse_file file in
@@ -72,7 +67,7 @@ let process ?(search=true) ~version file out =
 
   (* Add favicon *)
   let head = soup $ "head" in
-  parse ({|<link rel="shortcut icon" type="image/x-icon" href="|} ^ favicon () ^ {|">|})
+  parse ({|<link rel="shortcut icon" type="image/x-icon" href="|} ^ favicon ^ {|">|})
   |> append_child head;
 
   (* Add api wrapper *)
@@ -138,8 +133,7 @@ let process ?(search=true) ~version file out =
         unwrap uli;
         if search then search_widget true |> prepend_child body;
         create_element "h1" ~inner_text:
-          (sprintf "The OCaml %sAPI"
-             (if !compiler_libref then "Compiler " else ""))
+          (sprintf "The OCaml %sAPI" config.title)
         |> prepend_child body;
     | None ->
         if search then search_widget false |> prepend_child nav;
@@ -149,12 +143,11 @@ let process ?(search=true) ~version file out =
         |> prepend_child nav in
 
   (* Add version number *)
-  add_version_link nav ((if !compiler_libref then "Compiler " else "") ^
-                        "API Version " ^ version) releases_url;
+  add_version_link nav (config.title ^ "API Version " ^ version) releases_url;
 
   (* Add logo *)
   prepend_child header (logo_html
-                          ((if !compiler_libref then "../" else "") ^
+                          ((if config.title = "" then "" else "../") ^
                            (manual_page_url ^ "/index.html")));
 
   dbg "Saving %s..." out;
@@ -163,13 +156,13 @@ let process ?(search=true) ~version file out =
   let new_html = to_string soup in
   write_file out new_html
 
-let process ?(overwrite=false) ~version file out =
+let process ?(overwrite=false) ~version config file out =
   if overwrite || not (Sys.file_exists out)
-  then Ok (process ~version file out)
+  then Ok (process ~version config file out)
   else Error (sprintf "File %s already exists." out)
 
-let all_html_files () =
-  Sys.readdir !src_dir |> Array.to_list
+let all_html_files config =
+  Sys.readdir config.src_dir |> Array.to_list
   |> List.filter (fun s -> Filename.extension s = ".html")
 
 
@@ -248,9 +241,9 @@ let one_line s =
    - : (string * string) option =
    Some ("<code class=\\\"type\\\">int -&gt; float</code>", "int -> float")
   *)
-let get_sig ?mod_name ~id_name file  =
+let get_sig ?mod_name ~id_name config file  =
   dbg "Looking for signature for %s in %s" id_name file;
-  let soup = parse_file (!src_dir // file) in
+  let soup = parse_file (config.src_dir // file) in
   (* Now we jump to the html element with id=id_name. Warning, we cannot use the
      CSS "#id" syntax for searching the id -- like in: soup $ ("#" ^ id) --
      because it can have problematic chars like id="VAL( * )" *)
@@ -278,8 +271,8 @@ let get_id ref =
   | [file; id] -> Some (file, id)
   | _ -> dbg "Could not find id for %s" ref; None
 
-let make_index ?(with_sig = true) () =
-  let soup = parse_file (!src_dir // "index_values.html") in
+let make_index ?(with_sig = true) config =
+  let soup = parse_file (config.src_dir // "index_values.html") in
   soup $ "table"
   |> select "tr"
   |> fold (fun index_list tr ->
@@ -307,144 +300,13 @@ let make_index ?(with_sig = true) () =
               get_id value.html
               |> flat_option (fun (file,id_name) ->
                   assert (file = mdule.html);
-                  get_sig ~mod_name:mdule.txt ~id_name file)
+                  get_sig config ~mod_name:mdule.txt ~id_name file)
             else None in
           { mdule; value; info; signature } :: index_list
       | _ ->
           dbg "Ignoring row:";
           dbg "%s" (List.map to_string td_list |> String.concat " ");
           index_list)  []
-
-
-(* Fast version of make_index using Scanf *)
-(* More than 50x faster!                  *)
-(******************************************)
-module Index = struct
-
-  open Scanf
-
-  let sid x : string = x
-
-  let rec find ch word =
-    if Scanning.end_of_input ch then raise Not_found
-    else if bscanf ch "%s " sid <> word then find ch word
-
-  (* Return all words encountered before reaching [word]. All 'spaces' between
-     words are replaced by single ' 's. *)
-  let concat_before ch word =
-    let b = Buffer.create 256 in
-    let rec loop () =
-      if Scanning.end_of_input ch then raise Not_found;
-      let next = bscanf ch "%s " sid in
-      if next <> word then begin
-        Buffer.add_char b ' ';
-        Buffer.add_string b next;
-        loop ()
-      end else Buffer.contents b in
-    loop ()
-
-  let extract_infotext list =
-    list |> List.map (fun (mdule, value, info, signature) ->
-        let infotext = Soup.texts (Soup.parse info) |> String.concat "" in
-        let val_name = Soup.(parse value.txt |> R.leaf_text) in
-        (* We parse [value.txt] simply to replace "&amp;" by "&", etc... it could
-           be done much faster manually of course (saving 20% time...): there
-           are only a very limited number of such cases. *)
-        let value = {value with txt = val_name} in
-        let info = {html = String.escaped info; txt = String.escaped infotext} in
-        { mdule; value; info; signature })
-
-  (* Remove all <a> tags. Example:
-     {|'a <a href="Event.html#TYPEevent">event</a> -> ('a -> 'b) -> 'b <a href="Event.html#TYPEevent">event</a>|} ==> "'a event -> ('a -> 'b) -> 'b event"
-  *)
-  let strip_tag =
-    let reg = Str.regexp {|<[^>]+ [^>]+>\([^<]+\)</[^>]+>|} in
-    let reg_br = Str.regexp "<br>" in
-    let reg_space = Str.regexp "  +" in
-    fun s -> Str.global_replace reg "\\1" s
-             |> Str.global_replace reg_br " "
-             |> Str.global_replace reg_space " "
-
-  (* Look for signature (with and without html formatting);
-     [id] is the HTML id of the value. Example:
-     # get_sig ~id:"VALfloat_of_int" "Pervasives.html";;
-     - : string option = Some "int -> float"
-  *)
-  let get_sig ?mod_name ~id file  =
-    dbg "Looking for signature for %s in %s" id file;
-    let anon_t_regexp = Str.regexp "\\bt\\b" in
-    let inch = open_in (!src_dir // file) in
-    let reg = Str.regexp_string (sprintf {|id="%s"|} id) in
-    (* let reg_type = Str.regexp {|<code class="type">\(.+\)</code>|} in *)
-    let rec loop () = try
-        let line = input_line inch in
-        try let _ = Str.search_forward reg line 0 in
-          let code = parse line $ "code.type" in
-          let sig_txt = texts code
-                        |> String.concat ""
-                        |> String.escaped in
-
-          (* We now replace anonymous "t"'s by the qualified "Module.t" *)
-          let sig_txt = match mod_name with
-            | None -> sig_txt
-            | Some mod_name ->
-              Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
-          (* let _ = Str.search_forward reg_type line 0 in
-           * let the_sig = Str.matched_group 1 line |> strip_a_tag in *)
-          dbg "Signature=[%s]" sig_txt;
-          close_in inch; Some {html = to_string code |> String.escaped; txt = sig_txt}
-        with
-        | Not_found -> loop ()
-      with
-      | End_of_file -> close_in inch; None in
-    loop ()
-
-  (* Example: "Buffer.html#VALadd_subbytes" ==> Some "VALadd_subbytes" *)
-  let get_id ref =
-    try let i = String.index ref '#' in
-      Some (String.sub ref (i+1) (String.length ref - i - 1))
-    with Not_found -> dbg "Could not find id for %s" ref; None
-
-  let make ?(with_sig = true) () =
-    let ch = Scanning.open_in (!src_dir // "index_values.html") in
-    find ch "<table>";
-    let rec loop list =
-      if try find ch "<tr><td><a"; false with Not_found -> true
-      then list
-      else
-        (* Scan value reference *)
-        let html = bscanf ch " href=%S" sid in
-        let txt  = bscanf ch ">%s@<" sid in
-        let value = { html; txt} in
-        find ch  "[<a";
-
-        (* Scan module reference (ie. filename) *)
-        let html = bscanf ch " href=%S" sid in
-        let txt = bscanf ch ">%s@<" sid in
-        let mdule = { html; txt} in
-        bscanf ch "/a>]</td> <td>" ();
-
-        let signature =
-          if with_sig then
-            get_id value.html
-            |> flat_option (fun id -> get_sig ~mod_name:mdule.txt ~id mdule.html)
-          else None in
-
-        (* Scan info *)
-        let info = match bscanf ch "<%s@>" sid with
-          | "/td" -> find ch "</tr>"; ""
-          | "div class=\"info\"" ->
-            let s = concat_before ch "</td></tr>" in
-            "<div class=\"info\">" ^ s
-          | s -> raise (Scan_failure s) in
-        dbg "%s" value.html;
-
-        let new_entry = (mdule, value, info, signature) in
-        loop (new_entry :: list) in
-    loop []
-    |> extract_infotext
-end
-(******************************************)
 
 let save_index file index =
   let outch = open_out file in
@@ -459,45 +321,48 @@ let save_index file index =
   output_string outch "]\n";
   close_out outch
 
-let process_index ?(fast=false) () =
+let process_index config =
   print_endline "Creating index file, please wait...";
   let t = Unix.gettimeofday () in
-  let index = if fast then Index.make () else make_index () in
+  let index = make_index config in
   dbg "Index created. Time = %f\n" (Unix.gettimeofday () -. t);
-  save_index (!dst_dir // "index.js") index;
+  save_index (config.dst_dir // "index.js") index;
   dbg "Index saved. Time = %f\n" (Unix.gettimeofday () -. t)
 
-let process_html overwrite version =
-  print_endline (sprintf "\nProcessing version %s into %s...\n" version !dst_dir);
+let process_html config overwrite version =
+  print_endline (sprintf "\nProcessing version %s into %s...\n" version config.dst_dir);
   let processed = ref 0 in
-  all_html_files ()
+  all_html_files config
   |> List.iter (fun file ->
-      match process ~overwrite ~version
-              (!src_dir // file)
-              (!dst_dir // file) with
+      match process config ~overwrite ~version
+              (config.src_dir // file)
+              (config.dst_dir // file) with
       | Ok () -> incr processed
       | Error s -> dbg "%s" s
     );
   sprintf "Version %s, HTML processing done: %u files have been processed."
     version !processed |> print_endline
 
-let copy_files () =
-  let ind = !dst_dir // "index.js" in
-  if not (Sys.file_exists ind) then process_index ()
+let copy_files config =
+  let ind = config.dst_dir // "index.js" in
+  if not (Sys.file_exists ind) then process_index config
 
 (******************************************************************************)
 
 let () =
   let version = find_version () in
   let args = Sys.argv |> Array.to_list |> List.tl in
-  compiler_libref := List.mem "compiler" args;
-  set_dirs ();
+  let config = if List.mem "compiler" args
+    then { src_dir = html_maindir // "compilerlibref";
+           dst_dir = api_dir // "compilerlibref"; title = "Compiler"}
+    else { src_dir = html_maindir // "libref";
+           dst_dir = api_dir; title = ""} in
   let overwrite = List.mem "overwrite" args in
   let makeindex = List.mem "makeindex" args in
   let makehtml = List.mem "html" args || not makeindex in
-  if makehtml then process_html overwrite version;
-  if makeindex then process_index ();
-  copy_files ();
+  if makehtml then process_html config overwrite version;
+  if makeindex then process_index config;
+  copy_files config;
   print_endline "DONE."
 
 (*
