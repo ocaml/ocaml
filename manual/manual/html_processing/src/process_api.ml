@@ -29,23 +29,37 @@ let favicon () = if !compiler_libref then "../favicon.ico" else "favicon.ico"
 (* HTML code for the search widget. We don't add the "onchange" event because it
    forces to click twice to an external link after entering text. *)
 let search_widget with_description =
-  sprintf "<div class=\"api_search\"><input type=\"text\" name=\"apisearch\" id=\"api_search\"
-	 oninput    = \"mySearch(%b);\"
-         onkeypress = \"this.oninput();\"
-         onclick    = \"this.oninput();\"
-	 onpaste    = \"this.oninput();\">
-<img src=\"search_icon.svg\" alt=\"Search\" class=\"svg\" onclick=\"mySearch(%b)\">%s</div>
-<div id=\"search_results\"></div>" with_description with_description
-    (if with_description
-     then {|<span class="search_comment">(search values, type signatures, and descriptions - case sensitive)<div class="search_help"><ul><li>You may search bare values, like <code>map</code>, or indicate the module, like <code>List.map</code>, or type signatures, like <code>int -> float</code>.</li><li>To combine several keywords, just separate them by a space - except if you want to search type signatures: then you must use <strong>two</strong> spaces as separators.</li><li>You may use the special chars <code>^</code> and <code>$</code> to indicate where the matched string should start or end, respectively.</li></ul></div></span>|}
-     else "")
+  let search_decription = if with_description
+    then {|<span class="search_comment">(search values, type signatures, and descriptions - case sensitive)<div class="search_help"><ul><li>You may search bare values, like <code>map</code>, or indicate the module, like <code>List.map</code>, or type signatures, like <code>int -> float</code>.</li><li>To combine several keywords, just separate them by a space - except if you want to search type signatures: then you must use <strong>two</strong> spaces as separators.</li><li>You may use the special chars <code>^</code> and <code>$</code> to indicate where the matched string should start or end, respectively.</li></ul></div></span>|}
+    else "" in
+  sprintf {|<div class="api_search"><input type="text" name="apisearch" id="api_search"
+	 oninput    = "mySearch(%b);"
+         onkeypress = "this.oninput();"
+         onclick    = "this.oninput();"
+	 onpaste    = "this.oninput();">
+<img src="search_icon.svg" alt="Search" class="svg" onclick="mySearch(%b)">%s</div>
+<div id="search_results"></div>|} with_description with_description search_decription
   |> parse
+
+(* We save parsed files in a table; this is just for speed optimization,
+   especially for make_index (18sec instead of 50sec for the whole index); it
+   can be removed.  Although if we really wanted a fast make_index, we would use
+   Scanf all over the place ==> 1sec *)
+
+let parsed_files = Hashtbl.create 50
+
+let parse_file file =
+  match Hashtbl.find_opt parsed_files file with
+  | Some soup -> soup
+  | None ->
+      let soup = read_file file |> parse in
+      Hashtbl.add parsed_files file soup;
+      soup
 
 let process ?(search=true) ~version file out =
 
   dbg "Processing %s..." file;
-  let html = read_file file in
-  let soup = parse html in
+  let soup = parse_file file in
 
   (* Add javascript files *)
   let head = soup $ "head" in
@@ -207,6 +221,15 @@ let all_html_files () =
 
 *)
 
+type index_item =
+  { html : string; txt : string }
+
+type index_entry =
+  { mdule : index_item;
+    value : index_item;
+    info : index_item;
+    signature : index_item option }
+
 let anon_t_regexp = Str.regexp "\\bt\\b"
 let space_regexp = Str.regexp " +"
 let newline_regexp = Str.regexp_string "\n"
@@ -215,6 +238,7 @@ let newline_regexp = Str.regexp_string "\n"
 let one_line s =
   Str.global_replace newline_regexp " " s
   |> Str.global_replace space_regexp " "
+  |> String.trim
 
 (* Look for signature (with and without html formatting);
      [id] is the HTML id of the value. Example:
@@ -226,7 +250,7 @@ let one_line s =
   *)
 let get_sig ?mod_name ~id_name file  =
   dbg "Looking for signature for %s in %s" id_name file;
-  let soup = read_file (!src_dir // file) |> parse in
+  let soup = parse_file (!src_dir // file) in
   (* Now we jump to the html element with id=id_name. Warning, we cannot use the
      CSS "#id" syntax for searching the id -- like in: soup $ ("#" ^ id) --
      because it can have problematic chars like id="VAL( * )" *)
@@ -246,11 +270,7 @@ let get_sig ?mod_name ~id_name file  =
     | Some mod_name ->
         Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
   dbg "Signature=[%s]" sig_txt;
-  Some (to_string code |> String.escaped, sig_txt)
-
-let parse_pair = function
-  | [a; b] -> (a,b)
-  | _ -> raise (Invalid_argument "parse_pair")
+  Some {html = to_string code |> String.escaped; txt = sig_txt}
 
 (* Example: "Buffer.html#VALadd_subbytes" ==> Some "VALadd_subbytes" *)
 let get_id ref =
@@ -258,65 +278,50 @@ let get_id ref =
   | [file; id] -> Some (file, id)
   | _ -> dbg "Could not find id for %s" ref; None
 
-let parse_tdlist ~with_sig tdlist =
-  let mdule, value, info = match tdlist with
-    | [alist, []] -> let mdule, value = parse_pair alist in
-        dbg "%s" (fst value);
-        (mdule, value, ("",""))
-    | [[], infolist; alist, []] ->
-        let mdule, value = parse_pair alist in
-        let infohtml, infotext = List.split infolist in
-        let infohtml = List.map to_string infohtml
-                       |> String.concat " "
-                       |> one_line
-                       |> String.escaped in
-        let infotext = String.concat " " infotext
-                       |> one_line
-                       |> String.escaped in
-        dbg "%s" (fst value);
-        (mdule, value, (infohtml, infotext))
-    | _ -> raise (Invalid_argument "parse_tdlist") in
-  let signature =
-    if with_sig then
-      get_id (snd value)
-      |> flat_option (fun (file,id_name) -> get_sig ~mod_name:(fst mdule) ~id_name file)
-    else None in
-  (mdule, value, info, signature)
-
 let make_index ?(with_sig = true) () =
-  let html = read_file (!src_dir // "index_values.html") in
-  let soup = parse html in
+  let soup = parse_file (!src_dir // "index_values.html") in
   soup $ "table"
   |> select "tr"
-  |> fold (fun trlist tr ->
-      let tdlist =
-        tr $$ "td" (* We scan the row; it should contain 2 <td> entries *)
-        |> fold (fun tdlist td -> (* TODO instead of folding we may use directly
-                                     the first 2 entries *)
-            let alist = td $$ ">a" (* This should return something only with the first <td>. *)
-                        |> fold (fun alist a ->
-                            (R.leaf_text a, R.attribute "href" a) :: alist
-                          ) [] in
-            let infolist = td $$ "div.info" (* Second <td> *)
-                           |> to_list
-                           |> List.map (fun info ->
-                               let infotext = texts info
-                                              |> String.concat "" in
-                               (info, infotext)) in
-            if alist = [] && infolist = [] then tdlist
-            else (alist, infolist) :: tdlist
-          ) [] in
-      if tdlist = [] then trlist
-      else (parse_tdlist ~with_sig tdlist) :: trlist
-    ) []
+  |> fold (fun index_list tr ->
+      let td_list = tr $$ "td" |> to_list in
+      match td_list with
+      (* We scan the row; it should contain 2 <td> entries, except for
+         separators with initials A,B,C,D; etc. *)
+      | [td_val; td_info] ->
+          let mdule, value  = match td_val $$ ">a" |> to_list with
+            | [a_val; a_mod] ->
+                { txt = R.leaf_text a_mod; html = R.attribute "href" a_mod },
+                { txt = R.leaf_text a_val; html = R.attribute "href" a_val }
+            | _ -> failwith "Cannot parse value" in
+          let info = match td_info $? "div.info" with
+            | Some info -> { html = to_string info
+                                    |> one_line
+                                    |> String.escaped;
+                             txt = texts info
+                                   |> String.concat ""
+                                   |> one_line
+                                   |> String.escaped }
+            | None -> { html = ""; txt = ""} in
+          let signature =
+            if with_sig then
+              get_id value.html
+              |> flat_option (fun (file,id_name) ->
+                  assert (file = mdule.html);
+                  get_sig ~mod_name:mdule.txt ~id_name file)
+            else None in
+          { mdule; value; info; signature } :: index_list
+      | _ ->
+          dbg "Ignoring row:";
+          dbg "%s" (List.map to_string td_list |> String.concat " ");
+          index_list)  []
 
 
 (* Fast version of make_index using Scanf *)
+(* More than 50x faster!                  *)
 (******************************************)
 module Index = struct
 
   open Scanf
-  let index_len = 2545
 
   let sid x : string = x
 
@@ -339,15 +344,15 @@ module Index = struct
     loop ()
 
   let extract_infotext list =
-    list |> List.map (fun (a, (val_name, val_ref), info, signature) ->
+    list |> List.map (fun (mdule, value, info, signature) ->
         let infotext = Soup.texts (Soup.parse info) |> String.concat "" in
-        let val_name = Soup.(parse val_name |> R.leaf_text) in
-        (* We parse [val_name] simply to replace "&amp;" by "&", etc... it could
+        let val_name = Soup.(parse value.txt |> R.leaf_text) in
+        (* We parse [value.txt] simply to replace "&amp;" by "&", etc... it could
            be done much faster manually of course (saving 20% time...): there
            are only a very limited number of such cases. *)
-        (a, (val_name, val_ref),
-         (String.escaped info, String.escaped infotext), signature))
-
+        let value = {value with txt = val_name} in
+        let info = {html = String.escaped info; txt = String.escaped infotext} in
+        { mdule; value; info; signature })
 
   (* Remove all <a> tags. Example:
      {|'a <a href="Event.html#TYPEevent">event</a> -> ('a -> 'b) -> 'b <a href="Event.html#TYPEevent">event</a>|} ==> "'a event -> ('a -> 'b) -> 'b event"
@@ -387,7 +392,7 @@ module Index = struct
           (* let _ = Str.search_forward reg_type line 0 in
            * let the_sig = Str.matched_group 1 line |> strip_a_tag in *)
           dbg "Signature=[%s]" sig_txt;
-          close_in inch; Some (to_string code |> String.escaped, sig_txt)
+          close_in inch; Some {html = to_string code |> String.escaped; txt = sig_txt}
         with
         | Not_found -> loop ()
       with
@@ -408,19 +413,21 @@ module Index = struct
       then list
       else
         (* Scan value reference *)
-        let val_ref = bscanf ch " href=%S" sid in
-        let val_name = bscanf ch ">%s@<" sid in
+        let html = bscanf ch " href=%S" sid in
+        let txt  = bscanf ch ">%s@<" sid in
+        let value = { html; txt} in
         find ch  "[<a";
 
         (* Scan module reference (ie. filename) *)
-        let mod_ref = bscanf ch " href=%S" sid in
-        let mod_name = bscanf ch ">%s@<" sid in
+        let html = bscanf ch " href=%S" sid in
+        let txt = bscanf ch ">%s@<" sid in
+        let mdule = { html; txt} in
         bscanf ch "/a>]</td> <td>" ();
 
         let signature =
           if with_sig then
-            get_id val_ref
-            |> flat_option (fun id -> get_sig ~mod_name ~id mod_ref)
+            get_id value.html
+            |> flat_option (fun id -> get_sig ~mod_name:mdule.txt ~id mdule.html)
           else None in
 
         (* Scan info *)
@@ -430,9 +437,9 @@ module Index = struct
             let s = concat_before ch "</td></tr>" in
             "<div class=\"info\">" ^ s
           | s -> raise (Scan_failure s) in
-        dbg "%s" val_ref;
+        dbg "%s" value.html;
 
-        let new_entry = ((mod_name, mod_ref), (val_name, val_ref), info, signature) in
+        let new_entry = (mdule, value, info, signature) in
         loop (new_entry :: list) in
     loop []
     |> extract_infotext
@@ -442,19 +449,18 @@ end
 let save_index file index =
   let outch = open_out file in
   output_string outch "var GENERAL_INDEX = [\n";
-  index
-  |> List.iter (fun ((mod_name, mod_ref), (val_name, val_ref),
-                     (info_html, info_txt), signature) ->
+  List.iter (fun item ->
       fprintf outch {|["%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s"],|}
-        mod_name mod_ref val_name val_ref info_html info_txt
-        (map_option fst signature |> string_of_opt)
-        (map_option snd signature |> string_of_opt);
-      output_string outch "\n");
+        item.mdule.txt item.mdule.html item.value.txt item.value.html
+        item.info.html item.info.txt
+        (map_option (fun i -> i.html) item.signature |> string_of_opt)
+        (map_option (fun i -> i.txt) item.signature |> string_of_opt);
+      output_string outch "\n") index;
   output_string outch "]\n";
   close_out outch
 
-let process_index ?(fast=true) () =
-  dbg "Recreating index file, please wait...";
+let process_index ?(fast=false) () =
+  print_endline "Creating index file, please wait...";
   let t = Unix.gettimeofday () in
   let index = if fast then Index.make () else make_index () in
   dbg "Index created. Time = %f\n" (Unix.gettimeofday () -. t);
