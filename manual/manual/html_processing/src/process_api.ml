@@ -83,7 +83,8 @@ let process ?(search=true) ~version file out =
     let () = match attribute "id" h with
       | Some id ->
           let href = "#" ^ id in
-          let a = create_element "a" ~inner_text:(texts h |> String.concat "") ~attributes:["href", href] in
+          let a = create_element "a" ~inner_text:(texts h |> String.concat "")
+              ~attributes:["href", href] in
           append_child li_current a
       | None -> () in
     li_current in
@@ -158,40 +159,145 @@ let all_html_files () =
   |> List.filter (fun s -> Filename.extension s = ".html")
 
 
-(* Creation of a search bar *)
+(* Generate the index.js file for searching with the quick search widget *)
+(* The idea is to parse the file "index_values.html" to extract, for each entry
+   of this index, the following information (list of 8 strings):
+
+   [Module name; href URL of the Module (in principle an html file);
+   Value name; href URL of the value;
+   short description (html format); short description in txt format;
+   type signature (html format); type signature in txt format]
+
+   The "txt format" versions are used for searching, the "html version"
+   for display.
+   The signature is not in the "index_values.html" file, we have to look for it
+   by following the value href.
+
+   The index_values.html file has the following structure:
+
+   (...)
+
+   <table>
+
+   (...)
+
+   <tr><td><a href="List.html#VALappend">append</a> [<a href="List.html">List</a>]</td>
+   <td><div class="info">
+   <p>Concatenate two lists.</p>
+
+   </div>
+   </td></tr>
+
+   (...)
+
+   </table>
+
+   (...)
+
+   So we need to visit "List.html#VALappend", which has the following structure:
+
+   <pre><span id="VALappend"><span class="keyword">val</span> append</span> : <code class="type">'a list -> 'a list -> 'a list</code></pre>
+
+   and we finally return
+
+   ["List"; "List.html";
+   "rev_append"; "List.html#VALrev_append";
+   "<div class=\"info\">  <p><code class=\"code\"><span class=\"constructor\">List</span>.rev_append&nbsp;l1&nbsp;l2</code> reverses <code class=\"code\">l1</code> and concatenates it to <code class=\"code\">l2</code>.</p> </div>"; "  List.rev_append\194\160l1\194\160l2 reverses l1 and concatenates it to l2. ";
+   "<code class=\"type\">'a list -&gt; 'a list -&gt; 'a list</code>"; "'a list -> 'a list -> 'a list"]
+
+*)
+
+let anon_t_regexp = Str.regexp "\\bt\\b"
+let space_regexp = Str.regexp " +"
+let newline_regexp = Str.regexp_string "\n"
+
+(* Remove "\n" and superfluous spaces in string *)
+let one_line s =
+  Str.global_replace newline_regexp " " s
+  |> Str.global_replace space_regexp " "
+
+(* Look for signature (with and without html formatting);
+     [id] is the HTML id of the value. Example:
+   # get_sig ~id_name:"VALfloat_of_int" "Stdlib.html";;
+   Looking for signature for VALfloat_of_int in Stdlib.html
+   Signature=[int -> float]
+   - : (string * string) option =
+   Some ("<code class=\\\"type\\\">int -&gt; float</code>", "int -> float")
+  *)
+let get_sig ?mod_name ~id_name file  =
+  dbg "Looking for signature for %s in %s" id_name file;
+  let soup = read_file (!src_dir // file) |> parse in
+  (* Now we jump to the html element with id=id_name. Warning, we cannot use the
+     CSS "#id" syntax for searching the id -- like in: soup $ ("#" ^ id) --
+     because it can have problematic chars like id="VAL( * )" *)
+  let span =  soup $$ "pre span"
+              |> filter (fun s -> id s = Some id_name)
+              |> first |> require in
+  let pre = match parent span with
+    | None -> failwith ("Cannot find signature for " ^ id_name)
+    | Some pre -> pre in
+  let code = pre $ ".type" in
+  let sig_txt = texts code
+                |> String.concat ""
+                |> String.escaped in
+  (* We now replace anonymous "t"'s by the qualified "Module.t" *)
+  let sig_txt = match mod_name with
+    | None -> sig_txt
+    | Some mod_name ->
+        Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
+  dbg "Signature=[%s]" sig_txt;
+  Some (to_string code |> String.escaped, sig_txt)
+
 let parse_pair = function
   | [a; b] -> (a,b)
   | _ -> raise (Invalid_argument "parse_pair")
 
-let parse_tdlist = function
-  | [alist, []] -> let mdule, value = parse_pair alist in
-    dbg "%s" (fst value);
-    (mdule, value, ("",""))
-  | [[], infolist; alist, []] ->
-    let mdule, value = parse_pair alist in
-    let infohtml, infotext = List.split infolist in
-    let infohtml = infohtml |> List.map to_string |> String.concat " "
-                   |> String.escaped in
-    let infotext = infotext |> String.concat " " |> String.escaped in
-    dbg "%s" (fst value);
-    (mdule, value, (infohtml, infotext))
-  | _ -> raise (Invalid_argument "parse_tdlist")
+(* Example: "Buffer.html#VALadd_subbytes" ==> Some "VALadd_subbytes" *)
+let get_id ref =
+  match String.split_on_char '#' ref with
+  | [file; id] -> Some (file, id)
+  | _ -> dbg "Could not find id for %s" ref; None
 
-(* Generate the index using Lambdasoup ==> very slow, see below. *)
-let make_index () =
+let parse_tdlist ~with_sig tdlist =
+  let mdule, value, info = match tdlist with
+    | [alist, []] -> let mdule, value = parse_pair alist in
+        dbg "%s" (fst value);
+        (mdule, value, ("",""))
+    | [[], infolist; alist, []] ->
+        let mdule, value = parse_pair alist in
+        let infohtml, infotext = List.split infolist in
+        let infohtml = List.map to_string infohtml
+                       |> String.concat " "
+                       |> one_line
+                       |> String.escaped in
+        let infotext = String.concat " " infotext
+                       |> one_line
+                       |> String.escaped in
+        dbg "%s" (fst value);
+        (mdule, value, (infohtml, infotext))
+    | _ -> raise (Invalid_argument "parse_tdlist") in
+  let signature =
+    if with_sig then
+      get_id (snd value)
+      |> flat_option (fun (file,id_name) -> get_sig ~mod_name:(fst mdule) ~id_name file)
+    else None in
+  (mdule, value, info, signature)
+
+let make_index ?(with_sig = true) () =
   let html = read_file (!src_dir // "index_values.html") in
   let soup = parse html in
   soup $ "table"
   |> select "tr"
   |> fold (fun trlist tr ->
       let tdlist =
-        tr $$ "td"
-        |> fold (fun tdlist td ->
-            let alist = td $$ ">a"
+        tr $$ "td" (* We scan the row; it should contain 2 <td> entries *)
+        |> fold (fun tdlist td -> (* TODO instead of folding we may use directly
+                                     the first 2 entries *)
+            let alist = td $$ ">a" (* This should return something only with the first <td>. *)
                         |> fold (fun alist a ->
                             (R.leaf_text a, R.attribute "href" a) :: alist
                           ) [] in
-            let infolist = td $$ "div.info"
+            let infolist = td $$ "div.info" (* Second <td> *)
                            |> to_list
                            |> List.map (fun info ->
                                let infotext = texts info
@@ -201,7 +307,7 @@ let make_index () =
             else (alist, infolist) :: tdlist
           ) [] in
       if tdlist = [] then trlist
-      else (parse_tdlist tdlist) :: trlist
+      else (parse_tdlist ~with_sig tdlist) :: trlist
     ) []
 
 
@@ -256,7 +362,7 @@ module Index = struct
 
   (* Look for signature (with and without html formatting);
      [id] is the HTML id of the value. Example:
-     # get_sig ~version:"4.10" ~id:"VALfloat_of_int" "Pervasives.html";;
+     # get_sig ~id:"VALfloat_of_int" "Pervasives.html";;
      - : string option = Some "int -> float"
   *)
   let get_sig ?mod_name ~id file  =
@@ -350,8 +456,7 @@ let save_index file index =
 let process_index ?(fast=true) () =
   dbg "Recreating index file, please wait...";
   let t = Unix.gettimeofday () in
-  let index = if fast then Index.make ()
-    else make_index () |> List.map (fun (a,b,c) -> (a,b,c,None)) in
+  let index = if fast then Index.make () else make_index () in
   dbg "Index created. Time = %f\n" (Unix.gettimeofday () -. t);
   save_index (!dst_dir // "index.js") index;
   dbg "Index saved. Time = %f\n" (Unix.gettimeofday () -. t)
