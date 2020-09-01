@@ -458,7 +458,7 @@ let read_one_param ppf position name v =
 let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
-    if String.length s <> 0 then
+    if s <> "" then
       let (before, after) =
         try
           parse_args s
