@@ -80,6 +80,17 @@ static void check_pending(struct channel *channel)
   }
 }
 
+Caml_inline int descriptor_is_in_binary_mode(int fd)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+  int oldmode = setmode(fd, O_TEXT);
+  if (oldmode == O_BINARY) setmode(fd, O_BINARY);
+  return oldmode == O_BINARY;
+#else
+  return 1;
+#endif
+}
+
 CAMLexport struct channel * caml_open_descriptor_in(int fd)
 {
   struct channel * channel;
@@ -95,7 +106,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->revealed = 0;
   channel->old_revealed = 0;
   channel->refcount = 0;
-  channel->flags = 0;
+  channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
   channel->next = caml_all_opened_channels;
   channel->prev = NULL;
   channel->name = NULL;
@@ -139,34 +150,32 @@ CAMLexport void caml_close_channel(struct channel *channel)
 
 CAMLexport file_offset caml_channel_size(struct channel *channel)
 {
-  file_offset offset;
-  file_offset end;
+  file_offset here, end;
   int fd;
-  check_pending(channel);
 
+  check_pending(channel);
   /* We extract data from [channel] before dropping the OCaml lock, in case
      someone else touches the block. */
   fd = channel->fd;
-  offset = channel->offset;
+  here = channel->flags & CHANNEL_TEXT_MODE ? -1 : channel->offset;
   caml_enter_blocking_section_no_pending();
-  end = lseek(fd, 0, SEEK_END);
-  if (end == -1 || lseek(fd, offset, SEEK_SET) != offset) {
-    caml_leave_blocking_section();
-    caml_sys_error(NO_ARG);
+  if (here == -1) {
+    here = lseek(fd, 0, SEEK_CUR);
+    if (here == -1) goto error;
   }
+  end = lseek(fd, 0, SEEK_END);
+  if (end == -1) goto error;
+  if (lseek(fd, here, SEEK_SET) != here) goto error;
   caml_leave_blocking_section();
   return end;
+ error:
+  caml_leave_blocking_section();
+  caml_sys_error(NO_ARG);
 }
 
 CAMLexport int caml_channel_binary_mode(struct channel *channel)
 {
-#if defined(_WIN32) || defined(__CYGWIN__)
-  int oldmode = setmode(channel->fd, O_BINARY);
-  if (oldmode == O_TEXT) setmode(channel->fd, O_TEXT);
-  return oldmode == O_BINARY;
-#else
-  return 1;
-#endif
+  return channel->flags & CHANNEL_TEXT_MODE ? 0 : 1;
 }
 
 /* Output */
@@ -349,8 +358,9 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
 {
-  if (dest >= channel->offset - (channel->max - channel->buff) &&
-      dest <= channel->offset) {
+  if (dest >= channel->offset - (channel->max - channel->buff)
+      && dest <= channel->offset
+      && (channel->flags & CHANNEL_TEXT_MODE) == 0) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
     caml_enter_blocking_section_no_pending();
@@ -622,6 +632,10 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
 #endif
   if (setmode(channel->fd, Bool_val(mode) ? O_BINARY : O_TEXT) == -1)
     caml_sys_error(NO_ARG);
+  if (Bool_val(mode))
+    channel->flags &= ~CHANNEL_TEXT_MODE;
+  else
+    channel->flags |= CHANNEL_TEXT_MODE;
 #endif
   return Val_unit;
 }

@@ -56,6 +56,7 @@ enum {
   CHANNEL_FLAG_BLOCKING_WRITE = 2, /* Don't release master lock when writing */
 #endif
   CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
+  CHANNEL_TEXT_MODE = 8,           /* "Text mode" for Windows and Cygwin */
 };
 
 /* For an output channel:
