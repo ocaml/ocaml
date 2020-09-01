@@ -592,13 +592,14 @@ static file_offset ml_channel_size(value vchannel)
   Lock(channel);
   size = caml_channel_size(Channel(vchannel));
   Unlock(channel);
-  if (size > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   CAMLreturnT(file_offset, size);
 }
 
 CAMLprim value caml_ml_channel_size(value vchannel)
 {
-  return Val_long(ml_channel_size(vchannel));
+  file_offset size = ml_channel_size(vchannel);
+  if (size > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
+  return Val_long(size);
 }
 
 CAMLprim value caml_ml_channel_size_64(value vchannel)
