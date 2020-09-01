@@ -1429,6 +1429,7 @@ type socket_bool_option =
     SO_DEBUG       (** Record debugging information *)
   | SO_BROADCAST   (** Permit sending of broadcast messages *)
   | SO_REUSEADDR   (** Allow reuse of local addresses for bind *)
+  | SO_REUSEPORT   (** Allow reuse of address and port bindings *)
   | SO_KEEPALIVE   (** Keep connection active *)
   | SO_DONTROUTE   (** Bypass the standard routing algorithms *)
   | SO_OOBINLINE   (** Leave out-of-band data in line *)

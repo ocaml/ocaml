@@ -21,6 +21,9 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
+#ifndef SO_REUSEPORT
+#define SO_REUSEPORT (-1)
+#endif
 #ifndef IPPROTO_IPV6
 #define IPPROTO_IPV6 (-1)
 #endif
@@ -47,6 +50,7 @@ static struct socket_option sockopt_bool[] = {
   { SOL_SOCKET, SO_DEBUG },
   { SOL_SOCKET, SO_BROADCAST },
   { SOL_SOCKET, SO_REUSEADDR },
+  { SOL_SOCKET, SO_REUSEPORT },
   { SOL_SOCKET, SO_KEEPALIVE },
   { SOL_SOCKET, SO_DONTROUTE },
   { SOL_SOCKET, SO_OOBINLINE },

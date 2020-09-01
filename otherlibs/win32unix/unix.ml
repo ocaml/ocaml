@@ -729,6 +729,7 @@ type socket_bool_option =
     SO_DEBUG
   | SO_BROADCAST
   | SO_REUSEADDR
+  | SO_REUSEPORT
   | SO_KEEPALIVE
   | SO_DONTROUTE
   | SO_OOBINLINE
