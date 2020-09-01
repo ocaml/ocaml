@@ -502,6 +502,9 @@ let check_constraints_labels env visited l pl =
 
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
+  List.iter2
+    (fun (sty, _) ty -> check_constraints_rec env sty.ptyp_loc visited ty)
+    sdecl.ptype_params decl.type_params;
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant l ->

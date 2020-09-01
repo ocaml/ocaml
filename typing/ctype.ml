@@ -2678,6 +2678,10 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
+  let t2 =
+    if is_Tvar t2' || deep_occur t1' t2 && not (deep_occur t1' t2')
+    then t2' else t2
+  in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
 
   begin match (d1, d2) with (* handle vars and univars specially *)
