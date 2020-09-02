@@ -998,7 +998,13 @@ val seek_out : out_channel -> int -> unit
 val pos_out : out_channel -> int
 (** Return the current writing position for the given channel.  Does
     not work on channels opened with the [Open_append] flag (returns
-    unspecified results). *)
+    unspecified results).
+    For files opened in text mode under Windows, the returned position
+    is approximate (owing to end-of-line conversion); in particular,
+    saving the current position with [pos_out], then going back to
+    this position using [seek_out] will not work.  For this
+    programming idiom to work reliably and portably, the file must be
+    opened in binary mode. *)
 
 val out_channel_length : out_channel -> int
 (** Return the size (number of characters) of the regular file
@@ -1113,7 +1119,13 @@ val seek_in : in_channel -> int -> unit
    files of other kinds, the behavior is unspecified. *)
 
 val pos_in : in_channel -> int
-(** Return the current reading position for the given channel. *)
+(** Return the current reading position for the given channel.  For
+    files opened in text mode under Windows, the returned position is
+    approximate (owing to end-of-line conversion); in particular,
+    saving the current position with [pos_in], then going back to this
+    position using [seek_in] will not work.  For this programming
+    idiom to work reliably and portably, the file must be opened in
+    binary mode. *)
 
 val in_channel_length : in_channel -> int
 (** Return the size (number of characters) of the regular file
