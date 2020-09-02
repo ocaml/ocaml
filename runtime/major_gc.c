@@ -455,9 +455,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
     int alive_data = 1;
 
     /* The liveness of the ephemeron is one of the condition */
-    if (Is_white_hd (hd)) {
-      alive_data = 0;
-    }
+    if (Is_white_hd (hd)) alive_data = 0;
 
     /* The liveness of the keys not caml_ephe_none is the other condition */
     size = Wosize_hd (hd);
