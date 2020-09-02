@@ -547,9 +547,7 @@ static void mark_slice (intnat work)
         me_end = Wosize_val(me.block);
         can_mark = 1;
       }
-    }
-    else
-    {
+    } else {
       can_mark = 1;
     }
 
