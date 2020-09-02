@@ -184,7 +184,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
   mark_entry* new;
   uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
 
-  if ( Wsize_bsize(mark_stack_bsize) < Caml_state->stat_heap_wsz / 32 ) {
+  if ( Wsize_bsize(mark_stack_bsize) < Caml_state->stat_heap_wsz / 64 ) {
     caml_gc_message (0x08, "Growing mark stack to %"
                            ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                      (intnat) mark_stack_bsize * 2 / 1024);
