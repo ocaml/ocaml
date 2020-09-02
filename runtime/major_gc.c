@@ -313,8 +313,8 @@ void caml_darken (value v, value *p /* not used */)
    wasteful. Subsequent calls will continue progress.
  */
 static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
-  value* p = (value*)Chunk_redarken_start(heap_chunk);
-  value* end = (value*)Chunk_redarken_end(heap_chunk);
+  value* p = Chunk_redarken_start(heap_chunk);
+  value* end = Chunk_redarken_end(heap_chunk);
 
   while (p <= end) {
     header_t hd = Hd_op(p);
@@ -455,9 +455,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
     int alive_data = 1;
 
     /* The liveness of the ephemeron is one of the condition */
-    if (Is_white_hd (hd)) {
-      alive_data = 0;
-    }
+    if (Is_white_hd (hd)) alive_data = 0;
 
     /* The liveness of the keys not caml_ephe_none is the other condition */
     size = Wosize_hd (hd);

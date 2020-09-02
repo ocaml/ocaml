@@ -408,7 +408,6 @@ static value *expand_heap (mlsize_t request)
     }
   }
   CAMLassert (Wosize_hp (mem) >= request);
-
   if (caml_add_to_heap ((char *) mem) != 0){
     caml_free_for_heap ((char *) mem);
     return NULL;
