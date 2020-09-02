@@ -2105,7 +2105,7 @@ let expand_trace env trace =
 let deep_occur t0 ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if ty.level >= lowest_level then begin
+    if ty.level >= t0.level then begin
       if ty == t0 then raise Occur;
       ty.level <- pivot_level - ty.level;
       iter_type_expr occur_rec ty
@@ -2668,6 +2668,12 @@ and unify2 env t1 t2 =
       (match t2.desc with Tconstr (_, [], _) -> t2' | _ -> t2)
     else (t1, t2)
   in
+  let avoid_recursion t2 t1' t2' =
+    if t2 != t2'
+    && (is_Tvar t2' || not (deep_occur t1' t2') && deep_occur t1' t2)
+    then t2' else t2
+  in
+  let t2 = avoid_recursion t2 t1' t2' and t1 = avoid_recursion t1 t2' t1' in
   if unify_eq t1 t1' || not (unify_eq t2 t2') then
     unify3 env t1 t1' t2 t2'
   else
@@ -2678,10 +2684,6 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
-  let t2 =
-    if is_Tvar t2' || deep_occur t1' t2 && not (deep_occur t1' t2')
-    then t2' else t2
-  in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
 
   begin match (d1, d2) with (* handle vars and univars specially *)
@@ -2693,10 +2695,6 @@ and unify3 env t1 t1' t2 t2' =
       occur_univar !env t2;
       link_type t1' t2;
   | (_, Tvar _) ->
-      let t1 =
-        if is_Tvar t1' || deep_occur t2' t1 && not (deep_occur t2' t1')
-        then t1' else t1
-      in
       occur !env t2' t1;
       occur_univar !env t1;
       link_type t2' t1;
