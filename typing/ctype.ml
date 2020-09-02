@@ -2693,6 +2693,10 @@ and unify3 env t1 t1' t2 t2' =
       occur_univar !env t2;
       link_type t1' t2;
   | (_, Tvar _) ->
+      let t1 =
+        if is_Tvar t1' || deep_occur t2' t1 && not (deep_occur t2' t1')
+        then t1' else t1
+      in
       occur !env t2' t1;
       occur_univar !env t1;
       link_type t2' t1;
