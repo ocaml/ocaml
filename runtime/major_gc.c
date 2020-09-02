@@ -313,8 +313,8 @@ void caml_darken (value v, value *p /* not used */)
    wasteful. Subsequent calls will continue progress.
  */
 static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
-  value* p = (value*)Chunk_redarken_start(heap_chunk);
-  value* end = (value*)Chunk_redarken_end(heap_chunk);
+  value* p = Chunk_redarken_start(heap_chunk);
+  value* end = Chunk_redarken_end(heap_chunk);
 
   while (p <= end) {
     header_t hd = Hd_op(p);
