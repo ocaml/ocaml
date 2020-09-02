@@ -219,6 +219,9 @@ Working version
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
+- #9869: Add Unix.SO_REUSEPORT
+  (Yishuai Li, review by Xavier Leroy)
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared
