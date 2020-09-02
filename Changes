@@ -204,9 +204,6 @@ Working version
 - #9575: Add Unix.is_inet6_addr
   (Nicolás Ojeda Bär, review by Xavier Leroy)
 
-- #9869: Add Unix.SO_REUSEPORT
-  (Yishuai Li)
-
 - #9593: Use new flag for non-elevated symbolic links and test for Developer
   Mode on Windows
   (Manuel Hornung, review by David Allsopp and Nicolás Ojeda Bär)
@@ -221,6 +218,9 @@ Working version
 
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
+
+- #9869: Add Unix.SO_REUSEPORT
+  (Yishuai Li, review by Xavier Leroy)
 
 ### Tools:
 
