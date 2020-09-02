@@ -304,11 +304,14 @@ void caml_darken (value v, value *p /* not used */)
   }
 }
 
-/* This function adds blocks in the passed heap chunk [heap_chunk] to the mark
-   stack. It may return 0 if doing so would cause the mark stack to grow more
-   than a quarter full. This is to lower the chance of triggering another
-   overflow, which would be wasteful. Subsequent calls will continue progress.
-   It will return 1 when the supplied chunk has no more range to redarken. */
+/* This function adds blocks in the passed heap chunk [heap_chunk] to
+   the mark stack. It returns 1 when the supplied chunk has no more
+   range to redarken.  It returns 0 if there are still blocks in the
+   chunk that need redarkening because pushing them onto the stack
+   would make it grow more than a quarter full. This is to lower the
+   chance of triggering another overflow, which would be
+   wasteful. Subsequent calls will continue progress.
+ */
 static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
   value* p = (value*)Chunk_redarken_start(heap_chunk);
   value* end = (value*)Chunk_redarken_end(heap_chunk);
