@@ -275,6 +275,24 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
 
+#ifdef _WIN32
+#include <windows.h>
+
+static inline int safe_load(volatile value* p, value* result)
+{
+  value v;
+  __try {
+    v = *p;
+  }
+  __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+        EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
+    *result = 0xdeadbeef;
+    return 0;
+  }
+  *result = v;
+  return 1;
+}
+#else
 static inline int safe_load (header_t * addr, /*out*/ header_t * contents)
 {
   int ok;
@@ -296,6 +314,7 @@ static inline int safe_load (header_t * addr, /*out*/ header_t * contents)
   *contents = h;
   return ok;
 }
+#endif
 
 static int is_pointer_safe (value v, value *p)
 {
