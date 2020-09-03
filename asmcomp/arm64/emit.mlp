@@ -33,11 +33,11 @@ let fastcode_flag = ref true
 
 (* Names for special regs *)
 
-let reg_domain_state_ptr = phys_reg 22
-let reg_trap_ptr = phys_reg 23
-let reg_alloc_ptr = phys_reg 24
-let reg_tmp1 = phys_reg 26
-let reg_x8 = phys_reg 8
+let reg_domain_state_ptr = phys_reg 25 (* x28 *)
+let reg_trap_ptr = phys_reg 23 (* x26 *)
+let reg_alloc_ptr = phys_reg 24 (* x27 *)
+let reg_tmp1 = phys_reg 26 (* x16 *)
+let reg_x8 = phys_reg 8 (* x8 *)
 
 (* Output a label *)
 

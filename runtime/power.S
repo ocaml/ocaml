@@ -23,8 +23,8 @@
 #define C_CALL_FUN 25
 #define C_CALL_TOC 26
 #define C_CALL_RET_ADDR 27
-#define DOMAIN_STATE_PTR 28
 #define TRAP_PTR 29
+#define DOMAIN_STATE_PTR 30
 #define ALLOC_PTR 31
 
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
@@ -148,7 +148,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) 8*domain_field_caml_##var(28)
+#define Caml_state(var) 8*domain_field_caml_##var(DOMAIN_STATE_PTR)
 
 #if defined(MODEL_ppc64)
         .section ".opd","aw"

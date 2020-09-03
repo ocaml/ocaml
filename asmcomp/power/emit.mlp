@@ -529,7 +529,7 @@ end)
 let emit_alloc i bytes dbginfo far =
   if !call_gc_label = 0 then call_gc_label := new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
-  `	{emit_string lg}	0, {emit_int offset}(28)\n`;
+  `	{emit_string lg}	0, {emit_int offset}(30)\n`;
   `	addi    31, 31, {emit_int(-bytes)}\n`;
   `	{emit_string cmplg}	31, 0\n`;
   if not far then begin
@@ -993,8 +993,8 @@ let emit_instr i =
               Domainstate.(idx_of_field Domain_backtrace_pos)
             in
             begin match abi with
-            | ELF32 -> `	stw	0, {emit_int (backtrace_pos * 8)}(28)\n`
-            | _ -> `	std	0, {emit_int (backtrace_pos * 8)}(28)\n`
+            | ELF32 -> `	stw	0, {emit_int (backtrace_pos * 8)}(30)\n`
+            | _ -> `	std	0, {emit_int (backtrace_pos * 8)}(30)\n`
             end;
             emit_call "caml_raise_exn";
             record_frame Reg.Set.empty (Dbg_raise i.dbg);

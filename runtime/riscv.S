@@ -17,7 +17,7 @@
 /* Must be preprocessed by cpp */
 
 #define ARG_DOMAIN_STATE_PTR t0
-#define DOMAIN_STATE_PTR s0
+#define DOMAIN_STATE_PTR s11
 #define TRAP_PTR s1
 #define ALLOC_PTR s10
 #define TMP t1
@@ -33,7 +33,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) (8*domain_field_caml_##var)(s0)
+#define Caml_state(var) (8*domain_field_caml_##var)(DOMAIN_STATE_PTR)
 
 #define FUNCTION(name) \
         .align 2; \
@@ -62,11 +62,11 @@ FUNCTION(caml_call_gc)
         /* Record lowest stack address */
         STORE   sp, Caml_state(bottom_of_stack)
         /* Set up stack space, saving return address */
-        /* (1 reg for RA, 1 reg for FP, 22 allocatable int regs,
+        /* (1 reg for RA, 1 reg for FP, 23 allocatable int regs,
             20 caller-save float regs) * 8 */
-        addi    sp, sp, -0x160
+        /* + 1 for alignment */
+        addi    sp, sp, -0x170
         STORE   ra, 0x8(sp)
-        STORE   s0, 0x0(sp)
         /* Save allocatable integer registers on the stack,
            in the order given in proc.ml */
         STORE   a0, 0x10(sp)
@@ -90,29 +90,30 @@ FUNCTION(caml_call_gc)
         STORE   t4, 0xa0(sp)
         STORE   t5, 0xa8(sp)
         STORE   t6, 0xb0(sp)
-        STORE   t0, 0xb8(sp)
+        STORE   s0, 0xb8(sp)
+        STORE   t0, 0xc0(sp)
         /* Save caller-save floating-point registers on the stack
            (callee-saves are preserved by caml_garbage_collection) */
-        fsd     ft0, 0xc0(sp)
-        fsd     ft1, 0xc8(sp)
-        fsd     ft2, 0xd0(sp)
-        fsd     ft3, 0xd8(sp)
-        fsd     ft4, 0xe0(sp)
-        fsd     ft5, 0xe8(sp)
-        fsd     ft6, 0xf0(sp)
-        fsd     ft7, 0xf8(sp)
-        fsd     fa0, 0x100(sp)
-        fsd     fa1, 0x108(sp)
-        fsd     fa2, 0x110(sp)
-        fsd     fa3, 0x118(sp)
-        fsd     fa4, 0x120(sp)
-        fsd     fa5, 0x128(sp)
-        fsd     fa6, 0x130(sp)
-        fsd     fa7, 0x138(sp)
-        fsd     ft8, 0x140(sp)
-        fsd     ft9, 0x148(sp)
-        fsd     ft10, 0x150(sp)
-        fsd     ft11, 0x158(sp)
+        fsd     ft0, 0xd0(sp)
+        fsd     ft1, 0xd8(sp)
+        fsd     ft2, 0xe0(sp)
+        fsd     ft3, 0xe8(sp)
+        fsd     ft4, 0xf0(sp)
+        fsd     ft5, 0xf8(sp)
+        fsd     ft6, 0x100(sp)
+        fsd     ft7, 0x108(sp)
+        fsd     fa0, 0x110(sp)
+        fsd     fa1, 0x118(sp)
+        fsd     fa2, 0x120(sp)
+        fsd     fa3, 0x128(sp)
+        fsd     fa4, 0x130(sp)
+        fsd     fa5, 0x138(sp)
+        fsd     fa6, 0x140(sp)
+        fsd     fa7, 0x148(sp)
+        fsd     ft8, 0x150(sp)
+        fsd     ft9, 0x158(sp)
+        fsd     ft10, 0x160(sp)
+        fsd     ft11, 0x168(sp)
         /* Store pointer to saved integer registers in caml_gc_regs */
         addi    TMP, sp, 0x10
         STORE   TMP, Caml_state(gc_regs)
@@ -144,33 +145,33 @@ FUNCTION(caml_call_gc)
         LOAD    t4, 0xa0(sp)
         LOAD    t5, 0xa8(sp)
         LOAD    t6, 0xb0(sp)
-        LOAD    t0, 0xb8(sp)
-        fld     ft0, 0xc0(sp)
-        fld     ft1, 0xc8(sp)
-        fld     ft2, 0xd0(sp)
-        fld     ft3, 0xd8(sp)
-        fld     ft4, 0xe0(sp)
-        fld     ft5, 0xe8(sp)
-        fld     ft6, 0xf0(sp)
-        fld     ft7, 0xf8(sp)
-        fld     fa0, 0x100(sp)
-        fld     fa1, 0x108(sp)
-        fld     fa2, 0x110(sp)
-        fld     fa3, 0x118(sp)
-        fld     fa4, 0x120(sp)
-        fld     fa5, 0x128(sp)
-        fld     fa6, 0x130(sp)
-        fld     fa7, 0x138(sp)
-        fld     ft8, 0x140(sp)
-        fld     ft9, 0x148(sp)
-        fld     ft10, 0x150(sp)
-        fld     ft11, 0x158(sp)
+        LOAD    s0, 0xb8(sp)
+        LOAD    t0, 0xc0(sp)
+        fld     ft0, 0xd0(sp)
+        fld     ft1, 0xd8(sp)
+        fld     ft2, 0xe0(sp)
+        fld     ft3, 0xe8(sp)
+        fld     ft4, 0xf0(sp)
+        fld     ft5, 0xf8(sp)
+        fld     ft6, 0x100(sp)
+        fld     ft7, 0x108(sp)
+        fld     fa0, 0x110(sp)
+        fld     fa1, 0x118(sp)
+        fld     fa2, 0x120(sp)
+        fld     fa3, 0x128(sp)
+        fld     fa4, 0x130(sp)
+        fld     fa5, 0x138(sp)
+        fld     fa6, 0x140(sp)
+        fld     fa7, 0x148(sp)
+        fld     ft8, 0x150(sp)
+        fld     ft9, 0x158(sp)
+        fld     ft10, 0x160(sp)
+        fld     ft11, 0x168(sp)
         /* Reload new allocation pointer */
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
         /* Free stack space and return to caller */
         LOAD    ra, 0x8(sp)
-        LOAD    s0, 0x0(sp)
-        addi    sp, sp, 0x160
+        addi    sp, sp, 0x170
         ret
         .size   caml_call_gc, .-caml_call_gc
 

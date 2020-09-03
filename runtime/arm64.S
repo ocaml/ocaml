@@ -20,7 +20,7 @@
 
 /* Special registers */
 
-#define DOMAIN_STATE_PTR x25
+#define DOMAIN_STATE_PTR x28
 #define TRAP_PTR x26
 #define ALLOC_PTR x27
 #define ADDITIONAL_ARG x8
@@ -63,7 +63,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) [x25, 8*domain_field_caml_##var]
+#define Caml_state(var) [DOMAIN_STATE_PTR, 8*domain_field_caml_##var]
 
 /* Globals and labels */
 #if defined(SYS_macosx)
