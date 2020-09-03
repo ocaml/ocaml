@@ -486,8 +486,8 @@ module BR = Branch_relaxation.Make (struct
       then load_store_size addr + 1
       else load_store_size addr
     | Lop(Istore(_chunk, addr, _)) -> load_store_size addr
-    | Lop(Ialloc _) -> 4
-    | Lop(Ispecific(Ialloc_far _)) -> 5
+    | Lop(Ialloc _) -> 5
+    | Lop(Ispecific(Ialloc_far _)) -> 6
     | Lop(Iintop Imod) -> 3
     | Lop(Iintop(Icomp _)) -> 4
     | Lop(Iintop _) -> 1
@@ -523,6 +523,26 @@ module BR = Branch_relaxation.Make (struct
   let relax_intop_checkbound () = assert false
   let relax_intop_imm_checkbound ~bound:_ = assert false
 end)
+
+(* Assembly code for inlined allocation *)
+
+let emit_alloc i bytes dbginfo far =
+  if !call_gc_label = 0 then call_gc_label := new_label ();
+  let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+  `	{emit_string lg}	0, {emit_int offset}(28)\n`;
+  `	addi    31, 31, {emit_int(-bytes)}\n`;
+  `	{emit_string cmplg}	31, 0\n`;
+  if not far then begin
+    `	bltl	{emit_label !call_gc_label}\n`;
+    record_frame i.live (Dbg_alloc dbginfo);
+    `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+  end else begin
+    let lbl = new_label() in
+    `	bge	{emit_label lbl}\n`;
+    `	bl	{emit_label !call_gc_label}\n`;
+    record_frame i.live (Dbg_alloc dbginfo);
+    `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+  end
 
 (* Output the assembly code for an instruction *)
 
@@ -754,22 +774,10 @@ let emit_instr i =
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc { bytes = n; dbginfo }) ->
-        if !call_gc_label = 0 then call_gc_label := new_label ();
-        `	addi    31, 31, {emit_int(-n)}\n`;
-        `	{emit_string cmplg}	31, 30\n`;
-        `	bltl	{emit_label !call_gc_label}\n`;
-        record_frame i.live (Dbg_alloc dbginfo);
-        `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
-    | Lop(Ispecific(Ialloc_far { bytes = n; dbginfo })) ->
-        if !call_gc_label = 0 then call_gc_label := new_label ();
-        let lbl = new_label() in
-        `	addi    31, 31, {emit_int(-n)}\n`;
-        `	{emit_string cmplg}	31, 30\n`;
-        `	bge	{emit_label lbl}\n`;
-        `	bl	{emit_label !call_gc_label}\n`;
-        record_frame i.live (Dbg_alloc dbginfo);
-        `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
+    | Lop(Ialloc { bytes; dbginfo }) ->
+        emit_alloc i bytes dbginfo false
+    | Lop(Ispecific(Ialloc_far { bytes; dbginfo })) ->
+        emit_alloc i bytes dbginfo true
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop Imod) ->

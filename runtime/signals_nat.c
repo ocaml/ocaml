@@ -99,13 +99,6 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
 #endif
   if (sig < 0 || sig >= NSIG) return;
   caml_record_signal(sig);
-  /* Some ports cache [Caml_state->young_limit] in a register.
-     Use the signal context to modify that register too, but only if
-     we are inside OCaml code (not inside C code). */
-#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-  if (caml_find_code_fragment_by_pc((char *) CONTEXT_PC) != NULL)
-    CONTEXT_YOUNG_LIMIT = (context_reg) Caml_state->young_limit;
-#endif
   errno = saved_errno;
 }
 

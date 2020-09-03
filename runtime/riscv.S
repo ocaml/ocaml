@@ -20,7 +20,6 @@
 #define DOMAIN_STATE_PTR s0
 #define TRAP_PTR s1
 #define ALLOC_PTR s10
-#define ALLOC_LIMIT s11
 #define TMP t1
 #define ARG t2
 
@@ -166,9 +165,8 @@ FUNCTION(caml_call_gc)
         fld     ft9, 0x148(sp)
         fld     ft10, 0x150(sp)
         fld     ft11, 0x158(sp)
-        /* Reload new allocation pointer and allocation limit */
+        /* Reload new allocation pointer */
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
-        LOAD    ALLOC_LIMIT, Caml_state(young_limit)
         /* Free stack space and return to caller */
         LOAD    ra, 0x8(sp)
         LOAD    s0, 0x0(sp)
@@ -190,9 +188,8 @@ FUNCTION(caml_c_call)
         STORE   TRAP_PTR, Caml_state(exception_pointer)
         /* Call the function */
         jalr    ARG
-        /* Reload alloc ptr and alloc limit */
+        /* Reload alloc ptr */
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
-        LOAD    ALLOC_LIMIT, Caml_state(young_limit)
         /* Return */
         jr      s2
         .size   caml_c_call, .-caml_c_call
@@ -231,7 +228,6 @@ FUNCTION(caml_raise_exception)
         mv      a0, a1
         LOAD    TRAP_PTR, Caml_state(exception_pointer)
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
-        LOAD    ALLOC_LIMIT, Caml_state(young_limit)
         LOAD    TMP, Caml_state(backtrace_active)
         bnez    TMP, 2f
 1:      /* Cut stack at current trap handler */
@@ -304,7 +300,6 @@ FUNCTION(caml_start_program)
         STORE   TMP, 8(sp)
         mv      TRAP_PTR, sp
         LOAD    ALLOC_PTR, Caml_state(young_ptr)
-        LOAD    ALLOC_LIMIT, Caml_state(young_limit)
         STORE   x0, Caml_state(last_return_address)
         jalr    ARG
 .Lcaml_retaddr:         /* pop trap frame, restoring caml_exception_pointer */

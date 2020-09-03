@@ -37,7 +37,7 @@ let word_addressed = false
     14 - 27             general purpose, preserved by C
     28                  domain state pointer
     29                  trap pointer
-    30                  allocation limit
+    30                  unused (formely: allocation limit)
     31                  allocation pointer
   Floating-point register map:
     0                   temporary

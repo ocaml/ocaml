@@ -36,7 +36,6 @@ let fastcode_flag = ref true
 let reg_domain_state_ptr = phys_reg 22
 let reg_trap_ptr = phys_reg 23
 let reg_alloc_ptr = phys_reg 24
-let reg_alloc_limit = phys_reg 25
 let reg_tmp1 = phys_reg 26
 let reg_x8 = phys_reg 8
 
@@ -496,10 +495,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
-    | Lop (Ialloc {bytes = num_bytes}) when !fastcode_flag ->
-      if num_bytes <= 0xFFF then 4 else 5
-    | Lop (Ispecific (Ifar_alloc {bytes = num_bytes})) when !fastcode_flag ->
-      if num_bytes <= 0xFFF then 5 else 6
+    | Lop (Ialloc _) when !fastcode_flag -> 5
+    | Lop (Ispecific (Ifar_alloc _)) when !fastcode_flag -> 6
     | Lop (Ialloc { bytes = num_bytes; _ })
     | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
       begin match num_bytes with
@@ -586,8 +583,10 @@ let assembly_code_for_allocation i ~n ~far ~dbginfo =
        so it is reasonable to assume n < 0x1_000.  This makes
        the generated code simpler. *)
     assert (16 <= n && n < 0x1_000 && n land 0x7 = 0);
+    let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+    `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
     `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int n}\n`;
-    `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
+    `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp1}\n`;
     if not far then begin
       `	b.lo	{emit_label lbl_call_gc}\n`
     end else begin

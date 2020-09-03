@@ -37,7 +37,7 @@ let word_addressed = false
     x25                   domain state pointer
     x26                   trap pointer
     x27                   alloc pointer
-    x28                   alloc limit
+    x28                   unused (previously: alloc limit)
     x29                   frame pointer
     x30                   return address
     sp / xzr              stack pointer / zero register

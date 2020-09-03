@@ -40,7 +40,7 @@ let word_addressed = false
     t1           22        temporary (used by code generator)
     s0           23        domain pointer (preserved by C)
     s1           24        trap pointer (preserved by C)
-    s10          25        allocation pointer (preserved by C)
+    s10          25        unused (prev: allocation pointer) (preserved by C)
     s11          26        allocation limit (preserved by C)
 
   Floating-point register map
