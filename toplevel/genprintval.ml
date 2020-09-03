@@ -616,6 +616,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_printer printer)
 
 
-    in nest tree_of_val max_depth obj ty
-
+    in
+    let snap = Btype.snapshot () in
+    Misc.try_finally
+      (fun () -> nest tree_of_val max_depth obj (Ctype.correct_levels ty))
+      ~always:(fun () -> Btype.backtrack snap)
 end
