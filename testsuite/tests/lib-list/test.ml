@@ -1,11 +1,19 @@
 (* TEST
 *)
 
+let is_even x = (x mod 2 = 0)
+
 let string_of_even_opt x =
-  if x mod 2 = 0 then
+  if is_even x then
     Some (string_of_int x)
   else
     None
+
+let string_of_even_or_int x =
+  if is_even x then
+    Either.Left (string_of_int x)
+  else
+    Either.Right x
 
 (* Standard test case *)
 let () =
@@ -35,6 +43,11 @@ let () =
   end;
 
   assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
+
+  assert (List.partition is_even [1; 2; 3; 4; 5]
+          = ([2; 4], [1; 3; 5]));
+  assert (List.partition_map string_of_even_or_int [1; 2; 3; 4; 5]
+          = (["2"; "4"], [1; 3; 5]));
 
   assert (List.compare_lengths [] [] = 0);
   assert (List.compare_lengths [1;2] ['a';'b'] = 0);

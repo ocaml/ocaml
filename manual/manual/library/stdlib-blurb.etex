@@ -46,6 +46,7 @@ the above 4 modules \\
 "Int" & p.~\pageref{Int} & integer values \\
 "Option" & p.~\pageref{Option} & option values \\
 "Result" & p.~\pageref{Result} & result values \\
+"Either" & p.~\pageref{Either} & either values \\
 "Hashtbl" & p.~\pageref{Hashtbl} & hash tables and hash functions \\
 "Random" & p.~\pageref{Random} & pseudo-random number generator \\
 "Set" & p.~\pageref{Set} & sets over ordered types \\

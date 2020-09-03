@@ -1347,6 +1347,7 @@ module Callback     = Callback
 module Char         = Char
 module Complex      = Complex
 module Digest       = Digest
+module Either       = Either
 module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float
