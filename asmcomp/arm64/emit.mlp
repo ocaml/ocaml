@@ -95,12 +95,15 @@ let prologue_required = ref false
 
 let contains_calls = ref false
 
-let frame_size () =
-  let sz =
-    !stack_offset +
+let initial_stack_offset () =
     8 * num_stack_slots.(0) +
     8 * num_stack_slots.(1) +
     (if !contains_calls then 8 else 0)
+
+let frame_size () =
+  let sz =
+    !stack_offset +
+    initial_stack_offset ()
   in Misc.align sz 16
 
 let slot_offset loc cl =
@@ -449,7 +452,7 @@ module BR = Branch_relaxation.Make (struct
   let offset_pc_at_branch = 0
 
   let prologue_size () =
-    (if frame_size () > 0 then 2 else 0)
+    (if initial_stack_offset () > 0 then 2 else 0)
       + (if !contains_calls then 1 else 0)
 
   let epilogue_size () =

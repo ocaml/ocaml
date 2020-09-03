@@ -42,14 +42,16 @@ let prologue_required = ref false
 
 let contains_calls = ref false
 
+let initial_stack_offset () =
+  reserved_stack_space +
+  size_int * num_stack_slots.(0) +    (* Local int variables *)
+  size_float * num_stack_slots.(1) +  (* Local float variables *)
+  (if !contains_calls && abi = ELF32 then size_int else 0)
+                                        (* The return address *)
 let frame_size () =
   let size =
-    reserved_stack_space +
     !stack_offset +                     (* Trap frame, outgoing parameters *)
-    size_int * num_stack_slots.(0) +    (* Local int variables *)
-    size_float * num_stack_slots.(1) +  (* Local float variables *)
-    (if !contains_calls && abi = ELF32 then size_int else 0) in
-                                        (* The return address *)
+    initial_stack_offset () in
   Misc.align size 16
 
 let slot_offset loc cls =
@@ -439,7 +441,7 @@ module BR = Branch_relaxation.Make (struct
 
   let prologue_size () =
     profiling_prologue_size ()
-      + (if frame_size () > 0 then 1 else 0)
+      + (if initial_stack_offset () > 0 then 1 else 0)
       + (if !contains_calls then
            2 +
              match abi with
