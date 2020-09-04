@@ -416,7 +416,7 @@ intnat caml_input_scan_line(struct channel *channel)
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 
-/* FIXME CAMLexport, but not in io.h  exported for Cash ? */
+/* caml_finalize_channel is exported for Cash */
 CAMLexport void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
