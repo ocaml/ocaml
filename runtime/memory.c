@@ -455,7 +455,7 @@ void caml_shrink_heap (char *chunk)
   caml_free_for_heap (chunk);
 }
 
-color_t caml_allocation_color (void *hp)
+CAMLexport color_t caml_allocation_color (void *hp)
 {
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
       (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
