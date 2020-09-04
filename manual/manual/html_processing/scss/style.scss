@@ -5,12 +5,10 @@
 
 /* CSS file for the Ocaml API.  San Vu Ngoc 2019 */
 
-// TODO: revoir la table
-// https://sanette.github.io/ocaml-api/compilerlibref/4.08/Arg_helper.Make.html 
+// TODO: the ocamldoc output of Functors like in
+// compilerlibref/4.08/Arg_helper.Make.html
+// is not easy to style... without breaking other tables.
    
-// (mais attention, ça a des conséquences partout ! Attention aux 
-// tables d'index, et aux tables de type...  
-
 @import "common";
 @charset "UTF-8";
 
@@ -92,8 +90,8 @@
 	td:nth-child(4).typefieldcomment {
 	    /* this should be the column with the type */
 	    width: 60%;
-	    /* not optimal, see: file:///home/san/prog/ocaml/ocaml-api/dune-version/docs/Format.html#symbolic
-	    but leaving it automatic is not always good either: see: file:///home/san/prog/ocaml/ocaml-api/dune-version/docs/Arg.html */
+	    /* not optimal, see: Format.html#symbolic
+	    but leaving it automatic is not always good either: see: Arg.html */
 	}
 	
     }
