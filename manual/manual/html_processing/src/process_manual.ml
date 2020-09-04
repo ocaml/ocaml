@@ -18,7 +18,7 @@ let archives =
 
 (* Remove number: "Chapter 1  The core language" ==> "The core language" *)
 let remove_number s =
-  Str.global_replace (Str.regexp ".+  ") "" s
+  Re.Str.(global_replace (regexp ".+  ") "" s)
 
 (* Scan index.html and return the list of chapters (title, file)
    Processed parts: ["tutorials"; "refman"; "commands"; "library" ]
@@ -54,45 +54,45 @@ let load_html file =
   let html =
     read_file (html_file file)
     (* Normalize non-break spaces: *)
-    |> Str.global_replace (Str.regexp_string "&#XA0;") " "
-    |> Str.global_replace (Str.regexp "Chapter \\([0-9]+\\)")
+    |> Re.Str.(global_replace (regexp_string "&#XA0;") " ")
+    |> Re.Str.(global_replace (regexp "Chapter \\([0-9]+\\)"))
       (if file = "index.html" then "<span>\\1.</span>"
-      else "<span>Chapter \\1</span>")
+       else "<span>Chapter \\1</span>")
 
     (* I think it would be good to replace "chapter" by "tutorial" for part
        I. The problem of course is how we number chapters in the other parts. *)
 
-    (* |> Str.global_replace (Str.regexp_string "chapter") "tutorial"
-     * |> Str.global_replace (Str.regexp_string "Chapter") "Tutorial" *)
+    (* |> Re.Str.global_replace (Re.Str.regexp_string "chapter") "tutorial"
+     * |> Re.Str.global_replace (Re.Str.regexp_string "Chapter") "Tutorial" *)
 
     (* Remove the chapter number in local links, it makes the TOC unnecessarily
        unfriendly. *)
-    |> Str.global_replace (Str.regexp ">[0-9]+\\.\\([0-9]+\\) ") ">\\1 "
-    |> Str.global_replace (Str.regexp "[0-9]+\\.\\([0-9]+\\.[0-9]+\\) ")
+    |> Re.Str.(global_replace (regexp ">[0-9]+\\.\\([0-9]+\\) ") ">\\1 ")
+    |> Re.Str.(global_replace (regexp "[0-9]+\\.\\([0-9]+\\.[0-9]+\\) "))
       "\\1 "
 
     (* The API (libref and compilerlibref directories) should be separate
        entities, to better distinguish them from the manual. *)
-    |> Str.global_replace (Str.regexp_string "\"libref/")
+    |> Re.Str.(global_replace (regexp_string "\"libref/"))
       (sprintf "\"%s/" api_page_url)
-    |> Str.global_replace (Str.regexp_string "\"compilerlibref/")
-      (sprintf "\"%s/compilerlibref/" api_page_url)
+    |> Re.Str.(global_replace (regexp_string "\"compilerlibref/")
+                 (sprintf "\"%s/compilerlibref/" api_page_url))
   in
 
   (* For the main index file, we do a few adjustments *)
   let html = if file = "index.html"
-    then Str.global_replace (Str.regexp "Part \\([I|V]+\\)<br>")
-        "<span>\\1. </span>" html
+    then Re.Str.(global_replace (regexp "Part \\([I|V]+\\)<br>")
+                   "<span>\\1. </span>" html)
     else html in
 
   (* Set utf8 encoding directly in the html string *)
-  let charset_regexp = Str.regexp "charset=\\([-A-Za-z0-9]+\\)\\(\\b\\|;\\)" in
-  match Str.search_forward charset_regexp html 0 with
+  let charset_regexp = Re.Str.regexp "charset=\\([-A-Za-z0-9]+\\)\\(\\b\\|;\\)" in
+  match Re.Str.search_forward charset_regexp html 0 with
   | exception Not_found -> dbg "Warning, no charset found in html."; html
-  | _ -> match (String.lowercase_ascii (Str.matched_group 1 html)) with
+  | _ -> match (String.lowercase_ascii (Re.Str.matched_group 1 html)) with
     | "utf-8" -> dbg "Charset is UTF-8; good."; html
     | "us-ascii" -> dbg "Charset is US-ASCII. We change it to UTF-8";
-      Str.global_replace charset_regexp "charset=UTF-8\\2" html
+        Re.Str.global_replace charset_regexp "charset=UTF-8\\2" html
     | _ -> dbg "Warning, charset not recognized."; html
 
 (* Save new html file *)
@@ -289,7 +289,7 @@ let convert version chapters (title, file) =
           match leaf_text authors with
           | None -> ()
           | Some s ->
-              match Str.search_forward (Str.regexp "(.+written by.+)") s 0 with
+              match Re.Str.(search_forward (regexp "(.+written by.+)") s 0) with
               | exception Not_found -> ()
               | _ ->
                   dbg "Moving authors";

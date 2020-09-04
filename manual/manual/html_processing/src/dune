@@ -1,14 +1,14 @@
 (library
  (name common)
  (modules common)
- (libraries str lambdasoup))
+ (libraries lambdasoup))
 
 (executable
  (name process_api)
  (modules process_api)
- (libraries unix str lambdasoup common))
+ (libraries unix re lambdasoup common))
 
 (executable
  (name process_manual)
  (modules process_manual)
- (libraries str lambdasoup common))
+ (libraries re lambdasoup common))

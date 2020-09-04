@@ -223,14 +223,14 @@ type index_entry =
     info : index_item;
     signature : index_item option }
 
-let anon_t_regexp = Str.regexp "\\bt\\b"
-let space_regexp = Str.regexp " +"
-let newline_regexp = Str.regexp_string "\n"
+let anon_t_regexp = Re.Str.regexp "\\bt\\b"
+let space_regexp = Re.Str.regexp " +"
+let newline_regexp = Re.Str.regexp_string "\n"
 
 (* Remove "\n" and superfluous spaces in string *)
 let one_line s =
-  Str.global_replace newline_regexp " " s
-  |> Str.global_replace space_regexp " "
+  Re.Str.global_replace newline_regexp " " s
+  |> Re.Str.global_replace space_regexp " "
   |> String.trim
 
 (* Look for signature (with and without html formatting);
@@ -261,7 +261,7 @@ let get_sig ?mod_name ~id_name config file  =
   let sig_txt = match mod_name with
     | None -> sig_txt
     | Some mod_name ->
-        Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
+        Re.Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
   dbg "Signature=[%s]" sig_txt;
   Some {html = to_string code |> String.escaped; txt = sig_txt}
 
