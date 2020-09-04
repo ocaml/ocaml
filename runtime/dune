@@ -18,7 +18,7 @@
  (deps
    ; matches the line structure of files in gen_primitives.sh
    alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c intern.c
-     interp.c ints.c io.c
+     ints.c io.c
    lexing.c md5.c meta.c memprof.c obj.c parsing.c signals.c str.c sys.c
      callback.c weak.c
    finalise.c stacks.c dynlink.c backtrace_byt.c backtrace.c
