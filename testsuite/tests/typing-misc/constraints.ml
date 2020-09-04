@@ -145,35 +145,32 @@ Exception: Match_failure ("", 6, 23).
 |}]
 
 
-(* #9866 *)
+(* #9866, #9873 *)
 
 type 'a t = 'b  constraint 'a = 'b t;;
 [%%expect{|
-type 'a t = 'b constraint 'a = 'b t
+Line 1, characters 0-36:
+1 | type 'a t = 'b  constraint 'a = 'b t;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type 'b t t
+       but it is used as
+         'b t.
+       All uses need to match the definition for the recursive type to be regular.
 |}]
 
-let x : _ t = 3;;
-let y : _ t = x;;
-let z : _ t = y;;
-let u : _ t = z;;
+type 'a t = 'b constraint 'a = ('b * 'b) t;;
 [%%expect{|
-val x : int t t t t = 3
-val y : int t t t t t t t t = 3
-val z : int t t t t t t t t t t t t = 3
-val u : int t t t t t t t t t t t t t t t t = 3
-|}]
-
-let f x = (x : _ t :> _ t);;
-f 5 + 3;;
-f 5 = true;;
-[%%expect{|
-val f : 'a t t t t -> 'a t t = <fun>
-- : int = 8
-Line 3, characters 6-10:
-3 | f 5 = true;;
-          ^^^^
-Error: This expression has type bool but an expression was expected of type
-         int t t = int
+Line 1, characters 0-42:
+1 | type 'a t = 'b constraint 'a = ('b * 'b) t;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type ('b * 'b) t t
+       but it is used as
+         ('b * 'b) t.
+       All uses need to match the definition for the recursive type to be regular.
 |}]
 
 type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
@@ -188,11 +185,15 @@ Error: The type abbreviation t is cyclic
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
 [%%expect{|
-Line 1, characters 5-7:
+Line 1, characters 0-49:
 1 | type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
-         ^^
-Error: Constraints are not satisfied in this type.
-       Type 'b t should be an instance of 'a t t
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type 'b t t
+       but it is used as
+         'b t.
+       All uses need to match the definition for the recursive type to be regular.
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint <a : 'a; ..> = 'b t;;
@@ -202,4 +203,29 @@ Line 1, characters 0-59:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: A type variable is unbound in this type declaration.
 In method b: 'b the variable 'b is unbound
+|}]
+
+module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
+[%%expect{|
+Line 1, characters 19-54:
+1 | module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type 'b t t
+       but it is used as
+         'b t.
+       All uses need to match the definition for the recursive type to be regular.
+|}]
+module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
+[%%expect{|
+Line 1, characters 19-61:
+1 | module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type ('b * 'b) t t
+       but it is used as
+         ('b * 'b) t.
+       All uses need to match the definition for the recursive type to be regular.
 |}]
