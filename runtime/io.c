@@ -369,7 +369,7 @@ CAMLexport file_offset caml_pos_in(struct channel *channel)
   return channel->offset - (file_offset)(channel->max - channel->curr);
 }
 
-CAMLexport intnat caml_input_scan_line(struct channel *channel)
+intnat caml_input_scan_line(struct channel *channel)
 {
   char * p;
   int n;
