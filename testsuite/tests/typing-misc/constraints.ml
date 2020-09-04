@@ -33,8 +33,7 @@ type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 Line 1, characters 0-47:
 1 | type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-       [ `A of 'a t/2 t/2 t/2 t/2 ]
+Error: The type abbreviation t is cyclic
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
@@ -79,11 +78,11 @@ module type PR6505 = sig
 end
 ;; (* fails *)
 [%%expect{|
-Line 3, characters 6-8:
+Line 3, characters 2-44:
 3 |   and 'o abs constraint 'o = 'o is_an_object
-          ^^
-Error: Constraints are not satisfied in this type.
-       Type 'a is_an_object should be an instance of < .. > is_an_object
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of abs contains a cycle:
+       'a is_an_object as 'a
 |}];;
 
 module PR6505a_old = struct
@@ -118,6 +117,19 @@ Line 6, characters 8-17:
             ^^^^^^^^^
 Error: This expression has type
          (<  > PR6505a.is_an_object, <  > PR6505a.is_an_object) PR6505a.abs
+       It has no method bang
+|}, Principal{|
+module PR6505a :
+  sig
+    type 'o is_an_object = 'o constraint 'o = < .. >
+    and ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
+      constraint 'b = < .. >
+    val y : (<  >, <  >) abs
+  end
+Line 6, characters 8-17:
+6 | let _ = PR6505a.y#bang;; (* fails *)
+            ^^^^^^^^^
+Error: This expression has type (<  >, <  >) PR6505a.abs
        It has no method bang
 |}]
 

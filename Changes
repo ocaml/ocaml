@@ -58,6 +58,7 @@ OCaml 4.12.0
   parameters. Since all parameters of record and sum types are by definition
   injective, this only makes sense for type abbreviations:
     type !'a t = 'a list
+  Note that this change required making the regularity check stricter.
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
 - #9429: Add unary operators containing `#` to the parser for use in ppx

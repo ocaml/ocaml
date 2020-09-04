@@ -2668,12 +2668,6 @@ and unify2 env t1 t2 =
       (match t2.desc with Tconstr (_, [], _) -> t2' | _ -> t2)
     else (t1, t2)
   in
-  let avoid_recursion t2 t1' t2' =
-    if t2 != t2'
-    && (is_Tvar t2' || not (deep_occur t1' t2') && deep_occur t1' t2)
-    then t2' else t2
-  in
-  let t2 = avoid_recursion t2 t1' t2' and t1 = avoid_recursion t1 t2' t1' in
   if unify_eq t1 t1' || not (unify_eq t2 t2') then
     unify3 env t1 t1' t2 t2'
   else

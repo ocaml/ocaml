@@ -1011,17 +1011,8 @@ and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 Line 1, characters 0-71:
 1 | type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor a is defined as
-         type ([> `B of (('a, 'b) a, [> `A of ('a, 'b) a ] as 'c) b ],
-               (('a, 'b) a, 'c) b)
-              a
-       but it is used as
-         ('a, 'b) a
-       after the following expansion(s):
-         (('a, 'b) a, [> `A of ('a, 'b) a ]) b = [> `A of ('a, 'b) a ] ->
-                                                 unit
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of a contains a cycle:
+       [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
@@ -1071,7 +1062,7 @@ class type ['a] cb =
 type bt = 'b ca cb as 'b
 ;;
 [%%expect {|
-type bt = < a : 'a ca; as_b : ('a ca, 'a) b > as 'a
+type bt = 'a ca cb as 'a
 |}];;
 
 (* final classes, etc... *)
