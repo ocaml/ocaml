@@ -1,0 +1,14 @@
+File "i8907.ml", line 1:
+Error: The implementation i8907.ml does not match the interface i8907.cmi:
+       In module M:
+       Modules do not match:
+         sig type t = int val f : [< `Foo of t & int & string ] -> unit end
+       is not included in
+         sig val f : [< `Foo of int & string ] -> unit end
+       In module M:
+       Values do not match:
+         val f : [< `Foo of t & int & string ] -> unit
+       is not included in
+         val f : [< `Foo of int & string ] -> unit
+       File "i8907.mli", line 2, characters 2-42: Expected declaration
+       File "i8907_b.ml", line 3, characters 6-7: Actual declaration
