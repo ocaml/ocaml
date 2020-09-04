@@ -316,6 +316,12 @@ static inline int safe_load (header_t * addr, /*out*/ header_t * contents)
 }
 #endif
 
+#if SIZEOF_LONG == SIZEOF_PTR
+#define VAL_ONE 1ul
+#else
+#define VAL_ONE 1ull
+#endif
+
 static int is_pointer_safe (value v, value *p)
 {
   header_t h;
@@ -333,7 +339,7 @@ static int is_pointer_safe (value v, value *p)
   /* For the pointer to be considered safe, either the given pointer is in heap
    * or the (out of heap) pointer has a black header and its size is < 2 ** 40
    * words (128 GB). If not, we report a warning. */
-  if (Is_in_heap (v) || (Is_black_hd(h) && Wosize_hd(h) < (1ul << 40)))
+  if (Is_in_heap (v) || (Is_black_hd(h) && Wosize_hd(h) < (VAL_ONE << 40)))
     return 1;
 
   if (!Is_black_hd(h)) {
