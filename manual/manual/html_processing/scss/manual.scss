@@ -210,10 +210,6 @@ nav.toc{
 	@include nav-toc-mobile;}
 }
 
-.ocaml{ 
-    background:linear-gradient(to left,#fff 0,#f3f7f6 100%)
-}
-
 .pre,pre{
     background:linear-gradient(to left,#fff 0,#ede8e5 100%)
 }
@@ -264,25 +260,27 @@ span.c009{
 span.c013{
     font-weight:700
 }
-.caml-input span.ocamlkeyword{
-    font-weight:500;
-    color:#444
-}
-.caml-input span.ocamlhighlight{
-    font-weight:500;
-    text-decoration:underline
-}
-.caml-input span.id{
-    color:#523b74
+.caml-input{
+    span.ocamlkeyword{
+	font-weight:500;
+	color:#444
+    }
+    span.ocamlhighlight{
+	font-weight:500;
+	text-decoration:underline
+    }
+    span.id{
+	color:#523b74
+    }
+    span.ocamlstring,.caml-input span.string{
+	color:#df5000
+    }
+    span.comment, .caml-input span.ocamlcomment{
+	color:#969896
+    }
 }
 .ocaml span.ocamlerror{
     font-weight:500
-}
-.caml-input span.ocamlstring,.caml-input span.string{
-    color:#df5000
-}
-.caml-input span.comment, .caml-input span.ocamlcomment{
-    color:#969896
 }
 .copyright{
     font-size:smaller

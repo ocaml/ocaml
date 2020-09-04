@@ -24,10 +24,10 @@ $(WEBDIR):
 	mkdir -p $(WEBDIRMAN)
 	mkdir -p $(WEBDIRCOMP)
 
-$(WEBDIRMAN)/manual.css: $(WEBDIR)
+$(WEBDIRMAN)/manual.css: scss/manual.scss $(WEBDIR)
 	sass scss/manual.scss > $(WEBDIRMAN)/manual.css
 
-$(WEBDIRAPI)/style.css: $(WEBDIR)
+$(WEBDIRAPI)/style.css: scss/style.scss $(WEBDIR)
 	sass scss/style.scss > $(WEBDIRAPI)/style.css
 	cp $(WEBDIRAPI)/style.css $(WEBDIRCOMP)/style.css
 
