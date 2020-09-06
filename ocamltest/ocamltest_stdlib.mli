@@ -19,6 +19,8 @@
 
 val input_line_opt : in_channel -> string option
 
+include module type of Misc.BindingOps
+
 module Char : sig
   include module type of Char
   val is_blank : char -> bool
