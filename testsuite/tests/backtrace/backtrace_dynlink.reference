@@ -8,7 +8,7 @@ Called from Dynlink_common.Make.loadfile in file "dynlink_common.ml" (inlined), 
 Called from Backtrace_dynlink in file "backtrace_dynlink.ml", line 39, characters 4-52
 execution of module initializers in the shared library failed: Failure("SUCCESS")
 Raised by primitive operation at Dynlink.Native.run.(fun) in file "native/dynlink.ml", line 83, characters 12-29
-Re-raised at Dynlink.Native.run.(fun) in file "native/dynlink.ml", line 85, characters 10-149
+Re-raised at Dynlink.Native.run.(fun) in file "native/dynlink.ml", lines 85-87, characters 10-43
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15

@@ -1,10 +1,10 @@
 Error: Failure("Plugin error")
 Raised by primitive operation at Dynlink.Native.run.(fun) in file "native/dynlink.ml", line 83, characters 12-29
-Re-raised at Dynlink.Native.run.(fun) in file "native/dynlink.ml", line 85, characters 10-149
+Re-raised at Dynlink.Native.run.(fun) in file "native/dynlink.ml", lines 85-87, characters 10-43
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
 Called from Stdlib__Fun.protect in file "fun.ml", line 33, characters 8-15
 Re-raised at Stdlib__Fun.protect in file "fun.ml", line 38, characters 6-52
 Called from Dynlink_common.Make.loadfile in file "dynlink_common.ml" (inlined), line 366, characters 26-45
-Called from Test10_main in file "test10_main.ml", line 49, characters 30-87
+Called from Test10_main in file "test10_main.ml", lines 49-51, characters 30-7
