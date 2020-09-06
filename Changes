@@ -199,6 +199,10 @@ Working version
 - #12809: Add ThreadSanitizer support to FreeBSD/amd64
   (Miod Vallat, review by Gabriel Scherer)
 
+- #12815: Correctly format multi-line locations in exception backtraces, in the
+  style that the compiler driver uses.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
