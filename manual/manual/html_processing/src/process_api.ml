@@ -39,13 +39,16 @@ let search_widget with_description =
 (* We save parsed files in a table; this is just for speed optimization,
    especially for make_index (18sec instead of 50sec for the whole index); it
    can be removed.  Although if we really wanted a fast make_index, we would use
-   Scanf all over the place ==> 1sec *)
+   Scanf all over the place ==> 1sec. Warning: the parsed files will be mutated
+   by processing, so one should never process the same file twice. *)
 
 let parsed_files = Hashtbl.create 50
 
-let parse_file file =
+let parse_file ?(original=false) file =
   match Hashtbl.find_opt parsed_files file with
-  | Some soup -> soup
+  | Some soup ->
+      if original then failwith (sprintf "File %s was already processed" file)
+      else soup
   | None ->
       let soup = read_file file |> parse in
       Hashtbl.add parsed_files file soup;
@@ -54,7 +57,7 @@ let parse_file file =
 let process ?(search=true) ~version config file out =
 
   dbg "Processing %s..." file;
-  let soup = parse_file file in
+  let soup = parse_file ~original:true file in
 
   (* Add javascript files *)
   let head = soup $ "head" in

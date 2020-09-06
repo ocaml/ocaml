@@ -12,6 +12,9 @@ open Soup
 open Printf
 open Common
 
+(* How the main index.html page will be called: *)
+let index_title = "Home"
+
 (* Alternative formats for the manual: *)
 let archives =
   ["refman-html.tar.gz"; "refman.txt"; "refman.pdf"; "refman.info.tar.gz"]
@@ -20,26 +23,54 @@ let archives =
 let remove_number s =
   Re.Str.(global_replace (regexp ".+  ") "" s)
 
-(* Scan index.html and return the list of chapters (title, file)
-   Processed parts: ["tutorials"; "refman"; "commands"; "library" ]
-*)
-let index part =
-  dbg "Reading part [%s]" part;
-  let html = read_file (html_file "index.html") in
-  let soup = parse html in
-  (* Foreword. We do nothing. *)
-  (* We select the list of (html files, titles) for Part [part] *)
-  let part =
-    let a = match select_one ("a[id=\"p:" ^ part ^ "\"]") soup with
-      | Some node -> node
-      | None -> R.select_one ("a[name=\"p:" ^ part ^ "\"]") soup in
-    let ul = next a in
-    assert (name ul = "ul");
-    ul $$ "a"
-    |> fold (fun list a ->
-        (R.leaf_text a |> remove_number, R.attribute "href" a) :: list) []
-    |> List.rev in
-  part
+let toc_get_title li =
+  let r = Re.Str.regexp ".+  " in
+  let a = li $ "a[href]" in
+  let title = trimmed_texts a |> String.concat " "
+              |> Re.Str.global_replace r "" in
+  let file = R.attribute "href" a
+             |> String.split_on_char '#'
+             |> List.hd in
+  file, title
+
+let register_toc_entry toc_table name li =
+  let file, title = toc_get_title li in
+  dbg "%s : %s" name title;
+  if not (Hashtbl.mem toc_table file)
+  then begin
+    Hashtbl.add toc_table file title;
+    dbg "Registering %s => %s" file title
+  end;
+  file, title
+
+(* Scan manual001.html and return two things:
+   1. [toc_table]: a table with (file ==> title)
+   2. [all_chapters]: the list of parts: (part_title, chapters), where
+   chapters is a list of (title, file) *)
+let parse_toc () =
+  let toc_table = Hashtbl.create 50 in
+  Hashtbl.add toc_table "manual001.html" "Contents";
+  Hashtbl.add toc_table "foreword.html" "Foreword";
+  Hashtbl.add toc_table "manual071.html" "Keywords";
+
+  let soup = read_file (html_file "manual001.html") |> parse in
+  let toc = soup $ "ul.toc" in
+  let all_chapters =
+    toc $$ ">li.li-toc" (* Parts *)
+    |> fold (fun all_chapters li ->
+        let _file, title = toc_get_title li in
+        dbg "Part: %s " title;
+        let chapters =
+          li $$ ">ul >li.li-toc" (* Chapters *)
+          |> fold (fun chapters li ->
+              let file, title = register_toc_entry toc_table "  Chapters" li in
+              li $$ ">ul >li.li-toc" (* Sections *)
+              |> iter (ignore << (register_toc_entry toc_table "    Section"));
+              (file,title) :: chapters) []
+        |> List.rev in
+        if chapters = [] then all_chapters
+        else (title, chapters) :: all_chapters) [] in
+  toc_table, all_chapters
 
 (* This string is updated by [extract_date] *)
 let copyright_text = ref "Copyright © 2020 Institut National de Recherche en Informatique et en Automatique"
@@ -100,19 +131,64 @@ let save_to_file soup file =
   let new_html = to_string soup in
   write_file (docs_file file) new_html
 
-(* Remove first three links "Previous, Up, Next" *)
-let remove_navigation soup =
+(* Find title associated with file *)
+let file_title file toc =
+  if file = "index.html" then Some index_title
+  else Hashtbl.find_opt toc file
+
+(* Replace three links "Previous, Up, Next" at the end of the file by more
+   useful titles, and insert then in a div contained, keeping only 2 of them:
+   either (previous, next) or (previous, up) or (up, next). Remove them at the
+   top of the file, where they are not needed because we have the TOC. *)
+let update_navigation soup toc =
   do_option delete (soup $? "hr");
-  ["Previous"; "Up"; "Next"]
-  |> List.iter (fun s ->
-      soup $$ ("img[alt=\"" ^ s ^ "\"]")
-      |> iter (do_option delete << parent))
+  let container, count =
+    ["Previous"; "Up"; "Next"]
+    |> List.fold_left (fun (container, count) s ->
+        let imgs = soup $$ ("img[alt=\"" ^ s ^ "\"]") in
+        (* In principle [imgs] will contain either 0 or 2 elements. We delete
+           the first one. *)
+        do_option (delete << R.parent) (first imgs);
+        (* Now, if there is a second element, we update (or create) an "div"
+           container to insert the element, and increase [count]. [count] is
+           used to make sure we keep only 2 links, not 3. *)
+        imgs |> fold (fun (container, count) img ->
+            let a = R.parent img in
+            let file = R.attribute "href" a in
+            let title = match file_title file toc with
+              | Some f -> begin match s with
+                  | "Previous" -> "« " ^ f
+                  | "Next" -> f ^ " »"
+                  | "Up" -> f
+                  | _ -> failwith "This should not happen"
+                end
+              | None -> dbg "Unknown title for file %s" file; s in
+            let txt = create_text title in
+            add_class (String.lowercase_ascii s) a;
+            replace img txt;
+            let div = match container with
+              | Some c ->
+                  if count = 2 then delete (children c |> R.last);
+                  (* : we delete the "Up" link *)
+                  append_child c a; c
+              | None ->
+                  let c = create_element ~class_:"bottom-navigation" "div" in
+                  wrap a c; c in
+            Some div, count+1) (container, count)) (None, 0) in
+
+  match container with
+  | None -> print_endline "No Navigation"
+  | Some div ->
+      if count = 2 then begin
+        add_class "previous" (div $$ "a" |> R.first);
+        add_class "next" (div $$ "a" |> R.last);
+      end
 
 (* Create a new file by cloning the structure of "soup", and inserting the
    content of external file (hence preserving TOC and headers) *)
-let clone_structure soup xfile =
+let clone_structure soup toc xfile =
   let xternal = parse (load_html xfile) in
-  remove_navigation xternal;
+  update_navigation xternal toc;
   do_option delete (xternal $? "hr");
   let xbody = xternal $ "body" in
   let clone = parse (to_string soup) in
@@ -158,9 +234,9 @@ let convert_index version soup =
   |> append_child body
 
 (* This is the main script for processing a specified file. [convert] has to be
-   run for each "entry" [file] of the manual, making a "Chapter".  (the list of
-   [chapters] corresponds to a "Part" of the manual) *)
-let convert version chapters (title, file) =
+   run for each "entry" [file] of the manual, making a "Chapter". (The list of
+   [chapters] corresponds to a "Part" of the manual.) *)
+let convert version chapters toc_table (file, title) =
   dbg "%s ==> %s" (html_file file) (docs_file file);
 
   (* Parse html *)
@@ -181,7 +257,7 @@ let convert version chapters (title, file) =
     else ["manual"; "content"] in
   let body = wrap_body ~classes:c soup in
 
-  remove_navigation soup;
+  update_navigation soup toc_table;
 
   if file = "index.html" then convert_index version soup;
 
@@ -265,7 +341,7 @@ let convert version chapters (title, file) =
 
   (* Create new menu *)
   let menu = create_element "ul" ~class_:"part_menu" in
-  List.iter (fun (title, href) ->
+  List.iter (fun (href, title) ->
       let a = create_element "a" ~inner_text:title ~attributes:["href", href] in
       let li = if href = file
         then create_element "li" ~class_:"active"
@@ -318,7 +394,7 @@ let convert version chapters (title, file) =
   append_child body (copyright ());
 
   (* Generate external files *)
-  List.iter (clone_structure soup) xfiles;
+  List.iter (clone_structure soup toc_table) xfiles;
 
   (* And finally save *)
   save_to_file soup file
@@ -330,17 +406,16 @@ let process version =
 
   dbg "Current directory is: %s" (Sys.getcwd ());
 
-  (* special case of the "index.html" file *)
-  convert version [] ("The OCaml Manual", "index.html");
+  dbg "* Scanning index";
+  let toc_table, all_chapters = parse_toc () in
 
-  let parts = ["tutorials"; "refman"; "commands"; "library" ] in
-  let main_files = List.fold_left (fun list part ->
-      dbg "* Scanning index";
-      let chapters = index part in
+  (* special case of the "index.html" file: *)
+  convert version [] toc_table ("index.html", "The OCaml Manual");
 
-      dbg "* Processing chapters";
-      List.iter (convert version chapters) chapters;
-      (snd (List.hd chapters)) :: list) [] parts in
+  let main_files = List.fold_left (fun list (part_title, chapters) ->
+      dbg "* Processing chapters for %s" part_title;
+      List.iter (convert version chapters toc_table) chapters;
+      (fst (List.hd chapters)) :: list) [] all_chapters in
 
   main_files
 

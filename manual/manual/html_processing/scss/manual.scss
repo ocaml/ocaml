@@ -18,6 +18,17 @@
     &>header nav{
 	font-family:"Fira Sans",Helvetica,Arial,sans-serif
     }
+    /* navigation links at the bottom of page */
+    .bottom-navigation {
+	margin-bottom:1em;
+	a.next {
+	float: right;
+	}
+    }
+    .copyright{
+	font-size:smaller;
+	display:inline-block;
+    }
 }
 .index{ /* index.html */
     ul{
@@ -28,6 +39,18 @@
 		color:#c88b5f;
 	    }
 	}
+    }
+    /* table of contents: (manual.001.html) */
+    ul.toc ul.toc ul.toc{
+	font-size:smaller;
+    }
+    section>ul>li>a{ /* for Parts title */
+	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	font-size:larger;
+	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
+    }
+    section>ul>li>ul>li:hover{ /* Chapters */
+	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
     }
 }
 b{
@@ -169,6 +192,7 @@ ul.itemize{
 ul.itemize li::before{
     content:"▶";
     color:$logocolor;
+    font-size:smaller;
     margin-right:4px;
     margin-left:-1em}
 
@@ -281,9 +305,6 @@ span.c013{
 }
 .ocaml span.ocamlerror{
     font-weight:500
-}
-.copyright{
-    font-size:smaller
 }
 
 

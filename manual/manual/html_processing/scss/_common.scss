@@ -152,7 +152,8 @@ html {
     max-width:unset;
     border:none;
     padding:.2em 1em;
-    border-radius:5px
+    border-radius:5px 0;
+    &.brand { border-radius: 0 5px;}
 }
 
 
