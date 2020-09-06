@@ -686,3 +686,11 @@ module Magic_number : sig
 
   val all_kinds : kind list
 end
+
+
+(** binding operators *)
+module BindingOps : sig
+
+  val ( let@ ) : ('a -> 'b) -> 'a -> 'b
+  (** [let@ x = a in b] is [a @@ fun x -> b]. *)
+end
