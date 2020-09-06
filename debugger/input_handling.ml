@@ -63,21 +63,21 @@ let main_loop () =
     let old_state = !continue_main_loop in
     fun () -> continue_main_loop := old_state
   in
-    Fun.protect ~finally @@ fun () ->
-      continue_main_loop := true;
-      while !continue_main_loop do
-        try
-          let (input, _, _) =
-            select (List.map fst !active_files) [] [] (-1.)
-          in
-            List.iter
-              (function fd ->
-                 let (funct, iochan) = (List.assoc fd !active_files) in
-                   funct iochan)
-              input
-        with
-          Unix_error (EINTR, _, _) -> ()
-      done
+  let@ () = Fun.protect ~finally in
+  continue_main_loop := true;
+  while !continue_main_loop do
+    try
+      let (input, _, _) =
+        select (List.map fst !active_files) [] [] (-1.)
+      in
+        List.iter
+          (function fd ->
+             let (funct, iochan) = (List.assoc fd !active_files) in
+               funct iochan)
+          input
+    with
+      Unix_error (EINTR, _, _) -> ()
+  done
 
 (*** Managing user inputs ***)
 
