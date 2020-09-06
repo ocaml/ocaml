@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 open Misc
+open Misc.BindingOps
 open Compile_common
 
 let tool_name = "ocamlc"
@@ -22,7 +23,7 @@ let with_info =
   Compile_common.with_info ~native:false ~tool_name
 
 let interface ~source_file ~output_prefix =
-  with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
+  let@ info = with_info ~source_file ~output_prefix ~dump_ext:"cmi" in
   Compile_common.interface info
 
 (** Bytecode compilation backend for .ml files. *)
@@ -45,19 +46,19 @@ let to_bytecode i (typedtree, coercion) =
 let emit_bytecode i (bytecode, required_globals) =
   let cmofile = cmo i in
   let oc = open_out_bin cmofile in
-  Misc.try_finally
-    ~always:(fun () -> close_out oc)
-    ~exceptionally:(fun () -> Misc.remove_file cmofile)
-    (fun () ->
-       bytecode
-       |> Profile.(record ~accumulate:true generate)
-         (Emitcode.to_file oc i.module_name cmofile ~required_globals);
-    )
+  let@ () =
+    Misc.try_finally
+      ~always:(fun () -> close_out oc)
+      ~exceptionally:(fun () -> Misc.remove_file cmofile)
+  in
+  bytecode
+  |> Profile.(record ~accumulate:true generate)
+    (Emitcode.to_file oc i.module_name cmofile ~required_globals)
 
 let implementation ~source_file ~output_prefix =
   let backend info typed =
     let bytecode = to_bytecode info typed in
     emit_bytecode info bytecode
   in
-  with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
+  let@ info = with_info ~source_file ~output_prefix ~dump_ext:"cmo" in
   Compile_common.implementation info ~backend

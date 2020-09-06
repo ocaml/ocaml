@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 open Misc
+open Misc.BindingOps
 open Compenv
 
 type info = {
@@ -37,7 +38,7 @@ let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
   Env.set_unit_name module_name;
   let env = Compmisc.initial_env() in
   let dump_file = String.concat "." [output_prefix; dump_ext] in
-  Compmisc.with_ppf_dump ~file_prefix:dump_file @@ fun ppf_dump ->
+  let@ ppf_dump = Compmisc.with_ppf_dump ~file_prefix:dump_file in
   k {
     module_name;
     output_prefix;
@@ -56,7 +57,7 @@ let parse_intf i =
   |> print_if i.ppf_dump Clflags.dump_source Pprintast.signature
 
 let typecheck_intf info ast =
-  Profile.(record_call typing) @@ fun () ->
+  let@ () = Profile.(record_call typing) in
   let tsg =
     ast
     |> Typemod.type_interface info.env
@@ -83,7 +84,7 @@ let emit_signature info ast tsg =
     info.output_prefix info.source_file info.env sg
 
 let interface info =
-  Profile.record_call info.source_file @@ fun () ->
+  let@ () = Profile.record_call info.source_file in
   let ast = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
     let tsg = typecheck_intf info ast in
@@ -109,7 +110,7 @@ let typecheck_impl i parsetree =
     Printtyped.implementation_with_coercion
 
 let implementation info ~backend =
-  Profile.record_call info.source_file @@ fun () ->
+  let@ () = Profile.record_call info.source_file in
   let exceptionally () =
     let sufs = if info.native then [ cmx; obj ] else [ cmo ] in
     List.iter (fun suf -> remove_file (suf info)) sufs;
