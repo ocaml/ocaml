@@ -304,6 +304,27 @@ void caml_darken (value v, value *p /* not used */)
   }
 }
 
+/* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
+   and is called at the end of a GC compaction to avoid a mark stack greater
+   than 1/32th of the heap. */
+void caml_shrink_mark_stack () {
+  struct mark_stack* stk = Caml_state->mark_stack;
+  intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
+  mark_entry* shrunk_stack;
+
+  caml_gc_message (0x08, "Shrinking mark stack to %"
+                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
+                  init_stack_bsize);
+
+  shrunk_stack = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                              init_stack_bsize);
+  if (shrunk_stack != NULL) {
+    stk->stack = shrunk_stack;
+    stk->size = MARK_STACK_INIT_SIZE;
+    return;
+  }
+}
+
 /* This function adds blocks in the passed heap chunk [heap_chunk] to
    the mark stack. It returns 1 when the supplied chunk has no more
    range to redarken.  It returns 0 if there are still blocks in the
