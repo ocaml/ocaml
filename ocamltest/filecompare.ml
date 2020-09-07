@@ -59,33 +59,103 @@ type files = {
   output_filename : string;
 }
 
-let read_text_file lines_to_drop fn =
-  Sys.with_input_file ~bin:true fn @@ fun ic ->
-  let drop_cr s =
-    let l = String.length s in
-    if l > 0 && s.[l - 1] = '\r' then String.sub s 0 (l - 1)
-    else raise Exit
-  in
-  let rec drop k =
-    if k = 0 then
-      loop []
-    else
-      let stop = try ignore (input_line ic); false with End_of_file -> true in
-      if stop then [] else drop (k-1)
-  and loop acc =
-    match input_line ic with
-    | s -> loop (s :: acc)
-    | exception End_of_file ->
-        try List.rev_map drop_cr acc
-        with Exit -> List.rev acc
-  in
-  drop lines_to_drop
+let last_is_cr s =
+  let l = String.length s in
+  l > 0 && s.[l - 1] = '\r'
 
-let compare_text_files dropped_lines file1 file2 =
-  if read_text_file 0 file1 = read_text_file dropped_lines file2 then
-    Same
-  else
-    Different
+(* Returns last character of an input file. Fails for an empty file. *)
+let last_char ic =
+  seek_in ic (in_channel_length ic - 1);
+  input_char ic
+
+(* [line_seq_of_in_channel ~normalise ic first_line] constructs a sequence of
+   the lines of [ic] where [first_line] is the already read first line of [ic].
+   Strings include the line terminator and CRLF is normalised to LF if
+   [normalise] is [true]. The sequence raises [Exit] if normalise is [true] and
+   a terminated line is encountered which does not end CRLF. The final line of
+   the sequence only includes a terminator if it is present in the file (and a
+   terminating CR is never normalised if not strictly followed by LF). *)
+let line_seq_of_in_channel ~normalise ic =
+  let normalise =
+    if normalise then
+      fun s ->
+        if last_is_cr s then
+          String.sub s 0 (String.length s - 1)
+        else
+          raise Exit
+    else
+      Fun.id
+  in
+    let rec read_line last () =
+      (* Read the next line to determine if the last line ended with LF *)
+      match input_line ic with
+      | line ->
+          Seq.Cons (normalise last ^ "\n", read_line line)
+      | exception End_of_file ->
+          (* EOF reached - seek the last character to determine if the final
+             line ends in LF *)
+          let last =
+            if last_char ic = '\n' then
+              normalise last ^ "\n"
+            else
+              last
+          in
+            Seq.Cons (last, Seq.empty)
+    in
+      read_line
+
+let compare_text_files ignored_lines file1 file2 =
+  Sys.with_input_file ~bin:true file2 @@ fun ic2 ->
+    (* Get the first non-dropped line of file2 and determine if could be
+       CRLF-normalised (it can't be in any of the dropped lines didn't end
+       CRLF. *)
+    let (crlf_endings2, line2, reached_end_file2) =
+      let rec loop crlf_endings2 k =
+        match input_line ic2 with
+        | line ->
+            let crlf_endings2 = crlf_endings2 && last_is_cr line in
+            if k = 0 then
+              (crlf_endings2, line, false)
+            else
+              loop crlf_endings2 (pred k)
+        | exception End_of_file ->
+            (false, "", true)
+      in
+        loop true ignored_lines
+    in
+      Sys.with_input_file ~bin:true file1 @@ fun ic1 ->
+        if reached_end_file2 then
+          (* We reached the end of file2 while ignoring lines, so only an empty
+             file can be identical, as in the binary comparison case. *)
+          if in_channel_length ic1 = 0 then
+            Same
+          else
+            Different
+        else
+          (* file2 has at least one non-ignored line *)
+          match input_line ic1 with
+          | exception End_of_file -> Different
+          | line1 ->
+              let crlf_endings1 = last_is_cr line1 in
+              (* If both files appear to have CRLF endings, then there's no need
+                 to attempt to normalise either. *)
+              let seq1 =
+                let normalise = crlf_endings1 && not crlf_endings2 in
+                line_seq_of_in_channel ~normalise ic1 line1 in
+              let seq2 =
+                let normalise = crlf_endings2 && not crlf_endings1 in
+                line_seq_of_in_channel ~normalise ic2 line2 in
+              try
+                if Seq.equal seq1 seq2 then
+                  Same
+                else
+                  raise Exit
+              with Exit ->
+                (* Either the lines weren't equal, or the file which was being
+                   normalised suddenly had a line which didn't end CRLF. In this
+                   case, the files must differ since only one file is ever being
+                   normalised, so the earlier lines differed too. *)
+                Different
 
 (* Version of Stdlib.really_input which stops at EOF, rather than raising
    an exception. *)
@@ -161,13 +231,15 @@ let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
   let diff_commandline =
     Filename.quote_command "diff" ~stdout:temporary_file
-      [ "-u";
+      [ "--strip-trailing-cr"; "-u";
         files.reference_filename;
         files.output_filename ]
   in
   let result =
-    if (Sys.command diff_commandline) = 2 then Stdlib.Error "diff"
-    else Ok (Sys.string_of_file temporary_file)
+    match Sys.command diff_commandline with
+    | 0 -> Ok "Inconsistent LF/CRLF line-endings"
+    | 2 -> Stdlib.Error "diff"
+    | _ -> Ok (Sys.string_of_file temporary_file)
   in
   Sys.force_remove temporary_file;
   result

@@ -342,6 +342,10 @@ Working version
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
 
+- #9801: Don't ignore EOL-at-EOF differences in ocamltest.
+  (David Allsopp, review by Damien Doligez, much input and thought from
+   Daniel Bünzli, Damien Doligez, Sébastien Hinderer, and Xavier Leroy)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For

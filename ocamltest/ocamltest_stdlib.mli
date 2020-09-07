@@ -61,6 +61,12 @@ module Sys : sig
   val with_output_file : ?bin:bool -> string -> (out_channel -> 'a) -> 'a
 end
 
+module Seq : sig
+  include module type of struct include Seq end
+
+  val equal : 'a t -> 'a t -> bool
+end
+
 module Unix : sig
   include module type of Ocamltest_unix
 end
