@@ -75,9 +75,6 @@ CAMLextern void caml_seek_out (struct channel *, file_offset);
 CAMLextern file_offset caml_pos_in (struct channel *);
 CAMLextern file_offset caml_pos_out (struct channel *);
 
-CAMLextern void caml_finalize_channel (value);
-CAMLextern int caml_do_read (int, char *, unsigned int);
-
 /* I/O on channels from C. The channel must be locked (see below) before
    calling any of the functions and macros below */
 
