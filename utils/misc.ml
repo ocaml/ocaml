@@ -1185,3 +1185,8 @@ module Magic_number = struct
            | Error err -> Error (Unexpected_error err)
            | Ok () -> Ok info
 end
+
+
+module BindingOps = struct
+  let ( let@ ) f x = f x
+end

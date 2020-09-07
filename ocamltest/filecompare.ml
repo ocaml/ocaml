@@ -60,7 +60,7 @@ type files = {
 }
 
 let read_text_file lines_to_drop fn =
-  Sys.with_input_file ~bin:true fn @@ fun ic ->
+  let@ ic = Sys.with_input_file ~bin:true fn in
   let drop_cr s =
     let l = String.length s in
     if l > 0 && s.[l - 1] = '\r' then String.sub s 0 (l - 1)
@@ -107,8 +107,8 @@ let really_input_up_to ic =
     Bytes.sub buf 0 bytes_read
 
 let compare_binary_files bytes_to_ignore file1 file2 =
-  Sys.with_input_file ~bin:true file1 @@ fun ic1 ->
-  Sys.with_input_file ~bin:true file2 @@ fun ic2 ->
+  let@ ic1 = Sys.with_input_file ~bin:true file1 in
+  let@ ic2 = Sys.with_input_file ~bin:true file2 in
   seek_in ic1 bytes_to_ignore;
   seek_in ic2 bytes_to_ignore;
   let rec compare () =
@@ -175,14 +175,14 @@ let diff files =
 let promote {filetype; reference_filename; output_filename} ignore_conf =
   match filetype, ignore_conf with
   | Text, {lines = skip_lines; _} ->
-      Sys.with_output_file reference_filename @@ fun reference ->
-      Sys.with_input_file output_filename @@ fun output ->
+      let@ reference = Sys.with_output_file reference_filename in
+      let@ output = Sys.with_input_file output_filename in
       for _ = 1 to skip_lines do
         try ignore (input_line output) with End_of_file -> ()
       done;
       Sys.copy_chan output reference
   | Binary, {bytes = skip_bytes; _} ->
-      Sys.with_output_file ~bin:true reference_filename @@ fun reference ->
-      Sys.with_input_file ~bin:true output_filename @@ fun output ->
+      let@ reference = Sys.with_output_file ~bin:true reference_filename in
+      let@ output = Sys.with_input_file ~bin:true output_filename in
       seek_in output skip_bytes;
       Sys.copy_chan output reference

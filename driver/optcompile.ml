@@ -16,6 +16,7 @@
 (** The batch compiler *)
 
 open Misc
+open Misc.BindingOps
 open Compile_common
 
 let tool_name = "ocamlopt"
@@ -24,7 +25,7 @@ let with_info =
   Compile_common.with_info ~native:true ~tool_name
 
 let interface ~source_file ~output_prefix =
-  with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
+  let@ info = with_info ~source_file ~output_prefix ~dump_ext:"cmi" in
   Compile_common.interface info
 
 let (|>>) (x, y) f = (x, f y)
@@ -92,5 +93,5 @@ let implementation ~backend ~source_file ~output_prefix =
     then flambda info backend typed
     else clambda info backend typed
   in
-  with_info ~source_file ~output_prefix ~dump_ext:"cmx" @@ fun info ->
+  let@ info = with_info ~source_file ~output_prefix ~dump_ext:"cmx" in
   Compile_common.implementation info ~backend

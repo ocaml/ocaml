@@ -17,6 +17,8 @@
 
 module Unix = Ocamltest_unix
 
+include Misc.BindingOps
+
 let input_line_opt ic =
   try Some (input_line ic) with End_of_file -> None
 
@@ -126,7 +128,7 @@ module Sys = struct
     with_input_file filename in_channel_length = 0
 
   let string_of_file filename =
-    with_input_file ~bin:true filename @@ fun chan ->
+    let@ chan = with_input_file ~bin:true filename in
     let filesize = in_channel_length chan in
     if filesize > Sys.max_string_length then
       failwith
@@ -169,8 +171,8 @@ module Sys = struct
     in loop ()
 
   let copy_file src dest =
-    with_input_file ~bin:true src @@ fun ic ->
-    with_output_file ~bin:true dest @@ fun oc ->
+    let@ ic = with_input_file ~bin:true src in
+    let@ oc = with_output_file ~bin:true dest in
     copy_chan ic oc
 
   let force_remove file =

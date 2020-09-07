@@ -26,6 +26,8 @@ let cleanup e f =
 
 let nothing _ = ()
 
+let ( let@ ) f x = f x
+
 (*** Operations on lists. ***)
 
 (* Remove an element from a list *)

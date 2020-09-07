@@ -19,6 +19,9 @@
 (*** Miscellaneous ***)
 val nothing : 'a -> unit
 
+val ( let@ ) : ('a -> 'b) -> 'a -> 'b
+(** [let@ x = a in b] is [a @@ fun x -> b]. *)
+
 (*** Types and exceptions. ***)
 exception Out_of_range
 

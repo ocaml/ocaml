@@ -342,6 +342,10 @@ Working version
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
 
+- #9887: introduce `(let@)` in Misc.BindingOps:
+  `let@ x = a in b` is equivalent to `a @@ fun x -> b`.
+  (Gabriel Scherer, review by ???)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For

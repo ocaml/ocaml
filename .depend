@@ -1385,6 +1385,7 @@ typing/typedecl_properties.cmi : \
 typing/typedecl_separability.cmo : \
     typing/types.cmi \
     typing/typedecl_properties.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
@@ -1395,6 +1396,7 @@ typing/typedecl_separability.cmo : \
 typing/typedecl_separability.cmx : \
     typing/types.cmx \
     typing/typedecl_properties.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/env.cmx \
     typing/ctype.cmx \

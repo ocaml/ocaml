@@ -14,6 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Misc.BindingOps
 open Types
 
 type type_definition = type_declaration
@@ -81,7 +82,8 @@ let structure : type_definition -> type_structure = fun def ->
       end
   | Type_record (labels, _) ->
       Algebraic (One (
-        demultiply_list labels @@ fun ld -> {
+        let@ ld = demultiply_list labels in
+        {
           location = ld.ld_loc;
           kind = Record_field;
           mutability = ld.ld_mutable;
@@ -90,7 +92,8 @@ let structure : type_definition -> type_structure = fun def ->
         }
       ))
   | Type_variant constructors ->
-      Algebraic (demultiply_list constructors @@ fun cd ->
+      Algebraic (
+        let@ cd = demultiply_list constructors in
         let result_type_parameter_instances =
           match cd.cd_res with
           (* cd_res is the optional return type (in a GADT);
@@ -105,7 +108,8 @@ let structure : type_definition -> type_structure = fun def ->
         in
         begin match cd.cd_args with
         | Cstr_tuple tys ->
-            demultiply_list tys @@ fun argument_type -> {
+            let@ argument_type = demultiply_list tys in
+            {
               location = cd.cd_loc;
               kind = Constructor_parameter;
               mutability = Asttypes.Immutable;
@@ -113,15 +117,15 @@ let structure : type_definition -> type_structure = fun def ->
               result_type_parameter_instances;
             }
         | Cstr_record labels ->
-            demultiply_list labels @@ fun ld ->
-              let argument_type = ld.ld_type in
-              {
-                location = ld.ld_loc;
-                kind = Constructor_field;
-                mutability = ld.ld_mutable;
-                argument_type;
-                result_type_parameter_instances;
-              }
+            let@ ld = demultiply_list labels in
+            let argument_type = ld.ld_type in
+            {
+              location = ld.ld_loc;
+              kind = Constructor_field;
+              mutability = ld.ld_mutable;
+              argument_type;
+              result_type_parameter_instances;
+            }
         end)
 
 

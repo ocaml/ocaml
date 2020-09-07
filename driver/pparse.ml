@@ -13,6 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Misc.BindingOps
 open Format
 
 type error =
@@ -217,7 +218,7 @@ let parse_file ~tool_name invariant_fun parse kind sourcefile =
   let inputfile = preprocess sourcefile in
   Misc.try_finally
     (fun () ->
-       Profile.record_call "parsing" @@ fun () ->
+       let@ () = Profile.record_call "parsing" in
        file_aux ~tool_name inputfile parse invariant_fun kind)
     ~always:(fun () -> remove_preprocessed inputfile)
 
