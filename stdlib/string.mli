@@ -15,26 +15,26 @@
 
 (** Strings.
 
-    A string [s] of length [l] is an indexable, immutable, sequence of
-    [l] bytes. For historical reasons these bytes are refered to as
+    A string [s] of length [n] is an indexable, immutable, sequence of
+    [n] bytes. For historical reasons these bytes are refered to as
     characters.
 
     The semantics of string functions is defined in terms of
     indices and positions which are visualised and described by:
 
 {v
-positions  0   1   2   3   4    l-1    l
+positions  0   1   2   3   4    n-1    n
            +---+---+---+---+     +-----+
-  indices  | 0 | 1 | 2 | 3 | ... | l-1 |
+  indices  | 0 | 1 | 2 | 3 | ... | n-1 |
            +---+---+---+---+     +-----+
 v}
     {ul
-    {- An {e index} [i] of [s] is an integer in the range \[[0];[l-1]\].
+    {- An {e index} [i] of [s] is an integer in the range \[[0];[n-1]\].
        It represents the [i]th byte (character) of [s] which can be
        acccessed using the constant time string indexing operator
        [s.[i]].}
     {- A {e position} [i] of [s] is an integer in the range
-       \[[0];[l]\]. It can represent the point at the beginning of
+       \[[0];[n]\]. It can represent the point at the beginning of
        the string, the point between two indices, or the point at the end
        of the string. The [i]th byte index is between position [i] and
        [i+1].}}
@@ -70,16 +70,16 @@ type t = string
 (** The type for strings. *)
 
 val make : int -> char -> string
-(** [make l c] is a string of length [l] with each index holding the
+(** [make n c] is a string of length [n] with each index holding the
     character [c].
 
-    @raise Invalid_argument if [l < 0] or [l > ]{!Sys.max_string_length}. *)
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> string
-(** [init l f] is a string of length [l] with index
+(** [init n f] is a string of length [n] with index
     [i] holding the character [f i] (called in increasing index order).
 
-    @raise Invalid_argument if [l < 0] or [l > ]{!Sys.max_string_length}.
+    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
     @since 4.02.0 *)
 
 external length : string -> int = "%string_length"
