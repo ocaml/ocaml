@@ -84,7 +84,7 @@ Caml_inline int descriptor_is_in_binary_mode(int fd)
 {
 #if defined(_WIN32) || defined(__CYGWIN__)
   int oldmode = setmode(fd, O_TEXT);
-  if (oldmode == O_BINARY) setmode(fd, O_BINARY);
+  if (oldmode != -1 && oldmode != O_TEXT) setmode(fd, oldmode);
   return oldmode == O_BINARY;
 #else
   return 1;
