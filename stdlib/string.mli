@@ -70,12 +70,12 @@ type t = string
 (** The type for strings. *)
 
 val make : int -> char -> string
-(** [String.make n c] returns a fresh string of length [n],
+(** [make n c] returns a fresh string of length [n],
    filled with the character [c].
    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> string
-(** [String.init n f] returns a string of length [n], with character
+(** [init n f] returns a string of length [n], with character
     [i] initialized to the result of [f i] (called in increasing
     index order).
 
@@ -86,8 +86,8 @@ external length : string -> int = "%string_length"
 (** Return the length (number of characters) of the given string. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [String.get s n] returns the character at index [n] in string [s].
-   You can also write [s.[n]] instead of [String.get s n].
+(** [get s n] returns the character at index [n] in string [s].
+   You can also write [s.[n]] instead of [get s n].
     @raise Invalid_argument if [n] not a valid index in [s]. *)
 
 (** {1:concat Concatenating}
@@ -96,7 +96,7 @@ external get : string -> int -> char = "%string_safe_get"
     string. *)
 
 val concat : string -> string list -> string
-(** [String.concat sep sl] concatenates the list of strings [sl],
+(** [concat sep sl] concatenates the list of strings [sl],
     inserting the separator string [sep] between each.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
@@ -114,26 +114,26 @@ val compare : t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val starts_with : prefix:t -> t -> bool
-(** [String.starts_with prefix s] tests if [s] starts with [prefix]
+(** [starts_with prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
 val ends_with : suffix:t -> t -> bool
-(** [String.ends_with suffix s] tests if [s] ends with [suffix]
+(** [ends_with suffix s] tests if [s] ends with [suffix]
     @since 4.12.0 *)
 
 val contains : string -> char -> bool
-(** [String.contains s c] tests if character [c]
+(** [contains s c] tests if character [c]
    appears in the string [s]. *)
 
 val contains_from : string -> int -> char -> bool
-(** [String.contains_from s start c] tests if character [c]
+(** [contains_from s start c] tests if character [c]
    appears in [s] after position [start].
-   [String.contains s c] is equivalent to
-   [String.contains_from s 0 c].
+   [contains s c] is equivalent to
+   [contains_from s 0 c].
    @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
-(** [String.rcontains_from s stop c] tests if character [c]
+(** [rcontains_from s stop c] tests if character [c]
    appears in [s] before position [stop+1].
    @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
    position in [s]. *)
@@ -141,22 +141,22 @@ val rcontains_from : string -> int -> char -> bool
 (** {1:extract Extracting substrings} *)
 
 val sub : string -> int -> int -> string
-(** [String.sub s start len] returns a fresh string of length [len],
+(** [sub s start len] returns a fresh string of length [len],
    containing the substring of [s] that starts at position [start] and
    has length [len].
    @raise Invalid_argument if [start] and [len] do not
    designate a valid substring of [s]. *)
 
 val split_on_char: char -> string -> string list
-(** [String.split_on_char sep s] returns the list of all (possibly empty)
+(** [split_on_char sep s] returns the list of all (possibly empty)
     substrings of [s] that are delimited by the [sep] character.
 
     The function's output is specified by the following invariants:
 
     - The list is not empty.
     - Concatenating its elements using [sep] as a separator returns a
-      string equal to the input ([String.concat (String.make 1 sep)
-      (String.split_on_char sep s) = s]).
+      string equal to the input ([concat (make 1 sep)
+      (split_on_char sep s) = s]).
     - No string in the result contains the [sep] character.
 
     @since 4.04.0 *)
@@ -164,12 +164,12 @@ val split_on_char: char -> string -> string list
 (** {1:traversing Traversing} *)
 
 val iter : (char -> unit) -> string -> unit
-(** [String.iter f s] applies function [f] in turn to all
+(** [iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
-   [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
+   [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
 
 val iteri : (int -> char -> unit) -> string -> unit
-(** Same as {!String.iter}, but the
+(** Same as {!iter}, but the
    function is applied to the index of the element as first argument
    (counting from 0), and the character itself as second argument.
     @since 4.00.0 *)
@@ -177,60 +177,60 @@ val iteri : (int -> char -> unit) -> string -> unit
 (** {1:searching Searching} *)
 
 val index : string -> char -> int
-(** [String.index s c] returns the index of the first
+(** [index s c] returns the index of the first
    occurrence of character [c] in string [s].
    @raise Not_found if [c] does not occur in [s]. *)
 
 val index_opt: string -> char -> int option
-(** [String.index_opt s c] returns the index of the first
+(** [index_opt s c] returns the index of the first
     occurrence of character [c] in string [s], or
     [None] if [c] does not occur in [s].
     @since 4.05 *)
 
 val rindex : string -> char -> int
-(** [String.rindex s c] returns the index of the last
+(** [rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
    @raise Not_found if [c] does not occur in [s]. *)
 
 val rindex_opt: string -> char -> int option
-(** [String.rindex_opt s c] returns the index of the last occurrence
+(** [rindex_opt s c] returns the index of the last occurrence
     of character [c] in string [s], or [None] if [c] does not occur in
     [s].
     @since 4.05 *)
 
 val index_from : string -> int -> char -> int
-(** [String.index_from s i c] returns the index of the
+(** [index_from s i c] returns the index of the
    first occurrence of character [c] in string [s] after position [i].
-   [String.index s c] is equivalent to [String.index_from s 0 c].
+   [index s c] is equivalent to [index_from s 0 c].
    @raise Invalid_argument if [i] is not a valid position in [s].
    @raise Not_found if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: string -> int -> char -> int option
-(** [String.index_from_opt s i c] returns the index of the
+(** [index_from_opt s i c] returns the index of the
     first occurrence of character [c] in string [s] after position [i]
     or [None] if [c] does not occur in [s] after position [i].
 
-    [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
+    [index_opt s c] is equivalent to [index_from_opt s 0 c].
     @raise Invalid_argument if [i] is not a valid position in [s].
 
     @since 4.05
 *)
 
 val rindex_from : string -> int -> char -> int
-(** [String.rindex_from s i c] returns the index of the
+(** [rindex_from s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1].
-   [String.rindex s c] is equivalent to
-   [String.rindex_from s (String.length s - 1) c].
+   [rindex s c] is equivalent to
+   [rindex_from s (length s - 1) c].
    @raise Invalid_argument if [i+1] is not a valid position in [s].
    @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
 
 val rindex_from_opt: string -> int -> char -> int option
-(** [String.rindex_from_opt s i c] returns the index of the
+(** [rindex_from_opt s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1]
    or [None] if [c] does not occur in [s] before position [i+1].
 
-   [String.rindex_opt s c] is equivalent to
-   [String.rindex_from_opt s (String.length s - 1) c].
+   [rindex_opt s c] is equivalent to
+   [rindex_from_opt s (length s - 1) c].
    @raise Invalid_argument if [i+1] is not a valid position in [s].
 
    @since 4.05 *)
@@ -238,13 +238,13 @@ val rindex_from_opt: string -> int -> char -> int option
 (** {1:transforming Transforming} *)
 
 val map : (char -> char) -> string -> string
-(** [String.map f s] applies function [f] in turn to all the
+(** [map f s] applies function [f] in turn to all the
     characters of [s] (in increasing index order) and stores the
     results in a new string that is returned.
     @since 4.00.0 *)
 
 val mapi : (int -> char -> char) -> string -> string
-(** [String.mapi f s] calls [f] with each character of [s] and its
+(** [mapi f s] calls [f] with each character of [s] and its
     index (in increasing index order) and stores the results in a new
     string that is returned.
     @since 4.02.0 *)
@@ -312,7 +312,7 @@ val of_seq : char Seq.t -> t
 
 external create : int -> bytes = "caml_create_string"
   [@@ocaml.deprecated "Use Bytes.create instead."]
-(** [String.create n] returns a fresh byte sequence of length [n].
+(** [create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
 
@@ -320,9 +320,9 @@ external create : int -> bytes = "caml_create_string"
 
 external set : bytes -> int -> char -> unit = "%string_safe_set"
   [@@ocaml.deprecated "Use Bytes.set instead."]
-(** [String.set s n c] modifies byte sequence [s] in place,
+(** [set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
-   You can also write [s.[n] <- c] instead of [String.set s n c].
+   You can also write [s.[n] <- c] instead of [set s n c].
    @raise Invalid_argument if [n] is not a valid index in [s].
 
     @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
@@ -338,7 +338,7 @@ val copy : string -> string [@@ocaml.deprecated]
 
 val fill : bytes -> int -> int -> char -> unit
   [@@ocaml.deprecated "Use Bytes.fill instead."]
-(** [String.fill s start len c] modifies byte sequence [s] in place,
+(** [fill s start len c] modifies byte sequence [s] in place,
    replacing [len] bytes with [c], starting at [start].
    @raise Invalid_argument if [start] and [len] do not
    designate a valid range of [s].
