@@ -46,31 +46,7 @@
   opt-in; we intend to remove the option in the future.
 *)
 
-external length : string -> int = "%string_length"
-(** Return the length (number of characters) of the given string. *)
-
-external get : string -> int -> char = "%string_safe_get"
-(** [String.get s n] returns the character at index [n] in string [s].
-   You can also write [s.[n]] instead of [String.get s n].
-   @raise Invalid_argument if [n] not a valid index in [s]. *)
-
-
-external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated "Use Bytes.set instead."]
-(** [String.set s n c] modifies byte sequence [s] in place,
-   replacing the byte at index [n] with [c].
-   You can also write [s.[n] <- c] instead of [String.set s n c].
-   @raise Invalid_argument if [n] is not a valid index in [s].
-
-   @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
-
-external create : int -> bytes = "caml_create_string"
-  [@@ocaml.deprecated "Use Bytes.create instead."]
-(** [String.create n] returns a fresh byte sequence of length [n].
-   The sequence is uninitialized and contains arbitrary bytes.
-   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
-
-   @deprecated This is a deprecated alias of {!Bytes.create}.[ ] *)
+(** {1:strings Strings} *)
 
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
@@ -83,14 +59,16 @@ val init : int -> (int -> char) -> string
     index order).
 
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
-    @since 4.02.0
-*)
+    @since 4.02.0 *)
 
-val copy : string -> string [@@ocaml.deprecated]
-(** Return a copy of the given string.
+external length : string -> int = "%string_length"
+(** Return the length (number of characters) of the given string. *)
 
-    @deprecated Because strings are immutable, it doesn't make much
-    sense to make identical copies of them. *)
+external get : string -> int -> char = "%string_safe_get"
+(** [String.get s n] returns the character at index [n] in string [s].
+   You can also write [s.[n]] instead of [String.get s n].
+   @raise Invalid_argument if [n] not a valid index in [s]. *)
+
 
 val sub : string -> int -> int -> string
 (** [String.sub s start len] returns a fresh string of length [len],
@@ -98,15 +76,6 @@ val sub : string -> int -> int -> string
    has length [len].
    @raise Invalid_argument if [start] and [len] do not
    designate a valid substring of [s]. *)
-
-val fill : bytes -> int -> int -> char -> unit
-  [@@ocaml.deprecated "Use Bytes.fill instead."]
-(** [String.fill s start len c] modifies byte sequence [s] in place,
-   replacing [len] bytes with [c], starting at [start].
-   @raise Invalid_argument if [start] and [len] do not
-   designate a valid range of [s].
-
-   @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
 
 val blit : string -> int -> bytes -> int -> int -> unit
 (** Same as {!Bytes.blit_string}. *)
@@ -241,32 +210,6 @@ val rcontains_from : string -> int -> char -> bool
    @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
    position in [s]. *)
 
-val uppercase : string -> string
-  [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
-(** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val lowercase : string -> string
-  [@@ocaml.deprecated "Use String.lowercase_ascii instead."]
-(** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val capitalize : string -> string
-  [@@ocaml.deprecated "Use String.capitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to uppercase,
-   using the ISO Latin-1 (8859-1) character set..
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val uncapitalize : string -> string
-  [@@ocaml.deprecated "Use String.uncapitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to lowercase,
-   using the ISO Latin-1 (8859-1) character set..
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
 val uppercase_ascii : string -> string
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
@@ -337,6 +280,66 @@ val to_seqi : t -> (int * char) Seq.t
 val of_seq : char Seq.t -> t
 (** Create a string from the generator
     @since 4.07 *)
+
+(** {1:deprecated Deprecated functions} *)
+
+external create : int -> bytes = "caml_create_string"
+  [@@ocaml.deprecated "Use Bytes.create instead."]
+(** [String.create n] returns a fresh byte sequence of length [n].
+   The sequence is uninitialized and contains arbitrary bytes.
+   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
+
+   @deprecated This is a deprecated alias of {!Bytes.create}.[ ] *)
+
+external set : bytes -> int -> char -> unit = "%string_safe_set"
+  [@@ocaml.deprecated "Use Bytes.set instead."]
+(** [String.set s n c] modifies byte sequence [s] in place,
+   replacing the byte at index [n] with [c].
+   You can also write [s.[n] <- c] instead of [String.set s n c].
+   @raise Invalid_argument if [n] is not a valid index in [s].
+
+    @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
+
+val copy : string -> string [@@ocaml.deprecated]
+(** Return a copy of the given string.
+
+    @deprecated Because strings are immutable, it doesn't make much
+    sense to make identical copies of them. *)
+
+val fill : bytes -> int -> int -> char -> unit
+  [@@ocaml.deprecated "Use Bytes.fill instead."]
+(** [String.fill s start len c] modifies byte sequence [s] in place,
+   replacing [len] bytes with [c], starting at [start].
+   @raise Invalid_argument if [start] and [len] do not
+   designate a valid range of [s].
+
+   @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
+
+val uppercase : string -> string
+  [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
+(** Return a copy of the argument, with all lowercase letters
+   translated to uppercase, including accented letters of the ISO
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val lowercase : string -> string
+  [@@ocaml.deprecated "Use String.lowercase_ascii instead."]
+(** Return a copy of the argument, with all uppercase letters
+   translated to lowercase, including accented letters of the ISO
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val capitalize : string -> string
+  [@@ocaml.deprecated "Use String.capitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val uncapitalize : string -> string
+  [@@ocaml.deprecated "Use String.uncapitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 (**/**)
 
