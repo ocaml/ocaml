@@ -437,6 +437,9 @@ Working version
 - #8939: Command-line option to save Linear IR before emit.
   (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
 
+- #9003: Start compilation from Emit when the input file is in Linear IR format.
+  (Greta Yorsh, review by Jérémie Dimino and Gabriel Scherer)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
