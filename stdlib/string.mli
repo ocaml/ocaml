@@ -16,11 +16,12 @@
 (** Strings.
 
     A string [s] of length [n] is an indexable, immutable, sequence of
-    [n] bytes. For historical reasons these bytes are refered to as
+    [n] bytes. For historical reasons these bytes are referred to as
     characters.
 
     The semantics of string functions is defined in terms of
-    indices and positions which are visualised and described by:
+    indices and positions. These are depicted and described
+    as follows.
 
 {v
 positions  0   1   2   3   4    n-1    n
@@ -34,10 +35,10 @@ v}
        acccessed using the constant time string indexing operator
        [s.[i]].}
     {- A {e position} [i] of [s] is an integer in the range
-       \[[0];[n]\]. It can represent the point at the beginning of
-       the string, the point between two indices, or the point at the end
-       of the string. The [i]th byte index is between position [i] and
-       [i+1].}}
+       \[[0];[n]\]. It represents either the point at the beginning of
+       the string, or the point between two indices, or the point at
+       the end of the string. The [i]th byte index is between position
+       [i] and [i+1].}}
 
     Two integers [start] and [len] are said to define a {e valid
     substring} of [s] if [len >= 0] and [start], [start+len] are
