@@ -408,7 +408,6 @@ Working version
   cancause link-time errors with link-time optimization (LTO).
   (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
 
-
 - #9753: fix build for Android
   (Github user @EduardoRFS, review by Xavier Leroy)
 
@@ -417,6 +416,11 @@ Working version
 
 - #9860: wrong range constraint for subtract immediate on zSystems / s390x
   (Xavier Leroy, review by Stephen Dolan)
+
+- #9868, #9872: bugs in {in,out}_channel_length and seek_in
+  for files opened in text mode under Windows
+  (Xavier Leroy, report by Alain Frisch, review by Nicolás Ojeda Bär
+  and Alain Frisch)
 
 
 OCaml 4.11.1
