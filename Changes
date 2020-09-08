@@ -20,8 +20,8 @@ Working version
 
 - #9756: garbage collector colors change
   removes the gray color from the major gc
-  (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy, 
-  KC Sivaramakrishnan, Damien Doligez and Jacques-Henri Jourdan) 
+  (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy,
+  KC Sivaramakrishnan, Damien Doligez and Jacques-Henri Jourdan)
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
   adding support for Musl ppc64le along the way.
