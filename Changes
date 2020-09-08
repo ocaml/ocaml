@@ -142,8 +142,8 @@ Working version
 
 ### Standard library:
 
-- #XXXX: add String.subrange
- (Daniel Bünzli)
+- #9893: add String.subrange
+  (Daniel Bünzli, review by Alain Frisch)
 
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)

@@ -152,11 +152,12 @@ val sub : string -> int -> int -> string
 
 val subrange : ?first:int -> ?last:int -> string -> string
 (** [subrange ~first ~last s] are the consecutive bytes of [s] whose
-    indices exist in the range \[[first];[last]\]. [first] defaults to [0]
+    indices are in the range \[[first];[last]\]. [first] defaults to [0]
     and [last] to [length s - 1].
 
     Both [first] and [last] can be any integer. If [first > last] the
-    range is empty and the empty string is returned.
+    range is empty and the empty string is returned. As such, and
+    in contrast to {!sub}, this function never raises.
 
     @since 4.12.0 *)
 
