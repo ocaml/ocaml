@@ -460,34 +460,38 @@ extern uintnat caml_instr_alloc_jump;
 */
 void caml_gc_dispatch (void)
 {
-  value *trigger = Caml_state->young_trigger; /* save old value of trigger */
-
   CAML_EVENTLOG_DO({
     CAML_EV_COUNTER(EV_C_ALLOC_JUMP, caml_instr_alloc_jump);
     caml_instr_alloc_jump =  0;
   });
 
-  if (trigger == Caml_state->young_alloc_start
-      || Caml_state->requested_minor_gc) {
+  if (Caml_state->young_trigger == Caml_state->young_alloc_start){
     /* The minor heap is full, we must do a minor collection. */
+    Caml_state->requested_minor_gc = 1;
+  }else{
+    Caml_state->requested_major_slice = 1;
+  }
+  if (caml_gc_phase == Phase_idle){
+    /* The major GC needs an empty minor heap in order to start a new cycle.
+       If a major slice was requested, we need to do a minor collection
+       before we can do the major slice that starts a new major GC cycle.
+       If a minor collection was requested, we take the opportunity to start
+       a new major GC cycle.
+       In either case, we have to do a minor cycle followed by a major slice.
+    */
+    Caml_state->requested_minor_gc = 1;
+    Caml_state->requested_major_slice = 1;
+  }
+  if (Caml_state->requested_minor_gc) {
     /* reset the pointers first because the end hooks might allocate */
     CAML_EV_BEGIN(EV_MINOR);
     Caml_state->requested_minor_gc = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_mid;
     caml_update_young_limit();
     caml_empty_minor_heap ();
-    /* The minor heap is empty, we can start a major collection. */
     CAML_EV_END(EV_MINOR);
-    if (caml_gc_phase == Phase_idle)
-    {
-      CAML_EV_BEGIN(EV_MAJOR);
-      caml_major_collection_slice (-1);
-      CAML_EV_END(EV_MAJOR);
-    }
   }
-  if (trigger != Caml_state->young_alloc_start
-      || Caml_state->requested_major_slice) {
-    /* The minor heap is half-full, do a major GC slice. */
+  if (Caml_state->requested_major_slice) {
     Caml_state->requested_major_slice = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_start;
     caml_update_young_limit();
