@@ -202,6 +202,17 @@ type t = string
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
 
+let subrange ?(first = 0) ?last s =
+  let first = if first < 0 then 0 else first in
+  let max = length s - 1 in
+  let last = match last with
+    | None -> max
+    | Some l when l > max -> max
+    | Some l -> l
+  in
+  if first > last then "" else
+  sub s first (last - first + 1)
+
 let split_on_char sep s =
   let r = ref [] in
   let j = ref (length s) in

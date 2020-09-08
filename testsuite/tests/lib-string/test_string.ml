@@ -42,6 +42,26 @@ let () =
 
 (* GPR#805/815/833 *)
 
+let test_subrange () =
+  assert(String.subrange ~first:1 ~last:2 "abcd" = "bc");
+  assert(String.subrange ~first:2 ~last:1 "abcd" = "");
+  assert(String.subrange ~first:1 "abcd" = "bcd");
+  assert(String.subrange ~last:2 "abcd" = "abc");
+  assert(String.subrange ~first:(-1) "abcd" = "abcd");
+  assert(String.subrange ~last:100 "abcd" = "abcd");
+  assert(String.subrange ~first:(-1) ~last:100 "abcd" = "abcd");
+  assert(String.subrange ~first:98 "abcd" = "");
+  assert(String.subrange ~first:98 ~last:100 "abcd" = "");
+  assert(String.subrange ~first:100 ~last:98 "abcd" = "");
+  assert(String.subrange ~first:(-1) ~last:(-2) "abcd" = "");
+  assert(String.subrange ~last:(-2) "abcd" = "")
+
+
+let () =
+  test_subrange ();
+  ()
+
+
 let ()  =
   if Sys.word_size = 32 then begin
     let big = String.make Sys.max_string_length 'x' in

@@ -150,6 +150,16 @@ val sub : string -> int -> int -> string
     @raise Invalid_argument if [start] and [len] do not designate a valid
     substring of [s]. *)
 
+val subrange : ?first:int -> ?last:int -> string -> string
+(** [subrange ~first ~last s] are the consecutive bytes of [s] whose
+    indices exist in the range \[[first];[last]\]. [first] defaults to [0]
+    and [last] to [length s - 1].
+
+    Both [first] and [last] can be any integer. If [first > last] the
+    range is empty and the empty string is returned.
+
+    @since 4.12.0 *)
+
 val split_on_char : char -> string -> string list
 (** [split_on_char sep s] is the list of all (possibly empty)
     substrings of [s] that are delimited by the character [sep].
