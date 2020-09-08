@@ -13,38 +13,56 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** String operations.
+(** Strings.
 
-  A string is an immutable data structure that contains a
-  fixed-length sequence of (single-byte) characters. Each character
-  can be accessed in constant time through its index.
+    A string [s] of length [l] is an indexable, immutable, sequence of
+    [l] bytes. For historical reasons these bytes are refered to as
+    characters.
 
-  Given a string [s] of length [l], we can access each of the [l]
-  characters of [s] via its index in the sequence. Indexes start at
-  [0], and we will call an index valid in [s] if it falls within the
-  range [[0...l-1]] (inclusive). A position is the point between two
-  characters or at the beginning or end of the string.  We call a
-  position valid in [s] if it falls within the range [[0...l]]
-  (inclusive). Note that the character at index [n] is between
-  positions [n] and [n+1].
+    The semantics of string functions is defined in terms of
+    indices and positions which are visualised and described by:
 
-  Two parameters [start] and [len] are said to designate a valid
-  substring of [s] if [len >= 0] and [start] and [start+len] are
-  valid positions in [s].
+{v
+positions  0   1   2   3   4    l-1    l
+           +---+---+---+---+     +-----+
+  indices  | 0 | 1 | 2 | 3 | ... | l-1 |
+           +---+---+---+---+     +-----+
+v}
+    {ul
+    {- An {e index} [i] of [s] is an integer in the range \[[0];[l-1]\].
+       It represents the [i]th byte (character) of [s] which can be
+       acccessed using the constant time string indexing operator
+       [s.[i]].}
+    {- A {e position} [i] of [s] is an integer in the range
+       \[[0];[l]\]. It can represent the point at the beginning of
+       the string, the point between two indices, or the point at the end
+       of the string. The [i]th byte index is between position [i] and
+       [i+1].}}
 
-  Note: OCaml strings used to be modifiable in place, for instance via
-  the {!String.set} and {!String.blit} functions described below. This
-  usage is only possible when the compiler is put in "unsafe-string"
-  mode by giving the [-unsafe-string] command-line option. This
-  compatibility mode makes the types [string] and [bytes] (see module
-  {!Bytes}) interchangeable so that functions expecting byte sequences
-  can also accept strings as arguments and modify them.
+    Two integers [start] and [len] are said to define a {e valid
+    substring} of [s] if [len >= 0] and [start], [start+len] are
+    positions of [s].
 
-  The distinction between [bytes] and [string] was introduced in OCaml
-  4.02, and the "unsafe-string" compatibility mode was the default
-  until OCaml 4.05. Starting with 4.06, the compatibility mode is
-  opt-in; we intend to remove the option in the future.
-*)
+    {b Unicode text.} Strings being arbitrary sequences of bytes, they
+    can hold any kind of textual encoding. However the recommended
+    encoding for storing Unicode text in OCaml strings is UTF-8. This
+    is the encoding used by Unicode escapes in string literals. For
+    example the string ["\u{1F42B}"] is the UTF-8 encoding of the
+    Unicode character U+1F42B.
+
+    {b Past mutability.} OCaml strings used to be modifiable in place,
+    for instance via the {!String.set} and {!String.blit}
+    functions. This use is nowadays only possible when the compiler is
+    put in "unsafe-string" mode by giving the [-unsafe-string]
+    command-line option. This compatibility mode makes the types
+    [string] and [bytes] (see {!Bytes.t}) interchangeable so that
+    functions expecting byte sequences can also accept strings as
+    arguments and modify them.
+
+    The distinction between [bytes] and [string] was introduced in
+    OCaml 4.02, and the "unsafe-string" compatibility mode was the
+    default until OCaml 4.05. Starting with 4.06, the compatibility
+    mode is opt-in; we intend to remove the option in the future. *)
 
 (** {1:strings Strings} *)
 
