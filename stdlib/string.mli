@@ -70,242 +70,233 @@ type t = string
 (** The type for strings. *)
 
 val make : int -> char -> string
-(** [make n c] returns a fresh string of length [n],
-   filled with the character [c].
-   @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+(** [make l c] is a string of length [l] with each index holding the
+    character [c].
+
+    @raise Invalid_argument if [l < 0] or [l > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> string
-(** [init n f] returns a string of length [n], with character
-    [i] initialized to the result of [f i] (called in increasing
-    index order).
+(** [init l f] is a string of length [l] with index
+    [i] holding the character [f i] (called in increasing index order).
 
-    @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
+    @raise Invalid_argument if [l < 0] or [l > ]{!Sys.max_string_length}.
     @since 4.02.0 *)
 
 external length : string -> int = "%string_length"
-(** Return the length (number of characters) of the given string. *)
+(** [length s] is the length (number of bytes/characters) of [s]. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [get s n] returns the character at index [n] in string [s].
-   You can also write [s.[n]] instead of [get s n].
-    @raise Invalid_argument if [n] not a valid index in [s]. *)
+(** [get s i] is the character at index [i] in [s]. This is the same
+    as writing [s.[i]].
+
+    @raise Invalid_argument if [i] not an index of [s]. *)
 
 (** {1:concat Concatenating}
 
-    {b Note.} The {!( ^ )} operator is a binary operator to concat two
-    string. *)
+    {b Note.} The {!Stdlib.( ^ )} binary operator concatenates two
+    strings. *)
 
 val concat : string -> string list -> string
-(** [concat sep sl] concatenates the list of strings [sl],
-    inserting the separator string [sep] between each.
+(** [concat sep ss] concatenates the list of strings [ss], inserting
+    the separator string [sep] between each.
+
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
 (** {1:predicates Predicates and comparisons} *)
 
 val equal : t -> t -> bool
-(** The equal function for strings.
+(** [equal s0 s1] is [true] iff [s0] and [s1] are character-wise equal.
     @since 4.03.0 *)
 
 val compare : t -> t -> int
-(** The comparison function for strings, with the same specification as
-    {!Stdlib.compare}.  Along with the type [t], this function [compare]
-    allows the module [String] to be passed as argument to the functors
-    {!Set.Make} and {!Map.Make}. *)
+(** [compare s0 s1] sorts [s0] and [s1] in lexicographical order. [compare]
+    behaves like {!Stdlib.compare} on strings but is more efficient. *)
 
 val starts_with : prefix:t -> t -> bool
-(** [starts_with prefix s] tests if [s] starts with [prefix]
+(** [starts_with prefix s] is [true] iff [s] starts with [prefix].
+
     @since 4.12.0 *)
 
 val ends_with : suffix:t -> t -> bool
-(** [ends_with suffix s] tests if [s] ends with [suffix]
+(** [ends_with suffix s] is [true] iff [s] ends with [suffix].
+
     @since 4.12.0 *)
 
-val contains : string -> char -> bool
-(** [contains s c] tests if character [c]
-   appears in the string [s]. *)
-
 val contains_from : string -> int -> char -> bool
-(** [contains_from s start c] tests if character [c]
-   appears in [s] after position [start].
-   [contains s c] is equivalent to
-   [contains_from s 0 c].
-   @raise Invalid_argument if [start] is not a valid position in [s]. *)
+(** [contains_from s start c] is [true] iff [c] appears in [s] after position
+    [start].
+
+    @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
-(** [rcontains_from s stop c] tests if character [c]
-   appears in [s] before position [stop+1].
-   @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
-   position in [s]. *)
+(** [rcontains_from s stop c] is [true] iff [c] appears in [s] before position
+    [stop+1].
+
+    @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
+    position in [s]. *)
+
+val contains : string -> char -> bool
+(** [contains s c] is {!String.contains_from}[ s 0 c]. *)
 
 (** {1:extract Extracting substrings} *)
 
 val sub : string -> int -> int -> string
-(** [sub s start len] returns a fresh string of length [len],
-   containing the substring of [s] that starts at position [start] and
-   has length [len].
-   @raise Invalid_argument if [start] and [len] do not
-   designate a valid substring of [s]. *)
+(** [sub s start len] is a string of length [len], containing the
+    substring of [s] that starts at position [start] and has length
+    [len].
 
-val split_on_char: char -> string -> string list
-(** [split_on_char sep s] returns the list of all (possibly empty)
-    substrings of [s] that are delimited by the [sep] character.
+    @raise Invalid_argument if [start] and [len] do not designate a valid
+    substring of [s]. *)
 
-    The function's output is specified by the following invariants:
+val split_on_char : char -> string -> string list
+(** [split_on_char sep s] is the list of all (possibly empty)
+    substrings of [s] that are delimited by the character [sep].
 
-    - The list is not empty.
-    - Concatenating its elements using [sep] as a separator returns a
+    The function's result is specified by the following invariants:
+    {ul
+    {- The list is not empty.}
+    {- Concatenating its elements using [sep] as a separator returns a
       string equal to the input ([concat (make 1 sep)
-      (split_on_char sep s) = s]).
-    - No string in the result contains the [sep] character.
+      (split_on_char sep s) = s]).}
+    {- No string in the result contains the [sep] character.}}
 
     @since 4.04.0 *)
-
-(** {1:traversing Traversing} *)
-
-val iter : (char -> unit) -> string -> unit
-(** [iter f s] applies function [f] in turn to all
-   the characters of [s].  It is equivalent to
-   [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
-
-val iteri : (int -> char -> unit) -> string -> unit
-(** Same as {!iter}, but the
-   function is applied to the index of the element as first argument
-   (counting from 0), and the character itself as second argument.
-    @since 4.00.0 *)
-
-(** {1:searching Searching} *)
-
-val index : string -> char -> int
-(** [index s c] returns the index of the first
-   occurrence of character [c] in string [s].
-   @raise Not_found if [c] does not occur in [s]. *)
-
-val index_opt: string -> char -> int option
-(** [index_opt s c] returns the index of the first
-    occurrence of character [c] in string [s], or
-    [None] if [c] does not occur in [s].
-    @since 4.05 *)
-
-val rindex : string -> char -> int
-(** [rindex s c] returns the index of the last
-   occurrence of character [c] in string [s].
-   @raise Not_found if [c] does not occur in [s]. *)
-
-val rindex_opt: string -> char -> int option
-(** [rindex_opt s c] returns the index of the last occurrence
-    of character [c] in string [s], or [None] if [c] does not occur in
-    [s].
-    @since 4.05 *)
-
-val index_from : string -> int -> char -> int
-(** [index_from s i c] returns the index of the
-   first occurrence of character [c] in string [s] after position [i].
-   [index s c] is equivalent to [index_from s 0 c].
-   @raise Invalid_argument if [i] is not a valid position in [s].
-   @raise Not_found if [c] does not occur in [s] after position [i]. *)
-
-val index_from_opt: string -> int -> char -> int option
-(** [index_from_opt s i c] returns the index of the
-    first occurrence of character [c] in string [s] after position [i]
-    or [None] if [c] does not occur in [s] after position [i].
-
-    [index_opt s c] is equivalent to [index_from_opt s 0 c].
-    @raise Invalid_argument if [i] is not a valid position in [s].
-
-    @since 4.05
-*)
-
-val rindex_from : string -> int -> char -> int
-(** [rindex_from s i c] returns the index of the
-   last occurrence of character [c] in string [s] before position [i+1].
-   [rindex s c] is equivalent to
-   [rindex_from s (length s - 1) c].
-   @raise Invalid_argument if [i+1] is not a valid position in [s].
-   @raise Not_found if [c] does not occur in [s] before position [i+1]. *)
-
-val rindex_from_opt: string -> int -> char -> int option
-(** [rindex_from_opt s i c] returns the index of the
-   last occurrence of character [c] in string [s] before position [i+1]
-   or [None] if [c] does not occur in [s] before position [i+1].
-
-   [rindex_opt s c] is equivalent to
-   [rindex_from_opt s (length s - 1) c].
-   @raise Invalid_argument if [i+1] is not a valid position in [s].
-
-   @since 4.05 *)
 
 (** {1:transforming Transforming} *)
 
 val map : (char -> char) -> string -> string
-(** [map f s] applies function [f] in turn to all the
-    characters of [s] (in increasing index order) and stores the
-    results in a new string that is returned.
+(** [map f s] is the string resulting from applying [f] to all the
+    characters of [s] in increasing order.
+
     @since 4.00.0 *)
 
 val mapi : (int -> char -> char) -> string -> string
-(** [mapi f s] calls [f] with each character of [s] and its
-    index (in increasing index order) and stores the results in a new
-    string that is returned.
+(** [mapi f s] is like {!map} but the index of the character is also
+    passed to [f].
+
     @since 4.02.0 *)
 
 val trim : string -> string
-(** Return a copy of the argument, without leading and trailing
-   whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
-   trailing whitespace character in the argument, return the original
-   string itself, not a copy.
-   @since 4.00.0 *)
+(** [trim s] is [s] without leading and trailing whitespace. Whitespace
+    characters are: [' '], ['\x0C'] (form feed), ['\n'], ['\r'], and ['\t'].
+
+    @since 4.00.0 *)
 
 val escaped : string -> string
-(** Return a copy of the argument, with special characters
-    represented by escape sequences, following the lexical
-    conventions of OCaml.
-    All characters outside the ASCII printable range (32..126) are
-    escaped, as well as backslash and double-quote.
+(** [escaped s] is [s] with special characters represented by escape
+    sequences, following the lexical conventions of OCaml.
 
-    If there is no special character in the argument that needs
-    escaping, return the original string itself, not a copy.
-    @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes.
+    All characters outside the US-ASCII printable range \[0x20;0x7E\] are
+    escaped, as well as backslash (0x2F) and double-quote (0x22).
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
     i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
-    [escape s] fails). *)
+    [escape s] fails).
+
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
 val uppercase_ascii : string -> string
-(** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+(** [uppercase_ascii s] is [s] with all lowercase letters
+    translated to uppercase, using the US-ASCII character set.
+
+    @since 4.03.0 *)
 
 val lowercase_ascii : string -> string
-(** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 *)
+(** [lowercase_ascii s] is [s] with all uppercase letters translated
+    to lowercase, using the US-ASCII character set.
+
+    @since 4.03.0 *)
 
 val capitalize_ascii : string -> string
-(** Return a copy of the argument, with the first character set to uppercase,
-   using the US-ASCII character set.
-   @since 4.03.0 *)
+(** [capitalize_ascii s] is [s] with the first character set to
+    uppercase, using the US-ASCII character set.
+
+    @since 4.03.0 *)
 
 val uncapitalize_ascii : string -> string
-(** Return a copy of the argument, with the first character set to lowercase,
-   using the US-ASCII character set.
+(** [uncapitalize_ascii s] is [s] with the first character set to lowercase,
+    using the US-ASCII character set.
+
     @since 4.03.0 *)
+
+(** {1:traversing Traversing} *)
+
+val iter : (char -> unit) -> string -> unit
+(** [iter f s] applies function [f] in turn to all the characters of [s].
+    It is equivalent to [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
+
+val iteri : (int -> char -> unit) -> string -> unit
+(** [iteri] is like {!iter}, but the function is also given the
+    corresponding character index.
+
+    @since 4.00.0 *)
+
+(** {1:searching Searching} *)
+
+val index_from : string -> int -> char -> int
+(** [index_from s i c] is the index of the first occurrence of [c] in
+    [s] after position [i].
+
+    @raise Not_found if [c] does not occur in [s] after position [i].
+    @raise Invalid_argument if [i] is not a valid position in [s]. *)
+
+
+val index_from_opt : string -> int -> char -> int option
+(** [index_from_opt s i c] is the index of the first occurrence of [c]
+    in [s] after position [i] (if any).
+
+    @raise Invalid_argument if [i] is not a valid position in [s].
+    @since 4.05 *)
+
+val rindex_from : string -> int -> char -> int
+(** [rindex_from s i c] is the index of the last occurrence of [c] in
+    [s] before position [i+1].
+
+    @raise Not_found if [c] does not occur in [s] before position [i+1].
+    @raise Invalid_argument if [i+1] is not a valid position in [s]. *)
+
+val rindex_from_opt : string -> int -> char -> int option
+(** [rindex_from_opt s i c] is the index of the last occurrence of [c]
+    in [s] before position [i+1] (if any).
+
+    @raise Invalid_argument if [i+1] is not a valid position in [s].
+    @since 4.05 *)
+
+val index : string -> char -> int
+(** [index s c] is {!String.index_from}[ s 0 c]. *)
+
+val index_opt : string -> char -> int option
+(** [index_opt s c] is {!String.index_from_opt}[ s 0 c].
+
+    @since 4.05 *)
+
+val rindex : string -> char -> int
+(** [rindex s c] is {!String.rindex_from}[ s (length s - 1) c]. *)
+
+val rindex_opt : string -> char -> int option
+(** [rindex_opt s c] is {!String.rindex_from_opt}[ s (length s - 1) c].
+
+    @since 4.05 *)
 
 (** {1:converting Converting} *)
 
 val to_seq : t -> char Seq.t
-(** Iterate on the string, in increasing index order. Modifications of the
-    string during iteration will be reflected in the iterator.
+(** [to_seq s] is a sequence made of the string's characters in
+    increasing order. Modifications of the string during iteration
+    will be reflected in the iterator.
+
     @since 4.07 *)
 
 val to_seqi : t -> (int * char) Seq.t
-(** Iterate on the string, in increasing order, yielding indices along chars
+(** [to_seqi s] is like {!to_seq} but also tuples the corresponding index.
+
     @since 4.07 *)
 
 val of_seq : char Seq.t -> t
-(** Create a string from the generator
+(** [of_seq s] is a string made of the sequence's characters.
+
     @since 4.07 *)
 
 (** {1:deprecated Deprecated functions} *)
