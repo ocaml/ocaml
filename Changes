@@ -235,6 +235,10 @@ Working version
 - #9869: Add Unix.SO_REUSEPORT
   (Yishuai Li, review by Xavier Leroy)
 
+- #9894: New Win32 implementation of Condition.t with fairer semantics for
+  Condition.signal.
+  (David Allsopp, review by ???)
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared

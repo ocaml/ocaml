@@ -38,18 +38,11 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
-/* Thread-local storage associating a Win32 event to every thread. */
-static DWORD st_thread_sem_key;
-
 /* OS-specific initialization */
 
 static DWORD st_initialize(void)
 {
-  st_thread_sem_key = TlsAlloc();
-  if (st_thread_sem_key == TLS_OUT_OF_INDEXES)
-    return GetLastError();
-  else
-    return 0;
+  return 0;
 }
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
@@ -75,8 +68,7 @@ static DWORD st_thread_create(st_thread_id * res,
 
 static void st_thread_cleanup(void)
 {
-  HANDLE ev = (HANDLE) TlsGetValue(st_thread_sem_key);
-  if (ev != NULL) CloseHandle(ev);
+  return;
 }
 
 /* Thread termination */
@@ -212,26 +204,32 @@ Caml_inline DWORD st_mutex_unlock(st_mutex m)
 
 /* Condition variables */
 
-/* A condition variable is just a list of threads currently
-   waiting on this c.v.  Each thread is represented by its
-   associated event. */
-
-struct st_wait_list {
-  HANDLE event;                  /* event of the first waiting thread */
-  struct st_wait_list * next;
-};
+/* A condition variable is implemented using a manual-reset Event and an
+   auto-reset Event. A thread which waits on this c.v. waits on both events.
+   Condition.signal uses the auto-reset event (which will wake up exactly 1
+   thread) and Condition.broadcast uses the manual-reset event (which will wake
+   up all the threads). */
 
 typedef struct st_condvar_struct {
-  CRITICAL_SECTION lock;         /* protect the data structure */
-  struct st_wait_list * waiters; /* list of threads waiting */
+  CRITICAL_SECTION lock; /* protect the data structure */
+  HANDLE events[2];      /* events[0] is broadcast; events[1] is signal */
 } * st_condvar;
 
 static DWORD st_condvar_create(st_condvar * res)
 {
   st_condvar c = caml_stat_alloc_noexc(sizeof(struct st_condvar_struct));
   if (c == NULL) return ERROR_NOT_ENOUGH_MEMORY;
+  if ((c->events[0] = CreateEvent(NULL, TRUE, FALSE, NULL)) == NULL) {
+    caml_stat_free(c);
+    return ERROR_NOT_ENOUGH_MEMORY;
+  }
+  if ((c->events[1] = CreateEvent(NULL, FALSE, FALSE, NULL)) == NULL) {
+    CloseHandle(c->events[0]);
+    caml_stat_free(c);
+    return ERROR_NOT_ENOUGH_MEMORY;
+  }
+  /* InitializeCriticalSection does not fail on supported OSes. */
   InitializeCriticalSection(&c->lock);
-  c->waiters = NULL;
   *res = c;
   return 0;
 }
@@ -240,6 +238,8 @@ static DWORD st_condvar_destroy(st_condvar c)
 {
   TRACE1("st_condvar_destroy", c);
   DeleteCriticalSection(&c->lock);
+  CloseHandle(c->events[0]);
+  CloseHandle(c->events[1]);
   caml_stat_free(c);
   return 0;
 }
@@ -251,15 +251,7 @@ static DWORD st_condvar_signal(st_condvar c)
 
   TRACE1("st_condvar_signal", c);
   EnterCriticalSection(&c->lock);
-  curr = c->waiters;
-  if (curr != NULL) {
-    next = curr->next;
-    /* Wake up the first waiting thread */
-    TRACE1("st_condvar_signal: waking up", curr->event);
-    if (! SetEvent(curr->event)) rc = GetLastError();
-    /* Remove it from the waiting list */
-    c->waiters = next;
-  }
+  SetEvent(c->events[1]);
   LeaveCriticalSection(&c->lock);
   return rc;
 }
@@ -271,49 +263,22 @@ static DWORD st_condvar_broadcast(st_condvar c)
 
   TRACE1("st_condvar_broadcast", c);
   EnterCriticalSection(&c->lock);
-  /* Wake up all waiting threads */
-  curr = c->waiters;
-  while (curr != NULL) {
-    next = curr->next;
-    TRACE1("st_condvar_signal: waking up", curr->event);
-    if (! SetEvent(curr->event)) rc = GetLastError();
-    curr = next;
-  }
-  /* Remove them all from the waiting list */
-  c->waiters = NULL;
+  SetEvent(c->events[0]);
   LeaveCriticalSection(&c->lock);
   return rc;
 }
 
 static DWORD st_condvar_wait(st_condvar c, st_mutex m)
 {
-  HANDLE ev;
-  struct st_wait_list wait;
-
   TRACE1("st_condvar_wait", c);
-  /* Recover (or create) the event associated with the calling thread */
-  ev = (HANDLE) TlsGetValue(st_thread_sem_key);
-  if (ev == 0) {
-    ev = CreateEvent(NULL,
-                     FALSE /*auto reset*/,
-                     FALSE /*initially unset*/,
-                     NULL);
-    if (ev == NULL) return GetLastError();
-    TlsSetValue(st_thread_sem_key, (void *) ev);
-  }
   EnterCriticalSection(&c->lock);
-  /* Insert the current thread in the waiting list (atomically) */
-  wait.event = ev;
-  wait.next = c->waiters;
-  c->waiters = &wait;
+  ResetEvent(c->events[0]);
   LeaveCriticalSection(&c->lock);
-  /* Release the mutex m */
   LeaveCriticalSection(m);
-  /* Wait for our event to be signaled.  There is no risk of lost
-     wakeup, since we inserted ourselves on the waiting list of c
-     before releasing m */
-  TRACE1("st_condvar_wait: blocking on event", ev);
-  if (WaitForSingleObject(ev, INFINITE) == WAIT_FAILED)
+  /* Wait for our event to be signaled. */
+  TRACE1("st_condvar_wait: blocking on signal", c->events[1]);
+  TRACE1("st_condvar_wait: and broadcast", c->events[0]);
+  if (WaitForMultipleObjects(2, c->events, FALSE, INFINITE) == WAIT_FAILED)
     return GetLastError();
   /* Reacquire the mutex m */
   TRACE1("st_condvar_wait: restarted, acquiring mutex", m);
