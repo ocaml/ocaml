@@ -591,11 +591,25 @@ let apply_subst s1 tyl =
 
 type best_path = Paths of Path.t list | Best of Path.t
 
-let printing_depth = ref 0
-let printing_cont = ref ([] : Env.iter_cont list)
+(** Short-paths cache: the five mutable variables below implement a one-slot
+    cache for short-paths
+ *)
 let printing_old = ref Env.empty
 let printing_pers = ref Concr.empty
+(** {!printing_old} and  {!printing_pers} are the keys of the one-slot cache *)
+
+let printing_depth = ref 0
+let printing_cont = ref ([] : Env.iter_cont list)
 let printing_map = ref Path.Map.empty
+(**
+   - {!printing_map} is the main value stored in the cache.
+   Note that it is evaluated lazily and its value is updated during printing.
+   - {!printing_dep} is the current exploration depth of the environment,
+   it is used to determine whenever the {!printing_map} should be evaluated
+   further before completing a request.
+   - {!printing_cont} is the list of continuations needed to evaluate
+   the {!printing_map} one level further (see also {!Env.run_iter_cont})
+*)
 
 let same_type t t' = repr t == repr t'
 
@@ -1583,19 +1597,28 @@ let cltype_declaration id ppf cl =
 (* Print a module type *)
 
 let wrap_env fenv ftree arg =
+  (* We save the current value of the short-path cache *)
+  (* From keys *)
   let env = !printing_env in
+  let old_pers = !printing_pers in
+  (* to data *)
+  let old_map = !printing_map in
   let old_depth = !printing_depth in
   let old_cont = !printing_cont in
-  let old_pers = !printing_pers in
-  let old_map = !printing_map in
   set_printing_env (fenv env);
   let tree = ftree arg in
-  printing_depth := old_depth;
-  printing_cont := old_cont;
-  printing_pers := old_pers;
-  printing_map := old_map;
-  printing_old := env;
-  (* set_printing_env checks that persistent modules did not change *)
+  if !Clflags.real_paths
+     || same_printing_env env then ()
+   (* our cached key is still live in the cache, and we want to keep all
+      progress made on the computation of the [printing_map] *)
+  else begin
+    (* we restore the snapshotted cache before calling set_printing_env *)
+    printing_old := env;
+    printing_pers := old_pers;
+    printing_depth := old_depth;
+    printing_cont := old_cont;
+    printing_map := old_map
+  end;
   set_printing_env env;
   tree
 
