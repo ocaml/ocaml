@@ -48,6 +48,9 @@
 
 (** {1:strings Strings} *)
 
+type t = string
+(** The type for strings. *)
+
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
    filled with the character [c].
@@ -67,8 +70,57 @@ external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
 (** [String.get s n] returns the character at index [n] in string [s].
    You can also write [s.[n]] instead of [String.get s n].
-   @raise Invalid_argument if [n] not a valid index in [s]. *)
+    @raise Invalid_argument if [n] not a valid index in [s]. *)
 
+(** {1:concat Concatenating}
+
+    {b Note.} The {!( ^ )} operator is a binary operator to concat two
+    string. *)
+
+val concat : string -> string list -> string
+(** [String.concat sep sl] concatenates the list of strings [sl],
+    inserting the separator string [sep] between each.
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes. *)
+
+(** {1:predicates Predicates and comparisons} *)
+
+val equal : t -> t -> bool
+(** The equal function for strings.
+    @since 4.03.0 *)
+
+val compare : t -> t -> int
+(** The comparison function for strings, with the same specification as
+    {!Stdlib.compare}.  Along with the type [t], this function [compare]
+    allows the module [String] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
+
+val starts_with : prefix:t -> t -> bool
+(** [String.starts_with prefix s] tests if [s] starts with [prefix]
+    @since 4.12.0 *)
+
+val ends_with : suffix:t -> t -> bool
+(** [String.ends_with suffix s] tests if [s] ends with [suffix]
+    @since 4.12.0 *)
+
+val contains : string -> char -> bool
+(** [String.contains s c] tests if character [c]
+   appears in the string [s]. *)
+
+val contains_from : string -> int -> char -> bool
+(** [String.contains_from s start c] tests if character [c]
+   appears in [s] after position [start].
+   [String.contains s c] is equivalent to
+   [String.contains_from s 0 c].
+   @raise Invalid_argument if [start] is not a valid position in [s]. *)
+
+val rcontains_from : string -> int -> char -> bool
+(** [String.rcontains_from s stop c] tests if character [c]
+   appears in [s] before position [stop+1].
+   @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
+   position in [s]. *)
+
+(** {1:extract Extracting substrings} *)
 
 val sub : string -> int -> int -> string
 (** [String.sub s start len] returns a fresh string of length [len],
@@ -77,14 +129,21 @@ val sub : string -> int -> int -> string
    @raise Invalid_argument if [start] and [len] do not
    designate a valid substring of [s]. *)
 
-val blit : string -> int -> bytes -> int -> int -> unit
-(** Same as {!Bytes.blit_string}. *)
+val split_on_char: char -> string -> string list
+(** [String.split_on_char sep s] returns the list of all (possibly empty)
+    substrings of [s] that are delimited by the [sep] character.
 
-val concat : string -> string list -> string
-(** [String.concat sep sl] concatenates the list of strings [sl],
-    inserting the separator string [sep] between each.
-    @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes. *)
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      string equal to the input ([String.concat (String.make 1 sep)
+      (String.split_on_char sep s) = s]).
+    - No string in the result contains the [sep] character.
+
+    @since 4.04.0 *)
+
+(** {1:traversing Traversing} *)
 
 val iter : (char -> unit) -> string -> unit
 (** [String.iter f s] applies function [f] in turn to all
@@ -95,43 +154,9 @@ val iteri : (int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
    function is applied to the index of the element as first argument
    (counting from 0), and the character itself as second argument.
-   @since 4.00.0 *)
-
-val map : (char -> char) -> string -> string
-(** [String.map f s] applies function [f] in turn to all the
-    characters of [s] (in increasing index order) and stores the
-    results in a new string that is returned.
     @since 4.00.0 *)
 
-val mapi : (int -> char -> char) -> string -> string
-(** [String.mapi f s] calls [f] with each character of [s] and its
-    index (in increasing index order) and stores the results in a new
-    string that is returned.
-    @since 4.02.0 *)
-
-val trim : string -> string
-(** Return a copy of the argument, without leading and trailing
-   whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
-   trailing whitespace character in the argument, return the original
-   string itself, not a copy.
-   @since 4.00.0 *)
-
-val escaped : string -> string
-(** Return a copy of the argument, with special characters
-    represented by escape sequences, following the lexical
-    conventions of OCaml.
-    All characters outside the ASCII printable range (32..126) are
-    escaped, as well as backslash and double-quote.
-
-    If there is no special character in the argument that needs
-    escaping, return the original string itself, not a copy.
-    @raise Invalid_argument if the result is longer than
-    {!Sys.max_string_length} bytes.
-
-    The function {!Scanf.unescaped} is a left inverse of [escaped],
-    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
-    [escape s] fails). *)
+(** {1:searching Searching} *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the index of the first
@@ -190,25 +215,45 @@ val rindex_from_opt: string -> int -> char -> int option
    [String.rindex_from_opt s (String.length s - 1) c].
    @raise Invalid_argument if [i+1] is not a valid position in [s].
 
-    @since 4.05
-*)
+   @since 4.05 *)
 
-val contains : string -> char -> bool
-(** [String.contains s c] tests if character [c]
-   appears in the string [s]. *)
+(** {1:transforming Transforming} *)
 
-val contains_from : string -> int -> char -> bool
-(** [String.contains_from s start c] tests if character [c]
-   appears in [s] after position [start].
-   [String.contains s c] is equivalent to
-   [String.contains_from s 0 c].
-   @raise Invalid_argument if [start] is not a valid position in [s]. *)
+val map : (char -> char) -> string -> string
+(** [String.map f s] applies function [f] in turn to all the
+    characters of [s] (in increasing index order) and stores the
+    results in a new string that is returned.
+    @since 4.00.0 *)
 
-val rcontains_from : string -> int -> char -> bool
-(** [String.rcontains_from s stop c] tests if character [c]
-   appears in [s] before position [stop+1].
-   @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
-   position in [s]. *)
+val mapi : (int -> char -> char) -> string -> string
+(** [String.mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the results in a new
+    string that is returned.
+    @since 4.02.0 *)
+
+val trim : string -> string
+(** Return a copy of the argument, without leading and trailing
+   whitespace.  The characters regarded as whitespace are: [' '],
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
+   trailing whitespace character in the argument, return the original
+   string itself, not a copy.
+   @since 4.00.0 *)
+
+val escaped : string -> string
+(** Return a copy of the argument, with special characters
+    represented by escape sequences, following the lexical
+    conventions of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash and double-quote.
+
+    If there is no special character in the argument that needs
+    escaping, return the original string itself, not a copy.
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    The function {!Scanf.unescaped} is a left inverse of [escaped],
+    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
+    [escape s] fails). *)
 
 val uppercase_ascii : string -> string
 (** Return a copy of the argument, with all lowercase letters
@@ -228,45 +273,9 @@ val capitalize_ascii : string -> string
 val uncapitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 *)
-
-type t = string
-(** An alias for the type of strings. *)
-
-val compare: t -> t -> int
-(** The comparison function for strings, with the same specification as
-    {!Stdlib.compare}.  Along with the type [t], this function [compare]
-    allows the module [String] to be passed as argument to the functors
-    {!Set.Make} and {!Map.Make}. *)
-
-val equal: t -> t -> bool
-(** The equal function for strings.
     @since 4.03.0 *)
 
-val starts_with : prefix:t -> t -> bool
-(** [String.starts_with prefix s] tests if [s] starts with [prefix]
-    @since 4.12.0 *)
-
-val ends_with : suffix:t -> t -> bool
-(** [String.ends_with suffix s] tests if [s] ends with [suffix]
-    @since 4.12.0 *)
-
-val split_on_char: char -> string -> string list
-(** [String.split_on_char sep s] returns the list of all (possibly empty)
-    substrings of [s] that are delimited by the [sep] character.
-
-    The function's output is specified by the following invariants:
-
-    - The list is not empty.
-    - Concatenating its elements using [sep] as a separator returns a
-      string equal to the input ([String.concat (String.make 1 sep)
-      (String.split_on_char sep s) = s]).
-    - No string in the result contains the [sep] character.
-
-    @since 4.04.0
-*)
-
-(** {1 Iterators} *)
+(** {1:converting Converting} *)
 
 val to_seq : t -> char Seq.t
 (** Iterate on the string, in increasing index order. Modifications of the
@@ -299,6 +308,9 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
    @raise Invalid_argument if [n] is not a valid index in [s].
 
     @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
+
+val blit : string -> int -> bytes -> int -> int -> unit
+(** Same as {!Bytes.blit_string}. *)
 
 val copy : string -> string [@@ocaml.deprecated]
 (** Return a copy of the given string.
