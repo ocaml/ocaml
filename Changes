@@ -113,6 +113,11 @@ Working version
    Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
    Henri Jourdan)
 
+- #9888, #9890: Fixes a bug in the `riscv` backend where register t0 was not
+  saved/restored when performing a GC. This could potentially lead to a
+  segfault.
+  (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
