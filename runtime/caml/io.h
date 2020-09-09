@@ -70,7 +70,11 @@ enum {
 CAMLextern struct channel * caml_open_descriptor_in (int);
 CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern void caml_close_channel (struct channel *);
-
+CAMLextern file_offset caml_channel_size (struct channel *);
+CAMLextern void caml_seek_in (struct channel *, file_offset);
+CAMLextern void caml_seek_out (struct channel *, file_offset);
+CAMLextern file_offset caml_pos_in (struct channel *);
+CAMLextern file_offset caml_pos_out (struct channel *);
 
 /* I/O on channels from C. The channel must be locked (see below) before
    calling any of the functions and macros below */

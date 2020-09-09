@@ -275,8 +275,7 @@ CAMLexport file_offset caml_pos_out(struct channel *channel)
 
 /* Input */
 
-/* caml_do_read is exported for Cash */
-CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
+int caml_do_read(int fd, char *p, unsigned int n)
 {
   int r;
   do {
@@ -379,7 +378,7 @@ CAMLexport file_offset caml_pos_in(struct channel *channel)
   return channel->offset - (file_offset)(channel->max - channel->curr);
 }
 
-CAMLexport intnat caml_input_scan_line(struct channel *channel)
+intnat caml_input_scan_line(struct channel *channel)
 {
   char * p;
   int n;
@@ -426,8 +425,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 
-/* FIXME CAMLexport, but not in io.h  exported for Cash ? */
-CAMLexport void caml_finalize_channel(value vchan)
+void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
