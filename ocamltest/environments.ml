@@ -42,8 +42,8 @@ let rec expand env value =
   if expanded=value then value else expand env expanded
 
 let expand env = function
-| None -> raise Not_found
-| Some value -> expand env value
+  | None -> raise Not_found
+  | Some value -> expand env value
 
 let append_to_system_env environment env =
   (* Augment env with any bindings which are only in environment. This must be
@@ -129,9 +129,9 @@ let add_bindings bindings env =
 let from_bindings bindings = add_bindings bindings empty
 
 let dump_assignment log = function
-| (variable, Some value) ->
-  Printf.fprintf log "%s = %s\n%!" (Variables.name_of_variable variable) value
-| (_, None) -> ()
+  | (variable, Some value) ->
+    Printf.fprintf log "%s = %s\n%!" (Variables.name_of_variable variable) value
+  | (_, None) -> ()
 
 let dump log environment =
   List.iter (dump_assignment log) (VariableMap.bindings environment)
