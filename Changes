@@ -419,6 +419,10 @@ Working version
 - #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
   (Sébastien Hinderer, review by David Allsopp)
 
+- #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
+  Standard Library directory.
+  (Bernhard Schommer, review by David Allsopp)
+
 ### Bug fixes:
 
 - #7538, #9669: Check for misplaced attributes on module aliases
