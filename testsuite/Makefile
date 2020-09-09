@@ -93,8 +93,9 @@ default:
 	@echo "  parallel        launch all tests using GNU parallel"
 	@echo "  parallel-foo    launch all tests beginning with foo using \
 	GNU parallel"
-	@echo "  list FILE=f     launch the tests listed in f (one per line)"
+	@echo "  one TEST=f      launch just this single test"
 	@echo "  one DIR=p       launch the tests located in path p"
+	@echo "  one LIST=f      launch the tests listed in f (one per line)"
 	@echo "  promote DIR=p   promote the reference files for the tests in p"
 	@echo "  lib             build library modules"
 	@echo "  tools           build test tools"
@@ -115,7 +116,7 @@ all:
 new-without-report: lib tools
 	@rm -f $(failstamp)
 	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -find-test-dirs tests | while read dir; do \
+	$(ocamltest) -find-test-dirs tests | while IFS='' read -r dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV=""; \
@@ -186,27 +187,38 @@ parallel: parallel-*
 .PHONY: list
 list: lib tools
 	@if [ -z "$(FILE)" ]; \
-	  then echo "No value set for variable 'FILE'."; \
-	  exit 1; \
-	fi
-	@while read LINE; do \
-	  $(MAKE) --no-print-directory exec-one DIR=$$LINE; \
-	done <$(FILE) 2>&1 | tee $(TESTLOG)
-	@$(MAKE) --no-print-directory retries
-	@$(MAKE) report
+    then echo "No value set for variable 'FILE'."; \
+    exit 1; \
+  fi
+	@$(MAKE) --no-print-directory one LIST="$(FILE)"
 
 .PHONY: one
 one: lib tools
-	@if [ -z "$(DIR)" ]; then \
-	  echo "No value set for variable 'DIR'."; \
-	  exit 1; \
-	fi
-	@if [ ! -d $(DIR) ]; then \
-	  echo "Directory '$(DIR)' does not exist."; \
-	  exit 1; \
-	fi
-	@$(MAKE) --no-print-directory exec-one DIR=$(DIR)
+	@case "$(words $(DIR) $(LIST) $(TEST))" in \
+   0) echo 'No value set for variable DIR, LIST or TEST'>&2; exit 1;; \
+   1) exit 0;; \
+   *) echo 'Please specify just one of DIR, LIST or TEST'>&2; exit 1;; \
+   esac
+	@if [ -n '$(DIR)' ] && [ ! -d '$(DIR)' ]; then \
+    echo "Directory '$(DIR)' does not exist."; exit 1; \
+  fi
+	@if [ -n '$(TEST)' ] && [ ! -e '$(TEST)' ]; then \
+    echo "Test '$(TEST)' does not exist."; exit 1; \
+  fi
+	@if [ -n '$(LIST)' ] && [ ! -e '$(LIST)' ]; then \
+    echo "File '$(LIST)' does not exist."; exit 1; \
+  fi
+	@if [ -n '$(DIR)' ] ; then \
+    $(MAKE) --no-print-directory exec-one DIR=$(DIR); fi
+	@if [ -n '$(TEST)' ] ; then \
+    TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST); fi
 	@$(MAKE) check-failstamp
+	@if [ -n '$(LIST)' ] ; then \
+     while IFS='' read -r LINE; do \
+       $(MAKE) --no-print-directory exec-one DIR=$$LINE ; \
+     done < $$LIST 2>&1 | tee $(TESTLOG) ; \
+     $(MAKE) --no-print-directory retries ; \
+     $(MAKE) report ; fi
 
 .PHONY: exec-one
 exec-one:
@@ -227,7 +239,7 @@ exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
 	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -list-tests $(DIR) | while read testfile; do \
+	$(ocamltest) -list-tests $(DIR) | while IFS='' read -r testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
@@ -285,7 +297,7 @@ report:
 
 .PHONY: retry-list
 retry-list:
-	@while read LINE; do \
+	@while IFS='' read -r LINE; do \
 	  if [ -n "$$LINE" ] ; then \
 	    echo re-ran $$LINE>> $(TESTLOG); \
 	    $(MAKE) --no-print-directory clean-one DIR=$$LINE; \
