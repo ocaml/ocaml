@@ -238,7 +238,7 @@ Caml_inline DWORD st_mutex_trylock(st_mutex m)
 Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
   LONG self, prev;
-  /* If the calling thead holds the lock, m->owner is stable and equal
+  /* If the calling thread holds the lock, m->owner is stable and equal
      to GetCurrentThreadId().
      Otherwise, the value of m->owner can be 0 (if the mutex is unlocked)
      or some other thread ID (if the mutex is held by another thread),
