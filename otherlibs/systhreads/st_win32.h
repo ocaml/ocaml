@@ -163,6 +163,9 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 struct st_mutex_ {
   CRITICAL_SECTION crit;
   volatile LONG owner;    /* 0 if unlocked */
+  /* The "owner" field is not always protected by "crit"; it is also
+     accessed without holding "crit", using the Interlocked API for
+     atomic accesses */
 };
 
 typedef struct st_mutex_ * st_mutex;
