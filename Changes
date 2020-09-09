@@ -351,6 +351,9 @@ Working version
   (David Allsopp, review by Damien Doligez, much input and thought from
    Daniel Bünzli, Damien Doligez, Sébastien Hinderer, and Xavier Leroy)
 
+- #9889: more caching when printing types with -short-path.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
