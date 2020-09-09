@@ -192,6 +192,11 @@ Working version
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
+* #9668: List.equal, List.compare
+  (This could break code using "open List" by shadowing
+   Stdlib.{equal,compare}.)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, Daniel Bünzli and Alain Frisch)
+
 - #9763: Add function Hashtbl.rebuild to convert from old hash table
   formats (that may have been saved to persistent storage) to the
   current hash table format.  Remove leftover support for the hash
