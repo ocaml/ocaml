@@ -462,7 +462,7 @@ extern uintnat caml_instr_alloc_jump;
    Leave enough room in the minor heap to allocate at least one object.
    Guaranteed not to call any OCaml callback.
 */
-CAMLexport void caml_gc_dispatch (void)
+void caml_gc_dispatch (void)
 {
   value *trigger = Caml_state->young_trigger; /* save old value of trigger */
 
