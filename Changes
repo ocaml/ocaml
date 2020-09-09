@@ -359,8 +359,8 @@ Working version
 - #9889: more caching when printing types with -short-path.
   (Florian Angeletti, review by Gabriel Scherer)
 
--  #9591: fix pprint of polyvariants that start with a core_type, closed, not low
-   (Chet Murthy, review by Florian Angeletti)
+-  #9591: fix pprint of polyvariants that start with a core_type, closed,
+   not low (Chet Murthy, review by Florian Angeletti)
 
 ### Build system:
 
