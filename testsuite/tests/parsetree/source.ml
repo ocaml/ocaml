@@ -7380,3 +7380,9 @@ type t = unit
 let rec equal : 'a. ('a -> 'a -> bool) -> 'a t -> 'a t -> bool =
  (fun poly_a (_ : unit) (_ : unit) -> true) [@ocaml.warning "-A"]
  [@@ocaml.warning "-39"]
+
+(* Issue #9548, PR #9591 *)
+
+type u = [ `A ] ;;
+type v = [ u | `B ] ;;
+let f = fun (x : [ | u ]) -> x ;;
