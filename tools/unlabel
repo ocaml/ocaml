@@ -34,9 +34,6 @@ LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
 #OCamldoc code section with ]
 TILDEREGEX="s/~([a-z_]+[ \]])/\1/g"
 
-#@sinceunlabelednowarn --> @since
-SINCEREGEX="s/sinceunlabelednowarn/since/g"
-
 #Indent a non-blank line by two characters, for moreLabels templates
 INDENTREGEX="s/^(.+)$/  \1/m"
 
@@ -47,16 +44,10 @@ perl -p -e "$LABREGEX" stdlib/stringLabels.mli > stdlib/string.temp.mli
 perl -p -e "$LABREGEX" stdlib/bytesLabels.mli > stdlib/bytes.temp.mli
 
 #Stdlib tildes
-perl -p -e "$TILDEREGEX" stdlib/list.temp.mli > stdlib/list.2temp.mli
-perl -p -e "$TILDEREGEX" stdlib/array.temp.mli > stdlib/array.2temp.mli
-perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.2temp.mli
-perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.2temp.mli
-
-#Stdlib @since
-perl -p -e "$SINCEREGEX" stdlib/list.2temp.mli > stdlib/list.mli
-perl -p -e "$SINCEREGEX" stdlib/array.2temp.mli > stdlib/array.mli
-perl -p -e "$SINCEREGEX" stdlib/string.2temp.mli > stdlib/string.mli
-perl -p -e "$SINCEREGEX" stdlib/bytes.2temp.mli > stdlib/bytes.mli
+perl -p -e "$TILDEREGEX" stdlib/list.temp.mli > stdlib/list.mli
+perl -p -e "$TILDEREGEX" stdlib/array.temp.mli > stdlib/array.mli
+perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.mli
+perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
 
 #FloatArrayLabels
 perl -p -e "$LABREGEX" \
@@ -95,8 +86,6 @@ perl -p -e "$LABLABREGEX" \
 perl -p -e "$TILDEREGEX" stdlib/hashtbl.2temp.mli > stdlib/hashtbl.mli
 perl -p -e "$TILDEREGEX" stdlib/map.2temp.mli > stdlib/map.mli
 perl -p -e "$TILDEREGEX" stdlib/set.2temp.mli > stdlib/set.mli
-
-#(No @since problems in MoreLabels)
 
 #Indent the labeled modules
 perl -p -e "$INDENTREGEX" stdlib/templates/hashtbl.template.mli > \
@@ -143,15 +132,12 @@ perl -p -e "$LABREGEX" \
 #Tildes
 perl -p -e "$TILDEREGEX" \
   otherlibs/unix/unix.temp.mli > otherlibs/unix/unix.2temp.mli
-#Since
-perl -p -e "$SINCEREGEX" \
-  otherlibs/unix/unix.2temp.mli > otherlibs/unix/unix.3temp.mli
 
 #Remove type equivalences from unix.mli
 perl -p -e 's/ = Unix.[a-z_]+//' \
-  otherlibs/unix/unix.3temp.mli > otherlibs/unix/unix.4temp.mli
+  otherlibs/unix/unix.2temp.mli > otherlibs/unix/unix.3temp.mli
 perl -p -e 's/ = Unix.LargeFile.stats//' \
-  otherlibs/unix/unix.4temp.mli > otherlibs/unix/unix.mli
+  otherlibs/unix/unix.3temp.mli > otherlibs/unix/unix.mli
 
 #Clean up
 rm -f stdlib/*temp.mli
