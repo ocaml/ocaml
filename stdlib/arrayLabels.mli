@@ -250,8 +250,8 @@ val memq : 'a -> set:'a array -> bool
    instead of structural equality to compare list elements.
    @since 4.03.0 *)
 
-(** {1 Sorting} *)
 
+(** {1 Sorting} *)
 
 val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Sort an array in increasing order according to a comparison
@@ -259,8 +259,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see below for a
    complete specification).  For example, {!Stdlib.compare} is
-   a suitable comparison function, provided there are no floating-point
-   NaN values in the data.  After calling [sort], the
+   a suitable comparison function. After calling [sort], the
    array is sorted in place in increasing order.
    [sort] is guaranteed to run in constant heap space
    and (at most) logarithmic stack space.
