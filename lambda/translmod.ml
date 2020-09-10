@@ -806,7 +806,7 @@ let transl_implementation_flambda module_name (str, cc) =
   primitive_declarations := [];
   Translprim.clear_used_primitives ();
   let module_id = Ident.create_persistent module_name in
-  let scopes = [Sc_module_definition module_name] in
+  let scopes = enter_module_definition ~scopes:empty_scopes module_id in
   let body, size =
     Translobj.transl_label_init
       (fun () -> transl_struct ~scopes Loc_unknown [] cc
@@ -1383,14 +1383,14 @@ let transl_store_gen ~scopes module_name ({ str_items = str }, restr) topl =
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 let transl_store_phrases module_name str =
-  let scopes = [Sc_module_definition module_name] in
+  let scopes = enter_module_definition ~scopes:empty_scopes (Ident.create_persistent module_name) in
   transl_store_gen ~scopes module_name (str,Tcoerce_none) true
 
 let transl_store_implementation module_name (str, restr) =
   let s = !transl_store_subst in
   transl_store_subst := Ident.Map.empty;
   let module_ident = Ident.create_persistent module_name in
-  let scopes = [Sc_module_definition module_name] in
+  let scopes = enter_module_definition ~scopes:empty_scopes module_ident in
   let (i, code) = transl_store_gen ~scopes module_name (str, restr) false in
   transl_store_subst := s;
   { Lambda.main_module_block_size = i;
@@ -1566,7 +1566,7 @@ let transl_toplevel_item_and_close ~scopes itm =
 let transl_toplevel_definition str =
   reset_labels ();
   Translprim.clear_used_primitives ();
-  make_sequence (transl_toplevel_item_and_close ~scopes:[]) str.str_items
+  make_sequence (transl_toplevel_item_and_close ~scopes:empty_scopes) str.str_items
 
 (* Compile the initialization code for a packed library *)
 

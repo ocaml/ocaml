@@ -27,6 +27,8 @@ module Scoped_location = struct
 
   type scopes = scope_item list
 
+  let empty_scopes = []
+
   let add_parens_if_symbolic = function
     | "" -> ""
     | s ->
