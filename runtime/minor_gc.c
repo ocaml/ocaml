@@ -173,8 +173,9 @@ static inline void log_gc_value(const char* prefix, value v)
 
 /* TODO: Probably a better spinlock needed here though doesn't happen often */
 static void spin_on_header(value v) {
-  while (atomic_load(Hp_atomic_val(v)) != 0) {
-    cpu_relax();
+  SPIN_WAIT {
+    if (atomic_load(Hp_atomic_val(v)) == 0)
+      return;
   }
 }
 
