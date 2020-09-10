@@ -361,13 +361,18 @@ module Propagation = struct
 end
 ;;
 [%%expect{|
-Line 13, characters 19-20:
+Lines 11-13, characters 12-20:
+11 | ............match x with
+12 |     | IntLit n -> (n : s )
 13 |     | BoolLit b -> b
-                        ^
-Error: This expression has type bool but an expression was expected of type
-         s = bool
-       This instance of bool is ambiguous:
-       it would escape the scope of its equation
+Warning 18 [not-principal]:
+  The return type of this pattern-matching is ambiguous.
+  Please add a type annotation, as the choice of `s' is not principal.
+module Propagation :
+  sig
+    type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val check : 's t -> 's
+  end
 |}, Principal{|
 Line 13, characters 19-20:
 13 |     | BoolLit b -> b
