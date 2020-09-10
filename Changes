@@ -362,6 +362,9 @@ Working version
 -  #9591: fix pprint of polyvariants that start with a core_type, closed,
    not low (Chet Murthy, review by Florian Angeletti)
 
+-  #9590: fix pprint of extension constructors (and exceptions) that rebind
+   (Chet Murthy, review by octachron@)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For

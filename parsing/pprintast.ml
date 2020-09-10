@@ -1587,9 +1587,9 @@ and extension_constructor ctxt f x =
   | Pext_decl(l, r) ->
       constructor_declaration ctxt f (x.pext_name.txt, l, r, x.pext_attributes)
   | Pext_rebind li ->
-      pp f "%s%a@;=@;%a" x.pext_name.txt
-        (attributes ctxt) x.pext_attributes
+      pp f "%s@;=@;%a%a" x.pext_name.txt
         longident_loc li
+        (attributes ctxt) x.pext_attributes
 
 and case_list ctxt f l : unit =
   let aux f {pc_lhs; pc_guard; pc_rhs} =
