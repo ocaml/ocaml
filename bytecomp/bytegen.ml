@@ -130,7 +130,9 @@ let preserve_tailcall_for_prim = function
   | Pbytes_load_32 _ | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer ->
+  | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
+  | Pint_as_rawdata | Prawdata_load_int | Prawdata_load_float
+  | Prawdata_set_int | Prawdata_set_float ->
       false
 
 (* Add a Kpop N instruction in front of a continuation *)
@@ -501,6 +503,11 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
+  | Pint_as_rawdata -> Kccall("caml_int_as_rawdata", 1)
+  | Prawdata_load_int -> Kccall("caml_rawdata_load_int", 1)
+  | Prawdata_load_float -> Kccall("caml_rawdata_load_float", 1)
+  | Prawdata_set_int -> Kccall("caml_rawdata_set_int", 2)
+  | Prawdata_set_float -> Kccall("caml_rawdata_set_float", 2)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
   | _ -> fatal_error "Bytegen.comp_primitive"

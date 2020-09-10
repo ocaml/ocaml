@@ -202,4 +202,9 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Pint_as_rawdata -> fprintf ppf "int_as_rawdata"
+  | Prawdata_load_int -> fprintf ppf "rawdata_load_int"
+  | Prawdata_load_float -> fprintf ppf "rawdata_load_float"
+  | Prawdata_set_int -> fprintf ppf "rawdata_set_int"
+  | Prawdata_set_float -> fprintf ppf "rawdata_set_float"
   | Popaque -> fprintf ppf "opaque"

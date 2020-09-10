@@ -541,7 +541,9 @@ let rec transl env e =
          | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu
          | Pstringrefs | Pbyteslength | Pbytesrefu | Pbytessetu
          | Pbytesrefs | Pbytessets | Pisint | Pisout
-         | Pbswap16 | Pint_as_pointer | Popaque | Pfield _
+         | Pbswap16 | Pint_as_pointer | Pint_as_rawdata
+         | Prawdata_load_int | Prawdata_load_float | Prawdata_set_int
+         | Prawdata_set_float | Popaque | Pfield _
          | Psetfield (_, _, _) | Psetfield_computed (_, _)
          | Pfloatfield _ | Psetfloatfield (_, _) | Pduprecord (_, _)
          | Praise _ | Pdivint _ | Pmodint _ | Pintcomp _ | Poffsetint _
@@ -791,6 +793,15 @@ and transl_prim_1 env p arg dbg =
       box_float dbg (floatfield n ptr dbg)
   | Pint_as_pointer ->
       int_as_pointer (transl env arg) dbg
+  | Pint_as_rawdata ->
+      box_int dbg Pnativeint (transl env arg)
+  | Prawdata_load_int ->
+      Cop(Cload (Word_int, Mutable),
+          [transl_unbox_int dbg env Pnativeint arg], dbg)
+  | Prawdata_load_float ->
+      box_float dbg
+        (Cop(Cload (Double_u, Mutable),
+             [transl_unbox_int dbg env Pnativeint arg], dbg))
   (* Exceptions *)
   | Praise rkind ->
       raise_prim rkind (transl env arg) dbg
@@ -857,7 +868,8 @@ and transl_prim_1 env p arg dbg =
     | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
     | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
-    | Pbigstring_load _ | Pbigstring_set _)
+    | Pbigstring_load _ | Pbigstring_set _
+    | Prawdata_set_int | Prawdata_set_float)
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a"
         Printclambda_primitives.primitive p
@@ -1025,9 +1037,18 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi cmp,
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
+  | Prawdata_set_int ->
+      Cop(Cstore (Word_int, Assignment),
+          [transl_unbox_int dbg env Pnativeint arg1;
+           transl env arg2], dbg)
+  | Prawdata_set_float ->
+      Cop(Cstore (Double_u, Assignment),
+          [transl_unbox_int dbg env Pnativeint arg1;
+           transl_unbox_float dbg env arg2], dbg)
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
-  | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _
+  | Pisint | Pbswap16 | Pint_as_pointer | Pint_as_rawdata
+  | Prawdata_load_int | Prawdata_load_float | Popaque | Pread_symbol _
   | Pmakeblock (_, _, _) | Pfield _ | Psetfield_computed (_, _) | Pfloatfield _
   | Pduprecord (_, _) | Pccall _ | Praise _ | Poffsetint _ | Poffsetref _
   | Pmakearray (_, _) | Pduparray (_, _) | Parraylength _ | Parraysetu _
@@ -1081,7 +1102,9 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
   | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytesrefs | Pisint | Pisout
-  | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _ | Pmakeblock (_, _, _)
+  | Pbswap16 | Pint_as_pointer   | Pint_as_rawdata | Prawdata_load_int
+  | Prawdata_load_float | Prawdata_set_int | Prawdata_set_float
+  | Popaque | Pread_symbol _ | Pmakeblock (_, _, _)
   | Pfield _ | Psetfield (_, _, _) | Pfloatfield _ | Psetfloatfield (_, _)
   | Pduprecord (_, _) | Pccall _ | Praise _ | Pdivint _ | Pmodint _ | Pintcomp _
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _

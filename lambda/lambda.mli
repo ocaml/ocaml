@@ -150,6 +150,12 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* raw_data primitives *)
+  | Pint_as_rawdata
+  | Prawdata_load_int
+  | Prawdata_load_float
+  | Prawdata_set_int
+  | Prawdata_set_float
   (* Inhibition of optimisation *)
   | Popaque
 

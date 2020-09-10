@@ -122,6 +122,11 @@ let pgetglobal = "Pgetglobal"
 let pidentity = "Pidentity"
 let pignore = "Pignore"
 let pint_as_pointer = "Pint_as_pointer"
+let pint_as_rawdata = "Pint_as_rawdata"
+let prawdata_load_int = "Prawdata_load_int"
+let prawdata_load_float = "Prawdata_load_float"
+let prawdata_set_int = "Prawdata_set_int"
+let prawdata_set_float = "Prawdata_set_float"
 let pintcomp = "Pintcomp"
 let pcompare_ints = "Pcompare_ints"
 let pcompare_floats = "Pcompare_floats"
@@ -224,6 +229,11 @@ let pgetglobal_arg = "Pgetglobal_arg"
 let pidentity_arg = "Pidentity_arg"
 let pignore_arg = "Pignore_arg"
 let pint_as_pointer_arg = "Pint_as_pointer_arg"
+let pint_as_rawdata_arg = "Pint_as_rawdata_arg"
+let prawdata_load_int_arg = "Prawdata_load_int_arg"
+let prawdata_load_float_arg = "Prawdata_load_float_arg"
+let prawdata_set_int_arg = "Prawdata_set_int_arg"
+let prawdata_set_float_arg = "Prawdata_set_float_arg"
 let pintcomp_arg = "Pintcomp_arg"
 let pcompare_ints_arg = "Pcompare_ints_arg"
 let pcompare_floats_arg = "Pcompare_floats_arg"
@@ -413,6 +423,11 @@ let of_primitive : Lambda.primitive -> string = function
   | Pbswap16 -> pbswap16
   | Pbbswap _ -> pbbswap
   | Pint_as_pointer -> pint_as_pointer
+  | Pint_as_rawdata -> pint_as_rawdata
+  | Prawdata_load_int -> prawdata_load_int
+  | Prawdata_load_float -> prawdata_load_float
+  | Prawdata_set_int -> prawdata_set_int
+  | Prawdata_set_float -> prawdata_set_float
   | Popaque -> popaque
 
 let of_primitive_arg : Lambda.primitive -> string = function
@@ -519,4 +534,9 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pbswap16 -> pbswap16_arg
   | Pbbswap _ -> pbbswap_arg
   | Pint_as_pointer -> pint_as_pointer_arg
+  | Pint_as_rawdata -> pint_as_rawdata_arg
+  | Prawdata_load_int -> prawdata_load_int_arg
+  | Prawdata_load_float -> prawdata_load_float_arg
+  | Prawdata_set_int -> prawdata_set_int_arg
+  | Prawdata_set_float -> prawdata_set_float_arg
   | Popaque -> popaque_arg

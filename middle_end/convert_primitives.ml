@@ -139,6 +139,11 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pbigarraydim dim -> Pbigarraydim dim
   | Pbswap16 -> Pbswap16
   | Pint_as_pointer -> Pint_as_pointer
+  | Pint_as_rawdata -> Pint_as_rawdata
+  | Prawdata_load_int -> Prawdata_load_int
+  | Prawdata_load_float -> Prawdata_load_float
+  | Prawdata_set_int -> Prawdata_set_int
+  | Prawdata_set_float -> Prawdata_set_float
   | Popaque -> Popaque
 
   | Pbytes_to_string

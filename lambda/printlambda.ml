@@ -342,6 +342,11 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Pint_as_rawdata -> fprintf ppf "int_as_rawdata"
+  | Prawdata_load_int -> fprintf ppf "rawdata_load_int"
+  | Prawdata_load_float -> fprintf ppf "rawdata_load_float"
+  | Prawdata_set_int -> fprintf ppf "rawdata_set_int"
+  | Prawdata_set_float -> fprintf ppf "rawdata_set_float"
   | Popaque -> fprintf ppf "opaque"
 
 let name_of_primitive = function
@@ -448,6 +453,11 @@ let name_of_primitive = function
   | Pbswap16 -> "Pbswap16"
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
+  | Pint_as_rawdata -> "Pint_as_rawdata"
+  | Prawdata_load_int -> "Prawdata_load_int"
+  | Prawdata_load_float -> "Prawdata_load_float"
+  | Prawdata_set_int -> "Prawdata_set_int"
+  | Prawdata_set_float -> "Prawdata_set_float"
   | Popaque -> "Popaque"
 
 let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =

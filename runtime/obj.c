@@ -278,6 +278,28 @@ CAMLprim value caml_int_as_pointer (value n) {
   return n - 1;
 }
 
+CAMLprim value caml_int_as_rawdata (value n) {
+  return caml_copy_nativeint((intnat) n);
+}
+
+CAMLprim value caml_rawdata_load_int (value r) {
+  return *((value *)(Nativeint_val(r)));
+}
+
+CAMLprim value caml_rawdata_load_float (value r) {
+  return caml_copy_double(*((double *)(Nativeint_val(r))));
+}
+
+CAMLprim value caml_rawdata_set_int (value r, value v) {
+  *((value *)(Nativeint_val(r))) = v;
+  return Val_unit;
+}
+
+CAMLprim value caml_rawdata_set_float (value r, value v) {
+  *((double *)(Nativeint_val(r))) = Double_val(v);
+  return Val_unit;
+}
+
 /* Compute how many words in the heap are occupied by blocks accessible
    from a given value */
 

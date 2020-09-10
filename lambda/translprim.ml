@@ -346,6 +346,11 @@ let primitives_table =
     "%bswap_int64", Primitive ((Pbbswap(Pint64)), 1);
     "%bswap_native", Primitive ((Pbbswap(Pnativeint)), 1);
     "%int_as_pointer", Primitive (Pint_as_pointer, 1);
+    "%int_as_rawdata", Primitive (Pint_as_rawdata, 1);
+    "%rawdata_load_int", Primitive (Prawdata_load_int, 1);
+    "%rawdata_load_float", Primitive (Prawdata_load_float, 1);
+    "%rawdata_set_int", Primitive (Prawdata_set_int, 2);
+    "%rawdata_set_float", Primitive (Prawdata_set_float, 2);
     "%opaque", Primitive (Popaque, 1);
     "%sys_argv", External prim_sys_argv;
     "%send", Send;
@@ -769,7 +774,9 @@ let lambda_primitive_needs_event_after = function
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
-  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque -> false
+  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Pint_as_rawdata
+  | Prawdata_load_int | Prawdata_load_float | Prawdata_set_int
+  | Prawdata_set_float | Popaque -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
