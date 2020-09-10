@@ -522,6 +522,10 @@ OCaml 4.12.0
 - #9631: Named text sections for caml_system__code_begin/end symbols
   (Greta Yorsh, review by Frédéric Bour)
 
+- #9896: Share the strings representing scopes, fixing some regression
+  on .cmo/.cma sizes
+  (Alain Frisch and Xavier Clerc, review by Gabriel Scherer)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For

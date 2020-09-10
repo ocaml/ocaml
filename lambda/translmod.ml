@@ -1383,7 +1383,10 @@ let transl_store_gen ~scopes module_name ({ str_items = str }, restr) topl =
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 let transl_store_phrases module_name str =
-  let scopes = enter_module_definition ~scopes:empty_scopes (Ident.create_persistent module_name) in
+  let scopes =
+    enter_module_definition ~scopes:empty_scopes
+      (Ident.create_persistent module_name)
+  in
   transl_store_gen ~scopes module_name (str,Tcoerce_none) true
 
 let transl_store_implementation module_name (str, restr) =
@@ -1566,7 +1569,9 @@ let transl_toplevel_item_and_close ~scopes itm =
 let transl_toplevel_definition str =
   reset_labels ();
   Translprim.clear_used_primitives ();
-  make_sequence (transl_toplevel_item_and_close ~scopes:empty_scopes) str.str_items
+  make_sequence
+    (transl_toplevel_item_and_close ~scopes:empty_scopes)
+    str.str_items
 
 (* Compile the initialization code for a packed library *)
 
