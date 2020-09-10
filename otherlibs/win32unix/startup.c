@@ -20,7 +20,12 @@
 #include "winworker.h"
 #include "windbug.h"
 
-value val_process_id;
+static value val_process_id;
+
+CAMLprim value unix_getpid(value unit)
+{
+  return val_process_id;
+}
 
 CAMLprim value win_startup(unit)
      value unit;
