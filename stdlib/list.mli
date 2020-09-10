@@ -14,8 +14,8 @@
 (**************************************************************************)
 
 (* NOTE:
-   If this file is listLabels.mli, run tools/unlabel after editing it to
-   generate list.mli.
+   If this file is listLabels.mli, run tools/sync_stdlib_docs after editing it
+   to generate list.mli.
 
    If this file is list.mli, do not edit it directly -- edit
    listLabels.mli instead.

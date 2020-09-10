@@ -15,8 +15,8 @@
 (**************************************************************************)
 
 (* NOTE:
-   If this file is float.template.mli, run tools/unlabel after editing it to
-   generate float.mli.
+   If this file is float.template.mli, run tools/sync_stdlib_docs after editing
+   it to generate float.mli.
 
    If this file is float.mli, do not edit it directly -- edit
    templates/float.template.mli instead.

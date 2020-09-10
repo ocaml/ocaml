@@ -14,7 +14,7 @@
 (**************************************************************************)
 
 (* NOTE: If this file is set.mli, do not edit it directly! Instead,
-   edit templates/set.template.mli and run tools/unlabel *)
+   edit templates/set.template.mli and run tools/sync_stdlib_docs *)
 
 (** Sets over ordered types.
 

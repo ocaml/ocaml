@@ -14,8 +14,8 @@
 (**************************************************************************)
 
 (* NOTE:
-   If this file is stringLabels.mli, run tools/unlabel after editing it to
-   generate string.mli.
+   If this file is stringLabels.mli, run tools/sync_stdlib_docs after editing
+   it to generate string.mli.
 
    If this file is string.mli, do not edit it directly -- edit
    stringLabels.mli instead.
@@ -320,12 +320,12 @@ val uncapitalize_ascii : string -> string
    @since 4.03.0 (4.05.0 in StringLabels) *)
 
 val starts_with :
-  prefix (* comment thwarts tools/unlabel *) :string -> string -> bool
+  prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
 (** [starts_with ][~][prefix s] tests if [s] starts with [prefix]
     @since 4.12.0 *)
 
 val ends_with :
-  suffix (* comment thwarts tools/unlabel *) :string -> string -> bool
+  suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
 (** [ends_with suffix s] tests if [s] ends with [suffix]
     @since 4.12.0 *)
 

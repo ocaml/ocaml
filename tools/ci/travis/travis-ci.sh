@@ -78,22 +78,22 @@ case $TRAVIS_EVENT_TYPE in
      TRAVIS_MERGE_BASE=$(git merge-base "$TRAVIS_CUR_HEAD" "$TRAVIS_PR_HEAD");;
 esac
 
-CheckUnlabel () {
+CheckSyncStdlibDocs () {
   cat<<EOF
 ------------------------------------------------------------------------
-This test checks that running tools/unlabel is a no-op in the current
-state, which means that the labelled/unlabelled .mli files are in sync.
-If this check fails, it should be fixable by just running the script and
-reviewing the changes it makes.
+This test checks that running tools/sync-stdlib-docs is a no-op in the current
+state, which means that the labelled/unlabelled .mli files are in sync.  If
+this check fails, it should be fixable by just running the script and reviewing
+the changes it makes.
 ------------------------------------------------------------------------
 EOF
-  tools/unlabel
+  tools/sync_stdlib_docs
   git diff --quiet --exit-code && result=pass || result=fail
   case $result in
       pass)
-          echo "CheckUnlabel: success";;
+          echo "CheckSyncStdlibDocs: success";;
       fail)
-          echo "CheckUnlabel: failure with the following differences:"
+          echo "CheckSyncStdlibDocs: failure with the following differences:"
           git --no-pager diff
           exit 1;;
   esac
@@ -411,7 +411,7 @@ check-typo)
    set +x
    CheckTypo;;
 check-depend)
-    CheckUnlabel
+    CheckSyncStdlibDocs
     CheckDepend;;
 *) echo unknown CI kind
    exit 1

@@ -14,8 +14,8 @@
 (**************************************************************************)
 
 (* NOTE:
-   If this file is unixLabels.mli, run tools/unlabel after editing it to
-   generate unix.mli.
+   If this file is unixLabels.mli, run tools/sync_stdlib_docs after editing it
+   to generate unix.mli.
 
    If this file is unix.mli, do not edit it directly -- edit
    unixLabels.mli instead.
@@ -515,7 +515,7 @@ module LargeFile :
 
 val map_file :
   file_descr ->
-  ?pos (* thwart tools/unlabel *):int64 ->
+  ?pos (* thwart tools/sync_stdlib_docs *):int64 ->
   ('a, 'b) Stdlib.Bigarray.kind ->
   'c Stdlib.Bigarray.layout -> bool -> int array ->
   ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
@@ -587,7 +587,7 @@ val rename : string -> string -> unit
     owner, etc) of [dst] can either be preserved or be replaced by
     those of [src].  *)
 
-val link : ?follow (* thwart tools/unlabel*) :bool ->
+val link : ?follow (* thwart tools/sync_stdlib_docs *) :bool ->
            string -> string -> unit
 (** [link ?follow src dst] creates a hard link named [dst] to the file
    named [src].
@@ -651,13 +651,14 @@ val access : string -> access_permission list -> unit
 (** {1 Operations on file descriptors} *)
 
 
-val dup : ?cloexec: (* thwart tools/unlabel *) bool -> file_descr -> file_descr
+val dup : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
+          file_descr -> file_descr
 (** Return a new file descriptor referencing the same file as
    the given descriptor.
    See {!set_close_on_exec} for documentation on the [cloexec]
    optional argument. *)
 
-val dup2 : ?cloexec: (* thwart tools/unlabel *) bool ->
+val dup2 : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
            file_descr -> file_descr -> unit
 (** [dup2 src dst] duplicates [src] to [dst], closing [dst] if already
    opened.
@@ -769,7 +770,7 @@ val closedir : dir_handle -> unit
 (** {1 Pipes and redirections} *)
 
 
-val pipe : ?cloexec: (* thwart tools/unlabel *) bool ->
+val pipe : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
            unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
@@ -938,7 +939,7 @@ val close_process_full :
 (** {1 Symbolic links} *)
 
 
-val symlink : ?to_dir: (* thwart tools/unlabel*) bool ->
+val symlink : ?to_dir: (* thwart tools/sync_stdlib_docs *) bool ->
               string -> string -> unit
 (** [symlink ?to_dir src dst] creates the file [dst] as a symbolic link
    to the file [src]. On Windows, [to_dir] indicates if the symbolic link
@@ -1373,7 +1374,7 @@ type sockaddr =
    [port] is the port number. *)
 
 val socket :
-  ?cloexec: (* thwart tools/unlabel *) bool ->
+  ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
     socket_domain -> socket_type -> int -> file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
@@ -1385,14 +1386,14 @@ val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
 val socketpair :
-  ?cloexec: (* thwart toosl/unlabel *) bool ->
+  ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
     socket_domain -> socket_type -> int ->
     file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together.
    See {!set_close_on_exec} for documentation on the [cloexec]
    optional argument. *)
 
-val accept : ?cloexec: (* thwart tools/unlabel *) bool ->
+val accept : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
              file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is

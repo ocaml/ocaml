@@ -14,8 +14,8 @@
 (**************************************************************************)
 
 (* NOTE:
-   If this file is arrayLabels.mli, run tools/unlabel after editing it to
-   generate array.mli.
+   If this file is arrayLabels.mli, run tools/sync_stdlib_docs after editing it
+   to generate array.mli.
 
    If this file is array.mli, do not edit it directly -- edit
    arrayLabels.mli instead.
