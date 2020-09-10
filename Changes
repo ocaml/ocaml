@@ -302,6 +302,9 @@ Working version
   prevents the remaining arguments from being uncurried.
   (Hugo Heuzard, review by Leo White)
 
+- #9783: Widen warning 16 to more cases.
+  (Leo White, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #9216: add Lambda.duplicate which refreshes bound identifiers
