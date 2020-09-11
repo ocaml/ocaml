@@ -32,7 +32,6 @@
 #include "caml/memprof.h"
 #include "caml/eventlog.h"
 
-extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
 
 /* Colors

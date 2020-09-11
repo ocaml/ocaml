@@ -47,8 +47,6 @@ uintnat caml_use_huge_pages = 0;
    after that.
 */
 
-extern uintnat caml_percent_free;                   /* major_gc.c */
-
 /* Page table management */
 
 #define Page(p) ((uintnat) (p) >> Page_log)
