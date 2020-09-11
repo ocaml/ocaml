@@ -32,24 +32,6 @@
 #include "caml/roots.h"
 #include "caml/callback.h"
 
-/* The globals holding predefined exceptions */
-
-typedef value caml_generated_constant[1];
-
-extern caml_generated_constant
-  caml_exn_Out_of_memory,
-  caml_exn_Sys_error,
-  caml_exn_Failure,
-  caml_exn_Invalid_argument,
-  caml_exn_End_of_file,
-  caml_exn_Division_by_zero,
-  caml_exn_Not_found,
-  caml_exn_Match_failure,
-  caml_exn_Sys_blocked_io,
-  caml_exn_Stack_overflow,
-  caml_exn_Assert_failure,
-  caml_exn_Undefined_recursive_module;
-
 /* Exception raising */
 
 /* Used by the stack overflow handler -> deactivate ASAN (see

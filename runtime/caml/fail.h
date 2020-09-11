@@ -27,6 +27,27 @@
 #include "mlvalues.h"
 
 #ifdef CAML_INTERNALS
+/* Predefined exceptions */
+#ifdef NATIVE_CODE
+
+typedef value caml_generated_constant[1];
+
+extern caml_generated_constant
+  caml_exn_Out_of_memory,
+  caml_exn_Sys_error,
+  caml_exn_Failure,
+  caml_exn_Invalid_argument,
+  caml_exn_End_of_file,
+  caml_exn_Division_by_zero,
+  caml_exn_Not_found,
+  caml_exn_Match_failure,
+  caml_exn_Sys_blocked_io,
+  caml_exn_Stack_overflow,
+  caml_exn_Assert_failure,
+  caml_exn_Undefined_recursive_module;
+
+#else
+
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
 #define SYS_ERROR_EXN 1         /* "Sys_error" */
 #define FAILURE_EXN 2           /* "Failure" */
@@ -39,6 +60,8 @@
 #define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
 #define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
 #define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
+
+#endif /* NATIVE_CODE */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {
