@@ -160,6 +160,7 @@ _build
 /otherlibs/win32unix/putenv.c
 /otherlibs/win32unix/rmdir.c
 /otherlibs/win32unix/socketaddr.c
+/otherlibs/win32unix/socketaddr.h
 /otherlibs/win32unix/strofaddr.c
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c

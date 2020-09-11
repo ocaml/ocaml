@@ -34,14 +34,15 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
-  socketaddr.c strofaddr.c time.c unlink.c fsync.c
+  socketaddr.c strofaddr.c time.c unlink.c fsync.c socketaddr.h
 
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
 ALL_FILES=$(WIN_FILES) $(UNIX_FILES)
+ALL_C_FILES=$(filter %.c,$(ALL_FILES))
 
 LIBNAME=unix
-COBJS=$(ALL_FILES:.c=.$(O))
+COBJS=$(ALL_C_FILES:.c=.$(O))
 CAMLOBJS=unix.cmo unixLabels.cmo
 WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
 LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
