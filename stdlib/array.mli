@@ -283,9 +283,9 @@ val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
    elements that compare equal are kept in their original order) and
    not guaranteed to run in constant heap space.
 
-   The current implementation uses Merge Sort. It uses [n/2]
-   words of heap space, where [n] is the length of the array.
-   It is usually faster than the current implementation of {!sort}.
+   The current implementation uses Merge Sort. It uses a temporary array of
+   length [n/2], where [n] is the length of the array.  It is usually faster
+   than the current implementation of {!sort}.
 *)
 
 val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
