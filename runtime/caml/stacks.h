@@ -42,6 +42,8 @@ uintnat caml_stack_usage (void);
 
 CAMLextern uintnat (*caml_stack_usage_hook)(void);
 
+extern uintnat caml_max_stack_size;
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_STACKS_H */

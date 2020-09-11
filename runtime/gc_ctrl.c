@@ -38,10 +38,6 @@
 #endif
 #include "caml/startup_aux.h"
 
-#ifndef NATIVE_CODE
-extern uintnat caml_max_stack_size;    /* defined in stacks.c */
-#endif
-
 extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
 extern uintnat caml_allocation_policy;    /*        see freelist.c */
