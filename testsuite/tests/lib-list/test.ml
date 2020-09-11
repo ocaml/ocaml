@@ -19,6 +19,9 @@ let string_of_even_or_int x =
 let () =
   let l = List.init 10 (fun x -> x) in
   let sl = List.init 10 string_of_int in
+  assert (List.iota 3 = [0; 1; 2]);
+  assert (List.iota ~start:1 5 = [1; 2; 3; 4; 5]);
+  assert (List.iota ~start:10 ~step:2 5 = [10; 12; 14; 16; 18]);
   assert (List.exists (fun a -> a < 10) l);
   assert (List.exists (fun a -> a > 0) l);
   assert (List.exists (fun a -> a = 0) l);

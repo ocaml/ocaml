@@ -101,6 +101,11 @@ val concat : 'a list list -> 'a list
 val flatten : 'a list list -> 'a list
 (** An alias for [concat]. *)
 
+val iota : ?start:int -> ?step:int -> int -> int list
+(** [List.iota ?start ?step len] returns a list containing the elements
+    [[start; start+step; ...; start+(len-1)*step]], where [start] and [step]
+    default to [0] and [1], respectively.
+    Raise [Invalid_argument "List.iota"] if [n] is negative. *)
 
 (** {1 Comparison} *)
 
