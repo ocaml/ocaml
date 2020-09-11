@@ -31,8 +31,7 @@
 #include "caml/prims.h"
 #include "caml/stacks.h"
 #include "caml/startup_aux.h"
-
-extern code_t caml_start_code;
+#include "caml/fix_code.h"
 
 intnat caml_icount = 0;
 
