@@ -52,6 +52,7 @@ Caml_inline void caml_make_free_blocks
   (value *p, mlsize_t size, int do_merge, int color)
   { (*caml_fl_p_make_free_blocks) (p, size, do_merge, color); }
 
+extern uintnat caml_allocation_policy;
 extern void caml_set_allocation_policy (intnat);
 extern void caml_fl_reset_and_switch_policy (intnat);
 
