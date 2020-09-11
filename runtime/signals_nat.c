@@ -46,10 +46,6 @@
 #define NSIG 64
 #endif
 
-#ifdef _WIN32
-extern void caml_win32_overflow_detection();
-#endif
-
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
    With system threads, this callback can cause a context switch.
