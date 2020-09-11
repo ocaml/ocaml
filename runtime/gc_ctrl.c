@@ -38,10 +38,6 @@
 #endif
 #include "caml/startup_aux.h"
 
-extern uintnat caml_custom_major_ratio;   /* see custom.c */
-extern uintnat caml_custom_minor_ratio;   /* see custom.c */
-extern uintnat caml_custom_minor_max_bsz; /* see custom.c */
-
 #define Next(hp) ((header_t *)(hp) + Whsize_hp (hp))
 
 #ifdef DEBUG

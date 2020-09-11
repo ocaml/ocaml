@@ -80,6 +80,10 @@ extern struct custom_operations caml_nativeint_ops;
 extern struct custom_operations caml_int32_ops;
 extern struct custom_operations caml_int64_ops;
 extern struct custom_operations caml_ba_ops;
+
+extern uintnat caml_custom_major_ratio;
+extern uintnat caml_custom_minor_ratio;
+extern uintnat caml_custom_minor_max_bsz;
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
