@@ -321,7 +321,8 @@ void caml_shrink_mark_stack () {
   if (shrunk_stack != NULL) {
     stk->stack = shrunk_stack;
     stk->size = MARK_STACK_INIT_SIZE;
-    return;
+  }else{
+    caml_gc_message (0x08, "Mark stack shrinking failed");
   }
 }
 
