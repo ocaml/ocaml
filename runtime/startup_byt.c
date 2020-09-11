@@ -319,10 +319,6 @@ static int parse_command_line(char_os **argv)
   return i;
 }
 
-#ifdef _WIN32
-extern void caml_signal_thread(void * lpParam);
-#endif
-
 /* Main entry point when loading code from a file */
 
 CAMLexport void caml_main(char_os **argv)

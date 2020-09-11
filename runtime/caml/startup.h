@@ -53,6 +53,10 @@ enum caml_byte_program_mode
 
 extern enum caml_byte_program_mode caml_byte_program_mode;
 
+#ifdef _WIN32
+extern void caml_signal_thread(void * lpParam);
+#endif
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_STARTUP_H */
