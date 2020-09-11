@@ -93,6 +93,13 @@ CAMLextern void (*caml_leave_blocking_section_hook)(void);
 #ifdef POSIX_SIGNALS
 CAMLextern int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *);
 #endif
+
+typedef void (*signal_handler)(int signo);
+
+#ifdef _WIN32
+extern signal_handler caml_win32_signal(int sig, signal_handler action);
+#endif
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

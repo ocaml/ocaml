@@ -289,7 +289,7 @@ char * caml_dlerror(void)
 
 typedef void (*sighandler)(int sig);
 static int ctrl_handler_installed = 0;
-static volatile sighandler ctrl_handler_action = SIG_DFL;
+static volatile signal_handler ctrl_handler_action = SIG_DFL;
 
 static BOOL WINAPI ctrl_handler(DWORD event)
 {

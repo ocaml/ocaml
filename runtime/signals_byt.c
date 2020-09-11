@@ -32,8 +32,6 @@
 #endif
 
 #ifdef _WIN32
-typedef void (*sighandler)(int sig);
-extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 

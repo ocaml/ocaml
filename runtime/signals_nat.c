@@ -38,15 +38,15 @@
 #include "caml/memprof.h"
 #include "caml/finalise.h"
 
+#ifdef _WIN32
+#define signal(sig,act) caml_win32_signal(sig,act)
+#endif
+
 #ifndef NSIG
 #define NSIG 64
 #endif
 
-typedef void (*signal_handler)(int signo);
-
 #ifdef _WIN32
-extern signal_handler caml_win32_signal(int sig, signal_handler action);
-#define signal(sig,act) caml_win32_signal(sig,act)
 extern void caml_win32_overflow_detection();
 #endif
 
