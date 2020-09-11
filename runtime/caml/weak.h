@@ -191,6 +191,7 @@ Caml_inline void caml_ephe_clean_partial (value v,
           }
         }
       }
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
       if (Is_white_val (child) && !Is_young (child)){
         release_data = 1;
         Field (v, i) = caml_ephe_none;
@@ -200,15 +201,16 @@ Caml_inline void caml_ephe_clean_partial (value v,
 
   child = Field (v, 1);
   if(child != caml_ephe_none){
-    if (release_data){
-        Field (v, 1) = caml_ephe_none;
-      } else {
-        /* If we scanned all the keys and the data field remains filled,
-           then the mark phase must have marked it */
-        CAMLassert( !(offset_start == 2 && offset_end == Wosize_hd (Hd_val(v))
-                      && Is_block (child) && Is_in_heap (child)
-                      && Is_white_val (child)));
-      }
+    if (release_data) Field (v, 1) = caml_ephe_none;
+#ifdef DEBUG
+    else if (offset_start == 2 && offset_end == Wosize_hd (Hd_val(v)) &&
+             Is_block (child) && Is_in_heap (child)) {
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
+      /* If we scanned all the keys and the data field remains filled,
+         then the mark phase must have marked it */
+      CAMLassert( !Is_white_val (child) );
+    }
+#endif
   }
 }
 

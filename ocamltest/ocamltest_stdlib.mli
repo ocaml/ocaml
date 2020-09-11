@@ -46,18 +46,27 @@ end
 module Sys : sig
   include module type of Sys
   val file_is_empty : string -> bool
-  val run_system_command : string -> string list -> unit
   val make_directory : string -> unit
+  val rm_rf : string -> unit
   val string_of_file : string -> string
   val iter_lines_of_file : (string -> unit) -> string -> unit
   val dump_file : out_channel -> ?prefix:string -> string -> unit
   val copy_chan : in_channel -> out_channel -> unit
   val copy_file : string -> string -> unit
   val force_remove : string -> unit
-  val has_symlink : unit -> bool
   val with_chdir : string -> (unit -> 'a) -> 'a
   val getenv_with_default_value : string -> string -> string
   val safe_getenv : string -> string
   val with_input_file : ?bin:bool -> string -> (in_channel -> 'a) -> 'a
   val with_output_file : ?bin:bool -> string -> (out_channel -> 'a) -> 'a
+end
+
+module Seq : sig
+  include module type of struct include Seq end
+
+  val equal : 'a t -> 'a t -> bool
+end
+
+module Unix : sig
+  include module type of Ocamltest_unix
 end

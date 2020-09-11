@@ -52,17 +52,14 @@ let sighandler signo =
   (* Thoroughly wipe the minor heap *)
   ignore (tak (18, 12, 6))
 
-external unix_getpid : unit -> int = "unix_getpid" [@@noalloc]
-external unix_kill : int -> int -> unit = "unix_kill" [@@noalloc]
+external raise_sigusr1 : unit -> unit = "raise_sigusr1" [@@noalloc]
 
 let callbacksig () =
-  let pid = unix_getpid() in
   (* Allocate a block in the minor heap *)
   let s = String.make 5 'b' in
   (* Send a signal to self.  We want s to remain in a register and
-     not be spilled on the stack, hence we declare unix_kill
-     [@@noalloc]. *)
-  unix_kill pid Sys.sigusr1;
+     not be spilled on the stack, hence we use a [@@noalloc] stub *)
+  raise_sigusr1 ();
   (* Allocate some more so that the signal will be tested *)
   let u = (s, s) in
   fst u

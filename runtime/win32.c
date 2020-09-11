@@ -87,7 +87,7 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = read(fd, buf, n);
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
@@ -97,7 +97,7 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
     caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = recv((SOCKET) _get_osfhandle(fd), buf, n, 0);
     caml_leave_blocking_section();
     if (retcode == -1) caml_win32_sys_error(WSAGetLastError());
@@ -114,7 +114,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
     retcode = write(fd, buf, n);
   } else {
 #endif
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = write(fd, buf, n);
     caml_leave_blocking_section();
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
@@ -122,7 +122,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 #endif
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
     retcode = send((SOCKET) _get_osfhandle(fd), buf, n, 0);
     caml_leave_blocking_section();
     if (retcode == -1) caml_win32_sys_error(WSAGetLastError());

@@ -15,7 +15,7 @@
 
 (* A few extensions to OCaml's standard library *)
 
-(* Pervaisive *)
+module Unix = Ocamltest_unix
 
 let input_line_opt ic =
   try Some (input_line ic) with End_of_file -> None
@@ -84,22 +84,37 @@ end
 module Sys = struct
   include Sys
 
-  let run_system_command prog args =
-    let command = Filename.quote_command prog args in
-    match Sys.command command with
-    | 0 -> ()
-    | _ as exitcode ->
-      Printf.eprintf "System command %s failed with status %d\n%!"
-        command exitcode;
-      exit 3
+  let erase_file path =
+    try Sys.remove path
+    with Sys_error _ when Sys.win32 && Ocamltest_config.libunix <> None ->
+      (* Deal with read-only attribute on Windows. Ignore any error from chmod
+         so that the message always come from Sys.remove *)
+      let () = try Unix.chmod path 0o666 with Sys_error _ -> () in
+      Sys.remove path
 
-  let mkdir dir =
-    if not (Sys.file_exists dir) then
-      run_system_command "mkdir" [dir]
+  let rm_rf path =
+    let rec erase path =
+      if Sys.is_directory path then begin
+        Array.iter (fun entry -> erase (Filename.concat path entry))
+                   (Sys.readdir path);
+        Sys.rmdir path
+      end else erase_file path
+    in
+      try if Sys.file_exists path then erase path
+      with Sys_error err ->
+        raise (Sys_error (Printf.sprintf "Failed to remove %S (%s)" path err))
 
   let rec make_directory dir =
     if Sys.file_exists dir then ()
-    else (make_directory (Filename.dirname dir); mkdir dir)
+    else let () = make_directory (Filename.dirname dir) in
+         if not (Sys.file_exists dir) then
+           Sys.mkdir dir 0o777
+         else ()
+
+  let make_directory dir =
+    try make_directory dir
+    with Sys_error err ->
+      raise (Sys_error (Printf.sprintf "Failed to create %S (%s)" dir err))
 
   let with_input_file ?(bin=false) x f =
     let ic = (if bin then open_in_bin else open_in) x in
@@ -161,8 +176,6 @@ module Sys = struct
   let force_remove file =
     if file_exists file then remove file
 
-  external has_symlink : unit -> bool = "caml_has_symlink"
-
   let with_chdir path f =
     let oldcwd = Sys.getcwd () in
     Sys.chdir path;
@@ -171,4 +184,14 @@ module Sys = struct
   let getenv_with_default_value variable default_value =
     try Sys.getenv variable with Not_found -> default_value
   let safe_getenv variable = getenv_with_default_value variable ""
+end
+
+module Seq = struct
+  include Seq
+
+  let rec equal s1 s2 =
+    match s1 (), s2 () with
+    | Nil, Nil -> true
+    | Cons(e1, s1), Cons(e2, s2) -> e1 = e2 && equal s1 s2
+    | _, _ -> false
 end

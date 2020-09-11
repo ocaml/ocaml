@@ -36,7 +36,8 @@ let word_addressed = false
     a0-a7        0-7       arguments/results
     s2-s9        8-15      arguments/results (preserved by C)
     t2-t6        16-20     temporary
-    t0-t1        21-22     temporary (used by code generator)
+    t0           21        temporary
+    t1           22        temporary (used by code generator)
     s0           23        domain pointer (preserved by C)
     s1           24        trap pointer (preserved by C)
     s10          25        allocation pointer (preserved by C)
@@ -55,8 +56,8 @@ let word_addressed = false
   Additional notes
   ----------------
 
-    - t0-t1 are used by the assembler and code generator, so
-      not available for register allocation.
+    - t1 is used by the code generator, so not available for register
+      allocation.
 
     - t0-t6 may be used by PLT stubs, so should not be used to pass
       arguments and may be clobbered by [Ialloc] in the presence of dynamic

@@ -423,9 +423,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_EV_END(EV_MAJOR_ROOTS_DYNAMIC_GLOBAL);
   /* The stack and local roots */
   CAML_EV_BEGIN(EV_MAJOR_ROOTS_LOCAL);
-  caml_do_local_roots(f, Caml_state->bottom_of_stack,
-                      Caml_state->last_return_address, Caml_state->gc_regs,
-                      Caml_state->local_roots);
+  caml_do_local_roots_nat(f, Caml_state->bottom_of_stack,
+                          Caml_state->last_return_address, Caml_state->gc_regs,
+                          Caml_state->local_roots);
   CAML_EV_END(EV_MAJOR_ROOTS_LOCAL);
   /* Global C roots */
   CAML_EV_BEGIN(EV_MAJOR_ROOTS_C);
@@ -445,9 +445,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_EV_END(EV_MAJOR_ROOTS_HOOK);
 }
 
-void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                         uintnat last_retaddr, value * gc_regs,
-                         struct caml__roots_block * local_roots)
+void caml_do_local_roots_nat(scanning_action f, char * bottom_of_stack,
+                             uintnat last_retaddr, value * gc_regs,
+                             struct caml__roots_block * local_roots)
 {
   char * sp;
   uintnat retaddr;

@@ -1015,7 +1015,7 @@ method emit_extcall_args env ty_args args =
 method insert_move_extcall_arg env _ty_arg src dst =
   (* The default implementation is one or two ordinary moves.
      (Two in the case of an int64 argument on a 32-bit platform.)
-     It can be overriden to use special move instructions,
+     It can be overridden to use special move instructions,
      for example a "32-bit move" instruction for int32 arguments. *)
   self#insert_moves env src dst
 

@@ -32,7 +32,7 @@ val pattern : Lexing.lexbuf -> Parsetree.pattern
 
 val longident: Lexing.lexbuf -> Longident.t
 (**
-   The function [longident] is guaranted to parse all subclasses
+   The function [longident] is guaranteed to parse all subclasses
    of {!Longident.t} used in OCaml: values, constructors, simple or extended
    module paths, and types or module types.
 

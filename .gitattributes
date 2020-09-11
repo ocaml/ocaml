@@ -29,9 +29,9 @@
 
 /boot/menhir/parser.ml* -diff
 
-# configure is declared as binary so that it doesn't get included in diffs.
-# This also means it will have the correct Unix line-endings, even on Windows.
-/configure binary
+# configure is a shell-script; the linguist-generated attribute suppresses
+# changes being displayed by default in pull requests.
+/configure text eol=lf -diff linguist-generated
 
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
@@ -118,6 +118,10 @@ testsuite/tests/**/*.reference               typo.prune
 
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line
+
+# The normalisation tests have very specific line endings which mustn't be
+# corrupted by git.
+testsuite/tests/tool-ocamltest/norm*.reference binary
 
 tools/magic                       typo.missing-header
 tools/eventlog_metadata.in        typo.missing-header

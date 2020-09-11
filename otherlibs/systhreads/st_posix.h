@@ -437,6 +437,8 @@ value caml_thread_sigmask(value cmd, value sigs) /* ML */
   retcode = pthread_sigmask(how, &set, &oldset);
   caml_leave_blocking_section();
   st_check_error(retcode, "Thread.sigmask");
+  /* Run any handlers for just-unmasked pending signals */
+  caml_process_pending_actions();
   return st_encode_sigset(&oldset);
 }
 

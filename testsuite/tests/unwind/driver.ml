@@ -4,17 +4,18 @@ script = "sh ${test_source_directory}/check-linker-version.sh"
 files = "mylib.mli mylib.ml stack_walker.c"
 
 * macos
-** script
-*** setup-ocamlopt.byte-build-env
-**** ocamlopt.byte
+** arch_amd64
+*** script
+**** setup-ocamlopt.byte-build-env
+***** ocamlopt.byte
 flags = "-opaque"
 module = "mylib.mli"
-***** ocamlopt.byte
+****** ocamlopt.byte
 module = ""
 flags = "-cclib -Wl,-keep_dwarf_unwind"
 all_modules = "mylib.ml driver.ml stack_walker.c"
 program = "${test_build_directory}/unwind_test"
-****** run
+******* run
 
 *)
 

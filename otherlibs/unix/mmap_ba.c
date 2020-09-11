@@ -24,7 +24,7 @@
 /* Allocation of bigarrays for memory-mapped files.
    This is the OS-independent part of [mmap.c]. */
 
-CAMLextern void caml_ba_unmap_file(void * addr, uintnat len);
+extern void caml_ba_unmap_file(void *, uintnat);
 
 static void caml_ba_mapped_finalize(value v)
 {

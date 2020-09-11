@@ -22,15 +22,12 @@
 #include "caml/mlvalues.h"
 #include "caml/sys.h"
 #include "caml/osdeps.h"
+#include "caml/callback.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
-CAMLextern void caml_main (char_os **);
-
 #ifdef _WIN32
-CAMLextern void caml_expand_command_line (int *, wchar_t ***);
-
 int wmain(int argc, wchar_t **argv)
 #else
 int main(int argc, char **argv)

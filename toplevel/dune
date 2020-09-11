@@ -54,6 +54,7 @@
                     stdlib__Char
                     stdlib__Complex
                     stdlib__Digest
+                    stdlib__Either
                     stdlib__Ephemeron
                     stdlib__Filename
                     stdlib__Float

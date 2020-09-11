@@ -1434,7 +1434,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
         raise(Error(cty.ctyp_loc, Inconsistent_constraint (env, tr)))
     ) tparams sig_decl.type_params;
   List.iter (fun (cty, cty', loc) ->
-    (* Note: contraints must also be enforced in [sig_env] because
+    (* Note: constraints must also be enforced in [sig_env] because
        they may contain parameter variables from [tparams]
        that have now be unified in [sig_env]. *)
     try Ctype.unify env cty.ctyp_type cty'.ctyp_type

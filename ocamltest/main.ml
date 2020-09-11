@@ -152,9 +152,9 @@ let test_file test_filename =
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
   let clean_test_build_directory () =
-    ignore
-      (Sys.command
-         (Filename.quote_command "rm" ["-rf"; test_build_directory_prefix]))
+    try
+      Sys.rm_rf test_build_directory_prefix
+    with Sys_error _ -> ()
   in
   clean_test_build_directory ();
   Sys.make_directory test_build_directory_prefix;
@@ -221,6 +221,8 @@ let is_test s =
 let ignored s =
   s = "" || s.[0] = '_' || s.[0] = '.'
 
+let sort_strings = List.sort String.compare
+
 let find_test_dirs dir =
   let res = ref [] in
   let rec loop dir =
@@ -236,7 +238,7 @@ let find_test_dirs dir =
     if !contains_tests then res := dir :: !res
   in
   loop dir;
-  List.rev !res
+  sort_strings !res
 
 let list_tests dir =
   let res = ref [] in
@@ -250,7 +252,7 @@ let list_tests dir =
         end
       ) (Sys.readdir dir)
   end;
-  List.rev !res
+  sort_strings !res
 
 let () =
   init_tests_to_skip()

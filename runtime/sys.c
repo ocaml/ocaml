@@ -319,6 +319,36 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_sys_mkdir(value path, value perm)
+{
+  CAMLparam2(path, perm);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = mkdir_os(p, Int_val(perm));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_sys_rmdir(value path)
+{
+  CAMLparam1(path);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = rmdir_os(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_sys_getcwd(value unit)
 {
   char_os buff[4096];
@@ -431,6 +461,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
 
+#ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
@@ -453,6 +484,12 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = 255;
   CAMLreturn (Val_int(retcode));
 }
+#else
+CAMLprim value caml_sys_system_command(value command)
+{
+  caml_invalid_argument("Sys.command not implemented");
+}
+#endif
 
 double caml_sys_time_include_children_unboxed(value include_children)
 {

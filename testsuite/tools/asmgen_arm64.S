@@ -13,9 +13,15 @@
 /*                                                                        */
 /**************************************************************************/
 
-        .globl  call_gen_code
+#if defined(SYS_macosx)
+#define G(sym) _##sym
+#else
+#define G(sym) sym
+#endif
+
+        .globl  G(call_gen_code)
         .align  2
-call_gen_code:
+G(call_gen_code):
     /* Set up stack frame and save callee-save registers */
         stp     x29, x30, [sp, -160]!
         add     x29, sp, #0
@@ -51,8 +57,10 @@ call_gen_code:
 
         .globl  caml_c_call
         .align  2
-caml_c_call:
+G(caml_c_call):
         br      x15
 
+#if !defined(SYS_macosx)
 /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits
+#endif

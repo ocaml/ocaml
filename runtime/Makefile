@@ -349,13 +349,15 @@ ifneq "$(1)" "%"
 # don't use -MG and instead include $(GENERATED_HEADERS) in the order only
 # dependencies to ensure that they exist before dependencies are computed.
 $(DEPDIR)/$(1).$(D): %.c | $(DEPDIR) $(GENERATED_HEADERS)
-	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*$(subst %,,$(1)).$(O)' -MF $$@
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT \
+	  '$$*$(subst %,,$(1)).$(O)' -MF $$@
 endif
 $(1).$(O): %.c
 else
 $(1).$(O): %.c $(CONFIG_HEADERS) $(GENERATED_HEADERS) $(RUNTIME_HEADERS)
 endif
-	$$(CC) -c $$(OC_CFLAGS) $$(OC_CPPFLAGS) $$(OUTPUTOBJ)$$@ $$<
+	$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
+	  $$(OUTPUTOBJ)$$@ $$<
 endef
 
 object_types := % %.b %.bd %.bi %.bpic
