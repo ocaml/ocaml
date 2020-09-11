@@ -388,7 +388,7 @@ val assoc : 'a -> ('a * 'b) list -> 'b
 val assoc_opt : 'a -> ('a * 'b) list -> 'b option
 (** [assoc_opt a l] returns the value associated with key [a] in the list of
     pairs [l]. That is,
-    [assoc a [ ...; (a,b); ...] = Some b]
+    [assoc_opt a [ ...; (a,b); ...] = Some b]
     if [(a,b)] is the leftmost binding of [a] in list [l].
     Returns [None] if there is no value associated with [a] in the
     list [l].
