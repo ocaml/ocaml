@@ -67,6 +67,12 @@ int caml_is_special_exception(value exn);
 
 value caml_raise_if_exception(value res);
 
+#ifdef NATIVE_CODE
+CAMLnoreturn_start
+  extern void caml_raise_exception (caml_domain_state* state, value bucket)
+CAMLnoreturn_end;
+#endif /* NATIVE_CODE */
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
