@@ -46,6 +46,7 @@
 #include "caml/ui.h"
 #endif
 #include "caml/parsing.h"
+#include "caml/signals.h"
 
 extern char caml_system__code_begin, caml_system__code_end;
 
@@ -94,7 +95,6 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (caml_domain_state*);
-extern void caml_init_signals (void);
 #ifdef _WIN32
 extern void caml_win32_overflow_detection (void);
 #endif

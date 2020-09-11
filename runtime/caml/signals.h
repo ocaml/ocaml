@@ -96,6 +96,10 @@ CAMLextern int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *);
 
 typedef void (*signal_handler)(int signo);
 
+#ifdef NATIVE_CODE
+extern void caml_init_signals (void);
+#endif
+
 #ifdef _WIN32
 extern signal_handler caml_win32_signal(int sig, signal_handler action);
 #endif
