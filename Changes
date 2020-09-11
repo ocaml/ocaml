@@ -403,6 +403,9 @@ Working version
   REPL displayed <poly> for each as opposed to the concrete values used.
   (Christian Quinn, review by Gabriel Scherer)
 
+- #9433: Fix package constraints for module aliases
+  (Leo White, review by Jacques Garrigue)
+
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
 
