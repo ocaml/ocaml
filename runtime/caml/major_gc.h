@@ -66,6 +66,7 @@ extern uintnat caml_percent_free;
 
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;
+extern uintnat caml_major_heap_increment;
 extern char *caml_gc_sweep_hp;
 
 extern int caml_major_window;
