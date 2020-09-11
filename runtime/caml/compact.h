@@ -31,6 +31,8 @@ void caml_compact_heap (intnat new_allocation_policy);
 void caml_compact_heap_maybe (void);
 void caml_invert_root (value v, value *p);
 
+extern uintnat caml_percent_max;
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_COMPACT_H */
