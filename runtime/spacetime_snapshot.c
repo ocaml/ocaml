@@ -329,8 +329,6 @@ CAMLprim value caml_spacetime_take_snapshot(value v_time_opt, value v_channel)
   return Val_unit;
 }
 
-extern struct custom_operations caml_int64_ops;  /* ints.c */
-
 static value
 allocate_int64_outside_heap(uint64_t i)
 {
