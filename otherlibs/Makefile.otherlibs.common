@@ -82,7 +82,7 @@ else
 endif
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB)
-	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+	$(CAMLOPT_CMD) -shared -linkall -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
 lib$(CLIBNAME).$(A): $(COBJS)
 	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)

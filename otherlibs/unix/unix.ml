@@ -208,6 +208,7 @@ external execvp : string -> string array -> 'a = "unix_execvp"
 external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
 
 external fork : unit -> int = "unix_fork"
+external _exit : int -> 'a = "unix_exit"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
    = "unix_waitpid"

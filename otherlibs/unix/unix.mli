@@ -211,6 +211,17 @@ val fork : unit -> int
 
    On Windows: not implemented, use {!create_process} or threads. *)
 
+val _exit : int -> 'a
+(** Terminates the calling process immediately and returns the given
+    status code to the operating system. The functions registered with
+    {!Stdlib.at_exit} are not called and opened output channels are
+    not flushed.
+
+    See also {!Stdlib.exit}.
+
+    @since 4.12.0
+*)
+
 val wait : unit -> int * process_status
 (** Wait until one of the children processes die, and return its pid
    and termination status.
