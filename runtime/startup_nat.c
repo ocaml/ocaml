@@ -45,8 +45,8 @@
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
+#include "caml/parsing.h"
 
-extern int caml_parser_trace;
 extern char caml_system__code_begin, caml_system__code_end;
 
 /* Initialize the atom table and the static data and code area limits. */

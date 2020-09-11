@@ -37,6 +37,7 @@
 #include "caml/stacks.h"
 #endif
 #include "caml/startup_aux.h"
+#include "caml/parsing.h"
 
 #define Next(hp) ((header_t *)(hp) + Whsize_hp (hp))
 
@@ -711,8 +712,6 @@ CAMLprim value caml_runtime_variant (value unit)
   return caml_copy_string ("");
 #endif
 }
-
-extern int caml_parser_trace;
 
 CAMLprim value caml_runtime_parameters (value unit)
 {
