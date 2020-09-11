@@ -32,10 +32,6 @@
 #include "caml/parsing.h"
 
 
-#ifdef _WIN32
-extern void caml_win32_unregister_overflow_detection (void);
-#endif
-
 CAMLexport header_t *caml_atom_table = NULL;
 
 /* Initialize the atom table */

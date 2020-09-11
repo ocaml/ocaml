@@ -161,6 +161,13 @@ extern int caml_win32_isatty(int fd);
 
 CAMLextern void caml_expand_command_line (int *, wchar_t ***);
 
+extern void caml_win32_unregister_overflow_detection (void);
+
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+/* PR 4887: avoid crash box of windows runtime on some system calls */
+extern void caml_install_invalid_parameter_handler();
+#endif
+
 #endif /* _WIN32 */
 
 #endif /* CAML_INTERNALS */
