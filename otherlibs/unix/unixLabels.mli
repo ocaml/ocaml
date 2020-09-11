@@ -474,13 +474,13 @@ val isatty : file_descr -> bool
 module LargeFile :
   sig
     val lseek : file_descr -> int64 -> mode:seek_command -> int64
-    (** See {!lseek}. *)
+    (** See [lseek]. *)
 
     val truncate : string -> len:int64 -> unit
-    (** See {!truncate}. *)
+    (** See [truncate]. *)
 
     val ftruncate : file_descr -> len:int64 -> unit
-    (** See {!ftruncate}. *)
+    (** See [ftruncate]. *)
 
     type stats = Unix.LargeFile.stats =
       { st_dev : int;               (** Device number *)
