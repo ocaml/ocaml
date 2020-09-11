@@ -80,7 +80,7 @@ method! select_operation op args dbg =
   match (op, args) with
   (* Z does not support immediate operands for multiply high *)
     (Cmulhi, _) -> (Iintop Imulh, args)
-  (* sub immediate is turned into add immediate opposite, 
+  (* sub immediate is turned into add immediate opposite,
      hence the immediate range is special *)
   | (Csubi, [arg; Cconst_int (n, _)]) when self#is_immediate (-n) ->
       (Iintop_imm(Isub, n), [arg])
