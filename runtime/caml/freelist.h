@@ -24,6 +24,7 @@
 #include "mlvalues.h"
 
 extern asize_t caml_fl_cur_wsz;
+extern value caml_fl_merge;
 
 /* See [freelist.c] for usage info on these functions. */
 extern header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz);

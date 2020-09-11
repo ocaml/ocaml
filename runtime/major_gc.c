@@ -66,8 +66,6 @@ uintnat caml_dependent_size, caml_dependent_allocated;
 double caml_extra_heap_resources;
 uintnat caml_fl_wsz_at_phase_change = 0;
 
-extern value caml_fl_merge;  /* Defined in freelist.c. */
-
 /* redarken_first_chunk is the first chunk needing redarkening, if NULL no
   redarkening required */
 static char *redarken_first_chunk = NULL;
