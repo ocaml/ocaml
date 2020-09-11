@@ -548,10 +548,6 @@ CAMLprim value caml_sys_time(value unit)
   return caml_copy_double(caml_sys_time_unboxed(unit));
 }
 
-#ifdef _WIN32
-extern int caml_win32_random_seed (intnat data[16]);
-#endif
-
 CAMLprim value caml_sys_random_seed (value unit)
 {
   intnat data[16];

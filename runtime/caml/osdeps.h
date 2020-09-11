@@ -168,6 +168,8 @@ extern void caml_win32_unregister_overflow_detection (void);
 extern void caml_install_invalid_parameter_handler();
 #endif
 
+extern int caml_win32_random_seed (intnat data[16]);
+
 #endif /* _WIN32 */
 
 #endif /* CAML_INTERNALS */
