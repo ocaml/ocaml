@@ -87,7 +87,7 @@ $(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB)
 lib$(CLIBNAME).$(A): $(COBJS)
 	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
 
-install:: $(HEADERS)
+install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
 	  $(INSTALL_PROG) \
 	    dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
@@ -96,6 +96,7 @@ ifneq "$(STUBSLIB)" ""
 	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
 endif
+
 	$(INSTALL_DATA) \
 	  $(LIBNAME).cma $(CMIFILES) \
 	  "$(INSTALL_LIBDIR)/"
