@@ -13,11 +13,10 @@
 /**************************************************************************/
 
 /* Runtime support for afl-fuzz */
-#include "caml/config.h"
+#define CAML_INTERNALS
+#include "caml/mlvalues.h"
 
 #if !defined(HAS_SYS_SHM_H) || !defined(HAS_SHMAT)
-
-#include "caml/mlvalues.h"
 
 CAMLprim value caml_setup_afl (value unit)
 {
@@ -39,16 +38,11 @@ CAMLprim value caml_reset_afl_instrumentation(value unused)
 #include <stdio.h>
 #include <string.h>
 
-#define CAML_INTERNALS
 #include "caml/misc.h"
-#include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/printexc.h"
 
 static int afl_initialised = 0;
-
-/* afl uses abnormal termination (SIGABRT) to check whether
-   to count a testcase as "crashing" */
-extern int caml_abort_on_uncaught_exn;
 
 /* Values used by the instrumentation logic (see cmmgen.ml) */
 static unsigned char afl_area_initial[1 << 16];

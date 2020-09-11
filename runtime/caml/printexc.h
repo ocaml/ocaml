@@ -24,10 +24,16 @@
 extern "C" {
 #endif
 
-
 CAMLextern char * caml_format_exception (value);
+
 #ifdef CAML_INTERNALS
 CAMLnoreturn_start void caml_fatal_uncaught_exception (value) CAMLnoreturn_end;
+
+/* Determine if caml_fatal_uncaught_exception calls exit(2) or abort() for an
+   uncaught exception. afl uses abnormal termination (SIGABRT) to check whether
+   to count a testcase as "crashing". */
+extern int caml_abort_on_uncaught_exn;
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

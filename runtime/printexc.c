@@ -30,6 +30,8 @@
 #include "caml/memory.h"
 #include "caml/memprof.h"
 
+int caml_abort_on_uncaught_exn = 0; /* see afl.c */
+
 struct stringbuf {
   char * ptr;
   char * end;
@@ -132,8 +134,6 @@ static void default_fatal_uncaught_exception(value exn)
   if (Caml_state->backtrace_active && !DEBUGGER_IN_USE)
     caml_print_exception_backtrace();
 }
-
-int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
 void caml_fatal_uncaught_exception(value exn)
 {
