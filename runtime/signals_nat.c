@@ -184,10 +184,6 @@ static char sig_alt_stack[SIGSTKSZ];
    EXTRA_STACK bytes below the stack pointer. */
 #define EXTRA_STACK 256
 
-#ifdef RETURN_AFTER_STACK_OVERFLOW
-extern void caml_stack_overflow(caml_domain_state*);
-#endif
-
 /* Address sanitizer is confused when running the stack overflow
    handler in an alternate stack. We deactivate it for all the
    functions used by the stack overflow handler. */

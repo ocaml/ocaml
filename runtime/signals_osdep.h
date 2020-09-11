@@ -427,3 +427,7 @@
      sigact.sa_flags = 0
 
 #endif
+
+#ifdef RETURN_AFTER_STACK_OVERFLOW
+extern void caml_stack_overflow(caml_domain_state*);
+#endif
