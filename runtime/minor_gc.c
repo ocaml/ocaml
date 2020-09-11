@@ -453,10 +453,6 @@ void caml_empty_minor_heap (void)
 #endif
 }
 
-#ifdef CAML_INSTR
-extern uintnat caml_instr_alloc_jump;
-#endif /*CAML_INSTR*/
-
 /* Do a minor collection or a slice of major collection, call finalisation
    functions, etc.
    Leave enough room in the minor heap to allocate at least one object.

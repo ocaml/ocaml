@@ -62,6 +62,10 @@ Caml_inline void caml_fl_check (void)
   { (*caml_fl_p_check) (); }
 #endif
 
+#ifdef CAML_INSTR
+extern uintnat caml_instr_alloc_jump;
+#endif /*CAML_INSTR*/
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_FREELIST_H */
