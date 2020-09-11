@@ -182,9 +182,9 @@ CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 #endif
 
 
-/* void caml_shrink_heap (char *);        Only used in compact.c */
-
 #ifdef CAML_INTERNALS
+
+void caml_shrink_heap (char *);
 
 extern uintnat caml_use_huge_pages;
 

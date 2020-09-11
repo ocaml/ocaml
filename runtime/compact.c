@@ -32,8 +32,6 @@
 #include "caml/memprof.h"
 #include "caml/eventlog.h"
 
-extern void caml_shrink_heap (char *);              /* memory.c */
-
 /* Colors
 
    We use the GC's color bits in the following way:
