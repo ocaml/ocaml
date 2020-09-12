@@ -48,8 +48,6 @@
 #include "caml/parsing.h"
 #include "caml/signals.h"
 
-extern char caml_system__code_begin, caml_system__code_end;
-
 /* Initialize the atom table and the static data and code area limits. */
 
 struct segment { char * begin; char * end; };
@@ -57,6 +55,7 @@ struct segment { char * begin; char * end; };
 static void init_static(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
+  extern char caml_system__code_begin, caml_system__code_end;
 
   char * caml_code_area_start, * caml_code_area_end;
   int i;
