@@ -170,6 +170,8 @@ extern void caml_install_invalid_parameter_handler();
 
 extern int caml_win32_random_seed (intnat data[16]);
 
+extern void caml_win32_overflow_detection (void);
+
 #endif /* _WIN32 */
 
 #endif /* CAML_INTERNALS */
