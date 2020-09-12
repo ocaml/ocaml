@@ -1277,8 +1277,11 @@ static void caml_wait_interrupt_acknowledged (struct interruptor* self,
     cpu_relax();
   }
 
-  while (!atomic_load_acq(&req->acknowledged))
+  SPIN_WAIT {
+    if (atomic_load_acq(&req->acknowledged))
+      return;
     handle_incoming_otherwise_relax(self);
+  }
 
   return;
 }
