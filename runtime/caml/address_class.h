@@ -91,8 +91,6 @@
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
 
-extern char * caml_code_area_start, * caml_code_area_end;
-
 #define Not_in_heap 0
 #define In_heap 1
 #define In_young 2
