@@ -268,8 +268,8 @@ OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
 OPTTOPLEVEL_CMI=
 
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
-$(OPTTOPLEVEL:.cmo=.cmx): ocamlopt
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
+$(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)
 
 
 compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(COMMON)
