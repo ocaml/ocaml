@@ -39,6 +39,12 @@ let [@inline always] set_double_field x i v =
 external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
 external set_raw_field : t -> int -> raw_data -> unit
                                           = "caml_obj_set_raw_field"
+external int_as_raw_data : int -> raw_data = "%int_as_rawdata"
+external raw_data_load_int : raw_data -> int = "%rawdata_load_int"
+external raw_data_load_float : raw_data -> float = "%rawdata_load_float"
+external raw_data_set_int : raw_data -> int -> unit = "%rawdata_set_int"
+external raw_data_set_float : raw_data -> float -> unit  = "%rawdata_set_float"
+
 
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
