@@ -1191,6 +1191,22 @@ let rec pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf = function
     pp_sep ppf ();
     pp_print_list ~pp_sep pp_v ppf vs
 
+(* To format a sequence *)
+let rec pp_print_seq_in ~pp_sep pp_v ppf seq =
+  match seq () with
+  | Seq.Nil -> ()
+  | Seq.Cons (v, seq) ->
+    pp_sep ppf ();
+    pp_v ppf v;
+    pp_print_seq_in ~pp_sep pp_v ppf seq
+
+let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf seq =
+  match seq () with
+  | Seq.Nil -> ()
+  | Seq.Cons (v, seq) ->
+    pp_v ppf v;
+    pp_print_seq_in ~pp_sep pp_v ppf seq
+
 (* To format free-flowing text *)
 let pp_print_text ppf s =
   let len = String.length s in
