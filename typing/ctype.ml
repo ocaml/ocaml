@@ -2517,8 +2517,12 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = Some t2}) ->
             begin match nondep_instance env' lv2 id2 t2 with
-            | exception Nondep_cannot_erase _ -> raise Exit
             | t -> (n, t) :: complete nl ntl2
+            | exception Nondep_cannot_erase _ ->
+                if allow_absent then
+                  complete nl ntl2
+                else
+                  raise Exit
             end
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = None})
