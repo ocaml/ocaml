@@ -209,7 +209,8 @@ static void maybe_reopen_snapshot_channel(void)
   }
 }
 
-extern void caml_spacetime_automatic_save(void);
+/* Defined later */
+static void caml_spacetime_automatic_save(void);
 
 void caml_spacetime_initialize(void)
 {
@@ -1090,7 +1091,7 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
   return Val_unit;
 }
 
-void caml_spacetime_automatic_save (void)
+static void caml_spacetime_automatic_save (void)
 {
   /* Called from [atexit]. */
 
