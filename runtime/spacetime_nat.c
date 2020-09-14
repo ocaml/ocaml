@@ -597,7 +597,7 @@ static void* last_indirect_node_hole_ptr_callee;
 static value* last_indirect_node_hole_ptr_node_hole;
 static call_point* last_indirect_node_hole_ptr_result;
 
-CAMLprim value* caml_spacetime_indirect_node_hole_ptr
+CAMLexport value* caml_spacetime_indirect_node_hole_ptr
       (void* callee, value* node_hole, value caller_node)
 {
   /* Find the address of the node hole for an indirect call to [callee].
@@ -985,8 +985,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
 }
 
-CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
-                                                   uintnat index_within_node)
+CAMLexport uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
+                                                     uintnat index_within_node)
 {
   /* Called from code that creates a value's header inside an OCaml
      function. */
