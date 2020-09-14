@@ -215,6 +215,26 @@ val system : string -> process_status
    etc. The result [WEXITED 127] indicates that the shell couldn't
    be executed. *)
 
+val _exit : int -> 'a
+(** Terminate the calling process immediately, returning the given
+   status code to the operating system: usually 0 to indicate no
+   errors, and a small positive integer to indicate failure.
+   Unlike {!Stdlib.exit}, {!Unix._exit} performs no finalization
+   whatsoever: functions registered with {!Stdlib.at_exit} are not called,
+   input/output channels are not flushed, and the C run-time system
+   is not finalized either.
+
+   The typical use of {!Unix._exit} is after a {!Unix.fork} operation,
+   when the child process runs into a fatal error and must exit.  In
+   this case, it is preferable to not perform any finalization action
+   in the child process, as these actions could interfere with similar
+   actions performed by the parent process.  For example, output
+   channels should not be flushed by the child process, as the parent
+   process may flush them again later, resulting in duplicate
+   output.
+
+   @since 4.12.0 *)
+
 val getpid : unit -> int
 (** Return the pid of the process. *)
 
