@@ -118,6 +118,10 @@ Working version
   segfault.
   (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
 
+- #9909: Remove caml_code_area_start and caml_code_area_end globals (no longer
+  needed as the pagetable heads towards retirement).
+  (David Allsopp, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that

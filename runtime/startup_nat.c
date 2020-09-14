@@ -47,7 +47,6 @@
 #endif
 
 extern int caml_parser_trace;
-char * caml_code_area_start, * caml_code_area_end;
 extern char caml_system__code_begin, caml_system__code_end;
 
 /* Initialize the atom table and the static data and code area limits. */
@@ -57,6 +56,8 @@ struct segment { char * begin; char * end; };
 static void init_static(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
+
+  char * caml_code_area_start, * caml_code_area_end;
   int i;
 
   caml_init_atom_table ();
