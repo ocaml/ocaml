@@ -326,10 +326,13 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
 
 typedef HANDLE st_event;
 
-static DWORD st_event_create(st_event * res)
+static DWORD st_event_create(st_event * res, int autoreset)
 {
   st_event m =
-    CreateEvent(NULL, TRUE/*manual reset*/, FALSE/*initially unset*/, NULL);
+    CreateEvent(NULL,
+                autoreset ? FALSE/*autoreset*/ : TRUE/*manual reset*/,
+                FALSE/*initially unset*/,
+                NULL);
   TRACE1("st_event_create", m);
   if (m == NULL) return GetLastError();
   *res = m;

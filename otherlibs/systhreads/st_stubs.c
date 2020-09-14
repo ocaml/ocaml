@@ -943,7 +943,7 @@ static value caml_threadstatus_new (void)
 {
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
-  st_check_error(st_event_create(&ts), "Thread.create");
+  st_check_error(st_event_create(&ts, 0), "Thread.create");
   wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
                               0, 1);
   Threadstatus_val(wrapper) = ts;

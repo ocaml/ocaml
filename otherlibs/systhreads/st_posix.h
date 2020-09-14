@@ -274,10 +274,11 @@ Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
 typedef struct st_event_struct {
   pthread_mutex_t lock;         /* to protect contents */
   int status;                   /* 0 = not triggered, 1 = triggered */
+  int autoreset;
   pthread_cond_t triggered;     /* signaled when triggered */
 } * st_event;
 
-static int st_event_create(st_event * res)
+static int st_event_create(st_event * res, int autoreset)
 {
   int rc;
   st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
@@ -288,6 +289,7 @@ static int st_event_create(st_event * res)
   if (rc != 0)
   { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
   e->status = 0;
+  e->autoreset = autoreset;
   *res = e;
   return 0;
 }
@@ -322,6 +324,7 @@ static int st_event_wait(st_event e)
     rc = pthread_cond_wait(&e->triggered, &e->lock);
     if (rc != 0) return rc;
   }
+  if (e->autoreset) e->status = 0;
   rc = pthread_mutex_unlock(&e->lock);
   return rc;
 }
