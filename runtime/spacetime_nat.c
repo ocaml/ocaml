@@ -286,16 +286,6 @@ void caml_spacetime_register_shapes(void* dynlinked_table)
   caml_spacetime_dynamic_shape_tables = table;
 }
 
-CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)
-{
-  return (caml_spacetime_trie_root == Val_unit) ? Val_false : Val_true;
-}
-
-CAMLprim value caml_spacetime_get_trie_root (value v_unit)
-{
-  return caml_spacetime_trie_root;
-}
-
 void caml_spacetime_register_thread(
   value* trie_node_root, value* finaliser_trie_node_root)
 {
