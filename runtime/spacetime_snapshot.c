@@ -567,34 +567,9 @@ value caml_spacetime_shape_table(void)
 
 #else
 
-static value spacetime_disabled()
-{
-  caml_failwith("Spacetime profiling not enabled");
-}
-
 CAMLprim value caml_spacetime_take_snapshot(value v_time_opt, value v_channel)
 {
   return Val_unit;
-}
-
-CAMLprim value caml_spacetime_marshal_frame_table ()
-{
-  return spacetime_disabled();
-}
-
-CAMLprim value caml_spacetime_frame_table ()
-{
-  return spacetime_disabled();
-}
-
-CAMLprim value caml_spacetime_marshal_shape_table ()
-{
-  return spacetime_disabled();
-}
-
-CAMLprim value caml_spacetime_shape_table ()
-{
-  return spacetime_disabled();
 }
 
 #endif
