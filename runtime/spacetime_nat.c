@@ -1134,7 +1134,7 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_save_trie (value ignored)
+CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
 {
   return Val_unit;
 }

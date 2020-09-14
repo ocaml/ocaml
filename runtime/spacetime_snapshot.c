@@ -572,7 +572,7 @@ static value spacetime_disabled()
   caml_failwith("Spacetime profiling not enabled");
 }
 
-CAMLprim value caml_spacetime_take_snapshot(value ignored)
+CAMLprim value caml_spacetime_take_snapshot(value v_time_opt, value v_channel)
 {
   return Val_unit;
 }
