@@ -209,8 +209,7 @@ static struct ev_info *process_debug_events(code_t code_start,
 
 /* Processes a (Instruct.debug_event list array) into a form suitable
    for quick lookup and registers it for the (code_start,code_size) pc range. */
-CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
-                                   value events_heap)
+value caml_add_debug_info(code_t code_start, value code_size, value events_heap)
 {
   CAMLparam1(events_heap);
   struct debug_info *debug_info;
@@ -238,7 +237,7 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_remove_debug_info(code_t start)
+value caml_remove_debug_info(code_t start)
 {
   CAMLparam0();
   CAMLlocal2(dis, prev);
