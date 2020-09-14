@@ -1108,7 +1108,8 @@ CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 
 #else
 
-/* Functions for when the compiler was not configured with "-spacetime". */
+/* Functions for when the compiler was not configured with
+   "--enable-spacetime". */
 
 CAMLprim value caml_spacetime_write_magic_number(value v_channel)
 {
