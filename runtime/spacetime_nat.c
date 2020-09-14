@@ -70,8 +70,6 @@ static double next_snapshot_time = 0.0;
 static struct channel *snapshot_channel;
 static int pid_when_snapshot_channel_opened;
 
-extern value caml_spacetime_debug(value);
-
 static char* start_of_free_node_block;
 static char* end_of_free_node_block;
 
