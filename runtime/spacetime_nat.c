@@ -84,9 +84,6 @@ typedef struct per_thread {
 static per_thread* per_threads = NULL;
 static int num_per_threads = 0;
 
-/* [caml_spacetime_shapes] is defined in the startup file. */
-extern uint64_t* caml_spacetime_shapes;
-
 uint64_t** caml_spacetime_static_shape_tables = NULL;
 shape_table* caml_spacetime_dynamic_shape_tables = NULL;
 

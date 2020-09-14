@@ -195,6 +195,11 @@ extern void caml_spacetime_automatic_snapshot (void);
   profinfo = (uintnat) 0;
 #endif
 
+#ifdef CAML_INTERNALS
 
+/* [caml_spacetime_shapes] is defined in the startup file. */
+extern uint64_t* caml_spacetime_shapes;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_SPACETIME_H */
