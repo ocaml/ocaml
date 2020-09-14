@@ -240,6 +240,11 @@ Working version
 - #9869: Add Unix.SO_REUSEPORT
   (Yishuai Li, review by Xavier Leroy)
 
+- #9906, #9914: Add Unix._exit as a way to exit the process immediately,
+  skipping any finalization action
+  (Ivan Gotovchits and Xavier Leroy, review by Sébastien Hinderer and
+   David Allsopp)
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared
