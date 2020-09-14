@@ -26,7 +26,7 @@
 # versions: we assume that ocamlc, ocamlopt, etc. have been run first.
 
 # Set this to empty to force use of the bytecode compilers at all times
-ENABLE_BEST=yes
+ENABLE_BEST=
 
 check_not_stale = \
   $(if $(shell test $(ROOTDIR)/$1 -nt $(ROOTDIR)/$2 && echo stale), \
