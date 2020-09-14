@@ -994,9 +994,6 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
 }
 
-extern void caml_garbage_collection(void);  /* signals_nat.c */
-extern void caml_array_bound_error(void);  /* fail.c */
-
 CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
                                                    uintnat index_within_node)
 {
