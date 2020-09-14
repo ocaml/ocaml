@@ -145,3 +145,20 @@ val wait_signal : int list -> int
    Signal handlers attached to the signals in [sigs] will not
    be invoked.  The signals [sigs] are expected to be blocked before
    calling [wait_signal]. *)
+
+(**/**)
+
+(** {1 Low-level synchronization} *)
+
+val suspend : unit -> unit
+(** Suspend the calling thread until it is notified.  Any notification
+    posted since the last time [suspend] returned causes [suspend] to
+    return immediately.  Otherwise, the calling thread waits for another
+    thread to call [notify]. *)
+
+val notify : t -> unit
+(** Post a notification for the given thread.  If the given thread is blocked
+    on [suspend], it will restart immediately.  Otherwise, the notification
+    is buffered and will be delivered to the given thread when it calls
+    [suspend].  At most one notification is buffered.  This is broadly
+    similar to blocked POSIX signals. *)

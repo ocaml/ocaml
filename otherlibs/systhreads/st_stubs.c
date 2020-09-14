@@ -62,11 +62,13 @@ struct caml_thread_descr {
   value ident;                  /* Unique integer ID */
   value start_closure;          /* The closure to start this thread */
   value terminated;             /* Triggered event for thread termination */
+  value notified;               /* Triggered event for suspend/notify */
 };
 
 #define Ident(v) (((struct caml_thread_descr *)(v))->ident)
 #define Start_closure(v) (((struct caml_thread_descr *)(v))->start_closure)
 #define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
+#define Notified(v) (((struct caml_thread_descr *)(v))->notified)
 
 /* The infos on threads (allocated via caml_stat_alloc()) */
 
@@ -132,9 +134,9 @@ static st_tlskey last_channel_locked_key;
 static intnat thread_next_ident = 0;
 
 /* Forward declarations */
-static value caml_threadstatus_new (void);
-static void caml_threadstatus_terminate (value);
-static st_retcode caml_threadstatus_wait (value);
+static value caml_event_new (int);
+static void caml_event_trigger (value);
+static st_retcode caml_event_wait (value);
 
 /* Imports from the native-code runtime system */
 #ifdef NATIVE_CODE
@@ -379,19 +381,21 @@ static caml_thread_t caml_thread_new_info(void)
 
 static value caml_thread_new_descriptor(value clos)
 {
-  value mu = Val_unit;
+  CAMLparam1(clos);
+  CAMLlocal2(term,notif);
   value descr;
-  Begin_roots2 (clos, mu)
-    /* Create and initialize the termination semaphore */
-    mu = caml_threadstatus_new();
-    /* Create a descriptor for the new thread */
-    descr = caml_alloc_small(3, 0);
-    Ident(descr) = Val_long(thread_next_ident);
-    Start_closure(descr) = clos;
-    Terminated(descr) = mu;
-    thread_next_ident++;
-  End_roots();
-  return descr;
+  /* Create and initialize the termination event (never reset) */
+  term = caml_event_new(0);
+  /* Create and initialize the suspend/notify event (autoreset) */
+  notif = caml_event_new(1);
+  /* Create a descriptor for the new thread */
+  descr = caml_alloc_small(4, 0);
+  Ident(descr) = Val_long(thread_next_ident);
+  Start_closure(descr) = clos;
+  Terminated(descr) = term;
+  Notified(descr) = notif;
+  thread_next_ident++;
+  CAMLreturn(descr);
 }
 
 /* Remove a thread info block from the list of threads.
@@ -529,7 +533,7 @@ static void caml_thread_stop(void)
   /* Tell memprof that this thread is terminating. */
   caml_memprof_stop_th_ctx(&curr_thread->memprof_ctx);
   /* Signal that the thread has terminated */
-  caml_threadstatus_terminate(Terminated(curr_thread->descr));
+  caml_event_trigger(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */
   caml_thread_remove_info(curr_thread);
   /* OS-specific cleanups */
@@ -755,8 +759,24 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 
 CAMLprim value caml_thread_join(value th)          /* ML */
 {
-  st_retcode rc = caml_threadstatus_wait(Terminated(th));
+  st_retcode rc = caml_event_wait(Terminated(th));
   st_check_error(rc, "Thread.join");
+  return Val_unit;
+}
+
+/* Suspend the current thread until another thread notifies it */
+
+CAMLprim value caml_thread_suspend(value vunit)
+{
+  caml_event_wait(Notified(curr_thread->descr));
+  return Val_unit;
+}
+
+/* Notifies the given thread */
+
+CAMLprim value caml_thread_notify(value th)
+{
+  caml_event_trigger(Notified(th));
   return Val_unit;
 }
 
@@ -914,24 +934,24 @@ CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 
 /* Thread status blocks */
 
-#define Threadstatus_val(v) (* ((st_event *) Data_custom_val(v)))
+#define Event_val(v) (* ((st_event *) Data_custom_val(v)))
 
-static void caml_threadstatus_finalize(value wrapper)
+static void caml_event_finalize(value wrapper)
 {
-  st_event_destroy(Threadstatus_val(wrapper));
+  st_event_destroy(Event_val(wrapper));
 }
 
-static int caml_threadstatus_compare(value wrapper1, value wrapper2)
+static int caml_event_compare(value wrapper1, value wrapper2)
 {
-  st_event ts1 = Threadstatus_val(wrapper1);
-  st_event ts2 = Threadstatus_val(wrapper2);
+  st_event ts1 = Event_val(wrapper1);
+  st_event ts2 = Event_val(wrapper2);
   return ts1 == ts2 ? 0 : ts1 < ts2 ? -1 : 1;
 }
 
-static struct custom_operations caml_threadstatus_ops = {
-  "_threadstatus",
-  caml_threadstatus_finalize,
-  caml_threadstatus_compare,
+static struct custom_operations caml_event_ops = {
+  "_event",
+  caml_event_finalize,
+  caml_event_compare,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
@@ -939,25 +959,25 @@ static struct custom_operations caml_threadstatus_ops = {
   custom_fixed_length_default
 };
 
-static value caml_threadstatus_new (void)
+static value caml_event_new (int autoreset)
 {
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
-  st_check_error(st_event_create(&ts, 0), "Thread.create");
-  wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
+  st_check_error(st_event_create(&ts, autoreset), "Thread.create");
+  wrapper = caml_alloc_custom(&caml_event_ops, sizeof(st_event *),
                               0, 1);
-  Threadstatus_val(wrapper) = ts;
+  Event_val(wrapper) = ts;
   return wrapper;
 }
 
-static void caml_threadstatus_terminate (value wrapper)
+static void caml_event_trigger (value wrapper)
 {
-  st_event_trigger(Threadstatus_val(wrapper));
+  st_event_trigger(Event_val(wrapper));
 }
 
-static st_retcode caml_threadstatus_wait (value wrapper)
+static st_retcode caml_event_wait (value wrapper)
 {
-  st_event ts = Threadstatus_val(wrapper);
+  st_event ts = Event_val(wrapper);
   st_retcode retcode;
 
   Begin_roots1(wrapper)         /* prevent deallocation of ts */
