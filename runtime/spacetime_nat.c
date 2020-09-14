@@ -129,7 +129,7 @@ static void reinitialise_free_node_block(void)
 
 enum {
   FEATURE_CALL_COUNTS = 1,
-} features;
+};
 
 static uint16_t version_number = 0;
 static uint32_t magic_number_base = 0xace00ace;
@@ -354,8 +354,8 @@ CAMLprim value caml_spacetime_save_event (value v_time_opt,
 }
 
 
-void save_trie (struct channel *chan, double time_override,
-                int use_time_override)
+static void save_trie (struct channel *chan, double time_override,
+                       int use_time_override)
 {
   value v_time, v_frames, v_shapes;
   /* CR-someday mshinwell: The commented-out changes here are for multicore,
