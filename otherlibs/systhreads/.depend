@@ -1,7 +1,9 @@
 condition.cmo : \
+    thread.cmi \
     mutex.cmi \
     condition.cmi
 condition.cmx : \
+    thread.cmx \
     mutex.cmx \
     condition.cmi
 condition.cmi : \
@@ -16,8 +18,10 @@ event.cmx : \
     event.cmi
 event.cmi :
 mutex.cmo : \
+    thread.cmi \
     mutex.cmi
 mutex.cmx : \
+    thread.cmx \
     mutex.cmi
 mutex.cmi :
 thread.cmo : \

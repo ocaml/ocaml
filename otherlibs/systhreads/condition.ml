@@ -13,8 +13,34 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type t
-external create: unit -> t = "caml_condition_new"
-external wait: t -> Mutex.t -> unit = "caml_condition_wait"
-external signal: t -> unit = "caml_condition_signal"
-external broadcast: t -> unit = "caml_condition_broadcast"
+type t = Thread.t list Atomic.t
+
+let create () =
+  Atomic.make []
+
+let rec wait cond mut =
+  let cur = Atomic.get cond in
+  if not (Atomic.compare_and_set cond cur (Thread.self() :: cur))
+  then wait cond mut
+  else begin
+    Mutex.unlock mut;
+    Thread.suspend ();
+    Mutex.lock mut
+  end
+
+let rec signal cond =
+  let cur = Atomic.get cond in
+  let next = match cur with [] -> [] | _ :: t -> t in
+  if not (Atomic.compare_and_set cond cur next)
+  then signal cond
+  else begin
+    match cur with
+    | [] -> ()
+    | h :: _ -> Thread.notify h
+  end
+
+let rec broadcast cond =
+  let cur = Atomic.get cond in
+  if not (Atomic.compare_and_set cond cur [])
+  then broadcast cond
+  else List.iter Thread.notify cur
