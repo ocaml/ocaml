@@ -36,6 +36,7 @@ matrix:
   - env: >-
       CI_KIND=build
       XARCH=x64
+      CONFIG_ARG=--enable-spacetime
     addons:
       apt:
         packages:
