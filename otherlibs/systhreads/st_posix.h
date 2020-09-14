@@ -231,44 +231,6 @@ Caml_inline int st_mutex_unlock(st_mutex m)
   return pthread_mutex_unlock(m);
 }
 
-/* Condition variables */
-
-typedef pthread_cond_t * st_condvar;
-
-static int st_condvar_create(st_condvar * res)
-{
-  int rc;
-  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
-  rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { caml_stat_free(c); return rc; }
-  *res = c;
-  return 0;
-}
-
-static int st_condvar_destroy(st_condvar c)
-{
-  int rc;
-  rc = pthread_cond_destroy(c);
-  caml_stat_free(c);
-  return rc;
-}
-
-Caml_inline int st_condvar_signal(st_condvar c)
-{
-  return pthread_cond_signal(c);
-}
-
-Caml_inline int st_condvar_broadcast(st_condvar c)
-{
-  return pthread_cond_broadcast(c);
-}
-
-Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
-{
-  return pthread_cond_wait(c, m);
-}
-
 /* Triggered events */
 
 typedef struct st_event_struct {
