@@ -807,7 +807,7 @@ type formatter_out_functions = {
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
-  out_indent : int -> unit;
+  out_indent : int -> unit;(** @since 4.06.0 *)
 }
 (** The set of output functions specific to a formatter:
 - the [out_string] function performs all the pretty-printer string output.
@@ -822,7 +822,6 @@ type formatter_out_functions = {
 - the [out_indent] function performs new line indentation when the
   pretty-printer splits the line. It is called with the indentation value of
   the new line.
-  @since 4.06.0
 
   By default:
 - fields [out_string] and [out_flush] are output device specific;
