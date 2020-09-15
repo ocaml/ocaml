@@ -41,8 +41,6 @@ CAMLnoreturn_start
 CAMLextern value caml_sys_exit (value)
 CAMLnoreturn_end;
 
-CAMLextern value caml_sys_get_argv(value unit);
-
 extern char_os * caml_exe_name;
 
 #ifdef __cplusplus
