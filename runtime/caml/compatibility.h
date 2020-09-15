@@ -287,7 +287,6 @@
 
 /* **** sys.c */
 #define sys_error caml_sys_error
-#define sys_exit caml_sys_exit
 
 /* **** terminfo.c */
 

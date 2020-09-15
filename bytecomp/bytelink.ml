@@ -473,7 +473,8 @@ let link_bytecode_as_c tolink outfile with_main =
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
-\n#include <caml/startup.h>\n";
+\n#include <caml/startup.h>\
+\n#include <caml/sys.h>\n";
        output_string outchan "static int caml_code[] = {\n";
        Symtable.init();
        clear_crc_interfaces ();
@@ -516,7 +517,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \n                    caml_sections, sizeof(caml_sections),\
 \n                    /* pooling */ 0,\
 \n                    argv);\
-\n  caml_sys_exit(Val_int(0));\
+\n  caml_do_exit(0);\
 \n  return 0; /* not reached */\
 \n}\n"
        end else begin
