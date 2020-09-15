@@ -197,10 +197,24 @@ let capitalize_ascii s =
 let uncapitalize_ascii s =
   B.uncapitalize_ascii (bos s) |> bts
 
-type t = string
+let starts_with ~prefix s =
+  let len_s = length s
+  and len_pre = length prefix in
+  let rec aux i =
+    if i = len_pre then true
+    else if unsafe_get s i <> unsafe_get prefix i then false
+    else aux (i + 1)
+  in len_s >= len_pre && aux 0
 
-let compare (x: t) (y: t) = Stdlib.compare x y
-external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
+let ends_with ~suffix s =
+  let len_s = length s
+  and len_suf = length suffix in
+  let diff = len_s - len_suf in
+  let rec aux i =
+    if i = len_suf then true
+    else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
+    else aux (i + 1)
+  in diff >= 0 && aux 0
 
 let split_on_char sep s =
   let r = ref [] in
@@ -224,6 +238,11 @@ let capitalize s =
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
 
+type t = string
+
+let compare (x: t) (y: t) = Stdlib.compare x y
+external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
+
 (** {1 Iterators} *)
 
 let to_seq s = bos s |> B.to_seq
@@ -231,22 +250,3 @@ let to_seq s = bos s |> B.to_seq
 let to_seqi s = bos s |> B.to_seqi
 
 let of_seq g = B.of_seq g |> bts
-
-let starts_with ~prefix s =
-  let len_s = length s
-  and len_pre = length prefix in
-  let rec aux i =
-    if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
-    else aux (i + 1)
-  in len_s >= len_pre && aux 0
-
-let ends_with ~suffix s =
-  let len_s = length s
-  and len_suf = length suffix in
-  let diff = len_s - len_suf in
-  let rec aux i =
-    if i = len_suf then true
-    else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
-    else aux (i + 1)
-  in diff >= 0 && aux 0
