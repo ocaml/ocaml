@@ -70,8 +70,6 @@ static double next_snapshot_time = 0.0;
 static struct channel *snapshot_channel;
 static int pid_when_snapshot_channel_opened;
 
-extern value caml_spacetime_debug(value);
-
 static char* start_of_free_node_block;
 static char* end_of_free_node_block;
 
@@ -131,7 +129,7 @@ static void reinitialise_free_node_block(void)
 
 enum {
   FEATURE_CALL_COUNTS = 1,
-} features;
+};
 
 static uint16_t version_number = 0;
 static uint32_t magic_number_base = 0xace00ace;
@@ -211,7 +209,8 @@ static void maybe_reopen_snapshot_channel(void)
   }
 }
 
-extern void caml_spacetime_automatic_save(void);
+/* Defined later */
+static void caml_spacetime_automatic_save(void);
 
 void caml_spacetime_initialize(void)
 {
@@ -287,16 +286,6 @@ void caml_spacetime_register_shapes(void* dynlinked_table)
   caml_spacetime_dynamic_shape_tables = table;
 }
 
-CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)
-{
-  return (caml_spacetime_trie_root == Val_unit) ? Val_false : Val_true;
-}
-
-CAMLprim value caml_spacetime_get_trie_root (value v_unit)
-{
-  return caml_spacetime_trie_root;
-}
-
 void caml_spacetime_register_thread(
   value* trie_node_root, value* finaliser_trie_node_root)
 {
@@ -355,8 +344,8 @@ CAMLprim value caml_spacetime_save_event (value v_time_opt,
 }
 
 
-void save_trie (struct channel *chan, double time_override,
-                int use_time_override)
+static void save_trie (struct channel *chan, double time_override,
+                       int use_time_override)
 {
   value v_time, v_frames, v_shapes;
   /* CR-someday mshinwell: The commented-out changes here are for multicore,
@@ -608,7 +597,7 @@ static void* last_indirect_node_hole_ptr_callee;
 static value* last_indirect_node_hole_ptr_node_hole;
 static call_point* last_indirect_node_hole_ptr_result;
 
-CAMLprim value* caml_spacetime_indirect_node_hole_ptr
+CAMLexport value* caml_spacetime_indirect_node_hole_ptr
       (void* callee, value* node_hole, value caller_node)
 {
   /* Find the address of the node hole for an indirect call to [callee].
@@ -996,11 +985,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
 }
 
-extern void caml_garbage_collection(void);  /* signals_nat.c */
-extern void caml_array_bound_error(void);  /* fail.c */
-
-CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
-                                                   uintnat index_within_node)
+CAMLexport uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
+                                                     uintnat index_within_node)
 {
   /* Called from code that creates a value's header inside an OCaml
      function. */
@@ -1095,7 +1081,7 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
   return Val_unit;
 }
 
-void caml_spacetime_automatic_save (void)
+static void caml_spacetime_automatic_save (void)
 {
   /* Called from [atexit]. */
 
@@ -1122,7 +1108,8 @@ CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 
 #else
 
-/* Functions for when the compiler was not configured with "-spacetime". */
+/* Functions for when the compiler was not configured with
+   "--enable-spacetime". */
 
 CAMLprim value caml_spacetime_write_magic_number(value v_channel)
 {
@@ -1147,7 +1134,7 @@ CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_save_trie (value ignored)
+CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
 {
   return Val_unit;
 }
