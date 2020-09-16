@@ -24,7 +24,7 @@ external ignore : 'a -> unit = "%ignore"
    signals and other asynchronous callbacks might break atomicity. *)
 type 'a t = {mutable v: 'a}
 
-let make v = {v}
+let create v = {v}
 let get r = r.v
 let set r v = r.v <- v
 

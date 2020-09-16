@@ -20,7 +20,7 @@
    Stdlib__ prefix trick. *)
 
 type !'a t
-val make : 'a -> 'a t
+val create : 'a -> 'a t
 val get : 'a t -> 'a
 val set : 'a t -> 'a -> unit
 val exchange : 'a t -> 'a -> 'a

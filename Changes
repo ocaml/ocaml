@@ -166,10 +166,11 @@ Working version
 - #9561: Unbox Unix.gettimeofday and Unix.time
   (Stephen Dolan, review by David Allsopp)
 
-- #9570: Provide an Atomic module with a trivial purely-sequential
+- #9570, #9921: Provide an Atomic module with a purely-sequential
   implementation, to help write code that is compatible with Multicore
   OCaml.
-  (Gabriel Scherer, review by Xavier Leroy)
+  (Gabriel Scherer, Guillaume Munch-Maccagnoni and Daniel Bünzli,
+   review by Xavier Leroy)
 
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)

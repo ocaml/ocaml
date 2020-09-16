@@ -543,12 +543,12 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let exit_function = CamlinternalAtomic.make flush_all
+let exit_function = CamlinternalAtomic.create flush_all
 
 let rec at_exit f =
   let module Atomic = CamlinternalAtomic in
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
-  let f_yet_to_run = Atomic.make true in
+  let f_yet_to_run = Atomic.create true in
   let old_exit = Atomic.get exit_function in
   let new_exit () =
     if Atomic.compare_and_set f_yet_to_run true false then f () ;

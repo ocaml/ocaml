@@ -1,6 +1,6 @@
 (* TEST *)
 
-let r = Atomic.make 1
+let r = Atomic.create 1
 let () = assert (Atomic.get r = 1)
 
 let () = Atomic.set r 2
@@ -27,13 +27,13 @@ let () = assert ((Atomic.incr r; Atomic.get r) = 5)
 let () = assert ((Atomic.decr r; Atomic.get r) = 4)
 
 let () =
-  let r = Atomic.make 0 in
+  let r = Atomic.create 0 in
   let cur = Atomic.get r in
   ignore (Atomic.set r (cur + 1), Atomic.set r (cur - 1));
   assert (Atomic.get r <> cur)
 
 let () =
-  let r = Atomic.make 0 in
+  let r = Atomic.create 0 in
   let cur = Atomic.get r in
   ignore (Atomic.incr r, Atomic.decr r);
   assert (Atomic.get r = cur)

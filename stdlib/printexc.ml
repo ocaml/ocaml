@@ -17,7 +17,7 @@ open Printf
 
 type t = exn = ..
 
-let printers = Atomic.make []
+let printers = Atomic.create []
 
 let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 

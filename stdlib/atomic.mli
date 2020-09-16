@@ -30,7 +30,7 @@
 type !'a t
 
 (** Create an atomic reference. *)
-val make : 'a -> 'a t
+val create : 'a -> 'a t
 
 (** Get the current value of the atomic reference. *)
 val get : 'a t -> 'a

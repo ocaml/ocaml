@@ -7,7 +7,7 @@ include systhreads
 *** native
 *)
 
-let signals_requested = Atomic.make 0
+let signals_requested = Atomic.create 0
 let signal_delay = 0.1
 let _ = Thread.create (fun () ->
   let signals_sent = ref 0 in
@@ -56,7 +56,7 @@ let poke_stdout () =
   | exception Sys_error _ -> ()
 
 let () =
-  let r = Atomic.make true in
+  let r = Atomic.create true in
   Sys.set_signal Sys.sigint (Signal_handle (fun _ ->
     poke_stdout (); Atomic.set r false));
   request_signal ();
@@ -69,7 +69,7 @@ let () =
 let () =
   let mklist () = List.init 1000 (fun i -> (i, i)) in
   let before = Sys.opaque_identity (ref (mklist ())) in
-  let during = Atomic.make (Sys.opaque_identity (mklist ())) in
+  let during = Atomic.create (Sys.opaque_identity (mklist ())) in
   let siglist = ref [] in
   Sys.set_signal Sys.sigint (Signal_handle (fun _ ->
     Gc.full_major (); poke_stdout (); Gc.compact ();
