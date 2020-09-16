@@ -19,6 +19,9 @@
 
 pipeline {
   agent { label 'ocaml-linux-64' }
+  options {
+    timeout(time: 1, unit: 'HOURS')
+  }
   stages {
     stage(
       'Building the OCaml compiler step by step (without using world.opt)'
