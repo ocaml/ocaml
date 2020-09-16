@@ -996,12 +996,12 @@ CAMLprim value caml_memprof_stop(value unit)
 
 /**** Interface with systhread. ****/
 
-void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx) {
   ctx->suspended = 0;
   ctx->callback_running = 0;
 }
 
-void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
   /* Make sure that no memprof callback is being executed in this
      thread. If so, memprof data structures may have pointers to the
      thread's stack. */
@@ -1009,12 +1009,13 @@ void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx) {
     caml_fatal_error("Thread.exit called from a memprof callback.");
 }
 
-void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx) {
   ctx->suspended = suspended;
   ctx->callback_running = callback_running;
 }
 
-void caml_memprof_restore_th_ctx(const struct caml_memprof_th_ctx* ctx) {
+CAMLexport void caml_memprof_restore_th_ctx
+        (const struct caml_memprof_th_ctx* ctx) {
   callback_running = ctx->callback_running;
   caml_memprof_set_suspended(ctx->suspended);
 }

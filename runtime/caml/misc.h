@@ -336,6 +336,9 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
 CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
