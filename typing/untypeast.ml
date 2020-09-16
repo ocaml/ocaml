@@ -893,4 +893,3 @@ let untype_expression ?(mapper=default_mapper) expression =
 
 let untype_pattern ?(mapper=default_mapper) pattern =
   mapper.pat mapper pattern
-
