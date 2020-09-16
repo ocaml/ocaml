@@ -1740,7 +1740,8 @@ information is available, but the backtrace mechanism needs to be
 turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
-by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
+by calling "caml_record_backtraces(1);" in the OCaml-C glue code.
+("caml_record_backtraces" is declared in "backtrace.h")
 
 \paragraph{Unloading the runtime.}
 
