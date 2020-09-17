@@ -15,7 +15,8 @@ arguments = "-I ${test_source_directory} mainimmed.c"
   (addraset r i (and x N)) (assign i (+ i 1)) \
   (addraset r i (or x N)) (assign i (+ i 1)) \
   (addraset r i (xor x N)) (assign i (+ i 1)) \
-  (addraset r i (< x N)) (assign i (+ i 1))
+  (addraset r i (< x N)) (assign i (+ i 1)) \
+  (checkbound i N)
 
 (function "testimm" ()
   (let x (load int "X")
