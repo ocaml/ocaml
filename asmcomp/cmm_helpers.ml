@@ -72,22 +72,10 @@ let caml_nativeint_ops = "caml_nativeint_ops"
 let caml_int32_ops = "caml_int32_ops"
 let caml_int64_ops = "caml_int64_ops"
 
-let pos_arity_in_closinfo = 8 * size_addr - 8
-       (* arity = the top 8 bits of the closinfo word *)
-
-let closure_info ~arity ~startenv =
-  assert (-128 <= arity && arity <= 127);
-  assert (0 <= startenv && startenv < 1 lsl (pos_arity_in_closinfo - 1));
-  Nativeint.(add (shift_left (of_int arity) pos_arity_in_closinfo)
-                 (add (shift_left (of_int startenv) 1)
-                      1n))
-
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
 let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
 let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
 let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
-let alloc_closure_info ~arity ~startenv dbg =
-  Cblockheader (closure_info ~arity ~startenv, dbg)
 let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
 let alloc_boxedint64_header dbg = Cblockheader (boxedint64_header, dbg)
 let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
@@ -247,6 +235,23 @@ let untag_int i dbg =
     when n > 0 && n < size_int * 8 ->
       Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
   | c -> asr_int c (Cconst_int (1, dbg)) dbg
+
+(* Closure info *)
+
+let pos_arity_in_closinfo = 8 * size_addr - 8
+       (* arity = the top 8 bits of the closinfo word *)
+
+let closure_info ~arity ~startenv =
+  assert (-128 <= arity && arity <= 127);
+  assert (0 <= startenv && startenv < 1 lsl (pos_arity_in_closinfo - 1));
+  Nativeint.(add (shift_left (of_int arity) pos_arity_in_closinfo)
+                 (add (shift_left (of_int startenv) 1)
+                      1n))
+
+let alloc_closure_info ~arity ~startenv dbg =
+  natint_const_untagged dbg (closure_info ~arity ~startenv)
+
+(* *)
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
   match cond with
