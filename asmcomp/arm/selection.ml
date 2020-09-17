@@ -102,8 +102,12 @@ method! regs_for tyv =
                  tyv
                end)
 
-method is_immediate _op n =
-  Arch.is_immediate (Int32.of_int n)
+method! is_immediate op n =
+  match op with
+  | Iadd | Isub | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+      Arch.is_immediate (Int32.of_int n)
+  | _ ->
+      super#is_immediate op n
 
 method is_immediate_test _op n =
   Arch.is_immediate (Int32.of_int n)
@@ -213,11 +217,6 @@ method! select_operation op args dbg =
       [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int (n, _)], _); arg2])
     when n > 0 && n < 32 ->
       (Ispecific(Ishiftcheckbound(select_shiftop op, n)), [arg1; arg2])
-  (* ARM does not support immediate operands for multiplication *)
-  | (Cmuli, args) ->
-      (Iintop Imul, args)
-  | (Cmulhi, args) ->
-      (Iintop Imulh, args)
   (* Turn integer division/modulus into runtime ABI calls *)
   | (Cdivi, args) ->
       (self#iextcall "__aeabi_idiv" typ_int [], args)

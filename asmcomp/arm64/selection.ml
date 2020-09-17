@@ -103,16 +103,15 @@ class selector = object(self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate_test _cmp n = 
+method is_immediate_test _cmp n =
   is_immediate n
 
-method is_immediate op n =
+method! is_immediate op n =
   match op with
   | Iadd | Isub  -> n <= 0xFFF_FFF && n >= -0xFFF_FFF
-  | Imul | Imulh -> false        (* no mul immediate instruction *)
   | Iand | Ior | Ixor -> is_logical_immediate n
   | Icomp _ | Icheckbound _ -> is_immediate n
-  | _ -> assert false
+  | _ -> super#is_immediate op n
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)

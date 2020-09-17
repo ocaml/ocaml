@@ -28,15 +28,12 @@ inherit Selectgen.selector_generic as super
 (* RISC-V does not support immediate operands for comparison operators *)
 method is_immediate_test _cmp _n = false
 
-method is_immediate op n =
+method! is_immediate op n =
   match op with
+  | Iadd | Iand | Ior | Ixor -> is_immediate n
   (* sub immediate is turned into add immediate opposite *)
   | Isub -> is_immediate (-n)
-  (* RISC-V does not support immediate operands for multiply/multiply high *)
-  | Imul | Imulh -> false
-  (* RISC-V does not support immediate operands for comparison operators *)
-  | Icomp _ -> false
-  | _ -> is_immediate n
+  | _ -> super#is_immediate op n
 
 method select_addressing _ = function
   | Cop(Cadda, [arg; Cconst_int (n, _)], _) when is_immediate n ->

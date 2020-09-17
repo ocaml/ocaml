@@ -70,16 +70,15 @@ method is_immediate_test cmp n =
   | Isigned _ -> is_immediate n
   | Iunsigned _ -> is_immediate_logical n
 
-method is_immediate op n =
+method! is_immediate op n =
   match op with
   | Iadd | Imul -> is_immediate n
   | Isub -> is_immediate (-n)
-  | Imulh -> false (* Z does not support immediate operands for mul high *)
   | Iand -> n <= -1 && n >= -0x1_0000_0000
   | Ior | Ixor -> is_immediate_logical n
   | Icomp c -> self#is_immediate_test c n
-  | Icheckbound _ -> is_immediate_logical n
-  | _ -> assert false
+  | Icheckbound _ -> is_immediate_logical n (* unsigned comparison *)
+  | _ -> super#is_immediate op n
 
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in

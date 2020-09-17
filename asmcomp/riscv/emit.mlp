@@ -428,12 +428,6 @@ let emit_instr i =
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
   | Lop(Iintop_imm(Isub, n)) ->
       `	addi	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int(-n)}\n`
-  | Lop(Iintop_imm(Icomp _, _)) ->
-      Misc.fatal_error "Emit.emit_instr (Iintop_imm (Icomp _, _))"
-  | Lop(Iintop_imm(Icheckbound {label_after_error = label; _}, n)) ->
-      let lbl = bound_error_label ?label i.dbg in
-      `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-      `	bleu	{emit_reg i.arg.(0)}, {emit_reg reg_tmp}, {emit_label lbl}\n`
   | Lop(Iintop_imm(op, n)) ->
       let instr = name_for_intop_imm op in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`

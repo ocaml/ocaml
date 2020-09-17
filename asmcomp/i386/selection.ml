@@ -158,11 +158,12 @@ class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate op _n =
+method! is_immediate op n =
   match op with
-  (* i386 does not support immediate operands for multiply high signed *)
-  | Imulh -> false
-  | _ -> true
+  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+      true
+  | _ ->
+      super#is_immediate op n
 
 method is_immediate_test _cmp _n = true
 

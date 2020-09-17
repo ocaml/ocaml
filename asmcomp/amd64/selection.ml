@@ -131,11 +131,12 @@ class selector = object (self)
 
 inherit Spacetime_profiling.instruction_selection as super
 
-method is_immediate op n =
+method! is_immediate op n =
   match op with
-  (* AMD64 does not support immediate operands for multiply high signed *)
-  | Imulh -> false
-  | _ -> is_immediate n
+  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+      is_immediate n
+  | _ ->
+      super#is_immediate op n
 
 method is_immediate_test _cmp n = is_immediate n
 

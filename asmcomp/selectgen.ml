@@ -382,7 +382,10 @@ method effects_of exp =
 (* Says whether an integer constant is a suitable immediate argument for
    the given integer operation *)
 
-method virtual is_immediate : integer_operation -> int -> bool
+method is_immediate op n =
+  match op with
+  | Ilsl | Ilsr | Iasr -> n >= 0 && n < Arch.size_int * 8
+  | _ -> false
 
 (* Says whether an integer constant is a suitable immediate argument for
    the given integer test *)
@@ -486,9 +489,9 @@ method select_operation op args _dbg =
   | (Cand, _) -> self#select_arith_comm Iand args
   | (Cor, _) -> self#select_arith_comm Ior args
   | (Cxor, _) -> self#select_arith_comm Ixor args
-  | (Clsl, _) -> self#select_shift Ilsl args
-  | (Clsr, _) -> self#select_shift Ilsr args
-  | (Casr, _) -> self#select_shift Iasr args
+  | (Clsl, _) -> self#select_arith Ilsl args
+  | (Clsr, _) -> self#select_arith Ilsr args
+  | (Casr, _) -> self#select_arith Iasr args
   | (Ccmpi comp, _) -> self#select_arith_comp (Isigned comp) args
   | (Caddv, _) -> self#select_arith_comm Iadd args
   | (Cadda, _) -> self#select_arith_comm Iadd args
@@ -521,16 +524,10 @@ method private select_arith op = function
   | args ->
       (Iintop op, args)
 
-method private select_shift op = function
-  | [arg; Cconst_int (n, _)] when n >= 0 && n < Arch.size_int * 8 ->
-      (Iintop_imm(op, n), [arg])
-  | args ->
-      (Iintop op, args)
-
 method private select_arith_comp cmp = function
   | [arg; Cconst_int (n, _)] when self#is_immediate (Icomp cmp) n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [Cconst_int (n, _); arg] 
+  | [Cconst_int (n, _); arg]
     when self#is_immediate (Icomp(swap_intcomp cmp)) n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
