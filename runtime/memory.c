@@ -262,6 +262,8 @@ char *caml_alloc_for_heap (asize_t request)
     mem = (char *) block + sizeof (heap_chunk_head);
     Chunk_size (mem) = size - sizeof (heap_chunk_head);
     Chunk_block (mem) = block;
+    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
+    Chunk_redarken_end(mem) = (value*)mem;
     return mem;
 #else
     return NULL;
@@ -277,6 +279,8 @@ char *caml_alloc_for_heap (asize_t request)
     mem += sizeof (heap_chunk_head);
     Chunk_size (mem) = request;
     Chunk_block (mem) = block;
+    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
+    Chunk_redarken_end(mem) = (value*)mem;
     return mem;
   }
 }

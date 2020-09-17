@@ -368,6 +368,9 @@ static void do_compaction (intnat new_allocation_policy)
     }
   }
   ++ Caml_state->stat_compactions;
+
+  caml_shrink_mark_stack();
+
   caml_gc_message (0x10, "done.\n");
 }
 

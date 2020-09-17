@@ -1670,7 +1670,6 @@ static header_t *bf_merge_block (value bp, char *limit)
     switch (Color_val (cur)){
     case Caml_white: goto white;
     case Caml_blue: bf_remove (cur); goto next;
-    case Caml_gray:
     case Caml_black:
       goto end_of_run;
     }

@@ -173,7 +173,7 @@ static value heap_stats (int returnstats)
           }
         }
         break;
-      case Caml_gray: case Caml_black:
+      case Caml_black:
         CAMLassert (Wosize_hd (cur_hd) > 0);
         ++ live_blocks;
         live_words += Whsize_hd (cur_hd);

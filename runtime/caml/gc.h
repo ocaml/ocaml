@@ -68,7 +68,6 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #endif
 
 #define Is_white_val(val) (Color_val(val) == Caml_white)
-#define Is_gray_val(val) (Color_val(val) == Caml_gray)
 #define Is_blue_val(val) (Color_val(val) == Caml_blue)
 #define Is_black_val(val) (Color_val(val) == Caml_black)
 
