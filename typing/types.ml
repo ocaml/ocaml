@@ -19,6 +19,7 @@ open Asttypes
 
 (* Type expressions for the core language *)
 
+
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
@@ -79,6 +80,15 @@ module TypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
+module Internal = struct
+  type type_expr_internal = type_expr =
+      { mutable desc: type_desc;
+	mutable level: int;
+	mutable scope: int;
+	id: int }
+  let lock x = x
+  let unlock x = x
+end
 (* *)
 
 module Uid = struct
