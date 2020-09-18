@@ -1049,8 +1049,9 @@ and class_expr_aux cl_num val_env met_env scl =
           end
           pv
       in
-      let not_function = function
-          Cty_arrow _ -> false
+      let rec not_nolabel_function = function
+        | Cty_arrow(Nolabel, _, _) -> false
+        | Cty_arrow(_, _, cty) -> not_nolabel_function cty
         | _ -> true
       in
       let partial =
@@ -1061,7 +1062,7 @@ and class_expr_aux cl_num val_env met_env scl =
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in
       Ctype.end_def ();
-      if Btype.is_optional l && not_function cl.cl_type then
+      if Btype.is_optional l && not_nolabel_function cl.cl_type then
         Location.prerr_warning pat.pat_loc
           Warnings.Unerasable_optional_argument;
       rc {cl_desc = Tcl_fun (l, pat, pv, cl, partial);

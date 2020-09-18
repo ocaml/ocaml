@@ -3788,11 +3788,11 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
   let cases, partial =
     type_cases Value ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
       true loc caselist in
-  let not_function ty =
+  let not_nolabel_function ty =
     let ls, tvar = list_labels env ty in
-    ls = [] && not tvar
+    List.for_all ((<>) Nolabel) ls && not tvar
   in
-  if is_optional l && not_function ty_res then
+  if is_optional l && not_nolabel_function ty_res then
     Location.prerr_warning (List.hd cases).c_lhs.pat_loc
       Warnings.Unerasable_optional_argument;
   let param = name_cases "param" cases in
