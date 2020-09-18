@@ -17,7 +17,6 @@
 
 open Asttypes
 open Types
-open Internal
 
 open Local_store
 
@@ -46,7 +45,8 @@ let pivot_level = 2 * lowest_level - 1
 let new_id = s_ref (-1)
 
 let newty2 level desc  =
-  incr new_id; { desc; level; scope = lowest_level; id = !new_id }
+  incr new_id;
+  Internal.lock Internal.{ desc; level; scope = lowest_level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ?name () = newgenty (Tvar name)
 (*
@@ -109,7 +109,7 @@ let rec repr_link compress (t : type_expr) d : type_expr -> type_expr =
      repr_link true t d' t'
  | t' ->
      if compress then begin
-       log_change (Ccompress (t, t.desc, d)); (unlock t).desc <- d
+       log_change (Ccompress (t, t.desc, d)); (Internal.unlock t).desc <- d
      end;
      t'
 
