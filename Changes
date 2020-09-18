@@ -413,6 +413,9 @@ Working version
 
 ### Bug fixes:
 
+- #7538, #9669: Check for misplaced attributes on module aliases
+  (Leo White, report by Thomas Leonard, review by Florian Angeletti)
+
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
   off.
   (Jacques Garrigue, report by Francois Pottier, review by Leo White)
