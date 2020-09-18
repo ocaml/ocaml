@@ -16,6 +16,10 @@ Working version
     type !'a t = 'a list
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
+- #9429: Add unary operators containing `#` to the parser for use in ppx
+  rewriters
+  (Leo White, review by Damien Doligez)
+
 ### Supported platforms:
 
 - #9699: add support for iOS and macOS on ARM 64 bits
