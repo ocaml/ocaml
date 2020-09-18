@@ -17,6 +17,7 @@
 
 open Asttypes
 open Types
+open Internal
 
 open Local_store
 
@@ -100,7 +101,7 @@ let rec field_kind_repr =
     Fvar {contents = Some kind} -> field_kind_repr kind
   | kind                        -> kind
 
-let rec repr_link compress t d =
+let rec repr_link compress (t : type_expr) d : type_expr -> type_expr =
  function
    {desc = Tlink t' as d'} ->
      repr_link true t d' t'
@@ -108,11 +109,11 @@ let rec repr_link compress t d =
      repr_link true t d' t'
  | t' ->
      if compress then begin
-       log_change (Ccompress (t, t.desc, d)); t.desc <- d
+       log_change (Ccompress (t, t.desc, d)); (unlock t).desc <- d
      end;
      t'
 
-let repr t =
+let repr (t : type_expr) =
   match t.desc with
    Tlink t' as d ->
      repr_link false t d t'
