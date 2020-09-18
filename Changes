@@ -366,6 +366,9 @@ Working version
 - #9688: Expose the main entrypoint in compilerlibs
   (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
 
+- #9715: recheck scope escapes after normalising paths
+  (Matthew Ryan, review by Gabriel Scherer and Thomas Refis)
+
 - #9778: Fix printing for bindings where polymorphic type annotations and
   attributes are present.
   (Matthew Ryan, review by Nicolás Ojeda Bär)
