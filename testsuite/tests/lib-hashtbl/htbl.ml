@@ -92,6 +92,16 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
       (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
     check_to_seq_of_seq h;
     check_to_seq h;
+    (* Test find_or_add *)
+    Array.iter (fun (k, d) ->
+      let d_h = H.find_or_add h k (fun () -> d) in
+      let m', d_m = M.find_or_add k (fun () -> d) !m in m := m';
+      assert (d_h = d_m)
+    ) data;
+    printf "Find_or_add: %s\n"
+      (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
+    check_to_seq_of_seq h;
+    check_to_seq h;
     ()
 
 end
@@ -150,6 +160,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let find = Hashtbl.find
     let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all
+    let find_or_add = Hashtbl.find_or_add
     let replace = Hashtbl.replace
     let mem = Hashtbl.mem
     let iter = Hashtbl.iter

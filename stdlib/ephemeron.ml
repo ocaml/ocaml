@@ -269,6 +269,39 @@ module GenHashTable = struct
       h.data.(i) <- loop h i key hkey f h.data.(i);
       if h.size > Array.length h.data lsl 1 then resize h
 
+    let find_or_add h key f_info =
+      let cons_front h i key hkey info =
+        let container = H.create key info in
+        let bucket = Cons(hkey, container, h.data.(i)) in
+        h.data.(i) <- bucket;
+        h.size <- h.size + 1;
+        if h.size > Array.length h.data lsl 1 then resize h;
+        info
+      in
+      let rec find_or_add_rec h i key (hkey: int) f_info = function
+        | Empty ->
+          cons_front h i key hkey (f_info())
+        | Cons(hk, c, next) when hkey = hk  ->
+          begin match H.equal c key with
+          | ETrue ->
+            begin match H.get_data c with
+            (* This case is not impossible because the gc can run between
+               H.equal and H.get_data *)
+            | None ->
+              find_or_add_rec h i key hkey f_info next
+            | Some d -> d
+            end
+          | EFalse | EDead ->
+            find_or_add_rec h i key hkey f_info next
+          end
+        | Cons(_, _, next) ->
+          find_or_add_rec h i key hkey f_info next
+      in
+      let hkey = H.hash h.seed key in
+      let i = key_index h hkey in
+      let bucket = h.data.(i) in
+      find_or_add_rec h i key hkey f_info bucket
+
     let find_all h key =
       let hkey = H.hash h.seed key in
       let rec find_in_bucket = function

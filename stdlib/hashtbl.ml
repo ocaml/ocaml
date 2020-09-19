@@ -299,6 +299,7 @@ module type S =
     val find: 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
+    val find_or_add: 'a t -> key -> (unit -> 'a) -> 'a
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
@@ -328,6 +329,7 @@ module type SeededS =
     val find : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
+    val find_or_add: 'a t -> key -> (unit -> 'a) -> 'a
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
@@ -486,6 +488,34 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           then d :: find_in_bucket next
           else find_in_bucket next in
       find_in_bucket h.data.(key_index h key)
+
+    let find_or_add h key f_data =
+      let cons_front h i key data =
+        h.data.(i) <- Cons{key; data; next=h.data.(i)};
+        h.size <- h.size + 1;
+        if h.size > Array.length h.data lsl 1 then resize key_index h;
+        data
+      in
+      let rec find_or_add_rec i key f_data = function
+        | Empty -> cons_front h i key (f_data())
+        | Cons{key=k; data=d; next} ->
+          if H.equal key k then d else
+          find_or_add_rec i key f_data next
+      in
+      let i = key_index h key in
+      match h.data.(i) with
+      | Empty -> cons_front h i key (f_data())
+      | Cons{key=k1; data=d1; next=next1} ->
+      if H.equal key k1 then d1 else
+      match next1 with
+      | Empty -> cons_front h i key (f_data())
+      | Cons{key=k2; data=d2; next=next2} ->
+      if H.equal key k2 then d2 else
+      match next2 with
+      | Empty -> cons_front h i key (f_data())
+      | Cons{key=k3; data=d3; next=next3} ->
+      if H.equal key k3 then d3 else
+      find_or_add_rec i key f_data next3
 
     let rec replace_bucket key data = function
       | Empty ->
@@ -693,6 +723,32 @@ let find_all h key =
       then data :: find_in_bucket next
       else find_in_bucket next in
   find_in_bucket h.data.(key_index h key)
+
+let find_or_add h key f_data =
+  let cons_front i key data =
+    h.data.(i) <- Cons{key; data; next=h.data.(i)};
+    data
+  in
+  let rec find_or_add_rec i key f_data = function
+    | Empty -> cons_front i key (f_data())
+    | Cons{key=k; data=d; next} ->
+      if compare key k = 0 then d else
+      find_or_add_rec i key f_data next
+  in
+  let i = key_index h key in
+  match h.data.(i) with
+  | Empty -> cons_front i key (f_data())
+  | Cons{key=k1; data=d1; next=next1} ->
+  if compare key k1 = 0 then d1 else
+  match next1 with
+  | Empty -> cons_front i key (f_data())
+  | Cons{key=k2; data=d2; next=next2} ->
+  if compare key k2 = 0 then d2 else
+  match next2 with
+  | Empty -> cons_front i key (f_data())
+  | Cons{key=k3; data=d3; next=next3} ->
+  if compare key k3 = 0 then d3 else
+  find_or_add_rec i key f_data next3
 
 let rec replace_bucket key data = function
   | Empty ->

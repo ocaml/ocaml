@@ -3,56 +3,67 @@ Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Random integers, narrow range
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Strings, generic interface
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Strings, functorial interface
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Pairs of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Lists of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Weak K1 -- Strings, functorial interface
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Weak K1 -- Pairs of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Weak K2 -- Pairs of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Weak K1 -- Lists of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 -- Weak Kn -- Arrays of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
 Update: passed
+Find_or_add: passed
 1000 elements
 100,2
 200,4

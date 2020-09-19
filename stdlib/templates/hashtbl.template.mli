@@ -102,6 +102,14 @@ val find_all : ('a, 'b) t -> 'a -> 'b list
    The current binding is returned first, then the previous
    bindings, in reverse order of introduction in the table. *)
 
+val find_or_add : ('a, 'b) t -> key:'a -> data:(unit -> 'b) -> 'b
+(** [Hashtbl.find_or_add tbl ~key ~data] returns the data associated with
+    [key] if it exists. Otherwise, it adds a binding from [key] to [data()]
+    in the table, and returns it. This function only calculates the hash of
+    [x] once, and only evaluates [data()] if [key] is not bound in the
+    table.
+    @since 4.12.0 *)
+
 val mem : ('a, 'b) t -> 'a -> bool
 (** [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
 
@@ -125,7 +133,8 @@ val update : ('a, 'b) t -> key:'a -> f:('b option -> 'b option) -> unit
     if it exists,restoring the previous binding, if it exists. If [y] is
     [Some data], then [key] is bound to [data], replacing the previously
     bound value if it existed. This function only calculates the hash of
-    [key] once. *)
+    [key] once.
+    @since 4.12.0 *)
 
 val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter ~f tbl] applies [f] to all bindings in table [tbl].
@@ -358,6 +367,9 @@ module type S =
     (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
+    val find_or_add : 'a t -> key -> (unit -> 'a) -> 'a
+    (** @since 4.12.0 *)
+
     val replace : 'a t -> key:key -> data:'a -> unit
     val mem : 'a t -> key -> bool
     val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
@@ -438,6 +450,9 @@ module type SeededS =
     (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
+    val find_or_add : 'a t -> key -> (unit -> 'a) -> 'a
+    (** @since 4.12.0 *)
+
     val replace : 'a t -> key:key -> data:'a -> unit
     val mem : 'a t -> key -> bool
     val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit

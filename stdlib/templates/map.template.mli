@@ -320,6 +320,13 @@ module type S =
         @since 4.05
        *)
 
+    val find_or_add: key:key -> data:(unit -> 'a) -> 'a t -> 'a t * 'a
+    (** [find_or_add ~key ~data m] returns a tuple with [m] and the current
+        value of [key] in [m], if it exists. If it does not exist, it returns
+        a tuple with a map containing the same bindings as [m] plus a binding
+        of [key] to [data()], and [data()].
+        @since 4.12.0 *)
+
     val map: f:('a -> 'b) -> 'a t -> 'b t
     (** [map ~f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
