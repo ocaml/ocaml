@@ -78,7 +78,7 @@ let process ?(search=true) ~version config file out =
 
   (* Delete previous/up/next links *)
   body $? "div.navbar"
-  |> do_option delete;
+  |> Option.iter delete;
 
   (* Create TOC with H2 and H3 elements *)
   (* Cf Scanf for an example with H3 elements *)
@@ -318,8 +318,8 @@ let save_index file index =
       fprintf outch {|["%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s"],|}
         item.mdule.txt item.mdule.html item.value.txt item.value.html
         item.info.html item.info.txt
-        (map_option (fun i -> i.html) item.signature |> string_of_opt)
-        (map_option (fun i -> i.txt) item.signature |> string_of_opt);
+        (Option.map (fun i -> i.html) item.signature |> string_of_opt)
+        (Option.map (fun i -> i.txt) item.signature |> string_of_opt);
       output_string outch "\n") index;
   output_string outch "]\n";
   close_out outch

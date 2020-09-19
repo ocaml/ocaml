@@ -137,18 +137,18 @@ let file_title file toc =
   else Hashtbl.find_opt toc file
 
 (* Replace three links "Previous, Up, Next" at the end of the file by more
-   useful titles, and insert then in a div contained, keeping only 2 of them:
+   useful titles, and insert then in a div container, keeping only 2 of them:
    either (previous, next) or (previous, up) or (up, next). Remove them at the
    top of the file, where they are not needed because we have the TOC. *)
 let update_navigation soup toc =
-  do_option delete (soup $? "hr");
+  Option.iter delete (soup $? "hr");
   let container, count =
     ["Previous"; "Up"; "Next"]
     |> List.fold_left (fun (container, count) s ->
         let imgs = soup $$ ("img[alt=\"" ^ s ^ "\"]") in
         (* In principle [imgs] will contain either 0 or 2 elements. We delete
            the first one. *)
-        do_option (delete << R.parent) (first imgs);
+        Option.iter (delete << R.parent) (first imgs);
         (* Now, if there is a second element, we update (or create) an "div"
            container to insert the element, and increase [count]. [count] is
            used to make sure we keep only 2 links, not 3. *)
@@ -177,7 +177,7 @@ let update_navigation soup toc =
             Some div, count+1) (container, count)) (None, 0) in
 
   match container with
-  | None -> print_endline "No Navigation"
+  | None -> dbg "%s" "No navigation"
   | Some div ->
       if count = 2 then begin
         add_class "previous" (div $$ "a" |> R.first);
@@ -189,7 +189,7 @@ let update_navigation soup toc =
 let clone_structure soup toc xfile =
   let xternal = parse (load_html xfile) in
   update_navigation xternal toc;
-  do_option delete (xternal $? "hr");
+  Option.iter delete (xternal $? "hr");
   let xbody = xternal $ "body" in
   let clone = parse (to_string soup) in
   let header = clone $ "header" in
@@ -219,7 +219,7 @@ let extract_date maintitle =
 (* Special treatment of the main index.html file *)
 let convert_index version soup =
   (* Remove "translated from LaTeX" *)
-  soup $$ "blockquote" |> last |> do_option delete;
+  soup $$ "blockquote" |> last |> Option.iter delete;
   let title_selector = if float_of_string version < 4.07
     then "div.center" else "div.maintitle" in
   let maintitle = soup $ title_selector in
@@ -236,7 +236,7 @@ let convert_index version soup =
 (* This is the main script for processing a specified file. [convert] has to be
    run for each "entry" [file] of the manual, making a "Chapter". (The list of
    [chapters] corresponds to a "Part" of the manual.) *)
-let convert version chapters toc_table (file, title) =
+let convert version (part_title, chapters) toc_table (file, title) =
   dbg "%s ==> %s" (html_file file) (docs_file file);
 
   (* Parse html *)
@@ -252,7 +252,7 @@ let convert version chapters toc_table (file, title) =
   create_element "script" ~attributes:["src","scroll.js"]
   |> append_child head;
 
-  (* Wrap body. TODO use set_name instead *)
+  (* Wrap body. *)
   let c = if file = "index.html" then ["manual"; "content"; "index"]
     else ["manual"; "content"] in
   let body = wrap_body ~classes:c soup in
@@ -272,7 +272,7 @@ let convert version chapters toc_table (file, title) =
     | None -> prepend_child body nav
     | Some toc -> wrap toc nav in
   let nav = soup $ "nav" in
-  wrap nav (create_element "header");
+  wrap nav (create_element ~id:"sidebar" "header");
   begin match toc with
   | None -> dbg "No TOC for %s" file
   | Some toc -> begin
@@ -351,6 +351,14 @@ let convert version chapters toc_table (file, title) =
   (* let body = soup $ "div.content" in *)
   prepend_child body menu;
 
+  (* Add part_title just before the part_menu *)
+  if part_title <> "" then begin
+    let nav = create_element ~class_:"part_title" "nav" ~inner_text:part_title in
+    create_element "span" ~inner_text:"☰"
+    |> prepend_child nav;
+    prepend_child body nav
+  end;
+
   (* Add logo *)
   begin match soup $? "header" with
   | None -> dbg "Warning: no <header> for %s" file
@@ -361,7 +369,7 @@ let convert version chapters toc_table (file, title) =
   ["span.c009"]
   |> List.iter (fun selector ->
       soup $? selector
-      |> do_option (fun authors ->
+      |> Option.iter (fun authors ->
           match leaf_text authors with
           | None -> ()
           | Some s ->
@@ -410,11 +418,11 @@ let process version =
   let toc_table, all_chapters = parse_toc () in
 
   (* special case of the "index.html" file: *)
-  convert version [] toc_table ("index.html", "The OCaml Manual");
+  convert version ("", []) toc_table ("index.html", "The OCaml Manual");
 
   let main_files = List.fold_left (fun list (part_title, chapters) ->
       dbg "* Processing chapters for %s" part_title;
-      List.iter (convert version chapters toc_table) chapters;
+      List.iter (convert version (part_title, chapters) toc_table) chapters;
       (fst (List.hd chapters)) :: list) [] all_chapters in
 
   main_files

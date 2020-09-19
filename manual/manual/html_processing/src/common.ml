@@ -52,23 +52,11 @@ let releases_url = "https://ocaml.org/releases/"
 
 (**** utilities ****)
 
-let do_option f = function
-  | None -> ()
-  | Some x -> f x
-
-let map_option f = function
-  | None -> None
-  | Some x -> Some (f x)
-
-let flat_option f = function
-  | None -> None
-  | Some x -> f x
+let flat_option f o = Option.bind o f
 
 let (<<) f g x = f (g x)
 
-let string_of_opt = function
-  | None -> ""
-  | Some s -> s
+let string_of_opt = Option.value ~default:""
 
 let starts_with substring s =
   let l = String.length substring in

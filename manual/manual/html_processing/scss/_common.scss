@@ -54,6 +54,12 @@ body{
 }
 html {
     font-size: 16px;
+    .dt-thefootnotes{
+	height:1ex;
+    }
+    .footnotetext{
+	font-size: 13px;
+    }
 }
 
 @mixin content-frame {
@@ -149,13 +155,23 @@ html {
     position:static;
     width:auto;
     min-width:unset;
-    max-width:unset;
     border:none;
     padding:.2em 1em;
     border-radius:5px 0;
-    &.brand { border-radius: 0 5px;}
+    &.brand {border-radius: 0 5px;}
 }
 
+@mixin header-mobile {
+    margin-bottom:0;
+    position:fixed;
+    left:0;
+    background-color:#ffefe7;
+    transition:left 0.5s;
+    top:0;
+    max-height: 100%;
+    overflow-y: scroll;
+    box-shadow:0.4rem 0rem 0.8rem #bbb;
+}
 
 /* Print adjustements. */
 /* This page can be nicely printed or saved to PDF (local version) */

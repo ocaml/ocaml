@@ -18,6 +18,15 @@
     &>header nav{
 	font-family:"Fira Sans",Helvetica,Arial,sans-serif
     }
+    .part_title{
+	float:left;
+	color:#777;
+	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+	span{ /* menu icon */
+	    font-size:22px;
+	    margin-right:1ex;
+	}
+    }
     /* navigation links at the bottom of page */
     .bottom-navigation {
 	margin-bottom:1em;
@@ -51,6 +60,9 @@
     }
     section>ul>li>ul>li:hover{ /* Chapters */
 	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
+    }
+    section>ul>li>ul>li{ 	
+	transition: background 0.5s;
     }
 }
 b{
@@ -230,8 +242,14 @@ nav.toc{
 	margin:auto;
 	padding:2em
     }
+    
     nav.toc{
-	@include nav-toc-mobile;}
+	@include nav-toc-mobile; 
+    }
+    header{
+	@include header-mobile;
+    }
+    
 }
 
 .pre,pre{
