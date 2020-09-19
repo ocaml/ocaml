@@ -230,6 +230,45 @@ module GenHashTable = struct
       (* TODO inline 3 iterations *)
       find_rec_opt key hkey (h.data.(key_index h hkey))
 
+    let update h key f =
+      let rec loop h i key (hkey: int) f = function
+        (* Key not in table *)
+        | Empty ->
+          begin match f None with
+          | Some info ->
+            h.size <- h.size + 1;
+            let container = H.create key info in
+            Cons(hkey, container, Empty)
+          | None ->
+            Empty
+          end
+        | Cons(hk, c, next) when hkey = hk ->
+          begin match H.equal c key with
+          | ETrue ->
+            begin match H.get_data c with
+            | None -> Cons(hk, c, loop h i key hkey f next)
+            (* Key found in table *)
+            | Some _ as input ->
+              begin match f input with
+              | Some info ->
+                let container = H.create key info in
+                Cons(hkey, container, next)
+              | None ->
+                h.size <- h.size - 1;
+                next
+              end
+            end
+          | EFalse | EDead ->
+            Cons(hk, c, loop h i key hkey f next)
+          end
+        | Cons(hk, c, next) ->
+          Cons(hk, c, loop h i key hkey f next)
+      in
+      let hkey = H.hash h.seed key in
+      let i = key_index h hkey in
+      h.data.(i) <- loop h i key hkey f h.data.(i);
+      if h.size > Array.length h.data lsl 1 then resize h
+
     let find_all h key =
       let hkey = H.hash h.seed key in
       let rec find_in_bucket = function

@@ -77,6 +77,21 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
       (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
     check_to_seq_of_seq h;
     check_to_seq h;
+    (* Update some of the data *)
+    let f i d v =
+      match i mod 3 with
+      | 0 -> v
+      | 1 -> None
+      | 2 -> Some d
+      | _ -> assert false
+    in
+    Array.iteri
+      (fun i (k, d) -> H.update h k (f i d); m := M.update k (f i d) !m)
+      data;
+    printf "Update: %s\n"
+      (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
+    check_to_seq_of_seq h;
+    check_to_seq h;
     ()
 
 end
@@ -131,6 +146,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let copy = Hashtbl.copy
     let add = Hashtbl.add
     let remove = Hashtbl.remove
+    let update = Hashtbl.update
     let find = Hashtbl.find
     let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all

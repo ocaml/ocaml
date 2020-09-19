@@ -117,6 +117,16 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
 
+val update : ('a, 'b) t -> 'a -> ('b option -> 'b option) -> unit
+(** [Hashtbl.update tbl key f] updates the bindings of [key] depending on
+    the value it's currently bound to. Depending on the value of [y], where
+    [y] is [f (find_opt key tbl)], the binding of [key] can be added,
+    replaced, or removed. If [y] is [None], the current binding is removed
+    if it exists,restoring the previous binding, if it exists. If [y] is
+    [Some data], then [key] is bound to [data], replacing the previously
+    bound value if it existed. This function only calculates the hash of
+    [key] once. *)
+
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
@@ -340,6 +350,9 @@ module type S =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val update : 'a t -> key -> ('a option -> 'a option) -> unit
+    (** @since 4.12.0 *)
+
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
     (** @since 4.05.0 *)
@@ -417,8 +430,12 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val update : 'a t -> key -> ('a option -> 'a option) -> unit
+    (** @since 4.12.0 *)
+
     val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
+    val find_opt : 'a t -> key -> 'a option
+    (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
