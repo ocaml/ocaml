@@ -338,22 +338,20 @@ Line 4, characters 19-20:
 4 |   if b then x else y;;
                        ^
 Error: This expression has type
-         {M/1 : S} ->
-         M/2.t ->
-         'a M/2.u ->
-         {A/1 : S} ->
-         M/1.t -> 'a M/1.u -> {A/2 : S} -> M/1.t -> 'a M/1.u -> unit
+         {M : S} ->
+         M.t ->
+         'a M.u ->
+         {A/1 : S} -> M.t -> 'a M.u -> {A/2 : S} -> M.t -> 'a M.u -> unit
        but an expression was expected of type
          'a recursive_scoping =
-           {M/3 : S} ->
-           M/3.t -> 'a M/3.u -> ('a, ('a, unit) scoping_fn) scoping_fn
+           {M : S} -> M.t -> 'a M.u -> ('a, ('a, unit) scoping_fn) scoping_fn
        Type
          {A/1 : S} ->
-         M/3.t -> 'a M/3.u -> {A/2 : S} -> M/3.t -> 'a M/3.u -> unit
+         M/1.t -> 'a M/1.u -> {A/2 : S} -> M/1.t -> 'a M/1.u -> unit
        is not compatible with type
          ('a, ('a, unit) scoping_fn) scoping_fn =
-           {M/4 : S} -> M/4.t -> 'a M/4.u -> ('a, unit) scoping_fn
-       Type M/3.t is not compatible with type M/4.t
+           {M/2 : S} -> M/2.t -> 'a M/2.u -> ('a, unit) scoping_fn
+       Type M/1.t is not compatible with type M/2.t
 |}]
 
 (* Scope escape. *)
@@ -415,4 +413,17 @@ Error: This expression has type {M : T'} -> M.u
 type ('a, 'b) t = 'a -> {M : S with type t = 'b} -> (M.t as 'a);;
 [%%expect{|
 type ('a, 'b) t = 'a -> {M : S with type t = 'a} -> 'a constraint 'b = 'a
+|}]
+
+(* Bound module names are not mixed when there is a unification error part-way
+   through unifying a type.
+*)
+let f (x : ({X : S} -> X.t * bool)) : {Y : S} -> Y.t * unit = x;;
+[%%expect{|
+Line 1, characters 62-63:
+1 | let f (x : ({X : S} -> X.t * bool)) : {Y : S} -> Y.t * unit = x;;
+                                                                  ^
+Error: This expression has type {X : S} -> X.t * bool
+       but an expression was expected of type {Y : S} -> Y.t * unit
+       Type bool is not compatible with type unit
 |}]
