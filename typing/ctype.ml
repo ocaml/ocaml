@@ -3217,6 +3217,32 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
+  let snap_opt =
+    match (d1, d2) with
+    | (Tfunctor _, _) ->
+        (* If we hit a unification error, the partial unification may mean that
+           we have a mix of names from different sides of the [Tfunctor],
+           giving a type error that doesn't make sense to the user.
+           Here we take a snapshot so that we can reverse the partial
+           unification and recover a meaningful type error.
+
+           Without this, we would see e.g. [{A : S} -> (A.t * bool)] and
+           [{B : S} -> (B.t * unit)] raise an error with the nonsense type
+           [{A : S} -> (B.t * bool)] in its trace.
+
+           Note: We may erase some useful information by doing this. For
+           example, unifying [{A : S} -> (_ * A.t1)] and
+           [{B : S} -> (bool * B.t2)] will erase the knowledge that [_] unified
+           with [bool] successfully.
+           This useful information is never calculated if the order in the
+           tuples above are reversed, however, because of the evaluation order
+           here. With this in mind, it is probably acceptable to do this
+           erasure without need for mitigation.
+        *)
+        Some (snapshot ())
+    | _ ->
+        None
+  in
 
   begin match (d1, d2) with (* handle vars and univars specially *)
     (Tunivar _, Tunivar _) ->
@@ -3437,6 +3463,11 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
             () (* t2 has already been expanded by update_level *)
     with Unify trace ->
       Private_type_expr.set_desc t1' d1;
+      (* Erase back to the snapshot if one is given. This ensures we give a
+         sane error message for [Tfunctors]; see the comment in [snap_opt]
+         above for more detail.
+      *)
+      Option.iter backtrack snap_opt;
       raise (Unify trace)
   end
 
