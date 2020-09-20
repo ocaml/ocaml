@@ -184,6 +184,9 @@ Working version
 
 ### Standard library:
 
+- #9929: add Hashtbl.update, Hashtbl.find_or_add, and Map.find_or_add.
+  (André Duarte)
+
 - #9865: add Format.pp_print_seq
   (Raphaël Proust, review by Nicolás Ojeda Bär)
 
