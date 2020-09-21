@@ -952,9 +952,6 @@ CAMLexport void caml_leave_blocking_section() {
 
   if (self->backup_thread_running) {
     atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
-    caml_plat_lock(&self->interruptor.lock);
-    caml_plat_signal(&self->interruptor.cond);
-    caml_plat_unlock(&self->interruptor.lock);
   }
 
   caml_plat_lock(&self->domain_lock);
@@ -1207,6 +1204,10 @@ static void domain_terminate()
       s->running = 0;
       s->unique_id += Max_domains;
 
+      /* signal the interruptor condition variable
+       * because the backup thread may be waiting on it
+       */
+      caml_plat_broadcast(&s->cond);
       Assert (domain_self->backup_thread_running);
       domain_self->backup_thread_running = 0;
     }
