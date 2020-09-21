@@ -74,13 +74,20 @@ CAMLdeprecated_typedef(addr, char *);
   #define Noreturn
 #endif
 
-
-
 /* Export control (to mark primitives and to handle Windows DLL) */
+
+#ifndef CAMLDLLIMPORT
+  #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
+      && defined(__CYGWIN__)
+    #define CAMLDLLIMPORT __declspec(dllimport)
+  #else
+    #define CAMLDLLIMPORT
+  #endif
+#endif
 
 #define CAMLexport
 #define CAMLprim
-#define CAMLextern extern
+#define CAMLextern CAMLDLLIMPORT extern
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */

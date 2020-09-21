@@ -130,6 +130,8 @@ ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
 
+OC_CPPFLAGS += -DCAMLDLLIMPORT=
+
 OC_NATIVE_CPPFLAGS = -DNATIVE_CODE -DTARGET_$(ARCH)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
