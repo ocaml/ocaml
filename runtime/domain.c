@@ -249,7 +249,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->unique_id = d->interruptor.unique_id;
     d->state.state = domain_state;
     domain_state->critical_section_nesting = 0;
-    domain_state->handling_gc_interrupt = 0;
 
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
