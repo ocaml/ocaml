@@ -665,6 +665,7 @@ static void decrement_stw_domains_still_processing()
   }
 }
 
+static void caml_poll_gc_work();
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
 #ifdef DEBUG
@@ -709,7 +710,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   /* poll the GC to check for deferred work
      we do this here because blocking or waiting threads only execute
      the interrupt handler and do not poll for deferred work*/
-  caml_handle_gc_interrupt();
+  caml_poll_gc_work();
 }
 
 /* This runs the passed handler on all running domains but must only be run on *one* domain
@@ -881,25 +882,11 @@ void caml_request_minor_gc (void)
   caml_interrupt_self();
 }
 
-void caml_handle_gc_interrupt()
+static void caml_poll_gc_work()
 {
-  caml_ev_begin("handle_gc_interrupt");
-  atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   CAMLalloc_point_here;
 
-  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-    /* interrupt */
-    caml_ev_begin("handle_remote_interrupt");
-    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-      uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
-    }
-    caml_ev_pause(EV_PAUSE_YIELD);
-    caml_handle_incoming_interrupts();
-    caml_ev_resume();
-    caml_ev_end("handle_remote_interrupt");
-  }
-
+  caml_ev_begin("poll_gc_work");
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
        (uintnat)Caml_state->young_start) ||
       Caml_state->requested_minor_gc) {
@@ -926,7 +913,28 @@ void caml_handle_gc_interrupt()
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     caml_ev_end("dispatch_major_slice");
   }
-  caml_ev_end("handle_gc_interrupt");
+  caml_ev_end("poll_gc_work");
+}
+
+void caml_handle_gc_interrupt()
+{
+  atomic_uintnat* young_limit = domain_self->interrupt_word_address;
+  CAMLalloc_point_here;
+
+  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
+    /* interrupt */
+    caml_ev_begin("handle_remote_interrupt");
+    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
+      uintnat i = INTERRUPT_MAGIC;
+      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
+    }
+    caml_ev_pause(EV_PAUSE_YIELD);
+    caml_handle_incoming_interrupts();
+    caml_ev_resume();
+    caml_ev_end("handle_remote_interrupt");
+  }
+
+  caml_poll_gc_work();
 }
 
 static void caml_enter_blocking_section_default(void)
