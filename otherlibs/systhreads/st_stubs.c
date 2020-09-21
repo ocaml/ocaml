@@ -35,7 +35,9 @@
 #endif
 #include "caml/sys.h"
 #include "caml/memprof.h"
-#include "threads.h"
+
+/* threads.h is *not* included since it contains the _external_ declarations for
+   the caml_c_thread_register and caml_c_thread_unregister functions. */
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"

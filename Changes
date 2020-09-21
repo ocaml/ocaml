@@ -485,6 +485,9 @@ Working version
   it with -link.
   (David Allsopp, review by Xavier Leroy)
 
+- #9927: Restore Cygwin64 support.
+  (David Allsopp, review by Xavier Leroy)
+
 
 OCaml 4.11.1
 ------------

@@ -466,7 +466,8 @@ let link_bytecode_as_c tolink outfile with_main =
     (fun () ->
        (* The bytecode *)
        output_string outchan "\
-#define CAML_INTERNALS\
+#define CAML_INTERNALS\n\
+#define CAMLDLLIMPORT\
 \n\
 \n#ifdef __cplusplus\
 \nextern \"C\" {\

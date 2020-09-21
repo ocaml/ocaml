@@ -18,7 +18,7 @@
 #include "caml/alloc.h"
 #include <stdio.h>
 
-extern value stub1(void);
+CAMLextern value stub1(void);
 
 value stub2(void) {
   printf("This is stub2, calling stub1:\n"); fflush(stdout);
