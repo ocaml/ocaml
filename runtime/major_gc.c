@@ -273,7 +273,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 }
 
 
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#if defined(NO_NAKED_POINTERS) && defined(NAKED_POINTERS_CHECKER)
 
 #ifdef _WIN32
 #include <windows.h>
@@ -316,12 +316,6 @@ static inline int safe_load (header_t * addr, /*out*/ header_t * contents)
 }
 #endif
 
-#if SIZEOF_LONG == SIZEOF_PTR
-#define VAL_ONE 1ul
-#else
-#define VAL_ONE 1ull
-#endif
-
 static int is_pointer_safe (value v, value *p)
 {
   header_t h;
@@ -339,15 +333,17 @@ static int is_pointer_safe (value v, value *p)
   /* For the pointer to be considered safe, either the given pointer is in heap
    * or the (out of heap) pointer has a black header and its size is < 2 ** 40
    * words (128 GB). If not, we report a warning. */
-  if (Is_in_heap (v) || (Is_black_hd(h) && Wosize_hd(h) < (VAL_ONE << 40)))
+  if (Is_in_heap (v) ||
+      (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40)))
     return 1;
 
   if (!Is_black_hd(h)) {
     fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
-                    "non-black head (tag=%d)\n", p, (void*)v, t);
+                     "non-black head (tag=%d)\n", p, (void*)v, t);
   } else {
-    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
-                      "suspiciously large size: %lu words\n",
+    fprintf (stderr,
+             "Out-of-heap pointer at %p of value %p has "
+             "suspiciously large size: %" ARCH_INT64_PRINTF_FORMAT "u words\n",
               p, (void*)v, Wosize_hd(h));
   }
   return 0;
@@ -362,20 +358,23 @@ static int is_pointer_safe (value v, value *p)
 
 void caml_darken (value v, value *p /* not used */)
 {
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+  header_t h;
+  tag_t t;
+#ifdef NO_NAKED_POINTERS
   if (Is_block (v) && !Is_young (v)) {
-
+#ifdef NAKED_POINTERS_CHECKER
     if (!is_pointer_safe(v,p)) return;
 
     /* Atoms never need to be marked. */
     if (Wosize_val (v) == 0)
       return;
+#endif /* NAKED_POINTERS_CHECKER */
 
 #else
   if (Is_block (v) && Is_in_heap (v)) {
 #endif
-    header_t h = Hd_val (v);
-    tag_t t = Tag_hd (h);
+    h = Hd_val (v);
+    t = Tag_hd (h);
     if (t == Infix_tag){
       v -= Infix_offset_val(v);
       h = Hd_val (v);
@@ -498,21 +497,17 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
 
   child = Field (v, i);
 
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-  if (Is_block (child)
-        && ! Is_young (child)
-        /* Closure blocks contain code pointers at offsets that cannot
-           be reliably determined, so we always use the page table when
-           marking such values. */
-        && (!(Tag_val (v) == Closure_tag || Tag_val (v) == Infix_tag) ||
-            Is_in_heap (child))) {
+#ifdef NO_NAKED_POINTERS
+  if (Is_block (child) && ! Is_young (child)) {
 
+#ifdef NAKED_POINTERS_CHECKER
     if (!is_pointer_safe(child, &Field(v,i)))
-      return gray_vals_ptr;
-
+      return ;
     /* Atoms never need to be marked. */
     if (Wosize_val (child) == 0)
-      return gray_vals_ptr;
+      return ;
+#endif
+
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif

@@ -11,7 +11,7 @@ conflict-class: "ocaml-core-compiler"
 flags: compiler
 setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
 build: [
-  ["./configure" "--prefix=%{prefix}%" "--disable-naked-pointers"]
+  ["./configure" "--prefix=%{prefix}%"]
   [make "-j%{jobs}%"]
 ]
 install: [make "install"]

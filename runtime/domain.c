@@ -88,5 +88,7 @@ void caml_init_domain ()
   Caml_state->eventlog_startup_timestamp = 0;
   Caml_state->eventlog_out = NULL;
 
+  #ifdef NAKED_POINTERS_CHECKER
   Caml_state->checking_pointer_pc = NULL;
+  #endif
 }
