@@ -756,13 +756,15 @@ int caml_try_run_on_all_domains_with_spin_work(
   int i;
   uintnat domains_participating = 0;
 
+  caml_gc_log("requesting STW");
+
   // Don't take the lock if there's already a stw leader
-  if( atomic_load_acq(&stw_leader) ) {
+  if (atomic_load_acq(&stw_leader)) {
+    caml_ev_begin("stw/leader_collision");
     caml_handle_incoming_interrupts();
+    caml_ev_end("stw/leader_collision");
     return 0;
   }
-
-  caml_gc_log("requesting STW");
 
   /* Try to take the lock by setting ourselves as the stw_leader.
      If it fails, handle interrupts (probably participating in
@@ -770,7 +772,9 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_plat_lock(&all_domains_lock);
   if (atomic_load_acq(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
+    caml_ev_begin("stw/leader_collision");
     caml_handle_incoming_interrupts();
+    caml_ev_end("stw/leader_collision");
     return 0;
   } else {
     atomic_store_rel(&stw_leader, (uintnat)domain_self);
@@ -886,7 +890,6 @@ static void caml_poll_gc_work()
 {
   CAMLalloc_point_here;
 
-  caml_ev_begin("poll_gc_work");
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
        (uintnat)Caml_state->young_start) ||
       Caml_state->requested_minor_gc) {
@@ -913,7 +916,6 @@ static void caml_poll_gc_work()
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     caml_ev_end("dispatch_major_slice");
   }
-  caml_ev_end("poll_gc_work");
 }
 
 void caml_handle_gc_interrupt()
@@ -921,6 +923,7 @@ void caml_handle_gc_interrupt()
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   CAMLalloc_point_here;
 
+  caml_ev_begin("handle_gc_interrupt");
   if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
     caml_ev_begin("handle_remote_interrupt");
@@ -935,6 +938,7 @@ void caml_handle_gc_interrupt()
   }
 
   caml_poll_gc_work();
+  caml_ev_end("handle_gc_interrupt");
 }
 
 static void caml_enter_blocking_section_default(void)
