@@ -637,7 +637,7 @@ natruntop:
 	$(MAKE) core
 	$(MAKE) opt
 	$(MAKE) ocamlnat
-	@$(EXTRAPATH) $(RLWRAP) $(NATRUNTOP)
+	@$(FLEXLINK_ENV) $(EXTRAPATH) $(RLWRAP) $(NATRUNTOP)
 
 # Native dynlink
 
