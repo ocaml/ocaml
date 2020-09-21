@@ -208,23 +208,7 @@ let call_linker mode output_name files extra =
   )
 
 let linker_is_flexlink =
-  let command =
-    String.trim @@ Option.value !Clflags.c_compiler ~default:Config.mkexe in
-  if String.length command < 2 then false else
-    (* Get the first "word" of command *)
-    let full_path =
-      (* This is not comprehensive, but should be good enough for Windows *)
-      if command.[0] = '"' then
-        match String.index_from command 1 '"' with
-        | idx -> String.sub command 1 (idx - 1)
-        | exception Not_found -> String.sub command 1 (String.length command - 1)
-      else
-        match String.index_from command 1 ' ' with
-        | idx -> String.sub command 0 idx
-        | exception Not_found -> command
-    in
-    let prog =
-      let prog = Filename.basename full_path in
-      Option.value ~default:prog @@ Filename.chop_suffix_opt prog ~suffix:".exe"
-    in
-      String.lowercase_ascii prog = "flexlink"
+  (* Config.mkexe, Config.mkdll and Config.mkmaindll are all flexlink
+     invocations for the native Windows ports and for Cygwin, if shared library
+     support is enabled. *)
+  Sys.win32 || Config.supports_shared_libraries && Sys.cygwin
