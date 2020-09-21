@@ -29,7 +29,11 @@
           (run sed -i s/loc_FUNCTION/loc_POS/ %{input-file})
           (run awk -v dune_wrapped=true
                  -f %{dep:expand_module_aliases.awk} %{input-file})))
-      stdlib))))
+      stdlib)
+     (; FIXME: remove after 4.12 (this erases injectivity annotations)
+      (action (run sed "s/\\!\\([-+]*'\\)/\\1/g" %{input-file}))
+      atomic bigarray camlinternalAtomic camlinternalOO ephemeron hashtbl map
+      moreLabels queue stack stream weak))))
 
 (rule
  (targets sys.ml)
