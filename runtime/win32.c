@@ -410,7 +410,8 @@ CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
 
-int caml_read_directory(wchar_t * dirname, struct ext_table * contents)
+CAMLexport int caml_read_directory(wchar_t * dirname,
+                                   struct ext_table * contents)
 {
   size_t dirnamelen;
   wchar_t * template;

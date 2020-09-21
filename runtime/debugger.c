@@ -45,7 +45,7 @@ void caml_debugger(enum event_kind event, value param)
 {
 }
 
-void caml_debugger_cleanup_fork(void)
+CAMLexport void caml_debugger_cleanup_fork(void)
 {
 }
 
@@ -562,7 +562,7 @@ void caml_debugger(enum event_kind event, value param)
   }
 }
 
-void caml_debugger_cleanup_fork(void)
+CAMLexport void caml_debugger_cleanup_fork(void)
 {
   /* We could remove all of the event points, but closing the connection
    * means that they'll just be skipped anyway. */

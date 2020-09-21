@@ -80,13 +80,13 @@ void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
 value caml_execute_signal_exn(int signal_number, int in_signal_handler);
-void caml_record_signal(int signal_number);
-value caml_process_pending_signals_exn(void);
+CAMLextern void caml_record_signal(int signal_number);
+CAMLextern value caml_process_pending_signals_exn(void);
 void caml_set_action_pending (void);
 value caml_do_pending_actions_exn (void);
 value caml_process_pending_actions_with_root (value extra_root); // raises
 int caml_set_signal_action(int signo, int action);
-void caml_setup_stack_overflow_detection(void);
+CAMLextern void caml_setup_stack_overflow_detection(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);

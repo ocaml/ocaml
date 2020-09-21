@@ -283,7 +283,7 @@ void caml_init_signals(void)
 #endif
 }
 
-void caml_setup_stack_overflow_detection(void)
+CAMLexport void caml_setup_stack_overflow_detection(void)
 {
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   stack_t stk;

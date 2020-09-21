@@ -81,4 +81,4 @@ int caml_set_signal_action(int signo, int action)
     return 0;
 }
 
-void caml_setup_stack_overflow_detection(void) {}
+CAMLexport void caml_setup_stack_overflow_detection(void) {}

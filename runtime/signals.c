@@ -73,7 +73,7 @@ static int check_for_pending_signals(void)
 
 /* Execute all pending signals */
 
-value caml_process_pending_signals_exn(void)
+CAMLexport value caml_process_pending_signals_exn(void)
 {
   int i;
 #ifdef POSIX_SIGNALS
@@ -129,7 +129,8 @@ void caml_set_action_pending(void)
      caml_garbage_collection and caml_alloc_small_dispatch.
 */
 
-CAMLno_tsan void caml_record_signal(int signal_number)
+CAMLno_tsan
+CAMLexport void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   signals_are_pending = 1;

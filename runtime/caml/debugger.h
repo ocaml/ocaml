@@ -35,7 +35,7 @@ enum event_kind {
 
 void caml_debugger_init (void);
 void caml_debugger (enum event_kind event, value param);
-void caml_debugger_cleanup_fork (void);
+CAMLextern void caml_debugger_cleanup_fork (void);
 
 opcode_t caml_debugger_saved_instruction(code_t pc);
 
