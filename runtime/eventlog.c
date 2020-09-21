@@ -54,7 +54,14 @@ struct event_buffer {
 };
 
 static __thread struct event_buffer* evbuf;
+static __thread int is_backup_thread = 0;
+
 static pthread_key_t evbuf_pkey; // same as evbuf, used for destructor
+
+void caml_ev_tag_self_as_backup_thread ()
+{
+  is_backup_thread = 1;
+}
 
 static void thread_setup_evbuf()
 {
@@ -65,7 +72,7 @@ static void thread_setup_evbuf()
 
   evbuf->ev_flushed = 0;
   atomic_store_rel(&evbuf->ev_generated, 0);
-  evbuf->domain_unique_id = Caml_state->unique_id;
+  evbuf->domain_unique_id = 2 * Caml_state->unique_id + is_backup_thread;
 
   /* add to global list */
   caml_plat_lock(&lock);

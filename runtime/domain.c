@@ -391,6 +391,7 @@ static void* backup_thread_func(void* v)
 
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
+  caml_ev_tag_self_as_backup_thread();
 
   msg = atomic_load_acq (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
@@ -880,13 +881,15 @@ void caml_request_minor_gc (void)
   caml_interrupt_self();
 }
 
-void caml_handle_gc_interrupt() {
+void caml_handle_gc_interrupt()
+{
+  caml_ev_begin("handle_gc_interrupt");
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   CAMLalloc_point_here;
 
   if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
-    caml_ev_begin("handle_interrupt");
+    caml_ev_begin("handle_remote_interrupt");
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
       atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
@@ -894,7 +897,7 @@ void caml_handle_gc_interrupt() {
     caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
     caml_ev_resume();
-    caml_ev_end("handle_interrupt");
+    caml_ev_end("handle_remote_interrupt");
   }
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
@@ -923,6 +926,7 @@ void caml_handle_gc_interrupt() {
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     caml_ev_end("dispatch_major_slice");
   }
+  caml_ev_end("handle_gc_interrupt");
 }
 
 static void caml_enter_blocking_section_default(void)

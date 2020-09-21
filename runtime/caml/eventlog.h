@@ -10,6 +10,7 @@ void caml_ev_counter(const char* name, uint64_t val);
 void caml_ev_begin_flow(const char* name, uintnat id);
 void caml_ev_end_flow(const char* name, uintnat id);
 void caml_ev_global_sync(void);
+void caml_ev_tag_self_as_backup_thread(void);
 
 
 /* FIXME: blocking/resuming not currently traced */
