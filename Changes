@@ -483,7 +483,7 @@ Working version
 
 - #9925: Correct passing -fdebug-prefix-map to flexlink on Cygwin by prefixing
   it with -link.
-  (David Allsopp, review by ???)
+  (David Allsopp, review by Xavier Leroy)
 
 
 OCaml 4.11.1
