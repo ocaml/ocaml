@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Compenv
-
 let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
              options are:"
 
@@ -43,7 +41,7 @@ let prepare ppf =
   try
     let res =
       let objects =
-        List.rev (!preload_objects @ !first_objfiles)
+        List.rev (!preload_objects @ !Compenv.first_objfiles)
       in
       List.for_all (Topdirs.load_file ppf) objects
     in
