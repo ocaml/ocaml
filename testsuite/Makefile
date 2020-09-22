@@ -52,14 +52,18 @@ else # Windows
   endif
 endif
 
-ifeq "$(FLEXLINK_ENV)" ""
-  ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+ifeq "$(ocamltest_program)" ""
+  ocamltest = $(error ocamltest not found in $(ocamltest_directory))
 else
-  MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
-                                   $(FLEXLINK_FLAGS)
+  ifeq "$(FLEXLINK_ENV)" ""
+    ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+  else
+    MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
+                                     $(FLEXLINK_FLAGS)
 
-  ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
-                               $(ocamltest_program)
+    ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
+                                 $(ocamltest_program)
+  endif
 endif
 
 # PROMOTE is only meant to be used internally in recursive calls;
