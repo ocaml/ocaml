@@ -113,6 +113,16 @@ CAMLdeprecated_typedef(addr, char *);
 #error "How do I align values on this platform?"
 #endif
 
+/* Prefetching */
+
+#ifdef CAML_INTERNALS
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#define caml_prefetch(p) __builtin_prefetch((p), 1, 3)
+#else
+#define caml_prefetch(p)
+#endif
+#endif
+
 /* CAMLunused is preserved for compatibility reasons.
    Instead of the legacy GCC/Clang-only
      CAMLunused foo;
