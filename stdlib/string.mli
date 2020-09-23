@@ -190,7 +190,7 @@ val escaped : string -> string
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
     i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
-    [escape s] fails). *)
+    [escaped s] fails). *)
 
 val index : string -> char -> int
 (** [index s c] returns the index of the first
