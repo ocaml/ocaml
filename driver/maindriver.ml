@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 open Clflags
-open Compenv
 
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
@@ -26,11 +25,11 @@ let main argv ppf =
     ["-depend", Arg.Unit Makedepend.main_from_option,
      "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
   match
-    readenv ppf Before_args;
-    Clflags.parse_arguments argv anonymous usage;
+    Compenv.readenv ppf Before_args;
+    Clflags.parse_arguments argv Compenv.anonymous usage;
     Compmisc.read_clflags_from_env ();
     if !Clflags.plugin then
-      fatal "-plugin is only supported up to OCaml 4.08.0";
+      Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
       Compenv.process_deferred_actions
         (ppf,
@@ -45,20 +44,21 @@ let main argv ppf =
         exit 2
       end
     end;
-    readenv ppf Before_link;
+    Compenv.readenv ppf Before_link;
     if
       List.length
         (List.filter (fun x -> !x)
-           [make_archive;make_package;stop_early;output_c_object])
+           [make_archive;make_package;Compenv.stop_early;output_c_object])
         > 1
     then begin
       let module P = Clflags.Compiler_pass in
       match !stop_after with
       | None ->
-        fatal "Please specify at most one of -pack, -a, -c, -output-obj";
+          Compenv.fatal
+            "Please specify at most one of -pack, -a, -c, -output-obj";
       | Some ((P.Parsing | P.Typing) as p) ->
         assert (P.is_compilation_pass p);
-        Printf.ksprintf fatal
+        Printf.ksprintf Compenv.fatal
           "Options -i and -stop-after (%s) \
            are  incompatible with -pack, -a, -output-obj"
           (String.concat "|"
@@ -70,37 +70,37 @@ let main argv ppf =
 
       Bytelibrarian.create_archive
         (Compenv.get_objfiles ~with_ocamlparam:false)
-        (extract_output !output_name);
+        (Compenv.extract_output !output_name);
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path ();
-      let extracted_output = extract_output !output_name in
-      let revd = get_objfiles ~with_ocamlparam:false in
+      let extracted_output = Compenv.extract_output !output_name in
+      let revd = Compenv.get_objfiles ~with_ocamlparam:false in
       Compmisc.with_ppf_dump ~file_prefix:extracted_output (fun ppf_dump ->
         Bytepackager.package_files ~ppf_dump (Compmisc.initial_env ())
           revd (extracted_output));
       Warnings.check_fatal ();
     end
-    else if not !stop_early && !objfiles <> [] then begin
+    else if not !Compenv.stop_early && !objfiles <> [] then begin
       let target =
         if !output_c_object && not !output_complete_executable then
-          let s = extract_output !output_name in
+          let s = Compenv.extract_output !output_name in
           if (Filename.check_suffix s Config.ext_obj
             || Filename.check_suffix s Config.ext_dll
             || Filename.check_suffix s ".c")
           then s
           else
-            fatal
+            Compenv.fatal
               (Printf.sprintf
                  "The extension of the output file must be .c, %s or %s"
                  Config.ext_obj Config.ext_dll
               )
         else
-          default_output !output_name
+          Compenv.default_output !output_name
       in
       Compmisc.init_path ();
-      Bytelink.link (get_objfiles ~with_ocamlparam:true) target;
+      Bytelink.link (Compenv.get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with

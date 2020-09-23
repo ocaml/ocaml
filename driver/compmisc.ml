@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Compenv
-
 (* Initialize the search path.
    [dir] is always searched first (default: the current directory),
    then the directories specified with the -I option (in command-line order),
@@ -28,7 +26,8 @@ let init_path ?(dir="") () =
       !Clflags.include_dirs
   in
   let dirs =
-    !last_include_dirs @ dirs @ Config.flexdll_dirs @ !first_include_dirs
+    !Compenv.last_include_dirs @ dirs @ Config.flexdll_dirs @
+    !Compenv.first_include_dirs
   in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in

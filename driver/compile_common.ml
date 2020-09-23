@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 open Misc
-open Compenv
 
 type info = {
   source_file : string;
@@ -33,7 +32,7 @@ let annot i = i.output_prefix ^ ".annot"
 
 let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
   Compmisc.init_path ();
-  let module_name = module_of_filename source_file output_prefix in
+  let module_name = Compenv.module_of_filename source_file output_prefix in
   Env.set_unit_name module_name;
   let env = Compmisc.initial_env() in
   let dump_file = String.concat "." [output_prefix; dump_ext] in

@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Compenv
 open Parsetree
 module String = Misc.Stdlib.String
 
@@ -635,7 +634,7 @@ let run_main argv =
          "<plugin>  (no longer supported)";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
-     "-ppx", Arg.String (add_to_list first_ppx),
+     "-ppx", Arg.String (add_to_list Compenv.first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
      "-shared", Arg.Set shared,
          " Generate dependencies for native plugin files (.cmxs targets)";
