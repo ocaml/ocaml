@@ -215,7 +215,7 @@ val escaped : string -> string
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
     i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
-    [escape s] fails).
+    [escaped s] fails).
 
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
