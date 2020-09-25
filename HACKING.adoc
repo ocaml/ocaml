@@ -48,12 +48,11 @@ See also our <<tips,development tips and tricks>>, for example on how to
 There is always a lot of potential tasks, both for old and
 newcomers. Here are various potential projects:
 
-* http://caml.inria.fr/mantis/view_all_bug_page.php[The OCaml
+* https://github.com/ocaml/ocaml/issues[The OCaml
   bugtracker] contains reported bugs and feature requests. Some
   changes that should be accessible to newcomers are marked with the
-  tag link:++http://caml.inria.fr/mantis/search.php?
-project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job++[
-  junior_job].
+  tag link:++https://github.com/ocaml/ocaml/issues?q=is%3Aopen+is%3Aissue+label%3Anewcomer-job++[
+  newcomer-job].
 
 * The
   https://github.com/ocamllabs/compiler-hacking/wiki/Things-to-work-on[OCaml
