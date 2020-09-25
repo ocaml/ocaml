@@ -24,10 +24,8 @@ open Btype
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
-    let ty = repr ty in
-    if ty.level >= lowest_level then begin
-      ty.level <- pivot_level - ty.level;
-      match ty.desc with
+    mark_type_node_with ty
+      begin fun ty -> match ty.desc with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
       | Tvariant row ->
@@ -41,7 +39,7 @@ let free_vars ?(param=false) ty =
       (* XXX: What about Tobject ? *)
       | _ ->
           iter_type_expr loop ty
-    end
+      end
   in
   loop ty;
   unmark_type ty;
@@ -182,7 +180,8 @@ let extension_descr ~current_unit path_ext ext =
       cstr_uid = ext.ext_uid;
     }
 
-let none = {desc = Ttuple []; level = -1; scope = Btype.generic_level; id = -1}
+let none = Internal.lock
+ {desc = Ttuple []; level = -1; scope = Btype.generic_level; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
@@ -243,16 +242,3 @@ let labels_of_type ty_path decl =
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
   | Type_variant _ | Type_abstract | Type_open -> []
-
-(* Set row_name in Env, cf. GPR#1204/1329 *)
-let set_row_name decl path =
-  match decl.type_manifest with
-    None -> ()
-  | Some ty ->
-      let ty = repr ty in
-      match ty.desc with
-        Tvariant row when static_row row ->
-          let row = {(row_repr row) with
-                     row_name = Some (path, decl.type_params)} in
-          ty.desc <- Tvariant row
-      | _ -> ()

@@ -19,7 +19,6 @@ open Asttypes
 
 (* Type expressions for the core language *)
 
-
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;

@@ -568,10 +568,8 @@ let really_closed = ref None
    and only returns a [variable list].
  *)
 let rec free_vars_rec real ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    ty.level <- pivot_level - ty.level;
-    begin match ty.desc, !really_closed with
+  mark_type_node_with ty
+    begin fun ty -> match ty.desc, !really_closed with
       Tvar _, _ ->
         free_variables := (ty, real) :: !free_variables
     | Tconstr (path, tl, _), Some env ->
@@ -596,8 +594,7 @@ let rec free_vars_rec real ty =
         if not (static_row row) then free_vars_rec false row.row_more
     | _    ->
         iter_type_expr (free_vars_rec true) ty
-    end;
-  end
+    end
 
 let free_vars ?env ty =
   free_variables := [];
@@ -730,8 +727,10 @@ let duplicate_class_type ty =
 *)
 let rec generalize ty =
   let ty = repr ty in
+  (* generalize the type iff ty.level <= !current_level *)
   if (ty.level > !current_level) && (ty.level <> generic_level) then begin
     set_level ty generic_level;
+    (* recur into abbrev for the speed *)
     begin match ty.desc with
       Tconstr (_, _, abbrev) ->
         iter_abbrev generalize !abbrev
@@ -1157,8 +1156,8 @@ let rec copy ?partial ?keep_names scope ty =
     For_copy.save_desc scope ty desc;
     let t = newvar() in          (* Stub *)
     set_scope t ty.scope;
-    ty.desc <- Tsubst t;
-    t.desc <-
+    (Internal.unlock ty).desc <- Tsubst t;
+    (Internal.unlock t).desc <-
       begin match desc with
       | Tconstr (p, tl, _) ->
           let abbrevs = proper_abbrevs p tl !abbreviations in
@@ -1188,7 +1187,8 @@ let rec copy ?partial ?keep_names scope ty =
           begin match more.desc with
             Tsubst {desc = Ttuple [_;ty2]} ->
               (* This variant type has been already copied *)
-              ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+              (Internal.unlock ty).desc <- Tsubst ty2;
+	      (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
               (* If the row variable is not generic, we must keep it *)
@@ -1196,6 +1196,8 @@ let rec copy ?partial ?keep_names scope ty =
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
+		  (* TODO: is this case possible?
+		     possibly an interaction with (copy more) below? *)
                 | Tconstr _ | Tnil ->
                     For_copy.save_desc scope more more.desc;
                     copy more
@@ -1235,7 +1237,7 @@ let rec copy ?partial ?keep_names scope ty =
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
-              more.desc <- Tsubst(newgenty(Ttuple[more';t]));
+              (Internal.unlock more).desc <- Tsubst(newgenty(Ttuple[more';t]));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
@@ -1435,7 +1437,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
     if ty.level <> generic_level then ty else
     let t = newvar () in
     delayed_copy :=
-      lazy (t.desc <- Tlink (copy cleanup_scope ty))
+      lazy ((Internal.unlock t).desc <- Tlink (copy cleanup_scope ty))
       :: !delayed_copy;
     t
   else try
@@ -1453,7 +1455,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           visited
     in
     let copy_rec = copy_sep cleanup_scope fixed free bound visited in
-    t.desc <-
+    (Internal.unlock t).desc <-
       begin match ty.desc with
       | Tvariant row0 ->
           let row = row_repr row0 in
@@ -1910,6 +1912,7 @@ let local_non_recursive_abbrev env p ty =
 
 (* Since we cannot duplicate universal variables, unification must
    be done at meta-level, using bindings in univar_pairs *)
+(* TODO: use find_opt *)
 let rec unify_univar t1 t2 = function
     (cl1, cl2) :: rem ->
       let find_univ t cl =
@@ -1938,7 +1941,8 @@ let occur_univar env ty =
     let ty = repr ty in
     if ty.level >= lowest_level &&
       if TypeSet.is_empty bound then
-        (ty.level <- pivot_level - ty.level; true)
+        ((Internal.unlock ty).level <- pivot_level - ty.level; true)
+        (* TODO: (mark_type_node ty; true)? *)
       else try
         let bound' = TypeMap.find ty !visited in
         if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then
