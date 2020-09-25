@@ -164,6 +164,17 @@ type file =
   | Unit of string * unit_infos * Digest.t
   | Library of string * library_infos
 
+let object_file_name_of_file = function
+  | Unit (fname, _, _) -> Some (Filename.chop_suffix fname ".cmx" ^ ext_obj)
+  | Library (fname, infos) ->
+      let obj_file = Filename.chop_suffix fname ".cmxa" ^ ext_lib in
+      (* MSVC doesn't support empty .lib files, and macOS struggles to make
+         them (#6550), so there shouldn't be one if the .cmxa contains no
+         units. The file_exists check is added to be ultra-defensive for the
+         case where a user has manually added things to the .a/.lib file *)
+      if infos.lib_units = [] && not (Sys.file_exists obj_file) then None else
+      Some obj_file
+
 let read_file obj_name =
   let file_name =
     try
