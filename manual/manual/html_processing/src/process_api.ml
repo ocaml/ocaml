@@ -27,12 +27,12 @@ let search_widget with_description =
   let search_decription = if with_description
     then {|<span class="search_comment">(search values, type signatures, and descriptions - case sensitive)<div class="search_help"><ul><li>You may search bare values, like <code>map</code>, or indicate the module, like <code>List.map</code>, or type signatures, like <code>int -> float</code>.</li><li>To combine several keywords, just separate them by a space - except if you want to search type signatures: then you must use <strong>two</strong> spaces as separators.</li><li>You may use the special chars <code>^</code> and <code>$</code> to indicate where the matched string should start or end, respectively.</li></ul></div></span>|}
     else "" in
-  sprintf {|<div class="api_search"><input type="text" name="apisearch" id="api_search"
+  sprintf {|<div class="api_search"><input type="text" name="apisearch" id="api_search" class="api_search"
 	 oninput    = "mySearch(%b);"
          onkeypress = "this.oninput();"
          onclick    = "this.oninput();"
 	 onpaste    = "this.oninput();">
-<img src="search_icon.svg" alt="Search" class="svg" onclick="mySearch(%b)">%s</div>
+<img src="search_icon.svg" alt="Search" class="api_search svg" onclick="mySearch(%b)">%s</div>
 <div id="search_results"></div>|} with_description with_description search_decription
   |> parse
 
@@ -67,6 +67,8 @@ let process ?(search=true) ~version config file out =
   end;
   create_element "script" ~attributes:["src","scroll.js"]
   |> append_child head;
+  create_element "script" ~attributes:["src","navigation.js"]
+  |> append_child head;
 
   (* Add favicon *)
   let head = soup $ "head" in
@@ -82,7 +84,7 @@ let process ?(search=true) ~version config file out =
 
   (* Create TOC with H2 and H3 elements *)
   (* Cf Scanf for an example with H3 elements *)
-  let header = create_element "header" in
+  let header = create_element ~id:"sidebar" "header" in
   prepend_child body header;
   let nav = create_element "nav" ~class_:"toc" in
   append_child header nav;
@@ -148,6 +150,9 @@ let process ?(search=true) ~version config file out =
   (* Add version number *)
   add_version_link nav (config.title ^ "API Version " ^ version) releases_url;
 
+  (* Add sidebar button for mobile navigation *)
+  add_sidebar_button body;
+  
   (* Add logo *)
   prepend_child header (logo_html
                           ((if config.title = "" then "" else "../") ^
@@ -357,7 +362,7 @@ let () =
   let args = Sys.argv |> Array.to_list |> List.tl in
   let config = if List.mem "compiler" args
     then { src_dir = html_maindir // "compilerlibref";
-           dst_dir = api_dir // "compilerlibref"; title = "Compiler"}
+           dst_dir = api_dir // "compilerlibref"; title = "Compiler "}
     else { src_dir = html_maindir // "libref";
            dst_dir = api_dir; title = ""} in
   let overwrite = List.mem "overwrite" args in

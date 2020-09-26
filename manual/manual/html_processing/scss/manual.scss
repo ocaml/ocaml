@@ -12,15 +12,10 @@
 
 .content{
     @include content-frame;
-    &>header{
-	margin-bottom:30px
-    }
-    &>header nav{
-	font-family:"Fira Sans",Helvetica,Arial,sans-serif
-    }
-    .part_title{
+    #part-title{
 	float:left;
 	color:#777;
+	cursor: context-menu;
 	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
 	span{ /* menu icon */
 	    font-size:22px;
@@ -31,7 +26,7 @@
     .bottom-navigation {
 	margin-bottom:1em;
 	a.next {
-	float: right;
+	    float: right;
 	}
     }
     .copyright{
@@ -70,6 +65,9 @@ b{
 }
 em,i{
     font-style:italic
+}
+.ocaml {
+    background:#f7f5f4;
 }
 .ocaml,pre{
     margin-top:.8em;
@@ -201,12 +199,7 @@ section+section{
     margin-top:25px}
 ul.itemize{
     list-style:none}
-ul.itemize li::before{
-    content:"▶";
-    color:$logocolor;
-    font-size:smaller;
-    margin-right:4px;
-    margin-left:-1em}
+ul.itemize li::before{@include caret;}
 
 /* Table of Contents in the Left-hand sidebar */
 nav.toc{
@@ -236,24 +229,8 @@ nav.toc{
     }
 }
 
-/* Mobile */
-@media only screen and (max-width:95ex){
-    .content{
-	margin:auto;
-	padding:2em
-    }
-    
-    nav.toc{
-	@include nav-toc-mobile; 
-    }
-    header{
-	@include header-mobile;
-    }
-    
-}
-
 .pre,pre{
-    background:linear-gradient(to left,#fff 0,#ede8e5 100%)
+    /*background:linear-gradient(to left,#fff 0,#ede8e5 100%)*/
 }
 code.caml-output.ok,div.caml-output.ok,span.c006{
     color:#045804
@@ -275,13 +252,16 @@ blockquote.quote{
 	display:none;
     }
 }
-ul.part_menu{
+#part-menu{
     font-family:"Fira Sans";
     text-align:right;
-    list-style:none
+    list-style:none;
+    overflow-y:hidden;
+    transition:height 0.3s;
 }
-ul.part_menu li.active a{
-    color:#000
+#part-menu li.active a{
+    color:#000;
+    &::before{@include caret;}
 }
 span.c003{
     font-family:"Fira Mono",courier;
@@ -326,4 +306,19 @@ span.c013{
 }
 
 
-
+/* Mobile */
+@media only screen and (max-width:95ex){
+    @include mobile;
+    @include sidebar-button;
+    .content #part-menu{
+	    display:inline-block;
+	    height:0;
+	    width:100%;
+	}
+       nav.toc{
+	@include nav-toc-mobile; 
+    }
+    header{
+	@include header-mobile;
+    }
+} 

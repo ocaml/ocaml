@@ -184,18 +184,23 @@ let update_navigation soup toc =
         add_class "next" (div $$ "a" |> R.last);
       end
 
-(* Create a new file by cloning the structure of "soup", and inserting the
-   content of external file (hence preserving TOC and headers) *)
+(* Create a new file by cloning the structure of "soup", deleting everything
+   after the "h1", and inserting the content of external file (hence preserving
+   TOC and headers) *)
 let clone_structure soup toc xfile =
   let xternal = parse (load_html xfile) in
   update_navigation xternal toc;
   Option.iter delete (xternal $? "hr");
   let xbody = xternal $ "body" in
   let clone = parse (to_string soup) in
-  let header = clone $ "header" in
-  insert_after header xbody;
+  let header = soup $ "header" |> to_string |> parse in
+  let title = clone $ "h1" in
+  next_siblings title
+  |> iter delete;
+  insert_after title xbody;
   create_element ~id:"start-section" "a"
-  |> insert_after header;
+  |> insert_after title;
+  insert_after title header;
   next_siblings xbody
   |> iter delete;
   insert_after xbody (copyright ());
@@ -251,13 +256,14 @@ let convert version (part_title, chapters) toc_table (file, title) =
   let head = soup $ "head" in
   create_element "script" ~attributes:["src","scroll.js"]
   |> append_child head;
+  create_element "script" ~attributes:["src","navigation.js"]
+  |> append_child head;
+
 
   (* Wrap body. *)
   let c = if file = "index.html" then ["manual"; "content"; "index"]
     else ["manual"; "content"] in
   let body = wrap_body ~classes:c soup in
-
-  update_navigation soup toc_table;
 
   if file = "index.html" then convert_index version soup;
 
@@ -267,6 +273,15 @@ let convert version (part_title, chapters) toc_table (file, title) =
     | Some t -> if classes t <> [] (* as in libthreads.html or parsing.html *)
         then (dbg "We don't promote <UL> to TOC for file %s" file; None)
         else Some t in
+
+  let () = match soup $? "h2.section", toc with
+    | None, Some toc ->
+        (* If file has "no content" (sections), we clone the toc to leave it in
+           the main content. *)
+        let original_toc = parse (to_string toc) in
+        insert_after toc original_toc
+    | _ -> () in
+
   let nav = create_element "nav" ~class_:"toc" in
   let () = match toc with
     | None -> prepend_child body nav
@@ -340,7 +355,7 @@ let convert version (part_title, chapters) toc_table (file, title) =
   add_version_link nav version_text releases_url;
 
   (* Create new menu *)
-  let menu = create_element "ul" ~class_:"part_menu" in
+  let menu = create_element "ul" ~id:"part-menu" in
   List.iter (fun (href, title) ->
       let a = create_element "a" ~inner_text:title ~attributes:["href", href] in
       let li = if href = file
@@ -351,13 +366,16 @@ let convert version (part_title, chapters) toc_table (file, title) =
   (* let body = soup $ "div.content" in *)
   prepend_child body menu;
 
-  (* Add part_title just before the part_menu *)
+  (* Add part_title just before the part-menu *)
   if part_title <> "" then begin
-    let nav = create_element ~class_:"part_title" "nav" ~inner_text:part_title in
+    let nav = create_element ~id:"part-title" "nav" ~inner_text:part_title in
     create_element "span" ~inner_text:"☰"
     |> prepend_child nav;
     prepend_child body nav
   end;
+
+  (* Add side-bar button before part_title *)
+  add_sidebar_button body;
 
   (* Add logo *)
   begin match soup $? "header" with
@@ -397,6 +415,9 @@ let convert version (part_title, chapters) toc_table (file, title) =
               rf::list
             end else list) []
   in
+
+  (* Bottom navigation links *)
+  update_navigation soup toc_table;
 
   (* Add copyright *)
   append_child body (copyright ());

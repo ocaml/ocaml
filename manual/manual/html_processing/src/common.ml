@@ -93,6 +93,12 @@ let add_version_link nav text url =
   append_child vnum a;
   prepend_child nav vnum
 
+let add_sidebar_button body =
+  let btn = create_element "div" ~id:"sidebar-button" in
+  create_element "span" ~inner_text:"☰"
+  |> prepend_child btn;
+  prepend_child body btn
+
 (* Detect OCaml version from VERSION file *)
 let find_version () =
   let pp = Filename.parent_dir_name in

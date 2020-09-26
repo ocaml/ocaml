@@ -52,6 +52,7 @@ body{
     color:#333;
     background:#fff
 }
+
 html {
     font-size: 16px;
     .dt-thefootnotes{
@@ -59,6 +60,24 @@ html {
     }
     .footnotetext{
 	font-size: 13px;
+    }
+}
+
+#sidebar-button{
+	float:right;
+	cursor: context-menu;
+	span{
+	    font-size:28px;
+	}
+	display:none;
+    }
+
+.content, .api {
+    &>header {
+	margin-bottom: 30px;
+	nav {
+	    font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+	}
     }
 }
 
@@ -151,6 +170,16 @@ html {
     }
 }
 
+@mixin mobile {
+    .api, .content{
+	margin:auto;
+	padding:2em;
+	h1 {
+	    margin-top:0;
+	}
+    }
+}
+    
 @mixin nav-toc-mobile {
     position:static;
     width:auto;
@@ -161,16 +190,27 @@ html {
     &.brand {border-radius: 0 5px;}
 }
 
+/* Header is used as a side-bar */
 @mixin header-mobile {
     margin-bottom:0;
     position:fixed;
-    left:0;
+    left:-10000px; /* initially hidden */
     background-color:#ffefe7;
-    transition:left 0.5s;
+    transition:left 0.4s;
     top:0;
+    max-width:calc(100% - 2em);
     max-height: 100%;
-    overflow-y: scroll;
+    overflow-y: auto;
     box-shadow:0.4rem 0rem 0.8rem #bbb;
+}
+
+@mixin sidebar-button {
+    #sidebar-button{
+	display:inline-block;
+	position:fixed;
+	top:1.5em;
+	right:1ex;
+    }
 }
 
 /* Print adjustements. */
@@ -195,4 +235,12 @@ html {
 	margin-left: 3em;
 	margin-right: 3em;
     }
+}
+
+@mixin caret {
+    content:"▶";
+    color:$logocolor;
+    font-size:smaller;
+    margin-right:4px;
+    margin-left:-1em
 }

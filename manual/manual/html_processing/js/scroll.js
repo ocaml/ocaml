@@ -19,6 +19,11 @@
 
 // Goal: if a link is located at distance larger than MAX_DISTANCE, we
 // don't use a smooth scrolling.
+//
+// usage: to activate this, run setSmooth within window.onload:
+// window.onload = setSmooth
+// Here instead we create a loading chain because we have other things
+// to add window.onload later.
 
 const MAX_DISTANCE = 1000;
 const SCROLL_DURATION = 600;
@@ -90,6 +95,10 @@ function setSmooth () {
     }
 }
 
-window.onload = function() {
-    setSmooth();
-};
+// We add it to the chain of window.onload
+window.onload=(function(previousLoad){
+    return function (){
+	previousLoad && previousLoad ();
+	setSmooth ();
+    }
+})(window.onload);

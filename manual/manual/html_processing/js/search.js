@@ -24,9 +24,9 @@ const MAX_ERROR = 10;
 const DESCR_INDEX = 4; // index of HTML description in index.js
 const SIG_INDEX = 6; // index of HTML signature in index.js
 const ERR_INDEX = 8; // length of each line in index.js. This is used
-		     // for storing error, except if we don't want
-		     // description and type signature, the ERR_INDEX
-		     // becomes DESCR_INDEX.
+		     // for storing the computed error, except if we
+		     // don't want description and type signature,
+		     // then ERR_INDEX becomes DESCR_INDEX.
 
 let indexState = 'NOT_LOADED';
 
@@ -53,15 +53,12 @@ function loadingIndex (includeDescr) {
     }
 }
 
-// check if sub is a substring of s. The start/end of the string s are
+// Check if sub is a substring of s. The start/end of the string s are
 // marked by "^" and "$", and hence these chars can be used in sub to
-// refine the search.
+// refine the search. Case sensitive is better for OCaml modules.
 function isSubString (sub, s) {
-    // s = s.toLowerCase();
-    // sub = sub.toLowerCase();
-    // case sensitive is better for OCaml modules.
     let ss = "^" + s + "$";
-    return (ss.indexOf(sub) !== -1);
+    return (ss.includes(sub));
 }
 
 // line is a string array. We check if sub is a substring of one of
@@ -78,7 +75,7 @@ function hasSubStrings (subs, line) {
 	return (hasSubString (sub, line)); }) !== -1);
 }
 
-// error of sub being a substring of s. Best if starts at 0. Except
+// Error of sub being a substring of s. Best if starts at 0. Except
 // for strings containing "->", which is then best if the substring is
 // at the most right-hand position (representing the "return type").
 // markers "^" and "$" for start/end of string can be used: if they
@@ -117,7 +114,6 @@ function subError (sub, s) {
 // Minimal substring error. In particular, it returns 0 if the string
 // 'sub' has an exact match with one of the strings in 'line'.
 function subMinError (sub, line) {
-    //let strings = [line[0], line[1], line[2]];
     let errs = line.map(function (s) { return subError (sub, s); });
     return Math.min(...errs); // destructuring assignment
 }
@@ -130,7 +126,7 @@ function add (acc, a) {
 // for each sub we compute the minimal error within 'line', and then
 // take the average over all 'subs'. Thus it returns 0 if each sub has
 // an exact match with one of the strings in 'line'.
-function subsMinError (subs, line) {
+function subsAvgMinError (subs, line) {
     let errs = subs.map(function (sub) { return subMinError (sub, line); });
     return errs.reduce(add,0) / subs.length;
 }
@@ -138,15 +134,13 @@ function subsMinError (subs, line) {
 
 function formatLine (line) {
     let li = '<li>';
-    let html = '<code class="code"><a href="' + line[1] + '"><span class="constructor">' + line[0] + '</span></a>' +
-	'.' + '<a href="' + line[3] + '">' + line[2] + '</a></code>';
+    let html = `<code class="code"><a href="${line[1]}"><span class="constructor">${line[0]}</span></a>.<a href="${line[3]}">${line[2]}</a></code>`;
     if (line.length > 5) {
 	if ( line[ERR_INDEX] == 0 ) {
 	    li = '<li class="match">';
 	}
-	html += (' : ' + line[SIG_INDEX] + '</pre>');
-	html = '<pre>' + html + line[DESCR_INDEX]; }
-    return (li + html + "</li>\n");
+	html = `${li}<pre>${html} : ${line[SIG_INDEX]}</pre>${line[DESCR_INDEX]}</li>\n`; }
+    return (html);
 }
 
 // The initial format of an entry of the GENERAL_INDEX array is
@@ -187,7 +181,6 @@ function mySearch (includeDescr) {
 	    };
 	    words = words.filter(function (s) {
 		return (s !== "")});
-	    console.log (words);
 	}
 	
 	results = GENERAL_INDEX.filter(function (line) {
@@ -207,7 +200,7 @@ function mySearch (includeDescr) {
 		// one could merge hasSubString and subMinError for efficiency
 		let error = MAX_ERROR;
 		if ( includeDescr ) {
-		    error = subsMinError(words, cleanLine);
+		    error = subsAvgMinError(words, cleanLine);
 		} else {
 		    error = subMinError(text, cleanLine);
 		}
@@ -222,11 +215,11 @@ function mySearch (includeDescr) {
 	results.sort(function(line1, line2) {
 	    return (line1[err_index] - line2[err_index])});
 	count = results.length;
-	console.log("Results = " + (count.toString()));
+	console.log("Search results = " + (count.toString()));
 	results.length = Math.min(results.length, MAX_RESULTS);
 	html = "no results";
     }
-    // injects new html
+    // inject new html
     if (results.length > 0) {
 	html = "<ul>";
 	function myIter(line, index, array) {

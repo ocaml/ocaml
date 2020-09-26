@@ -19,24 +19,22 @@
 .api>table {
     word-break: break-word; 
     // this is unfortunately due to some very long names in Internal modules
-    
     td.module,
     td:first-child {
 	width: 33%;
     }
-
     td:nth-child(2) {
 	width: 65%;
     }
     td[align="left"] { 
-	// for the "Parameter" column of module signatures like Arg_helper.Make.html, which unfortunately have no class either.
-	
+	// for the "Parameter" column of module signatures like
+	// Arg_helper.Make.html, which unfortunately have no class
+	// either.
 	word-break: normal;
     }
     td[align="left"]:first-child {
 	width: 1%;
     }
-
 }
 
 .api {
@@ -93,7 +91,6 @@
 	    /* not optimal, see: Format.html#symbolic
 	    but leaving it automatic is not always good either: see: Arg.html */
 	}
-	
     }
 
     // for functor signature
@@ -106,8 +103,7 @@
 	}
 	td:first-child, td:nth-child(2) {
 	    width: 1em; // second column should contain only ":". First one will adapt to size.
-	}
-	
+	}	
     }
     
     .sig_block {
@@ -131,43 +127,29 @@
     
     @include content-frame;
 
-    >header {
-	margin-bottom: 30px;
-    }
-
-    >header nav {
-	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
-    }
-
     /* Basic markup elements */
     
     b, strong {
 	font-weight: 600;
     }
-
     i, em {
 	font-style: italic;
     }
-
     sup {
 	vertical-align: super;
     }
-
     sub {
 	vertical-align: sub;
     }
-
     sup, sub {
 	font-size: 12px;
 	line-height: 0;
 	margin-left: 0.2ex;
     }
-
     pre {
 	margin-top: 0.8em;
 	margin-bottom: 0;
     }
-
     p, ul, ol {
 	margin-top: 0.5em;
 	margin-bottom: 1em;
@@ -175,15 +157,12 @@
     ul, ol {
 	list-style-position: outside
     }
-
     ul>li {
 	margin-left: 22px;
     }
-
     ol>li {
 	margin-left: 27.2px;
     }
-
     li>*:first-child {
 	margin-top: 0
     }
@@ -193,31 +172,24 @@
     .left {
 	text-align: left;
     }
-
     .right {
 	text-align: right;
     }
-
     .center {
 	text-align: center;
     }
-
     /* Links and anchors */
-
     a {
 	text-decoration: none;
 	color: #92370A;
 	/* box-shadow: 0 1px 0 0 #d8b68b; */
     }
-
     a:hover {
 	box-shadow: 0 1px 0 0 #92370A;
     }
-
     td a:hover {
 	background: white;
     }
-
     /* Linked highlight */
     *:target {
 	/*box-shadow: 0 0px 0 1px rgba(255, 215, 181, 0.8) !important;*/
@@ -983,13 +955,14 @@
 /* When the navigation bar is collapsed */
 // this should match with ocamlorg.css
 @media only screen and (max-width: 979px) {
+    @include mobile;
     .container, .api {
 	margin-left: auto;
 	margin-right: auto;
     }
-    
-    .api>header {
-	box-shadow:   0px 3px 9px 3px #ddd;
+    @include sidebar-button;
+    header {
+	@include header-mobile;
     }
 
     .api>table {

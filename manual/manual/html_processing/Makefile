@@ -34,10 +34,9 @@ $(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss $(WEBDIR)
 css: $(WEBDIRMAN)/manual.css $(WEBDIRAPI)/style.css
 
 # Just copy the JS files
-JS_FILES0 := scroll.js search.js
-JS_FILES := $(addprefix $(WEBDIRAPI)/, $(JS_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(JS_FILES0)) $(WEBDIRMAN)/scroll.js
-# should be same as:
-#JS_FILES := $(WEBDIRAPI)/scroll.js $(WEBDIRAPI)/search.js $(WEBDIRCOMP)/scroll.js $(WEBDIRCOMP)/search.js $(WEBDIRMAN)/scroll.js
+JS_FILES0 := scroll.js navigation.js
+JS_FILES1 := $(JS_FILES0) search.js
+JS_FILES := $(addprefix $(WEBDIRAPI)/, $(JS_FILES1)) $(addprefix $(WEBDIRCOMP)/, $(JS_FILES1)) $(addprefix $(WEBDIRMAN)/, $(JS_FILES0))
 
 # There must be a more clever way
 $(WEBDIRAPI)/%.js: js/%.js
@@ -51,31 +50,30 @@ $(WEBDIRCOMP)/%.js: js/%.js
 
 js: $(WEBDIR) $(JS_FILES)
 
-# Copy images
-IMG_FILES0 := colour-logo-gray.svg favicon.ico
-IMG_FILES1 := $(IMG_FILES0) search_icon.svg
-IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES1)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES1)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
+# download images for local use
+$(WEBDIRAPI)/search_icon.svg: $(WEBDIR)
+	curl "https://ocaml.org/img/search.svg" > $(WEBDIRAPI)/search_icon.svg
+	cp $(WEBDIRAPI)/search_icon.svg $(WEBDIRCOMP)/search_icon.svg
 
-# There must be a more clever way
+$(WEBDIRAPI)/favicon.ico: $(WEBDIR)
+	curl "https://ocaml.org/img/favicon32x32.ico" > $(WEBDIRAPI)/favicon.ico
+	cp $(WEBDIRAPI)/favicon.ico $(WEBDIRMAN)/favicon.ico
+	cp $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/favicon.ico
+
+IMG_FILES0 := colour-logo-gray.svg
+IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
+
+# Remaining images (TODO: download them too)
 $(WEBDIRMAN)/%.svg: images/%.svg
-	cp $< $@
-
-$(WEBDIRMAN)/%.ico: images/%.ico
 	cp $< $@
 
 $(WEBDIRAPI)/%.svg: images/%.svg
 	cp $< $@
 
-$(WEBDIRAPI)/%.ico: images/%.ico
-	cp $< $@
-
 $(WEBDIRCOMP)/%.svg: images/%.svg
 	cp $< $@
 
-$(WEBDIRCOMP)/%.ico: images/%.ico
-	cp $< $@
-
-img: $(WEBDIR) $(IMG_FILES)
+img: $(WEBDIR) $(WEBDIRAPI)/search_icon.svg $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/search_icon.svg $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
 
 clean:
 	rm -rf $(WEBDIR) src/.merlin _build
