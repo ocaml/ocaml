@@ -22,6 +22,12 @@
 	    margin-right:1ex;
 	}
     }
+    ul{list-style:none;}
+    ul.itemize li::before{@include caret;}
+
+    /* When the TOC is repeated in the main content */
+    ul.ul-content {
+    }
     /* navigation links at the bottom of page */
     .bottom-navigation {
 	margin-bottom:1em;
@@ -197,9 +203,6 @@ p a>code{
     font-weight:500}
 section+section{
     margin-top:25px}
-ul.itemize{
-    list-style:none}
-ul.itemize li::before{@include caret;}
 
 /* Table of Contents in the Left-hand sidebar */
 nav.toc{

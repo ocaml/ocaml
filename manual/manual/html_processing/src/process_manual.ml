@@ -279,6 +279,8 @@ let convert version (part_title, chapters) toc_table (file, title) =
         (* If file has "no content" (sections), we clone the toc to leave it in
            the main content. *)
         let original_toc = parse (to_string toc) in
+        original_toc $ "ul"
+        |> add_class "ul-content";
         insert_after toc original_toc
     | _ -> () in
 
