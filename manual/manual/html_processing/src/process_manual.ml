@@ -279,7 +279,7 @@ let convert version (part_title, chapters) toc_table (file, title) =
   let () = match soup $? "h2.section", toc with
     | None, Some toc ->
         (* If file has "no content" (sections), we clone the toc to leave it in
-           the main content. *)
+           the main content. This applies to "index.html" as well. *)
         let original_toc = parse (to_string toc) in
         original_toc $ "ul"
         |> add_class "ul-content";

@@ -139,8 +139,8 @@ function formatLine (line) {
 	if ( line[ERR_INDEX] == 0 ) {
 	    li = '<li class="match">';
 	}
-	html = `${li}<pre>${html} : ${line[SIG_INDEX]}</pre>${line[DESCR_INDEX]}</li>\n`; }
-    return (html);
+	html = `<pre>${html} : ${line[SIG_INDEX]}</pre>${line[DESCR_INDEX]}`; }
+    return (li + html + "</li>\n");
 }
 
 // The initial format of an entry of the GENERAL_INDEX array is
