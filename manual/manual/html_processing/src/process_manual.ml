@@ -194,7 +194,9 @@ let clone_structure soup toc xfile =
   let xbody = xternal $ "body" in
   let clone = parse (to_string soup) in
   let header = soup $ "header" |> to_string |> parse in
-  let title = clone $ "h1" in
+  let title = match clone $? "div.maintitle" with
+    | Some div -> div (* This is the case for "index.html" *)
+    | None -> clone $ "h1" in
   next_siblings title
   |> iter delete;
   insert_after title xbody;
