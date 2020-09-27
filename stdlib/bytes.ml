@@ -61,6 +61,12 @@ let copy s =
 let to_string b = unsafe_to_string (copy b)
 let of_string s = copy (unsafe_of_string s)
 
+(* duplicated in string.ml *)
+let get_opt b i =
+  if i < 0 then invalid_arg "Bytes.get_opt"
+  else if i >= length b then None
+  else Some (unsafe_get b i)
+
 let sub s ofs len =
   if ofs < 0 || len < 0 || ofs > length s - len
   then invalid_arg "String.sub / Bytes.sub"

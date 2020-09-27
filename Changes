@@ -156,6 +156,9 @@ Working version
 
 ### Standard library:
 
+- #9944: - add String.get_opt and Bytes.get_opt functions
+  (Léo Andrès, review by XXXX)
+
 - #9865: add Format.pp_print_seq
   (Raphaël Proust, review by Nicolás Ojeda Bär)
 

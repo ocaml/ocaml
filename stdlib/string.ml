@@ -50,6 +50,12 @@ let fill =
 let blit =
   B.blit_string
 
+(* duplicated in bytes.ml *)
+let get_opt s i =
+  if i < 0 then invalid_arg "String.get_opt"
+  else if i >= length s then None
+  else Some (unsafe_get s i)
+
 let ensure_ge (x:int) y = if x >= y then x else invalid_arg "String.concat"
 
 let rec sum_lengths acc seplen = function

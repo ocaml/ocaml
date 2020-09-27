@@ -112,6 +112,13 @@ external get : string -> int -> char = "%string_safe_get"
 
     @raise Invalid_argument if [i] not an index of [s]. *)
 
+val get_opt : string -> int -> char option
+(** [get_opt s i] is [None] if [i] is not an index of [s]. Otherwise
+    it is [Some c] where [c] is the character at index [i] in [s].
+    @raise Invalid_argument if [i < 0].
+    @since 4.12.0
+*)
+
 (** {1:concat Concatenating}
 
     {b Note.} The {!Stdlib.( ^ )} binary operator concatenates two

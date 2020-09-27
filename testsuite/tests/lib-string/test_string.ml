@@ -34,6 +34,11 @@ let check_split sep s =
 ;;
 
 let () =
+  assert (None = String.get_opt "" 0);
+  assert (Some 'y' = String.get_opt "xyz" 1)
+;;
+
+let () =
   let s = " abc def " in
   for i = 0 to String.length s do
     check_split ' ' (String.sub s 0 i)

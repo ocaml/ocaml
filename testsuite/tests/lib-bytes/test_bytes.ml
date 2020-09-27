@@ -15,6 +15,11 @@ let check b offset s =
   loop 0
 
 let () =
+  assert (None = Bytes.get_opt (Bytes.of_string "") 0);
+  assert (Some 'y' = Bytes.get_opt (Bytes.of_string "xyz") 1)
+;;
+
+let () =
   let abcde = Bytes.of_string "abcde" in
   let open Bytes in
   begin

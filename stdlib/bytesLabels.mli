@@ -69,6 +69,12 @@ external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
     @raise Invalid_argument if [n] is not a valid index in [s]. *)
 
+val get_opt : bytes -> int -> char option
+(** [get_opt s i] is [None] if [i] is not a valid index in [s]. Otherwise
+    it is [Some c] where [c] is the byte at index [i] in [s].
+    @raise Invalid_argument if [i < 0].
+    @since 4.12.0
+*)
 
 external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
