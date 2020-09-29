@@ -292,9 +292,9 @@ let emit_float_comp cmp arg =
   in
   match cmp with
   | CFneq | CFngt | CFnge | CFnlt | CFnle ->
-    bitnum, false
-  | CFeq | CFgt | CFge | CFlt | CFle ->
     bitnum, true
+  | CFeq | CFgt | CFge | CFlt | CFle ->
+    bitnum, false
 
 (* Free the stack frame *)
 
