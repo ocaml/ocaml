@@ -140,6 +140,13 @@ Working version
   (KC Sivaramakrishnan, reported by Enguerrand Decorne, review by Gabriel
    Scherer, and Xavier Leroy)
 
+- #9534: Introduce a naked pointers checker mode to the runtime
+  (configure option --enable-naked-pointers-checker).  Alarms are printed
+  when the garbage collector finds out-of-heap pointers that could
+  cause a crash in no-naked-pointers mode.
+  (KC Sivaramakrishnan, with contributions by Xavier Leroy, Stephen
+  Dolan and David Allsopp, review by Xavier Leroy.)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
