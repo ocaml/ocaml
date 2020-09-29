@@ -116,7 +116,7 @@ module DLS = struct
 
   type 'a key = int ref * (unit -> 'a)
 
-  type entry = {key: int ref; slot: Obj.t ref}
+  type entry = {key_id: int ref; slot: Obj.t ref}
 
   external get_dls_list : unit -> entry list
     = "caml_domain_dls_get" [@@noalloc]
@@ -124,44 +124,38 @@ module DLS = struct
   external set_dls_list : entry list  -> unit
     = "caml_domain_dls_set" [@@noalloc]
 
-  let new_key f =
-    let k = ref 0 in
-    let vals = get_dls_list () in
-    let e = {key = k; slot = ref (Obj.repr (f ())) } in
-    set_dls_list (e::vals);
-    (k, f)
+  let new_key f = (ref 0, f)
 
   let set k x =
     let cs = Obj.repr x in
     let vals = get_dls_list () in
     let rec add_or_update_entry k v l =
       match l with
-      | [] -> Some {key = k; slot = ref v}
+      | [] -> Some {key_id = k; slot = ref v}
       | hd::tl ->
-        if (hd.key == k) then begin
+        if (hd.key_id == k) then begin
           hd.slot := v;
           None
         end
         else add_or_update_entry k v tl
     in
-    let k = fst k in
-    match add_or_update_entry k cs vals with
+    let (key, _) = k in
+    match add_or_update_entry key cs vals with
     | None -> ()
     | Some e -> set_dls_list (e::vals)
 
     let get k =
     let vals = get_dls_list () in
-    let key = fst k in
-    let init = snd k in
+    let (key, init) = k in
     let rec search k l =
       match l with
       | [] ->
         begin
-          let e = {key = k; slot = ref (Obj.repr (init ())) } in
+          let e = {key_id = k; slot = ref (Obj.repr (init ())) } in
           set_dls_list (e::vals);
           !(e.slot)
         end
-      | hd::tl -> if hd.key == k then !(hd.slot) else search k tl
+      | hd::tl -> if hd.key_id == k then !(hd.slot) else search k tl
     in
     Obj.obj @@ search key vals
 
