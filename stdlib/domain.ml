@@ -144,7 +144,7 @@ module DLS = struct
     | None -> ()
     | Some e -> set_dls_list (e::vals)
 
-    let get k =
+  let get k =
     let vals = get_dls_list () in
     let (key, init) = k in
     let rec search k l =
