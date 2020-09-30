@@ -168,7 +168,6 @@ and expression =
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
-  | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
   | Clet_mut of Backend_var.With_provenance.t * machtype

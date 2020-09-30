@@ -107,7 +107,6 @@ let size_expr (env:environment) exp =
     | Cconst_symbol _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
-    | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
           V.Map.find id localenv
@@ -314,7 +313,6 @@ method is_simple_expr = function
   | Cconst_natint _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
-  | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) | Clet_mut(_id, _, arg, body) ->
@@ -350,7 +348,6 @@ method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cblockheader _
   | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) | Clet_mut (_id, _, arg, body) ->
@@ -616,10 +613,6 @@ method insert_op_debug env op dbg rs rd =
 method insert_op env op rs rd =
   self#insert_op_debug env op Debuginfo.none rs rd
 
-method private emit_blockheader env n _dbg =
-  let r = self#regs_for typ_int in
-  Some(self#insert_op env (Iconst_int n) [||] r)
-
 (* Add the instructions for the given expression
    at the end of the self sequence *)
 
@@ -644,8 +637,6 @@ method emit_expr (env:environment) exp =
          adding this register to the frame table would be redundant *)
       let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_symbol n) [||] r)
-  | Cblockheader(n, dbg) ->
-      self#emit_blockheader env n dbg
   | Cvar v ->
       begin try
         Some(env_find v env)
@@ -1162,7 +1153,6 @@ method emit_tail (env:environment) exp =
       end
   | Cop _
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cblockheader _
   | Cvar _
   | Cassign _
   | Ctuple _

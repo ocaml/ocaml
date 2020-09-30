@@ -161,9 +161,6 @@ let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
   | Cconst_natint (n, _dbg) ->
     fprintf ppf "%s" (Nativeint.to_string n)
-  | Cblockheader(n, d) ->
-    fprintf ppf "block-hdr(%s)%s"
-      (Nativeint.to_string n) (location d)
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
   | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
   | Cvar id -> V.print ppf id

@@ -314,10 +314,10 @@ let is_unboxed_number_cmm ~strict cmm =
     r := join_unboxed_number_kind ~strict !r k
   in
   let rec aux = function
-    | Cop(Calloc, [Cblockheader (hdr, _); _], dbg)
+    | Cop(Calloc, [Cconst_natint (hdr, _); _], dbg)
       when Nativeint.equal hdr float_header ->
         notify (Boxed (Boxed_float dbg, false))
-    | Cop(Calloc, [Cblockheader (hdr, _); Cconst_symbol (ops, _); _], dbg) ->
+    | Cop(Calloc, [Cconst_natint (hdr, _); Cconst_symbol (ops, _); _], dbg) ->
         if Nativeint.equal hdr boxedintnat_header
         && String.equal ops caml_nativeint_ops
         then

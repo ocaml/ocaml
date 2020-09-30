@@ -201,7 +201,7 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int (n, _) ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint (n, _) | Cblockheader (n, _)) ->
+  | Cconst_natint (n, _) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_symbol (s, _) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])

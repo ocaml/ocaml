@@ -92,7 +92,7 @@ and instrument = function
   (* these are base cases and have no logging *)
   | Cconst_int _ | Cconst_natint _ | Cconst_float _
   | Cconst_symbol _
-  | Cblockheader _ | Cvar _ as c -> c
+  | Cvar _ as c -> c
 
 let instrument_function c dbg =
   with_afl_logging c dbg

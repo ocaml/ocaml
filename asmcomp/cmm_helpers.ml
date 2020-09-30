@@ -24,8 +24,7 @@ open Arch
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cblockheader _ -> fn arg
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
@@ -35,8 +34,7 @@ let bind_load name arg fn =
 
 let bind_nonvar name arg fn =
   match arg with
-    Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cblockheader _ -> fn arg
+    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
@@ -82,15 +80,15 @@ let closure_info ~arity ~startenv =
                  (add (shift_left (of_int startenv) 1)
                       1n))
 
-let alloc_float_header dbg = Cblockheader (float_header, dbg)
-let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
-let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
-let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
+let alloc_float_header dbg = Cconst_natint (float_header, dbg)
+let alloc_floatarray_header len dbg = Cconst_natint (floatarray_header len, dbg)
+let alloc_closure_header sz dbg = Cconst_natint (white_closure_header sz, dbg)
+let alloc_infix_header ofs dbg = Cconst_natint (infix_header ofs, dbg)
 let alloc_closure_info ~arity ~startenv dbg =
-  Cblockheader (closure_info ~arity ~startenv, dbg)
-let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
-let alloc_boxedint64_header dbg = Cblockheader (boxedint64_header, dbg)
-let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
+  Cconst_natint (closure_info ~arity ~startenv, dbg)
+let alloc_boxedint32_header dbg = Cconst_natint (boxedint32_header, dbg)
+let alloc_boxedint64_header dbg = Cconst_natint (boxedint64_header, dbg)
+let alloc_boxedintnat_header dbg = Cconst_natint (boxedintnat_header, dbg)
 
 (* Integers *)
 
@@ -563,7 +561,7 @@ let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 let unbox_float dbg =
   map_tail
     (function
-      | Cop(Calloc, [Cblockheader (hdr, _); c], _)
+      | Cop(Calloc, [Cconst_natint (hdr, _); c], _)
         when Nativeint.equal hdr float_header ->
           c
       | Cconst_symbol (s, _dbg) as cmm ->
@@ -797,7 +795,7 @@ let call_cached_method obj tag cache pos args dbg =
 
 let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
-    Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args, dbg)
+    Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
   else begin
     let id = V.create_local "*alloc*" in
     let rec fill_fields idx = function
@@ -1032,13 +1030,13 @@ let split_int64_for_32bit_target arg dbg =
 
 let alloc_matches_boxed_int bi ~hdr ~ops =
   match (bi : Primitive.boxed_integer), hdr, ops with
-  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pnativeint, Cconst_natint (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedintnat_header
         && String.equal sym caml_nativeint_ops
-  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pint32, Cconst_natint (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedint32_header
         && String.equal sym caml_int32_ops
-  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pint64, Cconst_natint (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedint64_header
         && String.equal sym caml_int64_ops
   | (Pnativeint | Pint32 | Pint64), _, _ -> false
