@@ -38,6 +38,21 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
+/* Unique thread identifiers and atomic operations over them */
+#ifdef ARCH_SIXTYFOUR
+typedef LONG64 st_tid;
+#define Tid_Atomic_Exchange InterlockedExchange64
+#define Tid_Atomic_Compare_Exchange InterlockedCompareExchange64
+#else
+typedef LONG st_tid;
+#define Tid_Atomic_Exchange InterlockedExchange
+#define Tid_Atomic_Compare_Exchange InterlockedCompareExchange
+#endif
+
+/* Return the identifier for the current thread.  Defined in st_stubs.c.
+   The 0 value is reserved. */
+static intnat st_current_thread_id(void);
+
 /* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
 
@@ -48,8 +63,7 @@ static DWORD st_initialize(void)
   st_thread_sem_key = TlsAlloc();
   if (st_thread_sem_key == TLS_OUT_OF_INDEXES)
     return GetLastError();
-  else
-    return 0;
+  return 0;
 }
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
@@ -162,7 +176,7 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 struct st_mutex_ {
   CRITICAL_SECTION crit;
-  volatile LONG owner;    /* 0 if unlocked */
+  volatile st_tid owner;    /* 0 if unlocked */
   /* The "owner" field is not always protected by "crit"; it is also
      accessed without holding "crit", using the Interlocked API for
      atomic accesses */
@@ -196,13 +210,14 @@ static DWORD st_mutex_destroy(st_mutex m)
 
 Caml_inline DWORD st_mutex_lock(st_mutex m)
 {
-  LONG prev;
+  st_tid self, prev;
   TRACE1("st_mutex_lock", m);
+  self = st_current_thread_id();
   /* Critical sections are recursive locks, so this will succeed
      if we already own the lock */
   EnterCriticalSection(&m->crit);
   /* Record that we are the owner of the lock */
-  prev = InterlockedExchange(&m->owner, GetCurrentThreadId());
+  prev = Tid_Atomic_Exchange(&m->owner, self);
   if (prev != 0) {
     /* The mutex was already locked by ourselves.
        Cancel the EnterCriticalSection above and return an error. */
@@ -216,14 +231,15 @@ Caml_inline DWORD st_mutex_lock(st_mutex m)
 
 Caml_inline DWORD st_mutex_trylock(st_mutex m)
 {
-  LONG prev;
+  st_tid self, prev;
   TRACE1("st_mutex_trylock", m);
+  self = st_current_thread_id();
   if (! TryEnterCriticalSection(&m->crit)) {
     TRACE1("st_mutex_trylock (failure)", m);
     return MUTEX_ALREADY_LOCKED;
   }
   /* Record that we are the owner of the lock */
-  prev = InterlockedExchange(&m->owner, GetCurrentThreadId());
+  prev = Tid_Atomic_Exchange(&m->owner, self);
   if (prev != 0) {
     /* The mutex was already locked by ourselves.
        Cancel the EnterCriticalSection above and return "already locked". */
@@ -237,14 +253,14 @@ Caml_inline DWORD st_mutex_trylock(st_mutex m)
 
 Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
-  LONG self, prev;
+  st_tid self, prev;
   /* If the calling thread holds the lock, m->owner is stable and equal
      to GetCurrentThreadId().
      Otherwise, the value of m->owner can be 0 (if the mutex is unlocked)
      or some other thread ID (if the mutex is held by another thread),
      but is never equal to GetCurrentThreadId(). */
-  self = GetCurrentThreadId();
-  prev = InterlockedCompareExchange(&m->owner, 0, self);
+  self = st_current_thread_id();
+  prev = Tid_Atomic_Compare_Exchange(&m->owner, 0, self);
   if (prev != self) {
     /* The value of m->owner is unchanged */
     TRACE1("st_mutex_unlock (error)", m);
@@ -335,7 +351,7 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
   HANDLE ev;
   struct st_wait_list wait;
   DWORD rc;
-  LONG self, prev;
+  st_tid self, prev;
 
   TRACE1("st_condvar_wait", c);
   /* Recover (or create) the event associated with the calling thread */
@@ -349,8 +365,8 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
     TlsSetValue(st_thread_sem_key, (void *) ev);
   }
   /* Get ready to release the mutex */
-  self = GetCurrentThreadId();
-  prev = InterlockedCompareExchange(&m->owner, 0, self);
+  self = st_current_thread_id();
+  prev = Tid_Atomic_Compare_Exchange(&m->owner, 0, self);
   if (prev != self) {
     /* The value of m->owner is unchanged */
     TRACE1("st_condvar_wait: error: mutex not held", m);

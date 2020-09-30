@@ -144,6 +144,18 @@ extern struct longjmp_buffer caml_termination_jmpbuf;
 extern void (*caml_termination_hook)(void);
 #endif
 
+#ifdef _WIN32
+/* Integer identifier for the currently-executing thread.
+   This is a tagged integer, so it is never 0. */
+
+static intnat st_current_thread_id(void)
+{
+  caml_thread_t th = st_tls_get(thread_descriptor_key);
+  return Ident(th->descr);
+}
+
+#endif
+
 /* Hook for scanning the stacks of the other threads */
 
 static void (*prev_scan_roots_hook) (scanning_action);
