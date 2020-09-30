@@ -683,8 +683,6 @@ Caml_inline mlsize_t extern_closure_up_to_env(value v)
 
 /* Marshal the given value in the output buffer */
 
-int caml_extern_allow_out_of_heap = 0;
-
 static void extern_rec(value v)
 {
   struct extern_item * sp;
@@ -698,7 +696,7 @@ static void extern_rec(value v)
   if (Is_long(v)) {
     extern_int(Long_val(v));
   }
-  else if (! (Is_in_value_area(v) || caml_extern_allow_out_of_heap)) {
+  else if (! (Is_in_value_area(v))) {
     /* Naked pointer outside the heap: try to marshal it as a code pointer,
        otherwise fail. */
     extern_code_pointer((char *) v);
