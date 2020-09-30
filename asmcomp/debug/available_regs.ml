@@ -95,7 +95,7 @@ let rec available_regs (instr : M.instruction)
       match instr.desc with
       | Iend -> None, ok avail_before
       | Ireturn -> None, unreachable
-      | Iop (Itailcall_ind _) | Iop (Itailcall_imm _) ->
+      | Iop (Itailcall_ind) | Iop (Itailcall_imm _) ->
         Some (ok Reg_with_debug_info.Set.empty), unreachable
       | Iop (Iname_for_debugger { ident; which_parameter; provenance;
           is_assignment; }) ->
@@ -197,7 +197,7 @@ let rec available_regs (instr : M.instruction)
            [Available_ranges.Make_ranges.end_pos_offset]. *)
         let made_unavailable_2 =
           match op with
-          | Icall_ind _ | Icall_imm _ | Ialloc _ ->
+          | Icall_ind | Icall_imm _ | Ialloc _ ->
             RD.Set.filter (fun reg ->
                 let holds_immediate = RD.holds_non_pointer reg in
                 let on_stack = RD.assigned_to_stack reg in

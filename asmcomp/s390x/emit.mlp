@@ -168,12 +168,8 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
+let record_frame_label live dbg =
+  let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -189,8 +185,8 @@ let record_frame_label ?label live dbg =
     ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live dbg =
-  let lbl = record_frame_label ?label live dbg in
+let record_frame live dbg =
+  let lbl = record_frame_label live dbg in
   `{emit_label lbl}:`
 
 (* Record calls to caml_call_gc, emitted out of line. *)
@@ -215,10 +211,10 @@ type bound_error_call =
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-let bound_error_label ?label dbg =
+let bound_error_label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
+    let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -355,20 +351,20 @@ let emit_instr i =
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Icall_ind { label_after; }) ->
+    | Lop(Icall_ind) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
+        `{record_frame i.live (Dbg_other i.dbg)}\n`
 
-    | Lop(Icall_imm { func; label_after; }) ->
+    | Lop(Icall_imm { func; }) ->
         emit_call func;
-        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
-    | Lop(Itailcall_ind { label_after = _; }) ->
+        `{record_frame i.live (Dbg_other i.dbg)}\n`
+    | Lop(Itailcall_ind) ->
         let n = frame_size() in
         if !contains_calls then
           `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
         emit_stack_adjust (-n);
         `	br	{emit_reg i.arg.(0)}\n`
-    | Lop(Itailcall_imm { func; label_after = _; }) ->
+    | Lop(Itailcall_imm { func; }) ->
         if func = !function_name then
           `	brcl	15, {emit_label !tailrec_entry_point}\n`
         else begin
@@ -382,12 +378,12 @@ let emit_instr i =
             `	brcl	15, {emit_symbol func}\n`
         end
 
-     | Lop(Iextcall { func; alloc; label_after; }) ->
+     | Lop(Iextcall { func; alloc; }) ->
         if not alloc then emit_call func
         else begin
           emit_load_symbol_addr reg_r7 func;
           emit_call "caml_c_call";
-          `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
+          `{record_frame i.live (Dbg_other i.dbg)}\n`
         end
 
      | Lop(Istackoffset n) ->
@@ -424,11 +420,11 @@ let emit_instr i =
           | Double | Double_u -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
+    | Lop(Ialloc { bytes = n; dbginfo }) ->
         let lbl_after_alloc = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live (Dbg_alloc dbginfo) ?label:label_after_call_gc
+          record_frame_label i.live (Dbg_alloc dbginfo)
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
@@ -483,8 +479,8 @@ let emit_instr i =
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl}:\n`
-    | Lop(Iintop (Icheckbound { label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+    | Lop(Iintop (Icheckbound)) ->
+        let lbl = bound_error_label i.dbg in
         `	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)
     | Lop(Iintop op) ->
@@ -503,8 +499,8 @@ let emit_instr i =
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl}:\n`
-    | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-       let lbl = bound_error_label i.dbg ?label:label_after_error in
+    | Lop(Iintop_imm(Icheckbound, n)) ->
+       let lbl = bound_error_label i.dbg in
        if n >= 0 then begin
         `	clgfi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	brcl	12, {emit_label lbl}\n`  (* branch if unsigned le *)

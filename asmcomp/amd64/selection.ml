@@ -133,7 +133,7 @@ inherit Selectgen.selector_generic as super
 
 method! is_immediate op n =
   match op with
-  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound ->
       is_immediate n
   | _ ->
       super#is_immediate op n
@@ -142,7 +142,7 @@ method is_immediate_test _cmp n = is_immediate n
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall (fn, _, _, _, _), args, _)
+  | Cop(Cextcall (fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
@@ -151,7 +151,7 @@ method! is_simple_expr e =
 
 method! effects_of e =
   match e with
-  | Cop(Cextcall(fn, _, _, _, _), args, _)
+  | Cop(Cextcall(fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
@@ -201,7 +201,7 @@ method! select_operation op args dbg =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
-  | Cextcall("sqrt", _, _, false, _) ->
+  | Cextcall("sqrt", _, _, false) ->
      begin match args with
        [Cop(Cload ((Double|Double_u as chunk), _), [loc], _dbg)] ->
          let (addr, arg) = self#select_addressing chunk loc in
@@ -221,12 +221,12 @@ method! select_operation op args dbg =
       | _ ->
           super#select_operation op args dbg
       end
-  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _) ->
       (Ispecific (Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 32), args)
-  | Cextcall("caml_int64_direct_bswap", _, _, _, _)
-  | Cextcall("caml_nativeint_direct_bswap", _, _, _, _) ->
+  | Cextcall("caml_int64_direct_bswap", _, _, _)
+  | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* Recognize sign extension *)
   | Casr ->

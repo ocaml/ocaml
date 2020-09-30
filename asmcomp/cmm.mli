@@ -138,7 +138,7 @@ type memory_chunk =
 
 and operation =
     Capply of machtype
-  | Cextcall of string * machtype * exttype list * bool * label option
+  | Cextcall of string * machtype * exttype list * bool
       (** The [machtype] is the machine type of the result.
           The [exttype list] describes the unboxing types of the arguments.
           An empty list means "all arguments are machine words [XInt]". *)

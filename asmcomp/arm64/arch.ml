@@ -42,15 +42,12 @@ type cmm_label = int
   (* Do not introduce a dependency to Cmm *)
 
 type specific_operation =
-  | Ifar_alloc of { bytes : int; label_after_call_gc : cmm_label option;
-                    dbginfo : Debuginfo.alloc_dbginfo }
-  | Ifar_intop_checkbound of { label_after_error : cmm_label option; }
-  | Ifar_intop_imm_checkbound of
-      { bound : int; label_after_error : cmm_label option; }
+  | Ifar_alloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Ifar_intop_checkbound
+  | Ifar_intop_imm_checkbound of { bound : int; }
   | Ishiftarith of arith_operation * int
-  | Ishiftcheckbound of { shift : int; label_after_error : cmm_label option; }
-  | Ifar_shiftcheckbound of
-      { shift : int; label_after_error : cmm_label option; }
+  | Ishiftcheckbound of { shift : int; }
+  | Ifar_shiftcheckbound of { shift : int; }
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -107,11 +104,11 @@ let print_addressing printreg addr ppf arg =
 
 let print_specific_operation printreg op ppf arg =
   match op with
-  | Ifar_alloc { bytes; label_after_call_gc = _; } ->
+  | Ifar_alloc { bytes; } ->
     fprintf ppf "(far) alloc %i" bytes
-  | Ifar_intop_checkbound _ ->
+  | Ifar_intop_checkbound ->
     fprintf ppf "%a (far) check > %a" printreg arg.(0) printreg arg.(1)
-  | Ifar_intop_imm_checkbound { bound; _ } ->
+  | Ifar_intop_imm_checkbound { bound; } ->
     fprintf ppf "%a (far) check > %i" printreg arg.(0) bound
   | Ishiftarith(op, shift) ->
       let op_name = function
@@ -123,10 +120,10 @@ let print_specific_operation printreg op ppf arg =
        else sprintf ">> %i" (-shift) in
       fprintf ppf "%a %s %a %s"
        printreg arg.(0) (op_name op) printreg arg.(1) shift_mark
-  | Ishiftcheckbound { shift; _ } ->
+  | Ishiftcheckbound { shift; } ->
       fprintf ppf "check %a >> %i > %a" printreg arg.(0) shift
         printreg arg.(1)
-  | Ifar_shiftcheckbound { shift; _ } ->
+  | Ifar_shiftcheckbound { shift; } ->
       fprintf ppf
         "(far) check %a >> %i > %a" printreg arg.(0) shift printreg arg.(1)
   | Imuladd ->

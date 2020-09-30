@@ -104,7 +104,7 @@ method! regs_for tyv =
 
 method! is_immediate op n =
   match op with
-  | Iadd | Isub | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+  | Iadd | Isub | Iand | Ior | Ixor | Icomp _ | Icheckbound ->
       Arch.is_immediate (Int32.of_int n)
   | _ ->
       super#is_immediate op n
@@ -114,25 +114,25 @@ method is_immediate_test _op n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall("sqrt", _, _, _, _), args, _) when !fpu >= VFPv2 ->
+  | Cop(Cextcall("sqrt", _, _, _), args, _) when !fpu >= VFPv2 ->
       List.for_all self#is_simple_expr args
   (* inlined byte-swap ops are simple if their arguments are *)
-  | Cop(Cextcall("caml_bswap16_direct", _, _, _, _), args, _)
+  | Cop(Cextcall("caml_bswap16_direct", _, _, _), args, _)
     when !arch >= ARMv6T2 ->
       List.for_all self#is_simple_expr args
-  | Cop(Cextcall("caml_int32_direct_bswap", _, _, _, _), args, _)
+  | Cop(Cextcall("caml_int32_direct_bswap", _, _, _), args, _)
     when !arch >= ARMv6 ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
 method! effects_of e =
   match e with
-  | Cop(Cextcall("sqrt", _, _, _, _), args, _) when !fpu >= VFPv2 ->
+  | Cop(Cextcall("sqrt", _, _, _), args, _) when !fpu >= VFPv2 ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
-  | Cop(Cextcall("caml_bswap16_direct", _, _, _, _), args, _)
+  | Cop(Cextcall("caml_bswap16_direct", _, _, _), args, _)
     when !arch >= ARMv6T2 ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
-  | Cop(Cextcall("caml_int32_direct_bswap",_ ,_ , _, _), args, _)
+  | Cop(Cextcall("caml_int32_direct_bswap",_ ,_ , _), args, _)
     when !arch >= ARMv6 ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | e -> super#effects_of e
@@ -187,8 +187,7 @@ method select_shift_arith op dbg arithop arithrevop args =
       end
 
 method private iextcall func ty_res ty_args =
-  Iextcall { func; ty_res; ty_args;
-             alloc = false; label_after = Cmm.new_label (); }
+  Iextcall { func; ty_res; ty_args; alloc = false; }
 
 method! select_operation op args dbg =
   match (op, args) with
@@ -224,10 +223,10 @@ method! select_operation op args dbg =
       (* See above for fix up of return register *)
       (self#iextcall "__aeabi_idivmod" typ_int [], args)
   (* Recognize 16-bit bswap instruction (ARMv6T2 because we need movt) *)
-  | (Cextcall("caml_bswap16_direct", _, _, _, _), args) when !arch >= ARMv6T2 ->
+  | (Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
       (Ispecific(Ibswap 16), args)
   (* Recognize 32-bit bswap instructions (ARMv6 and above) *)
-  | (Cextcall("caml_int32_direct_bswap", _, _, _, _), args)
+  | (Cextcall("caml_int32_direct_bswap", _, _, _), args)
     when !arch >= ARMv6 ->
       (Ispecific(Ibswap 32), args)
   (* Turn floating-point operations into runtime ABI calls for softfp *)
@@ -265,7 +264,7 @@ method private select_operation_softfp op args dbg =
         | CFnge -> Ceq, "__aeabi_dcmpge"
       in
       (Iintop_imm(Icomp(Iunsigned comp), 0),
-       [Cop(Cextcall(func, typ_int, [XFloat;XFloat], false, None),
+       [Cop(Cextcall(func, typ_int, [XFloat;XFloat], false),
             args, dbg)])
   (* Add coercions around loads and stores of 32-bit floats *)
   | (Cload (Single, mut), args) ->
@@ -273,7 +272,7 @@ method private select_operation_softfp op args dbg =
         [Cop(Cload (Word_int, mut), args, dbg)])
   | (Cstore (Single, init), [arg1; arg2]) ->
       let arg2' =
-        Cop(Cextcall("__aeabi_d2f", typ_int, [XFloat], false, None),
+        Cop(Cextcall("__aeabi_d2f", typ_int, [XFloat], false),
             [arg2], dbg) in
       self#select_operation (Cstore (Word_int, init)) [arg1; arg2'] dbg
   (* Other operations are regular *)
@@ -299,7 +298,7 @@ method private select_operation_vfpv3 op args dbg =
   | (Csubf, [Cop(Cmulf, args, _); arg]) ->
       (Ispecific Imulsubf, arg :: args)
   (* Recognize floating-point square root *)
-  | (Cextcall("sqrt", _, _, false, _), args) ->
+  | (Cextcall("sqrt", _, _, false), args) ->
       (Ispecific Isqrtf, args)
   (* Other operations are regular *)
   | (op, args) -> super#select_operation op args dbg

@@ -2263,12 +2263,10 @@ asmcomp/branch_relaxation.cmi : \
 asmcomp/branch_relaxation_intf.cmo : \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
-    asmcomp/cmm.cmi \
     asmcomp/arch.cmo
 asmcomp/branch_relaxation_intf.cmx : \
     asmcomp/linear.cmx \
     lambda/debuginfo.cmx \
-    asmcomp/cmm.cmx \
     asmcomp/arch.cmx
 asmcomp/cmm.cmo : \
     utils/targetint.cmi \

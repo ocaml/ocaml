@@ -90,13 +90,7 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound { label_after_error; } ->
-      Printf.sprintf "check[lbl=%s] > "
-        begin
-          match label_after_error with
-          | None -> ""
-          | Some lbl -> Int.to_string lbl
-        end
+  | Icheckbound -> Printf.sprintf "check > "
 
 let test tst ppf arg =
   match tst with
@@ -119,9 +113,9 @@ let operation op arg ppf res =
   | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Icall_ind _ -> fprintf ppf "call %a" regs arg
-  | Icall_imm { func; _ } -> fprintf ppf "call \"%s\" %a" func regs arg
-  | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
+  | Icall_ind -> fprintf ppf "call %a" regs arg
+  | Icall_imm { func; } -> fprintf ppf "call \"%s\" %a" func regs arg
+  | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
   | Itailcall_imm { func; } -> fprintf ppf "tailcall \"%s\" %a" func regs arg
   | Iextcall { func; alloc; _ } ->
       fprintf ppf "extcall \"%s\" %a%s" func regs arg
@@ -138,7 +132,7 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-  | Ialloc { bytes = n; _ } ->
+  | Ialloc { bytes = n; } ->
     fprintf ppf "alloc %i" n;
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n

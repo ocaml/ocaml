@@ -62,15 +62,13 @@ module type S = sig
      the size of out-of-line code (cf. branch_relaxation.mli). *)
   val relax_allocation
      : num_bytes:int
-    -> label_after_call_gc:Cmm.label option
     -> dbginfo:Debuginfo.alloc_dbginfo
     -> Linear.instruction_desc
   val relax_intop_checkbound
-     : label_after_error:Cmm.label option
+     : unit
     -> Linear.instruction_desc
   val relax_intop_imm_checkbound
      : bound:int
-    -> label_after_error:Cmm.label option
     -> Linear.instruction_desc
   val relax_specific_op : Arch.specific_operation -> Linear.instruction_desc
 end

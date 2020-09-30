@@ -729,7 +729,7 @@ and transl_catch env nfail ids body handler dbg =
 and transl_make_array dbg env kind args =
   match kind with
   | Pgenarray ->
-      Cop(Cextcall("caml_make_array", typ_val, [], true, None),
+      Cop(Cextcall("caml_make_array", typ_val, [], true),
           [make_alloc dbg 0 (List.map (transl env) args)], dbg)
   | Paddrarray | Pintarray ->
       make_alloc dbg 0 (List.map (transl env) args)
@@ -779,7 +779,7 @@ and transl_ccall env prim args dbg =
   let typ_args, args = transl_args prim.prim_native_repr_args args in
   wrap_result
     (Cop(Cextcall(Primitive.native_name prim,
-                  typ_res, typ_args, prim.prim_alloc, None), args, dbg))
+                  typ_res, typ_args, prim.prim_alloc), args, dbg))
 
 and transl_prim_1 env p arg dbg =
   match p with
@@ -1319,7 +1319,7 @@ and transl_letrec env bindings cont =
       bindings
   in
   let op_alloc prim args =
-    Cop(Cextcall(prim, typ_val, [], true, None), args, dbg) in
+    Cop(Cextcall(prim, typ_val, [], true), args, dbg) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, _exp, RHS_block sz) :: rem ->
@@ -1345,7 +1345,7 @@ and transl_letrec env bindings cont =
     | [] -> cont
     | (id, exp, (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
         let op =
-          Cop(Cextcall("caml_update_dummy", typ_void, [], false, None),
+          Cop(Cextcall("caml_update_dummy", typ_void, [], false),
               [Cvar (VP.var id); transl env exp], dbg) in
         Csequence(op, fill_blocks rem)
     | (_id, _exp, RHS_nonrec) :: rem ->

@@ -137,7 +137,7 @@ let linear i n contains_calls =
   let rec linear i n =
     match i.Mach.desc with
       Iend -> n
-    | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
+    | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
         copy_instr (Lop op) i (discard_dead_code n)
     | Iop(Imove | Ireload | Ispill)
       when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
