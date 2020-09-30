@@ -315,6 +315,11 @@ Working version
   various broken cli behaviours.
   (Daniel Bünzli, review by Nicolás Ojeda Bär)
 
+### Debugging and profiling:
+
+- #9948: Remove Spacetime.
+  (Nicolás Ojeda Bär, review by Stephen Dolan and Xavier Leroy)
+
 ### Manual and documentation:
 
 - #9468: HACKING.adoc: using dune to get merlin's support
