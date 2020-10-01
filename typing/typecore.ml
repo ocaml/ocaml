@@ -281,6 +281,23 @@ let extract_label_names env ty =
   with Not_found ->
     assert false
 
+let extract_array_type env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr (p0, _, _) ->
+      begin match expand_head env ty with
+      | {desc = Tconstr (p, _, _)} ->
+          if Path.same p Predef.path_floatarray ||
+             Path.same p Predef.path_array then
+            (p0, p)
+          else
+            raise Not_found
+      | _ ->
+          raise Not_found
+      end
+  | _ ->
+      raise Not_found
+
 (* Typing of patterns *)
 
 (* unification inside type_exp and type_expect *)
@@ -844,6 +861,77 @@ let wrap_disambiguate msg ty f x =
   try f x with
   | Wrong_name_disambiguation (env, wrong_name) ->
     raise (Error (wrong_name.name.loc, env, Wrong_name (msg, ty, wrong_name)))
+
+module ArrayDescription = struct
+  type t =
+    {
+      elt_ty: type_expr;
+      array_ty: type_expr;
+      kind: array_kind;
+    }
+
+  type usage = unit
+
+  let kind = Datatype_kind.Record
+
+  let name = "([||])"
+
+  let get_name _ = name
+
+  let get_type {array_ty; _} = array_ty
+
+  let t_floatarray =
+    {elt_ty = Predef.type_float;
+     array_ty = Predef.type_floatarray;
+     kind = Floatarray}
+
+  let t_array () =
+    let elt_ty = newgenvar() in
+    {elt_ty;
+     array_ty = Predef.type_array elt_ty;
+     kind = Genarray}
+
+  let lookup_all_from_type _loc () p _env =
+    if Path.same p Predef.path_floatarray then
+      [t_floatarray, ignore]
+    else if Path.same p Predef.path_array then
+      [t_array (), ignore]
+    else
+      []
+
+  let in_env _ = true
+end
+
+module ArrayTypes = NameChoice(ArrayDescription)
+
+let disambiguate_array_type loc env expected_ty =
+  let lid = Location.mkloc (Longident.Lident ArrayDescription.name) loc in
+  let expected_type =
+    try
+      let (p0, p) = extract_array_type env expected_ty in
+      let principal =
+        (repr expected_ty).level = generic_level || not !Clflags.principal
+      in
+      Some (p0, p, principal)
+    with Not_found ->
+      None
+  in
+
+  (* We disable warning 41 to avoid the following:
+
+     let units = [|"B"; "kB"; "MB"; "GB"|] in
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+     Error (warning 41 [ambiguous-name]): ([||]) belongs to several types:
+       array floatarray
+     The first one was selected. Please disambiguate if this is wrong.
+  *)
+
+  Warnings.without_warning 41 (fun () ->
+      wrap_disambiguate "" (mk_expected expected_ty)
+        (ArrayTypes.disambiguate () lid env expected_type)
+        (Ok [ArrayDescription.t_array (), ignore;
+             ArrayDescription.t_floatarray, ignore])
+    )
 
 module Label = NameChoice (struct
   type t = label_description
@@ -1710,11 +1798,10 @@ and type_pat_aux
             lid_sp_list (fun lbl_pat_list -> k' (make_record_pat lbl_pat_list))
       end
   | Ppat_array spl ->
-      let ty_elt = newgenvar() in
+      let {ArrayDescription.elt_ty; array_ty} = disambiguate_array_type loc !env expected_ty in
       let expected_ty = generic_instance expected_ty in
-      unify_pat_types ~refine
-        loc env (Predef.type_array ty_elt) expected_ty;
-      map_fold_cont (fun p -> type_pat Value p ty_elt) spl (fun pl ->
+      unify_pat_types ~refine loc env array_ty expected_ty;
+      map_fold_cont (fun p -> type_pat Value p elt_ty) spl (fun pl ->
         rvp k {
         pat_desc = Tpat_array pl;
         pat_loc = loc; pat_extra=[];
@@ -3020,12 +3107,11 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
-      let ty = newgenvar() in
-      let to_unify = Predef.type_array ty in
+      let {ArrayDescription.elt_ty; array_ty} = disambiguate_array_type loc env ty_expected in
       with_explanation (fun () ->
-        unify_exp_types loc env to_unify (generic_instance ty_expected));
+        unify_exp_types loc env array_ty (generic_instance ty_expected));
       let argl =
-        List.map (fun sarg -> type_expect env sarg (mk_expected ty)) sargl in
+        List.map (fun sarg -> type_expect env sarg (mk_expected elt_ty)) sargl in
       re {
         exp_desc = Texp_array argl;
         exp_loc = loc; exp_extra = [];

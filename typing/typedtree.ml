@@ -18,6 +18,8 @@
 open Asttypes
 open Types
 
+type array_kind = Floatarray | Genarray
+
 (* Value expressions for the core language *)
 
 type partial = Partial | Total

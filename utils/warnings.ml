@@ -911,3 +911,9 @@ let help_warnings () =
   done;
   exit 0
 ;;
+
+let without_warning n f =
+  let active = !current.active.(n) in
+  !current.active.(n) <- false;
+  Fun.protect ~finally:(fun () -> !current.active.(n) <- active) f
+;;
