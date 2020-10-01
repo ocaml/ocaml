@@ -186,7 +186,7 @@ let cleanup_queue q =
 (* Event construction *)
 
 let always data =
-  Communication(fun performed _condition evnum ->
+  Communication(fun performed condition evnum ->
     { poll = (fun () -> performed := evnum; true);
       suspend = (fun () -> ());
       result = (fun () -> data) })
