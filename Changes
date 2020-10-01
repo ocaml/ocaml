@@ -127,11 +127,11 @@ Working version
   needed as the pagetable heads towards retirement).
   (David Allsopp, review by Xavier Leroy)
 
-- #9534: Introduce a naked pointers checker mode to the runtime,
+- #9534, #9947: Introduce a naked pointers checker mode to the runtime,
   to print information on relevant values when they are
   inspected by the garbage collector.
-  (KC Sivaramakrishnan, with contributions by Stephen Dolan and David Allsopp,
-  review by Xavier Leroy.)
+  (Enguerrand Decorne, KC Sivaramakrishnan, Xavier Leroy, Stephen Dolan,
+  David Allsopp, Nicolás Ojeda Bär review by Xavier Leroy, Nicolás Ojeda Bär)
 
 ### Code generation and optimizations:
 
