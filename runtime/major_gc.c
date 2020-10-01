@@ -241,7 +241,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
   for (i = offset; i < end; i++) {
     v = Field(block, i);
 
-    if (Is_block(v) && !Is_black_val(v))
+    if (Is_block(v) && !Is_young(v))
       /* found something to mark */
       break;
   }
