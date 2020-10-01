@@ -86,12 +86,14 @@ let simpl_class_type t =
     | Types.Cty_signature cs ->
         (* we delete vals and methods in order to not print them when
            displaying the type *)
-      let tnil =
-        { Types.desc = Types.Tnil ; Types.level = 0
-        ; Types.scope = Btype.lowest_level ; Types.id = 0 }
+      let tself =
+	let open Types.Internal in
+	lock { (unlock cs.Types.csig_self) with
+	       desc = Types.Tobject
+		 (lock { desc = Types.Tnil ; level = 0 ;
+			 scope = Btype.lowest_level ; id = 0 }, ref None) }
       in
-        Types.Cty_signature { Types.csig_self = { cs.Types.csig_self with
-                                                  Types.desc = Types.Tobject (tnil, ref None) };
+        Types.Cty_signature { Types.csig_self = tself;
                               csig_vars = Types.Vars.empty ;
                               csig_concr = Types.Concr.empty ;
                               csig_inher = []

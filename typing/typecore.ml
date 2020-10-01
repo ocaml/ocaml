@@ -1049,7 +1049,7 @@ let unify_head_only ~refine loc env ty constr =
   let ty_res = repr ty_res in
   match ty_res.desc with
   | Tconstr(p,args,m) ->
-      ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
+      set_type_desc ty_res (Tconstr(p,List.map (fun _ -> newvar ()) args,m));
       enforce_constraints !env ty_res;
       unify_pat_types ~refine loc env ty_res ty
   | _ -> assert false

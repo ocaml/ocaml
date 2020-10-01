@@ -509,4 +509,5 @@ let remove_option typ =
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
   in
-  { typ with Types.desc = iter typ.Types.desc }
+  Types.Internal.lock
+    { (Types.Internal.unlock typ) with Types.Internal.desc = iter typ.Types.desc }

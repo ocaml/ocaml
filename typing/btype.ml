@@ -564,24 +564,26 @@ end = struct
 end
 
 (* Mark a type. *)
+let mirror_level level = pivot_level - level  
+
 let rec mark_type ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
     (* type nodes with negative levels are "marked" *)
-    (Internal.unlock ty).level <- pivot_level - ty.level;
+    (Internal.unlock ty).level <- mirror_level ty.level;
     iter_type_expr mark_type ty
   end
 
 let mark_type_node ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
-    (Internal.unlock ty).level <- pivot_level - ty.level;
+    (Internal.unlock ty).level <- mirror_level ty.level;
   end
 
 let mark_type_node_with ty f =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
-    (Internal.unlock ty).level <- pivot_level - ty.level;
+    (Internal.unlock ty).level <- mirror_level ty.level;
     f ty
   end
 
@@ -598,7 +600,7 @@ let type_iterators =
   in
   {type_iterators with it_type_expr}
 
-
+   
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in

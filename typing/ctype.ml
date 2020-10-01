@@ -1941,8 +1941,9 @@ let occur_univar env ty =
     let ty = repr ty in
     if ty.level >= lowest_level &&
       if TypeSet.is_empty bound then
-        ((Internal.unlock ty).level <- pivot_level - ty.level; true)
+        ((Internal.unlock ty).level <- mirror_level ty.level; true)
         (* TODO: (mark_type_node ty; true)? *)
+	(* or reform the logical structure of this if-construct? *)
       else try
         let bound' = TypeMap.find ty !visited in
         if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then
@@ -2061,7 +2062,7 @@ let polyfy env ty vars =
     | Tvar name when ty.level = generic_level ->
         For_copy.save_desc scope ty ty.desc;
         let t = newty (Tunivar name) in
-        ty.desc <- Tsubst t;
+        (Internal.unlock ty).desc <- Tsubst t;
         Some t
     | _ -> None
   in
@@ -2108,41 +2109,16 @@ let expand_trace env trace =
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 let deep_occur t0 ty =
   let rec occur_rec ty =
-    let ty = repr ty in
-    if ty.level >= t0.level then begin
-      if ty == t0 then raise Occur;
-      ty.level <- pivot_level - ty.level;
-      iter_type_expr occur_rec ty
-    end
+    mark_type_node_with ty
+      begin fun ty ->
+	if ty == t0 then raise Occur;
+	iter_type_expr occur_rec ty
+      end
   in
   try
     occur_rec ty; unmark_type ty; false
   with Occur ->
     unmark_type ty; true
-
-(*
-   1. When unifying two non-abbreviated types, one type is made a link
-      to the other. When unifying an abbreviated type with a
-      non-abbreviated type, the non-abbreviated type is made a link to
-      the other one. When unifying to abbreviated types, these two
-      types are kept distincts, but they are made to (temporally)
-      expand to the same type.
-   2. Abbreviations with at least one parameter are systematically
-      expanded. The overhead does not seem too high, and that way
-      abbreviations where some parameters does not appear in the
-      expansion, such as ['a t = int], are correctly handled. In
-      particular, for this example, unifying ['a t] with ['b t] keeps
-      ['a] and ['b] distincts. (Is it really important ?)
-   3. Unifying an abbreviation ['a t = 'a] with ['a] should not yield
-      ['a t as 'a]. Indeed, the type variable would otherwise be lost.
-      This problem occurs for abbreviations expanding to a type
-      variable, but also to many other constrained abbreviations (for
-      instance, [(< x : 'a > -> unit) t = <x : 'a>]). The solution is
-      that, if an abbreviation is unified with some subpart of its
-      parameters, then the parameter actually does not get
-      abbreviated.  It would be possible to check whether some
-      information is indeed lost, but it probably does not worth it.
-*)
 
 let gadt_equations_level = ref None
 
@@ -2449,15 +2425,14 @@ let mcomp env t1 t2 =
 (* Real unification *)
 
 let find_lowest_level ty =
-  let lowest = ref generic_level in
+  let lowest = ref (mirror_level generic_level) in
   let rec find ty =
-    let ty = repr ty in
-    if ty.level >= lowest_level then begin
-      if ty.level < !lowest then lowest := ty.level;
-      ty.level <- pivot_level - ty.level;
-      iter_type_expr find ty
-    end
-  in find ty; unmark_type ty; !lowest
+    mark_type_node_with ty
+      begin fun ty ->
+	if ty.level > !lowest then lowest := ty.level;
+	iter_type_expr find ty
+      end
+  in find ty; unmark_type ty; mirror_level !lowest
 
 let find_expansion_scope env path =
   (Env.find_type path env).type_expansion_scope
@@ -2584,7 +2559,7 @@ let unify1_var env t1 t2 =
     update_level env t1.level t2;
     update_scope t1.scope t2
   with Unify _ as e ->
-    t1.desc <- d1;
+    (Internal.unlock t1).desc <- d1;
     raise e
 
 (* Can only be called when generate_equations is true *)
@@ -2592,6 +2567,30 @@ let record_equation t1 t2 =
   match !equations_generation with
   | Forbidden -> assert false
   | Allowed { equated_types } -> TypePairs.add equated_types (t1, t2) ()
+
+(*
+   1. When unifying two non-abbreviated types, one type is made a link
+      to the other. When unifying an abbreviated type with a
+      non-abbreviated type, the non-abbreviated type is made a link to
+      the other one. When unifying to abbreviated types, these two
+      types are kept distincts, but they are made to (temporally)
+      expand to the same type.
+   2. Abbreviations with at least one parameter are systematically
+      expanded. The overhead does not seem too high, and that way
+      abbreviations where some parameters does not appear in the
+      expansion, such as ['a t = int], are correctly handled. In
+      particular, for this example, unifying ['a t] with ['b t] keeps
+      ['a] and ['b] distincts. (Is it really important ?)
+   3. Unifying an abbreviation ['a t = 'a] with ['a] should not yield
+      ['a t as 'a]. Indeed, the type variable would otherwise be lost.
+      This problem occurs for abbreviations expanding to a type
+      variable, but also to many other constrained abbreviations (for
+      instance, [(< x : 'a > -> unit) t = <x : 'a>]). The solution is
+      that, if an abbreviation is unified with some subpart of its
+      parameters, then the parameter actually does not get
+      abbreviated.  It would be possible to check whether some
+      information is indeed lost, but it probably does not worth it.
+*)
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
@@ -2848,7 +2847,7 @@ and unify3 env t1 t1' t2 t2' =
         | _ ->
             () (* t2 has already been expanded by update_level *)
     with Unify trace ->
-      t1'.desc <- d1;
+      (Internal.unlock t1').desc <- d1;
       raise (Unify trace)
   end
 
@@ -3114,7 +3113,6 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed second (fun () -> set_row_field e2 f1)
   | _ -> raise (Unify [])
 
-
 let unify env ty1 ty2 =
   let snap = Btype.snapshot () in
   try
@@ -3274,7 +3272,7 @@ let moregen_occur env level ty =
     let ty = repr ty in
     if ty.level > level then begin
       if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur;
-      ty.level <- pivot_level - ty.level;
+      (Internal.unlock ty).level <- mirror_level ty.level;
       iter_type_expr occur ty
     end
   in
@@ -3490,10 +3488,8 @@ let moregeneral env inst_nongen pat_sch subj_sch =
 (* Simpler, no? *)
 
 let rec rigidify_rec vars ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    ty.level <- pivot_level - ty.level;
-    match ty.desc with
+  mark_type_node_with ty
+    begin fun ty -> match ty.desc with
     | Tvar _ ->
         if not (List.memq ty !vars) then vars := ty :: !vars
     | Tvariant row ->
@@ -3510,7 +3506,7 @@ let rec rigidify_rec vars ty =
         if not (static_row row) then rigidify_rec vars (row_more row)
     | _ ->
         iter_type_expr (rigidify_rec vars) ty
-  end
+    end
 
 let rigidify ty =
   let vars = ref [] in
@@ -4120,7 +4116,7 @@ let rec build_subtype env visited loops posi level t =
              as this occurrence might break the occur check.
              XXX not clear whether this correct anyway... *)
           if List.exists (deep_occur ty) tl1 then raise Not_found;
-          ty.desc <- Tvar None;
+	  set_type_desc ty (Tvar None);
           let t'' = newvar () in
           let loops = (ty, t'') :: loops in
           (* May discard [visited] as level is going down *)
@@ -4129,7 +4125,7 @@ let rec build_subtype env visited loops posi level t =
           assert (is_Tvar t'');
           let nm =
             if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
-          t''.desc <- Tobject (ty1', ref nm);
+	  set_type_desc t'' (Tobject (ty1', ref nm));
           (try unify_var env ty t with Unify _ -> assert false);
           (t'', Changed)
       | _ -> raise Not_found
@@ -4645,7 +4641,7 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
   with Not_found ->
     let ty' = newgenvar () in        (* Stub *)
     TypeHash.add nondep_hash ty ty';
-    ty'.desc <-
+    set_type_desc ty'
       begin match ty.desc with
       | Tconstr(p, tl, _abbrev) ->
           begin try
