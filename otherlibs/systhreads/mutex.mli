@@ -37,11 +37,12 @@ val lock : t -> unit
    at any time. A thread that attempts to lock a mutex already locked
    by another thread will suspend until the other thread unlocks
    the mutex.
-   
+
    @raise Sys_error if the mutex is already locked by the thread calling
    {!Mutex.lock}.
 
-   @before 4.12 {!Sys_error} was not raised for recursive locking (platform-dependent behaviour) *)
+   @before 4.12 {!Sys_error} was not raised for recursive locking
+   (platform-dependent behaviour) *)
 
 val try_lock : t -> bool
 (** Same as {!Mutex.lock}, but does not suspend the calling thread if
