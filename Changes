@@ -127,6 +127,10 @@ Working version
   needed as the pagetable heads towards retirement).
   (David Allsopp, review by Xavier Leroy)
 
+- #9951: Ensure that the mark stack push optimisation handles naked pointers
+  (KC Sivaramakrishnan, reported by Enguerrand Decorne, review by Gabriel
+   Scherer, and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
