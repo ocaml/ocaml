@@ -255,10 +255,10 @@ Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
   st_tid self, prev;
   /* If the calling thread holds the lock, m->owner is stable and equal
-     to GetCurrentThreadId().
+     to st_current_thread_id().
      Otherwise, the value of m->owner can be 0 (if the mutex is unlocked)
      or some other thread ID (if the mutex is held by another thread),
-     but is never equal to GetCurrentThreadId(). */
+     but is never equal to st_current_thread_id(). */
   self = st_current_thread_id();
   prev = Tid_Atomic_Compare_Exchange(&m->owner, 0, self);
   if (prev != self) {
