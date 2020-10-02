@@ -167,7 +167,7 @@ let pat
   | Tpat_construct (_, _, l) -> List.iter (sub.pat sub) l
   | Tpat_variant (_, po, _) -> Option.iter (sub.pat sub) po
   | Tpat_record (l, _) -> List.iter (fun (_, _, i) -> sub.pat sub i) l
-  | Tpat_array l -> List.iter (sub.pat sub) l
+  | Tpat_array (_, l) -> List.iter (sub.pat sub) l
   | Tpat_alias (p, _, _) -> sub.pat sub p
   | Tpat_lazy p -> sub.pat sub p
   | Tpat_value p -> sub.pat sub (p :> pattern)
@@ -217,7 +217,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_setfield (exp1, _, _, exp2) ->
       sub.expr sub exp1;
       sub.expr sub exp2
-  | Texp_array list -> List.iter (sub.expr sub) list
+  | Texp_array (_, list) -> List.iter (sub.expr sub) list
   | Texp_ifthenelse (exp1, exp2, expo) ->
       sub.expr sub exp1;
       sub.expr sub exp2;

@@ -290,7 +290,7 @@ end = struct
       | `Record (fields, closed) ->
           let alpha_field env (lid, l, p) = (lid, l, alpha_pat env p) in
           `Record (List.map (alpha_field env) fields, closed)
-      | `Array ps -> `Array (List.map (alpha_pat env) ps)
+      | `Array (kind, ps) -> `Array (kind, List.map (alpha_pat env) ps)
       | `Lazy p -> `Lazy (alpha_pat env p)
     in
     { p with pat_desc }
@@ -389,7 +389,7 @@ let matcher discr (p : Simple.pattern) rem =
   | Variant _, (Constant _ | Construct _ | Lazy | Array _ | Record _ | Tuple _)
     ->
       no ()
-  | Array n1, Array n2 -> yesif (n1 = n2)
+  | Array (_, n1), Array (_, n2) -> yesif (n1 = n2)
   | Array _, (Constant _ | Construct _ | Variant _ | Lazy | Record _ | Tuple _)
     ->
       no ()
@@ -1999,19 +1999,19 @@ let divide_record all_labels ~scopes head ctx pm =
 (* Matching against an array pattern *)
 
 let get_key_array = function
-  | { pat_desc = Tpat_array patl } -> List.length patl
+  | { pat_desc = Tpat_array (_, patl) } -> List.length patl
   | _ -> assert false
 
 let get_pat_args_array p rem =
   match p with
-  | { pat_desc = Tpat_array patl } -> patl @ rem
+  | { pat_desc = Tpat_array (_, patl) } -> patl @ rem
   | _ -> assert false
 
 let get_expr_args_array ~scopes kind head (arg, _mut) rem =
   let len =
     let open Patterns.Head in
     match head.pat_desc with
-    | Array len -> len
+    | Array (_, len) -> len
     | _ -> assert false
   in
   let loc = head_loc ~scopes head in
@@ -3202,8 +3202,8 @@ and do_compile_matching ~scopes repr partial ctx pmh =
             partial (divide_constructor ~scopes)
             (combine_constructor ploc arg ph.pat_env cstr partial)
             ctx pm
-      | Array _ ->
-          let kind = Typeopt.array_pattern_kind pomega in
+      | Array (kind, _) ->
+          let kind = Typeopt.array_pattern_kind kind pomega in
           compile_test
             (compile_match ~scopes repr partial)
             partial (divide_array ~scopes kind)

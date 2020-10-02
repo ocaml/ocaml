@@ -1798,12 +1798,13 @@ and type_pat_aux
             lid_sp_list (fun lbl_pat_list -> k' (make_record_pat lbl_pat_list))
       end
   | Ppat_array spl ->
-      let {ArrayDescription.elt_ty; array_ty} = disambiguate_array_type loc !env expected_ty in
+      let {ArrayDescription.elt_ty; array_ty; kind} =
+        disambiguate_array_type loc !env expected_ty in
       let expected_ty = generic_instance expected_ty in
       unify_pat_types ~refine loc env array_ty expected_ty;
       map_fold_cont (fun p -> type_pat Value p elt_ty) spl (fun pl ->
         rvp k {
-        pat_desc = Tpat_array pl;
+        pat_desc = Tpat_array (kind, pl);
         pat_loc = loc; pat_extra=[];
         pat_type = instance expected_ty;
         pat_attributes = sp.ppat_attributes;
@@ -2165,7 +2166,7 @@ let rec is_nonexpansive exp =
   | Texp_constant _
   | Texp_unreachable
   | Texp_function _
-  | Texp_array [] -> true
+  | Texp_array (_, []) -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
@@ -2242,7 +2243,7 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Some e]) ->
      is_nonexpansive e
-  | Texp_array (_ :: _)
+  | Texp_array (_, _ :: _)
   | Texp_apply _
   | Texp_try _
   | Texp_setfield _
@@ -3107,13 +3108,14 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
-      let {ArrayDescription.elt_ty; array_ty} = disambiguate_array_type loc env ty_expected in
+      let {ArrayDescription.elt_ty; array_ty; kind} =
+        disambiguate_array_type loc env ty_expected in
       with_explanation (fun () ->
         unify_exp_types loc env array_ty (generic_instance ty_expected));
       let argl =
         List.map (fun sarg -> type_expect env sarg (mk_expected elt_ty)) sargl in
       re {
-        exp_desc = Texp_array argl;
+        exp_desc = Texp_array (kind, argl);
         exp_loc = loc; exp_extra = [];
         exp_type = instance ty_expected;
         exp_attributes = sexp.pexp_attributes;

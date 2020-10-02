@@ -114,7 +114,7 @@ and 'k pattern_desc =
 
             Invariant: n > 0
          *)
-  | Tpat_array : value general_pattern list -> value pattern_desc
+  | Tpat_array : array_kind * value general_pattern list -> value pattern_desc
         (** [| P1; ...; Pn |] *)
   | Tpat_lazy : value general_pattern -> value pattern_desc
         (** lazy P *)
@@ -246,7 +246,7 @@ and expression_desc =
   | Texp_field of expression * Longident.t loc * Types.label_description
   | Texp_setfield of
       expression * Longident.t loc * Types.label_description * expression
-  | Texp_array of expression list
+  | Texp_array of array_kind * expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
   | Texp_while of expression * expression
