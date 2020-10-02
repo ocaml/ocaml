@@ -54,7 +54,6 @@ val unlock : t -> unit
 (** Unlock the given mutex. Other threads suspended trying to lock
    the mutex will restart.  The mutex must have been previously locked
    by the thread that calls {!Mutex.unlock}.
-   
    @raise Sys_error if the mutex is unlocked or was locked by another thread.
 
    @before 4.12 {!Sys_error} was not raised when unlocking an unlocked mutex
