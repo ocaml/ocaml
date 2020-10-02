@@ -1125,8 +1125,8 @@ static void handover_ephemerons(caml_domain_state* domain_state)
       domain_state->ephe_info->live == 0)
     return;
 
-  todo_tail = caml_bias_ephe_list(domain_state->ephe_info->todo, (struct domain*)NULL);
-  live_tail = caml_bias_ephe_list(domain_state->ephe_info->live, (struct domain*)NULL);
+  todo_tail = caml_bias_ephe_list(domain_state->ephe_info->todo);
+  live_tail = caml_bias_ephe_list(domain_state->ephe_info->live);
   caml_add_orphaned_ephe(domain_state->ephe_info->todo, todo_tail,
                          domain_state->ephe_info->live, live_tail);
   if (domain_state->ephe_info->todo != 0) {

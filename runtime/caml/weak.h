@@ -61,8 +61,8 @@ struct caml_ephe_info {
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
 
 struct caml_ephe_info* caml_alloc_ephe_info (void);
-void caml_ephe_clean(struct domain* d, value e);
-value caml_bias_ephe_list(value, struct domain*);
+void caml_ephe_clean(value e);
+value caml_bias_ephe_list(value);
 
 #endif /* CAML_INTERNALS */
 
