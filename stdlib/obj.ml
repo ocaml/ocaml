@@ -109,7 +109,7 @@ module Ephemeron = struct
   type t (** ephemeron *)
 
    (** To change in sync with weak.h *)
-  let additional_values = 3
+  let additional_values = 2
   let max_ephe_length = Sys.max_array_length - additional_values
 
   external create : int -> t = "caml_ephe_create";;
