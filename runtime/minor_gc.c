@@ -469,6 +469,7 @@ void caml_gc_dispatch (void)
     /* The minor heap is full, we must do a minor collection. */
     Caml_state->requested_minor_gc = 1;
   }else{
+    /* The minor heap is half-full, do a major GC slice. */
     Caml_state->requested_major_slice = 1;
   }
   if (caml_gc_phase == Phase_idle){
