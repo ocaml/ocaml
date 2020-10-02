@@ -291,24 +291,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 Oval_list []
           | Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_array ->
-              let length = O.size obj in
-              if length > 0 then
-                match check_depth depth obj ty with
-                  Some x -> x
-                | None ->
-                    let rec tree_of_items tree_list i =
-                      if !printer_steps < 0 || depth < 0 then
-                        Oval_ellipsis :: tree_list
-                      else if i < length then
-                        let tree =
-                          nest tree_of_val (depth - 1) (O.field obj i) ty_arg
-                        in
-                        tree_of_items (tree :: tree_list) (i + 1)
-                      else tree_list
-                    in
-                    Oval_array (List.rev (tree_of_items [] 0))
-              else
-                Oval_array []
+              tree_of_array O.field depth obj ty ty_arg
+
+          | Tconstr(path, [], _)
+            when Path.same path Predef.path_floatarray ->
+              let double_field obj i = O.repr (O.double_field obj i) in
+              tree_of_array double_field depth obj ty Predef.type_float
 
           | Tconstr(path, [], _)
               when Path.same path Predef.path_string ->
@@ -482,6 +470,26 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
+
+      and tree_of_array f depth obj ty ty_arg =
+        let length = O.size obj in
+        if length > 0 then
+          match check_depth depth obj ty with
+            Some x -> x
+          | None ->
+              let rec tree_of_items tree_list i =
+                if !printer_steps < 0 || depth < 0 then
+                  Oval_ellipsis :: tree_list
+                else if i < length then
+                  let tree =
+                    nest tree_of_val (depth - 1) (f obj i) ty_arg
+                  in
+                  tree_of_items (tree :: tree_list) (i + 1)
+                else tree_list
+              in
+              Oval_array (List.rev (tree_of_items [] 0))
+        else
+          Oval_array []
 
       and tree_of_record_fields depth env path type_params ty_list
           lbl_list pos obj unboxed =
