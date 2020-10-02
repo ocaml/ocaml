@@ -334,6 +334,8 @@ let main fname =
         Clflags.no_std_include := true;
         Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
   end;
+  let state = Local_store.fresh Local_store.Compiler.compiler_state in
+  Local_store.with_scope state @@ fun () ->
   Compmisc.init_path ();
   Toploop.initialize_toplevel_env ();
   Sys.interactive := false;

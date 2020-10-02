@@ -243,6 +243,8 @@ module Toplevel = struct
 
 end
 
+let state = Local_store.fresh Local_store.Compiler.compiler_state
+
 let () =
   Arg.parse ["-n", Arg.Int (fun n -> linelen := n), "line length";
              "-o", Arg.String (fun s -> outfile := s), "output";
@@ -252,6 +254,7 @@ let () =
             ]
     (fun s -> files := s :: !files)
     "caml-tex: ";
+  Local_store.with_scope state @@ fun () ->
   Toplevel.init ()
 
 
@@ -776,4 +779,5 @@ let _ =
     try close_out (open_out !outfile)
     with _ -> failwith "Cannot open output file"
   end;
+  Local_store.with_scope state @@ fun () ->
   List.iter process_file (List.rev !files);

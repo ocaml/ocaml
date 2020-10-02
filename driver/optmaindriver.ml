@@ -40,6 +40,8 @@ let main argv ppf =
   native_code := true;
   match
     Compenv.readenv ppf Before_args;
+    let state = Local_store.fresh Local_store.Compiler.compiler_state in
+    Local_store.with_scope state @@ fun () ->
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.add_arguments __LOC__
       ["-depend", Arg.Unit Makedepend.main_from_option,

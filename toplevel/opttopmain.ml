@@ -103,6 +103,8 @@ let () =
 let main () =
   Clflags.native_code := true;
   let list = ref Options.list in
+  let state = Local_store.fresh Local_store.Compiler.compiler_state in
+  Local_store.with_scope state @@ fun () ->
   begin
     try
       Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;

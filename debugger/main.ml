@@ -229,6 +229,8 @@ let main () =
     end;
     if !Parameters.version
     then printf "\tOCaml Debugger version %s@.@." Config.version;
+    let state = Local_store.fresh Local_store.Compiler.compiler_state in
+    Local_store.with_scope state @@ fun () ->
     Loadprinter.init();
     Load_path.init !default_load_path;
     Clflags.recursive_types := true;    (* Allow recursive types. *)
