@@ -145,19 +145,20 @@ module DLS = struct
     | Some e -> set_dls_list (e::vals)
 
   let get k =
-    let vals = get_dls_list () in
-    let (key, init) = k in
-    let rec search k l =
+    let rec search key_id init dls_list l =
       match l with
       | [] ->
         begin
           let r = Obj.repr (init ()) in
-          let e = {key_id = k; slot = r } in
-          set_dls_list (e::vals);
+          let e = {key_id = key_id; slot = r } in
+          set_dls_list (e::dls_list);
           r
         end
-      | hd::tl -> if hd.key_id == k then hd.slot else search k tl
+      | hd::tl ->
+        if hd.key_id == key_id then hd.slot else search key_id init dls_list tl
     in
-    Obj.obj @@ search key vals
+    let dls_list = get_dls_list () in
+    let (key_id, init) = k in
+    Obj.obj @@ search key_id init dls_list dls_list
 
 end
