@@ -200,7 +200,6 @@ void caml_add_orphaned_ephe(value todo_head, value todo_tail,
 
 void caml_adopt_orphaned_work ()
 {
-  struct domain* d = caml_domain_self();
   caml_domain_state* domain_state = Caml_state;
   value last;
   struct caml_final_info *f, *myf, *temp;
@@ -211,7 +210,7 @@ void caml_adopt_orphaned_work ()
   caml_plat_lock(&orphaned_lock);
 
   if (orph_structs.ephe_list_live) {
-    last = caml_bias_ephe_list(orph_structs.ephe_list_live, d);
+    last = caml_bias_ephe_list(orph_structs.ephe_list_live);
     Ephe_link(last) = domain_state->ephe_info->live;
     domain_state->ephe_info->live = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = 0;
@@ -221,7 +220,7 @@ void caml_adopt_orphaned_work ()
     if (domain_state->ephe_info->todo == 0) {
       caml_ephe_todo_list_stolen();
     }
-    last = caml_bias_ephe_list(orph_structs.ephe_list_todo, d);
+    last = caml_bias_ephe_list(orph_structs.ephe_list_todo);
     Ephe_link(last) = domain_state->ephe_info->todo;
     domain_state->ephe_info->todo = orph_structs.ephe_list_todo;
     orph_structs.ephe_list_todo = 0;
@@ -757,7 +756,7 @@ intnat ephe_sweep (struct domain* d, intnat budget)
       /* The whole array is dead, drop this ephemeron */
       budget -= 1;
     } else {
-      caml_ephe_clean(d, v);
+      caml_ephe_clean(v);
       Ephe_link(v) = domain_state->ephe_info->live;
       domain_state->ephe_info->live = v;
       budget -= Whsize_val(v);
