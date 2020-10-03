@@ -1699,7 +1699,11 @@ AS_IF([test x"$enable_naked_pointers" = "xno" ],
   [naked_pointers=true])
 
 AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
-  [AS_CASE(["$arch","$system"],
+  [AS_IF([test x"$enable_naked_pointers" = "xno" ],
+         [AC_MSG_ERROR(m4_normalize([
+               --enable-naked-pointers-checker and --disable-naked-pointers
+               are incompatible]))])
+   AS_CASE(["$arch","$system"],
     [amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
     |amd64,freebsd],

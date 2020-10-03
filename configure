@@ -16665,7 +16665,10 @@ else
 fi
 
 if test x"$enable_naked_pointers_checker" = "xyes" ; then :
-  case "$arch","$system" in #(
+  if test x"$enable_naked_pointers" = "xno" ; then :
+  as_fn_error $? "--enable-naked-pointers-checker and --disable-naked-pointers are incompatible" "$LINENO" 5
+fi
+   case "$arch","$system" in #(
   amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
     |amd64,freebsd) :
