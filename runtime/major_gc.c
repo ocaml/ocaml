@@ -218,7 +218,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
 
-#ifdef NO_NAKED_POINTERS
+#if defined(NO_NAKED_POINTERS) || defined(NAKED_POINTERS_CHECKER)
   if (Tag_val(block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
         start scanning at the first word of the environment part. */
@@ -272,109 +272,19 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
   me->offset = offset;
 }
 
-
-#if defined(NO_NAKED_POINTERS) && defined(NAKED_POINTERS_CHECKER)
-
-#ifdef _WIN32
-#include <windows.h>
-
-static inline int safe_load(volatile value* p, value* result)
-{
-  value v;
-  __try {
-    v = *p;
-  }
-  __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
-        EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
-    *result = 0xdeadbeef;
-    return 0;
-  }
-  *result = v;
-  return 1;
-}
-#else
-static inline int safe_load (header_t * addr, /*out*/ header_t * contents)
-{
-  int ok;
-  header_t h;
-  intnat tmp;
-
-  asm volatile(
-      "leaq 1f(%%rip), %[tmp] \n\t"
-      "movq %[tmp], 0(%[handler]) \n\t"
-      "xorl %[ok], %[ok] \n\t"
-      "movq 0(%[addr]), %[h] \n\t"
-      "movl $1, %[ok] \n\t"
-  "1: \n\t"
-      "xorq %[tmp], %[tmp] \n\t"
-      "movq %[tmp], 0(%[handler])"
-      : [tmp] "=&r" (tmp), [ok] "=&r" (ok), [h] "=&r" (h)
-      : [addr] "r" (addr),
-        [handler] "r" (&(Caml_state->checking_pointer_pc)));
-  *contents = h;
-  return ok;
-}
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+static void check_pointer_safe (value v, value *p);
 #endif
 
-static int is_pointer_safe (value v, value *p)
+void caml_darken (value v, value *p)
 {
-  header_t h;
-  tag_t t;
-
-  if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
-
-  t = Tag_hd(h);
-  if (t == Infix_tag) {
-    v -= Infix_offset_hd(h);
-    if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
-    t = Tag_hd(h);
-  }
-
-  /* For the pointer to be considered safe, either the given pointer is in heap
-   * or the (out of heap) pointer has a black header and its size is < 2 ** 40
-   * words (128 GB). If not, we report a warning. */
-  if (Is_in_heap (v) ||
-      (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40)))
-    return 1;
-
-  if (!Is_black_hd(h)) {
-    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
-                     "non-black head (tag=%d)\n", p, (void*)v, t);
-  } else {
-    fprintf (stderr,
-             "Out-of-heap pointer at %p of value %p has "
-             "suspiciously large size: %" ARCH_INT64_PRINTF_FORMAT "u words\n",
-              p, (void*)v, Wosize_hd(h));
-  }
-  return 0;
-
- on_segfault:
-  fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
-           "Cannot read head.\n", p, (void*)v);
-  return 0;
-}
-
-#endif
-
-void caml_darken (value v, value *p /* not used */)
-{
-  header_t h;
-  tag_t t;
 #ifdef NO_NAKED_POINTERS
-  if (Is_block (v) && !Is_young (v)) {
-#ifdef NAKED_POINTERS_CHECKER
-    if (!is_pointer_safe(v,p)) return;
-
-    /* Atoms never need to be marked. */
-    if (Wosize_val (v) == 0)
-      return;
-#endif /* NAKED_POINTERS_CHECKER */
-
+  if (Is_block(v) && !Is_young (v)) {
 #else
-  if (Is_block (v) && Is_in_heap (v)) {
+  if (Is_block(v) && Is_in_heap (v)) {
 #endif
-    h = Hd_val (v);
-    t = Tag_hd (h);
+    header_t h = Hd_val (v);
+    tag_t t = Tag_hd (h);
     if (t == Infix_tag){
       v -= Infix_offset_val(v);
       h = Hd_val (v);
@@ -395,6 +305,11 @@ void caml_darken (value v, value *p /* not used */)
       }
     }
   }
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+  else if (Is_block(v) && !Is_young(v)) {
+    check_pointer_safe(v, p);
+  }
+#endif
 }
 
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
@@ -499,15 +414,6 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
 
 #ifdef NO_NAKED_POINTERS
   if (Is_block (child) && ! Is_young (child)) {
-
-#ifdef NAKED_POINTERS_CHECKER
-    if (!is_pointer_safe(child, &Field(v,i)))
-      return ;
-    /* Atoms never need to be marked. */
-    if (Wosize_val (child) == 0)
-      return ;
-#endif
-
 #else
   if (Is_block (child) && Is_in_heap (child)) {
 #endif
@@ -554,6 +460,11 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       }
     }
   }
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+  else if (Is_block(child) && ! Is_young(child)) {
+    check_pointer_safe(child, &Field (v, i));
+  }
+#endif
 }
 
 static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
@@ -643,8 +554,6 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
     ephes_checked_if_pure = &Field(v,CAML_EPHE_LINK_OFFSET);
   }
 }
-
-
 
 static void mark_slice (intnat work)
 {
@@ -1179,3 +1088,89 @@ void caml_finalise_heap (void)
   while (caml_gc_phase == Phase_sweep)
     sweep_slice (LONG_MAX);
 }
+
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+Caml_inline int safe_load(volatile header_t * p, header_t * result)
+{
+  header_t v;
+  __try {
+    v = *p;
+  }
+  __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+        EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
+    *result = 0xdeadbeef;
+    return 0;
+  }
+  *result = v;
+  return 1;
+}
+
+#else
+
+Caml_inline int safe_load (header_t * addr, /*out*/ header_t * contents)
+{
+  int ok;
+  header_t h;
+  intnat tmp;
+
+  asm volatile(
+      "leaq 1f(%%rip), %[tmp] \n\t"
+      "movq %[tmp], 0(%[handler]) \n\t"
+      "xorl %[ok], %[ok] \n\t"
+      "movq 0(%[addr]), %[h] \n\t"
+      "movl $1, %[ok] \n\t"
+  "1: \n\t"
+      "xorq %[tmp], %[tmp] \n\t"
+      "movq %[tmp], 0(%[handler])"
+      : [tmp] "=&r" (tmp), [ok] "=&r" (ok), [h] "=&r" (h)
+      : [addr] "r" (addr),
+        [handler] "r" (&(Caml_state->checking_pointer_pc)));
+  *contents = h;
+  return ok;
+}
+
+#endif
+
+static void check_pointer_safe (value v, value *p)
+{
+  header_t h;
+  tag_t t;
+
+  if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
+
+  t = Tag_hd(h);
+  if (t == Infix_tag) {
+    v -= Infix_offset_hd(h);
+    if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
+    t = Tag_hd(h);
+  }
+
+  /* For the pointer to be considered safe, either the given pointer is in heap
+   * or the (out of heap) pointer has a black header and its size is < 2 ** 40
+   * words (128 GB). If not, we report a warning. */
+  if (Is_in_heap (v) ||
+      (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40)))
+    return;
+
+  if (!Is_black_hd(h)) {
+    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                     "non-black head (tag=%d)\n", p, (void*)v, t);
+  } else {
+    fprintf (stderr,
+             "Out-of-heap pointer at %p of value %p has "
+             "suspiciously large size: %" ARCH_INT64_PRINTF_FORMAT "u words\n",
+              p, (void*)v, Wosize_hd(h));
+  }
+  return;
+
+ on_segfault:
+  fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
+           "Cannot read head.\n", p, (void*)v);
+}
+
+#endif
