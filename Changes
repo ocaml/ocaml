@@ -24,11 +24,12 @@ Working version
 
 ### Type system:
 
-* #??: remove propagation from previous branches
+* #9811: remove propagation from previous branches
   Type information inferred from previous branches was propagated in
   non-principal mode. Revert this for better compatibility with
   -principal mode.
-  (Jacques Garrigue, review by ??)
+  For the time being, infringing code should result in a principality warning.
+  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
 
 ### Runtime system:
 
