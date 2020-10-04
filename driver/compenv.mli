@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-exception Exit_status of int
+exception Exit_with_status of int
 
 val module_of_filename : string -> string -> string
 

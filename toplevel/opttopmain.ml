@@ -67,15 +67,15 @@ let file_argument name =
     Printf.eprintf "For implementation reasons, the toplevel does not support\
     \ having script files (here %S) inside expanded arguments passed through\
     \ the -args{,0} command-line option.\n" name;
-    raise (Exit_status 2)
+    raise (Exit_with_status 2)
   end else begin
     let newargs = Array.sub !argv !Arg.current
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
       if prepare ppf && Opttoploop.run_script ppf name newargs
-      then raise (Exit_status 0)
-      else raise (Exit_status 2)
+      then raise (Exit_with_status 0)
+      else raise (Exit_with_status 2)
     end
 
 let wrap_expand f s =
@@ -108,16 +108,16 @@ let main () =
       Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
     with
     | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg;
-                     raise (Exit_status 2)
+                     raise (Exit_with_status 2)
     | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg;
-                      raise (Exit_status 0)
+                      raise (Exit_with_status 0)
   end;
   Compmisc.read_clflags_from_env ();
-  if not (prepare Format.err_formatter) then raise (Exit_status 2);
+  if not (prepare Format.err_formatter) then raise (Exit_with_status 2);
   Compmisc.init_path ();
   Opttoploop.loop Format.std_formatter
 
 let main () =
   match main () with
-  | exception Exit_status n -> n
+  | exception Exit_with_status n -> n
   | () -> 0

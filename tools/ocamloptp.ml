@@ -69,7 +69,7 @@ let optlist =
 in
 begin try
   Arg.parse_expand optlist anon usage
-with Compenv.Exit_status n -> exit n
+with Compenv.Exit_with_status n -> exit n
 end;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamloptp cannot deal with both \"-impl\" and \"-intf\"\n";

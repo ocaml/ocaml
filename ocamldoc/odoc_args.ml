@@ -381,7 +381,7 @@ let parse () =
     Arg.parse (Arg.align ~limit:13 options)
       anonymous
       (M.usage^M.options_are)
-  with Compenv.Exit_status n -> exit n
+  with Compenv.Exit_with_status n -> exit n
   end;
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in
