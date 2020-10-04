@@ -8,4 +8,3 @@ then
 else
   exec ${program} > ${output}
 fi
-
