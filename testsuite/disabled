@@ -45,6 +45,13 @@ compatibility
 # TODO: preemption is not properly handled yet (no tick threads implemented)
 lib-systhreads
 
+# TODO: finaliser issue
+#  https://github.com/ocaml-multicore/ocaml-multicore/issues/385
+tests/backtrace/callstack.ml
+
+# TODO: beat test fails on MacOS + Clang
+tests/lib-thread/beat.ml
+
 # ocamldebug is broken (#34)
 tool-debugger
 
