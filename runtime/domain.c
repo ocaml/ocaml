@@ -944,7 +944,7 @@ void caml_handle_gc_interrupt() {
   }
 }
 
-CAMLexport inline int caml_bt_is_bt_working(void)
+CAMLexport inline int caml_bt_is_in_blocking_section(void)
 {
   dom_internal* self = domain_self;
   uintnat status = atomic_load_acq(&self->backup_thread_msg);

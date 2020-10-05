@@ -81,7 +81,7 @@ void caml_sample_gc_stats(struct gc_stats* buf);
 void caml_print_stats(void);
 
 CAMLexport void caml_reset_domain_lock(void);
-CAMLexport int caml_bt_is_bt_working(void);
+CAMLexport int caml_bt_is_in_blocking_section(void);
 CAMLexport void caml_bt_enter_ocaml(void);
 CAMLexport void caml_bt_exit_ocaml(void);
 CAMLexport void caml_acquire_domain_lock(void);

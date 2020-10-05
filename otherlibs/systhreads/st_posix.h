@@ -136,7 +136,7 @@ static void st_bt_lock_acquire(st_masterlock *m) {
   // We do not want to signal the backup thread is it is not "working"
   // as it may very well not be, because we could have just resumed
   // execution from another thread right away.
-  if (caml_bt_is_bt_working()) {
+  if (caml_bt_is_in_blocking_section()) {
     caml_bt_enter_ocaml();
   }
 
@@ -151,7 +151,7 @@ static void st_bt_lock_release(st_masterlock *m) {
   // no thread waiting to be scheduled, and the backup thread is currently
   // idle.
   if (atomic_load_acq(&m->waiters) == 0 &&
-      caml_bt_is_bt_working() == 0) {
+      caml_bt_is_in_blocking_section() == 0) {
     caml_bt_exit_ocaml();
   }
 
