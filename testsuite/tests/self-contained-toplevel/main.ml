@@ -37,4 +37,4 @@ let () =
             Env.add_persistent_structure (Ident.create_persistent "Foo")
               !Toploop.toplevel_env
       | _ -> ());
-  Topmain.main ()
+  exit (Topmain.main ())

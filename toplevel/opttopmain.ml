@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Clflags
+open Compenv
 
 let usage =
    "Usage: ocamlnat <options> <object-files> [script-file]\noptions are:"
@@ -67,15 +67,15 @@ let file_argument name =
     Printf.eprintf "For implementation reasons, the toplevel does not support\
     \ having script files (here %S) inside expanded arguments passed through\
     \ the -args{,0} command-line option.\n" name;
-    exit 2
+    raise (Exit_with_status 2)
   end else begin
     let newargs = Array.sub !argv !Arg.current
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
       if prepare ppf && Opttoploop.run_script ppf name newargs
-      then exit 0
-      else exit 2
+      then raise (Exit_with_status 0)
+      else raise (Exit_with_status 2)
     end
 
 let wrap_expand f s =
@@ -101,16 +101,23 @@ let () =
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let main () =
-  native_code := true;
+  Clflags.native_code := true;
   let list = ref Options.list in
   begin
     try
       Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
     with
-    | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg; exit 2
-    | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0
+    | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg;
+                     raise (Exit_with_status 2)
+    | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg;
+                      raise (Exit_with_status 0)
   end;
   Compmisc.read_clflags_from_env ();
-  if not (prepare Format.err_formatter) then exit 2;
+  if not (prepare Format.err_formatter) then raise (Exit_with_status 2);
   Compmisc.init_path ();
   Opttoploop.loop Format.std_formatter
+
+let main () =
+  match main () with
+  | exception Exit_with_status n -> n
+  | () -> 0

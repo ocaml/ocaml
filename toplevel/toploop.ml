@@ -590,7 +590,7 @@ let loop ppf =
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; exit 2
+      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
   end;
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
@@ -614,7 +614,7 @@ let loop ppf =
       Env.reset_cache_toplevel ();
       ignore(execute_phrase true ppf phr)
     with
-    | End_of_file -> exit 0
+    | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack snap
@@ -636,7 +636,7 @@ let run_script ppf name args =
   begin
     try toplevel_env := Compmisc.initial_env()
     with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; exit 2
+      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
   end;
   Sys.interactive := false;
   run_hooks After_setup;

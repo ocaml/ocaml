@@ -104,7 +104,7 @@ let main argv ppf =
       Warnings.check_fatal ();
     end;
   with
-  | exception (Compenv.Exit_compiler n) ->
+  | exception (Compenv.Exit_with_status n) ->
     n
   | exception x ->
     Location.report_exception ppf x;
