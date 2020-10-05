@@ -42,8 +42,8 @@ tests/callback/'signals_alloc.ml' with 1.2 (native)
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
-# TODO: preemption is not properly handled yet (no tick threads implemented)
-lib-systhreads
+# TODO: signal handling and tick thread missing from systhreads
+lib-systhreads-todo
 
 # TODO: finaliser issue (#385)
 tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
