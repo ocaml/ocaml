@@ -77,7 +77,7 @@ let set_structured_constants l =
     l
 
 let add_structured_constant sym cst =
-  Hashtbl.add state.structured_constants sym cst
+  Hashtbl.replace state.structured_constants sym cst
 
 let get_structured_constant s =
   Hashtbl.find_opt state.structured_constants s
