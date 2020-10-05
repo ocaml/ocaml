@@ -273,7 +273,7 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 }
 
 #if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
-static void check_pointer_safe (value v, value *p);
+static void is_naked_pointer_safe (value v, value *p);
 #endif
 
 void caml_darken (value v, value *p)
@@ -307,7 +307,7 @@ void caml_darken (value v, value *p)
   }
 #if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
   else if (Is_block(v) && !Is_young(v)) {
-    check_pointer_safe(v, p);
+    is_naked_pointer_safe(v, p);
   }
 #endif
 }
@@ -462,7 +462,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
   }
 #if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
   else if (Is_block(child) && ! Is_young(child)) {
-    check_pointer_safe(child, &Field (v, i));
+    is_naked_pointer_safe(child, &Field (v, i));
   }
 #endif
 }
@@ -1136,10 +1136,13 @@ Caml_inline int safe_load (header_t * addr, /*out*/ header_t * contents)
 
 #endif
 
-static void check_pointer_safe (value v, value *p)
+static void is_naked_pointer_safe (value v, value *p)
 {
   header_t h;
   tag_t t;
+
+  /* The following conditions were checked by the caller */
+  CAMLassert(Is_block(v) && !Is_young(v) && !Is_in_heap(v));
 
   if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
 
@@ -1150,11 +1153,10 @@ static void check_pointer_safe (value v, value *p)
     t = Tag_hd(h);
   }
 
-  /* For the pointer to be considered safe, either the given pointer is in heap
-   * or the (out of heap) pointer has a black header and its size is < 2 ** 40
+  /* For the out-of-heap pointer to be considered safe,
+   * it should have a black header and its size should be < 2 ** 40
    * words (128 GB). If not, we report a warning. */
-  if (Is_in_heap (v) ||
-      (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40)))
+  if (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40))
     return;
 
   if (!Is_black_hd(h)) {
