@@ -143,8 +143,8 @@ let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
 module PR6505b :
   sig
     type 'o is_an_object = 'o constraint 'o = [>  ]
-    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
-      constraint 'b = [>  ]
+    type ('a, 'o) abs = 'o constraint 'a = 'o is_an_object
+      constraint 'o = [>  ]
     val x : (([> `Foo of int ] as 'a) is_an_object, 'a is_an_object) abs
   end
 Line 6, characters 23-57:

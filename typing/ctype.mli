@@ -255,8 +255,6 @@ val extract_concrete_typedecl:
            type declaration found expanding it.
            Raise [Not_found] if none appears or not a type constructor. *)
 
-val enforce_constraints: Env.t -> type_expr -> unit
-
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
