@@ -259,7 +259,7 @@ Working version
   reliably raises a Sys_error exception.  Before, it could
   deadlock or succeed (and do recursive locking), depending on the OS.
   (Xavier Leroy, report by Guillaume Munch-Maccagnoni, review by
-  Guillaume Munch-Maccagnoni and David Allsopp)
+  Guillaume Munch-Maccagnoni, David Allsopp, and Stephen Dolan)
 
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
