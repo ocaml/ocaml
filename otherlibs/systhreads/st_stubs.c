@@ -279,7 +279,7 @@ static void caml_thread_reinitialize(void)
   // within the child, the domain_lock needs to be reset
   // and acquired.
   caml_reset_domain_lock();
-  caml_bt_acquire_domain_lock();
+  caml_acquire_domain_lock();
   // main_lock needs to be initialized and released.
   st_masterlock_init(&Thread_main_lock);
   st_masterlock_release(&Thread_main_lock);

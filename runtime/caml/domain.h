@@ -84,8 +84,8 @@ CAMLexport void caml_reset_domain_lock(void);
 CAMLexport int caml_bt_is_bt_working(void);
 CAMLexport void caml_bt_enter_ocaml(void);
 CAMLexport void caml_bt_exit_ocaml(void);
-CAMLexport void caml_bt_acquire_domain_lock(void);
-CAMLexport void caml_bt_release_domain_lock(void);
+CAMLexport void caml_acquire_domain_lock(void);
+CAMLexport void caml_release_domain_lock(void);
 
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);

@@ -140,7 +140,7 @@ static void st_bt_lock_acquire(st_masterlock *m) {
     caml_bt_enter_ocaml();
   }
 
-  caml_bt_acquire_domain_lock();
+  caml_acquire_domain_lock();
 
   return;
 }
@@ -155,7 +155,7 @@ static void st_bt_lock_release(st_masterlock *m) {
     caml_bt_exit_ocaml();
   }
 
-  caml_bt_release_domain_lock();
+  caml_release_domain_lock();
 
   return;
 }
@@ -220,7 +220,7 @@ static INLINE void st_thread_yield(st_masterlock * m)
   // messaging the bt should not be required because yield assumes
   // that a thread will resume execution (be it the yielding thread
   // or a waiting thread
-  caml_bt_release_domain_lock();
+  caml_release_domain_lock();
   atomic_fetch_add(&m->waiters, +1);
   do {
     /* Note: the POSIX spec prevents the above signal from pairing with this
@@ -233,7 +233,7 @@ static INLINE void st_thread_yield(st_masterlock * m)
   atomic_store_rel(&m->busy, 1);
   atomic_fetch_add(&m->waiters, -1);
 
-  caml_bt_acquire_domain_lock();
+  caml_acquire_domain_lock();
 
   caml_plat_unlock(&m->lock);
 
