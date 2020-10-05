@@ -271,6 +271,16 @@ Working version
   information before the first load.
   (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
 
+* #9757, #9846: check proper ownership when operating over mutexes.
+  Now, unlocking a mutex held by another thread or not locked at all
+  reliably raises a Sys_error exception.  Before, it was undefined
+  behavior, but the documentation did not say so.
+  Likewise, locking a mutex already locked by the current thread
+  reliably raises a Sys_error exception.  Before, it could
+  deadlock or succeed (and do recursive locking), depending on the OS.
+  (Xavier Leroy, report by Guillaume Munch-Maccagnoni, review by
+  Guillaume Munch-Maccagnoni, David Allsopp, and Stephen Dolan)
+
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
