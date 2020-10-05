@@ -747,6 +747,7 @@ build_os
 build_vendor
 build_cpu
 build
+naked_pointers_checker
 naked_pointers
 compute_deps
 stdlib_manpages
@@ -897,6 +898,7 @@ enable_ocamldoc
 enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
+enable_naked_pointers_checker
 enable_spacetime
 enable_call_counts
 enable_cfi
@@ -1570,6 +1572,8 @@ Optional Features:
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
                           do not allow naked pointers
+  --enable-naked-pointers-checker
+                          enable the naked pointers checker
   --enable-spacetime      build the spacetime profiler
   --disable-call-counts   disable the call counts in spacetime
   --disable-cfi           disable the CFI directives in assembly files
@@ -2943,6 +2947,7 @@ VERSION=4.12.0+dev0-2020-04-22
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3198,6 +3203,12 @@ fi
 # Check whether --enable-naked-pointers was given.
 if test "${enable_naked_pointers+set}" = set; then :
   enableval=$enable_naked_pointers;
+fi
+
+
+# Check whether --enable-naked-pointers-checker was given.
+if test "${enable_naked_pointers_checker+set}" = set; then :
+  enableval=$enable_naked_pointers_checker;
 fi
 
 
@@ -16651,6 +16662,27 @@ if test x"$enable_naked_pointers" = "xno" ; then :
 
 else
   naked_pointers=true
+fi
+
+if test x"$enable_naked_pointers_checker" = "xyes" ; then :
+  if test x"$enable_naked_pointers" = "xno" ; then :
+  as_fn_error $? "--enable-naked-pointers-checker and --disable-naked-pointers are incompatible" "$LINENO" 5
+fi
+   case "$arch","$system" in #(
+  amd64,linux|amd64,macosx \
+    |amd64,openbsd|amd64,win64 \
+    |amd64,freebsd) :
+    naked_pointers_checker=true
+      $as_echo "#define NAKED_POINTERS_CHECKER 1" >>confdefs.h
+ ;; #(
+  *) :
+    as_fn_error $? "naked pointers checker not supported on this platform" "$LINENO" 5
+   ;; #(
+  *) :
+     ;;
+esac
+else
+  naked_pointers_checker=false
 fi
 
 ## Check for mmap support for huge pages and contiguous heap

@@ -231,6 +231,14 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #endif
     caml_raise_stack_overflow();
 #endif
+#ifdef NAKED_POINTERS_CHECKER
+  } else if (Caml_state->checking_pointer_pc) {
+#ifdef CONTEXT_PC
+    CONTEXT_PC = (context_reg)Caml_state->checking_pointer_pc;
+#else
+#error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
+#endif /* CONTEXT_PC */
+#endif /* NAKED_POINTERS_CHECKER */
   } else {
     /* Otherwise, deactivate our exception handler and return,
        causing fatal signal to be generated at point of error. */
