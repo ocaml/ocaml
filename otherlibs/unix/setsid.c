@@ -23,7 +23,9 @@
 CAMLprim value unix_setsid(value unit)
 {
 #ifdef HAS_SETSID
-  return Val_int(setsid());
+  pid_t pid = setsid();
+  if (pid == (pid_t)(-1)) uerror("setsid", Nothing);
+  return Val_long(pid);
 #else
   caml_invalid_argument("setsid not implemented");
   return Val_unit;
