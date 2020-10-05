@@ -1118,17 +1118,11 @@ static void acknowledge_all_pending_interrupts()
 
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
-  value todo_tail = 0;
-  value live_tail = 0;
-
   if (domain_state->ephe_info->todo == 0 &&
       domain_state->ephe_info->live == 0)
     return;
 
-  todo_tail = caml_bias_ephe_list(domain_state->ephe_info->todo, (struct domain*)NULL);
-  live_tail = caml_bias_ephe_list(domain_state->ephe_info->live, (struct domain*)NULL);
-  caml_add_orphaned_ephe(domain_state->ephe_info->todo, todo_tail,
-                         domain_state->ephe_info->live, live_tail);
+  caml_add_to_orphaned_ephe_list(domain_state->ephe_info);
   if (domain_state->ephe_info->todo != 0) {
     caml_ephe_todo_list_emptied();
   }
