@@ -185,17 +185,6 @@ static void do_set (value e, mlsize_t offset, value v)
   }
 }
 
-value caml_bias_ephe_list(value e)
-{
-  value last = 0;
-  while (e != 0) {
-    CAMLassert (Tag_val(e) == Abstract_tag);
-    last = e;
-    e = Ephe_link(e);
-  }
-  return last;
-}
-
 static value ephe_set_field (value e, mlsize_t offset, value el)
 {
   CAMLparam2(e,el);
