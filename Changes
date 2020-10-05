@@ -275,6 +275,9 @@ Working version
   (Ivan Gotovchits and Xavier Leroy, review by Sébastien Hinderer and
    David Allsopp)
 
+- #9958: Raise exception in case of error in Unix.setsid.
+  (Nicolás Ojeda Bär, review by Stephen Dolan)
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared
