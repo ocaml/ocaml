@@ -62,7 +62,6 @@ struct caml_ephe_info {
 
 struct caml_ephe_info* caml_alloc_ephe_info (void);
 void caml_ephe_clean(value e);
-value caml_bias_ephe_list(value);
 
 #endif /* CAML_INTERNALS */
 

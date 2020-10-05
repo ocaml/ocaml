@@ -181,16 +181,31 @@ void caml_orphan_allocated_words() {
     atomic_fetch_add(&terminated_domains_allocated_words, Caml_state->allocated_words);
 }
 
-void caml_add_orphaned_ephe(value todo_head, value todo_tail,
-                            value live_head, value live_tail)
+static inline value ephe_list_tail(value e)
 {
+  value last = 0;
+  while (e != 0) {
+    CAMLassert (Tag_val(e) == Abstract_tag);
+    last = e;
+    e = Ephe_link(e);
+  }
+  return last;
+}
+
+void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
+{
+  value todo_head = ephe_info->todo;
+  value live_head = ephe_info->live;
+
   caml_plat_lock(&orphaned_lock);
   if (todo_head) {
+    value todo_tail = ephe_list_tail(todo_head);
     CAMLassert(Ephe_link(todo_tail) == 0);
     Ephe_link(todo_tail) = orph_structs.ephe_list_todo;
     orph_structs.ephe_list_todo = todo_head;
   }
   if (live_head) {
+    value live_tail = ephe_list_tail(live_head);
     CAMLassert(Ephe_link(live_tail) == 0);
     Ephe_link(live_tail) = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = live_head;
@@ -210,7 +225,7 @@ void caml_adopt_orphaned_work ()
   caml_plat_lock(&orphaned_lock);
 
   if (orph_structs.ephe_list_live) {
-    last = caml_bias_ephe_list(orph_structs.ephe_list_live);
+    last = ephe_list_tail(orph_structs.ephe_list_live);
     Ephe_link(last) = domain_state->ephe_info->live;
     domain_state->ephe_info->live = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = 0;
@@ -220,7 +235,7 @@ void caml_adopt_orphaned_work ()
     if (domain_state->ephe_info->todo == 0) {
       caml_ephe_todo_list_stolen();
     }
-    last = caml_bias_ephe_list(orph_structs.ephe_list_todo);
+    last = ephe_list_tail(orph_structs.ephe_list_todo);
     Ephe_link(last) = domain_state->ephe_info->todo;
     domain_state->ephe_info->todo = orph_structs.ephe_list_todo;
     orph_structs.ephe_list_todo = 0;
