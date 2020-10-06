@@ -1210,11 +1210,11 @@ and payload ctxt f = function
         (expression ctxt) e
         (item_attributes ctxt) attrs
   | PStr x -> structure ctxt f x
-  | PTyp x -> pp f ":"; core_type ctxt f x
-  | PSig x -> pp f ":"; signature ctxt f x
-  | PPat (x, None) -> pp f "?"; pattern ctxt f x
+  | PTyp x -> pp f ":@ "; core_type ctxt f x
+  | PSig x -> pp f ":@ "; signature ctxt f x
+  | PPat (x, None) -> pp f "?@ "; pattern ctxt f x
   | PPat (x, Some e) ->
-      pp f "?"; pattern ctxt f x;
+      pp f "?@ "; pattern ctxt f x;
       pp f " when "; expression ctxt f e
 
 (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
