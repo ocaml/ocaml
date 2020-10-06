@@ -493,6 +493,10 @@ Working version
 - #9927: Restore Cygwin64 support.
   (David Allsopp, review by Xavier Leroy)
 
+- #9940: Fix unboxing of allocated constants from other compilation units
+  (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
+  Stephen Dolan)
+
 
 OCaml 4.11.1
 ------------
