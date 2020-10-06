@@ -313,6 +313,16 @@ domain_init_complete:
   caml_plat_unlock(&all_domains_lock);
 }
 
+CAMLexport void caml_reset_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  // This is only used to reset the domain_lock state on fork.
+  caml_plat_mutex_init(&self->domain_lock);
+  caml_plat_cond_init(&self->domain_cond, &self->domain_lock);
+
+  return;
+}
+
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
   uintnat size;
@@ -467,6 +477,14 @@ static void install_backup_thread (dom_internal* di)
   }
 }
 
+static void caml_domain_start_default(void)
+{
+  return;
+}
+
+CAMLexport void (*caml_domain_start_hook)(void) =
+   caml_domain_start_default;
+
 static void domain_terminate();
 
 static void* domain_thread_func(void* v)
@@ -492,6 +510,7 @@ static void* domain_thread_func(void* v)
     install_backup_thread(domain_self);
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
+    caml_domain_start_hook();
     caml_callback(caml_read_root(callback), Val_unit);
     caml_delete_root(callback);
     domain_terminate();
@@ -929,13 +948,71 @@ void caml_handle_gc_interrupt()
   caml_ev_end("handle_gc_interrupt");
 }
 
+CAMLexport inline int caml_bt_is_in_blocking_section(void)
+{
+  dom_internal* self = domain_self;
+  uintnat status = atomic_load_acq(&self->backup_thread_msg);
+  if (status == BT_IN_BLOCKING_SECTION)
+    return 1;
+  else
+    return 0;
+
+}
+
+CAMLexport void caml_acquire_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  caml_plat_lock(&self->domain_lock);
+  return;
+}
+
+CAMLexport void caml_bt_enter_ocaml(void)
+{
+  dom_internal* self = domain_self;
+
+  Assert(caml_domain_alone() || self->backup_thread_running);
+
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
+  }
+
+  return;
+}
+
+CAMLexport void caml_release_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  caml_plat_unlock(&self->domain_lock);
+  return;
+}
+
+CAMLexport void caml_bt_exit_ocaml(void)
+{
+  dom_internal* self = domain_self;
+
+  Assert(caml_domain_alone() || self->backup_thread_running);
+
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
+    /* Wakeup backup thread if it is sleeping */
+    caml_plat_signal(&self->domain_cond);
+  }
+
+
+  return;
+}
+
 static void caml_enter_blocking_section_default(void)
 {
+  caml_bt_exit_ocaml();
+  caml_release_domain_lock();
   return;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
+  caml_bt_enter_ocaml();
+  caml_acquire_domain_lock();
   return;
 }
 
@@ -946,32 +1023,14 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
 
 CAMLexport void caml_leave_blocking_section() {
-  dom_internal* self = domain_self;
-
-  Assert(caml_domain_alone() || self->backup_thread_running);
-
-  if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
-  }
-
-  caml_plat_lock(&self->domain_lock);
   caml_leave_blocking_section_hook();
   caml_process_pending_signals();
 }
 
 CAMLexport void caml_enter_blocking_section() {
-  dom_internal* self = domain_self;
-
-  Assert(caml_domain_alone() || self->backup_thread_running);
 
   caml_process_pending_signals();
   caml_enter_blocking_section_hook();
-  if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
-    /* Wakeup backup thread if it is sleeping */
-    caml_plat_signal(&self->domain_cond);
-  }
-  caml_plat_unlock(&self->domain_lock);
 }
 
 void caml_print_stats () {
