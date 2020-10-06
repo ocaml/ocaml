@@ -43,11 +43,7 @@ endif
 
 LIBNAME=threads
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-HEADER = st_posix.h
-else # Windows
-HEADER = st_win32.h
-endif
+HEADER=st_posix.h
 
 # Note: the header on which object files produced from st_stubs.c
 # should actually depend is known for sure only at compile-time.

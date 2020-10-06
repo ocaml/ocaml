@@ -15,21 +15,26 @@
 
 /* POSIX thread implementation of the "st" interface */
 
-#include <assert.h>
-#include <errno.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#define CAML_INTERNALS
+
+#include "caml/alloc.h"
+#include "caml/domain_state.h"
+#include "caml/platform.h"
+#include "caml/custom.h"
+#include "caml/memory.h"
+#include "caml/fail.h"
+#include "caml/alloc.h"
+#include "caml/startup.h"
+#include "caml/fiber.h"
+#include "caml/callback.h"
+#include "caml/weak.h"
+#include "caml/finalise.h"
+#include "caml/domain.h"
+#include "caml/printexc.h"
+#include "caml/backtrace.h"
 #include <pthread.h>
-#ifdef __sun
-#define _POSIX_PTHREAD_SEMANTICS
-#endif
 #include <signal.h>
-#include <time.h>
-#include <sys/time.h>
-#ifdef __linux__
-#include <unistd.h>
-#endif
+#include <caml/signals.h>
 
 #ifdef __GNUC__
 #undef INLINE
@@ -40,14 +45,12 @@
 
 typedef int st_retcode;
 
-#define SIGPREEMPTION SIGVTALRM
-
 /* OS-specific initialization */
 
-static int st_initialize(void)
-{
-  return 0;
-}
+/* static int st_initialize(void) */
+/* { */
+/*   return 0; */
+/* } */
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
 
@@ -87,12 +90,6 @@ static void st_thread_exit(void)
   pthread_exit(NULL);
 }
 
-static void st_thread_join(st_thread_id thr)
-{
-  pthread_join(thr, NULL);
-  /* best effort: ignore errors */
-}
-
 /* Thread-specific state */
 
 typedef pthread_key_t st_tlskey;
@@ -118,44 +115,75 @@ static INLINE void st_tls_set(st_tlskey k, void * v)
    threads. */
 
 typedef struct {
-  pthread_mutex_t lock;         /* to protect contents  */
-  int busy;                     /* 0 = free, 1 = taken */
-  volatile int waiters;         /* number of threads waiting on master lock */
-  pthread_cond_t is_free;       /* signaled when free */
+  caml_plat_mutex lock;           /* to protect contents */
+  atomic_uintnat busy;            /* 0 = free, 1 = taken */
+  atomic_uintnat waiters;         /* number of threads waiting on master lock */
+  caml_plat_cond free;            /* signaled when free */
 } st_masterlock;
 
-static void st_masterlock_init(st_masterlock * m)
-{
-  pthread_mutex_init(&m->lock, NULL);
-  pthread_cond_init(&m->is_free, NULL);
-  m->busy = 1;
-  m->waiters = 0;
+static void st_masterlock_init(st_masterlock *m) {
+
+  caml_plat_mutex_init(&m->lock);
+  caml_plat_cond_init(&m->free, &m->lock);
+  atomic_store_rel(&m->busy, 1);
+  atomic_store_rel(&m->waiters, 0);
+
+  return;
+};
+
+static void st_bt_lock_acquire(st_masterlock *m) {
+
+  // We do not want to signal the backup thread is it is not "working"
+  // as it may very well not be, because we could have just resumed
+  // execution from another thread right away.
+  if (caml_bt_is_in_blocking_section()) {
+    caml_bt_enter_ocaml();
+  }
+
+  caml_acquire_domain_lock();
+
+  return;
 }
 
-static void st_masterlock_acquire(st_masterlock * m)
-{
-  pthread_mutex_lock(&m->lock);
-  while (m->busy) {
-    m->waiters ++;
-    pthread_cond_wait(&m->is_free, &m->lock);
-    m->waiters --;
+static void st_bt_lock_release(st_masterlock *m) {
+
+  // Here we do want to signal the backup thread iff there's
+  // no thread waiting to be scheduled, and the backup thread is currently
+  // idle.
+  if (atomic_load_acq(&m->waiters) == 0 &&
+      caml_bt_is_in_blocking_section() == 0) {
+    caml_bt_exit_ocaml();
   }
-  m->busy = 1;
-  pthread_mutex_unlock(&m->lock);
+
+  caml_release_domain_lock();
+
+  return;
+}
+
+static void st_masterlock_acquire(st_masterlock *m)
+{
+  caml_plat_lock(&m->lock);
+  while (atomic_load_acq(&m->busy)) {
+    atomic_fetch_add(&m->waiters, +1);
+    caml_plat_wait(&m->free);
+    atomic_fetch_add(&m->waiters, -1);
+  }
+  atomic_store_rel(&m->busy, 1);
+  st_bt_lock_acquire(m);
+  caml_plat_unlock(&m->lock);
+
+  return;
 }
 
 static void st_masterlock_release(st_masterlock * m)
 {
-  pthread_mutex_lock(&m->lock);
-  m->busy = 0;
-  pthread_mutex_unlock(&m->lock);
-  pthread_cond_signal(&m->is_free);
-}
+  caml_plat_lock(&m->lock);
+  atomic_store_rel(&m->busy, 0);
+  st_bt_lock_release(m);
+  caml_plat_signal(&m->free);
+  caml_plat_unlock(&m->lock);
 
-CAMLno_tsan  /* This can be called for reading [waiters] without locking. */
-static INLINE int st_masterlock_waiters(st_masterlock * m)
-{
-  return m->waiters;
+  return;
 }
 
 /* Scheduling hints */
@@ -167,61 +195,73 @@ static INLINE int st_masterlock_waiters(st_masterlock * m)
    off the lock to a waiter we know exists, it's safe, as they'll certainly
    re-wake us later.
 */
+
 static INLINE void st_thread_yield(st_masterlock * m)
 {
-  pthread_mutex_lock(&m->lock);
+  uintnat waiters;
+
+  caml_plat_lock(&m->lock);
   /* We must hold the lock to call this. */
-  assert(m->busy);
 
   /* We already checked this without the lock, but we might have raced--if
      there's no waiter, there's nothing to do and no one to wake us if we did
      wait, so just keep going. */
-  if (m->waiters == 0) {
-    pthread_mutex_unlock(&m->lock);
+  waiters = atomic_load_acq(&m->waiters);
+
+  if (waiters == 0) {
+    caml_plat_unlock(&m->lock);
     return;
   }
 
-  m->busy = 0;
-  pthread_cond_signal(&m->is_free);
-  m->waiters++;
+  atomic_store_rel(&m->busy, 0);
+
+  caml_plat_signal(&m->free);
+  // releasing the domain lock but not triggering bt messaging
+  // messaging the bt should not be required because yield assumes
+  // that a thread will resume execution (be it the yielding thread
+  // or a waiting thread
+  caml_release_domain_lock();
+  atomic_fetch_add(&m->waiters, +1);
   do {
     /* Note: the POSIX spec prevents the above signal from pairing with this
        wait, which is good: we'll reliably continue waiting until the next
        yield() or enter_blocking_section() call (or we see a spurious condvar
        wakeup, which are rare at best.) */
-       pthread_cond_wait(&m->is_free, &m->lock);
-  } while (m->busy);
-  m->busy = 1;
-  m->waiters--;
-  pthread_mutex_unlock(&m->lock);
+       caml_plat_wait(&m->free);
+  } while (atomic_load_acq(&m->busy));
+
+  atomic_store_rel(&m->busy, 1);
+  atomic_fetch_add(&m->waiters, -1);
+
+  caml_acquire_domain_lock();
+
+  caml_plat_unlock(&m->lock);
+
+  return;
 }
 
 /* Mutexes */
 
-typedef pthread_mutex_t * st_mutex;
+typedef caml_plat_mutex * st_mutex;
 
 static int st_mutex_create(st_mutex * res)
 {
-  int rc;
-  st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) return ENOMEM;
-  rc = pthread_mutex_init(m, NULL);
-  if (rc != 0) { caml_stat_free(m); return rc; }
-  *res = m;
+  st_mutex mut = caml_stat_alloc_noexc(sizeof(caml_plat_mutex));
+  caml_plat_mutex_init(mut);
+  *res = mut;
   return 0;
 }
 
 static int st_mutex_destroy(st_mutex m)
 {
-  int rc;
-  rc = pthread_mutex_destroy(m);
+  caml_plat_mutex_free(m);
   caml_stat_free(m);
-  return rc;
+  return 0;
 }
 
-static INLINE int st_mutex_lock(st_mutex m)
+static INLINE void st_mutex_lock(st_mutex m)
 {
-  return pthread_mutex_lock(m);
+  return caml_plat_lock(m);
 }
 
 #define PREVIOUSLY_UNLOCKED 0
@@ -229,107 +269,91 @@ static INLINE int st_mutex_lock(st_mutex m)
 
 static INLINE int st_mutex_trylock(st_mutex m)
 {
-  return pthread_mutex_trylock(m);
+  int retcode = caml_plat_try_lock(m);
+  return retcode;
 }
 
-static INLINE int st_mutex_unlock(st_mutex m)
+static INLINE void st_mutex_unlock(st_mutex m)
 {
-  return pthread_mutex_unlock(m);
+  return caml_plat_unlock(m);
 }
 
 /* Condition variables */
 
-typedef pthread_cond_t * st_condvar;
+typedef caml_plat_cond * st_condvar;
 
-static int st_condvar_create(st_condvar * res)
+static void st_condvar_create(st_condvar * res)
 {
-  int rc;
-  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
-  rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { caml_stat_free(c); return rc; }
-  *res = c;
-  return 0;
+  st_condvar cond = caml_stat_alloc_noexc(sizeof(caml_plat_cond));
+  caml_plat_cond_init_no_mutex(cond);
+  *res = cond;
 }
 
-static int st_condvar_destroy(st_condvar c)
+static void st_condvar_destroy(st_condvar c)
 {
-  int rc;
-  rc = pthread_cond_destroy(c);
+  caml_plat_cond_free(c);
   caml_stat_free(c);
-  return rc;
 }
 
-static INLINE int st_condvar_signal(st_condvar c)
+static INLINE void st_condvar_signal(st_condvar c)
 {
-  return pthread_cond_signal(c);
+  return check_err("st_condvar_signal", pthread_cond_signal(&c->cond));
 }
 
-static INLINE int st_condvar_broadcast(st_condvar c)
+static INLINE void st_condvar_broadcast(st_condvar c)
 {
-  return pthread_cond_broadcast(c);
+  return check_err("st_condvar_broadcast", pthread_cond_broadcast(&c->cond));
 }
 
-static INLINE int st_condvar_wait(st_condvar c, st_mutex m)
+static INLINE void st_condvar_wait(st_condvar c, st_mutex m)
 {
-  return pthread_cond_wait(c, m);
+  caml_plat_cond_set_mutex(c, m);
+  caml_plat_wait(c);
+  return;
 }
 
 /* Triggered events */
 
 typedef struct st_event_struct {
-  pthread_mutex_t lock;         /* to protect contents */
+  caml_plat_mutex lock;         /* to protect contents */
   int status;                   /* 0 = not triggered, 1 = triggered */
-  pthread_cond_t triggered;     /* signaled when triggered */
+  caml_plat_cond triggered;     /* signaled when triggered */
 } * st_event;
 
-static int st_event_create(st_event * res)
+
+static void st_event_create(st_event * res)
 {
-  int rc;
-  st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
-  if (e == NULL) return ENOMEM;
-  rc = pthread_mutex_init(&e->lock, NULL);
-  if (rc != 0) { caml_stat_free(e); return rc; }
-  rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0)
-  { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
+  st_event e = caml_stat_alloc(sizeof(struct st_event_struct));
+  caml_plat_mutex_init(&e->lock);
+  caml_plat_cond_init(&e->triggered, &e->lock);
   e->status = 0;
   *res = e;
-  return 0;
+  return ;
 }
 
-static int st_event_destroy(st_event e)
+static void st_event_destroy(st_event e)
 {
-  int rc1, rc2;
-  rc1 = pthread_mutex_destroy(&e->lock);
-  rc2 = pthread_cond_destroy(&e->triggered);
+  caml_plat_cond_free(&e->triggered);
+  caml_plat_mutex_free(&e->lock);
   caml_stat_free(e);
-  return rc1 != 0 ? rc1 : rc2;
 }
 
-static int st_event_trigger(st_event e)
+static void st_event_trigger(st_event e)
 {
-  int rc;
-  rc = pthread_mutex_lock(&e->lock);
-  if (rc != 0) return rc;
+  caml_plat_lock(&e->lock);
   e->status = 1;
-  rc = pthread_mutex_unlock(&e->lock);
-  if (rc != 0) return rc;
-  rc = pthread_cond_broadcast(&e->triggered);
-  return rc;
+  caml_plat_signal(&e->triggered);
+  caml_plat_unlock(&e->lock);
+  return;
 }
 
-static int st_event_wait(st_event e)
+static void st_event_wait(st_event e)
 {
-  int rc;
-  rc = pthread_mutex_lock(&e->lock);
-  if (rc != 0) return rc;
+  caml_plat_lock(&e->lock);
   while(e->status == 0) {
-    rc = pthread_cond_wait(&e->triggered, &e->lock);
-    if (rc != 0) return rc;
+    caml_plat_wait(&e->triggered);
   }
-  rc = pthread_mutex_unlock(&e->lock);
-  return rc;
+  caml_plat_unlock(&e->lock);
 }
 
 /* Reporting errors */
@@ -350,37 +374,6 @@ static void st_check_error(int retcode, char * msg)
   memmove (&Byte(str, msglen), ": ", 2);
   memmove (&Byte(str, msglen + 2), err, errlen);
   caml_raise_sys_error(str);
-}
-
-/* Variable used to stop the "tick" thread */
-static volatile int caml_tick_thread_stop = 0;
-
-/* The tick thread: posts a SIGPREEMPTION signal periodically */
-
-static void * caml_thread_tick(void * arg)
-{
-  struct timeval timeout;
-  sigset_t mask;
-  uintnat domain_id;
-
-  /* Initialize domain_self thread local variable */
-  domain_id = (uintnat)arg;
-  caml_init_domain_self (domain_id);
-  /* Block all signals so that we don't try to execute an OCaml signal handler*/
-  sigfillset(&mask);
-  pthread_sigmask(SIG_BLOCK, &mask, NULL);
-  while(! caml_tick_thread_stop) {
-    /* select() seems to be the most efficient way to suspend the
-       thread for sub-second intervals */
-    timeout.tv_sec = 0;
-    timeout.tv_usec = Thread_timeout * 1000;
-    select(0, NULL, NULL, NULL, &timeout);
-    /* The preemption signal should never cause a callback, so don't
-     go through caml_handle_signal(), just record signal delivery via
-     caml_record_signal(). */
-    caml_record_signal(SIGPREEMPTION);
-  }
-  return NULL;
 }
 
 /* "At fork" processing */

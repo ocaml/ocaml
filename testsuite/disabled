@@ -42,14 +42,19 @@ tests/callback/'signals_alloc.ml' with 1.2 (native)
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
+# TODO: signal handling and tick thread missing from systhreads
+lib-systhreads-todo
+
+# TODO: finaliser issue (#385)
+tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
+tests/backtrace/'callstack.ml' with 1.1.1 (native)
+
+# TODO: off-by-one error on MacOS+Clang (#408)
+tests/lib-threads/'beat.ml' with 1.2 (native)
+tests/lib-threads/'beat.ml' with 1.1 (bytecode)
+
 # ocamldebug is broken (#34)
 tool-debugger
-
-# the pre-multicore threads library is broken (#100)
-lib-systhreads
-lib-threads
-tests/backtrace/'callstack.ml' with 1.1.1 (native)
-tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
 
 # Uses obj.reachable_words whose definition in multicore isn't clear (think racy programs)
 lib-obj
