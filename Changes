@@ -434,6 +434,9 @@ Working version
 -  #9590: fix pprint of extension constructors (and exceptions) that rebind
    (Chet Murthy, review by octachron@)
 
+- #8939: Command-line option to save Linear IR before emit.
+  (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For

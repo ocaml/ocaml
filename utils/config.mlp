@@ -104,6 +104,7 @@ and ast_impl_magic_number = "Caml1999M027"
 and ast_intf_magic_number = "Caml1999N027"
 and cmxs_magic_number = "Caml1999D027"
 and cmt_magic_number = "Caml1999T027"
+and linear_magic_number = "Caml1999L027"
 
 let interface_suffix = ref ".mli"
 
@@ -213,6 +214,7 @@ let configuration_variables =
   p "ast_intf_magic_number" ast_intf_magic_number;
   p "cmxs_magic_number" cmxs_magic_number;
   p "cmt_magic_number" cmt_magic_number;
+  p "linear_magic_number" linear_magic_number;
 ]
 
 let print_config_value oc = function

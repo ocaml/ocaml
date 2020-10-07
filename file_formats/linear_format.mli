@@ -3,9 +3,11 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                    Greta Yorsh, Jane Street Europe                     *)
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
+(*   Copyright 2019 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,39 +15,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** From Lambda to assembly code *)
+(* Format of .cmir-linear files *)
 
-(** The type of converters from Lambda to Clambda. *)
-type middle_end =
-     backend:(module Backend_intf.S)
-  -> filename:string
-  -> prefixname:string
-  -> ppf_dump:Format.formatter
-  -> Lambda.program
-  -> Clambda.with_constants
+(* Compiler can optionally save Linear representation of a compilation unit,
+   along with other information required to emit assembly. *)
+type linear_item_info =
+  | Func of Linear.fundecl
+  | Data of Cmm.data_item list
 
-(** Compile an implementation from Lambda using the given middle end. *)
-val compile_implementation
-   : ?toplevel:(string -> bool)
-  -> backend:(module Backend_intf.S)
-  -> filename:string
-  -> prefixname:string
-  -> middle_end:middle_end
-  -> ppf_dump:Format.formatter
-  -> Lambda.program
-  -> unit
+type linear_unit_info =
+  {
+    mutable unit_name : string;
+    mutable items : linear_item_info list;
+  }
 
-val compile_phrase :
-    ppf_dump:Format.formatter -> Cmm.phrase -> unit
-
-type error = Assembler_error of string
-exception Error of error
-val report_error: Format.formatter -> error -> unit
-
-val compile_unit
-   : output_prefix:string
-   -> asm_filename:string
-   -> keep_asm:bool
-   -> obj_filename:string
-   -> (unit -> unit)
-   -> unit
+(* Marshal and unmarshal a compilation unit in Linear format.
+   It includes saving and restoring global state required for Emit,
+   that currently consists of Cmm.label_counter.
+*)
+val save : string -> linear_unit_info -> unit
+val restore : string -> linear_unit_info * Digest.t
