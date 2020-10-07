@@ -180,6 +180,9 @@ Working version
 - #10389, #10391, #10392: Add {Int,Int32,Int64,Nativeint}.{min,max}.
   (Nicolás Ojeda Bär and Alain Frisch, review by Xavier Leroy)
 
+- #9961: Add Array.fold_left_map.
+  (Craig Ferguson, review by Damien Doligez)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`
