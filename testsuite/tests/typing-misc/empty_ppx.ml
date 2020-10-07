@@ -9,6 +9,9 @@ let typ mapper e =
   | Ptyp_extension ({txt="empty_polyvar";loc},_) -> empty_polyvar loc
   | _ -> super.M.typ mapper e
 
-let () = M.register "empty ppx" (fun _ ->
+let () =
+  let state = Local_store.fresh Local_store.Compiler.compiler_state in
+  Local_store.with_scope state @@ fun () ->
+  M.register "empty ppx" (fun _ ->
     { super with typ }
   )

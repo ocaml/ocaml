@@ -33,6 +33,9 @@ let structure_item mapper stri = match stri.pstr_desc with
   | Pstr_extension (({Location.txt="empty_type";loc},_),_) -> empty_type loc
   | _ -> super.structure_item mapper stri
 
-let () = M.register "illegal ppx" (fun _ ->
+let () =
+  let state = Local_store.fresh Local_store.Compiler.compiler_state in
+  Local_store.with_scope state @@ fun () ->
+  M.register "illegal ppx" (fun _ ->
     { super with expr; pat; structure_item }
   )
