@@ -92,6 +92,19 @@ let () =
   assert (
     let f a b = a + b, string_of_int b in
     List.fold_left_map f 0 l = (45, sl));
+
+  assert (List.intersperse 0 [] = []);
+  assert (List.intersperse 0 [1] = [1]);
+  assert (List.intersperse 0 [1; 2; 3] = [1; 0; 2; 0; 3]);
+  assert (List.intersperse 0 [1; 2; 3; 4] = [1; 0; 2; 0; 3; 0; 4]);
+
+  assert (List.intercalate [10] [] = []);
+  assert (List.intercalate [10] [[1; 2]] = [1; 2]);
+  assert (List.intercalate [10] [[1; 2]; [3; 4]; [5; 6]]
+          = [1; 2; 10; 3; 4; 10; 5; 6]);
+  assert (List.intercalate [10; 20] [[1; 2]; [3; 4]; [5; 6]]
+          = [1; 2; 10; 20; 3; 4; 10; 20; 5; 6]);
+
   ()
 ;;
 

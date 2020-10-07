@@ -176,6 +176,10 @@ Working version
 - #10389, #10391, #10392: Add {Int,Int32,Int64,Nativeint}.{min,max}.
   (Nicolás Ojeda Bär and Alain Frisch, review by Xavier Leroy)
 
+- #9962: Add List.{intercalate,intersperse}.
+  (Craig Ferguson, review by Damien Doligez, Daniel Bünzli,
+  Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`
