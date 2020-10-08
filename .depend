@@ -78,10 +78,12 @@ utils/int_replace_polymorphic_compare.cmi :
 utils/load_path.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
+    utils/config.cmi \
     utils/load_path.cmi
 utils/load_path.cmx : \
     utils/misc.cmx \
     utils/local_store.cmx \
+    utils/config.cmx \
     utils/load_path.cmi
 utils/load_path.cmi :
 utils/local_store.cmo : \
