@@ -92,6 +92,10 @@ let () =
   assert (
     let f a b = a + b, string_of_int b in
     List.fold_left_map f 0 l = (45, sl));
+
+  assert (List.split_map Fun.id [(1, -1); (2, -2); (3, -3)]
+          = ([1; 2; 3],[-1; -2; -3]));
+
   ()
 ;;
 
