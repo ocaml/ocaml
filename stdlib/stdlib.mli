@@ -1396,7 +1396,6 @@ module Result       = Result
 module Scanf        = Scanf
 module Seq          = Seq
 module Set          = Set
-module Spacetime    = Spacetime
 module Stack        = Stack
 module StdLabels    = StdLabels
 module Stream       = Stream

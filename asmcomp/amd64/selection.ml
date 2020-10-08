@@ -129,7 +129,7 @@ let is_immediate_natint n = n <= 0x7FFF_FFFFn && n >= -0x8000_0000n
 
 class selector = object (self)
 
-inherit Spacetime_profiling.instruction_selection as super
+inherit Selectgen.selector_generic as super
 
 method! is_immediate op n =
   match op with
@@ -181,7 +181,7 @@ method! select_store is_assign addr exp =
   | (Cconst_natint (n, _dbg)) when is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | (Cblockheader(n, _dbg))
-      when is_immediate_natint n && not Config.spacetime ->
+      when is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp

@@ -25,7 +25,7 @@ BYTECODE_C_SOURCES := $(addsuffix .c, \
   signals_byt printexc backtrace_byt backtrace compare ints eventlog \
   floats str array io extern intern hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak compact finalise custom dynlink \
-  spacetime_byt afl $(UNIX_OR_WIN32) bigarray main memprof domain \
+  afl $(UNIX_OR_WIN32) bigarray main memprof domain \
   skiplist codefrag)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
@@ -34,7 +34,7 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   floats str array io extern intern hash sys parsing gc_ctrl eventlog md5 obj \
   lexing $(UNIX_OR_WIN32) printexc callback weak compact finalise custom \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
-  dynlink clambda_checks spacetime_nat spacetime_snapshot afl bigarray \
+  dynlink clambda_checks afl bigarray \
   memprof domain skiplist codefrag)
 
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
@@ -138,16 +138,13 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
 OC_NATIVE_CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
-OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
+OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR)
 
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
 
 ifeq "$(TOOLCHAIN)" "msvc"
 ASMFLAGS=
-ifeq ($(WITH_SPACETIME),true)
-ASMFLAGS=/DWITH_SPACETIME
-endif
 endif
 
 ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime

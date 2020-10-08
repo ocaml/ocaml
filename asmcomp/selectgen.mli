@@ -139,15 +139,13 @@ class virtual selector_generic : object
      above; overloading this is useful if Ispecific instructions need
      marking *)
 
-  (* The following method is the entry point and should not be overridden
-     (except by [Spacetime_profiling]). *)
+  (* The following method is the entry point and should not be overridden. *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
   (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction
-  method extract_core : end_instr:Mach.instruction -> Mach.instruction
   method insert :
     environment -> Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
   method insert_debug :
@@ -162,33 +160,6 @@ class virtual selector_generic : object
   method emit_expr :
     environment -> Cmm.expression -> Reg.t array option
   method emit_tail : environment -> Cmm.expression -> unit
-
-  (* Only for the use of [Spacetime_profiling]. *)
-  method select_allocation : int -> Mach.operation
-  method select_allocation_args : environment -> Reg.t array
-  method select_checkbound : unit -> Mach.integer_operation
-  method select_checkbound_extra_args : unit -> Cmm.expression list
-  method emit_blockheader
-     : environment
-    -> nativeint
-    -> Debuginfo.t
-    -> Reg.t array option
-  method about_to_emit_call
-     : environment
-    -> Mach.instruction_desc
-    -> Reg.t array
-    -> Debuginfo.t
-    -> Reg.t array option
-  method initial_env : unit -> environment
-  method insert_prologue
-     : Cmm.fundecl
-    -> loc_arg:Reg.t array
-    -> rarg:Reg.t array
-    -> spacetime_node_hole:(Backend_var.t * Reg.t array) option
-    -> env:environment
-    -> Mach.spacetime_shape option
-
-  val mutable instr_seq : Mach.instruction
 
   (* [contains_calls] is declared as a reference instance variable,
      instead of a mutable boolean instance variable,

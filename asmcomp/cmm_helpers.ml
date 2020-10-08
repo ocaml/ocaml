@@ -2628,18 +2628,6 @@ let frame_table namelist =
         List.map mksym namelist
         @ [cint_zero])
 
-(* Generate the master table of Spacetime shapes *)
-
-let spacetime_shapes namelist =
-  let mksym name =
-    Csymbol_address (
-      Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes"))
-  in
-  Cdata(Cglobal_symbol "caml_spacetime_shapes" ::
-        Cdefine_symbol "caml_spacetime_shapes" ::
-        List.map mksym namelist
-        @ [cint_zero])
-
 (* Generate the table of module data and code segments *)
 
 let segment_table namelist symbol begname endname =

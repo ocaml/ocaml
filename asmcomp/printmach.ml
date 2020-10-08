@@ -90,16 +90,13 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound { label_after_error; spacetime_index; } ->
-    if not Config.spacetime then " check > "
-    else
-      Printf.sprintf "check[lbl=%s,index=%d] > "
+  | Icheckbound { label_after_error; } ->
+      Printf.sprintf "check[lbl=%s] > "
         begin
           match label_after_error with
           | None -> ""
           | Some lbl -> Int.to_string lbl
         end
-        spacetime_index
 
 let test tst ppf arg =
   match tst with
@@ -143,9 +140,6 @@ let operation op arg ppf res =
        (if is_assign then "(assign)" else "(init)")
   | Ialloc { bytes = n; _ } ->
     fprintf ppf "alloc %i" n;
-    if Config.spacetime then begin
-      fprintf ppf "(spacetime node = %a)" reg arg.(0)
-    end
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n
   | Inegf -> fprintf ppf "-f %a" reg arg.(0)

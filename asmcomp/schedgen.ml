@@ -391,7 +391,6 @@ method schedule_fundecl f =
       fun_body = new_body;
       fun_fast = f.fun_fast;
       fun_dbg  = f.fun_dbg;
-      fun_spacetime_shape = f.fun_spacetime_shape;
       fun_tailrec_entry_point_label = f.fun_tailrec_entry_point_label;
       fun_contains_calls = f.fun_contains_calls;
       fun_num_stack_slots = f.fun_num_stack_slots;

@@ -600,10 +600,6 @@ val globals_map:
     from the given compilation units *)
 val frame_table: string list -> phrase
 
-(** Generate the caml_spacetime_shapes table, referencing the spacetime shapes
-    from the given compilation units *)
-val spacetime_shapes: string list -> phrase
-
 (** Generate the tables for data and code positions respectively of the given
     compilation units *)
 val data_segment_table: string list -> phrase

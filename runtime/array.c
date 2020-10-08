@@ -24,8 +24,6 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #include "caml/eventlog.h"
-/* Why is caml/spacetime.h included conditionnally sometimes and not here ? */
-#include "caml/spacetime.h"
 
 static const mlsize_t mlsize_t_max = -1;
 
@@ -285,7 +283,6 @@ CAMLprim value caml_floatarray_create(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
-/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
@@ -311,9 +308,7 @@ CAMLprim value caml_make_vect(value len, value init)
 #endif
   } else {
     if (size <= Max_young_wosize) {
-      uintnat profinfo;
-      Get_my_profinfo_with_cached_backtrace(profinfo, size);
-      res = caml_alloc_small_with_my_or_given_profinfo(size, 0, profinfo);
+      res = caml_alloc_small(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (size > Max_wosize) caml_invalid_argument("Array.make");

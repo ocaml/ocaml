@@ -34,7 +34,6 @@
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
 #include "caml/stack.h"
-#include "caml/spacetime.h"
 #include "caml/memprof.h"
 #include "caml/finalise.h"
 

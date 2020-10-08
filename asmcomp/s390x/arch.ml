@@ -35,8 +35,6 @@ type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
 
-let spacetime_node_hole_pointer_is_live_before _specific_op = false
-
 (* Addressing modes *)
 
 type addressing_mode =

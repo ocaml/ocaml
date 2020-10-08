@@ -37,7 +37,6 @@
  (targets ocaml.byte)
  (action (run %{ocaml_where}/expunge %{dep:topstart.exe} %{targets}
                     ; FIXME: inlined $(STDLIB_MODULES) ... minus Labels ones ...
-                    stdlib__Spacetime
                     stdlib__Arg
                     stdlib__Array
                     ; stdlib__ArrayLabels

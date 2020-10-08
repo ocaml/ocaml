@@ -39,10 +39,6 @@
 /* threads.h is *not* included since it contains the _external_ declarations for
    the caml_c_thread_register and caml_c_thread_unregister functions. */
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-#endif
-
 #ifndef NATIVE_CODE
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
@@ -84,12 +80,6 @@ struct caml_thread_struct {
   char * exception_pointer; /* Saved value of Caml_state->exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * exit_buf; /* For thread exit */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  value internal_spacetime_trie_root;
-  value internal_spacetime_finaliser_trie_root;
-  value* spacetime_trie_node_ptr;
-  value* spacetime_finaliser_trie_root;
-#endif
 #else
   value * stack_low; /* The execution stack for this thread */
   value * stack_high;
@@ -194,12 +184,6 @@ Caml_inline void caml_thread_save_runtime_state(void)
   curr_thread->last_retaddr = Caml_state->last_return_address;
   curr_thread->gc_regs = Caml_state->gc_regs;
   curr_thread->exception_pointer = Caml_state->exception_pointer;
-#ifdef WITH_SPACETIME
-  curr_thread->spacetime_trie_node_ptr
-    = caml_spacetime_trie_node_ptr;
-  curr_thread->spacetime_finaliser_trie_root
-    = caml_spacetime_finaliser_trie_root;
-#endif
 #else
   curr_thread->stack_low = Caml_state->stack_low;
   curr_thread->stack_high = Caml_state->stack_high;
@@ -223,12 +207,6 @@ Caml_inline void caml_thread_restore_runtime_state(void)
   Caml_state->last_return_address = curr_thread->last_retaddr;
   Caml_state->gc_regs = curr_thread->gc_regs;
   Caml_state->exception_pointer = curr_thread->exception_pointer;
-#ifdef WITH_SPACETIME
-  caml_spacetime_trie_node_ptr
-    = curr_thread->spacetime_trie_node_ptr;
-  caml_spacetime_finaliser_trie_root
-    = curr_thread->spacetime_finaliser_trie_root;
-#endif
 #else
   Caml_state->stack_low = curr_thread->stack_low;
   Caml_state->stack_high = curr_thread->stack_high;
@@ -358,20 +336,6 @@ static caml_thread_t caml_thread_new_info(void)
   th->exception_pointer = NULL;
   th->local_roots = NULL;
   th->exit_buf = NULL;
-#ifdef WITH_SPACETIME
-  /* CR-someday mshinwell: The commented-out changes here are for multicore,
-     where we think we should have one trie per domain. */
-  th->internal_spacetime_trie_root = Val_unit;
-  th->spacetime_trie_node_ptr =
-    &caml_spacetime_trie_root; /* &th->internal_spacetime_trie_root; */
-  th->internal_spacetime_finaliser_trie_root = Val_unit;
-  th->spacetime_finaliser_trie_root
-    = caml_spacetime_finaliser_trie_root;
-    /* &th->internal_spacetime_finaliser_trie_root; */
-  caml_spacetime_register_thread(
-    th->spacetime_trie_node_ptr,
-    th->spacetime_finaliser_trie_root);
-#endif
 #else
   /* Allocate the stacks */
   th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
@@ -423,13 +387,7 @@ static void caml_thread_remove_info(caml_thread_t th)
   caml_stat_free(th->stack_low);
 #endif
   if (th->backtrace_buffer != NULL) caml_stat_free(th->backtrace_buffer);
-#ifndef WITH_SPACETIME
   caml_stat_free(th);
-  /* CR-soon mshinwell: consider what to do about the Spacetime trace.  Could
-     perhaps have a hook to save a snapshot on thread termination.
-     For the moment we can't even free [th], since it contains the trie
-     roots. */
-#endif
 }
 
 /* Reinitialize the thread machinery after a fork() (PR#4577) */

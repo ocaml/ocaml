@@ -31,9 +31,6 @@
 #include "caml/signals.h"
 #include "caml/weak.h"
 #include "caml/memprof.h"
-#ifdef WITH_SPACETIME
-#include "caml/spacetime.h"
-#endif
 #include "caml/eventlog.h"
 
 /* Pointers into the minor heap.
@@ -536,11 +533,6 @@ void caml_alloc_small_dispatch (intnat wosize, int flags,
        callbacks. */
     CAML_EV_COUNTER (EV_C_FORCE_MINOR_ALLOC_SMALL, 1);
     caml_gc_dispatch ();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-    if (caml_young_ptr == caml_young_alloc_end) {
-      caml_spacetime_automatic_snapshot();
-    }
-#endif
   }
 
   /* Re-do the allocation: we now have enough space in the minor heap. */

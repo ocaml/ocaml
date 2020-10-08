@@ -345,9 +345,6 @@ LBL(caml_call_gc):
         movq    %rsp, Caml_state(gc_regs)
     /* Save young_ptr */
         movq    %r15, Caml_state(young_ptr)
-#ifdef WITH_SPACETIME
-        STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
-#endif
     /* Save floating-point registers */
         subq    $(16*8), %rsp; CFI_ADJUST (16*8);
         movsd   %xmm0, 0*8(%rsp)
@@ -457,11 +454,6 @@ LBL(caml_c_call):
         movq    %rsp, Caml_state(bottom_of_stack)
     /* equivalent to pushing last return address */
         subq    $8, %rsp; CFI_ADJUST(8)
-#ifdef WITH_SPACETIME
-    /* Record the trie node hole pointer that corresponds to
-       [Caml_state->last_return_address] */
-        STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
-#endif
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
         subq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(STACK_PROBE_SIZE);
@@ -489,29 +481,10 @@ FUNCTION(G(caml_start_program))
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Build a callback link */
-#ifdef WITH_SPACETIME
-        PUSH_VAR(caml_spacetime_trie_node_ptr)
-#else
         subq    $8, %rsp; CFI_ADJUST (8)        /* stack 16-aligned */
-#endif
         pushq   Caml_state(gc_regs); CFI_ADJUST(8)
         pushq   Caml_state(last_return_address); CFI_ADJUST(8)
         pushq   Caml_state(bottom_of_stack); CFI_ADJUST(8)
-#ifdef WITH_SPACETIME
-        /* Save arguments to caml_callback* */
-        pushq   %rax; CFI_ADJUST (8)
-        pushq   %rbx; CFI_ADJUST (8)
-        pushq   %rdi; CFI_ADJUST (8)
-        pushq   %rsi; CFI_ADJUST (8)
-        /* No need to push %r12: it's callee-save. */
-        movq    %r12, C_ARG_1
-        LEA_VAR(caml_start_program, C_ARG_2)
-        call    GCALL(caml_spacetime_c_to_ocaml)
-        popq    %rsi; CFI_ADJUST (-8)
-        popq    %rdi; CFI_ADJUST (-8)
-        popq    %rbx; CFI_ADJUST (-8)
-        popq    %rax; CFI_ADJUST (-8)
-#endif
     /* Setup alloc ptr */
         movq    Caml_state(young_ptr), %r15
     /* Build an exception handler */
@@ -519,9 +492,6 @@ LBL(caml_start_program):
         pushq   %r13; CFI_ADJUST(8)
         pushq   Caml_state(exception_pointer); CFI_ADJUST(8)
         movq    %rsp, Caml_state(exception_pointer)
-#ifdef WITH_SPACETIME
-        LOAD_VAR(caml_spacetime_trie_node_ptr, %r13)
-#endif
     /* Call the OCaml code */
         call    *%r12
 LBL(107):
@@ -535,11 +505,7 @@ LBL(109):
         popq    Caml_state(bottom_of_stack); CFI_ADJUST(-8)
         popq    Caml_state(last_return_address); CFI_ADJUST(-8)
         popq    Caml_state(gc_regs); CFI_ADJUST(-8)
-#ifdef WITH_SPACETIME
-        POP_VAR(caml_spacetime_trie_node_ptr)
-#else
         addq    $8, %rsp; CFI_ADJUST (-8);
-#endif
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */
@@ -707,19 +673,6 @@ G(caml_system__frametable):
         .quad   16
         .quad   0
         .string "amd64.S"
-
-#ifdef WITH_SPACETIME
-        .data
-        .globl  G(caml_system__spacetime_shapes)
-        .align  EIGHT_ALIGN
-G(caml_system__spacetime_shapes):
-        .quad   G(caml_start_program)
-        .quad   2           /* indirect call point to OCaml code */
-        .quad   LBL(107)    /* in caml_start_program / caml_callback* */
-        .quad   0           /* end of shapes for caml_start_program */
-        .quad   0           /* end of shape table */
-        .align  EIGHT_ALIGN
-#endif
 
 #if defined(SYS_macosx)
         .literal16

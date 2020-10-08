@@ -154,8 +154,6 @@ let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
 let max_arguments_for_tailcalls = 16
 
-let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
-
 (* OCaml calling convention:
      first integer args in a0 .. a7, s2 .. s9
      first float args in fa0 .. fa7, fs2 .. fs9

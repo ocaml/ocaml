@@ -47,8 +47,6 @@ let ocamlsrcdir = "%%ocamlsrcdir%%"
 
 let flambda = %%FLAMBDA%%
 
-let spacetime = %%WITH_SPACETIME%%
-
 let ocamlc_default_flags = "%%ocamlcdefaultflags%%"
 let ocamlopt_default_flags = "%%ocamloptdefaultflags%%"
 
