@@ -409,6 +409,64 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   CAMLreturn(th->descr);
 }
 
+/* Register a thread already created from C */
+
+CAMLexport int caml_c_thread_register(void)
+{
+  caml_thread_t th;
+
+  /* Already registered? */
+  if (Caml_state == NULL) {
+    caml_init_domain_self(0);
+  };
+  if (st_tls_get(Thread_key) != NULL) return 0;
+  /* Create a thread info block */
+  th = caml_thread_new_info();
+  if (th == NULL) return 0;
+  /* Take master lock to protect access to the chaining of threads */
+  st_masterlock_acquire(&Thread_main_lock);
+  /* Add thread info block to the list of threads */
+  if (All_threads == NULL) {
+    th->next = th;
+    th->prev = th;
+    All_threads = th;
+  } else {
+    th->next = All_threads->next;
+    th->prev = All_threads;
+    All_threads->next->prev = th;
+    All_threads->next = th;
+  }
+  /* Associate the thread descriptor with the thread */
+  st_tls_set(Thread_key, (void *) th);
+  /* Release the master lock */
+  st_masterlock_release(&Thread_main_lock);
+  /* Now we can re-enter the run-time system and heap-allocate the descriptor */
+  caml_leave_blocking_section();
+  th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
+  /* Exit the run-time system */
+  caml_enter_blocking_section();
+  return 1;
+}
+
+/* Unregister a thread that was created from C and registered with
+   the function above */
+
+CAMLexport int caml_c_thread_unregister(void)
+{
+  caml_thread_t th = st_tls_get(Thread_key);
+  /* Not registered? */
+  if (th == NULL) return 0;
+  /* Wait until the runtime is available */
+  st_masterlock_acquire(&Thread_main_lock);
+  /* Forget the thread descriptor */
+  st_tls_set(Thread_key, NULL);
+  /* Remove thread info block from list of threads, and free it */
+  caml_thread_remove_info(th);
+  /* Release the runtime */
+  st_masterlock_release(&Thread_main_lock);
+  return 1;
+}
+
 /* Return the current thread */
 
 CAMLprim value caml_thread_self(value unit)         /* ML */
