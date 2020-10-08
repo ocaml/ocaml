@@ -27,6 +27,8 @@ struct custom_fixed_length {
   intnat bsize_64;
 };
 
+struct caml_hash_state; /* opaque struct, passed by reference */
+
 struct custom_operations {
   char const *identifier;
   void (*finalize)(value v);
@@ -38,6 +40,7 @@ struct custom_operations {
   uintnat (*deserialize)(void * dst);
   int (*compare_ext)(value v1, value v2);
   const struct custom_fixed_length* fixed_length;
+  void (*hash_ext)(struct caml_hash_state * st, value v);
 };
 
 #define custom_finalize_default NULL
@@ -47,6 +50,7 @@ struct custom_operations {
 #define custom_deserialize_default NULL
 #define custom_compare_ext_default NULL
 #define custom_fixed_length_default NULL
+#define custom_hash_ext_default NULL
 
 #define Custom_ops_val(v) (*((struct custom_operations **) (v)))
 

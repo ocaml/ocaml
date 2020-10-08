@@ -20,6 +20,7 @@
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
+#include "caml/hash.h"
 #include "caml/intext.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -199,6 +200,12 @@ static intnat int32_hash(value v)
   return Int32_val(v);
 }
 
+static void int32_hash_ext(struct caml_hash_state * st, value v)
+{
+  caml_hash_add_header(st, 1, Custom_tag);
+  caml_hash_add_intnat(st, Int32_val(v));
+}
+
 static void int32_serialize(value v, uintnat * bsize_32,
                             uintnat * bsize_64)
 {
@@ -222,7 +229,8 @@ CAMLexport struct custom_operations caml_int32_ops = {
   int32_serialize,
   int32_deserialize,
   custom_compare_ext_default,
-  &int32_length
+  &int32_length,
+  int32_hash_ext
 };
 
 CAMLexport value caml_copy_int32(int32_t i)
@@ -391,6 +399,12 @@ static intnat int64_hash(value v)
   return hi ^ lo;
 }
 
+static void int64_hash_ext(struct caml_hash_state * st, value v)
+{
+  caml_hash_add_header(st, 1, Custom_tag);
+  caml_hash_add_uint64(st, Int64_val(v));
+}
+
 static void int64_serialize(value v, uintnat * bsize_32,
                             uintnat * bsize_64)
 {
@@ -421,7 +435,8 @@ CAMLexport struct custom_operations caml_int64_ops = {
   int64_serialize,
   int64_deserialize,
   custom_compare_ext_default,
-  &int64_length
+  &int64_length,
+  int64_hash_ext
 };
 
 CAMLexport value caml_copy_int64(int64_t i)
@@ -670,6 +685,12 @@ static intnat nativeint_hash(value v)
 #endif
 }
 
+static void nativeint_hash_ext(struct caml_hash_state * st, value v)
+{
+  caml_hash_add_header(st, 1, Custom_tag);
+  caml_hash_add_intnat(st, Nativeint_val(v));
+}
+
 static void nativeint_serialize(value v, uintnat * bsize_32,
                                 uintnat * bsize_64)
 {
@@ -710,6 +731,7 @@ static uintnat nativeint_deserialize(void * dst)
 }
 
 static const struct custom_fixed_length nativeint_length = { 4, 8 };
+
 CAMLexport struct custom_operations caml_nativeint_ops = {
   "_n",
   custom_finalize_default,
@@ -718,7 +740,8 @@ CAMLexport struct custom_operations caml_nativeint_ops = {
   nativeint_serialize,
   nativeint_deserialize,
   custom_compare_ext_default,
-  &nativeint_length
+  &nativeint_length,
+  nativeint_hash_ext
 };
 
 CAMLexport value caml_copy_nativeint(intnat i)

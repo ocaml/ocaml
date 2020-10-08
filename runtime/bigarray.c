@@ -66,6 +66,8 @@ CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
 
 /* Operation table for bigarrays */
 
+static void caml_ba_hash_ext(struct caml_hash_state * st, value v);
+
 CAMLexport struct custom_operations caml_ba_ops = {
   "_bigarr02",
   caml_ba_finalize,
@@ -74,7 +76,8 @@ CAMLexport struct custom_operations caml_ba_ops = {
   caml_ba_serialize,
   caml_ba_deserialize,
   custom_compare_ext_default,
-  custom_fixed_length_default
+  custom_fixed_length_default,
+  caml_ba_hash_ext
 };
 
 /* Allocation of a big array */
@@ -337,6 +340,96 @@ CAMLexport intnat caml_ba_hash(value v)
   }
   }
   return h;
+}
+
+CAMLexport void caml_ba_hash_ext(struct caml_hash_state * st, value v)
+{
+  struct caml_ba_array * b = Caml_ba_array_val(v);
+  uintnat num_elts, i;
+  int n;
+  uint64_t w;
+
+  num_elts = 1;
+  for (n = 0; n < b->num_dims; i++) num_elts = num_elts * b->dim[n];
+
+  switch (b->flags & CAML_BA_KIND_MASK) {
+  case CAML_BA_CHAR:
+  case CAML_BA_SINT8:
+  case CAML_BA_UINT8:
+    caml_hash_add_header(st, num_elts / 8 + 1, Custom_tag);
+    caml_hash_add_string(st, (const uint8_t *) b->data, num_elts);
+    break;
+  case CAML_BA_SINT16:
+  case CAML_BA_UINT16: {
+    caml_ba_uint16 * p = b->data;
+    caml_hash_add_header(st, num_elts / 4 + 1, Custom_tag);
+    for (i = 0; i + 4 <= num_elts; i += 4) {
+      w = (uint64_t) p[i]
+        | ((uint64_t) p[i + 1] << 16)
+        | ((uint64_t) p[i + 2] << 32)
+        | ((uint64_t) p[i + 3] << 48);
+      caml_hash_add_uint64(st, w);
+    }
+    w = (uint64_t) num_elts << 48;
+    switch (num_elts & 3) {
+    case 3: w |= (uint64_t) p[i + 2] << 32;  /* fallthrough */
+    case 2: w |= (uint64_t) p[i + 1] << 16;  /* fallthrough */
+    case 1: w |= (uint64_t) p[i + 0];        /* fallthrough */
+    case 0: /*skip*/;
+    }
+    caml_hash_add_uint64(st, w);
+    break;
+  }
+  case CAML_BA_INT32: {
+    uint32_t * p = b->data;
+    caml_hash_add_header(st, num_elts / 2 + 1, Custom_tag);
+    for (i = 0; i + 2 <= num_elts; i += 2) {
+      w = (uint64_t) p[i]
+        | ((uint64_t) p[i + 2] << 32);
+      caml_hash_add_uint64(st, w);
+    }
+    w = (uint64_t) num_elts << 32;
+    switch (num_elts & 3) {
+    case 1: w |= (uint64_t) p[i];        /* fallthrough */
+    case 0: /*skip*/;
+    }
+    caml_hash_add_uint64(st, w);
+    break;
+  }
+  case CAML_BA_CAML_INT:
+  case CAML_BA_NATIVE_INT:
+  {
+    intnat * p = b->data;
+    caml_hash_add_header(st, num_elts, Custom_tag);
+    for (i = 0; i < num_elts; n++) caml_hash_add_intnat(st, p[n]);
+    break;
+  }
+  case CAML_BA_INT64:
+  {
+    int64_t * p = b->data;
+    caml_hash_add_header(st, num_elts, Custom_tag);
+    for (i = 0; i < num_elts; n++) caml_hash_add_uint64(st, p[n]);
+    break;
+  }
+  case CAML_BA_COMPLEX32:
+    num_elts *= 2;              /* fallthrough */
+  case CAML_BA_FLOAT32:
+  {
+    float * p = b->data;
+    caml_hash_add_header(st, num_elts, Custom_tag);
+    for (i = 0; i < num_elts; i++) caml_hash_add_float(st, p[n]);
+    break;
+  }
+  case CAML_BA_COMPLEX64:
+    num_elts *= 2;              /* fallthrough */
+  case CAML_BA_FLOAT64:
+  {
+    double * p = b->data;
+    caml_hash_add_header(st, num_elts, Custom_tag);
+    for (i = 0; i < num_elts; i++) caml_hash_add_double(st, p[n]);
+    break;
+  }
+  }
 }
 
 static void caml_ba_serialize_longarray(void * data,

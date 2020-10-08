@@ -31,6 +31,26 @@ CAMLextern uint32_t caml_hash_mix_double(uint32_t h, double d);
 CAMLextern uint32_t caml_hash_mix_float(uint32_t h, float d);
 CAMLextern uint32_t caml_hash_mix_string(uint32_t h, value s);
 
+struct caml_hash_state; /* opaque struct, passed by reference */
+
+CAMLextern void caml_hash_add_header(struct caml_hash_state * st, 
+                                     uintnat sz, uint8_t tag);
+CAMLextern void caml_hash_add_uint64(struct caml_hash_state * st, uint64_t n);
+CAMLextern void caml_hash_add_double(struct caml_hash_state * st, double d);
+CAMLextern void caml_hash_add_string(struct caml_hash_state * st,
+                                     const uint8_t * s, uintnat len);
+
+Caml_inline void caml_hash_add_intnat(struct caml_hash_state * st, intnat n)
+{
+  /* Force sign extension to 64-bits to make sure that negative numbers
+     representable in 32 bits produce the same hash
+     on 32 and 64 bit platforms. */
+ caml_hash_add_uint64(st, (int64_t) n);
+}
+
+Caml_inline void caml_hash_add_float(struct caml_hash_state * st, float f)
+{ caml_hash_add_double(st, (double) f); }
+
 #ifdef __cplusplus
 }
 #endif
