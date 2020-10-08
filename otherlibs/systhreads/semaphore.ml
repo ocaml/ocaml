@@ -15,43 +15,31 @@
 
 (** Semaphores *)
 
-type t = {
+type sem = {
   mut: Mutex.t;                         (* protects [v] *)
   mutable v: int;                       (* the current value *)
-  capacity: int option;                 (* the maximal value *)
   nonzero: Condition.t                  (* signaled when [v > 0] *)
 }
 
-let make ?capacity v =
-  let cap = Option.value capacity ~default:max_int in
-  if v < 0 || v > cap then
-    raise (Sys_error "Semaphore.init: wrong initial value");
-  if cap <= 0 then
-    raise (Sys_error "Semaphore.init: wrong capacity");
-  { mut = Mutex.create(); v; capacity; nonzero = Condition.create() }
+module Counting = struct
 
-let make_binary b =
-  { mut = Mutex.create();
-    v = if b then 1 else 0;
-    capacity = Some 1;
-    nonzero = Condition.create() }
+type t = sem
+
+let make v =
+  if v < 0 then
+    raise (Sys_error "Semaphore.Counting.init: wrong initial value");
+  { mut = Mutex.create(); v; nonzero = Condition.create() }
 
 let release s =
   Mutex.lock s.mut;
-  begin match s.capacity with
-    | None ->
-        if s.v < max_int then
-          s.v <- s.v + 1
-        else begin
-          Mutex.unlock s.mut;
-          raise (Sys_error "Semaphore.release: overflow")
-        end
-    | Some cap ->
-        if s.v < cap then
-          s.v <- s.v + 1
-  end;
-  Condition.signal s.nonzero;
-  Mutex.unlock s.mut
+  if s.v < max_int then begin
+    s.v <- s.v + 1;
+    Condition.signal s.nonzero;
+    Mutex.unlock s.mut
+  end else begin
+    Mutex.unlock s.mut;
+   raise (Sys_error "Semaphore.Counting.release: overflow")
+  end
 
 let acquire s =
   Mutex.lock s.mut;
@@ -65,3 +53,35 @@ let try_acquire s =
   Mutex.unlock s.mut;
   ret
 
+let get_value s = s.v
+
+end
+
+module Binary = struct
+
+type t = sem
+
+let make b =
+  { mut = Mutex.create();
+    v = if b then 1 else 0;
+    nonzero = Condition.create() }
+
+let release s =
+  Mutex.lock s.mut;
+  s.v <- 1;
+  Condition.signal s.nonzero;
+  Mutex.unlock s.mut
+
+let acquire s =
+  Mutex.lock s.mut;
+  while s.v = 0 do Condition.wait s.nonzero s.mut done;
+  s.v <- 0;
+  Mutex.unlock s.mut
+
+let try_acquire s =
+  Mutex.lock s.mut;
+  let ret = if s.v = 0 then false else (s.v <- 0; true) in
+  Mutex.unlock s.mut;
+  ret
+
+end

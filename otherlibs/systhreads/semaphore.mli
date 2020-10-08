@@ -15,6 +15,17 @@
 
 (** Semaphores
 
+  A semaphore is a thread synchronization device that can be used to
+  control access to a shared resource.
+
+  Two flavors of semaphores are provided: counting semaphores and
+  binary semaphores.
+
+  @since 4.12 *)
+
+(** {2 Counting semaphores} *)
+
+(**
   A counting semaphore is a counter that can be accessed concurrently
   by several threads.  The typical use is to synchronize producers and
   consumers of a resource by counting how many units of the resource
@@ -28,50 +39,26 @@
   waits until the counter is greater than zero and decrements it.
   This corresponds to consuming one unit of the shared resource.
 
-  A variant of the counting semaphore is the binary semaphore,
-  which has only two values, 0 and 1.  "release" sets the value to 1
-  and "acquire" waits until the value is 1 and sets it to 0.  A binary
-  semaphore can be used instead of a mutex (see module {!Mutex})
-  when the mutex discipline (of unlocking the mutex from the
-  thread that locked it) is too restrictive.  The "acquire" operation
-  corresponds to locking the mutex, and the "release" operation
-  to unlocking it, but "release" can be performed in a thread different
-  than the one that performed the "acquire".
+  @since 4.12 *)
 
-  @since 4.12
-*)
+module Counting : sig
 
 type t
-(** The type of semaphores. *)
+(** The type of counting semaphores. *)
 
-val make : ?capacity: int -> int -> t
-(** [make n] returns a new counted semaphore, with initial value [n].
+val make : int -> t
+(** [make n] returns a new counting semaphore, with initial value [n].
     The initial value [n] must be nonnegative.
 
-    The [capacity] optional argument specifies the maximal value of
-    the semaphore: once the value of the semaphore reaches [capacity],
-    subsequent {!release} operations will not increase it
-    above [capacity].  If provided, [capacity] must be positive and
-    greater than or equal to [n].
-
-    @raise Sys_error if [n < 0] or [capacity <= 0] or [n > capacity]
-*)
-
-val make_binary : bool -> t
-(** [make_binary b] is equivalent to [{!make} ~capacity:1 (if b then 1 else 0)].
-    It returns a new binary semaphore, with initial value [b]
-    ([false] means [0], [true] means [1]) and maximal value [1].
+    @raise Sys_error if [n < 0]
 *)
 
 val release : t -> unit
 (** [release s] increments the value of semaphore [s].
     If other threads are waiting on [s], one of them is restarted.
-    If semaphore [s] was created with a maximal value, and the current
-    value is equal to this maximal value, the value of the semaphore
-    is unchanged and [release s] has no effect.
-    If semaphore [s] was created without a maximal value, and the
-    current value is equal to [max_int], the value of the semaphore
-    is unchanged and a [Sys_error] exception is raised to signal overflow.
+    If the current value of [s] is equal to [max_int], the value of
+    the semaphore is unchanged and a [Sys_error] exception is raised
+    to signal overflow.
 
     @raise Sys_error if the value of the semaphore would overflow [max_int]
 *)
@@ -86,3 +73,68 @@ val try_acquire : t -> bool
     is zero.  Otherwise, the value of [s] is atomically decremented
     and [try_acquire s] returns [true].
 *)
+
+val get_value : t -> int
+(** [get_value s] returns the current value of semaphore [s].
+    The current value can be modified at any time by concurrent
+    {!release} and {!acquire} operations.  Hence, the [get_value]
+    operation is racy, and its result should only be used for debugging
+    or informational messages.
+*)
+
+end
+
+(** {2 Binary semaphores} *)
+
+(** Binary semaphores are a variant of counting semaphores
+    where semaphores can only take two values, 0 and 1.
+
+    A binary semaphore can be used to control access to a single
+    shared resource, with value 1 meaning "resource is available" and
+    value 0 meaning "resource is unavailable".
+
+    The "release" operation of a binary semaphore sets its value to 1,
+    and "acquire" waits until the value is 1 and sets it to 0.
+
+    A binary semaphore can be used instead of a mutex (see module
+    {!Mutex}) when the mutex discipline (of unlocking the mutex from the
+    thread that locked it) is too restrictive.  The "acquire" operation
+    corresponds to locking the mutex, and the "release" operation to
+    unlocking it, but "release" can be performed in a thread different
+    than the one that performed the "acquire".  Likewise, it is safe
+    to release a binary semaphore that is already available.
+
+    @since 4.12
+*)
+
+module Binary : sig
+
+type t
+(** The type of binary semaphores. *)
+
+val make : bool -> t
+(** [make b] returns a new binary semaphore.
+    If [b] is [true], the initial value of the semaphore is 1, meaning
+    "available".  If [b] is [false], the initial value of the
+    semaphore is 0, meaning "unavailable".
+*)
+
+val release : t -> unit
+(** [release s] sets the value of semaphore [s] to 1, putting it in the
+    "available" state.  If other threads are waiting on [s], one of them is
+    restarted.
+*)
+
+val acquire : t -> unit
+(** [acquire s] blocks the calling thread until the semaphore [s]
+    has value 1 (is available), then atomically sets it to 0
+    and returns.
+*)
+
+val try_acquire : t -> bool
+(** [try_acquire s] immediately returns [false] if the semaphore [s]
+    has value 0.  If [s] has value 1, its value is atomically set to 0
+    and [try_acquire s] returns [true].
+*)
+
+end
