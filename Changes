@@ -472,6 +472,9 @@ Working version
   off.
   (Jacques Garrigue, report by Francois Pottier, review by Leo White)
 
+- #8746: Hashtbl: Restore ongoing traversal status after filter_map_inplace
+  (Mehdi Bouaziz, review by Alain Frisch)
+
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
 
