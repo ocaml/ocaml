@@ -453,7 +453,12 @@ CAMLexport int caml_c_thread_register(void)
 
 CAMLexport int caml_c_thread_unregister(void)
 {
-  caml_thread_t th = st_tls_get(Thread_key);
+  caml_thread_t th;
+
+  /* If Caml_state is not set, this thread was likely not registered */
+  if (Caml_state == NULL) return 0;
+
+  th = st_tls_get(Thread_key);
   /* Not registered? */
   if (th == NULL) return 0;
   /* Wait until the runtime is available */
