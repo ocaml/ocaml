@@ -104,8 +104,6 @@ let () =
 let main () =
   let ppf = Format.err_formatter in
   Compenv.readenv ppf Before_args;
-  let state = Local_store.fresh Local_store.Compiler.compiler_state in
-  Local_store.with_scope state @@ fun () ->
   let list = ref Options.list in
   begin
     try

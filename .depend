@@ -5881,7 +5881,6 @@ driver/maindriver.cmo : \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
-    utils/local_store.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     driver/compile.cmi \
@@ -5897,7 +5896,6 @@ driver/maindriver.cmx : \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
-    utils/local_store.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     driver/compile.cmx \
@@ -5989,7 +5987,6 @@ driver/optmaindriver.cmo : \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
-    utils/local_store.cmi \
     middle_end/flambda/import_approx.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
@@ -6010,7 +6007,6 @@ driver/optmaindriver.cmx : \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
-    utils/local_store.cmx \
     middle_end/flambda/import_approx.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
@@ -6248,7 +6244,6 @@ toplevel/opttopmain.cmo : \
     utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
-    utils/local_store.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
@@ -6259,7 +6254,6 @@ toplevel/opttopmain.cmx : \
     utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
-    utils/local_store.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
@@ -6356,7 +6350,6 @@ toplevel/toploop.cmo : \
     bytecomp/meta.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
-    utils/local_store.cmi \
     utils/load_path.cmi \
     parsing/lexer.cmi \
     typing/includemod.cmi \
@@ -6401,7 +6394,6 @@ toplevel/toploop.cmx : \
     bytecomp/meta.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
-    utils/local_store.cmx \
     utils/load_path.cmx \
     parsing/lexer.cmx \
     typing/includemod.cmx \
@@ -6434,7 +6426,6 @@ toplevel/topmain.cmo : \
     utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
-    utils/local_store.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
@@ -6445,7 +6436,6 @@ toplevel/topmain.cmx : \
     utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
-    utils/local_store.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \

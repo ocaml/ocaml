@@ -8,8 +8,6 @@ let () =
   let quote_option = function
     | None -> "None"
     | Some s -> Printf.sprintf "Some(%S)" s in
-  let state = Local_store.fresh Local_store.Compiler.compiler_state in
-  Local_store.with_scope state @@ fun () ->
   register "test" (fun _ ->
       Printf.eprintf "<ppx-context>\n";
       Printf.eprintf "tool_name: %S\n"
