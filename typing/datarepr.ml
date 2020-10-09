@@ -24,7 +24,7 @@ open Btype
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
-    mark_type_node_with ty
+    mark_type_node ty ~after:
       begin fun ty -> match ty.desc with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
