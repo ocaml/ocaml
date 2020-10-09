@@ -504,6 +504,8 @@ void caml_compact_heap_maybe (void)
   if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n");
     caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
+    caml_gc_message
+      (0x1, "Finishing major GC cycle (triggered by compaction)\n");
     caml_finish_major_cycle ();
     ++ Caml_state->stat_forced_major_collections;
 

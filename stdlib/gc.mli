@@ -115,7 +115,7 @@ type control =
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
-       - [0x001] Start of major GC cycle.
+       - [0x001] Start and end of major GC cycle.
        - [0x002] Minor collection and major GC slice.
        - [0x004] Growing and shrinking of the heap.
        - [0x008] Resizing of stacks and memory manager tables.

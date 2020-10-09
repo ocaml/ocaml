@@ -506,6 +506,7 @@ CAMLprim value caml_gc_set(value v)
   newpolicy = Long_val (Field (v, 6));
   if (newpolicy != caml_allocation_policy){
     caml_empty_minor_heap ();
+    caml_gc_message (0x1, "Full major GC cycle (changing allocation policy)\n");
     caml_finish_major_cycle ();
     caml_finish_major_cycle ();
     ++ Caml_state->stat_forced_major_collections;
@@ -563,7 +564,7 @@ CAMLprim value caml_gc_major(value v)
 
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR);
   CAMLassert (v == Val_unit);
-  caml_gc_message (0x1, "Major GC cycle requested\n");
+  caml_gc_message (0x1, "Finishing major GC cycle (requested by user)\n");
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   test_and_compact ();
@@ -580,7 +581,7 @@ CAMLprim value caml_gc_full_major(value v)
 
   CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
   CAMLassert (v == Val_unit);
-  caml_gc_message (0x1, "Full major GC cycle requested\n");
+  caml_gc_message (0x1, "Full major GC cycle (requested by user)\n");
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   // call finalisers
@@ -617,6 +618,7 @@ CAMLprim value caml_gc_compaction(value v)
   CAMLassert (v == Val_unit);
   caml_gc_message (0x10, "Heap compaction requested\n");
   caml_empty_minor_heap ();
+  caml_gc_message (0x1, "Full major GC cycle (compaction)\n");
   caml_finish_major_cycle ();
   // call finalisers
   exn = caml_process_pending_actions_exn();

@@ -145,7 +145,7 @@ The following environment variables are also consulted:
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
-        \item[1   (= 0x001)] Start of major GC cycle.
+        \item[1   (= 0x001)] Start and end of major GC cycle.
         \item[2   (= 0x002)] Minor collection and major GC slice.
         \item[4   (= 0x004)] Growing and shrinking of the heap.
         \item[8   (= 0x008)] Resizing of stacks and memory manager tables.

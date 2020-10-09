@@ -1076,6 +1076,7 @@ void caml_finalise_heap (void)
 {
   /* Finishing major cycle (all values become white) */
   caml_empty_minor_heap ();
+  caml_gc_message (0x1, "Finishing major GC cycle (finalising heap)\n");
   caml_finish_major_cycle ();
   CAMLassert (caml_gc_phase == Phase_idle);
 
