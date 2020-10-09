@@ -17,7 +17,11 @@ git checkout -b my-modification
 ----
 Usually, this branch wants to be based on `trunk`. If your changes must be on a
 specific release, use its release branch (*not* the release tag) instead. For
-example, to make a fix for 4.11.1, base your branch on 4.11 (not on 4.11.1).
+example, to make a fix for 4.11.1, base your branch on 4.11 (not on 4.11.1). The
+`configure` step for the compiler recognises a development build from the `+dev`
+in the version number, and release tarballs and the tagged Git commits do not
+have this which causes some important development things to be disabled
+(ocamltest and converting C compiler warnings to errors).
 
 2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
