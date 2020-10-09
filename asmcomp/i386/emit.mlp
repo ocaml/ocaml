@@ -200,12 +200,8 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
+let record_frame_label live dbg =
+  let lbl = new_label () in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -221,8 +217,8 @@ let record_frame_label ?label live dbg =
     ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live dbg =
-  let lbl = record_frame_label ?label live dbg in
+let record_frame live dbg =
+  let lbl = record_frame_label live dbg in
   def_label lbl
 
 (* Record calls to the GC -- we've moved them out of the way *)
@@ -251,10 +247,10 @@ type bound_error_call =
 let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
-let bound_error_label ?label dbg =
+let bound_error_label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
+    let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
     lbl_bound_error
@@ -538,18 +534,16 @@ let emit_instr fallthrough i =
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
       I.mov (immsym s) (reg i.res.(0))
-  | Lop(Icall_ind { label_after; }) ->
+  | Lop(Icall_ind) ->
       I.call (reg i.arg.(0));
-      record_frame i.live (Dbg_other i.dbg) ~label:label_after
-  | Lop(Icall_imm { func; label_after; }) ->
+      record_frame i.live (Dbg_other i.dbg)
+  | Lop(Icall_imm { func; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live (Dbg_other i.dbg) ~label:label_after
-  | Lop(Itailcall_ind { label_after = _; }) ->
-      output_epilogue begin fun () ->
-        I.jmp (reg i.arg.(0))
-      end
-  | Lop(Itailcall_imm { func; label_after = _; }) ->
+      record_frame i.live (Dbg_other i.dbg)
+  | Lop(Itailcall_ind) ->
+      output_epilogue (fun () -> I.jmp (reg i.arg.(0)))
+  | Lop(Itailcall_imm { func; }) ->
       if func = !function_name then
         I.jmp (label !tailrec_entry_point)
       else begin
@@ -558,12 +552,12 @@ let emit_instr fallthrough i =
           I.jmp (immsym func)
         end
       end
-  | Lop(Iextcall { func; alloc; label_after; }) ->
+  | Lop(Iextcall { func; alloc; }) ->
       add_used_symbol func;
       if alloc then begin
         I.mov (immsym func) eax;
         emit_call "caml_c_call";
-        record_frame i.live (Dbg_other i.dbg) ~label:label_after
+        record_frame i.live (Dbg_other i.dbg)
       end else begin
         emit_call func
       end
@@ -614,7 +608,7 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
+  | Lop(Ialloc { bytes = n; dbginfo }) ->
       if !fastcode_flag then begin
         load_domain_state ebx;
         I.mov (domain_field Domain_young_ptr RBX) eax;
@@ -623,7 +617,7 @@ let emit_instr fallthrough i =
         I.cmp (domain_field Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label ?label:label_after_call_gc
+          record_frame_label
             i.live (Dbg_alloc dbginfo) in
         I.jb (label lbl_call_gc);
         let lbl_after_alloc = new_label() in
@@ -643,7 +637,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         let label =
-          record_frame_label ?label:label_after_call_gc
+          record_frame_label
             i.live (Dbg_alloc dbginfo)
         in
         def_label label;
@@ -657,12 +651,12 @@ let emit_instr fallthrough i =
       I.cmp (int n) (reg i.arg.(0));
       I.set (cond cmp) al;
       I.movzx al (reg i.res.(0))
-  | Lop(Iintop (Icheckbound { label_after_error; } )) ->
-      let lbl = bound_error_label ?label:label_after_error i.dbg in
+  | Lop(Iintop (Icheckbound)) ->
+      let lbl = bound_error_label i.dbg in
       I.cmp (reg i.arg.(1)) (reg i.arg.(0));
       I.jbe (label lbl)
-  | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-      let lbl = bound_error_label ?label:label_after_error i.dbg in
+  | Lop(Iintop_imm(Icheckbound, n)) ->
+      let lbl = bound_error_label i.dbg in
       I.cmp (int n) (reg i.arg.(0));
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->

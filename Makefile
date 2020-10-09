@@ -746,7 +746,7 @@ clean::
 	$(MAKE) -C runtime clean
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
-otherlibs_all := bigarray dynlink raw_spacetime_lib \
+otherlibs_all := bigarray dynlink \
   str systhreads unix win32unix
 subdirs := debugger lex ocamldoc ocamltest stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
@@ -944,7 +944,7 @@ VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 lintapidiff:
 	$(MAKE) -C tools lintapidiff.opt
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
-	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
+	    grep -Ev internal\|obj\|stdLabels\|moreLabels |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
 # Tools

@@ -608,13 +608,6 @@ stdlib__set.cmx : \
     stdlib__set.cmi
 stdlib__set.cmi : \
     stdlib__seq.cmi
-stdlib__spacetime.cmo : \
-    stdlib__gc.cmi \
-    stdlib__spacetime.cmi
-stdlib__spacetime.cmx : \
-    stdlib__gc.cmx \
-    stdlib__spacetime.cmi
-stdlib__spacetime.cmi :
 stdlib__stack.cmo : \
     stdlib__seq.cmi \
     stdlib__list.cmi \

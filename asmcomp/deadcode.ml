@@ -37,28 +37,22 @@ let append a b =
   | _ -> append a b
 
 let rec deadcode i =
-  let arg =
-    if Config.spacetime
-      && Mach.spacetime_node_hole_pointer_is_live_before i
-    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
-    else i.arg
-  in
   match i.desc with
-  | Iend | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) | Iraise _ ->
-      let regs = Reg.add_set_array i.live arg in
+  | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) | Iraise _ ->
+      let regs = Reg.add_set_array i.live i.arg in
       { i; regs; exits = Int.Set.empty; }
   | Iop op ->
       let s = deadcode i.next in
       if Proc.op_is_pure op                     (* no side effects *)
       && Reg.disjoint_set_array s.regs i.res   (* results are not used after *)
-      && not (Proc.regs_are_volatile arg)      (* no stack-like hard reg *)
+      && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)
       then begin
         assert (Array.length i.res > 0);  (* sanity check *)
         s
       end else begin
         { i = {i with next = s.i};
-          regs = Reg.add_set_array i.live arg;
+          regs = Reg.add_set_array i.live i.arg;
           exits = s.exits;
         }
       end
@@ -67,7 +61,7 @@ let rec deadcode i =
       let ifnot' = deadcode ifnot in
       let s = deadcode i.next in
       { i = {i with desc = Iifthenelse(test, ifso'.i, ifnot'.i); next = s.i};
-        regs = Reg.add_set_array i.live arg;
+        regs = Reg.add_set_array i.live i.arg;
         exits = Int.Set.union s.exits
                   (Int.Set.union ifso'.exits ifnot'.exits);
       }
@@ -76,7 +70,7 @@ let rec deadcode i =
       let cases' = Array.map (fun c -> c.i) dc in
       let s = deadcode i.next in
       { i = {i with desc = Iswitch(index, cases'); next = s.i};
-        regs = Reg.add_set_array i.live arg;
+        regs = Reg.add_set_array i.live i.arg;
         exits = Array.fold_left
                   (fun acc c -> Int.Set.union acc c.exits) s.exits dc;
       }

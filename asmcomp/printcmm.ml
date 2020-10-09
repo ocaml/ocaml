@@ -116,7 +116,7 @@ let location d =
 
 let operation d = function
   | Capply _ty -> "app" ^ location d
-  | Cextcall(lbl, _ty_res, _ty_args, _alloc, _) ->
+  | Cextcall(lbl, _ty_res, _ty_args, _alloc) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (location d)
   | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
   | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
@@ -161,9 +161,6 @@ let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
   | Cconst_natint (n, _dbg) ->
     fprintf ppf "%s" (Nativeint.to_string n)
-  | Cblockheader(n, d) ->
-    fprintf ppf "block-hdr(%s)%s"
-      (Nativeint.to_string n) (location d)
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
   | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
   | Cvar id -> V.print ppf id
@@ -222,7 +219,7 @@ let rec expr ppf = function
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
       | Capply mty -> fprintf ppf "@ %a" machtype mty
-      | Cextcall(_, ty_res, ty_args, _, _) ->
+      | Cextcall(_, ty_res, ty_args, _) ->
           fprintf ppf "@ %a" extcall_signature (ty_res, ty_args)
       | _ -> ()
       end;

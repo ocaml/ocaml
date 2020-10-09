@@ -137,11 +137,8 @@ let linear i n contains_calls =
   let rec linear i n =
     match i.Mach.desc with
       Iend -> n
-    | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
-        if not Config.spacetime then
-          copy_instr (Lop op) i (discard_dead_code n)
-        else
-          copy_instr (Lop op) i (linear i.Mach.next n)
+    | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
+        copy_instr (Lop op) i (discard_dead_code n)
     | Iop(Imove | Ireload | Ispill)
       when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
         linear i.Mach.next n
@@ -248,7 +245,7 @@ let linear i n contains_calls =
           get_label (cons_instr Lentertrap (linear handler n1))
         in
         incr try_depth;
-        assert (i.Mach.arg = [| |] || Config.spacetime);
+        assert (i.Mach.arg = [| |]);
         let n3 = cons_instr (Lpushtrap { lbl_handler; })
                    (linear body
                       (cons_instr
@@ -331,7 +328,6 @@ let fundecl f =
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
-    fun_spacetime_shape = f.Mach.fun_spacetime_shape;
     fun_tailrec_entry_point_label;
     fun_contains_calls = contains_calls;
     fun_num_stack_slots = f.Mach.fun_num_stack_slots;

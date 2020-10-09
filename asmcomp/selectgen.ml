@@ -66,7 +66,7 @@ let env_empty = {
 
 let oper_result_type = function
     Capply ty -> ty
-  | Cextcall(_s, ty_res, _ty_args, _alloc, _) -> ty_res
+  | Cextcall(_s, ty_res, _ty_args, _alloc) -> ty_res
   | Cload (c, _) ->
       begin match c with
       | Word_val -> typ_val
@@ -107,7 +107,6 @@ let size_expr (env:environment) exp =
     | Cconst_symbol _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
-    | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
           V.Map.find id localenv
@@ -314,7 +313,6 @@ method is_simple_expr = function
   | Cconst_natint _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
-  | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) | Clet_mut(_id, _, arg, body) ->
@@ -350,7 +348,6 @@ method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cblockheader _
   | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) | Clet_mut (_id, _, arg, body) ->
@@ -413,13 +410,13 @@ method mark_tailcall = ()
 method mark_c_tailcall = ()
 
 method mark_instr = function
-  | Iop (Icall_ind _ | Icall_imm _ | Iextcall _) ->
+  | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
       self#mark_call
-  | Iop (Itailcall_ind _ | Itailcall_imm _) ->
+  | Iop (Itailcall_ind | Itailcall_imm _) ->
       self#mark_tailcall
   | Iop (Ialloc _) ->
       self#mark_call (* caml_alloc*, caml_garbage_collection *)
-  | Iop (Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _)) ->
+  | Iop (Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)) ->
       self#mark_c_tailcall (* caml_ml_array_bound_error *)
   | Iraise raise_kind ->
     begin match raise_kind with
@@ -437,30 +434,14 @@ method mark_instr = function
 
 (* Default instruction selection for operators *)
 
-method select_allocation bytes =
-  Ialloc { bytes; label_after_call_gc = None;
-           dbginfo = []; spacetime_index = 0; }
-method select_allocation_args _env = [| |]
-
-method select_checkbound () =
-  Icheckbound { spacetime_index = 0; label_after_error = None; }
-method select_checkbound_extra_args () = []
-
 method select_operation op args _dbg =
   match (op, args) with
   | (Capply _, Cconst_symbol (func, _dbg) :: rem) ->
-    let label_after = Cmm.new_label () in
-    (Icall_imm { func; label_after; }, rem)
+    (Icall_imm { func; }, rem)
   | (Capply _, _) ->
-    let label_after = Cmm.new_label () in
-    (Icall_ind { label_after; }, args)
-  | (Cextcall(func, ty_res, ty_args, alloc, label_after), _) ->
-    let label_after =
-      match label_after with
-      | None -> Cmm.new_label ()
-      | Some label_after -> label_after
-    in
-    Iextcall { func; ty_res; ty_args; alloc; label_after; }, args
+    (Icall_ind, args)
+  | (Cextcall(func, ty_res, ty_args, alloc), _) ->
+    Iextcall { func; ty_res; ty_args; alloc; }, args
   | (Cload (chunk, _mut), [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
@@ -479,7 +460,7 @@ method select_operation op args _dbg =
         (Istore(chunk, addr, is_assign), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
-  | (Calloc, _) -> (self#select_allocation 0), args
+  | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
   | (Cmuli, _) -> self#select_arith_comm Imul args
@@ -505,9 +486,7 @@ method select_operation op args _dbg =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound, _) ->
-    let extra_args = self#select_checkbound_extra_args () in
-    let op = self#select_checkbound () in
-    self#select_arith op (args @ extra_args)
+    self#select_arith Icheckbound args
   | _ -> Misc.fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -576,15 +555,12 @@ method insert_debug _env desc dbg arg res =
 method insert _env desc arg res =
   instr_seq <- instr_cons desc arg res instr_seq
 
-method extract_core ~end_instr =
+method extract =
   let rec extract res i =
     if i == dummy_instr
     then res
     else extract {i with next = res} i.next in
-  extract end_instr instr_seq
-
-method extract =
-  self#extract_core ~end_instr:(end_instr ())
+  extract (end_instr ()) instr_seq
 
 (* Insert a sequence of moves from one pseudoreg set to another. *)
 
@@ -622,20 +598,6 @@ method insert_op_debug env op dbg rs rd =
 method insert_op env op rs rd =
   self#insert_op_debug env op Debuginfo.none rs rd
 
-method emit_blockheader env n _dbg =
-  let r = self#regs_for typ_int in
-  Some(self#insert_op env (Iconst_int n) [||] r)
-
-method about_to_emit_call _env _insn _arg _dbg = None
-
-(* Prior to a function call, update the Spacetime node hole pointer hard
-   register. *)
-
-method private maybe_emit_spacetime_move env ~spacetime_reg =
-  Option.iter (fun reg ->
-      self#insert_moves env reg [| Proc.loc_spacetime_node_hole |])
-    spacetime_reg
-
 (* Add the instructions for the given expression
    at the end of the self sequence *)
 
@@ -660,8 +622,6 @@ method emit_expr (env:environment) exp =
          adding this register to the frame table would be redundant *)
       let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_symbol n) [||] r)
-  | Cblockheader(n, dbg) ->
-      self#emit_blockheader env n dbg
   | Cvar v ->
       begin try
         Some(env_find v env)
@@ -721,17 +681,13 @@ method emit_expr (env:environment) exp =
           let ty = oper_result_type op in
           let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
-            Icall_ind _ ->
+            Icall_ind ->
               let r1 = self#emit_tuple env new_args in
               let rarg = Array.sub r1 1 (Array.length r1 - 1) in
               let rd = self#regs_for ty in
               let (loc_arg, stack_ofs) = Proc.loc_arguments (Reg.typv rarg) in
               let loc_res = Proc.loc_results (Reg.typv rd) in
-              let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| r1.(0) |] dbg
-              in
               self#insert_move_args env rarg loc_arg stack_ofs;
-              self#maybe_emit_spacetime_move env ~spacetime_reg;
               self#insert_debug env (Iop new_op) dbg
                           (Array.append [|r1.(0)|] loc_arg) loc_res;
               self#insert_move_results env loc_res rd stack_ofs;
@@ -741,37 +697,28 @@ method emit_expr (env:environment) exp =
               let rd = self#regs_for ty in
               let (loc_arg, stack_ofs) = Proc.loc_arguments (Reg.typv r1) in
               let loc_res = Proc.loc_results (Reg.typv rd) in
-              let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| |] dbg
-              in
               self#insert_move_args env r1 loc_arg stack_ofs;
-              self#maybe_emit_spacetime_move env ~spacetime_reg;
               self#insert_debug env (Iop new_op) dbg loc_arg loc_res;
               self#insert_move_results env loc_res rd stack_ofs;
               Some rd
           | Iextcall { ty_args; _} ->
-              let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| |] dbg in
               let (loc_arg, stack_ofs) =
                 self#emit_extcall_args env ty_args new_args in
-              self#maybe_emit_spacetime_move env ~spacetime_reg;
               let rd = self#regs_for ty in
               let loc_res =
                 self#insert_op_debug env new_op dbg
                   loc_arg (Proc.loc_external_results (Reg.typv rd)) in
               self#insert_move_results env loc_res rd stack_ofs;
               Some rd
-          | Ialloc { bytes = _; spacetime_index; label_after_call_gc; } ->
+          | Ialloc { bytes = _; } ->
               let rd = self#regs_for typ_val in
               let bytes = size_expr env (Ctuple new_args) in
               assert (bytes mod Arch.size_addr = 0);
               let alloc_words = bytes / Arch.size_addr in
               let op =
-                Ialloc { bytes; spacetime_index; label_after_call_gc;
-                         dbginfo = [{alloc_words; alloc_dbg = dbg}] }
+                Ialloc { bytes; dbginfo = [{alloc_words; alloc_dbg = dbg}] }
               in
-              let args = self#select_allocation_args env in
-              self#insert_debug env (Iop op) dbg args rd;
+              self#insert_debug env (Iop op) dbg [||] rd;
               self#emit_stores env new_args rd;
               Some rd
           | op ->
@@ -1081,60 +1028,40 @@ method emit_tail (env:environment) exp =
       | Some(simple_args, env) ->
           let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
-            Icall_ind { label_after; } ->
+            Icall_ind ->
               let r1 = self#emit_tuple env new_args in
               let rarg = Array.sub r1 1 (Array.length r1 - 1) in
               let (loc_arg, stack_ofs) = Proc.loc_arguments (Reg.typv rarg) in
               if stack_ofs = 0 then begin
-                let call = Iop (Itailcall_ind { label_after; }) in
-                let spacetime_reg =
-                  self#about_to_emit_call env call [| r1.(0) |] dbg
-                in
+                let call = Iop (Itailcall_ind) in
                 self#insert_moves env rarg loc_arg;
-                self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env call dbg
                             (Array.append [|r1.(0)|] loc_arg) [||];
               end else begin
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results (Reg.typv rd) in
-                let spacetime_reg =
-                  self#about_to_emit_call env (Iop new_op) [| r1.(0) |] dbg
-                in
                 self#insert_move_args env rarg loc_arg stack_ofs;
-                self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env (Iop new_op) dbg
                             (Array.append [|r1.(0)|] loc_arg) loc_res;
                 self#insert env (Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert env Ireturn loc_res [||]
               end
-          | Icall_imm { func; label_after; } ->
+          | Icall_imm { func; } ->
               let r1 = self#emit_tuple env new_args in
               let (loc_arg, stack_ofs) = Proc.loc_arguments (Reg.typv r1) in
               if stack_ofs = 0 then begin
-                let call = Iop (Itailcall_imm { func; label_after; }) in
-                let spacetime_reg =
-                  self#about_to_emit_call env call [| |] dbg
-                in
+                let call = Iop (Itailcall_imm { func; }) in
                 self#insert_moves env r1 loc_arg;
-                self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env call dbg loc_arg [||];
               end else if func = !current_function_name then begin
-                let call = Iop (Itailcall_imm { func; label_after; }) in
+                let call = Iop (Itailcall_imm { func; }) in
                 let loc_arg' = Proc.loc_parameters (Reg.typv r1) in
-                let spacetime_reg =
-                  self#about_to_emit_call env call [| |] dbg
-                in
                 self#insert_moves env r1 loc_arg';
-                self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env call dbg loc_arg' [||];
               end else begin
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results (Reg.typv rd) in
-                let spacetime_reg =
-                  self#about_to_emit_call env (Iop new_op) [| |] dbg
-                in
                 self#insert_move_args env r1 loc_arg stack_ofs;
-                self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env (Iop new_op) dbg loc_arg loc_res;
                 self#insert env (Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert env Ireturn loc_res [||]
@@ -1210,7 +1137,6 @@ method emit_tail (env:environment) exp =
       end
   | Cop _
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cblockheader _
   | Cvar _
   | Cassign _
   | Ctuple _
@@ -1222,15 +1148,7 @@ method private emit_tail_sequence env exp =
   s#emit_tail env exp;
   s#extract
 
-(* Insertion of the function prologue *)
-
-method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_ ~env =
-  self#insert_moves env loc_arg rarg;
-  None
-
 (* Sequentialization of a function definition *)
-
-method initial_env () = env_empty
 
 method emit_fundecl f =
   current_function_name := f.Cmm.fun_name;
@@ -1240,37 +1158,19 @@ method emit_fundecl f =
       f.Cmm.fun_args in
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters (Reg.typv rarg) in
-  (* To make it easier to add the Spacetime instrumentation code, we
-     first emit the body and extract the resulting instruction sequence;
-     then we emit the prologue followed by any Spacetime instrumentation.  The
-     sequence resulting from extracting the latter (prologue + instrumentation)
-     together is then simply prepended to the body. *)
   let env =
     List.fold_right2
       (fun (id, _ty) r env -> env_add id r env)
-      f.Cmm.fun_args rargs (self#initial_env ()) in
-  let spacetime_node_hole, env =
-    if not Config.spacetime then None, env
-    else begin
-      let reg = self#regs_for typ_int in
-      let node_hole = V.create_local "spacetime_node_hole" in
-      Some (node_hole, reg), env_add (VP.create node_hole) reg env
-    end
-  in
+      f.Cmm.fun_args rargs env_empty in
+  self#insert_moves env loc_arg rarg;
   self#emit_tail env f.Cmm.fun_body;
   let body = self#extract in
-  instr_seq <- dummy_instr;
-  let fun_spacetime_shape =
-    self#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env
-  in
-  let body = self#extract_core ~end_instr:body in
   instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body;
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
-    fun_spacetime_shape;
     fun_num_stack_slots = Array.make Proc.num_register_classes 0;
     fun_contains_calls = !contains_calls;
   }

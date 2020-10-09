@@ -125,10 +125,6 @@ let system = "%%SYSTEM%%"
 let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
-let spacetime = %%WITH_SPACETIME%%
-let enable_call_counts = %%ENABLE_CALL_COUNTS%%
-let libunwind_available = %%LIBUNWIND_AVAILABLE%%
-let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
 let profinfo_width = %%PROFINFO_WIDTH%%
 
@@ -195,7 +191,6 @@ let configuration_variables =
   p "host" host;
   p "target" target;
   p_bool "flambda" flambda;
-  p_bool "spacetime" spacetime;
   p_bool "safe_string" safe_string;
   p_bool "default_safe_string" default_safe_string;
   p_bool "flat_float_array" flat_float_array;

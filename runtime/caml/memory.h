@@ -61,7 +61,6 @@ CAMLextern color_t caml_allocation_color (void *hp);
 #ifdef CAML_INTERNALS
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
-CAMLextern void caml_disown_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
 #endif /* CAML_INTERNALS */
 
@@ -240,25 +239,10 @@ extern void caml_alloc_small_dispatch (intnat wosize, int flags,
 #define Alloc_small_with_profinfo(result, wosize, tag, profinfo) \
   Alloc_small_aux(result, wosize, tag, profinfo, CAML_DO_TRACK)
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-
-extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
-
-#define Alloc_small(result, wosize, tag) \
-  Alloc_small_with_profinfo(result, wosize, tag, \
-    caml_spacetime_my_profinfo(NULL, wosize))
-#define Alloc_small_no_track(result, wosize, tag) \
-  Alloc_small_aux(result, wosize, tag, \
-    caml_spacetime_my_profinfo(NULL, wosize), CAML_DONT_TRACK)
-
-#else
-
 #define Alloc_small(result, wosize, tag) \
   Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
 #define Alloc_small_no_track(result, wosize, tag) \
   Alloc_small_aux(result, wosize, tag, (uintnat) 0, CAML_DONT_TRACK)
-
-#endif
 
 /* Deprecated alias for [caml_modify] */
 

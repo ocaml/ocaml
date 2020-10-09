@@ -125,7 +125,7 @@ let rec rename i sub =
   match i.desc with
     Iend ->
       (i, sub)
-  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
+  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
       (instr_cons_debug i.desc (subst_regs i.arg sub) [||] i.dbg i.next,
        None)
   | Iop Ireload when i.res.(0).loc = Unknown ->
@@ -219,7 +219,6 @@ let fundecl f =
     fun_body = new_body;
     fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
-    fun_spacetime_shape = f.fun_spacetime_shape;
     fun_num_stack_slots = f.fun_num_stack_slots;
     fun_contains_calls = f.fun_contains_calls;
   }

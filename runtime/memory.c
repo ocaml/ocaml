@@ -285,15 +285,6 @@ char *caml_alloc_for_heap (asize_t request)
   }
 }
 
-/* Use this function if a block allocated with [caml_alloc_for_heap] is
-   not actually going to be added to the heap.  The caller is responsible
-   for freeing it. */
-void caml_disown_for_heap (char* mem)
-{
-  /* Currently a no-op. */
-  (void)mem; /* can CAMLunused_{start,end} be used here? */
-}
-
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
    if you don't add it with [caml_add_to_heap].
 */
@@ -404,7 +395,7 @@ static value *expand_heap (mlsize_t request)
   }else{
     Field (Val_hp (prev), 0) = (value) NULL;
     if (remain == 1) {
-      Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
+      Hd_hp (hp) = Make_header (0, 0, Caml_white);
     }
   }
   CAMLassert (Wosize_hp (mem) >= request);
@@ -560,21 +551,6 @@ CAMLexport value caml_alloc_shr_for_minor_gc (mlsize_t wosize,
 }
 #endif /* WITH_PROFINFO */
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_with_profinfo (wosize, tag,
-    caml_spacetime_my_profinfo (NULL, wosize));
-}
-
-CAMLexport value caml_alloc_shr_no_track_noexc (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_aux (wosize, tag, 0, 0,
-                             caml_spacetime_my_profinfo (NULL, wosize));
-}
-#else
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux (wosize, tag, 1, 1, NO_PROFINFO);
@@ -584,7 +560,6 @@ CAMLexport value caml_alloc_shr_no_track_noexc (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux (wosize, tag, 0, 0, NO_PROFINFO);
 }
-#endif
 
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.

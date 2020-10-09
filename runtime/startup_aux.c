@@ -60,11 +60,7 @@ void caml_init_atom_table(void)
     caml_stat_alloc_aligned_noexc(request, 0, &b);
 
   for(i = 0; i < 256; i++) {
-#ifdef NATIVE_CODE
-    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_black);
-#else
     caml_atom_table[i] = Make_header(0, i, Caml_black);
-#endif
   }
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256 + 1) != 0) {

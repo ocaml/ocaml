@@ -731,8 +731,6 @@ ac_ct_LD
 LD
 DEFAULT_STRING
 WINDOWS_UNICODE_MODE
-LIBUNWIND_LIB_DIR
-LIBUNWIND_INCLUDE_DIR
 DLLIBS
 PARTIALLD
 target_os
@@ -763,11 +761,6 @@ windows_unicode
 max_testsuite_dir_retries
 flambda_invariants
 flambda
-libunwind_link_flags
-libunwind_include_flags
-libunwind_available
-call_counts
-spacetime
 frame_pointers
 profinfo_width
 profinfo
@@ -889,7 +882,6 @@ enable_dependency_generation
 enable_instrumented_runtime
 enable_vmthreads
 enable_systhreads
-with_libunwind
 enable_graph_lib
 enable_str_lib
 enable_unix_lib
@@ -899,8 +891,6 @@ enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
 enable_naked_pointers_checker
-enable_spacetime
-enable_call_counts
 enable_cfi
 enable_installing_source_artifacts
 enable_installing_bytecode_programs
@@ -931,8 +921,6 @@ AS
 ASPP
 PARTIALLD
 DLLIBS
-LIBUNWIND_INCLUDE_DIR
-LIBUNWIND_LIB_DIR
 WINDOWS_UNICODE_MODE
 DEFAULT_STRING
 CC
@@ -1574,8 +1562,6 @@ Optional Features:
                           do not allow naked pointers
   --enable-naked-pointers-checker
                           enable the naked pointers checker
-  --enable-spacetime      build the spacetime profiler
-  --disable-call-counts   disable the call counts in spacetime
   --disable-cfi           disable the CFI directives in assembly files
   --enable-installing-source-artifacts
                           install *.cmt* and *.mli files
@@ -1607,7 +1593,6 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --without-libunwind     disable libunwind support for Spacetime profiling
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -1625,10 +1610,6 @@ Some influential environment variables:
   PARTIALLD   how to build partial (relocatable) object files
   DLLIBS      which libraries to use (in addition to -ldl) to load dynamic
               libs
-  LIBUNWIND_INCLUDE_DIR
-              location of header files for libunwind
-  LIBUNWIND_LIB_DIR
-              location of library files for libunwind
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
@@ -2943,11 +2924,6 @@ VERSION=4.12.0+dev0-2020-04-22
 
 
 
-
-
-
-
-
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3143,17 +3119,6 @@ if test "${enable_systhreads+set}" = set; then :
 fi
 
 
-
-# Check whether --with-libunwind was given.
-if test "${with_libunwind+set}" = set; then :
-  withval=$with_libunwind;
-fi
-
-
-
-
-
-
 # Check whether --enable-graph-lib was given.
 if test "${enable_graph_lib+set}" = set; then :
   enableval=$enable_graph_lib; as_fn_error $? "The graphics library is no longer distributed with OCaml \
@@ -3209,18 +3174,6 @@ fi
 # Check whether --enable-naked-pointers-checker was given.
 if test "${enable_naked_pointers_checker+set}" = set; then :
   enableval=$enable_naked_pointers_checker;
-fi
-
-
-# Check whether --enable-spacetime was given.
-if test "${enable_spacetime+set}" = set; then :
-  enableval=$enable_spacetime;
-fi
-
-
-# Check whether --enable-call-counts was given.
-if test "${enable_call_counts+set}" = set; then :
-  enableval=$enable_call_counts;
 fi
 
 
@@ -14101,10 +14054,6 @@ else
   PACKLD="$PARTIALLD -o \$(EMPTY)"
 fi
 
-if test $arch != "none" && $arch64 ; then :
-  otherlibraries="$otherlibraries raw_spacetime_lib"
-fi
-
 # Disable PIE at link time when ocamlopt does not produce position-independent
 # code and the system produces PIE executables by default and demands PIC
 # object files to do so.
@@ -16752,143 +16701,6 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
 fi
 
 
-
-# Spacetime profiling, including libunwind detection
-
-# The number of bits used for profiling information is configurable here.
-# The more bits used for profiling, the smaller will be Max_wosize.
-# Note that PROFINFO_WIDTH must still be defined even if not configuring
-# for Spacetime (see comment in runtime/caml/mlvalues.h on [Profinfo_hd]).
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build spacetime" >&5
-$as_echo_n "checking whether to build spacetime... " >&6; }
-if test x"$enable_spacetime" != "xyes" ; then :
-  spacetime=false
-  call_counts=true # as in original script but should probably be false
-  libunwind_available=false
-  libunwind_include_flags=
-  libunwind_link_flags=
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-else
-  case $arch in #(
-  amd64) :
-    spacetime_supported=true ;; #(
-  *) :
-    spacetime_supported=false ;;
-esac
-  if $spacetime_supported; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-    spacetime=true
-    profinfo=true
-    profinfo_width=26
-    $as_echo "#define WITH_SPACETIME 1" >>confdefs.h
-
-    if test x"$enable_call_counts" != "xno"; then :
-  call_counts=true
-      $as_echo "#define ENABLE_CALL_COUNTS 1" >>confdefs.h
-
-else
-  call_counts=false
-fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use libunwind" >&5
-$as_echo_n "checking whether to use libunwind... " >&6; }
-    if test x"$with_libunwind" = "xno"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
-$as_echo "disabled" >&6; }
-else
-  if test x"$with_libunwind" = "x"; then :
-  libunwind_requested=false
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: if available" >&5
-$as_echo "if available" >&6; }
-else
-  libunwind_requested=true
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: requested" >&5
-$as_echo "requested" >&6; }
-        if test x"$with_libunwind" != "xyes"; then :
-  if test x"$LIBUNWIND_INCLUDE_DIR" = "x"; then :
-  LIBUNWIND_INCLUDE_DIR="$with_libunwind/include"
-fi
-          if test x"$LIBUNWIND_LIB_DIR" = "x"; then :
-  LIBUNWIND_LIB_DIR="$with_libunwind/lib"
-fi
-
-fi
-
-fi
-      if test "$system" = "macosx"; then :
-  if test x"$LIBUNWIND_INCLUDE_DIR" != x -o \
-                     x"$LIBUNWIND_LIB_DIR" != x; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On MacOSX, specifying paths for libunwind headers or libraries is strongly discouraged. It is recommended to rely on the defaults provided by the configure script" >&5
-$as_echo "$as_me: WARNING: On MacOSX, specifying paths for libunwind headers or libraries is strongly discouraged. It is recommended to rely on the defaults provided by the configure script" >&2;}
-fi
-fi
-
-      if test x"$LIBUNWIND_INCLUDE_DIR" != x; then :
-  libunwind_include_flags="-I$LIBUNWIND_INCLUDE_DIR"
-else
-  libunwind_include_flags=""
-fi
-
-      case "$system" in #(
-  "macosx") :
-    libunwind_link_flags="-framework System" ;; #(
-  *) :
-    libunwind_link_flags="-lunwind -lunwind-x86_64" ;;
-esac
-
-      if test x"$LIBUNWIND_LIB_DIR" != x; then :
-  libunwind_link_flags="-L$LIBUNWIND_LIB_DIR $libunwind_link_flags"
-fi
-
-
-  SAVED_CFLAGS="$CFLAGS"
-  SAVED_LDFLAGS="$LDFLAGS"
-  CFLAGS="$CFLAGS $libunwind_include_flags"
-  LDFLAGS="$LDFLAGS $libunwind_link_flags"
-  ac_fn_c_check_header_mongrel "$LINENO" "libunwind.h" "ac_cv_header_libunwind_h" "$ac_includes_default"
-if test "x$ac_cv_header_libunwind_h" = xyes; then :
-  $as_echo "#define HAS_LIBUNWIND 1" >>confdefs.h
-
-    libunwind_available=true
-else
-  libunwind_available=false
-fi
-
-
-  LDFLAGS="$SAVED_LDFLAGS"
-  CFLAGS="$SAVED_CFLAGS"
-
-
-      if $libunwind_requested && ! $libunwind_available; then :
-  as_fn_error $? "libunwind was requested but can not be found" "$LINENO" 5
-fi
-
-        # We need unwinding information at runtime, but since we use
-        # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
-        # the OS X linker will chuck away the DWARF-like (.eh_frame)
-        # information.  (Older versions of OS X don't provide this.)
-
-        if $libunwind_available && test x"$system" = "xmacosx"; then :
-  extra_flags="-Wl,-keep_dwarf_unwind"
-          mkexe="$mkexe $extra_flags"
-          mksharedlib="$mksharedlib $extra_flags"
-fi
-fi
-
-else
-  if test x"$enable_spacetime" = "xyes"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: requested but not supported" >&5
-$as_echo "requested but not supported" >&6; }
-      as_fn_error $? "exiting" "$LINENO" 5
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-fi
-
-fi
 
 cat >>confdefs.h <<_ACEOF
 #define PROFINFO_WIDTH $profinfo_width

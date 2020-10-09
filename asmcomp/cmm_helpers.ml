@@ -24,8 +24,7 @@ open Arch
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cblockheader _ -> fn arg
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
@@ -35,8 +34,7 @@ let bind_load name arg fn =
 
 let bind_nonvar name arg fn =
   match arg with
-    Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cblockheader _ -> fn arg
+    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
@@ -82,15 +80,15 @@ let closure_info ~arity ~startenv =
                  (add (shift_left (of_int startenv) 1)
                       1n))
 
-let alloc_float_header dbg = Cblockheader (float_header, dbg)
-let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
-let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
-let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
+let alloc_float_header dbg = Cconst_natint (float_header, dbg)
+let alloc_floatarray_header len dbg = Cconst_natint (floatarray_header len, dbg)
+let alloc_closure_header sz dbg = Cconst_natint (white_closure_header sz, dbg)
+let alloc_infix_header ofs dbg = Cconst_natint (infix_header ofs, dbg)
 let alloc_closure_info ~arity ~startenv dbg =
-  Cblockheader (closure_info ~arity ~startenv, dbg)
-let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
-let alloc_boxedint64_header dbg = Cblockheader (boxedint64_header, dbg)
-let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
+  Cconst_natint (closure_info ~arity ~startenv, dbg)
+let alloc_boxedint32_header dbg = Cconst_natint (boxedint32_header, dbg)
+let alloc_boxedint64_header dbg = Cconst_natint (boxedint64_header, dbg)
+let alloc_boxedintnat_header dbg = Cconst_natint (boxedintnat_header, dbg)
 
 (* Integers *)
 
@@ -563,7 +561,7 @@ let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 let unbox_float dbg =
   map_tail
     (function
-      | Cop(Calloc, [Cblockheader (hdr, _); c], _)
+      | Cop(Calloc, [Cconst_natint (hdr, _); c], _)
         when Nativeint.equal hdr float_header ->
           c
       | Cconst_symbol (s, _dbg) as cmm ->
@@ -613,8 +611,8 @@ let rec remove_unit = function
       Clet(id, c1, remove_unit c2)
   | Cop(Capply _mty, args, dbg) ->
       Cop(Capply typ_void, args, dbg)
-  | Cop(Cextcall(proc, _ty_res, ty_args, alloc, label_after), args, dbg) ->
-      Cop(Cextcall(proc, typ_void, ty_args, alloc, label_after), args, dbg)
+  | Cop(Cextcall(proc, _ty_res, ty_args, alloc), args, dbg) ->
+      Cop(Cextcall(proc, typ_void, ty_args, alloc), args, dbg)
   | Cexit (_,_) as c -> c
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
@@ -736,10 +734,10 @@ let float_array_ref arr ofs dbg =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
 
 let addr_array_set arr ofs newval dbg =
-  Cop(Cextcall("caml_modify", typ_void, [], false, None),
+  Cop(Cextcall("caml_modify", typ_void, [], false),
       [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
 let addr_array_initialize arr ofs newval dbg =
-  Cop(Cextcall("caml_initialize", typ_void, [], false, None),
+  Cop(Cextcall("caml_initialize", typ_void, [], false),
       [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
 let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Lambda.Assignment),
@@ -775,7 +773,7 @@ let bigstring_length ba dbg =
 
 let lookup_tag obj tag dbg =
   bind "tag" tag (fun tag ->
-    Cop(Cextcall("caml_get_public_method", typ_val, [], false, None),
+    Cop(Cextcall("caml_get_public_method", typ_val, [], false),
         [obj; tag],
         dbg))
 
@@ -797,7 +795,7 @@ let call_cached_method obj tag cache pos args dbg =
 
 let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
-    Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args, dbg)
+    Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
   else begin
     let id = V.create_local "*alloc*" in
     let rec fill_fields idx = function
@@ -805,14 +803,14 @@ let make_alloc_generic set_fn dbg tag wordsize args =
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
                           fill_fields (idx + 2) el) in
     Clet(VP.create id,
-         Cop(Cextcall("caml_alloc", typ_val, [], true, None),
+         Cop(Cextcall("caml_alloc", typ_val, [], true),
                  [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
          fill_fields 1 args)
   end
 
 let make_alloc dbg tag args =
   let addr_array_init arr ofs newval dbg =
-    Cop(Cextcall("caml_initialize", typ_void, [], false, None),
+    Cop(Cextcall("caml_initialize", typ_void, [], false),
         [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
   in
   make_alloc_generic addr_array_init dbg tag (List.length args) args
@@ -1032,13 +1030,13 @@ let split_int64_for_32bit_target arg dbg =
 
 let alloc_matches_boxed_int bi ~hdr ~ops =
   match (bi : Primitive.boxed_integer), hdr, ops with
-  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pnativeint, Cconst_natint (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedintnat_header
         && String.equal sym caml_nativeint_ops
-  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pint32, Cconst_natint (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedint32_header
         && String.equal sym caml_int32_ops
-  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pint64, Cconst_natint (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedint64_header
         && String.equal sym caml_int64_ops
   | (Pnativeint | Pint32 | Pint64), _, _ -> false
@@ -2155,12 +2153,12 @@ let bbswap bi arg dbg =
     | Pint64 -> "int64", XInt64
   in
   Cop(Cextcall(Printf.sprintf "caml_%s_direct_bswap" prim,
-               typ_int, [tyarg], false, None),
+               typ_int, [tyarg], false),
       [arg],
       dbg)
 
 let bswap16 arg dbg =
-  (Cop(Cextcall("caml_bswap16_direct", typ_int, [], false, None),
+  (Cop(Cextcall("caml_bswap16_direct", typ_int, [], false),
        [arg],
        dbg))
 
@@ -2186,12 +2184,12 @@ let setfield n ptr init arg1 arg2 dbg =
   match assignment_kind ptr init with
   | Caml_modify ->
       return_unit dbg
-        (Cop(Cextcall("caml_modify", typ_void, [], false, None),
+        (Cop(Cextcall("caml_modify", typ_void, [], false),
              [field_address arg1 n dbg; arg2],
              dbg))
   | Caml_initialize ->
       return_unit dbg
-        (Cop(Cextcall("caml_initialize", typ_void, [], false, None),
+        (Cop(Cextcall("caml_initialize", typ_void, [], false),
              [field_address arg1 n dbg; arg2],
              dbg))
   | Simple ->
@@ -2625,18 +2623,6 @@ let frame_table namelist =
   in
   Cdata(Cglobal_symbol "caml_frametable" ::
         Cdefine_symbol "caml_frametable" ::
-        List.map mksym namelist
-        @ [cint_zero])
-
-(* Generate the master table of Spacetime shapes *)
-
-let spacetime_shapes namelist =
-  let mksym name =
-    Csymbol_address (
-      Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes"))
-  in
-  Cdata(Cglobal_symbol "caml_spacetime_shapes" ::
-        Cdefine_symbol "caml_spacetime_shapes" ::
         List.map mksym namelist
         @ [cint_zero])
 

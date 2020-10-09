@@ -150,9 +150,7 @@ type memory_chunk =
 
 and operation =
     Capply of machtype
-  | Cextcall of string * machtype * exttype list * bool * label option
-    (** If specified, the given label will be placed immediately after the
-        call (at the same place as any frame descriptor would reference). *)
+  | Cextcall of string * machtype * exttype list * bool
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
@@ -173,7 +171,6 @@ type expression =
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
-  | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
   | Clet_mut of Backend_var.With_provenance.t * machtype
@@ -261,7 +258,6 @@ let iter_shallow_tail f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cblockheader _
   | Cvar _
   | Cassign _
   | Ctuple _
@@ -298,7 +294,6 @@ let rec map_tail f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cblockheader _
   | Cvar _
   | Cassign _
   | Ctuple _
@@ -335,7 +330,6 @@ let map_shallow f = function
   | Cconst_natint _
   | Cconst_float _
   | Cconst_symbol _
-  | Cblockheader _
   | Cvar _
     as c ->
       c

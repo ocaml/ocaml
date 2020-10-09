@@ -26,9 +26,6 @@
 #include "caml/osdeps.h"
 #include "caml/fail.h"
 #include "caml/signals.h"
-#ifdef WITH_SPACETIME
-#include "caml/spacetime.h"
-#endif
 
 #include "caml/hooks.h"
 
@@ -110,11 +107,6 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
 
   sym = optsym("__frametable");
   if (NULL != sym) caml_register_frametable(sym);
-
-#ifdef WITH_SPACETIME
-  sym = optsym("__spacetime_shapes");
-  if (NULL != sym) caml_spacetime_register_shapes(sym);
-#endif
 
   sym = optsym("__gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);

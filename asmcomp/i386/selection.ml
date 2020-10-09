@@ -89,7 +89,7 @@ let rec float_needs = function
       let n1 = float_needs arg1 in
       let n2 = float_needs arg2 in
       if n1 = n2 then 1 + n1 else if n1 > n2 then n1 else n2
-  | Cop(Cextcall(fn, _ty_res, _ty_args, _alloc, _label), args, _dbg)
+  | Cop(Cextcall(fn, _ty_res, _ty_args, _alloc), args, _dbg)
     when !fast_math && List.mem fn inline_float_ops ->
       begin match args with
         [arg] -> float_needs arg
@@ -160,7 +160,7 @@ inherit Selectgen.selector_generic as super
 
 method! is_immediate op n =
   match op with
-  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound ->
       true
   | _ ->
       super#is_immediate op n
@@ -169,7 +169,7 @@ method is_immediate_test _cmp _n = true
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _, _, _), args, _)
+  | Cop(Cextcall(fn, _, _, _), args, _)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
@@ -178,7 +178,7 @@ method! is_simple_expr e =
 
 method! effects_of e =
   match e with
-  | Cop(Cextcall(fn, _, _, _, _), args, _)
+  | Cop(Cextcall(fn, _, _, _), args, _)
     when !fast_math && List.mem fn inline_float_ops ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
@@ -201,7 +201,7 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int (n, _) ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint (n, _) | Cblockheader (n, _)) ->
+  | Cconst_natint (n, _) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_symbol (s, _) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
@@ -240,7 +240,7 @@ method! select_operation op args dbg =
           super#select_operation op args dbg
       end
   (* Recognize inlined floating point operations *)
-  | Cextcall(fn, _ty_res, _ty_args, false, _label)
+  | Cextcall(fn, _ty_res, _ty_args, false)
     when !fast_math && List.mem fn inline_float_ops ->
       (Ispecific(Ifloatspecial fn), args)
   (* Default *)

@@ -16,7 +16,7 @@
 ROOTDIR=..
 include $(ROOTDIR)/Makefile.common
 
-OTHERLIBRARIES ?= bigarray dynlink raw_spacetime_lib str systhreads \
+OTHERLIBRARIES ?= bigarray dynlink str systhreads \
                   unix win32unix
 
 # $1: target name to dispatch to all otherlibs/*/Makefile

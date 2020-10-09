@@ -81,9 +81,6 @@ struct caml_context {
   char * bottom_of_stack;       /* beginning of OCaml stack chunk */
   uintnat last_retaddr;         /* last return address in OCaml code */
   value * gc_regs;              /* pointer to register block */
-#ifdef WITH_SPACETIME
-  void* trie_node;
-#endif
 };
 
 /* Structure of frame descriptors */
