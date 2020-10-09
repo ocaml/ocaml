@@ -332,10 +332,12 @@ let ident ppf id = pp_print_string ppf
 (* Print a path *)
 
 let ident_stdlib = Ident.create_persistent "Stdlib"
+let opened_idents = lazy (ident_stdlib :: List.map Ident.create_persistent !Clflags.open_modules)
+let is_opened id = List.exists (Ident.same id) (Lazy.force opened_idents)
 
 let non_shadowed_pervasive = function
   | Pdot(Pident id, s) as path ->
-      Ident.same id ident_stdlib &&
+      is_opened id &&
       (match in_printing_env (Env.find_type_by_name (Lident s)) with
        | (path', _) -> Path.same path path'
        | exception Not_found -> true)
