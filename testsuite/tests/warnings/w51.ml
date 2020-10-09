@@ -62,3 +62,15 @@ Line 3, characters 9-56:
 Warning 51 [wrong-tailcall-expectation]: expected non-tailcall
 val fact_tail : int -> int -> int = <fun>
 |}]
+
+
+(* explicitly test the "invalid payload" case *)
+let rec test x = (test[@tailcall foobar]) x;;
+[%%expect{|
+Line 1, characters 24-32:
+1 | let rec test x = (test[@tailcall foobar]) x;;
+                            ^^^^^^^^
+Warning 47 [attribute-payload]: illegal payload for attribute 'tailcall'.
+Only an optional boolean literal is supported.
+val test : 'a -> 'b = <fun>
+|}]
