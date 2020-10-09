@@ -349,6 +349,39 @@ val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
    @since 4.11.0
 *)
 
+
+(** {1 List manipulation} *)
+
+
+val take : int -> 'a list -> 'a list
+(** [take n l] returns the prefix of [l] of length [n],
+    or [l] itself if [n > length l].
+    Negative values of [n] are treated as if [n = 0].
+*)
+
+val drop : int -> 'a list -> 'a list
+(** [drop n l] returns the suffix of [l] after [n] elements,
+    or [[]] if [n > length l].
+    Negative values of [n] are treated as if [n = 0].
+*)
+
+val split_at : int -> 'a list -> 'a list * 'a list
+(** [split_at i l] returns a pair of lists [(l1, l2)], where
+    [l1] is the prefix of [l] before the index [i], and
+    [l2] is the suffix of [l] on and after the index [i].
+    This function is morally equivalent to [(take i l, drop i l)].
+*)
+
+val take_while : ('a -> bool) -> 'a list -> 'a list
+(** [take_while p l] returns the prefix of [l] until the predicate [p]
+     is not satisfied anymore.
+*)
+
+val drop_while : ('a -> bool) -> 'a list -> 'a list
+(** [drop_while p l] return the suffix of [l] until the predicate [p]
+    is not satisfied anymore.
+*)
+
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition ~f l] returns a pair of lists [(l1, l2)], where
    [l1] is the list of all the elements of [l] that

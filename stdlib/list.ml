@@ -261,6 +261,38 @@ let filter_map f =
   in
   aux []
 
+let take n l =
+  let rec aux i acc = function
+    | x::l when i < n -> aux (i + 1) (x::acc) l
+    | _rest -> rev acc
+  in
+  aux 0 [] l
+
+let drop n l =
+  let rec aux i = function
+    | _x::l when i < n -> aux (i + 1) l
+    | rest -> rest
+  in
+  aux 0 l
+
+let split_at n l =
+  let rec aux i acc = function
+    | x::l when i < n -> aux (i + 1) (x::acc) l
+    | rest -> (rev acc, rest)
+  in
+  aux 0 [] l
+
+let take_while p l =
+  let rec aux acc = function
+    | x::l when p x -> aux (x::acc) l
+    | _rest -> rev acc
+  in
+  aux [] l
+
+let rec drop_while p = function
+  | x::l when p x -> drop_while p l
+  | rest -> rest
+
 let concat_map f l =
   let rec aux f acc = function
     | [] -> rev acc
