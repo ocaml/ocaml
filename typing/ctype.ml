@@ -1087,17 +1087,12 @@ let compute_univars ty =
 
 
 let fully_generic ty =
-  let rec aux acc ty =
-    acc &&
-    let ty = repr ty in
-    ty.level < lowest_level || (
-      ty.level = generic_level && (
-        mark_type_node ty;
-        fold_type_expr aux true ty
-      )
-    )
+  let rec aux ty =
+    mark_type_node ty
+      ~guard: (fun ty -> ty.level = generic_level || raise Exit)
+      ~after: (iter_type_expr aux)
   in
-  let res = aux true ty in
+  let res = try aux ty; true with Exit -> false in
   unmark_type ty;
   res
 
@@ -1938,22 +1933,20 @@ let rec unify_univar t1 t2 = function
 let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
-    let ty = repr ty in
-    if ty.level >= lowest_level &&
-      if TypeSet.is_empty bound then
-        ((Internal.unlock ty).level <- mirror_level ty.level; true)
-        (* TODO: (mark_type_node ty; true)? *)
-	(* or reform the logical structure of this if-construct? *)
-      else try
-        let bound' = TypeMap.find ty !visited in
-        if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then
-          (visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
-           true)
-        else false
-      with Not_found ->
-        visited := TypeMap.add ty bound !visited;
-        true
-    then
+    if TypeSet.is_empty bound then
+      mark_type_node ty ~after:(occur_desc bound)
+    else try
+      let ty = repr ty in
+      if ty.level < pivot_level then () else
+      let bound' = TypeMap.find ty !visited in
+      if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then begin
+	visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
+        occur_desc bound ty
+      end
+    with Not_found ->
+      visited := TypeMap.add ty bound !visited;
+      occur_desc bound ty
+  and occur_desc bound ty =
       match ty.desc with
         Tunivar _ ->
           if not (TypeSet.mem ty bound) then
@@ -3269,12 +3262,13 @@ let filter_self_method env lab priv meths ty =
 *)
 let moregen_occur env level ty =
   let rec occur ty =
-    let ty = repr ty in
-    if ty.level > level then begin
-      if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur;
-      (Internal.unlock ty).level <- mirror_level ty.level;
-      iter_type_expr occur ty
-    end
+    mark_type_node ty ~guard:
+      begin fun ty ->
+	ty.level > level &&
+	if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur
+	else true
+      end
+      ~after:(iter_type_expr occur)
   in
   begin try
     occur ty; unmark_type ty

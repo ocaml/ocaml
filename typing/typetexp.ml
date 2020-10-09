@@ -592,18 +592,16 @@ and transl_fields env policy o fields =
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =
-  let ty = repr ty in
-  if ty.level >= Btype.lowest_level then begin
-    Btype.mark_type_node ty;
-    match ty.desc with
+  Btype.mark_type_node ty ~after:
+    begin fun ty ->  match ty.desc with
     | Tvariant row ->
         let row = Btype.row_repr row in
         let more = Btype.row_more row in
         if Btype.is_Tunivar more then
           Btype.set_type_desc ty
 	    (Tvariant
-              {row with row_fixed=Some(Univar more);
-               row_fields = List.map
+               {row with row_fixed=Some(Univar more);
+		row_fields = List.map
                  (fun (s,f as p) -> match Btype.row_field_repr f with
                    Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)
                  | _ -> p)
@@ -611,7 +609,7 @@ let rec make_fixed_univars ty =
         Btype.iter_row make_fixed_univars row
     | _ ->
         Btype.iter_type_expr make_fixed_univars ty
-  end
+    end
 
 let make_fixed_univars ty =
   make_fixed_univars ty;
