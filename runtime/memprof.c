@@ -40,19 +40,10 @@ static uint32_t rand_pos;
 /* [lambda] is the mean number of samples for each allocated word (including
    block headers). */
 static double lambda = 0;
- /* Precomputed value of [1/log(1-lambda)], for fast sampling of
-    geometric distribution.
-    Dummy if [lambda = 0]. */
+/* Precomputed value of [1/log(1-lambda)], for fast sampling of
+   geometric distribution.
+   Dummy if [lambda = 0]. */
 static float one_log1m_lambda;
-
-/* [suspended] is used for masking memprof callbacks when
-   a callback is running or when an uncaught exception handler is
-   called. */
-static int suspended = 0;
-
-/* [callback_running] is used to trigger a fatal error whenever
-   [Thread.exit] is called from a callback. */
-static int callback_running = 0;
 
 static intnat callstack_size;
 
@@ -65,6 +56,19 @@ static intnat callstack_size;
 #define Dealloc_major(tracker) (Field(tracker, 4))
 
 static value tracker;
+
+/* Structure for thread-local variables. */
+struct caml_memprof_th_ctx {
+  /* [suspended] is used for masking memprof callbacks when
+     a callback is running or when an uncaught exception handler is
+     called. */
+  int suspended;
+
+  /* [callback_running] is used to trigger a fatal error whenever
+   [Thread.exit] is called from a callback. */
+  int callback_running;
+} caml_memprof_main_ctx = { 0, 0 };
+static struct caml_memprof_th_ctx* local = &caml_memprof_main_ctx;
 
 /* Pointer to the word following the next sample in the minor
    heap. Equals [Caml_state->young_alloc_start] if no sampling is planned in
@@ -263,14 +267,14 @@ static value capture_callstack_postponed()
 /* In this version, we are allowed to call the GC, so we use
    [caml_alloc], which is more efficient since it uses the minor
    heap.
-   Should be called with [suspended == 1] */
+   Should be called with [local->suspended == 1] */
 static value capture_callstack(int alloc_idx)
 {
   value res;
   intnat callstack_len =
     caml_collect_current_callstack(&callstack_buffer, &callstack_buffer_len,
                                    callstack_size, alloc_idx);
-  CAMLassert(suspended);
+  CAMLassert(local->suspended);
   res = caml_alloc(callstack_len, 0);
   memcpy(Op_val(res), callstack_buffer, sizeof(value) * callstack_len);
   if (callstack_buffer_len > 256 && callstack_buffer_len > callstack_len * 8) {
@@ -352,7 +356,7 @@ struct entry_array {
      the major heap ([young <= len]). */
   uintnat young_idx;
   /* There are no blocks to be deleted before this position
-     ([delete_idx <= entrieslen]). */
+     ([delete_idx <= len]). */
   uintnat delete_idx;
 };
 
@@ -361,8 +365,8 @@ struct entry_array {
 static struct entry_array entries =
   { NULL, MIN_ENTRIES_ALLOC_LEN, 0, 0, 0, 0 };
 
-/* There are no pending callbacks before this position
-   ([callback_idx <= len]). */
+/* There are no pending callbacks in [entries] before this
+   position ([callback_idx <= entries.len]). */
 static uintnat callback_idx;
 
 /* Reallocate the [ea] array if it is either too small or too
@@ -431,10 +435,10 @@ Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param)
   CAMLassert(!t->callback_running && t->idx_ptr == NULL);
   CAMLassert(lambda > 0.);
 
-  callback_running = t->callback_running = 1;
+  local->callback_running = t->callback_running = 1;
   t->idx_ptr = t_idx;
   res = caml_callback_exn(cb, param);
-  callback_running = 0;
+  local->callback_running = 0;
   /* The call above can modify [*t_idx] and thus invalidate [t]. */
   if (*t_idx == Invalid_index) {
     /* Make sure this entry has not been removed by [caml_memprof_stop] */
@@ -555,13 +559,13 @@ static void flush_deleted(struct entry_array* ea)
 
 static void check_action_pending(void)
 {
-  if (!suspended && callback_idx < entries.len)
+  if (!local->suspended && callback_idx < entries.len)
     caml_set_action_pending();
 }
 
 void caml_memprof_set_suspended(int s)
 {
-  suspended = s;
+  local->suspended = s;
   caml_memprof_renew_minor_sample();
   if (!s) check_action_pending();
 }
@@ -571,7 +575,7 @@ void caml_memprof_set_suspended(int s)
 value caml_memprof_handle_postponed_exn(void)
 {
   value res = Val_unit;
-  if (suspended || callback_idx >= entries.len) return res;
+  if (local->suspended || callback_idx >= entries.len) return res;
 
   caml_memprof_set_suspended(1);
   while (callback_idx < entries.len) {
@@ -668,7 +672,7 @@ void caml_memprof_track_alloc_shr(value block)
   value callstack = 0;
   CAMLassert(Is_in_heap(block));
 
-  if (lambda == 0 || suspended) return;
+  if (lambda == 0 || local->suspended) return;
 
   n_samples = rand_binom(Whsize_val(block));
   if (n_samples == 0) return;
@@ -700,8 +704,7 @@ static void shift_sample(uintnat n)
    geometric distribution. */
 void caml_memprof_renew_minor_sample(void)
 {
-
-  if (lambda == 0 || suspended) /* No trigger in the current minor heap. */
+  if (lambda == 0 || local->suspended) /* No trigger in the current minor heap. */
     caml_memprof_young_trigger = Caml_state->young_alloc_start;
   else {
     uintnat geom = rand_geom();
@@ -734,7 +737,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
      equal to [Caml_state->young_alloc_start]. But this function is only
      called with [Caml_state->young_alloc_start <= Caml_state->young_ptr <
      caml_memprof_young_trigger], which is contradictory. */
-  CAMLassert(!suspended && lambda > 0);
+  CAMLassert(!local->suspended && lambda > 0);
 
   if (!from_caml) {
     unsigned n_samples = 1 +
@@ -907,7 +910,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend)
   value callstack = 0;
   int is_young = Is_young(Val_hp(block));
 
-  if (lambda == 0 || suspended) return;
+  if (lambda == 0 || local->suspended) return;
 
   p = block;
   while (1) {
@@ -1007,30 +1010,34 @@ CAMLprim value caml_memprof_stop(value unit)
 
 /**** Interface with systhread. ****/
 
-CAMLexport void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx)
+CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx()
 {
+  struct caml_memprof_th_ctx* ctx =
+    caml_stat_alloc(sizeof(struct caml_memprof_th_ctx));
   ctx->suspended = 0;
   ctx->callback_running = 0;
+  return ctx;
 }
 
-CAMLexport void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx)
+CAMLexport void caml_memprof_delete_th_ctx(struct caml_memprof_th_ctx* ctx)
 {
   /* Make sure that no memprof callback is being executed in this
      thread. If so, memprof data structures may have pointers to the
      thread's stack. */
   if (ctx->callback_running)
     caml_fatal_error("Thread.exit called from a memprof callback.");
+  if (ctx == local) local = NULL;
+  if (ctx != &caml_memprof_main_ctx) caml_stat_free(ctx);
 }
 
-CAMLexport void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx)
+CAMLexport void caml_memprof_leave_thread(void)
 {
-  ctx->suspended = suspended;
-  ctx->callback_running = callback_running;
+  local = NULL;
 }
 
-CAMLexport void caml_memprof_restore_th_ctx
-        (const struct caml_memprof_th_ctx* ctx)
+CAMLexport void caml_memprof_enter_thread(struct caml_memprof_th_ctx* ctx)
 {
-  callback_running = ctx->callback_running;
+  CAMLassert(local == NULL);
+  local = ctx;
   caml_memprof_set_suspended(ctx->suspended);
 }
