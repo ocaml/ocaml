@@ -15,6 +15,9 @@ official distribution, please see link:CONTRIBUTING.md[].
 ----
 git checkout -b my-modification
 ----
+Usually, this branch wants to be based on `trunk`. If your changes must be on a
+specific release, use its release branch (*not* the release tag) instead. For
+example, to make a fix for 4.11.1, base your branch on 4.11 (not on 4.11.1).
 
 2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
