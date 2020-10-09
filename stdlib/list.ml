@@ -289,6 +289,33 @@ and[@tail_mod_cons] prepend_concat_map ys f xs =
   | [] -> concat_map f xs
   | y :: ys -> y :: prepend_concat_map ys f xs
 
+let take n l =
+  let rec aux i acc = function
+    | x::l when i < n -> aux (i + 1) (x::acc) l
+    | _rest -> rev acc
+  in
+  if n < 0 then invalid_arg "List.take";
+  aux 0 [] l
+
+let drop n l =
+  let rec aux i = function
+    | _x::l when i < n -> aux (i + 1) l
+    | rest -> rest
+  in
+  if n < 0 then invalid_arg "List.drop";
+  aux 0 l
+
+let take_while p l =
+  let rec aux acc = function
+    | x::l when p x -> aux (x::acc) l
+    | _rest -> rev acc
+  in
+  aux [] l
+
+let rec drop_while p = function
+  | x::l when p x -> drop_while p l
+  | rest -> rest
+
 let fold_left_map f accu l =
   let rec aux accu l_accu = function
     | [] -> accu, rev l_accu
