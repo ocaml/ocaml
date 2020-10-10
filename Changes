@@ -364,6 +364,10 @@ Working version
   (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
   and Gabriel Scherer)
 
+- #9754: allow [@tailcall true] (equivalent to [@tailcall]) and
+  [@tailcall false] (warns if on a tailcall)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
 - #9657: Warnings can now be referred to by their mnemonic name. The names are
   displayed using `-warn-help` and can be utilized anywhere where a warning list
   specification is expected, e.g. `[@@@ocaml.warning ...]`.
