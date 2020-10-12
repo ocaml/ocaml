@@ -420,11 +420,15 @@ CAMLexport int caml_c_thread_register(void)
     caml_init_domain_self(0);
   };
   if (st_tls_get(Thread_key) != NULL) return 0;
+  /* Take master lock to protect access to the runtime */
+  st_masterlock_acquire(&Thread_main_lock);
   /* Create a thread info block */
   th = caml_thread_new_info();
-  if (th == NULL) return 0;
-  /* Take master lock to protect access to the chaining of threads */
-  st_masterlock_acquire(&Thread_main_lock);
+  /* If it fails, we release the lock and return an error. */
+  if (th == NULL) {
+    st_masterlock_release(&Thread_main_lock);
+    return 0;
+  }
   /* Add thread info block to the list of threads */
   if (All_threads == NULL) {
     th->next = th;
@@ -438,13 +442,10 @@ CAMLexport int caml_c_thread_register(void)
   }
   /* Associate the thread descriptor with the thread */
   st_tls_set(Thread_key, (void *) th);
+  /* Allocate the thread descriptor on the heap */
+  th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
   /* Release the master lock */
   st_masterlock_release(&Thread_main_lock);
-  /* Now we can re-enter the run-time system and heap-allocate the descriptor */
-  caml_leave_blocking_section();
-  th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
-  /* Exit the run-time system */
-  caml_enter_blocking_section();
   return 1;
 }
 
@@ -463,10 +464,12 @@ CAMLexport int caml_c_thread_unregister(void)
   if (th == NULL) return 0;
   /* Wait until the runtime is available */
   st_masterlock_acquire(&Thread_main_lock);
-  /* Forget the thread descriptor */
+  /*  Forget the thread descriptor */
   st_tls_set(Thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
+  Current_thread = Current_thread->next;
+  caml_thread_restore_runtime_state();
   /* Release the runtime */
   st_masterlock_release(&Thread_main_lock);
   return 1;
