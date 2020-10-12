@@ -13,6 +13,16 @@
  ****** check-ocamlopt.byte-output
  ******* script
    script = "sh ${test_source_directory}/start_from_emit.sh"
+ ******** ocamlopt.byte
+   flags = "-S start_from_emit.cmir-linear -save-ir-after scheduling"
+   module = "empty.ml"
+   ocamlopt_byte_exit_status = "0"
+ ********* script
+  script = "cp start_from_emit.cmir-linear expected.cmir_linear"
+ ********** check-ocamlopt.byte-output
+ *********** script
+   script = "cmp start_from_emit.cmir-linear expected.cmir_linear"
+
 *)
 
 let foo f x =

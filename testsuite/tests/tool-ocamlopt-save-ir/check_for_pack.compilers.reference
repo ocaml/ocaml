@@ -1,0 +1,2 @@
+File "check_for_pack.cmir-linear", line 1:
+Error: This input file cannot be compiled with -for-pack foo: it was generated without -for-pack.
