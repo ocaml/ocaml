@@ -23,7 +23,9 @@ open Clflags
 open Misc
 open Cmm
 
-type error = Assembler_error of string
+type error =
+  | Assembler_error of string
+  | Mismatched_for_pack of string option
 
 exception Error of error
 
@@ -47,6 +49,7 @@ let should_save_before_emit () =
 let linear_unit_info =
   { Linear_format.unit_name = "";
     items = [];
+    for_pack = None;
   }
 
 let reset () =
@@ -54,6 +57,7 @@ let reset () =
   if should_save_before_emit () then begin
     linear_unit_info.unit_name <- Compilenv.current_unit_name ();
     linear_unit_info.items <- [];
+    linear_unit_info.for_pack <- !Clflags.for_package;
   end
 
 let save_data dl =
@@ -241,6 +245,10 @@ let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
 let linear_gen_implementation filename =
   let open Linear_format in
   let linear_unit_info, _ = restore filename in
+  (match !Clflags.for_package, linear_unit_info.for_pack with
+   | None, None -> ()
+   | Some expected, Some saved when String.equal expected saved -> ()
+   | _, saved -> raise(Error(Mismatched_for_pack saved)));
   let emit_item = function
     | Data dl -> emit_data dl
     | Func f -> emit_fundecl f
@@ -263,6 +271,14 @@ let report_error ppf = function
   | Assembler_error file ->
       fprintf ppf "Assembler error, input left in file %a"
         Location.print_filename file
+  | Mismatched_for_pack saved ->
+    let msg = function
+       | None -> "without -for-pack"
+       | Some s -> "with -for-pack "^s
+     in
+     fprintf ppf
+       "This input file cannot be compiled %s: it was generated %s."
+       (msg !Clflags.for_package) (msg saved)
 
 let () =
   Location.register_error_of_exn

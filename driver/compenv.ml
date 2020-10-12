@@ -654,7 +654,9 @@ let process_action
         dllibs := name :: !dllibs
       else
         match Compiler_pass.of_input_filename name with
-        | Some start_from -> impl ~start_from name
+        | Some start_from ->
+          Location.input_name := name;
+          impl ~start_from name
         | None -> raise(Arg.Bad("don't know what to do with " ^ name))
 
 
