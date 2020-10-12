@@ -300,6 +300,11 @@ Working version
   (Ivan Gotovchits and Xavier Leroy, review by Sébastien Hinderer and
    David Allsopp)
 
+- #9930: new module Semaphore in the thread library, implementing
+  counting semaphores and binary semaphores
+  (Xavier Leroy, review by Daniel Bünzli and Damien Doligez,
+   additional suggestions by Stephen Dolan and Craig Ferguson)
+
 - #9958: Raise exception in case of error in Unix.setsid.
   (Nicolás Ojeda Bär, review by Stephen Dolan)
 
