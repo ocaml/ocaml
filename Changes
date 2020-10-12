@@ -303,6 +303,11 @@ Working version
 - #9958: Raise exception in case of error in Unix.setsid.
   (Nicolás Ojeda Bär, review by Stephen Dolan)
 
+- #9971, #9973: Make sure the process can terminate when the last thread
+  calls Thread.exit.
+  (Xavier Leroy, report by Jacques-Henri Jourdan, review by David Allsopp
+  and Jacques-Henri Jourdan).
+
 ### Tools:
 
 - #9551: ocamlobjinfo is now able to display information on .cmxs shared
