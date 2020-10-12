@@ -780,11 +780,6 @@ type pattern_predicate = { f : 'k . 'k general_pattern -> bool }
 val exists_general_pattern: pattern_predicate -> 'k general_pattern -> bool
 val exists_pattern: (pattern -> bool) -> pattern -> bool
 
-(** bottom-up mapping of patterns: the transformation function is
-    called on the children before being called on the parent *)
-val map_general_pattern:
-  pattern_transformation -> 'k general_pattern -> 'k general_pattern
-
 val let_bound_idents: value_binding list -> Ident.t list
 val let_bound_idents_full:
     value_binding list -> (Ident.t * string loc * Types.type_expr) list
