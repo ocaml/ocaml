@@ -39,8 +39,10 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
+let start_from_emit = ref true
+
 let should_save_before_emit () =
-  should_save_ir_after Compiler_pass.Scheduling
+  should_save_ir_after Compiler_pass.Scheduling && (not !start_from_emit)
 
 let linear_unit_info =
   { Linear_format.unit_name = "";
@@ -48,6 +50,7 @@ let linear_unit_info =
   }
 
 let reset () =
+  start_from_emit := false;
   if should_save_before_emit () then begin
     linear_unit_info.unit_name <- Compilenv.current_unit_name ();
     linear_unit_info.items <- [];
@@ -242,6 +245,7 @@ let linear_gen_implementation filename =
     | Data dl -> emit_data dl
     | Func f -> emit_fundecl f
   in
+  start_from_emit := true;
   emit_begin_assembly ();
   Profile.record "Emit" (List.iter emit_item) linear_unit_info.items;
   emit_end_assembly ()
