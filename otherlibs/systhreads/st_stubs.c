@@ -504,6 +504,9 @@ static void caml_thread_stop(void)
   caml_threadstatus_terminate(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */
   caml_thread_remove_info(curr_thread);
+  /* If no other OCaml thread remains, ask the tick thread to stop
+     so that it does not prevent the whole process from exiting (#9971) */
+  if (all_threads == NULL) caml_thread_cleanup(Val_unit);
   /* OS-specific cleanups */
   st_thread_cleanup();
   /* Release the runtime system */
@@ -637,6 +640,9 @@ CAMLexport int caml_c_thread_unregister(void)
   st_tls_set(thread_descriptor_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
+  /* If no other OCaml thread remains, ask the tick thread to stop
+     so that it does not prevent the whole process from exiting (#9971) */
+  if (all_threads == NULL) caml_thread_cleanup(Val_unit);
   /* Release the runtime */
   st_masterlock_release(&caml_master_lock);
   return 1;
