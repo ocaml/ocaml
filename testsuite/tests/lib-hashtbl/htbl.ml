@@ -274,6 +274,12 @@ let () =
   let h = Hashtbl.create 16 in
   for i = 1 to 1000 do Hashtbl.add h i (i * 2) done;
   Printf.printf "%i elements\n" (Hashtbl.length h);
+  let () =
+    (* Check that filter_map_inplace of nothing changes nothing *)
+    let marshaled_before = Marshal.to_string h [Marshal.No_sharing] in
+    Hashtbl.filter_map_inplace (fun _k v -> Some v) h;
+    let marshaled_after = Marshal.to_string h [Marshal.No_sharing] in
+    assert (marshaled_before = marshaled_after) in
   Hashtbl.filter_map_inplace (fun k v ->
       if k mod 100 = 0 then ((*Hashtbl.add h v v;*) Some (v / 100)) else None)
     h;
