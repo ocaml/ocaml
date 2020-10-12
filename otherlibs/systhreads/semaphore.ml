@@ -38,7 +38,7 @@ let release s =
     Mutex.unlock s.mut
   end else begin
     Mutex.unlock s.mut;
-   raise (Sys_error "Semaphore.Counting.release: overflow")
+    raise (Sys_error "Semaphore.Counting.release: overflow")
   end
 
 let acquire s =
