@@ -50,7 +50,7 @@ val make : int -> t
 (** [make n] returns a new counting semaphore, with initial value [n].
     The initial value [n] must be nonnegative.
 
-    @raise Sys_error if [n < 0]
+    @raise Invalid_argument if [n < 0]
 *)
 
 val release : t -> unit

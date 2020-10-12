@@ -26,8 +26,7 @@ module Counting = struct
 type t = sem
 
 let make v =
-  if v < 0 then
-    raise (Sys_error "Semaphore.Counting.init: wrong initial value");
+  if v < 0 then invalid_arg "Semaphore.Counting.init: wrong initial value";
   { mut = Mutex.create(); v; nonzero = Condition.create() }
 
 let release s =
