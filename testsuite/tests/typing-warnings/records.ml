@@ -42,6 +42,10 @@ Line 7, characters 21-22:
                          ^
 Warning 42 [disambiguated-name]: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+Line 7, characters 18-19:
+7 |     match r with {x; y} -> y + y (* ok *)
+                      ^
+Warning 27 [unused-var-strict]: unused variable x.
 module OK :
   sig val f1 : M1.t -> int val f2 : M1.t -> int val f3 : M1.t -> int end
 |}, Principal{|
@@ -69,6 +73,10 @@ Line 7, characters 21-22:
                          ^
 Warning 42 [disambiguated-name]: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+Line 7, characters 18-19:
+7 |     match r with {x; y} -> y + y (* ok *)
+                      ^
+Warning 27 [unused-var-strict]: unused variable x.
 module OK :
   sig val f1 : M1.t -> int val f2 : M1.t -> int val f3 : M1.t -> int end
 |}]
@@ -108,6 +116,10 @@ Line 6, characters 11-12:
                ^
 Warning 42 [disambiguated-name]: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+Line 6, characters 8-9:
+6 |        {x; y} -> y + y
+            ^
+Warning 27 [unused-var-strict]: unused variable x.
 module F2 : sig val f : M1.t -> int end
 |}, Principal{|
 Line 6, characters 8-9:
@@ -124,6 +136,10 @@ Line 6, characters 7-13:
 6 |        {x; y} -> y + y
            ^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+Line 6, characters 8-9:
+6 |        {x; y} -> y + y
+            ^
+Warning 27 [unused-var-strict]: unused variable x.
 module F2 : sig val f : M1.t -> int end
 |}]
 

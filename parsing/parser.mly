@@ -353,8 +353,8 @@ let exp_of_longident ~loc lid =
 let exp_of_label ~loc lbl =
   mkexp ~loc (Pexp_ident (loc_lident lbl))
 
-let pat_of_label ~loc lbl =
-  ghpat ~loc (Ppat_var (make_ghost (loc_last lbl)))
+let pat_of_label lbl =
+  Pat.mk ~loc:lbl.loc  (Ppat_var (loc_last lbl))
 
 let mk_newtypes ~loc newtypes exp =
   let mkexp = mkexp ~loc in
@@ -2764,13 +2764,16 @@ pattern_comma_list(self):
   label = mkrhs(label_longident)
   octy = preceded(COLON, core_type)?
   opat = preceded(EQUAL, pattern)?
-    { let pat =
+    { let label, pat =
         match opat with
         | None ->
-            (* No pattern; this is a pun. Desugar it. *)
-            pat_of_label ~loc:$sloc label
+            (* No pattern; this is a pun. Desugar it.
+               But that the pattern was there and the label reconstructed (which
+               piece of AST is marked as ghost is important for warning
+               emission). *)
+            make_ghost label, pat_of_label label
         | Some pat ->
-            pat
+            label, pat
       in
       label, mkpat_opt_constraint ~loc:$sloc pat octy
     }
