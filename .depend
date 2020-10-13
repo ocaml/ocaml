@@ -1215,7 +1215,6 @@ typing/typecore.cmo : \
     typing/btype.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
-    typing/annot.cmi \
     typing/typecore.cmi
 typing/typecore.cmx : \
     utils/warnings.cmx \
@@ -1246,7 +1245,6 @@ typing/typecore.cmx : \
     typing/btype.cmx \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
-    typing/annot.cmi \
     typing/typecore.cmi
 typing/typecore.cmi : \
     typing/types.cmi \
@@ -1258,8 +1256,7 @@ typing/typecore.cmi : \
     typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
-    parsing/asttypes.cmi \
-    typing/annot.cmi
+    parsing/asttypes.cmi
 typing/typedecl.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
@@ -1519,7 +1516,6 @@ typing/typemod.cmo : \
     typing/btype.cmi \
     parsing/attr_helper.cmi \
     parsing/asttypes.cmi \
-    typing/annot.cmi \
     typing/typemod.cmi
 typing/typemod.cmx : \
     utils/warnings.cmx \
@@ -1552,7 +1548,6 @@ typing/typemod.cmx : \
     typing/btype.cmx \
     parsing/attr_helper.cmx \
     parsing/asttypes.cmi \
-    typing/annot.cmi \
     typing/typemod.cmi
 typing/typemod.cmi : \
     typing/types.cmi \
