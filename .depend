@@ -5721,7 +5721,8 @@ driver/compenv.cmx : \
     utils/clflags.cmx \
     utils/ccomp.cmx \
     driver/compenv.cmi
-driver/compenv.cmi :
+driver/compenv.cmi : \
+    utils/clflags.cmi
 driver/compile.cmo : \
     lambda/translmod.cmi \
     lambda/simplif.cmi \
@@ -5752,7 +5753,8 @@ driver/compile.cmi : \
     typing/typedtree.cmi \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
-    driver/compile_common.cmi
+    driver/compile_common.cmi \
+    utils/clflags.cmi
 driver/compile_common.cmo : \
     utils/warnings.cmi \
     typing/typemod.cmi \
@@ -5945,6 +5947,7 @@ driver/optcompile.cmx : \
 driver/optcompile.cmi : \
     typing/typedtree.cmi \
     driver/compile_common.cmi \
+    utils/clflags.cmi \
     middle_end/backend_intf.cmi
 driver/opterrors.cmo : \
     parsing/location.cmi \

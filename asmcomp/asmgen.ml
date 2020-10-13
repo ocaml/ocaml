@@ -23,7 +23,9 @@ open Clflags
 open Misc
 open Cmm
 
-type error = Assembler_error of string
+type error =
+  | Assembler_error of string
+  | Mismatched_for_pack of string option
 
 exception Error of error
 
@@ -39,18 +41,23 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
+let start_from_emit = ref true
+
 let should_save_before_emit () =
-  should_save_ir_after Compiler_pass.Scheduling
+  should_save_ir_after Compiler_pass.Scheduling && (not !start_from_emit)
 
 let linear_unit_info =
   { Linear_format.unit_name = "";
     items = [];
+    for_pack = None;
   }
 
 let reset () =
+  start_from_emit := false;
   if should_save_before_emit () then begin
     linear_unit_info.unit_name <- Compilenv.current_unit_name ();
     linear_unit_info.items <- [];
+    linear_unit_info.for_pack <- !Clflags.for_package;
   end
 
 let save_data dl =
@@ -65,9 +72,9 @@ let save_linear f =
   end;
   f
 
-let write_linear output_prefix =
+let write_linear prefix =
   if should_save_before_emit () then begin
-    let filename = output_prefix ^ Clflags.Compiler_ir.(extension Linear) in
+    let filename = Compiler_pass.(to_output_filename Scheduling ~prefix) in
     linear_unit_info.items <- List.rev linear_unit_info.items;
     Linear_format.save filename linear_unit_info
   end
@@ -218,14 +225,15 @@ type middle_end =
   -> Lambda.program
   -> Clambda.with_constants
 
+let asm_filename output_prefix =
+    if !keep_asm_file || !Emitaux.binary_backend_available
+    then output_prefix ^ ext_asm
+    else Filename.temp_file "camlasm" ext_asm
+
 let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
       ~ppf_dump (program : Lambda.program) =
-  let asm_filename =
-    if !keep_asm_file || !Emitaux.binary_backend_available
-    then prefixname ^ ext_asm
-    else Filename.temp_file "camlasm" ext_asm
-  in
-  compile_unit ~output_prefix:prefixname ~asm_filename ~keep_asm:!keep_asm_file
+  compile_unit ~output_prefix:prefixname
+    ~asm_filename:(asm_filename prefixname) ~keep_asm:!keep_asm_file
     ~obj_filename:(prefixname ^ ext_obj)
     (fun () ->
       Ident.Set.iter Compilenv.require_global program.required_globals;
@@ -234,12 +242,43 @@ let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
       in
       end_gen_implementation ?toplevel ~ppf_dump clambda_with_constants)
 
+let linear_gen_implementation filename =
+  let open Linear_format in
+  let linear_unit_info, _ = restore filename in
+  (match !Clflags.for_package, linear_unit_info.for_pack with
+   | None, None -> ()
+   | Some expected, Some saved when String.equal expected saved -> ()
+   | _, saved -> raise(Error(Mismatched_for_pack saved)));
+  let emit_item = function
+    | Data dl -> emit_data dl
+    | Func f -> emit_fundecl f
+  in
+  start_from_emit := true;
+  emit_begin_assembly ();
+  Profile.record "Emit" (List.iter emit_item) linear_unit_info.items;
+  emit_end_assembly ()
+
+let compile_implementation_linear output_prefix ~progname =
+  compile_unit ~output_prefix
+    ~asm_filename:(asm_filename output_prefix) ~keep_asm:!keep_asm_file
+    ~obj_filename:(output_prefix ^ ext_obj)
+    (fun () ->
+      linear_gen_implementation progname)
+
 (* Error report *)
 
 let report_error ppf = function
   | Assembler_error file ->
       fprintf ppf "Assembler error, input left in file %a"
         Location.print_filename file
+  | Mismatched_for_pack saved ->
+    let msg = function
+       | None -> "without -for-pack"
+       | Some s -> "with -for-pack "^s
+     in
+     fprintf ppf
+       "This input file cannot be compiled %s: it was generated %s."
+       (msg !Clflags.for_package) (msg saved)
 
 let () =
   Location.register_error_of_exn
