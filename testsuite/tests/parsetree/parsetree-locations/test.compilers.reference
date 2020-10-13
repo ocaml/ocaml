@@ -439,9 +439,9 @@ Ptop_def
                 pattern (//toplevel//[2,1+17]..[2,1+29])
                   Ppat_record Closed
                   [
-                    "contents" (//toplevel//[2,1+19]..[2,1+27])
-                      pattern (//toplevel//[2,1+19]..[2,1+27]) ghost
-                        Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                    "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                      pattern (//toplevel//[2,1+19]..[2,1+27])
+                        Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
                   ]
                 expression (//toplevel//[2,1+33]..[2,1+41])
                   Pexp_ident "contents" (//toplevel//[2,1+33]..[2,1+41])
@@ -465,11 +465,11 @@ Ptop_def
                 pattern (//toplevel//[2,1+17]..[2,1+35])
                   Ppat_record Closed
                   [
-                    "contents" (//toplevel//[2,1+19]..[2,1+27])
+                    "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
                       pattern (//toplevel//[2,1+19]..[2,1+33]) ghost
                         Ppat_constraint
-                        pattern (//toplevel//[2,1+19]..[2,1+33]) ghost
-                          Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                        pattern (//toplevel//[2,1+19]..[2,1+27])
+                          Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
                         core_type (//toplevel//[2,1+30]..[2,1+33])
                           Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
                           []
@@ -593,10 +593,11 @@ Ptop_def
                 Pexp_constant PConst_int (4,None)
       ]
   ]
+
 Line 2, characters 12-13:
 2 | let x = M.( 3; 4 );;
                 ^
-Warning 10: this expression should have type unit.
+Warning 10 [non-unit-statement]: this expression should have type unit.
 val x : int = 4
 Ptop_def
   [
@@ -1082,14 +1083,14 @@ Ptop_def
                 structure_item (//toplevel//[4,19+0]..[4,19+36])
                   Pstr_eval
                   expression (//toplevel//[4,19+0]..[4,19+36])
-                    Pexp_constant PConst_string(" Some docstring attached to x. ",None)
+                    Pexp_constant PConst_string(" Some docstring attached to x. ",(//toplevel//[4,19+0]..[4,19+36]),None)
               ]
             attribute "ocaml.doc"
               [
                 structure_item (//toplevel//[7,69+0]..[7,69+39])
                   Pstr_eval
                   expression (//toplevel//[7,69+0]..[7,69+39])
-                    Pexp_constant PConst_string(" Another docstring attached to x. ",None)
+                    Pexp_constant PConst_string(" Another docstring attached to x. ",(//toplevel//[7,69+0]..[7,69+39]),None)
               ]
           pattern (//toplevel//[5,56+4]..[5,56+5])
             Ppat_var "x" (//toplevel//[5,56+4]..[5,56+5])
