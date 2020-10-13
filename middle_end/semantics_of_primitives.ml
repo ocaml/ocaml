@@ -21,7 +21,7 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pmakeblock _ | Ppoll
+  | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->
@@ -36,6 +36,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
   | Prunstack | Pperform | Presume | Preperform -> Arbitrary_effects, Has_coeffects
+  | Ppoll -> Arbitrary_effects, Has_coeffects
   | Pnot
   | Pnegint
   | Paddint
