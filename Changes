@@ -438,7 +438,7 @@ Working version
   (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
 
 - #9003: Start compilation from Emit when the input file is in Linear IR format.
-  (Greta Yorsh, review by Jérémie Dimino and Gabriel Scherer)
+  (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
 
 ### Build system:
 
