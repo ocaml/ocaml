@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                        Frederic Bour, Tarides                          *)
+(*                         Thomas Refis, Tarides                          *)
+(*                                                                        *)
+(*   Copyright 2020 Tarides                                               *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 (* Dynamic-scoping for global piece of state *)
 
 type bindings

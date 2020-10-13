@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                        Frederic Bour, Tarides                          *)
+(*                         Thomas Refis, Tarides                          *)
+(*                                                                        *)
+(*   Copyright 2020 Tarides                                               *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 type ref_and_reset =
   | Table : { ref: 'a ref; init: unit -> 'a } -> ref_and_reset
   | Immutable : { ref: 'a ref; mutable snapshot: 'a } -> ref_and_reset
