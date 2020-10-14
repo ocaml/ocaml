@@ -73,17 +73,9 @@ v}
     default until OCaml 4.05. Starting with 4.06, the compatibility
     mode is opt-in; we intend to remove the option in the future.
 
-
-  The labeled version of this module, {!StringLabels}, is intended to be used
-  through {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and
-  {!String} with their labeled counterparts
-
-  For example:
-  {[
-     open StdLabels
-
-     let to_upper = String.map ~f:Char.uppercase_ascii
-  ]} *)
+    The labeled version of this module, {!StringLabels}, can be used
+    as described in the {!StdLabels} module.
+*)
 
 (** {1:strings Strings} *)
 
