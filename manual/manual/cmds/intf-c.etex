@@ -23,10 +23,10 @@ User primitives are declared in an implementation file or
 \end{alltt}
 This defines the value name \var{name} as a function with type
 \var{type} that executes by calling the given C function.
-For instance, here is how the "int_of_string" primitive is declared in the
+For instance, here is how the "seek_in" primitive is declared in the
 standard library module "Stdlib":
 \begin{verbatim}
-        external int_of_string : string -> int = "caml_int_of_string"
+        external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
 \end{verbatim}
 Primitives with several arguments are always curried. The C function
 does not necessarily have the same name as the ML function.
@@ -51,13 +51,13 @@ modules from libraries at link-time.
 The arity (number of arguments) of a primitive is automatically
 determined from its OCaml type in the "external" declaration, by
 counting the number of function arrows in the type.  For instance,
-"input" above has arity 4, and the "input" C function is called with
-four arguments.  Similarly,
+"seek_in" above has arity 2, and the "caml_ml_seek_in" C function
+is called with two arguments.  Similarly,
 \begin{verbatim}
-    external input2 : in_channel * bytes * int * int -> int = "input2"
+    external seek_in_pair: in_channel * int -> unit = "caml_ml_seek_in_pair"
 \end{verbatim}
-has arity 1, and the "input2" C function receives one argument (which
-is a quadruple of OCaml values).
+has arity 1, and the "caml_ml_seek_in_pair" C function receives one argument
+(which is a pair of OCaml values).
 
 Type abbreviations are not expanded when determining the arity of a
 primitive.  For instance,
