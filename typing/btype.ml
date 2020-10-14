@@ -18,7 +18,7 @@
 open Asttypes
 open Types
 
-open Local_store.Compiler
+open Local_store
 
 (**** Sets, maps and hashtables of types ****)
 

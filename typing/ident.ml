@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Local_store.Compiler
+open Local_store
 
 let lowest_scope  = 0
 let highest_scope = 100000000

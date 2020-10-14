@@ -23,45 +23,46 @@ type bindings = {
   is_bound: bool ref
 }
 
-let new_bindings () =
+let global_bindings =
   { refs = []; is_bound = ref false; frozen = false }
 
-let is_bound t = !(t.is_bound)
+let is_bound () = !(global_bindings.is_bound)
 
-let reset t =
-  assert (is_bound t);
+let reset () =
+  assert (is_bound ());
   List.iter (function
     | Table { ref; init } -> ref := init ()
     | Immutable { ref; snapshot } -> ref := snapshot
-  ) t.refs
+  ) global_bindings.refs
 
-let table t create size =
+let s_table create size =
   let init () = create size in
   let ref = ref (init ()) in
-  assert (not t.frozen);
-  t.refs <- (Table { ref; init }) :: t.refs;
+  assert (not global_bindings.frozen);
+  global_bindings.refs <- (Table { ref; init }) :: global_bindings.refs;
   ref
 
-let ref t k =
+let s_ref k =
   let ref = ref k in
-  assert (not t.frozen);
-  t.refs <- (Immutable { ref; snapshot = k }) :: t.refs;
+  assert (not global_bindings.frozen);
+  global_bindings.refs <-
+    (Immutable { ref; snapshot = k }) :: global_bindings.refs;
   ref
 
 type slot = Slot : { ref : 'a ref; mutable value : 'a } -> slot
 type scope = { slots: slot list; scope_bound : bool ref }
 
-let fresh t =
+let fresh () =
   let slots =
     List.map (function
       | Table { ref; init } -> Slot {ref; value = init ()}
       | Immutable r ->
-          if not t.frozen then r.snapshot <- !(r.ref);
+          if not global_bindings.frozen then r.snapshot <- !(r.ref);
           Slot { ref = r.ref; value = r.snapshot }
-    ) t.refs
+    ) global_bindings.refs
   in
-  t.frozen <- true;
-  { slots; scope_bound = t.is_bound }
+  global_bindings.frozen <- true;
+  { slots; scope_bound = global_bindings.is_bound }
 
 let with_scope { slots; scope_bound } f =
   assert (not !scope_bound);
@@ -71,9 +72,3 @@ let with_scope { slots; scope_bound } f =
     List.iter (fun (Slot s) -> s.value <- !(s.ref)) slots;
     scope_bound := false
   )
-
-module Compiler = struct
-  let compiler_state = new_bindings ()
-  let s_table f n = table compiler_state f n
-  let s_ref k = ref compiler_state k
-end

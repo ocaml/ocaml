@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Local_store.Compiler
+open Local_store
 
 module SMap = Misc.Stdlib.String.Map
 
@@ -47,7 +47,7 @@ end
 let dirs = s_ref []
 
 let reset () =
-  assert (not Config.merlin || Local_store.is_bound compiler_state);
+  assert (not Config.merlin || Local_store.is_bound ());
   files := SMap.empty;
   files_uncap := SMap.empty;
   dirs := []
@@ -67,7 +67,7 @@ let add_to_maps fn basenames files files_uncap =
    name already exists in the cache simply by adding entries in reverse
    order. *)
 let add dir =
-  assert (not Config.merlin || Local_store.is_bound compiler_state);
+  assert (not Config.merlin || Local_store.is_bound ());
   let new_files, new_files_uncap =
     add_to_maps (Filename.concat dir.Dir.path)
       dir.Dir.files !files !files_uncap
@@ -81,7 +81,7 @@ let init l =
   List.iter add !dirs
 
 let remove_dir dir =
-  assert (not Config.merlin || Local_store.is_bound compiler_state);
+  assert (not Config.merlin || Local_store.is_bound ());
   let new_dirs = List.filter (fun d -> Dir.path d <> dir) !dirs in
   if List.compare_lengths new_dirs !dirs <> 0 then begin
     reset ();
@@ -93,7 +93,7 @@ let remove_dir dir =
    add a basename to the cache if it is not already present in the cache, in
    order to enforce left-to-right precedence. *)
 let add dir =
-  assert (not Config.merlin || Local_store.is_bound compiler_state);
+  assert (not Config.merlin || Local_store.is_bound ());
   let new_files, new_files_uncap =
     add_to_maps (Filename.concat dir.Dir.path) dir.Dir.files
       SMap.empty SMap.empty
@@ -108,14 +108,14 @@ let add_dir dir = add (Dir.create dir)
 let is_basename fn = Filename.basename fn = fn
 
 let find fn =
-  assert (not Config.merlin || Local_store.is_bound compiler_state);
+  assert (not Config.merlin || Local_store.is_bound ());
   if is_basename fn then
     SMap.find fn !files
   else
     Misc.find_in_path (get_paths ()) fn
 
 let find_uncap fn =
-  assert (not Config.merlin || Local_store.is_bound compiler_state);
+  assert (not Config.merlin || Local_store.is_bound ());
   if is_basename fn then
     SMap.find (String.uncapitalize_ascii fn) !files_uncap
   else

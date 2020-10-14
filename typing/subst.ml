@@ -20,7 +20,7 @@ open Path
 open Types
 open Btype
 
-open Local_store.Compiler
+open Local_store
 
 type type_replacement =
   | Path of Path.t

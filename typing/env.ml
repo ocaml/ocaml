@@ -23,7 +23,7 @@ open Path
 open Types
 open Btype
 
-open Local_store.Compiler
+open Local_store
 
 module String = Misc.Stdlib.String
 
