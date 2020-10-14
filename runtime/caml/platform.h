@@ -2,9 +2,6 @@
 #define CAML_PLAT_THREADS_H
 /* Platform-specific concurrency and memory primitives */
 
-#ifdef __linux__
-#define _GNU_SOURCE /* for PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP */
-#endif
 #include <pthread.h>
 #include <errno.h>
 #include <string.h>
