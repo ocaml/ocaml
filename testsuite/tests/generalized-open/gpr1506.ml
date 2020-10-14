@@ -384,9 +384,9 @@ val print_list_of_int : Print_int.t list -> unit = <fun>
 let f () = let open functor(X: sig end) -> struct end in ();;
 
 [%%expect{|
-Line 1, characters 20-53:
+Line 1, characters 27-53:
 1 | let f () = let open functor(X: sig end) -> struct end in ();;
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
        functor (X : sig end) -> sig end
 |}]
