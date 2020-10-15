@@ -13,14 +13,54 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Dynamic-scoping for global piece of state *)
+(** This module provides some facilities for creating references (and hash
+    tables) which can easily be snapshoted and restored to an arbitrary version.
 
-val is_bound : unit -> bool
-val reset : unit -> unit
+    It is used throughout the frontend (read: typechecker), to register all
+    (well, hopefully) the global state. Thus making it easy for tools like Merlin
+    to go back and forth typechecking different files. *)
+
+(** {1 Creators} *)
+
+val s_ref : 'a -> 'a ref
+(** Similar to {!ref}, except the allocated reference is registered into the
+    store. *)
 
 val s_table : ('a -> 'b) -> 'a -> 'b ref
-val s_ref : 'a -> 'a ref
+(** Used to register hash tables. Those also need to be placed into refs to be
+    easily swapped out, but one can't just "snapshot" the initial value to
+    create fresh instances, so instead an initializer is required.
+
+    Use it like this:
+    {[
+      let my_table = s_table Hashtbl.create 42
+    ]}
+*)
+
+(** {1 State management}
+
+    Note: all the following functions are currently unused inside the compiler
+    codebase. Merlin is their only user at the moment. *)
 
 type scope
+
 val fresh : unit -> scope
+(** Returns a fresh instance of the store.
+
+    The first time this function is called, it snapshots the value of all the
+    registered references, later calls to [fresh] will return instances
+    initialized to those values. *)
+
 val with_scope : scope -> (unit -> 'a) -> 'a
+(** [with_scope s f] resets all the registered references to the value they have
+    in [s] for the run of [f].
+    If [f] updates any of the registered refs, [s] is updated to remember those
+    changes. *)
+
+val reset : unit -> unit
+(** Resets all the references to the initial snapshot (i.e. to the same values
+    that new instances start with). *)
+
+val is_bound : unit -> bool
+(** Returns [true] when a scope is active (i.e. when called from the callback
+    passed to {!with_scope}), [false] otherwise. *)
