@@ -82,6 +82,7 @@ COMPILERLIBS_SOURCES=\
   utils/consistbl.ml \
   utils/terminfo.ml \
   utils/warnings.ml \
+  utils/local_store.ml \
   utils/load_path.ml \
   utils/int_replace_polymorphic_compare.ml \
   parsing/location.ml \

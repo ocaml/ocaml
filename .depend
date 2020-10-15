@@ -77,11 +77,20 @@ utils/int_replace_polymorphic_compare.cmx : \
 utils/int_replace_polymorphic_compare.cmi :
 utils/load_path.cmo : \
     utils/misc.cmi \
+    utils/local_store.cmi \
+    utils/config.cmi \
     utils/load_path.cmi
 utils/load_path.cmx : \
     utils/misc.cmx \
+    utils/local_store.cmx \
+    utils/config.cmx \
     utils/load_path.cmi
 utils/load_path.cmi :
+utils/local_store.cmo : \
+    utils/local_store.cmi
+utils/local_store.cmx : \
+    utils/local_store.cmi
+utils/local_store.cmi :
 utils/misc.cmo : \
     utils/config.cmi \
     utils/build_path_prefix_map.cmi \
@@ -433,12 +442,14 @@ typing/annot.cmi : \
 typing/btype.cmo : \
     typing/types.cmi \
     typing/path.cmi \
+    utils/local_store.cmi \
     typing/ident.cmi \
     parsing/asttypes.cmi \
     typing/btype.cmi
 typing/btype.cmx : \
     typing/types.cmx \
     typing/path.cmx \
+    utils/local_store.cmx \
     typing/ident.cmx \
     parsing/asttypes.cmi \
     typing/btype.cmi
@@ -483,6 +494,7 @@ typing/ctype.cmo : \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    utils/local_store.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     utils/clflags.cmi \
@@ -498,6 +510,7 @@ typing/ctype.cmx : \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
+    utils/local_store.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     utils/clflags.cmx \
@@ -542,6 +555,7 @@ typing/env.cmo : \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    utils/local_store.cmi \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/datarepr.cmi \
@@ -561,6 +575,7 @@ typing/env.cmx : \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
+    utils/local_store.cmx \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/datarepr.cmx \
@@ -606,11 +621,13 @@ typing/envaux.cmi : \
     typing/env.cmi
 typing/ident.cmo : \
     utils/misc.cmi \
+    utils/local_store.cmi \
     utils/identifiable.cmi \
     utils/clflags.cmi \
     typing/ident.cmi
 typing/ident.cmx : \
     utils/misc.cmx \
+    utils/local_store.cmx \
     utils/identifiable.cmx \
     utils/clflags.cmx \
     typing/ident.cmi
@@ -1066,6 +1083,7 @@ typing/subst.cmo : \
     parsing/parsetree.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/local_store.cmi \
     typing/ident.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -1077,6 +1095,7 @@ typing/subst.cmx : \
     parsing/parsetree.cmi \
     utils/misc.cmx \
     parsing/location.cmx \
+    utils/local_store.cmx \
     typing/ident.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \

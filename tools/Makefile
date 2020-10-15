@@ -113,7 +113,7 @@ $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
 ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-               clflags.cmo \
+               clflags.cmo local_store.cmo \
                terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
                main_args.cmo
 
@@ -161,7 +161,7 @@ clean::
 OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
        identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-       load_path.cmo profile.cmo ccomp.cmo
+       local_store.cmo load_path.cmo profile.cmo ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 

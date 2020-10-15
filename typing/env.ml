@@ -23,6 +23,8 @@ open Path
 open Types
 open Btype
 
+open Local_store
+
 module String = Misc.Stdlib.String
 
 let add_delayed_check_forward = ref (fun _ -> assert false)
@@ -35,9 +37,9 @@ type 'a usage_tbl = ('a -> unit) Types.Uid.Tbl.t
     (inclusion test between signatures, cf Includemod.value_descriptions, ...).
 *)
 
-let value_declarations  : unit usage_tbl = Types.Uid.Tbl.create 16
-let type_declarations   : unit usage_tbl = Types.Uid.Tbl.create 16
-let module_declarations : unit usage_tbl = Types.Uid.Tbl.create 16
+let value_declarations  : unit usage_tbl ref = s_table Types.Uid.Tbl.create 16
+let type_declarations   : unit usage_tbl ref = s_table Types.Uid.Tbl.create 16
+let module_declarations : unit usage_tbl ref = s_table Types.Uid.Tbl.create 16
 
 type constructor_usage = Positive | Pattern | Privatize
 type constructor_usages =
@@ -64,7 +66,8 @@ let add_constructor_usage ~rebind priv cu usage =
 let constructor_usages () =
   {cu_positive = false; cu_pattern = false; cu_privatize = false}
 
-let used_constructors : constructor_usage usage_tbl = Types.Uid.Tbl.create 16
+let used_constructors : constructor_usage usage_tbl ref =
+  s_table Types.Uid.Tbl.create 16
 
 (** Map indexed by the name of module components. *)
 module NameMap = String.Map
@@ -769,57 +772,57 @@ let read_sign_of_cmi = sign_of_cmi ~freshen:true
 
 let save_sign_of_cmi = sign_of_cmi ~freshen:false
 
-let persistent_env : module_data Persistent_env.t =
-  Persistent_env.empty ()
+let persistent_env : module_data Persistent_env.t ref =
+  s_table Persistent_env.empty ()
 
 let without_cmis f x =
-  Persistent_env.without_cmis persistent_env f x
+  Persistent_env.without_cmis !persistent_env f x
 
-let imports () = Persistent_env.imports persistent_env
+let imports () = Persistent_env.imports !persistent_env
 
 let import_crcs ~source crcs =
-  Persistent_env.import_crcs persistent_env ~source crcs
+  Persistent_env.import_crcs !persistent_env ~source crcs
 
 let read_pers_mod modname filename =
-  Persistent_env.read persistent_env read_sign_of_cmi modname filename
+  Persistent_env.read !persistent_env read_sign_of_cmi modname filename
 
 let find_pers_mod name =
-  Persistent_env.find persistent_env read_sign_of_cmi name
+  Persistent_env.find !persistent_env read_sign_of_cmi name
 
 let check_pers_mod ~loc name =
-  Persistent_env.check persistent_env read_sign_of_cmi ~loc name
+  Persistent_env.check !persistent_env read_sign_of_cmi ~loc name
 
 let crc_of_unit name =
-  Persistent_env.crc_of_unit persistent_env read_sign_of_cmi name
+  Persistent_env.crc_of_unit !persistent_env read_sign_of_cmi name
 
 let is_imported_opaque modname =
-  Persistent_env.is_imported_opaque persistent_env modname
+  Persistent_env.is_imported_opaque !persistent_env modname
 
 let register_import_as_opaque modname =
-  Persistent_env.register_import_as_opaque persistent_env modname
+  Persistent_env.register_import_as_opaque !persistent_env modname
 
 let reset_declaration_caches () =
-  Types.Uid.Tbl.clear value_declarations;
-  Types.Uid.Tbl.clear type_declarations;
-  Types.Uid.Tbl.clear module_declarations;
-  Types.Uid.Tbl.clear used_constructors;
+  Types.Uid.Tbl.clear !value_declarations;
+  Types.Uid.Tbl.clear !type_declarations;
+  Types.Uid.Tbl.clear !module_declarations;
+  Types.Uid.Tbl.clear !used_constructors;
   ()
 
 let reset_cache () =
   Current_unit_name.set "";
-  Persistent_env.clear persistent_env;
+  Persistent_env.clear !persistent_env;
   reset_declaration_caches ();
   ()
 
 let reset_cache_toplevel () =
-  Persistent_env.clear_missing persistent_env;
+  Persistent_env.clear_missing !persistent_env;
   reset_declaration_caches ();
   ()
 
 (* get_components *)
 
 let get_components_res c =
-  match Persistent_env.can_load_cmis persistent_env with
+  match Persistent_env.can_load_cmis !persistent_env with
   | Persistent_env.Can_load_cmis ->
     EnvLazy.force !components_of_module_maker' c.comps
   | Persistent_env.Cannot_load_cmis log ->
@@ -1066,7 +1069,7 @@ let find_hash_type path env =
   | Papply _ ->
       raise Not_found
 
-let required_globals = ref []
+let required_globals = s_ref []
 let reset_required_globals () = required_globals := []
 let get_required_globals () = !required_globals
 let add_required_global id =
@@ -1243,7 +1246,7 @@ let rec scrape_alias_for_visit env (sub : Subst.t option) mty =
       begin match may_subst Subst.module_path sub path with
       | Pident id
         when Ident.persistent id
-          && not (Persistent_env.looked_up persistent_env (Ident.name id)) ->
+          && not (Persistent_env.looked_up !persistent_env (Ident.name id)) ->
           false
       | path -> (* PR#6600: find_module may raise Not_found *)
           try scrape_alias_for_visit env sub (find_module path env).md_type
@@ -1283,7 +1286,7 @@ let iter_env wrap proj1 proj2 f env () =
            iter_components (Pident id) path data.mda_components
        | Mod_persistent ->
            let modname = Ident.name id in
-           match Persistent_env.find_in_cache persistent_env modname with
+           match Persistent_env.find_in_cache !persistent_env modname with
            | None -> ()
            | Some data ->
                iter_components (Pident id) path data.mda_components)
@@ -1304,7 +1307,7 @@ let same_types env1 env2 =
   env1.types == env2.types && env1.modules == env2.modules
 
 let used_persistent () =
-  Persistent_env.fold persistent_env
+  Persistent_env.fold !persistent_env
     (fun s _m r -> Concr.add s r)
     Concr.empty
 
@@ -1674,7 +1677,7 @@ and check_value_name name loc =
 and store_value ?check id addr decl env =
   check_value_name (Ident.name id) decl.val_loc;
   Option.iter
-    (fun f -> check_usage decl.val_loc id decl.val_uid f value_declarations)
+    (fun f -> check_usage decl.val_loc id decl.val_uid f !value_declarations)
     check;
   let vda = { vda_description = decl; vda_address = addr } in
   { env with
@@ -1686,7 +1689,7 @@ and store_type ~check id info env =
   if check then
     check_usage loc id info.type_uid
       (fun s -> Warnings.Unused_type_declaration s)
-      type_declarations;
+      !type_declarations;
   let path = Pident id in
   let constructors =
     Datarepr.constructors_of_type path info
@@ -1705,9 +1708,9 @@ and store_type ~check id info env =
         let name = cstr.cstr_name in
         let loc = cstr.cstr_loc in
         let k = cstr.cstr_uid in
-        if not (Types.Uid.Tbl.mem used_constructors k) then
+        if not (Types.Uid.Tbl.mem !used_constructors k) then
           let used = constructor_usages () in
-          Types.Uid.Tbl.add used_constructors k
+          Types.Uid.Tbl.add !used_constructors k
             (add_constructor_usage ~rebind:false priv used);
           if not (ty_name = "" || ty_name.[0] = '_')
           then !add_delayed_check_forward
@@ -1757,9 +1760,9 @@ and store_extension ~check ~rebind id addr ext env =
     let is_exception = Path.same ext.ext_type_path Predef.path_exn in
     let name = cstr.cstr_name in
     let k = cstr.cstr_uid in
-    if not (Types.Uid.Tbl.mem used_constructors k) then begin
+    if not (Types.Uid.Tbl.mem !used_constructors k) then begin
       let used = constructor_usages () in
-      Types.Uid.Tbl.add used_constructors k
+      Types.Uid.Tbl.add !used_constructors k
         (add_constructor_usage ~rebind priv used);
       !add_delayed_check_forward
         (fun () ->
@@ -1778,7 +1781,7 @@ and store_extension ~check ~rebind id addr ext env =
 and store_module ~check ~freshening_sub id addr presence md env =
   let loc = md.md_loc in
   Option.iter
-    (fun f -> check_usage loc id md.md_uid f module_declarations) check;
+    (fun f -> check_usage loc id md.md_uid f !module_declarations) check;
   let alerts = Builtin_attributes.alerts_of_attrs md.md_attributes in
   let module_decl_lazy =
     match freshening_sub with
@@ -2125,11 +2128,11 @@ let save_signature_with_transform cmi_transform ~alerts sg modname filename =
   Subst.reset_for_saving ();
   let sg = Subst.signature Make_local (Subst.for_saving Subst.identity) sg in
   let cmi =
-    Persistent_env.make_cmi persistent_env modname sg alerts
+    Persistent_env.make_cmi !persistent_env modname sg alerts
     |> cmi_transform in
   let pm = save_sign_of_cmi
       { Persistent_env.Persistent_signature.cmi; filename } in
-  Persistent_env.save_cmi persistent_env
+  Persistent_env.save_cmi !persistent_env
     { Persistent_env.Persistent_signature.filename; cmi } pm;
   cmi
 
@@ -2152,19 +2155,19 @@ let (initial_safe_string, initial_unsafe_string) =
 (* Tracking usage *)
 
 let mark_module_used uid =
-  match Types.Uid.Tbl.find module_declarations uid with
+  match Types.Uid.Tbl.find !module_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let mark_modtype_used _uid = ()
 
 let mark_value_used uid =
-  match Types.Uid.Tbl.find value_declarations uid with
+  match Types.Uid.Tbl.find !value_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let mark_type_used uid =
-  match Types.Uid.Tbl.find type_declarations uid with
+  match Types.Uid.Tbl.find !type_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
@@ -2174,12 +2177,12 @@ let mark_type_path_used env path =
   | exception Not_found -> ()
 
 let mark_constructor_used usage cd =
-  match Types.Uid.Tbl.find used_constructors cd.cd_uid with
+  match Types.Uid.Tbl.find !used_constructors cd.cd_uid with
   | mark -> mark usage
   | exception Not_found -> ()
 
 let mark_extension_used usage ext =
-  match Types.Uid.Tbl.find used_constructors ext.ext_uid with
+  match Types.Uid.Tbl.find !used_constructors ext.ext_uid with
   | mark -> mark usage
   | exception Not_found -> ()
 
@@ -2190,7 +2193,7 @@ let mark_constructor_description_used usage env cstr =
     | _ -> assert false
   in
   mark_type_path_used env ty_path;
-  match Types.Uid.Tbl.find used_constructors cstr.cstr_uid with
+  match Types.Uid.Tbl.find !used_constructors cstr.cstr_uid with
   | mark -> mark usage
   | exception Not_found -> ()
 
@@ -2203,25 +2206,26 @@ let mark_label_description_used () env lbl =
   mark_type_path_used env ty_path
 
 let mark_class_used uid =
-  match Types.Uid.Tbl.find type_declarations uid with
+  match Types.Uid.Tbl.find !type_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let mark_cltype_used uid =
-  match Types.Uid.Tbl.find type_declarations uid with
+  match Types.Uid.Tbl.find !type_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let set_value_used_callback vd callback =
-  Types.Uid.Tbl.add value_declarations vd.val_uid callback
+  Types.Uid.Tbl.add !value_declarations vd.val_uid callback
 
 let set_type_used_callback td callback =
   if Uid.for_actual_declaration td.type_uid then
     let old =
-      try Types.Uid.Tbl.find type_declarations td.type_uid
+      try Types.Uid.Tbl.find !type_declarations td.type_uid
       with Not_found -> ignore
     in
-    Types.Uid.Tbl.replace type_declarations td.type_uid (fun () -> callback old)
+    Types.Uid.Tbl.replace !type_declarations td.type_uid
+      (fun () -> callback old)
 
 (* Lookup by name *)
 
@@ -2866,7 +2870,7 @@ let fold_modules f lid env acc =
                in
                f name p md acc
            | Mod_persistent ->
-               match Persistent_env.find_in_cache persistent_env name with
+               match Persistent_env.find_in_cache !persistent_env name with
                | None -> acc
                | Some mda ->
                    let md =
@@ -2927,7 +2931,7 @@ let filter_non_loaded_persistent f env =
          | Mod_local _ -> acc
          | Mod_unbound _ -> acc
          | Mod_persistent ->
-             match Persistent_env.find_in_cache persistent_env name with
+             match Persistent_env.find_in_cache !persistent_env name with
              | Some _ -> acc
              | None ->
                  if f (Ident.create_persistent name) then
@@ -2992,8 +2996,8 @@ let summary env =
   if Path.Map.is_empty env.local_constraints then env.summary
   else Env_constraints (env.summary, env.local_constraints)
 
-let last_env = ref empty
-let last_reduced_env = ref empty
+let last_env = s_ref empty
+let last_reduced_env = s_ref empty
 
 let keep_only_summary env =
   if !last_env == env then !last_reduced_env

@@ -18,6 +18,8 @@
 open Asttypes
 open Types
 
+open Local_store
+
 (**** Sets, maps and hashtables of types ****)
 
 module TypeSet = Set.Make(TypeOps)
@@ -40,7 +42,7 @@ let pivot_level = 2 * lowest_level - 1
 
 (**** Some type creators ****)
 
-let new_id = ref (-1)
+let new_id = s_ref (-1)
 
 let newty2 level desc  =
   incr new_id; { desc; level; scope = lowest_level; id = !new_id }
@@ -82,14 +84,14 @@ type changes =
   | Unchanged
   | Invalid
 
-let trail = Weak.create 1
+let trail = s_table Weak.create 1
 
 let log_change ch =
-  match Weak.get trail 0 with None -> ()
+  match Weak.get !trail 0 with None -> ()
   | Some r ->
       let r' = ref Unchanged in
       r := Change (ch, r');
-      Weak.set trail 0 (Some r')
+      Weak.set !trail 0 (Some r')
 
 (**** Representative of a type ****)
 
@@ -633,7 +635,7 @@ let rec check_expans visited ty =
   | _ -> ()
 *)
 
-let memo = ref []
+let memo = s_ref []
         (* Contains the list of saved abbreviation expansions. *)
 
 let cleanup_abbrev () =
@@ -718,7 +720,7 @@ let undo_change = function
   | Ctypeset (r, v) -> r := v
 
 type snapshot = changes ref * int
-let last_snapshot = ref 0
+let last_snapshot = s_ref 0
 
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
@@ -771,10 +773,10 @@ let set_typeset rs s =
 let snapshot () =
   let old = !last_snapshot in
   last_snapshot := !new_id;
-  match Weak.get trail 0 with Some r -> (r, old)
+  match Weak.get !trail 0 with Some r -> (r, old)
   | None ->
       let r = ref Unchanged in
-      Weak.set trail 0 (Some r);
+      Weak.set !trail 0 (Some r);
       (r, old)
 
 let rec rev_log accu = function
@@ -795,7 +797,7 @@ let backtrack (changes, old) =
       List.iter undo_change backlog;
       changes := Unchanged;
       last_snapshot := old;
-      Weak.set trail 0 (Some changes)
+      Weak.set !trail 0 (Some changes)
 
 let rec rev_compress_log log r =
   match !r with
