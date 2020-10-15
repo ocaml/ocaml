@@ -50,7 +50,7 @@ let s_ref k =
   ref
 
 type slot = Slot : { ref : 'a ref; mutable value : 'a } -> slot
-type scope = slot list
+type store = slot list
 
 let fresh () =
   let slots =
@@ -64,7 +64,7 @@ let fresh () =
   global_bindings.frozen <- true;
   slots
 
-let with_scope slots f =
+let with_store slots f =
   assert (not global_bindings.is_bound);
   global_bindings.is_bound <- true;
   List.iter (fun (Slot {ref;value}) -> ref := value) slots;

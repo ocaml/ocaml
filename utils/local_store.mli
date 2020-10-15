@@ -42,16 +42,16 @@ val s_table : ('a -> 'b) -> 'a -> 'b ref
     Note: all the following functions are currently unused inside the compiler
     codebase. Merlin is their only user at the moment. *)
 
-type scope
+type store
 
-val fresh : unit -> scope
+val fresh : unit -> store
 (** Returns a fresh instance of the store.
 
     The first time this function is called, it snapshots the value of all the
     registered references, later calls to [fresh] will return instances
     initialized to those values. *)
 
-val with_scope : scope -> (unit -> 'a) -> 'a
+val with_store : store -> (unit -> 'a) -> 'a
 (** [with_scope s f] resets all the registered references to the value they have
     in [s] for the run of [f].
     If [f] updates any of the registered refs, [s] is updated to remember those
