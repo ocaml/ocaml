@@ -17,8 +17,8 @@
     tables) which can easily be snapshoted and restored to an arbitrary version.
 
     It is used throughout the frontend (read: typechecker), to register all
-    (well, hopefully) the global state. Thus making it easy for tools like Merlin
-    to go back and forth typechecking different files. *)
+    (well, hopefully) the global state. Thus making it easy for tools like
+    Merlin to go back and forth typechecking different files. *)
 
 (** {1 Creators} *)
 

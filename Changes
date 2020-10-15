@@ -466,6 +466,9 @@ Working version
 - #9003: Start compilation from Emit when the input file is in Linear IR format.
   (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
 
+- #9963: Centralized tracking of frontend's global state
+  (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
