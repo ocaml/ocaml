@@ -20,13 +20,13 @@ type ref_and_reset =
 type bindings = {
   mutable refs: ref_and_reset list;
   mutable frozen : bool;
-  is_bound: bool ref
+  mutable is_bound: bool;
 }
 
 let global_bindings =
-  { refs = []; is_bound = ref false; frozen = false }
+  { refs = []; is_bound = false; frozen = false }
 
-let is_bound () = !(global_bindings.is_bound)
+let is_bound () = global_bindings.is_bound
 
 let reset () =
   assert (is_bound ());
@@ -50,7 +50,7 @@ let s_ref k =
   ref
 
 type slot = Slot : { ref : 'a ref; mutable value : 'a } -> slot
-type scope = { slots: slot list; scope_bound : bool ref }
+type scope = slot list
 
 let fresh () =
   let slots =
@@ -62,13 +62,13 @@ let fresh () =
     ) global_bindings.refs
   in
   global_bindings.frozen <- true;
-  { slots; scope_bound = global_bindings.is_bound }
+  slots
 
-let with_scope { slots; scope_bound } f =
-  assert (not !scope_bound);
-  scope_bound := true;
+let with_scope slots f =
+  assert (not global_bindings.is_bound);
+  global_bindings.is_bound <- true;
   List.iter (fun (Slot {ref;value}) -> ref := value) slots;
   Fun.protect f ~finally:(fun () ->
     List.iter (fun (Slot s) -> s.value <- !(s.ref)) slots;
-    scope_bound := false
+    global_bindings.is_bound <- false;
   )
