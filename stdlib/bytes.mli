@@ -47,16 +47,8 @@
 
    Bytes are represented by the OCaml type [char].
 
-   The labeled version of this module, {!BytesLabels}, is intended to be used
-   through {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and
-   {!String} with their labeled counterparts.
-
-   For example:
-   {[
-      open StdLabels
-
-      let first = Bytes.sub ~pos:0 ~len:1
-   ]}
+   The labeled version of this module can be used as described in the
+   {!StdLabels} module.
 
    @since 4.02.0
 
