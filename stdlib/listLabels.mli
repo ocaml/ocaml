@@ -33,8 +33,8 @@
    The above considerations can usually be ignored if your lists are not
    longer than about 10000 elements.
 
-   The labeled version of this module, {!ListLabels}, can be used
-   as described in the {!StdLabels} module.
+   The labeled version of this module can be used as described in the
+   {!StdLabels} module.
  *)
 
 type 'a t = 'a list = [] | (::) of 'a * 'a list (**)

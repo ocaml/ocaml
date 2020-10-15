@@ -47,8 +47,8 @@
 
    Bytes are represented by the OCaml type [char].
 
-   The labeled version of this module, {!BytesLabels}, can be used
-   as described in the {!StdLabels} module.
+   The labeled version of this module can be used as described in the
+   {!StdLabels} module.
 
    @since 4.02.0
 

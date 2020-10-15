@@ -73,8 +73,8 @@ v}
     default until OCaml 4.05. Starting with 4.06, the compatibility
     mode is opt-in; we intend to remove the option in the future.
 
-    The labeled version of this module, {!StringLabels}, can be used
-    as described in the {!StdLabels} module.
+    The labeled version of this module can be used as described in the
+    {!StdLabels} module.
 *)
 
 (** {1:strings Strings} *)
