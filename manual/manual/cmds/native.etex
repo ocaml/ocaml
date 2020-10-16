@@ -129,7 +129,7 @@ trigonometric operations "cos", "sin", "tan" have their range reduced to
 $[-2^{64}, 2^{64}]$.
 \end{options}
 
-\paragraph{Options for the 64-bit x84 architecture}
+\paragraph{Options for the 64-bit x86 architecture}
 The 64-bit code generator for Intel/AMD x86 processors ("amd64"
 architecture) supports the following additional options:
 
