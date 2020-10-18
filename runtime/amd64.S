@@ -726,7 +726,7 @@ G(caml_system__spacetime_shapes):
 #elif defined(SYS_mingw64) || defined(SYS_cygwin)
         .section .rdata,"dr"
 #else
-        .section    .rodata.cst8,"a",@progbits
+        .section    .rodata.cst16,"aM",@progbits,16
 #endif
         .globl  G(caml_negf_mask)
         .align  SIXTEEN_ALIGN

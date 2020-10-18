@@ -14,6 +14,12 @@ OCaml 4.11 maintenance branch
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
 
+### Code generation and optimizations:
+
+- #9969, #9981: Added mergeable flag to ELF sections containing mergeable
+  constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
+  (Jacob Young, review by Nicolás Ojeda Bär)
+
 ### Bug fixes:
 
 - #9970, #10010: fix the declaration scope of extensible-datatype constructors.

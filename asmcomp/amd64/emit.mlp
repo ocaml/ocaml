@@ -1032,7 +1032,7 @@ let begin_assembly() =
     | S_macosx -> D.section ["__TEXT";"__literal16"] None ["16byte_literals"]
     | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
     | S_win64 -> D.data ()
-    | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
+    | _ -> D.section [".rodata.cst16"] (Some "aM") ["@progbits";"16"]
     end;
     D.align 16;
     _label (emit_symbol "caml_negf_mask");
@@ -1096,8 +1096,9 @@ let end_assembly() =
     | S_macosx -> D.section ["__TEXT";"__literal8"] None ["8byte_literals"]
     | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
     | S_win64 -> D.data ()
-    | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
+    | _ -> D.section [".rodata.cst8"] (Some "aM") ["@progbits";"8"]
     end;
+    D.align 8;
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
