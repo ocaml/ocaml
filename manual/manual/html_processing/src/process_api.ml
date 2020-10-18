@@ -25,7 +25,7 @@ let favicon = "favicon.ico"
    forces to click twice to an external link after entering text. *)
 let search_widget with_description =
   let search_decription = if with_description
-    then {|<span class="search_comment">(search values, type signatures, and descriptions - case sensitive)<div class="search_help"><ul><li>You may search bare values, like <code>map</code>, or indicate the module, like <code>List.map</code>, or type signatures, like <code>int -> float</code>.</li><li>To combine several keywords, just separate them by a space - except if you want to search type signatures: then you must use <strong>two</strong> spaces as separators.</li><li>You may use the special chars <code>^</code> and <code>$</code> to indicate where the matched string should start or end, respectively.</li></ul></div></span>|}
+    then {|<span class="search_comment">(search values, type signatures, and descriptions - case sensitive)<div class="search_help"><ul><li>You may search bare values, like <code>map</code>, or indicate the module, like <code>List.map</code>, or type signatures, like <code>int -> float</code>.</li><li>To combine several keywords, just separate them by a space. Quotes "like this" can be used to prevent from splitting words at spaces.</li><li>You may use the special chars <code>^</code> and <code>$</code> to indicate where the matched string should start or end, respectively.</li></ul></div></span>|}
     else "" in
   sprintf {|<div class="api_search"><input type="text" name="apisearch" id="api_search" class="api_search"
 	 oninput    = "mySearch(%b);"

@@ -48,9 +48,14 @@
 	    span {
 		color:#c88b5f;
 	    }
+	    span.c003{
+		color:#564233;
+	    }
 	}
     }
-    /* table of contents: (manual.001.html) */
+    /* only for Contents/Foreword in index.html: */
+    ul.ul-content li::before{@include caret;}
+    /* table of contents: (manual.001.html): */
     ul.toc ul.toc ul.toc{
 	font-size:smaller;
     }
@@ -232,10 +237,10 @@ nav.toc{
     }
 }
 
-.pre,pre{
-    /*background:linear-gradient(to left,#fff 0,#ede8e5 100%)*/
+pre{
+    background:linear-gradient(to left,#fff 0,#ede8e5 100%)
 }
-code.caml-output.ok,div.caml-output.ok,span.c006{
+code.caml-output.ok,div.caml-output.ok{
     color:#045804
 }
 code.caml-output.error,div.caml-output.error{
@@ -267,6 +272,7 @@ blockquote.quote{
     &::before{@include caret;}
 }
 span.c003{
+    color:#564233;
     font-family:"Fira Mono",courier;
     background-color:#f3ece6;
     border-radius:6px
@@ -279,8 +285,15 @@ div.caml-example.toplevel div.caml-input::before{
 span.c004{
     color:#888
 }
+span.c006{
+    font-weight:700;
+    color:#564233;
+    font-family:"Fira Mono",courier;
+}
 span.c009{
-    font-style:italic
+    font-style:italic;
+    background-color:#f3ece6;
+    border-radius:6px
 }
 span.c013{
     font-weight:700

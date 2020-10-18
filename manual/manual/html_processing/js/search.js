@@ -14,7 +14,7 @@
 // OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
 // NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-    
+
 // Thanks @steinuil for help on deferred loading.
 // Thanks @osener, @UnixJunkie, @Armael for very helpful suggestions
 // Thanks to all testers!
@@ -35,7 +35,7 @@ function loadingIndex (includeDescr) {
     switch (indexState) {
     case 'NOT_LOADED':
 	indexState = 'LOADING';
-	
+
 	const script = document.createElement('script');
 	script.src = 'index.js';
 	script.addEventListener('load', () => {
@@ -44,37 +44,35 @@ function loadingIndex (includeDescr) {
 	});
 	document.head.appendChild(script);
 	return true;
-	
+
     case 'LOADING':
 	return true;
-	
+
     case 'HAS_LOADED':
 	return false;
     }
 }
 
-// Check if sub is a substring of s. The start/end of the string s are
-// marked by "^" and "$", and hence these chars can be used in sub to
-// refine the search. Case sensitive is better for OCaml modules.
-function isSubString (sub, s) {
-    let ss = "^" + s + "$";
-    return (ss.includes(sub));
-}
-
 // line is a string array. We check if sub is a substring of one of
-// the elements of the array.
+// the elements of the array. The start/end of the string s are marked
+// by "^" and "$", and hence these chars can be used in sub to refine
+// the search. Case sensitive is better for OCaml modules. Searching
+// within line.join() is slightly more efficient that iterating 'line'
+// with .findIndex (my benchmarks show about 15% faster; except if we
+// search for the value at the beginning of line). However it might
+// use more memory.
 function hasSubString (sub, line) {
-    return (line.findIndex(function (s) {
-	return (isSubString(sub,s)); }) !== -1);
+    let lineAll = "^" + line.join("$^") + "$";
+    return (lineAll.includes(sub));
 }
 
 // Check if one of the strings in subs is a substring of one of the
 // strings in line.
 function hasSubStrings (subs, line) {
+    let lineAll = "^" + line.join("$^") + "$";
     return (subs.findIndex(function (sub) {
-	return (hasSubString (sub, line)); }) !== -1);
+	return (lineAll.includes(sub))}) !== -1);
 }
-
 // Error of sub being a substring of s. Best if starts at 0. Except
 // for strings containing "->", which is then best if the substring is
 // at the most right-hand position (representing the "return type").
@@ -130,7 +128,6 @@ function subsAvgMinError (subs, line) {
     let errs = subs.map(function (sub) { return subMinError (sub, line); });
     return errs.reduce(add,0) / subs.length;
 }
-    
 
 function formatLine (line) {
     let li = '<li>';
@@ -141,6 +138,22 @@ function formatLine (line) {
 	}
 	html = `<pre>${html} : ${line[SIG_INDEX]}</pre>${line[DESCR_INDEX]}`; }
     return (li + html + "</li>\n");
+}
+
+// Split a string into an array of non-empty words, or phrases
+// delimited by quotes ("")
+function splitWords (s) {
+    let phrases = s.split('"');
+    let words = [];
+    phrases.forEach(function (phrase,i) {
+	if ( i%2 == 0 ) {
+	    words.push(...phrase.split(" "));
+	} else {
+	    words.push(phrase);
+	}
+    });
+    return (words.filter(function (s) {
+	return (s !== "")}));
 }
 
 // The initial format of an entry of the GENERAL_INDEX array is
@@ -168,21 +181,14 @@ function mySearch (includeDescr) {
     let err_index = DESCR_INDEX;
 
     if (text !== "") {
-	let words = [];
 	if ( includeDescr ) {
 	    err_index = ERR_INDEX;
-	    
-	    // Split text into an array of non-empty words:
-	    if ( text.includes("->") ) {
-		// this must be a type, so we don't split on single space
-		words = text.split("  ");
-	    } else {
-		words = text.split(" ");
-	    };
-	    words = words.filter(function (s) {
-		return (s !== "")});
 	}
-	
+
+	let t0 = performance.now();
+	var i;
+	for (i = 0; i < 100; i++) {
+	let exactMatches = 0;
 	results = GENERAL_INDEX.filter(function (line) {
 	    // We remove the html hrefs and add the Module.value complete name:
 	    let cleanLine = [line[0], line[2], line[0] + '.' + line[2]];
@@ -194,23 +200,35 @@ function mySearch (includeDescr) {
 		cleanLine.push(line[SIG_INDEX+1]);
 		// add the description and signature (txt format)
 	    }
-	    if ( hasSubString(text, cleanLine) ||
-		 // if includeDescr, we search for all separated words
-		 ( includeDescr && hasSubStrings(words, cleanLine) ) ) {
-		// one could merge hasSubString and subMinError for efficiency
-		let error = MAX_ERROR;
-		if ( includeDescr ) {
-		    error = subsAvgMinError(words, cleanLine);
-		} else {
+	    let error = MAX_ERROR;
+	    if ( exactMatches <= MAX_RESULTS ) {
+		// We may stop searching when exactMatches >
+		// MAX_RESULTS because the ranking between all exact
+		// matches is unspecified (depends on the construction
+		// of the GENERAL_INDEX array)
+		if ( hasSubString(text, cleanLine) ) {
 		    error = subMinError(text, cleanLine);
+		    // one could merge hasSubString and subMinError
+		    // for efficiency
 		}
-		line[err_index] = error;
-		// we add the error as element #err_index
-		return (true); }
-	    else {
-		return (false); }
+		if ( error != 0 && includeDescr ) {
+		    let words = splitWords(text);
+		    if ( hasSubStrings(words, cleanLine) ) {
+			// if there is no exact match for text and
+			// includeDescr=true, we also search for all separated
+			// words
+			error = subsAvgMinError(words, cleanLine);
+		    }
+		}
+		if ( error == 0 ) { exactMatches += 1; }
+	    }
+	    line[err_index] = error;
+	    // we add the error as element #err_index
+	    return ( error != MAX_ERROR );
 	});
-	
+	}
+	let t1 = performance.now();
+	console.log("20 x Search time = " + (t1 - t0) + " ms.");
 	// We sort the results by relevance:
 	results.sort(function(line1, line2) {
 	    return (line1[err_index] - line2[err_index])});
