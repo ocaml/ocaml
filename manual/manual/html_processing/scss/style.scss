@@ -102,7 +102,8 @@
 	    }	    
 	}
 	td:first-child, td:nth-child(2) {
-	    width: 1em; // second column should contain only ":". First one will adapt to size.
+	    width: 1em; // second column should contain only
+			// ":". First one will adapt to size.
 	}	
     }
     
@@ -110,7 +111,9 @@
 	border-left: 4px solid #e69c7f;
 	padding-left: 1em;
 	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
-	// PROBLEM  the sig_block ends to soon, it shoud actually include the "end)" line ==> REPORT THIS
+	// PROBLEM the sig_block ends too soon, it should actually
+	// include the "end)" line ==> REPORT THIS
+	// (eg: compilerlibref/Arg_helper.html)
 	pre {
 	    margin-top: 0;
 	    background: none;
@@ -119,6 +122,7 @@
     }
     pre .sig_block {
 	margin-bottom: 0; // see above
+	border-left: 0;
     }
 	
     *, *:before, *:after { 
@@ -778,6 +782,10 @@
 	color: #444;
     }
 
+    code span.keywordsign {
+	color:#92370a;
+    }
+    
     .caml-input span.kw1 {
 	font-weight: 500;
 	color: #777;
