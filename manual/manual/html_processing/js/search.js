@@ -186,8 +186,6 @@ function mySearch (includeDescr) {
 	}
 
 	let t0 = performance.now();
-	var i;
-	for (i = 0; i < 100; i++) {
 	let exactMatches = 0;
 	results = GENERAL_INDEX.filter(function (line) {
 	    // We remove the html hrefs and add the Module.value complete name:
@@ -226,9 +224,6 @@ function mySearch (includeDescr) {
 	    // we add the error as element #err_index
 	    return ( error != MAX_ERROR );
 	});
-	}
-	let t1 = performance.now();
-	console.log("20 x Search time = " + (t1 - t0) + " ms.");
 	// We sort the results by relevance:
 	results.sort(function(line1, line2) {
 	    return (line1[err_index] - line2[err_index])});
