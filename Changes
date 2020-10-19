@@ -498,6 +498,9 @@ OCaml 4.12.0
 - #9963: Centralized tracking of frontend's global state
   (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
 
+- #9631: Named text sections for caml_system__code_begin/end symbols
+  (Greta Yorsh, review by Frédéric Bour)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
