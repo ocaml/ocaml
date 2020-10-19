@@ -222,6 +222,8 @@ and nondep_sig_item env va ids = function
       Sig_class_type(id, Ctype.nondep_cltype_declaration env ids d, rs, vis)
 
 and nondep_sig env va ids sg =
+  let scope = Ctype.create_scope () in
+  let sg, env = Env.enter_signature ~scope sg env in
   List.map (nondep_sig_item env va ids) sg
 
 and nondep_modtype_decl env ids mtd =
