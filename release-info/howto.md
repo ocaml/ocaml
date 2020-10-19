@@ -203,8 +203,7 @@ Remove the oldest branch from this list.
 ## 5.4 new badge in README.adoc (for a new release branch)
 
 Add a badge for the new branch in README.adoc.
-Remove any badge that tracks a version older than Debian stable.
-
+Remove the oldest badge.
 
 ## 6: create OPAM packages
 
