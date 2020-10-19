@@ -169,7 +169,7 @@ git branch $BRANCH
 make -B configure
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
-git commit -m "first commit after branching $VERSION" -a
+git commit -m "first commit after branching $BRANCH" -a
 git push
 
 # Switch to the new branch
