@@ -151,11 +151,32 @@ module Memprof =
       float -> int -> ('minor, 'major) tracker -> unit
       = "caml_memprof_start"
 
+    exception Memprof_raised of exn
+
+    let () = Printexc.register_printer @@ function
+    | Memprof_raised exn -> Some ("Gc.Memprof.Memprof_raised: "
+                                  ^ Printexc.to_string exn)
+    | _ -> None
+
+    let wrap f x =
+      try f x with e ->
+        let bt = Printexc.get_raw_backtrace () in
+        Printexc.raise_with_backtrace (Memprof_raised e) bt
+
     let start
       ~sampling_rate
       ?(callstack_size = max_int)
       tracker =
-      c_start sampling_rate callstack_size tracker
+      let tracker' =
+        {
+          alloc_minor = wrap tracker.alloc_minor ;
+          alloc_major = wrap tracker.alloc_major ;
+          promote = wrap tracker.promote ;
+          dealloc_minor = wrap tracker.dealloc_minor ;
+          dealloc_major = wrap tracker.dealloc_major ;
+        }
+      in
+      c_start sampling_rate callstack_size tracker'
 
     external stop : unit -> unit = "caml_memprof_stop"
   end

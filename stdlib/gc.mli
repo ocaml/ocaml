@@ -520,6 +520,9 @@ module Memprof :
        The parameter [tracker] determines how to track sampled blocks
        over their lifetime in the minor and major heap.
 
+       If an exception [exn] is uncaught in a callback, then the
+       asynchronous exception [Memprof_raised exn] is raised.
+
        Sampling is temporarily disabled when calling a callback
        for the current thread. So they do not need to be reentrant if
        the program is single-threaded. However, if threads are used,
@@ -530,8 +533,8 @@ module Memprof :
        actual event. The callstack passed to the callback is always
        accurate, but the program state may have evolved.
 
-       Calling [Thread.exit] in a callback is currently unsafe and can
-       result in undefined behavior. *)
+       Calling {!Thread.exit} in a callback is currently unsafe and
+       can result in undefined behavior. *)
 
     val stop : unit -> unit
     (** Stop the sampling. Fails if sampling is not active.
@@ -544,4 +547,14 @@ module Memprof :
 
         Calling [stop] when a callback is running can lead to
         callbacks not being called even though some events happened. *)
+
+    exception Memprof_raised of exn
+    (** [Memprof_raised exn] is an asynchronous exception raised by
+       Memprof in case an exception [exn] is uncaught in a callback,
+       including other asynchronous exceptions such as {!Sys.Break}
+       and serious exceptions such as {!Stdlib.Out_of_memory} and
+       {!Stdlib.Stack_overflow}. As a general rule, this exception
+       should not be caught except as part of a catch-all handler
+       around isolated boundaries of your program. *)
+
 end

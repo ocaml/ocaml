@@ -31,4 +31,4 @@ val register_exception : string -> exn -> unit
    under the name [n]. C code can later retrieve a handle to
    the exception by calling [caml_named_value(n)]. The exception
    value thus obtained is suitable for passing as first argument
-   to [raise_constant] or [raise_with_arg]. *)
+   to [caml_raise_constant] or [caml_raise_with_arg]. *)
