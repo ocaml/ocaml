@@ -482,10 +482,7 @@ let rec build_as_type env p =
     match extra with
     | Tpat_type _ | Tpat_open _ | Tpat_unpack -> as_ty
     | Tpat_constraint cty ->
-      begin_def ();
-      let ty = instance cty.ctyp_type in
-      end_def ();
-      generalize_structure ty;
+      let ty = generic_instance cty.ctyp_type in
       (* This call to unify can't fail since the pattern is well typed. *)
       unify !env (instance as_ty) (instance ty);
       ty
