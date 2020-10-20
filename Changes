@@ -155,6 +155,10 @@ OCaml 4.12.0
   (Enguerrand Decorne, KC Sivaramakrishnan, Xavier Leroy, Stephen Dolan,
   David Allsopp, Nicolás Ojeda Bär review by Xavier Leroy, Nicolás Ojeda Bär)
 
+* #9674: Memprof: guarantee that an allocation callback is always run
+  in the same thread the allocation takes place
+  (Jacques-Henri Jourdan, review by Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that

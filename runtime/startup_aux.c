@@ -28,7 +28,6 @@
 #endif
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
-#include "caml/memprof.h"
 
 
 #ifdef _WIN32
