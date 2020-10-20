@@ -1,0 +1,13 @@
+T1: alloc
+    major alloc
+T2: alloc
+    minor alloc
+T2: minor GC
+    promoting...
+T1: major GC
+    major dealloc: major block
+    ...done promoting
+T2: done
+T1: major GC
+    major dealloc: promoted block
+T1: done

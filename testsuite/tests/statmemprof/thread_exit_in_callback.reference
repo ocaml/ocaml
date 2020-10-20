@@ -1,1 +1,0 @@
-Fatal error hook: Thread.exit called from a memprof callback.
