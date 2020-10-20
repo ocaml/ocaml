@@ -482,6 +482,11 @@ let rec build_as_type env p =
     match extra with
     | Tpat_type _ | Tpat_open _ | Tpat_unpack -> as_ty
     | Tpat_constraint cty ->
+      (* [generic_instance] can only be used if the variables of the original
+         type ([cty.ctyp_type] here) are not at [generic_level], which they are
+         here.
+         If we used [generic_instance] we would lose the sharing between
+         [instance ty] and [ty].  *)
       begin_def ();
       let ty = instance cty.ctyp_type in
       end_def ();
