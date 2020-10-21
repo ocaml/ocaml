@@ -191,7 +191,7 @@ CAMLprim value caml_obj_force_promote_to (value obj, value upto)
 
 CAMLprim value caml_obj_is_shared (value obj)
 {
-  return Val_int(Is_long(obj) || !Is_minor(obj));
+  return Val_int(Is_long(obj) || !Is_young(obj));
 }
 
 /* The following functions are used in stdlib/lazy.ml.

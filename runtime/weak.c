@@ -111,7 +111,7 @@ static void do_check_key_clean(value e, mlsize_t offset)
 
   value elt = Op_val(e)[offset];
   if (elt != caml_ephe_none && Is_block (elt) &&
-      !Is_minor (elt) && is_unmarked(elt)) {
+      !Is_young (elt) && is_unmarked(elt)) {
     Op_val(e)[offset] = caml_ephe_none;
     Op_val(e)[CAML_EPHE_DATA_OFFSET] = caml_ephe_none;
   }
@@ -139,15 +139,15 @@ void caml_ephe_clean (value v) {
             /* Do not short-circuit the pointer */
           } else {
             Op_val(v)[i] = child = f;
-            if (Is_block (f) && Is_minor (f))
+            if (Is_block (f) && Is_young (f))
               add_to_ephe_ref_table(&Caml_state->minor_tables->ephe_ref, v, i);
             goto ephemeron_again;
           }
         }
       }
 
-      // FIXME: Is_young -> Is_minor here is probably not what we want, fix this.
-      if (!Is_minor (child) && is_unmarked(child)) {
+      // FIXME: Is_young -> Is_young here is probably not what we want, fix this.
+      if (!Is_young (child) && is_unmarked(child)) {
         release_data = 1;
         Op_val(v)[i] = caml_ephe_none;
       }
@@ -174,10 +174,10 @@ static void clean_field (value e, mlsize_t offset)
 
 static void do_set (value e, mlsize_t offset, value v)
 {
-  if (Is_block(v) && Is_minor(v)) {
+  if (Is_block(v) && Is_young(v)) {
     value old = Op_val(e)[offset];
     Op_val(e)[offset] = v;
-    if (!(Is_block(old) && Is_minor(old)))
+    if (!(Is_block(old) && Is_young(old)))
       add_to_ephe_ref_table (&Caml_state->minor_tables->ephe_ref,
                              e, offset);
   } else {

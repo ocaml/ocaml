@@ -103,6 +103,8 @@ struct domain* caml_owner_of_young_block(value);
 struct domain* caml_domain_of_id(int);
 
 CAMLextern atomic_uintnat caml_num_domains_running;
+CAMLextern uintnat caml_minor_heaps_base;
+CAMLextern uintnat caml_minor_heaps_end;
 
 INLINE intnat caml_domain_alone()
 {
