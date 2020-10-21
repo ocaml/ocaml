@@ -266,7 +266,7 @@ module Simple : sig
     arg:lambda ->
     Half_simple.pattern ->
     mk_action:(vars:Ident.t list -> lambda) ->
-    vars:Ident.t list ->
+    patbound_action_vars:Ident.t list ->
     (pattern * lambda) list
 end = struct
   include Patterns.Simple
@@ -318,8 +318,9 @@ end = struct
      compiling in [do_for_multiple_match] where it is a tuple of
      variables.
   *)
-  let explode_or_pat ~arg (p : Half_simple.pattern) ~mk_action ~vars
-      : (pattern * lambda) list =
+  let explode_or_pat ~arg (p : Half_simple.pattern)
+        ~mk_action ~patbound_action_vars
+    : (pattern * lambda) list =
     let rec explode p aliases rem =
       let split_explode p aliases rem = explode (General.view p) aliases rem in
       match p.pat_desc with
@@ -373,7 +374,7 @@ end = struct
                   pat, bind_alias pat id ~arg ~action
               end
           in
-          fresh_clause None [] [] vars :: rem
+          fresh_clause None [] [] patbound_action_vars :: rem
     in
     explode (p : Half_simple.pattern :> General.pattern) [] []
 end
@@ -1569,9 +1570,9 @@ and precompile_or ~arg (cls : Simple.clause list) ors args def k =
               }
             in
             let pm_fv = pm_free_variables orpm in
-            let vars =
-              (* bound variables of the or-pattern and used in the orpm
-                 actions *)
+            let patbound_action_vars =
+              (* variables bound in the or-pattern
+                 that are used in the orpm actions *)
               Typedtree.pat_bound_idents_full orp
               |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
               |> List.map (fun (id, _, ty) ->
@@ -1584,12 +1585,13 @@ and precompile_or ~arg (cls : Simple.clause list) ors args def k =
             in
             let new_cases =
               Simple.explode_or_pat ~arg p
-                ~mk_action:mk_new_action ~vars:(List.map fst vars)
+                ~mk_action:mk_new_action
+                ~patbound_action_vars:(List.map fst patbound_action_vars)
               |> List.map (fun (p, act) -> ((p, new_patl), act)) in
             let handler =
               { provenance = [ [ orp ] ];
                 exit = or_num;
-                vars;
+                vars = patbound_action_vars;
                 pm = orpm
               }
             in
