@@ -296,10 +296,10 @@ CAMLprim value caml_make_vect(value len, value init)
     else {
       /* make sure init is not young, to avoid creating
        very many ref table entries */
-      if (Is_block(init) && Is_minor(init))
+      if (Is_block(init) && Is_young(init))
         caml_minor_collection();
 
-      CAMLassert(!(Is_block(init) && Is_minor(init)));
+      CAMLassert(!(Is_block(init) && Is_young(init)));
       res = caml_alloc(size, 0);
       /* We now know that [init] is not in the minor heap, so there is
          no need to call [caml_initialize]. */

@@ -475,12 +475,12 @@ CAMLprim value caml_continuation_use_noexc (value cont)
   value v;
   value null_stk = Val_ptr(NULL);
 
-  fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
+  fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_young(%d)", Is_block(cont), Tag_val(cont), Is_young(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
   /* this forms a barrier between execution and any other domains
      that might be marking this continuation */
-  if (!Is_minor(cont) ) caml_darken_cont(cont);
+  if (!Is_young(cont) ) caml_darken_cont(cont);
 
   /* at this stage the stack is assured to be marked */
   v = Op_val(cont)[0];

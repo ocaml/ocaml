@@ -212,18 +212,10 @@ typedef uint64_t uintnat;
    This must be at least [Max_young_wosize + 1]. */
 #define Minor_heap_min (Max_young_wosize + 1)
 
-/* There may be at most 1<<Minor_heap_sel_bits minor
-   heaps allocated */
-#define Minor_heap_sel_bits 7
-
-/* An entire minor heap must fit inside one region
-   of size 1 << Minor_heap_align_bits, which determines
-   the maximum size of the heap */
-#if SIZEOF_PTR  <= 4
-#define Minor_heap_align_bits 20
-#else
-#define Minor_heap_align_bits 24
-#endif
+/* Maximum size of the minor zone (words).
+   Must be greater than or equal to [Minor_heap_min].
+*/
+#define Minor_heap_max (1 << 28)
 
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144
@@ -264,7 +256,7 @@ typedef uint64_t uintnat;
 #define Percent_to_promote_with_GC 10
 
 /* Maximum number of domains */
-#define Max_domains (1 << Minor_heap_sel_bits)
+#define Max_domains 128
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)

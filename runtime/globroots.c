@@ -29,7 +29,7 @@ static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 CAMLexport caml_root caml_create_root(value init)
 {
   CAMLparam1(init);
-  
+
   value* v = (value*)caml_stat_alloc(sizeof(value));
 
   *v = init;
@@ -42,7 +42,7 @@ CAMLexport caml_root caml_create_root(value init)
 CAMLexport caml_root caml_create_root_noexc(value init)
 {
   CAMLparam1(init);
-  
+
   value* v = (value*)caml_stat_alloc_noexc(sizeof(value));
 
   if( v == NULL ) {
@@ -95,7 +95,7 @@ struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
    - Otherwise (the root contains a pointer outside of the heap or an integer),
      then neither [caml_global_roots_young] nor [caml_global_roots_old] contain
      it. */
-    
+
 /* Insertion and deletion */
 
 Caml_inline void caml_insert_global_root(struct skiplist * list, value * r)
@@ -307,4 +307,3 @@ void caml_scan_global_young_roots(scanning_action f, void* fdata)
 
   caml_skiplist_empty(&caml_global_roots_young);
 }
-  
