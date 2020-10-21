@@ -134,9 +134,10 @@ let _ = fun a b -> match a, b with
 - : bool -> bool -> bool * (bool * bool) = <fun>
 |}]
 
-(* here flattening is an optimisation,
-   as we avoid allocating the tuple in the first case,
-   and only allocate in the second case *)
+(* here flattening is an optimisation: the allocation is moved as an
+   alias within each branch, and in the first branch it is unused and
+   will be removed by simplification, so the final code
+   (see the -dlambda output) will not allocate in the first branch. *)
 let _ = fun a b -> match a, b with
 | (true as x, _) as _p -> x, (true, true)
 | (false as x, _) as p -> x, p
