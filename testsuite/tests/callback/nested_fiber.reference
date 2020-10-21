@@ -1,2 +1,5 @@
-1
-2
+g() check 2047
+g() returned: 1
+f() check: 15
+f() returned: 2
+() check: 15
