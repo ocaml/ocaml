@@ -100,13 +100,13 @@ domain_state_ptr  .req    r11
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#define TEXT_SECTION(name) .section .text.caml.##name,"ax",%progbits
 #else
 #define TEXT_SECTION(name)
 #endif
 
 #define FUNCTION(name) \
-        TEXT_SECTION(caml.##name); \
+        TEXT_SECTION(name); \
         .align 2; \
         .globl name; \
         .type name, %function; \
@@ -132,6 +132,7 @@ caml_hot__code_end:
 #define Caml_state(var) [domain_state_ptr, 8*domain_field_caml_##var]
 
 /* Allocation functions and GC interface */
+        TEXT_SECTION(caml_system__code_begin)
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
@@ -424,6 +425,7 @@ FUNCTION(caml_ml_array_bound_error)
         CFI_ENDPROC
         .size   caml_ml_array_bound_error, .-caml_ml_array_bound_error
 
+        TEXT_SECTION(caml_system__code_end)
         .globl  caml_system__code_end
 caml_system__code_end:
 

@@ -58,7 +58,7 @@
 #define GREL(r) r@GOTPCREL
 #define GCALL(r) r@PLT
 #if defined(FUNCTION_SECTIONS)
-#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#define TEXT_SECTION(name) .section .text.caml.##name,"ax",%progbits
 #else
 #define TEXT_SECTION(name)
 #endif
@@ -66,7 +66,7 @@
 #define EIGHT_ALIGN 8
 #define SIXTEEN_ALIGN 16
 #define FUNCTION(name) \
-        TEXT_SECTION(caml.##name); \
+        TEXT_SECTION(name); \
         .globl name; \
         .type name,@function; \
         .align FUNCTION_ALIGN; \
@@ -292,6 +292,8 @@
 #define C_ARG_4 %rcx
 #endif
 
+        .text
+
 #if defined(FUNCTION_SECTIONS)
         TEXT_SECTION(caml_hot__code_begin)
         .globl  G(caml_hot__code_begin)
@@ -302,8 +304,7 @@ G(caml_hot__code_begin):
 G(caml_hot__code_end):
 #endif
 
-        .text
-
+        TEXT_SECTION(caml_system__code_begin)
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
         ret  /* just one instruction, so that debuggers don't display
@@ -658,6 +659,7 @@ CFI_STARTPROC
 CFI_ENDPROC
 ENDFUNCTION(G(caml_ml_array_bound_error))
 
+        TEXT_SECTION(caml_system__code_end)
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
 
