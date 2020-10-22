@@ -33,6 +33,9 @@ val some : 'a -> 'a option
 val value : 'a option -> default:'a -> 'a
 (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
 
+val value_or_else : 'a option -> (unit -> 'a) -> 'a
+(** [value_or_else o f] is [v] if [o] is [Some v] and [f ()] otherwise. *)
+
 val get : 'a option -> 'a
 (** [get o] is [v] if [o] is [Some v] and @raise Invalid_argument otherwise. *)
 
