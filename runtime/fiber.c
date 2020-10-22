@@ -20,6 +20,12 @@
 #include "frame_descriptors.h"
 #endif
 
+#ifdef DEBUG
+#define fiber_debug_log(...) caml_gc_log(__VA_ARGS__)
+#else
+#define fiber_debug_log(...)
+#endif
+
 /* allocate a stack with at least "wosize" usable words of stack */
 static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
 {
@@ -60,7 +66,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 
   if (!stack) caml_raise_out_of_memory();
 
-  caml_gc_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
+  fiber_debug_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
 
   return Val_ptr(stack);
 }
@@ -239,25 +245,27 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
 /* Update absolute exception pointers for new stack*/
 static void rewrite_exception_stack(struct stack_info *old_stack, value** exn_ptr, struct stack_info *new_stack)
 {
-  caml_gc_log ("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
-  caml_gc_log ("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
+  fiber_debug_log ("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
+  fiber_debug_log ("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
   if(exn_ptr) {
-    caml_gc_log ("*exn_ptr=%p", *exn_ptr);
+    fiber_debug_log ("*exn_ptr=%p", *exn_ptr);
 
     while (Stack_base(old_stack) < *exn_ptr && *exn_ptr <= Stack_high(old_stack)) {
+#ifdef DEBUG
       value* old_val = *exn_ptr;
+#endif
       *exn_ptr = Stack_high(new_stack) - (Stack_high(old_stack) - *exn_ptr);
 
-      caml_gc_log ("Rewriting %p to %p", old_val, *exn_ptr);
+      fiber_debug_log ("Rewriting %p to %p", old_val, *exn_ptr);
 
       CAMLassert(Stack_base(new_stack) < *exn_ptr);
       CAMLassert((value*)*exn_ptr <= Stack_high(new_stack));
 
       exn_ptr = (value**)*exn_ptr;
     }
-    caml_gc_log ("finished with *exn_ptr=%p", *exn_ptr);
+    fiber_debug_log ("finished with *exn_ptr=%p", *exn_ptr);
   } else {
-    caml_gc_log ("exn_ptr is null");
+    fiber_debug_log ("exn_ptr is null");
   }
 }
 #endif
@@ -394,9 +402,7 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use (value cont)
 {
-#ifdef DEBUG
-  caml_gc_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
-#endif
+  fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
   value v;
