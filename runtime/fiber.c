@@ -48,6 +48,21 @@ static inline struct stack_info* alloc_for_stack (mlsize_t wosize)
                                sizeof(struct stack_handler));
 }
 
+static inline intnat stack_size_class (mlsize_t wosize)
+{
+  intnat size_class = 0;
+
+  if (wosize % caml_fiber_wsz != 0)
+    return -1;
+  wosize = wosize / caml_fiber_wsz;
+  do {
+    if ((wosize = wosize >> 1) == 0)
+      return size_class;
+  } while(size_class++ < NUM_STACK_SIZE_CLASSES);
+
+  return -1;
+}
+
 /* allocate a stack with at least "wosize" usable words of stack */
 static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
 {
@@ -58,15 +73,15 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
-  if (wosize % caml_fiber_wsz == 0 &&
-      (size_class = wosize / caml_fiber_wsz - 1) < NUM_STACK_SIZE_CLASSES) {
-    if (Caml_state->stack_cache[size_class] != NULL) {
+  size_class = stack_size_class (wosize);
+  if (size_class >= 0) {
+    if (Caml_state->stack_cache[size_class] == NULL) {
+      stack = alloc_for_stack(wosize);
+      stack->size_class = size_class;
+    } else {
       stack = Caml_state->stack_cache[size_class];
       CAMLassert(stack->size_class == size_class);
       Caml_state->stack_cache[size_class] = stack->handler->parent;
-    } else {
-      stack = alloc_for_stack(wosize);
-      stack->size_class = size_class;
     }
   } else {
     stack = alloc_for_stack(wosize);
