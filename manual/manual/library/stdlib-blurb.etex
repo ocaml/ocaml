@@ -217,6 +217,6 @@ be called from C \\
 \input{Uchar.tex}
 \input{Unit.tex}
 \input{Weak.tex}
-\input{Ocamloperators.tex}
+\input{Ocaml_operators.tex}
 }
 \fi
