@@ -46,7 +46,8 @@
 *.md                     typo.missing-header
 README*                  typo.missing-header
 *.adoc                   typo.missing-header
-stdlib/*.mld             typo.missing-header
+doc/*.mld                typo.missing-header
+doc/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
 
 *.adoc                   typo.long-line=may

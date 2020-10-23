@@ -877,15 +877,18 @@ partialclean::
 
 .PHONY: html_doc
 html_doc: ocamldoc
-	$(MAKE) -C ocamldoc $@
-	@echo "documentation is in ./ocamldoc/stdlib_html/"
+	$(MAKE) -C doc html
+	@echo "documentation is in ./doc/html/"
 
 .PHONY: manpages
 manpages:
-	$(MAKE) -C ocamldoc $@
+	$(MAKE) -C doc man
 
 partialclean::
 	$(MAKE) -C ocamldoc clean
+
+partialclean::
+	$(MAKE) -C doc clean
 
 # The extra libraries
 

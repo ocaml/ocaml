@@ -93,6 +93,13 @@ _build
 /manual/manual/cmds/warnings-help.etex
 /manual/manual/warnings-help.etex
 
+/doc/man
+/doc/html
+/doc/build
+/doc/html
+/doc/latex
+/doc/Compiler_libs.mld
+
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
 /ocamldoc/odoc
@@ -105,10 +112,6 @@ _build
 /ocamldoc/odoc_text_lexer.ml
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
-/ocamldoc/stdlib_man
-/ocamldoc/stdlib_html
-/ocamldoc/stdlib_latex
-/ocamldoc/stdlib_texi
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
 /ocamldoc/test_latex

@@ -220,18 +220,6 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
-.PHONY: manpages
-manpages: stdlib_man/Stdlib.3o
-
-.PHONY: html_doc
-html_doc: stdlib_html/Stdlib.html
-
-.PHONY: pdf_doc
-pdf_doc: stdlib_latex/stdlib.pdf
-
-.PHONY: texi_doc
-texi_doc: stdlib_texi/stdlib.texi
-
 .PHONY: dot
 dot: ocamldoc.dot
 
@@ -394,50 +382,6 @@ test_texi:
 #######################
 SRC=$(ROOTDIR)
 
-# Documented modules: stdlib + otherlib + utils(?) + parsing(for compiler-libs)
-
-include Makefile.docfiles
-
-stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_man
-	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" -man-mini \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_html
-	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_texi
-	$(OCAMLDOC_RUN) -texi -o stdlib_texi/stdlib.texi -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-
-stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL)
-	$(MKDIR) stdlib_latex
-	$(OCAMLDOC_RUN) -latex -o stdlib_latex/stdlib.tex -nostdlib \
-	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
-	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" \
-	$(DOC_ALL_TEXT:%=-text %) \
-	$(DOC_ALL_MLIS)
-
-stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
-	cd stdlib_latex && pdflatex stdlib && pdflatex stdlib
-
 
 .PHONY: autotest_stdlib
 autotest_stdlib:
@@ -447,7 +391,6 @@ autotest_stdlib:
 	$(ROOTDIR)/stdlib/*.mli \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
-
 
 # odoc rules :
 ##############

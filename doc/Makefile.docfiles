@@ -1,0 +1,59 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*             Florian Angeletti, projet Cambium, Inria Paris             *
+#*                                                                        *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+define capitalize
+$(shell echo $(1) | sed "s/\<./\U&/g")
+endef
+
+
+str_MLIS := str.mli
+unix_MLIS := unix.mli unixLabels.mli
+dynlink_MLIS := dynlink.mli
+thread_MLIS := \
+	thread.mli condition.mli mutex.mli event.mli \
+	threadUnix.mli semaphore.mli
+
+STDLIB=$(filter-out stdlib__pervasives, $(STDLIB_MODULES))
+
+stdlib_UNPREFIXED=$(STDLIB:stdlib__%=%)
+libref= \
+	$(stdlib_UNPREFIXED) \
+	$(str_MLIS:%.mli=%) \
+	$(unix_MLIS:%.mli=%) \
+	$(dynlink_MLIS:%.mli=%) \
+	$(thread_MLIS:%.mli=%)
+libref_EXTRA=stdlib__pervasives
+libref_TEXT=Ocaml_operators
+libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
+
+PARSING_MLIS := $(filter-out camlinternal%, \
+	$(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
+)
+UTILS_MLIS := $(notdir $(wildcard $(ROOTDIR)/utils/*.mli))
+DRIVER_MLIS := pparse.mli
+
+compilerlibref_MLIS=\
+  $(PARSING_MLIS) \
+  $(UTILS_MLIS) \
+  $(DRIVER_MLIS)
+compilerlibref=$(compilerlibref_MLIS:%.mli=%)
+compilerlibref_TEXT=Compiler_libs
+compilerlibref_C=$(call capitalize,$(compilerlibref))
+
+ALL_LIBREF= $(libref_TEXT:%=libref/%) $(libref:%=libref/%)
+ALL_COMPILERLIBREF= \
+  $(compilerlibref_TEXT:%=compilerlibref/%) \
+  $(compilerlibref:%=compilerlibref/%)
+ALL_DOC= $(ALL_LIBREF) $(ALL_COMPILERLIBREF)

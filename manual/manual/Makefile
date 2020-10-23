@@ -11,9 +11,6 @@ OCAMLDOC = $(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
   -pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk"
 
 
-# Import the list of mli files for the library docs
-include $(SRC)/ocamldoc/Makefile.docfiles
-
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
 
@@ -29,8 +26,21 @@ INFO_FLAGS = -fix -exec xxdate.exe -info -w 79 -s
 HTML_FLAGS = -fix -exec xxdate.exe -O
 TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 
+# Copy the documentation files from SRC/doc
+.PHONY: html_files
+.PHONY: latex_files
+latex_files:
+	$(MAKE) -C $(SRC)/doc latex
+	cp $(SRC)/doc/latex/*.tex library
+html_files:
+	$(MAKE) -C $(SRC)/doc html
+	mkdir -p htmlman/libref
+	cp -r $(SRC)/doc/html/libref $(SRC)/doc/html/compilerlibref htmlman
+	cp style.css htmlman/libref
+	cp style.css htmlman/compilerlibref
 
-manual: files
+
+manual: files latex_files
 	cd texstuff \
 	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
 
@@ -40,10 +50,9 @@ index:
 	  && makeindex manual.idx \
 	  && makeindex manual.kwd.idx
 
-
 # libref/style.css and comilerlibref/style.css are used as witness
 # for the generation of the html stdlib and compilerlibs reference.
-html: htmlman/libref/style.css htmlman/compilerlibref/style.css etex-files
+html: etex-files html_files
 	cd htmlman \
 	  && $(HEVEA) $(HTML_FLAGS) \
 	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
@@ -51,38 +60,7 @@ html: htmlman/libref/style.css htmlman/compilerlibref/style.css etex-files
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
 
-htmlman/libref/style.css: style.css $(STDLIB_MLIS) $(DOC_STDLIB_TEXT)
-	mkdir -p htmlman/libref
-	$(OCAMLDOC) -colorize-code -sort -html \
-	  -charset "UTF-8" \
-	  -d htmlman/libref \
-	  $(DOC_STDLIB_INCLUDES) \
-          $(DOC_STDLIB_TEXT:%=-text %) \
-          $(STDLIB_MLIS)
-	cp style.css $@
-
-COMPILERLIBS_MODULES=$(shell echo $(basename $(notdir $(COMPILERLIBS_MLIS))) \
-| sed "s/\<./\U&/g")
-
-library/compiler_libs.txt: library/compiler_libs.mld
-	cp $< $@ && echo "{!modules:$(COMPILERLIBS_MODULES)}" >> $@
-
-
-htmlman/compilerlibref/style.css: library/compiler_libs.txt style.css \
-  $(COMPILERLIBS_MLIS)
-	mkdir -p htmlman/compilerlibref
-	$(OCAMLDOC) -colorize-code -sort -html \
-	  -charset "UTF-8" \
-	  -d htmlman/compilerlibref \
-	  -I $(SRC)/stdlib \
-	  $(DOC_COMPILERLIBS_INCLUDES) \
-          -intro library/compiler_libs.txt \
-          library/compiler_libs.txt \
-	  $(COMPILERLIBS_MLIS)
-	cp style.css $@
-
-
-info: files
+info: files latex_files
 	cd infoman \
 	  && rm -f ocaml.info* \
 	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
@@ -94,7 +72,7 @@ info: files
 	  && rm -f ocaml.info.tmp ocaml.info.body \
 	  && gzip -9 ocaml.info*
 
-text: files
+text: files latex_files
 	cd textman \
 	  && $(HEVEA) $(TEXT_FLAGS) \
 	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
