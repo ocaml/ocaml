@@ -22,6 +22,50 @@
 #include "caml/globroots.h"
 #include "caml/skiplist.h"
 
+static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
+
+/* legacy multicore API that we need to fix */
+CAMLexport caml_root caml_create_root(value init)
+{
+  CAMLparam1(init);
+  
+  value* v = (value*)malloc(sizeof(value));
+
+  *v = init;
+
+  caml_register_global_root(v);
+
+  CAMLreturnT(caml_root, (caml_root)v);
+}
+
+CAMLexport caml_root caml_create_root_noexc(value init)
+{
+  CAMLparam1(init);
+
+  caml_root r = caml_create_root(init);
+
+  CAMLreturnT(caml_root, r);
+}
+
+CAMLexport void caml_delete_root(caml_root root)
+{
+  value* v = (value*)root;
+  Assert(root);
+  /* the root will be removed from roots_all and freed at the next GC */
+  caml_remove_global_root(v);
+  free(v);
+}
+
+CAMLexport value caml_read_root(caml_root root)
+{
+  return *((value*)root);
+}
+
+CAMLexport void caml_modify_root(caml_root root, value newv)
+{
+  caml_modify((value*)root, newv);
+}
+
 /* The three global root lists.
    Each is represented by a skip list with the key being the address
    of the root.  (The associated data field is unused.) */
@@ -32,6 +76,8 @@ struct skiplist caml_global_roots_young = SKIPLIST_STATIC_INITIALIZER;
                   /* generational roots pointing to minor or major heap */
 struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
                   /* generational roots pointing to major heap */
+struct skiplist caml_global_roots_dyn = SKIPLIST_STATIC_INITIALIZER;
+                  /* generational roots pointing to major heap */                  
 
 /* The invariant of the generational roots is the following:
    - If the global root contains a pointer to the minor heap, then the root is
@@ -47,12 +93,16 @@ struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
 
 Caml_inline void caml_insert_global_root(struct skiplist * list, value * r)
 {
+  caml_plat_lock(&roots_mutex);
   caml_skiplist_insert(list, (uintnat) r, 0);
+  caml_plat_unlock(&roots_mutex);
 }
 
 Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
 {
+  caml_plat_lock(&roots_mutex);
   caml_skiplist_remove(list, (uintnat) r);
+  caml_plat_unlock(&roots_mutex);
 }
 
 /* Iterate a GC scanning action over a global root list */
@@ -60,10 +110,12 @@ Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
 static void caml_iterate_global_roots(scanning_action f,
                                       struct skiplist * rootlist, void* fdata)
 {
+  caml_plat_lock(&roots_mutex);
   FOREACH_SKIPLIST_ELEMENT(e, rootlist, {
       value * r = (value *) (e->key);
       f(fdata, *r, r);
     })
+  caml_plat_unlock(&roots_mutex);
 }
 
 /* Register a global C root of the mutable kind */
@@ -72,6 +124,7 @@ CAMLexport void caml_register_global_root(value *r)
 {
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   caml_insert_global_root(&caml_global_roots, r);
+  caml_initialize(r, *r);
 }
 
 /* Un-register a global C root of the mutable kind */
@@ -156,7 +209,13 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
       break;
   }
 
-  *r = newval;
+  caml_modify(r, newval);
+}
+
+void caml_register_dyn_global(void *v) {
+  caml_plat_lock(&roots_mutex);
+  caml_insert_global_root(&caml_global_roots_dyn, v);
+  caml_plat_unlock(&roots_mutex);
 }
 
 /* Scan all global roots */
@@ -164,6 +223,7 @@ void caml_scan_global_roots(scanning_action f, void* fdata) {
   caml_iterate_global_roots(f, &caml_global_roots, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_young, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_old, fdata);
+  caml_iterate_global_roots(f, &caml_global_roots_dyn, fdata);
 }
 
 /* Scan global roots for a minor collection */
@@ -173,6 +233,8 @@ void caml_scan_global_young_roots(scanning_action f, void* fdata)
 
   caml_iterate_global_roots(f, &caml_global_roots, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_young, fdata);
+  caml_iterate_global_roots(f, &caml_global_roots_dyn, fdata);
+
   /* Move young roots to old roots */
   FOREACH_SKIPLIST_ELEMENT(e, &caml_global_roots_young, {
       value * r = (value *) (e->key);
