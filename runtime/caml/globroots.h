@@ -26,6 +26,10 @@
 void caml_scan_global_roots(scanning_action f, void* fdata);
 void caml_scan_global_young_roots(scanning_action f, void* fdata);
 
+#ifdef NATIVE_CODE
+void caml_register_dyn_global(void *v);
+#endif
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_GLOBROOTS_H */
