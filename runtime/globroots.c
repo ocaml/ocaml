@@ -21,6 +21,7 @@
 #include "caml/roots.h"
 #include "caml/globroots.h"
 #include "caml/skiplist.h"
+#include "caml/stack.h"
 
 static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
@@ -76,8 +77,6 @@ struct skiplist caml_global_roots_young = SKIPLIST_STATIC_INITIALIZER;
                   /* generational roots pointing to minor or major heap */
 struct skiplist caml_global_roots_old = SKIPLIST_STATIC_INITIALIZER;
                   /* generational roots pointing to major heap */
-struct skiplist caml_global_roots_dyn = SKIPLIST_STATIC_INITIALIZER;
-                  /* generational roots pointing to major heap */                  
 
 /* The invariant of the generational roots is the following:
    - If the global root contains a pointer to the minor heap, then the root is
@@ -212,18 +211,76 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
   caml_modify(r, newval);
 }
 
+#ifdef NATIVE_CODE
+
+/* Linked-list of natdynlink'd globals */
+
+typedef struct link {
+  void *data;
+  struct link *next;
+} link;
+
+static link *cons(void *data, link *tl) {
+  link *lnk = caml_stat_alloc(sizeof(link));
+  lnk->data = data;
+  lnk->next = tl;
+  return lnk;
+}
+
+#define iter_list(list,lnk) \
+  for (lnk = list; lnk != NULL; lnk = lnk->next)
+
+
+/* protected by roots_mutex */
+static link * caml_dyn_globals = NULL;
+
 void caml_register_dyn_global(void *v) {
   caml_plat_lock(&roots_mutex);
-  caml_insert_global_root(&caml_global_roots_dyn, v);
+  caml_dyn_globals = cons((void*) v,caml_dyn_globals);
   caml_plat_unlock(&roots_mutex);
 }
+
+static void scan_native_globals(scanning_action f, void* fdata)
+{
+  int i, j;
+  static link* dyn_globals;
+  value* glob;
+  link* lnk;
+
+  caml_plat_lock(&roots_mutex);
+  dyn_globals = caml_dyn_globals;
+  caml_plat_unlock(&roots_mutex);
+
+  /* The global roots */
+  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
+    }
+  }
+
+  /* Dynamic (natdynlink) global roots */
+  iter_list(dyn_globals, lnk) {
+    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
+    }
+  }
+}
+
+#endif
 
 /* Scan all global roots */
 void caml_scan_global_roots(scanning_action f, void* fdata) {
   caml_iterate_global_roots(f, &caml_global_roots, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_young, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_old, fdata);
-  caml_iterate_global_roots(f, &caml_global_roots_dyn, fdata);
+
+  #ifdef NATIVE_CODE
+  scan_native_globals(f, fdata);
+  #endif
 }
 
 /* Scan global roots for a minor collection */
@@ -233,7 +290,6 @@ void caml_scan_global_young_roots(scanning_action f, void* fdata)
 
   caml_iterate_global_roots(f, &caml_global_roots, fdata);
   caml_iterate_global_roots(f, &caml_global_roots_young, fdata);
-  caml_iterate_global_roots(f, &caml_global_roots_dyn, fdata);
 
   /* Move young roots to old roots */
   FOREACH_SKIPLIST_ELEMENT(e, &caml_global_roots_young, {
