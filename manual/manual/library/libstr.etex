@@ -19,14 +19,6 @@ For interactive use of the "str" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"str.cma\";;".
 
-\ifouthtml
-\begin{links}
-\item \ahref{libref/Str.html}{Module \texttt{Str}: regular expressions and string processing}
-\end{links}
-
-\else
-\ocamldocinputstart
-\input{Str.tex}
-\fi
-
-
+\begin{linklist}
+\stddocitem{Str}{regular expressions and string processing}
+\end{linklist}

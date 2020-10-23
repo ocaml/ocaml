@@ -291,5 +291,13 @@
 
 \newenvironment{maintitle}{\@open{div}{class="maintitle"}}{\@close{div}}
 
-%%% References to modules in the standard library
-\newcommand{\stdmoduleref}[1]{\ahref{libref/#1.html}{\texttt{#1}}}
+%%% Linking to modules
+
+\newenvironment{linklist}{\begin{links}}{\end{links}}
+
+\newcommand{\moduleref}[3]{\ahref{#1/#2.html}{#3}}
+\newcommand{\stdmoduleref}[1]{\moduleref{libref}{#1}{\texttt{#1}}}
+
+\newcommand{\docitem}[3]{\item \moduleref{#1}{#2}{Module \texttt{#2}}: #3}
+\newcommand{\stddocitem}[2]{\docitem{libref}{#1}{#2}}
+\newcommand{\compilerdocitem}[2]{\docitem{compilerlibref}{#1}{#2}}

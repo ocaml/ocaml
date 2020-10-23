@@ -9,11 +9,10 @@ provided.  Refer to sections 2~and~3 of the Unix manual for more
 details on the behavior of these functions.
 
 \ifouthtml
-\begin{links}
-\item \ahref{libref/Unix.html}{Module \texttt{Unix}: Unix system calls}
-\item \ahref{libref/UnixLabels.html}{Module \texttt{UnixLabels}: Labeled
-   Unix system calls}
-\end{links}
+\begin{linklist}
+\stddocitem{Unix}{Unix system calls}
+\stddocitem{UnixLabels}{Labeled Unix system calls}
+\end{linklist}
 \fi
 
 Not all functions are provided by all Unix variants. If some functions
@@ -39,20 +38,18 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \begin{latexonly}
-{
-\ocamldocinputstart
-\input{Unix.tex}
+\begin{linklist}
+\stddocitem{Unix}{Unix system calls}
 
-\section{s:Module \texttt{UnixLabels}: labelized version of the interface}
+\section{Module \texttt{UnixLabels}: labelized version of the interface}
 \label{UnixLabels}
 \index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
 
 This module is identical to "Unix"~(\ref{Unix}), and only differs by
 the addition of labels. You may see these labels directly by looking
 at "unixLabels.mli", or by using the "ocamlbrowser" tool.
-
 \newpage
-}
+\end{linklist}
 \end{latexonly}
 
 \begin{windows}
