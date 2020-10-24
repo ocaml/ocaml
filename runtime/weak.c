@@ -238,7 +238,7 @@ CAMLexport void caml_ephemeron_set_key(value ar, mlsize_t offset, value k)
 
   offset += CAML_EPHE_FIRST_KEY;
 
-  if( caml_gc_phase == Phase_mark && ephe_list_pure
+  if( caml_gc_phase == Phase_mark && caml_ephe_list_pure
       && Field(ar, CAML_EPHE_DATA_OFFSET) != caml_ephe_none
       && Is_White_During_Mark(Field(ar, offset))
       && !Is_White_During_Mark(k) ){
@@ -263,7 +263,7 @@ CAMLexport void caml_ephemeron_unset_key(value ar, mlsize_t offset)
   offset += CAML_EPHE_FIRST_KEY;
 
   if( caml_gc_phase == Phase_mark
-      && ephe_list_pure
+      && caml_ephe_list_pure
       && Field(ar, CAML_EPHE_DATA_OFFSET) != caml_ephe_none
       && Is_White_During_Mark(Field(ar, offset)) ){
     /* the ephemeron could be in the set (2) because of a white key and not have one anymore after set */
@@ -585,7 +585,7 @@ CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
   offset_d += CAML_EPHE_FIRST_KEY;
 
   if ( caml_gc_phase == Phase_mark
-       && ephe_list_pure
+       && caml_ephe_list_pure
        && Field(ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none ){
 
     dest_has_white_value = 0;
