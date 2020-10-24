@@ -26,6 +26,9 @@ Working version
 
 ### Bug fixes:
 
+* #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* function during
+   Mark phase (François Bobot, reported by Stephen Dolan, review by Damien Doligez)
+
 OCaml 4.12.0
 ------------
 
