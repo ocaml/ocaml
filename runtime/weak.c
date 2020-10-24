@@ -107,23 +107,6 @@ Caml_inline int Is_White_During_Mark(value x)
 #endif
 }
 
-/* True if ar could be in the set (1) (Cf. major_gc.c) */
-static int already_marked (value ar)
-{
-  value old_data;
-  CAMLassert (caml_gc_phase == Phase_mark);
-
-  old_data = Field (ar, CAML_EPHE_DATA_OFFSET);
-  return ( old_data == caml_ephe_none ||
-           (Is_block(old_data) &&
-#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
-            !Is_young (old_data) &&
-#else
-            Is_in_heap(old_data) &&
-#endif
-            Is_white_val(old_data)) );
-}
-
 /* [len] is a number of words (fields) */
 CAMLexport value caml_ephemeron_create (mlsize_t len)
 {
@@ -238,11 +221,13 @@ CAMLexport void caml_ephemeron_set_key(value ar, mlsize_t offset, value k)
 
   offset += CAML_EPHE_FIRST_KEY;
 
-  if( caml_gc_phase == Phase_mark && caml_ephe_list_pure
+  if( caml_gc_phase == Phase_mark
+      && caml_ephe_list_pure
       && Field(ar, CAML_EPHE_DATA_OFFSET) != caml_ephe_none
+      && !Is_white_val(ar)
       && Is_White_During_Mark(Field(ar, offset))
-      && !Is_White_During_Mark(k) ){
-    /* the ephemeron could be in the set (2) because of a white key and not have one anymore after set */
+      && !Is_White_During_Mark(k)){
+    /* the ephemeron could be in the set (2) only because of a white key and not have one anymore after set */
     caml_darken(Field(ar, CAML_EPHE_DATA_OFFSET), NULL);
   };
   if(caml_gc_phase == Phase_clean) do_check_key_clean(ar, offset);
@@ -265,8 +250,10 @@ CAMLexport void caml_ephemeron_unset_key(value ar, mlsize_t offset)
   if( caml_gc_phase == Phase_mark
       && caml_ephe_list_pure
       && Field(ar, CAML_EPHE_DATA_OFFSET) != caml_ephe_none
+      && !Is_white_val(ar)
       && Is_White_During_Mark(Field(ar, offset)) ){
-    /* the ephemeron could be in the set (2) because of a white key and not have one anymore after set */
+    /* the ephemeron could be in the set (2) only because of this white key and
+       not have one anymore after unsetting it */
     caml_darken(Field(ar, CAML_EPHE_DATA_OFFSET), NULL);
   };
 
@@ -301,9 +288,11 @@ CAMLprim value caml_weak_set (value ar, value n, value el)
 
 CAMLexport void caml_ephemeron_set_data (value ar, value el)
 {
+  value old_data;
   CAMLassert_valid_ephemeron(ar);
 
-  if (caml_gc_phase == Phase_mark && already_marked(ar)) caml_darken (el, NULL);
+  old_data = Field (ar, CAML_EPHE_DATA_OFFSET);
+  if (caml_gc_phase == Phase_mark && !Is_White_During_Mark(old_data)) caml_darken (el, NULL);
   if (caml_gc_phase == Phase_clean){
     /* During this phase since we don't know which ephemerons have been
        cleaned we always need to check it. */
@@ -586,25 +575,31 @@ CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
 
   if ( caml_gc_phase == Phase_mark
        && caml_ephe_list_pure
-       && Field(ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none ){
+       && Field(ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none
+       && !Is_white_val(ard)
+       ){
+    /* If the destination is in set (2) it is because of a white key */
 
     dest_has_white_value = 0;
 
     for(i = 0; i < length; i++){
-      dest_has_white_value &= Is_White_During_Mark(Field(ard, offset_d + i));
+      dest_has_white_value |= Is_White_During_Mark(Field(ard, offset_d + i));
     };
+    /* test if the destination can't be in set (2) because of the keys that are going to be set */
     if(!dest_has_white_value) goto No_darkening;
     for(i = 0; i < length; i++){
+      /* test if the source is going to bring a white key to replace the one set */
       if(Is_White_During_Mark(Field(ars, offset_s + i))) goto No_darkening;
     };
-    /* the destination ephemeron could be in the set (2) because of a white key and not have one anymore after blitting */
+    /* the destination ephemeron could be in the set (2) because of a white key replaced and not have one anymore after. */
     caml_darken(Field(ard, CAML_EPHE_DATA_OFFSET),NULL);
   }
   No_darkening:
+
   if (caml_gc_phase == Phase_clean){
     caml_ephe_clean_partial(ars, offset_s, offset_s + length);
     /* We don't need to clean the keys that are about to be overwritten,
-       except where cleaning them could result in releasing the data,
+       except when cleaning them could result in releasing the data,
        which can't happen if data is already released. */
     if (Field (ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none)
       caml_ephe_clean_partial(ard, offset_d, offset_d + length);
@@ -637,7 +632,7 @@ CAMLprim value caml_weak_blit (value ars, value ofs,
 
 CAMLexport void caml_ephemeron_blit_data (value ars, value ard)
 {
-  value data;
+  value data, old_data;
   CAMLassert_valid_ephemeron(ars);
   CAMLassert_valid_ephemeron(ard);
 
@@ -647,9 +642,10 @@ CAMLexport void caml_ephemeron_blit_data (value ars, value ard)
   };
 
   data = Field (ars, CAML_EPHE_DATA_OFFSET);
+  old_data = Field (ard, CAML_EPHE_DATA_OFFSET);
   if (caml_gc_phase == Phase_mark &&
       data != caml_ephe_none &&
-      already_marked(ard))
+      !Is_White_During_Mark(old_data))
     caml_darken (data, NULL);
 
   do_set (ard, CAML_EPHE_DATA_OFFSET, data);
