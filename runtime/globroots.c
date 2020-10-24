@@ -123,7 +123,7 @@ CAMLexport void caml_register_global_root(value *r)
 {
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   caml_insert_global_root(&caml_global_roots, r);
-  caml_initialize(r, *r);
+  caml_modify(r, *r);
 }
 
 /* Un-register a global C root of the mutable kind */
