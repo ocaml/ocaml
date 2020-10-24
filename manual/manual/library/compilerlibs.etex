@@ -45,8 +45,8 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 % Ast_helper is excluded from the PDF and text manuals.
 % It is over 20 pages long and does not have doc-comments. It is expected
 % that Ast_helper will be only useful in the HTML manual (to look up signatures).
-% \input{Asthelper.tex}
-\input{Astmapper.tex}
+% \input{Ast_helper.tex}
+\input{Ast_mapper.tex}
 \input{Asttypes.tex}
 % \input{Lexer.tex}
 \input{Location.tex}
