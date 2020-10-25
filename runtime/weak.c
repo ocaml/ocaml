@@ -65,23 +65,37 @@ CAMLexport mlsize_t caml_ephemeron_num_keys(value eph)
   return Wosize_val (eph) - CAML_EPHE_FIRST_KEY;
 }
 
-/** The minor heap is considered alive. */
+/* The minor heap is considered alive.
+   Outside minor and major heap it is considered alive (out of reach of the GC). */
+Caml_inline int Test_if_its_white(value x){
+  CAMLassert (x != caml_ephe_none);
+  if (!Is_block(x)) return 0;
+#ifdef NO_NAKED_POINTERS
+  if (Is_young (x))) return 0;
+#else
+  if (!Is_in_heap(x)) return 0;
+#endif
+  if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
+  return Is_white_val(x);
+}
 
-/** Outside minor and major heap, x must be black. */
+/* If it is not white during clean phase it is dead, i.e it will be swept */
 Caml_inline int Is_Dead_during_clean(value x)
 {
-  CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
-  if (!Is_block(x)) return 0;
-  if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
-#ifdef NO_NAKED_POINTERS
-  return Is_white_val(x) && !Is_young (x);
-#else
-  return Is_white_val(x) && Is_in_heap (x);
-#endif
+  return Test_if_its_white(x);
 }
+
+/** caml_ephe_none is considered as not white  */
+Caml_inline int Is_White_During_Mark(value x)
+{
+  CAMLassert (caml_gc_phase == Phase_mark);
+  if (x == caml_ephe_none ) return 0;
+  return Test_if_its_white(x);
+}
+
 /** The minor heap doesn't have to be marked, outside they should
-    already be black
+    already be black. Remains the value in the heap to mark.
 */
 Caml_inline int Must_be_Marked_during_mark(value x)
 {
@@ -91,19 +105,6 @@ Caml_inline int Must_be_Marked_during_mark(value x)
   return Is_block (x) && !Is_young (x);
 #else
   return Is_block (x) && Is_in_heap (x);
-#endif
-}
-
-/** During marking phase check if it is a white value. */
-Caml_inline int Is_White_During_Mark(value x)
-{
-  CAMLassert (caml_gc_phase == Phase_mark);
-  if (x == caml_ephe_none || !Is_block(x)) return 0;
-  if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
-#ifdef NO_NAKED_POINTERS
-  return Is_white_val(x) && !Is_young (x);
-#else
-  return Is_white_val(x) && Is_in_heap (x);
 #endif
 }
 
