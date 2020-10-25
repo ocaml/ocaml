@@ -62,6 +62,7 @@ val get : 'a t -> int -> 'a option
    0 to {!Weak.length}[ a - 1].*)
 
 val get_copy : 'a t -> int -> 'a option
+[@@ocaml.deprecated "Use Weak.get instead."]
 (** [Weak.get_copy ar n] returns None if the [n]th cell of [ar] is
    empty, [Some x] (where [x] is a (shallow) copy of the value) if
    it is full.
@@ -107,9 +108,6 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
     module; the [equal] relation and [hash] function are taken from that
     module.  We will say that [v] is an instance of [x] if [equal x v]
     is [true].
-
-    The [equal] relation must be able to work on a shallow copy of
-    the values and give the same result as with the values themselves.
     *)
 
 module type S = sig

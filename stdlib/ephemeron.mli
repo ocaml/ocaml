@@ -112,6 +112,7 @@ module K1 : sig
       empty, [Some x] (where [x] is the key) if it is full. *)
 
   val get_key_copy: ('k,'d) t -> 'k option
+  [@@ocaml.deprecated "Use Ephemeron.K1.get_key instead."]
   (** [Ephemeron.K1.get_key_copy eph] returns [None] if the key of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the key) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
@@ -149,6 +150,7 @@ module K1 : sig
       empty, [Some x] (where [x] is the data) if it is full. *)
 
   val get_data_copy: ('k,'d) t -> 'd option
+  [@@ocaml.deprecated "Use Ephemeron.K1.get_data instead."]
   (** [Ephemeron.K1.get_data_copy eph] returns [None] if the data of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the data) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
@@ -199,6 +201,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_key} *)
 
   val get_key1_copy: ('k1,'k2,'d) t -> 'k1 option
+  [@@ocaml.deprecated "Use Ephemeron.K2.get_key1 instead."]
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key1: ('k1,'k2,'d) t -> 'k1 -> unit
@@ -214,6 +217,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_key} *)
 
   val get_key2_copy: ('k1,'k2,'d) t -> 'k2 option
+  [@@ocaml.deprecated "Use Ephemeron.K2.get_key2 instead."]
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
@@ -238,6 +242,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_data} *)
 
   val get_data_copy: ('k1,'k2,'d) t -> 'd option
+  [@@ocaml.deprecated "Use Ephemeron.K2.get_data instead."]
   (** Same as {!Ephemeron.K1.get_data_copy} *)
 
   val set_data: ('k1,'k2,'d) t -> 'd -> unit
@@ -278,6 +283,7 @@ module Kn : sig
   (** Same as {!Ephemeron.K1.get_key} *)
 
   val get_key_copy: ('k,'d) t -> int -> 'k option
+  [@@ocaml.deprecated "Use Ephemeron.Kn.get_key instead."]
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key: ('k,'d) t -> int -> 'k -> unit
@@ -296,6 +302,7 @@ module Kn : sig
   (** Same as {!Ephemeron.K1.get_data} *)
 
   val get_data_copy: ('k,'d) t -> 'd option
+  [@@ocaml.deprecated "Use Ephemeron.Kn.get_data instead."]
   (** Same as {!Ephemeron.K1.get_data_copy} *)
 
   val set_data: ('k,'d) t -> 'd -> unit
