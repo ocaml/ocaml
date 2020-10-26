@@ -264,8 +264,8 @@ static INLINE void st_mutex_lock(st_mutex m)
   return caml_plat_lock(m);
 }
 
-#define PREVIOUSLY_UNLOCKED 0
-#define ALREADY_LOCKED EBUSY
+#define MUTEX_PREVIOUSLY_UNLOCKED 1
+#define MUTEX_ALREADY_LOCKED 0
 
 static INLINE int st_mutex_trylock(st_mutex m)
 {

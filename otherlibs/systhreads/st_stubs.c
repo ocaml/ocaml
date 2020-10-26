@@ -532,7 +532,7 @@ CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
   st_mutex mut = Mutex_val(wrapper);
 
   /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (caml_plat_try_lock(mut)) return Val_unit;
+  if (caml_plat_try_lock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
   /* If unsuccessful, block on mutex */
   Begin_root(wrapper)
     caml_enter_blocking_section();
@@ -554,7 +554,7 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
 {
   st_mutex mut = Mutex_val(wrapper);
   int retcode = st_mutex_trylock(mut);
-  if (retcode == 0) return Val_false;
+  if (retcode == MUTEX_ALREADY_LOCKED) return Val_false;
   return Val_true;
 }
 
