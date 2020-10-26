@@ -554,7 +554,7 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
 {
   st_mutex mut = Mutex_val(wrapper);
   int retcode = st_mutex_trylock(mut);
-  if (retcode == 1) return Val_false;
+  if (retcode == 0) return Val_false;
   return Val_true;
 }
 
