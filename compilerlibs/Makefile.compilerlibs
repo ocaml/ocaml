@@ -331,3 +331,21 @@ compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa \
 	  compilerlibs/ocamlopttoplevel.a compilerlibs/ocamlopttoplevel.lib
+
+utils/ocamlcompconfig.ml: utils/config.ml
+	cp $< $@
+
+utils/ocamlcompconfig.mli: utils/config.mli
+	cp $< $@
+
+utils/ocamlcompconfig.cmo: utils/ocamlcompconfig.cmi
+utils/ocamlcompconfig.cmx: utils/ocamlcompconfig.cmi
+
+partialclean::
+	rm -f utils/ocamlcompconfig.*
+
+compilerlibs/ocamlcompconfig.cma: utils/ocamlcompconfig.cmo
+	$(CAMLC) -a -o $@ $<
+
+compilerlibs/ocamlcompconfig.cmxa: utils/ocamlcompconfig.cmx
+	$(CAMLOPT) -a -o $@ $<

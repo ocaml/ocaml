@@ -891,10 +891,12 @@ partialclean::
 
 .PHONY: otherlibraries
 otherlibraries: ocamltools
+	$(MAKE) compilerlibs/ocamlcompconfig.cma
 	$(MAKE) -C otherlibs all
 
 .PHONY: otherlibrariesopt
 otherlibrariesopt:
+	$(MAKE) compilerlibs/ocamlcompconfig.cmxa
 	$(MAKE) -C otherlibs allopt
 
 partialclean::
