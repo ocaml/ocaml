@@ -341,11 +341,15 @@ utils/ocamlcompconfig.mli: utils/config.mli
 utils/ocamlcompconfig.cmo: utils/ocamlcompconfig.cmi
 utils/ocamlcompconfig.cmx: utils/ocamlcompconfig.cmi
 
-partialclean::
-	rm -f utils/ocamlcompconfig.*
-
 compilerlibs/ocamlcompconfig.cma: utils/ocamlcompconfig.cmo
 	$(CAMLC) -a -o $@ $<
 
 compilerlibs/ocamlcompconfig.cmxa: utils/ocamlcompconfig.cmx
 	$(CAMLOPT) -a -o $@ $<
+
+partialclean::
+	rm -f utils/ocamlcompconfig.*
+	rm -f compilerlibs/ocamlcompconfig.cma \
+	      compilerlibs/ocamlcompconfig.cmxa \
+	      compilerlibs/ocamlcompconfig.a \
+	      compilerlibs/ocamlcompconfig.lib
