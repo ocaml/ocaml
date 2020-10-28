@@ -26,34 +26,21 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 % Some of the files below are commented out as the documentation is too poor
 % or they are thought to be nonessential.
 
-\ifouthtml
-\begin{links}
-\item \ahref{compilerlibref/Ast\_helper.html}{Module \texttt{Ast_helper}: helper functions for AST construction}
-\item \ahref{compilerlibref/Ast\_mapper.html}{Module \texttt{Ast_mapper}: -ppx rewriter interface}
-\item \ahref{compilerlibref/Asttypes.html}{Module \texttt{Asttypes}: auxiliary types used by Parsetree}
-% \item \ahref{compilerlibref/Lexer.html}{Module \texttt{Lexer}: OCaml syntax lexing}
-\item \ahref{compilerlibref/Location.html}{Module \texttt{Location}: source code locations}
-\item \ahref{compilerlibref/Longident.html}{Module \texttt{Longident}: long identifiers}
-\item \ahref{compilerlibref/Parse.html}{Module \texttt{Parse}: OCaml syntax parsing}
-\item \ahref{compilerlibref/Parsetree.html}{Module \texttt{Parsetree}: OCaml syntax tree}
-\item \ahref{compilerlibref/Pprintast.html}{Module \texttt{Pprintast}: OCaml syntax printing}
-% \item \ahref{compilerlibref/Printast.html}{Module \texttt{Printast}: AST printing}
-\end{links}
 
-\else
-{\ocamldocinputstart
+\begin{linklist}
+\ifouthtml%
 % Ast_helper is excluded from the PDF and text manuals.
 % It is over 20 pages long and does not have doc-comments. It is expected
 % that Ast_helper will be only useful in the HTML manual (to look up signatures).
-% \input{Ast_helper.tex}
-\input{Ast_mapper.tex}
-\input{Asttypes.tex}
-% \input{Lexer.tex}
-\input{Location.tex}
-\input{Longident.tex}
-\input{Parse.tex}
-\input{Parsetree.tex}
-\input{Pprintast.tex}
-}
-% \input{Printast.tex}
-\fi
+\compilerdocitem{Ast_helper}{helper functions for AST construction}
+\fi%
+\compilerdocitem{Ast_mapper}{-ppx rewriter interface}
+\compilerdocitem{Asttypes}{auxiliary types used by Parsetree}
+% \item \ahref{compilerlibref/Lexer.html}{Module \texttt{Lexer}: OCaml syntax lexing}
+\compilerdocitem{Location}{source code locations}
+\compilerdocitem{Longident}{long identifiers}
+\compilerdocitem{Parse}{OCaml syntax parsing}
+\compilerdocitem{Parsetree}{OCaml syntax tree}
+\compilerdocitem{Pprintast}{OCaml syntax printing}
+% \item \ahref{compilerlibref/Printast.html}{Module \texttt{Printast}: AST printing}
+\end{linklist}

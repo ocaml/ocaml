@@ -219,8 +219,13 @@
   \addcontentsline{toc}{chapter}{#2}
   \@input{#1.ind}}
 
-%%% References to modules in the standard library
+%%% Linking to modules
 \newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
+
+\newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
+\newcommand{\stddocitem}[2]{\input{#1.tex}}
+\newcommand{\compilerdocitem}[2]{\input{#1.tex}}
+
 
 \newenvironment{maintitle}{\begin{center}}{\end{center}}
 

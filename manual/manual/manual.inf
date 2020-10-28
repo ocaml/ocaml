@@ -150,3 +150,11 @@
 \def\goodbreak{\ \\}
 
 \def\@savedlistI{}
+
+
+% Linking to modules
+\newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
+
+\newcommand{\docitem}[3]{\input{#2.tex}}
+\newcommand{\stddocitem}[2]{\input{#1.tex}}
+\newcommand{\compilerdocitem}[2]{\input{#1.tex}}
