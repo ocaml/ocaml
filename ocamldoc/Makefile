@@ -338,43 +338,6 @@ autotest_stdlib:
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
 
-# odoc rules :
-##############
-
-.PHONY: odoc
-odoc:
-	rm -rf odoc
-	$(MKDIR) odoc
-	# .cmti --> .odoc
-	for fn in $(ROOTDIR)/stdlib/stdlib*.cmti; do \
-	  odoc compile $(INCLUDES) --package stdlib $(ROOTDIR)/stdlib/$$fn; \
-	done
-	for lib in str bigarray; do \
-	  odoc compile $(INCLUDES) --package $$lib $(ROOTDIR)/otherlibs/$$lib/$$lib.cmti; \
-	done
-	odoc compile $(INCLUDES) --package unix $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cmti
-	for fn in $(ROOTDIR)/parsing/*.cmti; do \
-	  odoc compile $(INCLUDES) --package parsing $(ROOTDIR)/parsing/$$fn; \
-	done
-	# .odoc --> .html
-	odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/stdlib/stdlib.odoc
-	for lib in str bigarray $(UNIXLIB); do \
-	  odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/otherlibs/$$lib/$$lib.odoc; \
-	done
-	for fn in $(ROOTDIR)/parsing/*.odoc; do \
-	  odoc html $(INCLUDES) --output-dir odoc $$fn; \
-	done
-	for d in odoc/*; do \
-	  lib=`basename $$d`; \
-	  cd $$d; \
-	  echo -e The $$lib 'library.\n\nModules\n:{!modules:' * '}' > ../../index.mld; \
-	  cd ../..; \
-	  odoc html $(INCLUDES) --output-dir odoc --index-for=$$lib index.mld; \
-	  rm -f index.mld; \
-	done
-	cp odoc_index.html odoc/index.html
-	odoc css -o odoc
-
 # backup, clean and depend :
 ############################
 

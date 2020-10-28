@@ -26,6 +26,10 @@ define capitalize
 $(foreach m,$(1),$(call capitalize_one,$m))
 endef
 
+define sort
+$(shell $(BEST_OCAMLDEP) -sort $(1))
+endef
+
 
 str_MLIS := str.mli
 unix_MLIS := unix.mli unixLabels.mli
@@ -34,8 +38,11 @@ thread_MLIS := \
 	thread.mli condition.mli mutex.mli event.mli \
 	threadUnix.mli semaphore.mli
 
-libref= \
-	$(filter-out pervasives,$(STDLIB_MODULE_BASENAMES)) \
+STDLIB=$(filter-out stdlib__pervasives, $(STDLIB_MODULE_BASENAMES))
+
+stdlib_UNPREFIXED=$(STDLIB:stdlib__%=%)
+
+otherlibref= \
 	$(str_MLIS:%.mli=%) \
 	$(unix_MLIS:%.mli=%) \
 	$(dynlink_MLIS:%.mli=%) \
@@ -44,13 +51,13 @@ libref_EXTRA=stdlib__pervasives
 libref_TEXT=Ocaml_operators Format_tutorial
 libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
 
-PARSING_MLIS := $(filter-out camlinternal%, \
+PARSING_MLIS := $(call sort, \
 	$(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
 )
-UTILS_MLIS := $(notdir $(wildcard $(ROOTDIR)/utils/*.mli))
+UTILS_MLIS := $(call sort,$(notdir $(wildcard $(ROOTDIR)/utils/*.mli)))
 DRIVER_MLIS := pparse.mli
 
-compilerlibref_MLIS=\
+compilerlibref_MLIS= \
   $(PARSING_MLIS) \
   $(UTILS_MLIS) \
   $(DRIVER_MLIS)

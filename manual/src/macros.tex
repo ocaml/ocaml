@@ -221,12 +221,15 @@
 
 %%% Linking to modules
 \newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
-
 \newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
-\newcommand{\stddocitem}[2]{\input{#1.tex}}
+
 \newcommand{\compilerdocitem}[2]{\input{#1.tex}}
-
-
+\newcommand{\libdocitem}[2]{\input{#1.tex}}
+\ifocamldoc
+\newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
+\else
+\newcommand{\stddocitem}[2]{\libdocitem{Stdlib.#1}{#2}}
+\fi
 \newenvironment{maintitle}{\begin{center}}{\end{center}}
 
 

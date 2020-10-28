@@ -162,6 +162,6 @@ be called from C \\
 \stddocitem{Unit}{unit values}
 \stddocitem{Weak}{arrays of weak pointers}
 \ifouthtml\else
-\stddocitem{Ocaml_operators}{}
+\input{Ocaml_operators}
 \fi
 \end{linklist}

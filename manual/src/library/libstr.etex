@@ -20,5 +20,5 @@ or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"str.cma\";;".
 
 \begin{linklist}
-\stddocitem{Str}{regular expressions and string processing}
+\libdocitem{Str}{regular expressions and string processing}
 \end{linklist}
