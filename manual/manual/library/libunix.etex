@@ -40,16 +40,15 @@ more information on the functions that are not supported under Windows.
 \begin{latexonly}
 \begin{linklist}
 \stddocitem{Unix}{Unix system calls}
+\end{linklist}
 
-\section{Module \texttt{UnixLabels}: labelized version of the interface}
-\label{UnixLabels}
+\section{UnixLabels}{Module \texttt{UnixLabels}: labelized version of the interface}
 \index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
 
 This module is identical to "Unix"~(\ref{Unix}), and only differs by
 the addition of labels. You may see these labels directly by looking
 at "unixLabels.mli", or by using the "ocamlbrowser" tool.
 \newpage
-\end{linklist}
 \end{latexonly}
 
 \begin{windows}
