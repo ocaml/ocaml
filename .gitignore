@@ -260,6 +260,8 @@ _build
 /tools/eventlog_metadata
 
 /utils/config.ml
+/utils/ocamlcompconfig.ml
+/utils/ocamlcompconfig.mli
 /utils/domainstate.ml
 /utils/domainstate.mli
 
