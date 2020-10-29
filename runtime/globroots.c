@@ -30,7 +30,7 @@ CAMLexport caml_root caml_create_root(value init)
 {
   CAMLparam1(init);
   
-  value* v = (value*)malloc(sizeof(value));
+  value* v = (value*)caml_stat_alloc(sizeof(value));
 
   *v = init;
 
@@ -42,10 +42,19 @@ CAMLexport caml_root caml_create_root(value init)
 CAMLexport caml_root caml_create_root_noexc(value init)
 {
   CAMLparam1(init);
+  
+  value* v = (value*)caml_stat_alloc_noexc(sizeof(value));
 
-  caml_root r = caml_create_root(init);
+  if( v == NULL ) {
+    CAMLdrop;
+    return NULL;
+  }
 
-  CAMLreturnT(caml_root, r);
+  *v = init;
+
+  caml_register_global_root(v);
+
+  CAMLreturnT(caml_root, (caml_root)v);
 }
 
 CAMLexport void caml_delete_root(caml_root root)
@@ -54,7 +63,7 @@ CAMLexport void caml_delete_root(caml_root root)
   Assert(root);
   /* the root will be removed from roots_all and freed at the next GC */
   caml_remove_global_root(v);
-  free(v);
+  caml_stat_free(v);
 }
 
 CAMLexport value caml_read_root(caml_root root)
