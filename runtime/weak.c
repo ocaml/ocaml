@@ -71,7 +71,7 @@ Caml_inline int Test_if_its_white(value x){
   CAMLassert (x != caml_ephe_none);
   if (!Is_block(x)) return 0;
 #ifdef NO_NAKED_POINTERS
-  if (Is_young (x))) return 0;
+  if (Is_young (x)) return 0;
 #else
   if (!Is_in_heap(x)) return 0;
 #endif
