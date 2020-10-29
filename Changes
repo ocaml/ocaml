@@ -117,9 +117,9 @@ OCaml 4.12.0
   compaction algorithm and remove its dependence on the page table
   (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
 
-- #9742: Ephemerons are now compatible with infix pointers occurring
+- #9742, #9989: Ephemerons are now compatible with infix pointers occurring
    when using mutually recursive functions.
-   (Jacques-Henri Jourdan, review François Bobot)
+   (Jacques-Henri Jourdan, review by François Bobot)
 
 * #1128, #7503, #9036, #9722: EINTR-based signal handling.
   When a signal arrives, avoid running its OCaml handler in the middle

@@ -47,13 +47,14 @@ value caml_ephe_none = (value) &ephe_dummy;
 }while(0)
 
 #ifdef DEBUG
-#define CAMLassert_not_dead_value(v) do{                        \
-    if (caml_gc_phase == Phase_clean                            \
-        && Is_block(v)                                          \
-        && Is_in_heap (v)) {                                    \
-      if (Tag_val (v) == Infix_tag) v -= Infix_offset_val (v);  \
-      CAMLassert ( !Is_white_val(v) );                          \
-    }                                                           \
+#define CAMLassert_not_dead_value(v) do{                              \
+    value __v = v;                                                    \
+    if (caml_gc_phase == Phase_clean                                  \
+        && Is_block(__v)                                              \
+        && Is_in_heap (__v)) {                                        \
+      if (Tag_val (__v) == Infix_tag) __v -= Infix_offset_val (__v);  \
+      CAMLassert ( !Is_white_val(__v) );                              \
+    }                                                                 \
 }while(0)
 #else
 #define CAMLassert_not_dead_value(v)
@@ -72,13 +73,13 @@ Caml_inline int Is_Dead_during_clean(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
-  if (!Is_block(x)) return 0;
-  if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
 #ifdef NO_NAKED_POINTERS
-  return Is_white_val(x) && !Is_young (x);
+  if (!Is_block(x) || Is_young (x)) return 0;
 #else
-  return Is_white_val(x) && Is_in_heap (x);
+  if (!Is_block(x) || !Is_in_heap(x)) return 0;
 #endif
+  if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
+  return Is_white_val(x);
 }
 /** The minor heap doesn't have to be marked, outside they should
     already be black
