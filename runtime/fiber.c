@@ -80,7 +80,7 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
   *pc = Saved_return_address(*sp);
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack)
 {
   char * sp;
   uintnat retaddr;
@@ -92,12 +92,6 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
   value *root;
   struct caml_context* context;
   caml_frame_descrs fds = caml_get_frame_descrs();
-
-  f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-  f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-  f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  if (Stack_parent(stack) != NULL)
-    caml_scan_stack(f, fdata, Stack_parent(stack));
 
   if (stack->sp == Stack_high(stack)) return;
   sp = (char*)stack->sp;
@@ -141,6 +135,19 @@ next_chunk:
       sp += 4 * sizeof(value);
       goto next_chunk;
     }
+  }
+}
+
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+{
+  while (stack != NULL) {
+    scan_stack_frames(f, fdata, stack);
+
+    f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+    f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+    f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+
+    stack = Stack_parent(stack);
   }
 }
 
@@ -218,18 +225,21 @@ void caml_change_max_stack_size (uintnat new_max_size)
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
 {
   value *low, *high, *sp;
-  Assert(stack->magic == 42);
 
-  f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-  f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-  f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  if (Stack_parent(stack))
-    caml_scan_stack(f, fdata, Stack_parent(stack));
+  while (stack != NULL) {
+    Assert(stack->magic == 42);
 
-  high = Stack_high(stack);
-  low = stack->sp;
-  for (sp = low; sp < high; sp++) {
-    f(fdata, *sp, sp);
+    high = Stack_high(stack);
+    low = stack->sp;
+    for (sp = low; sp < high; sp++) {
+      f(fdata, *sp, sp);
+    }
+
+    f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+    f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+    f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+
+    stack = Stack_parent(stack);
   }
 }
 
