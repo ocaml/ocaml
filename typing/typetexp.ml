@@ -492,7 +492,7 @@ and transl_type_aux env policy styp =
             if deep_occur v ty then begin
               match v.desc with
                 Tvar name when v.level = Btype.generic_level ->
-		  Btype.set_type_desc v (Tunivar name);
+                  Btype.set_type_desc v (Tunivar name);
                   v :: tyl
               | _ ->
                 raise (Error (styp.ptyp_loc, env, Cannot_quantify (name, v)))
@@ -599,9 +599,9 @@ let rec make_fixed_univars ty =
         let more = Btype.row_more row in
         if Btype.is_Tunivar more then
           Btype.set_type_desc ty
-	    (Tvariant
+            (Tvariant
                {row with row_fixed=Some(Univar more);
-		row_fields = List.map
+                row_fields = List.map
                  (fun (s,f as p) -> match Btype.row_field_repr f with
                    Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)
                  | _ -> p)

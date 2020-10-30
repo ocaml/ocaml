@@ -564,7 +564,7 @@ end = struct
 end
 
 (* Mark a type. *)
-let mirror_level level = pivot_level - level  
+let mirror_level level = pivot_level - level
 
 let rec mark_type ty =
   let ty = repr ty in
@@ -590,7 +590,7 @@ let type_iterators =
   in
   {type_iterators with it_type_expr}
 
-   
+
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in
@@ -753,7 +753,7 @@ let link_type ty ty' =
       | None, Some _ ->  ()
       | Some _, Some _ ->
           if ty.level < ty'.level then
-	    (log_type ty'; (Internal.unlock ty').desc <- Tvar name)
+            (log_type ty'; (Internal.unlock ty').desc <- Tvar name)
       | None, None   ->  ()
       end
   | _ -> ()

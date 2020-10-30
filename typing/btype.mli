@@ -171,14 +171,14 @@ val pivot_level: int
 val mirror_level: int -> int
         (* Type marking: ty.level <- pivot_level - ty.level *)
         (* mirror_level is used for unmarking; it must be involutive,
-	   invert order *)
+           invert order *)
 val mark_type: type_expr -> unit
         (* Mark a type *)
 val mark_type_node:
         ?guard:(type_expr -> bool) -> ?after:(type_expr -> unit) ->
         type_expr -> unit
         (* If the node is not already marked and [guard] returns true
-	   (the default), then mark it and run [after]. *)
+           (the default), then mark it and run [after]. *)
 val mark_type_params: type_expr -> unit
         (* Mark the sons of a type node *)
 val unmark_type: type_expr -> unit

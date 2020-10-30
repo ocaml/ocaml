@@ -82,9 +82,9 @@ end
 module Internal = struct
   type type_expr_internal = type_expr =
       { mutable desc: type_desc;
-	mutable level: int;
-	mutable scope: int;
-	id: int }
+        mutable level: int;
+        mutable scope: int;
+        id: int }
   let lock x = x
   let unlock x = x
 end

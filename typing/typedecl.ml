@@ -177,8 +177,8 @@ let set_fixed_row env loc p decl =
     match tm.desc with
       Tvariant row ->
         let row = Btype.row_repr row in
-	Btype.set_type_desc tm
-	  (Tvariant {row with row_fixed = Some Fixed_private});
+        Btype.set_type_desc tm
+          (Tvariant {row with row_fixed = Some Fixed_private});
         if Btype.static_row row then Btype.newgenty Tnil
         else row.row_more
     | Tobject (ty, _) ->
@@ -989,9 +989,9 @@ let transl_extension_constructor ~scope env type_path type_params
           in
             List.iter
               (function {desc = Tvar (Some "_")} as ty
-		  when List.memq ty vars ->
-		    Btype.set_type_desc ty (Tvar None)
-		| _ -> ())
+                  when List.memq ty vars ->
+                    Btype.set_type_desc ty (Tvar None)
+                | _ -> ())
               typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)

@@ -236,9 +236,9 @@ and commutable =
 module Internal : sig
   type type_expr_internal =
       { mutable desc: type_desc;
-	mutable level: int;
-	mutable scope: int;
-	id: int }
+        mutable level: int;
+        mutable scope: int;
+        id: int }
   val lock : type_expr_internal -> type_expr
   val unlock : type_expr -> type_expr_internal
 end

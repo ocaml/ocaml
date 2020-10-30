@@ -156,8 +156,8 @@ let rec typexp copy_scope s ty =
         in
         For_copy.save_desc copy_scope ty desc;
         (Internal.unlock ty).desc <- Tsubst ty';
-	(* TODO: move this line to btype.ml
-	   there is a similar problem also in ctype.ml *)
+        (* TODO: move this line to btype.ml
+           there is a similar problem also in ctype.ml *)
         ty'
       else ty
   | Tsubst ty ->
@@ -219,7 +219,7 @@ let rec typexp copy_scope s ty =
             Tsubst {desc = Ttuple [_;ty2]} ->
               (* This variant type has been already copied *)
               (Internal.unlock ty).desc <- Tsubst ty2;
-	      (* avoid Tlink in the new type *)
+              (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
               let dup =
@@ -237,8 +237,9 @@ let rec typexp copy_scope s ty =
                 | _ -> assert false
               in
               (* Register new type first for recursion *)
-              (Internal.unlock more).desc <- Tsubst(newgenty(Ttuple[more';ty']));
-	      (* TODO: check if more' can be eliminated *)
+              (Internal.unlock more).desc <-
+                Tsubst(newgenty(Ttuple[more';ty']));
+              (* TODO: check if more' can be eliminated *)
               (* Return a new copy *)
               let row =
                 copy_row (typexp copy_scope s) true row (not dup) more' in

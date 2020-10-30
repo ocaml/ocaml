@@ -1183,7 +1183,7 @@ let rec copy ?partial ?keep_names scope ty =
             Tsubst {desc = Ttuple [_;ty2]} ->
               (* This variant type has been already copied *)
               (Internal.unlock ty).desc <- Tsubst ty2;
-	      (* avoid Tlink in the new type *)
+              (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
               (* If the row variable is not generic, we must keep it *)
@@ -1191,8 +1191,8 @@ let rec copy ?partial ?keep_names scope ty =
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
-		  (* TODO: is this case possible?
-		     possibly an interaction with (copy more) below? *)
+                  (* TODO: is this case possible?
+                     possibly an interaction with (copy more) below? *)
                 | Tconstr _ | Tnil ->
                     For_copy.save_desc scope more more.desc;
                     copy more
@@ -1940,7 +1940,7 @@ let occur_univar env ty =
       if ty.level < pivot_level then () else
       let bound' = TypeMap.find ty !visited in
       if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then begin
-	visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
+        visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
         occur_desc bound ty
       end
     with Not_found ->
@@ -2104,8 +2104,8 @@ let deep_occur t0 ty =
   let rec occur_rec ty =
     mark_type_node ty ~after:
       begin fun ty ->
-	if ty == t0 then raise Occur;
-	iter_type_expr occur_rec ty
+        if ty == t0 then raise Occur;
+        iter_type_expr occur_rec ty
       end
   in
   try
@@ -2422,8 +2422,8 @@ let find_lowest_level ty =
   let rec find ty =
     mark_type_node ty ~after:
       begin fun ty ->
-	if ty.level > !lowest then lowest := ty.level;
-	iter_type_expr find ty
+        if ty.level > !lowest then lowest := ty.level;
+        iter_type_expr find ty
       end
   in find ty; unmark_type ty; mirror_level !lowest
 
@@ -3264,9 +3264,9 @@ let moregen_occur env level ty =
   let rec occur ty =
     mark_type_node ty ~guard:
       begin fun ty ->
-	ty.level > level &&
-	if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur
-	else true
+        ty.level > level &&
+        if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur
+        else true
       end
       ~after:(iter_type_expr occur)
   in
@@ -4110,7 +4110,7 @@ let rec build_subtype env visited loops posi level t =
              as this occurrence might break the occur check.
              XXX not clear whether this correct anyway... *)
           if List.exists (deep_occur ty) tl1 then raise Not_found;
-	  set_type_desc ty (Tvar None);
+          set_type_desc ty (Tvar None);
           let t'' = newvar () in
           let loops = (ty, t'') :: loops in
           (* May discard [visited] as level is going down *)
@@ -4119,7 +4119,7 @@ let rec build_subtype env visited loops posi level t =
           assert (is_Tvar t'');
           let nm =
             if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
-	  set_type_desc t'' (Tobject (ty1', ref nm));
+          set_type_desc t'' (Tobject (ty1', ref nm));
           (try unify_var env ty t with Unify _ -> assert false);
           (t'', Changed)
       | _ -> raise Not_found
