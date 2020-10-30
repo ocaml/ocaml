@@ -45,11 +45,12 @@ let force_val_lazy_block (blk : 'arg lazy_t) =
   result
 
 
-(* [force] is not used, since [Lazy.force] is declared as a primitive
-   whose code inlines the tag tests of its argument.  This function is
-   here for the sake of completeness, and for debugging purpose. *)
+(* [force] is not used except when afl instrumentation is on.
+   In this case, it must not be inlined in flambda mode as it can modify
+   its argument in some cases, and is allowed to be called
+   with immutable arguments, which will generate warning 59. *)
 
-let force (lzv : 'arg lazy_t) =
+let[@inline never] force (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
   let t = Obj.tag x in
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
