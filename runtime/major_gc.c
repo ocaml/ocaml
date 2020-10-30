@@ -512,8 +512,8 @@ static void mark_stack_push(struct mark_stack* stk, value block,
 
   CAMLassert(Is_block(block) && !Is_minor(block));
   CAMLassert(Tag_val(block) != Infix_tag);
-  CAMLassert(Tag_val(block) != Cont_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
+  CAMLassert(Tag_val(block) != Cont_tag);
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
   end =  (block_wsz < 8 ? block_wsz : 8);
@@ -598,7 +598,6 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
     if (Has_status_hd(chd, global.UNMARKED)){
       Caml_state->stat_blocks_marked++;
       if (Tag_hd(chd) == Cont_tag){
-        mark_stack_push(stk, child, 0, work);
         caml_darken_cont(child);
         *work -= Wosize_hd(chd);
       } else{
