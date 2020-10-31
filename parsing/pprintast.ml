@@ -397,22 +397,26 @@ and core_type1 ctxt f x =
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
 and pattern ctxt f x =
-  let rec list_of_pattern acc = function (* only consider ((A|B)|C)*)
-    | {ppat_desc= Ppat_or (p1,p2); ppat_attributes = []} ->
-        list_of_pattern  (p2::acc) p1
-    | x -> x::acc
-  in
   if x.ppat_attributes <> [] then begin
     pp f "((%a)%a)" (pattern ctxt) {x with ppat_attributes=[]}
       (attributes ctxt) x.ppat_attributes
   end
   else match x.ppat_desc with
     | Ppat_alias (p, s) ->
-        pp f "@[<2>%a@;as@;%a@]" (pattern ctxt) p protect_ident s.txt (* RA*)
-    | Ppat_or _ -> (* *)
-        pp f "@[<hov0>%a@]" (list ~sep:"@,|" (pattern ctxt))
-          (list_of_pattern [] x)
-    | _ -> pattern1 ctxt f x
+        pp f "@[<2>%a@;as@;%a@]" (pattern ctxt) p protect_ident s.txt
+    | _ -> pattern_or ctxt f x
+
+and pattern_or ctxt f x =
+  let rec left_associative x acc = match x with
+    | {ppat_desc=Ppat_or (p1,p2); ppat_attributes = []} ->
+        left_associative p1 (p2 :: acc)
+    | x -> x :: acc
+  in
+  match left_associative x [] with
+  | [] -> assert false
+  | [x] -> pattern1 ctxt f x
+  | orpats ->
+      pp f "@[<hov0>%a@]" (list ~sep:"@,|" (pattern1 ctxt)) orpats
 
 and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   let rec pattern_list_helper f = function
