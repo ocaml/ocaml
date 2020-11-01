@@ -135,54 +135,6 @@ let file_title file toc =
   if file = "index.html" then Some index_title
   else Hashtbl.find_opt toc file
 
-(* Replace three links "Previous, Up, Next" at the end of the file by more
-   useful titles, and insert then in a div container, keeping only 2 of them:
-   either (previous, next) or (previous, up) or (up, next). Remove them at the
-   top of the file, where they are not needed because we have the TOC. *)
-let update_navigation_old soup toc =
-  Option.iter delete (soup $? "hr");
-  let container, count =
-    ["Previous"; "Up"; "Next"]
-    |> List.fold_left (fun (container, count) s ->
-        let imgs = soup $$ ("img[alt=\"" ^ s ^ "\"]") in
-        (* In principle [imgs] will contain either 0 or 2 elements. We delete
-           the first one. *)
-        Option.iter (delete << R.parent) (first imgs);
-        (* Now, if there is a second element, we update (or create) a "div"
-           container to insert the element, and increase [count]. [count] is
-           used to make sure we keep only 2 links, not 3. *)
-        imgs |> fold (fun (container, count) img ->
-            let a = R.parent img in
-            let file = R.attribute "href" a in
-            let title = match file_title file toc with
-              | Some f -> begin match s with
-                  | "Previous" -> "« " ^ f
-                  | "Next" -> f ^ " »"
-                  | "Up" -> f
-                  | _ -> failwith "This should not happen"
-                end
-              | None -> dbg "Unknown title for file %s" file; s in
-            let txt = create_text title in
-            add_class (String.lowercase_ascii s) a;
-            replace img txt;
-            let div = match container with
-              | Some c ->
-                  if count = 2 then delete (children c |> R.last);
-                  (* : we delete the "Up" link *)
-                  append_child c a; c
-              | None ->
-                  let c = create_element ~class_:"bottom-navigation" "div" in
-                  wrap a c; c in
-            Some div, count+1) (container, count)) (None, 0) in
-
-  match container with
-  | None -> dbg "%s" "No navigation"
-  | Some div ->
-      if count = 2 then begin
-        add_class "previous" (div $$ "a" |> R.first);
-        add_class "next" (div $$ "a" |> R.last);
-      end
-
 (* Replace the images of one of the "previous, next, up" link by the title of
    the reference. *)
 let nav_replace_img_by_text toc alt a img =
@@ -199,6 +151,10 @@ let nav_replace_img_by_text toc alt a img =
   replace img txt;
   add_class (String.lowercase_ascii alt) a
 
+(* Replace three links "Previous, Up, Next" at the end of the file by more
+   useful titles, and insert then in a div container, keeping only 2 of them:
+   either (previous, next) or (previous, up) or (up, next). Remove them at the
+   top of the file, where they are not needed because we have the TOC. *)
 let update_navigation soup toc =
   Option.iter delete (soup $? "hr");
   let links =
@@ -425,6 +381,22 @@ let move_authors body =
               add_class "authors" authors;
               append_child body authors)
 
+(* Get the list of external files linked by the current file *)
+let get_xfiles = function
+  | None -> []
+  | Some toc ->
+      toc $$ "li"
+      |> fold (fun list li ->
+          let rf = li $ "a" |> R.attribute "href" in
+          dbg "TOC reference = %s" rf;
+          if not (String.contains rf '#') &&
+             not (starts_with ".." rf) &&
+             not (starts_with "http" rf)
+          then begin
+            li $ "a" |> set_attribute "href" (rf ^ "#start-section");
+            rf::list
+          end else list) []
+
 (* This is the main script for processing a specified file. [convert] has to be
    run for each "entry" [file] of the manual, making a "Chapter". (The list of
    [chapters] corresponds to a "Part" of the manual.) *)
@@ -433,9 +405,9 @@ let convert version (part_title, chapters) toc_table (file, title) =
 
   (* Parse html *)
   let soup = parse (load_html file) in
-  change_title title soup;
 
-  (* Add javascript and favicon *)
+  (* Change title, add javascript and favicon *)
+  change_title title soup;
   update_head soup;
 
   (* Wrap body. *)
@@ -460,34 +432,18 @@ let convert version (part_title, chapters) toc_table (file, title) =
   (* Move authors to the end *)
   move_authors body;
 
-  (* Get the list of external files linked by the current file *)
-  let xfiles = match toc with
-    | None -> []
-    | Some toc ->
-        toc $$ "li"
-        |> fold (fun list li ->
-            let rf = li $ "a" |> R.attribute "href" in
-            dbg "TOC reference = %s" rf;
-            if not (String.contains rf '#') &&
-               not (starts_with ".." rf) &&
-               not (starts_with "http" rf)
-            then begin
-              li $ "a" |> set_attribute "href" (rf ^ "#start-section");
-              rf::list
-            end else list) []
-  in
-
   (* Bottom navigation links *)
   update_navigation soup toc_table;
 
   (* Add copyright *)
   append_child body (copyright ());
-  
+
   (* Save html *)
   save_to_file soup file;
 
   (* Finally, generate external files to be converted (this should be done at
      the end because it deeply mutates the original soup) *)
+  let xfiles = get_xfiles toc in
   let template = make_template soup in
   List.iter (clone_structure soup template toc_table) xfiles
 

@@ -159,168 +159,174 @@ let all_html_files config =
   |> List.filter (fun s -> Filename.extension s = ".html")
 
 
-(* Generate the index.js file for searching with the quick search widget *)
-(* The idea is to parse the file "index_values.html" to extract, for each entry
-   of this index, the following information (list of 8 strings):
+module Index = struct
+  (* Generate the index.js file for searching with the quick search widget *)
+  (* The idea is to parse the file "index_values.html" to extract, for each
+     entry of this index, the following information (list of 8 strings):
 
-   [Module name; href URL of the Module (in principle an html file);
-   Value name; href URL of the value;
-   short description (html format); short description in txt format;
-   type signature (html format); type signature in txt format]
+     [Module name; href URL of the Module (in principle an html file); Value
+     name; href URL of the value; short description (html format); short
+     description in txt format; type signature (html format); type signature in
+     txt format]
 
-   The "txt format" versions are used for searching, the "html version"
-   for display.
-   The signature is not in the "index_values.html" file, we have to look for it
-   by following the value href.
+     The "txt format" versions are used for searching, the "html version" for
+     display.  The signature is not in the "index_values.html" file, we have to
+     look for it by following the value href.  The index_values.html file has
+     the following structure:
 
-   The index_values.html file has the following structure:
+     (...)
 
-   (...)
+     <table>
 
-   <table>
+     (...)
 
-   (...)
+     <tr><td><a href="List.html#VALappend">append</a> [<a
+     href="List.html">List</a>]</td> <td><div class="info"> <p>Concatenate two
+     lists.</p>
 
-   <tr><td><a href="List.html#VALappend">append</a> [<a href="List.html">List</a>]</td>
-   <td><div class="info">
-   <p>Concatenate two lists.</p>
+     </div> </td></tr>
 
-   </div>
-   </td></tr>
+     (...)
 
-   (...)
+     </table>
 
-   </table>
+     (...)
 
-   (...)
+     So we need to visit "List.html#VALappend", which has the following
+     structure:
 
-   So we need to visit "List.html#VALappend", which has the following structure:
+     <pre><span id="VALappend"><span class="keyword">val</span> append</span> :
+     <code class="type">'a list -> 'a list -> 'a list</code></pre>
 
-   <pre><span id="VALappend"><span class="keyword">val</span> append</span> : <code class="type">'a list -> 'a list -> 'a list</code></pre>
+     and we finally return
 
-   and we finally return
+     ["List"; "List.html"; "rev_append"; "List.html#VALrev_append"; "<div
+     class=\"info\"> <p><code class=\"code\"><span
+     class=\"constructor\">List</span>.rev_append&nbsp;l1&nbsp;l2</code>
+     reverses <code class=\"code\">l1</code> and concatenates it to <code
+     class=\"code\">l2</code>.</p> </div>"; "
+     List.rev_append\194\160l1\194\160l2 reverses l1 and concatenates it to
+     l2. "; "<code class=\"type\">'a list -&gt; 'a list -&gt; 'a list</code>";
+     "'a list -> 'a list -> 'a list"]
 
-   ["List"; "List.html";
-   "rev_append"; "List.html#VALrev_append";
-   "<div class=\"info\">  <p><code class=\"code\"><span class=\"constructor\">List</span>.rev_append&nbsp;l1&nbsp;l2</code> reverses <code class=\"code\">l1</code> and concatenates it to <code class=\"code\">l2</code>.</p> </div>"; "  List.rev_append\194\160l1\194\160l2 reverses l1 and concatenates it to l2. ";
-   "<code class=\"type\">'a list -&gt; 'a list -&gt; 'a list</code>"; "'a list -> 'a list -> 'a list"]
-
-*)
-
-type index_item =
-  { html : string; txt : string }
-
-type index_entry =
-  { mdule : index_item;
-    value : index_item;
-    info : index_item;
-    signature : index_item option }
-
-let anon_t_regexp = Re.Str.regexp "\\bt\\b"
-let space_regexp = Re.Str.regexp " +"
-let newline_regexp = Re.Str.regexp_string "\n"
-
-(* Remove "\n" and superfluous spaces in string *)
-let one_line s =
-  Re.Str.global_replace newline_regexp " " s
-  |> Re.Str.global_replace space_regexp " "
-  |> String.trim
-
-(* Look for signature (with and without html formatting);
-     [id] is the HTML id of the value. Example:
-   # get_sig ~id_name:"VALfloat_of_int" "Stdlib.html";;
-   Looking for signature for VALfloat_of_int in Stdlib.html
-   Signature=[int -> float]
-   - : (string * string) option =
-   Some ("<code class=\\\"type\\\">int -&gt; float</code>", "int -> float")
   *)
-let get_sig ?mod_name ~id_name config file  =
-  dbg "Looking for signature for %s in %s" id_name file;
-  let soup = parse_file (config.src_dir // file) in
-  (* Now we jump to the html element with id=id_name. Warning, we cannot use the
-     CSS "#id" syntax for searching the id -- like in: soup $ ("#" ^ id) --
-     because it can have problematic chars like id="VAL( * )" *)
-  let span =  soup $$ "pre span"
-              |> filter (fun s -> id s = Some id_name)
-              |> first |> require in
-  let pre = match parent span with
-    | None -> failwith ("Cannot find signature for " ^ id_name)
-    | Some pre -> pre in
-  let code = pre $ ".type" in
-  let sig_txt = texts code
-                |> String.concat ""
-                |> String.escaped in
-  (* We now replace anonymous "t"'s by the qualified "Module.t" *)
-  let sig_txt = match mod_name with
-    | None -> sig_txt
-    | Some mod_name ->
-        Re.Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
-  dbg "Signature=[%s]" sig_txt;
-  Some {html = to_string code |> String.escaped; txt = sig_txt}
 
-(* Example: "Buffer.html#VALadd_subbytes" ==> Some "VALadd_subbytes" *)
-let get_id ref =
-  match String.split_on_char '#' ref with
-  | [file; id] -> Some (file, id)
-  | _ -> dbg "Could not find id for %s" ref; None
+  type item =
+    { html : string; txt : string }
 
-let make_index ?(with_sig = true) config =
-  let soup = parse_file (config.src_dir // "index_values.html") in
-  soup $ "table"
-  |> select "tr"
-  |> fold (fun index_list tr ->
-      let td_list = tr $$ "td" |> to_list in
-      match td_list with
-      (* We scan the row; it should contain 2 <td> entries, except for
-         separators with initials A,B,C,D; etc. *)
-      | [td_val; td_info] ->
-          let mdule, value  = match td_val $$ ">a" |> to_list with
-            | [a_val; a_mod] ->
-                { txt = R.leaf_text a_mod; html = R.attribute "href" a_mod },
-                { txt = R.leaf_text a_val; html = R.attribute "href" a_val }
-            | _ -> failwith "Cannot parse value" in
-          let info = match td_info $? "div.info" with
-            | Some info -> { html = to_string info
-                                    |> one_line
-                                    |> String.escaped;
-                             txt = texts info
-                                   |> String.concat ""
-                                   |> one_line
-                                   |> String.escaped }
-            | None -> { html = ""; txt = ""} in
-          let signature =
-            if with_sig then
-              get_id value.html
-              |> flat_option (fun (file,id_name) ->
-                  assert (file = mdule.html);
-                  get_sig config ~mod_name:mdule.txt ~id_name file)
-            else None in
-          { mdule; value; info; signature } :: index_list
-      | _ ->
-          dbg "Ignoring row:";
-          dbg "%s" (List.map to_string td_list |> String.concat " ");
-          index_list)  []
+  type entry =
+    { mdule : item;
+      value : item;
+      info : item;
+      signature : item option }
 
-let save_index file index =
-  let outch = open_out file in
-  output_string outch "var GENERAL_INDEX = [\n";
-  List.iter (fun item ->
-      fprintf outch {|["%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s"],|}
-        item.mdule.txt item.mdule.html item.value.txt item.value.html
-        item.info.html item.info.txt
-        (Option.map (fun i -> i.html) item.signature |> string_of_opt)
-        (Option.map (fun i -> i.txt) item.signature |> string_of_opt);
-      output_string outch "\n") index;
-  output_string outch "]\n";
-  close_out outch
+  let anon_t_regexp = Re.Str.regexp "\\bt\\b"
+  let space_regexp = Re.Str.regexp " +"
+  let newline_regexp = Re.Str.regexp_string "\n"
 
-let process_index config =
-  print_endline "Creating index file, please wait...";
-  let t = Unix.gettimeofday () in
-  let index = make_index config in
-  dbg "Index created. Time = %f\n" (Unix.gettimeofday () -. t);
-  save_index (config.dst_dir // "index.js") index;
-  dbg "Index saved. Time = %f\n" (Unix.gettimeofday () -. t)
+  (* Remove "\n" and superfluous spaces in string *)
+  let one_line s =
+    Re.Str.global_replace newline_regexp " " s
+    |> Re.Str.global_replace space_regexp " "
+    |> String.trim
+
+  (* Look for signature (with and without html formatting);
+     [id] is the HTML id of the value. Example:
+     # get_sig ~id_name:"VALfloat_of_int" "Stdlib.html";;
+     Looking for signature for VALfloat_of_int in Stdlib.html
+     Signature=[int -> float]
+     - : (string * string) option =
+     Some ("<code class=\\\"type\\\">int -&gt; float</code>", "int -> float")
+  *)
+  let get_sig ?mod_name ~id_name config file  =
+    dbg "Looking for signature for %s in %s" id_name file;
+    let soup = parse_file (config.src_dir // file) in
+    (* Now we jump to the html element with id=id_name. Warning, we cannot use
+       the CSS "#id" syntax for searching the id -- like in: soup $ ("#" ^ id)
+       -- because it can have problematic chars like id="VAL( * )" *)
+    let span =  soup $$ "pre span"
+                |> filter (fun s -> id s = Some id_name)
+                |> first |> require in
+    let pre = match parent span with
+      | None -> failwith ("Cannot find signature for " ^ id_name)
+      | Some pre -> pre in
+    let code = pre $ ".type" in
+    let sig_txt = texts code
+                  |> String.concat ""
+                  |> String.escaped in
+    (* We now replace anonymous "t"'s by the qualified "Module.t" *)
+    let sig_txt = match mod_name with
+      | None -> sig_txt
+      | Some mod_name ->
+          Re.Str.global_replace anon_t_regexp (mod_name ^ ".t") sig_txt in
+    dbg "Signature=[%s]" sig_txt;
+    Some {html = to_string code |> String.escaped; txt = sig_txt}
+
+  (* Example: "Buffer.html#VALadd_subbytes" ==> Some "VALadd_subbytes" *)
+  let get_id ref =
+    match String.split_on_char '#' ref with
+    | [file; id] -> Some (file, id)
+    | _ -> dbg "Could not find id for %s" ref; None
+
+  let make ?(with_sig = true) config =
+    let soup = parse_file (config.src_dir // "index_values.html") in
+    soup $ "table"
+    |> select "tr"
+    |> fold (fun index_list tr ->
+        let td_list = tr $$ "td" |> to_list in
+        match td_list with
+        (* We scan the row; it should contain 2 <td> entries, except for
+              separators with initials A,B,C,D; etc. *)
+        | [td_val; td_info] ->
+            let mdule, value  = match td_val $$ ">a" |> to_list with
+              | [a_val; a_mod] ->
+                  { txt = R.leaf_text a_mod; html = R.attribute "href" a_mod },
+                  { txt = R.leaf_text a_val; html = R.attribute "href" a_val }
+              | _ -> failwith "Cannot parse value" in
+            let info = match td_info $? "div.info" with
+              | Some info -> { html = to_string info
+                                      |> one_line
+                                      |> String.escaped;
+                               txt = texts info
+                                     |> String.concat ""
+                                     |> one_line
+                                     |> String.escaped }
+              | None -> { html = ""; txt = ""} in
+            let signature =
+              if with_sig then
+                get_id value.html
+                |> flat_option (fun (file,id_name) ->
+                    assert (file = mdule.html);
+                    get_sig config ~mod_name:mdule.txt ~id_name file)
+              else None in
+            { mdule; value; info; signature } :: index_list
+        | _ ->
+            dbg "Ignoring row:";
+            dbg "%s" (List.map to_string td_list |> String.concat " ");
+            index_list)  []
+
+  let save file index =
+    let outch = open_out file in
+    output_string outch "var GENERAL_INDEX = [\n";
+    List.iter (fun item ->
+        fprintf outch {|["%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s"],|}
+          item.mdule.txt item.mdule.html item.value.txt item.value.html
+          item.info.html item.info.txt
+          (Option.map (fun i -> i.html) item.signature |> string_of_opt)
+          (Option.map (fun i -> i.txt) item.signature |> string_of_opt);
+        output_string outch "\n") index;
+    output_string outch "]\n";
+    close_out outch
+
+  let process config =
+    print_endline "Creating index file, please wait...";
+    let t = Unix.gettimeofday () in
+    let index = make config in
+    dbg "Index created. Time = %f\n" (Unix.gettimeofday () -. t);
+    save (config.dst_dir // "index.js") index;
+    dbg "Index saved. Time = %f\n" (Unix.gettimeofday () -. t)
+
+end (* of Index module *)
 
 let process_html config overwrite version =
   print_endline (sprintf "\nProcessing version %s into %s...\n" version config.dst_dir);
@@ -338,7 +344,7 @@ let process_html config overwrite version =
 
 let copy_files config =
   let ind = config.dst_dir // "index.js" in
-  if not (Sys.file_exists ind) then process_index config
+  if not (Sys.file_exists ind) then Index.process config
 
 (******************************************************************************)
 
@@ -354,7 +360,7 @@ let () =
   let makeindex = List.mem "makeindex" args in
   let makehtml = List.mem "html" args || not makeindex in
   if makehtml then process_html config overwrite version;
-  if makeindex then process_index config;
+  if makeindex then Index.process config;
   copy_files config;
   print_endline "DONE."
 
