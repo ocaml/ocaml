@@ -52,23 +52,9 @@ let parse_file ?(original=false) file =
       Hashtbl.add parsed_files file soup;
       soup
 
-let process ?(search=true) ~version config file out =
-
-  dbg "Processing %s..." file;
-  let soup = parse_file ~original:true file in
-
-  (* Add javascript and favicon *)
-  update_head ~search soup;
-
-  (* Add api wrapper *)
-  let body = wrap_body ~classes:["api"] soup in
-
-  (* Delete previous/up/next links *)
-  body $? "div.navbar"
-  |> Option.iter delete;
-
-  (* Create TOC with H2 and H3 elements *)
-  (* Cf Scanf for an example with H3 elements *)
+(* Create TOC with H2 and H3 elements *)
+(* Cf Scanf for an example with H3 elements *)
+let make_toc ~version ~search file config title body =
   let header = create_element ~id:"sidebar" "header" in
   prepend_child body header;
   let nav = create_element "nav" ~class_:"toc" in
@@ -105,7 +91,6 @@ let process ?(search=true) ~version config file out =
       | _ -> li_current, h3_current) (create_element "li", None);
   |> ignore;
 
-  let title = soup $ "title" |> R.leaf_text in
   let href = let base = Filename.basename file in
     if String.sub base 0 5 = "type_"
     then String.sub base 5 (String.length base - 5) else "#top" in
@@ -141,7 +126,27 @@ let process ?(search=true) ~version config file out =
   (* Add logo *)
   prepend_child header (logo_html
                           ((if config.title = "" then "" else "../") ^
-                           (manual_page_url ^ "/index.html")));
+                           (manual_page_url ^ "/index.html")))
+
+
+let process ?(search=true) ~version config file out =
+
+  dbg "Processing %s..." file;
+  let soup = parse_file ~original:true file in
+
+  (* Add javascript and favicon *)
+  update_head ~search soup;
+
+  (* Add api wrapper *)
+  let body = wrap_body ~classes:["api"] soup in
+
+  (* Delete previous/up/next links *)
+  body $? "div.navbar"
+  |> Option.iter delete;
+
+  (* Add left sidebar with TOC *)
+  let title = soup $ "title" |> R.leaf_text in
+  make_toc ~version ~search file config title body;
 
   dbg "Saving %s..." out;
 
