@@ -19,8 +19,6 @@ type config = {
   title : string
 }
 
-let favicon = "favicon.ico"
-
 (* HTML code for the search widget. We don't add the "onchange" event because it
    forces to click twice to an external link after entering text. *)
 let search_widget with_description =
@@ -59,21 +57,8 @@ let process ?(search=true) ~version config file out =
   dbg "Processing %s..." file;
   let soup = parse_file ~original:true file in
 
-  (* Add javascript files *)
-  let head = soup $ "head" in
-  if search then begin
-    create_element "script" ~attributes:["src","search.js"]
-    |> append_child head
-  end;
-  create_element "script" ~attributes:["src","scroll.js"]
-  |> append_child head;
-  create_element "script" ~attributes:["src","navigation.js"]
-  |> append_child head;
-
-  (* Add favicon *)
-  let head = soup $ "head" in
-  parse ({|<link rel="shortcut icon" type="image/x-icon" href="|} ^ favicon ^ {|">|})
-  |> append_child head;
+  (* Add javascript and favicon *)
+  update_head ~search soup;
 
   (* Add api wrapper *)
   let body = wrap_body ~classes:["api"] soup in
@@ -152,7 +137,7 @@ let process ?(search=true) ~version config file out =
 
   (* Add sidebar button for mobile navigation *)
   add_sidebar_button body;
-  
+
   (* Add logo *)
   prepend_child header (logo_html
                           ((if config.title = "" then "" else "../") ^

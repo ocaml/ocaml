@@ -50,6 +50,8 @@ let html_file = ( // ) html_maindir
 
 let releases_url = "https://ocaml.org/releases/"
 
+let favicon = "favicon.ico"
+
 (**** utilities ****)
 
 let flat_option f o = Option.bind o f
@@ -75,7 +77,7 @@ let rec next node =
 
 let logo_html url =
   "<nav class=\"toc brand\"><a class=\"brand\" href=\"" ^ url ^
-  "\" ><img src=\"colour-logo-gray.svg\" class=\"svg\" alt=\"OCaml\" /></a></nav>"
+  "\" ><img src=\"colour-logo.svg\" class=\"svg\" alt=\"OCaml\" /></a></nav>"
   |> parse
 
 let wrap_body ~classes soup =
@@ -84,6 +86,25 @@ let wrap_body ~classes soup =
   List.iter (fun c -> add_class c body) classes;
   wrap body (create_element "body");
   body
+
+(* Add favicon *)
+let add_favicon head =
+  parse ({|<link rel="shortcut icon" type="image/x-icon" href="|} ^
+         favicon ^ {|">|})
+  |> append_child head
+
+(* Update html <head> element with javascript and favicon *)
+let update_head ?(search = false) soup =
+  let head = soup $ "head" in
+  if search then begin
+    create_element "script" ~attributes:["src","search.js"]
+    |> append_child head
+  end;
+  create_element "script" ~attributes:["src","scroll.js"]
+  |> append_child head;
+  create_element "script" ~attributes:["src","navigation.js"]
+  |> append_child head;
+  add_favicon head
 
 (* Add version number *)
 let add_version_link nav text url =

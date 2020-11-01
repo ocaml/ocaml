@@ -24,10 +24,9 @@ let remove_number s =
   Re.Str.(global_replace (regexp ".+  ") "" s)
 
 let toc_get_title li =
-  let r = Re.Str.regexp ".+  " in
   let a = li $ "a[href]" in
   let title = trimmed_texts a |> String.concat " "
-              |> Re.Str.global_replace r "" in
+              |> remove_number in
   let file = R.attribute "href" a
              |> String.split_on_char '#'
              |> List.hd in
@@ -140,7 +139,7 @@ let file_title file toc =
    useful titles, and insert then in a div container, keeping only 2 of them:
    either (previous, next) or (previous, up) or (up, next). Remove them at the
    top of the file, where they are not needed because we have the TOC. *)
-let update_navigation soup toc =
+let update_navigation_old soup toc =
   Option.iter delete (soup $? "hr");
   let container, count =
     ["Previous"; "Up"; "Next"]
@@ -149,7 +148,7 @@ let update_navigation soup toc =
         (* In principle [imgs] will contain either 0 or 2 elements. We delete
            the first one. *)
         Option.iter (delete << R.parent) (first imgs);
-        (* Now, if there is a second element, we update (or create) an "div"
+        (* Now, if there is a second element, we update (or create) a "div"
            container to insert the element, and increase [count]. [count] is
            used to make sure we keep only 2 links, not 3. *)
         imgs |> fold (fun (container, count) img ->
@@ -184,6 +183,60 @@ let update_navigation soup toc =
         add_class "next" (div $$ "a" |> R.last);
       end
 
+(* Replace the images of one of the "previous, next, up" link by the title of
+   the reference. *)
+let nav_replace_img_by_text toc alt a img =
+  let file = R.attribute "href" a in
+  let title = match file_title file toc with
+    | Some f -> begin match alt with
+        | "Previous" -> "« " ^ f
+        | "Next" -> f ^ " »"
+        | "Up" -> f
+        | _ -> failwith "This should not happen"
+            end
+    | None -> dbg "Unknown title for file %s" file; file in
+  let txt = create_text title in
+  replace img txt;
+  add_class (String.lowercase_ascii alt) a
+
+let update_navigation soup toc =
+  Option.iter delete (soup $? "hr");
+  let links =
+    ["Previous"; "Up"; "Next"]
+    |> List.map (fun alt -> alt, to_list (soup $$ ("img[alt=\"" ^ alt ^ "\"]")))
+    (* In principle [imgs] will contain either 0 or 2 elements. *)
+    |> List.filter (fun (_alt, imgs) -> List.length imgs = 2)
+    (* We delete the first link, and replace image by text *)
+    |> List.map (fun (alt, imgs) ->
+        delete (R.parent (List.hd imgs));
+        let img = List.hd (List.rev imgs) in
+        let a = R.parent img in
+        nav_replace_img_by_text toc alt a img;
+        a) in
+  if links <> [] then begin
+    (* We keep only 2 links: first and last *)
+    let a1, a2 = match links with
+      | [prev;up;next] -> delete up; (prev, next)
+      | [a;b] -> (a,b)
+      | _ -> failwith "Navigation link should have at least 2 elements" in
+    add_class "previous" a1;
+    add_class "next" a2;
+    (* some elements can have both previous and up classes, for instance. This
+       helps css styling. *)
+    let container = create_element ~class_:"bottom-navigation" "div" in
+    wrap a1 container;
+    append_child container a2
+  end
+
+
+let make_template soup =
+  let title = match soup $? "div.maintitle" with
+    | Some div -> div (* This is the case for "index.html" *)
+    | None -> soup $ "h1" in
+  next_siblings title
+  |> iter delete;
+  title
+  
 (* Create a new file by cloning the structure of "soup", deleting everything
    after the "h1", and inserting the content of external file (hence preserving
    TOC and headers) *)
@@ -240,43 +293,20 @@ let convert_index version soup =
   |> parse
   |> append_child body
 
-(* This is the main script for processing a specified file. [convert] has to be
-   run for each "entry" [file] of the manual, making a "Chapter". (The list of
-   [chapters] corresponds to a "Part" of the manual.) *)
-let convert version (part_title, chapters) toc_table (file, title) =
-  dbg "%s ==> %s" (html_file file) (docs_file file);
-
-  (* Parse html *)
-  let soup = parse (load_html file) in
-
-  (* Change title *)
+let change_title title soup =
   let title_tag = soup $ "title" in
   let new_title = create_element "title" ~inner_text:("OCaml - " ^ title) in
-  replace title_tag new_title;
+  replace title_tag new_title
 
-  (* Add javascript *)
-  let head = soup $ "head" in
-  create_element "script" ~attributes:["src","scroll.js"]
-  |> append_child head;
-  create_element "script" ~attributes:["src","navigation.js"]
-  |> append_child head;
-
-
-  (* Wrap body. *)
-  let c = if file = "index.html" then ["manual"; "content"; "index"]
-    else ["manual"; "content"] in
-  let body = wrap_body ~classes:c soup in
-
-  if file = "index.html" then convert_index version soup;
-
-  (* Create left sidebar for TOC.  *)
-  let toc = match soup $? "ul" with
+(* Create left sidebar for TOC.  *)
+let make_toc_sidebar ~version ~title file body =
+  let toc = match body $? "ul" with
     | None -> None (* can be None, eg chapters 15,19...*)
     | Some t -> if classes t <> [] (* as in libthreads.html or parsing.html *)
         then (dbg "We don't promote <UL> to TOC for file %s" file; None)
         else Some t in
 
-  let () = match soup $? "h2.section", toc with
+  let () = match body $? "h2.section", toc with
     | None, Some toc ->
         (* If file has "no content" (sections), we clone the toc to leave it in
            the main content. This applies to "index.html" as well. *)
@@ -290,7 +320,7 @@ let convert version (part_title, chapters) toc_table (file, title) =
   let () = match toc with
     | None -> prepend_child body nav
     | Some toc -> wrap toc nav in
-  let nav = soup $ "nav" in
+  let nav = body $ "nav" in
   wrap nav (create_element ~id:"sidebar" "header");
   begin match toc with
   | None -> dbg "No TOC for %s" file
@@ -357,8 +387,10 @@ let convert version (part_title, chapters) toc_table (file, title) =
   let version_text = if file = "index.html" then "Select another version"
     else "Version " ^ version in
   add_version_link nav version_text releases_url;
+  toc
 
-  (* Create new menu *)
+ (* Create menu for all chapters in the part *)
+let make_part_menu ~part_title chapters file body =
   let menu = create_element "ul" ~id:"part-menu" in
   List.iter (fun (href, title) ->
       let a = create_element "a" ~inner_text:title ~attributes:["href", href] in
@@ -367,7 +399,6 @@ let convert version (part_title, chapters) toc_table (file, title) =
         else create_element "li" in
       append_child li a;
       append_child menu li) chapters;
-  (* let body = soup $ "div.content" in *)
   prepend_child body menu;
 
   (* Add part_title just before the part-menu *)
@@ -376,32 +407,63 @@ let convert version (part_title, chapters) toc_table (file, title) =
     create_element "span" ~inner_text:"☰"
     |> prepend_child nav;
     prepend_child body nav
-  end;
+  end
+
+(* Add logo *)
+let add_logo file soup =
+  match soup $? "header" with
+  | None -> dbg "Warning: no <header> for %s" file
+  | Some header -> prepend_child header (logo_html "https://ocaml.org/")
+
+(* Move authors to the end *)
+let move_authors body =
+  body $? "span.c009"
+  |> Option.iter (fun authors ->
+      match leaf_text authors with
+      | None -> ()
+      | Some s ->
+          match Re.Str.(search_forward (regexp "(.+written by.+)") s 0) with
+          | exception Not_found -> ()
+          | _ ->
+              dbg "Moving authors";
+              delete authors;
+              add_class "authors" authors;
+              append_child body authors)
+
+(* This is the main script for processing a specified file. [convert] has to be
+   run for each "entry" [file] of the manual, making a "Chapter". (The list of
+   [chapters] corresponds to a "Part" of the manual.) *)
+let convert version (part_title, chapters) toc_table (file, title) =
+  dbg "%s ==> %s" (html_file file) (docs_file file);
+
+  (* Parse html *)
+  let soup = parse (load_html file) in
+  change_title title soup;
+
+  (* Add javascript and favicon *)
+  update_head soup;
+
+  (* Wrap body. *)
+  let c = if file = "index.html" then ["manual"; "content"; "index"]
+    else ["manual"; "content"] in
+  let body = wrap_body ~classes:c soup in
+
+  if file = "index.html" then convert_index version soup;
+
+  (* Make sidebar *)
+  let toc = make_toc_sidebar ~version ~title file body in
+
+  (* Make top menu for chapters *)
+  make_part_menu ~part_title chapters file body;
 
   (* Add side-bar button before part_title *)
   add_sidebar_button body;
 
   (* Add logo *)
-  begin match soup $? "header" with
-  | None -> dbg "Warning: no <header> for %s" file
-  | Some header -> prepend_child header (logo_html "https://ocaml.org/")
-  end;
+  add_logo file soup;
 
-  (* Move authors to the end. Versions >= 4.05 use c009. *)
-  ["span.c009"]
-  |> List.iter (fun selector ->
-      soup $? selector
-      |> Option.iter (fun authors ->
-          match leaf_text authors with
-          | None -> ()
-          | Some s ->
-              match Re.Str.(search_forward (regexp "(.+written by.+)") s 0) with
-              | exception Not_found -> ()
-              | _ ->
-                  dbg "Moving authors";
-                  delete authors;
-                  add_class "authors" authors;
-                  append_child body authors));
+  (* Move authors to the end *)
+  move_authors body;
 
   (* Get the list of external files linked by the current file *)
   let xfiles = match toc with
@@ -425,12 +487,13 @@ let convert version (part_title, chapters) toc_table (file, title) =
 
   (* Add copyright *)
   append_child body (copyright ());
-
-  (* Generate external files *)
-  List.iter (clone_structure soup toc_table) xfiles;
-
+  
   (* And finally save *)
-  save_to_file soup file
+  save_to_file soup file;
+
+  (* Generate external files to be converted *)
+  List.iter (clone_structure soup toc_table) xfiles
+
 
 (* Completely process the given version of the manual. Returns the names of the
    main html files. *)

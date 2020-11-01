@@ -191,6 +191,12 @@ h4{
     overflow-x:auto;
     padding-left:1ex
 }
+.ocaml .pre{
+    overflow-x:initial;
+}
+.caml-example .ocaml{
+    overflow-x:auto;
+}
 li code,p code{
     background-color:#f6f8fa;
     color:#0d2b3e;

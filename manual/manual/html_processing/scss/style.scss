@@ -875,12 +875,19 @@
 	}
     }
 
+    span.search_comment {
+	vertical-align: bottom;
+    }
+
     .search_comment .search_help {
 	height: 0;
 	opacity: 0;
 	font-size: 10px;
 	overflow: hidden;
 	transition: all 0.5s;
+	ul {
+	    margin-top: 0;
+	}
     }
     .search_comment:hover .search_help {
 	height: auto;
