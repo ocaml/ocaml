@@ -229,29 +229,24 @@ let update_navigation soup toc =
   end
 
 
+(* extract the cut point (just after title) and the header of soup:
+   "clone_structure" needs them to insert external files after the cut point,
+   and include the TOC. *)
 let make_template soup =
+  let header = soup $ "header" in
   let title = match soup $? "div.maintitle" with
     | Some div -> div (* This is the case for "index.html" *)
     | None -> soup $ "h1" in
-  next_siblings title
-  |> iter delete;
-  title
+  title, header
   
-(* Create a new file by cloning the structure of "soup", deleting everything
-   after the "h1", and inserting the content of external file (hence preserving
-   TOC and headers) *)
-let clone_structure soup toc xfile =
+(* Create a new file by keeping only the head/headers parts of "soup", deleting
+   everything after the title, and inserting the content of external file (hence
+   preserving TOC and headers) (WARNING: this mutates soup) *)
+let clone_structure soup (title, header) toc xfile =
   let xternal = parse (load_html xfile) in
   update_navigation xternal toc;
   Option.iter delete (xternal $? "hr");
   let xbody = xternal $ "body" in
-  let clone = parse (to_string soup) in
-  let header = soup $ "header" |> to_string |> parse in
-  let title = match clone $? "div.maintitle" with
-    | Some div -> div (* This is the case for "index.html" *)
-    | None -> clone $ "h1" in
-  next_siblings title
-  |> iter delete;
   insert_after title xbody;
   create_element ~id:"start-section" "a"
   |> insert_after title;
@@ -261,7 +256,7 @@ let clone_structure soup toc xfile =
   insert_after xbody (copyright ());
   set_name "section" xbody;
   set_attribute "id" "section" xbody;
-  save_to_file clone xfile
+  save_to_file soup xfile
 
 (* Extract the date (and copyright) from the maintitle block in "index.html" *)
 let extract_date maintitle =
@@ -488,11 +483,13 @@ let convert version (part_title, chapters) toc_table (file, title) =
   (* Add copyright *)
   append_child body (copyright ());
   
-  (* And finally save *)
+  (* Save html *)
   save_to_file soup file;
 
-  (* Generate external files to be converted *)
-  List.iter (clone_structure soup toc_table) xfiles
+  (* Finally, generate external files to be converted (this should be done at
+     the end because it deeply mutates the original soup) *)
+  let template = make_template soup in
+  List.iter (clone_structure soup template toc_table) xfiles
 
 
 (* Completely process the given version of the manual. Returns the names of the
