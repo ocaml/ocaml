@@ -377,8 +377,9 @@ static void read_main_debug_info(struct debug_info *di)
   }
 
   fd = caml_attempt_open(&exec_name, &trail, 1);
-  if (fd < 0){
-    caml_fatal_error ("executable program file not found");
+  if (fd < 0) {
+    /* Record the failure of caml_attempt_open in di->already-read */
+    di->already_read = fd;
     CAMLreturn0;
   }
 
@@ -407,6 +408,8 @@ static void read_main_debug_info(struct debug_info *di)
     caml_close_channel(chan);
 
     di->events = process_debug_events(caml_start_code, events, &di->num_events);
+  } else {
+    close(fd);
   }
 
   CAMLreturn0;
@@ -418,9 +421,25 @@ CAMLexport void caml_init_debug_info(void)
   caml_add_debug_info(caml_start_code, Val_long(caml_code_size), Val_unit);
 }
 
+CAMLexport void caml_load_main_debug_info(void)
+{
+  if (Caml_state->backtrace_active > 1) {
+    read_main_debug_info(caml_debug_info.contents[0]);
+  }
+}
+
 int caml_debug_info_available(void)
 {
   return (caml_debug_info.size != 0);
+}
+
+int caml_debug_info_status(void)
+{
+  if (!caml_debug_info_available()) {
+    return 0;
+  } else {
+    return ((struct debug_info *)caml_debug_info.contents[0])->already_read;
+  }
 }
 
 /* Search the event index for the given PC.  Return -1 if not found. */

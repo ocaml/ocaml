@@ -111,7 +111,7 @@ void caml_parse_ocamlrunparam(void)
       switch (*opt++){
       case 'a': scanmult (opt, &p); caml_set_allocation_policy ((intnat) p);
         break;
-      case 'b': scanmult (opt, &p); caml_record_backtrace(Val_bool (p));
+      case 'b': scanmult (opt, &p); caml_record_backtrace(Val_int (p));
         break;
       case 'c': scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
       case 'h': scanmult (opt, &caml_init_heap_wsz); break;
