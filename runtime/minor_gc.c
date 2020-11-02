@@ -28,6 +28,7 @@
 #include "caml/finalise.h"
 #include "caml/gc.h"
 #include "caml/gc_ctrl.h"
+#include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
 #include "caml/minor_gc.h"
@@ -536,6 +537,13 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
 
   caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
   caml_ev_begin("minor_gc");
+
+  caml_ev_begin("minor_gc/global_roots");
+  if( participating[0] == caml_domain_self() || !not_alone ) { // TODO: We should distribute this work
+    caml_scan_global_young_roots(oldify_one, &st);
+  }
+  caml_ev_end("minor_gc/global_roots");
+
   caml_ev_begin("minor_gc/remembered_set");
 
   int remembered_roots = 0;
