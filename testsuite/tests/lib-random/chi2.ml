@@ -65,4 +65,24 @@ let _ =
                                              52)));
   test "Random.int64 (256 * p) / p"
        (let p = 16430454264262693L in
-        fun () -> Int64.(to_int (div (Random.int64 (mul 256L p)) p)))
+        fun () -> Int64.(to_int (div (Random.int64 (mul 256L p)) p)));
+  if Sys.int_size >= 32 then begin
+    test "Random.int63 2^30 (bits 0-7)"
+         (fun () -> Random.int63 (1 lsl 30));
+    test "Random.int63 2^30 (bits 22-29)"
+         (fun () -> Random.int63 (1 lsl 30) lsr 22);
+    test "Random.int63 (256 * p) / p"
+         (let p = 7992689 in
+          fun () -> Random.int63 (256 * p) / p)
+  end;
+  if Sys.int_size >= 63 then begin
+    test "Random.int63 2^60 (bits 0-7)"
+         (fun () -> Random.int63 (1 lsl 60));
+    test "Random.int63 2^60 (bits 30-37)"
+         (fun () -> Random.int63 (1 lsl 60) lsr 30);
+    test "Random.int63 2^60 (bits 52-59)"
+         (fun () -> Random.int63 (1 lsl 60) lsr 52);
+    test "Random.int63 (256 * P) / P"
+         (let p = Int64.to_int 17766642568158577L in
+          fun () -> Random.int63 (256 * p) / p)
+  end
