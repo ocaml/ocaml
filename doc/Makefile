@@ -12,11 +12,12 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-ROOTDIR = $(abspath ..)
+ROOTDIR = ..
 
 include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
+include $(ROOTDIR)/ocamldoc/Makefile.best_ocamldoc
 include Makefile.docfiles
 
 DOC_COMPILERLIBS_DIRS= $(addprefix $(ROOTDIR)/, \
@@ -68,59 +69,56 @@ latex: latex/Stdlib.tex
 LD_PATH := "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
 SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_PATH)
 
-OCAMLDOC = $(if $(wildcard $(ROOTDIR)/ocamldoc/ocamldoc.opt),\
-  $(ROOTDIR)/ocamldoc/ocamldoc.opt,\
-  $(SET_LD_PATH) $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamldoc/ocamldoc)
 
 $(libref:%=build/libref/%.odoc):build/libref/%.odoc:%.mli
-	$(OCAMLDOC) -nostdlib -hide Stdlib -lib Stdlib \
+	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
 "$(AWK) -v ocamldoc=true -f $(ROOTDIR)/stdlib/expand_module_aliases.awk" \
 	$(DOC_STDLIB_INCLUDES) $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc:%.mli
-	$(OCAMLDOC) -nostdlib -hide Stdlib -lib Stdlib \
+	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	$(DOC_ALL_INCLUDES) $< -dump  $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc:%.mld
-	$(OCAMLDOC) $(DOC_ALL_INCLUDES) -text $< -dump  $@
+	$(OCAMLDOC_RUN) $(DOC_ALL_INCLUDES) -text $< -dump  $@
 
 $(libref_TEXT:%=build/libref/%.odoc):build/libref/%.odoc:%.mld
-	$(OCAMLDOC) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
+	$(OCAMLDOC_RUN) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
 
 ALL_COMPILED_DOC=$(ALL_DOC:%=build/%.odoc)
 man/Stdlib.3o: $(ALL_COMPILED_DOC)
 	$(MKDIR) man
-	$(OCAMLDOC) -man -d man -man-mini \
+	$(OCAMLDOC_RUN) -man -d man -man-mini \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
 html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc)
 	$(MKDIR) -p html/libref
-	$(OCAMLDOC) -html -d html/libref \
+	$(OCAMLDOC_RUN) -html -d html/libref \
 	-charset="utf8" \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_LIBREF:%=build/%.odoc))
 
 html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc)
 	$(MKDIR) -p html/compilerlibref
-	$(OCAMLDOC) -html -d html/compilerlibref \
-	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml compiler library" \
+	$(OCAMLDOC_RUN) -html -d html/compilerlibref \
+	-nostdlib -hide Stdlib -t "OCaml compiler library" \
 	-charset="utf8" \
 	-intro Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))
 
 texi/stdlib.texi: $(ALL_COMPILED_DOC)
 	$(MKDIR) texi
-	$(OCAMLDOC) -texi -o $@ \
+	$(OCAMLDOC_RUN) -texi -o $@ \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
 latex/Stdlib.tex: $(ALL_COMPILED_DOC)
 	$(MKDIR) latex
-	cd latex && $(OCAMLDOC) -latex \
+	$(OCAMLDOC_RUN) -latex -o latex/all.tex \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-sepfiles \
 	-latextitle "1,subsection*" \
@@ -130,7 +128,7 @@ latex/Stdlib.tex: $(ALL_COMPILED_DOC)
 	-latex-module-type-prefix "" \
 	-latex-value-prefix "" \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
-	$(addprefix -load ../, $(ALL_COMPILED_DOC))
+	$(addprefix -load , $(ALL_COMPILED_DOC))
 
 latex/alldoc.pdf: latex/Stdlib.tex latex/alldoc.tex
 	cd latex && TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
@@ -152,4 +150,4 @@ latex/compilerlibs_input.tex:
 	echo $(compilerlibs_INPUT)> $@
 
 clean:
-	rm -rf build man html latex texi
+	rm -rf build man html latex texi Compiler_libs.mld

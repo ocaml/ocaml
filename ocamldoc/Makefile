@@ -18,7 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
@@ -32,39 +31,8 @@ OCAMLLEX = $(BEST_OCAMLLEX)
 ##############
 
 CP=cp
-OCAMLDOC=ocamldoc$(EXE)
-OCAMLDOC_OPT=ocamldoc.opt$(EXE)
-
 programs := ocamldoc ocamldoc.opt
-
-# TODO: clarify whether the following really needs to be that complicated
-ifeq "$(UNIX_OR_WIN32)" "unix"
-  ifeq "$(TARGET)" "$(HOST)"
-    ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-      OCAMLDOC_RUN_BYTE=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
-    else
-# if shared-libraries are not supported, unix.cma and str.cma
-# are compiled with -custom, so ocamldoc also uses -custom,
-# and (ocamlrun ocamldoc) does not work.
-      OCAMLDOC_RUN_BYTE=./$(OCAMLDOC)
-    endif
-  else
-    OCAMLDOC_RUN_BYTE=$(OCAMLRUN) ./$(OCAMLDOC)
-  endif
-else # Windows
-  OCAMLDOC_RUN_BYTE = \
-    CAML_LD_LIBRARY_PATH="$(ROOTDIR)/otherlibs/win32unix;$(ROOTDIR)/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
-endif
-
-OCAMLDOC_RUN_OPT=./$(OCAMLDOC_OPT)
-
-OCAMLDOC_RUN_PLUGINS=$(OCAMLDOC_RUN_BYTE)
-
-ifeq "$(wildcard $(OCAMLDOC_OPT))" ""
-  OCAMLDOC_RUN=$(OCAMLDOC_RUN_BYTE)
-else
-  OCAMLDOC_RUN=$(OCAMLDOC_RUN_OPT)
-endif
+include Makefile.best_ocamldoc
 
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
