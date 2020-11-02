@@ -798,6 +798,16 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_ev_begin("stw/leader");
   caml_gc_log("causing STW");
 
+  /* setup all fields for this stw_request, must have those needed
+     for domains waiting at the enter spin barrier */
+  stw_request.enter_spin_callback = enter_spin_callback;
+  stw_request.enter_spin_data = enter_spin_data;
+  stw_request.callback = handler;
+  stw_request.data = data;
+  stw_request.leave_spin_callback = leave_spin_callback;
+  stw_request.leave_spin_data = leave_spin_data;
+  stw_request.leave_when_done = leave_when_done;
+  atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
   if( leader_setup ) {
@@ -836,18 +846,12 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   Assert(domains_participating > 0);
 
+  /* setup the domain_participating fields */
   stw_request.num_domains = domains_participating;
-  stw_request.leave_when_done = leave_when_done;
-  atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.num_domains_still_processing,
                    domains_participating);
-  stw_request.callback = handler;
-  stw_request.data = data;
-  stw_request.enter_spin_callback = enter_spin_callback;
-  stw_request.enter_spin_data = enter_spin_data;
-  stw_request.leave_spin_callback = leave_spin_callback;
-  stw_request.leave_spin_data = leave_spin_data;
 
+  /* release from the enter barrier */
   atomic_store_rel(&stw_request.domains_still_running, 0);
 
   #ifdef DEBUG
