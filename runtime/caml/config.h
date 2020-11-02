@@ -37,6 +37,12 @@
 #define inline __inline
 #endif
 
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define Caml_inline static __inline
+#else
+#define Caml_inline static inline
+#endif
+
 #include "s.h"
 
 #ifdef BOOTSTRAPPING_FLEXLINK
