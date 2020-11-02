@@ -99,12 +99,20 @@ module State = struct
     let b2 = bits s in
     let (b, max_int) =
       if n <= max_int_32 then
-        (* 32 random bits on both 64-bit OCaml and JavaScript *)
-        ((((b2 land 0x30000000) lsl 2) lor b1) land max_int_32, max_int_32)
+        (* 32 random bits on both 64-bit OCaml and JavaScript.
+           Use upper 16 bits of b1 and b2. *)
+        let bpos =
+          (((b2 land 0x3FFFC000) lsl 2) lor (b1 lsr 14)) land max_int_32
+        in
+          (bpos, max_int_32)
       else
         let b3 = bits s in
-        (* 63 random bits on 64-bit OCaml; unreachable on JavaScript *)
-        (((((b3 land 0x38000000) lsl 3) lor b2) lsl 30) lor b1, max_int)
+        (* 63 random bits on 64-bit OCaml; unreachable on JavaScript.
+           Use upper 21 bits of b1, b2 and b3. *)
+        let bpos =
+          ((((b3 land 0x3FFFFE00) lsl 12) lor (b2 lsr 9)) lsl 21) lor (b1 lsr 9)
+        in
+          (bpos, max_int)
     in
     let r = b lsr 1 in (* Random non-negative int *)
     let v = r mod n in
