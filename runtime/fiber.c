@@ -53,6 +53,7 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   hand->parent = NULL;
   stack->handler = hand;
   stack->sp = (value*)hand;
+  stack->exception_ptr = NULL;
   stack->magic = 42;
   CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
              Stack_high(stack) - Stack_base(stack) == wosize + 1);
@@ -393,10 +394,11 @@ CAMLprim value caml_clone_continuation (value cont)
            stack_used * sizeof(value));
 #ifdef NATIVE_CODE
     {
-      /* pull out the exception pointer from the caml context on the stack */
+      /* rewrite exception pointer in the caml context on the new stack */
       value* exn_start =
         Stack_high(target) - (Stack_high(source) - (value*)source->sp);
       rewrite_exception_stack(source, (value**)exn_start, target);
+      target->exception_ptr = *(value**)exn_start;
     }
 #endif
     target->sp = Stack_high(target) - stack_used;

@@ -20,8 +20,10 @@ struct stack_handler {
 struct stack_info {
 #ifdef NATIVE_CODE
   void* sp;
+  void* exception_ptr;
 #else
   value* sp;
+  value* exception_ptr;
 #endif
   struct stack_handler* handler;
   uintnat magic;
