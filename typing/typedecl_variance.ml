@@ -392,7 +392,9 @@ let transl_variance (v, i) =
   (co, cn, match i with Injective -> true | NoInjectivity -> false)
 
 let variance_of_params ptype_params =
-  List.map transl_variance (List.map snd ptype_params)
+  List.map transl_variance
+    (List.map (fun (p : Parsetree.type_parameter) ->
+                 p.ptp_variance, p.ptp_injectivity) ptype_params)
 
 let variance_of_sdecl sdecl =
   variance_of_params sdecl.Parsetree.ptype_params
@@ -401,12 +403,17 @@ let update_decls env sdecls decls =
   let required = List.map variance_of_sdecl sdecls in
   Typedecl_properties.compute_property property env decls required
 
+let variance_of_params_t ptype_params =
+  List.map transl_variance
+    (List.map (fun (p : Typedtree.type_parameter) ->
+                 p.typa_variance, p.typa_injectivity) ptype_params)
+
 let update_class_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
         (obj_id, obj_abbr) :: decls,
-        variance_of_params ci.Typedtree.ci_params :: req)
+        variance_of_params_t ci.Typedtree.ci_params :: req)
       cldecls ([],[])
   in
   let decls =

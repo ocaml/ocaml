@@ -6,8 +6,9 @@
         pci_virt = Concrete
         pci_params =
           [
-            core_type (hash_ambiguity.ml[8,140+7]..[8,140+9])
-              Ptyp_var a
+            ptp_name "a" (hash_ambiguity.ml[8,140+7]..[8,140+9])
+            ptp_variance NoVariance
+            ptp_injectivity NoInjectivity
           ]
         pci_name = "list" (hash_ambiguity.ml[8,140+11]..[8,140+15])
         pci_expr =
@@ -24,8 +25,9 @@
       type_declaration "t" (hash_ambiguity.ml[9,169+8]..[9,169+9]) (hash_ambiguity.ml[9,169+0]..[9,169+27])
         ptype_params =
           [
-            core_type (hash_ambiguity.ml[9,169+5]..[9,169+7])
-              Ptyp_var a
+            ptp_name "a" (hash_ambiguity.ml[9,169+5]..[9,169+7])
+            ptp_variance NoVariance
+            ptp_injectivity NoInjectivity
           ]
         ptype_cstrs =
           []
@@ -50,8 +52,9 @@
       type_declaration "u" (hash_ambiguity.ml[15,425+8]..[15,425+9]) (hash_ambiguity.ml[15,425+0]..[15,425+26])
         ptype_params =
           [
-            core_type (hash_ambiguity.ml[15,425+5]..[15,425+7])
-              Ptyp_var a
+            ptp_name "a" (hash_ambiguity.ml[15,425+5]..[15,425+7])
+            ptp_variance NoVariance
+            ptp_injectivity NoInjectivity
           ]
         ptype_cstrs =
           []
@@ -81,8 +84,9 @@
       type_declaration "v" (hash_ambiguity.ml[17,453+8]..[17,453+9]) (hash_ambiguity.ml[17,453+0]..[17,453+32])
         ptype_params =
           [
-            core_type (hash_ambiguity.ml[17,453+5]..[17,453+7])
-              Ptyp_var a
+            ptp_name "a" (hash_ambiguity.ml[17,453+5]..[17,453+7])
+            ptp_variance NoVariance
+            ptp_injectivity NoInjectivity
           ]
         ptype_cstrs =
           []

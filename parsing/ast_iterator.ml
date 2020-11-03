@@ -68,6 +68,7 @@ type iterator = {
   type_extension: iterator -> type_extension -> unit;
   type_exception: iterator -> type_exception -> unit;
   type_kind: iterator -> type_kind -> unit;
+  type_parameter: iterator -> type_parameter -> unit;
   value_binding: iterator -> value_binding -> unit;
   value_description: iterator -> value_description -> unit;
   with_constraint: iterator -> with_constraint -> unit;
@@ -77,7 +78,6 @@ type iterator = {
     argument the iterator to be applied to children in the syntax
     tree. *)
 
-let iter_fst f (x, _) = f x
 let iter_snd f (_, y) = f y
 let iter_tuple f1 f2 (x, y) = f1 x; f2 y
 let iter_tuple3 f1 f2 f3 (x, y, z) = f1 x; f2 y; f3 z
@@ -109,6 +109,9 @@ module T = struct
     match pof_desc with
     | Otag (_, t) -> sub.typ sub t
     | Oinherit t -> sub.typ sub t
+
+  let iter_type_parameter sub { ptp_name; ptp_variance=_; ptp_injectivity=_ } =
+    iter_loc sub ptp_name
 
   let iter sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     sub.location sub loc;
@@ -142,7 +145,7 @@ module T = struct
        ptype_attributes;
        ptype_loc} =
     iter_loc sub ptype_name;
-    List.iter (iter_fst (sub.typ sub)) ptype_params;
+    List.iter (sub.type_parameter sub) ptype_params;
     List.iter
       (iter_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
       ptype_cstrs;
@@ -171,7 +174,7 @@ module T = struct
        ptyext_attributes} =
     iter_loc sub ptyext_path;
     List.iter (sub.extension_constructor sub) ptyext_constructors;
-    List.iter (iter_fst (sub.typ sub)) ptyext_params;
+    List.iter (sub.type_parameter sub) ptyext_params;
     sub.location sub ptyext_loc;
     sub.attributes sub ptyext_attributes
 
@@ -506,7 +509,7 @@ module CE = struct
 
   let class_infos sub f {pci_virt = _; pci_params = pl; pci_name; pci_expr;
                          pci_loc; pci_attributes} =
-    List.iter (iter_fst (sub.typ sub)) pl;
+    List.iter (sub.type_parameter sub) pl;
     iter_loc sub pci_name;
     f pci_expr;
     sub.location sub pci_loc;
@@ -540,6 +543,7 @@ let default_iterator =
       (fun this -> CE.class_infos this (this.class_type this));
     type_declaration = T.iter_type_declaration;
     type_kind = T.iter_type_kind;
+    type_parameter = T.iter_type_parameter;
     typ = T.iter;
     row_field = T.row_field;
     object_field = T.object_field;

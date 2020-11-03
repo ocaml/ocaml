@@ -1392,15 +1392,15 @@ let class_infos define_class kind
 
   (* Introduce class parameters *)
   let ci_params =
-    let make_param (sty, v) =
+    let make_param p =
       try
-          (transl_type_param env sty, v)
+          transl_type_param env p
       with Already_bound ->
-        raise(Error(sty.ptyp_loc, env, Repeated_parameter))
+        raise(Error(p.ptp_name.loc, env, Repeated_parameter))
     in
       List.map make_param cl.pci_params
   in
-  let params = List.map (fun (cty, _) -> cty.ctyp_type) ci_params in
+  let params = List.map (fun cty -> cty.typa_type) ci_params in
 
   (* Allow self coercions (only for class declarations) *)
   let coercion_locs = ref [] in

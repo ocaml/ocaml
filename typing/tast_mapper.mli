@@ -61,6 +61,7 @@ type mapper =
     type_extension: mapper -> type_extension -> type_extension;
     type_exception: mapper -> type_exception -> type_exception;
     type_kind: mapper -> type_kind -> type_kind;
+    type_parameter: mapper -> type_parameter -> type_parameter;
     value_binding: mapper -> value_binding -> value_binding;
     value_bindings: mapper -> (rec_flag * value_binding list) ->
       (rec_flag * value_binding list);

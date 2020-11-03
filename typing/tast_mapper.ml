@@ -62,6 +62,7 @@ type mapper =
     type_extension: mapper -> type_extension -> type_extension;
     type_exception: mapper -> type_exception -> type_exception;
     type_kind: mapper -> type_kind -> type_kind;
+    type_parameter: mapper -> type_parameter -> type_parameter;
     value_binding: mapper -> value_binding -> value_binding;
     value_bindings: mapper -> (rec_flag * value_binding list) ->
       (rec_flag * value_binding list);
@@ -82,7 +83,7 @@ let structure sub {str_items; str_type; str_final_env} =
 
 let class_infos sub f x =
   {x with
-   ci_params = List.map (tuple2 (sub.typ sub) id) x.ci_params;
+   ci_params = List.map (sub.type_parameter sub) x.ci_params;
    ci_expr = f x.ci_expr;
   }
 
@@ -158,6 +159,8 @@ let type_kind sub = function
   | Ttype_record list -> Ttype_record (List.map (label_decl sub) list)
   | Ttype_open -> Ttype_open
 
+let type_parameter _sub p = p
+
 let type_declaration sub x =
   let typ_cstrs =
     List.map
@@ -166,14 +169,14 @@ let type_declaration sub x =
   in
   let typ_kind = sub.type_kind sub x.typ_kind in
   let typ_manifest = Option.map (sub.typ sub) x.typ_manifest in
-  let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
+  let typ_params = List.map (sub.type_parameter sub) x.typ_params in
   {x with typ_cstrs; typ_kind; typ_manifest; typ_params}
 
 let type_declarations sub (rec_flag, list) =
   (rec_flag, List.map (sub.type_declaration sub) list)
 
 let type_extension sub x =
-  let tyext_params = List.map (tuple2 (sub.typ sub) id) x.tyext_params in
+  let tyext_params = List.map (sub.type_parameter sub) x.tyext_params in
   let tyext_constructors =
     List.map (sub.extension_constructor sub) x.tyext_constructors
   in
@@ -737,6 +740,7 @@ let default =
     type_extension;
     type_exception;
     type_kind;
+    type_parameter;
     value_binding;
     value_bindings;
     value_description;

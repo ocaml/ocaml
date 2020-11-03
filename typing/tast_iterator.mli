@@ -59,6 +59,7 @@ type iterator =
     type_extension: iterator -> type_extension -> unit;
     type_exception: iterator -> type_exception -> unit;
     type_kind: iterator -> type_kind -> unit;
+    type_parameter: iterator -> type_parameter -> unit;
     value_binding: iterator -> value_binding -> unit;
     value_bindings: iterator -> (rec_flag * value_binding list) -> unit;
     value_description: iterator -> value_description -> unit;

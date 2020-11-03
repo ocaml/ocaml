@@ -275,14 +275,20 @@ let tyvar ppf s =
     Format.fprintf ppf "'%s" s
 
 let tyvar_loc f str = tyvar f str.txt
+
+let tyvar_opt_loc f s =
+  match s.txt with
+  | None -> pp f "_"
+  | Some t -> tyvar f t
+
 let string_quot f x = pp f "`%s" x
 
 (* c ['a,'b] *)
-let rec class_params_def ctxt f =  function
+let rec class_params_def f =  function
   | [] -> ()
   | l ->
       pp f "[%a] " (* space *)
-        (list (type_param ctxt) ~sep:",") l
+        (list type_param ~sep:",") l
 
 and type_with_label ctxt f (label, c) =
   match label with
@@ -912,7 +918,7 @@ and class_type_declaration_list ctxt f l =
     let { pci_params=ls; pci_name={ txt; _ }; _ } = x in
     pp f "@[<2>%s %a%a%s@ =@ %a@]%a" kwd
       virtual_flag x.pci_virt
-      (class_params_def ctxt) ls txt
+      class_params_def ls txt
       (class_type ctxt) x.pci_expr
       (item_attributes ctxt) x.pci_attributes
   in
@@ -1050,16 +1056,16 @@ and module_type ctxt f x =
     | Pmty_with (mt, l) ->
         let with_constraint f = function
           | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
-              let ls = List.map fst ls in
+              let ls = List.map (fun n -> n.ptp_name) ls in
               pp f "type@ %a %a =@ %a"
-                (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
+                (list tyvar_opt_loc ~sep:"," ~first:"(" ~last:")")
                 ls longident_loc li (type_declaration ctxt) td
           | Pwith_module (li, li2) ->
               pp f "module %a =@ %a" longident_loc li longident_loc li2;
           | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
-              let ls = List.map fst ls in
+              let ls = List.map (fun n -> n.ptp_name) ls in
               pp f "type@ %a %a :=@ %a"
-                (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
+                (list tyvar_opt_loc ~sep:"," ~first:"(" ~last:")")
                 ls longident_loc li
                 (type_declaration ctxt) td
           | Pwith_modsubst (li, li2) ->
@@ -1105,7 +1111,7 @@ and signature_item ctxt f x : unit =
       let class_description kwd f ({pci_params=ls;pci_name={txt;_};_} as x) =
         pp f "@[<2>%s %a%a%s@;:@;%a@]%a" kwd
           virtual_flag x.pci_virt
-          (class_params_def ctxt) ls txt
+          class_params_def ls txt
           (class_type ctxt) x.pci_expr
           (item_attributes ctxt) x.pci_attributes
       in begin
@@ -1391,7 +1397,7 @@ and structure_item ctxt f x =
         let args, constr, cl = extract_class_args x.pci_expr in
         pp f "@[<2>%s %a%a%s %a%a=@;%a@]%a" kwd
           virtual_flag x.pci_virt
-          (class_params_def ctxt) ls txt
+          class_params_def ls txt
           (list (label_exp ctxt)) args
           (option class_constraint) constr
           (class_expr ctxt) cl
@@ -1450,12 +1456,12 @@ and structure_item ctxt f x =
       item_extension ctxt f e;
       item_attributes ctxt f a
 
-and type_param ctxt f (ct, (a,b)) =
-  pp f "%s%s%a" (type_variance a) (type_injectivity b) (core_type ctxt) ct
+and type_param f { ptp_name = n; ptp_variance = v; ptp_injectivity = i } =
+  pp f "%s%s%a" (type_variance v) (type_injectivity i) tyvar_opt_loc n
 
-and type_params ctxt f = function
+and type_params f = function
   | [] -> ()
-  | l -> pp f "%a " (list (type_param ctxt) ~first:"(" ~last:")" ~sep:",@;") l
+  | l -> pp f "%a " (list type_param ~first:"(" ~last:")" ~sep:",@;") l
 
 and type_def_list ctxt f (rf, exported, l) =
   let type_decl kwd rf f x =
@@ -1467,7 +1473,7 @@ and type_def_list ctxt f (rf, exported, l) =
     in
     pp f "@[<2>%s %a%a%s%s%a@]%a" kwd
       nonrec_flag rf
-      (type_params ctxt) x.ptype_params
+      type_params x.ptype_params
       x.ptype_name.txt eq
       (type_declaration ctxt) x
       (item_attributes ctxt) x.ptype_attributes
@@ -1545,7 +1551,7 @@ and type_extension ctxt f x =
     (fun f -> function
        | [] -> ()
        | l ->
-           pp f "%a@;" (list (type_param ctxt) ~first:"(" ~last:")" ~sep:",") l)
+           pp f "%a@;" (list type_param ~first:"(" ~last:")" ~sep:",") l)
     x.ptyext_params
     longident_loc x.ptyext_path
     private_flag x.ptyext_private (* Cf: #7200 *)

@@ -126,15 +126,12 @@ let type_variable loc name =
 let valid_tyvar_name name =
   name <> "" && name.[0] <> '_'
 
-let transl_type_param env styp =
-  let loc = styp.ptyp_loc in
-  match styp.ptyp_desc with
-    Ptyp_any ->
-      let ty = new_global_var ~name:"_" () in
-        { ctyp_desc = Ttyp_any; ctyp_type = ty; ctyp_env = env;
-          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
-  | Ptyp_var name ->
-      let ty =
+let transl_type_param _env pt =
+  let loc = pt.ptp_name.loc in
+  let typa_type = match pt.ptp_name.txt with
+    None ->
+      new_global_var ~name:"_" ()
+  | Some name ->
         try
           if not (valid_tyvar_name name) then
             raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
@@ -144,17 +141,11 @@ let transl_type_param env styp =
           let v = new_global_var ~name () in
             type_variables := TyVarMap.add name v !type_variables;
             v
-      in
-        { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
-          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
-  | _ -> assert false
-
-let transl_type_param env styp =
-  (* Currently useless, since type parameters cannot hold attributes
-     (but this could easily be lifted in the future). *)
-  Builtin_attributes.warning_scope styp.ptyp_attributes
-    (fun () -> transl_type_param env styp)
-
+  in
+  { typa_type;
+    typa_name = pt.ptp_name;
+    typa_variance = pt.ptp_variance;
+    typa_injectivity = pt.ptp_injectivity }
 
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v

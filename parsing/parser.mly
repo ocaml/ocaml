@@ -2935,14 +2935,15 @@ type_parameters:
       { ps }
 ;
 type_parameter:
-    type_variance type_variable        { $2, $1 }
+    type_variance type_variable
+      { { ptp_name = $2; ptp_variance = fst $1; ptp_injectivity = snd $1 } }
 ;
 type_variable:
-  mktyp(
+  mkloc(
     QUOTE tyvar = ident
-      { Ptyp_var tyvar }
+      { Some tyvar }
   | UNDERSCORE
-      { Ptyp_any }
+      { None }
   ) { $1 }
 ;
 

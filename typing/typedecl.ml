@@ -192,11 +192,11 @@ let set_fixed_row env loc p decl =
 (* Translate one type declaration *)
 
 let make_params env params =
-  let make_param (sty, v) =
+  let make_param p =
     try
-      (transl_type_param env sty, v)
+      transl_type_param env p
     with Already_bound ->
-      raise(Error(sty.ptyp_loc, Repeated_parameter))
+      raise(Error(p.ptp_name.loc, Repeated_parameter))
   in
     List.map make_param params
 
@@ -279,7 +279,7 @@ let transl_declaration env sdecl (id, uid) =
   reset_type_variables();
   Ctype.begin_def ();
   let tparams = make_params env sdecl.ptype_params in
-  let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
+  let params = List.map (fun cty -> cty.typa_type) tparams in
   let cstrs = List.map
     (fun (sty, sty', loc) ->
       transl_simple_type env false sty,
@@ -1119,7 +1119,7 @@ let transl_type_extension extend env loc styext =
   | Some err -> raise (Error(loc, Extension_mismatch (type_path, err)))
   end;
   let ttype_params = make_params env styext.ptyext_params in
-  let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
+  let type_params = List.map (fun cty -> cty.typa_type) ttype_params in
   List.iter2 (Ctype.unify_var env)
     (Ctype.instance_list type_decl.type_params)
     type_params;
@@ -1399,7 +1399,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
   let env = outer_env in
   let loc = sdecl.ptype_loc in
   let tparams = make_params env sdecl.ptype_params in
-  let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
+  let params = List.map (fun cty -> cty.typa_type) tparams in
   let arity = List.length params in
   let constraints =
     List.map (fun (ty, ty', loc) ->
@@ -1428,10 +1428,10 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
   let sig_decl = Ctype.instance_declaration sig_decl in
   let arity_ok = arity = sig_decl.type_arity in
   if arity_ok then
-    List.iter2 (fun (cty, _) tparam ->
-      try Ctype.unify_var env cty.ctyp_type tparam
+    List.iter2 (fun cty tparam ->
+      try Ctype.unify_var env cty.typa_type tparam
       with Ctype.Unify tr ->
-        raise(Error(cty.ctyp_loc, Inconsistent_constraint (env, tr)))
+        raise(Error(cty.typa_name.loc, Inconsistent_constraint (env, tr)))
     ) tparams sig_decl.type_params;
   List.iter (fun (cty, cty', loc) ->
     (* Note: constraints must also be enforced in [sig_env] because

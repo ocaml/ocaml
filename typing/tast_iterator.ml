@@ -55,6 +55,7 @@ type iterator =
     type_extension: iterator -> type_extension -> unit;
     type_exception: iterator -> type_exception -> unit;
     type_kind: iterator -> type_kind -> unit;
+    type_parameter: iterator -> type_parameter -> unit;
     value_binding: iterator -> value_binding -> unit;
     value_bindings: iterator -> (rec_flag * value_binding list) -> unit;
     value_description: iterator -> value_description -> unit;
@@ -66,7 +67,7 @@ let structure sub {str_items; str_final_env; _} =
   sub.env sub str_final_env
 
 let class_infos sub f x =
-  List.iter (fun (ct, _) -> sub.typ sub ct) x.ci_params;
+  List.iter (sub.type_parameter sub) x.ci_params;
   f x.ci_expr
 
 let module_type_declaration sub {mtd_type; _} =
@@ -122,6 +123,8 @@ let type_kind sub = function
   | Ttype_record list -> List.iter (label_decl sub) list
   | Ttype_open -> ()
 
+let type_parameter _sub _t = ()
+
 let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; typ_params; _} =
   List.iter
     (fun (c1, c2, _) ->
@@ -130,12 +133,12 @@ let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; typ_params; _} =
     typ_cstrs;
   sub.type_kind sub typ_kind;
   Option.iter (sub.typ sub) typ_manifest;
-  List.iter (fun (c, _) -> sub.typ sub c) typ_params
+  List.iter (sub.type_parameter sub) typ_params
 
 let type_declarations sub (_, list) = List.iter (sub.type_declaration sub) list
 
 let type_extension sub {tyext_constructors; tyext_params; _} =
-  List.iter (fun (c, _) -> sub.typ sub c) tyext_params;
+  List.iter (sub.type_parameter sub) tyext_params;
   List.iter (sub.extension_constructor sub) tyext_constructors
 
 let type_exception sub {tyexn_constructor; _} =
@@ -503,6 +506,7 @@ let default_iterator =
     type_extension;
     type_exception;
     type_kind;
+    type_parameter;
     value_binding;
     value_bindings;
     value_description;

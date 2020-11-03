@@ -73,12 +73,12 @@ type mapper = {
   type_extension: mapper -> type_extension -> type_extension;
   type_exception: mapper -> type_exception -> type_exception;
   type_kind: mapper -> type_kind -> type_kind;
+  type_parameter: mapper -> type_parameter -> type_parameter;
   value_binding: mapper -> value_binding -> value_binding;
   value_description: mapper -> value_description -> value_description;
   with_constraint: mapper -> with_constraint -> with_constraint;
 }
 
-let map_fst f (x, y) = (f x, y)
 let map_snd f (x, y) = (x, f y)
 let map_tuple f1 f2 (x, y) = (f1 x, f2 y)
 let map_tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
@@ -128,6 +128,9 @@ module T = struct
     in
     Of.mk ~loc ~attrs desc
 
+  let map_type_parameter sub { ptp_name; ptp_variance; ptp_injectivity } =
+    { ptp_name = map_loc sub ptp_name; ptp_variance; ptp_injectivity }
+
   let map sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     let open Typ in
     let loc = sub.location sub loc in
@@ -164,7 +167,7 @@ module T = struct
     let loc = sub.location sub ptype_loc in
     let attrs = sub.attributes sub ptype_attributes in
     Type.mk ~loc ~attrs (map_loc sub ptype_name)
-      ~params:(List.map (map_fst (sub.typ sub)) ptype_params)
+      ~params:(List.map (sub.type_parameter sub) ptype_params)
       ~priv:ptype_private
       ~cstrs:(List.map
                 (map_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
@@ -195,7 +198,7 @@ module T = struct
     Te.mk ~loc ~attrs
       (map_loc sub ptyext_path)
       (List.map (sub.extension_constructor sub) ptyext_constructors)
-      ~params:(List.map (map_fst (sub.typ sub)) ptyext_params)
+      ~params:(List.map (sub.type_parameter sub) ptyext_params)
       ~priv:ptyext_private
 
   let map_type_exception sub
@@ -560,7 +563,7 @@ module CE = struct
     let attrs = sub.attributes sub pci_attributes in
     Ci.mk ~loc ~attrs
      ~virt:pci_virt
-     ~params:(List.map (map_fst (sub.typ sub)) pl)
+     ~params:(List.map (sub.type_parameter sub) pl)
       (map_loc sub pci_name)
       (f pci_expr)
 end
@@ -593,6 +596,7 @@ let default_mapper =
       (fun this -> CE.class_infos this (this.class_type this));
     type_declaration = T.map_type_declaration;
     type_kind = T.map_type_kind;
+    type_parameter = T.map_type_parameter;
     typ = T.map;
     type_extension = T.map_type_extension;
     type_exception = T.map_type_exception;
