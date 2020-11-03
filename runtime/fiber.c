@@ -93,7 +93,6 @@ static inline void scan_stack_frames(scanning_action f, void* fdata, struct stac
   struct caml_context* context;
   caml_frame_descrs fds = caml_get_frame_descrs();
 
-  if (stack->sp == Stack_high(stack)) return;
   sp = (char*)stack->sp;
 
 next_chunk:
@@ -102,7 +101,6 @@ next_chunk:
   regs = context->gc_regs;
   sp += sizeof(struct caml_context);
 
-  if (sp == (char*)Stack_high(stack)) return;
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
 
