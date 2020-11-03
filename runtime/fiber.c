@@ -80,7 +80,7 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
   *pc = Saved_return_address(*sp);
 }
 
-static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack)
+static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -90,19 +90,18 @@ static inline void scan_stack_frames(scanning_action f, void* fdata, struct stac
   int n, ofs;
   unsigned short * p;
   value *root;
-  struct caml_context* context;
   caml_frame_descrs fds = caml_get_frame_descrs();
 
   sp = (char*)stack->sp;
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
-  context = (struct caml_context*)sp;
-  regs = context->gc_regs;
-  sp += sizeof(struct caml_context);
 
+  sp += sizeof(struct caml_context);
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
+
+  regs = gc_regs;
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
@@ -129,17 +128,19 @@ next_chunk:
       /* XXX KC: disabled already scanned optimization. */
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the DWARF link & trap frame (4 words). */
-      sp += 4 * sizeof(value);
+       * chunk. This includes skipping over the trap frame (2 words). */
+      sp += 2 * sizeof(value);
+      regs = *(value**)sp;
+      sp += 2 * sizeof(value);
       goto next_chunk;
     }
   }
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
 {
   while (stack != NULL) {
-    scan_stack_frames(f, fdata, stack);
+    scan_stack_frames(f, fdata, stack, gc_regs);
 
     f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
     f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
@@ -220,7 +221,7 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
 

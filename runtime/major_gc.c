@@ -641,7 +641,7 @@ void caml_darken_cont(value cont)
             With_status_hd(hd, NOT_MARKABLE))) {
       value stk = Op_val(cont)[0];
       if (Ptr_val(stk) != NULL)
-        caml_scan_stack(&caml_darken, 0, Ptr_val(stk));
+        caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
       atomic_store_explicit(
         Hp_atomic_val(cont),
         With_status_hd(hd, global.MARKED),
