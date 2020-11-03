@@ -578,12 +578,14 @@ LBL(caml_allocN):
 LBL(call_gc_and_retry_alloc):
         addq    %rax, %r15
         SAVE_ALL_REGS
+        movq    %r15, Caml_state(gc_regs)
         pushq   %r15; CFI_ADJUST(8)
         PUSH_EXN_HANDLER
         SWITCH_OCAML_TO_C_NO_CTXT(16)
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML_NO_CTXT
         POP_EXN_HANDLER
+        movq    Caml_state(gc_regs), %r15
         popq    %r15; CFI_ADJUST(-8)
         RESTORE_ALL_REGS
         jmp     LBL(caml_allocN)
@@ -594,12 +596,14 @@ FUNCTION(G(caml_call_poll))
 CFI_STARTPROC
 LBL(caml_call_poll):
         SAVE_ALL_REGS
+        movq    %r15, Caml_state(gc_regs)
         pushq   %r15; CFI_ADJUST(8)
         PUSH_EXN_HANDLER
         SWITCH_OCAML_TO_C_NO_CTXT(16)
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML_NO_CTXT
         POP_EXN_HANDLER
+        movq    Caml_state(gc_regs), %r15
         popq    %r15; CFI_ADJUST(-8)
         RESTORE_ALL_REGS
         ret
@@ -704,6 +708,8 @@ LBL(caml_start_program):
     /* Store the stack pointer to allow DWARF unwind */
         subq    $16, %r10
         movq    %rsp, 0(%r10)
+        movq    Caml_state(gc_regs), %r11
+        movq    %r11, 8(%r10)
     /* Build a handler for exceptions raised in OCaml on the OCaml stack. */
         subq    $16, %r10
         lea     LBL(109)(%rip), %r11
@@ -725,8 +731,12 @@ LBL(108):
     /* pop exn handler */
         movq    0(%rsp), %r11
         movq    %r11, Caml_state(exn_handler)
-        leaq    32(%rsp), %r10
-1:  /* Update alloc ptr */
+        leaq    16(%rsp), %r10
+1:  /* restore GC regs */
+        movq    8(%r10), %r11
+        movq    %r11, Caml_state(gc_regs)
+        addq    $16, %r10
+    /* Update alloc ptr */
         movq    %r15, Caml_state(young_ptr)
     /* Return to C stack. */
         movq    Caml_state(current_stack), %r11
@@ -746,7 +756,7 @@ LBL(109):
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
         /* exn handler already popped here */
-        leaq    16(%rsp), %r10
+        movq    %rsp, %r10
         jmp     1b
 CFI_ENDPROC
 ENDFUNCTION(G(caml_start_program))

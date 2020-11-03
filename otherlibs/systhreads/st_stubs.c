@@ -65,6 +65,7 @@ struct caml_thread_struct {
   int backtrace_pos;
   code_t * backtrace_buffer;
   caml_root backtrace_last_exn;
+  value * gc_regs;
   value * gc_regs_buckets;
   value ** gc_regs_slot;
   void * exn_handler;
@@ -126,8 +127,8 @@ static void caml_thread_scan_roots(scanning_action action, void *fdata, struct d
       (*action)(fdata, th->descr, &th->descr);
 
       if (th != Current_thread) {
-	if (th->current_stack != NULL)
-	  caml_do_local_roots(action, fdata, th->local_roots, th->current_stack, 0);
+        if (th->current_stack != NULL)
+	        caml_do_local_roots(action, fdata, th->local_roots, th->current_stack, th->gc_regs);
       }
       th = th->next;
     } while (th != Current_thread);
@@ -143,6 +144,7 @@ void caml_thread_save_runtime_state(void)
 {
   Current_thread->current_stack = Caml_state->current_stack;
   Current_thread->c_stack = Caml_state->c_stack;
+  Current_thread->gc_regs = Caml_state->gc_regs;
   Current_thread->gc_regs_buckets = Caml_state->gc_regs_buckets;
   Current_thread->gc_regs_slot = Caml_state->gc_regs_slot;
   Current_thread->exn_handler = Caml_state->exn_handler;
@@ -161,6 +163,7 @@ void caml_thread_restore_runtime_state(void)
 {
   Caml_state->current_stack = Current_thread->current_stack;
   Caml_state->c_stack = Current_thread->c_stack;
+  Caml_state->gc_regs = Current_thread->gc_regs;
   Caml_state->gc_regs_buckets = Current_thread->gc_regs_buckets;
   Caml_state->gc_regs_slot = Current_thread->gc_regs_slot;
   Caml_state->exn_handler = Current_thread->exn_handler;
