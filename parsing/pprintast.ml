@@ -416,7 +416,7 @@ and pattern_or ctxt f x =
   | [] -> assert false
   | [x] -> pattern1 ctxt f x
   | orpats ->
-      pp f "@[<hov0>%a@]" (list ~sep:"@,|" (pattern1 ctxt)) orpats
+      pp f "@[<hov0>%a@]" (list ~sep:"@ | " (pattern1 ctxt)) orpats
 
 and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   let rec pattern_list_helper f = function
