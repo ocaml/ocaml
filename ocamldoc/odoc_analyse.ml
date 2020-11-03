@@ -16,8 +16,6 @@
 (** Analysis of source files. This module is strongly inspired from
     driver/main.ml :-) *)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 open Format
 open Typedtree
 

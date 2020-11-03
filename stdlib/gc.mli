@@ -72,6 +72,10 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words. @since 3.12.0 *)
+
+    forced_major_collections: int;
+    (** Number of forced full major collections completed since the program
+        was started. @since 4.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record.
 
@@ -111,7 +115,7 @@ type control =
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
-       - [0x001] Start of major GC cycle.
+       - [0x001] Start and end of major GC cycle.
        - [0x002] Minor collection and major GC slice.
        - [0x004] Growing and shrinking of the heap.
        - [0x008] Resizing of stacks and memory manager tables.
@@ -304,7 +308,7 @@ external get_minor_free : unit -> int = "caml_get_minor_free"
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
-    Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
+    @raise Invalid_argument if [n] is negative, return 0 if n is larger
     than the smoothing window.
 
     @since 4.03.0 *)
@@ -490,6 +494,9 @@ module Memprof :
        to keep for minor blocks, and ['major] the type of metadata
        for major blocks.
 
+       When using threads, it is guaranteed that allocation callbacks are
+       always run in the thread where the allocation takes place.
+
        If an allocation-tracking or promotion-tracking function returns [None],
        memprof stops tracking the corresponding value.
      *)
@@ -524,19 +531,15 @@ module Memprof :
 
        Note that the callback can be postponed slightly after the
        actual event. The callstack passed to the callback is always
-       accurate, but the program state may have evolved.
-
-       Calling [Thread.exit] in a callback is currently unsafe and can
-       result in undefined behavior. *)
+       accurate, but the program state may have evolved. *)
 
     val stop : unit -> unit
     (** Stop the sampling. Fails if sampling is not active.
 
-        This function does not allocate memory, but tries to run the
-        postponed callbacks for already allocated memory blocks (of
-        course, these callbacks may allocate).
+        This function does not allocate memory.
 
-        All the already tracked blocks are discarded.
+        All the already tracked blocks are discarded. If there are
+        pending postponed callbacks, they may be discarded.
 
         Calling [stop] when a callback is running can lead to
         callbacks not being called even though some events happened. *)

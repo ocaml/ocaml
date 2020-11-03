@@ -52,7 +52,7 @@ Lines 1-4, characters 0-24:
 2 | | {pv=[]} -> "OK"
 3 | | {pv=5::_} -> "int"
 4 | | {pv=true::_} -> "bool"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=false::_}
 - : string = "OK"
@@ -69,7 +69,7 @@ Lines 1-4, characters 0-20:
 2 | | {pv=[]} -> "OK"
 3 | | {pv=true::_} -> "bool"
 4 | | {pv=5::_} -> "int"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=0::_}
 - : string = "OK"
@@ -304,7 +304,7 @@ class ['a] ostream1 :
 Line 8, characters 4-16:
 8 |     self#tl#fold ~f ~init:(f self#hd init)
         ^^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 class ['a] ostream1 :
   hd:'a ->
   tl:'b ->
@@ -1089,7 +1089,7 @@ val f : unit -> c = <fun>
 Line 4, characters 11-60:
 4 | let f () = object method private n = 1 method m = {<>}#n end;;
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 15: the following private methods were made public implicitly:
+Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
 Line 5, characters 11-56:
@@ -1259,19 +1259,19 @@ val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 Line 2, characters 9-16:
 2 | fun x -> (f x)#m;; (* Warning 18 *)
              ^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
 Line 4, characters 9-20:
 4 | fun x -> (f (x,x))#m;; (* Warning 18 *)
              ^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
 Line 6, characters 9-20:
 6 | fun x -> (f x).(0)#m;; (* Warning 18 *)
              ^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 |}];;
 
@@ -1300,12 +1300,12 @@ val just : 'a option -> 'a = <fun>
 Line 4, characters 42-62:
 4 | let f x = let l = [Some x; (None : u)] in (just(List.hd l))#id;;
                                               ^^^^^^^^^^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 val f : c -> 'a -> 'a = <fun>
 Line 7, characters 36-47:
 7 |   let x = List.hd [Some x; none] in (just x)#id;;
                                         ^^^^^^^^^^^
-Warning 18: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 val g : c -> 'a -> 'a = <fun>
 val h : < id : 'a; .. > -> 'a = <fun>
 |}];;
@@ -1486,7 +1486,7 @@ match fun x -> x with x -> x, x;;
 - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
 |}];;
 
-(* PR#6747 *)
+(* PR#6744 *)
 (* ok *)
 let n = object
   method m : 'x 'o. ([< `Foo of 'x] as 'o) -> 'x = fun x -> assert false
@@ -1524,6 +1524,39 @@ Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
          < m : 'a. [< `Foo of int ] -> 'a >
        The universal variable 'x would escape its scope
 |}];;
+(* ok *)
+let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
+  (n : < m : 'b 'r. [< `Foo of 'b & int | `Bar] as 'r >)
+[%%expect{|
+val f :
+  < m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c > ->
+  < m : 'b 'd. [< `Bar | `Foo of 'b & int ] as 'd > = <fun>
+|}]
+(* fail? *)
+let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
+  (n : < m : 'b 'r. [< `Foo of int & 'b | `Bar] as 'r >)
+[%%expect{|
+Line 2, characters 3-4:
+2 |   (n : < m : 'b 'r. [< `Foo of int & 'b | `Bar] as 'r >)
+       ^
+Error: This expression has type
+         < m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >
+       but an expression was expected of type
+         < m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >
+       Types for tag `Foo are incompatible
+|}]
+(* fail? *)
+let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
+  (n : < m : 'b. [< `Foo of 'b & int | `Bar] >)
+[%%expect{|
+Line 1:
+Error: Values do not match:
+         val f :
+           < m : 'a. [< `Bar | `Foo of 'a & int ] as 'c > -> < m : 'b. 'c >
+       is not included in
+         val f :
+           < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
+|}]
 
 (* PR#6171 *)
 let f b (x: 'x) =
@@ -1851,4 +1884,28 @@ Error: This expression has type < x : 'b. 'b s list >
        The method x has type 'b. 'b s list, but the expected method type was
        'a list
        The universal variable 'b would escape its scope
+|}]
+
+(* #9856 *)
+let f x =
+  let ref : type a . a option ref = ref None in
+  ref := Some x;
+  Option.get !ref
+[%%expect{|
+Line 2, characters 6-44:
+2 |   let ref : type a . a option ref = ref None in
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This definition has type 'a option ref which is less general than
+         'a0. 'a0 option ref
+|}]
+
+type pr = { foo : 'a. 'a option ref }
+let x = { foo = ref None }
+[%%expect{|
+type pr = { foo : 'a. 'a option ref; }
+Line 2, characters 16-24:
+2 | let x = { foo = ref None }
+                    ^^^^^^^^
+Error: This field value has type 'b option ref which is less general than
+         'a. 'a option ref
 |}]

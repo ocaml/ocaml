@@ -483,7 +483,7 @@ and value_description =
 and type_declaration =
   { typ_id: Ident.t;
     typ_name: string loc;
-    typ_params: (core_type * variance) list;
+    typ_params: (core_type * (variance * injectivity)) list;
     typ_type: Types.type_declaration;
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
@@ -527,7 +527,7 @@ and type_extension =
   {
     tyext_path: Path.t;
     tyext_txt: Longident.t loc;
-    tyext_params: (core_type * variance) list;
+    tyext_params: (core_type * (variance * injectivity)) list;
     tyext_constructors: extension_constructor list;
     tyext_private: private_flag;
     tyext_loc: Location.t;
@@ -600,7 +600,7 @@ and class_type_declaration =
 
 and 'a class_infos =
   { ci_virt: virtual_flag;
-    ci_params: (core_type * variance) list;
+    ci_params: (core_type * (variance * injectivity)) list;
     ci_id_name: string loc;
     ci_id_class: Ident.t;
     ci_id_class_type: Ident.t;
@@ -713,15 +713,6 @@ let iter_pattern (f : pattern -> unit) =
           match classify_pattern p with
           | Value -> f p
           | Computation -> () }
-
-let rec map_general_pattern
-  : type k . pattern_transformation -> k general_pattern -> k general_pattern
-  = fun f p ->
-  let pat_desc =
-    shallow_map_pattern_desc
-      { f = fun p -> map_general_pattern f p }
-      p.pat_desc in
-  f.f { p with pat_desc }
 
 type pattern_predicate = { f : 'k . 'k general_pattern -> bool }
 let exists_general_pattern (f : pattern_predicate) p =

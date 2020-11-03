@@ -106,6 +106,10 @@
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
 
+#undef HAS_SYSTEM
+
+/* Define HAS_SYSTEM if the library provides the system() function. */
+
 #undef HAS_UTIME
 #undef HAS_UTIMES
 
@@ -245,6 +249,8 @@
 
 #undef HAS_SYS_SHM_H
 
+#undef HAS_SHMAT
+
 #undef HAS_EXECVPE
 
 #undef HAS_POSIX_SPAWN
@@ -256,13 +262,9 @@
 
 #undef HAS_SIGWAIT
 
-#undef HAS_LIBBFD
-
 #undef HAS_HUGE_PAGES
 
 #undef HUGE_PAGE_SIZE
-
-#undef HAS_LIBUNWIND
 
 #undef HAS_BROKEN_PRINTF
 

@@ -259,7 +259,7 @@ and transl_exp0 ~scopes e =
       in
       if extra_args = [] then lam
       else begin
-        let should_be_tailcall, funct =
+        let tailcall, funct =
           Translattribute.get_tailcall_attribute funct
         in
         let inlined, funct =
@@ -270,11 +270,11 @@ and transl_exp0 ~scopes e =
         in
         let e = { e with exp_desc = Texp_apply(funct, oargs) } in
         event_after ~scopes e
-          (transl_apply ~scopes ~should_be_tailcall ~inlined ~specialised
+          (transl_apply ~scopes ~tailcall ~inlined ~specialised
              lam extra_args (of_location ~scopes e.exp_loc))
       end
   | Texp_apply(funct, oargs) ->
-      let should_be_tailcall, funct =
+      let tailcall, funct =
         Translattribute.get_tailcall_attribute funct
       in
       let inlined, funct =
@@ -285,14 +285,14 @@ and transl_exp0 ~scopes e =
       in
       let e = { e with exp_desc = Texp_apply(funct, oargs) } in
       event_after ~scopes e
-        (transl_apply ~scopes ~should_be_tailcall ~inlined ~specialised
+        (transl_apply ~scopes ~tailcall ~inlined ~specialised
            (transl_exp ~scopes funct) oargs (of_location ~scopes e.exp_loc))
   | Texp_match(arg, pat_expr_list, partial) ->
       transl_match ~scopes e arg pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = Typecore.name_cases "exn" pat_expr_list in
       Ltrywith(transl_exp ~scopes body, id,
-               Matching.for_trywith ~scopes (Lvar id)
+               Matching.for_trywith ~scopes e.exp_loc (Lvar id)
                  (transl_cases_try ~scopes pat_expr_list))
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape ~scopes el in
@@ -454,13 +454,15 @@ and transl_exp0 ~scopes e =
       event_after ~scopes e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
       let loc = of_location ~scopes loc in
-      Lapply{ap_should_be_tailcall=false;
-             ap_loc=loc;
-             ap_func=
-               Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
-             ap_args=[lambda_unit];
-             ap_inlined=Default_inline;
-             ap_specialised=Default_specialise}
+      Lapply{
+        ap_loc=loc;
+        ap_func=
+          Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
+        ap_args=[lambda_unit];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      }
   | Texp_instvar(path_self, path, _) ->
       let loc = of_location ~scopes e.exp_loc in
       let self = transl_value_path loc e.exp_env path_self in
@@ -476,12 +478,14 @@ and transl_exp0 ~scopes e =
       let self = transl_value_path loc e.exp_env path_self in
       let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
-           Lapply{ap_should_be_tailcall=false;
-                  ap_loc=Loc_unknown;
-                  ap_func=Translobj.oo_prim "copy";
-                  ap_args=[self];
-                  ap_inlined=Default_inline;
-                  ap_specialised=Default_specialise},
+           Lapply{
+             ap_loc=Loc_unknown;
+             ap_func=Translobj.oo_prim "copy";
+             ap_args=[self];
+             ap_tailcall=Default_tailcall;
+             ap_inlined=Default_inline;
+             ap_specialised=Default_specialise;
+           },
            List.fold_right
              (fun (path, _, expr) rem ->
                let var = transl_value_path loc e.exp_env path in
@@ -648,8 +652,12 @@ and transl_tupled_cases ~scopes patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard ~scopes guard expr))
     patl_expr_list
 
-and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
-      ?(specialised = Default_specialise) lam sargs loc =
+and transl_apply ~scopes
+      ?(tailcall=Default_tailcall)
+      ?(inlined = Default_inline)
+      ?(specialised = Default_specialise)
+      lam sargs loc
+  =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, _) ->
@@ -659,12 +667,14 @@ and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
     | Lapply ap ->
         Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
     | lexp ->
-        Lapply {ap_should_be_tailcall=should_be_tailcall;
-                ap_loc=loc;
-                ap_func=lexp;
-                ap_args=args;
-                ap_inlined=inlined;
-                ap_specialised=specialised;}
+        Lapply {
+          ap_loc=loc;
+          ap_func=lexp;
+          ap_args=args;
+          ap_tailcall=tailcall;
+          ap_inlined=inlined;
+          ap_specialised=specialised;
+        }
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -723,23 +733,53 @@ and transl_apply ~scopes ?(should_be_tailcall=false) ?(inlined = Default_inline)
                                 sargs)
      : Lambda.lambda)
 
-and transl_function0
-      ~scopes loc return untuplify_fn repr partial (param:Ident.t) cases =
+and transl_curried_function
+      ~scopes loc return
+      repr partial (param:Ident.t) cases =
+  let max_arity = Lambda.max_arity () in
+  let rec loop ~scopes loc return ~arity partial (param:Ident.t) cases =
+    match cases with
+      [{c_lhs=pat; c_guard=None;
+        c_rhs={exp_desc =
+                 Texp_function
+                   { arg_label = _; param = param'; cases = cases';
+                     partial = partial'; }; exp_env; exp_type;exp_loc}}]
+      when arity <  max_arity ->
+      if  Parmatch.inactive ~partial pat
+      then
+        let kind = value_kind pat.pat_env pat.pat_type in
+        let return_kind = function_return_value_kind exp_env exp_type in
+        let ((_, params, return), body) =
+          loop ~scopes exp_loc return_kind ~arity:(arity + 1)
+            partial' param' cases'
+        in
+        ((Curried, (param, kind) :: params, return),
+         Matching.for_function ~scopes loc None (Lvar param)
+           [pat, body] partial)
+      else begin
+        begin match partial with
+        | Total ->
+          Location.prerr_warning pat.pat_loc
+            Match_on_mutable_state_prevent_uncurry
+        | Partial -> ()
+        end;
+        transl_tupled_function ~scopes ~arity
+          loc return repr partial param cases
+      end
+    | cases ->
+      transl_tupled_function ~scopes ~arity
+        loc return repr partial param cases
+  in
+  loop ~scopes loc return ~arity:1 partial param cases
+
+and transl_tupled_function
+      ~scopes ~arity loc return
+      repr partial (param:Ident.t) cases =
   match cases with
-    [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
-        partial = partial'; }; exp_env; exp_type} as exp}]
-    when Parmatch.inactive ~partial pat ->
-      let kind = value_kind pat.pat_env pat.pat_type in
-      let return_kind = function_return_value_kind exp_env exp_type in
-      let ((_, params, return), body) =
-        transl_function0 ~scopes exp.exp_loc return_kind false
-          repr partial' param' cases
-      in
-      ((Curried, (param, kind) :: params, return),
-       Matching.for_function ~scopes loc None (Lvar param)
-         [pat, body] partial)
-  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
+  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _
+    when !Clflags.native_code
+      && arity = 1
+      && List.length pl <= (Lambda.max_arity ()) ->
       begin try
         let size = List.length pl in
         let pats_expr_list =
@@ -771,28 +811,30 @@ and transl_function0
         ((Tupled, tparams, return),
          Matching.for_tupled_function ~scopes loc params
            (transl_tupled_cases ~scopes pats_expr_list) partial)
-      with Matching.Cannot_flatten ->
-        ((Curried, [param, Pgenval], return),
-         Matching.for_function ~scopes loc repr (Lvar param)
-           (transl_cases ~scopes cases) partial)
+    with Matching.Cannot_flatten ->
+      transl_function0 ~scopes loc return repr partial param cases
       end
-  | {c_lhs=pat} :: other_cases ->
-      let kind =
+  | _ -> transl_function0 ~scopes loc return repr partial param cases
+
+and transl_function0
+      ~scopes loc return
+      repr partial (param:Ident.t) cases =
+    let kind =
+      match cases with
+      | [] ->
+        (* With Camlp4, a pattern matching might be empty *)
+        Pgenval
+      | {c_lhs=pat} :: other_cases ->
         (* All the patterns might not share the same types. We must take the
            union of the patterns types *)
         List.fold_left (fun k {c_lhs=pat} ->
-            Typeopt.value_kind_union k
-              (value_kind pat.pat_env pat.pat_type))
+          Typeopt.value_kind_union k
+            (value_kind pat.pat_env pat.pat_type))
           (value_kind pat.pat_env pat.pat_type) other_cases
-      in
-      ((Curried, [param, kind], return),
-       Matching.for_function ~scopes loc repr (Lvar param)
-         (transl_cases ~scopes cases) partial)
-  | [] ->
-      (* With Camlp4, a pattern matching might be empty *)
-      ((Curried, [param, Pgenval], return),
-       Matching.for_function ~scopes loc repr (Lvar param)
-         (transl_cases ~scopes cases) partial)
+    in
+    ((Curried, [param, kind], return),
+     Matching.for_function ~scopes loc repr (Lvar param)
+       (transl_cases ~scopes cases) partial)
 
 and transl_function ~scopes e param cases partial =
   let ((kind, params, return), body) =
@@ -800,7 +842,7 @@ and transl_function ~scopes e param cases partial =
       (function repr ->
          let pl = push_defaults e.exp_loc [] cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
-         transl_function0 ~scopes e.exp_loc return_kind !Clflags.native_code
+         transl_curried_function ~scopes e.exp_loc return_kind
            repr partial param pl)
   in
   let attr = default_function_attribute in
@@ -1022,7 +1064,7 @@ and transl_match ~scopes e arg pat_expr_list partial =
     let static_exception_id = next_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
-                 Matching.for_trywith ~scopes (Lvar id) exn_cases),
+                 Matching.for_trywith ~scopes e.exp_loc (Lvar id) exn_cases),
        (static_exception_id, val_ids),
        handler)
   in
@@ -1073,12 +1115,14 @@ and transl_letop ~scopes loc env let_ ands param case partial =
         let exp = transl_exp ~scopes and_.bop_exp in
         let lam =
           bind Strict right_id exp
-            (Lapply{ap_should_be_tailcall = false;
-                    ap_loc = of_location ~scopes and_.bop_loc;
-                    ap_func = op;
-                    ap_args=[Lvar left_id; Lvar right_id];
-                    ap_inlined=Default_inline;
-                    ap_specialised=Default_specialise})
+            (Lapply{
+               ap_loc = of_location ~scopes and_.bop_loc;
+               ap_func = op;
+               ap_args=[Lvar left_id; Lvar right_id];
+               ap_tailcall = Default_tailcall;
+               ap_inlined = Default_inline;
+               ap_specialised = Default_specialise;
+             })
         in
         bind Strict left_id prev_lam (loop lam rest)
   in
@@ -1092,19 +1136,21 @@ and transl_letop ~scopes loc env let_ ands param case partial =
     let (kind, params, return), body =
       event_function ~scopes case.c_rhs
         (function repr ->
-           transl_function0 ~scopes case.c_rhs.exp_loc return_kind
-             !Clflags.native_code repr partial param [case])
+           transl_curried_function ~scopes case.c_rhs.exp_loc return_kind
+             repr partial param [case])
     in
     let attr = default_function_attribute in
     let loc = of_location ~scopes case.c_rhs.exp_loc in
     Lfunction{kind; params; return; body; attr; loc}
   in
-  Lapply{ap_should_be_tailcall = false;
-         ap_loc = of_location ~scopes loc;
-         ap_func = op;
-         ap_args=[exp; func];
-         ap_inlined=Default_inline;
-         ap_specialised=Default_specialise}
+  Lapply{
+    ap_loc = of_location ~scopes loc;
+    ap_func = op;
+    ap_args=[exp; func];
+    ap_tailcall = Default_tailcall;
+    ap_inlined = Default_inline;
+    ap_specialised = Default_specialise;
+  }
 
 (* Wrapper for class compilation *)
 

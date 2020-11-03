@@ -940,12 +940,14 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
                kind = Curried;
                return = Pgenval;
                params = List.map (fun v -> v, Pgenval) final_args;
-               body = Lapply{ap_should_be_tailcall=false;
-                             ap_loc=loc;
-                             ap_func=(Lvar funct_var);
-                             ap_args=internal_args;
-                             ap_inlined=Default_inline;
-                             ap_specialised=Default_specialise};
+               body = Lapply{
+                 ap_loc=loc;
+                 ap_func=(Lvar funct_var);
+                 ap_args=internal_args;
+                 ap_tailcall=Default_tailcall;
+                 ap_inlined=Default_inline;
+                 ap_specialised=Default_specialise;
+               };
                loc;
                attr = default_function_attribute})
         in
@@ -1066,12 +1068,15 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       close env arg
   | Lprim(Pdirapply,[funct;arg], loc)
   | Lprim(Prevapply,[arg;funct], loc) ->
-      close env       (Lapply{ap_should_be_tailcall=false;
-                              ap_loc=loc;
-                              ap_func=funct;
-                              ap_args=[arg];
-                              ap_inlined=Default_inline;
-                              ap_specialised=Default_specialise})
+      close env
+        (Lapply{
+           ap_loc=loc;
+           ap_func=funct;
+           ap_args=[arg];
+           ap_tailcall=Default_tailcall;
+           ap_inlined=Default_inline;
+           ap_specialised=Default_specialise;
+         })
   | Lprim(Pgetglobal id, [], loc) ->
       let dbg = Debuginfo.from_location loc in
       check_constant_result (getglobal dbg id)

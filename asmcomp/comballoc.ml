@@ -59,12 +59,11 @@ let rec combine i allocstate =
            else instr_cons_debug (Iop(Iintop_imm(Iadd, offset))) i.res
                 i.res i.dbg next
          in
-         (instr_cons_debug (Iop(Ialloc {bytes = totalsz; spacetime_index = 0;
-                                        dbginfo; label_after_call_gc = None; }))
+         (instr_cons_debug (Iop(Ialloc {bytes = totalsz; dbginfo; }))
           i.arg i.res i.dbg next, allocstate)
       end
-  | Iop(Icall_ind _ | Icall_imm _ | Iextcall _ |
-        Itailcall_ind _ | Itailcall_imm _) ->
+  | Iop(Icall_ind | Icall_imm _ | Iextcall _ |
+        Itailcall_ind | Itailcall_imm _) ->
       let newnext = combine_restart i.next in
       (instr_cons_debug i.desc i.arg i.res i.dbg newnext,
        allocstate)
@@ -99,5 +98,4 @@ and combine_restart i =
   let (newi, _) = combine i No_alloc in newi
 
 let fundecl f =
-  if Config.spacetime then f
-  else {f with fun_body = combine_restart f.fun_body}
+  {f with fun_body = combine_restart f.fun_body}

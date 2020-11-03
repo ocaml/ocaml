@@ -126,12 +126,14 @@ and apply_coercion_result loc strict funct params args cc_res =
                loc = loc;
                body = apply_coercion
                    loc Strict cc_res
-                   (Lapply{ap_should_be_tailcall=false;
-                           ap_loc=loc;
-                           ap_func=Lvar id;
-                           ap_args=List.rev args;
-                           ap_inlined=Default_inline;
-                           ap_specialised=Default_specialise})})
+                   (Lapply{
+                      ap_loc=loc;
+                      ap_func=Lvar id;
+                      ap_args=List.rev args;
+                      ap_tailcall=Default_tailcall;
+                      ap_inlined=Default_inline;
+                      ap_specialised=Default_specialise;
+                    })})
 
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
@@ -358,12 +360,14 @@ let eval_rec_bindings bindings cont =
       bind_inits rem
   | (Id id, Some(loc, shape), _rhs) :: rem ->
       Llet(Strict, Pgenval, id,
-           Lapply{ap_should_be_tailcall=false;
-                  ap_loc=Loc_unknown;
-                  ap_func=mod_prim "init_mod";
-                  ap_args=[loc; shape];
-                  ap_inlined=Default_inline;
-                  ap_specialised=Default_specialise},
+           Lapply{
+             ap_loc=Loc_unknown;
+             ap_func=mod_prim "init_mod";
+             ap_args=[loc; shape];
+             ap_tailcall=Default_tailcall;
+             ap_inlined=Default_inline;
+             ap_specialised=Default_specialise;
+           },
            bind_inits rem)
   and bind_strict = function
     [] ->
@@ -381,13 +385,16 @@ let eval_rec_bindings bindings cont =
   | (_, None, _rhs) :: rem ->
       patch_forwards rem
   | (Id id, Some(_loc, shape), rhs) :: rem ->
-      Lsequence(Lapply{ap_should_be_tailcall=false;
-                       ap_loc=Loc_unknown;
-                       ap_func=mod_prim "update_mod";
-                       ap_args=[shape; Lvar id; rhs];
-                       ap_inlined=Default_inline;
-                       ap_specialised=Default_specialise},
-                patch_forwards rem)
+      Lsequence(
+        Lapply {
+          ap_loc=Loc_unknown;
+          ap_func=mod_prim "update_mod";
+          ap_args=[shape; Lvar id; rhs];
+          ap_tailcall=Default_tailcall;
+          ap_inlined=Default_inline;
+          ap_specialised=Default_specialise;
+        },
+        patch_forwards rem)
   in
     bind_inits bindings
 
@@ -512,12 +519,13 @@ and transl_module ~scopes cc rootpath mexp =
       in
       oo_wrap mexp.mod_env true
         (apply_coercion loc Strict cc)
-        (Lapply{ap_should_be_tailcall=false;
-                ap_loc=loc;
-                ap_func=transl_module ~scopes Tcoerce_none None funct;
-                ap_args=[transl_module ~scopes ccarg None arg];
-                ap_inlined=inlined_attribute;
-                ap_specialised=Default_specialise})
+        (Lapply{
+           ap_loc=loc;
+           ap_func=transl_module ~scopes Tcoerce_none None funct;
+           ap_args=[transl_module ~scopes ccarg None arg];
+           ap_tailcall=Default_tailcall;
+           ap_inlined=inlined_attribute;
+           ap_specialised=Default_specialise})
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
@@ -658,7 +666,11 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
               in
               Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body), size
           end
-      | Tstr_module {mb_presence=Mp_absent} ->
+      | Tstr_module ({mb_presence=Mp_absent} as mb) ->
+          List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+            mb.mb_attributes;
+          List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+            mb.mb_expr.mod_attributes;
           transl_structure ~scopes loc fields cc rootpath final_env rem
       | Tstr_recmodule bindings ->
           let ext_fields =
@@ -1112,7 +1124,11 @@ let transl_store_structure ~scopes glob map prims aliases str =
                            transl_store ~scopes rootpath
                              (add_ident true id subst)
                              cont rem))
-        | Tstr_module {mb_presence=Mp_absent} ->
+        | Tstr_module ({mb_presence=Mp_absent} as mb) ->
+            List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+              mb.mb_attributes;
+            List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+              mb.mb_expr.mod_attributes;
             transl_store ~scopes rootpath subst cont rem
         | Tstr_recmodule bindings ->
             let ids = List.filter_map (fun mb -> mb.mb_id) bindings in
@@ -1401,27 +1417,32 @@ let toplevel_name id =
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
-  Lapply{ap_should_be_tailcall=false;
-         ap_loc=Loc_unknown;
-         ap_func=Lprim(Pfield toploop_getvalue_pos,
-                       [Lprim(Pgetglobal toploop_ident, [], Loc_unknown)],
-                       Loc_unknown);
-         ap_args=[Lconst(Const_base(
-             Const_string (toplevel_name id, Location.none,None)))];
-         ap_inlined=Default_inline;
-         ap_specialised=Default_specialise}
+  Lapply{
+    ap_loc=Loc_unknown;
+    ap_func=Lprim(Pfield toploop_getvalue_pos,
+                  [Lprim(Pgetglobal toploop_ident, [], Loc_unknown)],
+                  Loc_unknown);
+    ap_args=[Lconst(Const_base(
+      Const_string (toplevel_name id, Location.none, None)))];
+    ap_tailcall=Default_tailcall;
+    ap_inlined=Default_inline;
+    ap_specialised=Default_specialise;
+  }
 
 let toploop_setvalue id lam =
-  Lapply{ap_should_be_tailcall=false;
-         ap_loc=Loc_unknown;
-         ap_func=Lprim(Pfield toploop_setvalue_pos,
-                       [Lprim(Pgetglobal toploop_ident, [], Loc_unknown)],
-                       Loc_unknown);
-         ap_args=[Lconst(Const_base(
-             Const_string (toplevel_name id, Location.none, None)));
-                  lam];
-         ap_inlined=Default_inline;
-         ap_specialised=Default_specialise}
+  Lapply{
+    ap_loc=Loc_unknown;
+    ap_func=Lprim(Pfield toploop_setvalue_pos,
+                  [Lprim(Pgetglobal toploop_ident, [], Loc_unknown)],
+                  Loc_unknown);
+    ap_args=
+      [Lconst(Const_base(
+         Const_string(toplevel_name id, Location.none, None)));
+       lam];
+    ap_tailcall=Default_tailcall;
+    ap_inlined=Default_inline;
+    ap_specialised=Default_specialise;
+  }
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
@@ -1526,8 +1547,13 @@ let transl_toplevel_item ~scopes item =
                transl_module ~scopes Tcoerce_none None od.open_expr,
                set_idents 0 ids)
       end
+  | Tstr_module ({mb_presence=Mp_absent} as mb) ->
+      List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+        mb.mb_attributes;
+      List.iter (Translattribute.check_attribute_on_module mb.mb_expr)
+        mb.mb_expr.mod_attributes;
+      lambda_unit
   | Tstr_modtype _
-  | Tstr_module {mb_presence=Mp_absent}
   | Tstr_type _
   | Tstr_class_type _
   | Tstr_attribute _ ->

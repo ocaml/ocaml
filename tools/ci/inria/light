@@ -74,6 +74,7 @@ export LC_ALL=C
 git clean -q -f -d -x
 
 ./configure \
+   --disable-shared \
    --disable-debug-runtime \
    --disable-instrumented-runtime \
    --disable-dependency-generation \

@@ -106,14 +106,14 @@ module Nonexhaustive =
 Lines 11-12, characters 6-19:
 11 | ......function
 12 |         | C2 x -> x
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C1 _
 Lines 24-26, characters 6-30:
 24 | ......function
 25 |         | Foo _ , Foo _ -> true
 26 |         | Bar _, Bar _ -> true
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Foo _, Bar _)
 module Nonexhaustive :
@@ -160,13 +160,13 @@ end;;
 Line 2, characters 10-18:
 2 |   class c (Some x) = object method x : int = x end
               ^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 None
 Line 4, characters 10-18:
 4 |   class d (Just x) = object method x : int = x end
               ^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Nothing
 module PR6862 :
@@ -195,7 +195,7 @@ end;;
 Line 4, characters 43-44:
 4 |   let g : int t -> int = function I -> 1 | _ -> 2 (* warn *)
                                                ^
-Warning 56: this match case is unreachable.
+Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 module PR6220 :
   sig
@@ -263,7 +263,7 @@ end;;
 Lines 8-9, characters 4-33:
 8 | ....match x with
 9 |     | String s -> print_endline s.................
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Any
 module PR6801 :
@@ -361,6 +361,13 @@ module Propagation = struct
 end
 ;;
 [%%expect{|
+Lines 11-13, characters 12-20:
+11 | ............match x with
+12 |     | IntLit n -> (n : s )
+13 |     | BoolLit b -> b
+Warning 18 [not-principal]:
+  The return type of this pattern-matching is ambiguous.
+  Please add a type annotation, as the choice of `s' is not principal.
 module Propagation :
   sig
     type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
@@ -385,12 +392,6 @@ Line 5, characters 28-29:
                                 ^
 Error: This variant pattern is expected to have type a
        The constructor B does not belong to type a
-|}, Principal{|
-Line 5, characters 28-29:
-5 |   let f = function A -> 1 | B -> 2
-                                ^
-Error: This pattern matches values of type b
-       but a pattern was expected which matches values of type a
 |}];;
 
 module PR6849 = struct
@@ -924,7 +925,7 @@ Lines 2-8, characters 2-16:
 6 |   | TE TC, D [|1.0|] -> 14
 7 |   | TA, D 0 -> -1
 8 |   | TA, D z -> z
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (TE TC, D [| 0. |])
 val f : 'a ty -> 'a t -> int = <fun>
@@ -988,7 +989,7 @@ Lines 4-10, characters 2-29:
  8 |   | {left=TE TC; right=D [|1.0|]} -> 14
  9 |   | {left=TA; right=D 0} -> -1
 10 |   | {left=TA; right=D z} -> z
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=TE TC; right=D [| 0. |]}
 val f : 'a ty -> 'a t -> int = <fun>

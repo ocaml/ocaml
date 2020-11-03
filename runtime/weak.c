@@ -46,12 +46,19 @@ value caml_ephe_none = (value) &ephe_dummy;
     CAMLassert (offset < Wosize_val (eph) - CAML_EPHE_FIRST_KEY);       \
 }while(0)
 
-#define CAMLassert_not_dead_value(v) do{        \
-    CAMLassert ( caml_gc_phase != Phase_clean   \
-                 || !Is_block(v)                \
-                 || !Is_in_heap (v)             \
-                 || !Is_white_val(v) );         \
+#ifdef DEBUG
+#define CAMLassert_not_dead_value(v) do{                              \
+    value __v = v;                                                    \
+    if (caml_gc_phase == Phase_clean                                  \
+        && Is_block(__v)                                              \
+        && Is_in_heap (__v)) {                                        \
+      if (Tag_val (__v) == Infix_tag) __v -= Infix_offset_val (__v);  \
+      CAMLassert ( !Is_white_val(__v) );                              \
+    }                                                                 \
 }while(0)
+#else
+#define CAMLassert_not_dead_value(v)
+#endif
 
 CAMLexport mlsize_t caml_ephemeron_num_keys(value eph)
 {
@@ -60,13 +67,19 @@ CAMLexport mlsize_t caml_ephemeron_num_keys(value eph)
 }
 
 /** The minor heap is considered alive. */
-#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
+
 /** Outside minor and major heap, x must be black. */
 Caml_inline int Is_Dead_during_clean(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_clean);
-  return Is_block (x) && !Is_young (x) && Is_white_val(x);
+#ifdef NO_NAKED_POINTERS
+  if (!Is_block(x) || Is_young (x)) return 0;
+#else
+  if (!Is_block(x) || !Is_in_heap(x)) return 0;
+#endif
+  if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
+  return Is_white_val(x);
 }
 /** The minor heap doesn't have to be marked, outside they should
     already be black
@@ -75,22 +88,12 @@ Caml_inline int Must_be_Marked_during_mark(value x)
 {
   CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
+#ifdef NO_NAKED_POINTERS
   return Is_block (x) && !Is_young (x);
-}
 #else
-Caml_inline int Is_Dead_during_clean(value x)
-{
-  CAMLassert (x != caml_ephe_none);
-  CAMLassert (caml_gc_phase == Phase_clean);
-  return Is_block (x) && Is_in_heap (x) && Is_white_val(x);
-}
-Caml_inline int Must_be_Marked_during_mark(value x)
-{
-  CAMLassert (x != caml_ephe_none);
-  CAMLassert (caml_gc_phase == Phase_mark);
   return Is_block (x) && Is_in_heap (x);
-}
 #endif
+}
 
 /* [len] is a number of words (fields) */
 CAMLexport value caml_ephemeron_create (mlsize_t len)
@@ -375,7 +378,7 @@ Caml_inline void copy_value(value src, value dst)
 CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
                                            value *key)
 {
-  mlsize_t loop = 0;
+  mlsize_t loop = 0, infix_offs;
   CAMLparam1(ar);
   value elt = Val_unit, v; /* Caution: they are NOT local roots. */
   CAMLassert_valid_offset(ar, offset);
@@ -386,13 +389,15 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     if(is_ephe_key_none(ar, offset)) CAMLreturn(0);
     v = Field (ar, offset);
     /** Don't copy custom_block #7279 */
-    if(!(Is_block (v) && Is_in_heap_or_young(v)  && Tag_val(v) != Custom_tag)) {
+    if(!(Is_block (v) && Is_in_value_area(v) && Tag_val(v) != Custom_tag)) {
       if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
         caml_darken (v, NULL);
       };
       *key = v;
       CAMLreturn(1);
     }
+    infix_offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;
+    v -= infix_offs;
     if (elt != Val_unit &&
         Wosize_val(v) == Wosize_val(elt) && Tag_val(v) == Tag_val(elt)) {
       /* The allocation may trigger a finaliser that change the tag
@@ -402,7 +407,7 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
        */
       CAMLassert_not_dead_value(v);
       copy_value(v, elt);
-      *key = elt;
+      *key = elt + infix_offs;
       CAMLreturn(1);
     }
 
@@ -435,7 +440,7 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
 
 CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
 {
-  mlsize_t loop = 0;
+  mlsize_t loop = 0, infix_offs;
   CAMLparam1 (ar);
   value elt = Val_unit, v; /* Caution: they are NOT local roots. */
   CAMLassert_valid_ephemeron(ar);
@@ -445,19 +450,21 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     v = Field (ar, CAML_EPHE_DATA_OFFSET);
     if (v == caml_ephe_none) CAMLreturn(0);
     /** Don't copy custom_block #7279 */
-    if (!(Is_block (v) && Is_in_heap_or_young(v) && Tag_val(v) != Custom_tag)) {
+    if (!(Is_block (v) && Is_in_value_area(v) && Tag_val(v) != Custom_tag)) {
       if ( caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(v) ){
         caml_darken (v, NULL);
       };
       *data = v;
       CAMLreturn(1);
     }
+    infix_offs = Tag_val(v) == Infix_tag ? Infix_offset_val(v) : 0;
+    v -= infix_offs;
     if (elt != Val_unit &&
         Wosize_val(v) == Wosize_val(elt) && Tag_val(v) == Tag_val(elt)) {
       /** cf caml_ephemeron_get_key_copy */
       CAMLassert_not_dead_value(v);
       copy_value(v, elt);
-      *data = elt;
+      *data = elt + infix_offs;
       CAMLreturn(1);
     }
 

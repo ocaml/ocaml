@@ -23,13 +23,13 @@
 #include <stdio.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
 #include "caml/io.h"
-#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/memprof.h"
 #include "caml/mlvalues.h"
@@ -372,7 +372,7 @@ static void intern_rec(value *dest)
       } else {
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header_allocated_here(size, tag, intern_color);
+        *intern_dest = Make_header(size, tag, intern_color);
         intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
         if (tag == Object_tag) {
@@ -402,7 +402,7 @@ static void intern_rec(value *dest)
       size = (len + sizeof(value)) / sizeof(value);
       v = Val_hp(intern_dest);
       if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-      *intern_dest = Make_header_allocated_here(size, String_tag, intern_color);
+      *intern_dest = Make_header(size, String_tag, intern_color);
       intern_dest += 1 + size;
       Field(v, size - 1) = 0;
       ofs_ind = Bsize_wsize(size) - 1;
@@ -474,8 +474,8 @@ static void intern_rec(value *dest)
       case CODE_DOUBLE_BIG:
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header_allocated_here(Double_wosize, Double_tag,
-                                                  intern_color);
+        *intern_dest = Make_header(Double_wosize, Double_tag,
+                                   intern_color);
         intern_dest += 1 + Double_wosize;
         readfloat((double *) v, code);
         break;
@@ -486,8 +486,8 @@ static void intern_rec(value *dest)
         size = len * Double_wosize;
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header_allocated_here(size, Double_array_tag,
-                                                  intern_color);
+        *intern_dest = Make_header(size, Double_array_tag,
+                                   intern_color);
         intern_dest += 1 + size;
         readfloats((double *) v, len, code);
         break;
@@ -570,8 +570,8 @@ static void intern_rec(value *dest)
         size = 1 + (size + sizeof(value) - 1) / sizeof(value);
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header_allocated_here(size, Custom_tag,
-                                                  intern_color);
+        *intern_dest = Make_header(size, Custom_tag,
+                                   intern_color);
         Custom_ops_val(v) = ops;
 
         if (ops->finalize != NULL && Is_young(v)) {
@@ -599,8 +599,7 @@ static void intern_rec(value *dest)
   intern_free_stack();
 }
 
-static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
-      int outside_heap)
+static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
 {
   mlsize_t wosize;
 
@@ -610,7 +609,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     return;
   }
   wosize = Wosize_whsize(whsize);
-  if (outside_heap || wosize > Max_wosize) {
+  if (wosize > Max_wosize) {
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
@@ -619,8 +618,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
       intern_cleanup();
       caml_raise_out_of_memory();
     }
-    intern_color =
-      outside_heap ? Caml_black : caml_allocation_color(intern_extra_block);
+    intern_color = caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
     CAMLassert (intern_block == 0);
   } else {
@@ -767,7 +765,7 @@ static void caml_parse_header(char * fun_name,
 
 /* Reading from a channel */
 
-static value caml_input_val_core(struct channel *chan, int outside_heap)
+value caml_input_val(struct channel *chan)
 {
   intnat r;
   char header[32];
@@ -803,24 +801,10 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
   }
   /* Initialize global state */
   intern_init(block, block);
-  intern_alloc(h.whsize, h.num_objects, outside_heap);
+  intern_alloc(h.whsize, h.num_objects);
   /* Fill it in */
   intern_rec(&res);
-  if (!outside_heap)
-    return intern_end(res, h.whsize);
-  else {
-    caml_disown_for_heap(intern_extra_block);
-    intern_extra_block = NULL;
-    intern_block = 0;
-    /* Free everything */
-    intern_cleanup();
-    return caml_check_urgent_gc(res);
-  }
-}
-
-value caml_input_val(struct channel* chan)
-{
-  return caml_input_val_core(chan, 0);
+  return intern_end(res, h.whsize);
 }
 
 CAMLprim value caml_input_value(value vchan)
@@ -837,18 +821,6 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
-CAMLprim value caml_input_value_to_outside_heap(value vchan)
-{
-  CAMLparam1 (vchan);
-  struct channel * chan = Channel(vchan);
-  CAMLlocal1 (res);
-
-  Lock(chan);
-  res = caml_input_val_core(chan, 1);
-  Unlock(chan);
-  CAMLreturn (res);
-}
-
 CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
 {
   CAMLparam1 (str);
@@ -861,16 +833,11 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   if (ofs + h.header_len + h.data_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
   /* Allocate result */
-  intern_alloc(h.whsize, h.num_objects, 0);
+  intern_alloc(h.whsize, h.num_objects);
   intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
   CAMLreturn (intern_end(obj, h.whsize));
-}
-
-CAMLprim value caml_input_value_from_string(value str, value ofs)
-{
-  return caml_input_val_from_bytes(str, Long_val(ofs));
 }
 
 CAMLprim value caml_input_value_from_bytes(value str, value ofs)
@@ -882,7 +849,7 @@ static value input_val_from_block(struct marshal_header * h)
 {
   value obj;
   /* Allocate result */
-  intern_alloc(h->whsize, h->num_objects, 0);
+  intern_alloc(h->whsize, h->num_objects);
   /* Fill it in */
   intern_rec(&obj);
   return (intern_end(obj, h->whsize));
@@ -953,21 +920,11 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset)
 {
-  int i;
-  for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
-    struct code_fragment * cf = caml_code_fragments_table.contents[i];
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
-    if (memcmp(digest, cf->digest, 16) == 0) {
-      if (cf->code_start + offset < cf->code_end)
-        return cf->code_start + offset;
-      else
-        return NULL;
-    }
-  }
-  return NULL;
+  struct code_fragment * cf = caml_find_code_fragment_by_digest(digest);
+  if (cf != NULL && cf->code_start + offset < cf->code_end)
+    return cf->code_start + offset;
+  else
+    return NULL;
 }
 
 static void intern_bad_code_pointer(unsigned char digest[16])

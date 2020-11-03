@@ -697,7 +697,7 @@ Enable, disable, or mark as fatal the warnings specified by the argument
 Each warning can be
 .IR enabled \ or\  disabled ,
 and each warning can be
-.IR fatal or
+.IR fatal \ or
 .IR non-fatal .
 If a warning is disabled, it isn't displayed and doesn't affect
 compilation in any way (even if it is fatal).  If a warning is enabled,
@@ -960,6 +960,10 @@ mutually recursive types.
 67
 \ \ Unused functor parameter.
 
+68
+\ \ Pattern-matching depending on mutable state prevents the remaining
+arguments from being uncurried.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -1013,7 +1017,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66\-67\-68 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

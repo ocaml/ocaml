@@ -118,9 +118,13 @@ let override = function
 
 (* variance encoding: need to sync up with the [parser.mly] *)
 let type_variance = function
-  | Invariant -> ""
+  | NoVariance -> ""
   | Covariant -> "+"
   | Contravariant -> "-"
+
+let type_injectivity = function
+  | NoInjectivity -> ""
+  | Injective -> "!"
 
 type construct =
   [ `cons of expression list
@@ -326,6 +330,9 @@ and core_type1 ctxt f x =
              | _ -> list ~first:"(" ~last:")@;" (core_type ctxt) ~sep:",@;" f l)
           l longident_loc li
     | Ptyp_variant (l, closed, low) ->
+        let first_is_inherit = match l with
+          | {Parsetree.prf_desc = Rinherit _}::_ -> true
+          | _ -> false in
         let type_variant_helper f x =
           match x.prf_desc with
           | Rtag (l, _, ctl) ->
@@ -344,7 +351,7 @@ and core_type1 ctxt f x =
              | _ ->
                  pp f "%s@;%a"
                    (match (closed,low) with
-                    | (Closed,None) -> ""
+                    | (Closed,None) -> if first_is_inherit then " |" else ""
                     | (Closed,Some _) -> "<" (* FIXME desugar the syntax sugar*)
                     | (Open,_) -> ">")
                    (list type_variant_helper ~sep:"@;<1 -2>| ") l) l
@@ -1203,11 +1210,11 @@ and payload ctxt f = function
         (expression ctxt) e
         (item_attributes ctxt) attrs
   | PStr x -> structure ctxt f x
-  | PTyp x -> pp f ":"; core_type ctxt f x
-  | PSig x -> pp f ":"; signature ctxt f x
-  | PPat (x, None) -> pp f "?"; pattern ctxt f x
+  | PTyp x -> pp f ":@ "; core_type ctxt f x
+  | PSig x -> pp f ":@ "; signature ctxt f x
+  | PPat (x, None) -> pp f "?@ "; pattern ctxt f x
   | PPat (x, Some e) ->
-      pp f "?"; pattern ctxt f x;
+      pp f "?@ "; pattern ctxt f x;
       pp f " when "; expression ctxt f e
 
 (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
@@ -1251,7 +1258,16 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
       Some (p, pt_tyvars, e_ct, e) else None
     | _ -> None in
   if x.pexp_attributes <> []
-  then pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x else
+  then
+    match p with
+    | {ppat_desc=Ppat_constraint({ppat_desc=Ppat_var _; _} as pat,
+                                 ({ptyp_desc=Ptyp_poly _; _} as typ));
+       ppat_attributes=[]; _} ->
+        pp f "%a@;: %a@;=@;%a"
+          (simple_pattern ctxt) pat (core_type ctxt) typ (expression ctxt) x
+    | _ ->
+        pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
+  else
   match is_desugared_gadt p x with
   | Some (p, [], ct, e) ->
       pp f "%a@;: %a@;=@;%a"
@@ -1434,8 +1450,8 @@ and structure_item ctxt f x =
       item_extension ctxt f e;
       item_attributes ctxt f a
 
-and type_param ctxt f (ct, a) =
-  pp f "%s%a" (type_variance a) (core_type ctxt) ct
+and type_param ctxt f (ct, (a,b)) =
+  pp f "%s%s%a" (type_variance a) (type_injectivity b) (core_type ctxt) ct
 
 and type_params ctxt f = function
   | [] -> ()
@@ -1571,9 +1587,9 @@ and extension_constructor ctxt f x =
   | Pext_decl(l, r) ->
       constructor_declaration ctxt f (x.pext_name.txt, l, r, x.pext_attributes)
   | Pext_rebind li ->
-      pp f "%s%a@;=@;%a" x.pext_name.txt
-        (attributes ctxt) x.pext_attributes
+      pp f "%s@;=@;%a%a" x.pext_name.txt
         longident_loc li
+        (attributes ctxt) x.pext_attributes
 
 and case_list ctxt f l : unit =
   let aux f {pc_lhs; pc_guard; pc_rhs} =

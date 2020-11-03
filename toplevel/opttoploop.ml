@@ -335,8 +335,7 @@ let execute_phrase print_outcome ppf phr =
       let (str, sg, names, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       let sg' = Typemod.Signature_names.simplify newenv names sg in
-      (* Why is this done? *)
-      ignore (Includemod.signatures oldenv sg sg');
+      ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
       Typecore.force_delayed_checks ();
       let module_ident, res, required_globals, size =
         if Config.flambda then
@@ -360,7 +359,7 @@ let execute_phrase print_outcome ppf phr =
           | Result _ ->
               if Config.flambda then
                 (* CR-someday trefis: *)
-                ()
+                Env.register_import_as_opaque (Ident.name module_ident)
               else
                 Compilenv.record_global_approx_toplevel ();
               if print_outcome then
@@ -654,7 +653,7 @@ let loop ppf =
       if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       ignore(execute_phrase true ppf phr)
     with
-    | End_of_file -> exit 0
+    | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack snap

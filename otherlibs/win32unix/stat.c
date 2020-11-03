@@ -30,7 +30,6 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
-#define _INTEGRAL_MAX_BITS 64
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>

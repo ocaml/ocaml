@@ -1,18 +1,78 @@
 Working version
----------------
+----------------
 
 ### Language features:
 
-- #9570: Provide an Atomic module with a trivial purely-sequential
-  implementation, to help write code that is compatible with Multicore
-  OCaml.
-  (Gabriel Scherer, review by Xavier Leroy)
+### Runtime system:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+### Internal/compiler-libs changes:
+
+- #9650: keep refactoring the pattern-matching compiler
+  (Gabriel Scherer, review by Thomas Refis)
+
+### Build system:
+
+### Bug fixes:
+
+OCaml 4.12.0
+------------
+
+### Language features:
+
+- #1655: pattern aliases do not ignore type constraints
+  (Thomas Refis, review by Jacques Garrigue and Gabriel Scherer)
+
+* #9500, #9727: Injectivity annotations
+  One can now mark type parameters as injective, which is useful for
+  abstract types:
+    module Vec : sig type !'a t end = struct type 'a t = 'a array end
+  On non-abstract types, this can be used to check the injectivity of
+  parameters. Since all parameters of record and sum types are by definition
+  injective, this only makes sense for type abbreviations:
+    type !'a t = 'a list
+  (Jacques Garrigue, review by Jeremy Yallop and Leo White)
+
+- #9429: Add unary operators containing `#` to the parser for use in ppx
+  rewriters
+  (Leo White, review by Damien Doligez)
+
+### Supported platforms:
+
+- #9699: add support for iOS and macOS on ARM 64 bits
+  (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
+   and Anil Madhavapeddy, additional testing by Michael Schmidt)
+
+### Type system:
+
+* #9811: remove propagation from previous branches
+  Type information inferred from previous branches was propagated in
+  non-principal mode. Revert this for better compatibility with
+  -principal mode.
+  For the time being, infringing code should result in a principality warning.
+  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
 
 ### Runtime system:
 
-- #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
-  to allow it to work with directories.
-  (Daniil Baturin, review by Damien Doligez)
+- #2195: Improve error message in bytecode stack trace printing and load
+  debug information during bytecode startup if OCAMLRUNPARAM=b=2.
+  (David Allsopp, review by Gabriel Scherer and Xavier Leroy)
+
+- #9756: garbage collector colors change
+  removes the gray color from the major gc
+  (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy,
+  KC Sivaramakrishnan, Damien Doligez and Jacques-Henri Jourdan)
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
   adding support for Musl ppc64le along the way.
@@ -20,6 +80,9 @@ Working version
 
 - #9466: Memprof: optimize random samples generation.
   (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
+
+- #9628: Memprof: disable sampling when memprof is suspended.
+  (Jacques-Henri Jourdan review by Gabriel Scherer and Stephen Dolan)
 
 - #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
@@ -34,17 +97,142 @@ Working version
   (KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer,
    and Xavier Leroy)
 
-- #9569: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`, `caml_alloc_some`,
-  and `Tag_some`.
+* #5154, #9569, #9734: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`,
+  `caml_alloc_some`, and `Tag_some`. As these macros are sometimes defined by
+  authors of C bindings, this change may cause warnings/errors in case of
+  redefinition.
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
 
+- #8807, #9503: Use different symbols for do_local_roots on bytecode and native
+  (Stephen Dolan, review by David Allsopp and Xavier Leroy)
+
+- #9619: Change representation of function closures so that code pointers
+  can be easily distinguished from environment variables
+  (Xavier Leroy, review by Mark Shinwell and Damien Doligez)
+
+- #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- #9648, #9689: Update the generic hash function to take advantage
+  of the new representation for function closures
+  (Xavier Leroy, review by Stephen Dolan)
+
+- #9649: Update the marshaler (output_value) to take advantage
+  of the new representation for function closures
+  (Xavier Leroy, review by Damien Doligez)
+
+- #9654: More efficient management of code fragments.
+  (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
+  Stephen Dolan)
+
+- #9670: Report full major collections in Gc stats.
+  (Leo White, review by Gabriel Scherer)
+
+- #9675: Remove the caml_static_{alloc,free,resize} primitives, now unused.
+  (Xavier Leroy, review by Gabriel Scherer)
+
+- #9678: Reimplement `Obj.reachable_words` using a hash table to
+  detect sharing, instead of temporary in-place modifications.  This
+  is a prerequisite for Multicore OCaml.
+  (Xavier Leroy, review by Jacques-Henri Jourdan and Sébastien Hinderer)
+
+* #9697: Remove the Is_in_code_area macro and the registration of DLL code
+  areas in the page table, subsumed by the new code fragment management API
+  (Xavier Leroy, review by Jacques-Henri Jourdan)
+
+- #9710: Drop "support" for an hypothetical JIT for OCaml bytecode
+   which has never existed.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
+- #9728: Take advantage of the new closure representation to simplify the
+  compaction algorithm and remove its dependence on the page table
+  (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
+
+- #9742, #9989: Ephemerons are now compatible with infix pointers occurring
+   when using mutually recursive functions.
+   (Jacques-Henri Jourdan, review by François Bobot)
+
+* #1128, #7503, #9036, #9722: EINTR-based signal handling.
+  When a signal arrives, avoid running its OCaml handler in the middle
+  of a blocking section. Instead, allow control to return quickly to
+  a polling point where the signal handler can safely run, ensuring that
+  I/O locks are not held while it runs. A polling point was removed from
+  caml_leave_blocking_section, and one added to caml_raise.
+  (Stephen Dolan, review by Goswin von Brederlow, Xavier Leroy, Damien
+   Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
+   Henri Jourdan)
+
+- #9888, #9890: Fixes a bug in the `riscv` backend where register t0 was not
+  saved/restored when performing a GC. This could potentially lead to a
+  segfault.
+  (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
+
+- #9909: Remove caml_code_area_start and caml_code_area_end globals (no longer
+  needed as the pagetable heads towards retirement).
+  (David Allsopp, review by Xavier Leroy)
+
+- #9949: Clarify documentation of GC message 0x1 and make sure it is
+  displayed every time a major cycle is forcibly finished.
+  (Damien Doligez, review by Xavier Leroy)
+
+- #9951: Ensure that the mark stack push optimisation handles naked pointers
+  (KC Sivaramakrishnan, reported by Enguerrand Decorne, review by Gabriel
+   Scherer, and Xavier Leroy)
+
+- #9534, #9947: Introduce a naked pointers checker mode to the runtime
+  (configure option --enable-naked-pointers-checker).  Alarms are printed
+  when the garbage collector finds out-of-heap pointers that could
+  cause a crash in no-naked-pointers mode.
+  (Enguerrand Decorne, KC Sivaramakrishnan, Xavier Leroy, Stephen Dolan,
+  David Allsopp, Nicolás Ojeda Bär review by Xavier Leroy, Nicolás Ojeda Bär)
+
+* #9674: Memprof: guarantee that an allocation callback is always run
+  in the same thread the allocation takes place
+  (Jacques-Henri Jourdan, review by Stephen Dolan)
+
 ### Code generation and optimizations:
 
-- #9441: Add RISC-V RV64G native-code backend.
-  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+- #9551: ocamlc no longer loads DLLs at link time to check that
+  external functions referenced from OCaml code are defined.
+  Instead, .so/.dll files are parsed directly by pure OCaml code.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer,
+   Anil Madhavapeddy, and Xavier Leroy)
+
+- #9620: Limit the number of parameters for an uncurried or untupled
+   function.  Functions with more parameters than that are left
+   partially curried or tupled.
+   (Xavier Leroy, review by Mark Shinwell)
+
+- #9752: Revised handling of calling conventions for external C functions.
+   Provide a more precise description of the types of unboxed arguments,
+   so that the ARM64 iOS/macOS calling conventions can be honored.
+   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
+
+- #9838: Ensure that Cmm immediates are generated as Cconst_int where
+  possible, improving instruction selection.
+  (Stephen Dolan, review by Leo White and Xavier Leroy)
+
+- #9864: Revised recognition of immediate arguments to integer operations.
+  Fixes several issues that could have led to producing assembly code
+  that is rejected by the assembler.
+  (Xavier Leroy, review by Stephen Dolan)
+
+- #9969, #9981: Added mergeable flag to ELF sections containing mergeable
+  constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
+  (Jacob Young, review by Nicolás Ojeda Bär)
 
 ### Standard library:
+
+- #9865: add Format.pp_print_seq
+  (Raphaël Proust, review by Nicolás Ojeda Bär)
+
+- #9781: add injectivity annotations to parameterized abstract types
+  (Jeremy Yallop, review by Nicolás Ojeda Bär)
+
+* #9765: add init functions to Bigarray.
+  (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär, and
+   Xavier Leroy)
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
   or function, including any enclosing module or class.
@@ -56,10 +244,59 @@ Working version
 - #9561: Unbox Unix.gettimeofday and Unix.time
   (Stephen Dolan, review by David Allsopp)
 
+- #9570: Provide an Atomic module with a trivial purely-sequential
+  implementation, to help write code that is compatible with Multicore
+  OCaml.
+  (Gabriel Scherer, review by Xavier Leroy)
+
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
 
+- #9066: a new Either module with
+  type 'a Either.t = Left of 'a | Right of 'b
+  (Gabriel Scherer, review by Daniel Bünzli, Thomas Refis, Jeremy Yallop)
+
+- #9066: List.partition_map :
+    ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
+  (Gabriel Scherer, review by Jeremy Yallop)
+
+- #9587: Arg: new Rest_all spec to get all rest arguments in a list
+  (this is similar to Rest, but makes it possible to detect when there
+   are no arguments (an empty list) after the rest marker)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär and David Allsopp)
+
+- #9655: Obj: introduce type raw_data and functions raw_field, set_raw_field
+   to manipulate out-of-heap pointers in no-naked-pointer mode,
+   and more generally all other data that is not a well-formed OCaml value
+   (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
+
+- #9533: Added String.starts_with and String.ends_with.
+  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
+  Alain Frisch)
+
+- #9663: Extend Printexc API for raw backtrace entries.
+  (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+* #9668: List.equal, List.compare
+  (This could break code using "open List" by shadowing
+   Stdlib.{equal,compare}.)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, Daniel Bünzli and Alain Frisch)
+
+- #9763: Add function Hashtbl.rebuild to convert from old hash table
+  formats (that may have been saved to persistent storage) to the
+  current hash table format.  Remove leftover support for the hash
+  table format and generic hash function that were in use before OCaml 4.00.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #9797: Add Sys.mkdir and Sys.rmdir.
+  (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
+   Xavier Leroy)
+
 ### Other libraries:
+
+- #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
+  to allow it to work with directories.
+  (Daniil Baturin, review by Damien Doligez)
 
 * #9206, #9419: update documentation of the threads library;
   deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
@@ -82,13 +319,84 @@ Working version
   error handling when Unix.symlink is unavailable)
   (David Allsopp, review by Xavier Leroy)
 
+- #9338, #9790: Dynlink: make sure *_units () functions report accurate
+  information before the first load.
+  (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
+
+* #9757, #9846: check proper ownership when operating over mutexes.
+  Now, unlocking a mutex held by another thread or not locked at all
+  reliably raises a Sys_error exception.  Before, it was undefined
+  behavior, but the documentation did not say so.
+  Likewise, locking a mutex already locked by the current thread
+  reliably raises a Sys_error exception.  Before, it could
+  deadlock or succeed (and do recursive locking), depending on the OS.
+  (Xavier Leroy, report by Guillaume Munch-Maccagnoni, review by
+  Guillaume Munch-Maccagnoni, David Allsopp, and Stephen Dolan)
+
+- #9802: Ensure signals are handled before Unix.kill returns
+  (Stephen Dolan, review by Jacques-Henri Jourdan)
+
+- #9869: Add Unix.SO_REUSEPORT
+  (Yishuai Li, review by Xavier Leroy)
+
+- #9906, #9914: Add Unix._exit as a way to exit the process immediately,
+  skipping any finalization action
+  (Ivan Gotovchits and Xavier Leroy, review by Sébastien Hinderer and
+   David Allsopp)
+
+- #9930: new module Semaphore in the thread library, implementing
+  counting semaphores and binary semaphores
+  (Xavier Leroy, review by Daniel Bünzli and Damien Doligez,
+   additional suggestions by Stephen Dolan and Craig Ferguson)
+
+- #9958: Raise exception in case of error in Unix.setsid.
+  (Nicolás Ojeda Bär, review by Stephen Dolan)
+
+- #9971, #9973: Make sure the process can terminate when the last thread
+  calls Thread.exit.
+  (Xavier Leroy, report by Jacques-Henri Jourdan, review by David Allsopp
+  and Jacques-Henri Jourdan).
+
 ### Tools:
 
+- #9551: ocamlobjinfo is now able to display information on .cmxs shared
+  libraries natively; it no longer requires libbfd to do so
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer,
+   Anil Madhavapeddy, and Xavier Leroy)
+
+- #9606, #9635, #9637: fix performance regression in the debugger
+  (behaviors quadratic in the size of the debugged program)
+  (Xavier Leroy, report by Jacques Garrigue and Virgile Prevosto,
+  review by David Allsopp and Jacques-Henri Jourdan)
+
+* #9299, #9795: ocamldep: do not process files during cli parsing. Fixes
+  various broken cli behaviours.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär)
+
+### Debugging and profiling:
+
+- #9948: Remove Spacetime.
+  (Nicolás Ojeda Bär, review by Stephen Dolan and Xavier Leroy)
 
 ### Manual and documentation:
 
+- #9468: HACKING.adoc: using dune to get merlin's support
+  (Thomas Refis, review by Gabriel Scherer)
+
+- #9745: Manual: Standard Library labeled and unlabeled documentation unified
+  (John Whitington, review by Nicolás Ojeda Bär, David Allsopp,
+   Thomas Refis, and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
+
+- #1931: rely on levels to enforce principality in patterns
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
+* #9011: Do not create .a/.lib files when creating a .cmxa with no modules.
+  macOS ar doesn't support creating empty .a files (#1094) and MSVC doesn't
+  permit .lib files to contain no objects. When linking with a .cmxa containing
+  no modules, it is now not an error for there to be no .a/.lib file.
+  (David Allsopp, review by Xavier Leroy)
 
 - #9560: Report partial application warnings on type errors in applications.
   (Stephen Dolan, report and testcase by whitequark, review by Gabriel Scherer
@@ -104,9 +412,42 @@ Working version
   corresponding core_type.
   (Etienne Millon, review by Thomas Refis)
 
+- #6633, #9673: Add hint when a module is used instead of a module type or
+  when a module type is used instead of a module or when a class type is used
+  instead of a class.
+  (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
+  and Gabriel Scherer)
+
+- #9754: allow [@tailcall true] (equivalent to [@tailcall]) and
+  [@tailcall false] (warns if on a tailcall)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
+- #9657: Warnings can now be referred to by their mnemonic name. The names are
+  displayed using `-warn-help` and can be utilized anywhere where a warning list
+  specification is expected, e.g. `[@@@ocaml.warning ...]`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Florian Angeletti and Leo
+  White)
+
+- #9751: Add warning 68. Pattern-matching depending on mutable state
+  prevents the remaining arguments from being uncurried.
+  (Hugo Heuzard, review by Leo White)
+
+- #9783: Widen warning 16 to more cases.
+  (Leo White, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
-- #9493, #9520, #9563, #9599: refactor the pattern-matching compiler
+- #8987: Make some locations more accurate
+  (Thomas Refis, review by Gabriel Scherer)
+
+- #9216: add Lambda.duplicate which refreshes bound identifiers
+  (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
+
+- #9376: Remove spurious Ptop_defs from #use
+  (Leo White, review by Damien Doligez)
+
+- #9464, #9493, #9520, #9563, #9599, #9608, #9647: refactor
+  the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 - #9604: refactoring of the ocamltest codebase.
@@ -118,7 +459,69 @@ Working version
   (Gabriel Scherer, review by Luc Maranget, Thomas Refis and Florian Angeletti,
    report by Alex Fedoseev through Hongbo Zhang)
 
+- #9514: optimize pattern-matching exhaustivity analysis in the single-row case
+  (Gabriel Scherer, review by Stephen DOlan)
+
+- #9442: refactor the implementation of the [@tailcall] attribute
+  to allow for a structured attribute payload
+  (Gabriel Scherer, review by Vladimir Keleshev and Nicolás Ojeda Bär)
+
+- #9684: document in address_class.h the runtime value model in
+  naked-pointers and no-naked-pointers mode
+  (Xavier Leroy and Gabriel Scherer)
+
+- #9696: ocamltest now shows its log when a test fails. In addition, the log
+  contains the output of executed programs.
+  (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
+  Scherer)
+
+- #9688: Expose the main entrypoint in compilerlibs
+  (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
+
+- #9715: recheck scope escapes after normalising paths
+  (Matthew Ryan, review by Gabriel Scherer and Thomas Refis)
+
+- #9778: Fix printing for bindings where polymorphic type annotations and
+  attributes are present.
+  (Matthew Ryan, review by Nicolás Ojeda Bär)
+
+- #9797, #9849: Eliminate the routine use of external commands in ocamltest.
+  ocamltest no longer calls the mkdir, rm and ln external commands (at present,
+  the only external command ocamltest uses is diff).
+  (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
+   Xavier Leroy)
+
+- #9801: Don't ignore EOL-at-EOF differences in ocamltest.
+  (David Allsopp, review by Damien Doligez, much input and thought from
+   Daniel Bünzli, Damien Doligez, Sébastien Hinderer, and Xavier Leroy)
+
+- #9889: more caching when printing types with -short-path.
+  (Florian Angeletti, review by Gabriel Scherer)
+
+-  #9591: fix pprint of polyvariants that start with a core_type, closed,
+   not low (Chet Murthy, review by Florian Angeletti)
+
+-  #9590: fix pprint of extension constructors (and exceptions) that rebind
+   (Chet Murthy, review by octachron@)
+
+- #8939: Command-line option to save Linear IR before emit.
+  (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
+
+- #9003: Start compilation from Emit when the input file is in Linear IR format.
+  (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
+
+- #9963: Centralized tracking of frontend's global state
+  (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
+
+- #9631: Named text sections for caml_system__code_begin/end symbols
+  (Greta Yorsh, review by Frédéric Bour)
+
 ### Build system:
+
+- #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
+  cross-compilation, this means the triplet-prefixed version will always be
+  used.
+  (David Allsopp, report by Adrian Nader, review by Sébastien Hinderer)
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
   dependencies are generated on-the-fly in development mode. For incremental
@@ -129,7 +532,43 @@ Working version
   to avoid C dependency recomputation.
   (Gabriel Scherer, review by David Allsopp)
 
+- #9804: Build C stubs of libraries in otherlibs/ with debug info.
+  (Stephen Dolan, review by Sébastien Hinderer and David Allsopp)
+
+- #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
+  (Sébastien Hinderer, review by David Allsopp)
+
+- #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
+  Standard Library directory.
+  (Bernhard Schommer, review by David Allsopp)
+
 ### Bug fixes:
+
+- #7538, #9669: Check for misplaced attributes on module aliases
+  (Leo White, report by Thomas Leonard, review by Florian Angeletti)
+
+- #7902, #9556: Type-checker infers recursive type, even though -rectypes is
+  off.
+  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
+
+- #8746: Hashtbl: Restore ongoing traversal status after filter_map_inplace
+  (Mehdi Bouaziz, review by Alain Frisch)
+
+- #8747, #9709: incorrect principality warning on functional updates of records
+  (Jacques Garrigue, report and review by Thomas Refis)
+
+- #9421, #9427: fix printing of (::) in ocamldoc
+  (Florian Angeletti, report by Yawar Amin, review by Damien Doligez)
+
+- #9440: for a type extension constructor with parameterised arguments,
+  REPL displayed <poly> for each as opposed to the concrete values used.
+  (Christian Quinn, review by Gabriel Scherer)
+
+- #9433: Fix package constraints for module aliases
+  (Leo White, review by Jacques Garrigue)
+
+- #9469: Better backtraces for lazy values
+  (Leo White, review by Nicolás Ojeda Bär)
 
 - #9521, #9522: correctly fail when comparing functions
   with Closure and Infix tags.
@@ -140,45 +579,98 @@ Working version
   them to system linker, ppx contexts, etc.
   (Nicolás Ojeda Bär, review by Jérémie Dimino and Gabriel Scherer)
 
-OCaml 4.11
-----------
+- #9633: ocamltest: fix a bug when certain variables set in test scripts would
+  be ignored (eg `ocamlrunparam`).
+  (Nicolás Ojeda Bär, review by Sébastien Hinderer)
+
+- #9681, #9690, #9693: small runtime changes
+  for the new closure representation (#9619)
+  (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
+   review by Xavier Leroy and Jacques-Henri Jourdan)
+
+- #9759, #9767: Spurious GADT ambiguity without -principal
+  (Jacques Garrigue, report by Thomas Refis,
+   review by Thomas Refis and Gabriel Scherer)
+
+- #9799, #9803: pat_env points to the correct environment
+  (Thomas Refis, report by Alex Fedoseev, review by Gabriel Scherer)
+
+- #9825, #9830: the C global variable caml_fl_merge and the C function
+  caml_spacetime_my_profinfo (bytecode version) were declared and
+  defined with different types.  This is undefined behavior and
+  cancause link-time errors with link-time optimization (LTO).
+  (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
+
+- #9753: fix build for Android
+  (Github user @EduardoRFS, review by Xavier Leroy)
+
+- #9848, #9855: Fix double free of bytecode in toplevel
+  (Stephen Dolan, report by Sampsa Kiiskinen, review by Gabriel Scherer)
+
+- #9858, #9861: Compiler fails with Ctype.Nondep_cannot_erase exception
+  (Thomas Refis, report by @pveber, review by Florian Angeletti)
+
+- #9860: wrong range constraint for subtract immediate on zSystems / s390x
+  (Xavier Leroy, review by Stephen Dolan)
+
+- #9868, #9872, #9892: bugs in {in,out}_channel_length and seek_in
+  for files opened in text mode under Windows
+  (Xavier Leroy, report by Alain Frisch, review by Nicolás Ojeda Bär
+  and Alain Frisch)
+
+- #9925: Correct passing -fdebug-prefix-map to flexlink on Cygwin by prefixing
+  it with -link.
+  (David Allsopp, review by Xavier Leroy)
+
+- #9927: Restore Cygwin64 support.
+  (David Allsopp, review by Xavier Leroy)
+
+- #9940: Fix unboxing of allocated constants from other compilation units
+  (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
+  Stephen Dolan)
+
+
+OCaml 4.11.1
+------------
+
+### Bug fixes:
+
+- #9856, #9857: Prevent polymorphic type annotations from generalizing
+  weak polymorphic variables.
+  (Leo White, review by Jacques Garrigue)
+
+- #9859, #9862: Remove an erroneous assertion when inferred function types
+  appear in the right hand side of an explicit :> coercion
+  (Florian Angeletti, review by Thomas Refis)
+
+OCaml 4.11.0 (19 August 2020)
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
-
-### Language features
-
-- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
-  [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
-  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
-   request by Bikal Lem)
-
-- #6673, #1132, #9617: Relax the handling of explicit polymorphic types
-  (Leo White, review by Jacques Garrigue and Gabriel Scherer)
-
-- #9232: allow any class type paths in #-types,
-  For instance, "val f: #F(X).t -> unit" is now allowed.
-  (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
-
-- #7364, #2188, #9592, #9609: improvement of the unboxability check for types
-  with a single constructor. Mutually-recursive type declarations can
-  now contain unboxed types. This is based on the paper
-    https://arxiv.org/abs/1811.02300
-  (Gabriel Scherer and Rodolphe Lepigre,
-   review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
-
-- #1154, #1706: spellchecker hints and type-directed disambiguation
-  for extensible sum type constructors
-  (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
-  and Leo White)
 
 ### Runtime system:
 
 - #9096: Print function names in backtraces.
+  Old output:
+  > Called from file "foo.ml", line 16, characters 42-53
+  New output:
+  > Called from Foo.bar in file "foo.ml", line 16, characters 42-53
   (Stephen Dolan, review by Leo White and Mark Shinwell)
 
-- #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
-  API when the old block is NULL.
-  (Jacques-Henri Jourdan, review by Xavier Leroy)
+- #9082: The instrumented runtime now records logs in the CTF format.
+  A new API is available in the runtime to collect runtime statistics,
+  replacing the previous instrumented runtime macros.
+  Gc.eventlog_pause and Gc.eventlog_resume were added to allow user to control
+  instrumentation in a running program.
+  See the manual for more information on how to use this instrumentation mode.
+  (Enguerrand Decorne and Stephen Dolan, with help and review from
+  David Allsopp, Sébastien Hinderer, review by Anil Madhavapeddy,
+  Nicolás Ojeda Bär, Shakthi Kannan, KC Sivaramakrishnan, Gabriel Scherer,
+  Guillaume Munch-Maccagnoni, Damien Doligez, Leo White, Daniel Bünzli
+  and Xavier Leroy)
+
+- #9230, #9362: Memprof support for native allocations.
+  (Jacques-Henri Jourdan and Stephen Dolan, review by Gabriel Scherer)
 
 - #8920, #9238, #9239, #9254, #9458: New API for statistical memory profiling
   in Memprof.Gc. The new version does no longer use ephemerons and allows
@@ -188,11 +680,19 @@ OCaml 4.11
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez
    and Gabriel Scherer)
 
+- #9353: Reimplement `output_value` and the `Marshal.to_*` functions
+  using a hash table to detect sharing, instead of temporary in-place
+  modifications.  This is a prerequisite for Multicore OCaml.
+  (Xavier Leroy and Basile Clément, review by Gabriel Scherer and
+  Stephen Dolan)
+
+
+- #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
+  API when the old block is NULL.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 - #9233: Restore the bytecode stack after an allocation.
   (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
-
-- #9230, #9362: Memprof support for native allocations.
-  (Jacques-Henri Jourdan and Stephen Dolan, review by Gabriel Scherer)
 
 - #9249: restore definition of ARCH_ALIGN_INT64 in m.h if the architecture
   requires 64-bit integers to be double-word aligned (autoconf regression)
@@ -210,23 +710,12 @@ OCaml 4.11
 - #9280: Micro-optimise allocations on amd64 to save a register.
   (Stephen Dolan, review by Xavier Leroy)
 
-- #9316, #9443, #9463: Use typing information from Clambda
-  for mutable Cmm variables.
-  (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
-  and Gabriel Scherer; temporary bug report by Richard Jones)
-
 - #9426: build the Mingw ports with higher levels of GCC optimization
   (Xavier Leroy, review by Sébastien Hinderer)
 
 * #9483: Remove accidental inclusion of <stdio.h> in <caml/misc.h>
   The only release with the inclusion of stdio.h has been 4.10.0
   (Christopher Zimmermann, review by Xavier Leroy and David Allsopp)
-
-- #9353: Reimplement `output_value` and the `Marshal.to_*` functions
-  using a hash table to detect sharing, instead of temporary in-place
-  modifications.  This is a prerequisite for Multicore OCaml.
-  (Xavier Leroy and Basile Clément, review by Gabriel Scherer and
-  Stephen Dolan)
 
 - #9282: Make Cconst_symbol have typ_int to fix no-naked-pointers mode.
   (Stephen Dolan, review by Mark Shinwell, Xavier Leroy and Vincent Laviron)
@@ -240,22 +729,20 @@ OCaml 4.11
   avoiding overflow.
   (Jeremy Yallop, Stephen Dolan, review by Xavier Leroy)
 
-- #9082: The instrumented runtime now records logs in the CTF format.
-  A new API is available in the runtime to collect runtime statistics,
-  replacing the previous instrumented runtime macros.
-  Gc.eventlog_pause and Gc.eventlog_resume were added to allow user to control
-  instrumentation in a running program.
-  (Enguerrand Decorne and Stephen Dolan, with help and review from
-  David Allsopp, Sébastien Hinderer, review by Anil Madhavapeddy,
-  Nicolás Ojeda Bär, Shakthi Kannan, KC Sivaramakrishnan, Gabriel Scherer,
-  Guillaume Munch-Maccagnoni, Damien Doligez, Leo White, Daniel Bünzli
-  and Xavier Leroy)
-
 ### Code generation and optimizations:
+
+- #9441: Add RISC-V RV64G native-code backend.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+
+- #9316, #9443, #9463, #9782: Use typing information from Clambda
+  for mutable Cmm variables.
+  (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
+  and Gabriel Scherer; temporary bug report by Richard Jones)
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
    KC Sivaramakrishnan and Xavier Leroy)
+
 
 - #9193: Make tuple matching optimisation apply to Lswitch and Lstringswitch.
   (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
@@ -263,13 +750,44 @@ OCaml 4.11
 - #9392: Visit registers at most once in Coloring.iter_preferred.
   (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
 
+- #9549, #9557: Make -flarge-toc the default for PowerPC and introduce
+  -fsmall-toc to enable the previous behaviour.
+  (David Allsopp, report by Nathaniel Wesley Filardo, review by Xavier Leroy)
+
+### Language features
+
+- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
+  [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
+  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
+   request by Bikal Lem)
+
+- #7364, #2188, #9592, #9609: improvement of the unboxability check for types
+  with a single constructor. Mutually-recursive type declarations can
+  now contain unboxed types. This is based on the paper
+    https://arxiv.org/abs/1811.02300
+  (Gabriel Scherer and Rodolphe Lepigre,
+   review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
+
+- #1154, #1706: spellchecker hints and type-directed disambiguation
+  for extensible sum type constructors
+  (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
+  and Leo White)
+
+
+- #6673, #1132, #9617: Relax the handling of explicit polymorphic types.
+  This improves error messages in some polymorphic recursive definition,
+  and requires less polymorphic annotations in some cases of
+  mutually-recursive definitions involving polymorphic recursion.
+  (Leo White, review by Jacques Garrigue and Gabriel Scherer)
+
+- #9232: allow any class type paths in #-types,
+  For instance, "val f: #F(X).t -> unit" is now allowed.
+  (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
+
 ### Standard library:
 
 - #9077: Add Seq.cons and Seq.append
   (Sébastien Briais, review by Yawar Amin and Florian Angeletti)
-
-- #9248: Add Printexc.default_uncaught_exception_handler
-  (Raphael Sousa Santos, review by Daniel Bünzli)
 
 - #9235: Add Array.exists2 and Array.for_all2
   (Bernhard Schommer, review by Armaël Guéneau)
@@ -278,17 +796,24 @@ OCaml 4.11
    (Jeremy Yallop, review by Hezekiah M. Carty, Gabriel Scherer and
    Gabriel Radanne)
 
-- #8771: Lexing: add set_position and set_filename to change (fake)
-   the initial tracking position of the lexbuf.
-   (Konstantin Romanov, Miguel Lumapat, review by Gabriel Scherer,
-    Sébastien Hinderer, and David Allsopp)
-
 - #9059: Added List.filteri function, same as List.filter but
   with the index of the element.
   (Léo Andrès, review by Alain Frisch)
 
 - #8894: Added List.fold_left_map function combining map and fold.
   (Bernhard Schommer, review by Alain Frisch and github user @cfcs)
+
+- #9365: Set.filter_map and Map.filter_map
+  (Gabriel Scherer, review by Stephen Dolan and Nicolás Ojeda Bär)
+
+
+- #9248: Add Printexc.default_uncaught_exception_handler
+  (Raphael Sousa Santos, review by Daniel Bünzli)
+
+- #8771: Lexing: add set_position and set_filename to change (fake)
+   the initial tracking position of the lexbuf.
+   (Konstantin Romanov, Miguel Lumapat, review by Gabriel Scherer,
+    Sébastien Hinderer, and David Allsopp)
 
 - #9237: `Format.pp_update_geometry ppf (fun geo -> {geo with ...})`
   for formatter geometry changes that are robust to new geometry fields.
@@ -297,16 +822,9 @@ OCaml 4.11
 - #7110: Added Printf.ikbprintf and Printf.ibprintf
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
-- #9365: Set.filter_map and Map.filter_map
-  (Gabriel Scherer, review by Stephen Dolan and Nicolás Ojeda Bär)
-
 - #9266: Install pretty-printer for the exception Fun.Finally_raised.
   (Guillaume Munch-Maccagnoni, review by Daniel Bünzli, Gabriel Radanne,
    and Gabriel Scherer)
-
-- #9549, #9557: Make -flarge-toc the default for PowerPC and introduce
-  -fsmall-toc to enable the previous behaviour.
-  (David Allsopp, report by Nathaniel Wesley Filardo, review by Xavier Leroy)
 
 ### Other libraries:
 
@@ -329,6 +847,11 @@ OCaml 4.11
 
 ### Tools:
 
+- #9283, #9455, #9457: add a new toplevel directive `#use_output "<command>"` to
+  run a command and evaluate its output.
+  (Jérémie Dimino, review by David Allsopp)
+
+
 - #6969: Argument -nocwd added to ocamldep
   (Muskan Garg, review by Florian Angeletti)
 
@@ -348,10 +871,6 @@ OCaml 4.11
   from a different (older or newer), incompatible compiler version.
   (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
-- #9181: make objinfo work on Cygwin and look for the caml_plugin_header
-  symbol in both the static and the dynamic symbol tables.
-  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
-
 * #9197: remove compatibility logic from #244 that was designed to
   synchronize toplevel printing margins with Format.std_formatter,
   but also resulted in unpredictable/fragile changes to formatter
@@ -369,23 +888,9 @@ OCaml 4.11
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
 
-- #9283, #9455, #9457: add a new toplevel directive `#use_output "<command>"` to
-  run a command and evaluate its output.
-  (Jérémie Dimino, review by David Allsopp)
-
-- #9402: Remove `sudo:false` from .travis.yml
-  (Hikaru Yoshimura)
-
-- #9414: testsuite, ocamltest: keep test artifacts only on failure.
-  Use KEEP_TEST_DIR_ON_SUCCESS=1 to keep all artifacts.
-  (Gabriel Scherer, review by Sébastien Hinderer)
-
 - #9482, #9492: use diversions (@file) to work around OS limitations
   on length of Sys.command argument.
   (Xavier Leroy, report by Jérémie Dimino, review by David Allsopp)
-
-- #9552: restore ocamloptp build and installation
-  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
 
 ### Manual and documentation:
 
@@ -403,6 +908,30 @@ OCaml 4.11
 - #9325: documented base case for `List.for_all` and `List.exists`
   (Glenn Slotte, review by Florian Angeletti)
 
+- #9410, #9422: replaced naive fibonacci example with gcd
+  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
+
+- #9541: Add a documentation page for the instrumented runtime;
+  additional changes to option names in the instrumented runtime.
+  (Enguerrand Decorne, review by Anil Madhavapeddy, Gabriel Scherer,
+   Daniel Bünzli, David Allsopp, Florian Angeletti,
+   and Sébastien Hinderer)
+
+- #9610: manual, C FFI: naked pointers are deprecated, detail the
+  forward-compatible options for handling out-of-heap pointers.
+  (Xavier Leroy, review by Mark Shinwell, David Allsopp and Florian Angeletti)
+
+- #9618: clarify the Format documentation on the margin and maximum indentation
+  limit
+  (Florian Angeletti, review by Josh Berdine)
+
+
+- #8644: fix formatting comment about @raise in stdlib's mli files
+  (Élie Brami, review by David Allsopp)
+
+- #9327, #9401: manual, fix infix attribute examples
+  (Florian Angeletti, report by David Cadé, review by Gabriel Scherer)
+
 - #9403: added a description for warning 67 and added a "." at the end of
   warnings for consistency.
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
@@ -412,9 +941,24 @@ OCaml 4.11
 
 ### Compiler user-interface and warnings:
 
-- GPR#1664: make -output-complete-obj link the runtime native c libraries when
+- #9712: Update the version format to allow "~".
+  The new format is "major.minor[.patchlevel][(+|~)additional-info]",
+  for instance "4.12.0~beta1+flambda".
+  This is a documentation-only change for the 4.11 branch, the new format
+  will be used starting with the 4.12 branch.
+  (Florian Angeletti, review by Damien Doligez and Xavier Leroy)
+
+- #1664: make -output-complete-obj link the runtime native c libraries when
   building shared libraries like `-output-obj`.
   (Florian Angeletti, review by Nicolás Ojeda Bär)
+
+- #9349: Support [@inlined hint] attribute.
+  (Leo White, review by Stephen Dolan)
+
+- #2141: generate .annot files from cmt data; deprecate -annot.
+  (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
+  Doligez)
+
 
 * #7678, #8631: ocamlc -c and ocamlopt -c pass same switches to the C
   compiler when compiling .c files (in particular, this means ocamlopt
@@ -442,18 +986,21 @@ OCaml 4.11
 - #9393: Improve recursive module usage warnings
   (Leo White, review by Thomas Refis)
 
-- #2141: generate .annot files from cmt data; deprecate -annot.
-  (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
-  Doligez)
-
 - #9486: Fix configuration for the Haiku operating system
   (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
 
 ### Internal/compiler-libs changes:
 
- - #463: a new Misc.Magic_number module for user-friendly parsing
-   and validation of OCaml magic numbers.
-   (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
+- #9021: expose compiler Longident.t parsers
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #9452: Add locations to docstring attributes
+  (Leo White, review by Gabriel Scherer)
+
+
+- #463: a new Misc.Magic_number module for user-friendly parsing
+  and validation of OCaml magic numbers.
+  (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
 - #1176: encourage better compatibility with older Microsoft C compilers by
   using GCC's -Wdeclaration-after-statement when available. Introduce
@@ -472,9 +1019,6 @@ OCaml 4.11
 - #9060: ensure that Misc.protect_refs preserves backtraces
   (Gabriel Scherer, review by Guillaume Munch-Maccagnoni and David Allsopp)
 
-- #9021: expose compiler Longident.t parsers
-  (Florian Angeletti, review by Gabriel Scherer)
-
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)
 
@@ -490,13 +1034,16 @@ OCaml 4.11
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 
-- #9321, #9322, #9359, #9361, #9417, #9447, #9464: refactor the
+- #9321, #9322, #9359, #9361, #9417, #9447: refactor the
   pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 - #9211, #9215, #9222: fix Makefile dependencies in
   compilerlibs, dynlink, ocamltest.
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
+
+- #9275: Short circuit simple inclusion checks
+  (Leo White, review by Thomas Refis)
 
 - #9305: Avoid polymorphic compare in Ident
   (Leo White, review by Xavier Leroy and Gabriel Scherer)
@@ -511,11 +1058,16 @@ OCaml 4.11
 - #9246: Avoid rechecking functor applications
   (Leo White, review by Jacques Garrigue)
 
+- #9402: Remove `sudo:false` from .travis.yml
+  (Hikaru Yoshimura)
+
 * #9411: forbid optional arguments reordering with -nolabels
   (Thomas Refis, review by Frédéric Bour and Jacques Garrigue)
 
-- #9452: Add locations to docstring attributes
-  (Leo White, review by Gabriel Scherer)
+- #9414: testsuite, ocamltest: keep test artifacts only on failure.
+  Use KEEP_TEST_DIR_ON_SUCCESS=1 to keep all artifacts.
+  (Gabriel Scherer, review by Sébastien Hinderer)
+
 
 ### Build system:
 
@@ -546,15 +1098,25 @@ OCaml 4.11
 - #7817, #9546: Unsound inclusion check for polymorphic variant
   (Jacques Garrigue, report by Mikhail Mandrykin, review by Gabriel Scherer)
 
+- #7897, #9537: Fix warning 38 for rebound extension constructors
+  (Leo White, review by Florian Angeletti)
+
 - #7917, #9426: Use GCC option -fexcess-precision=standard when available,
   avoiding a problem with x87 excess precision in Float.round.
   (Xavier Leroy, review by Sébastien Hinderer)
+
+- #9011: Allow linking .cmxa files with no units on MSVC by not requiring the
+  .lib file to be present.
+  (David Allsopp, report by Dimitry Bely, review by Xavier Leroy)
 
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
+
+- #9163: Treat loops properly in un_anf
+  (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
 
 - #9189, #9281: fix a conflict with Gentoo build system
   by removing an one-letter Makefile variable.
@@ -569,6 +1131,9 @@ OCaml 4.11
   collected call stack, and make sure ocamlc preserves such events
   even if they are at tail position.
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
+
+- #9244: Fix some missing usage warnings
+  (Leo White, review by Florian Angeletti)
 
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
@@ -597,8 +1162,14 @@ OCaml 4.11
 - #9375, #9477: add forgotten substitution when compiling anonymous modules
   (Thomas Refis, review by Frédéric Bour, report by Andreas Hauptmann)
 
+- #9384, #9385: Fix copy scope bugs in substitutions
+  (Leo White, review by Thomas Refis, report by Nick Roberts)
+
 * #9388: Prohibit signature local types with constraints
   (Leo White, review by Jacques Garrigue)
+
+- #7141, #9389: returns exit_code for better user response on linking_error
+  (Anukriti Kumar, review by Gabriel Scherer and Valentin Gatien-Baron)
 
 - #9406, #9409: fix an error with packed module types from missing
   cmis.
@@ -608,12 +1179,26 @@ OCaml 4.11
 - #9415: Treat `open struct` as `include struct` in toplevel
   (Leo White, review by Thomas Refis)
 
+- #9416: Avoid warning 58 in flambda ocamlnat
+  (Leo White, review by Florian Angeletti)
+
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
 
 - #9428: Fix truncated exception backtrace for C->OCaml callbacks
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #9623, #9642: fix typing environments in Typedecl.transl_with_constraint
+  (Gabriel Scherer, review by Jacques Garrigue and Leo White,
+   report by Hugo Heuzard)
+
+- #9695, #9702: no error when opening an alias to a missing module
+  (Jacques Garrigue, report and review by Gabriel Scherer)
+
+- #9714, #9724: Add a terminator to the `caml_domain_state` structure
+  to better ensure that members are correctly spaced.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
 OCaml 4.10 maintenance branch
 -----------------------------
@@ -636,13 +1221,26 @@ OCaml 4.10 maintenance branch
 - #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
   (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
 
-- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+- #9165, #9840: Add missing -function-sections flag in Makefiles.
   (Greta Yorsh, review by David Allsopp)
 
 - #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`
   would not execute `at_exit` hooks at program termination (in particular,
   output channels would not be flushed).
   (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #9714, #9724: Use the C++ alignas keyword when compiling in C++ in MSVC.
+  Fixes a bug with MSVC C++ 2015 onwards.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+
+- #9736, #9749: Compaction must start in a heap where all free blocks are
+  blue, which was not the case with the best-fit allocator.
+  (Damien Doligez, report and review by Leo White)
+
+### Tools:
+
+- #9552: restore ocamloptp build and installation
+  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
@@ -952,6 +1550,10 @@ OCaml 4.10.0 (21 February 2020)
 - #9127, #9130: ocamldoc: fix the formatting of closing brace in record types.
   (David Allsopp, report by San Vu Ngoc)
 
+- #9181: make objinfo work on Cygwin and look for the caml_plugin_header
+  symbol in both the static and the dynamic symbol tables.
+  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
+
 ### Build system:
 
 - #8840: use ocaml{c,opt}.opt when available to build internal tools
@@ -1152,9 +1754,6 @@ OCaml 4.10.0 (21 February 2020)
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
 
-- #9389: returns exit_code for better user response on linking_error
-  (Anukriti Kumar, review by Gabriel Scherer and sliquister)
-
 OCaml 4.09 maintenance branch
 -----------------------------
 
@@ -1185,14 +1784,14 @@ OCaml 4.09.1 (16 Mars 2020)
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
 
-- #9144, #9180: multiple definitions of global variables in the C runtime,
-  causing problems with GCC 10.0 and possibly with other C compilers
-  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
-
 - #9180: pass -fno-common option to C compiler when available,
   so as to detect problematic multiple definitions of global variables
   in the C runtime
   (Xavier Leroy, review by Mark Shinwell)
+
+- #9144, #9180: multiple definitions of global variables in the C runtime,
+  causing problems with GCC 10.0 and possibly with other C compilers
+  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
 
 - #9128: Fix a bug in bytecode mode which could lead to a segmentation
   fault. The bug was caused by the fact that the atom table shared a
@@ -1341,9 +1940,6 @@ OCaml 4.09.0 (19 September 2019)
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #9327, #9401: manual, fix infix attribute examples
-  (Florian Angeletti, report by David Cadé, review by Gabriel Scherer)
-
 ### Tools:
 
 - #2221: ocamldep will now correctly allow a .ml file in an include directory
@@ -1414,9 +2010,6 @@ OCaml 4.09.0 (19 September 2019)
 - #8598: Replace "not is_nonexpansive" by "maybe_expansive".
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)
-
-- #9275: Short circuit simple inclusion checks
-  (Leo White, review by Thomas Refis)
 
 ### Compiler distribution build system:
 
@@ -1939,9 +2532,6 @@ OCaml 4.08.0 (13 June 2019)
 
 - #8508: refresh \moduleref macro
   (Florian Angeletti, review by Gabriel Scherer)
-
-- 9410: replaced fibonacci example with gcd of coreexamples manual
-  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
 
 ### Code generation and optimizations:
 
@@ -2668,9 +3258,6 @@ OCaml 4.07.0 (10 July 2018)
   "-output-complete-obj". Previously, it was always linked in only on some
   platforms, making this option unusable on platforms where it wasn't.
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
-
-- #9349: Support [@inlined hint] attribute.
-  (Leo White, review by Stephen Dolan)
 
 ### Runtime system:
 

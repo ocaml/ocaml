@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* NOTE: If this file is map.mli, do not edit it directly! Instead,
+   edit templates/map.template.mli and run tools/sync_stdlib_docs *)
+
 (** Association tables over ordered types.
 
    This module implements applicative association tables, also known as
@@ -57,14 +60,14 @@ module type OrderedType =
           Example: a suitable ordering function is the generic structural
           comparison function {!Stdlib.compare}. *)
   end
-(** Input signature of the functor {!Map.Make}. *)
+(** Input signature of the functor {!Make}. *)
 
 module type S =
   sig
     type key
     (** The type of the map keys. *)
 
-    type (+'a) t
+    type !+'a t
     (** The type of maps from type [key] to type ['a]. *)
 
     val empty: 'a t
@@ -78,21 +81,21 @@ module type S =
        and [false] otherwise. *)
 
     val add: key -> 'a -> 'a t -> 'a t
-    (** [add x y m] returns a map containing the same bindings as
-       [m], plus a binding of [x] to [y]. If [x] was already bound
-       in [m] to a value that is physically equal to [y],
+    (** [add key data m] returns a map containing the same bindings as
+       [m], plus a binding of [key] to [data]. If [key] was already bound
+       in [m] to a value that is physically equal to [data],
        [m] is returned unchanged (the result of the function is
        then physically equal to [m]). Otherwise, the previous binding
-       of [x] in [m] disappears.
+       of [key] in [m] disappears.
        @before 4.03 Physical equality was not ensured. *)
 
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
-    (** [update x f m] returns a map containing the same bindings as
-        [m], except for the binding of [x]. Depending on the value of
-        [y] where [y] is [f (find_opt x m)], the binding of [x] is
+    (** [update key f m] returns a map containing the same bindings as
+        [m], except for the binding of [key]. Depending on the value of
+        [y] where [y] is [f (find_opt key m)], the binding of [key] is
         added, removed or updated. If [y] is [None], the binding is
-        removed if it exists; otherwise, if [y] is [Some z] then [x]
-        is associated to [z] in the resulting map.  If [x] was already
+        removed if it exists; otherwise, if [y] is [Some z] then [key]
+        is associated to [z] in the resulting map.  If [key] was already
         bound in [m] to a value that is physically equal to [z], [m]
         is returned unchanged (the result of the function is then
         physically equal to [m]).
@@ -100,8 +103,8 @@ module type S =
     *)
 
     val singleton: key -> 'a -> 'a t
-    (** [singleton x y] returns the one-element map that contains a binding [y]
-        for [x].
+    (** [singleton x y] returns the one-element map that contains a binding
+        [y] for [x].
         @since 3.12.0
      *)
 
@@ -113,7 +116,8 @@ module type S =
        @before 4.03 Physical equality was not ensured. *)
 
     val merge:
-         (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+         (key -> 'a option -> 'b option -> 'c option) ->
+         'a t -> 'b t -> 'c t
     (** [merge f m1 m2] computes a map whose keys are a subset of the keys of
         [m1] and of [m2]. The presence of each such binding, and the
         corresponding value, is determined with the function [f].
@@ -154,25 +158,25 @@ module type S =
        order with respect to the ordering over the type of the keys. *)
 
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
+    (** [fold f m init] computes [(f kN dN ... (f k1 d1 init)...)],
        where [k1 ... kN] are the keys of all bindings in [m]
        (in increasing order), and [d1 ... dN] are the associated data. *)
 
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
-    (** [for_all p m] checks if all the bindings of the map
-        satisfy the predicate [p].
+    (** [for_all f m] checks if all the bindings of the map
+        satisfy the predicate [f].
         @since 3.12.0
      *)
 
     val exists: (key -> 'a -> bool) -> 'a t -> bool
-    (** [exists p m] checks if at least one binding of the map
-        satisfies the predicate [p].
+    (** [exists f m] checks if at least one binding of the map
+        satisfies the predicate [f].
         @since 3.12.0
      *)
 
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
-    (** [filter p m] returns the map with all the bindings in [m]
-        that satisfy predicate [p]. If every binding in [m] satisfies [p],
+    (** [filter f m] returns the map with all the bindings in [m]
+        that satisfy predicate [p]. If every binding in [m] satisfies [f],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
         @since 3.12.0
@@ -200,10 +204,10 @@ module type S =
      *)
 
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
-    (** [partition p m] returns a pair of maps [(m1, m2)], where
+    (** [partition f m] returns a pair of maps [(m1, m2)], where
         [m1] contains all the bindings of [m] that satisfy the
-        predicate [p], and [m2] is the map with all the bindings of
-        [m] that do not satisfy [p].
+        predicate [f], and [m2] is the map with all the bindings of
+        [m] that do not satisfy [f].
         @since 3.12.0
      *)
 
@@ -216,7 +220,7 @@ module type S =
     (** Return the list of all bindings of the given map.
        The returned list is sorted in increasing order of keys with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Map.Make}.
+       given to {!Make}.
         @since 3.12.0
      *)
 
@@ -235,13 +239,13 @@ module type S =
      *)
 
     val max_binding: 'a t -> (key * 'a)
-    (** Same as {!Map.S.min_binding}, but returns the binding with
+    (** Same as {!S.min_binding}, but returns the binding with
         the largest key in the given map.
         @since 3.12.0
      *)
 
     val max_binding_opt: 'a t -> (key * 'a) option
-    (** Same as {!Map.S.min_binding_opt}, but returns the binding with
+    (** Same as {!S.min_binding_opt}, but returns the binding with
         the largest key in the given map.
         @since 4.05
      *)
@@ -288,16 +292,16 @@ module type S =
 
        For example, [find_first (fun k -> Ord.compare k x >= 0) m] will return
        the first binding [k, v] of [m] where [Ord.compare k x >= 0]
-       (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than any
-       element of [m].
+       (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than
+       any element of [m].
 
         @since 4.05
        *)
 
     val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
-    (** [find_first_opt f m], where [f] is a monotonically increasing function,
-       returns an option containing the binding of [m] with the lowest key [k]
-       such that [f k], or [None] if no such key exists.
+    (** [find_first_opt f m], where [f] is a monotonically increasing
+       function, returns an option containing the binding of [m] with the
+       lowest key [k] such that [f k], or [None] if no such key exists.
         @since 4.05
        *)
 
@@ -309,9 +313,10 @@ module type S =
        *)
 
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
-    (** [find_last_opt f m], where [f] is a monotonically decreasing function,
-       returns an option containing the binding of [m] with the highest key [k]
-       such that [f k], or [None] if no such key exists.
+    (** [find_last_opt f m], where [f] is a monotonically decreasing
+       function, returns an option containing the binding of [m] with
+       the highest key [k] such that [f k], or [None] if no such key
+       exists.
         @since 4.05
        *)
 
@@ -323,7 +328,7 @@ module type S =
        with respect to the ordering over the type of the keys. *)
 
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
-    (** Same as {!Map.S.map}, but the function receives as arguments both the
+    (** Same as {!S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
     (** {1 Iterators} *)
@@ -349,7 +354,7 @@ module type S =
     (** Build a map from the given bindings
         @since 4.07 *)
   end
-(** Output signature of the functor {!Map.Make}. *)
+(** Output signature of the functor {!Make}. *)
 
 module Make (Ord : OrderedType) : S with type key = Ord.t
 (** Functor building an implementation of the map structure

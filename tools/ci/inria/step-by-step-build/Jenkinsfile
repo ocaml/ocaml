@@ -1,0 +1,48 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                    Sebastien Hinderer, INRIA Paris                     */
+/*                                                                        */
+/*   Copyright 2020 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+/* Pipeline for the step-by-step-build job on Inria's CI */
+
+/* Build OCaml the legacy way (without using the world.opt target) */
+
+pipeline {
+  agent { label 'ocaml-linux-64' }
+  options {
+    timeout(time: 1, unit: 'HOURS')
+  }
+  stages {
+    stage(
+      'Building the OCaml compiler step by step (without using world.opt)'
+    ) {
+      steps {
+        sh 'tools/ci/inria/step-by-step-build/script'
+      }
+    }
+  }
+  post {
+    regression {
+      emailext (
+        to: 'ocaml-ci-notifications@inria.fr',
+        subject: 'Job $JOB_NAME $BUILD_STATUS (build #$BUILD_NUMBER)',
+        body: 'Changes since the last successful build:\n\n' +
+          '${CHANGES, format="%r %a %m"}\n\n' +
+          'See the attached build log or check console output here:\n' +
+          '$BUILD_URL\n',
+        /* recipientProviders: [[$class: 'DevelopersRecipientProvider']], */
+        attachLog: true
+      )
+    }
+  }
+}

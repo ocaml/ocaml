@@ -94,8 +94,6 @@ let phys_reg n =
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
-let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
-
 (* Calling conventions *)
 
 let calling_conventions
@@ -105,7 +103,7 @@ let calling_conventions
   let float = ref first_float in
   let ofs = ref stack_ofs in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -145,11 +143,9 @@ let loc_results res =
      Always reserve 160 bytes at bottom of stack, plus whatever is needed
      to hold the overflow arguments. *)
 
-let loc_external_arguments arg =
-  let arg =
-    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg in
-  let (loc, ofs) =
-    calling_conventions 0 4 100 103 outgoing 160 arg in
+let loc_external_arguments ty_args =
+  let arg = Cmm.machtype_of_exttype_list ty_args in
+  let (loc, ofs) = calling_conventions 0 4 100 103 outgoing 160 arg in
   (Array.map (fun reg -> [|reg|]) loc, ofs)
 
 (* Results are in GPR 2 and FPR 0 *)
@@ -192,7 +188,7 @@ let destroyed_at_c_call =
      100; 101; 102; 103; 104; 105; 106; 107])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _ }) ->
+    Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; _ }) ->
     all_phys_regs
   | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
   | _ -> [||]
@@ -217,9 +213,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
   | Ispecific(Imultaddf | Imultsubf) -> true
   | _ -> true
 

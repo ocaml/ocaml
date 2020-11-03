@@ -147,6 +147,8 @@ static void update_environment(array local_env)
       memcpy(value, pos_eq + 1, value_length);
       value[value_length] = '\0';
       setenv(name, value, 1); /* 1 means overwrite */
+      free(name);
+      free(value);
     }
   }
 }

@@ -42,14 +42,16 @@ let prologue_required = ref false
 
 let contains_calls = ref false
 
+let initial_stack_offset () =
+  reserved_stack_space +
+  size_int * num_stack_slots.(0) +    (* Local int variables *)
+  size_float * num_stack_slots.(1) +  (* Local float variables *)
+  (if !contains_calls && abi = ELF32 then size_int else 0)
+                                        (* The return address *)
 let frame_size () =
   let size =
-    reserved_stack_space +
     !stack_offset +                     (* Trap frame, outgoing parameters *)
-    size_int * num_stack_slots.(0) +    (* Local int variables *)
-    size_float * num_stack_slots.(1) +  (* Local float variables *)
-    (if !contains_calls && abi = ELF32 then size_int else 0) in
-                                        (* The return address *)
+    initial_stack_offset () in
   Misc.align size 16
 
 let slot_offset loc cls =
@@ -308,12 +310,8 @@ let adjust_stack_offset delta =
 
 (* Record live pointers at call points *)
 
-let record_frame ?label live dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
+let record_frame live dbg =
+  let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -439,7 +437,7 @@ module BR = Branch_relaxation.Make (struct
 
   let prologue_size () =
     profiling_prologue_size ()
-      + (if frame_size () > 0 then 1 else 0)
+      + (if initial_stack_offset () > 0 then 1 else 0)
       + (if !contains_calls then
            2 +
              match abi with
@@ -472,9 +470,9 @@ module BR = Branch_relaxation.Make (struct
       else tocload_size()
     | Lop(Iconst_float _) -> if abi = ELF32 then 2 else tocload_size()
     | Lop(Iconst_symbol _) -> if abi = ELF32 then 2 else tocload_size()
-    | Lop(Icall_ind _) -> size 2 5 4
+    | Lop(Icall_ind) -> size 2 5 4
     | Lop(Icall_imm _) -> size 1 3 3
-    | Lop(Itailcall_ind _) -> size 5 7 6
+    | Lop(Itailcall_ind) -> size 5 7 6
     | Lop(Itailcall_imm { func; _ }) ->
         if func = !function_name
         then 1
@@ -516,14 +514,14 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 2
     | Lraise _ -> 6
 
-  let relax_allocation ~num_bytes:bytes ~label_after_call_gc ~dbginfo =
-    Lop (Ispecific (Ialloc_far { bytes; label_after_call_gc; dbginfo }))
+  let relax_allocation ~num_bytes:bytes ~dbginfo =
+    Lop (Ispecific (Ialloc_far { bytes; dbginfo }))
 
   (* [classify_addr], above, never identifies these instructions as needing
      relaxing.  As such, these functions should never be called. *)
   let relax_specific_op _ = assert false
-  let relax_intop_checkbound ~label_after_error:_ = assert false
-  let relax_intop_imm_checkbound ~bound:_ ~label_after_error:_ = assert false
+  let relax_intop_checkbound () = assert false
+  let relax_intop_imm_checkbound ~bound:_ = assert false
 end)
 
 (* Output the assembly code for an instruction *)
@@ -617,31 +615,31 @@ let emit_instr i =
         | ELF64v1 | ELF64v2 ->
           emit_tocload emit_reg i.res.(0) (TocSym s)
         end
-    | Lop(Icall_ind { label_after; }) ->
+    | Lop(Icall_ind) ->
         begin match abi with
         | ELF32 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	bctrl\n`;
-          record_frame i.live (Dbg_other i.dbg) ~label:label_after
+          record_frame i.live (Dbg_other i.dbg)
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
           `	mtctr	0\n`;
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
-          record_frame i.live (Dbg_other i.dbg) ~label:label_after;
+          record_frame i.live (Dbg_other i.dbg);
           emit_reload_toc()
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
           `	bctrl\n`;
-          record_frame i.live (Dbg_other i.dbg) ~label:label_after;
+          record_frame i.live (Dbg_other i.dbg);
           emit_reload_toc()
         end
-    | Lop(Icall_imm { func; label_after; }) ->
+    | Lop(Icall_imm { func; }) ->
         begin match abi with
         | ELF32 ->
             emit_call func;
-            record_frame i.live (Dbg_other i.dbg) ~label:label_after
+            record_frame i.live (Dbg_other i.dbg)
         | ELF64v1 | ELF64v2 ->
         (* For PPC64, we cannot just emit a "bl s; nop" sequence, because
            of the following scenario:
@@ -661,11 +659,11 @@ let emit_instr i =
                 Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
             emit_call func;
-            record_frame i.live (Dbg_other i.dbg) ~label:label_after;
+            record_frame i.live (Dbg_other i.dbg);
             `	nop\n`;
             emit_reload_toc()
         end
-    | Lop(Itailcall_ind { label_after = _; }) ->
+    | Lop(Itailcall_ind) ->
         begin match abi with
         | ELF32 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`
@@ -683,7 +681,7 @@ let emit_instr i =
         end;
         emit_free_frame();
         `	bctr\n`
-    | Lop(Itailcall_imm { func; label_after = _; }) ->
+    | Lop(Itailcall_imm { func; }) ->
         if func = !function_name then
           `	b	{emit_label !tailrec_entry_point}\n`
         else begin
@@ -756,23 +754,15 @@ let emit_instr i =
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
-        if !call_gc_label = 0 then begin
-          match label_after_call_gc with
-          | None -> call_gc_label := new_label ()
-          | Some label -> call_gc_label := label
-        end;
+    | Lop(Ialloc { bytes = n; dbginfo }) ->
+        if !call_gc_label = 0 then call_gc_label := new_label ();
         `	addi    31, 31, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	31, 30\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         record_frame i.live (Dbg_alloc dbginfo);
         `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
-    | Lop(Ispecific(Ialloc_far { bytes = n; label_after_call_gc; dbginfo })) ->
-        if !call_gc_label = 0 then begin
-          match label_after_call_gc with
-          | None -> call_gc_label := new_label ()
-          | Some label -> call_gc_label := label
-        end;
+    | Lop(Ispecific(Ialloc_far { bytes = n; dbginfo })) ->
+        if !call_gc_label = 0 then call_gc_label := new_label ();
         let lbl = new_label() in
         `	addi    31, 31, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	31, 30\n`;
@@ -795,9 +785,9 @@ let emit_instr i =
             `	{emit_string cmplg}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             emit_set_comp c i.res.(0)
         end
-    | Lop(Iintop (Icheckbound { label_after_error; })) ->
+    | Lop(Iintop (Icheckbound)) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty (Dbg_other i.dbg) ?label:label_after_error;
+          record_frame Reg.Set.empty (Dbg_other i.dbg);
         `	{emit_string tglle}   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
@@ -813,9 +803,9 @@ let emit_instr i =
             `	{emit_string cmplg}i	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             emit_set_comp c i.res.(0)
         end
-    | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
+    | Lop(Iintop_imm(Icheckbound, n)) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty (Dbg_other i.dbg) ?label:label_after_error;
+          record_frame Reg.Set.empty (Dbg_other i.dbg);
         `	{emit_string tglle}i   {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in

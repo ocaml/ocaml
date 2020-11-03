@@ -25,12 +25,12 @@ STDLIB_INTF = $(STDLIB_MODs:%=%.tex)
 
 COMPILER_LIBS_PLUGIN_HOOKS = Pparse.tex Typemod.tex
 
-COMPILER_LIBS_INTF = Asthelper.tex Astmapper.tex Asttypes.tex \
+COMPILER_LIBS_INTF = Ast_helper.tex Ast_mapper.tex Asttypes.tex \
   Lexer.tex Location.tex Longident.tex Parse.tex Pprintast.tex Printast.tex \
   $(COMPILER_LIBS_PLUGIN_HOOKS)
 
 OTHERLIB_INTF = Unix.tex UnixLabels.tex Str.tex \
-  Thread.tex Mutex.tex Condition.tex Event.tex \
+  Thread.tex Mutex.tex Condition.tex Semaphore.tex Event.tex \
   Dynlink.tex Bigarray.tex
 
 INTF = $(CORE_INTF) $(STDLIB_INTF) $(COMPILER_LIBS_INTF) $(OTHERLIB_INTF)
@@ -63,9 +63,6 @@ ocamldoc.out: $(DOC_ALL)
 	  -latex-module-prefix "" \
 	  -latex-module-type-prefix "" \
 	  -latex-value-prefix ""
-	mv Ast_helper.tex Asthelper.tex
-	mv Ast_mapper.tex Astmapper.tex
-	mv Ocaml_operators.tex Ocamloperators.tex
 
 %.tex: %.etex
 	$(TEXQUOTE) < $< > $*.texquote_error.tex

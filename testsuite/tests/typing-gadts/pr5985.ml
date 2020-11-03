@@ -70,16 +70,15 @@ Error: In this definition, a type variable cannot be deduced
 (* It is not OK to allow modules exported by other compilation units *)
 type (_,_) eq = Eq : ('a,'a) eq;;
 let eq = Obj.magic Eq;;
-(* pretend that Queue.t is not injective *)
-let eq : ('a Queue.t, 'b Queue.t) eq = eq;;
-type _ t = T : 'a -> 'a Queue.t t;; (* fail *)
+let eq : (('a, 'b) Ephemeron.K1.t, ('c, 'd) Ephemeron.K1.t) eq = eq;;
+type _ t = T : 'a -> ('a, 'b) Ephemeron.K1.t t;; (* fail *)
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq
 val eq : 'a = <poly>
-val eq : ('a Queue.t, 'b Queue.t) eq = Eq
-Line 5, characters 0-33:
-5 | type _ t = T : 'a -> 'a Queue.t t;; (* fail *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+val eq : (('a, 'b) Ephemeron.K1.t, ('c, 'd) Ephemeron.K1.t) eq = Eq
+Line 4, characters 0-46:
+4 | type _ t = T : 'a -> ('a, 'b) Ephemeron.K1.t t;; (* fail *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 |}];;

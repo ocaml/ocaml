@@ -58,8 +58,8 @@ method oper_issue_cycles = function
   | Iintop(Ilsl | Ilsr | Iasr) -> 2
   | Iintop(Icomp _)
   | Iintop_imm(Icomp _, _) -> 3
-  | Iintop(Icheckbound _)
-  | Iintop_imm(Icheckbound _, _) -> 2
+  | Iintop(Icheckbound)
+  | Iintop_imm(Icheckbound, _) -> 2
   | Ispecific(Ishiftcheckbound _) -> 3
   | Iintop(Imul | Imulh)
   | Ispecific(Imuladd | Imulsub | Imulhadd) -> 2

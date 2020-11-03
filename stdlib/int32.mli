@@ -56,9 +56,10 @@ external mul : int32 -> int32 -> int32 = "%int32_mul"
 (** Multiplication. *)
 
 external div : int32 -> int32 -> int32 = "%int32_div"
-(** Integer division.  Raise [Division_by_zero] if the second
-   argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+(** Integer division. This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Stdlib.(/)}.
+   @raise Division_by_zero if the second
+   argument is zero.  *)
 
 val unsigned_div : int32 -> int32 -> int32
 (** Same as {!div}, except that arguments and result are interpreted as {e
@@ -167,7 +168,7 @@ external of_string : string -> int32 = "caml_int32_of_string"
 
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
-   Raise [Failure "Int32.of_string"] if the given string is not
+   @raise Failure if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int32]. *)
 

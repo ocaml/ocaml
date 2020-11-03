@@ -28,7 +28,6 @@
 #endif
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
-#include "caml/memprof.h"
 
 
 #ifdef _WIN32
@@ -60,11 +59,7 @@ void caml_init_atom_table(void)
     caml_stat_alloc_aligned_noexc(request, 0, &b);
 
   for(i = 0; i < 256; i++) {
-#ifdef NATIVE_CODE
-    caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_white);
-#else
-    caml_atom_table[i] = Make_header(0, i, Caml_white);
-#endif
+    caml_atom_table[i] = Make_header(0, i, Caml_black);
   }
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256 + 1) != 0) {
@@ -116,7 +111,7 @@ void caml_parse_ocamlrunparam(void)
       switch (*opt++){
       case 'a': scanmult (opt, &p); caml_set_allocation_policy ((intnat) p);
         break;
-      case 'b': scanmult (opt, &p); caml_record_backtrace(Val_bool (p));
+      case 'b': scanmult (opt, &p); caml_record_backtrace(Val_int (p));
         break;
       case 'c': scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
       case 'h': scanmult (opt, &caml_init_heap_wsz); break;
@@ -135,6 +130,7 @@ void caml_parse_ocamlrunparam(void)
       case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'w': scanmult (opt, &caml_init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
+      case ',': continue;
       }
       while (*opt != '\0'){
         if (*opt++ == ',') break;
@@ -190,7 +186,6 @@ CAMLexport void caml_shutdown(void)
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
   caml_finalise_heap();
-  caml_memprof_shutdown();
   caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();

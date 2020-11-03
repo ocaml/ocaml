@@ -56,7 +56,8 @@ external mul : int64 -> int64 -> int64 = "%int64_mul"
 (** Multiplication. *)
 
 external div : int64 -> int64 -> int64 = "%int64_div"
-(** Integer division.  Raise [Division_by_zero] if the second
+(** Integer division.
+   @raise Division_by_zero if the second
    argument is zero.  This division rounds the real quotient of
    its arguments towards zero, as specified for {!Stdlib.(/)}. *)
 
@@ -187,7 +188,7 @@ external of_string : string -> int64 = "caml_int64_of_string"
 
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
-   Raise [Failure "Int64.of_string"] if the given string is not
+   @raise Failure if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int64]. *)
 

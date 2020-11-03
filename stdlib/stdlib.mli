@@ -361,12 +361,13 @@ external ( * ) : int -> int -> int = "%mulint"
 
 external ( / ) : int -> int -> int = "%divint"
 (** Integer division.
-   Raise [Division_by_zero] if the second argument is 0.
    Integer division rounds the real quotient of its arguments towards zero.
    More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
    less than or equal to the real quotient of [x] by [y].  Moreover,
    [(- x) / y = x / (- y) = - (x / y)].
    Left-associative operator, see {!Ocaml_operators} for more information.
+
+   @raise Division_by_zero if the second argument is 0.
 *)
 
 external ( mod ) : int -> int -> int = "%modint"
@@ -376,8 +377,9 @@ external ( mod ) : int -> int -> int = "%modint"
    [abs(x mod y) <= abs(y) - 1].
    If [y = 0], [x mod y] raises [Division_by_zero].
    Note that [x mod y] is negative only if [x < 0].
-   Raise [Division_by_zero] if [y] is zero.
    Left-associative operator, see {!Ocaml_operators} for more information.
+
+   @raise Division_by_zero if [y] is zero.
 *)
 
 val abs : int -> int
@@ -682,7 +684,7 @@ external int_of_char : char -> int = "%identity"
 
 val char_of_int : int -> char
 (** Return the character with the given ASCII code.
-   Raise [Invalid_argument "char_of_int"] if the argument is
+   @raise Invalid_argument if the argument is
    outside the range 0--255. *)
 
 
@@ -958,7 +960,7 @@ val output_bytes : out_channel -> bytes -> unit
 val output : out_channel -> bytes -> int -> int -> unit
 (** [output oc buf pos len] writes [len] characters from byte sequence [buf],
    starting at offset [pos], to the given output channel [oc].
-   Raise [Invalid_argument "output"] if [pos] and [len] do not
+   @raise Invalid_argument if [pos] and [len] do not
    designate a valid range of [buf]. *)
 
 val output_substring : out_channel -> string -> int -> int -> unit
@@ -996,7 +998,13 @@ val seek_out : out_channel -> int -> unit
 val pos_out : out_channel -> int
 (** Return the current writing position for the given channel.  Does
     not work on channels opened with the [Open_append] flag (returns
-    unspecified results). *)
+    unspecified results).
+    For files opened in text mode under Windows, the returned position
+    is approximate (owing to end-of-line conversion); in particular,
+    saving the current position with [pos_out], then going back to
+    this position using [seek_out] will not work.  For this
+    programming idiom to work reliably and portably, the file must be
+    opened in binary mode. *)
 
 val out_channel_length : out_channel -> int
 (** Return the size (number of characters) of the regular file
@@ -1046,13 +1054,13 @@ val open_in_gen : open_flag list -> int -> string -> in_channel
 
 val input_char : in_channel -> char
 (** Read one character from the given input channel.
-   Raise [End_of_file] if there are no more characters to read. *)
+   @raise End_of_file if there are no more characters to read. *)
 
 val input_line : in_channel -> string
 (** Read characters from the given input channel, until a
    newline character is encountered. Return the string of
    all characters read, without the newline character at the end.
-   Raise [End_of_file] if the end of the file is reached
+   @raise End_of_file if the end of the file is reached
    at the beginning of line. *)
 
 val input : in_channel -> bytes -> int -> int -> int
@@ -1075,27 +1083,27 @@ val input : in_channel -> bytes -> int -> int -> int
 val really_input : in_channel -> bytes -> int -> int -> unit
 (** [really_input ic buf pos len] reads [len] characters from channel [ic],
    storing them in byte sequence [buf], starting at character number [pos].
-   Raise [End_of_file] if the end of file is reached before [len]
+   @raise End_of_file if the end of file is reached before [len]
    characters have been read.
-   Raise [Invalid_argument "really_input"] if
+   @raise Invalid_argument if
    [pos] and [len] do not designate a valid range of [buf]. *)
 
 val really_input_string : in_channel -> int -> string
 (** [really_input_string ic len] reads [len] characters from channel [ic]
    and returns them in a new string.
-   Raise [End_of_file] if the end of file is reached before [len]
+   @raise End_of_file if the end of file is reached before [len]
    characters have been read.
    @since 4.02.0 *)
 
 val input_byte : in_channel -> int
 (** Same as {!Stdlib.input_char}, but return the 8-bit integer representing
    the character.
-   Raise [End_of_file] if an end of file was reached. *)
+   @raise End_of_file if an end of file was reached. *)
 
 val input_binary_int : in_channel -> int
 (** Read an integer encoded in binary format (4 bytes, big-endian)
    from the given input channel. See {!Stdlib.output_binary_int}.
-   Raise [End_of_file] if an end of file was reached while reading the
+   @raise End_of_file if an end of file was reached while reading the
    integer. *)
 
 val input_value : in_channel -> 'a
@@ -1111,7 +1119,13 @@ val seek_in : in_channel -> int -> unit
    files of other kinds, the behavior is unspecified. *)
 
 val pos_in : in_channel -> int
-(** Return the current reading position for the given channel. *)
+(** Return the current reading position for the given channel.  For
+    files opened in text mode under Windows, the returned position is
+    approximate (owing to end-of-line conversion); in particular,
+    saving the current position with [pos_in], then going back to this
+    position using [seek_in] will not work.  For this programming
+    idiom to work reliably and portably, the file must be opened in
+    binary mode. *)
 
 val in_channel_length : in_channel -> int
 (** Return the size (number of characters) of the regular file
@@ -1345,6 +1359,7 @@ module Callback     = Callback
 module Char         = Char
 module Complex      = Complex
 module Digest       = Digest
+module Either       = Either
 module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float
@@ -1381,7 +1396,6 @@ module Result       = Result
 module Scanf        = Scanf
 module Seq          = Seq
 module Set          = Set
-module Spacetime    = Spacetime
 module Stack        = Stack
 module StdLabels    = StdLabels
 module Stream       = Stream

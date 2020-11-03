@@ -43,13 +43,29 @@ let rec select_addr = function
   | exp ->
       (Alinear exp, 0, Debuginfo.none)
 
+let is_immediate n = n <= 0x7FFF && n >= -0x8000
+let is_immediate_logical n = n <= 0xFFFF && n >= 0
+
 (* Instruction selection *)
 
 class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate n = (n <= 32767) && (n >= -32768)
+method is_immediate_test cmp n =
+  match cmp with
+  | Isigned _ -> is_immediate n
+  | Iunsigned _ -> is_immediate_logical n
+
+method! is_immediate op n =
+  match op with
+  | Iadd | Imul -> is_immediate n
+  | Isub -> is_immediate (-n)  (* turned into add opposite *)
+  | Iand | Ior | Ixor -> is_immediate_logical n
+  | Icomp c -> self#is_immediate_test c n
+  | Icheckbound -> 0 <= n && n <= 0x7FFF
+    (* twlle takes a 16-bit signed immediate but performs an unsigned compare *)
+  | _ -> super#is_immediate op n
 
 method select_addressing _chunk exp =
   match select_addr exp with
@@ -64,13 +80,6 @@ method select_addressing _chunk exp =
 
 method! select_operation op args dbg =
   match (op, args) with
-  (* PowerPC does not support immediate operands for multiply high *)
-    (Cmulhi, _) -> (Iintop Imulh, args)
-  (* The and, or and xor instructions have a different range of immediate
-     operands than the other instructions *)
-  | (Cand, _) -> self#select_logical Iand args
-  | (Cor, _) -> self#select_logical Ior args
-  | (Cxor, _) -> self#select_logical Ixor args
   (* Recognize mult-add and mult-sub instructions *)
   | (Caddf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultaddf, [arg1; arg2; arg3])
@@ -80,14 +89,6 @@ method! select_operation op args dbg =
       (Ispecific Imultsubf, [arg1; arg2; arg3])
   | _ ->
       super#select_operation op args dbg
-
-method select_logical op = function
-    [arg; Cconst_int (n, _)] when n >= 0 && n <= 0xFFFF ->
-      (Iintop_imm(op, n), [arg])
-  | [Cconst_int (n, _); arg] when n >= 0 && n <= 0xFFFF ->
-      (Iintop_imm(op, n), [arg])
-  | args ->
-      (Iintop op, args)
 
 end
 

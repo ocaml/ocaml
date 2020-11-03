@@ -74,12 +74,13 @@
 int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
-  do {
-    caml_enter_blocking_section();
-    retcode = read(fd, buf, n);
-    caml_leave_blocking_section();
-  } while (retcode == -1 && errno == EINTR);
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
+  caml_enter_blocking_section_no_pending();
+  retcode = read(fd, buf, n);
+  caml_leave_blocking_section();
+  if (retcode == -1) {
+    if (errno == EINTR) return Io_interrupted;
+    else caml_sys_io_error(NO_ARG);
+  }
   return retcode;
 }
 
@@ -87,19 +88,11 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
  again:
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
-    retcode = write(fd, buf, n);
-  } else {
-#endif
-  caml_enter_blocking_section();
+  caml_enter_blocking_section_no_pending();
   retcode = write(fd, buf, n);
   caml_leave_blocking_section();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  }
-#endif
   if (retcode == -1) {
-    if (errno == EINTR) goto again;
+    if (errno == EINTR) return Io_interrupted;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than

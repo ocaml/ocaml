@@ -26,7 +26,7 @@
 \begin{quote}
 \rule{}{}
 This manual is also available in
-\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF}.
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF},
 \ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain text},
 as a
 \ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman-html.tar.gz}{bundle of HTML files},
@@ -71,8 +71,8 @@ and as a
 % \input emacs.tex
 \input{intf-c.tex}
 \input{flambda.tex}
-\input{spacetime-chapter.tex}
 \input{afl-fuzz.tex}
+\input{instrumented-runtime.tex}
 
 \part{The OCaml library}
 \label{p:library}

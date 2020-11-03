@@ -1,7 +1,8 @@
 (* TEST
    modules = "is_in_static_data.c is_static_flambda_dep.ml"
    * flambda
-   ** native
+   ** naked_pointers
+   *** native
 *)
 
 (* Data that should be statically allocated by the compiler (flambda only) *)

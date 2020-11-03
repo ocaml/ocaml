@@ -34,6 +34,8 @@
 CAMLexport void caml_raise(value v)
 {
   Unlock_exn();
+  CAMLassert(!Is_exception_result(v));
+  v = caml_process_pending_actions_with_root(v);
   Caml_state->exn_bucket = v;
   if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
   siglongjmp(Caml_state->external_raise->buf, 1);
@@ -190,7 +192,7 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
-value caml_raise_if_exception(value res)
+CAMLexport value caml_raise_if_exception(value res)
 {
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;

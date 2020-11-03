@@ -25,14 +25,10 @@ indexed at the end of this report.
 \input{builtin.tex}
 \ifouthtml
 \section{s:stdlib-module}{Module {\tt Stdlib}: the initially opened module}
-\begin{links}
-\item \ahref{libref/Stdlib.html}{Module \texttt{Stdlib}: the initially opened module}
-\item Module \texttt{Pervasives}: deprecated alias for Stdlib
-\end{links}
-\else
-{
-\ocamldocinputstart
-\input{Stdlib.tex}
-}
 \fi
-
+\begin{linklist}
+\stddocitem{Stdlib}{the initially opened module}
+\ifouthtml%
+\item Module \texttt{Pervasives}: deprecated alias for Stdlib
+\fi%
+\end{linklist}

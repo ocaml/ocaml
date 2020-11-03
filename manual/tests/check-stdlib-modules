@@ -13,7 +13,11 @@ for i in `cat $TMPDIR/stdlib-$$-modules`; do
     Stdlib | Camlinternal* | *Labels | Obj | Pervasives) continue;;
   esac
   grep -q -e '"'$i'" & p\.~\\pageref{'$i'} &' $1/manual/manual/library/stdlib-blurb.etex || {
-    echo "Module $i is missing from library/stdlib-blurb.etex." >&2
+    echo "Module $i is missing from the module description in library/stdlib-blurb.etex." >&2
+    exitcode=2
+  } &&
+  grep -q -e '\\stddocitem{'$i'}' $1/manual/manual/library/stdlib-blurb.etex || {
+    echo "Module $i is missing from the linklist in library/stdlib-blurb.etex." >&2
     exitcode=2
   }
 done

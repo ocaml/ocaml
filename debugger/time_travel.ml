@@ -181,7 +181,7 @@ let new_checkpoint_list checkpoint_count accepted rejected =
     let (k, l) =
       list_truncate2 (checkpoint_count - List.length accepted) rejected
     in
-      (List.merge (fun {c_time = t1} {c_time = t2} -> compare t2 t1) accepted k,
+      (List.merge (fun t1 t2 -> compare t2.c_time t1.c_time) accepted k,
        l)
 
 (* Clean the checkpoint list. *)

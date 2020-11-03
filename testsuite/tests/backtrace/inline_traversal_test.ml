@@ -3,11 +3,9 @@
    ocamlrunparam += ",b=1"
    * bytecode
    * native
-     compare_programs = "false"
    * native
      ocamlopt_flags = "-O3"
      compiler_directory_suffix = ".O3"
-     compare_programs = "false"
 *)
 
 (* A test for inlined stack backtraces *)
@@ -26,7 +24,6 @@ let i x =
 
 let () =
   let open Printexc in
-  record_backtrace true;
   try i ()
   with _ ->
     let trace = get_raw_backtrace () in

@@ -74,13 +74,20 @@ CAMLdeprecated_typedef(addr, char *);
   #define Noreturn
 #endif
 
-
-
 /* Export control (to mark primitives and to handle Windows DLL) */
+
+#ifndef CAMLDLLIMPORT
+  #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
+      && defined(__CYGWIN__)
+    #define CAMLDLLIMPORT __declspec(dllimport)
+  #else
+    #define CAMLDLLIMPORT
+  #endif
+#endif
 
 #define CAMLexport
 #define CAMLprim
-#define CAMLextern extern
+#define CAMLextern CAMLDLLIMPORT extern
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
@@ -96,6 +103,8 @@ CAMLdeprecated_typedef(addr, char *);
 /* we need to be able to compute the exact offset of each member. */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define CAMLalign(n) _Alignas(n)
+#elif defined(__cplusplus) && (__cplusplus >= 201103L || _MSC_VER >= 1900)
+#define CAMLalign(n) alignas(n)
 #elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
 #elif _MSC_VER >= 1500
@@ -257,6 +266,7 @@ extern double caml_log1p(double);
 #define unlink_os _wunlink
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
+#define mkdir_os(path, perm) _wmkdir(path)
 #define getcwd_os _wgetcwd
 #define system_os _wsystem
 #define rmdir_os _wrmdir
@@ -292,6 +302,7 @@ extern double caml_log1p(double);
 #define unlink_os unlink
 #define rename_os rename
 #define chdir_os chdir
+#define mkdir_os mkdir
 #define getcwd_os getcwd
 #define system_os system
 #define rmdir_os rmdir
@@ -332,6 +343,9 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
 CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
@@ -429,18 +443,6 @@ extern int caml_snwprintf(wchar_t * buf,
 #    define CAMLno_asan __attribute__((no_sanitize("address")))
 #  endif
 #endif
-
-/* A table of all code fragments (main program and dynlinked modules) */
-struct code_fragment {
-  char *code_start;
-  char *code_end;
-  unsigned char digest[16];
-  char digest_computed;
-};
-
-extern struct ext_table caml_code_fragments_table;
-
-int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
 
 #endif /* CAML_INTERNALS */
 

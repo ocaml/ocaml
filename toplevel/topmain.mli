@@ -13,6 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Start the [ocaml] toplevel loop *)
+(* Start the [ocaml] toplevel loop, and return the exit code *)
 
-val main: unit -> unit
+val main: unit -> int

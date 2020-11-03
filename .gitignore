@@ -118,6 +118,7 @@ _build
 /ocamltest/ocamltest
 /ocamltest/ocamltest.opt
 /ocamltest/ocamltest_config.ml
+/ocamltest/ocamltest_unix.ml
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
@@ -163,6 +164,7 @@ _build
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
 /otherlibs/win32unix/fsync.c
+/otherlibs/win32unix/mkdir.c
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -222,7 +224,6 @@ _build
 
 /tools/ocamldep
 /tools/ocamldep.opt
-/tools/ocamldep.bak
 /tools/ocamlprof
 /tools/ocamlprof.opt
 /tools/opnames.ml
@@ -233,7 +234,6 @@ _build
 /tools/ocamlobjinfo.opt
 /tools/cvt_emit
 /tools/cvt_emit.opt
-/tools/cvt_emit.bak
 /tools/cvt_emit.ml
 /tools/ocamlcp
 /tools/ocamlcp.opt
@@ -248,9 +248,8 @@ _build
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
-/tools/objinfo_helper
-/tools/read_cmt
-/tools/read_cmt.opt
+/tools/ocamlcmt
+/tools/ocamlcmt.opt
 /tools/cmpbyt
 /tools/cmpbyt.opt
 /tools/stripdebug

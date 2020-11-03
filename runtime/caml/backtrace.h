@@ -96,7 +96,7 @@
  * It might be called before GC initialization, so it shouldn't do OCaml
  * allocation.
  */
-CAMLprim value caml_record_backtrace(value vflag);
+CAMLextern value caml_record_backtrace(value vflag);
 
 
 #ifndef NATIVE_CODE
@@ -109,6 +109,7 @@ CAMLextern char_os * caml_cds_file;
  * different prototype. */
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
+CAMLextern void caml_load_main_debug_info(void);
 #endif
 
 
@@ -122,7 +123,7 @@ extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 CAMLextern void caml_print_exception_backtrace(void);
 
 void caml_init_backtrace(void);
-CAMLexport void caml_init_debug_info(void);
+CAMLextern void caml_init_debug_info(void);
 
 #endif /* CAML_INTERNALS */
 

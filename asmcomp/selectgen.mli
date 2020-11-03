@@ -62,9 +62,14 @@ end
 class virtual selector_generic : object
   (* The following methods must or can be overridden by the processor
      description *)
-  method virtual is_immediate : int -> bool
+  method is_immediate : Mach.integer_operation -> int -> bool
+    (* Must be overriden to indicate whether a constant is a suitable
+       immediate operand to the given integer arithmetic instruction.
+       The default implementation handles shifts by immediate amounts,
+       but produces no immediate operations otherwise. *)
+  method virtual is_immediate_test : Mach.integer_comparison -> int -> bool
     (* Must be defined to indicate whether a constant is a suitable
-       immediate operand to arithmetic instructions *)
+       immediate operand to the given integer test *)
   method virtual select_addressing :
     Cmm.memory_chunk -> Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)
@@ -97,8 +102,13 @@ class virtual selector_generic : object
       -> Reg.t array -> Reg.t array
     (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
+  method insert_move_extcall_arg :
+    environment -> Cmm.exttype -> Reg.t array -> Reg.t array -> unit
+    (* Can be overridden to deal with unusual unboxed calling conventions,
+       e.g. on a 64-bit platform, passing unboxed 32-bit arguments
+       in 32-bit stack slots. *)
   method emit_extcall_args :
-    environment -> Cmm.expression list -> Reg.t array * int
+    environment -> Cmm.exttype list -> Cmm.expression list -> Reg.t array * int
     (* Can be overridden to deal with stack-based calling conventions *)
   method emit_stores :
     environment -> Cmm.expression list -> Reg.t array -> unit
@@ -129,15 +139,13 @@ class virtual selector_generic : object
      above; overloading this is useful if Ispecific instructions need
      marking *)
 
-  (* The following method is the entry point and should not be overridden
-     (except by [Spacetime_profiling]). *)
+  (* The following method is the entry point and should not be overridden. *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
   (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction
-  method extract_core : end_instr:Mach.instruction -> Mach.instruction
   method insert :
     environment -> Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
   method insert_debug :
@@ -152,33 +160,6 @@ class virtual selector_generic : object
   method emit_expr :
     environment -> Cmm.expression -> Reg.t array option
   method emit_tail : environment -> Cmm.expression -> unit
-
-  (* Only for the use of [Spacetime_profiling]. *)
-  method select_allocation : int -> Mach.operation
-  method select_allocation_args : environment -> Reg.t array
-  method select_checkbound : unit -> Mach.integer_operation
-  method select_checkbound_extra_args : unit -> Cmm.expression list
-  method emit_blockheader
-     : environment
-    -> nativeint
-    -> Debuginfo.t
-    -> Reg.t array option
-  method about_to_emit_call
-     : environment
-    -> Mach.instruction_desc
-    -> Reg.t array
-    -> Debuginfo.t
-    -> Reg.t array option
-  method initial_env : unit -> environment
-  method insert_prologue
-     : Cmm.fundecl
-    -> loc_arg:Reg.t array
-    -> rarg:Reg.t array
-    -> spacetime_node_hole:(Backend_var.t * Reg.t array) option
-    -> env:environment
-    -> Mach.spacetime_shape option
-
-  val mutable instr_seq : Mach.instruction
 
   (* [contains_calls] is declared as a reference instance variable,
      instead of a mutable boolean instance variable,

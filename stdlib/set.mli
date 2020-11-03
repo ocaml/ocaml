@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* NOTE: If this file is set.mli, do not edit it directly! Instead,
+   edit templates/set.template.mli and run tools/sync_stdlib_docs *)
+
 (** Sets over ordered types.
 
    This module implements the set data structure, given a total ordering
@@ -58,7 +61,7 @@ module type OrderedType =
           Example: a suitable ordering function is the generic structural
           comparison function {!Stdlib.compare}. *)
   end
-(** Input signature of the functor {!Set.Make}. *)
+(** Input signature of the functor {!Make}. *)
 
 module type S =
   sig
@@ -136,20 +139,20 @@ module type S =
        @since 4.04.0 *)
 
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
+    (** [fold f s init] computes [(f xN ... (f x2 (f x1 init))...)],
        where [x1 ... xN] are the elements of [s], in increasing order. *)
 
     val for_all: (elt -> bool) -> t -> bool
-    (** [for_all p s] checks if all elements of the set
-       satisfy the predicate [p]. *)
+    (** [for_all f s] checks if all elements of the set
+       satisfy the predicate [f]. *)
 
     val exists: (elt -> bool) -> t -> bool
-    (** [exists p s] checks if at least one element of
-       the set satisfies the predicate [p]. *)
+    (** [exists f s] checks if at least one element of
+       the set satisfies the predicate [f]. *)
 
     val filter: (elt -> bool) -> t -> t
-    (** [filter p s] returns the set of all elements in [s]
-       that satisfy predicate [p]. If [p] satisfies every element in [s],
+    (** [filter f s] returns the set of all elements in [s]
+       that satisfy predicate [f]. If [f] satisfies every element in [s],
        [s] is returned unchanged (the result of the function is then
        physically equal to [s]).
        @before 4.03 Physical equality was not ensured.*)
@@ -171,10 +174,10 @@ module type S =
      *)
 
     val partition: (elt -> bool) -> t -> t * t
-    (** [partition p s] returns a pair of sets [(s1, s2)], where
+    (** [partition f s] returns a pair of sets [(s1, s2)], where
        [s1] is the set of all the elements of [s] that satisfy the
-       predicate [p], and [s2] is the set of all the elements of
-       [s] that do not satisfy [p]. *)
+       predicate [f], and [s2] is the set of all the elements of
+       [s] that do not satisfy [f]. *)
 
     val cardinal: t -> int
     (** Return the number of elements of a set. *)
@@ -183,7 +186,7 @@ module type S =
     (** Return the list of all elements of the given set.
        The returned list is sorted in increasing order with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Set.Make}. *)
+       given to {!Make}. *)
 
     val min_elt: t -> elt
     (** Return the smallest element of the given set
@@ -198,11 +201,11 @@ module type S =
     *)
 
     val max_elt: t -> elt
-    (** Same as {!Set.S.min_elt}, but returns the largest element of the
+    (** Same as {!S.min_elt}, but returns the largest element of the
        given set. *)
 
     val max_elt_opt: t -> elt option
-    (** Same as {!Set.S.min_elt_opt}, but returns the largest element of the
+    (** Same as {!S.min_elt_opt}, but returns the largest element of the
         given set.
         @since 4.05
     *)
@@ -254,9 +257,9 @@ module type S =
        *)
 
     val find_first_opt: (elt -> bool) -> t -> elt option
-    (** [find_first_opt f s], where [f] is a monotonically increasing function,
-       returns an option containing the lowest element [e] of [s] such that
-       [f e], or [None] if no such element exists.
+    (** [find_first_opt f s], where [f] is a monotonically increasing
+       function, returns an option containing the lowest element [e] of [s]
+       such that [f e], or [None] if no such element exists.
         @since 4.05
        *)
 
@@ -268,9 +271,9 @@ module type S =
        *)
 
     val find_last_opt: (elt -> bool) -> t -> elt option
-    (** [find_last_opt f s], where [f] is a monotonically decreasing function,
-       returns an option containing the highest element [e] of [s] such that
-       [f e], or [None] if no such element exists.
+    (** [find_last_opt f s], where [f] is a monotonically decreasing
+       function, returns an option containing the highest element [e] of [s]
+       such that [f e], or [None] if no such element exists.
         @since 4.05
        *)
 
@@ -303,7 +306,7 @@ module type S =
     (** Build a set from the given bindings
         @since 4.07 *)
   end
-(** Output signature of the functor {!Set.Make}. *)
+(** Output signature of the functor {!Make}. *)
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t
 (** Functor building an implementation of the set structure

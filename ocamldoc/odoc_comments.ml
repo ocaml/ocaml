@@ -17,8 +17,6 @@
 
 open Odoc_types
 
-let print_DEBUG s = print_string s ; print_newline ();;
-
 (** This variable contains the regular expression representing a blank but not a '\n'.*)
 let simple_blank = "[ \013\009\012]"
 
@@ -56,7 +54,6 @@ module Info_retriever =
                 None ->
                   ()
               | Some s ->
-                  (*DEBUG*)print_string ("remain: "^s); print_newline();
                   let lexbuf2 = Lexing.from_string s in
                   Odoc_parser.info_part2 Odoc_lexer.elements lexbuf2
             end;
@@ -144,26 +141,18 @@ module Info_retriever =
       iter s
 
     let all_special file s =
-      print_DEBUG ("all_special: "^s);
       let rec iter acc n s2 =
         match retrieve_info_special file s2 with
           (_, None) ->
             (n, acc)
         | (n2, Some i) ->
-            print_DEBUG ("all_special: avant String.sub new_s="^s2);
-            print_DEBUG ("n2="^(Int.to_string n2)) ;
-            print_DEBUG ("len(s2)="^(Int.to_string (String.length s2))) ;
             let new_s = String.sub s2 n2 ((String.length s2) - n2) in
-            print_DEBUG ("all_special: apres String.sub new_s="^new_s);
             iter (acc @ [i]) (n + n2) new_s
       in
-      let res = iter [] 0 s in
-      print_DEBUG ("all_special: end");
-      res
+      iter [] 0 s
 
     let just_after_special file s =
-      print_DEBUG ("just_after_special: "^s);
-      let res = match retrieve_info_special file s with
+      match retrieve_info_special file s with
         (_, None) ->
           (0, None)
       | (len, Some d) ->
@@ -188,9 +177,6 @@ module Info_retriever =
               )
           | (_, Some _) ->
               (0, None)
-      in
-      print_DEBUG ("just_after_special:end");
-      res
 
     let first_special file s =
       retrieve_info_special file s

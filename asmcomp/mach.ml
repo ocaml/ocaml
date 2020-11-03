@@ -15,8 +15,6 @@
 
 (* Representation of machine code by sequences of pseudoinstructions *)
 
-type label = Cmm.label
-
 type integer_comparison =
     Isigned of Cmm.integer_comparison
   | Iunsigned of Cmm.integer_comparison
@@ -25,8 +23,7 @@ type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
-  | Icheckbound of { label_after_error : label option;
-        spacetime_index : int; }
+  | Icheckbound
 
 type float_comparison = Cmm.float_comparison
 
@@ -46,16 +43,17 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
-  | Itailcall_ind of { label_after : label; }
-  | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Icall_ind
+  | Icall_imm of { func : string; }
+  | Itailcall_ind
+  | Itailcall_imm of { func : string; }
+  | Iextcall of { func : string;
+                  ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
+                  alloc : bool; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { bytes : int; label_after_call_gc : label option;
-      dbginfo : Debuginfo.alloc_dbginfo; spacetime_index : int; }
+  | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -86,20 +84,12 @@ and instruction_desc =
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
-type spacetime_part_of_shape =
-  | Direct_call_point of { callee : string; }
-  | Indirect_call_point
-  | Allocation_point
-
-type spacetime_shape = (spacetime_part_of_shape * Cmm.label) list
-
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
-    fun_spacetime_shape : spacetime_shape option;
     fun_num_stack_slots: int array;
     fun_contains_calls: bool;
   }
@@ -146,7 +136,7 @@ let rec instr_iter f i =
       f i;
       match i.desc with
         Iend -> ()
-      | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) -> ()
+      | Ireturn | Iop Itailcall_ind | Iop(Itailcall_imm _) -> ()
       | Iifthenelse(_tst, ifso, ifnot) ->
           instr_iter f ifso; instr_iter f ifnot; instr_iter f i.next
       | Iswitch(_index, cases) ->
@@ -165,43 +155,9 @@ let rec instr_iter f i =
       | _ ->
           instr_iter f i.next
 
-let spacetime_node_hole_pointer_is_live_before insn =
-  match insn.desc with
-  | Iop op ->
-    begin match op with
-    | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _ -> true
-    | Iextcall { alloc; } -> alloc
-    | Ialloc _ ->
-      (* Allocations are special: the call to [caml_call_gc] requires some
-         instrumentation code immediately prior, but this is not inserted until
-         the emitter (since the call is not visible prior to that in any IR).
-         As such, none of the Mach / Linearize analyses will ever see that
-         we use the node hole pointer for these, and we do not need to say
-         that it is live at such points. *)
-      false
-    | Iintop op | Iintop_imm (op, _) ->
-      begin match op with
-      | Icheckbound _
-        (* [Icheckbound] doesn't need to return [true] for the same reason as
-           [Ialloc]. *)
-      | Iadd | Isub | Imul | Imulh | Idiv | Imod
-      | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
-      | Icomp _ -> false
-      end
-    | Ispecific specific_op ->
-      Arch.spacetime_node_hole_pointer_is_live_before specific_op
-    | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
-    | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
-    | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-    | Ifloatofint | Iintoffloat
-    | Iname_for_debugger _ -> false
-    end
-  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _
-  | Iexit _ | Itrywith _ | Iraise _ -> false
-
 let operation_can_raise op =
   match op with
-  | Icall_ind _ | Icall_imm _ | Iextcall _
-  | Iintop (Icheckbound _) | Iintop_imm (Icheckbound _, _)
+  | Icall_ind | Icall_imm _ | Iextcall _
+  | Iintop (Icheckbound) | Iintop_imm (Icheckbound, _)
   | Ialloc _ -> true
   | _ -> false

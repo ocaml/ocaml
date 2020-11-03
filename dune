@@ -45,7 +45,7 @@
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
-   targetint load_path int_replace_polymorphic_compare
+   targetint load_path int_replace_polymorphic_compare binutils local_store
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -152,8 +152,11 @@
    CSE CSEgen
    deadcode domainstate emit emitaux interf interval linear linearize linscan
    liveness mach printcmm printlinear printmach proc reg reload reloadgen
-   schedgen scheduling selectgen selection spacetime_profiling spill split
+   schedgen scheduling selectgen selection spill split
    strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
+
+   ;; file_formats/
+   linear_format
 
    ;; asmcomp/debug/
    reg_availability_set compute_ranges_intf available_regs reg_with_debug_info

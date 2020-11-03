@@ -143,12 +143,8 @@ let emit_float_store src ofs =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
+let record_frame_label live dbg =
+  let lbl = new_label () in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -165,8 +161,8 @@ let record_frame_label ?label live dbg =
     ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live dbg =
-  let lbl = record_frame_label ?label live dbg in
+let record_frame live dbg =
+  let lbl = record_frame_label live dbg in
   `{emit_label lbl}:\n`
 
 (* Record calls to the GC -- we've moved them out of the way *)
@@ -194,10 +190,10 @@ type bound_error_call =
 
 let bound_error_sites = ref ([] : bound_error_call list)
 
-let bound_error_label ?label dbg =
+let bound_error_label dbg =
   if !Clflags.debug || !bound_error_sites = [] then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
+    let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error;
         bd_frame_lbl = lbl_frame } :: !bound_error_sites;
@@ -311,18 +307,18 @@ let emit_instr i =
       `	fld	{emit_reg i.res.(0)}, {emit_label lbl}, {emit_reg reg_tmp}\n`
   | Lop(Iconst_symbol s) ->
       `	la	{emit_reg i.res.(0)}, {emit_symbol s}\n`
-  | Lop(Icall_ind {label_after = label}) ->
+  | Lop(Icall_ind) ->
       `	jalr	{emit_reg i.arg.(0)}\n`;
-      record_frame ~label i.live (Dbg_other i.dbg)
-  | Lop(Icall_imm {func; label_after = label}) ->
+      record_frame i.live (Dbg_other i.dbg)
+  | Lop(Icall_imm {func}) ->
       `	{emit_call func}\n`;
-      record_frame ~label i.live (Dbg_other i.dbg)
-  | Lop(Itailcall_ind {label_after = _}) ->
+      record_frame i.live (Dbg_other i.dbg)
+  | Lop(Itailcall_ind) ->
       let n = frame_size() in
       if !contains_calls then reload_ra n;
       emit_stack_adjustment n;
       `	jr	{emit_reg i.arg.(0)}\n`
-  | Lop(Itailcall_imm {func; label_after = _}) ->
+  | Lop(Itailcall_imm {func}) ->
       if func = !function_name then begin
         `	j	{emit_label !tailrec_entry_point}\n`
       end else begin
@@ -331,11 +327,11 @@ let emit_instr i =
         emit_stack_adjustment n;
         `	{emit_tail func}\n`
       end
-  | Lop(Iextcall{func; alloc = true; label_after = label}) ->
+  | Lop(Iextcall{func; alloc = true}) ->
       `	la	{emit_reg reg_t2}, {emit_symbol func}\n`;
       `	{emit_call "caml_c_call"}\n`;
-      record_frame ~label i.live (Dbg_other i.dbg)
-  | Lop(Iextcall{func; alloc = false; label_after = _}) ->
+      record_frame i.live (Dbg_other i.dbg)
+  | Lop(Iextcall{func; alloc = false}) ->
       `	{emit_call func}\n`
   | Lop(Istackoffset n) ->
       assert (n mod 16 = 0);
@@ -373,8 +369,8 @@ let emit_instr i =
         | Double | Double_u -> "fsd"
       in
       `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
-  | Lop(Ialloc {bytes; label_after_call_gc = label; dbginfo}) ->
-      let lbl_frame_lbl = record_frame_label ?label i.live (Dbg_alloc dbginfo) in
+  | Lop(Ialloc {bytes; dbginfo}) ->
+      let lbl_frame_lbl = record_frame_label i.live (Dbg_alloc dbginfo) in
       let lbl_after_alloc = new_label () in
       let lbl_call_gc = new_label () in
       let n = -bytes in
@@ -420,20 +416,14 @@ let emit_instr i =
           `	sltu	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
           `	xori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, 1\n`;
       end
-  | Lop(Iintop (Icheckbound {label_after_error = label; _})) ->
-      let lbl = bound_error_label ?label i.dbg in
+  | Lop(Iintop (Icheckbound)) ->
+      let lbl = bound_error_label i.dbg in
       `	bleu	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_label lbl}\n`
   | Lop(Iintop op) ->
       let instr = name_for_intop op in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
   | Lop(Iintop_imm(Isub, n)) ->
       `	addi	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int(-n)}\n`
-  | Lop(Iintop_imm(Icomp _, _)) ->
-      Misc.fatal_error "Emit.emit_instr (Iintop_imm (Icomp _, _))"
-  | Lop(Iintop_imm(Icheckbound {label_after_error = label; _}, n)) ->
-      let lbl = bound_error_label ?label i.dbg in
-      `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-      `	bleu	{emit_reg i.arg.(0)}, {emit_reg reg_tmp}, {emit_label lbl}\n`
   | Lop(Iintop_imm(op, n)) ->
       let instr = name_for_intop_imm op in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`

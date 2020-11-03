@@ -265,7 +265,8 @@ val make_copy_of_types: t -> (t -> t)
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
-val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
+val add_extension:
+  check:bool -> rebind:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module:
   ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
@@ -306,9 +307,9 @@ val open_signature:
     ?used_slot:bool ref ->
     ?loc:Location.t -> ?toplevel:bool ->
     Asttypes.override_flag -> Path.t ->
-      t -> t option
+    t -> (t, [`Not_found | `Functor]) result
 
-val open_pers_signature: string -> t -> t
+val open_pers_signature: string -> t -> (t, [`Not_found]) result
 
 (* Insertion by name *)
 
@@ -317,7 +318,8 @@ val enter_value:
     string -> value_description -> t -> Ident.t * t
 val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
 val enter_extension:
-  scope:int -> string -> extension_constructor -> t -> Ident.t * t
+  scope:int -> rebind:bool -> string ->
+  extension_constructor -> t -> Ident.t * t
 val enter_module:
   scope:int -> ?arg:bool -> string -> module_presence ->
   module_type -> t -> Ident.t * t
@@ -370,8 +372,11 @@ val imports: unit -> crcs
 (* may raise Persistent_env.Consistbl.Inconsistency *)
 val import_crcs: source:string -> crcs -> unit
 
-(* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
+(* [is_imported_opaque md] returns true if [md] is an opaque imported module *)
 val is_imported_opaque: modname -> bool
+
+(* [register_import_as_opaque md] registers [md] as an opaque imported module *)
+val register_import_as_opaque: modname -> unit
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)
@@ -431,9 +436,34 @@ val print_path: (Format.formatter -> Path.t -> unit) ref
 
 (** Folds *)
 
+val fold_values:
+  (string -> Path.t -> value_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_types:
+  (string -> Path.t -> type_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
 val fold_constructors:
   (constructor_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
+val fold_labels:
+  (label_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
+(** Persistent structures are only traversed if they are already loaded. *)
+val fold_modules:
+  (string -> Path.t -> module_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
+val fold_modtypes:
+  (string -> Path.t -> modtype_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_classes:
+  (string -> Path.t -> class_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_cltypes:
+  (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type

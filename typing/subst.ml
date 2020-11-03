@@ -20,6 +20,8 @@ open Path
 open Types
 open Btype
 
+open Local_store
+
 type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
@@ -124,7 +126,7 @@ let to_subst_by_type_function s p =
 
 (* Special type ids for saved signatures *)
 
-let new_id = ref (-1)
+let new_id = s_ref (-1)
 let reset_for_saving () = new_id := -1
 
 let newpersty desc =
@@ -506,8 +508,9 @@ and signature_item' copy_scope scoping s comp =
   | Sig_class_type(id, d, rs, vis) ->
       Sig_class_type(id, cltype_declaration' copy_scope s d, rs, vis)
 
-and signature_item s comp =
-  For_copy.with_scope (fun copy_scope -> signature_item' copy_scope s comp)
+and signature_item scoping s comp =
+  For_copy.with_scope
+    (fun copy_scope -> signature_item' copy_scope scoping s comp)
 
 and module_declaration scoping s decl =
   {
@@ -538,9 +541,10 @@ let merge_path_maps f m1 m2 =
 let type_replacement s = function
   | Path p -> Path (type_path s p)
   | Type_function { params; body } ->
-     let params = List.map (type_expr s) params in
-     let body = type_expr s body in
-     Type_function { params; body }
+    For_copy.with_scope (fun copy_scope ->
+     let params = List.map (typexp copy_scope s) params in
+     let body = typexp copy_scope s body in
+     Type_function { params; body })
 
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)

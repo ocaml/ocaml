@@ -35,11 +35,9 @@
 #endif
 #include "caml/sys.h"
 #include "caml/memprof.h"
-#include "threads.h"
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-#endif
+/* threads.h is *not* included since it contains the _external_ declarations for
+   the caml_c_thread_register and caml_c_thread_unregister functions. */
 
 #ifndef NATIVE_CODE
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
@@ -82,12 +80,6 @@ struct caml_thread_struct {
   char * exception_pointer; /* Saved value of Caml_state->exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * exit_buf; /* For thread exit */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  value internal_spacetime_trie_root;
-  value internal_spacetime_finaliser_trie_root;
-  value* spacetime_trie_node_ptr;
-  value* spacetime_finaliser_trie_root;
-#endif
 #else
   value * stack_low; /* The execution stack for this thread */
   value * stack_high;
@@ -101,7 +93,7 @@ struct caml_thread_struct {
   int backtrace_pos; /* Saved Caml_state->backtrace_pos */
   backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
   value backtrace_last_exn;  /* Saved Caml_state->backtrace_last_exn (root) */
-  struct caml_memprof_th_ctx memprof_ctx;
+  struct caml_memprof_th_ctx *memprof_ctx;
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -142,15 +134,25 @@ extern struct longjmp_buffer caml_termination_jmpbuf;
 extern void (*caml_termination_hook)(void);
 #endif
 
+#ifdef _WIN32
+/* Integer identifier for the currently-executing thread.
+   This is a tagged integer, so it is never 0. */
+
+static intnat st_current_thread_id(void)
+{
+  caml_thread_t th = st_tls_get(thread_descriptor_key);
+  return Ident(th->descr);
+}
+
+#endif
+
 /* Hook for scanning the stacks of the other threads */
 
 static void (*prev_scan_roots_hook) (scanning_action);
 
 static void caml_thread_scan_roots(scanning_action action)
 {
-  caml_thread_t th;
-
-  th = curr_thread;
+  caml_thread_t th = curr_thread;
   do {
     (*action)(th->descr, &th->descr);
     (*action)(th->backtrace_last_exn, &th->backtrace_last_exn);
@@ -170,6 +172,17 @@ static void caml_thread_scan_roots(scanning_action action)
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
 }
 
+/* Hook for iterating over Memprof's entries arrays */
+
+static void memprof_ctx_iter(th_ctx_action f, void* data)
+{
+  caml_thread_t th = curr_thread;
+  do {
+    f(th->memprof_ctx, data);
+    th = th->next;
+  } while (th != curr_thread);
+}
+
 /* Saving and restoring runtime state in curr_thread */
 
 Caml_inline void caml_thread_save_runtime_state(void)
@@ -180,12 +193,6 @@ Caml_inline void caml_thread_save_runtime_state(void)
   curr_thread->last_retaddr = Caml_state->last_return_address;
   curr_thread->gc_regs = Caml_state->gc_regs;
   curr_thread->exception_pointer = Caml_state->exception_pointer;
-#ifdef WITH_SPACETIME
-  curr_thread->spacetime_trie_node_ptr
-    = caml_spacetime_trie_node_ptr;
-  curr_thread->spacetime_finaliser_trie_root
-    = caml_spacetime_finaliser_trie_root;
-#endif
 #else
   curr_thread->stack_low = Caml_state->stack_low;
   curr_thread->stack_high = Caml_state->stack_high;
@@ -198,7 +205,7 @@ Caml_inline void caml_thread_save_runtime_state(void)
   curr_thread->backtrace_pos = Caml_state->backtrace_pos;
   curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
   curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
-  caml_memprof_save_th_ctx(&curr_thread->memprof_ctx);
+  caml_memprof_leave_thread();
 }
 
 Caml_inline void caml_thread_restore_runtime_state(void)
@@ -209,12 +216,6 @@ Caml_inline void caml_thread_restore_runtime_state(void)
   Caml_state->last_return_address = curr_thread->last_retaddr;
   Caml_state->gc_regs = curr_thread->gc_regs;
   Caml_state->exception_pointer = curr_thread->exception_pointer;
-#ifdef WITH_SPACETIME
-  caml_spacetime_trie_node_ptr
-    = curr_thread->spacetime_trie_node_ptr;
-  caml_spacetime_finaliser_trie_root
-    = curr_thread->spacetime_finaliser_trie_root;
-#endif
 #else
   Caml_state->stack_low = curr_thread->stack_low;
   Caml_state->stack_high = curr_thread->stack_high;
@@ -227,7 +228,7 @@ Caml_inline void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_pos = curr_thread->backtrace_pos;
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
-  caml_memprof_restore_th_ctx(&curr_thread->memprof_ctx);
+  caml_memprof_enter_thread(curr_thread->memprof_ctx);
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
@@ -253,15 +254,6 @@ static void caml_thread_leave_blocking_section(void)
   caml_thread_restore_runtime_state();
 }
 
-static int caml_thread_try_leave_blocking_section(void)
-{
-  /* Disable immediate processing of signals (PR#3659).
-     try_leave_blocking_section always fails, forcing the signal to be
-     recorded and processed at the next leave_blocking_section or
-     polling. */
-  return 0;
-}
-
 /* Hooks for I/O locking */
 
 static void caml_io_mutex_free(struct channel *chan)
@@ -282,7 +274,7 @@ static void caml_io_mutex_lock(struct channel *chan)
     chan->mutex = mutex;
   }
   /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mutex) == PREVIOUSLY_UNLOCKED) {
+  if (st_mutex_trylock(mutex) == MUTEX_PREVIOUSLY_UNLOCKED) {
     st_tls_set(last_channel_locked_key, (void *) chan);
     return;
   }
@@ -353,20 +345,6 @@ static caml_thread_t caml_thread_new_info(void)
   th->exception_pointer = NULL;
   th->local_roots = NULL;
   th->exit_buf = NULL;
-#ifdef WITH_SPACETIME
-  /* CR-someday mshinwell: The commented-out changes here are for multicore,
-     where we think we should have one trie per domain. */
-  th->internal_spacetime_trie_root = Val_unit;
-  th->spacetime_trie_node_ptr =
-    &caml_spacetime_trie_root; /* &th->internal_spacetime_trie_root; */
-  th->internal_spacetime_finaliser_trie_root = Val_unit;
-  th->spacetime_finaliser_trie_root
-    = caml_spacetime_finaliser_trie_root;
-    /* &th->internal_spacetime_finaliser_trie_root; */
-  caml_spacetime_register_thread(
-    th->spacetime_trie_node_ptr,
-    th->spacetime_finaliser_trie_root);
-#endif
 #else
   /* Allocate the stacks */
   th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
@@ -380,7 +358,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->backtrace_pos = 0;
   th->backtrace_buffer = NULL;
   th->backtrace_last_exn = Val_unit;
-  caml_memprof_init_th_ctx(&th->memprof_ctx);
+  th->memprof_ctx = caml_memprof_new_th_ctx();
   return th;
 }
 
@@ -418,33 +396,22 @@ static void caml_thread_remove_info(caml_thread_t th)
   caml_stat_free(th->stack_low);
 #endif
   if (th->backtrace_buffer != NULL) caml_stat_free(th->backtrace_buffer);
-#ifndef WITH_SPACETIME
   caml_stat_free(th);
-  /* CR-soon mshinwell: consider what to do about the Spacetime trace.  Could
-     perhaps have a hook to save a snapshot on thread termination.
-     For the moment we can't even free [th], since it contains the trie
-     roots. */
-#endif
 }
 
 /* Reinitialize the thread machinery after a fork() (PR#4577) */
 
 static void caml_thread_reinitialize(void)
 {
-  caml_thread_t thr, next;
   struct channel * chan;
 
   /* Remove all other threads (now nonexistent)
      from the doubly-linked list of threads */
-  thr = curr_thread->next;
-  while (thr != curr_thread) {
-    next = thr->next;
-    caml_stat_free(thr);
-    thr = next;
+  while (curr_thread->next != curr_thread) {
+    caml_memprof_delete_th_ctx(curr_thread->next->memprof_ctx);
+    caml_thread_remove_info(curr_thread->next);
   }
-  curr_thread->next = curr_thread;
-  curr_thread->prev = curr_thread;
-  all_threads = curr_thread;
+
   /* Reinitialize the master lock machinery,
      just in case the fork happened while other threads were doing
      caml_leave_blocking_section */
@@ -487,6 +454,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
 #ifdef NATIVE_CODE
   curr_thread->exit_buf = &caml_termination_jmpbuf;
 #endif
+  curr_thread->memprof_ctx = &caml_memprof_main_ctx;
   /* The stack-related fields will be filled in at the next
      caml_enter_blocking_section */
   /* Associate the thread descriptor with the thread */
@@ -496,7 +464,6 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
-  caml_try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
 #ifdef NATIVE_CODE
   caml_termination_hook = st_thread_exit;
 #endif
@@ -506,6 +473,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
   prev_stack_usage_hook = caml_stack_usage_hook;
   caml_stack_usage_hook = caml_thread_stack_usage;
+  caml_memprof_th_ctx_iter_hook = memprof_ctx_iter;
   /* Set up fork() to reinitialize the thread machinery in the child
      (PR#4577) */
   st_atfork(caml_thread_reinitialize);
@@ -537,11 +505,14 @@ static void caml_thread_stop(void)
      below uses accurate information. */
   caml_thread_save_runtime_state();
   /* Tell memprof that this thread is terminating. */
-  caml_memprof_stop_th_ctx(&curr_thread->memprof_ctx);
+  caml_memprof_delete_th_ctx(curr_thread->memprof_ctx);
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */
   caml_thread_remove_info(curr_thread);
+  /* If no other OCaml thread remains, ask the tick thread to stop
+     so that it does not prevent the whole process from exiting (#9971) */
+  if (all_threads == NULL) caml_thread_cleanup(Val_unit);
   /* OS-specific cleanups */
   st_thread_cleanup();
   /* Release the runtime system */
@@ -675,6 +646,9 @@ CAMLexport int caml_c_thread_unregister(void)
   st_tls_set(thread_descriptor_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
+  /* If no other OCaml thread remains, ask the tick thread to stop
+     so that it does not prevent the whole process from exiting (#9971) */
+  if (all_threads == NULL) caml_thread_cleanup(Val_unit);
   /* Release the runtime */
   st_masterlock_release(&caml_master_lock);
   return 1;
@@ -819,7 +793,7 @@ CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
   st_retcode retcode;
 
   /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mut) == PREVIOUSLY_UNLOCKED) return Val_unit;
+  if (st_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
   /* If unsuccessful, block on mutex */
   Begin_root(wrapper)           /* prevent the deallocation of mutex */
     caml_enter_blocking_section();
@@ -845,7 +819,7 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
   st_mutex mut = Mutex_val(wrapper);
   st_retcode retcode;
   retcode = st_mutex_trylock(mut);
-  if (retcode == ALREADY_LOCKED) return Val_false;
+  if (retcode == MUTEX_ALREADY_LOCKED) return Val_false;
   st_check_error(retcode, "Mutex.try_lock");
   return Val_true;
 }

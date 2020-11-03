@@ -124,13 +124,6 @@ Line 4, characters 4-11:
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
-|}, Principal{|
-Line 4, characters 4-17:
-4 |   | BoolLit, true -> ()
-        ^^^^^^^^^^^^^
-Error: This pattern matches values of type bool t * bool
-       but a pattern was expected which matches values of type int t * int
-       Type bool is not compatible with type int
 |}]
 
 let simple_annotated (type a) (t : a t) (a : a) =
@@ -240,11 +233,7 @@ let simple_merged_annotated_return_annotated (type a) (t : a t) (a : a) =
 ;;
 
 [%%expect{|
-Lines 3-4, characters 4-30:
-3 | ....IntLit, ((3 : a) as x)
-4 |   | BoolLit, ((true : a) as x)............
-Error: The variable x on the left-hand side of this or-pattern has type
-       a but on the right-hand side it has type bool
+val simple_merged_annotated_return_annotated : 'a t -> 'a -> unit = <fun>
 |}]
 
 (* test more scenarios: when the or-pattern itself is not at toplevel but under
@@ -391,13 +380,6 @@ Line 4, characters 4-11:
         ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
-|}, Principal{|
-Line 4, characters 4-14:
-4 |   | BoolLit, x -> x
-        ^^^^^^^^^^
-Error: This pattern matches values of type bool t * 'a
-       but a pattern was expected which matches values of type int t * 'b
        Type bool is not compatible with type int
 |}]
 
@@ -593,12 +575,7 @@ let lambiguity (type a) (t2 : a t2) =
 ;;
 
 [%%expect{|
-Line 3, characters 8-22:
-3 |   | Int ((_ : a) as x)
-            ^^^^^^^^^^^^^^
-Error: This pattern matches values of type a
-       This instance of a is ambiguous:
-       it would escape the scope of its equation
+val lambiguity : 'a t2 -> 'a = <fun>
 |}]
 
 let rambiguity (type a) (t2 : a t2) =
@@ -608,12 +585,11 @@ let rambiguity (type a) (t2 : a t2) =
 ;;
 
 [%%expect{|
-Line 4, characters 9-23:
-4 |   | Bool ((_ : a) as x) -> x
-             ^^^^^^^^^^^^^^
-Error: This pattern matches values of type a
-       This instance of a is ambiguous:
-       it would escape the scope of its equation
+Lines 3-4, characters 4-23:
+3 | ....Int (_ as x)
+4 |   | Bool ((_ : a) as x).....
+Error: The variable x on the left-hand side of this or-pattern has type
+       int but on the right-hand side it has type a
 |}]
 
 

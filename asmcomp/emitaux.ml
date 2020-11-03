@@ -185,7 +185,7 @@ let emit_frames a =
       | Dbg_other d | Dbg_raise d ->
         if Debuginfo.is_none d then 0 else 1
       | Dbg_alloc dbgs ->
-        if !Clflags.debug && not Config.spacetime &&
+        if !Clflags.debug &&
            List.exists (fun d ->
              not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
         then 3 else 2

@@ -23,7 +23,7 @@ STR_MLIS = $(addprefix $(SRC)/otherlibs/str/, str.mli)
 UNIX_MLIS = $(addprefix $(SRC)/otherlibs/unix/, unix.mli unixLabels.mli)
 DYNLINK_MLIS = $(addprefix $(SRC)/otherlibs/dynlink/, dynlink.mli)
 THREAD_MLIS = $(addprefix $(SRC)/otherlibs/systhreads/, \
-  thread.mli condition.mli mutex.mli event.mli threadUnix.mli)
+  thread.mli condition.mli mutex.mli event.mli semaphore.mli threadUnix.mli)
 DRIVER_MLIS = $(SRC)/driver/pparse.mli
 
 

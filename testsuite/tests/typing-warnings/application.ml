@@ -19,7 +19,7 @@ let _ = Array.get [||];;
 Line 1, characters 8-22:
 1 | let _ = Array.get [||];;
             ^^^^^^^^^^^^^^
-Warning 5: this function application is partial,
+Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
 - : int -> 'a = <fun>
 |}]
@@ -33,7 +33,7 @@ let () = ignore (Array.get [||]);;
 Line 1, characters 16-32:
 1 | let () = ignore (Array.get [||]);;
                     ^^^^^^^^^^^^^^^^
-Warning 5: this function application is partial,
+Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
 |}]
 
@@ -48,7 +48,7 @@ let _ = if true then Array.get [||] else (fun _ -> 12);;
 Line 1, characters 21-35:
 1 | let _ = if true then Array.get [||] else (fun _ -> 12);;
                          ^^^^^^^^^^^^^^
-Warning 5: this function application is partial,
+Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
 - : int -> int = <fun>
 |}]
@@ -71,7 +71,7 @@ let f x = let _ = x.r 1 in ();;
 Line 1, characters 18-23:
 1 | let f x = let _ = x.r 1 in ();;
                       ^^^^^
-Warning 5: this function application is partial,
+Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
 val f : t -> unit = <fun>
 |}]
@@ -81,7 +81,7 @@ let _ = raise Exit 3;;
 Line 1, characters 19-20:
 1 | let _ = raise Exit 3;;
                        ^
-Warning 20: this argument will not be used by the function.
+Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
 Exception: Stdlib.Exit.
 |}]
 
@@ -96,7 +96,7 @@ val g : int -> int = <fun>
 Line 2, characters 10-15:
 2 | let _ = g (f 1);;
               ^^^^^
-Warning 5: this function application is partial,
+Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
 Line 2, characters 10-15:
 2 | let _ = g (f 1);;

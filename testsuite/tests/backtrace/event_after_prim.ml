@@ -1,6 +1,6 @@
 (* TEST
    flags = "-g"
-   compare_programs = "false" *)
+*)
 
 let f n b =
   let arr = Array.make n 42 in

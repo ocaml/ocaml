@@ -36,6 +36,9 @@ DOMAIN_STATE(struct caml_ephe_ref_table*, ephe_ref_table)
 DOMAIN_STATE(struct caml_custom_table*, custom_table)
 /* See minor_gc.c */
 
+DOMAIN_STATE(struct mark_stack*, mark_stack)
+/* See major_gc.c */
+
 DOMAIN_STATE(value*, stack_low)
 DOMAIN_STATE(value*, stack_high)
 DOMAIN_STATE(value*, stack_threshold)
@@ -71,12 +74,18 @@ DOMAIN_STATE(intnat, stat_major_collections)
 DOMAIN_STATE(intnat, stat_heap_wsz)
 DOMAIN_STATE(intnat, stat_top_heap_wsz)
 DOMAIN_STATE(intnat, stat_compactions)
+DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(intnat, stat_heap_chunks)
 /* See gc_ctrl.c */
 
 DOMAIN_STATE(uintnat, eventlog_startup_timestamp)
-DOMAIN_STATE(uint32_t, eventlog_startup_pid)
+DOMAIN_STATE(long, eventlog_startup_pid)
 DOMAIN_STATE(uintnat, eventlog_paused)
 DOMAIN_STATE(uintnat, eventlog_enabled)
 DOMAIN_STATE(FILE*, eventlog_out)
 /* See eventlog.c */
+
+#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
+DOMAIN_STATE(void*, checking_pointer_pc)
+/* See major_gc.c */
+#endif

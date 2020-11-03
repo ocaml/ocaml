@@ -22,6 +22,7 @@
 #include "caml/callback.h"
 #include "caml/backtrace.h"
 #include "caml/custom.h"
+#include "caml/codefrag.h"
 #include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/eventlog.h"
@@ -38,16 +39,12 @@
 #include "caml/stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
-#ifdef WITH_SPACETIME
-#include "caml/spacetime.h"
-#endif
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
 
 extern int caml_parser_trace;
-char * caml_code_area_start, * caml_code_area_end;
-struct ext_table caml_code_fragments_table;
+extern char caml_system__code_begin, caml_system__code_end;
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -56,8 +53,9 @@ struct segment { char * begin; char * end; };
 static void init_static(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
+
+  char * caml_code_area_start, * caml_code_area_end;
   int i;
-  struct code_fragment * cf;
 
   caml_init_atom_table ();
 
@@ -79,12 +77,13 @@ static void init_static(void)
       caml_code_area_end = caml_code_segments[i].end;
   }
   /* Register the code in the table of code fragments */
-  cf = caml_stat_alloc(sizeof(struct code_fragment));
-  cf->code_start = caml_code_area_start;
-  cf->code_end = caml_code_area_end;
-  cf->digest_computed = 0;
-  caml_ext_table_init(&caml_code_fragments_table, 8);
-  caml_ext_table_add(&caml_code_fragments_table, cf);
+  caml_register_code_fragment(caml_code_area_start,
+                              caml_code_area_end,
+                              DIGEST_LATER, NULL);
+  /* Also register the glue code written in assembly */
+  caml_register_code_fragment(&caml_system__code_begin,
+                              &caml_system__code_end,
+                              DIGEST_IGNORE, NULL);
 }
 
 /* These are termination hooks used by the systhreads library */
@@ -125,9 +124,6 @@ value caml_startup_common(char_os **argv, int pooling)
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-#ifdef WITH_SPACETIME
-  caml_spacetime_initialize();
-#endif
   caml_init_frame_descriptors();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L

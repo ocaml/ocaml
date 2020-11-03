@@ -29,9 +29,9 @@
 
 /boot/menhir/parser.ml* -diff
 
-# configure is declared as binary so that it doesn't get included in diffs.
-# This also means it will have the correct Unix line-endings, even on Windows.
-/configure binary
+# configure is a shell-script; the linguist-generated attribute suppresses
+# changes being displayed by default in pull requests.
+/configure text eol=lf -diff linguist-generated
 
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
@@ -57,16 +57,16 @@ tools/mantis2gh_stripped.csv typo.missing-header
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
-/News                    typo.utf8 typo.missing-header
+/release-info/News       typo.utf8 typo.missing-header
 /INSTALL                 typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
 /tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
-/tools/ci/inria/remove-sinh-primitive.patch typo.white-at-eol typo.missing-header typo.long-line
-/tools/release-checklist                    typo.missing-header typo.very-long-line
-
+/tools/ci/inria/bootstrap/remove-sinh-primitive.patch typo.prune
+/release-info/howto.md                    typo.missing-header typo.long-line
+/release-info/templates/*.md              typo.missing-header typo.very-long-line=may
 # ignore auto-generated .depend files
 .depend                  typo.prune
 /.depend.menhir          typo.prune
@@ -109,6 +109,7 @@ testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=fals
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
 testsuite/tests/win-unicode/*.ml                        typo.utf8
+testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
@@ -118,6 +119,10 @@ testsuite/tests/**/*.reference               typo.prune
 
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line
+
+# The normalisation tests have very specific line endings which mustn't be
+# corrupted by git.
+testsuite/tests/tool-ocamltest/norm*.reference binary
 
 tools/magic                       typo.missing-header
 tools/eventlog_metadata.in        typo.missing-header

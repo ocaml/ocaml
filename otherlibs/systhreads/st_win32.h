@@ -38,6 +38,21 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
+/* Unique thread identifiers and atomic operations over them */
+#ifdef ARCH_SIXTYFOUR
+typedef LONG64 st_tid;
+#define Tid_Atomic_Exchange InterlockedExchange64
+#define Tid_Atomic_Compare_Exchange InterlockedCompareExchange64
+#else
+typedef LONG st_tid;
+#define Tid_Atomic_Exchange InterlockedExchange
+#define Tid_Atomic_Compare_Exchange InterlockedCompareExchange
+#endif
+
+/* Return the identifier for the current thread.  Defined in st_stubs.c.
+   The 0 value is reserved. */
+static intnat st_current_thread_id(void);
+
 /* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
 
@@ -48,8 +63,7 @@ static DWORD st_initialize(void)
   st_thread_sem_key = TlsAlloc();
   if (st_thread_sem_key == TLS_OUT_OF_INDEXES)
     return GetLastError();
-  else
-    return 0;
+  return 0;
 }
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
@@ -160,53 +174,100 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 /* Mutexes */
 
-typedef CRITICAL_SECTION * st_mutex;
+struct st_mutex_ {
+  CRITICAL_SECTION crit;
+  volatile st_tid owner;    /* 0 if unlocked */
+  /* The "owner" field is not always protected by "crit"; it is also
+     accessed without holding "crit", using the Interlocked API for
+     atomic accesses */
+};
+
+typedef struct st_mutex_ * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(struct st_mutex_));
   if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
-  InitializeCriticalSection(m);
+  InitializeCriticalSection(&m->crit);
+  m->owner = 0;
   *res = m;
   return 0;
 }
 
 static DWORD st_mutex_destroy(st_mutex m)
 {
-  DeleteCriticalSection(m);
+  DeleteCriticalSection(&m->crit);
   caml_stat_free(m);
-  return 0;
-}
-
-Caml_inline DWORD st_mutex_lock(st_mutex m)
-{
-  TRACE1("st_mutex_lock", m);
-  EnterCriticalSection(m);
-  TRACE1("st_mutex_lock (done)", m);
   return 0;
 }
 
 /* Error codes with the 29th bit set are reserved for the application */
 
-#define PREVIOUSLY_UNLOCKED 0
-#define ALREADY_LOCKED (1<<29)
+#define MUTEX_DEADLOCK (1<<29 | 1)
+#define MUTEX_PREVIOUSLY_UNLOCKED 0
+#define MUTEX_ALREADY_LOCKED (1 << 29)
+#define MUTEX_NOT_OWNED (1<<29 | 2)
+
+Caml_inline DWORD st_mutex_lock(st_mutex m)
+{
+  st_tid self, prev;
+  TRACE1("st_mutex_lock", m);
+  self = st_current_thread_id();
+  /* Critical sections are recursive locks, so this will succeed
+     if we already own the lock */
+  EnterCriticalSection(&m->crit);
+  /* Record that we are the owner of the lock */
+  prev = Tid_Atomic_Exchange(&m->owner, self);
+  if (prev != 0) {
+    /* The mutex was already locked by ourselves.
+       Cancel the EnterCriticalSection above and return an error. */
+    TRACE1("st_mutex_lock (deadlock)", m);
+    LeaveCriticalSection(&m->crit);
+    return MUTEX_DEADLOCK;
+  }
+  TRACE1("st_mutex_lock (done)", m);
+  return 0;
+}
 
 Caml_inline DWORD st_mutex_trylock(st_mutex m)
 {
+  st_tid self, prev;
   TRACE1("st_mutex_trylock", m);
-  if (TryEnterCriticalSection(m)) {
-    TRACE1("st_mutex_trylock (success)", m);
-    return PREVIOUSLY_UNLOCKED;
-  } else {
+  self = st_current_thread_id();
+  if (! TryEnterCriticalSection(&m->crit)) {
     TRACE1("st_mutex_trylock (failure)", m);
-    return ALREADY_LOCKED;
+    return MUTEX_ALREADY_LOCKED;
   }
+  /* Record that we are the owner of the lock */
+  prev = Tid_Atomic_Exchange(&m->owner, self);
+  if (prev != 0) {
+    /* The mutex was already locked by ourselves.
+       Cancel the EnterCriticalSection above and return "already locked". */
+    TRACE1("st_mutex_trylock (already locked by self)", m);
+    LeaveCriticalSection(&m->crit);
+    return MUTEX_ALREADY_LOCKED;
+  }
+  TRACE1("st_mutex_trylock (done)", m);
+  return MUTEX_PREVIOUSLY_UNLOCKED;
 }
 
 Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
+  st_tid self, prev;
+  /* If the calling thread holds the lock, m->owner is stable and equal
+     to st_current_thread_id().
+     Otherwise, the value of m->owner can be 0 (if the mutex is unlocked)
+     or some other thread ID (if the mutex is held by another thread),
+     but is never equal to st_current_thread_id(). */
+  self = st_current_thread_id();
+  prev = Tid_Atomic_Compare_Exchange(&m->owner, 0, self);
+  if (prev != self) {
+    /* The value of m->owner is unchanged */
+    TRACE1("st_mutex_unlock (error)", m);
+    return MUTEX_NOT_OWNED;
+  }
   TRACE1("st_mutex_unlock", m);
-  LeaveCriticalSection(m);
+  LeaveCriticalSection(&m->crit);
   return 0;
 }
 
@@ -289,6 +350,8 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
 {
   HANDLE ev;
   struct st_wait_list wait;
+  DWORD rc;
+  st_tid self, prev;
 
   TRACE1("st_condvar_wait", c);
   /* Recover (or create) the event associated with the calling thread */
@@ -301,14 +364,23 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
     if (ev == NULL) return GetLastError();
     TlsSetValue(st_thread_sem_key, (void *) ev);
   }
-  EnterCriticalSection(&c->lock);
+  /* Get ready to release the mutex */
+  self = st_current_thread_id();
+  prev = Tid_Atomic_Compare_Exchange(&m->owner, 0, self);
+  if (prev != self) {
+    /* The value of m->owner is unchanged */
+    TRACE1("st_condvar_wait: error: mutex not held", m);
+    return MUTEX_NOT_OWNED;
+  }
   /* Insert the current thread in the waiting list (atomically) */
+  EnterCriticalSection(&c->lock);
   wait.event = ev;
   wait.next = c->waiters;
   c->waiters = &wait;
   LeaveCriticalSection(&c->lock);
-  /* Release the mutex m */
-  LeaveCriticalSection(m);
+  /* Finish releasing the mutex m (like st_mutex_unlock does, minus
+     the error checking, which we've already done above). */
+  LeaveCriticalSection(&m->crit);
   /* Wait for our event to be signaled.  There is no risk of lost
      wakeup, since we inserted ourselves on the waiting list of c
      before releasing m */
@@ -316,9 +388,10 @@ static DWORD st_condvar_wait(st_condvar c, st_mutex m)
   if (WaitForSingleObject(ev, INFINITE) == WAIT_FAILED)
     return GetLastError();
   /* Reacquire the mutex m */
-  TRACE1("st_condvar_wait: restarted, acquiring mutex", m);
-  EnterCriticalSection(m);
-  TRACE1("st_condvar_wait: acquired mutex", m);
+  TRACE1("st_condvar_wait: restarted, acquiring mutex", c);
+  rc = st_mutex_lock(m);
+  if (rc != 0) return rc;
+  TRACE1("st_condvar_wait: acquired mutex", c);
   return 0;
 }
 
@@ -373,16 +446,28 @@ static void st_check_error(DWORD retcode, char * msg)
 
   if (retcode == 0) return;
   if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
-  ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                      NULL,
-                      retcode,
-                      0,
-                      err,
-                      sizeof(err)/sizeof(wchar_t),
-                      NULL);
-  if (! ret) {
-    ret =
-      swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
+  switch (retcode) {
+  case MUTEX_DEADLOCK:
+    ret = swprintf(err, sizeof(err)/sizeof(wchar_t),
+                   L"Mutex is already locked by calling thread");
+    break;
+  case MUTEX_NOT_OWNED:
+    ret = swprintf(err, sizeof(err)/sizeof(wchar_t),
+                   L"Mutex is not locked by calling thread");
+    break;
+  default:
+    ret = FormatMessage(
+             FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+             NULL,
+             retcode,
+             0,
+             err,
+             sizeof(err)/sizeof(wchar_t),
+             NULL);
+    if (! ret) {
+      ret =
+        swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
+    }
   }
   msglen = strlen(msg);
   errlen = win_wide_char_to_multi_byte(err, ret, NULL, 0);

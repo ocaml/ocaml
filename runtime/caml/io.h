@@ -52,10 +52,8 @@ struct channel {
 
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  CHANNEL_FLAG_BLOCKING_WRITE = 2, /* Don't release master lock when writing */
-#endif
   CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
+  CHANNEL_TEXT_MODE = 8,           /* "Text mode" for Windows and Cygwin */
 };
 
 /* For an output channel:
@@ -64,8 +62,19 @@ enum {
      [offset] is the absolute position of the logical end of the buffer, [max].
 */
 
-/* Functions and macros that can be called from C.  Take arguments of
-   type struct channel *.  No locking is performed. */
+/* Creating and closing channels from C */
+
+CAMLextern struct channel * caml_open_descriptor_in (int);
+CAMLextern struct channel * caml_open_descriptor_out (int);
+CAMLextern void caml_close_channel (struct channel *);
+CAMLextern file_offset caml_channel_size (struct channel *);
+CAMLextern void caml_seek_in (struct channel *, file_offset);
+CAMLextern void caml_seek_out (struct channel *, file_offset);
+CAMLextern file_offset caml_pos_in (struct channel *);
+CAMLextern file_offset caml_pos_out (struct channel *);
+
+/* I/O on channels from C. The channel must be locked (see below) before
+   calling any of the functions and macros below */
 
 #define caml_putch(channel, ch) do{                                       \
   if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
@@ -77,11 +86,8 @@ enum {
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
-CAMLextern void caml_close_channel (struct channel *);
-CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern value caml_alloc_channel(struct channel *chan);
+CAMLextern int caml_channel_binary_mode (struct channel *);
 
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
@@ -118,6 +124,10 @@ CAMLextern struct channel * caml_all_opened_channels;
 
 #define Val_file_offset(fofs) caml_copy_int64(fofs)
 #define File_offset_val(v) ((file_offset) Int64_val(v))
+
+/* Primitives required by the Unix library */
+CAMLextern value caml_ml_open_descriptor_in(value fd);
+CAMLextern value caml_ml_open_descriptor_out(value fd);
 
 #endif /* CAML_INTERNALS */
 

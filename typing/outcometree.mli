@@ -56,6 +56,8 @@ type out_value =
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
 
+type out_type_param = string * (Asttypes.variance * Asttypes.injectivity)
+
 type out_type =
   | Otyp_abstract
   | Otyp_open
@@ -97,10 +99,10 @@ type out_module_type =
   | Omty_alias of out_ident
 and out_sig_item =
   | Osig_class of
-      bool * string * (string * (bool * bool)) list * out_class_type *
+      bool * string * out_type_param list * out_class_type *
         out_rec_status
   | Osig_class_type of
-      bool * string * (string * (bool * bool)) list * out_class_type *
+      bool * string * out_type_param list * out_class_type *
         out_rec_status
   | Osig_typext of out_extension_constructor * out_ext_status
   | Osig_modtype of string * out_module_type
@@ -110,7 +112,7 @@ and out_sig_item =
   | Osig_ellipsis
 and out_type_decl =
   { otype_name: string;
-    otype_params: (string * (bool * bool)) list;
+    otype_params: out_type_param list;
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
     otype_immediate: Type_immediacy.t;

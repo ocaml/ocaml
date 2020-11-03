@@ -18,6 +18,7 @@
 val interface:
   source_file:string -> output_prefix:string -> unit
 val implementation:
+  start_from:Clflags.Compiler_pass.t ->
   source_file:string -> output_prefix:string -> unit
 
 (** {2 Internal functions} **)

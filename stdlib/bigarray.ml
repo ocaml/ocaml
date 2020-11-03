@@ -92,13 +92,34 @@ let c_layout = C_layout
 let fortran_layout = Fortran_layout
 
 module Genarray = struct
-  type ('a, 'b, 'c) t
+  type (!'a, !'b, !'c) t
   external create: ('a, 'b) kind -> 'c layout -> int array -> ('a, 'b, 'c) t
      = "caml_ba_create"
   external get: ('a, 'b, 'c) t -> int array -> 'a
      = "caml_ba_get_generic"
   external set: ('a, 'b, 'c) t -> int array -> 'a -> unit
      = "caml_ba_set_generic"
+
+  let rec cloop arr idx f col max =
+    if col = Array.length idx then set arr idx (f idx)
+    else for j = 0 to pred max.(col) do
+           idx.(col) <- j;
+           cloop arr idx f (succ col) max
+         done
+  let rec floop arr idx f col max =
+    if col < 0 then set arr idx (f idx)
+    else for j = 1 to max.(col) do
+           idx.(col) <- j;
+           floop arr idx f (pred col) max
+         done
+  let init (type t) kind (layout : t layout) dims f =
+    let arr = create kind layout dims in
+    match Array.length dims, layout with
+    | 0, _ -> arr
+    | dlen, C_layout -> cloop arr (Array.make dlen 0) f 0 dims; arr
+    | dlen, Fortran_layout -> floop arr (Array.make dlen 1) f (pred dlen) dims;
+                              arr
+
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
   external nth_dim: ('a, 'b, 'c) t -> int -> int = "caml_ba_dim"
   let dims a =
@@ -132,7 +153,7 @@ module Genarray = struct
 end
 
 module Array0 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout =
     Genarray.create kind layout [||]
   let get arr = Genarray.get arr [||]
@@ -152,10 +173,11 @@ module Array0 = struct
     let a = create kind layout in
     set a v;
     a
+  let init = of_value
 end
 
 module Array1 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim =
     Genarray.create kind layout [|dim|]
   external get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
@@ -180,6 +202,15 @@ module Array1 = struct
     | Fortran_layout -> (Genarray.slice_right a [|n|]: (_, _, t) Genarray.t)
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+  let c_init arr dim f =
+    for i = 0 to pred dim do unsafe_set arr i (f i) done
+  let fortran_init arr dim f =
+    for i = 1 to dim do unsafe_set arr i (f i) done
+  let init (type t) kind (layout : t layout) dim f =
+    let arr = create kind layout dim in
+    match layout with
+    | C_layout -> c_init arr dim f; arr
+    | Fortran_layout -> fortran_init arr dim f; arr
   let of_array (type t) kind (layout: t layout) data =
     let ba = create kind layout (Array.length data) in
     let ofs =
@@ -192,7 +223,7 @@ module Array1 = struct
 end
 
 module Array2 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim1 dim2 =
     Genarray.create kind layout [|dim1; dim2|]
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%caml_ba_ref_2"
@@ -221,6 +252,23 @@ module Array2 = struct
   let slice_right a n = Genarray.slice_right a [|n|]
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+  let c_init arr dim1 dim2 f =
+    for i = 0 to pred dim1 do
+      for j = 0 to pred dim2 do
+        unsafe_set arr i j (f i j)
+      done
+    done
+  let fortran_init arr dim1 dim2 f =
+    for j = 1 to dim2 do
+      for i = 1 to dim1 do
+        unsafe_set arr i j (f i j)
+      done
+    done
+  let init (type t) kind (layout : t layout) dim1 dim2 f =
+    let arr = create kind layout dim1 dim2 in
+    match layout with
+    | C_layout -> c_init arr dim1 dim2 f; arr
+    | Fortran_layout -> fortran_init arr dim1 dim2 f; arr
   let of_array (type t) kind (layout: t layout) data =
     let dim1 = Array.length data in
     let dim2 = if dim1 = 0 then 0 else Array.length data.(0) in
@@ -242,7 +290,7 @@ module Array2 = struct
 end
 
 module Array3 = struct
-  type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+  type (!'a, !'b, !'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim1 dim2 dim3 =
     Genarray.create kind layout [|dim1; dim2; dim3|]
   external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%caml_ba_ref_3"
@@ -275,6 +323,27 @@ module Array3 = struct
   let slice_right_2 a n = Genarray.slice_right a [|n|]
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+  let c_init arr dim1 dim2 dim3 f =
+    for i = 0 to pred dim1 do
+      for j = 0 to pred dim2 do
+        for k = 0 to pred dim3 do
+          unsafe_set arr i j k (f i j k)
+        done
+      done
+    done
+  let fortran_init arr dim1 dim2 dim3 f =
+    for k = 1 to dim3 do
+      for j = 1 to dim2 do
+        for i = 1 to dim1 do
+          unsafe_set arr i j k (f i j k)
+        done
+      done
+    done
+  let init (type t) kind (layout : t layout) dim1 dim2 dim3 f =
+    let arr = create kind layout dim1 dim2 dim3 in
+    match layout with
+    | C_layout -> c_init arr dim1 dim2 dim3 f; arr
+    | Fortran_layout -> fortran_init arr dim1 dim2 dim3 f; arr
   let of_array (type t) kind (layout: t layout) data =
     let dim1 = Array.length data in
     let dim2 = if dim1 = 0 then 0 else Array.length data.(0) in

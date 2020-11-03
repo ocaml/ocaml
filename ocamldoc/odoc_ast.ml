@@ -18,9 +18,6 @@ open Asttypes
 open Types
 open Typedtree
 
-let print_DEBUG3 s = print_string s ; print_newline ();;
-let print_DEBUG s = print_string s ; print_newline ();;
-
 type typedtree = (Typedtree.structure * Typedtree.module_coercion)
 
 open Odoc_parameter
@@ -324,7 +321,6 @@ module Analyser =
                       in
                       (new_param, func_body2)
                   | _ ->
-                      print_DEBUG3 "Pas le bon filtre pour le parametre optionnel avec valeur par defaut.";
                       (parameter, func_body)
                  )
                 )
@@ -484,7 +480,6 @@ module Analyser =
                                   in
                                   (new_param, body2)
                               | _ ->
-                                  print_DEBUG3 "Pas le bon filtre pour le parametre optionnel avec valeur par defaut.";
                                   (parameter, body)
                              )
                             )
@@ -1023,7 +1018,6 @@ module Analyser =
 
     (** Analysis of a parse tree structure with a typed tree, to return module elements.*)
     let rec analyse_structure env current_module_name last_pos pos_limit parsetree typedtree =
-      print_DEBUG "Odoc_ast:analyse_struture";
       let (table, table_values) = Typedtree_search.tables typedtree.str_items in
       let rec iter env last_pos = function
           [] ->
@@ -1065,7 +1059,6 @@ module Analyser =
    (** Analysis of a parse tree structure item to obtain a new environment and a list of elements.*)
    and analyse_structure_item env current_module_name loc pos_limit comment_opt parsetree_item_desc _typedtree
         table table_values =
-      print_DEBUG "Odoc_ast:analyse_struture_item";
       match parsetree_item_desc with
         Parsetree.Pstr_eval _ ->
           (* don't care *)
@@ -1138,7 +1131,6 @@ module Analyser =
       | Parsetree.Pstr_primitive val_desc ->
             let name_pre = val_desc.Parsetree.pval_name.txt in
             (* of string * value_description *)
-            print_DEBUG ("Parsetree.Pstr_primitive ("^name_pre^", ["^(String.concat ", " val_desc.Parsetree.pval_prim)^"]");
             let typ = Typedtree_search.search_primitive table name_pre in
             let name = Name.parens_if_infix name_pre in
             let complete_name = Name.concat current_module_name name in
@@ -1749,7 +1741,6 @@ module Analyser =
            let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
            let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
            let mp_type_code = get_string_of_file loc_start loc_end in
-           print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            let param =
              {
                mp_name ;
@@ -1799,7 +1790,6 @@ module Analyser =
 
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype),
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _, _)) ->
-          print_DEBUG ("Odoc_ast: case Parsetree.Pmod_constraint + Typedtree.Tmod_constraint "^module_name);
           let m_base2 = analyse_module
               env
               current_module_name
@@ -1827,8 +1817,6 @@ module Analyser =
             tt_modtype, _, _)
         ) ->
           (* needed for recursive modules *)
-
-          print_DEBUG ("Odoc_ast: case Parsetree.Pmod_structure + Typedtree.Tmod_constraint "^module_name);
           let elements = analyse_structure env complete_name pos_start pos_end p_structure tt_structure in
           (* we must complete the included modules *)
           let included_modules_from_tt = tt_get_included_module_list tt_structure in
@@ -1840,7 +1828,6 @@ module Analyser =
 
       | (Parsetree.Pmod_unpack p_exp,
          Typedtree.Tmod_unpack (_t_exp, tt_modtype)) ->
-          print_DEBUG ("Odoc_ast: case Parsetree.Pmod_unpack + Typedtree.Tmod_unpack "^module_name);
           let code =
             let loc = p_module_expr.Parsetree.pmod_loc in
             let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
@@ -1863,28 +1850,6 @@ module Analyser =
           }
 
       | (_parsetree, _typedtree) ->
-          (*DEBUG*)let s_parse =
-          (*DEBUG*)  match _parsetree with
-          (*DEBUG*)    Parsetree.Pmod_ident _ -> "Pmod_ident"
-          (*DEBUG*)  | Parsetree.Pmod_structure _ -> "Pmod_structure"
-          (*DEBUG*)  | Parsetree.Pmod_functor _ -> "Pmod_functor"
-          (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
-          (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
-          (*DEBUG*)  | Parsetree.Pmod_unpack _ -> "Pmod_unpack"
-          (*DEBUG*)  | Parsetree.Pmod_extension _ -> "Pmod_extension"
-          (*DEBUG*)in
-          (*DEBUG*)let s_typed =
-          (*DEBUG*)  match _typedtree with
-          (*DEBUG*)    Typedtree.Tmod_ident _ -> "Tmod_ident"
-          (*DEBUG*)  | Typedtree.Tmod_structure _ -> "Tmod_structure"
-          (*DEBUG*)  | Typedtree.Tmod_functor _ -> "Tmod_functor"
-          (*DEBUG*)  | Typedtree.Tmod_apply _ -> "Tmod_apply"
-          (*DEBUG*)  | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
-          (*DEBUG*)  | Typedtree.Tmod_unpack _ -> "Tmod_unpack"
-          (*DEBUG*)in
-          (*DEBUG*)let code = get_string_of_file pos_start pos_end in
-          print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);
-
           raise (Failure "analyse_module: parsetree and typedtree don't match.")
 
      let analyse_typed_tree source_file input_file

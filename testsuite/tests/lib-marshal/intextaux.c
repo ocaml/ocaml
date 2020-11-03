@@ -19,15 +19,20 @@
 
 #define CAML_INTERNALS
 
-value marshal_to_block(value vbuf, value vlen, value v, value vflags)
+#define BLOCK_SIZE 512
+static char marshal_block[BLOCK_SIZE];
+
+value marshal_to_block(value vlen, value v, value vflags)
 {
-  return Val_long(caml_output_value_to_block(v, vflags,
-                                        (char *) vbuf, Long_val(vlen)));
+  CAMLassert(Long_val(vlen) <= BLOCK_SIZE);
+  caml_output_value_to_block(v, vflags, marshal_block, Long_val(vlen));
+  return Val_unit;
 }
 
-value marshal_from_block(value vbuf, value vlen)
+value marshal_from_block(value vlen)
 {
-  return caml_input_value_from_block((char *) vbuf, Long_val(vlen));
+  CAMLassert(Long_val(vlen) <= BLOCK_SIZE);
+  return caml_input_value_from_block(marshal_block, Long_val(vlen));
 }
 
 static void bad_serialize(value v, uintnat* sz_32, uintnat* sz_64)

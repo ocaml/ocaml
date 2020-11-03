@@ -81,5 +81,7 @@ val default_mapper : mapper
 
 val untype_structure : ?mapper:mapper -> Typedtree.structure -> structure
 val untype_signature : ?mapper:mapper -> Typedtree.signature -> signature
+val untype_expression : ?mapper:mapper -> Typedtree.expression -> expression
+val untype_pattern : ?mapper:mapper -> _ Typedtree.general_pattern -> pattern
 
 val constant : Asttypes.constant -> Parsetree.constant

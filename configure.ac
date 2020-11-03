@@ -37,7 +37,11 @@ programs_man_section=1
 libraries_man_section=3
 
 # Command to build executalbes
-mkexe="\$(CC) \$(OC_CFLAGS) \$(OC_CPPFLAGS) \$(OC_LDFLAGS)"
+# In general this command is supposed to use the CFLAGs-related variables
+# ($OC_CFLAGS and $CFLAGS), but at the moment they are not taken into
+# account on Windows, because flexlink, which is used to build
+# executables on this platform, can not handle them.
+mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
 mkexedebugflag="-g"
@@ -64,7 +68,7 @@ instrumented_runtime_ldlibs=""
 ## Source directory
 AC_CONFIG_SRCDIR([runtime/interp.c])
 
-## Directory containing auxiliary scripts used dugring build
+## Directory containing auxiliary scripts used during build
 AC_CONFIG_AUX_DIR([build-aux])
 
 ## Output variables
@@ -132,9 +136,6 @@ AC_SUBST([ocamltest])
 AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
-AC_SUBST([bfd_cppflags])
-AC_SUBST([bfd_ldflags])
-AC_SUBST([bfd_ldlibs])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
@@ -149,11 +150,6 @@ AC_SUBST([install_source_artifacts])
 AC_SUBST([profinfo])
 AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
-AC_SUBST([spacetime])
-AC_SUBST([call_counts])
-AC_SUBST([libunwind_available])
-AC_SUBST([libunwind_include_flags])
-AC_SUBST([libunwind_link_flags])
 AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
 AC_SUBST([max_testsuite_dir_retries])
@@ -168,6 +164,8 @@ AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
+AC_SUBST([naked_pointers])
+AC_SUBST([naked_pointers_checker])
 
 ## Generated files
 
@@ -239,28 +237,6 @@ AC_ARG_ENABLE([systhreads],
   [AS_HELP_STRING([--disable-systhreads],
     [disable the Win32/POSIX threads library])])
 
-AC_ARG_WITH([libunwind],
-  [AS_HELP_STRING([--without-libunwind],
-    [disable libunwind support for Spacetime profiling])])
-
-AC_ARG_VAR([LIBUNWIND_INCLUDE_DIR],
-  [location of header files for libunwind])
-
-AC_ARG_VAR([LIBUNWIND_LIB_DIR],
-  [location of library files for libunwind])
-
-AC_ARG_WITH([bfd],
-  [AS_HELP_STRING([--without-bfd],
-    [disable BFD (Binary File Description) library support])],
-    [],
-    [with_bfd=auto])
-
-AC_ARG_VAR([BFD_INCLUDE_DIR],
-  [location of header files for the BFD library])
-
-AC_ARG_VAR([BFD_LIB_DIR],
-  [location of library files for the BFD library])
-
 AC_ARG_ENABLE([graph-lib], [],
   [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
 since version 4.09. It is now distributed as a separate "graphics" package: \
@@ -297,13 +273,9 @@ AC_ARG_ENABLE([naked-pointers],
   [AS_HELP_STRING([--disable-naked-pointers],
     [do not allow naked pointers])])
 
-AC_ARG_ENABLE([spacetime],
-  [AS_HELP_STRING([--enable-spacetime],
-    [build the spacetime profiler])])
-
-AC_ARG_ENABLE([call-counts],
-  [AS_HELP_STRING([--disable-call-counts],
-    [disable the call counts in spacetime])])
+AC_ARG_ENABLE([naked-pointers-checker],
+  [AS_HELP_STRING([--enable-naked-pointers-checker],
+    [enable the naked pointers checker])])
 
 AC_ARG_ENABLE([cfi],
   [AS_HELP_STRING([--disable-cfi],
@@ -339,7 +311,7 @@ AC_ARG_ENABLE([reserved-header-bits],
     [0],
       [with_profinfo=false
       profinfo_width=0],
-    [[[1-9]]|1[[0-9]]|2[[0-1]]],
+    [[[1-9]]|[[1-2]][[0-9]]|3[[0-1]]],
       [with_profinfo=true
       profinfo_width="$enable_reserved_header_bits"],
     [AC_MSG_ERROR([invalid argument to --enable-reserved-header-bits])])])
@@ -347,6 +319,10 @@ AC_ARG_ENABLE([reserved-header-bits],
 AC_ARG_ENABLE([stdlib-manpages],
   [AS_HELP_STRING([--disable-stdlib-manpages],
     [do not build or install the library man pages])])
+
+AC_ARG_ENABLE([warn-error],
+  [AS_HELP_STRING([--enable-warn-error],
+    [treat C compiler warnings as errors])])
 
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
@@ -416,9 +392,14 @@ AS_IF([test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"],
 # User-specified LD still takes precedence.
 AC_CHECK_TOOLS([LD],[ld link])
 # libtool expects host_os=mingw for native Windows
+# Also, it has been observed that, on some platforms (e.g. msvc) LT_INIT
+# alters the CFLAGS variable, so we save its value before calling the macro
+# and restore it after the call
 old_host_os=$host_os
 AS_IF([test x"$host_os" = "xwindows"],[host_os=mingw])
+saved_CFLAGS="$CFLAGS"
 LT_INIT
+CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 
 AS_CASE([$host],
@@ -556,15 +537,20 @@ AS_IF(
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
-    [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
+    [outputobj='-o $(EMPTY)'
+    warn_error_flag=''
+    cc_warnings='-qflag=i:i'], # all warnings enabled
   [msvc-*],
-    [outputobj=-Fo; gcc_warnings=""],
+    [outputobj='-Fo'
+    warn_error_flag='-WX'
+    cc_warnings=''],
   [outputobj='-o $(EMPTY)'
-  gcc_warnings='-Wall -Wdeclaration-after-statement'
-  AS_CASE([AC_PACKAGE_VERSION],
-    [*+dev*],
-      [gcc_warnings="$gcc_warnings -Werror"])
-  ])
+  warn_error_flag='-Werror'
+  cc_warnings='-Wall -Wdeclaration-after-statement'])
+
+AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*],
+    [cc_warnings="$cc_warnings $warn_error_flag"])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
@@ -588,7 +574,7 @@ AS_CASE([$host],
         [AC_MSG_ERROR(m4_normalize([This version of Mingw GCC is too old.
           Please use GCC version 5 or above.]))],
       [gcc-*],
-        [internal_cflags="-Wno-unused $gcc_warnings \
+        [internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
@@ -599,7 +585,7 @@ AS_CASE([$host],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common"],
+      internal_cflags="$cc_warnings -fno-common"],
     [gcc-[[012]]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -612,29 +598,29 @@ AS_CASE([$host],
         Reducing optimization level."]));
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-4-[[234]]],
       # No -fexcess-precision option before GCC 4.5
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$cc_warnings"],
     [gcc-4-*],
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$gcc_warnings -fexcess-precision=standard"],
+      internal_cflags="$cc_warnings -fexcess-precision=standard"],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings -fno-common \
+      internal_cflags="$cc_warnings -fno-common \
 -fexcess-precision=standard"],
     [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD"
+      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
-      [common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
-      internal_cflags="$gcc_warnings"],
+      [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+      internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
@@ -702,13 +688,13 @@ AS_CASE([$CC,$host],
       mkexedebugflag="-link -g"])
     ostype="Win32"
     toolchain="mingw"
-    mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='-municode'
     SO="dll"],
   [*,*-pc-windows],
     [toolchain=msvc
     ostype="Win32"
-    mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='/ENTRY:wmainCRTStartup'
     AS_CASE([$host],
       [i686-pc-windows], [flexdll_chain=msvc],
@@ -745,7 +731,6 @@ AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
 AC_CHECK_HEADER([math.h])
 AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD])])
 AC_CHECK_HEADER([stdint.h],[AC_DEFINE([HAS_STDINT_H])])
-AC_CHECK_HEADER([sys/shm.h],[AC_DEFINE([HAS_SYS_SHM_H])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
   [#include <sys/types.h>])
 
@@ -794,7 +779,7 @@ AC_MSG_NOTICE([Target is a $bits bits architecture])
 
 AC_C_BIGENDIAN(
   [
-    AC_DEFINE([ARCH_BIG_ENDIAN], [1]),
+    AC_DEFINE([ARCH_BIG_ENDIAN], [1])
     [endianness="be"]
   ],
   [endianness="le"],
@@ -877,6 +862,8 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[i[3456]86-*-linux*]], [natdynlink=true],
     [[i[3456]86-*-gnu*]], [natdynlink=true],
     [[x86_64-*-linux*]], [natdynlink=true],
+    [arm64-*-darwin*], [natdynlink=true],
+    [aarch64-*-darwin*], [natdynlink=true],
     [x86_64-*-darwin*], [natdynlink=true],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
@@ -983,6 +970,10 @@ AS_CASE([$host],
     [arch=amd64; system=netbsd],
   [x86_64-*-openbsd*],
     [arch=amd64; system=openbsd],
+  [arm64-*-darwin*],
+    [arch=arm64; system=macosx],
+  [aarch64-*-darwin*],
+    [arch=arm64; system=macosx],
   [x86_64-*-darwin*],
     [arch=amd64; system=macosx],
   [x86_64-*-mingw32],
@@ -1010,24 +1001,23 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
+  [AS_CASE(["$arch,$CC,$system,$model"],
+    [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
+    [amd64,gcc*,solaris,*], [PACKLD_FLAGS=' -m elf_x86_64'],
+    [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
+    [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
+    [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
+    [PACKLD_FLAGS=''])
   # The string for PACKLD must be capable of being concatenated with the
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick).
-  [AS_CASE(["$arch,$CC,$system,$model"],
-    [amd64,gcc*,macosx,*], [PACKLD='ld -r -arch x86_64 -o $(EMPTY)'],
-    [amd64,gcc*,solaris,*], [PACKLD='ld -r -m elf_x86_64 -o $(EMPTY)'],
-    [power,gcc*,elf,ppc], [PACKLD='ld -r -m elf32ppclinux -o $(EMPTY)'],
-    [power,gcc*,elf,ppc64], [PACKLD='ld -r -m elf64ppc -o $(EMPTY)'],
-    [power,gcc*,elf,ppc64le], [PACKLD='ld -r -m elf64lppc -o $(EMPTY)'],
+   AS_IF([test x"$CC" = "xcl"],
     # For the Microsoft C compiler there must be no space at the end of the
     # string.
-    [*,cl,*,*], [PACKLD="link -lib -nologo $machine -out:"],
-    [PACKLD="$DIRECT_LD -r -o \$(EMPTY)"])],
+    [PACKLD="link -lib -nologo $machine -out:"],
+    [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o \$(EMPTY)"])],
   [PACKLD="$PARTIALLD -o \$(EMPTY)"])
-
-AS_IF([test $arch != "none" && $arch64 ],
-  [otherlibraries="$otherlibraries raw_spacetime_lib"])
 
 # Disable PIE at link time when ocamlopt does not produce position-independent
 # code and the system produces PIE executables by default and demands PIC
@@ -1318,6 +1308,8 @@ AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
 
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
+AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
+
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition
@@ -1567,6 +1559,13 @@ AC_CHECK_FUNC([accept4], [AC_DEFINE([HAS_ACCEPT4])])
 
 AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL])])
 
+## shmat
+AC_CHECK_HEADER([sys/shm.h],
+  [
+    AC_DEFINE([HAS_SYS_SHM_H])
+    AC_CHECK_FUNC([shmat], [AC_DEFINE([HAS_SHMAT])])
+  ])
+
 ## execvpe
 
 AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
@@ -1627,6 +1626,7 @@ AS_IF([test x"$enable_systhreads" = "xno"],
       AS_CASE([$host],
         [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
         [*-*-haiku*], [pthread_link=""],
+        [*-*-android*], [pthread_link=""],
         [pthread_link="-lpthread"])
       common_cppflags="$common_cppflags -D_REENTRANT"
       AC_MSG_NOTICE([the POSIX threads library is supported])
@@ -1641,72 +1641,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
-
-## BFD (Binary File Description) library
-
-bfd_cppflags=""
-bfd_ldflags=""
-bfd_ldlibs=""
-
-AS_IF([test x"$with_bfd" != "xno"],
-  [bfd_available=false
-  AS_CASE([$host],
-    [x86_64-*-darwin*],
-      [AS_IF([test -z "$BFD_INCLUDE_DIR"],
-        [BFD_INCLUDE_DIR="/opt/local/include"])
-      AS_IF([test -z "$BFD_LIB_DIR"],
-        [BFD_LIB_DIR="/opt/local/lib"])],
-    [*-*-openbsd*|*-*-freebsd*],
-      [AS_IF([test -z "$BFD_INCLUDE_DIR"],
-        [BFD_INCLUDE_DIR="/usr/local/include"])
-      AS_IF([test -z "$BFD_LIB_DIR"],
-        [BFD_LIB_DIR="/usr/local/lib"])])
-  AS_IF([test -n "$BFD_INCLUDE_DIR"],
-    [bfd_cppflags="-I$BFD_INCLUDE_DIR"])
-  AS_IF([test -n "$BFD_LIB_DIR"],
-    [bfd_ldflags="-L$BFD_LIB_DIR"])
-  SAVED_CPPFLAGS="$CPPFLAGS"
-  SAVED_LDFLAGS="$LDFLAGS"
-  CPPFLAGS="$CPPFLAGS $bfd_cppflags"
-  LDFLAGS="$LDFLAGS $bfd_ldflags"
-  AC_CHECK_HEADER([bfd.h],
-    [bfd_ldlibs=""
-    AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd"])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS"], [], [$DLLIBS])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS -liberty"], [], [$DLLIBS -liberty])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"], [], [$DLLIBS -liberty -lz])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [unset ac_cv_lib_bfd_bfd_openr
-      AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"], [],
-        [$DLLIBS -liberty -lz -lintl])])
-    AS_IF([test -n "$bfd_ldlibs"],
-      [bfd_available=true
-      AC_DEFINE([HAS_LIBBFD])])])
-  AS_IF([! $bfd_available],
-    [AS_IF([test x"$with_bfd" = "xyes"],
-      [AC_MSG_ERROR([BFD library support requested but not available])],
-      [bfd_cppflags=""
-      bfd_ldflags=""
-      AC_MSG_NOTICE(m4_normalize([
-        BFD library not found, 'ocamlobjinfo' will be unable to display
-        info on .cmxs files.
-      ]))])])
-  LDFLAGS="$SAVED_LDFLAGS"
-  CPP_FLAGS="$SAVED_CPPFLAGS"],
-  [AC_MSG_NOTICE(m4_normalize([
-    Support for the BFD (Binary File Description) library disabled,
-    'ocamlobjinfo' will be unable to display info on .cmxs files.
-    ]))])
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false
@@ -1734,94 +1668,28 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
 ## No naked pointers
 
 AS_IF([test x"$enable_naked_pointers" = "xno" ],
-  [AC_DEFINE([NO_NAKED_POINTERS])])
+  [naked_pointers=false
+   AC_DEFINE([NO_NAKED_POINTERS])],
+  [naked_pointers=true])
+
+AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
+  [AS_IF([test x"$enable_naked_pointers" = "xno" ],
+         [AC_MSG_ERROR(m4_normalize([
+               --enable-naked-pointers-checker and --disable-naked-pointers
+               are incompatible]))])
+   AS_CASE(["$arch","$system"],
+    [amd64,linux|amd64,macosx \
+    |amd64,openbsd|amd64,win64 \
+    |amd64,freebsd],
+      [naked_pointers_checker=true
+      AC_DEFINE([NAKED_POINTERS_CHECKER])],
+    [*],
+      [AC_MSG_ERROR([naked pointers checker not supported on this platform])]
+  )],
+  [naked_pointers_checker=false])
 
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES
-
-# Spacetime profiling, including libunwind detection
-
-# The number of bits used for profiling information is configurable here.
-# The more bits used for profiling, the smaller will be Max_wosize.
-# Note that PROFINFO_WIDTH must still be defined even if not configuring
-# for Spacetime (see comment in runtime/caml/mlvalues.h on [Profinfo_hd]).
-AC_MSG_CHECKING([whether to build spacetime])
-AS_IF([test x"$enable_spacetime" != "xyes" ],
-  [spacetime=false
-  call_counts=true # as in original script but should probably be false
-  libunwind_available=false
-  libunwind_include_flags=
-  libunwind_link_flags=
-  AC_MSG_RESULT([no])],
-  [AS_CASE([$arch],
-    [amd64], [spacetime_supported=true],
-    [spacetime_supported=false])
-  AS_IF([$spacetime_supported],
-    [AC_MSG_RESULT([yes])
-    spacetime=true
-    profinfo=true
-    profinfo_width=26
-    AC_DEFINE([WITH_SPACETIME])
-    AS_IF([test x"$enable_call_counts" != "xno"],
-      [call_counts=true
-      AC_DEFINE([ENABLE_CALL_COUNTS])],
-      [call_counts=false])
-    AC_MSG_CHECKING([whether to use libunwind])
-    AS_IF([test x"$with_libunwind" = "xno"],
-      [AC_MSG_RESULT([disabled])],
-      [AS_IF([test x"$with_libunwind" = "x"],
-        [libunwind_requested=false
-        AC_MSG_RESULT([if available])],
-        [libunwind_requested=true
-        AC_MSG_RESULT([requested])
-        AS_IF([test x"$with_libunwind" != "xyes"],
-          [AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" = "x"],
-            [LIBUNWIND_INCLUDE_DIR="$with_libunwind/include"])
-          AS_IF([test x"$LIBUNWIND_LIB_DIR" = "x"],
-            [LIBUNWIND_LIB_DIR="$with_libunwind/lib"])
-          ])
-        ])
-      AS_IF([test "$system" = "macosx"],
-        [AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" != x -o \
-                     x"$LIBUNWIND_LIB_DIR" != x],
-          [AC_MSG_WARN(m4_normalize([
-            On MacOSX, specifying paths for libunwind headers or libraries
-            is strongly discouraged.  It is recommended to rely on the
-            defaults provided by the configure script
-          ]))])])
-
-      AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" != x],
-        [libunwind_include_flags="-I$LIBUNWIND_INCLUDE_DIR"],
-        [libunwind_include_flags=""])
-
-      AS_CASE(["$system"],
-        ["macosx"], [libunwind_link_flags="-framework System"],
-        [libunwind_link_flags="-lunwind -lunwind-x86_64"])
-
-      AS_IF([test x"$LIBUNWIND_LIB_DIR" != x],
-        [libunwind_link_flags="-L$LIBUNWIND_LIB_DIR $libunwind_link_flags"])
-
-      OCAML_CHECK_LIBUNWIND
-
-      AS_IF([$libunwind_requested && ! $libunwind_available],
-        [AC_MSG_ERROR([libunwind was requested but can not be found])])
-
-        # We need unwinding information at runtime, but since we use
-        # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
-        # the OS X linker will chuck away the DWARF-like (.eh_frame)
-        # information.  (Older versions of OS X don't provide this.)
-
-        AS_IF([$libunwind_available && test x"$system" = "xmacosx"],
-          [extra_flags="-Wl,-keep_dwarf_unwind"
-          mkexe="$mkexe $extra_flags"
-          mksharedlib="$mksharedlib $extra_flags"])])
-    ],
-    [AS_IF([test x"$enable_spacetime" = "xyes"],
-      [AC_MSG_RESULT([requested but not supported])
-      AC_MSG_ERROR([exiting])],
-      [AC_MSG_RESULT([no])])
-    ])
-  ])
 
 AC_DEFINE_UNQUOTED([PROFINFO_WIDTH], [$profinfo_width])
 AS_IF([$profinfo], [AC_DEFINE([WITH_PROFINFO])])
@@ -1903,8 +1771,8 @@ AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$common_cflags $sharedlib_cflags"
-ocamlc_cppflags="$common_cppflags"
+ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
+ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
 AS_CASE([$host],

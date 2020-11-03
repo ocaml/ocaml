@@ -679,7 +679,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
                            loc),
                      Lprim(Praise Raise_reraise, [raise_arg], loc)))
   | Lazy_force, [arg] ->
-      Matching.inline_lazy_force arg Loc_unknown
+      Matching.inline_lazy_force arg loc
   | Loc kind, [] ->
       lambda_of_loc kind loc
   | Loc kind, [arg] ->

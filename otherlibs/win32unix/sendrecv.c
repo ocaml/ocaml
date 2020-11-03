@@ -67,7 +67,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
   Begin_roots2 (buff, adr);
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
-    addr_len = sizeof(sock_addr);
+    addr_len = sizeof(addr);
     caml_enter_blocking_section();
     ret = recvfrom(s, iobuf, (int) numbytes, flg, &addr.s_gen, &addr_len);
     if (ret == -1) err = WSAGetLastError();

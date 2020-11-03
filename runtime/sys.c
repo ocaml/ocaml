@@ -130,6 +130,7 @@ CAMLprim value caml_sys_exit(value retcode_v)
     intnat heap_chunks = Caml_state->stat_heap_chunks;
     intnat top_heap_words = Caml_state->stat_top_heap_wsz;
     intnat cpct = Caml_state->stat_compactions;
+    intnat forcmajcoll = Caml_state->stat_forced_major_collections;
     caml_gc_message(0x400, "allocated_words: %.0f\n", allocated_words);
     caml_gc_message(0x400, "minor_words: %.0f\n", minwords);
     caml_gc_message(0x400, "promoted_words: %.0f\n", prowords);
@@ -146,6 +147,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
                     top_heap_words);
     caml_gc_message(0x400, "compactions: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                     cpct);
+    caml_gc_message(0x400,
+                    "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    forcmajcoll);
   }
 
 #ifndef NATIVE_CODE
@@ -315,6 +319,36 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value caml_sys_mkdir(value path, value perm)
+{
+  CAMLparam2(path, perm);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = mkdir_os(p, Int_val(perm));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_sys_rmdir(value path)
+{
+  CAMLparam1(path);
+  char_os * p;
+  int ret;
+  caml_sys_check_path(path);
+  p = caml_stat_strdup_to_os(String_val(path));
+  caml_enter_blocking_section();
+  ret = rmdir_os(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) caml_sys_error(path);
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value caml_sys_getcwd(value unit)
 {
   char_os buff[4096];
@@ -427,6 +461,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
 
+#ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
@@ -449,6 +484,12 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = 255;
   CAMLreturn (Val_int(retcode));
 }
+#else
+CAMLprim value caml_sys_system_command(value command)
+{
+  caml_invalid_argument("Sys.command not implemented");
+}
+#endif
 
 double caml_sys_time_include_children_unboxed(value include_children)
 {
@@ -656,4 +697,13 @@ CAMLprim value caml_sys_isatty(value chan)
 #endif
 
   return ret;
+}
+
+CAMLprim value caml_sys_const_naked_pointers_checked(value unit)
+{
+#ifdef NAKED_POINTERS_CHECKER
+  return Val_true;
+#else
+  return Val_false;
+#endif
 }

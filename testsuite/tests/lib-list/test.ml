@@ -1,11 +1,19 @@
 (* TEST
 *)
 
+let is_even x = (x mod 2 = 0)
+
 let string_of_even_opt x =
-  if x mod 2 = 0 then
+  if is_even x then
     Some (string_of_int x)
   else
     None
+
+let string_of_even_or_int x =
+  if is_even x then
+    Either.Left (string_of_int x)
+  else
+    Either.Right x
 
 (* Standard test case *)
 let () =
@@ -27,6 +35,24 @@ let () =
   assert (not (List.exists (fun a -> a > 9) l));
   assert (List.exists (fun _ -> true) l);
 
+  assert (List.equal (=) [1; 2; 3] [1; 2; 3]);
+  assert (not (List.equal (=) [1; 2; 3] [1; 2]));
+  assert (not (List.equal (=) [1; 2; 3] [1; 3; 2]));
+
+  (* The current implementation of List.equal calls the comparison
+     function even for different-size lists. This is not part of the
+     specification, so it would be valid to change this behavior, but
+     we don't want to change it without noticing so here is a test for
+     it. *)
+  assert (let c = ref 0 in
+          not (List.equal (fun _ _ -> incr c; true) [1; 2] [1; 2; 3])
+          && !c = 2);
+
+  assert (List.compare compare [1; 2; 3] [1; 2; 3] = 0);
+  assert (List.compare compare [1; 2; 3] [1; 2] > 0);
+  assert (List.compare compare [1; 2; 3] [1; 3; 2] < 0);
+  assert (List.compare compare [3] [2; 1] > 0);
+
   begin
     let f ~limit a = if a >= limit then Some (a, limit) else None in
     assert (List.find_map (f ~limit:3) [] = None);
@@ -35,6 +61,11 @@ let () =
   end;
 
   assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
+
+  assert (List.partition is_even [1; 2; 3; 4; 5]
+          = ([2; 4], [1; 3; 5]));
+  assert (List.partition_map string_of_even_or_int [1; 2; 3; 4; 5]
+          = (["2"; "4"], [1; 3; 5]));
 
   assert (List.compare_lengths [] [] = 0);
   assert (List.compare_lengths [1;2] ['a';'b'] = 0);

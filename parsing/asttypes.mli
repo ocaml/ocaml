@@ -60,4 +60,8 @@ type 'a loc = 'a Location.loc = {
 type variance =
   | Covariant
   | Contravariant
-  | Invariant
+  | NoVariance
+
+type injectivity =
+  | Injective
+  | NoInjectivity

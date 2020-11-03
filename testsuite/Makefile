@@ -16,8 +16,6 @@
 .NOTPARALLEL:
 
 BASEDIR := $(shell pwd)
-NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
-	  && echo --no-print-directory`
 
 FIND=find
 TOPDIR := ..
@@ -54,14 +52,18 @@ else # Windows
   endif
 endif
 
-ifeq "$(FLEXLINK_ENV)" ""
-  ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+ifeq "$(ocamltest_program)" ""
+  ocamltest = $(error ocamltest not found in $(ocamltest_directory))
 else
-  MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
-                                   $(FLEXLINK_FLAGS)
+  ifeq "$(FLEXLINK_ENV)" ""
+    ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+  else
+    MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
+                                     $(FLEXLINK_FLAGS)
 
-  ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
-                               $(ocamltest_program)
+    ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
+                                 $(ocamltest_program)
+  endif
 endif
 
 # PROMOTE is only meant to be used internally in recursive calls;
@@ -75,7 +77,7 @@ endif
 
 # KEEP_TEST_DIR_ON_SUCCESS should be set by the user (to a non-empty value)
 # if they want to pass the -keep-test-dir-on-success option to ocamltest,
-# to preserve test data of succesful tests.
+# to preserve test data of successful tests.
 KEEP_TEST_DIR_ON_SUCCESS ?=
 ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
   OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG :=
@@ -95,8 +97,9 @@ default:
 	@echo "  parallel        launch all tests using GNU parallel"
 	@echo "  parallel-foo    launch all tests beginning with foo using \
 	GNU parallel"
-	@echo "  list FILE=f     launch the tests listed in f (one per line)"
+	@echo "  one TEST=f      launch just this single test"
 	@echo "  one DIR=p       launch the tests located in path p"
+	@echo "  one LIST=f      launch the tests listed in f (one per line)"
 	@echo "  promote DIR=p   promote the reference files for the tests in p"
 	@echo "  lib             build library modules"
 	@echo "  tools           build test tools"
@@ -110,14 +113,14 @@ default:
 .PHONY: all
 all:
 	@rm -f $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) new-without-report
-	@$(MAKE) $(NO_PRINT) report
+	@$(MAKE) --no-print-directory new-without-report
+	@$(MAKE) --no-print-directory report
 
 .PHONY: new-without-report
 new-without-report: lib tools
 	@rm -f $(failstamp)
 	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -find-test-dirs tests | while read dir; do \
+	$(ocamltest) -find-test-dirs tests | while IFS='' read -r dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV=""; \
@@ -136,9 +139,9 @@ check-failstamp:
 .PHONY: all-%
 all-%: lib tools
 	@for dir in tests/$**; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
+	  $(MAKE) --no-print-directory exec-one DIR=$$dir; \
 	done 2>&1 | tee $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 # The targets below use GNU parallel to parallelize tests
@@ -177,9 +180,9 @@ parallel-%: lib tools
 	     exit 1)
 	@for dir in tests/$**; do echo $$dir; done \
 	 | parallel --gnu --no-notice --keep-order \
-	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
+	     "$(MAKE) --no-print-directory exec-one DIR={} 2>&1" \
 	 | tee $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 .PHONY: parallel
@@ -188,27 +191,38 @@ parallel: parallel-*
 .PHONY: list
 list: lib tools
 	@if [ -z "$(FILE)" ]; \
-	  then echo "No value set for variable 'FILE'."; \
-	  exit 1; \
-	fi
-	@while read LINE; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
-	done <$(FILE) 2>&1 | tee $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
-	@$(MAKE) report
+    then echo "No value set for variable 'FILE'."; \
+    exit 1; \
+  fi
+	@$(MAKE) --no-print-directory one LIST="$(FILE)"
 
 .PHONY: one
 one: lib tools
-	@if [ -z "$(DIR)" ]; then \
-	  echo "No value set for variable 'DIR'."; \
-	  exit 1; \
-	fi
-	@if [ ! -d $(DIR) ]; then \
-	  echo "Directory '$(DIR)' does not exist."; \
-	  exit 1; \
-	fi
-	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
+	@case "$(words $(DIR) $(LIST) $(TEST))" in \
+   0) echo 'No value set for variable DIR, LIST or TEST'>&2; exit 1;; \
+   1) exit 0;; \
+   *) echo 'Please specify just one of DIR, LIST or TEST'>&2; exit 1;; \
+   esac
+	@if [ -n '$(DIR)' ] && [ ! -d '$(DIR)' ]; then \
+    echo "Directory '$(DIR)' does not exist."; exit 1; \
+  fi
+	@if [ -n '$(TEST)' ] && [ ! -e '$(TEST)' ]; then \
+    echo "Test '$(TEST)' does not exist."; exit 1; \
+  fi
+	@if [ -n '$(LIST)' ] && [ ! -e '$(LIST)' ]; then \
+    echo "File '$(LIST)' does not exist."; exit 1; \
+  fi
+	@if [ -n '$(DIR)' ] ; then \
+    $(MAKE) --no-print-directory exec-one DIR=$(DIR); fi
+	@if [ -n '$(TEST)' ] ; then \
+    TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST); fi
 	@$(MAKE) check-failstamp
+	@if [ -n '$(LIST)' ] ; then \
+     while IFS='' read -r LINE; do \
+       $(MAKE) --no-print-directory exec-one DIR=$$LINE ; \
+     done < $$LIST 2>&1 | tee $(TESTLOG) ; \
+     $(MAKE) --no-print-directory retries ; \
+     $(MAKE) report ; fi
 
 .PHONY: exec-one
 exec-one:
@@ -229,7 +243,7 @@ exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
 	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -list-tests $(DIR) | while read testfile; do \
+	$(ocamltest) -list-tests $(DIR) | while IFS='' read -r testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
@@ -287,21 +301,20 @@ report:
 
 .PHONY: retry-list
 retry-list:
-	@while read LINE; do \
+	@while IFS='' read -r LINE; do \
 	  if [ -n "$$LINE" ] ; then \
 	    echo re-ran $$LINE>> $(TESTLOG); \
-	    $(MAKE) $(NO_PRINT) clean-one DIR=$$LINE; \
-	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a $(TESTLOG) ; \
+	    $(MAKE) --no-print-directory clean-one DIR=$$LINE; \
+	    $(MAKE) --no-print-directory exec-one DIR=$$LINE 2>&1 \
+	      | tee -a $(TESTLOG) ; \
 	  fi \
 	done <_retries;
-	@$(MAKE) $(NO_PRINT) retries
+	@$(MAKE) --no-print-directory retries
 
 .PHONY: retries
 retries:
 	@$(AWK) -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
 	     -f ./summarize.awk < $(TESTLOG) > _retries
-	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
+	@test `cat _retries | wc -l` -eq 0 || \
+	  $(MAKE) --no-print-directory retry-list
 	@rm -f _retries
-
-.PHONY: empty
-empty:

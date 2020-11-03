@@ -20,6 +20,15 @@ mutex.cmo : \
 mutex.cmx : \
     mutex.cmi
 mutex.cmi :
+semaphore.cmo : \
+    mutex.cmi \
+    condition.cmi \
+    semaphore.cmi
+semaphore.cmx : \
+    mutex.cmx \
+    condition.cmx \
+    semaphore.cmi
+semaphore.cmi :
 thread.cmo : \
     thread.cmi
 thread.cmx : \

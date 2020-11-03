@@ -1,0 +1,245 @@
+OCaml 4.10.0 (21 February 2020)
+-------------------------------
+
+- New best-fit allocator for the major heap
+- Preliminary runtime work for OCaml multicore
+- Immutable strings are now enforced at configuration time
+- User-defined indexing operators for multidimensional arrays
+- Coming soon: statmemprof, a new statistical memory profiler.
+- The external API will be released next version.
+- Various improvements to the manual
+- More precise exhaustiveness check for GADTs
+- Many bug fixes
+
+
+OCaml 4.09.1 (18 March 2020)
+----------------------------
+
+Bug fixes.
+
+OCaml 4.09.0 (18 September 2019)
+--------------------------------
+
+- New optimisations, in particular for affine functions in matches,
+  for instance:
+
+     type t = A | B | C
+     let affine = function
+       | A -> 4
+       | B -> 3
+       | C -> 2
+
+- The `graphics` library was moved out of the compiler distribution.
+- The `vmthread` library was removed.
+- Support for compiler plugins was removed.
+- Many bug fixes.
+
+OCaml 4.08.1 (5 August 2019)
+----------------------------
+
+Bug fixes.
+
+OCaml 4.08.0 (14 June 2019)
+---------------------------
+
+- Binding operators (let*, let+, and*, etc). They can be used to
+  streamline monadic code.
+
+- `open` now applies to arbitrary module expression in structures and
+  to applicative paths in signatures.
+
+- A new notion of (user-defined) "alerts" generalizes the deprecated
+  warning.
+
+- New modules in the standard library: Fun, Bool, Int, Option, Result.
+
+- A significant number of new functions in Float, including FMA
+  support, and a new Float.Array submodule.
+
+- Source highlighting for errors and warnings in batch mode.
+
+- Many error messages were improved.
+
+- Improved AFL instrumentation for objects and lazy values.
+
+
+OCaml 4.07.1 (4 October 2018)
+-----------------------------
+
+This release consists mostly of bug fixes. The most salient bugs were
+
+- MPR#7820, GPR#1897: a bug in Array.of_seq (new in 4.07)
+  (Thierry Martinez, review by Nicolás Ojeda Bär)
+
+- MPR#7815, GPR#1896: crash in the major GC with the first-fit policy
+  (Stephen Dolan and Damien Doligez, report by Joris Giovannangeli)
+
+- MPR#7821, GPR#1908: the compiler loads more cmi, which breaks some builds
+  (Jérémie Dimino, review by Gabriel Scherer)
+
+- MPR#7833, GPR#1946: typechecking failure (regression) on large GADT matchings
+  (Thomas Refis, report by Jerome Simeon, review by Jacques Garrigue)
+
+See the detailed list of fixes at (Changes#4.07.1).
+
+
+OCaml 4.07.0 (10 July 2018):
+----------------------------
+
+Some highlights of this release are:
+
+-   The way the standard library modules are organized internally has
+    changed (GPR#1010, by Jérémie Dimino):
+
+    1. the `List` module (for example) is now named `Stdlib__list`
+    2. a new Stdlib module contains a series of aliases
+    such as `module List = Stdlib__list`
+    3. the `Stdlib` module is implicitly opened when type-checking OCaml
+    programs (as `Pervasives` previously was), so that `Stdlib.List` can be
+    accessed as just `List`, as before.
+
+    This should be invisible to most users, although it is possible that
+    some tools show the `Stdlib.` or `Stdlib__` prefixes in
+    messages. (You might want to report these situations as usability
+    bugs.) The change prevents standard library modules from conflicting
+    with end-user filenames (please avoid `stdlib.ml` and the
+    `Stdlib__` prefix); we may introduce new standard library modules in
+    the future with less fear of breaking user code. In particular,
+    `Float` (GPR#1638, by Nicolás Ojeda Bär) and `Seq` (GPR#1002, by
+    Simon Cruanes) modules have now been added to the standard library.
+
+-   The error messages caused by various typing errors have been improved
+    to be easier to understand, in particular for beginners.
+    (GPR#1505, GPR#1510, by Arthur Charguéreau and Armaël Guéneau)
+
+    For example,
+
+        # while 1 do () done;;
+                ^
+        Error: This expression has type int but
+               an expression was expected of type bool
+
+    now adds the extra explanation
+
+        because it is in the condition of a while-loop
+
+-   Effort has been made to reduce the compilation time of flambda
+    programs, and the size of the produced `.cmx` files when using
+    the -Oclassic optimisation level.
+    (GPR#1401, GPR#1455, GPR#1627, GPR#1665, by Pierre Chambart, Xavier
+    Clerc, Fuyong Quah, and Leo White)
+
+-   The HTML manual has benefited from various style improvements
+    and should look visually nicer than previous editions.
+    (GPR#1741, GPR#1757, GPR#1767 by Charles Chamberlain and steinuil)
+
+    The new version of the manual can be consulted at
+    <http://caml.inria.fr/pub/docs/manual-ocaml-4.07/>; see the
+    previous version for comparison at
+    <http://caml.inria.fr/pub/docs/manual-ocaml-4.06/>.
+
+-   Since 4.01, it is possible to select a variant constructor or
+    record field from a sub-module that is not opened in the current
+    scope, if type information is available at the point of use. This
+    now also works for GADT constructors.
+    (GPR#1648, by Thomas Refis and Leo White)
+
+-   The GC should handle the accumulation of custom blocks in the minor
+    heap better; this solves some memory-usage issues observed by code
+    which allocates a lot of small custom blocks, typically small bigarrays
+    (GPR#1476, by Alain Frsich)
+
+See also the detailed list of changes: (Changes#4.07.0).
+
+
+OCaml 4.06.1 (16 Feb 2018):
+---------------------------
+
+This release consists mostly of bug fixes. The most salient bugs were
+
+-   An incorrect compilation of pattern-matching in presence of
+    extensible variant constructors (such as exceptions), that had been
+    present for a long time.
+    (GPR#1459, GPR#1538, by Luc Maranget, Thomas Refis and Gabriel Scherer)
+
+-   An optimization of `not (x = y)` into `x <> y`, introduced in
+    4.06.0, is incorrect on floating-point numbers in the `nan`
+    case. (GPR#1470, by Leo White)
+
+See the detailed list of fixes at (Changes#4.06.1).
+
+
+OCaml 4.06.0 (3 Nov 2017):
+--------------------------
+
+-   Strings (type `string`) are now immutable by default. In-place
+    modification must use the type `bytes` of byte sequences, which is
+    distinct from `string`.  This corresponds to the `-safe-string`
+    compile-time option, which was introduced in OCaml 4.02 in 2014, and
+    which is now the default.
+    (GPR#1252, by Damien Doligez)
+
+-   Object types can now extend a previously-defined object type,
+    as in `<t; a: int>`.
+    (GPR#1118, by Runhang Li)
+
+-   Destructive substitution over module signatures can now express more
+    substitutions, such as `S with type M.t := type-expr` and `S with
+    module M.N := path`.
+    (GPR#792, by Valentin Gatien-Baron)
+
+-   Users can now define operators that look like array indexing,
+    e.g. `let ( .%() ) = List.nth in [0; 1; 2].%(1)`
+    (GPR#1064, GPR#1392, by Florian Angeletti)
+
+-   New escape `\u{XXXX}` in string literals, denoting the UTF-8
+    encoding of the Unicode code point `XXXX`.
+    (GPR#1232, by Daniel Bünzli)
+
+-   Full Unicode support was added to the Windows runtime system.  In
+    particular, file names can now contain Unicode characters.
+    (GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1369, GPR#1398,
+    GPR#1446, GPR#1448, by ygrek and Nicolás Ojeda Bär)
+
+-   An alternate register allocator based on linear scan can be selected
+    with `ocamlopt -linscan`.  It reduces compilation time compared with
+    the default register allocator.
+    (GPR#375, Marcell Fischbach and Benedikt Meurer)
+
+-   The Num library for arbitrary-precision integer and rational
+    arithmetic is no longer part of the core distribution and can be
+    found as a separate OPAM package.
+
+See the detailed list of changes: (Changes#4.06.0).
+
+
+OCaml 4.05.0 (13 Jul 2017):
+---------------------------
+
+Some highlights include:
+
+-   Instrumentation support for fuzzing with afl-fuzz.
+    (GPR#504, by Stephen Dolan)
+
+-   The compilers now accept new `-args/-args0 <file>` command-line
+    parameters to provide extra command-line arguments in a file.  User
+    programs may implement similar options using the new `Expand`
+    constructor of the `Arg` module.
+    (GPR#748, GPR#843, GPR#864, by Bernhard Schommer)
+
+-   Many functions of the standard library that raise an exception now
+    have an option-returning variable suffixed by `_opt` Typical
+    examples of the new functions include:
+
+        int_of_string_opt: string -> int option
+        List.nth_opt: 'a list -> int -> 'a option
+        Hashtbl.find_opt : ('a, 'b) t -> 'a -> 'b option
+
+    (GPR#885, by Alain Frisch)
+
+-   The security of the runtime system is now hardened by using `secure_getenv`
+    to access environment variables whenever its possible, to avoid unplanned
+    privilege-escalation when running setuid binaries.
+    (GPR#1213, by Damien Doligez)
+
+See the detailed list of changes: (Changes#4.05.0).

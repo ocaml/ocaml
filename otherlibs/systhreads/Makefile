@@ -18,6 +18,10 @@ ROOTDIR=../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
+ifneq "$(CCOMPTYPE)" "msvc"
+OC_CFLAGS += -g
+endif
+
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
@@ -32,8 +36,11 @@ LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 CAMLC=$(BEST_OCAMLC) $(LIBS)
 CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
 
-MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS += -O3
+endif
 
 LIBNAME=threads
 
@@ -45,12 +52,15 @@ LIBNAME=threads
 BYTECODE_C_OBJS=st_stubs.b.$(O)
 NATIVECODE_C_OBJS=st_stubs.n.$(O)
 
-THREADS_SOURCES = thread.ml mutex.ml condition.ml event.ml threadUnix.ml
+THREADS_SOURCES = thread.ml mutex.ml condition.ml event.ml threadUnix.ml \
+  semaphore.ml
 
 THREADS_BCOBJS = $(THREADS_SOURCES:.ml=.cmo)
 THREADS_NCOBJS = $(THREADS_SOURCES:.ml=.cmx)
 
-MLIFILES=thread.mli mutex.mli condition.mli event.mli threadUnix.mli
+MLIFILES=thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
+  semaphore.mli
+
 CMIFILES=$(MLIFILES:.mli=.cmi)
 
 all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
@@ -96,7 +106,8 @@ st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
 
 partialclean:
 	rm -f *.cm*
@@ -109,8 +120,7 @@ INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
 install:
 	if test -f dllthreads$(EXT_DLL); then \
-	  $(INSTALL_PROG) \
-	    dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/dllthreads$(EXT_DLL)"; \
+	  $(INSTALL_PROG) dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
@@ -159,7 +169,7 @@ endif
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
-	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
 endef
 
 $(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))

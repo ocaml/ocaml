@@ -171,11 +171,14 @@ and[@foo] y = x
 type%foo[@foo] t = int
 and[@foo] t = int
 type%foo[@foo] t += T
+type t += A = M.A[@a]
+type t += B = M.A[@b] | C = M.A[@c][@@t]
 
 class%foo[@foo] x = x
 class type%foo[@foo] x = x
 external%foo[@foo] x : _  = ""
 exception%foo[@foo] X
+exception A = M.A[@a]
 
 module%foo[@foo] M = M
 module%foo[@foo] rec M : S = M
@@ -7372,3 +7375,17 @@ let f = function
 
 let () =
   f (fun (type t) -> x)
+
+(* #9778 *)
+
+type t = unit
+
+let rec equal : 'a. ('a -> 'a -> bool) -> 'a t -> 'a t -> bool =
+ (fun poly_a (_ : unit) (_ : unit) -> true) [@ocaml.warning "-A"]
+ [@@ocaml.warning "-39"]
+
+(* Issue #9548, PR #9591 *)
+
+type u = [ `A ] ;;
+type v = [ u | `B ] ;;
+let f = fun (x : [ | u ]) -> x ;;

@@ -18,13 +18,6 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-ifeq ($(SYSTEM),unix)
-override define shellquote
-$i := $$(subst ",\",$$(subst $$$$,\$$$$,$$(subst `,\`,$i)))#")#
-endef
-$(foreach i,BINDIR LIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
-endif
-
 DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
@@ -46,10 +39,14 @@ define byte_and_opt_
 # This check is defensive programming
 $(and $(filter-out 1,$(words $1)),$(error \
    cannot build file with whitespace in name))
-$1: $3 $2
+$(call PROGRAM_SYNONYM, $1)
+
+$1$(EXE): $3 $2
 	$$(CAMLC) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ $2
 
-$1.opt: $3 $$(call byte2native,$2)
+$(call PROGRAM_SYNONYM, $1.opt)
+
+$1.opt$(EXE): $3 $$(call byte2native,$2)
 	$$(CAMLOPT_CMD) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ \
 	                $$(call byte2native,$2)
 
@@ -61,7 +58,7 @@ ifeq '$(filter $(installed_tools),$1)' '$1'
 install_files += $1
 endif
 clean::
-	rm -f -- $1 $1.opt
+	rm -f -- $1 $1.opt $1.exe $1.opt.exe
 
 endef
 
@@ -73,7 +70,7 @@ endef
 
 CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
-CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
                        middle_end middle_end/closure middle_end/flambda \
@@ -93,17 +90,13 @@ CAMLDEP_OBJ=ocamldep.cmo
 CAMLDEP_IMPORTS= \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma
-ocamldep: LINKFLAGS += -compat-32
+ocamldep$(EXE): LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
-ocamldep: depend.cmi
-ocamldep.opt: depend.cmi
+ocamldep$(EXE): depend.cmi
+ocamldep.opt$(EXE): depend.cmi
 
-# ocamldep is precious: sometimes we are stuck in the middle of a
-# bootstrap and we need to remake the dependencies
 clean::
-	if test -f ocamldep; then mv -f ocamldep ocamldep.bak; else :; fi
-	rm -f ocamldep.opt
-
+	rm -f ocamldep ocamldep.exe ocamldep.opt ocamldep.opt.exe
 
 # The profiler
 
@@ -120,7 +113,7 @@ $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
 ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-               clflags.cmo \
+               clflags.cmo local_store.cmo \
                terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
                main_args.cmo
 
@@ -168,7 +161,7 @@ clean::
 OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
        identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-       load_path.cmo profile.cmo ccomp.cmo
+       local_store.cmo load_path.cmo profile.cmo ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
@@ -186,60 +179,56 @@ install::
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	for i in $(install_files); \
 	do \
-	  $(INSTALL_PROG) "$$i" "$(INSTALL_BINDIR)/$$i.byte$(EXE)"; \
-	  if test -f "$$i".opt; then \
-	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)" && \
-	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	  $(INSTALL_PROG) "$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)"; \
+	  if test -f "$$i".opt$(EXE); then \
+	    $(INSTALL_PROG) "$$i.opt$(EXE)" "$(INSTALL_BINDIR)" && \
+	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  else \
-	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
+	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
 else
 	for i in $(install_files); \
 	do \
-	  if test -f "$$i".opt; then \
-	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)"; \
-	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	  if test -f "$$i".opt$(EXE); then \
+	    $(INSTALL_PROG) "$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
+	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
 endif
 
 # The preprocessor for asm generators
 
-CVT_EMIT=cvt_emit.cmo
+cvt_emit := cvt_emit$(EXE)
 
-cvt_emit: $(CVT_EMIT)
-	$(CAMLC) $(LINKFLAGS) -o cvt_emit $(CVT_EMIT)
+$(eval $(call PROGRAM_SYNONYM,cvt_emit))
 
-# cvt_emit is precious: sometimes we are stuck in the middle of a
-# bootstrap and we need to remake the dependencies
-.PRECIOUS: cvt_emit
-clean::
-	if test -f cvt_emit; then mv -f cvt_emit cvt_emit.bak; else :; fi
+$(cvt_emit): cvt_emit.cmo
+	$(CAMLC) $(LINKFLAGS) -o $@ $^
 
 clean::
-	rm -f cvt_emit.ml
+	rm -f cvt_emit.ml cvt_emit cvt_emit.exe
 
 beforedepend:: cvt_emit.ml
 
 # Reading cmt files
 
-READ_CMT= \
+ocamlcmt_objects= \
           $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
           $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
           \
-          read_cmt.cmo
+          ocamlcmt.cmo
 
 # Reading cmt files
-$(call byte_and_opt,read_cmt,$(READ_CMT),)
+$(call byte_and_opt,ocamlcmt,$(ocamlcmt_objects),)
 
 install::
-	if test -f read_cmt.opt; then \
-	  $(INSTALL_PROG) read_cmt.opt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	if test -f ocamlcmt.opt$(EXE); then \
+	  $(INSTALL_PROG)\
+	    ocamlcmt.opt$(EXE) "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
 	else \
-	  $(INSTALL_PROG) read_cmt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	  $(INSTALL_PROG) ocamlcmt$(EXE) "$(INSTALL_BINDIR)"; \
 	fi
-
 
 # The bytecode disassembler
 
@@ -251,14 +240,18 @@ DUMPOBJ= \
 
 $(call byte_and_opt,dumpobj,$(DUMPOBJ),)
 
-make_opcodes: make_opcodes.ml
-	$(CAMLC) make_opcodes.ml -o $@
+make_opcodes := make_opcodes$(EXE)
 
-opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h make_opcodes
-	$(ROOTDIR)/runtime/ocamlrun make_opcodes -opnames < $< > $@
+$(eval $(call PROGRAM_SYNONYM,make_opcodes))
+
+$(make_opcodes): make_opcodes.ml
+	$(CAMLC) $< -o $@
+
+opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
+	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(make_opcodes) -opnames < $< > $@
 
 clean::
-	rm -f opnames.ml make_opcodes make_opcodes.ml
+	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml
 
 beforedepend:: opnames.ml
 
@@ -274,24 +267,12 @@ ifeq "$(SYSTEM)" "cygwin"
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
 endif
 
-objinfo_helper$(EXE): objinfo_helper.$(O)
-	$(CC) $(BFD_LDFLAGS) $(OC_CFLAGS) $(OUTPUTEXE)$@ $< $(BFD_LDLIBS)
-
-objinfo_helper.$(O): $(ROOTDIR)/runtime/caml/s.h
-
-objinfo_helper.$(O): \
-  OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(DEF_SYMBOL_PREFIX) $(BFD_CPPFLAGS)
-
 OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
         objinfo.cmo
 
-$(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
-
-install::
-	$(INSTALL_PROG) \
-	  objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
+$(call byte_and_opt,ocamlobjinfo,$(OBJINFO),)
 
 primreq=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
@@ -306,16 +287,12 @@ LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
 	$(ROOTDIR)/otherlibs/str/str.cmxa \
 	lintapidiff.cmx
 
-lintapidiff.opt: INCLUDES+= -I $(ROOTDIR)/otherlibs/str
-lintapidiff.opt: $(LINTAPIDIFF)
+lintapidiff.opt$(EXE): INCLUDES+= -I $(ROOTDIR)/otherlibs/str
+lintapidiff.opt$(EXE): $(LINTAPIDIFF)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(LINTAPIDIFF)
 clean::
-	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o lintapidiff.obj
-
-
-clean::
-	rm -f "objinfo_helper" "objinfo_helper.manifest"
-	rm -f "objinfo_helper.exe" "objinfo_helper.exe.manifest"
+	rm -f -- lintapidiff.opt lintapidiff.opt.exe
+	rm -f lintapidiff.cm? lintapidiff.o lintapidiff.obj
 
 # Eventlog metadata file
 
@@ -340,28 +317,31 @@ CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 
 $(call byte_and_opt,cmpbyt,$(CMPBYT),)
 
-CAMLTEX= $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
-	$(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
-	$(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
-	$(ROOTDIR)/otherlibs/str/str.cma \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cma \
-	caml_tex.ml
+caml_tex_files := \
+  $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+  $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+  $(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
+  $(ROOTDIR)/otherlibs/str/str.cma \
+  $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cma \
+  caml_tex.ml
 
 #Scan latex files, and run ocaml code examples
 
-caml-tex: INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
-caml-tex: $(CAMLTEX)
-	$(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+caml_tex := caml-tex$(EXE)
+
+$(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
+$(caml_tex): $(caml_tex_files)
+	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(ROOTDIR)/ocamlc$(EXE) -nostdlib \
 	                            -I $(ROOTDIR)/stdlib $(LINKFLAGS) -linkall \
-	                            -o $@ -no-alias-deps $(CAMLTEX)
+	                            -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage
 ifneq "$(WITH_CAMLTEX)" ""
-opt.opt:caml-tex
+opt.opt: $(caml_tex)
 endif
 clean::
-	rm -f -- caml-tex caml_tex.cm?
+	rm -f -- caml-tex caml-tex.exe caml_tex.cm?
 
 # Common stuff
 

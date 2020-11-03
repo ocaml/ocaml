@@ -58,13 +58,27 @@ let pseudoregs_for_operation op arg res =
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
+let is_immediate n = n <= 0x7FFF_FFFF && n >= -0x8000_0000
+let is_immediate_logical n = n <= 0xFFFF_FFFF && n >= 0
+
 class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
-  (* -1-.... : hack so that this can be compiled on 32-bit
-     (cf 'make check_all_arches') *)
+method is_immediate_test cmp n =
+  match cmp with
+  | Isigned _ -> is_immediate n
+  | Iunsigned _ -> is_immediate_logical n
+
+method! is_immediate op n =
+  match op with
+  | Iadd | Imul -> is_immediate n
+  | Isub -> is_immediate (-n)
+  | Iand -> n <= -1 && n >= -0x1_0000_0000
+  | Ior | Ixor -> is_immediate_logical n
+  | Icomp c -> self#is_immediate_test c n
+  | Icheckbound -> is_immediate_logical n (* unsigned comparison *)
+  | _ -> super#is_immediate op n
 
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
@@ -78,14 +92,6 @@ method select_addressing _chunk exp =
 
 method! select_operation op args dbg =
   match (op, args) with
-  (* Z does not support immediate operands for multiply high *)
-    (Cmulhi, _) -> (Iintop Imulh, args)
-  (* The and, or and xor instructions have a different range of immediate
-     operands than the other instructions *)
-  | (Cand, _) ->
-      self#select_logical Iand (-1 lsl 32 (*0x1_0000_0000*)) (-1) args
-  | (Cor, _) -> self#select_logical Ior 0 (1 lsl 32 - 1 (*0xFFFF_FFFF*)) args
-  | (Cxor, _) -> self#select_logical Ixor  0 (1 lsl 32 - 1 (*0xFFFF_FFFF*)) args
   (* Recognize mult-add and mult-sub instructions *)
   | (Caddf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultaddf, [arg1; arg2; arg3])
@@ -95,15 +101,6 @@ method! select_operation op args dbg =
       (Ispecific Imultsubf, [arg1; arg2; arg3])
   | _ ->
       super#select_operation op args dbg
-
-method select_logical op lo hi = function
-    [arg; Cconst_int (n, _)] when n >= lo && n <= hi ->
-      (Iintop_imm(op, n), [arg])
-  | [Cconst_int (n, _); arg] when n >= lo && n <= hi ->
-      (Iintop_imm(op, n), [arg])
-  | args ->
-      (Iintop op, args)
-
 
 method! insert_op_debug env op dbg rs rd =
   try

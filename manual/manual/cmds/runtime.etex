@@ -98,6 +98,8 @@ The following environment variables are also consulted:
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications separated
   by commas.
+  For convenience, commas at the beginning of the variable are ignored,
+  and multiple runs of commas are interpreted as a single one.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;
@@ -110,8 +112,13 @@ The following environment variables are also consulted:
 \fi
   \begin{options}
   \item[b] (backtrace) Trigger the printing of a stack backtrace
-        when an uncaught exception aborts the program.
-        This option takes no argument.
+        when an uncaught exception aborts the program. An optional argument can
+        be provided: "b=0" turns backtrace printing off; "b=1" is equivalent to
+        "b" and turns backtrace printing on; "b=2" turns backtrace printing on
+        and forces the runtime system to load debugging information at program
+        startup time instead of at backtrace printing time. "b=2" can be used if
+        the runtime is unable to load debugging information at backtrace
+        printing time, for example if there are no file descriptors available.
   \item[p] (parser trace) Turn on debugging support for
         "ocamlyacc"-generated parsers.  When this option is on,
         the pushdown automaton that executes the parsers prints a
@@ -137,11 +144,13 @@ The following environment variables are also consulted:
   \item[o] ("space_overhead")  The major GC speed setting.
     See the Gc module documentation for details.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
-  \item[l] ("stack_limit") The limit (in words) of the stack size.
+  \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
+  relevant to the byte-code runtime, as the native code runtime uses the
+  operating system's stack.
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
-        \item[1   (= 0x001)] Start of major GC cycle.
+        \item[1   (= 0x001)] Start and end of major GC cycle.
         \item[2   (= 0x002)] Minor collection and major GC slice.
         \item[4   (= 0x004)] Growing and shrinking of the heap.
         \item[8   (= 0x008)] Resizing of stacks and memory manager tables.

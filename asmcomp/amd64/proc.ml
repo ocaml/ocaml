@@ -138,7 +138,6 @@ let rax = phys_reg 0
 let rdx = phys_reg 4
 let r10 = phys_reg 10
 let r11 = phys_reg 11
-let r13 = phys_reg 9
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
 
@@ -165,7 +164,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let float = ref first_float in
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -190,20 +189,15 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_int_args_in_regs () =
-  if Config.spacetime then 9 else 10
-
 let loc_arguments arg =
-  calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 outgoing arg
+  calling_conventions 0 9 100 109 outgoing arg
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 incoming arg
+    calling_conventions 0 9 100 109 incoming arg
   in
   loc
 let loc_results res =
   let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
-
-let loc_spacetime_node_hole = r13
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -234,7 +228,7 @@ let win64_loc_external_arguments arg =
   let reg = ref 0
   and ofs = ref 32 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !reg < 4 then begin
           loc.(i) <- phys_reg win64_int_external_arguments.(!reg);
@@ -254,15 +248,14 @@ let win64_loc_external_arguments arg =
   done;
   (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let loc_external_arguments arg =
-  let arg =
-    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
-  in
-  let loc, alignment =
-    if win64 then win64_loc_external_arguments arg
+let loc_external_arguments ty_args =
+  let arg = Cmm.machtype_of_exttype_list ty_args in
+  let loc, stack_ofs =
+    if win64
+    then win64_loc_external_arguments arg
     else unix_loc_external_arguments arg
   in
-  Array.map (fun reg -> [|reg|]) loc, alignment
+  Array.map (fun reg -> [|reg|]) loc, stack_ofs
 
 let loc_exn_bucket = rax
 
@@ -301,23 +294,14 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
-let destroyed_by_spacetime_at_alloc =
-  if Config.spacetime then
-    [| loc_spacetime_node_hole |]
-  else
-    [| |]
-
 let destroyed_at_alloc =
-  let regs =
-    if X86_proc.use_plt then
-      destroyed_by_plt_stub
-    else
-      [| r11 |]
-  in
-  Array.concat [regs; destroyed_by_spacetime_at_alloc]
+  if X86_proc.use_plt then
+    destroyed_by_plt_stub
+  else
+    [| r11 |]
 
 let destroyed_at_oper = function
-    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
+    Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; }) ->
     all_phys_regs
   | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
@@ -326,10 +310,6 @@ let destroyed_at_oper = function
   | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
-  | Iop (Iintop (Icheckbound _)) when Config.spacetime ->
-      [| loc_spacetime_node_hole |]
-  | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
-      [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | Itrywith _ -> [| r11 |]
   | _ ->
@@ -372,9 +352,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
   | Ispecific(Ilea _|Isextend32|Izextend32) -> true
   | Ispecific _ -> false
   | _ -> true

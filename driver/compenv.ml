@@ -15,6 +15,8 @@
 
 open Clflags
 
+exception Exit_with_status of int
+
 let output_prefix name =
   let oname =
     match !output_name with
@@ -27,17 +29,19 @@ let print_version_and_library compiler =
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
-  exit 0
+  raise (Exit_with_status 0)
 
 let print_version_string () =
-  print_string Config.version; print_newline(); exit 0
+  print_string Config.version; print_newline();
+  raise (Exit_with_status 0)
 
 let print_standard_library () =
-  print_string Config.standard_library; print_newline(); exit 0
+  print_string Config.standard_library; print_newline();
+  raise (Exit_with_status 0)
 
 let fatal err =
   prerr_endline err;
-  exit 2
+  raise (Exit_with_status 2)
 
 let extract_output = function
   | Some s -> s
@@ -188,6 +192,30 @@ let check_bool ppf name s =
     Printf.ksprintf (print_error ppf)
       "bad value %s for %s" s name;
     false
+
+let decode_compiler_pass ppf v ~name ~filter =
+  let module P = Clflags.Compiler_pass in
+  let passes = P.available_pass_names ~filter ~native:!native_code in
+  begin match List.find_opt (String.equal v) passes with
+  | None ->
+    Printf.ksprintf (print_error ppf)
+      "bad value %s for option \"%s\" (expected one of: %s)"
+      v name (String.concat ", " passes);
+    None
+  | Some v -> P.of_string v
+  end
+
+let set_compiler_pass ppf ~name v flag ~filter =
+  match decode_compiler_pass ppf v ~name ~filter with
+  | None -> ()
+  | Some pass ->
+    match !flag with
+    | None -> flag := Some pass
+    | Some p ->
+      if not (p = pass) then begin
+        Printf.ksprintf (print_error ppf)
+          "Please specify at most one %s <pass>." name
+      end
 
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
@@ -432,17 +460,16 @@ let read_one_param ppf position name v =
      profile_columns := if check_bool ppf name v then if_on else []
 
   | "stop-after" ->
-    let module P = Clflags.Compiler_pass in
-    let passes = P.available_pass_names ~native:!native_code in
-    begin match List.find_opt (String.equal v) passes with
-    | None ->
-        Printf.ksprintf (print_error ppf)
-          "bad value %s for option \"stop-after\" (expected one of: %s)"
-          v (String.concat ", " passes)
-    | Some v ->
-        let pass = Option.get (P.of_string v)  in
-        Clflags.stop_after := Some pass
+    set_compiler_pass ppf v ~name Clflags.stop_after ~filter:(fun _ -> true)
+
+  | "save-ir-after" ->
+    if !native_code then begin
+      let filter = Clflags.Compiler_pass.can_save_ir_after in
+      match decode_compiler_pass ppf v ~name ~filter with
+      | None -> ()
+      | Some pass -> set_save_ir_after pass true
     end
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -451,20 +478,22 @@ let read_one_param ppf position name v =
         name
     end
 
+
 let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
-    let (before, after) =
-      try
-        parse_args s
-      with SyntaxError s ->
-        print_error ppf s;
-        [],[]
-    in
-    List.iter (fun (name, v) -> read_one_param ppf position name v)
-      (match position with
-         Before_args -> before
-       | Before_compile _ | Before_link -> after)
+    if s <> "" then
+      let (before, after) =
+        try
+          parse_args s
+        with SyntaxError s ->
+          print_error ppf s;
+          [],[]
+      in
+      List.iter (fun (name, v) -> read_one_param ppf position name v)
+        (match position with
+           Before_args -> before
+         | Before_compile _ | Before_link -> after)
   with Not_found -> ()
 
 (* OCAMLPARAM passed as file *)
@@ -589,12 +618,15 @@ let c_object_of_filename name =
 
 let process_action
     (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
+  let impl ~start_from name =
+    readenv ppf (Before_compile name);
+    let opref = output_prefix name in
+    implementation ~start_from ~source_file:name ~output_prefix:opref;
+    objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
+  in
   match action with
   | ProcessImplementation name ->
-      readenv ppf (Before_compile name);
-      let opref = output_prefix name in
-      implementation ~source_file:name ~output_prefix:opref;
-      objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
+      impl ~start_from:Compiler_pass.Parsing name
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
@@ -603,7 +635,7 @@ let process_action
   | ProcessCFile name ->
       readenv ppf (Before_compile name);
       Location.input_name := name;
-      if Ccomp.compile_file name <> 0 then exit 2;
+      if Ccomp.compile_file name <> 0 then raise (Exit_with_status 2);
       ccobjs := c_object_of_filename name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs
@@ -621,7 +653,11 @@ let process_action
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
       else
-        raise(Arg.Bad("don't know what to do with " ^ name))
+        match Compiler_pass.of_input_filename name with
+        | Some start_from ->
+          Location.input_name := name;
+          impl ~start_from name
+        | None -> raise(Arg.Bad("don't know what to do with " ^ name))
 
 
 let action_of_file name =

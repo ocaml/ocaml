@@ -11,5 +11,5 @@ Line 3, characters 24-25:
 3 |  fun C k -> k (fun x -> x);;
                             ^
 Error: This expression has type $0 but an expression was expected of type
-         $1 = ($2 -> $1) -> $1
+         $1 = o
 |}];;

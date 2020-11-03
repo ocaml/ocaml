@@ -95,8 +95,6 @@ let edx = phys_reg 3
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
-let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
-
 (* Instruction selection *)
 
 let word_addressed = false
@@ -121,7 +119,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let float = ref first_float in
   let ofs = ref (-64) in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
       Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -158,7 +156,7 @@ let loc_external_arguments _arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =
   match res with
-  | [|{typ=Int};{typ=Int}|] -> [|eax; edx|]
+  | [| Int; Int |] -> [|eax; edx|]
   | _ ->
       let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
@@ -201,7 +199,7 @@ let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
   [|eax; ecx; edx|]
 
 let destroyed_at_oper = function
-    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _}) ->
+    Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; _}) ->
     all_phys_regs
   | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| eax; edx |]
@@ -232,9 +230,9 @@ let max_register_pressure = function
    registers).  *)
 
 let op_is_pure = function
-  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | _ -> true

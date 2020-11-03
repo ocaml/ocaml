@@ -13,7 +13,7 @@ To add a new module, you must:
 * Create new `.mli` and `.ml` files for the modules, obviously.
 
 * Define the module in `stdlib/stdlib.mli` and `stdlib/stdlib.ml` in
-  the section of the code commented "MODULE ALIASES". Please maintain
+  the section of the code commented "MODULE_ALIASES". Please maintain
   the same style as the rest of the code, in particular the
   alphabetical ordering and whitespace alignment of module aliases.
 

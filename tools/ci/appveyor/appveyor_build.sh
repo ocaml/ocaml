@@ -49,7 +49,6 @@ function run {
 # Takes 3 arguments
 # $1:the Windows port. Recognized values: mingw, msvc and msvc64
 # $2: the prefix to use to install
-# $3: C compiler flags to use to turn warnings into errors
 function set_configuration {
     case "$1" in
         mingw)
@@ -77,9 +76,7 @@ function set_configuration {
       ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
                   $dep $build $host --prefix="$2" --enable-ocamltest )
 
-    FILE=$(pwd | cygpath -f - -m)/Makefile.config
-    echo "Edit $FILE to turn C compiler warnings into errors"
-    sed -i -e '/^ *OC_CFLAGS *=/s/\r\?$/ '"$3"'\0/' "$FILE"
+#    FILE=$(pwd | cygpath -f - -m)/Makefile.config
 #    run "Content of $FILE" cat Makefile.config
 }
 
@@ -110,7 +107,7 @@ case "$1" in
   msvc32-only)
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32"
 
-    set_configuration msvc "$OCAMLROOT-msvc32" -WX
+    set_configuration msvc "$OCAMLROOT-msvc32"
 
     run "$MAKE world" $MAKE world
     run "$MAKE runtimeopt" $MAKE runtimeopt
@@ -163,9 +160,9 @@ case "$1" in
     fi
 
     if [[ $PORT = 'msvc64' ]] ; then
-      set_configuration msvc64 "$OCAMLROOT" -WX
+      set_configuration msvc64 "$OCAMLROOT"
     else
-      set_configuration mingw "$OCAMLROOT-mingw32" -Werror
+      set_configuration mingw "$OCAMLROOT-mingw32"
     fi
 
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"

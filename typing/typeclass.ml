@@ -1049,8 +1049,9 @@ and class_expr_aux cl_num val_env met_env scl =
           end
           pv
       in
-      let not_function = function
-          Cty_arrow _ -> false
+      let rec not_nolabel_function = function
+        | Cty_arrow(Nolabel, _, _) -> false
+        | Cty_arrow(_, _, cty) -> not_nolabel_function cty
         | _ -> true
       in
       let partial =
@@ -1061,7 +1062,7 @@ and class_expr_aux cl_num val_env met_env scl =
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in
       Ctype.end_def ();
-      if Btype.is_optional l && not_function cl.cl_type then
+      if Btype.is_optional l && not_nolabel_function cl.cl_type then
         Location.prerr_warning pat.pat_loc
           Warnings.Unerasable_optional_argument;
       rc {cl_desc = Tcl_fun (l, pat, pv, cl, partial);
@@ -1180,7 +1181,7 @@ and class_expr_aux cl_num val_env met_env scl =
          }
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
-        Typecore.type_let In_class_def val_env rec_flag sdefs None in
+        Typecore.type_let In_class_def val_env rec_flag sdefs in
       let (vals, met_env) =
         List.fold_right
           (fun (id, _id_loc, _typ) (vals, met_env) ->
@@ -1310,7 +1311,7 @@ let temp_abbrev loc env id arity uid =
        type_kind = Type_abstract;
        type_private = Public;
        type_manifest = Some ty;
-       type_variance = Misc.replicate_list Variance.full arity;
+       type_variance = Variance.unknown_signature ~arity;
        type_separability = Types.Separability.default_signature ~arity;
        type_is_newtype = false;
        type_expansion_scope = Btype.lowest_level;
@@ -1488,7 +1489,8 @@ let class_infos define_class kind
   end;
 
   (* Class and class type temporary definitions *)
-  let cty_variance = List.map (fun _ -> Variance.full) params in
+  let cty_variance =
+    Variance.unknown_signature ~arity:(List.length params) in
   let cltydef =
     {clty_params = params; clty_type = class_body typ;
      clty_variance = cty_variance;
@@ -1570,7 +1572,7 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some obj_ty;
-     type_variance = List.map (fun _ -> Variance.full) obj_params;
+     type_variance = Variance.unknown_signature ~arity;
      type_separability = Types.Separability.default_signature ~arity;
      type_is_newtype = false;
      type_expansion_scope = Btype.lowest_level;
@@ -1594,7 +1596,7 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some cl_ty;
-     type_variance = List.map (fun _ -> Variance.full) cl_params;
+     type_variance = Variance.unknown_signature ~arity;
      type_separability = Types.Separability.default_signature ~arity;
      type_is_newtype = false;
      type_expansion_scope = Btype.lowest_level;

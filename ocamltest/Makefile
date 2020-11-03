@@ -33,8 +33,16 @@ else
 endif
 
 ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+  ocamltest_unix := dummy
+  unix_name :=
+  unix_path :=
   unix := None
+  unix_include :=
 else
+  ocamltest_unix := real
+  unix_name := unix
+  unix_path := $(ROOTDIR)/otherlibs/$(UNIXLIB)
+  unix_include := -I $(unix_path) $(EMPTY)
   ifeq "$(UNIX_OR_WIN32)" "win32"
     unix := Some false
   else
@@ -43,13 +51,11 @@ else
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
-  ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
-    | sed 's/\\/\\\\\\\\/g')
-  mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
+  ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)" | cygpath -w -f -)
 else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
-  mkexe := $(MKEXE)
 endif
+mkexe := $(MKEXE)
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
@@ -99,8 +105,8 @@ endif
 
 core := \
   $(run_source) run_stubs.c \
-  ocamltest_stdlib_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
+  ocamltest_unix.mli ocamltest_unix.ml \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
   filecompare.mli filecompare.ml \
@@ -168,6 +174,7 @@ parsers := $(filter %.mly,$(sources))
 config_files := $(filter %.ml.in,$(sources))
 
 dependencies_generated_prereqs := \
+  ocamltest_unix.ml \
   $(config_files:.ml.in=.ml) \
   $(lexers:.mll=.ml) \
   $(parsers:.mly=.mli) $(parsers:.mly=.ml)
@@ -187,9 +194,9 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := $(BEST_OCAMLC) $(flags)
+ocamlc = $(BEST_OCAMLC) $(flags)
 
-ocamlopt :=  $(BEST_OCAMLOPT) $(flags)
+ocamlopt = $(BEST_OCAMLOPT) $(flags)
 
 ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
@@ -197,7 +204,7 @@ depincludes :=
 
 ocamllex := $(BEST_OCAMLLEX)
 
-ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
+ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 ocamlcdefaultflags :=
 
@@ -212,22 +219,29 @@ opt.opt: allopt
 
 compdeps_names=ocamlcommon ocamlbytecomp
 compdeps_paths=$(addprefix $(ROOTDIR)/compilerlibs/,$(compdeps_names))
-compdeps_byte=$(addsuffix .cma,$(compdeps_paths))
-compdeps_opt=$(addsuffix .cmxa,$(compdeps_paths))
+deps_paths=$(compdeps_paths) $(addprefix $(unix_path)/,$(unix_name))
+deps_byte=$(addsuffix .cma,$(deps_paths))
+deps_opt=$(addsuffix .cmxa,$(deps_paths))
 
-ocamltest$(EXE): $(compdeps_byte) $(bytecode_modules)
-	$(ocamlc_cmd) -custom -o $@ $^
+$(eval $(call PROGRAM_SYNONYM,ocamltest))
 
-%.cmo: %.ml $(compdeps_byte)
+ocamltest_unix.%: flags+=$(unix_include) -opaque
+
+ocamltest$(EXE): $(deps_byte) $(bytecode_modules)
+	$(ocamlc_cmd) $(unix_include)-custom -o $@ $^
+
+%.cmo: %.ml $(deps_byte)
 	$(ocamlc) -c $<
 
-ocamltest.opt$(EXE): $(compdeps_opt) $(native_modules)
-	$(ocamlopt_cmd) -o $@ $^
+$(eval $(call PROGRAM_SYNONYM,ocamltest.opt))
 
-%.cmx: %.ml $(compdeps_opt)
+ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
+	$(ocamlopt_cmd) $(unix_include)-o $@ $^
+
+%.cmx: %.ml $(deps_opt)
 	$(ocamlopt) -c $<
 
-%.cmi: %.mli $(compdeps_byte)
+%.cmi: %.mli $(deps_byte)
 	$(ocamlc) -c $<
 
 %.ml %.mli: %.mly
@@ -236,44 +250,48 @@ ocamltest.opt$(EXE): $(compdeps_opt) $(native_modules)
 %.ml: %.mll
 	$(ocamllex) $(OCAMLLEX_FLAGS) $<
 
+ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
+	echo '# 1 "$^"' > $@
+	cat $^ >> $@
+
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
-	sed \
-	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
-	  -e 's|@@RUNTIMEI@@|$(RUNTIMEI)|' \
-	  -e 's|@@ARCH@@|$(ARCH)|' \
-	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
-	  -e 's|@@UNIX@@|$(unix)|' \
-	  -e 's|@@SYSTHREADS@@|$(systhreads)|' \
-	  -e 's|@@STR@@|$(str)|' \
-	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
-	  -e 's|@@CPP@@|$(CPP)|' \
-	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
-	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
-	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
-	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
-	  -e 's|@@SPACETIME@@|$(WITH_SPACETIME)|' \
-	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
-	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
-	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
-	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
-	  -e 's|@@OBJEXT@@|$(O)|' \
-	  -e 's|@@ASMEXT@@|$(S)|' \
-	  -e 's|@@NATIVE_DYNLINK@@|$(NATDYNLINK)|' \
-	  -e 's|@@SHARED_LIBRARY_CFLAGS@@|$(SHAREDLIB_CFLAGS)|' \
-	  -e 's|@@SHAREDOBJEXT@@|$(SO)|' \
-	  -e 's|@@CSC@@|$(CSC)|' \
-	  -e 's|@@CSCFLAGS@@|$(CSCFLAGS)|' \
-	  -e 's|@@MKDLL@@|$(MKDLL)|' \
-	  -e 's|@@MKEXE@@|$(mkexe)|' \
-	  -e 's|@@BYTECCLIBS@@|$(BYTECCLIBS)|' \
-	  -e 's|@@NATIVECCLIBS@@|$(NATIVECCLIBS)|' \
-	  -e 's|@@ASM@@|$(ASM)|' \
-	  -e 's|@@CC@@|$(CC)|' \
-	  -e 's|@@CFLAGS@@|$(OC_CFLAGS)|' \
-	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
-	  -e 's|@@WINDOWS_UNICODE@@|$(WINDOWS_UNICODE)|' \
-	  -e 's|@@FUNCTION_SECTIONS@@|$(FUNCTION_SECTIONS)|' \
-	  $< > $@
+	sed $(call SUBST,AFL_INSTRUMENT) \
+	    $(call SUBST,RUNTIMEI) \
+	    $(call SUBST,ARCH) \
+	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
+	    $(call SUBST,unix) \
+	    $(call SUBST,systhreads) \
+	    $(call SUBST,str) \
+	    $(call SUBST,SYSTEM) \
+	    $(call SUBST_STRING,CPP) \
+	    $(call SUBST_STRING,ocamlcdefaultflags) \
+	    $(call SUBST_STRING,ocamloptdefaultflags) \
+	    $(call SUBST_STRING,ocamlsrcdir) \
+	    $(call SUBST,FLAMBDA) \
+	    $(call SUBST,FORCE_SAFE_STRING) \
+	    $(call SUBST,FLAT_FLOAT_ARRAY) \
+	    $(call SUBST,WITH_OCAMLDOC) \
+	    $(call SUBST,WITH_OCAMLDEBUG) \
+	    $(call SUBST,O) \
+	    $(call SUBST,S) \
+	    $(call SUBST,NATDYNLINK) \
+	    $(call SUBST_STRING,SHAREDLIB_CFLAGS) \
+	    $(call SUBST,SO) \
+	    $(call SUBST_STRING,CSC) \
+	    $(call SUBST_STRING,CSCFLAGS) \
+	    $(call SUBST_STRING,EXE) \
+	    $(call SUBST_STRING,MKDLL) \
+	    $(call SUBST_STRING,mkexe) \
+	    $(call SUBST_STRING,BYTECCLIBS) \
+	    $(call SUBST_STRING,NATIVECCLIBS) \
+	    $(call SUBST_STRING,ASM) \
+	    $(call SUBST_STRING,CC) \
+	    $(call SUBST_STRING,OC_CFLAGS) \
+	    $(call SUBST,CCOMPTYPE) \
+	    $(call SUBST,WINDOWS_UNICODE) \
+	    $(call SUBST,FUNCTION_SECTIONS) \
+	    $(call SUBST,NAKED_POINTERS) \
+	    $< > $@
 
 # Manual
 
@@ -301,7 +319,7 @@ include $(addprefix $(DEPDIR)/, $(c_files:.c=.$(D)))
 endif
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)

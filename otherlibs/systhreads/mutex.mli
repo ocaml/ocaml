@@ -36,7 +36,13 @@ val lock : t -> unit
 (** Lock the given mutex. Only one thread can have the mutex locked
    at any time. A thread that attempts to lock a mutex already locked
    by another thread will suspend until the other thread unlocks
-   the mutex. *)
+   the mutex.
+
+   @raise Sys_error if the mutex is already locked by the thread calling
+   {!Mutex.lock}.
+
+   @before 4.12 {!Sys_error} was not raised for recursive locking
+   (platform-dependent behaviour) *)
 
 val try_lock : t -> bool
 (** Same as {!Mutex.lock}, but does not suspend the calling thread if
@@ -46,4 +52,9 @@ val try_lock : t -> bool
 
 val unlock : t -> unit
 (** Unlock the given mutex. Other threads suspended trying to lock
-   the mutex will restart. *)
+   the mutex will restart.  The mutex must have been previously locked
+   by the thread that calls {!Mutex.unlock}.
+   @raise Sys_error if the mutex is unlocked or was locked by another thread.
+
+   @before 4.12 {!Sys_error} was not raised when unlocking an unlocked mutex
+   or when unlocking a mutex from a different thread. *)

@@ -39,8 +39,7 @@
 #endif
 
 /* Defined in [mmap_ba.c] */
-CAMLextern value
-caml_unix_mapped_alloc(int flags, int num_dims, void * data, intnat * dim);
+extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
 
 #if defined(HAS_MMAP)
 

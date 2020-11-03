@@ -36,7 +36,8 @@ let word_addressed = false
     a0-a7        0-7       arguments/results
     s2-s9        8-15      arguments/results (preserved by C)
     t2-t6        16-20     temporary
-    t0-t1        21-22     temporary (used by code generator)
+    t0           21        temporary
+    t1           22        temporary (used by code generator)
     s0           23        domain pointer (preserved by C)
     s1           24        trap pointer (preserved by C)
     s10          25        allocation pointer (preserved by C)
@@ -55,8 +56,8 @@ let word_addressed = false
   Additional notes
   ----------------
 
-    - t0-t1 are used by the assembler and code generator, so
-      not available for register allocation.
+    - t1 is used by the code generator, so not available for register
+      allocation.
 
     - t0-t6 may be used by PLT stubs, so should not be used to pass
       arguments and may be clobbered by [Ialloc] in the presence of dynamic
@@ -127,7 +128,7 @@ let calling_conventions
   let float = ref first_float in
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
     | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -153,20 +154,11 @@ let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
 let max_arguments_for_tailcalls = 16
 
-let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
-
 (* OCaml calling convention:
      first integer args in a0 .. a7, s2 .. s9
      first float args in fa0 .. fa7, fs2 .. fs9
      remaining args on stack.
    Return values in a0 .. a7, s2 .. s9 or fa0 .. fa7, fs2 .. fs9. *)
-
-let single_regs arg = Array.map (fun arg -> [| arg |]) arg
-let ensure_single_regs res =
-  Array.map (function
-      | [| res |] -> res
-      | _ -> failwith "proc.ensure_single_regs"
-    ) res
 
 let loc_arguments arg =
   calling_conventions 0 15 110 125 outgoing arg
@@ -199,42 +191,35 @@ let external_calling_conventions
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
-    | [| arg |] ->
-        begin match arg.typ with
-        | Val | Int | Addr as ty ->
-            if !int <= last_int then begin
-              loc.(i) <- [| phys_reg !int |];
-              incr int
-            end else begin
-              loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
-              ofs := !ofs + size_int
-            end
-        | Float ->
-            if !float <= last_float then begin
-              loc.(i) <- [| phys_reg !float |];
-              incr float
-            end else if !int <= last_int then begin
-              loc.(i) <- [| phys_reg !int |];
-              incr int
-            end else begin
-              loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
-              ofs := !ofs + size_float
-            end
+    | Val | Int | Addr as ty ->
+        if !int <= last_int then begin
+          loc.(i) <- [| phys_reg !int |];
+          incr int
+        end else begin
+          loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
+          ofs := !ofs + size_int
         end
-    | _ ->
-        fatal_error "Proc.calling_conventions: bad number of register for \
-                     multi-register argument"
+    | Float ->
+        if !float <= last_float then begin
+          loc.(i) <- [| phys_reg !float |];
+          incr float
+        end else if !int <= last_int then begin
+          loc.(i) <- [| phys_reg !int |];
+          incr int
+        end else begin
+          loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
+          ofs := !ofs + size_float
+        end
   done;
   (loc, Misc.align !ofs 16) (* Keep stack 16-aligned. *)
 
-let loc_external_arguments arg =
+let loc_external_arguments ty_args =
+  let arg = Cmm.machtype_of_exttype_list ty_args in
   external_calling_conventions 0 7 110 117 outgoing arg
 
 let loc_external_results res =
-  let (loc, _ofs) =
-    external_calling_conventions 0 1 110 111 not_supported (single_regs res)
-  in
-  ensure_single_regs loc
+  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported res
+  in loc
 
 (* Exceptions are in a0 *)
 
@@ -259,7 +244,7 @@ let destroyed_at_alloc =
   else [| |]
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind _ | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
+  | Iop(Icall_ind | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
   | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
   | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
@@ -284,9 +269,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
   | Ispecific(Imultaddf _ | Imultsubf _) -> true
   | _ -> true
 

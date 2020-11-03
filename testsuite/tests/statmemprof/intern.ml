@@ -1,8 +1,5 @@
 (* TEST
    flags = "-g"
-   * bytecode
-   * native
-     compare_programs = "false"
 *)
 
 open Gc.Memprof

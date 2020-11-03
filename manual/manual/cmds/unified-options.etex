@@ -393,8 +393,13 @@ libraries and options on the command line.
 
 \nat{%
 \item["-nodynlink"]
-Allow the compiler to use some optimizations that are valid only for code
-that is never dynlinked.
+Allow the compiler to use some optimizations that are valid only for
+code that is statically linked to produce a non-relocatable
+executable.  The generated code cannot be linked to produce a shared
+library nor a position-independent executable (PIE).  Many operating
+systems produce PIEs by default, causing errors when linking code
+compiled with "-nodynlink".  Either do not use "-nodynlink" or pass
+the option "-ccopt -no-pie" at link-time.
 }%nat
 
 \item["-nolabels"]
@@ -753,8 +758,18 @@ to \var{uppercase-letter}.
 to \var{lowercase-letter}.
 \end{options}
 
-Warning numbers and letters which are out of the range of warnings
-that are currently defined are ignored. The warnings are as follows.
+Alternatively, \var{warning-list} can specify a single warning using its
+mnemonic name (see below), as follows:
+
+\begin{options}
+\item["+"\var{name}] Enable warning \var{name}.
+\item["-"\var{name}] Disable warning \var{name}.
+\item["@"\var{name}] Enable and mark as fatal warning \var{name}.
+\end{options}
+
+Warning numbers, letters and names which are not currently defined are
+ignored. The warnings are as follows (the name following each number specifies
+the mnemonic for that warning).
 \begin{options}
 \input{warnings-help.tex}
 \end{options}

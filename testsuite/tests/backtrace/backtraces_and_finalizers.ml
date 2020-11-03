@@ -1,11 +1,8 @@
 (* TEST
    flags = "-g -inline 0"
    ocamlrunparam += ",b=1"
-   compare_programs = "false"
    * native
 *)
-
-let () = Printexc.record_backtrace true
 
 let finaliser _ = try raise Exit with _ -> ()
 

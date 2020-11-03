@@ -113,12 +113,13 @@ exclusive.
 % compilers and toplevel
 \input{unified-options.tex}
 
-\paragraph{Options for the IA32 architecture}
-The IA32 code generator (Intel Pentium, AMD Athlon) supports the
+\paragraph{Options for the 32-bit x86 architecture}
+The 32-bit code generator for Intel/AMD x86 processors ("i386"
+architecture) supports the
 following additional option:
 
 \begin{options}
-\item["-ffast-math"] Use the IA32 instructions to compute
+\item["-ffast-math"] Use the processor instructions to compute
 trigonometric and exponential functions, instead of calling the
 corresponding library routines.  The functions affected are:
 "atan", "atan2", "cos", "log", "log10", "sin", "sqrt" and "tan".
@@ -128,9 +129,9 @@ trigonometric operations "cos", "sin", "tan" have their range reduced to
 $[-2^{64}, 2^{64}]$.
 \end{options}
 
-\paragraph{Options for the AMD64 architecture}
-The AMD64 code generator (64-bit versions of Intel Pentium and AMD
-Athlon) supports the following additional options:
+\paragraph{Options for the 64-bit x86 architecture}
+The 64-bit code generator for Intel/AMD x86 processors ("amd64"
+architecture) supports the following additional options:
 
 \begin{options}
 \item["-fPIC"] Generate position-independent machine code.  This is
@@ -219,8 +220,8 @@ until the next heap allocation.
   beneficial, but produces floating-point results that differ slightly
   from those produced by the bytecode interpreter.
 
-\item On IA32 processors only (Intel and AMD x86 processors in 32-bit
-mode), some intermediate results in floating-point computations are
+\item On Intel/AMD x86 processors in 32-bit mode,
+some intermediate results in floating-point computations are
 kept in extended precision rather than being rounded to double
 precision like the bytecode compiler always does.  Floating-point
 results can therefore differ slightly between bytecode and native code.

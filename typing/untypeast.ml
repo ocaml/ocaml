@@ -887,3 +887,9 @@ let untype_structure ?(mapper=default_mapper) structure =
 
 let untype_signature ?(mapper=default_mapper) signature =
   mapper.signature mapper signature
+
+let untype_expression ?(mapper=default_mapper) expression =
+  mapper.expr mapper expression
+
+let untype_pattern ?(mapper=default_mapper) pattern =
+  mapper.pat mapper pattern

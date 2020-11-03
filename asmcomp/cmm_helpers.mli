@@ -64,11 +64,16 @@ val boxedint32_header : nativeint
 val boxedint64_header : nativeint
 val boxedintnat_header : nativeint
 
+(** Closure info for a closure of given arity and distance to environment *)
+val closure_info : arity:int -> startenv:int -> nativeint
+
 (** Wrappers *)
 val alloc_float_header : Debuginfo.t -> expression
 val alloc_floatarray_header : int -> Debuginfo.t -> expression
 val alloc_closure_header : int -> Debuginfo.t -> expression
 val alloc_infix_header : int -> Debuginfo.t -> expression
+val alloc_closure_info :
+      arity:int -> startenv:int -> Debuginfo.t -> expression
 val alloc_boxedint32_header : Debuginfo.t -> expression
 val alloc_boxedint64_header : Debuginfo.t -> expression
 val alloc_boxedintnat_header : Debuginfo.t -> expression
@@ -594,10 +599,6 @@ val globals_map:
 (** Generate the caml_frametable table, referencing the frametables
     from the given compilation units *)
 val frame_table: string list -> phrase
-
-(** Generate the caml_spacetime_shapes table, referencing the spacetime shapes
-    from the given compilation units *)
-val spacetime_shapes: string list -> phrase
 
 (** Generate the tables for data and code positions respectively of the given
     compilation units *)

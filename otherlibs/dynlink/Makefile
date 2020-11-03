@@ -24,7 +24,7 @@ ROOTDIR = ../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 
 OCAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
@@ -33,6 +33,9 @@ OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS += -O3
+endif
 
 COMPFLAGS += -I byte
 OPTCOMPFLAGS += -I native
@@ -70,6 +73,7 @@ COMPILERLIBS_INTFS=\
 
 # .ml files from compilerlibs that have corresponding .mli files.
 COMPILERLIBS_SOURCES=\
+  utils/binutils.ml \
   utils/config.ml \
   utils/build_path_prefix_map.ml \
   utils/misc.ml \
@@ -81,6 +85,7 @@ COMPILERLIBS_SOURCES=\
   utils/consistbl.ml \
   utils/terminfo.ml \
   utils/warnings.ml \
+  utils/local_store.ml \
   utils/load_path.ml \
   utils/int_replace_polymorphic_compare.ml \
   parsing/location.ml \
@@ -201,7 +206,9 @@ native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 
 # The main dynlink rules start here.
 
-all: dynlink.cma extract_crc
+extract_crc := extract_crc$(EXE)
+
+all: dynlink.cma $(extract_crc)
 
 allopt: dynlink.cmxa
 
@@ -225,7 +232,9 @@ dynlink.cmxa: $(NATOBJS)
 dynlink_platform_intf.mli: dynlink_platform_intf.ml
 	cp $< $@
 
-extract_crc: dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
+$(eval $(call PROGRAM_SYNONYM,extract_crc))
+
+$(extract_crc): dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
 install:
@@ -237,8 +246,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  dynlink.cmti dynlink.mli \
 	  "$(INSTALL_LIBDIR)"
 endif
-	$(INSTALL_PROG) \
-	  extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
+	$(INSTALL_PROG) $(extract_crc) "$(INSTALL_LIBDIR)"
 
 installopt:
 	if $(NATDYNLINK); then \
@@ -249,13 +257,14 @@ installopt:
 	fi
 
 partialclean:
-	rm -f extract_crc *.cm[ioaxt] *.cmti *.cmxa \
+	rm -f $(extract_crc) *.cm[ioaxt] *.cmti *.cmxa \
 	      byte/*.cm[iot] byte/*.cmti \
 	      native/*.cm[ixt] native/*.cmti native/*.o native/*.obj \
 	      $(LOCAL_SRC)/*.cm[ioaxt] $(LOCAL_SRC)/*.cmti \
         $(LOCAL_SRC)/*.o $(LOCAL_SRC)/*.obj
 
 clean: partialclean
+	rm -f extract_crc extract_crc.exe
 	rm -f *.a *.lib *.o *.obj *.so *.dll dynlink_platform_intf.mli \
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
 	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli

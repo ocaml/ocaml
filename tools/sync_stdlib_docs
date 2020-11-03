@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                            John Whitington                             *
+#*                                                                        *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
+#*     en automatique                                                     *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+#Allow to be run from outside tools/
+cd $(dirname "$0")/..
+
+if [[ ! -d stdlib || ! -d otherlibs ]] ; then
+  echo 'Cannot find the stdlib and otherlibs directories' >&2
+  exit 1
+fi
+
+#Removes a label, i.e a space, a variable name, followed by a colon followed by
+#an alphabetic character or ( or '. This should avoid altering the contents of
+#comments.
+LABREGEX="s/ [a-z_]+:([a-z\('])/ \1/g"
+
+#A second, slightly different round sometimes required to deal with f:(key:key
+LABLABREGEX="s/\([a-z_]+:([a-z\('])/\(\1/g"
+
+#Remove a tilde if it is followed by a label name and a space or closing
+#OCamldoc code section with ]
+TILDEREGEX="s/~([a-z_]+[ \]])/\1/g"
+
+#Indent a non-blank line by two characters, for moreLabels templates
+INDENTREGEX="s/^(.+)$/  \1/m"
+
+#Stdlib
+perl -p -e "$LABREGEX" stdlib/listLabels.mli > stdlib/list.temp.mli
+perl -p -e "$LABREGEX" stdlib/arrayLabels.mli > stdlib/array.temp.mli
+perl -p -e "$LABREGEX" stdlib/stringLabels.mli > stdlib/string.temp.mli
+perl -p -e "$LABREGEX" stdlib/bytesLabels.mli > stdlib/bytes.temp.mli
+
+#Stdlib tildes
+perl -p -e "$TILDEREGEX" stdlib/list.temp.mli > stdlib/list.mli
+perl -p -e "$TILDEREGEX" stdlib/array.temp.mli > stdlib/array.mli
+perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.mli
+perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
+
+#FloatArrayLabels
+perl -p -e "$LABREGEX" \
+  stdlib/templates/floatarraylabeled.template.mli > \
+  stdlib/templates/floatarrayunlabeled.temp.mli
+perl -p -e "$TILDEREGEX" stdlib/templates/floatarrayunlabeled.temp.mli > \
+  stdlib/templates/floatarrayunlabeled.2temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/floatarraylabeled.template.mli > \
+  stdlib/templates/fal.indented.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/floatarrayunlabeled.2temp.mli > \
+  stdlib/templates/fau.indented.temp.mli
+perl -p -e\
+  's/FLOATARRAYLAB/`tail -n +17 stdlib\/templates\/fal.indented.temp.mli`/e' \
+  stdlib/templates/float.template.mli > \
+  stdlib/templates/float.template.temp.mli
+perl -p -e\
+  's/FLOATARRAY/`tail -n +17 stdlib\/templates\/fau.indented.temp.mli`/e' \
+  stdlib/templates/float.template.temp.mli > \
+  stdlib/float.mli
+
+#MoreLabels
+perl -p -e "$LABREGEX" \
+  stdlib/templates/hashtbl.template.mli > stdlib/hashtbl.temp.mli
+perl -p -e "$LABLABREGEX" \
+  stdlib/hashtbl.temp.mli > stdlib/hashtbl.2temp.mli
+perl -p -e "$LABREGEX" \
+  stdlib/templates/map.template.mli > stdlib/map.temp.mli
+perl -p -e "$LABLABREGEX" \
+  stdlib/map.temp.mli > stdlib/map.2temp.mli
+perl -p -e "$LABREGEX" \
+  stdlib/templates/set.template.mli > stdlib/set.temp.mli
+perl -p -e "$LABLABREGEX" \
+  stdlib/set.temp.mli > stdlib/set.2temp.mli
+
+#MoreLabels tildes
+perl -p -e "$TILDEREGEX" stdlib/hashtbl.2temp.mli > stdlib/hashtbl.mli
+perl -p -e "$TILDEREGEX" stdlib/map.2temp.mli > stdlib/map.mli
+perl -p -e "$TILDEREGEX" stdlib/set.2temp.mli > stdlib/set.mli
+
+#Indent the labeled modules
+perl -p -e "$INDENTREGEX" stdlib/templates/hashtbl.template.mli > \
+  stdlib/templates/hashtbl.template.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/map.template.mli > \
+  stdlib/templates/map.template.temp.mli
+perl -p -e "$INDENTREGEX" stdlib/templates/set.template.mli > \
+  stdlib/templates/set.template.temp.mli
+
+#Substitute the labeled modules in to moreLabels.mli
+perl -p -e\
+  's/HASHTBL/`tail -n +19 stdlib\/templates\/hashtbl.template.temp.mli`/e' \
+  stdlib/templates/moreLabels.template.mli > stdlib/moreLabels.temp.mli
+perl -p -e 's/MAP/`tail -n +19 stdlib\/templates\/map.template.temp.mli`/e' \
+  stdlib/moreLabels.temp.mli > stdlib/moreLabels.2temp.mli
+perl -p -e 's/SET/`tail -n +19 stdlib\/templates\/set.template.temp.mli`/e' \
+  stdlib/moreLabels.2temp.mli > stdlib/moreLabels.mli
+
+#Fix up with templates in tools/unlabel-patches
+perl -p -e "s/type statistics =/type statistics = Hashtbl\.statistics =/" \
+  stdlib/moreLabels.mli > stdlib/moreLabels.temp.mli
+perl -p -e "s/type \(!'a, !'b\) t/type \(!'a, !'b\) t = \('a, 'b) Hashtbl.t/" \
+  stdlib/moreLabels.temp.mli > stdlib/moreLabels.2temp.mli
+perl -p -e\
+  "s/module Make \(H : HashedType\) : S with type key = H.t\
+/`cat tools/unlabel-patches/1.mli`/" \
+  stdlib/moreLabels.2temp.mli > stdlib/moreLabels.3temp.mli
+perl -p -e\
+  "s/module MakeSeeded \(H : SeededHashedType\) : SeededS with type key = H.t\
+/`cat tools/unlabel-patches/2.mli`/" \
+  stdlib/moreLabels.3temp.mli > stdlib/moreLabels.4temp.mli
+perl -p -e\
+  "s/module Make \(Ord : OrderedType\) : S with type key = Ord.t\
+/`cat tools/unlabel-patches/3.mli`/" \
+  stdlib/moreLabels.4temp.mli > stdlib/moreLabels.5temp.mli
+perl -p -e\
+  "s/module Make \(Ord : OrderedType\) : S with type elt = Ord.t\
+/`cat tools/unlabel-patches/4.mli`/" \
+  stdlib/moreLabels.5temp.mli > stdlib/moreLabels.mli
+
+#Unix
+perl -p -e "$LABREGEX" \
+  otherlibs/unix/unixLabels.mli > otherlibs/unix/unix.temp.mli
+#Tildes
+perl -p -e "$TILDEREGEX" \
+  otherlibs/unix/unix.temp.mli > otherlibs/unix/unix.2temp.mli
+
+#Remove type equivalences from unix.mli
+perl -p -e 's/ = Unix.[a-z_]+//' \
+  otherlibs/unix/unix.2temp.mli > otherlibs/unix/unix.3temp.mli
+perl -p -e 's/ = Unix.LargeFile.stats//' \
+  otherlibs/unix/unix.3temp.mli > otherlibs/unix/unix.mli
+
+#Clean up
+rm -f stdlib/*temp.mli
+rm -f otherlibs/unix/*temp.mli
+rm -f stdlib/templates/*temp.mli

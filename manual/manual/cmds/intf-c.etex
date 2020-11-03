@@ -23,10 +23,10 @@ User primitives are declared in an implementation file or
 \end{alltt}
 This defines the value name \var{name} as a function with type
 \var{type} that executes by calling the given C function.
-For instance, here is how the "int_of_string" primitive is declared in the
+For instance, here is how the "seek_in" primitive is declared in the
 standard library module "Stdlib":
 \begin{verbatim}
-        external int_of_string : string -> int = "caml_int_of_string"
+        external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
 \end{verbatim}
 Primitives with several arguments are always curried. The C function
 does not necessarily have the same name as the ML function.
@@ -51,13 +51,13 @@ modules from libraries at link-time.
 The arity (number of arguments) of a primitive is automatically
 determined from its OCaml type in the "external" declaration, by
 counting the number of function arrows in the type.  For instance,
-"input" above has arity 4, and the "input" C function is called with
-four arguments.  Similarly,
+"seek_in" above has arity 2, and the "caml_ml_seek_in" C function
+is called with two arguments.  Similarly,
 \begin{verbatim}
-    external input2 : in_channel * bytes * int * int -> int = "input2"
+    external seek_in_pair: in_channel * int -> unit = "caml_ml_seek_in_pair"
 \end{verbatim}
-has arity 1, and the "input2" C function receives one argument (which
-is a quadruple of OCaml values).
+has arity 1, and the "caml_ml_seek_in_pair" C function receives one argument
+(which is a pair of OCaml values).
 
 Type abbreviations are not expanded when determining the arity of a
 primitive.  For instance,
@@ -185,7 +185,7 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
-Before including any of these files, you should define the "OCAML_NAME_SPACE"
+Before including any of these files, you should define the "CAML_NAME_SPACE"
 macro. For instance,
 \begin{verbatim}
 #define CAML_NAME_SPACE
@@ -434,11 +434,9 @@ defined in the include file "caml/mlvalues.h", along with macros to
 manipulate values of that type. An object of type "value" is either:
 \begin{itemize}
 \item an unboxed integer;
-\item a pointer to a block inside the heap (such as the blocks
-allocated through one of the \verb"caml_alloc_*" functions below);
-\item a pointer to an object outside the heap (e.g., a pointer to a block
-allocated by "malloc", or to a C variable).
-   %%% FIXME will change in 4.02.0 (?)
+\item or a pointer to a block inside the heap,
+allocated through one of the \verb"caml_alloc_*" functions described
+in section~\ref{ss:c-block-allocation}.
 \end{itemize}
 
 \subsection{ss:c-int}{Integer values}
@@ -477,21 +475,68 @@ floating-point numbers.}
 
 \subsection{ss:c-outside-head}{Pointers outside the heap}
 
-Any word-aligned pointer to an address outside the heap can be safely
-cast to and from the type "value". This includes pointers returned by
-"malloc", and pointers to C variables (of size at least one word)
-obtained with the \verb'&' operator.
-   %%% FIXME will change in 4.02.0 (?)
+In earlier versions of OCaml, it was possible to use
+word-aligned pointers to addresses outside the heap as OCaml values,
+just by casting the pointer to type "value".  Starting with OCaml
+4.11, this usage is deprecated and will stop being supported in OCaml 5.00.
 
-Caution: if a pointer returned by "malloc" is cast to the type "value"
-and returned to OCaml, explicit deallocation of the pointer using
-"free" is potentially dangerous, because the pointer may still be
-accessible from the OCaml world.  Worse, the memory space deallocated
-by "free" can later be reallocated as part of the OCaml heap; the
-pointer, formerly pointing outside the OCaml heap, now points inside
-the OCaml heap, and this can crash the garbage collector.  To avoid
-these problems, it is preferable to wrap the pointer in a OCaml block
-with tag "Abstract_tag" or "Custom_tag".
+A correct way to manipulate pointers to out-of-heap blocks from
+OCaml is to store those pointers in OCaml blocks with tag
+"Abstract_tag" or "Custom_tag", then use the blocks as the OCaml
+values.
+
+Here is an example of encapsulation of out-of-heap pointers of C type
+"ty *" inside "Abstract_tag" blocks.  Section~\ref{s:c-intf-example}
+gives a more complete example using "Custom_tag" blocks.
+\begin{verbatim}
+/* Create an OCaml value encapsulating the pointer p */
+static value val_of_typtr(ty * p)
+{
+  value v = caml_alloc(1, Abstract_tag);
+  *((ty **) Data_abstract_val(v)) = p;
+  return v;
+}
+
+/* Extract the pointer encapsulated in the given OCaml value */
+static ty * typtr_of_val(value v)
+{
+  return *((ty **) Data_abstract_val(v));
+}
+\end{verbatim}
+Alternatively, out-of-heap pointers can be treated as ``native''
+integers, that is, boxed 32-bit integers on a 32-bit platform and
+boxed 64-bit integers on a 64-bit platform.
+\begin{verbatim}
+/* Create an OCaml value encapsulating the pointer p */
+static value val_of_typtr(ty * p)
+{
+  return caml_copy_nativeint((intnat) p);
+}
+
+/* Extract the pointer encapsulated in the given OCaml value */
+static ty * typtr_of_val(value v)
+{
+  return (ty *) Nativeint_val(v);
+}
+\end{verbatim}
+For pointers that are at least 2-aligned (the low bit is guaranteed to
+be zero), we have yet another valid representation as an OCaml tagged
+integer.
+\begin{verbatim}
+/* Create an OCaml value encapsulating the pointer p */
+static value val_of_typtr(ty * p)
+{
+  assert (((uintptr_t) p & 1) == 0);  /* check correct alignment */
+  return (value) p | 1;
+}
+
+/* Extract the pointer encapsulated in the given OCaml value */
+static ty * typtr_of_val(value v)
+{
+  return (ty *) (v & ~1);
+}
+\end{verbatim}
+
 
 \section{s:c-ocaml-datatype-repr}{Representation of OCaml data types}
 
@@ -938,7 +983,7 @@ variables.
 
 Example:
 \begin{verbatim}
-value bar (value v1, value v2, value v3)
+CAMLprim value bar (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   CAMLlocal1 (result);
@@ -961,7 +1006,7 @@ block (i.e. "Is_block("\var{b}")" must be true).
 
 Example:
 \begin{verbatim}
-value bar (value v1, value v2, value v3)
+CAMLprim value bar (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   CAMLlocal1 (result);
@@ -1283,62 +1328,62 @@ static value alloc_window(WINDOW * w)
   return v;
 }
 
-value caml_curses_initscr(value unit)
+CAMLprim value caml_curses_initscr(value unit)
 {
   CAMLparam1 (unit);
   CAMLreturn (alloc_window(initscr()));
 }
 
-value caml_curses_endwin(value unit)
+CAMLprim value caml_curses_endwin(value unit)
 {
   CAMLparam1 (unit);
   endwin();
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_refresh(value unit)
+CAMLprim value caml_curses_refresh(value unit)
 {
   CAMLparam1 (unit);
   refresh();
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_wrefresh(value win)
+CAMLprim value caml_curses_wrefresh(value win)
 {
   CAMLparam1 (win);
   wrefresh(Window_val(win));
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_newwin(value nlines, value ncols, value x0, value y0)
+CAMLprim value caml_curses_newwin(value nlines, value ncols, value x0, value y0)
 {
   CAMLparam4 (nlines, ncols, x0, y0);
   CAMLreturn (alloc_window(newwin(Int_val(nlines), Int_val(ncols),
                                   Int_val(x0), Int_val(y0))));
 }
 
-value caml_curses_addch(value c)
+CAMLprim value caml_curses_addch(value c)
 {
   CAMLparam1 (c);
   addch(Int_val(c));            /* Characters are encoded like integers */
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_mvwaddch(value win, value x, value y, value c)
+CAMLprim value caml_curses_mvwaddch(value win, value x, value y, value c)
 {
   CAMLparam4 (win, x, y, c);
   mvwaddch(Window_val(win), Int_val(x), Int_val(y), Int_val(c));
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_addstr(value s)
+CAMLprim value caml_curses_addstr(value s)
 {
   CAMLparam1 (s);
   addstr(String_val(s));
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_mvwaddstr(value win, value x, value y, value s)
+CAMLprim value caml_curses_mvwaddstr(value win, value x, value y, value s)
 {
   CAMLparam4 (win, x, y, s);
   mvwaddstr(Window_val(win), Int_val(x), Int_val(y), String_val(s));
@@ -1433,7 +1478,7 @@ can crash since \var{v} does not contain a valid value.
 
 Example:
 \begin{verbatim}
-    value call_caml_f_ex(value closure, value arg)
+    CAMLprim value call_caml_f_ex(value closure, value arg)
     {
       CAMLparam2(closure, arg);
       CAMLlocal2(res, tmp);
@@ -2124,7 +2169,7 @@ to a C function and a Fortran function.
     extern void my_c_function(double * data, int dimx, int dimy);
     extern void my_fortran_function_(double * data, int * dimx, int * dimy);
 
-    value caml_stub(value bigarray)
+    CAMLprim value caml_stub(value bigarray)
     {
       int dimx = Caml_ba_array_val(bigarray)->dim[0];
       int dimy = Caml_ba_array_val(bigarray)->dim[1];
@@ -2168,7 +2213,7 @@ Fortran arrays can be made available to OCaml.
     extern long my_c_array[100][200];
     extern float my_fortran_array_[300][400];
 
-    value caml_get_c_array(value unit)
+    CAMLprim value caml_get_c_array(value unit)
     {
       long dims[2];
       dims[0] = 100; dims[1] = 200;
@@ -2176,7 +2221,7 @@ Fortran arrays can be made available to OCaml.
                            2, my_c_array, dims);
     }
 
-    value caml_get_fortran_array(value unit)
+    CAMLprim value caml_get_fortran_array(value unit)
     {
       return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
                                 2, my_fortran_array_, 300L, 400L);

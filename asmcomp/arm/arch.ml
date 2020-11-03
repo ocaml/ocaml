@@ -141,8 +141,6 @@ and shift_operation =
   | Ishiftlogicalright
   | Ishiftarithmeticright
 
-let spacetime_node_hole_pointer_is_live_before _specific_op = false
-
 (* Sizes, endianness *)
 
 let big_endian = false

@@ -13,35 +13,8 @@ module M : module type of struct include Map end [@remove_aliases] =
 module Se : module type of struct include Set end [@remove_aliases] =
   MoreLabels.Set
 
-
-(* For  *)
-(* module H : module type of Hashtbl = MoreLabels.Hashtbl *)
-(* we will have following error: *)
-(* Error: Signature mismatch: *)
-(*        ... *)
-(*        Type declarations do not match: *)
-(*          type statistics = Hashtbl.statistics *)
-(*        is not included in *)
-(*          type statistics = { *)
-(*            num_bindings : int; *)
-(*            num_buckets : int; *)
-(*            max_bucket_length : int; *)
-(*            bucket_histogram : int array; *)
-(*          } *)
-(*        Their kinds differ. *)
-(* This is workaround:*)
-module Indirection = struct
-  type t = Hashtbl.statistics = {  num_bindings: int;
-                                   num_buckets: int;
-                                   max_bucket_length: int;
-                                   bucket_histogram: int array}
-end
-module type HS = sig
-  type statistics = Indirection.t
-  include module type of struct include Hashtbl end [@remove_aliases]
-                         with type statistics := Indirection.t
-end
-module H : HS = MoreLabels.Hashtbl
+module H : module type of struct include Hashtbl end [@remove_aliases] =
+  MoreLabels.Hashtbl
 
 let ()  =
   ()

@@ -52,7 +52,7 @@ extern uintnat caml_percent_free;                   /* major_gc.c */
 /* Page table management */
 
 #define Page(p) ((uintnat) (p) >> Page_log)
-#define Page_mask ((uintnat) -1 << Page_log)
+#define Page_mask ((~(uintnat)0) << Page_log)
 
 #ifdef ARCH_SIXTYFOUR
 
@@ -262,6 +262,8 @@ char *caml_alloc_for_heap (asize_t request)
     mem = (char *) block + sizeof (heap_chunk_head);
     Chunk_size (mem) = size - sizeof (heap_chunk_head);
     Chunk_block (mem) = block;
+    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
+    Chunk_redarken_end(mem) = (value*)mem;
     return mem;
 #else
     return NULL;
@@ -277,17 +279,10 @@ char *caml_alloc_for_heap (asize_t request)
     mem += sizeof (heap_chunk_head);
     Chunk_size (mem) = request;
     Chunk_block (mem) = block;
+    Chunk_redarken_start(mem) = (value*)(mem + Chunk_size(mem));
+    Chunk_redarken_end(mem) = (value*)mem;
     return mem;
   }
-}
-
-/* Use this function if a block allocated with [caml_alloc_for_heap] is
-   not actually going to be added to the heap.  The caller is responsible
-   for freeing it. */
-void caml_disown_for_heap (char* mem)
-{
-  /* Currently a no-op. */
-  (void)mem; /* can CAMLunused_{start,end} be used here? */
 }
 
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
@@ -400,7 +395,7 @@ static value *expand_heap (mlsize_t request)
   }else{
     Field (Val_hp (prev), 0) = (value) NULL;
     if (remain == 1) {
-      Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
+      Hd_hp (hp) = Make_header (0, 0, Caml_white);
     }
   }
   CAMLassert (Wosize_hp (mem) >= request);
@@ -429,7 +424,7 @@ void caml_shrink_heap (char *chunk)
 
   Caml_state->stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
   caml_gc_message (0x04, "Shrinking heap to %"
-                   ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
+                   ARCH_INTNAT_PRINTF_FORMAT "dk words\n",
                    Caml_state->stat_heap_wsz / 1024);
 
 #ifdef DEBUG
@@ -455,7 +450,7 @@ void caml_shrink_heap (char *chunk)
   caml_free_for_heap (chunk);
 }
 
-color_t caml_allocation_color (void *hp)
+CAMLexport color_t caml_allocation_color (void *hp)
 {
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
       (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
@@ -556,21 +551,6 @@ CAMLexport value caml_alloc_shr_for_minor_gc (mlsize_t wosize,
 }
 #endif /* WITH_PROFINFO */
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_with_profinfo (wosize, tag,
-    caml_spacetime_my_profinfo (NULL, wosize));
-}
-
-CAMLexport value caml_alloc_shr_no_track_noexc (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_aux (wosize, tag, 0, 0,
-                             caml_spacetime_my_profinfo (NULL, wosize));
-}
-#else
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux (wosize, tag, 1, 1, NO_PROFINFO);
@@ -580,7 +560,6 @@ CAMLexport value caml_alloc_shr_no_track_noexc (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux (wosize, tag, 0, 0, NO_PROFINFO);
 }
-#endif
 
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.

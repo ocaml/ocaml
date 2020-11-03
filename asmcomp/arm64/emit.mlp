@@ -38,17 +38,34 @@ let reg_trap_ptr = phys_reg 23
 let reg_alloc_ptr = phys_reg 24
 let reg_alloc_limit = phys_reg 25
 let reg_tmp1 = phys_reg 26
-let reg_x15 = phys_reg 15
+let reg_x8 = phys_reg 8
 
 (* Output a label *)
 
+let label_prefix =
+  if macosx then "L" else ".L"
+
 let emit_label lbl =
-  emit_string ".L"; emit_int lbl
+  emit_string label_prefix; emit_int lbl
 
 (* Symbols *)
 
 let emit_symbol s =
+  if macosx then emit_string "_";
   Emitaux.emit_symbol '$' s
+
+(* Object types *)
+
+let emit_symbol_type emit_lbl_or_sym lbl_or_sym ty =
+  if not macosx then begin
+    `	.type	{emit_lbl_or_sym lbl_or_sym}, %{emit_string ty}\n`
+  end
+
+
+let emit_symbol_size sym =
+  if not macosx then begin
+    `	.size	{emit_symbol sym}, .-{emit_symbol sym}\n`
+  end
 
 (* Output a pseudo-register *)
 
@@ -78,12 +95,15 @@ let prologue_required = ref false
 
 let contains_calls = ref false
 
-let frame_size () =
-  let sz =
-    !stack_offset +
+let initial_stack_offset () =
     8 * num_stack_slots.(0) +
     8 * num_stack_slots.(1) +
     (if !contains_calls then 8 else 0)
+
+let frame_size () =
+  let sz =
+    !stack_offset +
+    initial_stack_offset ()
   in Misc.align sz 16
 
 let slot_offset loc cl =
@@ -126,12 +146,8 @@ let emit_addressing addr r =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live dbg =
-  let lbl =
-    match label with
-    | None -> new_label()
-    | Some label -> label
-  in
+let record_frame_label live dbg =
+  let lbl = new_label () in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
@@ -147,8 +163,8 @@ let record_frame_label ?label live dbg =
     ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live dbg =
-  let lbl = record_frame_label ?label live dbg in `{emit_label lbl}:`
+let record_frame live dbg =
+  let lbl = record_frame_label live dbg in `{emit_label lbl}:`
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -173,10 +189,10 @@ type bound_error_call =
 
 let bound_error_sites = ref ([] : bound_error_call list)
 
-let bound_error_label ?label dbg =
+let bound_error_label dbg =
   if !Clflags.debug || !bound_error_sites = [] then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
+    let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error;
         bd_frame_lbl = lbl_frame } :: !bound_error_sites;
@@ -301,6 +317,37 @@ let output_epilogue f =
   (* reset CFA back because function body may continue *)
   if n > 0 then cfi_adjust_cfa_offset n
 
+(* Output add-immediate / sub-immediate / cmp-immediate instructions *)
+
+let rec emit_addimm rd rs n =
+  if n < 0 then emit_subimm rd rs (-n)
+  else if n <= 0xFFF then
+    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
+  else begin
+    assert (n <= 0xFFF_FFF);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
+    if nl <> 0 then
+      `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+  end
+
+and emit_subimm rd rs n =
+  if n < 0 then emit_addimm rd rs (-n)
+  else if n <= 0xFFF then
+    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
+  else begin
+    assert (n <= 0xFFF_FFF);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
+    if nl <> 0 then
+      `	sub	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+  end
+
+let emit_cmpimm rs n =
+  if n >= 0
+  then `	cmp	{emit_reg rs}, #{emit_int n}\n`
+  else `	cmn	{emit_reg rs}, #{emit_int (-n)}\n`
+
 (* Name of current function *)
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
@@ -320,6 +367,8 @@ let float_literal f =
 (* Emit all pending literals *)
 let emit_literals() =
   if !float_literals <> [] then begin
+    if macosx then
+      `	.section	__TEXT,__literal8,8byte_literals\n`;
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
@@ -331,7 +380,10 @@ let emit_literals() =
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if not !Clflags.dlcode then begin
+  if macosx then begin
+    `	adrp	{emit_reg dst}, {emit_symbol s}@GOTPAGE\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg dst}, {emit_symbol s}@GOTPAGEOFF]\n`
+  end else if not !Clflags.dlcode then begin
     `	adrp	{emit_reg dst}, {emit_symbol s}\n`;
     `	add	{emit_reg dst}, {emit_reg dst}, #:lo12:{emit_symbol s}\n`
   end else begin
@@ -349,8 +401,8 @@ let num_call_gc_and_check_bound_points instr =
     | Lend -> totals
     | Lop (Ialloc _) when !fastcode_flag ->
       loop instr.next (call_gc + 1, check_bound)
-    | Lop (Iintop Icheckbound _)
-    | Lop (Iintop_imm (Icheckbound _, _))
+    | Lop (Iintop Icheckbound)
+    | Lop (Iintop_imm (Icheckbound, _))
     | Lop (Ispecific (Ishiftcheckbound _)) ->
       let check_bound =
         (* When not in debug mode, there is at most one check-bound point. *)
@@ -361,7 +413,7 @@ let num_call_gc_and_check_bound_points instr =
     (* The following four should never be seen, since this function is run
        before branch relaxation. *)
     | Lop (Ispecific (Ifar_alloc _))
-    | Lop (Ispecific Ifar_intop_checkbound _)
+    | Lop (Ispecific Ifar_intop_checkbound)
     | Lop (Ispecific (Ifar_intop_imm_checkbound _))
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> assert false
     | _ -> loop instr.next totals
@@ -407,8 +459,8 @@ module BR = Branch_relaxation.Make (struct
 
     let classify_instr = function
       | Lop (Ialloc _)
-      | Lop (Iintop Icheckbound _)
-      | Lop (Iintop_imm (Icheckbound _, _))
+      | Lop (Iintop Icheckbound)
+      | Lop (Iintop_imm (Icheckbound, _))
       | Lop (Ispecific (Ishiftcheckbound _)) -> Some Bcc
       (* The various "far" variants in [specific_operation] don't need to
          return [Some] here, since their code sequences never contain any
@@ -427,7 +479,7 @@ module BR = Branch_relaxation.Make (struct
   let offset_pc_at_branch = 0
 
   let prologue_size () =
-    (if frame_size () > 0 then 2 else 0)
+    (if initial_stack_offset () > 0 then 2 else 0)
       + (if !contains_calls then 1 else 0)
 
   let epilogue_size () =
@@ -441,9 +493,9 @@ module BR = Branch_relaxation.Make (struct
       num_instructions_for_intconst n
     | Lop (Iconst_float _) -> 2
     | Lop (Iconst_symbol _) -> 2
-    | Lop (Icall_ind _) -> 1
+    | Lop (Icall_ind) -> 1
     | Lop (Icall_imm _) -> 1
-    | Lop (Itailcall_ind _) -> epilogue_size ()
+    | Lop (Itailcall_ind) -> epilogue_size ()
     | Lop (Itailcall_imm { func; _ }) ->
       if func = !function_name then 1 else epilogue_size ()
     | Lop (Iextcall { alloc = false; }) -> 1
@@ -464,9 +516,9 @@ module BR = Branch_relaxation.Make (struct
       end
     | Lop (Iintop (Icomp _)) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
-    | Lop (Iintop (Icheckbound _)) -> 2
-    | Lop (Ispecific (Ifar_intop_checkbound _)) -> 3
-    | Lop (Iintop_imm (Icheckbound _, _)) -> 2
+    | Lop (Iintop (Icheckbound)) -> 2
+    | Lop (Ispecific (Ifar_intop_checkbound)) -> 3
+    | Lop (Iintop_imm (Icheckbound, _)) -> 2
     | Lop (Ispecific (Ifar_intop_imm_checkbound _)) -> 3
     | Lop (Ispecific (Ishiftcheckbound _)) -> 2
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> 3
@@ -481,6 +533,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Imuladd | Imulsub)) -> 1
     | Lop (Ispecific (Ibswap 16)) -> 2
     | Lop (Ispecific (Ibswap _)) -> 1
+    | Lop (Ispecific Imove32) -> 1
     | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size ()
@@ -512,26 +565,26 @@ module BR = Branch_relaxation.Make (struct
       | Lambda.Raise_notrace -> 4
       end
 
-  let relax_allocation ~num_bytes ~label_after_call_gc ~dbginfo =
-    Lop (Ispecific (Ifar_alloc { bytes = num_bytes; label_after_call_gc; dbginfo }))
+  let relax_allocation ~num_bytes ~dbginfo =
+    Lop (Ispecific (Ifar_alloc { bytes = num_bytes; dbginfo }))
 
-  let relax_intop_checkbound ~label_after_error =
-    Lop (Ispecific (Ifar_intop_checkbound { label_after_error; }))
+  let relax_intop_checkbound () =
+    Lop (Ispecific (Ifar_intop_checkbound))
 
-  let relax_intop_imm_checkbound ~bound ~label_after_error =
-    Lop (Ispecific (Ifar_intop_imm_checkbound { bound; label_after_error; }))
+  let relax_intop_imm_checkbound ~bound =
+    Lop (Ispecific (Ifar_intop_imm_checkbound { bound; }))
 
   let relax_specific_op = function
-    | Ishiftcheckbound { shift; label_after_error; } ->
-      Lop (Ispecific (Ifar_shiftcheckbound { shift; label_after_error; }))
+    | Ishiftcheckbound { shift; } ->
+      Lop (Ispecific (Ifar_shiftcheckbound { shift; }))
     | _ -> assert false
 end)
 
 (* Output the assembly code for allocation. *)
 
-let assembly_code_for_allocation ~label_after_call_gc i ~n ~far ~dbginfo =
+let assembly_code_for_allocation i ~n ~far ~dbginfo =
   let lbl_frame =
-    record_frame_label ?label:label_after_call_gc i.live (Dbg_alloc dbginfo)
+    record_frame_label i.live (Dbg_alloc dbginfo)
   in
   if !fastcode_flag then begin
     let lbl_after_alloc = new_label() in
@@ -561,7 +614,7 @@ let assembly_code_for_allocation ~label_after_call_gc i ~n ~far ~dbginfo =
     | 16 -> `	bl	{emit_symbol "caml_alloc1"}\n`
     | 24 -> `	bl	{emit_symbol "caml_alloc2"}\n`
     | 32 -> `	bl	{emit_symbol "caml_alloc3"}\n`
-    | _  -> emit_intconst reg_x15 (Nativeint.of_int n);
+    | _  -> emit_intconst reg_x8 (Nativeint.of_int n);
             `	bl	{emit_symbol "caml_allocN"}\n`
     end;
     `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
@@ -575,6 +628,17 @@ let emit_named_text_section func_name =
   end
   else
     `	.text\n`
+
+(* Emit code to load an emitted literal *)
+
+let emit_load_literal dst lbl =
+  if macosx then begin
+    `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}@PAGE\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg reg_tmp1}, {emit_label lbl}@PAGEOFF]\n`
+  end else begin
+    `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
+  end
 
 (* Output the assembly code for an instruction *)
 
@@ -606,6 +670,19 @@ let emit_instr i =
           | _ ->
               assert false
         end
+    | Lop(Ispecific Imove32) ->
+        let src = i.arg.(0) and dst = i.res.(0) in
+        if src.loc <> dst.loc then begin
+          match (src, dst) with
+          | {loc = Reg _}, {loc = Reg _} ->
+              `	mov	{emit_wreg dst}, {emit_wreg src}\n`
+          | {loc = Reg _}, {loc = Stack _} ->
+              `	str	{emit_wreg src}, {emit_stack dst}\n`
+          | {loc = Stack _}, {loc = Reg _} ->
+              `	ldr	{emit_wreg dst}, {emit_stack src}\n`
+          | _ ->
+              assert false
+        end
     | Lop(Iconst_int n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
@@ -615,30 +692,29 @@ let emit_instr i =
           `	fmov	{emit_reg i.res.(0)}, #{emit_printf "%.7f" (Int64.float_of_bits f)}\n`
         else begin
           let lbl = float_literal f in
-          `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
-          `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
+          emit_load_literal i.res.(0) lbl
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Icall_ind { label_after; }) ->
+    | Lop(Icall_ind) ->
         `	blr	{emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
-    | Lop(Icall_imm { func; label_after; }) ->
+        `{record_frame i.live (Dbg_other i.dbg)}\n`
+    | Lop(Icall_imm { func; }) ->
         `	bl	{emit_symbol func}\n`;
-        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
-    | Lop(Itailcall_ind { label_after = _; }) ->
+        `{record_frame i.live (Dbg_other i.dbg)}\n`
+    | Lop(Itailcall_ind) ->
         output_epilogue (fun () -> `	br	{emit_reg i.arg.(0)}\n`)
-    | Lop(Itailcall_imm { func; label_after = _; }) ->
+    | Lop(Itailcall_imm { func; }) ->
         if func = !function_name then
           `	b	{emit_label !tailrec_entry_point}\n`
         else
           output_epilogue (fun () -> `	b	{emit_symbol func}\n`)
-    | Lop(Iextcall { func; alloc = false; label_after = _; }) ->
+    | Lop(Iextcall { func; alloc = false; }) ->
         `	bl	{emit_symbol func}\n`
-    | Lop(Iextcall { func; alloc = true; label_after; }) ->
-        emit_load_symbol_addr reg_x15 func;
+    | Lop(Iextcall { func; alloc = true; }) ->
+        emit_load_symbol_addr reg_x8 func;
         `	bl	{emit_symbol "caml_c_call"}\n`;
-        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
+        `{record_frame i.live (Dbg_other i.dbg)}\n`
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
@@ -693,45 +769,49 @@ let emit_instr i =
         | Word_int | Word_val | Double | Double_u ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
-    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
-        assembly_code_for_allocation i ~n ~far:false ~label_after_call_gc ~dbginfo
-    | Lop(Ispecific (Ifar_alloc { bytes = n; label_after_call_gc; dbginfo })) ->
-        assembly_code_for_allocation i ~n ~far:true ~label_after_call_gc ~dbginfo
+    | Lop(Ialloc { bytes = n; dbginfo }) ->
+        assembly_code_for_allocation i ~n ~far:false ~dbginfo
+    | Lop(Ispecific (Ifar_alloc { bytes = n; dbginfo })) ->
+        assembly_code_for_allocation i ~n ~far:true ~dbginfo
+    | Lop(Iintop_imm(Iadd, n)) ->
+        emit_addimm i.res.(0) i.arg.(0) n
+    | Lop(Iintop_imm(Isub, n)) ->
+        emit_subimm i.res.(0) i.arg.(0) n
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+        emit_cmpimm i.arg.(0) n;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
-    | Lop(Iintop (Icheckbound { label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+    | Lop(Iintop (Icheckbound)) ->
+        let lbl = bound_error_label i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.ls	{emit_label lbl}\n`
-    | Lop(Ispecific Ifar_intop_checkbound { label_after_error; }) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+    | Lop(Ispecific Ifar_intop_checkbound) ->
+        let lbl = bound_error_label i.dbg in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
         `{emit_label lbl2}:\n`;
-    | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
-        `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+    | Lop(Iintop_imm(Icheckbound, n)) ->
+        let lbl = bound_error_label i.dbg in
+        emit_cmpimm i.arg.(0) n;
         `	b.ls	{emit_label lbl}\n`
     | Lop(Ispecific(
-          Ifar_intop_imm_checkbound { bound; label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+          Ifar_intop_imm_checkbound { bound; })) ->
+        let lbl = bound_error_label i.dbg in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int bound}\n`;
         `	b.hi	{emit_label lbl2}\n`;
         `	b	{emit_label lbl}\n`;
         `{emit_label lbl2}:\n`;
-    | Lop(Ispecific(Ishiftcheckbound { shift; label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+    | Lop(Ispecific(Ishiftcheckbound { shift; })) ->
+        let lbl = bound_error_label i.dbg in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.cs	{emit_label lbl}\n`
-    | Lop(Ispecific(Ifar_shiftcheckbound { shift; label_after_error; })) ->
-        let lbl = bound_error_label i.dbg ?label:label_after_error in
+    | Lop(Ispecific(Ifar_shiftcheckbound { shift; })) ->
+        let lbl = bound_error_label i.dbg in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.lo	{emit_label lbl2}\n`;
@@ -820,7 +900,7 @@ let emit_instr i =
             let comp = name_for_comparison cmp in
             `	b.{emit_string comp}	{emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
-            `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+            emit_cmpimm i.arg.(0) n;
             let comp = name_for_comparison cmp in
             `	b.{emit_string comp}	{emit_label lbl}\n`
         | Ifloattest cmp ->
@@ -936,7 +1016,7 @@ let fundecl fundecl =
   emit_named_text_section !function_name;
   `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
+  emit_symbol_type emit_symbol fundecl.fun_name "function";
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
@@ -954,8 +1034,8 @@ let fundecl fundecl =
   assert (List.length !call_gc_sites = num_call_gc);
   assert (List.length !bound_error_sites = num_check_bound);
   cfi_endproc();
-  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
-  `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`;
+  emit_symbol_type emit_symbol fundecl.fun_name "function";
+  emit_symbol_size fundecl.fun_name;
   emit_literals()
 
 (* Emission of data *)
@@ -1018,10 +1098,10 @@ let end_assembly () =
   `{emit_symbol lbl}:\n`;
   emit_frames
     { efa_code_label = (fun lbl ->
-                       `	.type	{emit_label lbl}, %function\n`;
+                       emit_symbol_type emit_label lbl "function";
                        `	.quad	{emit_label lbl}\n`);
       efa_data_label = (fun lbl ->
-                       `	.type	{emit_label lbl}, %object\n`;
+                       emit_symbol_type emit_label lbl "object";
                        `	.quad	{emit_label lbl}\n`);
       efa_8 = (fun n -> `	.byte	{emit_int n}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
@@ -1032,8 +1112,8 @@ let end_assembly () =
                            `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);
       efa_def_label = (fun lbl -> `{emit_label lbl}:\n`);
       efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
-  `	.type	{emit_symbol lbl}, %object\n`;
-  `	.size	{emit_symbol lbl}, .-{emit_symbol lbl}\n`;
+  emit_symbol_type emit_symbol lbl "object";
+  emit_symbol_size lbl;
   begin match Config.system with
   | "linux" ->
       (* Mark stack as non-executable *)

@@ -152,19 +152,20 @@ let test_file test_filename =
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
   let clean_test_build_directory () =
-    ignore
-      (Sys.command
-         (Filename.quote_command "rm" ["-rf"; test_build_directory_prefix]))
+    try
+      Sys.rm_rf test_build_directory_prefix
+    with Sys_error _ -> ()
   in
   clean_test_build_directory ();
   Sys.make_directory test_build_directory_prefix;
+  let log_filename =
+    Filename.concat test_build_directory_prefix (test_prefix ^ ".log") in
+  let log =
+    if Options.log_to_stderr then stderr else begin
+      open_out log_filename
+    end in
   let summary = Sys.with_chdir test_build_directory_prefix
     (fun () ->
-       let log =
-         if Options.log_to_stderr then stderr else begin
-           let log_filename = test_prefix ^ ".log" in
-           open_out log_filename
-         end in
        let promote = string_of_bool Options.promote in
        let install_hook name =
          let hook_name = Filename.make_filename hookname_prefix name in
@@ -187,10 +188,12 @@ let test_file test_filename =
                test_build_directory_prefix;
              Builtin_variables.promote, promote;
            ] in
-       let root_environment =
+       let rootenv =
+         Environments.initialize Environments.Pre log initial_environment in
+       let rootenv =
          interprete_environment_statements
-           initial_environment rootenv_statements in
-       let rootenv = Environments.initialize log root_environment in
+           rootenv rootenv_statements in
+       let rootenv = Environments.initialize Environments.Post log rootenv in
        let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
        let initial_status =
          if skip_test then Skip_all_tests else Run rootenv
@@ -198,11 +201,13 @@ let test_file test_filename =
        let summary =
          run_test_trees log common_prefix "" initial_status test_trees in
        Actions.clear_all_hooks();
-       if not Options.log_to_stderr then close_out log;
        summary
     ) in
+  if not Options.log_to_stderr then close_out log;
   begin match summary with
-  | Some_failure -> ()
+  | Some_failure ->
+      if not Options.log_to_stderr then
+        Sys.dump_file stderr ~prefix:"> " log_filename
   | No_failure ->
       if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
@@ -215,6 +220,8 @@ let is_test s =
 
 let ignored s =
   s = "" || s.[0] = '_' || s.[0] = '.'
+
+let sort_strings = List.sort String.compare
 
 let find_test_dirs dir =
   let res = ref [] in
@@ -231,7 +238,7 @@ let find_test_dirs dir =
     if !contains_tests then res := dir :: !res
   in
   loop dir;
-  List.rev !res
+  sort_strings !res
 
 let list_tests dir =
   let res = ref [] in
@@ -245,7 +252,7 @@ let list_tests dir =
         end
       ) (Sys.readdir dir)
   end;
-  List.rev !res
+  sort_strings !res
 
 let () =
   init_tests_to_skip()

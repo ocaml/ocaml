@@ -93,9 +93,6 @@ CAMLexport void caml_fatal_error (char *msg, ...)
   abort();
 }
 
-/* If you change the caml_ext_table* functions, also update
-   runtime/spacetime_nat.c:find_trie_node_from_libunwind. */
-
 void caml_ext_table_init(struct ext_table * tbl, int init_capa)
 {
   tbl->size = 0;
@@ -204,20 +201,4 @@ int caml_runtime_warnings_active(void)
     caml_runtime_warnings_first = 0;
   }
   return 1;
-}
-
-int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf)
-{
-  struct code_fragment *cfi;
-  int i;
-
-  for (i = 0; i < caml_code_fragments_table.size; i++) {
-    cfi = (struct code_fragment *) caml_code_fragments_table.contents[i];
-    if ((char*) pc >= cfi->code_start && (char*) pc < cfi->code_end) {
-      if (index != NULL) *index = i;
-      if (cf != NULL) *cf = cfi;
-      return 1;
-    }
-  }
-  return 0;
 }

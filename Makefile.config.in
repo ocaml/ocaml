@@ -129,7 +129,7 @@ ARCH=@arch@
 # Whether the architecture has 64 bits
 ARCH64=@arch64@
 
-# Endianess for this architecture
+# Endianness for this architecture
 ENDIANNESS=@endianness@
 
 ### Name of architecture model for the native-code compiler.
@@ -165,7 +165,6 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 #       dynlink           Dynamic linking (bytecode and native)
 #       (win32)unix       Unix system calls
 #       str               Regular expressions and high-level string processing
-#       raw_spacetime_lib Parsing of spacetime traces
 #       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
@@ -176,13 +175,12 @@ PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
 
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
-BFD_CPPFLAGS=@bfd_cppflags@
-BFD_LDFLAGS=@bfd_ldflags@
-BFD_LDLIBS=@bfd_ldlibs@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
+CFLAGS?=@CFLAGS@
 OC_CPPFLAGS=@oc_cppflags@
+CPPFLAGS?=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
 OCAMLC_CPPFLAGS=@ocamlc_cppflags@
@@ -226,13 +224,8 @@ WITH_OCAMLDOC=@ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
-WITH_SPACETIME=@spacetime@
-ENABLE_CALL_COUNTS=@call_counts@
 WITH_PROFINFO=@profinfo@
 PROFINFO_WIDTH=@profinfo_width@
-LIBUNWIND_AVAILABLE=@libunwind_available@
-LIBUNWIND_INCLUDE_FLAGS=@libunwind_include_flags@
-LIBUNWIND_LINK_FLAGS=@libunwind_link_flags@
 WITH_FPIC=@fpic@
 TARGET=@target@
 HOST=@host@
@@ -247,7 +240,7 @@ FLAT_FLOAT_ARRAY=@flat_float_array@
 FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
 STDLIB_MANPAGES=@stdlib_manpages@
-
+NAKED_POINTERS=@naked_pointers@
 
 ### Native command to build ocamlrun.exe
 
@@ -255,10 +248,10 @@ ifeq "$(TOOLCHAIN)" "msvc"
   MERGEMANIFESTEXE=test ! -f $(1).manifest \
           || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
           && rm -f $(1).manifest
-  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
+  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) \
     /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
 else
-  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
 endif # ifeq "$(TOOLCHAIN)" "msvc"
 
 # The following variables were defined only in the Windows-specific makefiles.
@@ -276,7 +269,6 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   SORT=/usr/bin/sort
   SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
   FLEXLINK_CMD=flexlink
-  MKEXE_ANSI=$(FLEXLINK) -exe
   FLEXDLL_CHAIN=@flexdll_chain@
   # FLEXLINK_FLAGS must be safe to insert in an OCaml string
   #   (see ocamlmklibconfig.ml in tools/Makefile)

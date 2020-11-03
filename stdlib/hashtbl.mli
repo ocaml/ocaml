@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* NOTE: If this file is hashtbl.mli, do not edit it directly! Instead,
+   edit templates/hashtbl.template.mli and run tools/sync_stdlib_docs *)
+
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.
@@ -22,22 +25,23 @@
 (** {1 Generic interface} *)
 
 
-type ('a, 'b) t
+type (!'a, !'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
-val create : ?random:bool -> int -> ('a, 'b) t
+val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
+             int -> ('a, 'b) t
 (** [Hashtbl.create n] creates a new, empty hash table, with
    initial size [n].  For best results, [n] should be on the
    order of the expected number of elements that will be in
    the table.  The table grows as needed, so [n] is just an
    initial guess.
 
-   The optional [random] parameter (a boolean) controls whether
+   The optional [~][random] parameter (a boolean) controls whether
    the internal organization of the hash table is randomized at each
    execution of [Hashtbl.create] or deterministic over all executions.
 
-   A hash table that is created with [~random:false] uses a
-   fixed hash function ({!Hashtbl.hash}) to distribute keys among
+   A hash table that is created with [~][random] set to [false] uses a
+   fixed hash function ({!hash}) to distribute keys among
    buckets.  As a consequence, collisions between keys happen
    deterministically.  In Web-facing applications or other
    security-sensitive applications, the deterministic collision
@@ -45,23 +49,22 @@ val create : ?random:bool -> int -> ('a, 'b) t
    denial-of-service attack: the attacker sends input crafted to
    create many collisions in the table, slowing the application down.
 
-   A hash table that is created with [~random:true] uses the seeded
-   hash function {!Hashtbl.seeded_hash} with a seed that is randomly
-   chosen at hash table creation time.  In effect, the hash function
-   used is randomly selected among [2^{30}] different hash functions.
-   All these hash functions have different collision patterns,
-   rendering ineffective the denial-of-service attack described above.
-   However, because of randomization, enumerating all elements of the
-   hash table using {!Hashtbl.fold} or {!Hashtbl.iter} is no longer
-   deterministic: elements are enumerated in different orders at
-   different runs of the program.
+   A hash table that is created with [~][random] set to [true] uses the seeded
+   hash function {!seeded_hash} with a seed that is randomly chosen at hash
+   table creation time.  In effect, the hash function used is randomly
+   selected among [2^{30}] different hash functions.  All these hash
+   functions have different collision patterns, rendering ineffective the
+   denial-of-service attack described above.  However, because of
+   randomization, enumerating all elements of the hash table using {!fold}
+   or {!iter} is no longer deterministic: elements are enumerated in
+   different orders at different runs of the program.
 
-   If no [~random] parameter is given, hash tables are created
+   If no [~][random] parameter is given, hash tables are created
    in non-random mode by default.  This default can be changed
-   either programmatically by calling {!Hashtbl.randomize} or by
+   either programmatically by calling {!randomize} or by
    setting the [R] flag in the [OCAMLRUNPARAM] environment variable.
 
-   @before 4.00.0 the [random] parameter was not present and all
+   @before 4.00.0 the [~][random] parameter was not present and all
    hash tables were created in non-randomized mode. *)
 
 val clear : ('a, 'b) t -> unit
@@ -77,10 +80,11 @@ val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
 
 val add : ('a, 'b) t -> 'a -> 'b -> unit
-(** [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
-   Previous bindings for [x] are not removed, but simply
-   hidden. That is, after performing {!Hashtbl.remove}[ tbl x],
-   the previous binding for [x], if any, is restored.
+(** [Hashtbl.add tbl key data] adds a binding of [key] to [data]
+   in table [tbl].
+   Previous bindings for [key] are not removed, but simply
+   hidden. That is, after performing {!remove}[ tbl key],
+   the previous binding for [key], if any, is restored.
    (Same behavior as with association lists.) *)
 
 val find : ('a, 'b) t -> 'a -> 'b
@@ -107,11 +111,11 @@ val remove : ('a, 'b) t -> 'a -> unit
    It does nothing if [x] is not bound in [tbl]. *)
 
 val replace : ('a, 'b) t -> 'a -> 'b -> unit
-(** [Hashtbl.replace tbl x y] replaces the current binding of [x]
-   in [tbl] by a binding of [x] to [y].  If [x] is unbound in [tbl],
-   a binding of [x] to [y] is added to [tbl].
-   This is functionally equivalent to {!Hashtbl.remove}[ tbl x]
-   followed by {!Hashtbl.add}[ tbl x y]. *)
+(** [Hashtbl.replace tbl key data] replaces the current binding of [key]
+   in [tbl] by a binding of [key] to [data].  If [key] is unbound in [tbl],
+   a binding of [key] to [data] is added to [tbl].
+   This is functionally equivalent to {!remove}[ tbl key]
+   followed by {!add}[ tbl key data]. *)
 
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
@@ -133,14 +137,15 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
    by [f] during the iteration.
 *)
 
-val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t -> unit
+val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t ->
+    unit
 (** [Hashtbl.filter_map_inplace f tbl] applies [f] to all bindings in
     table [tbl] and update each binding depending on the result of
     [f].  If [f] returns [None], the binding is discarded.  If it
     returns [Some new_val], the binding is update to associate the key
     to [new_val].
 
-    Other comments for {!Hashtbl.iter} apply as well.
+    Other comments for {!iter} apply as well.
     @since 4.03.0 *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
@@ -173,33 +178,50 @@ val length : ('a, 'b) t -> int
 
 val randomize : unit -> unit
 (** After a call to [Hashtbl.randomize()], hash tables are created in
-    randomized mode by default: {!Hashtbl.create} returns randomized
+    randomized mode by default: {!create} returns randomized
     hash tables, unless the [~random:false] optional parameter is given.
     The same effect can be achieved by setting the [R] parameter in
     the [OCAMLRUNPARAM] environment variable.
 
     It is recommended that applications or Web frameworks that need to
     protect themselves against the denial-of-service attack described
-    in {!Hashtbl.create} call [Hashtbl.randomize()] at initialization
+    in {!create} call [Hashtbl.randomize()] at initialization
     time.
 
     Note that once [Hashtbl.randomize()] was called, there is no way
-    to revert to the non-randomized default behavior of {!Hashtbl.create}.
+    to revert to the non-randomized default behavior of {!create}.
     This is intentional.  Non-randomized hash tables can still be
     created using [Hashtbl.create ~random:false].
 
     @since 4.00.0 *)
 
 val is_randomized : unit -> bool
-(** return if the tables are currently created in randomized mode by default
-
+(** Return [true] if the tables are currently created in randomized mode
+    by default, [false] otherwise.
     @since 4.03.0 *)
+
+val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
+    ('a, 'b) t -> ('a, 'b) t
+(** Return a copy of the given hashtable.  Unlike {!copy},
+    {!rebuild}[ h] re-hashes all the (key, value) entries of
+    the original table [h].  The returned hash table is randomized if
+    [h] was randomized, or the optional [random] parameter is true, or
+    if the default is to create randomized hash tables; see
+    {!create} for more information.
+
+    {!rebuild} can safely be used to import a hash table built
+    by an old version of the {!Hashtbl} module, then marshaled to
+    persistent storage.  After unmarshaling, apply {!rebuild}
+    to produce a hash table for the current version of the {!Hashtbl}
+    module.
+
+    @since 4.12.0 *)
 
 (** @since 4.00.0 *)
 type statistics = {
   num_bindings: int;
     (** Number of bindings present in the table.
-        Same value as returned by {!Hashtbl.length}. *)
+        Same value as returned by {!length}. *)
   num_buckets: int;
     (** Number of buckets in the table. *)
   max_bucket_length: int;
@@ -297,20 +319,20 @@ module type HashedType =
           as computed by [hash].
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
--         ([(=)], {!Hashtbl.hash}) for comparing objects by structure
+-         ([(=)], {!hash}) for comparing objects by structure
               (provided objects do not contain floats)
--         ([(fun x y -> compare x y = 0)], {!Hashtbl.hash})
+-         ([(fun x y -> compare x y = 0)], {!hash})
               for comparing objects by structure
               and handling {!Stdlib.nan} correctly
--         ([(==)], {!Hashtbl.hash}) for comparing objects by physical
+-         ([(==)], {!hash}) for comparing objects by physical
               equality (e.g. for mutable or cyclic objects). *)
    end
-(** The input signature of the functor {!Hashtbl.Make}. *)
+(** The input signature of the functor {!Make}. *)
 
 module type S =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit (** @since 4.00.0 *)
@@ -326,7 +348,8 @@ module type S =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
+      unit
     (** @since 4.03.0 *)
 
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
@@ -351,7 +374,7 @@ module type S =
     val of_seq : (key * 'a) Seq.t -> 'a t
     (** @since 4.07 *)
   end
-(** The output signature of the functor {!Hashtbl.Make}. *)
+(** The output signature of the functor {!Make}. *)
 
 module Make (H : HashedType) : S with type key = H.t
 (** Functor building an implementation of the hashtable structure.
@@ -377,17 +400,18 @@ module type SeededHashedType =
       (** A seeded hashing function on keys.  The first argument is
           the seed.  It must be the case that if [equal x y] is true,
           then [hash seed x = hash seed y] for any value of [seed].
-          A suitable choice for [hash] is the function {!Hashtbl.seeded_hash}
+          A suitable choice for [hash] is the function {!seeded_hash}
           below. *)
   end
-(** The input signature of the functor {!Hashtbl.MakeSeeded}.
+(** The input signature of the functor {!MakeSeeded}.
     @since 4.00.0 *)
 
 module type SeededS =
   sig
     type key
-    type 'a t
-    val create : ?random:bool -> int -> 'a t
+    type !'a t
+    val create : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
+                 int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
     val copy : 'a t -> 'a t
@@ -400,7 +424,8 @@ module type SeededS =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
+      unit
     (** @since 4.03.0 *)
 
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
@@ -425,7 +450,7 @@ module type SeededS =
     val of_seq : (key * 'a) Seq.t -> 'a t
     (** @since 4.07 *)
   end
-(** The output signature of the functor {!Hashtbl.MakeSeeded}.
+(** The output signature of the functor {!MakeSeeded}.
     @since 4.00.0 *)
 
 module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
@@ -437,7 +462,7 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
     interface, but use the seeded hashing and equality functions
     specified in the functor argument [H] instead of generic
     equality and hashing.  The [create] operation of the
-    result structure supports the [~random] optional parameter
+    result structure supports the [~][random] optional parameter
     and returns randomized hash tables if [~random:true] is passed
     or if randomization is globally on (see {!Hashtbl.randomize}).
     @since 4.00.0 *)
@@ -453,7 +478,7 @@ val hash : 'a -> int
    Moreover, [hash] always terminates, even on cyclic structures. *)
 
 val seeded_hash : int -> 'a -> int
-(** A variant of {!Hashtbl.hash} that is further parameterized by
+(** A variant of {!hash} that is further parameterized by
    an integer seed.
    @since 4.00.0 *)
 
@@ -473,11 +498,11 @@ val hash_param : int -> int -> 'a -> int
    and therefore collisions are less likely to happen.  However,
    hashing takes longer. The parameters [meaningful] and [total]
    govern the tradeoff between accuracy and speed.  As default
-   choices, {!Hashtbl.hash} and {!Hashtbl.seeded_hash} take
+   choices, {!hash} and {!seeded_hash} take
    [meaningful = 10] and [total = 100]. *)
 
 val seeded_hash_param : int -> int -> int -> 'a -> int
-(** A variant of {!Hashtbl.hash_param} that is further parameterized by
+(** A variant of {!hash_param} that is further parameterized by
    an integer seed.  Usage:
    [Hashtbl.seeded_hash_param meaningful total seed x].
    @since 4.00.0 *)

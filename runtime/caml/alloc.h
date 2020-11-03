@@ -51,11 +51,6 @@ CAMLextern value caml_alloc_sprintf(const char * format, ...)
 ;
 CAMLextern value caml_alloc_some(value);
 
-CAMLextern value caml_alloc_with_profinfo (mlsize_t, tag_t, intnat);
-CAMLextern value caml_alloc_small_with_my_or_given_profinfo (
-  mlsize_t, tag_t, uintnat);
-CAMLextern value caml_alloc_small_with_profinfo (mlsize_t, tag_t, intnat);
-
 typedef void (*final_fun)(value);
 CAMLextern value caml_alloc_final (mlsize_t wosize,
                                    final_fun, /*finalization function*/
