@@ -26,6 +26,9 @@ Working version
 
 ### Bug fixes:
 
+- #10005: Try expanding aliases in Ctype.nondep_type_rec
+  (Stephen Dolan, review by Gabriel Scherer)
+
 OCaml 4.12.0
 ------------
 
