@@ -203,12 +203,19 @@
        saving the exception pointer of the source stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
         PUSH_EXN_HANDLER; \
-    /* Save OCaml SP in the stack slot */ \
+    /* Save OCaml SP and exn_handler in the stack slot */ \
         movq    Caml_state(current_stack), %r11; \
         movq    %rsp, Stack_sp(%r11); \
-        movq    %r10, Caml_state(current_stack) ; \
+        movq    %r10, Caml_state(current_stack); /* free up r10 */ \
+        movq    Caml_state(exn_handler), %r10; \
+        movq    %r10, Stack_exception(%r11); \
+    /* switch stacks */ \
+        movq    Caml_state(current_stack), %r10; \
         movq    Stack_sp(%r10), %rsp; \
         .cfi_def_cfa_offset 24 ; /* FIXME */ \
+    /* restore exn_handler */ \
+        movq    Stack_exception(%r10), %r11; \
+        movq    %r11, Caml_state(exn_handler); \
     /* Pop the caml_context from the bottom of stack */ \
         POP_EXN_HANDLER; \
         popq    %r11; CFI_ADJUST(-8)
@@ -330,7 +337,8 @@ G(caml_hot__code_end):
 
 /* struct stack_info */
 #define Stack_sp                 0
-#define Stack_handler            8
+#define Stack_exception          8
+#define Stack_handler            16
 
 /* struct stack_handler */
 #define Handler_value(REG)       0(REG)
@@ -705,7 +713,8 @@ LBL(caml_start_program):
     /* Load the OCaml stack. */
         movq    Caml_state(current_stack), %r11
         movq    Stack_sp(%r11), %r10
-    /* Store the stack pointer to allow DWARF unwind */
+    /* Store the stack pointer to allow DWARF unwind and
+       gc_regs for callbacks during a GC */
         subq    $16, %r10
         movq    %rsp, 0(%r10)
         movq    Caml_state(gc_regs), %r11
