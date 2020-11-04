@@ -629,6 +629,8 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
+  (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
 
 OCaml 4.11.1
 ------------
