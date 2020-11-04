@@ -76,7 +76,7 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
 {
   char* p = (char*)stack->sp;
 
-  p += /*sizeof(struct caml_context)*/ + sizeof(value);
+  p += sizeof(value);
   *sp = p;
   *pc = Saved_return_address(*sp);
 }
@@ -98,7 +98,6 @@ static inline void scan_stack_frames(scanning_action f, void* fdata, struct stac
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
 
-  /*sp += sizeof(struct caml_context);*/
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
 
@@ -130,9 +129,9 @@ next_chunk:
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
        * chunk. This includes skipping over the trap frame (2 words). */
-      sp += 2 * sizeof(value);
+      sp += 2 * sizeof(value); /* trap frame */
       regs = *(value**)sp;
-      sp += 2 * sizeof(value);
+      sp += 2 * sizeof(value); /* DWARF and gc_regs */
       goto next_chunk;
     }
   }
