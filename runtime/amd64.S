@@ -163,16 +163,6 @@
           DW_OP_breg + DW_REG_rsp, Cstack_sp, DW_OP_deref, \
           DW_OP_plus_uconst, (PUSHED) + 8 /* retaddr */
 
-/* Switch from OCaml to C stack. Also builds a context at
- * the bottom of the OCaml stack. Clobbers %r10, %r11.
- * PUSHED is the number of bytes already pushed by this function.
- * It is used to compute the backtrace. */
-#define SWITCH_OCAML_TO_C(PUSHED) \
-    /* Build caml_context at the bottom of the stack */ \
-    /*  pushq   $0 ; CFI_ADJUST(8); */ \
-    /*  PUSH_EXN_HANDLER; */ \
-        SWITCH_OCAML_TO_C_NO_CTXT(PUSHED)
-
 /* Switch from C to OCaml stack.  Clobbers %r11. */
 #define SWITCH_C_TO_OCAML_NO_CTXT \
     /* Assert that %rsp == Caml_state->c_stack &&
@@ -183,14 +173,6 @@
         movq    Cstack_sp(%rsp), %rsp; \
         .cfi_restore_state
 
-/* Switch from C to OCaml stack. Also pops the context
- * from the bottom of the OCaml stack. Clobbers %r10 and %r11. */
-#define SWITCH_C_TO_OCAML \
-        SWITCH_C_TO_OCAML_NO_CTXT; \
-    /* Pop the caml_context from the bottom of stack */ \
-    /*  POP_EXN_HANDLER; */ \
-    /*  popq    %r11; CFI_ADJUST(-8); */
-
 /* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r10 and %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
         movq    Caml_state(exn_handler), %rsp; \
@@ -199,10 +181,6 @@
 
 /* Switch between OCaml stacks. Clobbers %r10 and %r11. Expects target stack in %r10. */
 #define SWITCH_OCAML_STACKS \
-    /* Build caml_context at the bottom of the stack, \
-       saving the exception pointer of the source stack */ \
-    /*  pushq   $0 ; CFI_ADJUST(8); */ \
-    /*  PUSH_EXN_HANDLER; */ \
     /* Save OCaml SP and exn_handler in the stack slot */ \
         movq    Caml_state(current_stack), %r11; \
         movq    %rsp, Stack_sp(%r11); \
@@ -213,12 +191,9 @@
         movq    Caml_state(current_stack), %r10; \
         movq    Stack_sp(%r10), %rsp; \
         .cfi_def_cfa_offset 8 ; /* FIXME */ \
-    /* restore exn_handler */ \
+    /* restore exn_handler in new stack */ \
         movq    Stack_exception(%r10), %r11; \
-        movq    %r11, Caml_state(exn_handler); \
-    /* Pop the caml_context from the bottom of stack */ \
-    /*  POP_EXN_HANDLER; */ \
-    /*  popq    %r11; CFI_ADJUST(-8) */
+        movq    %r11, Caml_state(exn_handler)
 
 /******************************************************************************/
 /* Save and restore all callee-save registers on stack.
@@ -630,7 +605,7 @@ LBL(caml_c_call):
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
         C function          : %rax */
     /* Switch from OCaml to C */
-        SWITCH_OCAML_TO_C(0)
+        SWITCH_OCAML_TO_C_NO_CTXT(0)
     /* Make the alloc ptr available to the C code */
         movq    %r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
@@ -638,7 +613,7 @@ LBL(caml_c_call):
     /* Prepare for return to OCaml */
         movq    Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
-        SWITCH_C_TO_OCAML
+        SWITCH_C_TO_OCAML_NO_CTXT
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
@@ -652,12 +627,12 @@ CFI_STARTPROC
         C function          : %rax
         C stack args        : begin=%r13 end=%r12 */
     /* Switch from OCaml to C */
-        SWITCH_OCAML_TO_C(0)
+        SWITCH_OCAML_TO_C_NO_CTXT(0)
     /* we use %rbp (otherwise unused) to enable backtraces */
         movq    %rsp, %rbp
         .cfi_escape DW_CFA_def_cfa_expression, 5, \
           DW_OP_breg + DW_REG_rbp, Cstack_sp, DW_OP_deref, \
-          DW_OP_plus_uconst, 16 /* caml_context */ + 8 /* ret addr */
+          DW_OP_plus_uconst,  8 /* ret addr */
     /* Make the alloc ptr available to the C code */
         movq    %r15, Caml_state(young_ptr)
     /* Copy arguments from OCaml to C stack */
@@ -675,7 +650,7 @@ LBL(106):
     /* Prepare for return to OCaml */
         movq    Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
-        SWITCH_C_TO_OCAML
+        SWITCH_C_TO_OCAML_NO_CTXT
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
@@ -723,9 +698,7 @@ LBL(caml_start_program):
         subq    $16, %r10
         lea     LBL(109)(%rip), %r11
         movq    %r11, 8(%r10)
-    /* load the previous context exn_handler so that copying stacks works */
-    /*  movq    Caml_state(current_stack), %r11 */
-    /*  movq    Stack_sp(%r11), %r11 */
+    /* link in the previous exn_handler so that copying stacks works */
         movq    Caml_state(exn_handler), %r11
         movq    %r11, 0(%r10)
         movq    %r10, Caml_state(exn_handler)
@@ -822,9 +795,6 @@ CFI_STARTPROC
     /* Discard the C stack pointer and reset to ocaml stack */
         movq    Caml_state(current_stack), %r10
         movq    Stack_sp(%r10), %rsp         /* FIXME: CFI */
-    /* Pop the caml_context and raise exn in OCaml */
-    /*  POP_EXN_HANDLER */
-    /*  popq    %r10 */
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exception))
@@ -952,9 +922,6 @@ CFI_STARTPROC
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         movq    %rax, %rdi
-    /* Build caml_context at the bottom of the stack */
-    /*  pushq   $0 ; CFI_ADJUST(8); */
-    /*  PUSH_EXN_HANDLER */
     /* save old stack pointer and exception handler */
         movq    Caml_state(current_stack), %rax
         movq    Caml_state(exn_handler), %r10
@@ -970,9 +937,7 @@ CFI_STARTPROC
         leaq    -32(%rax), %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
         movq    %r10, 8(%r11)
-    /* load the previous context exn_handler so that copying stacks works */
-    /*  movq    %rax, 0(%r11) */
-    /*  movq    %r11, Caml_state(exn_handler) */
+    /* link the previous exn_handler so that copying stacks works */
         movq    Stack_exception(%rdi), %r10
         movq    %r10, 0(%r11)
         movq    %r11, Caml_state(exn_handler)
@@ -982,7 +947,7 @@ CFI_STARTPROC
         .cfi_escape DW_CFA_def_cfa_expression, 3+3+2, \
           DW_OP_breg + DW_REG_rsp, 32 /* exn */ + Handler_parent, DW_OP_deref,\
           DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
-          DW_OP_plus_uconst, /* 16 sizeof caml_context */ + 8 /* ret addr */
+          DW_OP_plus_uconst, 8 /* ret addr */
         movq    %r12, %rax /* first argument */
         callq   *(%rbx) /* closure in %rbx (second argument) */
 LBL(frame_runstack):
@@ -1002,9 +967,6 @@ LBL(frame_runstack):
         movq    %r13, %rsp
         .cfi_restore_state
         movq    %r12, %rax
-    /* Pop the caml_context from the bottom of the stack */
-    /*  POP_EXN_HANDLER */
-    /*  popq    %r10; CFI_ADJUST(-8) */
 
     /* Invoke handle_value (or handle_exn) */
         jmp     *(%rbx)

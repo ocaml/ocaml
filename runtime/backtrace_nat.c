@@ -56,8 +56,6 @@ static frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat *
         return NULL;
       }
       *sp += sizeof(value); /* return address */
-          /* sizeof(struct caml_context) */ /* context */
-          /*+ sizeof(value); */ /* return address */
     }
   }
 }
