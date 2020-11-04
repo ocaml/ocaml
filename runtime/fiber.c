@@ -76,7 +76,7 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
 {
   char* p = (char*)stack->sp;
 
-  p += sizeof(struct caml_context) + sizeof(value);
+  p += /*sizeof(struct caml_context)*/ + sizeof(value);
   *sp = p;
   *pc = Saved_return_address(*sp);
 }
@@ -98,7 +98,7 @@ static inline void scan_stack_frames(scanning_action f, void* fdata, struct stac
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
 
-  sp += sizeof(struct caml_context);
+  /*sp += sizeof(struct caml_context);*/
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
 
@@ -395,10 +395,8 @@ CAMLprim value caml_clone_continuation (value cont)
 #ifdef NATIVE_CODE
     {
       /* rewrite exception pointer in the caml context on the new stack */
-      value* exn_start =
-        Stack_high(target) - (Stack_high(source) - (value*)source->sp);
-      rewrite_exception_stack(source, (value**)exn_start, target);
-      target->exception_ptr = *(value**)exn_start;
+      target->exception_ptr = source->exception_ptr;
+      rewrite_exception_stack(source, (value**)&target->exception_ptr, target);
     }
 #endif
     target->sp = Stack_high(target) - stack_used;
