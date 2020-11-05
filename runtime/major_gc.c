@@ -854,6 +854,19 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   buf->major_heap.large_max_words = large_max;
 }
 
+/* update GC stats for this given domain */
+inline void caml_sample_gc_collect(caml_domain_state* domain)
+{
+  int stats_phase = caml_major_cycles_completed & 1;
+  struct gc_stats* stats = &sampled_gc_stats[stats_phase][domain->id];
+
+  stats->minor_words = domain->stat_minor_words;
+  stats->promoted_words = domain->stat_promoted_words;
+  stats->major_words = domain->stat_major_words;
+  stats->minor_collections = domain->stat_minor_collections;
+  caml_sample_heap_stats(domain->shared_heap, &stats->major_heap);
+}
+
 static void cycle_all_domains_callback(struct domain* domain, void* unused,
                                        int participating_count, struct domain** participating)
 {
@@ -872,16 +885,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
 
   caml_ev_begin("major_gc/stw");
 
-  {
-    /* update GC stats */
-    int stats_phase = caml_major_cycles_completed & 1;
-    struct gc_stats* stats = &sampled_gc_stats[stats_phase][domain->state->id];
-    stats->minor_words = domain->state->stat_minor_words;
-    stats->promoted_words = domain->state->stat_promoted_words;
-    stats->major_words = domain->state->stat_major_words;
-    stats->minor_collections = domain->state->stat_minor_collections;
-    caml_sample_heap_stats(domain->state->shared_heap, &stats->major_heap);
-  }
+  caml_sample_gc_collect(domain->state);
 
   {
     /* Cycle major heap */
