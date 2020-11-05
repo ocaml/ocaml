@@ -20,4 +20,4 @@ val interface : formatter -> signature -> unit;;
 val implementation : formatter -> structure -> unit;;
 
 val implementation_with_coercion :
-    formatter -> (structure * module_coercion * Types.signature) -> unit;;
+    formatter -> Typemod.typed_impl -> unit;;

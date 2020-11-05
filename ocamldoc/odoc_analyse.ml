@@ -151,7 +151,7 @@ let process_file sourcefile =
          match parsetree_typedtree_opt with
            None ->
              None
-         | Some (parsetree, (structure, coercion, _signature)) ->
+         | Some (parsetree, Typemod.{structure; coercion; _}) ->
              let typedtree = (structure, coercion) in
              let file_module = Ast_analyser.analyse_typed_tree file
                  input_file parsetree typedtree

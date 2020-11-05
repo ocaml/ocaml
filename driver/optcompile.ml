@@ -31,15 +31,14 @@ let (|>>) (x, y) f = (x, f y)
 
 (** Native compilation backend for .ml files. *)
 
-let flambda i backend (structure, coercion, _signature) =
+let flambda i backend Typemod.{structure; coercion; _} =
   if !Clflags.classic_inlining then begin
     Clflags.default_simplify_rounds := 1;
     Clflags.use_inlining_arguments_set Clflags.classic_arguments;
     Clflags.unbox_free_vars_of_closures := false;
     Clflags.unbox_specialised_args := false
   end;
-  let typed = (structure, coercion) in
-  typed
+  (structure, coercion)
   |> Profile.(record transl)
       (Translmod.transl_implementation_flambda i.module_name)
   |> Profile.(record generate)
@@ -67,10 +66,9 @@ let flambda i backend (structure, coercion, _signature) =
         program);
     Compilenv.save_unit_info (cmx i))
 
-let clambda i backend (structure, coercion, _signature) =
+let clambda i backend Typemod.{structure; coercion; _} =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
-  let typed = (structure, coercion) in
-  typed
+  (structure, coercion)
   |> Profile.(record transl)
     (Translmod.transl_store_implementation i.module_name)
   |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program

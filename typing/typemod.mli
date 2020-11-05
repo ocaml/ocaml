@@ -29,6 +29,12 @@ module Signature_names : sig
   val simplify: Env.t -> t -> signature -> signature
 end
 
+type typed_impl = {
+  structure: Typedtree.structure;
+  coercion: Typedtree.module_coercion;
+  signature: Types.signature
+}
+
 val type_module:
         Env.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
@@ -38,8 +44,7 @@ val type_toplevel_phrase:
   Env.t -> Parsetree.structure ->
   Typedtree.structure * Types.signature * Signature_names.t * Env.t
 val type_implementation:
-  string -> string -> string -> Env.t -> Parsetree.structure ->
-  Typedtree.structure * Typedtree.module_coercion * Types.signature
+  string -> string -> string -> Env.t -> Parsetree.structure -> typed_impl
 val type_interface:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
