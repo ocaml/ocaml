@@ -53,6 +53,7 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   hand->parent = NULL;
   stack->handler = hand;
   stack->sp = (value*)hand;
+  stack->exception_ptr = NULL;
   stack->magic = 42;
   CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
              Stack_high(stack) - Stack_base(stack) == wosize + 1);
@@ -75,12 +76,12 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
 {
   char* p = (char*)stack->sp;
 
-  p += sizeof(struct caml_context) + sizeof(value);
+  p += sizeof(value);
   *sp = p;
   *pc = Saved_return_address(*sp);
 }
 
-static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack)
+static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -90,21 +91,17 @@ static inline void scan_stack_frames(scanning_action f, void* fdata, struct stac
   int n, ofs;
   unsigned short * p;
   value *root;
-  struct caml_context* context;
   caml_frame_descrs fds = caml_get_frame_descrs();
 
-  if (stack->sp == Stack_high(stack)) return;
   sp = (char*)stack->sp;
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
-  context = (struct caml_context*)sp;
-  regs = context->gc_regs;
-  sp += sizeof(struct caml_context);
 
-  if (sp == (char*)Stack_high(stack)) return;
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
+
+  regs = gc_regs;
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
@@ -131,17 +128,19 @@ next_chunk:
       /* XXX KC: disabled already scanned optimization. */
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the DWARF link & trap frame (4 words). */
-      sp += 4 * sizeof(value);
+       * chunk. This includes skipping over the trap frame (2 words). */
+      sp += 2 * sizeof(value); /* trap frame */
+      regs = *(value**)sp;
+      sp += 2 * sizeof(value); /* DWARF and gc_regs */
       goto next_chunk;
     }
   }
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
 {
   while (stack != NULL) {
-    scan_stack_frames(f, fdata, stack);
+    scan_stack_frames(f, fdata, stack, gc_regs);
 
     f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
     f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
@@ -222,7 +221,7 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
 
@@ -394,10 +393,9 @@ CAMLprim value caml_clone_continuation (value cont)
            stack_used * sizeof(value));
 #ifdef NATIVE_CODE
     {
-      /* pull out the exception pointer from the caml context on the stack */
-      value* exn_start =
-        Stack_high(target) - (Stack_high(source) - (value*)source->sp);
-      rewrite_exception_stack(source, (value**)exn_start, target);
+      /* rewrite exception pointer in the caml context on the new stack */
+      target->exception_ptr = source->exception_ptr;
+      rewrite_exception_stack(source, (value**)&target->exception_ptr, target);
     }
 #endif
     target->sp = Stack_high(target) - stack_used;
