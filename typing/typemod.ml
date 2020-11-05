@@ -2637,7 +2637,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
               (Printtyp.printed_signature sourcefile) simple_sg
           );
         gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
-        (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
+        (str, Tcoerce_none, simple_sg)   (* result is ignored by Compile.implementation *)
       end else begin
         let sourceintf =
           Filename.remove_extension sourcefile ^ !Config.interface_suffix in
@@ -2661,7 +2661,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
             annots (Some sourcefile) initial_env None;
           gen_annot outputprefix sourcefile annots;
-          (str, coercion)
+          (str, coercion, dclsig)
         end else begin
           let coercion =
             Includemod.compunit initial_env ~mark:Mark_positive
@@ -2685,7 +2685,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
               annots (Some sourcefile) initial_env (Some cmi);
             gen_annot outputprefix sourcefile annots
           end;
-          (str, coercion)
+          (str, coercion, simple_sg)
         end
       end
     )
