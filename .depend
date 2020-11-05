@@ -1010,6 +1010,7 @@ typing/printtyp.cmi : \
     parsing/asttypes.cmi
 typing/printtyped.cmo : \
     typing/types.cmi \
+    typing/typemod.cmi \
     typing/typedtree.cmi \
     parsing/printast.cmi \
     typing/path.cmi \
@@ -1022,6 +1023,7 @@ typing/printtyped.cmo : \
     typing/printtyped.cmi
 typing/printtyped.cmx : \
     typing/types.cmx \
+    typing/typemod.cmx \
     typing/typedtree.cmx \
     parsing/printast.cmx \
     typing/path.cmx \
