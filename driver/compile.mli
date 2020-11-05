@@ -25,7 +25,7 @@ val implementation:
 
 val to_bytecode :
   Compile_common.info ->
-  Typedtree.t ->
+  Typedtree.implementation ->
   Instruct.instruction list * Ident.Set.t
 (** [to_bytecode info typed] takes a typechecked implementation
     and returns its bytecode.

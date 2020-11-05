@@ -19,4 +19,4 @@ open Format;;
 val interface : formatter -> signature -> unit;;
 val implementation : formatter -> structure -> unit;;
 
-val implementation_with_coercion : formatter -> Typedtree.t -> unit;;
+val implementation_with_coercion : formatter -> Typedtree.implementation -> unit;;

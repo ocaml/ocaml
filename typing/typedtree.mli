@@ -752,7 +752,7 @@ and 'a class_infos =
     ci_attributes: attributes;
    }
 
-type t = {
+type implementation = {
   structure: structure;
   coercion: module_coercion;
   signature: Types.signature
