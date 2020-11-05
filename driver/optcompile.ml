@@ -31,7 +31,7 @@ let (|>>) (x, y) f = (x, f y)
 
 (** Native compilation backend for .ml files. *)
 
-let flambda i backend Typemod.{structure; coercion; _} =
+let flambda i backend Typedtree.{structure; coercion; _} =
   if !Clflags.classic_inlining then begin
     Clflags.default_simplify_rounds := 1;
     Clflags.use_inlining_arguments_set Clflags.classic_arguments;
@@ -66,7 +66,7 @@ let flambda i backend Typemod.{structure; coercion; _} =
         program);
     Compilenv.save_unit_info (cmx i))
 
-let clambda i backend Typemod.{structure; coercion; _} =
+let clambda i backend Typedtree.{structure; coercion; _} =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
   (structure, coercion)
   |> Profile.(record transl)

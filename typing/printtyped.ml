@@ -942,4 +942,4 @@ let interface ppf x = list 0 signature_item ppf x.sig_items;;
 
 let implementation ppf x = list 0 structure_item ppf x.str_items;;
 
-let implementation_with_coercion ppf Typemod.{structure; _} = implementation ppf structure 
+let implementation_with_coercion ppf Typedtree.{structure; _} = implementation ppf structure 

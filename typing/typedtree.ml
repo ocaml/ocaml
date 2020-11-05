@@ -613,6 +613,13 @@ and 'a class_infos =
     ci_attributes: attribute list;
    }
 
+type t = {
+  structure: structure;
+  coercion: module_coercion;
+  signature: Types.signature
+}
+
+
 (* Auxiliary functions over the a.s.t. *)
 
 let as_computation_pattern (p : pattern) : computation general_pattern =

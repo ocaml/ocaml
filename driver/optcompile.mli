@@ -25,13 +25,13 @@ val implementation:
 (** {2 Internal functions} **)
 
 val clambda :
-  Compile_common.info -> (module Backend_intf.S) -> Typemod.typed_impl-> unit
+  Compile_common.info -> (module Backend_intf.S) -> Typedtree.t-> unit
 (** [clambda info typed] applies the regular compilation pipeline to the
     given typechecked implementation and outputs the resulting files.
 *)
 
 val flambda :
-  Compile_common.info -> (module Backend_intf.S) -> Typemod.typed_impl -> unit
+  Compile_common.info -> (module Backend_intf.S) -> Typedtree.t -> unit
 (** [flambda info backend typed] applies the Flambda compilation pipeline to the
     given typechecked implementation and outputs the resulting files.
 *)

@@ -106,12 +106,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-type typed_impl = {
-  structure: Typedtree.structure;
-  coercion: Typedtree.module_coercion;
-  signature: Types.signature
-}
-
 open Typedtree
 
 let rec path_concat head p =

@@ -752,6 +752,12 @@ and 'a class_infos =
     ci_attributes: attributes;
    }
 
+type t = {
+  structure: structure;
+  coercion: module_coercion;
+  signature: Types.signature
+}
+
 (* Auxiliary functions over the a.s.t. *)
 
 (** [as_computation_pattern p] is a computation pattern with description

@@ -68,13 +68,13 @@ val interface : info -> unit
 val parse_impl : info -> Parsetree.structure
 (** [parse_impl info] parses an implementation (usually an [.ml] file). *)
 
-val typecheck_impl : info -> Parsetree.structure -> Typemod.typed_impl
+val typecheck_impl : info -> Parsetree.structure -> Typedtree.t
 (** [typecheck_impl info parsetree] typechecks an implementation and returns
     the typedtree of the associated module, its public interface, and a
     coercion against that public interface.
 *)
 
-val implementation : info -> backend:(info -> Typemod.typed_impl -> unit) -> unit
+val implementation : info -> backend:(info -> Typedtree.t -> unit) -> unit
 (** The complete compilation pipeline for implementations. *)
 
 (** {2 Build artifacts} *)
