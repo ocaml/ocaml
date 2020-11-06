@@ -190,7 +190,7 @@
     /* switch stacks */ \
         movq    Caml_state(current_stack), %r10; \
         movq    Stack_sp(%r10), %rsp; \
-        .cfi_def_cfa_offset 8 ; /* FIXME */ \
+        .cfi_def_cfa_offset 8; \
     /* restore exn_handler in new stack */ \
         movq    Stack_exception(%r10), %r11; \
         movq    %r11, Caml_state(exn_handler)
@@ -562,14 +562,10 @@ LBL(call_gc_and_retry_alloc):
         addq    %rax, %r15
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
-        /* pushq   %r15; CFI_ADJUST(8) */
-        /* PUSH_EXN_HANDLER */
         SWITCH_OCAML_TO_C_NO_CTXT(0)
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML_NO_CTXT
-        /* POP_EXN_HANDLER */
         movq    Caml_state(gc_regs), %r15
-        /* popq    %r15; CFI_ADJUST(-8) */
         RESTORE_ALL_REGS
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
@@ -580,14 +576,10 @@ CFI_STARTPROC
 LBL(caml_call_poll):
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
-        /* pushq   %r15; CFI_ADJUST(8) */
-        /* PUSH_EXN_HANDLER */
         SWITCH_OCAML_TO_C_NO_CTXT(0)
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML_NO_CTXT
-        /* POP_EXN_HANDLER */
         movq    Caml_state(gc_regs), %r15
-        /* popq    %r15; CFI_ADJUST(-8) */
         RESTORE_ALL_REGS
         ret
 CFI_ENDPROC
