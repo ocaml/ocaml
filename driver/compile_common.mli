@@ -74,7 +74,8 @@ val typecheck_impl : info -> Parsetree.structure -> Typedtree.implementation
     coercion against that public interface.
 *)
 
-val implementation : info -> backend:(info -> Typedtree.implementation -> unit) -> unit
+val implementation :
+  info -> backend:(info -> Typedtree.implementation -> unit) -> unit
 (** The complete compilation pipeline for implementations. *)
 
 (** {2 Build artifacts} *)
