@@ -359,6 +359,7 @@ G(caml_system__code_begin):
 #define DW_CFA_val_offset         0x14
 #define DW_REG_rbp                6
 #define DW_REG_rsp                7
+#define DW_REG_r13                13
 #define DW_OP_breg                0x70
 #define DW_OP_deref               0x06
 #define DW_OP_plus_uconst         0x23
@@ -925,7 +926,7 @@ CFI_STARTPROC
         movq    %rdi, Caml_state(current_stack)
         movq    Stack_sp(%rdi), %rax
     /* Create an exception handler on the target stack
-       after 16byte DWARF block (which is unused here) */
+       after 16byte DWARF & gc_regs block (which is unused here) */
         leaq    -32(%rax), %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
         movq    %r10, 8(%r11)
@@ -952,9 +953,11 @@ LBL(frame_runstack):
         movq    Stack_exception(%r10), %r11
         movq    %r11, Caml_state(exn_handler)
         movq    Stack_sp(%r10), %r13 /* saved across C call */
+        .cfi_restore_state
+        .cfi_remember_state
+        .cfi_def_cfa_register DW_REG_r13
         movq    %rax, %r12 /* save %rax across C call */
         movq    Caml_state(c_stack), %rsp
-        /* FIXME: CFI here */
         call    GCALL(caml_free_stack)
         movq    %r13, %rsp
         .cfi_restore_state
