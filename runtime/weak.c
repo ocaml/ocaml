@@ -54,14 +54,12 @@ CAMLprim value caml_ephe_create (value len)
 
   size = Long_val (len)
        + 1 /* weak_list */
-       + 1 /* owning domain */
        + 1 /* the value */;
   if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize) caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
 
   Ephe_link(res) = domain_state->ephe_info->live;
   domain_state->ephe_info->live = res;
-  Ephe_domain(res) = caml_domain_self();
   for (i = CAML_EPHE_DATA_OFFSET; i < size; i++)
     Op_val(res)[i] = caml_ephe_none;
   return res;
@@ -105,10 +103,9 @@ CAMLprim value caml_weak_create (value len)
 /* If we are in Phase_sweep_ephe we need to check if the key
    that is going to disappear is dead and so should trigger a cleaning
  */
-static void do_check_key_clean(struct domain* d, value e, mlsize_t offset)
+static void do_check_key_clean(value e, mlsize_t offset)
 {
   CAMLassert (offset >= CAML_EPHE_FIRST_KEY);
-  CAMLassert (Ephe_domain(e) == d);
 
   if (caml_gc_phase != Phase_sweep_ephe) return;
 
@@ -120,12 +117,11 @@ static void do_check_key_clean(struct domain* d, value e, mlsize_t offset)
   }
 }
 
-void caml_ephe_clean (struct domain* d, value v) {
+void caml_ephe_clean (value v) {
   value child;
   int release_data = 0;
   mlsize_t size, i;
   header_t hd;
-  CAMLassert (Ephe_domain(v) = d);
 
   if (caml_gc_phase != Phase_sweep_ephe) return;
 
@@ -168,278 +164,34 @@ void caml_ephe_clean (struct domain* d, value v) {
   }
 }
 
-static void clean_field (struct domain* d, value e, mlsize_t offset)
+static void clean_field (value e, mlsize_t offset)
 {
   if (offset == CAML_EPHE_DATA_OFFSET)
-    caml_ephe_clean(d, e);
+    caml_ephe_clean(e);
   else
-    do_check_key_clean(d, e, offset);
+    do_check_key_clean(e, offset);
 }
 
-static void do_set (struct domain* d, value e, mlsize_t offset, value v)
+static void do_set (value e, mlsize_t offset, value v)
 {
-  CAMLassert (Ephe_domain(e) == d ||
-              !Is_block(v) || !Is_minor(v)); //blit operations
-
   if (Is_block(v) && Is_minor(v)) {
     value old = Op_val(e)[offset];
     Op_val(e)[offset] = v;
     if (!(Is_block(old) && Is_minor(old)))
-      add_to_ephe_ref_table (&d->state->minor_tables->ephe_ref,
+      add_to_ephe_ref_table (&Caml_state->minor_tables->ephe_ref,
                              e, offset);
   } else {
     Op_val(e)[offset] = v;
   }
 }
 
-value caml_bias_ephe_list(value e, struct domain* d)
-{
-  value last = 0;
-  while (e != 0) {
-    CAMLassert (Tag_val(e) == Abstract_tag);
-    Ephe_domain(e) = d;
-    last = e;
-    e = Ephe_link(e);
-  }
-  return last;
-}
-
-/*****************************************************************************
- * Core functions
- ****************************************************************************/
-
-typedef struct {
-  void* f;
-  value* argv;
-  int success;
-} rpc_payload_t;
-
-static value ephe_set_field_domain (value e, value n, value el,
-                             struct domain* d, int* rpc_success)
-{
-  CAMLparam3(e,n,el);
-  mlsize_t offset = Long_val (n);
-
-  if (rpc_success && Ephe_domain(e) == 0) {
-    *rpc_success = 0;
-    CAMLreturn(Val_unit);
-  }
-  CAMLassert (Ephe_domain(e) == d);
-
-  clean_field(d, e, offset);
-  do_set(d, e, offset, el);
-  CAMLreturn(Val_unit);
-}
-
-static value ephe_get_field_domain (value e, value n, struct domain* d, int* rpc_success)
-{
-  CAMLparam2(e, n);
-  CAMLlocal2 (res, elt);
-  mlsize_t offset = Long_val (n);
-
-  if (rpc_success && Ephe_domain(e) == 0) {
-    *rpc_success = 0;
-    CAMLreturn(Val_unit);
-  }
-  CAMLassert (Ephe_domain(e) == d);
-
-  clean_field(d, e, offset);
-  elt = Op_val(e)[offset];
-
-  if (elt == caml_ephe_none) {
-    res = None_val;
-  } else {
-    if (rpc_success) {
-      elt = Op_val(e)[offset];
-    }
-    caml_darken (0, elt, 0);
-    if (rpc_success) {
-      res = caml_alloc_shr (1, Some_tag);
-      caml_initialize_field(res, 0, elt);
-    } else {
-      res = caml_alloc_small (1, Some_tag);
-      Field (res, 0) = elt;
-    }
-  }
-  CAMLreturn (res);
-}
-
-static value ephe_get_field_copy_domain (value e, value n, struct domain* d, int* rpc_success)
-{
-  CAMLparam2 (e, n);
-  CAMLlocal2 (res, elt);
-  mlsize_t i, offset = Long_val (n);
-  value v; /* Caution: this is NOT a local root. */
-  value f;
-
-  if (rpc_success && Ephe_domain(e) == 0) {
-    *rpc_success = 0;
-    CAMLreturn(Val_unit);
-  }
-  CAMLassert (Ephe_domain(e) == d);
-
-  clean_field (d, e, offset);
-  v = Op_val(e)[offset];
-  if (v == caml_ephe_none) CAMLreturn (None_val);
-
-  /** Don't copy custom_block #7279 */
-  if (Is_block(v) && //XXX KC: trunk includes Is_in_heap_or_young(v) &&
-      Tag_val(v) != Custom_tag) {
-    if (rpc_success) {
-      elt = caml_alloc_shr (Wosize_val(v), Tag_val(v));
-    } else {
-      elt = caml_alloc (Wosize_val(v), Tag_val(v));
-      /* The GC may erase or move v during this call to caml_alloc. */
-    }
-    clean_field (d, e, offset);
-    if (rpc_success) {
-      v = Op_val(e)[offset];
-    } else {
-      v = Op_val (e)[offset];
-    }
-    if (v == caml_ephe_none) CAMLreturn (None_val);
-
-    if (Tag_val(v) < No_scan_tag) {
-      for (i = 0; i < Wosize_val(v); i++) {
-        f = Op_val(v)[i];
-        caml_darken (0, f, 0);
-        Store_field(elt, i, f);
-      }
-    } else {
-      memmove (Bp_val(elt), Bp_val(v), Bosize_val(v));
-    }
-  } else {
-    if (rpc_success) {
-      Op_val(e)[offset] = elt = v;
-    } else {
-      caml_darken (0, v, 0);
-      elt = v;
-    }
-  }
-  if (rpc_success) {
-    res = caml_alloc_shr (1, Some_tag);
-    caml_initialize_field(res, 0, elt);
-  } else {
-    res = caml_alloc_small (1, Some_tag);
-    Field (res, 0) = elt;
-  }
-  CAMLreturn(res);
-}
-
-static value ephe_check_field_domain (value e, value n, struct domain* d, int* rpc_success)
-{
-  CAMLparam2(e,n);
-  CAMLlocal1(v);
-  mlsize_t offset = Long_val(n);
-
-  if (rpc_success && Ephe_domain(e) == 0) {
-    *rpc_success = 0;
-    CAMLreturn(Val_unit);
-  }
-  CAMLassert (Ephe_domain(e) == d);
-
-  clean_field (d, e, offset);
-  v = Op_val(e)[offset];
-  CAMLreturn(Val_bool(v != caml_ephe_none));
-}
-
-static value ephe_blit_field_produce_domain (value es, value ofs, value len,
-                                             struct domain* d, int* rpc_success)
-{
-  CAMLparam3(es, ofs, len);
-  CAMLlocal1(ar);
-  mlsize_t offset_s = Long_val(ofs);
-  mlsize_t length = Long_val(len);
-  long i;
-
-  if (rpc_success && Ephe_domain(es) == 0) {
-    *rpc_success = 0;
-    CAMLreturn(Val_unit);
-  }
-  CAMLassert (Ephe_domain(es) == d);
-
-  for (i = 0; i < length; i++) {
-    caml_darken(0, Op_val(es)[offset_s + i], 0);
-  }
-  ar = caml_alloc_shr (length, 0);
-  for (i = 0; i < length; i++) {
-    caml_initialize_field (ar, i, Op_val(es)[offset_s + i]);
-  }
-  CAMLreturn(ar);
-}
-
-static value ephe_blit_field_consume_domain (value ed, value ofd, value ar,
-                                             struct domain* d, int* rpc_success)
-{
-  CAMLparam3(ed,ofd,ar);
-  mlsize_t offset_d = Long_val(ofd);
-  long i;
-
-  if (rpc_success && Ephe_domain(ed) == 0) {
-    *rpc_success = 0;
-    CAMLreturn(Val_unit);
-  }
-  CAMLassert (Ephe_domain(ed) == d);
-
-  for (i = 0; i < Wosize_val(ar); i++) {
-    Op_val(ed)[offset_d + i] = Op_val(ar)[i];
-  }
-  CAMLreturn(Val_unit);
-}
-
-static void handle_ephe_rpc (struct domain* d, void* arg, interrupt* done)
-{
-  rpc_payload_t* p = (rpc_payload_t*)arg;
-  CAMLassert (p->success);
-
-  if (p->f == (void*)&ephe_set_field_domain) {
-    p->argv[0] = ephe_set_field_domain(p->argv[0], p->argv[1], p->argv[2], d, &p->success);
-  } else if (p->f == (void*)&ephe_get_field_domain) {
-    p->argv[0] = ephe_get_field_domain (p->argv[0], p->argv[1], d, &p->success);
-  } else if (p->f == (void*)&ephe_get_field_copy_domain) {
-    p->argv[0] = ephe_get_field_copy_domain (p->argv[0], p->argv[1], d, &p->success);
-  } else if (p->f == (void*)&ephe_check_field_domain) {
-    p->argv[0] = ephe_check_field_domain (p->argv[0], p->argv[1], d, &p->success);
-  } else if (p->f == (void*)&ephe_blit_field_produce_domain) {
-    p->argv[0] = ephe_blit_field_produce_domain (p->argv[0], p->argv[1], p->argv[2], d, &p->success);
-  } else if (p->f == (void*)&ephe_blit_field_consume_domain) {
-    p->argv[0] = ephe_blit_field_consume_domain (p->argv[0], p->argv[1], p->argv[2], d, &p->success);
-  }
-
-  caml_acknowledge_interrupt(done);
-}
-
-/*****************************************************************************
- * Wrapper functions
- ****************************************************************************/
-
 static value ephe_set_field (value e, mlsize_t offset, value el)
 {
   CAMLparam2(e,el);
-  struct domain* source = caml_domain_self();
-  struct domain* target;
 
-  while (1) {
-    target = Ephe_domain(e);
-    if (source == target) {
-      CAMLreturn(ephe_set_field_domain(e, Val_long(offset), el, source, NULL));
-    } else if (target == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      CAMLlocalN(argv,3);
-      argv[0] = e;
-      argv[1] = Val_long(offset);
-      argv[2] = el;
-      rpc_payload_t p;
-      p.f = (void*)&ephe_set_field_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc(target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(Val_unit);
-      }
-    }
-  }
+  clean_field(e, offset);
+  do_set(e, offset, el);
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_ephe_set_key (value e, value n, value el)
@@ -484,29 +236,20 @@ CAMLprim value caml_ephe_unset_data (value e)
 static value ephe_get_field (value e, mlsize_t offset)
 {
   CAMLparam1(e);
-  struct domain* source = caml_domain_self();
-  struct domain* target;
+  CAMLlocal2 (res, elt);
 
-  while (1) {
-    target = Ephe_domain(e);
-    if (source == target) {
-      CAMLreturn(ephe_get_field_domain(e, Val_long(offset), source, NULL));
-    } else if (target == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      CAMLlocalN(argv,2);
-      argv[0] = e;
-      argv[1] = Val_long(offset);
-      rpc_payload_t p;
-      p.f = (void*)&ephe_get_field_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc(target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(argv[0]);
-      }
-    }
+  clean_field(e, offset);
+  elt = Op_val(e)[offset];
+
+  if (elt == caml_ephe_none) {
+    res = None_val;
+  } else {
+    elt = Op_val(e)[offset];
+    caml_darken (0, elt, 0);
+    res = caml_alloc_shr (1, Some_tag);
+    caml_initialize_field(res, 0, elt);
   }
+  CAMLreturn (res);
 }
 
 CAMLprim value caml_ephe_get_key (value e, value n)
@@ -525,30 +268,39 @@ CAMLprim value caml_weak_get (value ar, value n)
 
 static value ephe_get_field_copy (value e, mlsize_t offset)
 {
-  CAMLparam1(e);
-  struct domain* source = caml_domain_self();
-  struct domain* target;
+  CAMLparam1 (e);
+  CAMLlocal2 (res, elt);
+  mlsize_t i;
+  value v; /* Caution: this is NOT a local root. */
+  value f;
 
-  while (1) {
-    target = Ephe_domain(e);
-    if (source == target) {
-      CAMLreturn(ephe_get_field_copy_domain(e, Val_long(offset), source, NULL));
-    } else if (target == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      CAMLlocalN(argv,2);
-      argv[0] = e;
-      argv[1] = Val_long(offset);
-      rpc_payload_t p;
-      p.f = (void*)&ephe_get_field_copy_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc(target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(argv[0]);
+  clean_field(e, offset);
+  v = Op_val(e)[offset];
+  if (v == caml_ephe_none) CAMLreturn (None_val);
+
+  /** Don't copy custom_block #7279 */
+  if (Is_block(v) && //XXX KC: trunk includes Is_in_heap_or_young(v) &&
+      Tag_val(v) != Custom_tag) {
+    elt = caml_alloc_shr (Wosize_val(v), Tag_val(v));
+    clean_field(e, offset);
+    v = Op_val(e)[offset];
+    if (v == caml_ephe_none) CAMLreturn (None_val);
+
+    if (Tag_val(v) < No_scan_tag) {
+      for (i = 0; i < Wosize_val(v); i++) {
+        f = Op_val(v)[i];
+        caml_darken (0, f, 0);
+        Store_field(elt, i, f);
       }
+    } else {
+      memmove (Bp_val(elt), Bp_val(v), Bosize_val(v));
     }
+  } else {
+    Op_val(e)[offset] = elt = v;
   }
+  res = caml_alloc_shr (1, Some_tag);
+  caml_initialize_field(res, 0, elt);
+  CAMLreturn(res);
 }
 
 CAMLprim value caml_ephe_get_key_copy (value e, value n)
@@ -577,29 +329,11 @@ CAMLprim value caml_ephe_get_data_copy (value e)
 static value ephe_check_field (value e, mlsize_t offset)
 {
   CAMLparam1(e);
-  struct domain* source = caml_domain_self();
-  struct domain* target;
+  CAMLlocal1(v);
 
-  while (1) {
-    target = Ephe_domain(e);
-    if (source == target) {
-      CAMLreturn(ephe_check_field_domain(e, Val_long(offset), source, NULL));
-    } else if (target == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      CAMLlocalN(argv,2);
-      argv[0] = e;
-      argv[1] = Val_long(offset);
-      rpc_payload_t p;
-      p.f = (void*)&ephe_check_field_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc(target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(argv[0]);
-      }
-    }
-  }
+  clean_field(e, offset);
+  v = Op_val(e)[offset];
+  CAMLreturn(Val_bool(v != caml_ephe_none));
 }
 
 CAMLprim value caml_ephe_check_key (value e, value n)
@@ -621,107 +355,30 @@ CAMLprim value caml_ephe_check_data (value e)
   return ephe_check_field (e, CAML_EPHE_DATA_OFFSET);
 }
 
-static value ephe_blit_field_produce (value es, mlsize_t offset_s,
-                                      mlsize_t length)
-{
-  CAMLparam1(es);
-  CAMLlocal1(ar);
-  struct domain* source = caml_domain_self();
-  struct domain* target;
-
-  while (1) {
-    target = Ephe_domain(es);
-    if (source == target) {
-      CAMLreturn(ephe_blit_field_produce_domain(es, Val_long(offset_s), Val_long(length), source, 0));
-    }
-    if (target == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      CAMLlocalN(argv, 3);
-      argv[0] = es;
-      argv[1] = Val_long(offset_s);
-      argv[2] = Val_long(length);
-      rpc_payload_t p;
-      p.f = (void*)&ephe_blit_field_produce_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc (target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(argv[0]);
-      }
-    }
-  }
-}
-
-static value ephe_blit_field_consume (value ed, mlsize_t offset_d, value ar)
-{
-  CAMLparam2(ed,ar);
-  struct domain* source = caml_domain_self();
-  struct domain* target;
-
-  while (1) {
-    target = Ephe_domain(ed);
-    if (source == target) {
-      CAMLreturn(ephe_blit_field_consume_domain(ed, Val_long(offset_d), ar, source, 0));
-    }
-    if (target == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      CAMLlocalN(argv, 3);
-      argv[0] = ed;
-      argv[1] = Val_long(offset_d);
-      argv[2] = ar;
-      rpc_payload_t p;
-      p.f = (void*)&ephe_blit_field_consume_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc (target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(Val_unit);
-      }
-    }
-  }
-}
-
 static value ephe_blit_field (value es, mlsize_t offset_s,
                               value ed, mlsize_t offset_d, mlsize_t length)
 {
   CAMLparam2(es,ed);
   CAMLlocal1(ar);
-  struct domain* my_domain = caml_domain_self();
-  struct domain *d1, *d2;
   long i;
 
   if (length == 0) CAMLreturn(Val_unit);
 
-  while (1) {
-    d1 = Ephe_domain(es);
-    d2 = Ephe_domain(ed);
+  caml_ephe_clean(es);
+  caml_ephe_clean(ed);
 
-    if (my_domain == d1) caml_ephe_clean(d1, es);
-    if (my_domain == d2) caml_ephe_clean(d2, ed);
-
-    if (my_domain == d1 && my_domain == d2) {
-      if (offset_d < offset_s) {
-        for (i = 0; i < length; i++) {
-          caml_darken(0, Op_val(es)[offset_s + i], 0);
-          do_set(my_domain, ed, offset_d + i, Op_val(es)[offset_s + i]);
-        }
-      } else {
-        for (i = length - 1; i >= 0; i--) {
-          caml_darken(0, Op_val(es)[offset_s + i], 0);
-          do_set(my_domain, ed, offset_d + i, Op_val(es)[offset_s + i]);
-        }
-      }
-      CAMLreturn(Val_unit);
-    } else if (d1 == 0 || d2 == 0) {
-      caml_adopt_orphaned_work();
-    } else {
-      ar = ephe_blit_field_produce (es, offset_s, length);
-      ephe_blit_field_consume (ed, offset_d, ar);
-      CAMLreturn(Val_unit);
+  if (offset_d < offset_s) {
+    for (i = 0; i < length; i++) {
+      caml_darken(0, Op_val(es)[offset_s + i], 0);
+      do_set(ed, offset_d + i, Op_val(es)[offset_s + i]);
+    }
+  } else {
+    for (i = length - 1; i >= 0; i--) {
+      caml_darken(0, Op_val(es)[offset_s + i], 0);
+      do_set(ed, offset_d + i, Op_val(es)[offset_s + i]);
     }
   }
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_ephe_blit_key (value es, value ofs,
@@ -751,5 +408,3 @@ CAMLprim value caml_weak_blit (value es, value ofs,
 {
   return caml_ephe_blit_key (es, ofs, ed, ofd, len);
 }
-
-

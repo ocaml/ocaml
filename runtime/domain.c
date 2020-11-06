@@ -313,6 +313,16 @@ domain_init_complete:
   caml_plat_unlock(&all_domains_lock);
 }
 
+CAMLexport void caml_reset_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  // This is only used to reset the domain_lock state on fork.
+  caml_plat_mutex_init(&self->domain_lock);
+  caml_plat_cond_init(&self->domain_cond, &self->domain_lock);
+
+  return;
+}
+
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
   uintnat size;
@@ -391,35 +401,55 @@ static void* backup_thread_func(void* v)
 
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
+  caml_ev_tag_self_as_backup_thread();
 
-  caml_plat_lock (&di->domain_lock);
-  while (1) { /* loop1 */
-    msg = atomic_load_acq (&di->backup_thread_msg);
+  msg = atomic_load_acq (&di->backup_thread_msg);
+  while (msg != BT_TERMINATE) {
     Assert (msg <= BT_TERMINATE);
-    if (msg == BT_ENTERING_OCAML) {
-      /* Main thread wants to enter OCaml */
-      caml_plat_wait(&di->domain_cond);
-    } else if (msg == BT_IN_BLOCKING_SECTION) {
-      /* Handle interrupts on behalf of the main thread */
-      caml_plat_lock(&s->lock);
-      /* Both [s->lock] and [di->domain_lock] held here */
-      while (1) { /* loop2 */
-        msg = atomic_load_acq (&di->backup_thread_msg);
-        Assert (msg <= BT_TERMINATE);
-        if (msg == BT_ENTERING_OCAML) {
-          /* Main thread is leaving blocking section and entering OCaml */
-          caml_plat_unlock (&s->lock);
-          break; /* break loop2 and goto loop1 */
-        } else if (handle_incoming(s) == 0) {
-          caml_plat_wait(&s->cond);
+    switch (msg) {
+      case BT_IN_BLOCKING_SECTION:
+        /* Handle interrupts on behalf of the main thread:
+         *  - must hold domain_lock to handle interrupts
+         *  - need to guarantee no blocking so that backup thread
+         *    can be signalled from caml_leave_blocking_section
+         */
+        if (caml_incoming_interrupts_queued()) {
+          if (caml_plat_try_lock(&di->domain_lock)) {
+            caml_handle_incoming_interrupts();
+            caml_plat_unlock(&di->domain_lock);
+          }
         }
-      }
-    } else if (msg == BT_TERMINATE) {
-      atomic_store_rel(&di->backup_thread_msg, BT_INIT);
-      caml_plat_unlock (&di->domain_lock);
-      break;
-    }
+        /* Wait safely if there is nothing to do.
+         * Will be woken from caml_leave_blocking_section
+         */
+        caml_plat_lock(&s->lock);
+        msg = atomic_load_acq (&di->backup_thread_msg);
+        if (msg == BT_IN_BLOCKING_SECTION &&
+            !caml_incoming_interrupts_queued())
+          caml_plat_wait(&s->cond);
+        caml_plat_unlock(&s->lock);
+        break;
+      case BT_ENTERING_OCAML:
+        /* Main thread wants to enter OCaml
+         * Will be woken from caml_enter_blocking_section
+         * or domain_terminate
+         */
+        caml_plat_lock(&di->domain_lock);
+        msg = atomic_load_acq (&di->backup_thread_msg);
+        if (msg == BT_ENTERING_OCAML)
+          caml_plat_wait(&di->domain_cond);
+        caml_plat_unlock(&di->domain_lock);
+        break;
+      default:
+        cpu_relax();
+        break;
+    };
+    msg = atomic_load_acq (&di->backup_thread_msg);
   }
+
+  /* doing terminate */
+  atomic_store_rel(&di->backup_thread_msg, BT_INIT);
+
   return 0;
 }
 
@@ -447,6 +477,14 @@ static void install_backup_thread (dom_internal* di)
   }
 }
 
+static void caml_domain_start_default(void)
+{
+  return;
+}
+
+CAMLexport void (*caml_domain_start_hook)(void) =
+   caml_domain_start_default;
+
 static void domain_terminate();
 
 static void* domain_thread_func(void* v)
@@ -472,6 +510,7 @@ static void* domain_thread_func(void* v)
     install_backup_thread(domain_self);
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
+    caml_domain_start_hook();
     caml_callback(caml_read_root(callback), Val_unit);
     caml_delete_root(callback);
     domain_terminate();
@@ -759,6 +798,16 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_ev_begin("stw/leader");
   caml_gc_log("causing STW");
 
+  /* setup all fields for this stw_request, must have those needed
+     for domains waiting at the enter spin barrier */
+  stw_request.enter_spin_callback = enter_spin_callback;
+  stw_request.enter_spin_data = enter_spin_data;
+  stw_request.callback = handler;
+  stw_request.data = data;
+  stw_request.leave_spin_callback = leave_spin_callback;
+  stw_request.leave_spin_data = leave_spin_data;
+  stw_request.leave_when_done = leave_when_done;
+  atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
   if( leader_setup ) {
@@ -797,18 +846,12 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   Assert(domains_participating > 0);
 
+  /* setup the domain_participating fields */
   stw_request.num_domains = domains_participating;
-  stw_request.leave_when_done = leave_when_done;
-  atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.num_domains_still_processing,
                    domains_participating);
-  stw_request.callback = handler;
-  stw_request.data = data;
-  stw_request.enter_spin_callback = enter_spin_callback;
-  stw_request.enter_spin_data = enter_spin_data;
-  stw_request.leave_spin_callback = leave_spin_callback;
-  stw_request.leave_spin_data = leave_spin_data;
 
+  /* release from the enter barrier */
   atomic_store_rel(&stw_request.domains_still_running, 0);
 
   #ifdef DEBUG
@@ -861,13 +904,15 @@ void caml_request_minor_gc (void)
   caml_interrupt_self();
 }
 
-void caml_handle_gc_interrupt() {
+void caml_handle_gc_interrupt()
+{
+  caml_ev_begin("handle_gc_interrupt");
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   CAMLalloc_point_here;
 
   if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
-    caml_ev_begin("handle_interrupt");
+    caml_ev_begin("handle_remote_interrupt");
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
       atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
@@ -875,7 +920,7 @@ void caml_handle_gc_interrupt() {
     caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
     caml_ev_resume();
-    caml_ev_end("handle_interrupt");
+    caml_ev_end("handle_remote_interrupt");
   }
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
@@ -901,18 +946,77 @@ void caml_handle_gc_interrupt() {
   if (Caml_state->requested_major_slice) {
     caml_ev_begin("dispatch_major_slice");
     Caml_state->requested_major_slice = 0;
-    caml_major_collection_slice (0, 0);
+    caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     caml_ev_end("dispatch_major_slice");
   }
+  caml_ev_end("handle_gc_interrupt");
+}
+
+CAMLexport inline int caml_bt_is_in_blocking_section(void)
+{
+  dom_internal* self = domain_self;
+  uintnat status = atomic_load_acq(&self->backup_thread_msg);
+  if (status == BT_IN_BLOCKING_SECTION)
+    return 1;
+  else
+    return 0;
+
+}
+
+CAMLexport void caml_acquire_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  caml_plat_lock(&self->domain_lock);
+  return;
+}
+
+CAMLexport void caml_bt_enter_ocaml(void)
+{
+  dom_internal* self = domain_self;
+
+  Assert(caml_domain_alone() || self->backup_thread_running);
+
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
+  }
+
+  return;
+}
+
+CAMLexport void caml_release_domain_lock(void)
+{
+  dom_internal* self = domain_self;
+  caml_plat_unlock(&self->domain_lock);
+  return;
+}
+
+CAMLexport void caml_bt_exit_ocaml(void)
+{
+  dom_internal* self = domain_self;
+
+  Assert(caml_domain_alone() || self->backup_thread_running);
+
+  if (self->backup_thread_running) {
+    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
+    /* Wakeup backup thread if it is sleeping */
+    caml_plat_signal(&self->domain_cond);
+  }
+
+
+  return;
 }
 
 static void caml_enter_blocking_section_default(void)
 {
+  caml_bt_exit_ocaml();
+  caml_release_domain_lock();
   return;
 }
 
 static void caml_leave_blocking_section_default(void)
 {
+  caml_bt_enter_ocaml();
+  caml_acquire_domain_lock();
   return;
 }
 
@@ -923,35 +1027,14 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
 
 CAMLexport void caml_leave_blocking_section() {
-  dom_internal* self = domain_self;
-
-  Assert(caml_domain_alone() || self->backup_thread_running);
-
-  if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
-    caml_plat_lock(&self->interruptor.lock);
-    caml_plat_signal(&self->interruptor.cond);
-    caml_plat_unlock(&self->interruptor.lock);
-  }
-
-  caml_plat_lock(&self->domain_lock);
   caml_leave_blocking_section_hook();
   caml_process_pending_signals();
 }
 
 CAMLexport void caml_enter_blocking_section() {
-  dom_internal* self = domain_self;
-
-  Assert(caml_domain_alone() || self->backup_thread_running);
 
   caml_process_pending_signals();
   caml_enter_blocking_section_hook();
-  if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
-    /* Wakeup backup thread if it is sleeping */
-    caml_plat_signal(&self->domain_cond);
-  }
-  caml_plat_unlock(&self->domain_lock);
 }
 
 void caml_print_stats () {
@@ -1098,17 +1181,11 @@ static void acknowledge_all_pending_interrupts()
 
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
-  value todo_tail = 0;
-  value live_tail = 0;
-
   if (domain_state->ephe_info->todo == 0 &&
       domain_state->ephe_info->live == 0)
     return;
 
-  todo_tail = caml_bias_ephe_list(domain_state->ephe_info->todo, (struct domain*)NULL);
-  live_tail = caml_bias_ephe_list(domain_state->ephe_info->live, (struct domain*)NULL);
-  caml_add_orphaned_ephe(domain_state->ephe_info->todo, todo_tail,
-                         domain_state->ephe_info->live, live_tail);
+  caml_add_to_orphaned_ephe_list(domain_state->ephe_info);
   if (domain_state->ephe_info->todo != 0) {
     caml_ephe_todo_list_emptied();
   }
@@ -1184,6 +1261,10 @@ static void domain_terminate()
       s->running = 0;
       s->unique_id += Max_domains;
 
+      /* signal the interruptor condition variable
+       * because the backup thread may be waiting on it
+       */
+      caml_plat_broadcast(&s->cond);
       Assert (domain_self->backup_thread_running);
       domain_self->backup_thread_running = 0;
     }
@@ -1217,6 +1298,11 @@ static void domain_terminate()
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
   atomic_fetch_add(&caml_num_domains_running, -1);
+}
+
+int caml_incoming_interrupts_queued()
+{
+  return domain_self->interruptor.qhead != NULL;
 }
 
 static inline void handle_incoming_interrupts(struct interruptor* s, int otherwise_relax)
@@ -1253,8 +1339,11 @@ static void caml_wait_interrupt_acknowledged (struct interruptor* self,
     cpu_relax();
   }
 
-  while (!atomic_load_acq(&req->acknowledged))
+  SPIN_WAIT {
+    if (atomic_load_acq(&req->acknowledged))
+      return;
     handle_incoming_otherwise_relax(self);
+  }
 
   return;
 }
@@ -1343,7 +1432,7 @@ CAMLprim value caml_ml_domain_yield(value unused)
       caml_ev_end("domain/idle_wait");
     } else {
       caml_plat_unlock(&s->lock);
-      caml_opportunistic_major_collection_slice(Chunk_size, &left);
+      left = caml_opportunistic_major_collection_slice(Chunk_size);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);
@@ -1425,7 +1514,7 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       }
     } else {
       caml_plat_unlock(&s->lock);
-      caml_opportunistic_major_collection_slice(Chunk_size, &left);
+      left = caml_opportunistic_major_collection_slice(Chunk_size);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);

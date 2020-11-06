@@ -20,6 +20,12 @@
 #include "frame_descriptors.h"
 #endif
 
+#ifdef DEBUG
+#define fiber_debug_log(...) caml_gc_log(__VA_ARGS__)
+#else
+#define fiber_debug_log(...)
+#endif
+
 /* allocate a stack with at least "wosize" usable words of stack */
 static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
 {
@@ -47,6 +53,7 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   hand->parent = NULL;
   stack->handler = hand;
   stack->sp = (value*)hand;
+  stack->exception_ptr = NULL;
   stack->magic = 42;
   CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
              Stack_high(stack) - Stack_base(stack) == wosize + 1);
@@ -60,7 +67,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 
   if (!stack) caml_raise_out_of_memory();
 
-  caml_gc_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
+  fiber_debug_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
 
   return Val_ptr(stack);
 }
@@ -69,12 +76,12 @@ void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintna
 {
   char* p = (char*)stack->sp;
 
-  p += sizeof(struct caml_context) + sizeof(value);
+  p += sizeof(value);
   *sp = p;
   *pc = Saved_return_address(*sp);
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+static inline void scan_stack_frames(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
 {
   char * sp;
   uintnat retaddr;
@@ -84,27 +91,17 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
   int n, ofs;
   unsigned short * p;
   value *root;
-  struct caml_context* context;
   caml_frame_descrs fds = caml_get_frame_descrs();
 
-  f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-  f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-  f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  if (Stack_parent(stack) != NULL)
-    caml_scan_stack(f, fdata, Stack_parent(stack));
-
-  if (stack->sp == Stack_high(stack)) return;
   sp = (char*)stack->sp;
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
-  context = (struct caml_context*)sp;
-  regs = context->gc_regs;
-  sp += sizeof(struct caml_context);
 
-  if (sp == (char*)Stack_high(stack)) return;
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
+
+  regs = gc_regs;
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
@@ -131,10 +128,25 @@ next_chunk:
       /* XXX KC: disabled already scanned optimization. */
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the DWARF link & trap frame (4 words). */
-      sp += 4 * sizeof(value);
+       * chunk. This includes skipping over the trap frame (2 words). */
+      sp += 2 * sizeof(value); /* trap frame */
+      regs = *(value**)sp;
+      sp += 2 * sizeof(value); /* DWARF and gc_regs */
       goto next_chunk;
     }
+  }
+}
+
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* gc_regs)
+{
+  while (stack != NULL) {
+    scan_stack_frames(f, fdata, stack, gc_regs);
+
+    f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+    f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+    f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+
+    stack = Stack_parent(stack);
   }
 }
 
@@ -209,21 +221,24 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
-  Assert(stack->magic == 42);
 
-  f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-  f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-  f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  if (Stack_parent(stack))
-    caml_scan_stack(f, fdata, Stack_parent(stack));
+  while (stack != NULL) {
+    Assert(stack->magic == 42);
 
-  high = Stack_high(stack);
-  low = stack->sp;
-  for (sp = low; sp < high; sp++) {
-    f(fdata, *sp, sp);
+    high = Stack_high(stack);
+    low = stack->sp;
+    for (sp = low; sp < high; sp++) {
+      f(fdata, *sp, sp);
+    }
+
+    f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+    f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+    f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+
+    stack = Stack_parent(stack);
   }
 }
 
@@ -239,25 +254,27 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
 /* Update absolute exception pointers for new stack*/
 static void rewrite_exception_stack(struct stack_info *old_stack, value** exn_ptr, struct stack_info *new_stack)
 {
-  caml_gc_log ("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
-  caml_gc_log ("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
+  fiber_debug_log ("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
+  fiber_debug_log ("New [%p, %p]", Stack_base(new_stack), Stack_high(new_stack));
   if(exn_ptr) {
-    caml_gc_log ("*exn_ptr=%p", *exn_ptr);
+    fiber_debug_log ("*exn_ptr=%p", *exn_ptr);
 
     while (Stack_base(old_stack) < *exn_ptr && *exn_ptr <= Stack_high(old_stack)) {
+#ifdef DEBUG
       value* old_val = *exn_ptr;
+#endif
       *exn_ptr = Stack_high(new_stack) - (Stack_high(old_stack) - *exn_ptr);
 
-      caml_gc_log ("Rewriting %p to %p", old_val, *exn_ptr);
+      fiber_debug_log ("Rewriting %p to %p", old_val, *exn_ptr);
 
       CAMLassert(Stack_base(new_stack) < *exn_ptr);
       CAMLassert((value*)*exn_ptr <= Stack_high(new_stack));
 
       exn_ptr = (value**)*exn_ptr;
     }
-    caml_gc_log ("finished with *exn_ptr=%p", *exn_ptr);
+    fiber_debug_log ("finished with *exn_ptr=%p", *exn_ptr);
   } else {
-    caml_gc_log ("exn_ptr is null");
+    fiber_debug_log ("exn_ptr is null");
   }
 }
 #endif
@@ -376,10 +393,9 @@ CAMLprim value caml_clone_continuation (value cont)
            stack_used * sizeof(value));
 #ifdef NATIVE_CODE
     {
-      /* pull out the exception pointer from the caml context on the stack */
-      value* exn_start =
-        Stack_high(target) - (Stack_high(source) - (value*)source->sp);
-      rewrite_exception_stack(source, (value**)exn_start, target);
+      /* rewrite exception pointer in the caml context on the new stack */
+      target->exception_ptr = source->exception_ptr;
+      rewrite_exception_stack(source, (value**)&target->exception_ptr, target);
     }
 #endif
     target->sp = Stack_high(target) - stack_used;
@@ -394,9 +410,7 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use (value cont)
 {
-#ifdef DEBUG
-  caml_gc_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
-#endif
+  fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
   value v;

@@ -42,24 +42,25 @@ tests/callback/'signals_alloc.ml' with 1.2 (native)
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 
+# TODO: signal handling and tick thread missing from systhreads
+lib-systhreads-todo
+
+# TODO: finaliser issue (#385)
+tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
+tests/backtrace/'callstack.ml' with 1.1.1 (native)
+
+# TODO: off-by-one error on MacOS+Clang (#408)
+tests/lib-threads/'beat.ml' with 1.2 (native)
+tests/lib-threads/'beat.ml' with 1.1 (bytecode)
+
 # ocamldebug is broken (#34)
 tool-debugger
-
-# the pre-multicore threads library is broken (#100)
-lib-systhreads
-lib-threads
-tests/backtrace/'callstack.ml' with 1.1.1 (native)
-tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
 
 # Uses obj.reachable_words whose definition in multicore isn't clear (think racy programs)
 lib-obj
 
 # Uses caml_page_table_lookup() (<- Is_in_static_data ()) which is not available on multicore
 tests/asmcomp/'is_static.ml' with 1 (native)
-
-# GC bug in callbacks (#211)
-tests/callback/'nested_fiber.ml' with 1.1 (bytecode)
-tests/callback/'test7.ml' with 1.2 (native)
 
 # since promotion is based on minor heap size now, this test can no longer be correct
 tests/promotion/bigrecmod.ml

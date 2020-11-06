@@ -60,21 +60,20 @@ static int obj_update_tag (value blk, int old_tag, int new_tag)
   header_t hd;
   tag_t tag;
 
-again:
-  hd = Hd_val(blk);
-  tag = Tag_hd(hd);
+  SPIN_WAIT {
+    hd = Hd_val(blk);
+    tag = Tag_hd(hd);
 
-  if (tag != old_tag) return 0;
-  if (caml_domain_alone()) {
-    Tag_val (blk) = new_tag;
-    return 1;
+    if (tag != old_tag) return 0;
+    if (caml_domain_alone()) {
+      Tag_val (blk) = new_tag;
+      return 1;
+    }
+
+    if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
+                                       (hd & ~0xFF) | new_tag))
+      return 1;
   }
-
-  if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
-                                     (hd & ~0xFF) | new_tag))
-    return 1;
-
-  goto again;
 }
 
 CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
