@@ -23,17 +23,17 @@
 
 == Overview
 
-OCaml is an implementation of the ML language, based on the Caml Light
-dialect extended with a complete class-based object system and a powerful
-module system in the style of Standard ML.
+OCaml is a functional, statically-typed programming language from the
+ML family, offering a powerful module system extending that of
+Standard ML and a feature-rich, class-based object system.
 
 OCaml comprises two compilers. One generates bytecode which is then
-interpreted by a C program. This compiler runs quickly, generates compact
-code with moderate memory requirements, and is portable to essentially any
-32 or 64 bit Unix platform. Performance of generated programs is quite good
-for a bytecoded implementation.  This compiler can be used either as a
-standalone, batch-oriented compiler that produces standalone programs, or as
-an interactive, toplevel-based system.
+interpreted by a C program. This compiler runs quickly, generates
+compact code with moderate memory requirements, and is portable to
+many 32 or 64 bit platforms. Performance of generated programs is
+quite good for a bytecoded implementation.  This compiler can be used
+either as a standalone, batch-oriented compiler that produces
+standalone programs, or as an interactive REPL system.
 
 The other compiler generates high-performance native code for a number of
 processors. Compilation takes longer and generates bigger code, but the
@@ -68,7 +68,7 @@ file LICENSE.
 == Installation
 
 See the file link:INSTALL.adoc[] for installation instructions on
-machines running Unix, Linux, OS X and Cygwin.  For native Microsoft
+machines running Unix, Linux, macOS and Cygwin.  For native Microsoft
 Windows, see link:README.win32.adoc[].
 
 == Documentation
@@ -86,6 +86,10 @@ https://ocaml.org/docs/install.html
 
 == Keeping in Touch with the Caml Community
 
+There is an active and friendly discussion forum at
+
+https://discuss.ocaml.org/
+
 The OCaml mailing list is the longest-running forum for OCaml users.
 You can email it at
 
@@ -98,10 +102,6 @@ https://sympa.inria.fr/sympa/subscribe/caml-list
 An alternative archive of the mailing list is also available at
 
 https://inbox.ocaml.org/
-
-You can also access a newer discussion forum at
-
-https://discuss.ocaml.org/
 
 There also exist other mailing lists, chat channels, and various other forums
 around the internet for getting in touch with the OCaml and ML family language
