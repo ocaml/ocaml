@@ -4739,7 +4739,7 @@ and type_cases
   let cases =
     let may_backtrack = does_contain_gadt && not !Clflags.principal in
     if not may_backtrack then mk_cases false else
-    let snap = Btype.snapshot () in
+    let state = save_state (ref env) in
     let has_equation_escape err =
       match trace_of_error err with
         Some tr ->
@@ -4749,7 +4749,7 @@ and type_cases
     in
     try mk_cases false
     with Error(_,_,err) when has_equation_escape err ->
-      Btype.backtrack snap;
+      set_state state (ref env);
       let cases = mk_cases true in
       let msg =
         Format.asprintf
