@@ -41,15 +41,9 @@ struct caml_ephe_info {
   } cursor;
 };
 
-#define CAML_EPHE_LINK_OFFSET 0
-#define CAML_EPHE_DOMAIN_OFFSET 1
-#define CAML_EPHE_DATA_OFFSET 2
-#define CAML_EPHE_FIRST_KEY 3
-
 /** The first field 0:  weak list;
-       second field 1:  owning domain;
-        third field 2:  data;
-       others       3..:  keys;
+       second field 1:  data;
+       others       2..:  keys;
 
     A weak pointer is an ephemeron with the data at caml_ephe_none
     If fields are added, don't forget to update weak.ml, [additional_values],
@@ -58,13 +52,16 @@ struct caml_ephe_info {
 
  */
 
+#define CAML_EPHE_LINK_OFFSET 0
+#define CAML_EPHE_DATA_OFFSET 1
+#define CAML_EPHE_FIRST_KEY 2
+#define CAML_EPHE_MAX_WOSIZE (Max_wosize - CAML_EPHE_FIRST_KEY)
+
 #define Ephe_link(e) (*(Op_val(e) + CAML_EPHE_LINK_OFFSET))
-#define Ephe_domain(e) (*(struct domain**)(Op_val(e) + CAML_EPHE_DOMAIN_OFFSET))
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
 
 struct caml_ephe_info* caml_alloc_ephe_info (void);
-void caml_ephe_clean(struct domain* d, value e);
-value caml_bias_ephe_list(value, struct domain*);
+void caml_ephe_clean(value e);
 
 #endif /* CAML_INTERNALS */
 

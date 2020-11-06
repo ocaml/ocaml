@@ -59,6 +59,8 @@ CAMLextern int caml_c_thread_unregister(void);
    functions.  Just call [caml_c_thread_register] once.
    Before the thread finishes, it must call [caml_c_thread_unregister].
    Both functions return 1 on success, 0 on error.
+   In multicore OCaml, note that threads created by C code will be registered
+   to the domain 0 threads chaining.
 */
 
 #ifdef __cplusplus

@@ -37,6 +37,12 @@
 #define inline __inline
 #endif
 
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define Caml_inline static __inline
+#else
+#define Caml_inline static inline
+#endif
+
 #include "s.h"
 
 #ifdef BOOTSTRAPPING_FLEXLINK
@@ -190,7 +196,7 @@ typedef uint64_t uintnat;
 
 /* Number of words used in the control structure at the start of a stack
    (see fiber.h) */
-#define Stack_ctx_words 3
+#define Stack_ctx_words 4
 
 /* Default maximum size of the stack (words). */
 #define Max_stack_def (1024 * 1024)

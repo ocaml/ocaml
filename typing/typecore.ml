@@ -4579,7 +4579,8 @@ and type_effect_cases ~exception_allowed env ty_res loc caselist conts =
   in
   let name = Ctype.get_new_abstract_name "effect" in
   let scope = create_scope () in
-  let (id, new_env) = Env.enter_type ~scope name decl env in
+  let id = Ident.create_scoped ~scope name in
+  let new_env = Env.add_type ~check:false id decl env in
   let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
   let ty_arg = Predef.type_eff ty_eff in
   let ty_cont = Predef.type_continuation ty_eff ty_res in

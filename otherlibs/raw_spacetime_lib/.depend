@@ -1,16 +1,21 @@
 spacetime_offline.$(O): spacetime_offline.c ../../runtime/caml/alloc.h \
-  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
-  ../../runtime/caml/m.h ../../runtime/caml/s.h \
-  ../../runtime/caml/camlatomic.h ../../runtime/caml/mlvalues.h \
-  ../../runtime/caml/domain_state.h ../../runtime/caml/domain_state.tbl \
-  ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/fail.h \
-  ../../runtime/caml/gc.h ../../runtime/caml/intext.h \
-  ../../runtime/caml/io.h ../../runtime/caml/platform.h \
-  ../../runtime/caml/major_gc.h ../../runtime/caml/memory.h \
-  ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
-  ../../runtime/caml/domain.h ../../runtime/caml/roots.h \
-  ../../runtime/caml/signals.h ../../runtime/caml/stack.h \
-  ../../runtime/caml/sys.h ../../runtime/caml/spacetime.h
+ ../../runtime/caml/misc.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h \
+ ../../runtime/caml/camlatomic.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/domain_state.h ../../runtime/caml/domain_state.tbl \
+ ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/config.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/intext.h ../../runtime/caml/io.h \
+ ../../runtime/caml/platform.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/addrmap.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/roots.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/stack.h \
+ ../../runtime/caml/sys.h ../../runtime/caml/spacetime.h \
+ ../../runtime/caml/stack.h ../../runtime/caml/s.h
 raw_spacetime_lib.cmo : \
     raw_spacetime_lib.cmi
 raw_spacetime_lib.cmx : \

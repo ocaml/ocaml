@@ -1,6 +1,5 @@
 #define CAML_INTERNALS
 
-#define _GNU_SOURCE /* for PTHREAD_MUTEX_ERRORCHECK_NP */
 #include <sys/mman.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,16 +10,20 @@
 
 /* Mutexes */
 
-void caml_plat_mutex_init(caml_plat_mutex* m)
+void caml_plat_mutex_init(caml_plat_mutex * m)
 {
-#ifdef __linux__
-  pthread_mutexattr_t ma;
-  pthread_mutexattr_init(&ma);
-  pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_ERRORCHECK_NP);
-  check_err("mutex_init", pthread_mutex_init(m, &ma));
-#else
-  check_err("mutex_init", pthread_mutex_init(m, 0));
-#endif
+  int rc;
+  pthread_mutexattr_t attr;
+  rc = pthread_mutexattr_init(&attr);
+  if (rc != 0) goto error1;
+  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+  if (rc != 0) goto error2;
+  rc = pthread_mutex_init(m, &attr);
+  // fall through
+error2:
+  pthread_mutexattr_destroy(&attr);
+error1:
+  check_err("mutex_init", rc);
 }
 
 void caml_plat_assert_locked(caml_plat_mutex* m)
@@ -50,8 +53,7 @@ void caml_plat_mutex_free(caml_plat_mutex* m)
   check_err("mutex_free", pthread_mutex_destroy(m));
 }
 
-/* Condition variables */
-void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+static void caml_plat_cond_init_aux(caml_plat_cond *cond)
 {
   pthread_condattr_t attr;
   pthread_condattr_init(&attr);
@@ -59,7 +61,28 @@ void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
   pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 #endif
   pthread_cond_init(&cond->cond, &attr);
+}
+
+/* Condition variables */
+void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+{
+  caml_plat_cond_init_aux(cond);
   cond->mutex = m;
+}
+
+/* TODO: This specific entrypoint is required for systhreads.
+   Refactoring conditions in platform context with support for
+   systhreads style conditions would be useful. */
+void caml_plat_cond_init_no_mutex(caml_plat_cond* cond)
+{
+  caml_plat_cond_init_aux(cond);
+  cond->mutex = NULL;
+}
+
+void caml_plat_cond_set_mutex(caml_plat_cond *cond, caml_plat_mutex* m)
+{
+  if (cond->mutex == NULL)
+    cond->mutex = m;
 }
 
 void caml_plat_wait(caml_plat_cond* cond)

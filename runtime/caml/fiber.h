@@ -20,8 +20,10 @@ struct stack_handler {
 struct stack_info {
 #ifdef NATIVE_CODE
   void* sp;
+  void* exception_ptr;
 #else
   value* sp;
+  value* exception_ptr;
 #endif
   struct stack_handler* handler;
   uintnat magic;
@@ -71,7 +73,7 @@ extern caml_root caml_global_data;
 #define Trap_link(tp) ((tp)[1])
 
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
-void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack);
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs);
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
 int caml_try_realloc_stack (asize_t required_size);
