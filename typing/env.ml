@@ -670,7 +670,8 @@ module Current_unit_name : sig
   val get : unit -> modname
   val set : modname -> unit
   val is : modname -> bool
-  val is_name_of : Ident.t -> bool
+  val is_ident : Ident.t -> bool
+  val is_path : Path.t -> bool
 end = struct
   let current_unit =
     ref ""
@@ -680,8 +681,11 @@ end = struct
     current_unit := name
   let is name =
     !current_unit = name
-  let is_name_of id =
-    is (Ident.name id)
+  let is_ident id =
+    Ident.persistent id && is (Ident.name id)
+  let is_path = function
+  | Pident id -> is_ident id
+  | Pdot _ | Papply _ -> false
 end
 
 let set_unit_name = Current_unit_name.set
@@ -691,7 +695,7 @@ let find_same_module id tbl =
   match IdTbl.find_same id tbl with
   | x -> x
   | exception Not_found
-    when Ident.persistent id && not (Current_unit_name.is_name_of id) ->
+    when Ident.persistent id && not (Current_unit_name.is_ident id) ->
       Mod_persistent
 
 let find_name_module ~mark name tbl =
@@ -703,7 +707,7 @@ let find_name_module ~mark name tbl =
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if not (Current_unit_name.is_name_of id) then
+  if not (Current_unit_name.is_ident id) then
     let summary =
       match
         IdTbl.find_name wrap_module ~mark:false (Ident.name id) env.modules
@@ -3171,9 +3175,13 @@ let report_lookup_error _loc env ppf = function
       fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
                    applied@ in@ type@ expressions@]" !print_longident lid
   | Cannot_scrape_alias(lid, p) ->
+      let cause =
+        if Current_unit_name.is_path p then "is the current compilation unit"
+        else "is missing"
+      in
       fprintf ppf
-        "The module %a is an alias for module %a, which is missing"
-        !print_longident lid !print_path p
+        "The module %a is an alias for module %a, which %s"
+        !print_longident lid !print_path p cause
 
 let report_error ppf = function
   | Missing_module(_, path1, path2) ->
