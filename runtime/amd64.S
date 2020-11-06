@@ -179,21 +179,21 @@
         .cfi_def_cfa_offset 16; \
         POP_EXN_HANDLER
 
-/* Switch between OCaml stacks. Clobbers %r10 and %r11. Expects target stack in %r10. */
+/* Switch between OCaml stacks. Clobbers %r12.
+   Expects old stack in %rsi and target stack in %r10.
+   Leaves old stack in %rsi and target stack in %r10. */
 #define SWITCH_OCAML_STACKS \
-    /* Save OCaml SP and exn_handler in the stack slot */ \
-        movq    Caml_state(current_stack), %r11; \
-        movq    %rsp, Stack_sp(%r11); \
-        movq    %r10, Caml_state(current_stack); /* free up r10 */ \
-        movq    Caml_state(exn_handler), %r10; \
-        movq    %r10, Stack_exception(%r11); \
+    /* Save OCaml SP and exn_handler in the stack info */ \
+        movq    %rsp, Stack_sp(%rsi); \
+        movq    Caml_state(exn_handler), %r12; \
+        movq    %r12, Stack_exception(%rsi); \
     /* switch stacks */ \
-        movq    Caml_state(current_stack), %r10; \
+        movq    %r10, Caml_state(current_stack); \
         movq    Stack_sp(%r10), %rsp; \
         .cfi_def_cfa_offset 8; \
-    /* restore exn_handler in new stack */ \
-        movq    Stack_exception(%r10), %r11; \
-        movq    %r11, Caml_state(exn_handler)
+    /* restore exn_handler for new stack */ \
+        movq    Stack_exception(%r10), %r12; \
+        movq    %r12, Caml_state(exn_handler)
 
 /******************************************************************************/
 /* Save and restore all callee-save registers on stack.
@@ -859,15 +859,18 @@ LBL(do_perform):
         movq    Handler_parent(%r11), %r10      /* %r10 := parent stack */
         cmpq    $0, %r10                        /* parent is NULL? */
         je      LBL(112)
+        SWITCH_OCAML_STACKS /* preserves r11 and rsi */
+        /* we have to null the Handler_parent after the switch because
+        the Handler_parent is needed to unwind the stack for backtraces */
         movq    $0, Handler_parent(%r11)        /* Set parent stack of performer to NULL */
         movq    Handler_effect(%r11), %rsi      /* %rsi := effect handler */
-        SWITCH_OCAML_STACKS
         jmp     GCALL(caml_apply3)
 LBL(112):
     /* switch back to original performer before raising Unhandled
         (no-op unless this is a reperform) */
         movq    0(%rbx), %r10                     /* load performer stack from continuation */
         subq    $1, %r10                          /* r10 := Ptr_val(r10) */
+        movq    Caml_state(current_stack), %rsi
         SWITCH_OCAML_STACKS
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_exn_Unhandled, %rax)
@@ -899,8 +902,8 @@ CFI_STARTPROC
         movq    Handler_parent(%rcx), %rsi
         testq   %rsi, %rsi
         jnz     1b
-        movq    Caml_state(current_stack), %r11
-        movq    %r11, Handler_parent(%rcx)
+        movq    Caml_state(current_stack), %rsi
+        movq    %rsi, Handler_parent(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
 CFI_ENDPROC
