@@ -427,6 +427,9 @@ OCaml 4.12.0
 - #9783: Widen warning 16 to more cases.
   (Leo White, review by Florian Angeletti)
 
+- #10008: Improve error message for aliases to the current compilation unit.
+  (Leo White, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #8987: Make some locations more accurate
