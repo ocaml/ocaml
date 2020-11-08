@@ -267,7 +267,8 @@ let add_directive name dir_fun dir_info =
 
 (* Execute a toplevel phrase *)
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase print_outcome log phr =
+  let ppf = Misc.Log.formatter log in
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
@@ -314,7 +315,7 @@ let execute_phrase print_outcome ppf phr =
               in
               Ophr_exception (exn, outv)
         in
-        !print_out_phrase ppf out_phr;
+        Log.log_itemf "phrases" log "%a" !print_out_phrase out_phr;
         if Printexc.backtrace_status ()
         then begin
           match !backtrace with
@@ -370,8 +371,9 @@ let execute_phrase print_outcome ppf phr =
               false
       end
 
-let execute_phrase print_outcome ppf phr =
-  try execute_phrase print_outcome ppf phr
+let execute_phrase print_outcome log phr =
+  try
+    execute_phrase print_outcome log phr
   with exn ->
     Warnings.reset_fatal ();
     raise exn
@@ -380,7 +382,8 @@ let execute_phrase print_outcome ppf phr =
 
 let use_print_results = ref true
 
-let preprocess_phrase ppf phr =
+let preprocess_phrase log phr =
+  let ppf = Misc.Log.formatter log in
   let phr =
     match phr with
     | Ptop_def str ->
@@ -403,20 +406,25 @@ let use_channel ppf ~wrap_in_module ic name filename =
   protect_refs [ R (Location.input_name, filename);
                  R (Location.input_lexbuf, Some lb); ]
     (fun () ->
+    let log = Location.init_log ppf in
     try
       List.iter
         (fun ph ->
-          let ph = preprocess_phrase ppf ph in
-          if not (execute_phrase !use_print_results ppf ph) then raise Exit)
+          let ph = preprocess_phrase log ph in
+          if not (execute_phrase !use_print_results log ph) then raise Exit)
         (if wrap_in_module then
            parse_mod_use_file name lb
          else
            !parse_use_file lb);
+      Misc.Log.flush log;
       true
     with
-    | Exit -> false
-    | Sys.Break -> fprintf ppf "Interrupted.@."; false
-    | x -> Location.report_exception ppf x; false)
+    | Exit -> Misc.Log.flush log; false
+    | Sys.Break ->
+        Misc.Log.logf "status" log "Interrupted.@.";
+        Misc.Log.flush log;
+        false
+    | x -> Location.report_exception log x; Misc.Log.flush log; false)
 
 let use_output ppf command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
@@ -584,13 +592,14 @@ exception PPerror
 
 let loop ppf =
   Clflags.debug := true;
-  Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
     fprintf ppf "        OCaml version %s@.@." Config.version;
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+    let log = Location.init_log ppf in
+    Location.report_exception log exn; Misc.Log.flush log;
+    raise (Compenv.Exit_with_status 2)
   end;
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
@@ -601,6 +610,7 @@ let loop ppf =
   run_hooks After_setup;
   load_ocamlinit ppf;
   while true do
+    let log = Location.init_log ppf in
     let snap = Btype.snapshot () in
     try
       Lexing.flush_input lb;
@@ -610,14 +620,19 @@ let loop ppf =
       Warnings.reset_fatal ();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = preprocess_phrase ppf phr  in
+      let phr = preprocess_phrase log phr in
       Env.reset_cache_toplevel ();
-      ignore(execute_phrase true ppf phr)
+      ignore(execute_phrase true log phr);
+      Misc.Log.flush log
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
-    | PPerror -> ()
-    | x -> Location.report_exception ppf x; Btype.backtrack snap
+    | Sys.Break ->
+        Misc.Log.logf "status" log "Interrupted.@.";
+        Misc.Log.flush log;
+        Btype.backtrack snap
+    | PPerror -> Misc.Log.flush log; ()
+    | x -> Location.report_exception log x;
+      Misc.Log.flush log; Btype.backtrack snap
   done
 
 external caml_sys_modify_argv : string array -> unit =
@@ -636,7 +651,8 @@ let run_script ppf name args =
   begin
     try toplevel_env := Compmisc.initial_env()
     with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+      Location.report_exception (Direct ppf) exn;
+      raise (Compenv.Exit_with_status 2)
   end;
   Sys.interactive := false;
   run_hooks After_setup;
@@ -647,3 +663,23 @@ let run_script ppf name args =
     else name
   in
   use_silently ppf explicit_name
+
+let preprocess_phrase_with_log = preprocess_phrase
+
+let preprocess_phrase ppf phr =
+  let log = Location.init_log ppf in
+  let ans = preprocess_phrase log phr in
+  Log.flush log;
+  ans
+
+let execute_phrase_with_log print_outcome log phr =
+  Fun.protect (fun () -> execute_phrase print_outcome log phr)
+    ~finally:Warnings.reset_fatal
+
+let execute_phrase print_outcome ppf phr =
+  let log = Location.init_log ppf in
+  Fun.protect (fun () -> execute_phrase print_outcome log phr)
+    ~finally:(fun () ->
+        Warnings.reset_fatal ();
+        Log.flush log
+      )

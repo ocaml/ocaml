@@ -523,6 +523,6 @@ let main () =
       fprintf Format.err_formatter "@[%s@]@." msg;
       exit 2
   | exn ->
-      Location.report_exception Format.err_formatter exn
+      Location.report_exception (Misc.Log.Direct Format.err_formatter) exn
 
 let _ = main ()
