@@ -219,7 +219,13 @@ let module_binding sub mb =
     (map_loc sub mb.mb_name)
     (sub.module_expr sub mb.mb_expr)
 
-let type_parameter sub (ct, v) = (sub.typ sub ct, v)
+let type_parameter _sub p =
+  let name =
+    match p.typa_name.txt with
+    | Some n -> Ptyp_var n
+    | None -> Ptyp_any in
+  (Typ.mk ~loc:p.typa_name.loc name,
+   (p.typa_variance, p.typa_injectivity))
 
 let type_declaration sub decl =
   let loc = sub.location sub decl.typ_loc in

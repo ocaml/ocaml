@@ -44,6 +44,9 @@ let rec fmt_longident_aux f x =
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x.txt;;
 
+let fmt_string_loc f (x : string loc) =
+  fprintf f "\"%s\" %a" x.txt fmt_location x.loc
+
 let fmt_ident = Ident.print
 
 let fmt_modname f = function
@@ -449,7 +452,23 @@ and binding_op i ppf x =
     fmt_location x.bop_loc;
   expression i ppf x.bop_exp
 
-and type_parameter i ppf (x, _variance) = core_type i ppf x
+and type_parameter i ppf x =
+  (match x.typa_name.txt with
+   | Some n ->
+     line i ppf "typa_name %a\n" fmt_string_loc { x.typa_name with txt = n }
+   | None ->
+     line i ppf "typa_name _\n");
+  let variance =
+    match x.typa_variance with
+    | Covariant -> "Covariant"
+    | Contravariant -> "Contravariant"
+    | NoVariance -> "NoVariance" in
+  line i ppf "typa_variance %s\n" variance;
+  let injectivity =
+    match x.typa_injectivity with
+    | Injective -> "Injective"
+    | NoInjectivity -> "NoInjectivity" in
+  line i ppf "typa_injectivity %s\n" injectivity
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a %a\n" fmt_ident x.typ_id fmt_location

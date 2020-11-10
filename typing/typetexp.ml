@@ -126,34 +126,36 @@ let type_variable loc name =
 let valid_tyvar_name name =
   name <> "" && name.[0] <> '_'
 
-let transl_type_param env styp =
+let transl_type_param styp (v, i) =
   let loc = styp.ptyp_loc in
-  match styp.ptyp_desc with
-    Ptyp_any ->
-      let ty = new_global_var ~name:"_" () in
-        { ctyp_desc = Ttyp_any; ctyp_type = ty; ctyp_env = env;
-          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
-  | Ptyp_var name ->
-      let ty =
-        try
-          if not (valid_tyvar_name name) then
-            raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
-          ignore (TyVarMap.find name !type_variables);
-          raise Already_bound
-        with Not_found ->
-          let v = new_global_var ~name () in
-            type_variables := TyVarMap.add name v !type_variables;
-            v
-      in
-        { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
-          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
-  | _ -> assert false
+  let typa_type, name =
+    match styp.ptyp_desc with
+      Ptyp_any ->
+        new_global_var ~name:"_" (), None
+    | Ptyp_var name ->
+        let ty =
+          try
+            if not (valid_tyvar_name name) then
+              raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
+            ignore (TyVarMap.find name !type_variables);
+            raise Already_bound
+          with Not_found ->
+            let v = new_global_var ~name () in
+              type_variables := TyVarMap.add name v !type_variables;
+              v
+        in
+        ty, Some name
+    | _ -> assert false in
+  { typa_type;
+    typa_name = Location.mkloc name styp.ptyp_loc;
+    typa_variance = v;
+    typa_injectivity = i }
 
-let transl_type_param env styp =
+let transl_type_param styp vi =
   (* Currently useless, since type parameters cannot hold attributes
      (but this could easily be lifted in the future). *)
   Builtin_attributes.warning_scope styp.ptyp_attributes
-    (fun () -> transl_type_param env styp)
+    (fun () -> transl_type_param styp vi)
 
 
 let new_pre_univar ?name () =

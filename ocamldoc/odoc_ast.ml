@@ -1273,7 +1273,7 @@ module Analyser =
               te_type_name =
                 Odoc_env.full_type_name new_env (Name.from_path tt_tyext.tyext_path);
               te_type_parameters =
-                List.map (fun (ctyp, _) -> Odoc_env.subst_type new_env ctyp.ctyp_type)  tt_tyext.tyext_params;
+                List.map (fun p -> Odoc_env.subst_type new_env p.typa_type)  tt_tyext.tyext_params;
               te_private = tt_tyext.tyext_private;
               te_constructors = [];
               te_loc = { loc_impl = Some loc ; loc_inter = None } ;

@@ -80,9 +80,8 @@ let structure sub {str_items; str_type; str_final_env} =
     str_type;
   }
 
-let class_infos sub f x =
+let class_infos _sub f x =
   {x with
-   ci_params = List.map (tuple2 (sub.typ sub) id) x.ci_params;
    ci_expr = f x.ci_expr;
   }
 
@@ -166,18 +165,16 @@ let type_declaration sub x =
   in
   let typ_kind = sub.type_kind sub x.typ_kind in
   let typ_manifest = Option.map (sub.typ sub) x.typ_manifest in
-  let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
-  {x with typ_cstrs; typ_kind; typ_manifest; typ_params}
+  {x with typ_cstrs; typ_kind; typ_manifest}
 
 let type_declarations sub (rec_flag, list) =
   (rec_flag, List.map (sub.type_declaration sub) list)
 
 let type_extension sub x =
-  let tyext_params = List.map (tuple2 (sub.typ sub) id) x.tyext_params in
   let tyext_constructors =
     List.map (sub.extension_constructor sub) x.tyext_constructors
   in
-  {x with tyext_constructors; tyext_params}
+  {x with tyext_constructors}
 
 let type_exception sub x =
   let tyexn_constructor =

@@ -65,8 +65,7 @@ let structure sub {str_items; str_final_env; _} =
   List.iter (sub.structure_item sub) str_items;
   sub.env sub str_final_env
 
-let class_infos sub f x =
-  List.iter (fun (ct, _) -> sub.typ sub ct) x.ci_params;
+let class_infos _sub f x =
   f x.ci_expr
 
 let module_type_declaration sub {mtd_type; _} =
@@ -122,20 +121,18 @@ let type_kind sub = function
   | Ttype_record list -> List.iter (label_decl sub) list
   | Ttype_open -> ()
 
-let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; typ_params; _} =
+let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; _} =
   List.iter
     (fun (c1, c2, _) ->
       sub.typ sub c1;
       sub.typ sub c2)
     typ_cstrs;
   sub.type_kind sub typ_kind;
-  Option.iter (sub.typ sub) typ_manifest;
-  List.iter (fun (c, _) -> sub.typ sub c) typ_params
+  Option.iter (sub.typ sub) typ_manifest
 
 let type_declarations sub (_, list) = List.iter (sub.type_declaration sub) list
 
-let type_extension sub {tyext_constructors; tyext_params; _} =
-  List.iter (fun (c, _) -> sub.typ sub c) tyext_params;
+let type_extension sub {tyext_constructors; _} =
   List.iter (sub.extension_constructor sub) tyext_constructors
 
 let type_exception sub {tyexn_constructor; _} =

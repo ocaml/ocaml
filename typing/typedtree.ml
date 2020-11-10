@@ -480,10 +480,18 @@ and value_description =
     val_attributes: attribute list;
     }
 
+and type_parameter =
+  {
+    typa_type: type_expr;
+    typa_name: string option loc;
+    typa_variance: variance;
+    typa_injectivity: injectivity
+  }
+
 and type_declaration =
   { typ_id: Ident.t;
     typ_name: string loc;
-    typ_params: (core_type * (variance * injectivity)) list;
+    typ_params: type_parameter list;
     typ_type: Types.type_declaration;
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
@@ -527,7 +535,7 @@ and type_extension =
   {
     tyext_path: Path.t;
     tyext_txt: Longident.t loc;
-    tyext_params: (core_type * (variance * injectivity)) list;
+    tyext_params: type_parameter list;
     tyext_constructors: extension_constructor list;
     tyext_private: private_flag;
     tyext_loc: Location.t;
@@ -600,7 +608,7 @@ and class_type_declaration =
 
 and 'a class_infos =
   { ci_virt: virtual_flag;
-    ci_params: (core_type * (variance * injectivity)) list;
+    ci_params: type_parameter list;
     ci_id_name: string loc;
     ci_id_class: Ident.t;
     ci_id_class_type: Ident.t;
