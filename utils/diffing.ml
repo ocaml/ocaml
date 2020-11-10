@@ -226,19 +226,25 @@ let diff ~weight ~test ~update state line column =
   let fullstate = { line; column; state } in
   construct_diff (compute_matrix ~weight ~test ~update fullstate)
 
-type ('st,'line,'column) step =
-  | No_expand of 'st
-  | Expand_left of 'st * 'line array
-  | Expand_right of 'st * 'column array
+type ('l, 'r, 'e, 'd, 'state) update =
+  | No of (('l,'r,'e,'d) change -> 'state -> 'state)
+  | Left of (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
+  | Right of (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
 
-let variadic_diff ~weight ~test ~update state line column =
-  let update d fs =
-    match update d fs.state with
-    | No_expand state -> { fs with state }
-    | Expand_left (state, line) ->
-        { fs with state ; line = Array.append fs.line line }
-    | Expand_right (state, column) ->
-        { fs with state ; column = Array.append fs.column column }
-  in 
+let variadic_diff ~weight ~test ~(update:_ update) state line column =
+  let update = match update with
+    | No up ->
+        fun d fs ->
+          let state = up d fs.state in
+          { fs with state }
+    | Left up ->
+        fun d fs ->
+          let state, a = up d fs.state in
+          { fs with state ; line = Array.append fs.line a }
+    | Right up -> 
+        fun d fs ->
+          let state, a = up d fs.state in
+          { fs with state ; column = Array.append fs.column a }
+  in
   let fullstate = { line; column; state } in
   construct_diff (compute_matrix ~weight ~test ~update fullstate)

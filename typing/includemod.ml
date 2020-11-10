@@ -889,9 +889,8 @@ module FunctorDiff = struct
 
   let expand_arg_params state  =
     match need_expansion state with
-    | None -> Diffing.No_expand state
-    | Some (res, expansion) ->
-        Diffing.Expand_left ({ state with res }, expansion)
+    | None -> state, [||]
+    | Some (res, expansion) -> { state with res }, expansion
 
   let arg_update d st = match data d with
     | Insert (Unit | Named (None,_))
@@ -899,7 +898,7 @@ module FunctorDiff = struct
     | Keep (Unit,_,_)
     | Keep (_,Unit,_)
     | Change (_,(Unit | Named (None,_)), _) ->
-        Diffing.No_expand st
+        st, [||]
     | Insert (Named (Some p, arg))
     | Delete (Named (Some p, arg))
     | Change (Unit, Named (Some p, arg), _) ->
@@ -916,16 +915,16 @@ module FunctorDiff = struct
             expand_arg_params { st with env; subst }
         | None, Some p2 ->
             let env = Env.add_module p2 Mp_present arg' st.env in
-            Diffing.No_expand { st with env }
+            { st with env }, [||]
         | Some p1, None ->
             let env = Env.add_module p1 Mp_present arg' st.env in
             expand_arg_params { st with env }
         | None, None ->
-            Diffing.No_expand st
+            st, [||]
       end
 
   let arg_diff env _ctxt (l1,res1) (l2,_res2) =
-    let update = arg_update in
+    let update = Diffing.Left arg_update in
     let test st mty1 mty2 =
       let loc = Location.none in
       let snap = Btype.snapshot () in
@@ -951,15 +950,15 @@ module FunctorDiff = struct
   let arg_preprocess (_,_,_,fn as data) =
     let metadata =
       match fn with
-      | Unit ->None
-      | Named(x,_) -> x in
+      | Unit -> None
+      | Named(x,_) -> x
+    in
     { data; metadata }
 
   let expand_app_params state =
     match need_expansion state with
-    | None -> Diffing.No_expand state
-    | Some (res, column) ->
-        Diffing.Expand_right ({ state with res }, column)
+    | None -> state, [||]
+    | Some (res, expansion) -> { state with res }, expansion
 
   let app_update d st =
     match Diffing.map data_preprocess Fun.id (data d) with
@@ -969,7 +968,7 @@ module FunctorDiff = struct
     | Keep (_,Unit,_)
     | Change (_,(Unit | Named (None,_)), _ )
     | Change (None, Named (Some _, _), _) ->
-        Diffing.No_expand st
+        st, [||]
     | Keep (Some arg, Named (param_name, _param), _)
     | Change (Some arg, Named (param_name, _param), _) -> begin
         let arg' = Subst.modtype Keep st.subst arg.mty in
@@ -988,12 +987,12 @@ module FunctorDiff = struct
               Option.map (Mtype.nondep_supertype env [param]) st.res in
             expand_app_params { st with env; res}
         | _, None ->
-            Diffing.No_expand st
+            st, [||]
       end
 
   let app_diff env ~f ~args =
     let params, res = retrieve_functor_params env f in
-    let update = app_update in
+    let update = Diffing.Right app_update in
     let test state x y =
       let arg = data_preprocess x.data and param = y.data in
       let loc = Location.none in

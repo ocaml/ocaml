@@ -60,21 +60,18 @@ val diff :
     Variadic diffing allows to expand the lists being diffed during diffing.
 *)
 
-type ('st,'line,'column) step =
-  | No_expand of 'st
-  | Expand_left of 'st * 'line array
-  | Expand_right of 'st * 'column array
+type ('l, 'r, 'e, 'd, 'state) update =
+  | No of (('l,'r,'e,'d) change -> 'state -> 'state)
+  | Left of (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
+  | Right of (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
 
 (** [variadic_diff ~weight ~test ~update state l r] behaves as [diff]
     with the following difference:
-    - [update ch st] must now return a {!step} which indicate if 
-      the lists should be expanded.
-
-    {b Warning}: To ensure termination, it is primordial that only one
-    side is expanded during a diffing.
+    - [update] must now be an {!update} which indicates in which direction
+      the expansion takes place.
 *)
 val variadic_diff :
   weight:(('l, 'r, 'eq, 'diff) change -> int) ->
   test:('state -> 'l -> 'r -> ('eq, 'diff) result) ->
-  update:(('l, 'r, 'eq, 'diff) change -> 'state -> ('state, 'l, 'r) step) ->
+  update:('l, 'r, 'eq, 'diff, 'state) update ->
   'state -> 'l array -> 'r array -> ('l, 'r, 'eq, 'diff) patch
