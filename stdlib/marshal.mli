@@ -110,8 +110,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    only matters when marshaling is performed on a 64-bit platform;
    it has no effect if marshaling is performed on a 32-bit platform.
    
-   It raises [Failure "output_value: not a binary channel"] if channel
-   [chan] is not in binary mode.
+   @raise Failure if [chan] is not in binary mode.
  *)
 
 external to_bytes :
