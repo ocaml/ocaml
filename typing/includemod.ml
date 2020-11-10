@@ -938,7 +938,7 @@ module FunctorDiff = struct
     in
     let state0 =
       { line = Array.map param_preprocess @@ Array.of_list l1;
-        col = Array.map param_preprocess @@ Array.of_list l2;
+        column = Array.map param_preprocess @@ Array.of_list l2;
         inner = {
           env=env0;
           subst = Subst.identity;
@@ -960,10 +960,10 @@ module FunctorDiff = struct
     { data; metadata }
 
   let expand_app_params st inner =
-    match need_expansion inner.env st.col inner.res with
+    match need_expansion inner.env st.column inner.res with
     | None -> { st with inner }
-    | Some (res, col) ->
-        { st with inner= { inner with res }; col }
+    | Some (res, column) ->
+        { st with inner = { inner with res }; column }
 
   let app_update d ({inner; _} as st) =
     match Diffing.map data_preprocess Fun.id (data d) with
@@ -1018,7 +1018,7 @@ module FunctorDiff = struct
     in
     let state0 = {
       line = Array.map arg_preprocess @@ Array.of_list args;
-      col = Array.map param_preprocess @@ Array.of_list params;
+      column = Array.map param_preprocess @@ Array.of_list params;
       inner = { env = env0;
                 subst= Subst.identity;
                 res = keep_expansible_param res;

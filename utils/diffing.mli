@@ -38,12 +38,11 @@ val diff :
 
     If only one side is ever expanded by the update function,
     the patch computation is guaranteed to terminate *)
-type ('inner,'line,'col) full_state =
-  {
-    line: 'line array;
-    col: 'col array;
-    inner:'inner
-  }
+type ('inner,'line,'column) full_state = {
+  line: 'line array;
+  column: 'column array;
+  inner:'inner
+}
 
 val dynamically_resized_diff :
   weight:(('a, 'b, 'c, 'd) change -> int) ->
