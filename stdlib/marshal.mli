@@ -141,10 +141,11 @@ val from_channel : in_channel -> 'a
    one of the [Marshal.to_*] functions, and reconstructs and
    returns the corresponding value.
 
-   It raises [End_of_file] if the function has already reached the
-   end of file when starting to read from the channel, and raises
-   [Failure "input_value: truncated object"] if it reaches the end
-   of file later during the unmarshalling. *)
+   @raise End_of_file if the function has already reached the end
+   of file when starting to read from [chan].
+   
+   @raise Failure if it reaches the end of the file during
+   the unmarshalling. *)
 
 val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value
