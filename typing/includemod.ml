@@ -18,7 +18,6 @@
 open Misc
 open Typedtree
 open Types
-module Diff = Compilerlibs_edit_distance
 
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
@@ -835,7 +834,7 @@ module Short_name = struct
 end
 
 module FunctorDiff = struct
-  open Diff
+  open Diffing
 
 
   type ('a,'b) data = { data:'a; metadata:'b}
@@ -946,7 +945,7 @@ module FunctorDiff = struct
           res = keep_expansible_param res1;
         }
       } in
-    Diff.dynamically_resized_diff ~weight ~test ~update state0
+    Diffing.dynamically_resized_diff ~weight ~test ~update state0
 
   let data_preprocess (parg,_,_,fn) =
     match fn with
@@ -967,7 +966,7 @@ module FunctorDiff = struct
         { st with inner= { inner with res }; col }
 
   let app_update d ({inner; _} as st) =
-    match Diff.map data_preprocess Fun.id (data d) with
+    match Diffing.map data_preprocess Fun.id (data d) with
     | Insert _
     | Delete _
     | Keep (None,_,_)
@@ -1026,7 +1025,7 @@ module FunctorDiff = struct
               };
     }
     in
-    Diff.dynamically_resized_diff ~weight ~test ~update state0
+    Diffing.dynamically_resized_diff ~weight ~test ~update state0
 
   (* Simplication for printing *)
 
@@ -1047,16 +1046,16 @@ module FunctorDiff = struct
     let aux i d =
       let pos = i + 1 in
       let d = match d with
-        | Diff.Insert mty ->
-            Diff.Insert (to_shortname `Expected pos mty)
-        | Diff.Delete mty ->
-            Diff.Delete (to_shortname (elide_if_app `Got) pos mty)
-        | Diff.Change (g, e, p) ->
-            Diff.Change
+        | Diffing.Insert mty ->
+            Diffing.Insert (to_shortname `Expected pos mty)
+        | Diffing.Delete mty ->
+            Diffing.Delete (to_shortname (elide_if_app `Got) pos mty)
+        | Diffing.Change (g, e, p) ->
+            Diffing.Change
               (to_shortname `Got pos g,
                to_shortname `Expected pos e, p)
-        | Diff.Keep (g, e, p) ->
-            Diff.Keep (to_shortname `Got pos g,
+        | Diffing.Keep (g, e, p) ->
+            Diffing.Keep (to_shortname `Got pos g,
                        to_shortname (elide_if_app `Expected) pos e, p)
       in
       pos, d
@@ -1065,7 +1064,7 @@ module FunctorDiff = struct
 
   let drop_inserted_suffix patch =
     let rec drop = function
-      | Diff.Insert _ :: q -> drop q
+      | Diffing.Insert _ :: q -> drop q
       | rest -> List.rev rest in
     drop (List.rev patch)
 
@@ -1443,10 +1442,10 @@ module Pp = struct
     | None, None, _, _ -> assert false
 
   let style = function
-    | Diff.Keep _ -> Misc.Color.[ FG Green ]
-    | Diff.Delete _ -> Misc.Color.[ FG Red; Bold]
-    | Diff.Insert _ -> Misc.Color.[ FG Red; Bold]
-    | Diff.Change _ -> Misc.Color.[ FG Magenta; Bold]
+    | Diffing.Keep _ -> Misc.Color.[ FG Green ]
+    | Diffing.Delete _ -> Misc.Color.[ FG Red; Bold]
+    | Diffing.Insert _ -> Misc.Color.[ FG Red; Bold]
+    | Diffing.Change _ -> Misc.Color.[ FG Magenta; Bold]
 
   let decorate preprinter x =
     let sty = style x in
@@ -1463,11 +1462,17 @@ module Pp = struct
     Format.pp_close_stag ppf ()
 
   let got f = function
-    | Diff.Delete mty | Diff.Keep (mty,_,_) | Diff.Change (mty,_,_) -> f mty
-    | Diff.Insert _ -> ignore
+    | Diffing.Delete mty
+    | Diffing.Keep (mty,_,_)
+    | Diffing.Change (mty,_,_)
+      -> f mty
+    | Diffing.Insert _ -> ignore
   let expected f = function
-    | Diff.Insert mty | Diff.Keep (_,mty,_) | Diff.Change (_,mty,_) -> f mty
-    | Diff.Delete _ -> ignore
+    | Diffing.Insert mty
+    | Diffing.Keep (_,mty,_)
+    | Diffing.Change (_,mty,_)
+      -> f mty
+    | Diffing.Delete _ -> ignore
 
   let space ppf () = Format.fprintf ppf "@ "
   let dlist ?(sep=space) f l  =
@@ -1501,7 +1506,7 @@ module Linearize = struct
   type ('a,'b) patch =
     ( 'a Short_name.item, 'b Short_name.item,
       Typedtree.module_coercion, Error.arg_functor_param_syndrom
-    ) Diff.change
+    ) Diffing.change
   type ('a,'b) t = {
     msgs: Location.msg list;
     post:
@@ -1685,7 +1690,7 @@ module Linearize = struct
   let param_suberrors sub ~expansion_token env l =
     let rec aux = function
       | [] -> []
-      | (_, Diff.Keep _) as a :: q ->
+      | (_, Diffing.Keep _) as a :: q ->
           param_subcase sub ~expansion_token env a
           :: aux q
       | a :: q ->
@@ -1736,18 +1741,18 @@ module Linearize = struct
         msg g e more
 
   and arg ~expansion_token env = function
-    | Diff.Insert mty -> insert_suberror mty
-    | Diff.Delete mty -> delete_suberror mty
-    | Diff.Change (g, e, d) ->
+    | Diffing.Insert mty -> insert_suberror mty
+    | Diffing.Delete mty -> delete_suberror mty
+    | Diffing.Change (g, e, d) ->
         diff_suberror arg_incompatible diff_arg ~expansion_token env g e d
-    | Diff.Keep (x, y, _) -> ok_suberror x y
+    | Diffing.Keep (x, y, _) -> ok_suberror x y
 
   let app ~expansion_token env = function
-    | Diff.Insert mty -> insert_suberror mty
-    | Diff.Delete mty -> delete_suberror_app mty
-    | Diff.Change (g, e, d) ->
+    | Diffing.Insert mty -> insert_suberror mty
+    | Diffing.Delete mty -> delete_suberror_app mty
+    | Diffing.Change (g, e, d) ->
         diff_suberror app_incompatible diff_app ~expansion_token env g e d
-    | Diff.Keep (x, y, _) -> ok_suberror_app x y
+    | Diffing.Keep (x, y, _) -> ok_suberror_app x y
 
   let all env = function
     | In_Compilation_unit diff ->

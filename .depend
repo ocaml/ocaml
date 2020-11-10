@@ -45,11 +45,11 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
-utils/compilerlibs_edit_distance.cmo : \
-    utils/compilerlibs_edit_distance.cmi
-utils/compilerlibs_edit_distance.cmx : \
-    utils/compilerlibs_edit_distance.cmi
-utils/compilerlibs_edit_distance.cmi :
+utils/diffing.cmo : \
+    utils/diffing.cmi
+utils/diffing.cmx : \
+    utils/diffing.cmi
+utils/diffing.cmi :
 utils/config.cmo : \
     utils/config.cmi
 utils/config.cmx : \
@@ -720,7 +720,7 @@ typing/includemod.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
-    utils/compilerlibs_edit_distance.cmi \
+    utils/diffing.cmi \
     file_formats/cmt_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -746,7 +746,7 @@ typing/includemod.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
-    utils/compilerlibs_edit_distance.cmx \
+    utils/diffing.cmx \
     file_formats/cmt_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
