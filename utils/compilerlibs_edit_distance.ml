@@ -104,7 +104,7 @@ let select_best_proposition l =
   | [] -> None
   | (m,res)::l ->Some(aux m res l)
 
-let update_cell m i j ?p ~x ~s =
+let update_cell m i j ~p ~x ~s =
   m.Matrix.weight.(i).(j) <- x;
   m.Matrix.state.(i).(j) <- Some s;
   m.Matrix.patch.(i).(j) <- p;
@@ -117,7 +117,7 @@ let compute_col0 ~update ~weight tbl i =
   update_cell tbl i 0
     ~x:(weight diff + tbl.Matrix.weight.(i-1).(0))
     ~s:(update diff st)
-    ~p:diff
+    ~p:(Some diff)
 
 let compute_line0 ~update ~weight tbl j =
   let*! st = tbl.Matrix.state.(0).(j-1) in
@@ -126,7 +126,7 @@ let compute_line0 ~update ~weight tbl j =
   update_cell tbl 0 j
     ~x:(weight diff + tbl.Matrix.weight.(0).(j-1))
     ~s:(update diff st)
-    ~p:diff
+    ~p:(Some diff)
 
 let compute_inner_cell ~test ~update ~weight tbl i j =
   let open Matrix in
@@ -157,13 +157,13 @@ let compute_inner_cell ~test ~update ~weight tbl i j =
   let*! newweight, (newres, newstate) =
     select_best_proposition [del;insert;diag]
   in
-  update_cell tbl i j ~x:newweight ~s:newstate ~p:newres
+  update_cell tbl i j ~x:newweight ~s:newstate ~p:(Some newres)
 
 let compute_matrix ~weight ~test ~update state0 =
   let open Matrix in
   let compute_inner_cell = compute_inner_cell ~test ~update ~weight in
   let m0 = Matrix.make ~size:(0,0) in
-  update_cell m0 0 0 ~x:0 ~s:state0 ?p:None;
+  update_cell m0 0 0 ~x:0 ~s:state0 ~p:None;
   let rec loop m =
     let orig_lines = m.lines and orig_cols = m.cols in
     let ext_lines, ext_cols as ext_shape = Matrix.real_shape m in

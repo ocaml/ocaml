@@ -44,7 +44,6 @@ Line 1, characters 26-36:
                               ^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match: sig end is not included in Original.T
-       Unbound module type Original.T
 |}]
 
 let foo (x : Middle.pack1) =

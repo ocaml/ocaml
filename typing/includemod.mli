@@ -89,8 +89,6 @@ type pos =
   | Modtype of Ident.t
   | Arg of functor_parameter
   | Body of functor_parameter
-type error = pos list * Env.t * symptom
-
 
 exception Error of explanation
 exception Apply_error of {
