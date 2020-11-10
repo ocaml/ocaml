@@ -1700,18 +1700,18 @@ module Linearize = struct
   let arg_incompatible = function
     | Unit ->
         Format.dprintf
-          "the functor was expected to be applicative at this position"
+          "The functor was expected to be applicative at this position"
     | Named _ ->
         Format.dprintf
-          "the functor was expected to be generative at this position"
+          "The functor was expected to be generative at this position"
 
   let app_incompatible = function
     | None ->
         Format.dprintf
-          "the functor was expected to be applicative at this position"
+          "The functor was expected to be applicative at this position"
     | Some _ ->
         Format.dprintf
-          "the functor was expected to be generative at this position"
+          "The functor was expected to be generative at this position"
 
 
   let rec diff_suberror:
