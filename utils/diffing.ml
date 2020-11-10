@@ -19,14 +19,13 @@ let (let*) = Option.bind
 let (let+) x f = Option.map f x
 let (let*!) x f = Option.iter f x
 
+type ('left, 'right, 'eq, 'diff) change =
+  | Delete of 'left
+  | Insert of 'right
+  | Keep of 'left * 'right * 'eq
+  | Change of 'left * 'right * 'diff
 
-type ('a, 'b, 'c, 'd) change =
-  | Delete of 'a
-  | Insert of 'b
-  | Keep of 'a * 'b * 'c
-  | Change of 'a * 'b * 'd
-
-type ('a, 'b, 'c, 'd) patch = ('a, 'b, 'c, 'd) change list
+type ('l, 'r, 'eq, 'diff) patch = ('l, 'r, 'eq, 'diff) change list
 
 let map f g = function
   | Delete x -> Delete (f x)
@@ -34,10 +33,10 @@ let map f g = function
   | Keep (x,y,k) -> Keep (f x, g y, k)
   | Change (x,y,k) -> Change (f x, g y, k)
 
-type ('inner,'line,'column) full_state = {
+type ('st,'line,'column) full_state = {
   line: 'line array;
   column: 'column array;
-  inner:'inner
+  state: 'st
 }
 
 module Matrix : sig
@@ -168,7 +167,7 @@ let compute_inner_cell ~weight ~test ~update tbl i j =
       let* state = Matrix.state tbl (i-1) (j-1) in
       let* line = Matrix.line tbl (i-1) (j-1) in
       let* column = Matrix.column tbl (i-1) (j-1) in
-      match test state.inner line column with
+      match test state.state line column with
       | Ok ok -> Some (Keep (line, column, ok))
       | Error err -> Some (Change (line, column, err))
     in
@@ -222,12 +221,24 @@ let construct_diff mat =
   in
   aux [] (Matrix.shape mat)
 
-
-
-let dynamically_resized_diff ~weight ~test ~update state =
-  construct_diff (compute_matrix ~weight ~test ~update state)
-
 let diff ~weight ~test ~update state line column =
-  let update d fs = { fs with inner = update d fs.inner } in
-  let state = { line; column; inner=state } in
-  dynamically_resized_diff ~weight ~test ~update state
+  let update d fs = { fs with state = update d fs.state } in
+  let fullstate = { line; column; state } in
+  construct_diff (compute_matrix ~weight ~test ~update fullstate)
+
+type ('st,'line,'column) step =
+  | No_expand of 'st
+  | Expand_left of 'st * 'line array
+  | Expand_right of 'st * 'column array
+
+let dynamically_resized_diff ~weight ~test ~update state line column =
+  let update d fs =
+    match update d fs.state with
+    | No_expand state -> { fs with state }
+    | Expand_left (state, line) ->
+        { fs with state ; line = Array.append fs.line line }
+    | Expand_right (state, column) ->
+        { fs with state ; column = Array.append fs.column column }
+  in 
+  let fullstate = { line; column; state } in
+  construct_diff (compute_matrix ~weight ~test ~update fullstate)

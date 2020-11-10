@@ -14,23 +14,24 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
-type ('a, 'b, 'c, 'd) change =
-  | Delete of 'a
-  | Insert of 'b
-  | Keep of 'a * 'b * 'c
-  | Change of 'a * 'b * 'd
+type ('left, 'right, 'eq, 'diff) change =
+  | Delete of 'left
+  | Insert of 'right
+  | Keep of 'left * 'right * 'eq
+  | Change of 'left * 'right * 'diff
 
 val map :
-  ('a -> 'b) -> ('c -> 'd) -> ('a, 'c, 'e, 'f) change -> ('b, 'd, 'e, 'f) change
+  ('l1 -> 'l2) -> ('r1 -> 'r2) ->
+  ('l1, 'r1, 'eq, 'diff) change ->
+  ('l2, 'r2, 'eq, 'diff) change
 
-type ('a, 'b, 'c, 'd) patch = ('a, 'b, 'c, 'd) change list
+type ('l, 'r, 'eq, 'diff) patch = ('l, 'r, 'eq, 'diff) change list
 
 val diff :
-  weight:(('a, 'b, 'c, 'd) change -> int) ->
-  test:('state -> 'a -> 'b -> ('c, 'd) result) ->
-  update:(('a, 'b, 'c, 'd) change -> 'state -> 'state) ->
-  'state -> 'a array -> 'b array -> ('a, 'b, 'c, 'd) patch
+  weight:(('l, 'r, 'eq, 'diff) change -> int) ->
+  test:('state -> 'l -> 'r -> ('eq, 'diff) result) ->
+  update:(('l, 'r, 'eq, 'diff) change -> 'state -> 'state) ->
+  'state -> 'l array -> 'r array -> ('l, 'r, 'eq, 'diff) patch
 
 
 (** Using the full state make it possible to resize the
@@ -38,15 +39,13 @@ val diff :
 
     If only one side is ever expanded by the update function,
     the patch computation is guaranteed to terminate *)
-type ('inner,'line,'column) full_state = {
-  line: 'line array;
-  column: 'column array;
-  inner:'inner
-}
+type ('st,'line,'column) step =
+  | No_expand of 'st
+  | Expand_left of 'st * 'line array
+  | Expand_right of 'st * 'column array
 
 val dynamically_resized_diff :
-  weight:(('a, 'b, 'c, 'd) change -> int) ->
-  test:('state -> 'a -> 'b -> ('c, 'd) result) ->
-  update:
-    (('a, 'b, 'c, 'd) change -> (('state,'a,'b) full_state as 'fs) -> 'fs) ->
-  'fs -> ('a, 'b, 'c, 'd) patch
+  weight:(('l, 'r, 'eq, 'diff) change -> int) ->
+  test:('state -> 'l -> 'r -> ('eq, 'diff) result) ->
+  update:(('l, 'r, 'eq, 'diff) change -> 'state -> ('state, 'l, 'r) step) ->
+  'state -> 'l array -> 'r array -> ('l, 'r, 'eq, 'diff) patch
