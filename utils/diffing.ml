@@ -94,8 +94,11 @@ end = struct
       if l > !lines then lines := l;
       if c > !columns then columns := c
     in
-    for i = 0 to tbl.lines do max_at i tbl.columns done;
-    for j = 0 to tbl.columns do max_at tbl.lines j done;
+    for i = 0 to tbl.lines do 
+      for j = 0 to tbl.columns do
+        max_at i j
+      done;
+    done;
     !lines, !columns
 
   let make ~lines ~columns =
@@ -124,9 +127,10 @@ end
 
 let select_best_proposition l =
   let compare_proposition curr prop =
-    let* curr_m, curr_res = curr in
-    let* m, res = prop in
-    Some (if curr_m <= m then curr_m, curr_res else m,res)
+    match curr, prop with
+    | None, o | o, None -> o
+    | Some (curr_m, curr_res), Some (m, res) ->
+        Some (if curr_m <= m then curr_m, curr_res else m,res)
   in
   List.fold_left compare_proposition None l
 
@@ -176,8 +180,8 @@ let compute_inner_cell ~weight ~test ~update tbl i j =
   let*! newweight, (diff, localstate) =
     select_best_proposition [del;insert;diag]
   in
-  let newstate = update diff localstate in
-  Matrix.update tbl i j ~weight:newweight ~state:newstate ~diff
+  let state = update diff localstate in
+  Matrix.update tbl i j ~weight:newweight ~state ~diff
 
 let compute_matrix ~weight ~test ~update state0 =
   let compute_inner_cell = compute_inner_cell ~test ~update ~weight in
