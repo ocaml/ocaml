@@ -68,7 +68,7 @@ Error: Signature mismatch:
          functor (X : sig end) -> ...
        is not included in
          functor () -> ...
-     the functor was expected to be generative at this position
+     The functor was expected to be generative at this position
 |}];;
 module F3 () = struct end;;
 module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
@@ -82,7 +82,7 @@ Error: Signature mismatch:
          functor () -> ...
        is not included in
          functor (X : sig end) -> ...
-     the functor was expected to be applicative at this position
+     The functor was expected to be applicative at this position
 |}];;
 
 (* tests for shortened functor notation () *)

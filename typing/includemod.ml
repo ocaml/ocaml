@@ -783,7 +783,7 @@ module Short_name = struct
 
   type 'a item = {
     item: 'a;
-    name : (Ident.t option -> string);
+    name : string;
     from: Ident.t option;
   }
 
@@ -801,7 +801,7 @@ module Short_name = struct
     | Mty_signature []
       -> Original r.item
     | Mty_signature _ | Mty_functor _
-      -> Synthetic (r.name r.from, r.item)
+      -> Synthetic (r.name, r.item)
 
   let functor_param (ua : _ item) = match ua.item with
     | Types.Unit -> Unit
@@ -813,7 +813,7 @@ module Short_name = struct
     | Pmod_structure []
       -> Original r.item
     | _
-      -> Synthetic (r.name r.from, r.item)
+      -> Synthetic (r.name, r.item)
 
   let argument ua =
     let (path, md, mty, param) = ua.item in
@@ -1030,12 +1030,11 @@ module FunctorDiff = struct
 
   (* Simplication for printing *)
 
-  let shortname side pos name =
-    match side, name with
-    | `Got, None -> Format.sprintf "...(S%d)" pos
-    | `Expected, None -> Format.sprintf "...(T%d)" pos
-    | `Unneeded, _ -> "..."
-    | _, Some name -> Format.sprintf "...(%s)" (Ident.name name)
+  let shortname side pos =
+    match side with
+    | `Got -> Format.sprintf "$S%d" pos
+    | `Expected -> Format.sprintf "$T%d" pos
+    | `Unneeded -> "..."
 
   let to_shortnames ctx patch =
     let to_shortname side pos mty =

@@ -51,11 +51,11 @@ Error: The functor application F(M) is ill-typed.
        These arguments:
          M
        do not match these parameters:
-         functor (X : ...(X)) -> ...
+         functor (X : $T1) -> ...
      Modules do not match:
        M : sig type t = M.t val equal : 'a -> 'a -> bool end
      is not included in
-       ...(X) = sig type t = M.t val equal : unit end
+       $T1 = sig type t = M.t val equal : unit end
      Values do not match:
        val equal : 'a -> 'a -> bool
      is not included in

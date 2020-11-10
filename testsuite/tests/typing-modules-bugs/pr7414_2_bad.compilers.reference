@@ -5,12 +5,12 @@ Error: The functor application is ill-typed.
        These arguments:
          Choose
        do not match these parameters:
-         functor (X : ...(X)) -> ...
+         functor (X : $T1) -> ...
      Modules do not match:
        Choose :
        functor () -> sig module Choice : T val r : '_weak1 list ref ref end
      is not included in
-       ...(X) = functor () -> S
+       $T1 = functor () -> S
      Modules do not match:
        sig module Choice : T val r : '_weak1 list ref ref end
      is not included in
