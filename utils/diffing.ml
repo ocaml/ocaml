@@ -231,7 +231,7 @@ type ('st,'line,'column) step =
   | Expand_left of 'st * 'line array
   | Expand_right of 'st * 'column array
 
-let dynamically_resized_diff ~weight ~test ~update state line column =
+let variadic_diff ~weight ~test ~update state line column =
   let update d fs =
     match update d fs.state with
     | No_expand state -> { fs with state }

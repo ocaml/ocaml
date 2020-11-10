@@ -941,7 +941,7 @@ module FunctorDiff = struct
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res1}
     in
-    Diffing.dynamically_resized_diff ~weight ~test ~update state param1 param2
+    Diffing.variadic_diff ~weight ~test ~update state param1 param2
 
   let data_preprocess (parg,_,_,fn) =
     match fn with
@@ -1019,7 +1019,7 @@ module FunctorDiff = struct
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res }
     in
-    Diffing.dynamically_resized_diff ~weight ~test ~update state args params
+    Diffing.variadic_diff ~weight ~test ~update state args params
 
   (* Simplication for printing *)
 
