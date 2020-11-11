@@ -128,7 +128,7 @@ let valid_tyvar_name name =
 
 let transl_type_param styp (v, i) =
   let loc = styp.ptyp_loc in
-  let typa_type, name =
+  let typa_type, typa_name =
     match styp.ptyp_desc with
       Ptyp_any ->
         new_global_var ~name:"_" (), None
@@ -146,10 +146,10 @@ let transl_type_param styp (v, i) =
         in
         ty, Some name
     | _ -> assert false in
-  { typa_type;
-    typa_name = Location.mkloc name styp.ptyp_loc;
+  { typa_type; typa_name;
     typa_variance = v;
-    typa_injectivity = i }
+    typa_injectivity = i;
+    typa_loc = styp.ptyp_loc; }
 
 let transl_type_param styp vi =
   (* Currently useless, since type parameters cannot hold attributes

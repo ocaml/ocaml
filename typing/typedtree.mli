@@ -621,9 +621,10 @@ and value_description =
 and type_parameter =
   {
     typa_type: Types.type_expr;
-    typa_name: string option loc;
+    typa_name: string option;
     typa_variance: variance;
-    typa_injectivity: injectivity
+    typa_injectivity: injectivity;
+    typa_loc: Location.t;
   }
 
 and type_declaration =

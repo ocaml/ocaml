@@ -221,10 +221,10 @@ let module_binding sub mb =
 
 let type_parameter _sub p =
   let name =
-    match p.typa_name.txt with
+    match p.typa_name with
     | Some n -> Ptyp_var n
     | None -> Ptyp_any in
-  (Typ.mk ~loc:p.typa_name.loc name,
+  (Typ.mk ~loc:p.typa_loc name,
    (p.typa_variance, p.typa_injectivity))
 
 let type_declaration sub decl =
