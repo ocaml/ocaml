@@ -449,7 +449,21 @@ and binding_op i ppf x =
     fmt_location x.bop_loc;
   expression i ppf x.bop_exp
 
-and type_parameter i ppf (x, _variance) = core_type i ppf x
+and type_parameter i ppf x =
+  line i ppf "type_parameter %s %a\n"
+    (Option.value ~default:"_" x.typa_name)
+    fmt_location x.typa_loc;
+  let variance =
+    match x.typa_variance with
+    | Covariant -> "Covariant"
+    | Contravariant -> "Contravariant"
+    | NoVariance -> "NoVariance" in
+  line (i+1) ppf "typa_variance %s\n" variance;
+  let injectivity =
+    match x.typa_injectivity with
+    | Injective -> "Injective"
+    | NoInjectivity -> "NoInjectivity" in
+  line (i+1) ppf "typa_injectivity %s\n" injectivity
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a %a\n" fmt_ident x.typ_id fmt_location
