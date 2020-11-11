@@ -175,3 +175,29 @@ Line 2, characters 2-26:
 Error: Types marked with the immediate attribute must be non-pointer types
        like int or bool.
 |}];;
+
+(* Aliases should be expanded to check immediacy *)
+type 'a id = 'a
+type s = int id [@@immediate]
+[%%expect{|
+type 'a id = 'a
+type s = int id [@@immediate]
+|}];;
+module F (X : sig type t end) = X
+module I = struct type t = int end
+type t = F(I).t [@@immediate]
+[%%expect{|
+module F : functor (X : sig type t end) -> sig type t = X.t end
+module I : sig type t = int end
+type t = F(I).t [@@immediate]
+|}];;
+module type T = sig type t type s = t end
+module F (X : T with type t = int) = struct
+  type t = X.s [@@immediate]
+end
+[%%expect{|
+module type T = sig type t type s = t end
+module F :
+  functor (X : sig type t = int type s = t end) ->
+    sig type t = X.s [@@immediate] end
+|}];;

@@ -4892,31 +4892,52 @@ let is_immediate = function
          targeting 32 or 64 bits. *)
       !Clflags.native_code && Sys.word_size = 64
 
-let immediacy env typ =
-   match (repr typ).desc with
-  | Tconstr(p, _args, _abbrev) ->
-    begin try
-      let type_decl = Env.find_type p env in
-      type_decl.type_immediate
-    with Not_found -> Type_immediacy.Unknown
-    (* This can happen due to e.g. missing -I options,
-       causing some .cmi files to be unavailable.
-       Maybe we should emit a warning. *)
-    end
-  | Tvariant row ->
-      let row = Btype.row_repr row in
-      (* if all labels are devoid of arguments, not a pointer *)
-      if
-        not row.row_closed
-        || List.exists
-          (function
-            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
-            | _ -> false)
-          row.row_fields
-      then
-        Type_immediacy.Unknown
-      else
-        Type_immediacy.Always
+
+let row_immediacy row =
+  let row = Btype.row_repr row in
+  (* if all labels are devoid of arguments, not a pointer *)
+  if
+    not row.row_closed
+    || List.exists
+      (function
+        | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
+        | _ -> false)
+      row.row_fields
+  then
+    Type_immediacy.Unknown
+  else
+    Type_immediacy.Always
+
+let approx_path_immediacy env p =
+  try (Env.find_type p env).type_immediate
+  with Not_found -> Type_immediacy.Unknown
+       (* This can happen due to e.g. missing -I options,
+          causing some .cmi files to be unavailable.
+          Maybe we should emit a warning. *)
+
+let approx_immediacy env typ =
+  match (repr typ).desc with
+  | Tconstr(p, _args, _abbrev) -> approx_path_immediacy env p
+  | Tvariant row -> row_immediacy row
   | _ -> Type_immediacy.Unknown
 
-let maybe_pointer_type env typ = not (is_immediate (immediacy env typ))
+let rec check_immediacy env ~as_ typ =
+  let check imm =
+    Type_immediacy.coerce imm ~as_ in
+  match (repr typ).desc with
+  | Tconstr(p, _args, _abbrev) ->
+    begin match check (approx_path_immediacy env p) with
+    | Ok () -> Ok ()
+    | Error _ as e ->
+       (* That check failed, but maybe it will pass if we expand aliases *)
+       match try_expand_head try_expand_once env typ with
+       | typ ->
+          check_immediacy env ~as_ typ
+       | exception Cannot_expand ->
+          (* OK, admit it's failed *)
+          e
+    end
+  | Tvariant row -> check (row_immediacy row)
+  | _ -> check Type_immediacy.Unknown
+
+let maybe_pointer_type env typ = not (is_immediate (approx_immediacy env typ))
