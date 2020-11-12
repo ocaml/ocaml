@@ -258,7 +258,9 @@ static void caml_thread_remove_info(caml_thread_t th)
 
   th->next->prev = th->prev;
   th->prev->next = th->next;
-  caml_stat_free(th->current_stack);
+  caml_free_stack(th->current_stack);
+  caml_delete_root(th->backtrace_last_exn);
+  caml_stat_free(th);
   return;
 }
 
