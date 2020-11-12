@@ -33,64 +33,76 @@ let map f g = function
   | Keep (x,y,k) -> Keep (f x, g y, k)
   | Change (x,y,k) -> Change (f x, g y, k)
 
-type ('st,'line,'column) full_state = {
-  line: 'line array;
-  column: 'column array;
+type ('st,'left,'right) full_state = {
+  line: 'left array;
+  column: 'right array;
   state: 'st
 }
 
 module Matrix : sig
 
-  type ('content,'state,'line,'column) t
+  type ('state,'left,'right,'eq,'diff) t
 
-  val make : lines:int -> columns:int -> ('a,'st,'l,'c) t
-  val reshape : lines:int -> columns:int -> ('a,'st,'l,'c) t -> ('a,'st,'l,'c) t
+  val make : lines:int -> columns:int -> ('st,'l,'r,'e,'d) t
+  val reshape :
+    lines:int -> columns:int ->
+    ('st,'l,'r,'e,'d) t -> ('st,'l,'r,'e,'d) t
 
-  val diff : ('a,_,_,_) t -> int -> int -> 'a option
-  val state : (_,'st,'l,'c) t -> int -> int -> ('st,'l,'c) full_state option
+  val diff : (_,'l,'r,'e,'d) t -> int -> int -> ('l,'r,'e,'d) change option
+  val state : ('st,'l,'r,'e,'d) t -> int -> int -> ('st, 'l, 'r) full_state option
   val weight : _ t -> int -> int -> int
 
-  val line : (_,_,'l,_) t -> int -> int -> 'l option
-  val column : (_,_,_,'c) t -> int -> int -> 'c option
+  val line : (_,'l,_,_,_) t -> int -> int -> 'l option
+  val column : (_,_,'r,_,_) t -> int -> int -> 'r option
 
   val update :
-    ('a,'st,'l,'c) t -> int -> int ->
-    ?diff:'a -> weight:int -> state:('st, 'l, 'c) full_state -> unit
+    ('st,'l,'r,'e,'d) t -> int -> int ->
+    ?diff:('l,'r,'e,'d) change ->
+    weight:int ->
+    state:('st, 'l, 'r) full_state ->
+    unit
 
   val shape : _ t -> int * int
+  val[@warning "-32"] shape_at : _ t -> int -> int -> (int * int) option
   val real_shape : _ t -> int * int
 
+  val[@warning "-32"] pp : Format.formatter -> _ t -> unit
+  
 end = struct
 
-  type ('content,'state,'line,'column) t =
-    { state: ('state,'line,'column) full_state option array array;
+  type ('state,'left,'right,'eq,'diff) t =
+    { states: ('state,'left,'right) full_state option array array;
       weight: int array array;
-      diff: 'content option array array;
+      diff: ('left,'right,'eq,'diff) change option array array;
       columns: int;
       lines: int;
     }
   let opt_get a n =
     if n < Array.length a then Some (Array.unsafe_get a n) else None
-  let line m i j = let* st = m.state.(i).(j) in opt_get st.line i
-  let column m i j = let* st = m.state.(i).(j) in opt_get st.column j
+  let line m i j = let* st = m.states.(i).(j) in opt_get st.line i
+  let column m i j = let* st = m.states.(i).(j) in opt_get st.column j
   let diff m i j = m.diff.(i).(j)
   let weight m i j = m.weight.(i).(j)
-  let state m i j = m.state.(i).(j)
+  let state m i j = m.states.(i).(j)
   let shape m = m.lines, m.columns
   
   let update m i j ?diff ~weight ~state =
     m.weight.(i).(j) <- weight;
-    m.state.(i).(j) <- Some state;
+    m.states.(i).(j) <- Some state;
     m.diff.(i).(j) <- diff;
     ()
+
+  let shape_at tbl i j =
+    let+ st = tbl.states.(i).(j) in
+    let l = Array.length st.line in
+    let c = Array.length st.column in
+    l, c
   
   let real_shape tbl =
     let lines = ref tbl.lines in
     let columns = ref tbl.columns in
     let max_at i j =
-      let*! st = tbl.state.(i).(j) in
-      let l = Array.length st.line in
-      let c = Array.length st.column in
+      let*! l, c = shape_at tbl i j in
       if l > !lines then lines := l;
       if c > !columns then columns := c
     in
@@ -102,7 +114,7 @@ end = struct
     !lines, !columns
 
   let make ~lines ~columns =
-    { state = Array.make_matrix (lines + 1) (columns + 1) None;
+    { states = Array.make_matrix (lines + 1) (columns + 1) None;
       weight = Array.make_matrix (lines + 1) (columns + 1) max_int;
       diff = Array.make_matrix (lines + 1) (columns + 1) None;
       lines;
@@ -115,13 +127,36 @@ end = struct
           if i <= m.lines && j <= m.columns then
             a.(i).(j)
           else default) ) in
-    { state = copy None m.state;
+    { states = copy None m.states;
       weight = copy max_int m.weight;
       diff = copy None m.diff;
       lines;
       columns
     }
 
+
+  let pp ppf m =
+    let l,c = shape m in
+    Format.eprintf "Shape : %i, %i@." l c;
+    for i = 0 to l do
+      for j = 0 to c do
+        let d = diff m i j in
+        match d with
+        | None ->
+            Format.fprintf ppf "    "
+        | Some diff ->
+            let sdiff = match diff with
+              | Insert _ -> "←"
+              | Delete _ -> "↑"
+              | Keep _ -> "↖"
+              | Change _ -> "⇱"
+            in
+            let w = weight m i j in
+            Format.fprintf ppf "%s%i " sdiff w
+      done;
+      Format.pp_print_newline ppf ()
+    done
+ 
 end
 
 
@@ -183,8 +218,15 @@ let compute_inner_cell ~weight ~test ~update tbl i j =
   let state = update diff localstate in
   Matrix.update tbl i j ~weight:newweight ~state ~diff
 
+let compute_cell ~weight ~test ~update m i j =
+  match i, j with
+  | _ when Matrix.diff m i j <> None -> ()
+  | 0,0 -> ()
+  | 0,j -> compute_line0 ~update ~weight m j
+  | i,0 -> compute_column0 ~update ~weight m i;
+  | _ -> compute_inner_cell ~weight ~test ~update m i j
+
 let compute_matrix ~weight ~test ~update state0 =
-  let compute_inner_cell = compute_inner_cell ~test ~update ~weight in
   let m0 = Matrix.make ~lines:0 ~columns:0 in
   Matrix.update m0 0 0 ~weight:0 ~state:state0 ?diff:None;
   let rec loop m =
@@ -192,16 +234,9 @@ let compute_matrix ~weight ~test ~update state0 =
     let lines, columns = Matrix.real_shape m in
     if lines > orig_lines || columns > orig_columns then
       let m = Matrix.reshape ~lines ~columns m in
-      for j = orig_columns + 1 to columns do
-        compute_line0 ~update ~weight m j;
-        for i = 1 to orig_lines do
-          compute_inner_cell m i j
-        done
-      done;
-      for i = orig_lines + 1 to lines do
-        compute_column0 ~update ~weight m i;
-        for j = 1 to columns do
-          compute_inner_cell m i j
+      for j = 0 to columns do
+        for i = 0 to lines do
+          compute_cell ~update ~test ~weight m i j
         done
       done;
       loop m
