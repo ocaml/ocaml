@@ -1618,3 +1618,84 @@ Error: The functor application is ill-typed.
        Z of X.t
      The types are not equal.
 |}]
+
+(** Final state in the presence of extensions
+    Test provided by Leo White in 
+    https://github.com/ocaml/ocaml/pull/9331#pullrequestreview-492359720
+*)
+
+module type A = sig type a end
+module A = struct type a end
+module type B = sig type b end
+module B = struct type b end
+
+module type ty = sig type t end
+module TY = struct type t end
+
+module type Ext = sig module type T module X : T end
+
+module AExt = struct module type T = A module X = A end
+module FiveArgsExt = struct
+  module type T = ty -> ty -> ty -> ty -> ty -> sig end
+  module X : T =
+    functor (_ : ty) (_ : ty) (_ : ty) (_ : ty) (_ : ty) -> struct end
+end
+
+module Bar (W : A) (X : Ext) (Y : B) (Z : Ext) = Z.X
+
+type fine = Bar(A)(FiveArgsExt)(B)(AExt).a
+[%%expect{|
+module type A = sig type a end
+module A : sig type a end
+module type B = sig type b end
+module B : sig type b end
+module type ty = sig type t end
+module TY : sig type t end
+module type Ext = sig module type T module X : T end
+module AExt : sig module type T = A module X = A end
+module FiveArgsExt :
+  sig module type T = ty -> ty -> ty -> ty -> ty -> sig end module X : T end
+module Bar : functor (W : A) (X : Ext) (Y : B) (Z : Ext) -> Z.T
+type fine = Bar(A)(FiveArgsExt)(B)(AExt).a
+|}]
+
+type broken1 = Bar(B)(FiveArgsExt)(B)(AExt).a
+[%%expect{|
+Line 1, characters 15-45:
+1 | type broken1 = Bar(B)(FiveArgsExt)(B)(AExt).a
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application Bar(B)(FiveArgsExt)(B)(AExt) is ill-typed.
+       These arguments:
+         B FiveArgsExt B AExt
+       do not match these parameters:
+         functor (W : A) (X : Ext) (Y : B) (Z : Ext) -> ...
+  1. Modules do not match:
+       B : sig type b = B.b end
+     is not included in
+       A
+     The type `a' is required but not provided
+  2. Module FiveArgsExt matches the expected module type Ext
+  3. Module B matches the expected module type B
+  4. Module AExt matches the expected module type Ext
+|}]
+
+type broken2 = Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY).a
+[%%expect{|
+Line 1, characters 15-56:
+1 | type broken2 = Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY).a
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY) is ill-typed.
+       These arguments:
+         A   FiveArgsExt TY TY TY TY TY
+       do not match these parameters:
+         functor (W : A) (X : Ext) (Y : B) (Z : Ext) ty ty ty ty ty -> ...
+  1. Module A matches the expected module type A
+  2. An argument appears to be missing with module type Ext
+  3. An argument appears to be missing with module type B
+  4. Module FiveArgsExt matches the expected module type Ext
+  5. Module TY matches the expected module type ty
+  6. Module TY matches the expected module type ty
+  7. Module TY matches the expected module type ty
+  8. Module TY matches the expected module type ty
+  9. Module TY matches the expected module type ty
+|}]
