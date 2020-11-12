@@ -231,10 +231,10 @@ Error: The functor application is ill-typed.
        These arguments:
          Ord Ord
        do not match these parameters:
-         functor (Ord : Map.OrderedType)  -> ...
-  1. Module Ord matches the expected module type Map.OrderedType
-  2. The following extra argument is provided
+         functor  (Ord : Map.OrderedType) -> ...
+  1. The following extra argument is provided
          Ord : sig type t = unit val compare : 'a -> 'b -> int end
+  2. Module Ord matches the expected module type Map.OrderedType
 |}]
 
 
@@ -349,10 +349,10 @@ Error: The functor application is ill-typed.
        These arguments:
          M.N Defs.X Defs.X Defs.Y
        do not match these parameters:
-         functor (A : ...) (B : ...)  (C : ...) -> ...
+         functor (A : ...)  (B : ...) (C : ...) -> ...
   1. Module M.N matches the expected module type
-  2. Module Defs.X matches the expected module type
-  3. The following extra argument is provided Defs.X : sig type x = M.N.x end
+  2. The following extra argument is provided Defs.X : sig type x = M.N.x end
+  3. Module Defs.X matches the expected module type
   4. Module Defs.Y matches the expected module type
 |}]
 
@@ -386,10 +386,10 @@ Error: The functor application is ill-typed.
        These arguments:
          $S1 X X Y
        do not match these parameters:
-         functor (A : ...) (B : ...)  (C : ...) -> ...
+         functor (A : ...)  (B : ...) (C : ...) -> ...
   1. Module $S1 matches the expected module type
-  2. Module X matches the expected module type
-  3. The following extra argument is provided X : sig type x = int end
+  2. The following extra argument is provided X : sig type x = int end
+  3. Module X matches the expected module type
   4. Module Y matches the expected module type
 |}]
 
@@ -1016,16 +1016,16 @@ Error: Signature mismatch:
          end
        In module B.C.D.E.F:
        Modules do not match:
-         functor (X : $S1) (Y : $S2)  (W : $S4) -> ...
+         functor (X : $S1)  (Y : $S3) (W : $S4) -> ...
        is not included in
          functor $T1 $T2 $T3 $T4 -> ...
   1. Module types $S1 and $T1 match
-  2. Module types do not match:
-       $S2 = sig type y' end
+  2. An argument appears to be missing with module type $T2 = sig type y end
+  3. Module types do not match:
+       $S3 = sig type y' end
      does not include
-       $T2 = sig type y end
+       $T3 = sig type z end
      The type `y'' is required but not provided
-  3. An argument appears to be missing with module type $T3 = sig type z end
   4. Module types $S4 and $T4 match
 |}]
 
@@ -1060,15 +1060,15 @@ Error: The functor application G(X)(Y)(X)(Y)(X) is ill-typed.
        These arguments:
          A.X A.Y A.X A.Y A.X
        do not match these parameters:
-         functor (X : A.A) (Y : A.A)  A.A (Z : A.A) -> ...
-  1. Modules do not match:
+         functor  (X : A.A) (Y : A.A) A.A (Z : A.A) -> ...
+  1. The following extra argument is provided
+         A.X : A.Honorificabilitudinitatibus
+  2. Module A.Y matches the expected module type A.A
+  3. Modules do not match:
        A.X : A.Honorificabilitudinitatibus
      is not included in
        A.A
 
-  2. Module A.Y matches the expected module type A.A
-  3. The following extra argument is provided
-         A.X : A.Honorificabilitudinitatibus
   4. Module A.Y matches the expected module type A.A
   5. Modules do not match:
        A.X : A.Honorificabilitudinitatibus
@@ -1366,18 +1366,18 @@ Error: The functor application is ill-typed.
        These arguments:
          Add_one Add_three A A A
        do not match these parameters:
-         functor (X : ...)  arg   -> ...
-  1. Module Add_one matches the expected module type
-  2. The following extra argument is provided
-         Add_three :
+         functor  (X : ...) arg arg arg -> ...
+  1. The following extra argument is provided
+         Add_one :
          sig
-           module M = Add_three'.M
-           module type t = arg -> arg -> arg -> sig type arg = A.arg end
-           type witness = Add_three.witness
+           type witness = Add_one.witness
+           module M = Add_one'.M
+           module type t = arg -> sig type arg = A.arg end
          end
+  2. Module Add_three matches the expected module type
   3. Module A matches the expected module type arg
-  4. The following extra argument is provided A : sig type arg = A.arg end
-  5. The following extra argument is provided A : sig type arg = A.arg end
+  4. Module A matches the expected module type arg
+  5. Module A matches the expected module type arg
 |}]
 
 
@@ -1550,16 +1550,16 @@ Error: Signature mismatch:
          functor (Arg : $S1) (X : $S2) (Res : X/2.T) (Res : X/2.T)
          (Res : X/2.T) -> ...
        is not included in
-         functor sig end (X : $T2) X/2.T X/2.T  -> ...
+         functor sig end (X : $T2)  X/2.T X/2.T -> ...
   1. Module types do not match:
        $S1 = sig type wrong end
      does not include
        sig end
      The type `wrong' is required but not provided
   2. Module types $S2 and $T2 match
-  3. Module types X/2.T and X/2.T match
+  3. An extra argument is provided of module type X/2.T
   4. Module types X/2.T and X/2.T match
-  5. An extra argument is provided of module type X/2.T
+  5. Module types X/2.T and X/2.T match
 |}]
 
 
@@ -1584,34 +1584,37 @@ Line 9, characters 13-48:
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The functor application is ill-typed.
        These arguments:
-         X $S2 Y Z
+         X ... Y Z
        do not match these parameters:
-         functor (X : ...) (Y : $T2) (Z : $T3)  -> ...
+         functor (X : ...)  (Y : $T3) (Z : $T4) -> ...
   1. Module X matches the expected module type
-  2. Modules do not match:
-       $S2 = struct type t = int end
-     is not included in
-       $T2 = sig type t = Y of X/2.t end
-     Type declarations do not match:
-       type t = int
-     is not included in
-       type t = Y of X.t
-     Their kinds differ.
-     Line 5, characters 0-32:
-       Definition of module X/1
-     File "_none_", line 1:
-       Definition of module Y/1
-     Line 6, characters 0-39:
-       Definition of module Y/2
+  2. The following extra argument is provided ... = struct type t = int end
   3. Modules do not match:
        Y : sig type t = Y.t = Y of int end
      is not included in
-       $T3 = sig type t = Z of X/2.t end
+       $T3 = sig type t = Y of X/2.t end
      Type declarations do not match:
-       type t = Y/2.t = Y of int
+       type t = Y.t = Y of int
+     is not included in
+       type t = Y of X.t
+     Constructors do not match:
+       Y of int
+     is not compatible with:
+       Y of X.t
+     The types are not equal.
+     Line 5, characters 0-32:
+       Definition of module X/1
+  4. Modules do not match:
+       Z : sig type t = Z.t = Z of int end
+     is not included in
+       $T4 = sig type t = Z of X/2.t end
+     Type declarations do not match:
+       type t = Z.t = Z of int
      is not included in
        type t = Z of X.t
-     Constructors number 1 have different names, Y and Z.
-  4. The following extra argument is provided
-         Z : sig type t = Z.t = Z of int end
+     Constructors do not match:
+       Z of int
+     is not compatible with:
+       Z of X.t
+     The types are not equal.
 |}]
