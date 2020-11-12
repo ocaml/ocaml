@@ -473,7 +473,7 @@ CAMLexport int caml_c_thread_unregister(void)
   st_tls_set(Thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
-  Current_thread = Current_thread->next;
+  Current_thread = All_threads;
   caml_thread_restore_runtime_state();
   /* Release the runtime */
   st_masterlock_release(&Thread_main_lock);
