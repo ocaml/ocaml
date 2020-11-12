@@ -896,6 +896,9 @@ CFI_STARTPROC
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         leaq    -1(%rax), %r10  /* %r10 (new stack) = Ptr_val(%rax) */
         movq    %rdi, %rax      /* %rax := argument to function in %rbx */
+    /*  check if stack null, then already used */
+        testq   %r10, %r10
+        jz      2f
     /* Find end of list of stacks and add current */
         movq    %r10, %rsi
 1:      movq    Stack_handler(%rsi), %rcx
@@ -906,6 +909,8 @@ CFI_STARTPROC
         movq    %rsi, Handler_parent(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
+2:      LEA_VAR(caml_exn_Continuation_in_use, %rax)
+        jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_resume))
 

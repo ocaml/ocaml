@@ -408,29 +408,39 @@ CAMLprim value caml_clone_continuation (value cont)
   CAMLreturn (new_cont);
 }
 
-CAMLprim value caml_continuation_use (value cont)
+CAMLprim value caml_continuation_use_noexc (value cont)
 {
+  value v;
+  value null_stk = Val_ptr(NULL);
+
   fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
-  value v;
+  /* this forms a barrier between execution and any other domains
+     that might be marking this continuation */
   if (!Is_minor(cont) ) caml_darken_cont(cont);
 
+  /* at this stage the stack is assured to be marked */
   v = Op_val(cont)[0];
 
-  if (v == Val_ptr(NULL))
-    caml_invalid_argument("continuation already taken");
-
   if (caml_domain_alone()) {
-    Field(cont, 0) = Val_ptr(NULL);
+    Field(cont, 0) = null_stk;
     return v;
   }
 
-  if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, Val_ptr(NULL))) {
+  if (atomic_compare_exchange_strong(Op_atomic_val(cont), &v, null_stk)) {
     return v;
   } else {
-    caml_invalid_argument("continuation already taken");
+    return null_stk;
   }
+}
+
+CAMLprim value caml_continuation_use (value cont)
+{
+  value v = caml_continuation_use_noexc(cont);
+  if (v == Val_ptr(NULL))
+    caml_invalid_argument("continuation already taken");
+  return v;
 }
 
 void caml_continuation_replace(value cont, struct stack_info* stk)

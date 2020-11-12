@@ -12,7 +12,7 @@ let _ =
         print_endline "intercepting request..";
         continue k (perform E)
   with
-  | Invalid_argument s -> Printf.printf "raised Invalid_argument \"%s\"\n" s
+  | Continuation_in_use -> Printf.printf "raised Continuation_in_use\n"
   | effect E k ->
       let k' = Obj.clone_continuation k in
       continue k "";
