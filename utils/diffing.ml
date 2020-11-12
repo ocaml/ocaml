@@ -243,13 +243,30 @@ let compute_matrix ~weight ~test ~update state0 =
     else m in
   loop m0
 
-let construct_diff mat =
+let select_final_state m0 =
+  let final = ref (0,0, max_int) in
+  let l0, c0 = Matrix.shape m0 in
+  for i = 0 to l0 do
+    for j = 0 to c0 do
+      let*! l, c = Matrix.shape_at m0 i j in
+      let w = Matrix.weight m0 i j in
+      let _, _, w0 = !final in
+      if i = l && j = c && w < w0 then begin
+        final := (i, j, w)
+      end
+    done;
+  done;
+  let i_final, j_final, _ = !final in
+  assert (i_final <> 0 || j_final <> 0);
+  (i_final, j_final)
+
+let construct_diff m0 =
   let rec aux acc (i, j) =
     if i = 0 && j = 0 then
       acc
     else
-      match Matrix.diff mat i j with
-      | None -> acc
+      match Matrix.diff m0 i j with
+      | None -> assert false
       | Some d ->
           let next = match d with
             | Keep _ | Change _ -> (i-1, j-1)
@@ -258,7 +275,7 @@ let construct_diff mat =
           in
           aux (d::acc) next
   in
-  aux [] (Matrix.shape mat)
+  aux [] (select_final_state m0)
 
 let diff ~weight ~test ~update state line column =
   let update d fs = { fs with state = update d fs.state } in
