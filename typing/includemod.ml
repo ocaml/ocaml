@@ -742,20 +742,19 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
   | Error e -> Some (env, Error.In_Module_type e)
 
 let check_functor_application_in_path
-    ~errors ~loc ~lid_app ~f_path ~arg ~arg_path ~arg_mty ~param_mty env =
+    ~errors ~loc ~lid_whole_app ~f0_path ~args ~arg_path ~arg_mty ~param_mty env =
   match check_modtype_inclusion_raw ~loc env arg_mty arg_path param_mty with
   | Ok _ -> ()
   | Error _errs ->
       if errors then
-        let mty_arg arg =
-          let path, md = Env.find_module_by_name arg env in
-          let aliasable = can_alias env path in
-          let smd = Mtype.strengthen ~aliasable env md.md_type path in
-          (Some path, None, smd)
+        let prepare_arg (arg_path, arg_mty) =
+          let aliasable = can_alias env arg_path in
+          let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
+          (Some arg_path, None, smd)
         in
-        let args = List.map mty_arg arg in
-        let mty_f = (Env.find_module f_path env).md_type in
-        let lid_app = Some lid_app in
+        let mty_f = (Env.find_module f0_path env).md_type in
+        let args = List.map prepare_arg args in
+        let lid_app = Some lid_whole_app in
         raise (Apply_error {loc; env; lid_app; mty_f; args})
       else
         raise Not_found

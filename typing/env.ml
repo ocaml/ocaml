@@ -648,13 +648,14 @@ let components_of_functor_appl' =
 let check_functor_application =
   (* to be filled by Includemod *)
   ref ((fun ~errors:_ ~loc:_
-         ~lid_app:_ ~f_path:_ ~arg:_ ~arg_path:_ ~arg_mty:_ ~param_mty:_
+         ~lid_whole_app:_  ~f0_path:_ ~args:_
+         ~arg_path:_ ~arg_mty:_ ~param_mty:_
          _env
          -> assert false) :
          errors:bool -> loc:Location.t ->
-       lid_app:Longident.t -> f_path:Path.t ->
-       arg:Longident.t list -> arg_path:Path.t -> arg_mty:module_type ->
-       param_mty:module_type ->
+       lid_whole_app:Longident.t ->
+       f0_path:Path.t -> args:(Path.t * Types.module_type) list ->
+       arg_path:Path.t -> arg_mty:module_type -> param_mty:module_type ->
        t -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
@@ -880,12 +881,16 @@ let modtype_of_functor_appl fcomp p1 p2 =
         Hashtbl.add fcomp.fcomp_subst_cache p2 mty;
         mty
 
-let check_functor_appl ~errors ~loc
-    ~lid_app ~f_path ~f_comp ~arg:args0 ~arg_mty ~arg_path ~param_mty env =
+let check_functor_appl
+    ~errors ~loc ~lid_whole_app ~f0_path ~args
+    ~f_comp
+    ~arg_path ~arg_mty ~param_mty
+    env =
   if not (Hashtbl.mem f_comp.fcomp_cache arg_path) then
     !check_functor_application
-      ~errors ~loc
-      ~lid_app ~f_path ~arg:args0 ~arg_mty ~arg_path ~param_mty env 
+      ~errors ~loc ~lid_whole_app ~f0_path ~args
+      ~arg_path ~arg_mty ~param_mty
+      env
 
 (* Lookup by identifier *)
 
@@ -2458,13 +2463,6 @@ let lookup_all_ident_constructors ~errors ~use ~loc usage s env =
            (cda.cda_description, use_fn))
         cstrs
 
-let decompose_apply p =
-  let rec aux l = function
-    | Lident _ | Ldot _ as p -> (p, l)
-    | Lapply (p1, p2) -> aux (p2::l) p1
-  in
-  aux [] p
-
 let rec lookup_module_components ~errors ~use ~loc lid env =
   match lid with
   | Lident s ->
@@ -2505,42 +2503,53 @@ and get_functor_components ~errors ~loc lid env comps =
   | Error (No_components_alias p) ->
       may_lookup_error errors loc env (Cannot_scrape_alias(lid, p))
 
+and lookup_all_args ~errors ~use ~loc lid0 env =
+  let rec loop_lid_arg args = function
+    | Lident _ | Ldot _ as f_lid ->
+        (f_lid, args)
+    | Lapply (f_lid, arg_lid) ->
+        let arg_path, arg_md = lookup_module ~errors ~use ~loc arg_lid env in
+        loop_lid_arg ((f_lid,arg_path,arg_md.md_type)::args) f_lid
+  in
+  loop_lid_arg [] lid0
+
 and lookup_apply ~errors ~use ~loc lid0 env =
-  let f0_lid, args0 = decompose_apply lid0 in
+  let f0_lid, args0 = lookup_all_args ~errors ~use ~loc lid0 env in
+  let args_for_errors = List.map (fun (_,p,mty) -> (p,mty)) args0 in
   let f0_path, f0_comp =
-    lookup_module_components ~errors ~use ~loc f0_lid env in
-  let check_one_apply ~errors ~use ~loc ~f_lid ~f_comp ~arg env =
+    lookup_module_components ~errors ~use ~loc f0_lid env
+  in
+  let check_one_apply ~errors ~loc ~f_lid ~f_comp ~arg_path ~arg_mty env =
     let f_comp, param_mty =
       get_functor_components ~errors ~loc f_lid env f_comp
     in
-    let arg_path, arg_md = lookup_module ~errors ~use ~loc arg env in
     check_functor_appl
-      ~errors ~loc
-      ~lid_app:lid0 ~f_path:f0_path ~f_comp
-      ~arg:args0 ~arg_mty:arg_md.md_type ~arg_path
-      ~param_mty
+      ~errors ~loc ~lid_whole_app:lid0
+      ~f0_path ~args:args_for_errors ~f_comp
+      ~arg_path ~arg_mty ~param_mty
       env;
     arg_path, f_comp
   in
-  let rec check_apply (f_lid, f_path, f_comp) = function
+  let rec check_apply ~path:f_path ~comp:f_comp = function
     | [] -> invalid_arg "Env.lookup_apply: empty argument list"
-    | [arg_lid] ->
+    | [ f_lid, arg_path, arg_mty ] ->
         let arg_path, comps =
-          check_one_apply ~errors ~use ~loc ~f_lid ~f_comp ~arg:arg_lid env
+          check_one_apply ~errors ~loc ~f_lid ~f_comp
+            ~arg_path ~arg_mty env
         in
         f_path, comps, arg_path
-    | arg_lid :: args ->
+    | (f_lid, arg_path, arg_mty) :: args ->
         let arg_path, f_comp =
-          check_one_apply ~errors ~use ~loc ~f_lid ~f_comp ~arg:arg_lid env
+          check_one_apply ~errors ~loc ~f_lid ~f_comp
+            ~arg_path ~arg_mty env
         in
-        let comps =
+        let comp =
           !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg:arg_path env
         in
         let path = Papply (f_path, arg_path) in
-        let lid = Lapply (f_lid, arg_lid) in
-        check_apply (lid, path, comps) args
+        check_apply ~path ~comp args
   in
-  check_apply (f0_lid, f0_path, f0_comp) args0
+  check_apply ~path:f0_path ~comp:f0_comp args0
 
 and lookup_module ~errors ~use ~loc lid env =
   match lid with
