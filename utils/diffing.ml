@@ -15,6 +15,18 @@
 
 [@@@warning "-16"]
 
+(* This module implements a modified version of Wagner-Fischer
+   See <https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm>
+   for preliminary reading.
+
+   The main extensions is that:
+   - State is computed based on the patch so far.
+   - The lists can be extended at each state computation.
+
+   We add the constraint that extensions can only be in one side
+   (either the left or right list). This is enforced by the external API.
+*)
+
 let (let*) = Option.bind
 let (let+) x f = Option.map f x
 let (let*!) x f = Option.iter f x
@@ -39,6 +51,15 @@ type ('st,'left,'right) full_state = {
   state: 'st
 }
 
+(* The matrix supporting our dynamic programming implementation.
+
+   Each cell contains:
+   - The diff and its weight
+   - The state computed so far
+   - The lists, potentially extended locally.
+
+   The matrix can also be reshaped.
+*)
 module Matrix : sig
 
   type shape = { l : int ; c : int }
@@ -157,6 +178,8 @@ end = struct
 
 end
 
+(* Computation of new cells *)
+
 let select_best_proposition l =
   let compare_proposition curr prop =
     match curr, prop with
@@ -223,6 +246,15 @@ let compute_cell ~weight ~test ~update m i j =
   | i,0 -> compute_column0 ~update ~weight m i;
   | _ -> compute_inner_cell ~weight ~test ~update m i j
 
+(* Filling the matrix
+
+   We fill the whole matrix, as in vanilla Wagner-Fischer.
+   At this point, the lists in some states might have been extended.
+   - The extremal corner of the matrix might be a final state, but
+     only if its lists have not been extended along the way.
+   - If any list have been extended, we need to reshape the matrix
+     and repeat the process
+*)
 let compute_matrix ~weight ~test ~update state0 =
   let m0 = Matrix.make { l = 0 ; c = 0 } in
   Matrix.update m0 0 0 ~weight:0 ~state:state0 ~diff:None;
@@ -250,6 +282,10 @@ let compute_matrix ~weight ~test ~update state0 =
   in
   loop [] m0
 
+(* Building the patch.
+
+   We select the best final state, and walk back to the origin.
+*)
 let select_final_state m0 maybe_finals =
   let compare_states (i0,j0,weigth0) (i,j) =
     let weight = Matrix.weight m0 i j in
@@ -261,7 +297,7 @@ let select_final_state m0 maybe_finals =
   assert (i_final <> 0 || j_final <> 0);
   (i_final, j_final)
 
-let construct_diff (m0, maybe_finals) =
+let construct_patch (m0, maybe_finals) =
   let rec aux acc (i, j) =
     if i = 0 && j = 0 then
       acc
@@ -282,7 +318,7 @@ let diff ~weight ~test ~update state line column =
   let update d fs = { fs with state = update d fs.state } in
   let fullstate = { line; column; state } in
   compute_matrix ~weight ~test ~update fullstate
-  |> construct_diff
+  |> construct_patch
 
 type ('l, 'r, 'e, 'd, 'state) update =
   | No of (('l,'r,'e,'d) change -> 'state -> 'state)
@@ -306,4 +342,4 @@ let variadic_diff ~weight ~test ~(update:_ update) state line column =
   in
   let fullstate = { line; column; state } in
   compute_matrix ~weight ~test ~update fullstate
-  |> construct_diff
+  |> construct_patch
