@@ -574,6 +574,8 @@ let at_exit f =
 
 let do_at_exit () = (!exit_function) ()
 
+external nop : unit -> unit = "%nop"
+
 let exit retcode =
   do_at_exit ();
   maybe_print_stats ();

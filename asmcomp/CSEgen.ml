@@ -237,6 +237,8 @@ method class_of_operation op =
   | Ispecific _ -> Op_other
   | Iname_for_debugger _ -> Op_pure
   | Ipoll -> Op_checkbound
+  | Inop -> Op_store true (* not correct, but enough to force CSE from leaving
+                             nops alone *)
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 

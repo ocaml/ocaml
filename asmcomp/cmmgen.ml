@@ -532,7 +532,7 @@ let rec transl env e =
         ->
           fatal_error "Cmmgen.transl:prim, wrong arity"
       | ((Pfield_computed|Psequand
-         | Prunstack | Pperform | Presume | Preperform | Ppoll
+         | Prunstack | Pperform | Presume | Preperform | Ppoll | Pnop
          | Patomic_load _ | Patomic_exchange
          | Patomic_cas | Patomic_fetch_add
          | Psequor | Pnot | Pnegint | Paddint | Psubint
@@ -841,6 +841,8 @@ and transl_prim_1 env p arg dbg =
           dbg)
   | Ppoll ->
       Cop(Cpoll, [transl env arg], dbg)
+  | Pnop ->
+      Cop(Cnop, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Immediate} ->
       Cop(mk_load_mut Word_int, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Pointer} ->
@@ -1025,7 +1027,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Patomic_fetch_add ->
      Cop (Cextcall ("caml_atomic_fetch_add", typ_int, false, None),
           [transl env arg1; transl env arg2], dbg)
-  | Prunstack | Pperform | Presume | Preperform | Ppoll
+  | Prunstack | Pperform | Presume | Preperform | Ppoll | Pnop
   | Patomic_cas | Patomic_load _
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
@@ -1098,7 +1100,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                             transl env arg2; transl env arg3],
            dbg)
 
-  | Pperform | Ppoll
+  | Pperform | Ppoll | Pnop
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
