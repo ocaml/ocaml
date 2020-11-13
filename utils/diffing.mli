@@ -22,8 +22,18 @@
     - The equality witness when an element is kept
     - The diffing witness when an element is changed
 
-    The underlying algorithm is modified Wagner-Fischer algorithm
+    Diffing is extended to maintain state depending on the
+    computed changes while walking through the two lists.
+
+    The underlying algorithm is a modified Wagner-Fischer algorithm
     (see <https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm>).
+
+    We provide the following guarantee:
+    Given two lists [l] and [r], if different patches result in different
+    states, we say that the state diverges.
+    - We always return the optimal patch on prefixes of [l] and [r]
+      on which state does not diverge.
+    - Otherwise, we return a correct but non-optimal patch.
 *)
 
 (** The type of potential changes on a list. *)
