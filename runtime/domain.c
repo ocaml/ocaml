@@ -477,6 +477,11 @@ static void install_backup_thread (dom_internal* di)
   }
 }
 
+static void caml_domain_stop_default(void)
+{
+  return;
+}
+
 static void caml_domain_start_default(void)
 {
   return;
@@ -484,6 +489,9 @@ static void caml_domain_start_default(void)
 
 CAMLexport void (*caml_domain_start_hook)(void) =
    caml_domain_start_default;
+
+CAMLexport void (*caml_domain_stop_hook)(void) =
+   caml_domain_stop_default;
 
 static void domain_terminate();
 
@@ -1225,6 +1233,8 @@ static void domain_terminate()
 
   caml_gc_log("Domain terminating");
   caml_ev_pause(EV_PAUSE_YIELD);
+  // Before wrapping up further, we run the termination hook
+  caml_domain_stop_hook();
   caml_delete_root(domain_state->dls_root);
   s->terminating = 1;
 
