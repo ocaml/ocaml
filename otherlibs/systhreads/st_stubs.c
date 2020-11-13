@@ -293,19 +293,26 @@ static void caml_thread_reinitialize(void)
 }
 
 CAMLprim value caml_thread_initialize(value unit);
+static void caml_thread_initialize_domain();
 
 /* To initialize the thread machinery on a newly created domain. */
 /* FIXME(engil): it may be better to just initialize the machinery for every */
 /* domain at startup */
-
 static void caml_thread_domain_start_hook(void) {
-  caml_thread_initialize(Val_unit);
+  caml_thread_initialize_domain();
 }
 
-CAMLprim value caml_thread_initialize(value unit)   /* ML */
-{
-  CAMLparam0();
+static void caml_thread_domain_stop_hook(void) {
+  // This hook will clean up the initial domain's thread descriptor.
+  // The assumption is that it is the only remaining link in the threading chain
+  // (as every other threads either go through caml_thread_stop or
+  // caml_c_thread_unregister.)
+  caml_stat_free(Current_thread);
+  Current_thread = NULL;
+}
 
+static void caml_thread_initialize_domain()
+{
   caml_thread_t new_thread;
 
   st_masterlock_init(&Thread_main_lock);
@@ -321,23 +328,35 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   new_thread->exit_buf = &caml_termination_jmpbuf;
   #endif
 
-  // Hooks setup, if caml_scan_roots_hook is set, it was done already
-  // by another domain.
-  if (caml_scan_roots_hook != caml_thread_scan_roots) {
-    prev_scan_roots_hook = caml_scan_roots_hook;
-    caml_scan_roots_hook = caml_thread_scan_roots;
-    caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
-    caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
-    caml_domain_start_hook = caml_thread_domain_start_hook;
-  };
-
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
 
   All_threads = new_thread;
   Current_thread = new_thread;
 
+  return;
+}
+
+// This setup function is called as an entrypoint to the Thread module.
+// This will setup the global variables and hooks for systhreads
+// cooperate with the runtime system, after initializing
+// the thread chaining.
+CAMLprim value caml_thread_initialize(value unit)   /* ML */
+{
+  CAMLparam0();
+
+  // We first initialize the thread chaining.
+  caml_thread_initialize_domain();
+
+  prev_scan_roots_hook = caml_scan_roots_hook;
+  caml_scan_roots_hook = caml_thread_scan_roots;
+  caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
+  caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
+  caml_domain_start_hook = caml_thread_domain_start_hook;
+  caml_domain_stop_hook = caml_thread_domain_stop_hook;
+
   st_atfork(caml_thread_reinitialize);
+
 
   CAMLreturn(Val_unit);
 }
