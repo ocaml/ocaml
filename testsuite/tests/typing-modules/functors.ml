@@ -1563,7 +1563,7 @@ Error: Signature mismatch:
 |}]
 
 
-(** The price of Gluttony: glutton update of environment leads to a non-optimal edit distance. *)
+(** The price of Gluttony: gready update of environment leads to a non-optimal edit distance. *)
 
 module F(X:sig type t end)(Y:sig type t = Y of X.t end)(Z:sig type t = Z of X.t end) = struct end
 
