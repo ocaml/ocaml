@@ -742,8 +742,8 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
   | Error e -> Some (env, Error.In_Module_type e)
 
 let check_functor_application_in_path
-    ~errors ~loc (lid_app, path_f, args) env mty1 path1 mty2 =
-  match check_modtype_inclusion_raw ~loc env mty1 path1 mty2 with
+    ~errors ~loc ~lid_app ~f_path ~arg ~arg_path ~arg_mty ~param_mty env =
+  match check_modtype_inclusion_raw ~loc env arg_mty arg_path param_mty with
   | Ok _ -> ()
   | Error _errs ->
       if errors then
@@ -753,8 +753,8 @@ let check_functor_application_in_path
           let smd = Mtype.strengthen ~aliasable env md.md_type path in
           (Some path, None, smd)
         in
-        let args = List.map mty_arg args in
-        let mty_f = (Env.find_module path_f env).md_type in
+        let args = List.map mty_arg arg in
+        let mty_f = (Env.find_module f_path env).md_type in
         let lid_app = Some lid_app in
         raise (Apply_error {loc; env; lid_app; mty_f; args})
       else
