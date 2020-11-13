@@ -1620,7 +1620,7 @@ Error: The functor application is ill-typed.
 |}]
 
 (** Final state in the presence of extensions
-    Test provided by Leo White in 
+    Test provided by Leo White in
     https://github.com/ocaml/ocaml/pull/9331#pullrequestreview-492359720
 *)
 

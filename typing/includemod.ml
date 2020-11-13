@@ -742,7 +742,8 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
   | Error e -> Some (env, Error.In_Module_type e)
 
 let check_functor_application_in_path
-    ~errors ~loc ~lid_whole_app ~f0_path ~args ~arg_path ~arg_mty ~param_mty env =
+    ~errors ~loc ~lid_whole_app ~f0_path ~args
+    ~arg_path ~arg_mty ~param_mty env =
   match check_modtype_inclusion_raw ~loc env arg_mty arg_path param_mty with
   | Ok _ -> ()
   | Error _errs ->
@@ -771,7 +772,8 @@ let compunit env ~mark impl_name impl_sig intf_name intf_sig =
     signatures ~loc:(Location.in_file impl_name) env ~mark Subst.identity
       impl_sig intf_sig
   with Result.Error reasons ->
-    let cdiff = Error.In_Compilation_unit(Error.diff impl_name intf_name reasons) in
+    let cdiff =
+      Error.In_Compilation_unit(Error.diff impl_name intf_name reasons) in
     raise(Error(env, cdiff))
   | Ok x -> x
 
@@ -1013,7 +1015,7 @@ module FunctorDiff = struct
     in
     let args = Array.map arg_preprocess @@ Array.of_list args in
     let params = Array.map param_preprocess @@ Array.of_list params in
-    
+
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res }
     in

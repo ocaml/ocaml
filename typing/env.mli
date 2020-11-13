@@ -417,7 +417,7 @@ val set_type_used_callback:
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_functor_application:
   (errors:bool -> loc:Location.t ->
-   lid_whole_app:Longident.t -> 
+   lid_whole_app:Longident.t ->
    f0_path:Path.t -> args:(Path.t * Types.module_type) list ->
    arg_path:Path.t -> arg_mty:Types.module_type ->
    param_mty:Types.module_type ->

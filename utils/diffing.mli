@@ -45,10 +45,10 @@ type ('l, 'r, 'eq, 'diff) patch = ('l, 'r, 'eq, 'diff) change list
     the diff between [l] and [r], using the initial state [state].
     - [test st xl xr] tests if the elements [xl] and [xr] are
       compatible ([Ok]) or not ([Error]).
-    - [weight ch] returns the weight of the change [ch]. 
+    - [weight ch] returns the weight of the change [ch].
       Used to find the smallest patch.
     - [update ch st] returns the new state after applying a change.
-*)    
+*)
 val diff :
   weight:(('l, 'r, 'eq, 'diff) change -> int) ->
   test:('state -> 'l -> 'r -> ('eq, 'diff) result) ->
