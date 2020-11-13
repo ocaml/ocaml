@@ -153,6 +153,8 @@ type primitive =
   | Popaque
   (* Polling for interrupts *)
   | Ppoll
+  (* nop instruction for debugging *)
+  | Pnop
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

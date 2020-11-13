@@ -140,6 +140,7 @@ let operation d = function
   | Craise k -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
   | Cpoll -> "poll"
+  | Cnop -> "nop"
 
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n

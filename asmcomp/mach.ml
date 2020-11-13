@@ -64,6 +64,7 @@ type operation =
   | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
       provenance : unit option; is_assignment : bool; }
   | Ipoll
+  | Inop
 
 type instruction =
   { desc: instruction_desc;
@@ -195,7 +196,7 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
     | Ifloatofint | Iintoffloat
-    | Iname_for_debugger _ | Ipoll -> false
+    | Iname_for_debugger _ | Ipoll | Inop -> false
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false
