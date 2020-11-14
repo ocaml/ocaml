@@ -992,26 +992,23 @@ end = struct
     check Sig_component_kind.Class_type t loc id info
 
   let check_sig_item ?info names loc component =
-    let info id loc =
+    let component_kind, id =
+      let open Sig_component_kind in
+      match component with
+      | Sig_type(id, _, _, _) -> Type, id
+      | Sig_module(id, _, _, _, _) -> Module, id
+      | Sig_modtype(id, _, _) -> Module_type, id
+      | Sig_typext(id, _, _, _) -> Extension_constructor, id
+      | Sig_value (id, _, _) -> Value, id
+      | Sig_class (id, _, _, _) -> Class, id
+      | Sig_class_type (id, _, _, _) -> Class_type, id
+    in
+    let info =
       match info with
       | None -> `Shadowable (id, loc)
       | Some i -> i
     in
-    match component with
-    | Sig_type(id, _, _, _) ->
-        check_type names loc id ~info:(info id loc)
-    | Sig_module(id, _, _, _, _) ->
-        check_module names loc id ~info:(info id loc)
-    | Sig_modtype(id, _, _) ->
-        check_modtype names loc id ~info:(info id loc)
-    | Sig_typext(id, _, _, _) ->
-        check_typext names loc id ~info:(info id loc)
-    | Sig_value (id, _, _) ->
-        check_value names loc id ~info:(info id loc)
-    | Sig_class (id, _, _, _) ->
-        check_class names loc id ~info:(info id loc)
-    | Sig_class_type (id, _, _, _) ->
-        check_class_type names loc id ~info:(info id loc)
+    check component_kind names loc id info
 
   (* We usually require name uniqueness of signature components (e.g. types,
      modules, etc), however in some situation reusing the name is allowed: if
