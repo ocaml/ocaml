@@ -2355,14 +2355,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
           (List.map (fun cls ->
                (cls.Typeclass.cls_info,
                 cls.Typeclass.cls_pub_methods)) classes),
-(* TODO: check with Jacques why this is here
-      Tstr_class_type
-          (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_, i, d, _,_,_,_,_) -> (i, d)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
-*)
         List.flatten
           (map_rec
             (fun rs cls ->
@@ -2387,11 +2379,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
                (cl.Typeclass.clsty_ty_id,
                 cl.Typeclass.clsty_id_loc,
                 cl.Typeclass.clsty_info)) classes),
-(*  TODO: check with Jacques why this is here
-           Tstr_type
-             (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
-           Tstr_type
-             (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) :: *)
         List.flatten
           (map_rec
              (fun rs decl ->
