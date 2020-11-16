@@ -439,7 +439,7 @@ CAMLprim value caml_continuation_use (value cont)
 {
   value v = caml_continuation_use_noexc(cont);
   if (v == Val_ptr(NULL))
-    caml_invalid_argument("continuation already taken");
+    caml_raise_continuation_already_taken();
   return v;
 }
 
