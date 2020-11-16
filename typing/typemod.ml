@@ -938,7 +938,19 @@ end = struct
     };
   }
 
-  let check cl loc (tbl : names_infos) id (info : info) to_be_removed =
+  let table_for component names =
+    let open Sig_component_kind in
+    match component with
+    | Value -> names.values
+    | Type -> names.types
+    | Module -> names.modules
+    | Module_type -> names.modtypes
+    | Extension_constructor -> names.typexts
+    | Class -> names.classes
+    | Class_type -> names.class_types
+
+  let check cl t loc id (info : info) =
+    let to_be_removed = t.to_be_removed in
     match info with
     | `Substituted_away s ->
         to_be_removed.subst <- Subst.compose s to_be_removed.subst
@@ -946,6 +958,7 @@ end = struct
         to_be_removed.hide <-
           Ident.Map.add id (cl, loc, From_open) to_be_removed.hide
     | #bound_info as bound_info ->
+        let tbl = table_for cl t.bound in
         let name = Ident.name id in
         match Hashtbl.find_opt tbl name with
         | None -> Hashtbl.add tbl name bound_info
@@ -964,44 +977,38 @@ end = struct
       | Some i -> i
       | None -> `Shadowable (id, loc)
     in
-    check Sig_component_kind.Value loc t.bound.values id info t.to_be_removed
+    check Sig_component_kind.Value t loc id info
   let check_type ?(info=`Exported) t loc id =
-    check Sig_component_kind.Type loc t.bound.types id info t.to_be_removed
+    check Sig_component_kind.Type t loc id info
   let check_module ?(info=`Exported) t loc id =
-    check Sig_component_kind.Module loc t.bound.modules id info t.to_be_removed
+    check Sig_component_kind.Module t loc id info
   let check_modtype ?(info=`Exported) t loc id =
-    check Sig_component_kind.Module_type loc t.bound.modtypes id info
-      t.to_be_removed
+    check Sig_component_kind.Module_type t loc id info
   let check_typext ?(info=`Exported) t loc id =
-    check Sig_component_kind.Extension_constructor loc t.bound.typexts id info
-      t.to_be_removed
+    check Sig_component_kind.Extension_constructor t loc id info
   let check_class ?(info=`Exported) t loc id =
-    check Sig_component_kind.Class loc t.bound.classes id info t.to_be_removed
+    check Sig_component_kind.Class t loc id info
   let check_class_type ?(info=`Exported) t loc id =
-    check Sig_component_kind.Class_type loc t.bound.class_types id info
-      t.to_be_removed
+    check Sig_component_kind.Class_type t loc id info
 
   let check_sig_item ?info names loc component =
-    let info id loc =
+    let component_kind, id =
+      let open Sig_component_kind in
+      match component with
+      | Sig_type(id, _, _, _) -> Type, id
+      | Sig_module(id, _, _, _, _) -> Module, id
+      | Sig_modtype(id, _, _) -> Module_type, id
+      | Sig_typext(id, _, _, _) -> Extension_constructor, id
+      | Sig_value (id, _, _) -> Value, id
+      | Sig_class (id, _, _, _) -> Class, id
+      | Sig_class_type (id, _, _, _) -> Class_type, id
+    in
+    let info =
       match info with
       | None -> `Shadowable (id, loc)
       | Some i -> i
     in
-    match component with
-    | Sig_type(id, _, _, _) ->
-        check_type names loc id ~info:(info id loc)
-    | Sig_module(id, _, _, _, _) ->
-        check_module names loc id ~info:(info id loc)
-    | Sig_modtype(id, _, _) ->
-        check_modtype names loc id ~info:(info id loc)
-    | Sig_typext(id, _, _, _) ->
-        check_typext names loc id ~info:(info id loc)
-    | Sig_value (id, _, _) ->
-        check_value names loc id ~info:(info id loc)
-    | Sig_class (id, _, _, _) ->
-        check_class names loc id ~info:(info id loc)
-    | Sig_class_type (id, _, _, _) ->
-        check_class_type names loc id ~info:(info id loc)
+    check component_kind names loc id info
 
   (* We usually require name uniqueness of signature components (e.g. types,
      modules, etc), however in some situation reusing the name is allowed: if
@@ -2348,14 +2355,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
           (List.map (fun cls ->
                (cls.Typeclass.cls_info,
                 cls.Typeclass.cls_pub_methods)) classes),
-(* TODO: check with Jacques why this is here
-      Tstr_class_type
-          (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_, i, d, _,_,_,_,_) -> (i, d)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
-*)
         List.flatten
           (map_rec
             (fun rs cls ->
@@ -2380,11 +2379,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
                (cl.Typeclass.clsty_ty_id,
                 cl.Typeclass.clsty_id_loc,
                 cl.Typeclass.clsty_info)) classes),
-(*  TODO: check with Jacques why this is here
-           Tstr_type
-             (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
-           Tstr_type
-             (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) :: *)
         List.flatten
           (map_rec
              (fun rs decl ->
