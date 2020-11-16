@@ -909,7 +909,7 @@ CFI_STARTPROC
         movq    %rsi, Handler_parent(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
-2:      LEA_VAR(caml_exn_Continuation_in_use, %rax)
+2:      LEA_VAR(caml_exn_Continuation_already_taken, %rax)
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_resume))

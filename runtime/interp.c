@@ -1289,7 +1289,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 do_resume: {
       struct stack_info* stk = Ptr_val(accu);
       if (stk == NULL) {
-         accu = Field_imm(caml_read_root(caml_global_data), CONTINUATION_IN_USE_EXN);
+         accu = Field_imm(caml_read_root(caml_global_data), CONTINUATION_ALREADY_TAKEN_EXN);
          goto raise_exception;
       }
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);

@@ -104,7 +104,7 @@ and ident_assert_failure = ident_create "Assert_failure"
 and ident_undefined_recursive_module =
         ident_create "Undefined_recursive_module"
 and ident_unhandled = ident_create "Unhandled"
-and ident_continuation_in_use = ident_create "Continuation_in_use"
+and ident_continuation_already_taken = ident_create "Continuation_already_taken"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -120,7 +120,7 @@ let all_predef_exns = [
   ident_assert_failure;
   ident_undefined_recursive_module;
   ident_unhandled;
-  ident_continuation_in_use;
+  ident_continuation_already_taken;
 ]
 
 let path_match_failure = Pident ident_match_failure
@@ -243,7 +243,7 @@ let common_initial_env add_type add_extension empty_env =
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_unhandled [] (
-  add_extension ident_continuation_in_use [] (
+  add_extension ident_continuation_already_taken [] (
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
