@@ -765,6 +765,25 @@ void caml_memprof_track_alloc_shr(value block)
   check_action_pending();
 }
 
+void caml_memprof_track_custom(value block, mlsize_t bytes)
+{
+  uintnat n_samples;
+  value callstack = 0;
+  CAMLassert(Is_young(block) || Is_in_heap(block));
+
+  if (lambda == 0 || local->suspended) return;
+
+  n_samples = rand_binom(Wsize_bsize(bytes));
+  if (n_samples == 0) return;
+
+  callstack = capture_callstack_postponed();
+  if (callstack == 0) return;
+
+  new_tracked(n_samples, Wsize_bsize(bytes), 0, Is_young(block),
+              block, callstack);
+  check_action_pending();
+}
+
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
    this tells the sampler to ignore the next [n] words of the minor
    heap. */

@@ -5,6 +5,9 @@ Working version
 
 ### Runtime system:
 
+- #??: Track custom blocks (e.g. Bigarray) with Statmemprof
+  (Stephen Dolan, review by ??)
+
 ### Code generation and optimizations:
 
 ### Standard library:
