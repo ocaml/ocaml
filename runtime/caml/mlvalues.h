@@ -124,11 +124,15 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #ifdef WITH_PROFINFO
 #define PROFINFO_SHIFT (Gen_profinfo_shift(PROFINFO_WIDTH))
 #define PROFINFO_MASK (Gen_profinfo_mask(PROFINFO_WIDTH))
+/* Use NO_PROFINFO to debug problems with profinfo macros */
+#define NO_PROFINFO 0xff
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
 #define Profinfo_hd(hd) (Gen_profinfo_hd(PROFINFO_WIDTH, hd))
 #else
+#define NO_PROFINFO 0
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
+#define Profinfo_hd(hd) NO_PROFINFO
 #endif /* WITH_PROFINFO */
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
