@@ -119,14 +119,7 @@ module F : functor (X : sig type t end) -> sig end
 Line 2, characters 11-31:
 2 | module M = F(struct type x end)
                ^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
-       These arguments:
-         $S1
-       do not match these parameters:
-         functor (X : $T1) -> ...
-     Modules do not match:
-       $S1 = struct type x end
-     is not included in
+Error: Modules do not match: $S1 = struct type x end is not included in
        $T1 = sig type t end
      The type `t' is required but not provided
 |}]
@@ -552,15 +545,7 @@ module F : functor (X : a) -> sig type t end
 Line 6, characters 13-19:
 6 |     type t = F(X).t
                  ^^^^^^
-Error: The functor application F(X) is ill-typed.
-       These arguments:
-         P.X
-       do not match these parameters:
-         functor (X : a/2) -> ...
-     Modules do not match:
-       P.X : a/1
-     is not included in
-       a/2
+Error: Modules do not match: P.X : a/1 is not included in a/2
       Line 3, characters 2-15:
         Definition of module type a/1
       Line 1, characters 0-13:

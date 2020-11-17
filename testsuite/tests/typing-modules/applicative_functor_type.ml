@@ -19,15 +19,9 @@ type t = Set.Make(M).t
 Line 1, characters 9-22:
 1 | type t = Set.Make(M).t
              ^^^^^^^^^^^^^
-Error: The functor application Set.Make(M) is ill-typed.
-       These arguments:
-         M
-       do not match these parameters:
-         functor (Ord : Set.OrderedType) -> ...
-     Modules do not match:
+Error: Modules do not match:
        M : sig type t = M.t val equal : 'a -> 'a -> bool end
-     is not included in
-       Set.OrderedType
+     is not included in Set.OrderedType
      The value `compare' is required but not provided
      File "set.mli", line 55, characters 4-31: Expected declaration
 |} ]
@@ -47,15 +41,9 @@ type t = F(M).t
 Line 1, characters 9-15:
 1 | type t = F(M).t
              ^^^^^^
-Error: The functor application F(M) is ill-typed.
-       These arguments:
-         M
-       do not match these parameters:
-         functor (X : $T1) -> ...
-     Modules do not match:
+Error: Modules do not match:
        M : sig type t = M.t val equal : 'a -> 'a -> bool end
-     is not included in
-       $T1 = sig type t = M.t val equal : unit end
+     is not included in $T1 = sig type t = M.t val equal : unit end
      Values do not match:
        val equal : 'a -> 'a -> bool
      is not included in

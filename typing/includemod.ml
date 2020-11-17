@@ -1675,6 +1675,7 @@ module Linearize = struct
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
+
   let param_onlycase sub ~expansion_token env (_, diff) =
     Location.msg "   @[<hv 2>%t@]"
       (Printtyp.wrap_printing_env env ~error:true
@@ -1694,7 +1695,6 @@ module Linearize = struct
     match l with
     | [a] -> [param_onlycase sub ~expansion_token env a]
     | l -> aux l
-
 
   let arg_incompatible = function
     | Unit ->
@@ -1804,14 +1804,18 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
     FunctorDiff.app_diff env ~f:mty_f ~args
     |> FunctorDiff.prepare_patch ~drop:true ~ctx:`App
   in
-  Location.errorf ~loc
-    ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
-    "@[<hv>The functor application %tis ill-typed.@ \
-     These arguments:@;<1 2>\
-     @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
-    may_print_app
-    Pp.(params_diff space (got short_argument) d)
-    Pp.(params_diff space (expected functor_param) d)
+  match d with
+  | [ _, (Diffing.Change _ as c) ] ->
+      Location.errorf ~loc "%t" (Linearize.app env ~expansion_token:true c)
+  | _ ->
+      Location.errorf ~loc
+        ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
+        "@[<hv>The functor application %tis ill-typed.@ \
+         These arguments:@;<1 2>\
+         @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
+        may_print_app
+        Pp.(params_diff space (got short_argument) d)
+        Pp.(params_diff space (expected functor_param) d)
 
 
 (* We could do a better job to split the individual error items
