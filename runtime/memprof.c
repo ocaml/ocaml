@@ -750,41 +750,35 @@ void caml_memprof_invert_tracked(void)
 
 /**** Sampling procedures ****/
 
-void caml_memprof_track_alloc_shr(value block)
+static void maybe_track_block(value block, uintnat n_samples,
+                              uintnat wosize, int src)
 {
-  uintnat n_samples;
-  value callstack = 0;
-  CAMLassert(Is_in_heap(block));
-
-  if (lambda == 0 || local->suspended) return;
-
-  n_samples = rand_binom(Whsize_val(block));
+  value callstack;
   if (n_samples == 0) return;
 
   callstack = capture_callstack_postponed();
   if (callstack == 0) return;
 
-  new_tracked(n_samples, Wosize_val(block), SRC_NORMAL, 0, block, callstack);
+  new_tracked(n_samples, wosize, src, Is_young(block), block, callstack);
   check_action_pending();
+}
+
+void caml_memprof_track_alloc_shr(value block)
+{
+  CAMLassert(Is_in_heap(block));
+  if (lambda == 0 || local->suspended) return;
+
+  maybe_track_block(block, rand_binom(Whsize_val(block)),
+                    Wosize_val(block), SRC_NORMAL);
 }
 
 void caml_memprof_track_custom(value block, mlsize_t bytes)
 {
-  uintnat n_samples;
-  value callstack = 0;
   CAMLassert(Is_young(block) || Is_in_heap(block));
-
   if (lambda == 0 || local->suspended) return;
 
-  n_samples = rand_binom(Wsize_bsize(bytes));
-  if (n_samples == 0) return;
-
-  callstack = capture_callstack_postponed();
-  if (callstack == 0) return;
-
-  new_tracked(n_samples, Wsize_bsize(bytes), SRC_CUSTOM, Is_young(block),
-              block, callstack);
-  check_action_pending();
+  maybe_track_block(block, rand_binom(Wsize_bsize(bytes)),
+                    Wsize_bsize(bytes), SRC_CUSTOM);
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -844,13 +838,8 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       rand_binom(caml_memprof_young_trigger - 1 - Caml_state->young_ptr);
     CAMLassert(encoded_alloc_lens == NULL);    /* No Comballoc in C! */
     caml_memprof_renew_minor_sample();
-
-    callstack = capture_callstack_postponed();
-    if (callstack == 0) return;
-
-    new_tracked(n_samples, wosize,
-                SRC_NORMAL, 1, Val_hp(Caml_state->young_ptr), callstack);
-    check_action_pending();
+    maybe_track_block(Val_hp(Caml_state->young_ptr), n_samples,
+                      wosize, SRC_NORMAL);
     return;
   }
 
