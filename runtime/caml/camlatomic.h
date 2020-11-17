@@ -13,6 +13,10 @@
    the subset of C11 atomics needed by the OCaml runtime
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(HAS_STDATOMIC_H)
 #include <stdatomic.h>
 #define ATOMIC_UINTNAT_INIT(x) (x)
@@ -50,5 +54,8 @@ typedef struct { intnat repr; } atomic_intnat;
 #error "C11 atomics are unavailable on this platform. See camlatomic.h"
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_ATOMIC_H */
