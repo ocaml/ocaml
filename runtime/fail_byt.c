@@ -207,6 +207,13 @@ CAMLexport void caml_raise_sys_blocked_io(void)
                                 SYS_BLOCKED_IO));
 }
 
+CAMLexport void caml_raise_continuation_already_taken(void)
+{
+  check_global_data("Continuation_already_taken");
+  caml_raise_constant(Field_imm(caml_read_root(caml_global_data),
+                                CONTINUATION_ALREADY_TAKEN_EXN));
+}
+
 value caml_raise_if_exception(value res)
 {
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
