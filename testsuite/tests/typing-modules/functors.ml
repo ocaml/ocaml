@@ -1053,13 +1053,11 @@ Error: The functor application G(X)(Y)(X)(Y)(X) is ill-typed.
        A.X : A.Honorificabilitudinitatibus
      is not included in
        A.A
-
   4. Module A.Y matches the expected module type A.A
   5. Modules do not match:
        A.X : A.Honorificabilitudinitatibus
      is not included in
        A.A
-
 |}]
 
 

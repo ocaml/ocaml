@@ -1377,7 +1377,7 @@ module Pp = struct
     | Not_an_alias | Not_an_identifier | Abstract_module_type
     | Incompatible_aliases ->
         if Printtyp.Conflicts.exists () then
-          Some (Printtyp.Conflicts.print_explanations)
+          Some Printtyp.Conflicts.print_explanations
         else None
     | Unbound_module_path path ->
         Some(Format.dprintf "Unbound module %a" Printtyp.path path)
@@ -1659,7 +1659,7 @@ module Linearize = struct
     let e = Pp.definition_of_functor_param e in
     Format.dprintf
       "Module types do not match:@ @[%t@]@;<1 -2>does not include@ \
-       @[%t@]@;<1 -2>@[%t@]"
+       @[%t@]%t"
       g e (more ())
 
   let diff_app g e more =
@@ -1667,7 +1667,7 @@ module Linearize = struct
     let e = Pp.definition_of_functor_param e in
     Format.dprintf
       "Modules do not match:@ @[%t@]@;<1 -2>\
-       is not included in@ @[%t@]@;<1 -2>@[%t@]"
+       is not included in@ @[%t@]%t"
       g e (more ())
 
   let param_subcase sub ~expansion_token env (pos, diff) =
@@ -1723,10 +1723,15 @@ module Linearize = struct
           let r =
             module_type_symptom ~expansion_token ~env ~before:[] ~ctx:[]
               mty_diff.symptom in
-          let list l ppf =
-            Format.pp_print_list ~pp_sep:Pp.space
-              (fun ppf f -> f.Location.txt ppf)
-              ppf l in
+          let list l ppf = match l with
+            | [] -> ()
+            | _ :: _ ->
+                Format.fprintf ppf "@;<1 -2>@[%a@]"
+                  (Format.pp_print_list ~pp_sep:Pp.space
+                     (fun ppf f -> f.Location.txt ppf)
+                  )
+                  l
+          in
           let post = match r.post with
             | None -> []
             | Some (env, patch) ->
