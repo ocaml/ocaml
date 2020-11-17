@@ -46,13 +46,13 @@ exception Undefined_recursive_module = Undefined_recursive_module
 (* Effects *)
 
 type ('a, 'b) stack
-external take_cont : ('a, 'b) continuation -> ('a, 'b) stack = "caml_continuation_use"
+external take_cont_noexc : ('a, 'b) continuation -> ('a, 'b) stack = "caml_continuation_use_noexc" [@@noalloc]
 external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
 
 let continue k v =
-  resume (take_cont k) (fun x -> x) v
+  resume (take_cont_noexc k) (fun x -> x) v
 let discontinue k e =
-  resume (take_cont k) (fun e -> raise e) e
+  resume (take_cont_noexc k) (fun e -> raise e) e
 
 external perform : 'a eff -> 'a = "%perform"
 
