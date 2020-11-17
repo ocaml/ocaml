@@ -15,7 +15,7 @@ let test sampling_rate =
   let tracker =
     { null_tracker with
       alloc_minor = (fun info ->
-        if info.size < size_words then None
+        if info.source <> Custom then None
         else begin
           alloc := !alloc + info.n_samples;
           Some info.n_samples
