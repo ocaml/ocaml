@@ -4643,22 +4643,24 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
     ty'.desc <-
       begin match ty.desc with
       | Tconstr(p, tl, _abbrev) ->
-          begin match Path.find_free_opt ids p with
-          | Some id ->
-              begin try
-                Tlink (nondep_type_rec ~expand_private env ids
-                         (expand_abbrev env (newty2 ty.level ty.desc)))
-                (*
-                   The [Tlink] is important. The expanded type may be a
-                   variable, or may not be completely copied yet
-                   (recursive type), so one cannot just take its
-                   description.
-                 *)
-              with Cannot_expand | Unify _ ->
-                raise (Nondep_cannot_erase id)
-              end
-          | None ->
-              Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
+          begin try
+            (* First, try keeping the same type constructor p *)
+            match Path.find_free_opt ids p with
+            | Some id ->
+               raise (Nondep_cannot_erase id)
+            | None ->
+               Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
+          with (Nondep_cannot_erase _) as exn ->
+            (* If that doesn't work, try expanding abbrevs *)
+            try Tlink (nondep_type_rec ~expand_private env ids
+                       (expand_abbrev env (newty2 ty.level ty.desc)))
+              (*
+                 The [Tlink] is important. The expanded type may be a
+                 variable, or may not be completely copied yet
+                 (recursive type), so one cannot just take its
+                 description.
+               *)
+            with Cannot_expand | Unify _ -> raise exn
           end
       | Tpackage(p, nl, tl) when Path.exists_free ids p ->
           let p' = normalize_package_path env p in
