@@ -74,18 +74,13 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
   size_class = stack_size_class (wosize);
-  if (size_class >= 0) {
-    if (Caml_state->stack_cache[size_class] == NULL) {
-      stack = alloc_for_stack(wosize);
-      stack->size_class = size_class;
-    } else {
-      stack = Caml_state->stack_cache[size_class];
-      CAMLassert(stack->size_class == size_class);
-      Caml_state->stack_cache[size_class] = stack->handler->parent;
-    }
+  if (size_class >= 0 && Caml_state->stack_cache[size_class] != NULL) {
+    stack = Caml_state->stack_cache[size_class];
+    CAMLassert(stack->size_class == size_class);
+    Caml_state->stack_cache[size_class] = stack->handler->parent;
   } else {
     stack = alloc_for_stack(wosize);
-    stack->size_class = -1;
+    stack->size_class = size_class;
   }
   if (stack == NULL) {
     return NULL;
