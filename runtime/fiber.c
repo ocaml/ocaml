@@ -26,16 +26,16 @@
 #define fiber_debug_log(...)
 #endif
 
-struct stack_cache* caml_init_stack_cache () {
+struct stack_info** caml_alloc_stack_cache () {
   int i;
 
-  struct stack_cache* stack_cache =
-    (struct stack_cache*)caml_stat_alloc_noexc(sizeof(struct stack_cache));
+  struct stack_info** stack_cache =
+    (struct stack_info**)caml_stat_alloc_noexc(sizeof(struct stack_info*)*NUM_STACK_SIZE_CLASSES);
   if (stack_cache == NULL)
     return NULL;
 
   for(i = 0; i < NUM_STACK_SIZE_CLASSES; i++)
-    stack_cache->pool[i] = NULL;
+    stack_cache[i] = NULL;
 
   return stack_cache;
 }
@@ -60,13 +60,13 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
 
   if (wosize % caml_fiber_wsz == 0 &&
       (size_class = wosize / caml_fiber_wsz - 1) < NUM_STACK_SIZE_CLASSES) {
-    if (Caml_state->stack_cache->pool[size_class] == NULL) {
+    if (Caml_state->stack_cache[size_class] != NULL) {
+      stack = Caml_state->stack_cache[size_class];
+      CAMLassert(stack->size_class == size_class);
+      Caml_state->stack_cache[size_class] = stack->handler->parent;
+    } else {
       stack = alloc_for_stack(wosize);
       stack->size_class = size_class;
-    } else {
-      stack = Caml_state->stack_cache->pool[size_class];
-      CAMLassert(stack->size_class == size_class);
-      Caml_state->stack_cache->pool[size_class] = stack->handler->parent;
     }
   } else {
     stack = alloc_for_stack(wosize);
@@ -402,8 +402,8 @@ void caml_free_stack (struct stack_info* stack)
   memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif
   if (stack->size_class != -1) {
-    stack->handler->parent = Caml_state->stack_cache->pool[stack->size_class];
-    Caml_state->stack_cache->pool[stack->size_class] = stack;
+    stack->handler->parent = Caml_state->stack_cache[stack->size_class];
+    Caml_state->stack_cache[stack->size_class] = stack;
   } else {
     caml_stat_free(stack);
   }

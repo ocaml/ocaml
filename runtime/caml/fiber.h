@@ -76,17 +76,13 @@ struct c_stack_link {
 
 #define NUM_STACK_SIZE_CLASSES 5
 
-struct stack_cache {
-  struct stack_info* pool[NUM_STACK_SIZE_CLASSES];
-};
-
 /* The table of global identifiers */
 extern caml_root caml_global_data;
 
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
-struct stack_cache* caml_init_stack_cache (void);
+struct stack_info** caml_alloc_stack_cache (void);
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs);
 /* try to grow the stack until at least required_size words are available.
