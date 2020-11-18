@@ -63,17 +63,14 @@ static inline intnat stack_size_class (mlsize_t wosize)
   return -1;
 }
 
-/* allocate a stack with at least "wosize" usable words of stack */
-static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
+static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, intnat size_class, value hval, value hexn, value heff)
 {
   struct stack_info* stack;
   struct stack_handler* hand;
-  intnat size_class;
 
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
-  size_class = stack_size_class (wosize);
   if (size_class >= 0 && Caml_state->stack_cache[size_class] != NULL) {
     stack = Caml_state->stack_cache[size_class];
     CAMLassert(stack->size_class == size_class);
@@ -101,12 +98,20 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
              Stack_high(stack) - Stack_base(stack) == wosize + 1);
   return stack;
+
+}
+
+/* allocate a stack with at least "wosize" usable words of stack */
+static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
+{
+  intnat size_class = stack_size_class (wosize);
+  return alloc_size_class_stack_noexc(wosize, size_class, hval, hexn, heff);
 }
 
 #ifdef NATIVE_CODE
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
-  struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
+  struct stack_info* stack = alloc_size_class_stack_noexc(caml_fiber_wsz, 0, hval, hexn, heff);
 
   if (!stack) caml_raise_out_of_memory();
 
@@ -221,7 +226,7 @@ caml_root caml_global_data;
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
-  struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
+  struct stack_info* stack = alloc_size_class_stack_noexc(caml_fiber_wsz, 0, hval, hexn, heff);
   value* sp;
 
   if (!stack) caml_raise_out_of_memory();
@@ -458,6 +463,7 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use_noexc (value cont)
 {
+  CAMLnoalloc;
   value v;
   value null_stk = Val_ptr(NULL);
 
