@@ -195,7 +195,7 @@ module Conflicts = struct
     in
     begin match l with
     | [] -> ()
-    | l -> Format.fprintf ppf "@ %a" print_located_explanations l
+    | l -> Format.fprintf ppf "@,%a" print_located_explanations l
     end;
     (* if there are name collisions in a toplevel session,
        display at least one generic hint by namespace *)
