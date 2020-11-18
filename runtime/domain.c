@@ -284,8 +284,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     if(domain_state->dls_root == NULL) {
       goto create_root_failure;
     }
-    domain_state->stack_cache = caml_init_stack_cache();
-    if(Caml_state->stack_cache == NULL) {
+    domain_state->stack_cache = caml_alloc_stack_cache();
+    if(domain_state->stack_cache == NULL) {
       goto create_stack_cache_failure;
     }
 
