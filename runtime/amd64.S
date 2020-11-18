@@ -921,25 +921,23 @@ CFI_STARTPROC
         .cfi_signal_frame
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
-        movq    %rdi, %r12      /* Save arg (callee-saved) */
-        movq    %rax, %rdi
     /* save old stack pointer and exception handler */
-        movq    Caml_state(current_stack), %rax
+        movq    Caml_state(current_stack), %rcx
         movq    Caml_state(exn_handler), %r10
-        movq    %rsp, Stack_sp(%rax)
-        movq    %r10, Stack_exception(%rax)
+        movq    %rsp, Stack_sp(%rcx)
+        movq    %r10, Stack_exception(%rcx)
     /* Load new stack pointer and set parent */
-        movq    Stack_handler(%rdi), %rcx
-        movq    %rax, Handler_parent(%rcx)
-        movq    %rdi, Caml_state(current_stack)
-        movq    Stack_sp(%rdi), %rax
+        movq    Stack_handler(%rax), %r11
+        movq    %rcx, Handler_parent(%r11)
+        movq    %rax, Caml_state(current_stack)
+        movq    Stack_sp(%rax), %r11
     /* Create an exception handler on the target stack
        after 16byte DWARF & gc_regs block (which is unused here) */
-        leaq    -32(%rax), %r11
+        subq    $32, %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
         movq    %r10, 8(%r11)
     /* link the previous exn_handler so that copying stacks works */
-        movq    Stack_exception(%rdi), %r10
+        movq    Stack_exception(%rax), %r10
         movq    %r10, 0(%r11)
         movq    %r11, Caml_state(exn_handler)
     /* Switch to the new stack */
@@ -949,17 +947,18 @@ CFI_STARTPROC
           DW_OP_breg + DW_REG_rsp, 32 /* exn */ + Handler_parent, DW_OP_deref,\
           DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
           DW_OP_plus_uconst, 8 /* ret addr */
-        movq    %r12, %rax /* first argument */
+        movq    %rdi, %rax /* first argument */
         callq   *(%rbx) /* closure in %rbx (second argument) */
 LBL(frame_runstack):
         leaq    32(%rsp), %r11 /* SP with exn handler popped */
         movq    Handler_value(%r11), %rbx
-1:  /* Switch back to parent stack, restore exception handler and free current */
+1:      movq    Caml_state(current_stack), %rdi /* arg to caml_free_stack */
+    /* restore parent stack and exn_handler into Caml_state */
         movq    Handler_parent(%r11), %r10
-        movq    Caml_state(current_stack), %rdi
-        movq    %r10, Caml_state(current_stack)
         movq    Stack_exception(%r10), %r11
+        movq    %r10, Caml_state(current_stack)
         movq    %r11, Caml_state(exn_handler)
+    /* free old stack by switching directly to c_stack; is a no-alloc call */
         movq    Stack_sp(%r10), %r13 /* saved across C call */
         .cfi_restore_state
         .cfi_remember_state
@@ -967,6 +966,7 @@ LBL(frame_runstack):
         movq    %rax, %r12 /* save %rax across C call */
         movq    Caml_state(c_stack), %rsp
         call    GCALL(caml_free_stack)
+    /* switch directly to parent stack with correct return */
         movq    %r13, %rsp
         .cfi_restore_state
         movq    %r12, %rax
