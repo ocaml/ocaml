@@ -76,23 +76,27 @@ static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, intnat s
     stack = Caml_state->stack_cache[size_class];
     CAMLassert(stack->size_class == size_class);
     Caml_state->stack_cache[size_class] = stack->handler->parent;
+    hand = stack->handler;
   } else {
+    /* couldn't get a cached stack, so have to create one */
     stack = alloc_for_stack(wosize);
+    if (stack == NULL) {
+      return NULL;
+    }
+
     stack->size_class = size_class;
-  }
-  if (stack == NULL) {
-    return NULL;
+
+    /* Ensure 16-byte alignment because some architectures require it */
+    hand = (struct stack_handler*)
+      (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
+       & ((uintnat)-1 << 4));
+    stack->handler = hand;
   }
 
-  /* Ensure 16-byte alignment because some architectures require it */
-  hand = (struct stack_handler*)
-    (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
-     & ((uintnat)-1 << 4));
   hand->handle_value = hval;
   hand->handle_exn = hexn;
   hand->handle_effect = heff;
   hand->parent = NULL;
-  stack->handler = hand;
   stack->sp = (value*)hand;
   stack->exception_ptr = NULL;
   stack->magic = 42;
