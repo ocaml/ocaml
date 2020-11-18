@@ -86,14 +86,14 @@ Error: Signature mismatch:
          functor (X : s/1) -> ...
        is not included in
          functor (X : s/2) -> ...
-     Module types do not match:
-       s/1
-     does not include
-       s/2
-      Line 5, characters 6-19:
-        Definition of module type s/1
-      Line 2, characters 2-15:
-        Definition of module type s/2
+       Module types do not match:
+         s/1
+       does not include
+         s/2
+        Line 5, characters 6-19:
+          Definition of module type s/1
+        Line 2, characters 2-15:
+          Definition of module type s/2
 |}]
 
 module L = struct

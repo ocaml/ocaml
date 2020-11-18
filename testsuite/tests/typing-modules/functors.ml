@@ -46,9 +46,9 @@ Error: The functor application is ill-typed.
          X  Z
        do not match these parameters:
          functor (X : x) (Y : y) (Z : z) -> ...
-  1. Module X matches the expected module type x
-  2. An argument appears to be missing with module type y
-  3. Module Z matches the expected module type z
+       1. Module X matches the expected module type x
+       2. An argument appears to be missing with module type y
+       3. Module Z matches the expected module type z
 |}]
 
 module type f = functor (X:empty)(Y:empty) -> empty
@@ -64,9 +64,9 @@ Error: Signature mismatch:
          functor (X : empty) (Y : empty) (Z : empty) -> ...
        is not included in
          functor (X : empty) (Y : empty)  -> ...
-  1. Module types empty and empty match
-  2. Module types empty and empty match
-  3. An extra argument is provided of module type empty
+       1. Module types empty and empty match
+       2. Module types empty and empty match
+       3. An extra argument is provided of module type empty
 |}]
 
 module type f = functor (X:a)(Y:b) -> c
@@ -81,9 +81,9 @@ Error: Signature mismatch:
          functor (X : a) (Y : b) (Z : c) -> ...
        is not included in
          functor (X : a) (Y : b)  -> ...
-  1. Module types a and a match
-  2. Module types b and b match
-  3. An extra argument is provided of module type c
+       1. Module types a and a match
+       2. Module types b and b match
+       3. An extra argument is provided of module type c
 |}]
 
 module M : sig module F: functor (X:sig end) -> sig end end =
@@ -105,11 +105,11 @@ Error: Signature mismatch:
          functor (X : $S1) -> ...
        is not included in
          functor (X : sig end) -> ...
-     Module types do not match:
-       $S1 = sig type t end
-     does not include
-       sig end
-     The type `t' is required but not provided
+       Module types do not match:
+         $S1 = sig type t end
+       does not include
+         sig end
+       The type `t' is required but not provided
 |}]
 
 module F(X:sig type t end) = struct end
@@ -140,9 +140,10 @@ Error: The functor application F(X)(Z) is ill-typed.
          X  Z
        do not match these parameters:
          functor (X : ...) (Y : $T2) (Z : ...) -> ...
-  1. Module X matches the expected module type
-  2. An argument appears to be missing with module type $T2 = sig type y end
-  3. Module Z matches the expected module type
+       1. Module X matches the expected module type
+       2. An argument appears to be missing with module type
+              $T2 = sig type y end
+       3. Module Z matches the expected module type
 |}]
 
 module F()(X:sig type t end) = struct end
@@ -157,8 +158,8 @@ Error: The functor application is ill-typed.
          () ()
        do not match these parameters:
          functor () (X : $T2) -> ...
-  1. Module () matches the expected module type
-  2. The functor was expected to be applicative at this position
+       1. Module () matches the expected module type
+       2. The functor was expected to be applicative at this position
 |}]
 
 module M: sig
@@ -184,8 +185,9 @@ Error: Signature mismatch:
          functor  (X : $S2) -> ...
        is not included in
          functor (X : $T1) (X : $T2) -> ...
-  1. An argument appears to be missing with module type $T1 = sig type x end
-  2. Module types $S2 and $T2 match
+       1. An argument appears to be missing with module type
+              $T1 = sig type x end
+       2. Module types $S2 and $T2 match
 |}]
 
 
@@ -208,8 +210,8 @@ Error: The functor application is ill-typed.
          Ctx.Y Ctx.X
        do not match these parameters:
          functor (A : Ctx.t) (B : Ctx.u) -> ...
-  1. Modules do not match: Ctx.Y : Ctx.u is not included in Ctx.t
-  2. Modules do not match: Ctx.X : Ctx.t is not included in Ctx.u
+       1. Modules do not match: Ctx.Y : Ctx.u is not included in Ctx.t
+       2. Modules do not match: Ctx.X : Ctx.t is not included in Ctx.u
 |}]
 
 (** Too many arguments *)
@@ -225,9 +227,9 @@ Error: The functor application is ill-typed.
          Ord Ord
        do not match these parameters:
          functor  (Ord : Map.OrderedType) -> ...
-  1. The following extra argument is provided
-         Ord : sig type t = unit val compare : 'a -> 'b -> int end
-  2. Module Ord matches the expected module type Map.OrderedType
+       1. The following extra argument is provided
+              Ord : sig type t = unit val compare : 'a -> 'b -> int end
+       2. Module Ord matches the expected module type Map.OrderedType
 |}]
 
 
@@ -254,9 +256,9 @@ Error: The functor application is ill-typed.
          K $S2 ()
        do not match these parameters:
          functor (A : ...) (B : ...) (C : $T3) -> ...
-  1. Module K matches the expected module type
-  2. Module $S2 matches the expected module type
-  3. The functor was expected to be applicative at this position
+       1. Module K matches the expected module type
+       2. Module $S2 matches the expected module type
+       3. The functor was expected to be applicative at this position
 |}]
 
 module M = F(K)(struct type y = K.y end)
@@ -269,10 +271,10 @@ Error: The functor application is ill-typed.
          K  $S3
        do not match these parameters:
          functor (A : ...) (B : $T2) (C : ...) -> ...
-  1. Module K matches the expected module type
-  2. An argument appears to be missing with module type
-         $T2 = sig type x = A.x end
-  3. Module $S3 matches the expected module type
+       1. Module K matches the expected module type
+       2. An argument appears to be missing with module type
+              $T2 = sig type x = A.x end
+       3. Module $S3 matches the expected module type
 |}]
 
 
@@ -292,13 +294,13 @@ Error: The functor application is ill-typed.
          $S1 $S2 $S3
        do not match these parameters:
          functor (A : ...) (B : ...) (C : $T3) -> ...
-  1. Module $S1 matches the expected module type
-  2. Module $S2 matches the expected module type
-  3. Modules do not match:
-       $S3 = struct type yy = K.y end
-     is not included in
-       $T3 = sig type y = A.y end
-     The type `y' is required but not provided
+       1. Module $S1 matches the expected module type
+       2. Module $S2 matches the expected module type
+       3. Modules do not match:
+            $S3 = struct type yy = K.y end
+          is not included in
+            $T3 = sig type y = A.y end
+          The type `y' is required but not provided
 |}]
 
 
@@ -327,10 +329,10 @@ Error: The functor application is ill-typed.
          M.N  Defs.Y
        do not match these parameters:
          functor (A : ...) (B : $T2) (C : ...) -> ...
-  1. Module M.N matches the expected module type
-  2. An argument appears to be missing with module type
-         $T2 = sig type x = A.x end
-  3. Module Defs.Y matches the expected module type
+       1. Module M.N matches the expected module type
+       2. An argument appears to be missing with module type
+              $T2 = sig type x = A.x end
+       3. Module Defs.Y matches the expected module type
 |}]
 
 module Too_many_Xs = F(M.N)(Defs.X)(Defs.X)(Defs.Y)
@@ -343,10 +345,11 @@ Error: The functor application is ill-typed.
          M.N Defs.X Defs.X Defs.Y
        do not match these parameters:
          functor (A : ...)  (B : ...) (C : ...) -> ...
-  1. Module M.N matches the expected module type
-  2. The following extra argument is provided Defs.X : sig type x = M.N.x end
-  3. Module Defs.X matches the expected module type
-  4. Module Defs.Y matches the expected module type
+       1. Module M.N matches the expected module type
+       2. The following extra argument is provided
+              Defs.X : sig type x = M.N.x end
+       3. Module Defs.X matches the expected module type
+       4. Module Defs.Y matches the expected module type
 |}]
 
 
@@ -364,10 +367,10 @@ Error: The functor application is ill-typed.
          $S1  Y
        do not match these parameters:
          functor (A : ...) (B : $T2) (C : ...) -> ...
-  1. Module $S1 matches the expected module type
-  2. An argument appears to be missing with module type
-         $T2 = sig type x = A.x end
-  3. Module Y matches the expected module type
+       1. Module $S1 matches the expected module type
+       2. An argument appears to be missing with module type
+              $T2 = sig type x = A.x end
+       3. Module Y matches the expected module type
 |}]
 
 module Too_many_Xs_bis = F(struct type x = int type y = float end)(X)(X)(Y)
@@ -380,10 +383,10 @@ Error: The functor application is ill-typed.
          $S1 X X Y
        do not match these parameters:
          functor (A : ...)  (B : ...) (C : ...) -> ...
-  1. Module $S1 matches the expected module type
-  2. The following extra argument is provided X : sig type x = int end
-  3. Module X matches the expected module type
-  4. Module Y matches the expected module type
+       1. Module $S1 matches the expected module type
+       2. The following extra argument is provided X : sig type x = int end
+       3. Module X matches the expected module type
+       4. Module Y matches the expected module type
 |}]
 
 
@@ -404,10 +407,10 @@ Error: Signature mismatch:
          functor (A : $S1)  (Z : $S3) -> ...
        is not included in
          functor (A : $T1) (B : $T2) (C : $T3) -> ...
-  1. Module types $S1 and $T1 match
-  2. An argument appears to be missing with module type
-         $T2 = sig type x = A.x end
-  3. Module types $S3 and $T3 match
+       1. Module types $S1 and $T1 match
+       2. An argument appears to be missing with module type
+              $T2 = sig type x = A.x end
+       3. Module types $S3 and $T3 match
 |}]
 
 
@@ -428,10 +431,10 @@ Error: Signature mismatch:
          functor (X : $S1)  (Z : $S3) -> ...
        is not included in
          functor (B : $T1) (Y : $T2) (Z : $T3) -> ...
-  1. Module types $S1 and $T1 match
-  2. An argument appears to be missing with module type
-         $T2 = sig type yu = Y of B.u end
-  3. Module types $S3 and $T3 match
+       1. Module types $S1 and $T1 match
+       2. An argument appears to be missing with module type
+              $T2 = sig type yu = Y of B.u end
+       3. Module types $S3 and $T3 match
 |}]
 
 
@@ -516,20 +519,20 @@ Error: The functor application is ill-typed.
          $S1 P.B $S3
        do not match these parameters:
          functor (X : x) (B : b/2) (Y : y) -> ...
-  1. Module $S1 matches the expected module type x
-  2. Modules do not match:
-       P.B : b/1
-     is not included in
-       b/2
-      Line 5, characters 2-15:
-        Definition of module type b/1
-      Line 2, characters 0-13:
-        Definition of module type b/2
-  3. Modules do not match:
-       $S3 = struct type w end
-     is not included in
-       y
-     The type `y' is required but not provided
+       1. Module $S1 matches the expected module type x
+       2. Modules do not match:
+            P.B : b/1
+          is not included in
+            b/2
+           Line 5, characters 2-15:
+             Definition of module type b/1
+           Line 2, characters 0-13:
+             Definition of module type b/2
+       3. Modules do not match:
+            $S3 = struct type w end
+          is not included in
+            y
+          The type `y' is required but not provided
 |}]
 
 module F(X:a) = struct type t end
@@ -581,15 +584,15 @@ Error: Signature mismatch:
          functor (X : aa) (Y : a/1) -> ...
        is not included in
          functor (X : a/2) (Y : a/2) -> ...
-  1. Module types aa and a/2 match
-  2. Module types do not match:
-       a/1
-     does not include
-       a/2
-      Line 4, characters 2-15:
-        Definition of module type a/1
-      Line 1, characters 0-13:
-        Definition of module type a/2
+       1. Module types aa and a/2 match
+       2. Module types do not match:
+            a/1
+          does not include
+            a/2
+           Line 4, characters 2-15:
+             Definition of module type a/1
+           Line 1, characters 0-13:
+             Definition of module type a/2
 |}]
 
 module X: functor ( X: sig end) -> sig end = functor(X: Set.OrderedType) -> struct end
@@ -602,14 +605,14 @@ Error: Signature mismatch:
          functor (X : Set.OrderedType) -> ...
        is not included in
          functor (X : sig end) -> ...
-     Module types do not match:
-       Set.OrderedType
-     does not include
-       sig end
-     The type `t' is required but not provided
-     File "set.mli", line 52, characters 4-10: Expected declaration
-     The value `compare' is required but not provided
-     File "set.mli", line 55, characters 4-31: Expected declaration
+       Module types do not match:
+         Set.OrderedType
+       does not include
+         sig end
+       The type `t' is required but not provided
+       File "set.mli", line 52, characters 4-10: Expected declaration
+       The value `compare' is required but not provided
+       File "set.mli", line 55, characters 4-31: Expected declaration
 |}]
 
 (** Deeply nested errors *)
@@ -681,29 +684,33 @@ Error: Signature mismatch:
          functor (X : $S1) (Y : $S2) (Z : $S3) -> ...
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) -> ...
-  1. Module types $S1 and $T1 match
-  2. Module types do not match:
-       $S2 = functor (A : sig type ya end) (B : sig type ybb end) -> sig end
-     does not include
-       $T2 = functor (A : sig type ya end) (B : sig type yb end) -> sig end
-     Modules do not match:
-       functor (A : $S1) (B : $S2) -> ...
-     is not included in
-       functor (A : $T1) (B : $T2) -> ...
-     1. Module types $S1 and $T1 match
-     2. Module types do not match:
-          $S2 = sig type yb end
-        does not include
-          $T2 = sig type ybb end
-        The type `yb' is required but not provided
-  3. Module types do not match:
-       $S3 = functor (A : sig type za end) (B : sig type zbb end) -> sig end
-     does not include
-       $T3 = functor (A : sig type za end) (B : sig type zb end) -> sig end
-     Modules do not match:
-       functor (A : $S1) (B : $S2) -> ...
-     is not included in
-       functor (A : $T1) (B : $T2) -> ...
+       1. Module types $S1 and $T1 match
+       2. Module types do not match:
+            $S2 =
+            functor (A : sig type ya end) (B : sig type ybb end) -> sig end
+          does not include
+            $T2 =
+            functor (A : sig type ya end) (B : sig type yb end) -> sig end
+          Modules do not match:
+            functor (A : $S1) (B : $S2) -> ...
+          is not included in
+            functor (A : $T1) (B : $T2) -> ...
+          1. Module types $S1 and $T1 match
+          2. Module types do not match:
+               $S2 = sig type yb end
+             does not include
+               $T2 = sig type ybb end
+             The type `yb' is required but not provided
+       3. Module types do not match:
+            $S3 =
+            functor (A : sig type za end) (B : sig type zbb end) -> sig end
+          does not include
+            $T3 =
+            functor (A : sig type za end) (B : sig type zb end) -> sig end
+          Modules do not match:
+            functor (A : $S1) (B : $S2) -> ...
+          is not included in
+            functor (A : $T1) (B : $T2) -> ...
 |}]
 
 
@@ -768,10 +775,11 @@ Error: Signature mismatch:
          functor (X : $S1) (Y : $S2)  -> ...
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) -> ...
-  1. Module types $S1 and $T1 match
-  2. Module types $S2 and $T2 match
-  3. An argument appears to be missing with module type
-         $T3 = functor (A : sig type za end) (B : sig type zb end) -> sig end
+       1. Module types $S1 and $T1 match
+       2. Module types $S2 and $T2 match
+       3. An argument appears to be missing with module type
+              $T3 =
+              functor (A : sig type za end) (B : sig type zb end) -> sig end
 |}]
 
 module M: sig
@@ -840,36 +848,42 @@ Error: Signature mismatch:
          functor (X : $S1) (Y : $S2) (Z : $S3) -> ...
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) -> ...
-  1. Module types do not match:
-       $S1 = functor (A : sig type xaa end) (B : sig type xz end) -> sig end
-     does not include
-       $T1 = functor (A : sig type xa end) (B : sig type xz end) -> sig end
-     Modules do not match:
-       functor (A : $S1) (B : $S2) -> ...
-     is not included in
-       functor (A : $T1) (B : $T2) -> ...
-     1. Module types do not match:
-          $S1 = sig type xa end
-        does not include
-          $T1 = sig type xaa end
-        The type `xa' is required but not provided
-     2. Module types $S2 and $T2 match
-  2. Module types do not match:
-       $S2 = functor (A : sig type ya end) (B : sig type ybb end) -> sig end
-     does not include
-       $T2 = functor (A : sig type ya end) (B : sig type yb end) -> sig end
-     Modules do not match:
-       functor (A : $S1) (B : $S2) -> ...
-     is not included in
-       functor (A : $T1) (B : $T2) -> ...
-  3. Module types do not match:
-       $S3 = functor (A : sig type za end) (B : sig type zbb end) -> sig end
-     does not include
-       $T3 = functor (A : sig type za end) (B : sig type zb end) -> sig end
-     Modules do not match:
-       functor (A : $S1) (B : $S2) -> ...
-     is not included in
-       functor (A : $T1) (B : $T2) -> ...
+       1. Module types do not match:
+            $S1 =
+            functor (A : sig type xaa end) (B : sig type xz end) -> sig end
+          does not include
+            $T1 =
+            functor (A : sig type xa end) (B : sig type xz end) -> sig end
+          Modules do not match:
+            functor (A : $S1) (B : $S2) -> ...
+          is not included in
+            functor (A : $T1) (B : $T2) -> ...
+          1. Module types do not match:
+               $S1 = sig type xa end
+             does not include
+               $T1 = sig type xaa end
+             The type `xa' is required but not provided
+          2. Module types $S2 and $T2 match
+       2. Module types do not match:
+            $S2 =
+            functor (A : sig type ya end) (B : sig type ybb end) -> sig end
+          does not include
+            $T2 =
+            functor (A : sig type ya end) (B : sig type yb end) -> sig end
+          Modules do not match:
+            functor (A : $S1) (B : $S2) -> ...
+          is not included in
+            functor (A : $T1) (B : $T2) -> ...
+       3. Module types do not match:
+            $S3 =
+            functor (A : sig type za end) (B : sig type zbb end) -> sig end
+          does not include
+            $T3 =
+            functor (A : sig type za end) (B : sig type zb end) -> sig end
+          Modules do not match:
+            functor (A : $S1) (B : $S2) -> ...
+          is not included in
+            functor (A : $T1) (B : $T2) -> ...
 |}]
 
 module A: sig
@@ -1004,14 +1018,15 @@ Error: Signature mismatch:
          functor (X : $S1)  (Y : $S3) (W : $S4) -> ...
        is not included in
          functor $T1 $T2 $T3 $T4 -> ...
-  1. Module types $S1 and $T1 match
-  2. An argument appears to be missing with module type $T2 = sig type y end
-  3. Module types do not match:
-       $S3 = sig type y' end
-     does not include
-       $T3 = sig type z end
-     The type `y'' is required but not provided
-  4. Module types $S4 and $T4 match
+       1. Module types $S1 and $T1 match
+       2. An argument appears to be missing with module type
+              $T2 = sig type y end
+       3. Module types do not match:
+            $S3 = sig type y' end
+          does not include
+            $T3 = sig type z end
+          The type `y'' is required but not provided
+       4. Module types $S4 and $T4 match
 |}]
 
 
@@ -1046,18 +1061,18 @@ Error: The functor application G(X)(Y)(X)(Y)(X) is ill-typed.
          A.X A.Y A.X A.Y A.X
        do not match these parameters:
          functor  (X : A.A) (Y : A.A) A.A (Z : A.A) -> ...
-  1. The following extra argument is provided
-         A.X : A.Honorificabilitudinitatibus
-  2. Module A.Y matches the expected module type A.A
-  3. Modules do not match:
-       A.X : A.Honorificabilitudinitatibus
-     is not included in
-       A.A
-  4. Module A.Y matches the expected module type A.A
-  5. Modules do not match:
-       A.X : A.Honorificabilitudinitatibus
-     is not included in
-       A.A
+       1. The following extra argument is provided
+              A.X : A.Honorificabilitudinitatibus
+       2. Module A.Y matches the expected module type A.A
+       3. Modules do not match:
+            A.X : A.Honorificabilitudinitatibus
+          is not included in
+            A.A
+       4. Module A.Y matches the expected module type A.A
+       5. Modules do not match:
+            A.X : A.Honorificabilitudinitatibus
+          is not included in
+            A.A
 |}]
 
 
@@ -1128,66 +1143,96 @@ Error: Signature mismatch:
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) (Z : $T4) (W : $T5) (S : $T6)
          (R : $T7) -> ...
-  1. Module types do not match:
-       $S1 =
-       sig type when_ type shall type we type tree type meet type again end
-     does not include
-       $T1 =
-       sig type when_ type shall type we type three type meet type again end
-     The type `tree' is required but not provided
-  2. Module types do not match:
-       $S2 = sig type in_ val thunder : in_ val lightning : in_ type pain end
-     does not include
-       $T2 = sig type in_ val thunder : in_ val lightning : in_ type rain end
-     The type `pain' is required but not provided
-  3. Module types do not match:
-       $S3 = sig type when_ type the type hurlyburly's type gone end
-     does not include
-       $T3 = sig type when_ type the type hurlyburly's type done_ end
-     The type `gone' is required but not provided
-  4. Module types do not match:
-       $S4 =
-       sig type when_ type the type battle's type last type and_ type won end
-     does not include
-       $T4 =
-       sig type when_ type the type battle's type lost type and_ type won end
-     The type `last' is required but not provided
-  5. Module types do not match:
-       $S5 =
-       sig
-         type that
-         type will
-         type be
-         type the
-         type era
-         type set
-         type of_
-         type sun
-       end
-     does not include
-       $T5 =
-       sig
-         type that
-         type will
-         type be
-         type ere
-         type the_
-         type set
-         type of_
-         type sun
-       end
-     The type `the' is required but not provided
-     The type `era' is required but not provided
-  6. Module types do not match:
-       $S6 = sig type where type the type lace end
-     does not include
-       $T6 = sig type where type the type place end
-     The type `lace' is required but not provided
-  7. Module types do not match:
-       $S7 = sig type upon type the type heart end
-     does not include
-       $T7 = sig type upon type the type heath end
-     The type `heart' is required but not provided
+       1. Module types do not match:
+            $S1 =
+            sig
+              type when_
+              type shall
+              type we
+              type tree
+              type meet
+              type again
+            end
+          does not include
+            $T1 =
+            sig
+              type when_
+              type shall
+              type we
+              type three
+              type meet
+              type again
+            end
+          The type `tree' is required but not provided
+       2. Module types do not match:
+            $S2 =
+            sig type in_ val thunder : in_ val lightning : in_ type pain end
+          does not include
+            $T2 =
+            sig type in_ val thunder : in_ val lightning : in_ type rain end
+          The type `pain' is required but not provided
+       3. Module types do not match:
+            $S3 = sig type when_ type the type hurlyburly's type gone end
+          does not include
+            $T3 = sig type when_ type the type hurlyburly's type done_ end
+          The type `gone' is required but not provided
+       4. Module types do not match:
+            $S4 =
+            sig
+              type when_
+              type the
+              type battle's
+              type last
+              type and_
+              type won
+            end
+          does not include
+            $T4 =
+            sig
+              type when_
+              type the
+              type battle's
+              type lost
+              type and_
+              type won
+            end
+          The type `last' is required but not provided
+       5. Module types do not match:
+            $S5 =
+            sig
+              type that
+              type will
+              type be
+              type the
+              type era
+              type set
+              type of_
+              type sun
+            end
+          does not include
+            $T5 =
+            sig
+              type that
+              type will
+              type be
+              type ere
+              type the_
+              type set
+              type of_
+              type sun
+            end
+          The type `the' is required but not provided
+          The type `era' is required but not provided
+       6. Module types do not match:
+            $S6 = sig type where type the type lace end
+          does not include
+            $T6 = sig type where type the type place end
+          The type `lace' is required but not provided
+       7. Module types do not match:
+            $S7 = sig type upon type the type heart end
+          does not include
+            $T7 = sig type upon type the type heath end
+          The type `heart' is required but not provided
 |}]
 
 
@@ -1227,22 +1272,23 @@ Error: The functor application is ill-typed.
        do not match these parameters:
          functor (X : ...) (X : ...) (X : ...) (X : ...) (X : ...) (X : $T6)
          -> ...
-  1. Module PF matches the expected module type
-  2. Module PF matches the expected module type
-  3. Module PF matches the expected module type
-  4. Module PF matches the expected module type
-  5. Module PF matches the expected module type
-  6. Modules do not match:
-       F :
-       functor (X : sig type witness module type t module M : t end) -> X.t
-     is not included in
-       $T6 = sig type witness module type t module M : t end
-     Modules do not match:
-       functor (X : $S1) -> ...
-     is not included in
-       functor  -> ...
-        An extra argument is provided of module type
-            $S1 = sig type witness module type t module M : t end
+       1. Module PF matches the expected module type
+       2. Module PF matches the expected module type
+       3. Module PF matches the expected module type
+       4. Module PF matches the expected module type
+       5. Module PF matches the expected module type
+       6. Modules do not match:
+            F :
+            functor (X : sig type witness module type t module M : t end) ->
+              X.t
+          is not included in
+            $T6 = sig type witness module type t module M : t end
+          Modules do not match:
+            functor (X : $S1) -> ...
+          is not included in
+            functor  -> ...
+          An extra argument is provided of module type
+              $S1 = sig type witness module type t module M : t end
 |}]
 
 (** Divergent arities *)
@@ -1301,18 +1347,18 @@ Error: The functor application is ill-typed.
          Add_three' A A A
        do not match these parameters:
          functor (X : $T1) arg arg arg -> ...
-  1. Modules do not match:
-       Add_three' :
-       sig
-         module M = Add_three'.M
-         module type t = arg -> arg -> arg -> sig type arg = A.arg end
-       end
-     is not included in
-       $T1 = sig type witness module type t module M : t end
-     The type `witness' is required but not provided
-  2. Module A matches the expected module type arg
-  3. Module A matches the expected module type arg
-  4. Module A matches the expected module type arg
+       1. Modules do not match:
+            Add_three' :
+            sig
+              module M = Add_three'.M
+              module type t = arg -> arg -> arg -> sig type arg = A.arg end
+            end
+          is not included in
+            $T1 = sig type witness module type t module M : t end
+          The type `witness' is required but not provided
+       2. Module A matches the expected module type arg
+       3. Module A matches the expected module type arg
+       4. Module A matches the expected module type arg
 |}]
 
 module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
@@ -1325,16 +1371,16 @@ Error: The functor application is ill-typed.
          Add_one' Add_three A A A
        do not match these parameters:
          functor  (X : ...) arg arg arg -> ...
-  1. The following extra argument is provided
-         Add_one' :
-         sig
-           module M = Add_one'.M
-           module type t = arg -> sig type arg = A.arg end
-         end
-  2. Module Add_three matches the expected module type
-  3. Module A matches the expected module type arg
-  4. Module A matches the expected module type arg
-  5. Module A matches the expected module type arg
+       1. The following extra argument is provided
+              Add_one' :
+              sig
+                module M = Add_one'.M
+                module type t = arg -> sig type arg = A.arg end
+              end
+       2. Module Add_three matches the expected module type
+       3. Module A matches the expected module type arg
+       4. Module A matches the expected module type arg
+       5. Module A matches the expected module type arg
 |}]
 
 (** Known lmitation: we choose the wrong environment without the
@@ -1350,17 +1396,17 @@ Error: The functor application is ill-typed.
          Add_one Add_three A A A
        do not match these parameters:
          functor  (X : ...) arg arg arg -> ...
-  1. The following extra argument is provided
-         Add_one :
-         sig
-           type witness = Add_one.witness
-           module M = Add_one'.M
-           module type t = arg -> sig type arg = A.arg end
-         end
-  2. Module Add_three matches the expected module type
-  3. Module A matches the expected module type arg
-  4. Module A matches the expected module type arg
-  5. Module A matches the expected module type arg
+       1. The following extra argument is provided
+              Add_one :
+              sig
+                type witness = Add_one.witness
+                module M = Add_one'.M
+                module type t = arg -> sig type arg = A.arg end
+              end
+       2. Module Add_three matches the expected module type
+       3. Module A matches the expected module type arg
+       4. Module A matches the expected module type arg
+       5. Module A matches the expected module type arg
 |}]
 
 
@@ -1412,9 +1458,10 @@ Error: Signature mismatch:
          functor (X : $S1)  (Z : $S3) -> ...
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) -> ...
-  1. Module types $S1 and $T1 match
-  2. An argument appears to be missing with module type $T2 = sig type y end
-  3. Module types $S3 and $T3 match
+       1. Module types $S1 and $T1 match
+       2. An argument appears to be missing with module type
+              $T2 = sig type y end
+       3. Module types $S3 and $T3 match
 |}]
 
 
@@ -1464,10 +1511,11 @@ Error: Signature mismatch:
          functor (Wrong : $S1) (X : $S2) X/2.T X/2.T -> ...
        is not included in
          functor  (X : $T2) X/3.T X/3.T -> ...
-  1. An extra argument is provided of module type $S1 = sig type wrong end
-  2. Module types $S2 and $T2 match
-  3. Module types X/3.T and X/2.T match
-  4. Module types X/3.T and X/2.T match
+       1. An extra argument is provided of module type
+              $S1 = sig type wrong end
+       2. Module types $S2 and $T2 match
+       3. Module types X/3.T and X/2.T match
+       4. Module types X/3.T and X/2.T match
 |}]
 
 
@@ -1534,15 +1582,15 @@ Error: Signature mismatch:
          (Res : X/2.T) -> ...
        is not included in
          functor sig end (X : $T2)  X/2.T X/2.T -> ...
-  1. Module types do not match:
-       $S1 = sig type wrong end
-     does not include
-       sig end
-     The type `wrong' is required but not provided
-  2. Module types $S2 and $T2 match
-  3. An extra argument is provided of module type X/2.T
-  4. Module types X/2.T and X/2.T match
-  5. Module types X/2.T and X/2.T match
+       1. Module types do not match:
+            $S1 = sig type wrong end
+          does not include
+            sig end
+          The type `wrong' is required but not provided
+       2. Module types $S2 and $T2 match
+       3. An extra argument is provided of module type X/2.T
+       4. Module types X/2.T and X/2.T match
+       5. Module types X/2.T and X/2.T match
 |}]
 
 
@@ -1570,36 +1618,37 @@ Error: The functor application is ill-typed.
          X ... Y Z
        do not match these parameters:
          functor (X : ...)  (Y : $T3) (Z : $T4) -> ...
-  1. Module X matches the expected module type
-  2. The following extra argument is provided ... = struct type t = int end
-  3. Modules do not match:
-       Y : sig type t = Y.t = Y of int end
-     is not included in
-       $T3 = sig type t = Y of X/2.t end
-     Type declarations do not match:
-       type t = Y.t = Y of int
-     is not included in
-       type t = Y of X.t
-     Constructors do not match:
-       Y of int
-     is not compatible with:
-       Y of X.t
-     The types are not equal.
-     Line 5, characters 0-32:
-       Definition of module X/1
-  4. Modules do not match:
-       Z : sig type t = Z.t = Z of int end
-     is not included in
-       $T4 = sig type t = Z of X/2.t end
-     Type declarations do not match:
-       type t = Z.t = Z of int
-     is not included in
-       type t = Z of X.t
-     Constructors do not match:
-       Z of int
-     is not compatible with:
-       Z of X.t
-     The types are not equal.
+       1. Module X matches the expected module type
+       2. The following extra argument is provided
+              ... = struct type t = int end
+       3. Modules do not match:
+            Y : sig type t = Y.t = Y of int end
+          is not included in
+            $T3 = sig type t = Y of X/2.t end
+          Type declarations do not match:
+            type t = Y.t = Y of int
+          is not included in
+            type t = Y of X.t
+          Constructors do not match:
+            Y of int
+          is not compatible with:
+            Y of X.t
+          The types are not equal.
+          Line 5, characters 0-32:
+            Definition of module X/1
+       4. Modules do not match:
+            Z : sig type t = Z.t = Z of int end
+          is not included in
+            $T4 = sig type t = Z of X/2.t end
+          Type declarations do not match:
+            type t = Z.t = Z of int
+          is not included in
+            type t = Z of X.t
+          Constructors do not match:
+            Z of int
+          is not compatible with:
+            Z of X.t
+          The types are not equal.
 |}]
 
 (** Final state in the presence of extensions
@@ -1652,14 +1701,14 @@ Error: The functor application Bar(B)(FiveArgsExt)(B)(AExt) is ill-typed.
          B FiveArgsExt B AExt
        do not match these parameters:
          functor (W : A) (X : Ext) (Y : B) (Z : Ext) -> ...
-  1. Modules do not match:
-       B : sig type b = B.b end
-     is not included in
-       A
-     The type `a' is required but not provided
-  2. Module FiveArgsExt matches the expected module type Ext
-  3. Module B matches the expected module type B
-  4. Module AExt matches the expected module type Ext
+       1. Modules do not match:
+            B : sig type b = B.b end
+          is not included in
+            A
+          The type `a' is required but not provided
+       2. Module FiveArgsExt matches the expected module type Ext
+       3. Module B matches the expected module type B
+       4. Module AExt matches the expected module type Ext
 |}]
 
 type broken2 = Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY).a
@@ -1672,13 +1721,13 @@ Error: The functor application Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY) is ill-ty
          A   FiveArgsExt TY TY TY TY TY
        do not match these parameters:
          functor (W : A) (X : Ext) (Y : B) (Z : Ext) ty ty ty ty ty -> ...
-  1. Module A matches the expected module type A
-  2. An argument appears to be missing with module type Ext
-  3. An argument appears to be missing with module type B
-  4. Module FiveArgsExt matches the expected module type Ext
-  5. Module TY matches the expected module type ty
-  6. Module TY matches the expected module type ty
-  7. Module TY matches the expected module type ty
-  8. Module TY matches the expected module type ty
-  9. Module TY matches the expected module type ty
+       1. Module A matches the expected module type A
+       2. An argument appears to be missing with module type Ext
+       3. An argument appears to be missing with module type B
+       4. Module FiveArgsExt matches the expected module type Ext
+       5. Module TY matches the expected module type ty
+       6. Module TY matches the expected module type ty
+       7. Module TY matches the expected module type ty
+       8. Module TY matches the expected module type ty
+       9. Module TY matches the expected module type ty
 |}]

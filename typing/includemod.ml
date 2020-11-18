@@ -1671,13 +1671,19 @@ module Linearize = struct
       g e (more ())
 
   let param_subcase sub ~expansion_token env (pos, diff) =
-    Location.msg "%a @[<hv 2>%t@]" Pp.prefix (pos, diff)
+    Location.msg "%a%a%a %a@[<hv 2>%t@]%a"
+      Format.pp_print_tab ()
+      Format.pp_open_tbox ()
+      Pp.prefix (pos, diff)
+      Format.pp_set_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
+     Format.pp_close_tbox ()
 
   let param_onlycase sub ~expansion_token env (_, diff) =
-    Location.msg "   @[<hv 2>%t@]"
+    Location.msg "%a@[<hv 2>%t@]"
+      Format.pp_print_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
