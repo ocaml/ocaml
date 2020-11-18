@@ -44,7 +44,7 @@ let rec get_unboxed_type_representation env ty fuel =
         let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
         get_unboxed_type_representation env
           (Ctype.apply env type_params ty2 args) (fuel - 1)
-    | {type_kind=Type_abstract} -> Unavailable
+    | {type_kind=Type_abstract _} -> Unavailable
           (* This case can occur when checking a recursive unboxed type
              declaration. *)
     | _ -> assert false (* only the above can be unboxed *)

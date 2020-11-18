@@ -51,8 +51,8 @@ let value_descriptions ~loc env name
 let private_flags decl1 decl2 =
   match decl1.type_private, decl2.type_private with
   | Private, Public ->
-      decl2.type_kind = Type_abstract &&
-      (decl2.type_manifest = None || decl1.type_kind <> Type_abstract)
+      decl_is_abstract decl2 &&
+      (decl2.type_manifest = None || not (decl_is_abstract decl1))
   | _, _ -> true
 
 (* Inclusion between manifest types (particularly for private row types) *)
@@ -409,7 +409,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   let err =
     match (decl2.type_kind, decl1.type_unboxed.unboxed,
            decl2.type_unboxed.unboxed) with
-    | Type_abstract, _, _ -> None
+    | Type_abstract _, _, _ -> None
     | _, true, false -> Some (Unboxed_representation First)
     | _, false, true -> Some (Unboxed_representation Second)
     | _ -> None

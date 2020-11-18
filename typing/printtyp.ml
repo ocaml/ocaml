@@ -1210,7 +1210,7 @@ let rec tree_of_type_decl id decl =
         Some ty
   in
   begin match decl.type_kind with
-  | Type_abstract -> ()
+  | Type_abstract _ -> ()
   | Type_variant cstrs ->
       List.iter
         (fun c ->
@@ -1230,7 +1230,7 @@ let rec tree_of_type_decl id decl =
   let type_defined decl =
     let abstr =
       match decl.type_kind with
-        Type_abstract ->
+        Type_abstract _ ->
           decl.type_manifest = None || decl.type_private = Private
       | Type_record _ ->
           decl.type_private = Private
@@ -1246,7 +1246,7 @@ let rec tree_of_type_decl id decl =
           let is_var = is_Tvar (repr ty) in
           if abstr || not is_var then
             let inj =
-              decl.type_kind = Type_abstract && Variance.mem Inj v &&
+              decl_is_abstract decl && Variance.mem Inj v &&
               match decl.type_manifest with
               | None -> true
               | Some ty -> (* only abstract or private row types *)
@@ -1270,29 +1270,29 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let ty, priv =
+  let ty, priv, imm =
     match decl.type_kind with
-    | Type_abstract ->
+    | Type_abstract {immediate=imm} ->
         begin match ty_manifest with
-        | None -> (Otyp_abstract, Public)
+        | None -> (Otyp_abstract, Public, imm)
         | Some ty ->
-            tree_of_typexp false ty, decl.type_private
+            tree_of_typexp false ty, decl.type_private, imm
         end
     | Type_variant cstrs ->
         tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
-        decl.type_private
+        decl.type_private, Type_immediacy.Unknown
     | Type_record(lbls, _rep) ->
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
-        decl.type_private
+        decl.type_private, Type_immediacy.Unknown
     | Type_open ->
         tree_of_manifest Otyp_open,
-        decl.type_private
+        decl.type_private, Type_immediacy.Unknown
   in
     { otype_name = name;
       otype_params = args;
       otype_type = ty;
       otype_private = priv;
-      otype_immediate = Type_immediacy.of_attributes decl.type_attributes;
+      otype_immediate = imm;
       otype_unboxed = decl.type_unboxed.unboxed;
       otype_cstrs = constraints }
 
@@ -1635,7 +1635,7 @@ let dummy =
   {
     type_params = [];
     type_arity = 0;
-    type_kind = Type_abstract;
+    type_kind = Types.kind_abstract;
     type_private = Public;
     type_manifest = None;
     type_variance = [];
@@ -1644,7 +1644,6 @@ let dummy =
     type_expansion_scope = Btype.lowest_level;
     type_loc = Location.none;
     type_attributes = [];
-    type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
     type_uid = Uid.internal_not_actually_unique;
   }

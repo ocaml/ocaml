@@ -359,13 +359,12 @@ type type_declaration =
     type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: Type_immediacy.t;
     type_unboxed: unboxed_status;
     type_uid: Uid.t;
   }
 
 and type_kind =
-    Type_abstract
+    Type_abstract of {immediate: Type_immediacy.t}
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
   | Type_open
@@ -414,6 +413,9 @@ val unboxed_false_default_false : unboxed_status
 val unboxed_false_default_true : unboxed_status
 val unboxed_true_default_false : unboxed_status
 val unboxed_true_default_true : unboxed_status
+
+val kind_abstract : type_kind
+val decl_is_abstract : type_declaration -> bool
 
 type extension_constructor =
   {
