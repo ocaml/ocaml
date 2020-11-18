@@ -877,8 +877,8 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       int stopped;
 
       callstack = capture_callstack(alloc_idx);
-      t_idx = new_tracked(n_samples, alloc_wosz,
-                          SRC_NORMAL, 1, Placeholder_offs(alloc_ofs), callstack);
+      t_idx = new_tracked(n_samples, alloc_wosz, SRC_NORMAL, 1,
+                          Placeholder_offs(alloc_ofs), callstack);
       if (t_idx == Invalid_index) continue;
       res = run_alloc_callback_exn(t_idx);
       /* Has [caml_memprof_stop] been called during the callback? */
