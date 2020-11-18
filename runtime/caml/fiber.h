@@ -26,6 +26,14 @@ struct stack_info {
   value* exception_ptr;
 #endif
   struct stack_handler* handler;
+
+  /* [size_class] is a multiple of [caml_fiber_wsz] if pooled. If unpooled, it
+   * is [-1].
+   *
+   * Stacks may be unpooled if either the stack size is not a multiple of
+   * [caml_fiber_wsz] (may be the case in debug mode) or the stack is bigger
+   * than pooled sizes. */
+  intnat size_class;
   uintnat magic;
 };
 
@@ -66,12 +74,19 @@ struct c_stack_link {
   struct c_stack_link* prev;
 };
 
+#define NUM_STACK_SIZE_CLASSES 5
+
+struct stack_cache {
+  struct stack_info* pool[NUM_STACK_SIZE_CLASSES];
+};
+
 /* The table of global identifiers */
 extern caml_root caml_global_data;
 
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
+struct stack_cache* caml_init_stack_cache (void);
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs);
 /* try to grow the stack until at least required_size words are available.
