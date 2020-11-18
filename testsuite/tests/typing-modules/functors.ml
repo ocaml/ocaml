@@ -528,11 +528,7 @@ Error: The functor application is ill-typed.
             Definition of module type b/1
           Line 2, characters 0-13:
             Definition of module type b/2
-       3. Modules do not match:
-            $S3 = struct type w end
-          is not included in
-            y
-          The type `y' is required but not provided
+       3. Modules do not match: $S3 = struct type w end is not included in y
 |}]
 
 module F(X:a) = struct type t end
@@ -1025,7 +1021,6 @@ Error: Signature mismatch:
             $S3 = sig type y' end
           does not include
             $T3 = sig type z end
-          The type `y'' is required but not provided
        4. Module types $S4 and $T4 match
 |}]
 
@@ -1170,12 +1165,10 @@ Error: Signature mismatch:
           does not include
             $T2 =
             sig type in_ val thunder : in_ val lightning : in_ type rain end
-          The type `pain' is required but not provided
        3. Module types do not match:
             $S3 = sig type when_ type the type hurlyburly's type gone end
           does not include
             $T3 = sig type when_ type the type hurlyburly's type done_ end
-          The type `gone' is required but not provided
        4. Module types do not match:
             $S4 =
             sig
@@ -1196,7 +1189,6 @@ Error: Signature mismatch:
               type and_
               type won
             end
-          The type `last' is required but not provided
        5. Module types do not match:
             $S5 =
             sig
@@ -1221,18 +1213,14 @@ Error: Signature mismatch:
               type of_
               type sun
             end
-          The type `the' is required but not provided
-          The type `era' is required but not provided
        6. Module types do not match:
             $S6 = sig type where type the type lace end
           does not include
             $T6 = sig type where type the type place end
-          The type `lace' is required but not provided
        7. Module types do not match:
             $S7 = sig type upon type the type heart end
           does not include
             $T7 = sig type upon type the type heath end
-          The type `heart' is required but not provided
 |}]
 
 

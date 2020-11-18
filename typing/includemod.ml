@@ -1559,8 +1559,14 @@ module Linearize = struct
     Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
     match sgs.missings, sgs.incompatibles with
     | a :: l , _ ->
-        let more = List.map (Location.msg "%a" Pp.missing_field) l in
-        let msgs = with_context ctx Pp.missing_field a :: more @ before in
+        let more =
+          if expansion_token then
+            with_context ctx Pp.missing_field a
+            :: List.map (Location.msg "%a" Pp.missing_field) l
+          else
+            []
+        in
+        let msgs = more @ before in
         { msgs; post = None }
     | [], a :: _ -> sigitem ~expansion_token ~env:sgs.env ~before ~ctx a
     | [], [] -> assert false
