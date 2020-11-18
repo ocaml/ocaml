@@ -187,8 +187,9 @@ module Variance = struct
   let conjugate v = swap May_pos May_neg (swap Pos Neg v)
   let get_upper v = (mem May_pos v, mem May_neg v)
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
-  let unknown_signature ~arity =
-    Misc.replicate_list unknown arity
+  let unknown_signature ~injective ~arity =
+    let v = if injective then set Inj true unknown else unknown in
+    Misc.replicate_list v arity
 end
 
 module Separability = struct
