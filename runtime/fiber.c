@@ -51,14 +51,15 @@ static inline struct stack_info* alloc_for_stack (mlsize_t wosize)
 static inline intnat stack_size_class (mlsize_t wosize)
 {
   intnat size_class = 0;
+  mlsize_t size_class_wsz = caml_fiber_wsz;
 
-  if (wosize % caml_fiber_wsz != 0)
-    return -1;
-  wosize = wosize / caml_fiber_wsz;
+  /* wosize is size_class N iff wosize == caml_fiber_wsz * 2**N */
   do {
-    if ((wosize = wosize >> 1) == 0)
+    if (wosize == size_class_wsz)
       return size_class;
-  } while(size_class++ < NUM_STACK_SIZE_CLASSES);
+    ++size_class;
+    size_class_wsz += size_class_wsz;
+  } while (size_class < NUM_STACK_SIZE_CLASSES);
 
   return -1;
 }
