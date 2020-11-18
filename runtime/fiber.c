@@ -26,19 +26,52 @@
 #define fiber_debug_log(...)
 #endif
 
+struct stack_cache* caml_init_stack_cache () {
+  int i;
+
+  struct stack_cache* stack_cache =
+    (struct stack_cache*)caml_stat_alloc_noexc(sizeof(struct stack_cache));
+  if (stack_cache == NULL)
+    return NULL;
+
+  for(i = 0; i < NUM_STACK_SIZE_CLASSES; i++)
+    stack_cache->pool[i] = NULL;
+
+  return stack_cache;
+}
+
+static inline struct stack_info* alloc_for_stack (mlsize_t wosize)
+{
+  return caml_stat_alloc_noexc(sizeof(struct stack_info) +
+                               sizeof(value) * wosize +
+                               8 /* for alignment */ +
+                               sizeof(struct stack_handler));
+}
+
 /* allocate a stack with at least "wosize" usable words of stack */
 static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
 {
   struct stack_info* stack;
   struct stack_handler* hand;
+  intnat size_class;
 
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
-  stack = caml_stat_alloc_noexc(sizeof(struct stack_info) +
-                          sizeof(value) * wosize +
-                          8 /* for alignment */ +
-                          sizeof(struct stack_handler));
+  if (wosize % caml_fiber_wsz == 0 &&
+      (size_class = wosize / caml_fiber_wsz - 1) < NUM_STACK_SIZE_CLASSES) {
+    if (Caml_state->stack_cache->pool[size_class] == NULL) {
+      stack = alloc_for_stack(wosize);
+      stack->size_class = size_class;
+    } else {
+      stack = Caml_state->stack_cache->pool[size_class];
+      CAMLassert(stack->size_class == size_class);
+      Caml_state->stack_cache->pool[size_class] = stack->handler->parent;
+    }
+  } else {
+    stack = alloc_for_stack(wosize);
+    stack->size_class = -1;
+  }
   if (stack == NULL) {
     return NULL;
   }
@@ -368,7 +401,12 @@ void caml_free_stack (struct stack_info* stack)
 #ifdef DEBUG
   memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif
-  caml_stat_free(stack);
+  if (stack->size_class != -1) {
+    stack->handler->parent = Caml_state->stack_cache->pool[stack->size_class];
+    Caml_state->stack_cache->pool[stack->size_class] = stack;
+  } else {
+    caml_stat_free(stack);
+  }
 }
 
 CAMLprim value caml_clone_continuation (value cont)
