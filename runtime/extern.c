@@ -1127,7 +1127,11 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 #endif
 }
 
-static intnat reachable_words_traverse(int traverse, int scan_closures, value v) {
+static intnat reachable_words_traverse(
+                                       int traverse,
+                                       int scan_closures,
+                                       value v
+                                       ) {
   struct extern_item * sp = extern_stack;
   intnat size = 0;
   uintnat h = 0;
@@ -1195,7 +1199,11 @@ CAMLprim value caml_obj_reachable_words(value v) {
   return Val_long(size);
 }
 
-CAMLprim value caml_obj_reachable_words_many(value v_scan_closures, value except_values, value values) {
+CAMLprim value caml_obj_reachable_words_many(
+                                             value v_scan_closures,
+                                             value except_values,
+                                             value values
+                                             ) {
   CAMLparam2(except_values, values);
   CAMLlocal1(sizes);
   mlsize_t n_values;
@@ -1203,8 +1211,8 @@ CAMLprim value caml_obj_reachable_words_many(value v_scan_closures, value except
   int j;
 
   /* Protect against [| Obj.repr 42. |] in flat-float array mode */
-  if (Tag_val(values) != 0) caml_invalid_argument("reachable_words_many");
-  if (Tag_val(except_values) != 0) caml_invalid_argument("reachable_words_many");
+  if (Tag_val(values) != 0 || Tag_val(except_values) != 0)
+    caml_invalid_argument("reachable_words_many");
 
   extern_init_position_table();
 
@@ -1215,7 +1223,8 @@ CAMLprim value caml_obj_reachable_words_many(value v_scan_closures, value except
   n_values = Wosize_val(values);
   sizes = caml_alloc(n_values, 0);
   for (j = 0; j < n_values; j++)
-    Field(sizes, j) = Val_long(reachable_words_traverse(1, scan_closures, Field(values, j)));
+    Field(sizes, j) =
+      Val_long(reachable_words_traverse(1, scan_closures, Field(values, j)));
 
   extern_free_stack();
   extern_free_position_table();
