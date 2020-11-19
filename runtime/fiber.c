@@ -74,8 +74,8 @@ static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, struct s
 
   if (size_bucket != NULL && *size_bucket != NULL) {
     stack = *size_bucket;
-    CAMLassert(stack->size_bucket == stack_cache_bucket(wosize));
     *size_bucket = (struct stack_info*)stack->exception_ptr;
+    CAMLassert(stack->size_bucket == stack_cache_bucket(wosize));
     hand = stack->handler;
   } else {
     /* couldn't get a cached stack, so have to create one */
@@ -418,13 +418,16 @@ void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
   CAMLassert(stack->magic == 42);
-#ifdef DEBUG
-  memset(stack, 0x42, (char*)stack->handler - (char*)stack);
-#endif
   if (stack->size_bucket != NULL) {
     stack->exception_ptr = (void*)(*stack->size_bucket);
     *stack->size_bucket = stack;
+#ifdef DEBUG
+    memset(Stack_base(stack), 0x42, (Stack_high(stack)-Stack_base(stack))*sizeof(value));
+#endif
   } else {
+#ifdef DEBUG
+    memset(stack, 0x42, (char*)stack->handler - (char*)stack);
+#endif
     caml_stat_free(stack);
   }
 }
