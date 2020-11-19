@@ -149,5 +149,13 @@ $(filter-out camlinternal%,$(compilerlibref)),\
 latex/compilerlibs_input.tex:
 	echo $(compilerlibs_INPUT)> $@
 
+INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
+.PHONY:install
+install:
+	$(MKDIR) "$(INSTALL_MANODIR)"
+	if test -d man; then \
+	  $(INSTALL_DATA) man/* "$(INSTALL_MANODIR)"; \
+	else : ; fi
+
 clean:
 	rm -rf build man html latex texi Compiler_libs.mld

@@ -412,6 +412,9 @@ endif
 ifneq "$(WITH_OCAMLDOC)" ""
 	$(MAKE) -C ocamldoc install
 endif
+ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
+	$(MAKE) -C api_docgen install
+endif
 	if test -n "$(WITH_DEBUGGER)"; then \
 	  $(MAKE) -C debugger install; \
 	fi
@@ -877,18 +880,18 @@ partialclean::
 
 .PHONY: html_doc
 html_doc: ocamldoc
-	$(MAKE) -C doc html
-	@echo "documentation is in ./doc/html/"
+	$(MAKE) -C api_docgen html
+	@echo "documentation is in ./api_docgen/html/"
 
 .PHONY: manpages
 manpages:
-	$(MAKE) -C doc man
+	$(MAKE) -C api_docgen man
 
 partialclean::
 	$(MAKE) -C ocamldoc clean
 
 partialclean::
-	$(MAKE) -C doc clean
+	$(MAKE) -C api_docgen clean
 
 # The extra libraries
 

@@ -211,7 +211,7 @@ EOF
   cd ..
   if command -v pdflatex &>/dev/null  ; then
     echo Ensuring that all library documentation compiles
-    $MAKE -C doc html latex texi
+    $MAKE -C api_docgen html latex texi
   fi
   $MAKE install
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then

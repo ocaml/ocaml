@@ -30,12 +30,12 @@ TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 .PHONY: html_files
 .PHONY: latex_files
 latex_files:
-	$(MAKE) -C $(SRC)/doc latex
-	cp $(SRC)/doc/latex/*.tex library
+	$(MAKE) -C $(SRC)/api_docgen latex
+	cp $(SRC)/api_docgen/latex/*.tex library
 html_files:
-	$(MAKE) -C $(SRC)/doc html
+	$(MAKE) -C $(SRC)/api_docgen html
 	mkdir -p htmlman/libref
-	cp -r $(SRC)/doc/html/libref $(SRC)/doc/html/compilerlibref htmlman
+	cp -r $(SRC)/api_docgen/html/libref $(SRC)/api_docgen/html/compilerlibref htmlman
 	cp style.css htmlman/libref
 	cp style.css htmlman/compilerlibref
 

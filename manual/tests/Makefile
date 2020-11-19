@@ -1,6 +1,6 @@
 TOPDIR=$(abspath ../..)
 SRC=$(TOPDIR)
-include $(TOPDIR)/doc/Makefile.docfiles
+include $(TOPDIR)/api_docgen/Makefile.docfiles
 include $(TOPDIR)/Makefile.tools
 MANUAL=$(TOPDIR)/manual/manual
 
