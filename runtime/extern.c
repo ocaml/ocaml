@@ -1127,101 +1127,98 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 #endif
 }
 
-static void reachable_words_full(
-                                 int scan_closures,
-                                 mlsize_t ignored,
-                                 mlsize_t n_values, value *values,
-                                 intnat *sizes
-                                 )
-{
-  value v;
-  intnat size;
-  struct extern_item * sp;
+static intnat reachable_words_traverse(int traverse, int scan_closures, value v) {
+  struct extern_item * sp = extern_stack;
+  intnat size = 0;
   uintnat h = 0;
   uintnat pos;
-  mlsize_t j;
 
-  extern_init_position_table();
-  sp = extern_stack;
-  size = 0;
-
-  for (j = 0; j < n_values; j++) {
-    v = values[j];
-    while (1) {
-      if (Is_long(v)) {
-        /* Tagged integers contribute 0 to the size, nothing to do */
-      } else if (! Is_in_heap_or_young(v)) {
-        /* Out-of-heap blocks contribute 0 to the size, nothing to do */
-        /* However, in no-naked-pointers mode, we don't distinguish
-           between major heap blocks and out-of-heap blocks,
-           and the test above is always false,
-           so we end up counting out-of-heap blocks too. */
-      } else if (extern_lookup_position(v, &pos, &h)) {
-        /* Already seen and counted, nothing to do */
-      } else {
-        header_t hd = Hd_val(v);
-        tag_t tag = Tag_hd(hd);
-        mlsize_t sz = Wosize_hd(hd);
-        /* Infix pointer: go back to containing closure */
-        if (tag == Infix_tag) {
-          v = v - Infix_offset_hd(hd);
-          continue;
-        }
-        /* Remember that we've visited this block */
-        extern_record_location(v, h);
-        if (ignored <= j && (scan_closures || tag != Closure_tag)) {
-          /* The block contributes to the total size */
-          size += 1 + sz;           /* header word included */
-          if (tag < No_scan_tag) {
-            /* i is the position of the first field to traverse recursively */
-            uintnat i =
-              tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;
-            if (i < sz) {
-              if (i < sz - 1) {
-                /* Remember that we need to count fields i + 1 ... sz - 1 */
-                sp++;
-                if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
-                sp->v = &Field(v, i + 1);
-                sp->count = sz - i - 1;
-              }
-              /* Continue with field i */
-              v = Field(v, i);
-              continue;
+  while (1) {
+    if (Is_long(v)) {
+      /* Tagged integers contribute 0 to the size, nothing to do */
+    } else if (! Is_in_heap_or_young(v)) {
+      /* Out-of-heap blocks contribute 0 to the size, nothing to do */
+      /* However, in no-naked-pointers mode, we don't distinguish
+         between major heap blocks and out-of-heap blocks,
+         and the test above is always false,
+         so we end up counting out-of-heap blocks too. */
+    } else if (extern_lookup_position(v, &pos, &h)) {
+      /* Already seen and counted, nothing to do */
+    } else {
+      header_t hd = Hd_val(v);
+      tag_t tag = Tag_hd(hd);
+      mlsize_t sz = Wosize_hd(hd);
+      /* Infix pointer: go back to containing closure */
+      if (tag == Infix_tag) {
+        v = v - Infix_offset_hd(hd);
+        continue;
+      }
+      /* Remember that we've visited this block */
+      extern_record_location(v, h);
+      if (traverse && (scan_closures || tag != Closure_tag)) {
+        /* The block contributes to the total size */
+        size += 1 + sz;           /* header word included */
+        if (tag < No_scan_tag) {
+          /* i is the position of the first field to traverse recursively */
+          uintnat i =
+            tag == Closure_tag ? Start_env_closinfo(Closinfo_val(v)) : 0;
+          if (i < sz) {
+            if (i < sz - 1) {
+              /* Remember that we need to count fields i + 1 ... sz - 1 */
+              sp++;
+              if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+              sp->v = &Field(v, i + 1);
+              sp->count = sz - i - 1;
             }
+            /* Continue with field i */
+            v = Field(v, i);
+            continue;
           }
         }
       }
-      /* Pop one more item to traverse, if any */
-      if (sp == extern_stack) break;
-      v = *((sp->v)++);
-      if (--(sp->count) == 0) sp--;
     }
-    sizes[j] = Val_long(size);
+    /* Pop one more item to traverse, if any */
+    if (sp == extern_stack) break;
+    v = *((sp->v)++);
+    if (--(sp->count) == 0) sp--;
   }
-  extern_free_stack();
-  extern_free_position_table();
+  return size;
 }
 
 
 CAMLprim value caml_obj_reachable_words(value v) {
-  value size;
-  reachable_words_full(1, 0, 1, &v, &size);
-  return size;
+  intnat size;
+  extern_init_position_table();
+  size = reachable_words_traverse(1, 1, v);
+  extern_free_stack();
+  extern_free_position_table();
+  return Val_long(size);
 }
 
-CAMLprim value caml_obj_reachable_words_many(value v_scan_closures, value v_ignored, value values) {
-  CAMLparam1(values);
+CAMLprim value caml_obj_reachable_words_many(value v_scan_closures, value except_values, value values) {
+  CAMLparam2(except_values, values);
   CAMLlocal1(sizes);
   mlsize_t n_values;
-  mlsize_t ignored = Long_val(v_ignored);
   int scan_closures = Bool_val(v_scan_closures);
+  int j;
 
   /* Protect against [| Obj.repr 42. |] in flat-float array mode */
   if (Tag_val(values) != 0) caml_invalid_argument("reachable_words_many");
-  n_values = Wosize_val(values);
-  if (ignored < 0 || n_values < ignored) caml_invalid_argument("reachable_words_many");
+  if (Tag_val(except_values) != 0) caml_invalid_argument("reachable_words_many");
 
+  extern_init_position_table();
+
+  n_values = Wosize_val(except_values);
+  for (j = 0; j < n_values; j++)
+    reachable_words_traverse(0, 0, Field(except_values, j));
+
+  n_values = Wosize_val(values);
   sizes = caml_alloc(n_values, 0);
-  reachable_words_full(scan_closures, ignored, n_values, &Field(values, 0), &Field(sizes, 0));
+  for (j = 0; j < n_values; j++)
+    Field(sizes, j) = Val_long(reachable_words_traverse(1, scan_closures, Field(values, j)));
+
+  extern_free_stack();
+  extern_free_position_table();
+
   CAMLreturn(sizes);
 }
