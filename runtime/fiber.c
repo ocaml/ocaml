@@ -75,7 +75,7 @@ static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, intnat s
   if (size_class >= 0 && Caml_state->stack_cache[size_class] != NULL) {
     stack = Caml_state->stack_cache[size_class];
     CAMLassert(stack->size_class == size_class);
-    Caml_state->stack_cache[size_class] = stack->handler->parent;
+    Caml_state->stack_cache[size_class] = (struct stack_info*)stack->exception_ptr;
     hand = stack->handler;
   } else {
     /* couldn't get a cached stack, so have to create one */
@@ -422,7 +422,7 @@ void caml_free_stack (struct stack_info* stack)
   memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif
   if (stack->size_class != -1) {
-    stack->handler->parent = Caml_state->stack_cache[stack->size_class];
+    stack->exception_ptr = (void*)Caml_state->stack_cache[stack->size_class];
     Caml_state->stack_cache[stack->size_class] = stack;
   } else {
     caml_stat_free(stack);
