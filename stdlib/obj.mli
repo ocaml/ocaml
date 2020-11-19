@@ -39,7 +39,11 @@ external reachable_words : t -> int = "caml_obj_reachable_words"
      @Since 4.04
   *)
 
-val reachable_words_many : ?without_closures:unit -> ?except:t array -> t array -> int array
+val reachable_words_many :
+  ?without_closures:unit ->
+  ?except:t array ->
+  t array ->
+  int array
 (** Given an array of values [values], returns an array of integers
     [sizes] where [sizes.(i)] is the total size of all heap blocks
     accessible from [values.(i)] but not from any [values.(j)] with [j
