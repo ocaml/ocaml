@@ -49,7 +49,7 @@ val reachable_words_many : ?without_closures:unit -> ?except:t array -> t array 
 
     For instance [(reachable_words_many [|v1;v2|]).(1)] is the number
     of heap words accessible from [v2] but not from [v1] and
-    [reachable_words_many ~except:[|v1|] [|v2|]] is the number
+    [(reachable_words_many ~except:[|v1|] [|v2|]).(0)] is the number
     of heap words accessible from [v2] without crossing [v1].
 
      @Since X.YY
