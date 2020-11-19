@@ -27,13 +27,13 @@ struct stack_info {
 #endif
   struct stack_handler* handler;
 
-  /* [size_class] is a multiple of [caml_fiber_wsz] if pooled. If unpooled, it
-   * is [-1].
+  /* [size_bucket] is a pointer to a bucket in Caml->stack_cache if this
+   * size is pooled. If unpooled, it is NULL.
    *
-   * Stacks may be unpooled if either the stack size is not a multiple of
+   * Stacks may be unpooled if either the stack size is not 2**N multiple of
    * [caml_fiber_wsz] (may be the case in debug mode) or the stack is bigger
    * than pooled sizes. */
-  intnat size_class;
+  struct stack_info** size_bucket;
   uintnat magic;
 };
 

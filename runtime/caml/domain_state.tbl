@@ -38,6 +38,7 @@ DOMAIN_STATE(struct c_stack_link*, c_stack)
 /* The C stack associated with this domain. Used by this domain to perform external calls. */
 
 DOMAIN_STATE(struct stack_info**, stack_cache)
+/* This is a list of freelist buckets of stacks */
 
 DOMAIN_STATE(value*, gc_regs_buckets)
 
