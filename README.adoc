@@ -62,7 +62,7 @@ compiler currently runs on the following platforms:
 
 | x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
 | x86 32 bits    | Linux, Windows                  |  FreeBSD, NetBSD, OpenBSD
-| ARM 64 bits    | Linux                           |  FreeBSD
+| ARM 64 bits    | Linux, macOS                    |  FreeBSD
 | ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
 | Power 64 bits  | Linux                           |
 | Power 32 bits  |                                 |  Linux
