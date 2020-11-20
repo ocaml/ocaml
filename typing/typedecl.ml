@@ -114,7 +114,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
-      type_variance = Variance.unknown_signature ~arity;
+      type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
@@ -403,7 +403,7 @@ let transl_declaration env sdecl (id, uid) =
         type_kind = kind;
         type_private = sdecl.ptype_private;
         type_manifest = man;
-        type_variance = Variance.unknown_signature ~arity;
+        type_variance = Variance.unknown_signature ~injective:false ~arity;
         type_separability = Types.Separability.default_signature ~arity;
         type_is_newtype = false;
         type_expansion_scope = Btype.lowest_level;
@@ -1531,7 +1531,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
 
 (* Approximate a type declaration: just make all types abstract *)
 
-let abstract_type_decl arity =
+let abstract_type_decl ~injective arity =
   let rec make_params n =
     if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
   Ctype.begin_def();
@@ -1541,7 +1541,7 @@ let abstract_type_decl arity =
       type_kind = Type_abstract;
       type_private = Public;
       type_manifest = None;
-      type_variance = Variance.unknown_signature ~arity;
+      type_variance = Variance.unknown_signature ~injective ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
@@ -1559,8 +1559,9 @@ let approx_type_decl sdecl_list =
   let scope = Ctype.create_scope () in
   List.map
     (fun sdecl ->
+      let injective = sdecl.ptype_kind <> Ptype_abstract in
       (Ident.create_scoped ~scope sdecl.ptype_name.txt,
-       abstract_type_decl (List.length sdecl.ptype_params)))
+       abstract_type_decl ~injective (List.length sdecl.ptype_params)))
     sdecl_list
 
 (* Variant of check_abbrev_recursion to check the well-formedness
