@@ -26,8 +26,45 @@
 #define fiber_debug_log(...)
 #endif
 
-/* allocate a stack with at least "wosize" usable words of stack */
-static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
+struct stack_info** caml_alloc_stack_cache () {
+  int i;
+
+  struct stack_info** stack_cache =
+    (struct stack_info**)caml_stat_alloc_noexc(sizeof(struct stack_info*)*NUM_STACK_SIZE_CLASSES);
+  if (stack_cache == NULL)
+    return NULL;
+
+  for(i = 0; i < NUM_STACK_SIZE_CLASSES; i++)
+    stack_cache[i] = NULL;
+
+  return stack_cache;
+}
+
+static inline struct stack_info* alloc_for_stack (mlsize_t wosize)
+{
+  return caml_stat_alloc_noexc(sizeof(struct stack_info) +
+                               sizeof(value) * wosize +
+                               8 /* for alignment */ +
+                               sizeof(struct stack_handler));
+}
+
+static inline struct stack_info** stack_cache_bucket (mlsize_t wosize) {
+  mlsize_t size_bucket_wsz = caml_fiber_wsz;
+  struct stack_info** size_bucket = Caml_state->stack_cache;
+  struct stack_info** end = size_bucket + NUM_STACK_SIZE_CLASSES;
+
+  /* wosize is in stack cache bucket n iff wosize == caml_fiber_wsz * 2**n */
+  while (size_bucket < end) {
+    if (wosize == size_bucket_wsz)
+      return size_bucket;
+    ++size_bucket;
+    size_bucket_wsz += size_bucket_wsz;
+  }
+
+  return NULL;
+}
+
+static struct stack_info* alloc_size_class_stack_noexc(mlsize_t wosize, struct stack_info** size_bucket, value hval, value hexn, value heff)
 {
   struct stack_info* stack;
   struct stack_handler* hand;
@@ -35,35 +72,51 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
-  stack = caml_stat_alloc_noexc(sizeof(struct stack_info) +
-                          sizeof(value) * wosize +
-                          8 /* for alignment */ +
-                          sizeof(struct stack_handler));
-  if (stack == NULL) {
-    return NULL;
+  if (size_bucket != NULL && *size_bucket != NULL) {
+    stack = *size_bucket;
+    *size_bucket = (struct stack_info*)stack->exception_ptr;
+    CAMLassert(stack->size_bucket == stack_cache_bucket(wosize));
+    hand = stack->handler;
+  } else {
+    /* couldn't get a cached stack, so have to create one */
+    stack = alloc_for_stack(wosize);
+    if (stack == NULL) {
+      return NULL;
+    }
+
+    stack->size_bucket = size_bucket;
+
+    /* Ensure 16-byte alignment because some architectures require it */
+    hand = (struct stack_handler*)
+      (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
+       & ((uintnat)-1 << 4));
+    stack->handler = hand;
   }
 
-  /* Ensure 16-byte alignment because some architectures require it */
-  hand = (struct stack_handler*)
-    (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
-     & ((uintnat)-1 << 4));
   hand->handle_value = hval;
   hand->handle_exn = hexn;
   hand->handle_effect = heff;
   hand->parent = NULL;
-  stack->handler = hand;
   stack->sp = (value*)hand;
   stack->exception_ptr = NULL;
   stack->magic = 42;
   CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
              Stack_high(stack) - Stack_base(stack) == wosize + 1);
   return stack;
+
+}
+
+/* allocate a stack with at least "wosize" usable words of stack */
+static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
+{
+  struct stack_info** size_bucket = stack_cache_bucket (wosize);
+  return alloc_size_class_stack_noexc(wosize, size_bucket, hval, hexn, heff);
 }
 
 #ifdef NATIVE_CODE
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
-  struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
+  struct stack_info* stack = alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache, hval, hexn, heff);
 
   if (!stack) caml_raise_out_of_memory();
 
@@ -178,7 +231,7 @@ caml_root caml_global_data;
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
-  struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
+  struct stack_info* stack = alloc_size_class_stack_noexc(caml_fiber_wsz, Caml_state->stack_cache, hval, hexn, heff);
   value* sp;
 
   if (!stack) caml_raise_out_of_memory();
@@ -365,10 +418,18 @@ void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
   CAMLassert(stack->magic == 42);
+  if (stack->size_bucket != NULL) {
+    stack->exception_ptr = (void*)(*stack->size_bucket);
+    *stack->size_bucket = stack;
 #ifdef DEBUG
-  memset(stack, 0x42, (char*)stack->handler - (char*)stack);
+    memset(Stack_base(stack), 0x42, (Stack_high(stack)-Stack_base(stack))*sizeof(value));
 #endif
-  caml_stat_free(stack);
+  } else {
+#ifdef DEBUG
+    memset(stack, 0x42, (char*)stack->handler - (char*)stack);
+#endif
+    caml_stat_free(stack);
+  }
 }
 
 CAMLprim value caml_clone_continuation (value cont)
@@ -410,6 +471,7 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use_noexc (value cont)
 {
+  CAMLnoalloc;
   value v;
   value null_stk = Val_ptr(NULL);
 

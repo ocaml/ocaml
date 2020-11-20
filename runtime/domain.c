@@ -274,15 +274,20 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
       goto reallocate_minor_heap_failure;
     }
 
-    Caml_state->current_stack =
-        caml_alloc_main_stack(Stack_size / sizeof(value));
-    if(Caml_state->current_stack == NULL) {
-      goto alloc_main_stack_failure;
+    domain_state->dls_root = caml_create_root_noexc(Val_unit);
+    if(domain_state->dls_root == NULL) {
+      goto create_root_failure;
     }
 
-    domain_state->dls_root = caml_create_root_noexc(Val_unit);
-    if(Caml_state->dls_root == NULL) {
-      goto create_root_failure;
+    domain_state->stack_cache = caml_alloc_stack_cache();
+    if(domain_state->stack_cache == NULL) {
+      goto create_stack_cache_failure;
+    }
+
+    domain_state->current_stack =
+        caml_alloc_main_stack(Stack_size / sizeof(value));
+    if(domain_state->current_stack == NULL) {
+      goto alloc_main_stack_failure;
     }
 
     domain_state->backtrace_buffer = NULL;
@@ -292,9 +297,11 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 #endif
     goto domain_init_complete;
 
-create_root_failure:
-  caml_free_stack(Caml_state->current_stack);
+  caml_free_stack(domain_state->current_stack);
 alloc_main_stack_failure:
+create_stack_cache_failure:
+  caml_delete_root(domain_state->dls_root);
+create_root_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
