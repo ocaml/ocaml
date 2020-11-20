@@ -1,0 +1,72 @@
+name: main
+
+on: [push, pull_request]
+
+jobs:
+  no-naked-pointers:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: configure tree
+      run: ./configure --disable-naked-pointers --disable-stdlib-manpages
+    - name: Build
+      run: |
+        make -j world.opt
+    - name: Run the testsuite
+      run: |
+        make -C testsuite USE_RUNTIME=d all
+  flambda:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh
+  i386:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Packages
+      run: |
+        sudo apt install gcc-multilib gfortran-multilib
+    - name: Build
+      run: |
+        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh
+  full:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Packages
+      run: |
+        sudo apt install texlive-latex-extra texlive-fonts-recommended
+    - name: Build
+      run: |
+        XARCH=x64 bash -xe tools/ci/actions/runner.sh
+  static:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      run: |
+        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh
+  minimum:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      run: |
+        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh
+  parallel:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh
