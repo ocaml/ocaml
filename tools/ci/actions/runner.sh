@@ -21,7 +21,9 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
-BuildAndTest () {
+export PATH=$PREFIX/bin:$PATH
+
+Configure () {
   mkdir -p $PREFIX
   cat<<EOF
 ------------------------------------------------------------------------
@@ -72,8 +74,9 @@ EOF
     exit 1
     ;;
   esac
+}
 
-  export PATH=$PREFIX/bin:$PATH
+Build () {
   if [ "$MIN_BUILD" = "1" ] ; then
     if $MAKE world.opt ; then
       echo "world.opt is not supposed to work!"
@@ -87,6 +90,9 @@ EOF
   fi
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
+}
+
+Test () {
   cd testsuite
   echo Running the testsuite with the normal runtime
   $MAKE all
@@ -99,7 +105,13 @@ EOF
     echo Ensuring that all library documentation compiles
     $MAKE -C ocamldoc html_doc pdf_doc texi_doc
   fi
+}
+
+Install () {
   $MAKE install
+}
+
+Checks () {
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
@@ -135,4 +147,12 @@ EOF
 
 }
 
-BuildAndTest
+case $1 in
+configure) Configure;;
+build) Build;;
+test) Test;;
+install) Install;;
+other-checks) Checks;;
+*) echo "Unknown CI instruction: $1"
+   exit 1;;
+esac

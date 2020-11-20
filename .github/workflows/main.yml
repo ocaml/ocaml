@@ -21,9 +21,21 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: configure tree
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh
+        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
   i386:
     runs-on: ubuntu-latest
     steps:
@@ -32,9 +44,21 @@ jobs:
     - name: Packages
       run: |
         sudo apt install gcc-multilib gfortran-multilib
+    - name: configure tree
+      run: |
+        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh
+        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh other-checks
   full:
     runs-on: ubuntu-latest
     steps:
@@ -47,30 +71,78 @@ jobs:
     - name: distclean
       run: |
         make distclean
+    - name: configure tree
+      run: |
+        XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 bash -xe tools/ci/actions/runner.sh
+        XARCH=x64 bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        XARCH=x64 bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        XARCH=x64 bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        XARCH=x64 bash -xe tools/ci/actions/runner.sh other-checks
   static:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: configure tree
+      run: |
+        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh
+        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh other-checks
   minimum:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: configure tree
+      run: |
+        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh
+        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh other-checks
   parallel:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: configure tree
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh
+        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh test
+    - name: Install
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh install
+    - name: Other checks
+      run: |
+        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh other-checks
