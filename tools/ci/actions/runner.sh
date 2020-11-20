@@ -34,9 +34,6 @@ request can be merged.
 ------------------------------------------------------------------------
 EOF
 
-  # Ensure that make distclean can be run from an empty tree
-  $MAKE distclean
-
   if [ "$MIN_BUILD" = "1" ] ; then
     configure_flags="\
       --prefix=$PREFIX \

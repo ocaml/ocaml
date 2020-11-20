@@ -43,6 +43,10 @@ jobs:
     - name: Packages
       run: |
         sudo apt install texlive-latex-extra texlive-fonts-recommended
+  # Ensure that make distclean can be run from an empty tree
+    - name: distclean
+      run: |
+        make distclean
     - name: Build
       run: |
         XARCH=x64 bash -xe tools/ci/actions/runner.sh
