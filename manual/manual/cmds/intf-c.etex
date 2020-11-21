@@ -2163,6 +2163,11 @@ The kind of array elements is one of the following constants:
 \entree{"CAML_BA_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
 \end{tableau}
 %
+\paragraph{Warning:} The expression "Caml_ba_array_val("\var{v}")"
+resolves to a derived pointer: it is not a valid OCaml value but points to
+a memory region managed by the GC. For this reason this value must not be
+stored in any memory location that could be live cross a GC.
+
 The following example shows the passing of a two-dimensional Bigarray
 to a C function and a Fortran function.
 \begin{verbatim}
