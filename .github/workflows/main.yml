@@ -26,16 +26,16 @@ jobs:
         XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh build
+        OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh build
     - name: Run the testsuite
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
+        OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
     - name: Install
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+        OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
     - name: Other checks
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
+        OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
   i386:
     runs-on: ubuntu-latest
     steps:
@@ -49,16 +49,16 @@ jobs:
         XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh build
+        bash -xe tools/ci/actions/runner.sh build
     - name: Run the testsuite
       run: |
-        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh test
+        bash -xe tools/ci/actions/runner.sh test
     - name: Install
       run: |
-        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh install
+        bash -xe tools/ci/actions/runner.sh install
     - name: Other checks
       run: |
-        XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages bash -xe tools/ci/actions/runner.sh other-checks
+        bash -xe tools/ci/actions/runner.sh other-checks
   full:
     runs-on: ubuntu-latest
     steps:
@@ -76,16 +76,16 @@ jobs:
         XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 bash -xe tools/ci/actions/runner.sh build
+        bash -xe tools/ci/actions/runner.sh build
     - name: Run the testsuite
       run: |
-        XARCH=x64 bash -xe tools/ci/actions/runner.sh test
+        bash -xe tools/ci/actions/runner.sh test
     - name: Install
       run: |
-        XARCH=x64 bash -xe tools/ci/actions/runner.sh install
+        bash -xe tools/ci/actions/runner.sh install
     - name: Other checks
       run: |
-        XARCH=x64 bash -xe tools/ci/actions/runner.sh other-checks
+        bash -xe tools/ci/actions/runner.sh other-checks
   static:
     runs-on: ubuntu-latest
     steps:
@@ -96,16 +96,16 @@ jobs:
         XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh build
+        bash -xe tools/ci/actions/runner.sh build
     - name: Run the testsuite
       run: |
-        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh test
+        bash -xe tools/ci/actions/runner.sh test
     - name: Install
       run: |
-        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh install
+        bash -xe tools/ci/actions/runner.sh install
     - name: Other checks
       run: |
-        XARCH=x64 CONFIG_ARG=--disable-shared bash -xe tools/ci/actions/runner.sh other-checks
+        bash -xe tools/ci/actions/runner.sh other-checks
   minimum:
     runs-on: ubuntu-latest
     steps:
@@ -116,16 +116,16 @@ jobs:
         XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh build
+        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh build
     - name: Run the testsuite
       run: |
-        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh test
+        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh test
     - name: Install
       run: |
-        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh install
+        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh install
     - name: Other checks
       run: |
-        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh other-checks
+        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh other-checks
   parallel:
     runs-on: ubuntu-latest
     steps:
@@ -136,13 +136,13 @@ jobs:
         XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure
     - name: Build
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+        MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
     - name: Run the testsuite
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh test
+        MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh test
     - name: Install
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh install
+        MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh install
     - name: Other checks
       run: |
-        XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh other-checks
+        MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh other-checks
