@@ -603,6 +603,12 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9998: Use Sys.opaque_identity in CamlinternalLazy.force
+  This removes extra warning 59 messages when compiling afl-instrumented
+  code with flambda -O3.
+  (Vincent Laviron, report by Louis Gesbert, review by Gabriel Scherer and
+   Pierre Chambart)
+
 - #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
   (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
 
