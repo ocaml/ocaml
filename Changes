@@ -606,6 +606,9 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9991: Fix reproducibility for `-no-alias-deps`
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
+
 - #9998: Use Sys.opaque_identity in CamlinternalLazy.force
   This removes extra warning 59 messages when compiling afl-instrumented
   code with flambda -O3.

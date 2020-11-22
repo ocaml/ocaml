@@ -707,20 +707,34 @@ let find_name_module ~mark name tbl =
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if not (Current_unit_name.is_ident id) then
-    let summary =
+  if Current_unit_name.is_ident id then env
+  else begin
+    let material =
+      (* This addition only observably changes the environment if it shadows a
+         non-persistent module already in the environment.
+         (See PR#9345) *)
       match
         IdTbl.find_name wrap_module ~mark:false (Ident.name id) env.modules
       with
-      | exception Not_found | _, Mod_persistent -> env.summary
-      | _ -> Env_persistent (env.summary, id)
+      | exception Not_found | _, Mod_persistent -> false
+      | _ -> true
     in
-    { env with
-      modules = IdTbl.add id Mod_persistent env.modules;
-      summary
-    }
-  else
-    env
+    let summary =
+      if material then Env_persistent (env.summary, id)
+      else env.summary
+    in
+    let modules =
+      (* With [-no-alias-deps], non-material additions should not
+         affect the environment at all. We should only observe the
+         existence of a cmi when accessing components of the module.
+         (See #9991). *)
+      if material || not !Clflags.transparent_modules then
+        IdTbl.add id Mod_persistent env.modules
+      else
+        env.modules
+    in
+    { env with modules; summary }
+  end
 
 let components_of_module ~alerts ~uid env fs ps path addr mty =
   {
