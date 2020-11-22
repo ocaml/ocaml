@@ -84,9 +84,10 @@ DUNE_TAG = 2.6.2
 LAMBDASOUP_TAG = 0.7.1
 MARKUP_TAG = 0.8.2
 UUTF_TAG = v1.0.2
+RE_TAG = 1.9.0
 
 # Duniverse rules - set-up dune and the dependencies in-tree for CI
-duniverse: dune/dune.exe markup.ml uutf lambdasoup
+duniverse: dune/dune.exe re markup.ml uutf lambdasoup
 
 dune/dune.exe: dune
 	cd dune; ocaml bootstrap.ml
@@ -99,6 +100,13 @@ dune:
 
 distclean::
 	rm -rf dune
+
+re:
+	git clone https://github.com/ocaml/ocaml-re.git -n -o upstream
+	cd ocaml-re; $(GIT_CHECKOUT) $(RE_TAG)
+
+distclean::
+	rm -rf ocaml-re
 
 lambdasoup:
 	git clone https://github.com/aantron/lambdasoup.git -n -o upstream
