@@ -964,7 +964,7 @@ commands:
 $ ocamlc -o gcd gcd.ml
 $ ./gcd 6 9
 3
-$ ./fib 7 11
+$ ./gcd 7 11
 1
 \end{verbatim}
 

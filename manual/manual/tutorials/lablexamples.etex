@@ -261,7 +261,7 @@ UnixLabels.write : file_descr -> buf:bytes -> pos:int -> len:int -> unit
 When there are several objects of same nature and role, they are all
 left unlabeled.
 \begin{alltt}
-"ListLabels.iter2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit"
+"ListLabels.iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit"
 \end{alltt}
 
 When there is no preferable object, all arguments are labeled.
