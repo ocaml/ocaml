@@ -101,10 +101,11 @@ Test () {
     $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
   fi
   cd ..
-  if command -v pdflatex &>/dev/null  ; then
-    echo Ensuring that all library documentation compiles
-    $MAKE -C ocamldoc html_doc pdf_doc texi_doc
-  fi
+}
+
+API_Docs () {
+  echo Ensuring that all library documentation compiles
+  $MAKE -C ocamldoc html_doc pdf_doc texi_doc
 }
 
 Install () {
@@ -151,6 +152,7 @@ case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
+api-docs) API_Docs;;
 install) Install;;
 other-checks) Checks;;
 *) echo "Unknown CI instruction: $1"

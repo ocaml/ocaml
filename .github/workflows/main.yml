@@ -60,6 +60,9 @@ jobs:
     - name: Run the testsuite
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
+    - name: Build API Documentation
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh api-docs
     - name: Install
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
