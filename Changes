@@ -22,6 +22,11 @@ Working version
 - #9650, #9651: keep refactoring the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
+- #10007: Driver.compile_common: when typing a .ml file, return the
+  compilation unit signature (inferred or from the .cmi) in addition
+  to the implementation and the coercion.
+  (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
+
 ### Build system:
 
 ### Bug fixes:
