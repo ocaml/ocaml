@@ -4884,25 +4884,63 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let is_immediate = function
-  | Type_immediacy.Unknown -> false
-  | Type_immediacy.Always -> true
-  | Type_immediacy.Always_on_64bits ->
-      (* In bytecode, we don't know at compile time whether we are
-         targeting 32 or 64 bits. *)
-      !Clflags.native_code && Sys.word_size = 64
-
-let immediacy env typ =
-   match (repr typ).desc with
-  | Tconstr(p, _args, _abbrev) ->
-    begin try
-      let type_decl = Env.find_type p env in
-      type_decl.type_immediate
-    with Not_found -> Type_immediacy.Unknown
-    (* This can happen due to e.g. missing -I options,
-       causing some .cmi files to be unavailable.
-       Maybe we should emit a warning. *)
+(* We use expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
+let rec get_unboxed_type_representation env ty fuel =
+  if fuel < 0 then None else
+  let ty = repr (expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr (p, args, _) ->
+    begin match Env.find_type p env with
+    | exception Not_found -> Some ty
+    | {type_unboxed = {unboxed = false}} -> Some ty
+    | {type_params; type_kind =
+         Type_record ([{ld_type = ty2; _}], _)
+       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
+       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
+      ->
+        let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
+        get_unboxed_type_representation env
+          (apply env type_params ty2 args) (fuel - 1)
+    | {type_kind=Type_abstract _} -> None
+          (* This case can occur when checking a recursive unboxed type
+             declaration. *)
+    | _ -> assert false (* only the above can be unboxed *)
     end
+  | _ -> Some ty
+
+let get_unboxed_type_representation env ty =
+  (* Do not give too much fuel: PR#7424 *)
+  get_unboxed_type_representation env ty 100
+
+let kind_immediacy = function
+  | Type_open | Type_record _ -> Type_immediacy.Unknown
+  | Type_abstract { immediate } -> immediate
+  | Type_variant cstrs ->
+     if List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs
+     then Type_immediacy.Unknown
+     else Type_immediacy.Always
+
+let rec check_type_immediate env ty imm =
+  match (repr ty).desc with
+  | Tconstr(p, _args, _abbrev) ->
+     begin match Env.find_type p env with
+     | { type_unboxed = { unboxed = true; _ }; _ } ->
+        begin match get_unboxed_type_representation env ty with
+        | Some ty' -> check_type_immediate env ty' imm
+        | None -> Type_immediacy.coerce Unknown ~as_:imm
+        end
+     | { type_kind = k; _ } when
+         Result.is_ok (Type_immediacy.coerce (kind_immediacy k) ~as_:imm) ->
+        Ok ()
+     | { type_kind = Type_abstract _; _ } ->
+        begin match try_expand_head try_expand_once_opt env ty with
+        | ty' -> check_type_immediate env ty' imm
+        | exception Cannot_expand -> Type_immediacy.coerce Unknown ~as_:imm
+        end
+     | _ -> Type_immediacy.coerce Unknown ~as_:imm
+     | exception Not_found -> Type_immediacy.coerce Unknown ~as_:imm
+     end
   | Tvariant row ->
       let row = Btype.row_repr row in
       (* if all labels are devoid of arguments, not a pointer *)
@@ -4914,9 +4952,30 @@ let immediacy env typ =
             | _ -> false)
           row.row_fields
       then
-        Type_immediacy.Unknown
+        Type_immediacy.coerce Unknown ~as_:imm
       else
-        Type_immediacy.Always
-  | _ -> Type_immediacy.Unknown
+        Type_immediacy.coerce Always ~as_:imm
+  | _ -> Type_immediacy.coerce Unknown ~as_:imm
 
-let maybe_pointer_type env typ = not (is_immediate (immediacy env typ))
+let check_decl_immediate env decl imm =
+  match decl with
+  | { type_unboxed = { unboxed = true; _ };
+      type_kind = ( Type_variant [{cd_args = Cstr_tuple [arg]; _}]
+                  | Type_variant [{cd_args = Cstr_record [{ld_type=arg; _}]; _}]
+                  | Type_record ([{ld_type=arg; _}], _)); _ } ->
+     check_type_immediate env arg imm
+  | { type_kind; type_manifest = None; _ } ->
+     Type_immediacy.coerce (kind_immediacy type_kind) ~as_:imm
+  | { type_kind; type_manifest = Some ty; _ } ->
+     (* Check the kind first, in case of missing cmis *)
+     match Type_immediacy.coerce (kind_immediacy type_kind) ~as_:imm with
+     | Ok () -> Ok ()
+     | _ -> check_type_immediate env ty imm
+
+let maybe_pointer_type env typ =
+  let imm : Type_immediacy.t =
+    (* In bytecode, we don't know at compile time whether we are
+       targeting 32 or 64 bits. *)
+    if !Clflags.native_code && Sys.word_size = 64 then Always_on_64bits
+    else Always in
+  Result.is_error (check_type_immediate env typ imm)

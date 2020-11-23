@@ -37,6 +37,9 @@ Working version
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
+- #10017, #??: Expand aliases if necessary during @@immediate checks
+  (Stephen Dolan, review by Gabriel Scherer?)
+
 OCaml 4.12.0
 ------------
 

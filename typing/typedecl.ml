@@ -136,14 +136,9 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-let get_unboxed_type_representation env ty =
-  match Typedecl_unboxed.get_unboxed_type_representation env ty with
-  | Typedecl_unboxed.This x -> Some x
-  | _ -> None
-
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
-  match get_unboxed_type_representation env ty with
+  match Ctype.get_unboxed_type_representation env ty with
     Some {desc = Tconstr(p, _, _); _} -> Path.same p Predef.path_float
   | _ -> false
 
@@ -326,9 +321,10 @@ let transl_declaration env sdecl (id, uid) =
     | _ -> unboxed_false_default_false (* Not unboxable, mark as boxed *)
   in
   let unbox = unboxed_status.unboxed in
+  let immediate = Type_immediacy.of_attributes sdecl.ptype_attributes in
   let (tkind, kind) =
     match sdecl.ptype_kind with
-      | Ptype_abstract -> Ttype_abstract, Type_abstract
+      | Ptype_abstract -> Ttype_abstract, Type_abstract {immediate}
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -411,7 +407,10 @@ let transl_declaration env sdecl (id, uid) =
         type_unboxed = unboxed_status;
         type_uid = uid;
       } in
-
+    begin match Ctype.check_decl_immediate env decl immediate with
+    | Ok () -> ()
+    | Error v -> raise(Error(sdecl.ptype_loc, Immediacy v))
+    end;
   (* Check constraints *)
     List.iter
       (fun (cty, cty', loc) ->
@@ -587,6 +586,12 @@ let check_coherence env loc dpath decl =
           end
       | _ -> raise(Error(loc, Definition_mismatch (ty, None)))
       end
+  | { type_kind = Type_abstract { immediate = imm };
+      type_manifest = Some ty } ->
+     begin match Ctype.check_type_immediate env ty imm with
+     | Ok () -> ()
+     | Error v -> raise(Error(loc, Immediacy v))
+     end
   | _ -> ()
 
 let check_abbrev env sdecl (id, decl) =
@@ -917,13 +922,10 @@ let transl_type_decl env rec_flag sdecl_list =
       decls
       |> name_recursion_decls sdecl_list
       |> Typedecl_variance.update_decls env sdecl_list
-      |> Typedecl_immediacy.update_decls env
       |> Typedecl_separability.update_decls env
     with
     | Typedecl_variance.Error (loc, err) ->
         raise (Error (loc, Variance err))
-    | Typedecl_immediacy.Error (loc, err) ->
-        raise (Error (loc, Immediacy err))
     | Typedecl_separability.Error (loc, err) ->
         raise (Error (loc, Separability err))
   in
@@ -1482,9 +1484,6 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
       Typedecl_variance.compute_decl env ~check:true new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
-  let new_type_immediate =
-    (* Typedecl_immediacy.compute_decl never raises *)
-    Typedecl_immediacy.compute_decl env new_sig_decl in
   let new_type_separability =
     try Typedecl_separability.compute_decl env new_sig_decl
     with Typedecl_separability.Error (loc, err) ->

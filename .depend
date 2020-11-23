@@ -901,7 +901,6 @@ typing/persistent_env.cmi : \
     file_formats/cmi_format.cmi
 typing/predef.cmo : \
     typing/types.cmi \
-    typing/type_immediacy.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/location.cmi \
@@ -912,7 +911,6 @@ typing/predef.cmo : \
     typing/predef.cmi
 typing/predef.cmx : \
     typing/types.cmx \
-    typing/type_immediacy.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     parsing/location.cmx \
@@ -1282,7 +1280,6 @@ typing/typedecl.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/typedecl_variance.cmi \
-    typing/typedecl_unboxed.cmi \
     typing/typedecl_separability.cmi \
     typing/type_immediacy.cmi \
     typing/subst.cmi \
@@ -1315,7 +1312,6 @@ typing/typedecl.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/typedecl_variance.cmx \
-    typing/typedecl_unboxed.cmx \
     typing/typedecl_separability.cmx \
     typing/type_immediacy.cmx \
     typing/subst.cmx \
@@ -1347,6 +1343,7 @@ typing/typedecl.cmi : \
     typing/typedtree.cmi \
     typing/typedecl_variance.cmi \
     typing/typedecl_separability.cmi \
+    typing/type_immediacy.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
@@ -1397,21 +1394,6 @@ typing/typedecl_separability.cmi : \
     typing/typedecl_properties.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    typing/env.cmi
-typing/typedecl_unboxed.cmo : \
-    typing/types.cmi \
-    typing/predef.cmi \
-    typing/env.cmi \
-    typing/ctype.cmi \
-    typing/typedecl_unboxed.cmi
-typing/typedecl_unboxed.cmx : \
-    typing/types.cmx \
-    typing/predef.cmx \
-    typing/env.cmx \
-    typing/ctype.cmx \
-    typing/typedecl_unboxed.cmi
-typing/typedecl_unboxed.cmi : \
-    typing/types.cmi \
     typing/env.cmi
 typing/typedecl_variance.cmo : \
     typing/types.cmi \
