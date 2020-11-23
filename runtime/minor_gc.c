@@ -725,6 +725,9 @@ static void caml_stw_empty_minor_heap_no_major_slice (struct domain* domain, voi
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, participating_count, participating, not_alone);
 
+  /* collect gc stats before leaving the barrier */
+  caml_sample_gc_collect(domain->state);
+
   if( not_alone ) {
     caml_ev_begin("minor_gc/leave_barrier");
     SPIN_WAIT {
