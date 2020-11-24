@@ -603,10 +603,21 @@ cleanup:
 
 CAMLprim value caml_gc_major_slice (value v)
 {
+  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR_SLICE);
   CAMLassert (Is_long (v));
-  caml_major_collection_slice (Long_val (v));
+  if (caml_gc_phase == Phase_idle){
+    /* We need to start a new major GC cycle. Go through the pending_action
+       machinery. */
+    caml_request_major_slice ();
+    exn = caml_process_pending_actions_exn ();
+      /* Calls the major GC without passing [v] but the initial slice
+         ignores this parameter anyway. */
+  }else{
+    caml_major_collection_slice (Long_val (v));
+  }
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR_SLICE);
+  caml_raise_if_exception (exn);
   return Val_long (0);
 }
 
