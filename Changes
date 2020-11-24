@@ -217,6 +217,9 @@ OCaml 4.12.0
   OCaml.
   (Gabriel Scherer, review by Xavier Leroy)
 
+- #10035: Make sure that flambda respects atomicity in the Atomic module.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
 
