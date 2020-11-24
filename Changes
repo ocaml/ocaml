@@ -19,6 +19,13 @@ OCaml 4.11 maintenance branch
 
 ### Bug fixes:
 
+- #9970, #10010: fix the declaration scope of extensible-datatype constructors.
+  A regression that dates back to 4.08 makes extensible-datatype constructors
+  with inline records very fragile, for example:
+    type 'a t += X of {x : 'a}
+  (Gabriel Scherer, review by Thomas Refis and Leo White,
+   report by Nicolás Ojeda Bär)
+
 - #9096, #10096: fix a 4.11.0 performance regression in classes/objects
   declared within a function
   (Gabriel Scherer, review by Leo White, report by Sacha Ayoun)
