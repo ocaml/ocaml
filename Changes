@@ -35,9 +35,6 @@ Working version
 
 ### Bug fixes:
 
-- #9991: Fix reproducibility for `-no-alias-deps`
-  (Leo White, review by Gabriel Scherer and Florian Angeletti)
-
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
@@ -652,6 +649,9 @@ OCaml 4.12.0
 - #9940: Fix unboxing of allocated constants from other compilation units
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
+
+- #9991: Fix reproducibility for `-no-alias-deps`
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #9998: Use Sys.opaque_identity in CamlinternalLazy.force
   This removes extra warning 59 messages when compiling afl-instrumented
