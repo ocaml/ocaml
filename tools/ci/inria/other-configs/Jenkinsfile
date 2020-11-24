@@ -29,7 +29,6 @@ pipeline {
       }
     }
   }
-  }
   post {
     regression {
       emailext (
