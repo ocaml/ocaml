@@ -22,7 +22,7 @@ let check_distrib len cnt rate =
       alloc_minor = (fun info ->
         assert (info.size = 2);
         assert (info.n_samples > 0);
-        assert (not info.unmarshalled);
+        assert (info.source = Normal);
         smp := !smp + info.n_samples;
         None);
     };
