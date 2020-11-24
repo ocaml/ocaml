@@ -574,7 +574,11 @@ let rec mark_type ty =
     iter_type_expr mark_type ty
   end
 
-let mark_type_node ?(guard = fun _ -> true) ?(after = fun _ -> ()) ty =
+let mark_type_node_only ty =
+  if ty.level >= lowest_level then
+    (Internal.unlock ty).level <- mirror_level ty.level
+
+let mark_type_node ?(guard = fun _ -> true) ~after ty =
   let ty = repr ty in
   if ty.level >= lowest_level && guard ty then begin
     (Internal.unlock ty).level <- mirror_level ty.level;

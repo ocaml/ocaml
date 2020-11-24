@@ -682,7 +682,7 @@ let closed_class params sign =
     (fun (lab, _, ty) -> if lab = dummy_method then mark_type ty)
     fields;
   try
-    mark_type_node (repr sign.csig_self);
+    mark_type_node_only (repr sign.csig_self);
     List.iter
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
