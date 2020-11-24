@@ -19,7 +19,9 @@
 
 pipeline {
   agent { label 'ocaml-linux-64' }
-  timeout(time: 2, unit: 'MINUTES') {
+  options {
+    timeout(time: 2, unit: 'MINUTES') 
+  }
   stages {
     stage('Testing various other compiler configurations') {
       steps {
