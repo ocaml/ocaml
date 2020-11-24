@@ -198,6 +198,10 @@ OCaml 4.12.0
   constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
   (Jacob Young, review by Nicolás Ojeda Bär)
 
+- #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
+  (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
+   Jourdan)
+
 ### Standard library:
 
 - #9865: add Format.pp_print_seq
