@@ -69,23 +69,3 @@ jobs:
     - name: Other checks
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
-  minimum:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: configure tree
-      run: |
-        XARCH=x64 MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh configure
-    - name: Build
-      run: |
-        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh build
-    - name: Run the testsuite
-      run: |
-        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh test
-    - name: Install
-      run: |
-        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh install
-    - name: Other checks
-      run: |
-        MIN_BUILD=1 bash -xe tools/ci/actions/runner.sh other-checks

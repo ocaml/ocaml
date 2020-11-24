@@ -36,29 +36,13 @@ request can be merged.
 ------------------------------------------------------------------------
 EOF
 
-  if [ "$MIN_BUILD" = "1" ] ; then
-    configure_flags="\
-      --prefix=$PREFIX \
-      --disable-shared \
-      --disable-debug-runtime \
-      --disable-instrumented-runtime \
-      --disable-systhreads \
-      --disable-str-lib \
-      --disable-unix-lib \
-      --disable-bigarray-lib \
-      --disable-ocamldoc \
-      --disable-native-compiler \
-      --enable-ocamltest \
-      --disable-dependency-generation \
-      $CONFIG_ARG"
-  else
-    configure_flags="\
-      --prefix=$PREFIX \
-      --enable-flambda-invariants \
-      --enable-ocamltest \
-      --disable-dependency-generation \
-      $CONFIG_ARG"
-  fi
+  configure_flags="\
+    --prefix=$PREFIX \
+    --enable-flambda-invariants \
+    --enable-ocamltest \
+    --disable-dependency-generation \
+    $CONFIG_ARG"
+
   case $XARCH in
   x64)
     ./configure $configure_flags
@@ -77,17 +61,8 @@ EOF
 }
 
 Build () {
-  if [ "$MIN_BUILD" = "1" ] ; then
-    if $MAKE world.opt ; then
-      echo "world.opt is not supposed to work!"
-      exit 1
-    else
-      $MAKE world
-    fi
-  else
-    $MAKE world.opt
-    $MAKE ocamlnat
-  fi
+  $MAKE world.opt
+  $MAKE ocamlnat
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
 }
@@ -96,10 +71,8 @@ Test () {
   cd testsuite
   echo Running the testsuite with the normal runtime
   $MAKE all
-  if [ "$MIN_BUILD" != "1" ] ; then
-    echo Running the testsuite with the debug runtime
-    $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
-  fi
+  echo Running the testsuite with the debug runtime
+  $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
   cd ..
 }
 
