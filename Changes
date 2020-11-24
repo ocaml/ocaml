@@ -32,8 +32,9 @@ Working version
   (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
 ### Build system:
-- #10044: Always report the detected SYSTEM, even for bytecode-only builds
-  (fixes a "configuration regression" from 4.08 for the Windows builds)
+- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
+  only builds (fixes a "configuration regression" from 4.08 for the Windows
+  builds)
   (David Allsopp, review by ??)
 
 ### Bug fixes:

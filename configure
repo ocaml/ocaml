@@ -13910,7 +13910,7 @@ fi; system=elf ;; #(
 esac
 
 if test x"$enable_native_compiler" = "xno"; then :
-  arch=none; model=default; native_compiler=false
+  native_compiler=false
   { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
 $as_echo "$as_me: the native compiler is disabled" >&6;}
 else
