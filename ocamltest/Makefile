@@ -255,6 +255,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,WITH_OCAMLDOC) \
 	    $(call SUBST,WITH_OCAMLDEBUG) \
 	    $(call SUBST,O) \
+	    $(call SUBST,A) \
 	    $(call SUBST,S) \
 	    $(call SUBST,NATIVE_COMPILER) \
 	    $(call SUBST,NATDYNLINK) \
