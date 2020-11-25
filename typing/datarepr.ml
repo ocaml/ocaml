@@ -91,7 +91,6 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
           type_expansion_scope = Btype.lowest_level;
           type_loc = Location.none;
           type_attributes = [];
-          type_immediate = Unknown;
           type_unboxed;
           type_uid = Uid.mk ~current_unit;
         }
@@ -235,14 +234,14 @@ let find_constr_by_tag tag cstrlist =
 let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
   | Type_variant cstrs -> constructor_descrs ~current_unit ty_path decl cstrs
-  | Type_record _ | Type_abstract | Type_open -> []
+  | Type_record _ | Type_abstract _ | Type_open -> []
 
 let labels_of_type ty_path decl =
   match decl.type_kind with
   | Type_record(labels, rep) ->
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
-  | Type_variant _ | Type_abstract | Type_open -> []
+  | Type_variant _ | Type_abstract _ | Type_open -> []
 
 (* Set row_name in Env, cf. GPR#1204/1329 *)
 let set_row_name decl path =

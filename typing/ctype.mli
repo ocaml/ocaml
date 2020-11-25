@@ -380,8 +380,6 @@ val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
 
-val immediacy : Env.t -> type_expr -> Type_immediacy.t
-
 val maybe_pointer_type : Env.t -> type_expr -> bool
        (* True if type is possibly pointer, false if definitely not a pointer *)
 
@@ -391,3 +389,8 @@ val package_subtype :
       Path.t -> Longident.t list -> type_expr list -> bool) ref
 
 val mcomp : Env.t -> type_expr -> type_expr -> unit
+
+val get_unboxed_type_representation : Env.t -> type_expr -> type_expr option
+
+val check_decl_immediate : Env.t -> type_declaration -> Type_immediacy.t -> (unit, Type_immediacy.Violation.t) result
+val check_type_immediate : Env.t -> type_expr -> Type_immediacy.t -> (unit, Type_immediacy.Violation.t) result

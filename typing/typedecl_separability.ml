@@ -74,7 +74,7 @@ let demultiply_list
 let structure : type_definition -> type_structure = fun def ->
   match def.type_kind with
   | Type_open -> Open
-  | Type_abstract ->
+  | Type_abstract _ ->
       begin match def.type_manifest with
       | None -> Abstract
       | Some type_expr -> Synonym type_expr
@@ -529,10 +529,10 @@ let worst_msig decl = List.map (fun _ -> Deepsep) decl.type_params
 
     Note: this differs from {!Types.Separability.default_signature},
     which does not have access to the declaration and its immediacy. *)
-let msig_of_external_type decl =
-  match decl.type_immediate with
-  | Always | Always_on_64bits -> best_msig decl
-  | Unknown -> worst_msig decl
+let msig_of_external_type env decl =
+  if Result.is_ok (Ctype.check_decl_immediate env decl Always_on_64bits)
+  then best_msig decl
+  else worst_msig decl
 
 (** [msig_of_context ~decl_loc constructor context] returns the
    separability signature of a single-constructor type whose
@@ -669,7 +669,7 @@ let check_def
   match structure def with
   | Abstract ->
       assert boxed;
-      msig_of_external_type def
+      msig_of_external_type env def
   | Synonym type_expr ->
       check_type env type_expr Sep
       |> msig_of_context ~decl_loc:def.type_loc ~parameters:def.type_params

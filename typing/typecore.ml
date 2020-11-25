@@ -3547,7 +3547,7 @@ and type_expect_
       let decl = {
         type_params = [];
         type_arity = 0;
-        type_kind = Type_abstract;
+        type_kind = Types.kind_abstract;
         type_private = Public;
         type_manifest = None;
         type_variance = [];
@@ -3556,7 +3556,6 @@ and type_expect_
         type_expansion_scope = Btype.lowest_level;
         type_loc = loc;
         type_attributes = [];
-        type_immediate = Unknown;
         type_unboxed = unboxed_false_default_false;
         type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
       }

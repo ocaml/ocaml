@@ -232,13 +232,12 @@ type type_declaration =
     type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: Type_immediacy.t;
     type_unboxed: unboxed_status;
     type_uid: Uid.t;
  }
 
 and type_kind =
-    Type_abstract
+    Type_abstract of {immediate: Type_immediacy.t}
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
   | Type_open
@@ -437,6 +436,12 @@ let equal_tag t1 t2 =
 let may_equal_constr c1 c2 = match c1.cstr_tag,c2.cstr_tag with
 | Cstr_extension _,Cstr_extension _ -> c1.cstr_arity = c2.cstr_arity
 | tag1,tag2 -> equal_tag tag1 tag2
+
+let kind_abstract = Type_abstract { immediate = Unknown }
+
+let decl_is_abstract = function
+  | { type_kind = Type_abstract _; _ } -> true
+  | _ -> false
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

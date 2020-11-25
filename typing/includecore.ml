@@ -51,8 +51,8 @@ let value_descriptions ~loc env name
 let private_flags decl1 decl2 =
   match decl1.type_private, decl2.type_private with
   | Private, Public ->
-      decl2.type_kind = Type_abstract &&
-      (decl2.type_manifest = None || decl1.type_kind <> Type_abstract)
+      decl_is_abstract decl2 &&
+      (decl2.type_manifest = None || not (decl_is_abstract decl1))
   | _, _ -> true
 
 (* Inclusion between manifest types (particularly for private row types) *)
@@ -409,14 +409,17 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   let err =
     match (decl2.type_kind, decl1.type_unboxed.unboxed,
            decl2.type_unboxed.unboxed) with
-    | Type_abstract, _, _ -> None
+    | Type_abstract _, _, _ -> None
     | _, true, false -> Some (Unboxed_representation First)
     | _, false, true -> Some (Unboxed_representation Second)
     | _ -> None
   in
   if err <> None then err else
   let err = match (decl1.type_kind, decl2.type_kind) with
-      (_, Type_abstract) -> None
+      (_, Type_abstract { immediate = imm }) ->
+       (match Ctype.check_decl_immediate env decl1 imm with
+        | Ok () -> None
+        | Error v -> Some (Immediate v))
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         if mark then begin
           let mark usage cstrs =
@@ -443,20 +446,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | (_, _) -> Some Kind
   in
   if err <> None then err else
-  let abstr = decl2.type_kind = Type_abstract && decl2.type_manifest = None in
-  (* If attempt to assign a non-immediate type (e.g. string) to a type that
-   * must be immediate, then we error *)
-  let err =
-    if not abstr then
-      None
-    else
-      match
-        Type_immediacy.coerce decl1.type_immediate ~as_:decl2.type_immediate
-      with
-      | Ok () -> None
-      | Error violation -> Some (Immediate violation)
-  in
-  if err <> None then err else
+  let abstr = decl_is_abstract decl2 && decl2.type_manifest = None in
   let need_variance =
     abstr || decl1.type_private = Private || decl1.type_kind = Type_open in
   if not need_variance then None else

@@ -350,7 +350,7 @@ let map_type_expr_cstr_args f = function
       Cstr_record (List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
 
 let iter_type_expr_kind f = function
-  | Type_abstract -> ()
+  | Type_abstract _ -> ()
   | Type_variant cstrs ->
       List.iter
         (fun cd ->
