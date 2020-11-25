@@ -453,6 +453,11 @@ OCaml 4.12.0
 - #10008: Improve error message for aliases to the current compilation unit.
   (Leo White, review by Gabriel Scherer)
 
+- #10046: Link all DLLs with -static-libgcc on mingw32 to prevent dependency
+  on libgcc_s_sjlj-1.dll with mingw-w64 runtime 8.0.0 (previously this was
+  only needed for dllunix.dll).
+  (David Allsopp, report by Andreas Hauptmann, review by ???)
+
 ### Internal/compiler-libs changes:
 
 - #8987: Make some locations more accurate

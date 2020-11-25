@@ -58,8 +58,9 @@ else
   ifeq "$(FLEXLINK_ENV)" ""
     ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
   else
+    FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
     MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
-                                     $(FLEXLINK_FLAGS)
+                                     $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
 
     ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
                                  $(ocamltest_program)
