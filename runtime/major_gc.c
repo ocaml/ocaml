@@ -56,6 +56,7 @@ struct mark_stack {
 };
 
 uintnat caml_percent_free;
+static uintnat marked_words, heap_wsz_at_cycle_start;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
@@ -304,6 +305,7 @@ void caml_darken (value v, value *p)
     if (Is_white_hd (h)){
       ephe_list_pure = 0;
       Hd_val (v) = Blackhd_hd (h);
+      marked_words += Whsize_hd (h);
       if (t < No_scan_tag){
         mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
       }
@@ -382,6 +384,8 @@ static void start_cycle (void)
   caml_gc_message (0x01, "Starting new major GC cycle\n");
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
+  marked_words = 0;
+  heap_wsz_at_cycle_start = Caml_state->stat_heap_wsz;
   caml_gc_subphase = Subphase_mark_roots;
   ephe_list_pure = 1;
   ephes_checked_if_pure = &caml_ephe_list_head;
@@ -456,6 +460,7 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
     if (Is_white_hd (chd)){
       ephe_list_pure = 0;
       Hd_val (child) = Blackhd_hd (chd);
+      marked_words += Whsize_hd (chd);
       if( Tag_hd(chd) < No_scan_tag ) {
         mark_stack_push(stk, child, 0, work);
       } else {
@@ -946,6 +951,19 @@ void caml_major_collection_slice (intnat howmuch)
 
   if (caml_gc_phase == Phase_idle){
     CAML_EV_BEGIN(EV_MAJOR_CHECK_AND_COMPACT);
+    caml_gc_message (0x200, "marked words = %"
+                     ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                     marked_words);
+    caml_gc_message (0x200, "heap size at start of cycle = %"
+                     ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                     heap_wsz_at_cycle_start);
+    if (marked_words == 0){
+      caml_gc_message (0x200, "actual overhead at start of cycle = +inf\n");
+    }else{
+      caml_gc_message (0x200, "actual overhead at start of cycle = %.2g%%\n",
+                       100.0 * (heap_wsz_at_cycle_start - marked_words)
+                       / marked_words);
+    }
     caml_compact_heap_maybe ();
     CAML_EV_END(EV_MAJOR_CHECK_AND_COMPACT);
   }
