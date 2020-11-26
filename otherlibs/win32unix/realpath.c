@@ -15,6 +15,12 @@
 
 #define CAML_INTERNALS
 
+/*
+ * Windows Vista functions enabled
+ */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -24,7 +30,6 @@
 
 #include <windows.h>
 #include <fileapi.h>
-#include <tchar.h>
 #include <stdio.h>
 
 CAMLprim value unix_realpath (value p)
@@ -48,7 +53,7 @@ CAMLprim value unix_realpath (value p)
     uerror ("realpath", p);
   }
 
-  wr_len = GetFinalPathNameByHandleW (h, NULL, 0, VOLUME_NAME_DOS);
+  wr_len = GetFinalPathNameByHandle (h, NULL, 0, VOLUME_NAME_DOS);
   if (wr_len == 0)
   {
     win32_maperr (GetLastError ());
@@ -57,7 +62,7 @@ CAMLprim value unix_realpath (value p)
   }
 
   wr = caml_stat_alloc ((wr_len + 1) * sizeof (wchar_t));
-  wr_len = GetFinalPathNameByHandleW (h, wr, wr_len, VOLUME_NAME_DOS);
+  wr_len = GetFinalPathNameByHandle (h, wr, wr_len, VOLUME_NAME_DOS);
 
   if (wr_len == 0)
   {
