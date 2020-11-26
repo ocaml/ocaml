@@ -226,63 +226,55 @@ let name_for_int_operation = function
   | Iasr -> "asr"
   | _ -> assert false
 
+(* Decompose an integer constant into four 16-bit shifted fragments.
+   Omit the fragments that are equal to "default" (16 zeros or 16 ones). *)
+
+let decompose_int default n =
+  let rec decomp n pos =
+    if pos >= 64 then [] else begin
+      let frag = Nativeint.logand n 0xFFFFn
+      and rem  = Nativeint.shift_right_logical n 16 in
+      if frag = default
+      then decomp rem (pos + 16)
+      else (frag, pos) :: decomp rem (pos + 16)
+    end
+  in decomp n 0
+
 (* Load an integer constant into a register *)
 
+let emit_movk dst (f, p) =
+    `	movk	{emit_reg dst}, #{emit_nativeint f}, lsl #{emit_int p}\n`
+
 let emit_intconst dst n =
-  let rec emit_pos first shift =
-    if shift < 0 then begin
-      if first then `	mov	{emit_reg dst}, xzr\n`
+  if is_logical_immediate n then
+    `	orr	{emit_reg dst}, xzr, #{emit_nativeint n}\n`
+  else begin
+    let dz = decompose_int 0x0000n n
+    and dn = decompose_int 0xFFFFn n in
+    if List.length dz <= List.length dn then begin
+      match dz with
+      | [] ->
+          `	mov	{emit_reg dst}, xzr\n`
+      | (f, p) :: l ->
+          `	movz	{emit_reg dst}, #{emit_nativeint f}, lsl #{emit_int p}\n`;
+          List.iter (emit_movk dst) l
     end else begin
-      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
-      if s = 0n then emit_pos first (shift - 16) else begin
-        if first then
-          `	movz	{emit_reg dst}, #{emit_nativeint s}, lsl #{emit_int shift}\n`
-        else
-           `	movk	{emit_reg dst}, #{emit_nativeint s}, lsl #{emit_int shift}\n`;
-        emit_pos false (shift - 16)
-      end
+      match dn with
+      | [] ->
+          `	movn	{emit_reg dst}, #0\n`
+      | (f, p) :: l ->
+          let nf = Nativeint.logxor f 0xFFFFn in
+          `	movn	{emit_reg dst}, #{emit_nativeint nf}, lsl #{emit_int p}\n`;
+          List.iter (emit_movk dst) l
     end
-  and emit_neg first shift =
-    if shift < 0 then begin
-      if first then `	movn	{emit_reg dst}, #0\n`
-    end else begin
-      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
-      if s = 0xFFFFn then emit_neg first (shift - 16) else begin
-        if first then
-          `	movn	{emit_reg dst}, #{emit_nativeint (Nativeint.logxor s 0xFFFFn)}, lsl #{emit_int shift}\n`
-        else
-           `	movk	{emit_reg dst}, #{emit_nativeint s}, lsl #{emit_int shift}\n`;
-        emit_neg false (shift - 16)
-      end
-    end
-  in
-    if n < 0n then emit_neg true 48 else emit_pos true 48
+  end
 
 let num_instructions_for_intconst n =
-  let num_instructions = ref 0 in
-  let rec count_pos first shift =
-    if shift < 0 then begin
-      if first then incr num_instructions
-    end else begin
-      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
-      if s = 0n then count_pos first (shift - 16) else begin
-        incr num_instructions;
-        count_pos false (shift - 16)
-      end
-    end
-  and count_neg first shift =
-    if shift < 0 then begin
-      if first then incr num_instructions
-    end else begin
-      let s = Nativeint.(logand (shift_right_logical n shift) 0xFFFFn) in
-      if s = 0xFFFFn then count_neg first (shift - 16) else begin
-        incr num_instructions;
-        count_neg false (shift - 16)
-      end
-    end
-  in
-  if n < 0n then count_neg true 48 else count_pos true 48;
-  !num_instructions
+  if is_logical_immediate n then 1 else begin
+    let dz = decompose_int 0x0000n n
+    and dn = decompose_int 0xFFFFn n in
+    max 1 (min (List.length dz) (List.length dn))
+  end
 
 (* Recognize float constants appropriate for FMOV dst, #fpimm instruction:
    "a normalized binary floating point encoding with 1 sign bit, 4
@@ -534,6 +526,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Ibswap 16)) -> 2
     | Lop (Ispecific (Ibswap _)) -> 1
     | Lop (Ispecific Imove32) -> 1
+    | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size ()
@@ -880,6 +873,8 @@ let emit_instr i =
         | _ ->
             assert false
         end
+    | Lop(Ispecific(Isignext size)) ->
+        `	sbfm	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0, #{emit_int (size - 1)}\n`
     | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         ()
