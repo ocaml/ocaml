@@ -57,13 +57,16 @@ enum {
 
 /* Check that the structure was laid out without padding,
    since the runtime assumes this in computing offsets */
+#ifdef NATIVE_CODE
+CAML_STATIC_ASSERT(
+  sizeof(caml_domain_state) == Domain_state_num_fields * 8);
+#else
 CAML_STATIC_ASSERT(
   sizeof(caml_domain_state) ==
    (Domain_state_num_fields
-#ifndef NATIVE_CODE
      + Byte_domain_state_num_fields
-#endif
    ) * 8);
+#endif
 
 #ifdef __APPLE__
   CAMLextern pthread_key_t caml_domain_state_key;
