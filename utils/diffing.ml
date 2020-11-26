@@ -290,7 +290,7 @@ let compute_cell ~weight ~test ~update m i j =
 let compute_matrix ~weight ~test ~update state0 =
   let m0 = Matrix.make { l = 0 ; c = 0 } in
   Matrix.set m0 0 0 ~weight:0 ~state:state0 ~diff:None;
-  let rec loop final_candidates m =
+  let rec loop m =
     let shape = Matrix.shape m in
     let new_shape = Matrix.real_shape m in
     if new_shape.l > shape.l || new_shape.c > shape.c then
@@ -300,38 +300,46 @@ let compute_matrix ~weight ~test ~update state0 =
           compute_cell ~update ~test ~weight m i j
         done
       done;
-      let final_candidates =
-        let i = new_shape.l and j = new_shape.c in
-        match Matrix.shape_at m i j with
-        | Some shape_here when shape_here = new_shape ->
-            (* the current patch cannot be extended anymore: it fully transforms
-               its view of the left input into its right input *)
-            (i,j) :: final_candidates
-        | _ ->
-            final_candidates
-      in
-      loop final_candidates m
+      loop m
     else
-      (m, final_candidates)
+      m
   in
-  loop [] m0
+  loop m0
 
 (* Building the patch.
 
-   We select the best final state, and walk back to the origin.
+   We first select the best final cell. A potential final cell
+   is a cell where the local shape (i.e., the size of the strings) correspond
+   to its position in the matrix. In other words: it's at the end of both its
+   strings. We select the final cell with the smallest weight.
+
+   We then build the patch by walking backward from the final cell to the
+   origin.
 *)
-let select_final_state m0 maybe_finals =
-  let compare_states (i0,j0,weigth0) (i,j) =
+
+let select_final_state m0 =
+  let maybe_final i j =
+    match Matrix.shape_at m0 i j with
+    | Some shape_here -> shape_here.l = i && shape_here.c = j
+    | None -> false
+  in
+  let best_state (i0,j0,weigth0) (i,j) =
     let weight = Matrix.weight m0 i j in
     if weight < weigth0 then (i,j,weight) else (i0,j0,weigth0)
   in
-  let i_final, j_final, _ =
-    List.fold_left compare_states (0,0,max_int) maybe_finals
-  in
+  let res = ref (0,0,max_int) in
+  let shape = Matrix.shape m0 in
+  for i = 0 to shape.l do
+    for j = 0 to shape.c do
+      if maybe_final i j then
+        res := best_state !res (i,j)
+    done
+  done;
+  let i_final, j_final, _ = !res in
   assert (i_final <> 0 || j_final <> 0);
   (i_final, j_final)
 
-let construct_patch (m0, maybe_finals) =
+let construct_patch m0 =
   let rec aux acc (i, j) =
     if i = 0 && j = 0 then
       acc
@@ -346,7 +354,7 @@ let construct_patch (m0, maybe_finals) =
           in
           aux (d::acc) next
   in
-  aux [] (select_final_state m0 maybe_finals)
+  aux [] (select_final_state m0)
 
 let diff ~weight ~test ~update state line column =
   let update d fs = { fs with state = update d fs.state } in
