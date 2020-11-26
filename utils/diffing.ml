@@ -20,11 +20,32 @@
    for preliminary reading.
 
    The main extensions is that:
-   - State is computed based on the patch so far.
+   - State is computed based on the optimal patch so far.
    - The lists can be extended at each state computation.
 
    We add the constraint that extensions can only be in one side
    (either the left or right list). This is enforced by the external API.
+
+   The optimality of Wagner-Fischer depends on the property that the
+   edit-distance between a k-prefix of the left input and a l-prefix of the
+   right input d(k,l) satisfy
+
+   d(k,l) = min (
+     del_cost + d(k-1,l),
+     insert_cost + d(k,l-1),
+     change_cost + d(k-1,l-1)
+    )
+
+   In other, the optimal distance does not depend on the inner state of patches.
+   Under this hypothesis, it is optimal to choose greadily the state of the
+   minimal patch transforming the left k-prefix into the right l-prefix as a
+   representative of the state of all possible patches.
+
+   If this properties is not satisfied, the computed patch is not guaranteed
+   to be globally optimal, but it is still a correct patch, which is even
+   optimal among all patches with gready choices of representative state among
+   all patches between left k-prefix and right l-prefix.
+
 *)
 
 let (let*) = Option.bind
@@ -69,6 +90,7 @@ module Matrix : sig
   val make : shape -> ('st,'l,'r,'e,'d) t
   val reshape : shape -> ('st,'l,'r,'e,'d) t -> ('st,'l,'r,'e,'d) t
 
+  (** accessor functions *)
   val diff : (_,'l,'r,'e,'d) t -> int -> int -> ('l,'r,'e,'d) change option
   val state :
     ('st,'l,'r,'e,'d) t -> int -> int -> ('st, 'l, 'r) full_state option
@@ -77,17 +99,25 @@ module Matrix : sig
   val line : (_,'l,_,_,_) t -> int -> int -> 'l option
   val column : (_,_,'r,_,_) t -> int -> int -> 'r option
 
-  val update :
+  val set :
     ('st,'l,'r,'e,'d) t -> int -> int ->
     diff:('l,'r,'e,'d) change option ->
     weight:int ->
     state:('st, 'l, 'r) full_state ->
     unit
 
+  (** the shape when starting filling the matrix *)
   val shape : _ t -> shape
+
+  (** [shape m i j] is the shape as seen from the state at position (i,j)
+      after some possible extensions
+  *)
   val shape_at : _ t -> int -> int -> shape option
+
+  (** the maximal shape on the whole matrix *)
   val real_shape : _ t -> shape
 
+  (** debugging printer *)
   val[@warning "-32"] pp : Format.formatter -> _ t -> unit
 
 end = struct
@@ -110,7 +140,7 @@ end = struct
   let state m i j = m.states.(i).(j)
   let shape m = { l = m.lines ; c = m.columns }
 
-  let update m i j ~diff ~weight ~state =
+  let set m i j ~diff ~weight ~state =
     m.weight.(i).(j) <- weight;
     m.states.(i).(j) <- Some state;
     m.diff.(i).(j) <- diff;
@@ -190,11 +220,12 @@ let select_best_proposition l =
   in
   List.fold_left compare_proposition None l
 
+(* Boundary cell update *)
 let compute_column0 ~weight ~update tbl i =
   let*! st = Matrix.state tbl (i-1) 0 in
   let*! line = Matrix.line tbl (i-1) 0 in
   let diff = Delete line in
-  Matrix.update tbl i 0
+  Matrix.set tbl i 0
     ~weight:(weight diff + Matrix.weight tbl (i-1) 0)
     ~state:(update diff st)
     ~diff:(Some diff)
@@ -203,7 +234,7 @@ let compute_line0 ~weight ~update tbl j =
   let*! st = Matrix.state tbl 0 (j-1) in
   let*! column = Matrix.column tbl 0 (j-1) in
   let diff = Insert column in
-  Matrix.update tbl 0 j
+  Matrix.set tbl 0 j
     ~weight:(weight diff + Matrix.weight tbl 0 (j-1))
     ~state:(update diff st)
     ~diff:(Some diff)
@@ -237,7 +268,7 @@ let compute_inner_cell ~weight ~test ~update tbl i j =
     select_best_proposition [diag;del;insert]
   in
   let state = update diff localstate in
-  Matrix.update tbl i j ~weight:newweight ~state ~diff:(Some diff)
+  Matrix.set tbl i j ~weight:newweight ~state ~diff:(Some diff)
 
 let compute_cell ~weight ~test ~update m i j =
   match i, j with
@@ -258,8 +289,8 @@ let compute_cell ~weight ~test ~update m i j =
 *)
 let compute_matrix ~weight ~test ~update state0 =
   let m0 = Matrix.make { l = 0 ; c = 0 } in
-  Matrix.update m0 0 0 ~weight:0 ~state:state0 ~diff:None;
-  let rec loop maybe_finals m =
+  Matrix.set m0 0 0 ~weight:0 ~state:state0 ~diff:None;
+  let rec loop final_candidates m =
     let shape = Matrix.shape m in
     let new_shape = Matrix.real_shape m in
     if new_shape.l > shape.l || new_shape.c > shape.c then
@@ -269,17 +300,19 @@ let compute_matrix ~weight ~test ~update state0 =
           compute_cell ~update ~test ~weight m i j
         done
       done;
-      let maybe_finals =
+      let final_candidates =
         let i = new_shape.l and j = new_shape.c in
         match Matrix.shape_at m i j with
         | Some shape_here when shape_here = new_shape ->
-            (i,j) :: maybe_finals
+            (* the current patch cannot be extended anymore: it fully transforms
+               its view of the left input into its right input *)
+            (i,j) :: final_candidates
         | _ ->
-            maybe_finals
+            final_candidates
       in
-      loop maybe_finals m
+      loop final_candidates m
     else
-      (m, maybe_finals)
+      (m, final_candidates)
   in
   loop [] m0
 

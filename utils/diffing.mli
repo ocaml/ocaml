@@ -33,7 +33,8 @@
     states, we say that the state diverges.
     - We always return the optimal patch on prefixes of [l] and [r]
       on which state does not diverge.
-    - Otherwise, we return a correct but non-optimal patch.
+    - Otherwise, we return a correct but non-optimal patch where subpath with no
+      divergent states are optimal for the given initial state.
 *)
 
 (** The type of potential changes on a list. *)
