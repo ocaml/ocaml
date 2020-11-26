@@ -14,14 +14,22 @@
  */
 
 #ifdef __cplusplus
-extern "C" {
-#endif
 
-#if defined(HAS_STDATOMIC_H)
+extern "C++" {
+#include <atomic>
+using namespace std;
+#define ATOMIC_UINTNAT_INIT(x) (x)
+typedef atomic<uintnat> atomic_uintnat;
+typedef atomic<intnat> atomic_intnat;
+}
+
+#elif defined(HAS_STDATOMIC_H)
+
 #include <stdatomic.h>
 #define ATOMIC_UINTNAT_INIT(x) (x)
 typedef _Atomic uintnat atomic_uintnat;
 typedef _Atomic intnat atomic_intnat;
+
 #elif defined(__GNUC__)
 
 /* Support for versions of gcc which have built-in atomics but do not
@@ -52,10 +60,6 @@ typedef struct { intnat repr; } atomic_intnat;
 
 #else
 #error "C11 atomics are unavailable on this platform. See camlatomic.h"
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif /* CAML_ATOMIC_H */
