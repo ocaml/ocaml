@@ -70,7 +70,8 @@ module Matrix : sig
   val reshape : shape -> ('st,'l,'r,'e,'d) t -> ('st,'l,'r,'e,'d) t
 
   val diff : (_,'l,'r,'e,'d) t -> int -> int -> ('l,'r,'e,'d) change option
-  val state : ('st,'l,'r,'e,'d) t -> int -> int -> ('st, 'l, 'r) full_state option
+  val state :
+    ('st,'l,'r,'e,'d) t -> int -> int -> ('st, 'l, 'r) full_state option
   val weight : _ t -> int -> int -> int
 
   val line : (_,'l,_,_,_) t -> int -> int -> 'l option
@@ -165,10 +166,10 @@ end = struct
             Format.fprintf ppf "    "
         | Some diff ->
             let sdiff = match diff with
-              | Insert _ -> "←"
-              | Delete _ -> "↑"
-              | Keep _ -> "↖"
-              | Change _ -> "⇱"
+              | Insert _ -> "\u{2190}"
+              | Delete _ -> "\u{2191}"
+              | Keep _ -> "\u{2196}"
+              | Change _ -> "\u{21F1}"
             in
             let w = weight m i j in
             Format.fprintf ppf "%s%i " sdiff w
