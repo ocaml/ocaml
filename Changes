@@ -11,6 +11,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #9937: improvements in ARM64 code generation (constants, sign extensions)
+  (Xavier Leroy, review by Stephen Dolan)
+
 ### Standard library:
 
 ### Other libraries:
@@ -37,6 +40,7 @@ Working version
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
+
 
 OCaml 4.12.0
 ------------
