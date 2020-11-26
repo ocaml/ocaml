@@ -42,4 +42,3 @@ let _ =
   printf "Final balance: %d\n" (get a);
   stop a;
   Thread.join th
-
