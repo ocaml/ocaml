@@ -145,9 +145,14 @@ val signature: formatter -> signature -> unit
 val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
-val tree_of_functor_parameters:
-  Types.functor_parameter list ->
-  (string option * Outcometree.out_module_type) option list
+
+(** Print a list of functor parameters while eventually updating the
+    printing environment *)
+val functor_parameters:
+  sep:(Format.formatter -> unit -> unit) ->
+  custom_printer:(Format.formatter -> 'b -> unit) ->
+  Format.formatter -> (functor_parameter option * 'b) list -> unit
+
 val tree_of_signature: Types.signature -> out_sig_item list
 val tree_of_typexp: bool -> type_expr -> out_type
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit

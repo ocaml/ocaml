@@ -1440,40 +1440,37 @@ module Pp = struct
     | Diffing.Insert _ -> Misc.Color.[ FG Red; Bold]
     | Diffing.Change _ -> Misc.Color.[ FG Magenta; Bold]
 
-  let decorate preprinter x =
-    let sty = style x in
-    let printer = preprinter x in
-    fun ppf ->
-      Format.pp_open_stag ppf (Misc.Color.Style sty);
-      printer ppf;
-      Format.pp_close_stag ppf ()
-
   let prefix ppf (pos, p) =
     let sty = style p in
     Format.pp_open_stag ppf (Misc.Color.Style sty);
     Format.fprintf ppf "%i." pos;
     Format.pp_close_stag ppf ()
 
-  let got f = function
+  let got proj f = function
     | Diffing.Delete mty
     | Diffing.Keep (mty,_,_)
-    | Diffing.Change (mty,_,_)
-      -> f mty
-    | Diffing.Insert _ -> ignore
-  let expected f = function
+    | Diffing.Change (mty,_,_) as x
+      -> Some (proj mty, (x,(fun ppf -> f mty ppf)))
+    | Diffing.Insert _ -> None
+  let expected proj f = function
     | Diffing.Insert mty
     | Diffing.Keep (_,mty,_)
-    | Diffing.Change (_,mty,_)
-      -> f mty
-    | Diffing.Delete _ -> ignore
+    | Diffing.Change (_,mty,_) as x
+      -> Some (proj mty, (x, (fun ppf -> f mty ppf)))
+    | Diffing.Delete _ -> None
 
   let space ppf () = Format.fprintf ppf "@ "
-  let dlist ?(sep=space) f l  =
-    let l' = List.map f l in
-    fun ppf -> Format.pp_print_list ~pp_sep:sep (|>) ppf l'
-  let params_diff sep f patch =
-    let elt (_,x) = decorate f x in
-    dlist ~sep elt patch
+  let params_diff env sep f patch =
+    let params = List.filter_map f @@ List.map snd patch in
+    let elt ppf (x,printer) =
+      let sty = style x in
+      Format.pp_open_stag ppf (Misc.Color.Style sty);
+      printer ppf;
+      Format.pp_close_stag ppf () in
+    fun ppf ->
+      Printtyp.wrap_printing_env ~error:true env (fun () ->
+          Printtyp.functor_parameters ~sep ~custom_printer:elt ppf params
+        )
 
 end
 
@@ -1542,8 +1539,11 @@ module Linearize = struct
           FunctorDiff.arg_diff env ctx got expected
           |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
         in
-        let got = Pp.(params_diff space (got functor_param) d) in
-        let expected = Pp.(params_diff space (expected functor_param) d) in
+        let item x = Some x.Short_name.item in
+        let got = Pp.(params_diff env space (got item functor_param) d) in
+        let expected =
+          Pp.(params_diff env space (expected item functor_param) d)
+        in
         let main =
           Format.dprintf
             "@[<hv 2>Modules do not match:@ \
@@ -1824,14 +1824,16 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
   | [ _, (Diffing.Change _ as c) ] ->
       Location.errorf ~loc "%t" (Linearize.app env ~expansion_token:true c)
   | _ ->
+      let item x = Some (x.Short_name.item) in
+      let none _ = None in
       Location.errorf ~loc
         ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
         "@[<hv>The functor application %tis ill-typed.@ \
          These arguments:@;<1 2>\
          @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
         may_print_app
-        Pp.(params_diff space (got short_argument) d)
-        Pp.(params_diff space (expected functor_param) d)
+        Pp.(params_diff env space (got none short_argument) d)
+        Pp.(params_diff env space (expected item functor_param) d)
 
 
 (* We could do a better job to split the individual error items

@@ -43,7 +43,7 @@ Line 1, characters 11-18:
                ^^^^^^^
 Error: The functor application is ill-typed.
        These arguments:
-         X  Z
+         X Z
        do not match these parameters:
          functor (X : x) (Y : y) (Z : z) -> ...
        1. Module X matches the expected module type x
@@ -63,7 +63,7 @@ Error: Signature mismatch:
        Modules do not match:
          functor (X : empty) (Y : empty) (Z : empty) -> ...
        is not included in
-         functor (X : empty) (Y : empty)  -> ...
+         functor (X : empty) (Y : empty) -> ...
        1. Module types empty and empty match
        2. Module types empty and empty match
        3. An extra argument is provided of module type empty
@@ -80,7 +80,7 @@ Error: Signature mismatch:
        Modules do not match:
          functor (X : a) (Y : b) (Z : c) -> ...
        is not included in
-         functor (X : a) (Y : b)  -> ...
+         functor (X : a) (Y : b) -> ...
        1. Module types a and a match
        2. Module types b and b match
        3. An extra argument is provided of module type c
@@ -137,7 +137,7 @@ Line 4, characters 9-18:
              ^^^^^^^^^
 Error: The functor application F(X)(Z) is ill-typed.
        These arguments:
-         X  Z
+         X Z
        do not match these parameters:
          functor (X : ...) (Y : $T2) (Z : ...) -> ...
        1. Module X matches the expected module type
@@ -182,7 +182,7 @@ Error: Signature mismatch:
          end
        In module F:
        Modules do not match:
-         functor  (X : $S2) -> ...
+         functor (X : $S2) -> ...
        is not included in
          functor (X : $T1) (X : $T2) -> ...
        1. An argument appears to be missing with module type
@@ -226,7 +226,7 @@ Error: The functor application is ill-typed.
        These arguments:
          Ord Ord
        do not match these parameters:
-         functor  (Ord : Map.OrderedType) -> ...
+         functor (Ord : Map.OrderedType) -> ...
        1. The following extra argument is provided
               Ord : sig type t = unit val compare : 'a -> 'b -> int end
        2. Module Ord matches the expected module type Map.OrderedType
@@ -268,7 +268,7 @@ Line 1, characters 11-40:
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The functor application is ill-typed.
        These arguments:
-         K  $S3
+         K $S3
        do not match these parameters:
          functor (A : ...) (B : $T2) (C : ...) -> ...
        1. Module K matches the expected module type
@@ -326,7 +326,7 @@ Line 13, characters 19-33:
                         ^^^^^^^^^^^^^^
 Error: The functor application is ill-typed.
        These arguments:
-         M.N  Defs.Y
+         M.N Defs.Y
        do not match these parameters:
          functor (A : ...) (B : $T2) (C : ...) -> ...
        1. Module M.N matches the expected module type
@@ -344,7 +344,7 @@ Error: The functor application is ill-typed.
        These arguments:
          M.N Defs.X Defs.X Defs.Y
        do not match these parameters:
-         functor (A : ...)  (B : ...) (C : ...) -> ...
+         functor (A : ...) (B : ...) (C : ...) -> ...
        1. Module M.N matches the expected module type
        2. The following extra argument is provided
               Defs.X : sig type x = M.N.x end
@@ -364,7 +364,7 @@ Line 3, characters 23-67:
                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The functor application is ill-typed.
        These arguments:
-         $S1  Y
+         $S1 Y
        do not match these parameters:
          functor (A : ...) (B : $T2) (C : ...) -> ...
        1. Module $S1 matches the expected module type
@@ -382,7 +382,7 @@ Error: The functor application is ill-typed.
        These arguments:
          $S1 X X Y
        do not match these parameters:
-         functor (A : ...)  (B : ...) (C : ...) -> ...
+         functor (A : ...) (B : ...) (C : ...) -> ...
        1. Module $S1 matches the expected module type
        2. The following extra argument is provided X : sig type x = int end
        3. Module X matches the expected module type
@@ -404,7 +404,7 @@ Line 4, characters 22-91:
                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         functor (A : $S1)  (Z : $S3) -> ...
+         functor (A : $S1) (Z : $S3) -> ...
        is not included in
          functor (A : $T1) (B : $T2) (C : $T3) -> ...
        1. Module types $S1 and $T1 match
@@ -428,7 +428,7 @@ Line 4, characters 22-97:
                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         functor (X : $S1)  (Z : $S3) -> ...
+         functor (X : $S1) (Z : $S3) -> ...
        is not included in
          functor (B : $T1) (Y : $T2) (Z : $T3) -> ...
        1. Module types $S1 and $T1 match
@@ -577,7 +577,7 @@ Error: Signature mismatch:
          sig module F : functor (X : a) (Y : a) -> sig end end
        In module F:
        Modules do not match:
-         functor (X : aa) (Y : a/1) -> ...
+         functor (X : aa) (Y : a) -> ...
        is not included in
          functor (X : a/2) (Y : a/2) -> ...
        1. Module types aa and a/2 match
@@ -768,7 +768,7 @@ Error: Signature mismatch:
          end
        In module F:
        Modules do not match:
-         functor (X : $S1) (Y : $S2)  -> ...
+         functor (X : $S1) (Y : $S2) -> ...
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) -> ...
        1. Module types $S1 and $T1 match
@@ -1011,7 +1011,7 @@ Error: Signature mismatch:
          end
        In module B.C.D.E.F:
        Modules do not match:
-         functor (X : $S1)  (Y : $S3) (W : $S4) -> ...
+         functor (X : $S1) (Y : $S3) (W : $S4) -> ...
        is not included in
          functor $T1 $T2 $T3 $T4 -> ...
        1. Module types $S1 and $T1 match
@@ -1055,7 +1055,7 @@ Error: The functor application G(X)(Y)(X)(Y)(X) is ill-typed.
        These arguments:
          A.X A.Y A.X A.Y A.X
        do not match these parameters:
-         functor  (X : A.A) (Y : A.A) A.A (Z : A.A) -> ...
+         functor (X : A.A) (Y : A.A) A.A (Z : A.A) -> ...
        1. The following extra argument is provided
               A.X : A.Honorificabilitudinitatibus
        2. Module A.Y matches the expected module type A.A
@@ -1358,7 +1358,7 @@ Error: The functor application is ill-typed.
        These arguments:
          Add_one' Add_three A A A
        do not match these parameters:
-         functor  (X : ...) arg arg arg -> ...
+         functor (X : ...) arg arg arg -> ...
        1. The following extra argument is provided
               Add_one' :
               sig
@@ -1383,7 +1383,7 @@ Error: The functor application is ill-typed.
        These arguments:
          Add_one Add_three A A A
        do not match these parameters:
-         functor  (X : ...) arg arg arg -> ...
+         functor (X : ...) arg arg arg -> ...
        1. The following extra argument is provided
               Add_one :
               sig
@@ -1443,7 +1443,7 @@ Error: Signature mismatch:
          end
        In module F:
        Modules do not match:
-         functor (X : $S1)  (Z : $S3) -> ...
+         functor (X : $S1) (Z : $S3) -> ...
        is not included in
          functor (X : $T1) (Y : $T2) (Z : $T3) -> ...
        1. Module types $S1 and $T1 match
@@ -1496,9 +1496,9 @@ Error: Signature mismatch:
          end
        In module F:
        Modules do not match:
-         functor (Wrong : $S1) (X : $S2) X/2.T X/2.T -> ...
+         functor (Wrong : $S1) (X : $S2) X.T X.T -> ...
        is not included in
-         functor  (X : $T2) X/3.T X/3.T -> ...
+         functor (X : $T2) X.T X.T -> ...
        1. An extra argument is provided of module type
               $S1 = sig type wrong end
        2. Module types $S2 and $T2 match
@@ -1566,10 +1566,10 @@ Error: Signature mismatch:
          end
        In module F:
        Modules do not match:
-         functor (Arg : $S1) (X : $S2) (Res : X/2.T) (Res : X/2.T)
-         (Res : X/2.T) -> ...
+         functor (Arg : $S1) (X : $S2) (Res : X.T) (Res : X.T) (Res :
+         X.T) -> ...
        is not included in
-         functor sig end (X : $T2)  X/2.T X/2.T -> ...
+         functor sig end (X : $T2) X/2.T X/2.T -> ...
        1. Module types do not match:
             $S1 = sig type wrong end
           does not include
@@ -1605,7 +1605,7 @@ Error: The functor application is ill-typed.
        These arguments:
          X ... Y Z
        do not match these parameters:
-         functor (X : ...)  (Y : $T3) (Z : $T4) -> ...
+         functor (X : ...) (Y : $T3) (Z : $T4) -> ...
        1. Module X matches the expected module type
        2. The following extra argument is provided
               ... = struct type t = int end
@@ -1706,7 +1706,7 @@ Line 1, characters 15-56:
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The functor application Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY) is ill-typed.
        These arguments:
-         A   FiveArgsExt TY TY TY TY TY
+         A FiveArgsExt TY TY TY TY TY
        do not match these parameters:
          functor (W : A) (X : Ext) (Y : B) (Z : Ext) ty ty ty ty ty -> ...
        1. Module A matches the expected module type A

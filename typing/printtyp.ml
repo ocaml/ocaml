@@ -1729,12 +1729,6 @@ and tree_of_functor_parameter = function
       in
       Some (name, tree_of_modtype ~ellipsis:false ty_arg), env
 
-and tree_of_functor_parameters = function
-  | [] -> []
-  | param :: l ->
-      let param, _ = tree_of_functor_parameter param in
-      param :: tree_of_functor_parameters l
-
 and tree_of_signature sg =
   wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
 
@@ -1783,6 +1777,22 @@ and tree_of_modtype_declaration id decl =
 
 and tree_of_module id ?ellipsis mty rs =
   Osig_module (Ident.name id, tree_of_modtype ?ellipsis mty, tree_of_rec rs)
+
+let rec functor_parameters ~sep ~custom_printer ppf = function
+  | [] -> ()
+  | param :: q ->
+      let env_update = match fst param with
+        | None | Some (Unit | Named(None, _)) -> Fun.id
+        | Some Named (Some id, ty_arg) ->
+            Env.add_module ~arg:true id Mp_present ty_arg
+      in
+      custom_printer ppf (snd param);
+      begin match q with
+        | [] -> ()
+        | _ :: _ -> sep ppf ()
+      end;
+      wrap_env env_update (functor_parameters ~sep ~custom_printer ppf) q
+
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =
