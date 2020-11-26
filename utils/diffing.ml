@@ -282,10 +282,8 @@ let compute_cell ~weight ~test ~update m i j =
 
    We fill the whole matrix, as in vanilla Wagner-Fischer.
    At this point, the lists in some states might have been extended.
-   - The extremal corner of the matrix might be a final state, but
-     only if its lists have not been extended along the way.
-   - If any list have been extended, we need to reshape the matrix
-     and repeat the process
+   If any list have been extended, we need to reshape the matrix
+   and repeat the process
 *)
 let compute_matrix ~weight ~test ~update state0 =
   let m0 = Matrix.make { l = 0 ; c = 0 } in
