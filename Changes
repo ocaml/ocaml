@@ -203,6 +203,10 @@ OCaml 4.12.0
   in the same thread the allocation takes place
   (Jacques-Henri Jourdan, review by Stephen Dolan)
 
+- #10050: update {PUSH,}OFFSETCLOSURE* bytecode instructions to match new
+  representation for closures
+  (Nathanaël Courant, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
