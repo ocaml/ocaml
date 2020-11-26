@@ -644,6 +644,11 @@ val link : ?follow (* thwart tools/sync_stdlib_docs *) :bool ->
                  unavailable.
    @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
 
+val realpath : string -> string
+(** [realpath p] is the absolute pathname for [p] obtained by resolving
+    all extra [/] characters, relative path segments and symbolic links.
+
+    @since 4.13.0 *)
 
 (** {1 File permissions and ownership} *)
 

@@ -364,6 +364,7 @@ external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : ?follow:bool -> string -> string -> unit = "unix_link"
+external realpath : string -> string = "unix_realpath"
 
 (* Operations on large files *)
 

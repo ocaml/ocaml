@@ -141,6 +141,9 @@
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */
 
+#undef HAS_REALPATH
+/* Define HAS_REALPATH if you have realpath(). */
+
 #undef HAS_WAIT4
 #undef HAS_WAITPID
 

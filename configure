@@ -15044,6 +15044,13 @@ fi
 fi
 
 
+ac_fn_c_check_func "$LINENO" "realpath" "ac_cv_func_realpath"
+if test "x$ac_cv_func_realpath" = xyes; then :
+  $as_echo "#define HAS_REALPATH 1" >>confdefs.h
+
+fi
+
+
 # wait
 ac_fn_c_check_func "$LINENO" "waitpid" "ac_cv_func_waitpid"
 if test "x$ac_cv_func_waitpid" = xyes; then :
