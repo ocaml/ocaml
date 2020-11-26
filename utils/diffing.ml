@@ -327,6 +327,9 @@ type ('l, 'r, 'e, 'd, 'state) update =
   | Right of (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
 
 let variadic_diff ~weight ~test ~(update:_ update) state line column =
+  let may_append x = function
+    | [||] -> x
+    | y -> Array.append x y in
   let update = match update with
     | No up ->
         fun d fs ->
@@ -335,11 +338,11 @@ let variadic_diff ~weight ~test ~(update:_ update) state line column =
     | Left up ->
         fun d fs ->
           let state, a = up d fs.state in
-          { fs with state ; line = Array.append fs.line a }
+          { fs with state ; line = may_append fs.line a }
     | Right up ->
         fun d fs ->
           let state, a = up d fs.state in
-          { fs with state ; column = Array.append fs.column a }
+          { fs with state ; column = may_append fs.column a }
   in
   let fullstate = { line; column; state } in
   compute_matrix ~weight ~test ~update fullstate
