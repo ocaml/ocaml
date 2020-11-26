@@ -226,8 +226,8 @@ let emit_instr = function
       let org = !out_position in
       List.iter (out_label_with_orig org) lbls
   | Koffsetclosure ofs ->
-      if ofs = -2 || ofs = 0 || ofs = 2
-      then out (opOFFSETCLOSURE0 + ofs / 2)
+      if ofs = -3 || ofs = 0 || ofs = 3
+      then out (opOFFSETCLOSURE0 + ofs / 3)
       else (out opOFFSETCLOSURE; out_int ofs)
   | Kgetglobal q -> out opGETGLOBAL; slot_for_getglobal q
   | Ksetglobal q -> out opSETGLOBAL; slot_for_setglobal q
@@ -351,8 +351,8 @@ let rec emit = function
       else (out opPUSHENVACC; out_int n);
       emit c
   | Kpush :: Koffsetclosure ofs :: c ->
-      if ofs = -2 || ofs = 0 || ofs = 2
-      then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
+      if ofs = -3 || ofs = 0 || ofs = 3
+      then out(opPUSHOFFSETCLOSURE0 + ofs / 3)
       else (out opPUSHOFFSETCLOSURE; out_int ofs);
       emit c
   | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
