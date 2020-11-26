@@ -5,7 +5,7 @@
 (*                                                                        *)
 (*             Gabriel Radanne, projet Cambium, INRIA Rocquencourt        *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2020 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -71,9 +71,11 @@ val diff :
 *)
 
 type ('l, 'r, 'e, 'd, 'state) update =
-  | No of (('l,'r,'e,'d) change -> 'state -> 'state)
-  | Left of (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
-  | Right of (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
+  | Without_extensions of (('l,'r,'e,'d) change -> 'state -> 'state)
+  | With_left_extensions of
+      (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
+  | With_right_extensions of
+      (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
 
 (** [variadic_diff ~weight ~test ~update state l r] behaves as [diff]
     with the following difference:

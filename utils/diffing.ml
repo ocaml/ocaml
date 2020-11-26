@@ -322,24 +322,26 @@ let diff ~weight ~test ~update state line column =
   |> construct_patch
 
 type ('l, 'r, 'e, 'd, 'state) update =
-  | No of (('l,'r,'e,'d) change -> 'state -> 'state)
-  | Left of (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
-  | Right of (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
+  | Without_extensions of (('l,'r,'e,'d) change -> 'state -> 'state)
+  | With_left_extensions of
+      (('l,'r,'e,'d) change -> 'state -> 'state * 'l array)
+  | With_right_extensions of
+      (('l,'r,'e,'d) change -> 'state -> 'state * 'r array)
 
 let variadic_diff ~weight ~test ~(update:_ update) state line column =
   let may_append x = function
     | [||] -> x
     | y -> Array.append x y in
   let update = match update with
-    | No up ->
+    | Without_extensions up ->
         fun d fs ->
           let state = up d fs.state in
           { fs with state }
-    | Left up ->
+    | With_left_extensions up ->
         fun d fs ->
           let state, a = up d fs.state in
           { fs with state ; line = may_append fs.line a }
-    | Right up ->
+    | With_right_extensions up ->
         fun d fs ->
           let state, a = up d fs.state in
           { fs with state ; column = may_append fs.column a }

@@ -837,7 +837,6 @@ end
 module FunctorDiff = struct
   open Diffing
 
-
   type ('a,'b) data = { data:'a; metadata:'b}
   type functor_arg = {path: Path.t option; mty: Types.module_type }
 
@@ -925,7 +924,7 @@ module FunctorDiff = struct
       end
 
   let arg_diff env _ctxt (l1,res1) (l2,_res2) =
-    let update = Diffing.Left arg_update in
+    let update = Diffing.With_left_extensions arg_update in
     let test st mty1 mty2 =
       let loc = Location.none in
       let snap = Btype.snapshot () in
@@ -993,7 +992,7 @@ module FunctorDiff = struct
 
   let app_diff env ~f ~args =
     let params, res = retrieve_functor_params env f in
-    let update = Diffing.Right app_update in
+    let update = Diffing.With_right_extensions app_update in
     let test state x y =
       let arg = data_preprocess x.data and param = y.data in
       let loc = Location.none in
