@@ -9,6 +9,10 @@ OCaml 4.08 maintenance branch:
 - #9383: Don't assume that AWKPATH includes .
   (David Allsopp, report by Ian Zimmerman)
 
+- #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
+  prevent their C99-compliant snprintf conflicting with ours.
+  (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
+
 OCaml 4.08.1 (5 August 2019)
 ----------------------------
 
