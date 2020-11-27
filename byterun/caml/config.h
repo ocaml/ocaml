@@ -34,6 +34,19 @@
 #include <stdint.h>
 #endif
 
+/* Disable the mingw-w64 *printf shims */
+#ifdef __MINGW32__
+  /* Headers may have already included <_mingw.h>, so #undef if necessary. */
+  #ifdef __USE_MINGW_ANSI_STDIO
+    #undef __USE_MINGW_ANSI_STDIO
+  #endif
+  /* <stdio.h> must either be #include'd before this header or
+     __USE_MINGW_ANSI_STDIO needs to be 0 when <stdio.h> is processed. The final
+     effect will be the same - stdio.h will define snprintf and misc.h will make
+     snprintf a macro (referring to caml_snprintf). */
+  #define __USE_MINGW_ANSI_STDIO 0
+#endif
+
 /* Types for 32-bit integers, 64-bit integers, and
    native integers (as wide as a pointer type) */
 
