@@ -219,6 +219,11 @@ OCaml 4.12.0
   representation for closures
   (Nathanaël Courant, review by Xavier Leroy)
 
+- #10056: Memprof: ensure young_trigger is within the bounds of the minor
+  heap in caml_memprof_renew_minor_sample (regression from #8684)
+  (David Allsopp, review by Guillaume Munch-Maccagnoni and
+  Jacques-Henri Jourdan)
+
 - #10062: set ARCH_INT64_PRINTF_FORMAT correctly for both modes of mingw-w64
   (David Allsopp, review by Xavier Leroy)
 
