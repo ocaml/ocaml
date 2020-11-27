@@ -100,7 +100,7 @@ Error: Constraints are not satisfied in this type.
 
 module PR6505a = struct
   type 'o is_an_object = < .. > as 'o
-  and ('k,'l) abs = 'l constraint 'k = 'l is_an_object constraint 'l = < .. >
+  type ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let y : ('o, 'o) abs = object end
 end;;
 let _ = PR6505a.y#bang;; (* fails *)
@@ -108,7 +108,7 @@ let _ = PR6505a.y#bang;; (* fails *)
 module PR6505a :
   sig
     type 'o is_an_object = 'o constraint 'o = < .. >
-    and ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
+    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
       constraint 'b = < .. >
     val y : (<  > is_an_object, <  > is_an_object) abs
   end
@@ -122,7 +122,7 @@ Error: This expression has type
 module PR6505a :
   sig
     type 'o is_an_object = 'o constraint 'o = < .. >
-    and ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
+    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
       constraint 'b = < .. >
     val y : (<  >, <  >) abs
   end
@@ -135,7 +135,7 @@ Error: This expression has type (<  >, <  >) PR6505a.abs
 
 module PR6505b = struct
   type 'o is_an_object = [> ] as 'o
-  and ('k,'l) abs = 'l constraint 'k = 'l is_an_object constraint 'l = [> ]
+  type ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let x : ('a, 'a) abs = `Foo 6
 end;;
 let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
@@ -143,7 +143,7 @@ let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
 module PR6505b :
   sig
     type 'o is_an_object = 'o constraint 'o = [>  ]
-    and ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
+    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
       constraint 'b = [>  ]
     val x : (([> `Foo of int ] as 'a) is_an_object, 'a is_an_object) abs
   end
