@@ -43,7 +43,6 @@
 typedef struct {
   value block;
   uintnat offset;
-  uintnat end;
 } mark_entry;
 
 struct mark_stack {
@@ -504,105 +503,144 @@ static void realloc_mark_stack (struct mark_stack* stk)
   mark_stack_prune(stk);
 }
 
-static intnat mark_stack_push(struct mark_stack* stk, mark_entry e)
+static void mark_stack_push(struct mark_stack* stk, value block, 
+      uintnat offset, intnat* work)
 {
   value v;
-  intnat work;
+  int i, block_wsz = Wosize_val(block), end;
+  mark_entry* me;
 
-  CAMLassert(Is_block(e.block) && !Is_minor(e.block));
-  CAMLassert(Tag_val(e.block) != Infix_tag);
-  CAMLassert(Tag_val(e.block) != Cont_tag);
-  CAMLassert(Tag_val(e.block) < No_scan_tag);
+  CAMLassert(Is_block(block) && !Is_minor(block));
+  CAMLassert(Tag_val(block) != Infix_tag);
+  CAMLassert(Tag_val(block) < No_scan_tag);
+  CAMLassert(Tag_val(block) != Cont_tag);
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
-  for (work = 0; work < 16; work++) {
-    if (e.offset == e.end)
-      /* nothing left to mark and credit header */
-      return work+1;
-    v = Op_val(e.block)[e.offset];
+  end =  (block_wsz < 8 ? block_wsz : 8);
+
+  for (i = offset; i < end; i++) {
+    v = Field(block, i);
 
     if (Is_markable(v))
-      /* found something to mark */
       break;
-    else
-      /* keep going */
-      e.offset++;
   }
 
-  if (e.offset == e.end)
+  if (i == block_wsz){
     /* nothing left to mark and credit header */
-    return work+1;
+    if(work != NULL){
+      /* we should take credit for it though */
+      *work -= Whsize_wosize(block_wsz - offset);
+    }
+    return;
+  }
+
+  if( work != NULL ) {
+    /* take credit for the work we skipped due to the optimisation.
+       we will take credit for the header later as part of marking. */
+    *work -= (i - offset);
+  }
+
+  offset = i;
 
   if (stk->count == stk->size)
     realloc_mark_stack(stk);
 
-  stk->stack[stk->count++] = e;
-  return work;
+  me = &stk->stack[stk->count++];
+  me->block = block;
+  me->offset = offset;
 }
 
 /* to fit scanning_action */
 static void mark_stack_push_act(void* state, value v, value* ignored) {
-  mark_entry e = { v, 0, Wosize_val(v) };
   if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
-    mark_stack_push(Caml_state->mark_stack, e);
+    mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
+}
+
+/* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
+   and is called at the end of a GC compaction to avoid a mark stack greater
+   than 1/32th of the heap. */
+void caml_shrink_mark_stack () {
+  struct mark_stack* stk = Caml_state->mark_stack;
+  intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
+  mark_entry* shrunk_stack;
+
+  caml_gc_log ("Shrinking mark stack to %"
+                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
+                  init_stack_bsize);
+
+  shrunk_stack = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                              init_stack_bsize);
+  if (shrunk_stack != NULL) {
+    stk->stack = shrunk_stack;
+    stk->size = MARK_STACK_INIT_SIZE;
+  }else{
+    caml_gc_log ("Mark stack shrinking failed");
+  }
 }
 
 void caml_darken_cont(value cont);
-static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
+
+static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
+                              intnat* work)
+{
+  value child;
+  header_t chd;
+
+  child = Field(v, i);
+
+  if (Is_markable(child)){
+    chd = Hd_val(child);
+    if(Tag_hd(chd) == Infix_tag){
+      child -= Infix_offset_hd(chd);
+      chd = Hd_val(child);
+    }
+    CAMLassert(!Has_status_hd(chd, global.GARBAGE));
+    if (Has_status_hd(chd, global.UNMARKED)){
+      Caml_state->stat_blocks_marked++;
+      if (Tag_hd(chd) == Cont_tag){
+        caml_darken_cont(child);
+        *work -= Wosize_hd(chd);
+      } else{
+    again:
+      if (Tag_hd(chd) == Lazy_tag || Tag_hd(chd) == Forcing_tag){
+        if(!atomic_compare_exchange_strong(Hp_atomic_val(child), &chd,
+              With_status_hd(chd, global.MARKED))){
+                chd = Hd_val(child);
+                goto again;
+              }
+      } else {
+        atomic_store_explicit(
+          Hp_atomic_val(child),
+          With_status_hd(chd, global.MARKED),
+          memory_order_relaxed);
+      }
+      if(Tag_hd(chd) < No_scan_tag){
+        mark_stack_push(stk, child, 0, work);
+      }
+      else{
+        *work -= Wosize_hd(chd); /* account for header */
+      }
+    }
+  }
+  }
+}
+
+static intnat do_some_marking(intnat budget) {
+  struct mark_stack* stk = Caml_state->mark_stack;
   while (stk->count > 0) {
-    mark_entry e = stk->stack[--stk->count];
-    while (e.offset != e.end) {
-      value v;
+    mark_entry me = stk->stack[--stk->count];
+    intnat me_end = Wosize_val(me.block);
+    while (me.offset != me_end) {
       if (budget <= 0) {
-        budget -= mark_stack_push(stk, e);
+        mark_stack_push(stk, me.block, me.offset, NULL);
         return budget;
       }
       budget--;
-      CAMLassert(Is_markable(e.block) &&
-                 Has_status_hd(Hd_val(e.block), global.MARKED) &&
-                 Tag_val(e.block) < No_scan_tag &&
-                 Tag_val(e.block) != Cont_tag);
-      v = Op_val(e.block)[e.offset++];
-      if (Is_markable(v)) {
-        header_t hd = Hd_val(v);
-        if (Tag_hd(hd) == Infix_tag) {
-          v -= Infix_offset_hd(hd);
-          hd = Hd_val(v);
-        }
-        CAMLassert (!Has_status_hd(hd, global.GARBAGE));
-        if (Has_status_hd(hd, global.UNMARKED)) {
-          Caml_state->stat_blocks_marked++;
-          if (Tag_hd(hd) == Cont_tag) {
-            budget -= mark_stack_push(stk, e);
-            caml_darken_cont(v);
-            e = (mark_entry){0};
-            budget -= Wosize_hd(hd); /* credit for header, done with mark_entry */
-          } else {
-again:
-            if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
-              if (!atomic_compare_exchange_strong(
-                    Hp_atomic_val(v), &hd,
-                    With_status_hd(hd, global.MARKED))) {
-                hd = Hd_val(v);
-                goto again;
-              }
-            }
-            else {
-              atomic_store_explicit(
-                Hp_atomic_val(v),
-                With_status_hd(hd, global.MARKED),
-                memory_order_relaxed);
-            }
-            if (Tag_hd(hd) < No_scan_tag) {
-              mark_entry child = {v, 0, Wosize_hd(hd)};
-              budget -= mark_stack_push(stk, e);
-              e = child;
-            } else {
-              budget -= Whsize_hd(hd);
-            }
-          }
-        }
-      }
+      CAMLassert(Is_markable(me.block) &&
+                 Has_status_hd(Hd_val(me.block), global.MARKED) &&
+                 Tag_val(me.block) < No_scan_tag &&
+                 Tag_val(me.block) != Cont_tag);
+      mark_slice_darken(stk, me.block, me.offset++, &budget);
     }
     budget--; /* credit for header */
   }
@@ -612,7 +650,7 @@ again:
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
   while (budget > 0 && !Caml_state->marking_done) {
-    budget = do_some_marking(Caml_state->mark_stack, budget);
+    budget = do_some_marking(budget);
     if (budget > 0) {
       struct pool* p = find_pool_to_rescan();
       if (p) {
@@ -672,8 +710,7 @@ void caml_darken(void* state, value v, value* ignored) {
          With_status_hd(hd, global.MARKED),
          memory_order_relaxed);
       if (Tag_hd(hd) < No_scan_tag) {
-        mark_entry e = {v, 0, Wosize_val(v)};
-        mark_stack_push(Caml_state->mark_stack, e);
+        mark_stack_push(Caml_state->mark_stack, v, 0, NULL);
       }
     }
   }
@@ -1319,6 +1356,7 @@ void caml_finish_marking () {
   if (!Caml_state->marking_done) {
     caml_ev_begin("major_gc/finish_marking");
     caml_empty_mark_stack();
+    caml_shrink_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
     caml_ev_end("major_gc/finish_marking");
