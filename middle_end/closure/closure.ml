@@ -858,42 +858,45 @@ let close_approx_var { fenv; cenv } id =
 let close_var env id =
   let (ulam, _app) = close_approx_var env id in ulam
 
+let close_constant cst =
+  let str ?(shared = true) cst =
+    let name =
+      Compilenv.new_structured_constant cst ~shared
+    in
+    Uconst_ref (name, Some cst)
+  in
+  let rec transl = function
+    | Const_base(Const_int n) -> Uconst_int n
+    | Const_base(Const_char c) -> Uconst_int (Char.code c)
+    | Const_block (tag, fields) ->
+        str (Uconst_block (tag, List.map transl fields))
+    | Const_float_array sl ->
+        (* constant float arrays are really immutable *)
+        str (Uconst_float_array (List.map float_of_string sl))
+    | Const_immstring s ->
+        str (Uconst_string s)
+    | Const_base (Const_string (s, _, _)) ->
+        (* Strings (even literal ones) must be assumed to be mutable...
+           except when OCaml has been configured with
+           -safe-string.  Passing -safe-string at compilation
+           time is not enough, since the unit could be linked
+           with another one compiled without -safe-string, and
+           that one could modify our string literal.  *)
+        str ~shared:Config.safe_string (Uconst_string s)
+    | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
+    | Const_base(Const_int32 x) -> str (Uconst_int32 x)
+    | Const_base(Const_int64 x) -> str (Uconst_int64 x)
+    | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
+  in
+  make_const (transl cst)
+
 let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
   let module B = (val backend : Backend_intf.S) in
   match lam with
   | Lvar id ->
       close_approx_var env id
   | Lconst cst ->
-      let str ?(shared = true) cst =
-        let name =
-          Compilenv.new_structured_constant cst ~shared
-        in
-        Uconst_ref (name, Some cst)
-      in
-      let rec transl = function
-        | Const_base(Const_int n) -> Uconst_int n
-        | Const_base(Const_char c) -> Uconst_int (Char.code c)
-        | Const_block (tag, fields) ->
-            str (Uconst_block (tag, List.map transl fields))
-        | Const_float_array sl ->
-            (* constant float arrays are really immutable *)
-            str (Uconst_float_array (List.map float_of_string sl))
-        | Const_immstring s ->
-            str (Uconst_string s)
-        | Const_base (Const_string (s, _, _)) ->
-              (* Strings (even literal ones) must be assumed to be mutable...
-                 except when OCaml has been configured with
-                 -safe-string.  Passing -safe-string at compilation
-                 time is not enough, since the unit could be linked
-                 with another one compiled without -safe-string, and
-                 that one could modify our string literal.  *)
-            str ~shared:Config.safe_string (Uconst_string s)
-        | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
-        | Const_base(Const_int32 x) -> str (Uconst_int32 x)
-        | Const_base(Const_int64 x) -> str (Uconst_int64 x)
-        | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
-      in
-      make_const (transl cst)
+      close_constant cst
   | Lfunction _ as funct ->
       close_one_function env (Ident.create_local "fun") funct
 
@@ -1045,7 +1048,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         (Uletrec(udefs, ubody), approx)
       end
   (* Compile-time constants *)
-  | Lprim(Pctconst c, [arg], _loc) ->
+  | Lprim(Pctconst c, args, _loc) ->
       let cst, approx =
         match c with
         | Big_endian -> make_const_bool B.big_endian
@@ -1057,10 +1060,15 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
         | Backend_type ->
             make_const_int 0 (* tag 0 is the same as Native here *)
+        | Literal c ->
+            close_constant (Const_base c)
       in
-      let arg, _approx = close env arg in
-      let id = Ident.create_local "dummy" in
-      Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
+      List.fold_right (fun arg cst ->
+          let arg, _approx = close env arg in
+          let id = Ident.create_local "dummy" in
+          Ulet(Immutable, Pgenval, VP.create id, arg, cst)
+        ) args cst,
+      approx
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_int 0 in
       Usequence(fst (close env arg), expr), approx

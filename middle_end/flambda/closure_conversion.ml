@@ -434,7 +434,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (name_expr
         (Prim (Praise kind, [arg_var], dbg))
         ~name:Names.raise)
-  | Lprim (Pctconst c, [arg], _loc) ->
+  | Lprim (Pctconst c, args, _loc) ->
       let module Backend = (val t.backend) in
       let const =
         begin match c with
@@ -448,11 +448,15 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         | Ostype_cygwin -> lambda_const_bool (String.equal Sys.os_type "Cygwin")
         | Backend_type ->
             Lambda.const_int 0 (* tag 0 is the same as Native *)
+        | Literal c ->
+            Lambda.Const_base c
         end
       in
       close t env
-        (Lambda.Llet(Strict, Pgenval, Ident.create_local "dummy",
-                     arg, Lconst const))
+        (List.fold_right (fun arg cst ->
+             Lambda.Llet(Strict, Pgenval, Ident.create_local "dummy",
+                         arg, cst)
+           ) args (Lambda.Lconst const))
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [],_)], _)
       when Ident.same id t.current_unit_id ->
     Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \

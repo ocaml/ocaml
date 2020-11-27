@@ -451,16 +451,24 @@ let comp_primitive p args =
   | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pctconst c ->
-     let const_name = match c with
-       | Big_endian -> "big_endian"
-       | Word_size -> "word_size"
-       | Int_size -> "int_size"
-       | Max_wosize -> "max_wosize"
-       | Ostype_unix -> "ostype_unix"
-       | Ostype_win32 -> "ostype_win32"
-       | Ostype_cygwin -> "ostype_cygwin"
-       | Backend_type -> "backend_type" in
-     Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
+     let ccall =
+       match c with
+       | Big_endian -> Ok "big_endian"
+       | Word_size -> Ok "word_size"
+       | Int_size -> Ok "int_size"
+       | Max_wosize -> Ok "max_wosize"
+       | Ostype_unix -> Ok "ostype_unix"
+       | Ostype_win32 -> Ok "ostype_win32"
+       | Ostype_cygwin -> Ok "ostype_cygwin"
+       | Backend_type -> Ok "backend_type"
+       | Literal c -> Result.Error c
+     in
+     begin match ccall with
+     | Ok const_name ->
+         Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
+     | Error c ->
+         Kconst (Const_base c)
+     end
   | Pisint -> Kisint
   | Pisout -> Kisout
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
