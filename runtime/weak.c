@@ -358,20 +358,28 @@ CAMLprim value caml_ephe_get_data (value ar)
   return optionalize(caml_ephemeron_get_data(ar, &data), &data);
 }
 
-
-Caml_inline void copy_value(value src, value dst)
+static void copy_value(value src, value dst)
 {
-  if (Tag_val (src) < No_scan_tag){
-    mlsize_t i;
-    for (i = 0; i < Wosize_val (src); i++){
-      value f = Field (src, i);
-      if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(f)){
-        caml_darken (f, NULL);
-      }
-      caml_modify (&Field (dst, i), f);
+  mlsize_t sz, i;
+  sz = Wosize_val(src);
+  if (Tag_val (src) >= No_scan_tag) {
+    /* Direct copy */
+    memcpy (Bp_val (dst), Bp_val (src), Bsize_wsize (sz));
+    return;
+  }
+  i = 0;
+  if (Tag_val (src) == Closure_tag) {
+    /* Direct copy of the code pointers and closure info fields */
+    i = Start_env_closinfo(Closinfo_val(src));
+    memcpy (Bp_val (dst), Bp_val (src), Bsize_wsize (i));
+  }
+  /* Field-by-field copy and darkening of the remaining fields */
+  for (/*nothing*/; i < sz; i++){
+    value f = Field (src, i);
+    if (caml_gc_phase == Phase_mark && Must_be_Marked_during_mark(f)){
+      caml_darken (f, NULL);
     }
-  }else{
-    memmove (Bp_val (dst), Bp_val (src), Bosize_val (src));
+    caml_modify (&Field (dst, i), f);
   }
 }
 
