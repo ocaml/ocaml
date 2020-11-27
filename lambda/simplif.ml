@@ -243,6 +243,8 @@ let simplify_exits lam =
           }
         (* Simplify %identity *)
       | Pidentity, [e] -> e
+        (* Simplify compile-time literal constants *)
+      | Pctconst (Literal c), [] -> Lconst (Const_base c)
 
         (* Simplify Obj.with_tag *)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
