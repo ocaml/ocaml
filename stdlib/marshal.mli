@@ -109,7 +109,6 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    when read back on a 32-bit platform.  The [Mashal.Compat_32] flag
    only matters when marshaling is performed on a 64-bit platform;
    it has no effect if marshaling is performed on a 32-bit platform.
-   
    @raise Failure if [chan] is not in binary mode.
  *)
 
