@@ -40,12 +40,12 @@ let expand_position pos len =
 
 
 let prepare ppf =
-  Opttoploop.set_paths ();
+  Toploop.set_paths ();
   try
     let res =
-      List.for_all (Opttopdirs.load_file ppf) (List.rev !preload_objects)
+      List.for_all (Topdirs.load_file ppf) (List.rev !preload_objects)
     in
-    Opttoploop.run_hooks Opttoploop.Startup;
+    Toploop.run_hooks Toploop.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false
@@ -73,7 +73,7 @@ let file_argument name =
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
-      if prepare ppf && Opttoploop.run_script ppf name newargs
+      if prepare ppf && Toploop.run_script ppf name newargs
       then raise (Exit_with_status 0)
       else raise (Exit_with_status 2)
     end
@@ -115,7 +115,7 @@ let main () =
   Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then raise (Exit_with_status 2);
   Compmisc.init_path ();
-  Opttoploop.loop Format.std_formatter
+  Toploop.loop Format.std_formatter
 
 let main () =
   match main () with

@@ -19,7 +19,7 @@ open Format
 open Misc
 open Longident
 open Types
-open Opttoploop
+open Toploop
 
 (* The standard output formatter *)
 let std_out = std_formatter
@@ -114,8 +114,8 @@ let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
 
 (* Load commands from a file *)
 
-let dir_use ppf name = ignore(Opttoploop.use_file ppf name)
-let dir_use_output ppf name = ignore(Opttoploop.use_output ppf name)
+let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
 
 let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
 let _ = Hashtbl.add directive_table "use_output"
@@ -194,6 +194,12 @@ let _ = Hashtbl.add directive_table "remove_printer"
 let parse_warnings ppf iserr s =
   try Warnings.parse_options iserr s
   with Arg.Bad err -> fprintf ppf "%s.@." err
+
+let unavailable () = invalid_arg "Directive unavailable in the native toplevel."
+
+let dir_trace _ _ = unavailable ()
+let dir_untrace _ _ = unavailable ()
+let dir_untrace_all _ _ = unavailable ()
 
 let _ =
 (* Control the printing of values *)
