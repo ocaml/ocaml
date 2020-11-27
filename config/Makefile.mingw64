@@ -116,7 +116,7 @@ CC=$(TOOLPREF)gcc
 CFLAGS=-O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
 # -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
 # and only works on GCC 4.2 and later.
-CPPFLAGS=-DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
+CPPFLAGS=-DCAML_NAME_SPACE -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
 OCAMLC_CFLAGS=-O -mms-bitfields
 
 BYTECCDBGCOMPOPTS=-g
