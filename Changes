@@ -577,7 +577,8 @@ OCaml 4.12.0
 - #7538, #9669: Check for misplaced attributes on module aliases
   (Leo White, report by Thomas Leonard, review by Florian Angeletti)
 
-- #7813, #9955: make sure the major GC cycle doesn't get stuck in Idle state
+- #7813, #9955, #10055: make sure the major GC cycle doesn't get stuck in Idle
+  state
   (Damien Doligez, report by Anders Fugmann, review by Jacques-Henri Jourdan)
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
