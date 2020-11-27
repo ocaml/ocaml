@@ -82,23 +82,23 @@ external with_tag : int -> t -> t = "caml_obj_with_tag"
 val first_non_constant_constructor_tag : int
 val last_non_constant_constructor_tag : int
 
-val lazy_tag : int
-val closure_tag : int
-val object_tag : int
-val infix_tag : int
-val forward_tag : int
-val no_scan_tag : int
-val abstract_tag : int
-val string_tag : int   (* both [string] and [bytes] *)
-val double_tag : int
-val double_array_tag : int
-val custom_tag : int
-val final_tag : int
+external lazy_tag : int = "%lazy_tag"
+external closure_tag : int = "%closure_tag"
+external object_tag : int = "%object_tag"
+external infix_tag : int = "%infix_tag"
+external forward_tag : int = "%forward_tag"
+external no_scan_tag : int = "%no_scan_tag"
+external abstract_tag : int = "%abstract_tag"
+external string_tag : int = "%string_tag"  (* both [string] and [bytes] *)
+external double_tag : int = "%double_tag"
+external double_array_tag : int = "%double_array_tag"
+external custom_tag : int = "%custom_tag"
+external final_tag : int = "%custom_tag"
   [@@ocaml.deprecated "Replaced by custom_tag."]
 
-val int_tag : int
-val out_of_heap_tag : int
-val unaligned_tag : int   (* should never happen @since 3.11.0 *)
+external int_tag : int = "%int_tag"
+external out_of_heap_tag : int = "%out_of_heap_tag"
+external unaligned_tag : int = "%unaligned_tag"   (* should never happen @since 3.11.0 *)
 
 module Closure : sig
   type info = {

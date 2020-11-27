@@ -54,25 +54,24 @@ let unmarshal str pos =
 let first_non_constant_constructor_tag = 0
 let last_non_constant_constructor_tag = 245
 
-let lazy_tag = 246
-let closure_tag = 247
-let object_tag = 248
-let infix_tag = 249
-let forward_tag = 250
+external lazy_tag : int = "%lazy_tag"
+external closure_tag : int = "%closure_tag"
+external object_tag : int = "%object_tag"
+external infix_tag : int = "%infix_tag"
+external forward_tag : int = "%forward_tag"
 
-let no_scan_tag = 251
+external no_scan_tag : int = "%no_scan_tag"
 
-let abstract_tag = 251
-let string_tag = 252
-let double_tag = 253
-let double_array_tag = 254
-let custom_tag = 255
-let final_tag = custom_tag
+external abstract_tag : int = "%abstract_tag"
+external string_tag : int = "%string_tag"
+external double_tag : int = "%double_tag"
+external double_array_tag : int = "%double_array_tag"
+external custom_tag : int = "%custom_tag"
+external final_tag : int = "%custom_tag"
 
-
-let int_tag = 1000
-let out_of_heap_tag = 1001
-let unaligned_tag = 1002
+external int_tag : int = "%int_tag"
+external out_of_heap_tag : int = "%out_of_heap_tag"
+external unaligned_tag : int = "%unaligned_tag"
 
 module Closure = struct
   type info = {
