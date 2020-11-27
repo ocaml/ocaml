@@ -564,6 +564,10 @@ OCaml 4.12.0
 - #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
   (Sébastien Hinderer, review by David Allsopp)
 
+- #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
+  prevent their C99-compliant snprintf conflicting with ours.
+  (David Allsopp, report by Michael Soegtrop, review by ???)
+
 - #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
   Standard Library directory.
   (Bernhard Schommer, review by David Allsopp)
