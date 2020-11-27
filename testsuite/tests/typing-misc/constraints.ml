@@ -241,3 +241,21 @@ Error: This recursive type is not regular.
          ('b * 'b) t.
        All uses need to match the definition for the recursive type to be regular.
 |}]
+
+module type S =
+sig
+  type !'a s
+  type !'a t = 'b  constraint 'a = 'b s
+end
+[%%expect{|
+module type S = sig type !'a s type 'a t = 'b constraint 'a = 'b s end
+|}]
+
+(* This still causes a stack overflow *)
+(*
+module rec M : S =
+struct
+  type !'a s = 'a M.t
+  type !'a t = 'b constraint 'a = 'b s
+end
+*)
