@@ -133,16 +133,16 @@ static void write_barrier(value obj, intnat field, value old_val, value new_val)
   /* HACK: can't assert when get old C-api style pointers
     Assert (Is_block(obj)); */
 
-  if (!Is_minor(obj)) {
+  if (!Is_young(obj)) {
 
     if (Is_block(old_val)) {
        /* if old is in the minor heap, then this is in a remembered set already */
-       if (Is_minor(old_val)) return;
+       if (Is_young(old_val)) return;
        /* old is a block and in the major heap */
        caml_darken(0, old_val, 0);
      }
      /* this update is creating a new link from major to minor, remember it */
-     if (Is_block_and_minor(new_val)) {
+     if (Is_block_and_young(new_val)) {
        Ref_table_add(&Caml_state->minor_tables->major_ref, Op_val(obj) + field);
      }
    }
@@ -185,7 +185,7 @@ CAMLexport void caml_initialize_field (value obj, intnat field, value val)
   Assert(0 <= field && field < Wosize_val(obj));
 #ifdef DEBUG
   /* caml_initialize_field can only be used on just-allocated objects */
-  if (Is_minor(obj))
+  if (Is_young(obj))
     Assert(Op_val(obj)[field] == Debug_uninit_minor ||
            Op_val(obj)[field] == Val_unit);
   else
@@ -204,7 +204,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
   /* caml_initialize_field can only be used on just-allocated objects */
-  if (Is_minor((value)fp))
+  if (Is_young((value)fp))
     Assert(*fp == Debug_uninit_minor ||
            *fp == Val_unit);
   else
@@ -390,10 +390,6 @@ CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
 #ifdef DEBUG
 header_t hd_val (value v) {
   return (header_t)Hd_val(v);
-}
-
-int is_minor(value v) {
-  return Is_minor(v);
 }
 
 int is_young(value v) {

@@ -472,9 +472,9 @@ static struct pool* find_pool_to_rescan();
 
 
 #ifdef DEBUG
-#define Is_markable(v) (Is_block(v) && !Is_minor(v) && v != Debug_free_major)
+#define Is_markable(v) (Is_block(v) && !Is_young(v) && v != Debug_free_major)
 #else
-#define Is_markable(v) (Is_block(v) && !Is_minor(v))
+#define Is_markable(v) (Is_block(v) && !Is_young(v))
 #endif
 
 static void realloc_mark_stack (struct mark_stack* stk)
@@ -510,10 +510,11 @@ static void mark_stack_push(struct mark_stack* stk, value block,
   int i, block_wsz = Wosize_val(block), end;
   mark_entry* me;
 
-  CAMLassert(Is_block(block) && !Is_minor(block));
+  CAMLassert(Is_block(block) && !Is_young(block));
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
   CAMLassert(Tag_val(block) != Cont_tag);
+
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
   end =  (block_wsz < 8 ? block_wsz : 8);
@@ -667,7 +668,7 @@ static intnat mark(intnat budget) {
 
 void caml_darken_cont(value cont)
 {
-  CAMLassert(Is_block(cont) && !Is_minor(cont) && Tag_val(cont) == Cont_tag);
+  CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
   SPIN_WAIT {
     header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
     CAMLassert(!Has_status_hd(hd, global.GARBAGE));
