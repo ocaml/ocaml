@@ -528,6 +528,11 @@ OCaml 4.12.0
   Standard Library directory.
   (Bernhard Schommer, review by David Allsopp)
 
+- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
+  only builds (fixes a "configuration regression" from 4.08 for the Windows
+  builds)
+  (David Allsopp, review by Xavier Leroy)
+
 ### Bug fixes:
 
 - #7538, #9669: Check for misplaced attributes on module aliases
