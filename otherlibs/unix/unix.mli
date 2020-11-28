@@ -876,10 +876,11 @@ val open_process_full :
 
 val open_process_args_in : string -> string array -> in_channel
 (** High-level pipe and process management. The first argument specifies the
-   command to run, and the second argument specifies the argument array passed
-   to the command.  This function runs the command in parallel with the program.
-   The standard output of the command is redirected to a pipe, which can be read
-   via the returned input channel.
+   path to the command to run, and the second argument specifies the argument
+   array passed to the command. The first array position must match the command.
+   This function is not run through a shell. This function runs the command
+   in parallel with the program. The standard output of the command is
+   redirected to a pipe, which can be read via the returned input channel.
 
     @since 4.08.0 *)
 
