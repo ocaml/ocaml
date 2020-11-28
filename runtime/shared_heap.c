@@ -411,7 +411,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 
 struct pool* caml_pool_of_shared_block(value v)
 {
-  Assert (Is_block(v) && !Is_minor(v));
+  Assert (Is_block(v) && !Is_young(v));
   mlsize_t whsize = Whsize_wosize(Wosize_val(v));
   if (whsize > 0 && whsize <= SIZECLASS_MAX) {
     return (pool*)((uintnat)v &~(POOL_WSIZE * sizeof(value) - 1));
@@ -630,7 +630,7 @@ void verify_push(void* st_v, value v, value* p)
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
 
-  if( Is_minor(v) ) {
+  if( Is_young(v) ) {
     caml_gc_log("minor in heap: %p, hd_val: %lx, p: %p", (value*)v, Hd_val(v), p);
     struct domain* domain = caml_owner_of_young_block(v);
     caml_gc_log("owner: %d, young_start: %p, young_end: %p, young_ptr: %p, young_limit: %p", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, (void *)domain->state->young_limit);
@@ -652,7 +652,7 @@ void caml_verify_root(void* state, value v, value* p)
 static void verify_object(struct heap_verify_state* st, value v) {
   if (!Is_block(v)) return;
 
-  Assert (!Is_minor(v));
+  Assert (!Is_young(v));
   Assert (Hd_val(v));
 
   if (Tag_val(v) == Infix_tag) {
@@ -677,7 +677,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
     int i;
     for (i = 0; i < Wosize_val(v); i++) {
       value f = Op_val(v)[i];
-      if (Is_minor(v) && Is_minor(f)) {
+      if (Is_young(v) && Is_young(f)) {
         Assert(caml_owner_of_young_block(v) ==
                caml_owner_of_young_block(f));
       }

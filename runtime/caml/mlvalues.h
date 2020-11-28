@@ -204,31 +204,14 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Fields are numbered from 0. */
 #define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
 
-/* All values which are not blocks in the current domain's minor heap
-   differ from caml_domain_state in at least one of the bits set in
-   Young_val_bitmask */
-#define Young_val_bitmask \
-  ((uintnat)1 | ~(((uintnat)1 << Minor_heap_align_bits) - (uintnat)1))
+/* Is_young(val) is true iff val is in the reserved area for minor heaps */
 
-/* All values which are not blocks in any domain's minor heap differ
-   from caml_domain_state in at least one of the bits set in
-   Minor_val_bitmask */
-#define Minor_val_bitmask \
-  ((uintnat)1 | ~(((uintnat)1 << (Minor_heap_align_bits + Minor_heap_sel_bits)) - (uintnat)1))
-
-
-/* Is_young(val) is true iff val is a block in the current domain's minor heap.
-   Since the minor heap is allocated in one aligned block, this can be tested
-   via bitmasking. */
 #define Is_young(val) \
-  ((((uintnat)(val) ^ (uintnat)Caml_state) & Young_val_bitmask) == 0)
+  (CAMLassert (Is_block (val)),		   \
+   (char *)(val) < (char *)caml_minor_heaps_end && \
+   (char *)(val) > (char *)caml_minor_heaps_base)
 
-/* Is_minor(val) is true iff val is a block in any domain's minor heap. */
-#define Is_minor(val) \
-  ((((uintnat)(val) ^ (uintnat)Caml_state) & Minor_val_bitmask) == 0)
-
-#define Is_block_and_young(val) Is_young(val)
-#define Is_block_and_minor(val) Is_minor(val)
+#define Is_block_and_young(val) (Is_block(val) && Is_young(val))
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.

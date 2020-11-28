@@ -14,8 +14,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-val minor_heap_sel_bits : int
-val minor_heap_align_bits : int
 val stack_ctx_words : int
 
 type t =
