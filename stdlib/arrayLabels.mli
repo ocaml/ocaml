@@ -243,6 +243,31 @@ val memq : 'a -> set:'a array -> bool
    instead of structural equality to compare list elements.
    @since 4.03.0 *)
 
+val find_opt : f:('a -> bool) -> 'a array -> 'a option
+(** [find_opt ~f a] returns the first element of the array [a] that satisfies
+    the predicate [f], or [None] if there is no value that satisfies [f] in the
+    array [a].
+
+    @since 4.13.0 *)
+
+val find_map : f:('a -> 'b option) -> 'a array -> 'b option
+(** [find_map ~f a] applies [f] to the elements of [a] in order, and returns the
+    first result of the form [Some v], or [None] if none exist.
+
+    @since 4.13.0 *)
+
+(** {1 Arrays of pairs} *)
+
+val split : ('a * 'b) array -> 'a array * 'b array
+(** [split [|(a1,b1); ...; (an,bn)|]] is [([|a1; ...; an|], [|b1; ...; bn|])].
+
+    @since 4.13.0 *)
+
+val combine : 'a array -> 'b array -> ('a * 'b) array
+(** [combine [|a1; ...; an|] [|b1; ...; bn|]] is [[|(a1,b1); ...; (an,bn)|]].
+    Raise [Invalid_argument] if the two arrays have different lengths.
+
+    @since 4.13.0 *)
 
 (** {1 Sorting} *)
 

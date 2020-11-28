@@ -223,6 +223,56 @@ let memq x a =
     else loop (succ i) in
   loop 0
 
+let find_opt p a =
+  let n = length a in
+  let rec loop i =
+    if i = n then None
+    else
+      let x = unsafe_get a i in
+      if p x then Some x
+      else loop (succ i)
+  in
+  loop 0
+
+let find_map f a =
+  let n = length a in
+  let rec loop i =
+    if i = n then None
+    else
+      match f (unsafe_get a i) with
+      | None -> loop (succ i)
+      | Some _ as r -> r
+  in
+  loop 0
+
+let split x =
+  if x = [||] then [||], [||]
+  else begin
+    let a0, b0 = unsafe_get x 0 in
+    let n = length x in
+    let a = create n a0 in
+    let b = create n b0 in
+    for i = 1 to n - 1 do
+      let ai, bi = unsafe_get x i in
+      unsafe_set a i ai;
+      unsafe_set b i bi
+    done;
+    a, b
+  end
+
+let combine a b =
+  let na = length a in
+  let nb = length b in
+  if na <> nb then invalid_arg "Array.combine";
+  if na = 0 then [||]
+  else begin
+    let x = create na (unsafe_get a 0, unsafe_get b 0) in
+    for i = 1 to na - 1 do
+      unsafe_set x i (unsafe_get a i, unsafe_get b i)
+    done;
+    x
+  end
+
 exception Bottom of int
 let sort cmp a =
   let maxson l i =
