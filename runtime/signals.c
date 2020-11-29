@@ -563,7 +563,9 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
 
 /* Installation of a signal handler (as per [Sys.signal]) */
 
-CAMLprim value caml_install_signal_handler(value signal_number, value action)
+static value install_signal_handler(value signal_number,
+                                    value action,
+                                    caml_mask_kind mask)
 {
   CAMLparam2 (signal_number, action);
   CAMLlocal1 (res);
@@ -573,7 +575,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   if (sig < 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
 
-  pending_signals_mask[sig] = CAML_MASK_UNINTERRUPTIBLE;
+  pending_signals_mask[sig] = mask;
 
   switch(action) {
   case Val_int(0):              /* Signal_default */
@@ -610,4 +612,18 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   }
   caml_raise_if_exception(caml_process_pending_signals_exn());
   CAMLreturn (res);
+}
+
+CAMLprim value caml_install_signal_handler(value signal_number,
+                                           value action)
+{
+  return install_signal_handler(signal_number, action,
+                                CAML_MASK_UNINTERRUPTIBLE);
+}
+
+CAMLprim value caml_install_nonraising_signal_handler(value signal_number,
+                                                      value action)
+{
+  return install_signal_handler(signal_number, action,
+                                CAML_MASK_NONPREEMPTIBLE);
 }

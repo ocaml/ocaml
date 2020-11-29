@@ -64,8 +64,11 @@ let preempt_signal =
   | "Win32" -> Sys.sigterm
   | _       -> Sys.sigvtalrm
 
+external signal_nonraising : int -> Sys.signal_behavior -> Sys.signal_behavior
+  = "caml_install_nonraising_signal_handler"
+
 let () =
-  Sys.set_signal preempt_signal (Sys.Signal_handle preempt);
+  ignore(signal_nonraising preempt_signal (Sys.Signal_handle preempt));
   thread_initialize ();
   Callback.register "Thread.at_shutdown" (fun () ->
     thread_cleanup();
