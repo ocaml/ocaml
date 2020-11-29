@@ -254,15 +254,15 @@ CAMLexport void caml_unmask(caml_mask_kind old_mask)
 }
 
 // ML, noalloc
-CAMLprim value caml_sys_set_mask(value unit)
+CAMLprim value caml_sys_set_mask(value mask)
 {
-  return Val_bool(caml_mask(CAML_MASK_UNINTERRUPTIBLE) == CAML_MASK_NONE);
+  return Val_int(caml_mask(Int_val(mask)));
 }
 
 // ML, noalloc
-CAMLprim value caml_sys_unset_mask(value unit)
+CAMLprim value caml_sys_unset_mask(value mask)
 {
-  caml_unmask(CAML_MASK_NONE);
+  caml_unmask(Int_val(mask));
   return Val_unit;
 }
 

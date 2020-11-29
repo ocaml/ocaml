@@ -121,22 +121,38 @@ let catch_break on =
     set_signal sigint Signal_default
 
 
-external set_mask : unit -> bool = "caml_sys_set_mask" [@@noalloc]
-external unset_mask : unit -> unit = "caml_sys_unset_mask" [@@noalloc]
+type _mask_kind = Mask_none | Mask_uninterruptible | Mask_nonpreemptible
+
+external set_mask : _mask_kind -> _mask_kind = "caml_sys_set_mask" [@@noalloc]
+external unset_mask : _mask_kind -> unit = "caml_sys_unset_mask" [@@noalloc]
 
 let mask f (* BEGIN ATOMIC *) x =
-  if set_mask () then (
-    (* END ATOMIC *)
-    match f x with
-    | y -> (* BEGIN ATOMIC *) unset_mask () ; y (* END ATOMIC *)
-    | exception e -> (
-        (* BEGIN ATOMIC *)
-        unset_mask () ;
-        raise e
-        (* END ATOMIC *)
-      )
-  ) else f x
+  match set_mask Mask_uninterruptible (* END ATOMIC *) with
+  | Mask_none -> (
+      match f x with
+      | y -> (* BEGIN ATOMIC *) unset_mask Mask_none ; y (* END ATOMIC *)
+      | exception e -> (
+          (* BEGIN ATOMIC *)
+          unset_mask Mask_none ;
+          raise e
+          (* END ATOMIC *)
+        )
+    )
+  | _ -> f x
 
+let nonpreemptible_mask f (* BEGIN ATOMIC *) x =
+  match set_mask Mask_nonpreemptible (* END ATOMIC *) with
+  | Mask_nonpreemptible -> f x
+  | m -> (
+      match f x with
+      | y -> (* BEGIN ATOMIC *) unset_mask m ; y (* END ATOMIC *)
+      | exception e -> (
+          (* BEGIN ATOMIC *)
+          unset_mask m ;
+          raise e
+          (* END ATOMIC *)
+        )
+    )
 
 external enable_runtime_warnings: bool -> unit =
   "caml_ml_enable_runtime_warnings"

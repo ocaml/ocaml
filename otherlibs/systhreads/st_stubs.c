@@ -239,6 +239,10 @@ Caml_inline void caml_thread_restore_runtime_state(void)
 
 static void caml_thread_enter_blocking_section(void)
 {
+  if (Caml_state->mask_async_callbacks == CAML_MASK_NONPREEMPTIBLE)
+    caml_invalid_argument("Cannot enter a blocking section inside a "
+                          "non-preemptible mask");
+
   /* Save the current runtime state in the thread descriptor
      of the current thread */
   caml_thread_save_runtime_state();
@@ -722,7 +726,9 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 
 CAMLprim value caml_thread_yield(value unit)        /* ML */
 {
-  if (st_masterlock_waiters(&caml_master_lock) == 0) return Val_unit;
+  if (Caml_state->mask_async_callbacks == CAML_MASK_NONPREEMPTIBLE
+      || st_masterlock_waiters(&caml_master_lock) == 0)
+    return Val_unit;
 
   /* Do all the parts of a blocking section enter/leave except lock
      manipulation, which we'll do more efficiently in st_thread_yield. (Since

@@ -10,8 +10,13 @@
 
 exception Alarm
 
-external set_mask : unit -> unit = "caml_sys_set_mask" [@@noalloc]
-external unset_mask : unit -> unit = "caml_sys_unset_mask" [@@noalloc]
+type _mask_kind = Mask_none | Mask_uninterruptible | Mask_nonpreemptible
+
+external set_mask_prim : _mask_kind -> _mask_kind = "caml_sys_set_mask" [@@noalloc]
+external unset_mask_prim : _mask_kind -> unit = "caml_sys_unset_mask" [@@noalloc]
+
+let set_mask () = ignore (set_mask_prim Mask_uninterruptible)
+let unset_mask () = unset_mask_prim Mask_none
 
 let mask : ('a -> 'b) -> 'a -> 'b = Sys.mask
 
