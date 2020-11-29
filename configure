@@ -13656,6 +13656,12 @@ fi
   *) :
      ;;
 esac ;; #(
+  *-*-solaris*) :
+    sharedlib_cflags="-fPIC"
+      mksharedlib="$CC -shared"
+      rpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      shared_libraries_supported=true ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
@@ -13706,6 +13712,8 @@ if test x"$enable_shared" != "xno"; then :
   s390x*-*-linux*) :
     natdynlink=true ;; #(
   powerpc*-*-linux*) :
+    natdynlink=true ;; #(
+  x86_64-*-solaris*) :
     natdynlink=true ;; #(
   i686-*-kfreebsd*) :
     natdynlink=true ;; #(
@@ -13892,6 +13900,8 @@ fi; system=elf ;; #(
     arch=amd64; system=gnu ;; #(
   x86_64-*-dragonfly*) :
     arch=amd64; system=dragonfly ;; #(
+  x86_64-*-solaris*) :
+    arch=amd64; system=solaris ;; #(
   x86_64-*-freebsd*) :
     arch=amd64; system=freebsd ;; #(
   x86_64-*-netbsd*) :
@@ -14038,8 +14048,6 @@ if test -z "$PARTIALLD"; then :
   case "$arch,$CC,$system,$model" in #(
   amd64,gcc*,macosx,*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
-  amd64,gcc*,solaris,*) :
-    PACKLD_FLAGS=' -m elf_x86_64' ;; #(
   power,gcc*,elf,ppc) :
     PACKLD_FLAGS=' -m elf32ppclinux' ;; #(
   power,gcc*,elf,ppc64) :
@@ -14556,6 +14564,9 @@ case $host in #(
     sockets=true ;; #(
   *-*-haiku) :
     cclibs="$cclibs -lnetwork"
+    sockets=true ;; #(
+  *-*-solaris*) :
+    cclibs="$cclibs -lsocket -lnsl"
     sockets=true ;; #(
   *) :
 
@@ -16432,8 +16443,6 @@ if test "x$ax_pthread_ok" = "xyes"; then
         systhread_support=true
       otherlibraries="$otherlibraries systhreads"
       case $host in #(
-  *-*-solaris*) :
-    pthread_link="-lpthread -lposix4" ;; #(
   *-*-haiku*) :
     pthread_link="" ;; #(
   *-*-android*) :

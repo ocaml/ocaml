@@ -843,6 +843,12 @@ AS_IF([test x"$enable_shared" != "xno"],
                [xlc*],
                [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true])],
+    [*-*-solaris*],
+      [sharedlib_cflags="-fPIC"
+      mksharedlib="$CC -shared"
+      rpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      shared_libraries_supported=true],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
@@ -875,6 +881,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [x86_64-*-darwin*], [natdynlink=true],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
+    [x86_64-*-solaris*], [natdynlink=true],
     [i686-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-dragonfly*], [natdynlink=true],
@@ -972,6 +979,8 @@ AS_CASE([$host],
     [arch=amd64; system=gnu],
   [x86_64-*-dragonfly*],
     [arch=amd64; system=dragonfly],
+  [x86_64-*-solaris*],
+    [arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
     [arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
@@ -1011,7 +1020,6 @@ AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
   [AS_CASE(["$arch,$CC,$system,$model"],
     [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [amd64,gcc*,solaris,*], [PACKLD_FLAGS=' -m elf_x86_64'],
     [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
     [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
     [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
@@ -1267,6 +1275,9 @@ AS_CASE([$host],
     sockets=true],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
+    sockets=true],
+  [*-*-solaris*],
+    [cclibs="$cclibs -lsocket -lnsl"
     sockets=true],
   [
     AC_CHECK_FUNC([socket])
@@ -1639,7 +1650,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
       AS_CASE([$host],
-        [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
         [*-*-haiku*], [pthread_link=""],
         [*-*-android*], [pthread_link=""],
         [pthread_link="-lpthread"])

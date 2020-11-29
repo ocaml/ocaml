@@ -21,9 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#ifdef __sun
-#define _POSIX_PTHREAD_SEMANTICS
-#endif
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
