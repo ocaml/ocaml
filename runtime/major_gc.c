@@ -1358,18 +1358,23 @@ static struct pool* find_pool_to_rescan()
 
 static void mark_stack_prune (struct mark_stack* stk)
 {
-  uintnat entry, mark_stack_count = stk->count, final_count = mark_stack_count * 0.25;
+  int entry_idx, large_idx = 0;
   mark_entry* mark_stack = stk->stack;
 
   struct skiplist chunk_sklist = SKIPLIST_STATIC_INITIALIZER;
   /* Insert used pools into skiplist */
-  for(entry = mark_stack_count - 1; entry > final_count; entry--){
-    mark_entry me = mark_stack[entry];
+  for(entry_idx = 0; entry_idx < stk->count; entry_idx++){
+    mark_entry me = mark_stack[entry_idx];
     struct pool* pool = caml_pool_of_shared_block(me.block);
-    if (!pool) continue;
+    if (!pool) {
+      // This could be a large allocation - which is off-heap. Hold on to it.
+      mark_stack[large_idx++] = me;
+      continue;
+    }
     caml_skiplist_insert(&chunk_sklist, (uintnat)pool, 
     (uintnat)pool + sizeof(pool));
   }
+
   /* Traverse through entire skiplist and put it into pools to rescan */
   FOREACH_SKIPLIST_ELEMENT(e, &chunk_sklist, {
     if(Caml_state->pools_to_rescan_len == Caml_state->pools_to_rescan_count){
@@ -1381,8 +1386,8 @@ static void mark_stack_prune (struct mark_stack* stk)
   });
 
   caml_gc_log("Mark stack overflow. Postponing %d pools", Caml_state->pools_to_rescan_count);
-  /* empty mark stack */
-  stk->count = final_count;
+  
+  stk->count = large_idx;
 }
 
 int caml_init_major_gc(caml_domain_state* d) {
