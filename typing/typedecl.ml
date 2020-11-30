@@ -502,6 +502,9 @@ let check_constraints_labels env visited l pl =
 
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
+  List.iter2
+    (fun (sty, _) ty -> check_constraints_rec env sty.ptyp_loc visited ty)
+    sdecl.ptype_params decl.type_params;
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant l ->
@@ -668,7 +671,7 @@ let check_well_founded_decl env loc path decl to_check =
 
 (* Check for ill-defined abbrevs *)
 
-let check_recursion env loc path decl to_check =
+let check_recursion ~orig_env env loc path decl to_check =
   (* to_check is true for potentially mutually recursive paths.
      (path, decl) is the type declaration to be checked. *)
 
@@ -683,7 +686,7 @@ let check_recursion env loc path decl to_check =
       match ty.desc with
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
-            if not (Ctype.equal env false args args') then
+            if not (Ctype.equal orig_env false args args') then
               raise (Error(loc,
                      Non_regular {
                        definition=path;
@@ -705,7 +708,7 @@ let check_recursion env loc path decl to_check =
               let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
-                try List.iter2 (Ctype.unify env) params args'
+                try List.iter2 (Ctype.unify orig_env) params args'
                 with Ctype.Unify _ ->
                   raise (Error(loc, Constraint_failed
                                  (ty, Ctype.newconstr path' params0)));
@@ -729,13 +732,15 @@ let check_recursion env loc path decl to_check =
       let (args, body) =
         Ctype.instance_parameterized_type
           ~keep_names:true decl.type_params body in
+      List.iter (check_regular path args [] []) args;
       check_regular path args [] [] body)
     decl.type_manifest
 
-let check_abbrev_recursion env id_loc_list to_check tdecl =
+let check_abbrev_recursion ~orig_env env id_loc_list to_check tdecl =
   let decl = tdecl.typ_type in
   let id = tdecl.typ_id in
-  check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl to_check
+  check_recursion ~orig_env env (List.assoc id id_loc_list) (Path.Pident id)
+    decl to_check
 
 let check_duplicates sdecl_list =
   let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
@@ -902,7 +907,8 @@ let transl_type_decl env rec_flag sdecl_list =
     check_well_founded_decl new_env (List.assoc id id_loc_list) (Path.Pident id)
       decl to_check)
     decls;
-  List.iter (check_abbrev_recursion new_env id_loc_list to_check) tdecls;
+  List.iter
+    (check_abbrev_recursion ~orig_env:env new_env id_loc_list to_check) tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
@@ -1575,7 +1581,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
-  check_recursion env loc path decl to_check;
+  check_recursion ~orig_env:env env loc path decl to_check;
   (* additionally check coherece, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
   check_coherence env loc path decl
