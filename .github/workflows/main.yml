@@ -23,7 +23,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Packages
       run: |
-        sudo apt install gcc-multilib gfortran-multilib
+        sudo apt-get update -y && sudo apt-get install -y gcc-multilib gfortran-multilib
     - name: configure tree
       run: |
         XARCH=i386 CONFIG_ARG='--disable-stdlib-manpages --disable-shared' bash -xe tools/ci/actions/runner.sh configure
@@ -46,7 +46,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Packages
       run: |
-        sudo apt install texlive-latex-extra texlive-fonts-recommended
+        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended
   # Ensure that make distclean can be run from an empty tree
     - name: distclean
       run: |
