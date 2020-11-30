@@ -729,12 +729,12 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
      our blocking section doesn't contain anything interesting, don't bother
      with saving errno.)
   */
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_raise_if_exception(caml_process_pending_actions_exn());
   caml_thread_save_runtime_state();
   st_thread_yield(&caml_master_lock);
   curr_thread = st_tls_get(thread_descriptor_key);
   caml_thread_restore_runtime_state();
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_raise_if_exception(caml_process_pending_actions_exn());
 
   return Val_unit;
 }

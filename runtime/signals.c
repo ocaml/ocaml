@@ -100,9 +100,6 @@ static int check_for_pending_signals(caml_mask_kind mask)
   return 0;
 }
 
-/* Caches the result of check_for_pending_signals(CAML_MASK_NONE) */
-static intnat volatile signals_are_pending = 0;
-
 /* Execute all pending signals for that mask level */
 
 static value process_pending_signals_exn(caml_mask_kind mask)
@@ -111,12 +108,6 @@ static value process_pending_signals_exn(caml_mask_kind mask)
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
-
-  if (!signals_are_pending)
-    return Val_unit;
-
-  if (mask == CAML_MASK_NONE)
-    signals_are_pending = 0;
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
@@ -147,11 +138,6 @@ static value process_pending_signals_exn(caml_mask_kind mask)
     }
   }
   return Val_unit;
-}
-
-CAMLexport value caml_process_pending_signals_exn(void)
-{
-  return process_pending_signals_exn(Caml_state->mask_async_callbacks);
 }
 
 static void notify_action()
@@ -185,7 +171,6 @@ CAMLexport void caml_record_signal(int signal_number)
 {
   if (signal_number < 0 || signal_number >= NSIG) return;
   caml_pending_signals[signal_number] = 1;
-  signals_are_pending = 1;
   caml_set_action_pending();
 }
 
@@ -204,16 +189,19 @@ CAMLexport void (*caml_enter_blocking_section_hook)(void) =
 CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
 
-CAMLno_tsan /* The read of [signals_are_pending] is not synchronized. */
+CAMLno_tsan /* The read of [action_pending] is not synchronized. */
 CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_raise_if_exception(caml_process_pending_signals_exn());
+    caml_raise_if_exception(caml_process_pending_actions_exn());
     caml_enter_blocking_section_hook ();
-    /* Check if some signal is arrived meanwhile.
+    /* Check if some signal arrived meanwhile (in which case
+       action_pending is at the max level).
        If none, done; otherwise, try again */
-    if (! signals_are_pending) break;
+    if (action_pending != CAML_MASK_NONPREEMPTIBLE
+        || !caml_check_pending_actions())
+      break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -230,21 +218,19 @@ CAMLexport void caml_leave_blocking_section(void)
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
 
-  /* Some other thread may have switched [signals_are_pending] to 0
-     even though there are still pending signals (masked in the other
-     thread, in the sense of POSIX signal masks). To handle this case,
-     we force re-examination of all signals by setting it back to 1.
+  /* Some other thread may have lowered [action_pending] even though
+     there are still pending signals (masked in the other thread, in
+     the sense of POSIX signal masks). To handle this case, we force
+     re-examination of all signals by setting it back to 1.
 
      Another case where this is necessary (even in a single threaded
      setting) is when the blocking section (POSIX-)unmasks a pending
-     signal: If the signal is pending and masked but has already been
-     examined by [caml_process_pending_signals_exn], then
-     [signals_are_pending] is 0 but the signal needs to be handled at
-     this point. */
-  if (check_for_pending_signals(CAML_MASK_NONE)) {
-    signals_are_pending = 1;
+     signal: If the signal is pending and (POSIX-)masked but has
+     already been examined by [caml_process_pending_actions], then
+     [action_pending] has been lowered but the signal needs to be
+     handled at this point. */
+  if (check_for_pending_signals(CAML_MASK_NONE))
     caml_set_action_pending();
-  }
 
   errno = saved_errno;
 }
@@ -610,7 +596,7 @@ static value install_signal_handler(value signal_number,
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_raise_if_exception(caml_process_pending_actions_exn());
   CAMLreturn (res);
 }
 
