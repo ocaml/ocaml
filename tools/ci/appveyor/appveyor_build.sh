@@ -51,12 +51,20 @@ function run {
 # $2: the prefix to use to install
 function set_configuration {
     case "$1" in
-        mingw)
+        cygwin*)
+            dep='--disable-dependency-generation'
+        ;;
+        mingw32)
             build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
             dep='--disable-dependency-generation'
         ;;
-        msvc)
+        mingw64)
+            build='--build=i686-pc-cygwin'
+            host='--host=x86_64-w64-mingw32'
+            dep='--disable-dependency-generation'
+        ;;
+        msvc32)
             build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
             dep='--disable-dependency-generation'
@@ -88,26 +96,34 @@ OCAMLROOT=$(echo "$PROGRAMFILES/Бактріан🐫" | cygpath -f - -m)
 # This must be kept in sync with appveyor_build.cmd
 BUILD_PREFIX=🐫реализация
 
-PATH=$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH
+if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
+  case "$PORT" in
+    cygwin*) ;;
+    *) PATH=$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH;;
+  esac
+fi
 
 case "$1" in
   install)
-    mkdir -p "$OCAMLROOT/bin/flexdll"
-    cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
-    # msvc64 objects need to be compiled with VS2015, so are copied later from
-    # a source build.
-    for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
-      cp "$f" "$OCAMLROOT/bin/flexdll/"
-    done
-    if [[ $PORT = 'msvc64' ]] ; then
-      echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
-        >> ~/.bash_profile
+    if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
+      mkdir -p "$OCAMLROOT/bin/flexdll"
+      cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
+      # The objects are always built from the sources
+      for f in flexdll.h flexlink.exe default*.manifest ; do
+        cp "$f" "$OCAMLROOT/bin/flexdll/"
+      done
     fi
+    case "$PORT" in
+      msvc*)
+        echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
+          >> ~/.bash_profile
+        ;;
+    esac
     ;;
   msvc32-only)
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32"
 
-    set_configuration msvc "$OCAMLROOT-msvc32"
+    set_configuration msvc32 "$OCAMLROOT-msvc32"
 
     run "$MAKE world" $MAKE world
     run "$MAKE runtimeopt" $MAKE runtimeopt
@@ -123,6 +139,11 @@ case "$1" in
       run "Check runtime symbols" \
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
+    fi
+    if [[ $PORT = 'mingw64' ]] ; then
+      export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+    elif [[ $PORT = 'mingw32' ]] ; then
+      export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
     fi
     run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
@@ -152,31 +173,32 @@ case "$1" in
     if [[ $PORT = 'msvc64' ]] ; then
       # Ensure that make distclean can be run from an empty tree
       run "$MAKE distclean" $MAKE distclean
+    fi
+
+    if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
-      $MAKE MSVC_DETECT=0 CHAINS=msvc64 support
-      cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
+      $MAKE MSVC_DETECT=0 CHAINS=${PORT%32} support
+      cp -f *.obj "$OCAMLROOT/bin/flexdll/" || \
+      cp -f *.o "$OCAMLROOT/bin/flexdll/"
       cd ..
     fi
 
-    if [[ $PORT = 'msvc64' ]] ; then
-      set_configuration msvc64 "$OCAMLROOT"
-    else
-      set_configuration mingw "$OCAMLROOT-mingw32"
-    fi
+    set_configuration "$PORT" "$OCAMLROOT"
 
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
     export TERM=ansi
 
-    if [[ $PORT = 'mingw32' ]] ; then
+    if [[ $PORT != 'msvc64' ]] ; then
       set -o pipefail
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \
-        "$MAKE -C ../$BUILD_PREFIX-mingw32 flexdll && "\
-"$MAKE -C ../$BUILD_PREFIX-mingw32 world.opt" \
-        "../$BUILD_PREFIX-mingw32/build.log" |
+        "( test "$BOOTSTRAP_FLEXDLL" = 'false' || "\
+"$MAKE -C ../$BUILD_PREFIX-$PORT flexdll ) && "\
+"$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
+        "../$BUILD_PREFIX-$PORT/build.log" |
           sed -e 's/\d027\[K//g' \
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'

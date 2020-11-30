@@ -58,7 +58,7 @@ goto :EOF
 
 :UpgradeCygwin
 if "%CYGWIN_INSTALL_PACKAGES%" neq "" "%CYG_ROOT%\setup-x86_64.exe" --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root "%CYG_ROOT%" --site "%CYG_MIRROR%" --local-package-dir "%CYG_CACHE%" --packages %CYGWIN_INSTALL_PACKAGES:~1% > nul
-for %%P in (%CYGWIN_COMMANDS%) do "%CYG_ROOT%\bin\%%P.exe" --version > nul || set CYGWIN_UPGRADE_REQUIRED=1
+for %%P in (%CYGWIN_COMMANDS%) do "%CYG_ROOT%\bin\%%P.exe" --version 2> nul > nul || set CYGWIN_UPGRADE_REQUIRED=1
 "%CYG_ROOT%\bin\bash.exe" -lc "cygcheck -dc %CYGWIN_PACKAGES%"
 if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
   echo Cygwin package upgrade required - please go and drink coffee
@@ -73,11 +73,12 @@ rem This must be kept in sync with appveyor_build.sh
 set BUILD_PREFIX=🐫реализация
 git worktree add "..\%BUILD_PREFIX%-%PORT%" -b appveyor-build-%PORT%
 if "%PORT%" equ "msvc64" (
-  git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-%PORT%32
+  rem msvc64 also does a small bit of msvc32 on an older compiler
+  git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-msvc32
 )
 
 cd "..\%BUILD_PREFIX%-%PORT%"
-if "%PORT%" equ "mingw32" (
+if "%BOOTSTRAP_FLEXDLL%" equ "true" (
   git submodule update --init flexdll
 )
 
@@ -104,6 +105,18 @@ if "%PORT%" equ "mingw32" (
   set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core mingw64-i686-runtime
   set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc cygcheck
 )
+if "%PORT%" equ "mingw64" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-x86_64-gcc-core
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-w64-mingw32-gcc
+)
+if "%PORT%" equ "cygwin32" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% cygwin32-gcc-core flexdll
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-pc-cygwin-gcc flexlink
+)
+if "%PORT%" equ "cygwin64" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% gcc-core flexdll
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-pc-cygwin-gcc flexlink
+)
 
 set CYGWIN_INSTALL_PACKAGES=
 set CYGWIN_UPGRADE_REQUIRED=0
@@ -119,6 +132,10 @@ goto :EOF
 if "%PORT%" equ "msvc64" (
   setlocal
   call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+)
+if "%PORT%" equ "msvc32" (
+  setlocal
+  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
 )
 rem Do the main build (either msvc64 or mingw32)
 "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
