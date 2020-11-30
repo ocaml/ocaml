@@ -692,6 +692,7 @@ static void decrement_stw_domains_still_processing()
   }
 }
 
+static void caml_poll_gc_work();
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
 #ifdef DEBUG
@@ -736,7 +737,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   /* poll the GC to check for deferred work
      we do this here because blocking or waiting threads only execute
      the interrupt handler and do not poll for deferred work*/
-  caml_handle_gc_interrupt();
+  caml_poll_gc_work();
 }
 
 /* This runs the passed handler on all running domains but must only be run on *one* domain
@@ -782,13 +783,15 @@ int caml_try_run_on_all_domains_with_spin_work(
   int i;
   uintnat domains_participating = 0;
 
+  caml_gc_log("requesting STW");
+
   // Don't take the lock if there's already a stw leader
-  if( atomic_load_acq(&stw_leader) ) {
+  if (atomic_load_acq(&stw_leader)) {
+    caml_ev_begin("stw/leader_collision");
     caml_handle_incoming_interrupts();
+    caml_ev_end("stw/leader_collision");
     return 0;
   }
-
-  caml_gc_log("requesting STW");
 
   /* Try to take the lock by setting ourselves as the stw_leader.
      If it fails, handle interrupts (probably participating in
@@ -796,7 +799,9 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_plat_lock(&all_domains_lock);
   if (atomic_load_acq(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
+    caml_ev_begin("stw/leader_collision");
     caml_handle_incoming_interrupts();
+    caml_ev_end("stw/leader_collision");
     return 0;
   } else {
     atomic_store_rel(&stw_leader, (uintnat)domain_self);
@@ -912,24 +917,9 @@ void caml_request_minor_gc (void)
   caml_interrupt_self();
 }
 
-void caml_handle_gc_interrupt()
+static void caml_poll_gc_work()
 {
-  caml_ev_begin("handle_gc_interrupt");
-  atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   CAMLalloc_point_here;
-
-  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-    /* interrupt */
-    caml_ev_begin("handle_remote_interrupt");
-    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-      uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
-    }
-    caml_ev_pause(EV_PAUSE_YIELD);
-    caml_handle_incoming_interrupts();
-    caml_ev_resume();
-    caml_ev_end("handle_remote_interrupt");
-  }
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
        (uintnat)Caml_state->young_start) ||
@@ -957,6 +947,28 @@ void caml_handle_gc_interrupt()
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     caml_ev_end("dispatch_major_slice");
   }
+}
+
+void caml_handle_gc_interrupt()
+{
+  atomic_uintnat* young_limit = domain_self->interrupt_word_address;
+  CAMLalloc_point_here;
+
+  caml_ev_begin("handle_gc_interrupt");
+  if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
+    /* interrupt */
+    caml_ev_begin("handle_remote_interrupt");
+    while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
+      uintnat i = INTERRUPT_MAGIC;
+      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
+    }
+    caml_ev_pause(EV_PAUSE_YIELD);
+    caml_handle_incoming_interrupts();
+    caml_ev_resume();
+    caml_ev_end("handle_remote_interrupt");
+  }
+
+  caml_poll_gc_work();
   caml_ev_end("handle_gc_interrupt");
 }
 
