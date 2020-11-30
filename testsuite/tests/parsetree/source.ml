@@ -7389,3 +7389,28 @@ let rec equal : 'a. ('a -> 'a -> bool) -> 'a t -> 'a t -> bool =
 type u = [ `A ] ;;
 type v = [ u | `B ] ;;
 let f = fun (x : [ | u ]) -> x ;;
+
+(* Issue #9999 *)
+let test = function
+  | `A | `B as x -> ignore x
+
+let test = function
+  | `A as x | (`B as x) -> ignore x
+
+let test = function
+  | `A as x | (`B as x) as z -> ignore (z, x)
+
+let test = function
+  | (`A as x) | (`B as x) as z -> ignore (z, x)
+
+let test = function
+  | (`A | `B) | `C -> ()
+
+let test = function
+  | `A | (`B | `C) -> ()
+
+let test = function
+  | `A | `B | `C -> ()
+
+let test = function
+  | (`A | `B) as x | `C -> ()

@@ -463,6 +463,7 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
    notice. *)
 module Memprof :
   sig
+    type allocation_source = Normal | Marshal | Custom
     type allocation = private
       { n_samples : int;
         (** The number of samples in this block (>= 1). *)
@@ -470,8 +471,8 @@ module Memprof :
         size : int;
         (** The size of the block, in words, excluding the header. *)
 
-        unmarshalled : bool;
-        (** Whether the block comes from unmarshalling. *)
+        source : allocation_source;
+        (** The type of the allocation. *)
 
         callstack : Printexc.raw_backtrace
         (** The callstack for the allocation. *)

@@ -616,18 +616,18 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(OFFSETCLOSURE):
       accu = env + *pc++ * sizeof(value); Next;
 
-    Instruct(PUSHOFFSETCLOSUREM2):
+    Instruct(PUSHOFFSETCLOSUREM3):
       *--sp = accu; /* fallthrough */
-    Instruct(OFFSETCLOSUREM2):
-      accu = env - 2 * sizeof(value); Next;
+    Instruct(OFFSETCLOSUREM3):
+      accu = env - 3 * sizeof(value); Next;
     Instruct(PUSHOFFSETCLOSURE0):
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE0):
       accu = env; Next;
-    Instruct(PUSHOFFSETCLOSURE2):
+    Instruct(PUSHOFFSETCLOSURE3):
       *--sp = accu; /* fallthrough */
-    Instruct(OFFSETCLOSURE2):
-      accu = env + 2 * sizeof(value); Next;
+    Instruct(OFFSETCLOSURE3):
+      accu = env + 3 * sizeof(value); Next;
 
 
 /* Access to global variables */

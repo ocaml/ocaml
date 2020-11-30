@@ -114,7 +114,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
-      type_variance = Variance.unknown_signature ~arity;
+      type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
@@ -403,7 +403,7 @@ let transl_declaration env sdecl (id, uid) =
         type_kind = kind;
         type_private = sdecl.ptype_private;
         type_manifest = man;
-        type_variance = Variance.unknown_signature ~arity;
+        type_variance = Variance.unknown_signature ~injective:false ~arity;
         type_separability = Types.Separability.default_signature ~arity;
         type_is_newtype = false;
         type_expansion_scope = Btype.lowest_level;
@@ -502,6 +502,9 @@ let check_constraints_labels env visited l pl =
 
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
+  List.iter2
+    (fun (sty, _) ty -> check_constraints_rec env sty.ptyp_loc visited ty)
+    sdecl.ptype_params decl.type_params;
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant l ->
@@ -668,7 +671,7 @@ let check_well_founded_decl env loc path decl to_check =
 
 (* Check for ill-defined abbrevs *)
 
-let check_recursion env loc path decl to_check =
+let check_recursion ~orig_env env loc path decl to_check =
   (* to_check is true for potentially mutually recursive paths.
      (path, decl) is the type declaration to be checked. *)
 
@@ -683,7 +686,7 @@ let check_recursion env loc path decl to_check =
       match ty.desc with
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
-            if not (Ctype.equal env false args args') then
+            if not (Ctype.equal orig_env false args args') then
               raise (Error(loc,
                      Non_regular {
                        definition=path;
@@ -705,7 +708,7 @@ let check_recursion env loc path decl to_check =
               let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
-                try List.iter2 (Ctype.unify env) params args'
+                try List.iter2 (Ctype.unify orig_env) params args'
                 with Ctype.Unify _ ->
                   raise (Error(loc, Constraint_failed
                                  (ty, Ctype.newconstr path' params0)));
@@ -729,13 +732,15 @@ let check_recursion env loc path decl to_check =
       let (args, body) =
         Ctype.instance_parameterized_type
           ~keep_names:true decl.type_params body in
+      List.iter (check_regular path args [] []) args;
       check_regular path args [] [] body)
     decl.type_manifest
 
-let check_abbrev_recursion env id_loc_list to_check tdecl =
+let check_abbrev_recursion ~orig_env env id_loc_list to_check tdecl =
   let decl = tdecl.typ_type in
   let id = tdecl.typ_id in
-  check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl to_check
+  check_recursion ~orig_env env (List.assoc id id_loc_list) (Path.Pident id)
+    decl to_check
 
 let check_duplicates sdecl_list =
   let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
@@ -902,7 +907,8 @@ let transl_type_decl env rec_flag sdecl_list =
     check_well_founded_decl new_env (List.assoc id id_loc_list) (Path.Pident id)
       decl to_check)
     decls;
-  List.iter (check_abbrev_recursion new_env id_loc_list to_check) tdecls;
+  List.iter
+    (check_abbrev_recursion ~orig_env:env new_env id_loc_list to_check) tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
@@ -945,9 +951,8 @@ let transl_type_decl env rec_flag sdecl_list =
 
 (* Translating type extensions *)
 
-let transl_extension_constructor env type_path type_params
+let transl_extension_constructor ~scope env type_path type_params
                                  typext_params priv sext =
-  let scope = Ctype.create_scope () in
   let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
@@ -1060,10 +1065,10 @@ let transl_extension_constructor env type_path type_params
       Typedtree.ext_loc = sext.pext_loc;
       Typedtree.ext_attributes = sext.pext_attributes; }
 
-let transl_extension_constructor env type_path type_params
+let transl_extension_constructor ~scope env type_path type_params
     typext_params priv sext =
   Builtin_attributes.warning_scope sext.pext_attributes
-    (fun () -> transl_extension_constructor env type_path type_params
+    (fun () -> transl_extension_constructor ~scope env type_path type_params
         typext_params priv sext)
 
 let is_rebind ext =
@@ -1072,6 +1077,9 @@ let is_rebind ext =
   | Text_decl _ -> false
 
 let transl_type_extension extend env loc styext =
+  (* Note: it would be incorrect to call [create_scope] *after*
+     [reset_type_variables] or after [begin_def] (see #10010). *)
+  let scope = Ctype.create_scope () in
   reset_type_variables();
   Ctype.begin_def();
   let type_path, type_decl =
@@ -1124,7 +1132,7 @@ let transl_type_extension extend env loc styext =
     (Ctype.instance_list type_decl.type_params)
     type_params;
   let constructors =
-    List.map (transl_extension_constructor env type_path
+    List.map (transl_extension_constructor ~scope env type_path
                type_decl.type_params type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
@@ -1180,10 +1188,11 @@ let transl_type_extension extend env loc styext =
     (fun () -> transl_type_extension extend env loc styext)
 
 let transl_exception env sext =
+  let scope = Ctype.create_scope () in
   reset_type_variables();
   Ctype.begin_def();
   let ext =
-    transl_extension_constructor env
+    transl_extension_constructor ~scope env
       Predef.path_exn [] [] Asttypes.Public sext
   in
   Ctype.end_def();
@@ -1531,7 +1540,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
 
 (* Approximate a type declaration: just make all types abstract *)
 
-let abstract_type_decl arity =
+let abstract_type_decl ~injective arity =
   let rec make_params n =
     if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
   Ctype.begin_def();
@@ -1541,7 +1550,7 @@ let abstract_type_decl arity =
       type_kind = Type_abstract;
       type_private = Public;
       type_manifest = None;
-      type_variance = Variance.unknown_signature ~arity;
+      type_variance = Variance.unknown_signature ~injective ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
@@ -1559,8 +1568,9 @@ let approx_type_decl sdecl_list =
   let scope = Ctype.create_scope () in
   List.map
     (fun sdecl ->
+      let injective = sdecl.ptype_kind <> Ptype_abstract in
       (Ident.create_scoped ~scope sdecl.ptype_name.txt,
-       abstract_type_decl (List.length sdecl.ptype_params)))
+       abstract_type_decl ~injective (List.length sdecl.ptype_params)))
     sdecl_list
 
 (* Variant of check_abbrev_recursion to check the well-formedness
@@ -1571,7 +1581,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
-  check_recursion env loc path decl to_check;
+  check_recursion ~orig_env:env env loc path decl to_check;
   (* additionally check coherece, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
   check_coherence env loc path decl

@@ -36,12 +36,10 @@ extern "C" {
 #endif
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
-#ifdef WITH_PROFINFO
+
+/* Variant of [caml_alloc_shr] with explicit profinfo.
+   Equivalent to caml_alloc_shr unless WITH_PROFINFO is true */
 CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
-#else
-#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
-  caml_alloc_shr(size, tag)
-#endif /* WITH_PROFINFO */
 
 /* Variant of [caml_alloc_shr] where no memprof sampling is performed. */
 CAMLextern value caml_alloc_shr_no_track_noexc (mlsize_t, tag_t);

@@ -47,13 +47,14 @@ value caml_ephe_none = (value) &ephe_dummy;
 }while(0)
 
 #ifdef DEBUG
-#define CAMLassert_not_dead_value(v) do{                        \
-    if (caml_gc_phase == Phase_clean                            \
-        && Is_block(v)                                          \
-        && Is_in_heap (v)) {                                    \
-      if (Tag_val (v) == Infix_tag) v -= Infix_offset_val (v);  \
-      CAMLassert ( !Is_white_val(v) );                          \
-    }                                                           \
+#define CAMLassert_not_dead_value(v) do{                              \
+    value __v = v;                                                    \
+    if (caml_gc_phase == Phase_clean                                  \
+        && Is_block(__v)                                              \
+        && Is_in_heap (__v)) {                                        \
+      if (Tag_val (__v) == Infix_tag) __v -= Infix_offset_val (__v);  \
+      CAMLassert ( !Is_white_val(__v) );                              \
+    }                                                                 \
 }while(0)
 #else
 #define CAMLassert_not_dead_value(v)
@@ -69,11 +70,10 @@ CAMLexport mlsize_t caml_ephemeron_num_keys(value eph)
    Outside minor and major heap it is considered alive (out of reach of the GC). */
 Caml_inline int Test_if_its_white(value x){
   CAMLassert (x != caml_ephe_none);
-  if (!Is_block(x)) return 0;
 #ifdef NO_NAKED_POINTERS
-  if (Is_young (x)) return 0;
+  if (!Is_block(x) || Is_young (x)) return 0;
 #else
-  if (!Is_in_heap(x)) return 0;
+  if (!Is_block(x) || !Is_in_heap(x)) return 0;
 #endif
   if (Tag_val(x) == Infix_tag) x -= Infix_offset_val(x);
   return Is_white_val(x);

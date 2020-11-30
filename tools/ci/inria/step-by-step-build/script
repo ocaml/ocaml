@@ -14,6 +14,9 @@
 #*                                                                        *
 #**************************************************************************
 
+# Be verbose and stop on errors
+set -ex
+
 jobs=-j8
 instdir="$HOME/ocaml-tmp-install-$$"
 ./configure --prefix "$instdir" --disable-dependency-generation

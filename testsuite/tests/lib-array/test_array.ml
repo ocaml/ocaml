@@ -55,3 +55,62 @@ val a : float array = [|0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.|]
 - : unit = ()
 - : float array = [|0.; 0.; 42.; 42.; 42.; 0.; 0.; 0.|]
 |}]
+
+let a = [|(1, 'a'); (2, 'b'); (3, 'c')|];;
+let _ = Array.split a;;
+[%%expect{|
+val a : (int * char) array = [|(1, 'a'); (2, 'b'); (3, 'c')|]
+- : int array * char array = ([|1; 2; 3|], [|'a'; 'b'; 'c'|])
+|}]
+
+let a = [|1; 2; 3|];;
+let b = [|'a'; 'b'; 'c'|];;
+let _ = Array.combine a b;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+val b : char array = [|'a'; 'b'; 'c'|]
+- : (int * char) array = [|(1, 'a'); (2, 'b'); (3, 'c')|]
+|}]
+
+let _ : int array * char array = Array.split [||];;
+[%%expect{|
+- : int array * char array = ([||], [||])
+|}]
+
+let _ : (int * char) array = Array.combine [||] [||];;
+[%%expect{|
+- : (int * char) array = [||]
+|}]
+
+let _ = Array.combine [||] [|1|];;
+[%%expect{|
+Exception: Invalid_argument "Array.combine".
+|}]
+
+let a = [|1; 2; 3|];;
+let _ = Array.find_opt (function 2 -> true | _ -> false) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : int option = Some 2
+|}]
+
+let a = [|'a'; 'b'; 'c'|];;
+let _ = Array.find_map (function 'b' -> Some 121 | _ -> None) a;;
+[%%expect{|
+val a : char array = [|'a'; 'b'; 'c'|]
+- : int option = Some 121
+|}]
+
+let a = [|1; 2|];;
+let _ = Array.find_opt (function 101 -> true | _ -> false) a;;
+[%%expect{|
+val a : int array = [|1; 2|]
+- : int option = None
+|}]
+
+let a = [|1; 2|];;
+let _ = Array.find_map (fun _ -> None) a;;
+[%%expect{|
+val a : int array = [|1; 2|]
+- : 'a option = None
+|}]

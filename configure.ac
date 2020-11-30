@@ -578,7 +578,7 @@ AS_CASE([$host],
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-DUNICODE -D_UNICODE'
+        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
         internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
         internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
       [AC_MSG_ERROR([Unsupported C compiler for a Mingw build])])],
@@ -989,7 +989,7 @@ AS_CASE([$host],
 )
 
 AS_IF([test x"$enable_native_compiler" = "xno"],
-  [arch=none; model=default; system=unknown; native_compiler=false
+  [native_compiler=false
   AC_MSG_NOTICE([the native compiler is disabled])],
   [native_compiler=true])
 

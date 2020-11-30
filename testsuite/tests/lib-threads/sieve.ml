@@ -1,11 +1,23 @@
 (* TEST
 
+script = "sh ${test_source_directory}/test-runtime-cleanup.sh"
+
 * hassysthreads
 include systhreads
-** bytecode
-** native
+** script
+*** bytecode
+output = "${test_build_directory}/program-output"
+stdout = "${output}"
+*** native
+output = "${test_build_directory}/program-output"
+stdout = "${output}"
 
 *)
+
+(* This test is skipped in "runtime cleanup at exit" mode
+   (OCAMLRUNPARAM contains c=1) because the cleanup in the main thread
+   destroys condition variables that are waited for by other threads,
+   causing a deadlock on some systems. *)
 
 let sieve primes =
   Event.sync (Event.send primes 2);

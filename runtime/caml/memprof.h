@@ -27,6 +27,7 @@ extern void caml_memprof_set_suspended(int);
 extern value caml_memprof_handle_postponed_exn(void);
 
 extern void caml_memprof_track_alloc_shr(value block);
+extern void caml_memprof_track_custom(value block, mlsize_t bytes);
 extern void caml_memprof_track_young(uintnat wosize, int from_caml,
                                      int nallocs, unsigned char* alloc_lens);
 extern void caml_memprof_track_interned(header_t* block, header_t* blockend);

@@ -56,7 +56,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL,
                      OPEN_EXISTING,
-                     0,
+                     FILE_FLAG_BACKUP_SEMANTICS,
                      NULL);
   caml_leave_blocking_section();
   caml_stat_free(wpath);

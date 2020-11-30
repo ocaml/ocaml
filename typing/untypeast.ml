@@ -605,7 +605,7 @@ let functor_parameter sub : functor_parameter -> Parsetree.functor_parameter =
   | Unit -> Unit
   | Named (_, name, mtype) -> Named (name, sub.module_type sub mtype)
 
-let module_type sub mty =
+let module_type (sub : mapper) mty =
   let loc = sub.location sub mty.mty_loc in
   let attrs = sub.attributes sub mty.mty_attributes in
   let desc = match mty.mty_desc with
@@ -633,7 +633,7 @@ let with_constraint sub (_path, lid, cstr) =
   | Twith_modsubst (_path, lid2) ->
       Pwith_modsubst (map_loc sub lid, map_loc sub lid2)
 
-let module_expr sub mexpr =
+let module_expr (sub : mapper) mexpr =
   let loc = sub.location sub mexpr.mod_loc in
   let attrs = sub.attributes sub mexpr.mod_attributes in
   match mexpr.mod_desc with
@@ -882,10 +882,10 @@ let default_mapper =
     object_field = object_field ;
   }
 
-let untype_structure ?(mapper=default_mapper) structure =
+let untype_structure ?(mapper : mapper = default_mapper) structure =
   mapper.structure mapper structure
 
-let untype_signature ?(mapper=default_mapper) signature =
+let untype_signature ?(mapper : mapper = default_mapper) signature =
   mapper.signature mapper signature
 
 let untype_expression ?(mapper=default_mapper) expression =

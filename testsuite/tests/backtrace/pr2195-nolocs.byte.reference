@@ -1,0 +1,6 @@
+Fatal error: exception Stdlib.Exit
+Raised by primitive operation at unknown location
+Called from unknown location
+(Cannot print locations:
+ bytecode executable program file cannot be opened;
+ -- too many open files. Try running with OCAMLRUNPARAM=b=2)

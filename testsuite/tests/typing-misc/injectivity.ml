@@ -423,3 +423,15 @@ Line 1, characters 18-21:
                       ^^^
 Error: Unbound module R
 |}]
+
+(* #10028 by Stephen Dolan *)
+
+module rec A : sig
+  type _ t = Foo : 'a -> 'a A.s t
+  type 'a s = T of 'a
+end =
+  A
+;;
+[%%expect{|
+module rec A : sig type _ t = Foo : 'a -> 'a A.s t type 'a s = T of 'a end
+|}]

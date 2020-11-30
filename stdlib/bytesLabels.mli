@@ -280,14 +280,14 @@ val capitalize : bytes -> bytes
   [@@ocaml.deprecated
     "Use Bytes.capitalize_ascii/BytesLabels.capitalize_ascii instead."]
 (** Return a copy of the argument, with the first character set to uppercase,
-   using the ISO Latin-1 (8859-1) character set..
+   using the ISO Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : bytes -> bytes
   [@@ocaml.deprecated
     "Use Bytes.uncapitalize_ascii/BytesLabels.uncapitalize_ascii instead."]
 (** Return a copy of the argument, with the first character set to lowercase,
-   using the ISO Latin-1 (8859-1) character set..
+   using the ISO Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uppercase_ascii : bytes -> bytes

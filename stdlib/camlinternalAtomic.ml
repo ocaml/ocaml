@@ -28,21 +28,32 @@ let make v = {v}
 let get r = r.v
 let set r v = r.v <- v
 
-let exchange r v =
+(* The following functions are set to never be inlined: Flambda is
+   allowed to move surrounding code inside the critical section,
+   including allocations. *)
+
+let[@inline never] exchange r v =
+  (* BEGIN ATOMIC *)
   let cur = r.v in
   r.v <- v;
+  (* END ATOMIC *)
   cur
 
-let compare_and_set r seen v =
+let[@inline never] compare_and_set r seen v =
+  (* BEGIN ATOMIC *)
   let cur = r.v in
-  if cur == seen then
-    (r.v <- v; true)
-  else
+  if cur == seen then (
+    r.v <- v;
+    (* END ATOMIC *)
+    true
+  ) else
     false
 
-let fetch_and_add r n =
+let[@inline never] fetch_and_add r n =
+  (* BEGIN ATOMIC *)
   let cur = r.v in
   r.v <- (cur + n);
+  (* END ATOMIC *)
   cur
 
 let incr r = ignore (fetch_and_add r 1)

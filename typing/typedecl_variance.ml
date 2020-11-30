@@ -166,9 +166,11 @@ let compute_variance_type env ~check (required, loc) decl tyl =
             match ty.desc with
             | Tvar _ -> raise Exit
             | Tconstr _ ->
+                let old = !visited in
                 begin try
                   Btype.iter_type_expr check ty
                 with Exit ->
+                  visited := old;
                   let ty' = Ctype.expand_head_opt env ty in
                   if ty == ty' then raise Exit else check ty'
                 end

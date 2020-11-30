@@ -28,6 +28,8 @@ val bytecc_libs : Variables.t
 
 val c_preprocessor : Variables.t
 
+val cc : Variables.t
+
 val caml_ld_library_path : Variables.t
 
 val compare_programs : Variables.t

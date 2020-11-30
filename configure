@@ -12656,7 +12656,7 @@ case $host in #(
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-DUNICODE -D_UNICODE'
+        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
         internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
         internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   *) :
@@ -13910,7 +13910,7 @@ fi; system=elf ;; #(
 esac
 
 if test x"$enable_native_compiler" = "xno"; then :
-  arch=none; model=default; system=unknown; native_compiler=false
+  native_compiler=false
   { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
 $as_echo "$as_me: the native compiler is disabled" >&6;}
 else

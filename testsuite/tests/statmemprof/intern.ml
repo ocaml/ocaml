@@ -134,7 +134,7 @@ let check_distrib lo hi cnt rate =
   let alloc info =
     (* We also allocate the list constructor in the minor heap,
        so we filter that out. *)
-    if info.unmarshalled then begin
+    if info.source = Marshal then begin
       assert (info.size = 1 || info.size = 2);
       assert (info.n_samples > 0);
       smp := !smp + info.n_samples

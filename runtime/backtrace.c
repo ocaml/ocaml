@@ -27,6 +27,7 @@
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
 #include "caml/debugger.h"
+#include "caml/startup.h"
 
 void caml_init_backtrace(void)
 {
@@ -121,6 +122,38 @@ CAMLexport void caml_print_exception_backtrace(void)
       print_location(&li, i);
     }
   }
+
+  /* See also printexc.ml */
+  switch (caml_debug_info_status()) {
+  case FILE_NOT_FOUND:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file not found)\n");
+    break;
+  case BAD_BYTECODE:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file appears to be corrupt)\n");
+    break;
+  case WRONG_MAGIC:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file has wrong magic number)\n");
+    break;
+  case NO_FDS:
+    fprintf(stderr,
+            "(Cannot print locations:\n "
+             "bytecode executable program file cannot be opened;\n "
+             "-- too many open files. Try running with OCAMLRUNPARAM=b=2)\n");
+    break;
+  }
+}
+
+/* Return the status of loading backtrace information (error reporting in
+   bytecode) */
+CAMLprim value caml_ml_debug_info_status(value unit)
+{
+  return Val_int(caml_debug_info_status());
 }
 
 /* Get a copy of the latest backtrace */

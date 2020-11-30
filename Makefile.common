@@ -66,9 +66,6 @@ OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS += -O3
-endif
 # By default, request ocamllex to be quiet
 OCAMLLEX_FLAGS ?= -q
 

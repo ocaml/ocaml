@@ -187,6 +187,30 @@ let get_num : type a. a foo -> a -> a option = fun f i1 ->
 val get_num : 'a foo -> 'a -> 'a option = <fun>
 |}]
 
+(* Extensions can have inline records (regression test for #9970) *)
+type _ inline = ..
+type 'a inline += X of {x : 'a}
+;;
+[%%expect {|
+type _ inline = ..
+type 'a inline += X of { x : 'a; }
+|}]
+
+let _ = X {x = 1};;
+[%%expect {|
+- : int inline = X {x = 1}
+|}]
+
+let must_be_polymorphic = fun x -> X {x};;
+[%%expect {|
+val must_be_polymorphic : 'a -> 'a inline = <fun>
+|}]
+
+let must_be_polymorphic : 'a . 'a -> 'a inline = fun x -> X {x};;
+[%%expect {|
+val must_be_polymorphic : 'a -> 'a inline = <fun>
+|}]
+
 (* Extensions must obey constraints *)
 
 type 'a foo = .. constraint 'a = [> `Var ]

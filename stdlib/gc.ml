@@ -125,10 +125,11 @@ let delete_alarm a = a := false
 
 module Memprof =
   struct
+    type allocation_source = Normal | Marshal | Custom
     type allocation =
       { n_samples : int;
         size : int;
-        unmarshalled : bool;
+        source : allocation_source;
         callstack : Printexc.raw_backtrace }
 
     type ('minor, 'major) tracker = {

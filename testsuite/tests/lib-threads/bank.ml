@@ -12,25 +12,33 @@ include systhreads
 open Printf
 open Event
 
-type account = int channel * int channel
+type account = {
+  get: int channel;
+  put: int channel;
+  stop: unit channel
+  }
 
-let account (put_ch, get_ch) =
+let account a =
   let rec acc balance =
     select [
-      wrap (send get_ch balance) (fun () -> acc balance);
-      wrap (receive put_ch) (fun amount ->
+      wrap (send a.get balance) (fun () -> acc balance);
+      wrap (receive a.put) (fun amount ->
         if balance + amount < 0 then failwith "negative balance";
-        acc (balance + amount))
+        acc (balance + amount));
+      wrap (receive a.stop) (fun _ -> ())
     ]
   in acc 0
 
-let get ((put_ch, get_ch): account) = sync (receive get_ch)
-let put ((put_ch, get_ch): account) amount = sync (send put_ch amount)
+let get a = sync (receive a.get)
+let put a amount = sync (send a.put amount)
+let stop a = sync (send a.stop ())
 
 let _ =
-  let a : account = (new_channel(), new_channel()) in
-  ignore (Thread.create account a);
+  let a = { get = new_channel(); put = new_channel(); stop = new_channel() } in
+  let th = Thread.create account a in
   put a 100;
   printf "Current balance: %d\n" (get a);
   for i = 1 to 99 do put a (-2); put a 1 done;
-  printf "Final balance: %d\n" (get a)
+  printf "Final balance: %d\n" (get a);
+  stop a;
+  Thread.join th

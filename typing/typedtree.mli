@@ -752,6 +752,21 @@ and 'a class_infos =
     ci_attributes: attributes;
    }
 
+type implementation = {
+  structure: structure;
+  coercion: module_coercion;
+  signature: Types.signature
+}
+(** A typechecked implementation including its module structure, its exported
+    signature, and a coercion of the module against that signature.
+
+    If an .mli file is present, the signature will come from that file and be
+    the exported signature of the module.
+
+    If there isn't one, the signature will be inferred from the module
+    structure.
+*)
+
 (* Auxiliary functions over the a.s.t. *)
 
 (** [as_computation_pattern p] is a computation pattern with description
