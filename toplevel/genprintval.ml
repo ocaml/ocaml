@@ -616,6 +616,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_printer printer)
 
 
-    in nest tree_of_val max_depth obj ty
+    in nest tree_of_val max_depth obj (Ctype.correct_levels ty)
 
 end

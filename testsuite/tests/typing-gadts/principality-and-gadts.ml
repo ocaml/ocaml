@@ -362,7 +362,7 @@ val foo : int foo -> int = <fun>
 Line 3, characters 26-31:
 3 |   | { x = (x : int); eq = Refl3 } -> x
                               ^^^^^
-Warning 18 [not-principal]: typing this pattern requires considering M.t and int as equal.
+Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
 val foo : int foo -> int = <fun>
 |}]
