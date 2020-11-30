@@ -599,7 +599,7 @@ OCaml 4.12.0
   (Jacques Garrigue, report and review by Thomas Refis)
 
 * #8907, #9878: `Typemod.normalize_signature` uses wrong environment
-  (Jacques Garrigue, report by Leo White)
+  (Jacques Garrigue, report and review by Leo White)
 
 - #9421, #9427: fix printing of (::) in ocamldoc
   (Florian Angeletti, report by Yawar Amin, review by Damien Doligez)
