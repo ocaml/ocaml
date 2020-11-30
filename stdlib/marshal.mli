@@ -143,7 +143,7 @@ val from_channel : in_channel -> 'a
    @raise End_of_file if [chan] is already at the end of the file.
 
    @raise Failure if the end of the file is reached during
-   unmarshalling itself. *)
+   unmarshalling itself or if [chan] is not in binary mode.*)
 
 val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value
