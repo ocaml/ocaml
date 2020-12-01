@@ -206,5 +206,14 @@ case "$1" in
       exit 1
     esac
 
+    echo DLL base addresses
+    case "$PORT" in
+      *32)
+        ARG='-4';;
+      *64)
+        ARG='-8';;
+    esac
+    find "../$BUILD_PREFIX-$PORT" -type f -name \*.dll | xargs rebase -i "$ARG"
+
     ;;
 esac
