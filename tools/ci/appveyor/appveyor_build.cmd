@@ -119,7 +119,7 @@ if "%PORT%" equ "cygwin64" (
 )
 
 set CYGWIN_INSTALL_PACKAGES=
-set CYGWIN_UPGRADE_REQUIRED=0
+set CYGWIN_UPGRADE_REQUIRED=%FORCE_CYGWIN_UPGRADE%
 
 for %%P in (%CYGWIN_PACKAGES%) do call :CheckPackage %%P
 call :UpgradeCygwin

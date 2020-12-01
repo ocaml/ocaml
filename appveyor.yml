@@ -28,6 +28,7 @@ environment:
     CYG_CACHE: C:/cygwin64/var/cache/setup
     FLEXDLL_VERSION: 0.39
     OCAMLRUNPARAM: v=0,b
+    FORCE_CYGWIN_UPGRADE: 0
   matrix:
     - PORT: mingw32
       BOOTSTRAP_FLEXDLL: true
