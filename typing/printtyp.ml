@@ -923,7 +923,7 @@ let rec mark_loops_rec visited ty =
     | Tunivar _ -> add_named_var ty
 
 let mark_loops ty =
-  normalize_type Env.empty ty;
+  normalize_type ty;
   mark_loops_rec [] ty;;
 
 let reset_loop_marks () =
