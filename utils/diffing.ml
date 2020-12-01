@@ -26,26 +26,6 @@
    We add the constraint that extensions can only be in one side
    (either the left or right list). This is enforced by the external API.
 
-   The optimality of Wagner-Fischer depends on the property that the
-   edit-distance between a k-prefix of the left input and a l-prefix of the
-   right input d(k,l) satisfy
-
-   d(k,l) = min (
-     del_cost + d(k-1,l),
-     insert_cost + d(k,l-1),
-     change_cost + d(k-1,l-1)
-    )
-
-   In other, the optimal distance does not depend on the inner state of patches.
-   Under this hypothesis, it is optimal to choose greadily the state of the
-   minimal patch transforming the left k-prefix into the right l-prefix as a
-   representative of the state of all possible patches.
-
-   If this properties is not satisfied, the computed patch is not guaranteed
-   to be globally optimal, but it is still a correct patch, which is even
-   optimal among all patches with gready choices of representative state among
-   all patches between left k-prefix and right l-prefix.
-
 *)
 
 let (let*) = Option.bind
