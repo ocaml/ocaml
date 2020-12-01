@@ -7,6 +7,22 @@ Working version
   prevent their C99-compliant snprintf conflicting with ours.
   (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
 
+### Supported platforms:
+
+- #9699, #10026: add support for iOS and macOS on ARM 64 bits
+  Backported from OCaml 4.12.0
+  (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
+   and Anil Madhavapeddy, additional testing by Michael Schmidt)
+
+### Code generation and optimization
+
+ - #9752, #10026: Revised handling of calling conventions for
+   external C functions.
+   Provide a more precise description of the types of unboxed arguments,
+   so that the ARM64 iOS/macOS calling conventions can be honored.
+   Backported from OCaml 4.12.0
+   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
+
 OCaml 4.10.1 (20 August 2020)
 -----------------------------
 
