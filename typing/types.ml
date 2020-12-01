@@ -79,14 +79,11 @@ module TypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
-module Internal = struct
-  type type_expr_internal = type_expr =
-      { mutable desc: type_desc;
-        mutable level: int;
-        mutable scope: int;
-        id: int }
-  let lock x = x
-  let unlock x = x
+module Unsafe_access = struct
+  let create desc ~level ~scope ~id = {desc; level; scope; id}
+  let set_desc ty d = ty.desc <- d
+  let set_level ty lv = ty.level <- lv
+  let set_scope ty sc = ty.scope <- sc
 end
 (* *)
 

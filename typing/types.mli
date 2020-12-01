@@ -233,14 +233,11 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
-module Internal : sig
-  type type_expr_internal =
-      { mutable desc: type_desc;
-        mutable level: int;
-        mutable scope: int;
-        id: int }
-  val lock : type_expr_internal -> type_expr
-  val unlock : type_expr -> type_expr_internal
+module Unsafe_access : sig
+  val create : type_desc -> level: int -> scope: int -> id: int -> type_expr
+  val set_desc : type_expr -> type_desc -> unit
+  val set_level : type_expr -> int -> unit
+  val set_scope : type_expr -> int -> unit
 end
 
 module TypeOps : sig

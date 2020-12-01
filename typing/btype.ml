@@ -109,7 +109,7 @@ let rec repr_link compress (t : type_expr) d : type_expr -> type_expr =
      repr_link true t d' t'
  | t' ->
      if compress then begin
-       log_change (Ccompress (t, t.desc, d)); (Internal.unlock t).desc <- d
+       log_change (Ccompress (t, t.desc, d)); Unsafe_access.set_desc t d
      end;
      t'
 
@@ -268,7 +268,7 @@ let set_row_name decl path =
         Tvariant row when static_row row ->
           let row = {(row_repr row) with
                      row_name = Some (path, decl.type_params)} in
-          (Internal.unlock ty).desc <- Tvariant row
+          Unsafe_access.set_desc ty (Tvariant row)
       | _ -> ()
 
 
@@ -553,7 +553,7 @@ end = struct
 
   (* Restore type descriptions. *)
   let cleanup { saved_desc; saved_kinds; _ } =
-    List.iter (fun (ty, desc) -> (Internal.unlock ty).desc <- desc) saved_desc;
+    List.iter (fun (ty, desc) -> Unsafe_access.set_desc ty desc) saved_desc;
     List.iter (fun r -> r := None) saved_kinds
 
   let with_scope f =
