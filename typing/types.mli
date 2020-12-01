@@ -233,7 +233,7 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
-module Unsafe_access : sig
+module Private_type_expr : sig
   val create : type_desc -> level: int -> scope: int -> id: int -> type_expr
   val set_desc : type_expr -> type_desc -> unit
   val set_level : type_expr -> int -> unit
