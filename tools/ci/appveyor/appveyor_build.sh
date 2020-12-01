@@ -120,18 +120,6 @@ case "$1" in
         ;;
     esac
     ;;
-  msvc32-only)
-    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32"
-
-    set_configuration msvc32 "$OCAMLROOT-msvc32"
-
-    run "$MAKE world" $MAKE world
-    run "$MAKE runtimeopt" $MAKE runtimeopt
-    run "$MAKE -C otherlibs/systhreads libthreadsnat.lib" \
-         $MAKE -C otherlibs/systhreads libthreadsnat.lib
-
-    exit 0
-    ;;
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
     run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
@@ -186,30 +174,37 @@ case "$1" in
 
     set_configuration "$PORT" "$OCAMLROOT"
 
-    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
-
     export TERM=ansi
 
-    if [[ $PORT != 'msvc64' ]] ; then
-      set -o pipefail
-      # For an explanation of the sed command, see
-      # https://github.com/appveyor/ci/issues/1824
-      script --quiet --return --command \
-        "( test "$BOOTSTRAP_FLEXDLL" = 'false' || "\
+    case "$BUILD_MODE" in
+      world.opt)
+        set -o pipefail
+        # For an explanation of the sed command, see
+        # https://github.com/appveyor/ci/issues/1824
+        script --quiet --return --command \
+          "( test "$BOOTSTRAP_FLEXDLL" = 'false' || "\
 "$MAKE -C ../$BUILD_PREFIX-$PORT flexdll ) && "\
 "$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
-        "../$BUILD_PREFIX-$PORT/build.log" |
-          sed -e 's/\d027\[K//g' \
-              -e 's/\d027\[m/\d027[0m/g' \
-              -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
-    else
+          "../$BUILD_PREFIX-$PORT/build.log" |
+            sed -e 's/\d027\[K//g' \
+                -e 's/\d027\[m/\d027[0m/g' \
+                -e 's/\d027\[01\([m;]\)/\d027[1\1/g';;
+    steps)
       run "C deps: runtime" make -j64 -C runtime setup-depend
       run "C deps: win32unix" make -j64 -C otherlibs/win32unix setup-depend
       run "$MAKE world" $MAKE world
       run "$MAKE bootstrap" $MAKE bootstrap
       run "$MAKE opt" $MAKE opt
-      run "$MAKE opt.opt" $MAKE opt.opt
-    fi
+      run "$MAKE opt.opt" $MAKE opt.opt;;
+    C)
+      run "$MAKE world" $MAKE world
+      run "$MAKE runtimeopt" $MAKE runtimeopt
+      run "$MAKE -C otherlibs/systhreads libthreadsnat.lib" \
+           $MAKE -C otherlibs/systhreads libthreadsnat.lib;;
+    *)
+      echo "Unrecognised build: $BUILD_MODE"
+      exit 1
+    esac
 
     ;;
 esac

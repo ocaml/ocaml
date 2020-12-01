@@ -72,10 +72,6 @@ chcp 65001 > nul
 rem This must be kept in sync with appveyor_build.sh
 set BUILD_PREFIX=🐫реализация
 git worktree add "..\%BUILD_PREFIX%-%PORT%" -b appveyor-build-%PORT%
-if "%PORT%" equ "msvc64" (
-  rem msvc64 also does a small bit of msvc32 on an older compiler
-  git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-msvc32
-)
 
 cd "..\%BUILD_PREFIX%-%PORT%"
 if "%BOOTSTRAP_FLEXDLL%" equ "true" (
@@ -129,27 +125,24 @@ call :UpgradeCygwin
 goto :EOF
 
 :build
-if "%PORT%" equ "msvc64" (
-  setlocal
-  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+rem Testing %SDK% is tricky, since it can contain double-quotes. The "trick",
+rem is to make SDK_TEST the second character of %SDK%. If %SDK% is un-set then
+rem SDK_TEST will be the literal string %SDK:~1,1%, obviously. However, that
+rem means %SDK_TEST:~1,1% only expands to the empty string if SDK was itself
+rem un-set. <sigh>
+set SDK_TEST=%SDK:~1,1%
+if "%SDK_TEST:~1,1%" neq "" (
+  if "%PORT%" equ "msvc64" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+  if "%PORT%" equ "msvc32" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
+) else (
+  set SDK=call %SDK%
 )
-if "%PORT%" equ "msvc32" (
-  setlocal
-  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
-)
-rem Do the main build (either msvc64 or mingw32)
+
+%SDK%
+
 "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
-
-if "%PORT%" neq "msvc64" goto :EOF
-
-rem Reconfigure the environment and run the msvc32 partial build
-endlocal
-call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
-"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh msvc32-only" || exit /b 1
 goto :EOF
 
 :test
-rem Reconfigure the environment for the msvc64 build
-call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
+if "%BUILD_MODE%" neq "C" "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF
