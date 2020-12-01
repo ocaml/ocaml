@@ -13,8 +13,13 @@
 #*                                                                        *
 #**************************************************************************
 
+define capitalize_one
+$(shell echo $(1) | cut -c1 | tr '[:lower:]' '[:upper:]')$\
+$(shell echo $(1) | cut -c2-)
+endef
+
 define capitalize
-$(shell echo $(1) | sed "s/\<./\U&/g")
+$(foreach m,$(1),$(call capitalize_one,$m))
 endef
 
 
