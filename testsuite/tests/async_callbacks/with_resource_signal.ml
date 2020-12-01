@@ -2,8 +2,9 @@
    * hasunix
    include unix
    ** native
+   ** bytecode
 
-(* Test only implemented on Unix. It currently fails with bytecode. *)
+(* Test only implemented on Unix. *)
 
 *)
 
@@ -37,10 +38,10 @@ let with_unblock f x =
      f x ;
      set_mask () ;
      blocked := true
-   with Alarm ->
-     (* critical section *)
+   with (* BEGIN ATOMIC *) Alarm ->
+     blocked := true ;
+     (* END ATOMIC *)
      set_mask () ;
-     blocked := true
   ) ;
   unset_mask ()
 
@@ -55,27 +56,31 @@ let with_resource ~acquire ~(release : _ -> unit) work x =
   let release_ref_no_exn () =
     Printexc.catch release (borrow ())
   in
-  match Sys.mask initialise () ; work (borrow ()) with
-  | result -> (
-      (* critical section *)
-      Sys.mask release_ref_no_exn () ;
+  match mask initialise () ; work (borrow ()) with
+  | (* BEGIN ATOMIC *) result -> (
+      (* Sys.mask inlined for bytecode polling behaviour *)
+      let old_mask = set_mask_prim Mask_uninterruptible in
+      release_ref_no_exn () ;
+      unset_mask_prim old_mask ;
+      (* END ATOMIC *)
       result
     )
-  | exception e -> (
-      (* critical section *)
+  | (* BEGIN ATOMIC *) exception e -> (
       if !resource_ref = None then raise e
       else (
+        (* Sys.mask inlined for bytecode polling behaviour *)
+        let old_mask = set_mask_prim Mask_uninterruptible in
         let work_bt = Printexc.get_raw_backtrace () in
-        Sys.mask release_ref_no_exn () ;
+        mask release_ref_no_exn () ;
+        unset_mask_prim old_mask ;
         Printexc.raise_with_backtrace e work_bt
+        (* END ATOMIC *)
       )
     )
 
 (* Unix-specific *)
 
-let _ =
-  if Sys.os_type <> "Unix"
-  then (* not implemented *) assert false
+let () = if Sys.os_type <> "Unix" then failwith "not implemented"
 
 let time = Unix.gettimeofday
 
@@ -94,10 +99,10 @@ let check_receive_signal tick () =
      report Fail ;
      set_mask () ;
      blocked := true
-   with Alarm ->
-     (* critical section *)
-     set_mask () ;
+   with (* BEGIN ATOMIC *) Alarm ->
      blocked := true ;
+     (* END ATOMIC *)
+     set_mask () ;
      report Pass
   ) ;
   unset_mask ()
@@ -109,12 +114,15 @@ let wait tock =
 (* control *)
 let check_block_signal tick () =
   try
-    (* critical section *)
-    blocked := false ;
-    mask wait (300. *. tick) ;
-    blocked := true ;
+    mask (fun () ->
+      blocked := false ;
+      wait (300. *. tick) ;
+      blocked := true) () ;
     report Pass
-  with Alarm -> report Fail
+  with (* BEGIN ATOMIC *) Alarm ->
+     blocked := true ;
+     (* END ATOMIC *)
+     report Fail
 
 
 let repeat_test tick test =
@@ -167,9 +175,9 @@ let repeat_test_with_resource tick ~inside ~outside =
 
 let run_contain (f : _ -> unit) x =
   try f x ; blocked := true
-  with e -> (
-      (* critical section *)
+  with (* BEGIN ATOMIC *) e -> (
       blocked := true ;
+      (* END ATOMIC *)
       Printf.printf "Escaped: %s\n" (Printexc.to_string e) ;
       report Fail
     )

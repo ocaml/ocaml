@@ -1,17 +1,24 @@
 (* TEST
    modules = "signals.c"
+   * native
+   * bytecode
+(*   modules = "signals.c"
    * hasunix
    include unix
    ** native
-
-(* Fails on bytecode for now *)
+   ** bytecode *)
 
 *)
 
 exception Alarm
 
-external set_mask : unit -> unit = "caml_sys_set_mask" [@@noalloc]
-external unset_mask : unit -> unit = "caml_sys_unset_mask" [@@noalloc]
+type _mask_kind = Mask_none | Mask_uninterruptible | Mask_nonpreemptible
+
+external set_mask_prim : _mask_kind -> _mask_kind = "caml_sys_set_mask" [@@noalloc]
+external unset_mask_prim : _mask_kind -> unit = "caml_sys_unset_mask" [@@noalloc]
+
+let set_mask () = ignore (set_mask_prim Mask_uninterruptible)
+let unset_mask () = unset_mask_prim Mask_none
 
 let mask : ('a -> 'b) -> 'a -> 'b = Sys.mask
 
@@ -25,19 +32,13 @@ let report b =
   print_endline (if b == Pass then "Passed" else "Failed")
 
 let with_unblock f x =
-  set_mask () ;
-  (try
-     blocked := false ;
-     unset_mask () ;
-     f x ;
-     set_mask () ;
-     blocked := true
-   with Alarm ->
-     (* critical section *)
-     set_mask () ;
-     blocked := true
-  ) ;
-  unset_mask ()
+  try
+    blocked := false ;
+    f x ;
+    blocked := true
+  with (* BEGIN ATOMIC *) Alarm ->
+    blocked := true
+    (* END ATOMIC *)
 
 let with_resource ~acquire ~(release : _ -> unit) work x =
   let resource_ref = ref None in
@@ -51,40 +52,52 @@ let with_resource ~acquire ~(release : _ -> unit) work x =
     Printexc.catch release (borrow ())
   in
   match mask initialise () ; work (borrow ()) with
-  | result -> (
-      (* critical section *)
-      mask release_ref_no_exn () ;
+  | (* BEGIN ATOMIC *) result -> (
+      (* Sys.mask inlined for bytecode polling behaviour *)
+      let old_mask = set_mask_prim Mask_uninterruptible in
+      release_ref_no_exn () ;
+      unset_mask_prim old_mask ;
+      (* END ATOMIC *)
       result
     )
-  | exception e -> (
-      (* critical section *)
+  | (* BEGIN ATOMIC *) exception e -> (
       if !resource_ref = None then raise e
       else (
+        (* Sys.mask inlined for bytecode polling behaviour *)
+        let old_mask = set_mask_prim Mask_uninterruptible in
         let work_bt = Printexc.get_raw_backtrace () in
         mask release_ref_no_exn () ;
+        unset_mask_prim old_mask ;
         Printexc.raise_with_backtrace e work_bt
+        (* END ATOMIC *)
       )
     )
+
 
 (* control *)
 let check_block_signal () =
   try
-    (* critical section *)
-    blocked := false ;
-    mask check_urgent () ;
-    blocked := true ;
+    mask (fun () ->
+      blocked := false ;
+      check_urgent () ;
+      blocked := true) () ;
     Pass
-  with Alarm -> Fail
+  with (* BEGIN ATOMIC *) Alarm ->
+    blocked := true ;
+    (* END ATOMIC *)
+    Fail
 
 (* control, must fail *)
 let check_unblock_signal () =
   try
-    (* critical section *)
     blocked := false ;
     check_urgent () ;
     blocked := true ;
     Pass
-  with Alarm -> Fail
+  with (* BEGIN ATOMIC *) Alarm ->
+    blocked := true ;
+    (* END ATOMIC *)
+    Fail
 
 let test_with_resource branch ~inside ~outside =
   let count = ref 0 in
@@ -110,9 +123,9 @@ let test_with_resource branch ~inside ~outside =
 
 let run_contain (f : _ -> pass) x =
   try let res = f x in blocked := true ; res
-  with e -> (
-      (* critical section *)
+  with (* BEGIN ATOMIC *) e -> (
       blocked := true ;
+      (* END ATOMIC *)
       Printf.printf "Escaped: %s\n" (Printexc.to_string e) ;
       Fail
     )
