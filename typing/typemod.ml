@@ -2457,17 +2457,17 @@ let type_structure = type_structure false None
 
 (* Normalize types in a signature *)
 
-let rec normalize_modtype env = function
+let rec normalize_modtype = function
     Mty_ident _
   | Mty_alias _ -> ()
-  | Mty_signature sg -> normalize_signature env sg
-  | Mty_functor(_param, body) -> normalize_modtype env body
+  | Mty_signature sg -> normalize_signature sg
+  | Mty_functor(_param, body) -> normalize_modtype body
 
-and normalize_signature env = List.iter (normalize_signature_item env)
+and normalize_signature sg = List.iter normalize_signature_item sg
 
-and normalize_signature_item env = function
-    Sig_value(_id, desc, _) -> Ctype.normalize_type env desc.val_type
-  | Sig_module(_id, _, md, _, _) -> normalize_modtype env md.md_type
+and normalize_signature_item = function
+    Sig_value(_id, desc, _) -> Ctype.normalize_type desc.val_type
+  | Sig_module(_id, _, md, _, _) -> normalize_modtype md.md_type
   | _ -> ()
 
 (* Extract the module type of a module expression *)
@@ -2668,7 +2668,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
               sourcefile sg "(inferred signature)" simple_sg
           in
           check_nongen_schemes finalenv simple_sg;
-          normalize_signature finalenv simple_sg;
+          normalize_signature simple_sg;
           Typecore.force_delayed_checks ();
           (* See comment above. Here the target signature contains all
              the value being exported. We can still capture unused
