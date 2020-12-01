@@ -3,7 +3,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Gabriel Radanne, projet Cambium, INRIA Rocquencourt        *)
+(*             Gabriel Radanne, projet Cambium, Inria Paris               *)
 (*                                                                        *)
 (*   Copyright 2020 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
