@@ -3,8 +3,10 @@ Working version
 
 ### Language features:
 
-- #??: Let-punning
-  (Stephen Dolan, review by ??)
+- #10013: Let-punning
+  Allow 'let* x in ...' and 'let%ext x in ...' as shorthand for
+    'let* x = x in ...' and 'let%ext x = x in ...' respectively.
+  (Stephen Dolan, review by Gabriel Scherer)
 
 ### Runtime system:
 
