@@ -24,8 +24,9 @@ open Btype
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
-    mark_type_node ty ~after:
-      begin fun ty -> match ty.desc with
+    let ty = repr ty in
+    if mark_type_node ty then
+      match ty.desc with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
       | Tvariant row ->
@@ -39,7 +40,6 @@ let free_vars ?(param=false) ty =
       (* XXX: What about Tobject ? *)
       | _ ->
           iter_type_expr loop ty
-      end
   in
   loop ty;
   unmark_type ty;

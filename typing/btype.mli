@@ -174,13 +174,9 @@ val mirror_level: int -> int
            invert order *)
 val mark_type: type_expr -> unit
         (* Mark a type *)
-val mark_type_node:
-        ?guard:(type_expr -> bool) -> after:(type_expr -> unit) ->
-        type_expr -> unit
-        (* If the node is not already marked and [guard] returns true
-           (the default), then mark it and run [after]. *)
-val mark_type_node_only: type_expr -> unit
-        (* A much simpler variant of [mark_type_node], even without [repr]'ing  *)
+val mark_type_node: type_expr -> bool
+        (* Just mark a node if its level was highe than lowest_level,
+           and return whether this was done. No [repr]'ing. *)
 val mark_type_params: type_expr -> unit
         (* Mark the sons of a type node *)
 val unmark_type: type_expr -> unit

@@ -574,23 +574,17 @@ let rec mark_type ty =
     iter_type_expr mark_type ty
   end
 
-let mark_type_node_only ty =
-  if ty.level >= lowest_level then
-    (Internal.unlock ty).level <- mirror_level ty.level
-
-let mark_type_node ?(guard = fun _ -> true) ~after ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level && guard ty then begin
-    (Internal.unlock ty).level <- mirror_level ty.level;
-    after ty
-  end
+let mark_type_node ty =
+  ty.level >= lowest_level &&
+  ((Internal.unlock ty).level <- mirror_level ty.level; true)
 
 let mark_type_params ty =
   iter_type_expr mark_type ty
 
 let type_iterators =
   let it_type_expr it ty =
-    mark_type_node ty ~after:(it.it_do_type_expr it)
+    let ty = repr ty in
+    if mark_type_node ty then it.it_do_type_expr it ty
   in
   {type_iterators with it_type_expr}
 

@@ -568,8 +568,9 @@ let really_closed = ref None
    and only returns a [variable list].
  *)
 let rec free_vars_rec real ty =
-  mark_type_node ty ~after:
-    begin fun ty -> match ty.desc, !really_closed with
+  let ty = repr ty in
+  if mark_type_node ty then
+    match ty.desc, !really_closed with
       Tvar _, _ ->
         free_variables := (ty, real) :: !free_variables
     | Tconstr (path, tl, _), Some env ->
@@ -594,7 +595,6 @@ let rec free_vars_rec real ty =
         if not (static_row row) then free_vars_rec false row.row_more
     | _    ->
         iter_type_expr (free_vars_rec true) ty
-    end
 
 let free_vars ?env ty =
   free_variables := [];
@@ -682,7 +682,7 @@ let closed_class params sign =
     (fun (lab, _, ty) -> if lab = dummy_method then mark_type ty)
     fields;
   try
-    mark_type_node_only (repr sign.csig_self);
+    ignore (mark_type_node (repr sign.csig_self));
     List.iter
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
@@ -1088,9 +1088,10 @@ let compute_univars ty =
 
 let fully_generic ty =
   let rec aux ty =
-    mark_type_node ty
-      ~guard: (fun ty -> ty.level = generic_level || raise Exit)
-      ~after: (iter_type_expr aux)
+    let ty = repr ty in
+    if ty.level = generic_level then
+      (if mark_type_node ty then iter_type_expr aux ty)
+    else raise Exit
   in
   let res = try aux ty; true with Exit -> false in
   unmark_type ty;
@@ -1933,10 +1934,10 @@ let rec unify_univar t1 t2 = function
 let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
+    let ty = repr ty in
     if TypeSet.is_empty bound then
-      mark_type_node ty ~after:(occur_desc bound)
+      (if mark_type_node ty then occur_desc bound ty)
     else try
-      let ty = repr ty in
       if ty.level < pivot_level then () else
       let bound' = TypeMap.find ty !visited in
       if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then begin
@@ -2102,8 +2103,9 @@ let expand_trace env trace =
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 let deep_occur t0 ty =
   let rec occur_rec ty =
-    mark_type_node ty ~after:
-      begin fun ty ->
+    let ty = repr ty in
+    if mark_type_node ty then
+      begin
         if ty == t0 then raise Occur;
         iter_type_expr occur_rec ty
       end
@@ -2420,8 +2422,9 @@ let mcomp env t1 t2 =
 let find_lowest_level ty =
   let lowest = ref (mirror_level generic_level) in
   let rec find ty =
-    mark_type_node ty ~after:
-      begin fun ty ->
+    let ty = repr ty in
+    if mark_type_node ty then
+      begin
         if ty.level > !lowest then lowest := ty.level;
         iter_type_expr find ty
       end
@@ -3262,6 +3265,7 @@ let filter_self_method env lab priv meths ty =
 *)
 let moregen_occur env level ty =
   let rec occur ty =
+    let ty = repr ty in
     mark_type_node ty ~guard:
       begin fun ty ->
         ty.level > level &&
