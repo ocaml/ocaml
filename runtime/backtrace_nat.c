@@ -155,6 +155,11 @@ intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
   return trace_pos;
 }
 
+uintnat caml_debuginfo_return_address(backtrace_slot slot)
+{
+  return caml_find_frame_descr_start(slot)->retaddr;
+}
+
 debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {
   /* Debuginfo pointers are stored as 32-bit relative offsets,

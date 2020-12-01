@@ -97,6 +97,9 @@ type raw_backtrace = raw_backtrace_entry array
 
 let raw_backtrace_entries bt = bt
 
+external return_address_of_raw_entry:
+  raw_backtrace_entry -> nativeint = "caml_raw_backtrace_entry_retaddr"
+
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
 

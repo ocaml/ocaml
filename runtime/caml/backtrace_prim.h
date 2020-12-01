@@ -58,6 +58,9 @@ int caml_debug_info_available(void);
  * startup.h if something went wrong loading the debug information. */
 int caml_debug_info_status(void);
 
+/* Get return address for a given slot (returns 0 in bytecode) */
+uintnat caml_debuginfo_return_address(backtrace_slot slot);
+
 /* Return debuginfo associated to a slot or NULL. */
 debuginfo caml_debuginfo_extract(backtrace_slot slot);
 

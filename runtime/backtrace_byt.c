@@ -500,6 +500,11 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_endchr = event->ev_endchr;
 }
 
+uintnat caml_debuginfo_return_address(backtrace_slot slot)
+{
+  return 0;
+}
+
 debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {
   return (debuginfo)slot;
