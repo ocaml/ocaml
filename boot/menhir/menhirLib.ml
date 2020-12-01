@@ -43,7 +43,7 @@ let rec uniq1 cmp x ys =
       []
   | y :: ys ->
       if cmp x y = 0 then
-        uniq1 cmp x ys
+        uniq1 compare x ys
       else
         y :: uniq1 cmp y ys
 
@@ -85,6 +85,7 @@ let rec foldr f xs accu =
       accu
   | Cons (x, xs) ->
       f x (foldr f xs accu)
+
 end
 module Convert = struct
 (******************************************************************************)
@@ -3132,14 +3133,8 @@ module Make
   type item =
       int * int
 
-  let low_bits =
-    10
-
-  let low_limit =
-    1 lsl low_bits
-
   let export t : item =
-    (t lsr low_bits, t mod low_limit)
+    (t lsr 7, t mod 128)
 
   let items s =
     (* Map [s] to its LR(0) core. *)
@@ -3518,5 +3513,5 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
 end
 end
 module StaticVersion = struct
-let require_20200624 = ()
+let require_20190924 = ()
 end
