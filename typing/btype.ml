@@ -46,7 +46,7 @@ let new_id = s_ref (-1)
 
 let newty2 level desc  =
   incr new_id;
-  Internal.lock Internal.{ desc; level; scope = lowest_level; id = !new_id }
+  Private_type_expr.create desc ~level ~scope:lowest_level ~id:!new_id
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ?name () = newgenty (Tvar name)
 (*
