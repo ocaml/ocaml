@@ -1089,6 +1089,7 @@ let compute_univars ty =
 let fully_generic ty =
   let rec aux ty =
     let ty = repr ty in
+    if ty.level < lowest_level then () else
     if ty.level = generic_level then
       (if mark_type_node ty then iter_type_expr aux ty)
     else raise Exit
@@ -3266,13 +3267,9 @@ let filter_self_method env lab priv meths ty =
 let moregen_occur env level ty =
   let rec occur ty =
     let ty = repr ty in
-    mark_type_node ty ~guard:
-      begin fun ty ->
-        ty.level > level &&
-        if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur
-        else true
-      end
-      ~after:(iter_type_expr occur)
+    if ty.level <= level then () else
+    if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur else
+    if mark_type_node ty then iter_type_expr occur ty
   in
   begin try
     occur ty; unmark_type ty
@@ -3486,8 +3483,9 @@ let moregeneral env inst_nongen pat_sch subj_sch =
 (* Simpler, no? *)
 
 let rec rigidify_rec vars ty =
-  mark_type_node ty ~after:
-    begin fun ty -> match ty.desc with
+  let ty = repr ty in
+  if mark_type_node ty then
+    begin match ty.desc with
     | Tvar _ ->
         if not (List.memq ty !vars) then vars := ty :: !vars
     | Tvariant row ->
