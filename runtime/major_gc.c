@@ -810,9 +810,6 @@ void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 void caml_sample_gc_stats(struct gc_stats* buf)
 {
   memset(buf, 0, sizeof(*buf));
-  /* we read from the buffers that are not currently being
-     written to. that way, we pick up the numbers written
-     at the end of the most recently completed GC cycle */
   int i;
   intnat pool_max = 0, large_max = 0;
   struct domain* domain_self = caml_domain_self ();
