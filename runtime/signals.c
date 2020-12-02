@@ -305,6 +305,11 @@ int caml_check_pending_actions()
   return caml_something_to_do;
 }
 
+value caml_process_pending_actions_with_root_exn(value extra_root)
+{
+  return process_pending_actions_with_root_exn(extra_root);
+}
+
 value caml_process_pending_actions_with_root(value extra_root)
 {
   value res = process_pending_actions_with_root_exn(extra_root);

@@ -35,7 +35,12 @@ CAMLexport void caml_raise(value v)
 {
   Unlock_exn();
   CAMLassert(!Is_exception_result(v));
-  v = caml_process_pending_actions_with_root(v);
+
+  // avoid calling caml_raise recursively
+  v = caml_process_pending_actions_with_root_exn(v);
+  if (Is_exception_result(v))
+    v = Extract_exception(v);
+
   Caml_state->exn_bucket = v;
   if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
   siglongjmp(Caml_state->external_raise->buf, 1);
