@@ -758,7 +758,6 @@ afl
 function_sections
 flat_float_array
 windows_unicode
-max_testsuite_dir_retries
 flambda_invariants
 flambda
 frame_pointers
@@ -2887,7 +2886,6 @@ VERSION=4.13.0+dev0-2020-10-19
 
 
  # TODO: rename this variable
-
 
 
 
@@ -16859,7 +16857,6 @@ fi
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
-    max_testsuite_dir_retries=1
     case $WINDOWS_UNICODE_MODE in #(
   ansi) :
     windows_unicode=0 ;; #(
@@ -16869,8 +16866,7 @@ case $host in #(
     as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
 esac ;; #(
   *) :
-    max_testsuite_dir_retries=0
-  windows_unicode=0 ;;
+    windows_unicode=0 ;;
 esac
 
 # Define flexlink chain and flags correctly for the different Windows ports
