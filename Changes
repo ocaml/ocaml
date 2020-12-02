@@ -361,6 +361,11 @@ OCaml 4.12.0
   (John Whitington, review by Nicolás Ojeda Bär, David Allsopp,
    Thomas Refis, and Florian Angeletti)
 
+- #9877: manual, warn that multi-index indexing operators should be defined in
+  conjunction of single-index ones.
+  (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
+   and Marcello Seri)
+
 ### Compiler user-interface and warnings:
 
 - #1931: rely on levels to enforce principality in patterns
