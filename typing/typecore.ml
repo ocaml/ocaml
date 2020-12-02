@@ -3595,9 +3595,13 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_open (od, e) ->
+      let tv = newvar () in
       let (od, _, newenv) = !type_open_decl env od in
       let exp = type_expect newenv e ty_expected_explained in
-      rue {
+      (* Force the return type to be well-formed in the original
+         environment. *)
+      unify_var newenv tv exp.exp_type;
+      re {
         exp_desc = Texp_open (od, exp);
         exp_type = exp.exp_type;
         exp_loc = loc;
