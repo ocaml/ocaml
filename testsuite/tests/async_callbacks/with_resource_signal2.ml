@@ -2,11 +2,6 @@
    modules = "signals.c"
    * native
    * bytecode
-(*   modules = "signals.c"
-   * hasunix
-   include unix
-   ** native
-   ** bytecode *)
 
 *)
 
@@ -149,7 +144,7 @@ let handler s =
 let test_all f =
   let test_up_to n =
     iterations := n ;
-    record_signal Sys.sigalrm ;
+    record_signal Sys.sigint ;
     try run_contain f () with _ -> Fail
   in
   let rec test_all n =
@@ -168,7 +163,7 @@ let test_pair ~inside ~outside =
 let () =
   Printexc.record_backtrace true ;
   blocked := true ;
-  Sys.set_signal Sys.sigalrm (Signal_handle handler);
+  Sys.set_signal Sys.sigint (Signal_handle handler);
   Printf.printf "---Control 1---\n" ;
   test_all check_block_signal ;
   Printf.printf "---Control 2---\n" ;

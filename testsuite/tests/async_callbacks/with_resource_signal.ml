@@ -1,10 +1,9 @@
 (* TEST
    * hasunix
    include unix
-   ** native
-   ** bytecode
-
-(* Test only implemented on Unix. *)
+   ** not-windows
+   *** native
+   *** bytecode
 
 *)
 

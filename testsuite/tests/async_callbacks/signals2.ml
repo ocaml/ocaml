@@ -33,8 +33,8 @@ let handler =
     )
 
 let _ =
-  Sys.set_signal Sys.sigalrm (Signal_handle handler);
-  record_signal Sys.sigalrm ;
+  Sys.set_signal Sys.sigint (Signal_handle handler);
+  record_signal Sys.sigint ;
   let () =
     (* caml_enter_blocking_section *)
     try
