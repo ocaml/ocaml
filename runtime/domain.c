@@ -1290,6 +1290,7 @@ static void domain_terminate()
     }
     caml_plat_unlock(&s->lock);
   }
+  caml_sample_gc_collect(domain_state);
 
   caml_stat_free(domain_state->final_info);
   caml_stat_free(domain_state->ephe_info);
