@@ -85,6 +85,7 @@ struct gc_stats {
   struct heap_stats major_heap;
 };
 void caml_sample_gc_stats(struct gc_stats* buf);
+void caml_sample_gc_collect(caml_domain_state *domain);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.
