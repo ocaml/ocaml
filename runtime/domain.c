@@ -1233,8 +1233,6 @@ static void domain_terminate()
 
   caml_gc_log("Domain terminating");
   caml_ev_pause(EV_PAUSE_YIELD);
-  // Before wrapping up further, we run the termination hook
-  caml_domain_stop_hook();
   caml_delete_root(domain_state->dls_root);
   s->terminating = 1;
 
@@ -1282,6 +1280,8 @@ static void domain_terminate()
   }
 
   caml_stat_free(domain_state->final_info);
+  // run the domain termination hook
+  caml_domain_stop_hook();
   caml_stat_free(domain_state->ephe_info);
   caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_state->shared_heap);
