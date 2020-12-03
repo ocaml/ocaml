@@ -250,6 +250,16 @@ let set namespace x = map.(Namespace.id namespace) <- x
    if a name is already attributed in the current environment.
    This is a weaker version of hidden_rec_items used by short-path. *)
 let protected = ref S.empty
+
+(* When dealing with functor arguments, identity becomes fuzzy because the same
+   syntactic argument may be represented by different identifers during the
+   error processing, we are thus disabling disambiguation on the argument name
+*)
+let fuzzy = ref S.empty
+let with_arg id f =
+  protect_refs [ R(fuzzy, S.add (Ident.name id) !fuzzy) ] f
+let fuzzy_id namespace id = namespace = Module && S.mem (Ident.name id) !fuzzy
+
 let add_protected id = protected := S.add (Ident.name id) !protected
 let reset_protected () = protected := S.empty
 let with_hidden id f =
@@ -281,7 +291,9 @@ let env_ident namespace name =
 
 (** Associate a name to the identifier [id] within [namespace] *)
 let ident_name_simple namespace id =
-  if not !enabled then Out_name.create (Ident.name id) else
+  if not !enabled || fuzzy_id namespace id then
+    Out_name.create (Ident.name id)
+  else
   let name = Ident.name id in
   match M.find name (get namespace) with
   | Uniquely_associated_to (id',r) when Ident.same id id' ->
@@ -1778,20 +1790,24 @@ and tree_of_modtype_declaration id decl =
 and tree_of_module id ?ellipsis mty rs =
   Osig_module (Ident.name id, tree_of_modtype ?ellipsis mty, tree_of_rec rs)
 
-let rec functor_parameters ~sep ~custom_printer ppf = function
-  | [] -> ()
-  | param :: q ->
-      let env_update = match fst param with
-        | None | Some (Unit | Named(None, _)) -> Fun.id
-        | Some Named (Some id, ty_arg) ->
-            Env.add_module ~arg:true id Mp_present ty_arg
-      in
-      custom_printer ppf (snd param);
-      begin match q with
-        | [] -> ()
-        | _ :: _ -> sep ppf ()
-      end;
-      wrap_env env_update (functor_parameters ~sep ~custom_printer ppf) q
+let rec functor_parameters ~sep custom_printer = function
+  | [] -> ignore
+  | [id,param] ->
+      Format.dprintf "%t%t"
+        (custom_printer param)
+        (functor_param ~sep ~custom_printer id [])
+  | (id,param) :: q ->
+      Format.dprintf "%t%a%t"
+        (custom_printer param)
+        sep ()
+        (functor_param ~sep ~custom_printer id q)
+and functor_param ~sep ~custom_printer id q =
+  match id with
+  | None -> functor_parameters ~sep custom_printer q
+  | Some id ->
+      Naming_context.with_arg id
+        (fun () -> functor_parameters ~sep custom_printer q)
+
 
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
