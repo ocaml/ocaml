@@ -13,7 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* The "trace" facility ; note that this module is only implemented in bytecode,
+(* The "trace" facility *)
+
+(* /!\ Not available in native code /!\
    functions will raise [Invalid_argument] if called in a native toplevel *)
 
 open Format

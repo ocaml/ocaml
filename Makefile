@@ -372,9 +372,6 @@ endif
 	   toplevel/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	   toplevel/native/*.cmi \
-	   "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
 	   toplevel/byte/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
@@ -389,7 +386,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	   toplevel/byte/*.cmt toplevel/byte/*.cmti toplevel/byte/*.mli \
+	   toplevel/byte/*.cmt \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
