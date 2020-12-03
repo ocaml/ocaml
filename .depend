@@ -6121,6 +6121,11 @@ toplevel/topstart.cmo : \
     toplevel/topmain.cmi
 toplevel/topstart.cmx : \
     toplevel/topmain.cmi
+toplevel/trace.cmi : \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/longident.cmi \
+    typing/env.cmi
 toplevel/byte/topdirs.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
@@ -6486,3 +6491,14 @@ toplevel/native/topmain.cmx : \
     utils/clflags.cmx \
     toplevel/native/topmain.cmi
 toplevel/native/topmain.cmi :
+toplevel/native/trace.cmo : \
+    typing/path.cmi \
+    toplevel/native/trace.cmi
+toplevel/native/trace.cmx : \
+    typing/path.cmx \
+    toplevel/native/trace.cmi
+toplevel/native/trace.cmi : \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/longident.cmi \
+    typing/env.cmi

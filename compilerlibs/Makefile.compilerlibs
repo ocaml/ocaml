@@ -269,7 +269,7 @@ OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/native/toploop.cmo \
   toplevel/native/topdirs.cmo toplevel/native/topmain.cmo
 OPTTOPLEVEL_CMI=toplevel/native/toploop.cmi toplevel/native/topdirs.cmi toplevel/native/topmain.cmi
 
-TOPLEVEL_SHARED_MLIS = toploop.mli topdirs.mli topmain.mli
+TOPLEVEL_SHARED_MLIS = toploop.mli trace.mli topdirs.mli topmain.mli
 
 toplevel/byte/%.mli toplevel/byte/%.cmi: toplevel/%.mli toplevel/%.cmi
 	cp  toplevel/$*.mli toplevel/$*.cmi $(@D)
