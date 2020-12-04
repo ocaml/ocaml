@@ -960,7 +960,7 @@ void caml_major_collection_slice (intnat howmuch)
     if (marked_words == 0){
       caml_gc_message (0x200, "actual overhead at start of cycle = +inf\n");
     }else{
-      caml_gc_message (0x200, "actual overhead at start of cycle = %.2g%%\n",
+      caml_gc_message (0x200, "actual overhead at start of cycle = %.0f%%\n",
                        100.0 * (heap_wsz_at_cycle_start - marked_words)
                        / marked_words);
     }

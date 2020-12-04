@@ -514,9 +514,8 @@ void caml_compact_heap_maybe (void)
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                      (uintnat) fp);
     if (fp >= caml_percent_max)
-         caml_compact_heap (-1);
+      caml_compact_heap (-1);
     else
-         caml_gc_message (0x200, "Automatic compaction aborted.\n");
-
+      caml_gc_message (0x200, "Automatic compaction aborted.\n");
   }
 }
