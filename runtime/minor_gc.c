@@ -173,8 +173,8 @@ void caml_set_minor_heap_size (asize_t bsz)
   Caml_state->young_alloc_mid =
     Caml_state->young_alloc_start + Wsize_bsize (bsz) / 2;
   Caml_state->young_alloc_end = Caml_state->young_end;
+  /* caml_update_young_limit called by caml_memprof_renew_minor_sample */
   Caml_state->young_trigger = Caml_state->young_alloc_start;
-  caml_update_young_limit();
   Caml_state->young_ptr = Caml_state->young_alloc_end;
   Caml_state->minor_heap_wsz = Wsize_bsize (bsz);
   caml_memprof_renew_minor_sample();

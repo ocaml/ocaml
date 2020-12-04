@@ -621,7 +621,8 @@ void caml_memprof_renew_minor_sample(void)
     if (Caml_state->young_ptr - Caml_state->young_alloc_start < geom)
       /* No trigger in the current minor heap. */
       caml_memprof_young_trigger = Caml_state->young_alloc_start;
-    caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
+    else
+      caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
   }
 
   caml_update_young_limit();

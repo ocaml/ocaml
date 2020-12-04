@@ -267,6 +267,11 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 
 void caml_update_young_limit (void)
 {
+  CAMLassert(Caml_state->young_alloc_start <= caml_memprof_young_trigger &&
+             caml_memprof_young_trigger <= Caml_state->young_alloc_end);
+  CAMLassert(Caml_state->young_alloc_start <= Caml_state->young_trigger &&
+             Caml_state->young_trigger < Caml_state->young_alloc_end);
+
   /* The minor heap grows downwards. The first trigger is the largest one. */
   Caml_state->young_limit =
     caml_memprof_young_trigger < Caml_state->young_trigger ?
