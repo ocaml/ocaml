@@ -38,10 +38,6 @@ Working version
   (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
 ### Build system:
-- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
-  only builds (fixes a "configuration regression" from 4.08 for the Windows
-  builds)
-  (David Allsopp, review by ??)
 
 ### Bug fixes:
 
@@ -582,11 +578,16 @@ OCaml 4.12.0
 
 - #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
   prevent their C99-compliant snprintf conflicting with ours.
-  (David Allsopp, report by Michael Soegtrop, review by ???)
+  (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
 
 - #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
   Standard Library directory.
   (Bernhard Schommer, review by David Allsopp)
+
+- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
+  only builds (fixes a "configuration regression" from 4.08 for the Windows
+  builds)
+  (David Allsopp, review by Xavier Leroy)
 
 ### Bug fixes:
 
