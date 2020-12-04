@@ -144,88 +144,74 @@ END {
         printf ("\n#### Some fatal error occurred during testing.\n\n");
         exit (3);
     }else{
-        if (!retries){
-            for (key in SKIPPED){
-                if (!SKIPPED[key]){
-                    ++ empty;
-                    blanks[emptyidx++] = key;
-                    delete SKIPPED[key];
-                }
+        for (key in SKIPPED){
+            if (!SKIPPED[key]){
+                ++ empty;
+                blanks[emptyidx++] = key;
+                delete SKIPPED[key];
             }
-            for (key in RESULTS){
-                r = RESULTS[key];
-                if (r == "p"){
-                    ++ passed;
-                }else if (r == "f"){
-                    ++ failed;
-                    fail[failidx++] = key;
-                }else if (r == "e"){
-                    ++ unexped;
-                    unexp[unexpidx++] = key;
-                }else if (r == "s"){
-                    ++ skipped;
-                    curdir = DIRS[key];
-                    if (curdir in SKIPPED){
-                        if (SKIPPED[curdir]){
-                            SKIPPED[curdir] = 0;
-                            skips[skipidx++] = curdir;
-                        }
-                    }else{
-                        skips[skipidx++] = key;
+        }
+        for (key in RESULTS){
+            r = RESULTS[key];
+            if (r == "p"){
+                ++ passed;
+            }else if (r == "f"){
+                ++ failed;
+                fail[failidx++] = key;
+            }else if (r == "e"){
+                ++ unexped;
+                unexp[unexpidx++] = key;
+            }else if (r == "s"){
+                ++ skipped;
+                curdir = DIRS[key];
+                if (curdir in SKIPPED){
+                    if (SKIPPED[curdir]){
+                        SKIPPED[curdir] = 0;
+                        skips[skipidx++] = curdir;
                     }
-                }else if (r == "n"){
-                    ++ ignored;
+                }else{
+                    skips[skipidx++] = key;
                 }
+            }else if (r == "n"){
+                ++ ignored;
             }
-            printf("\n");
-            if (skipped != 0){
-                printf("\nList of skipped tests:\n");
-                for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
-            }
-            if (empty != 0){
-                printf("\nList of directories returning no results:\n");
-                for (i=0; i < empty; i++) printf("    %s\n", blanks[i]);
-            }
-            if (failed != 0){
-                printf("\nList of failed tests:\n");
-                for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
-            }
-            if (unexped != 0){
-                printf("\nList of unexpected errors:\n");
-                for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
-            }
-            printf("\n");
-            printf("Summary:\n");
-            printf("  %3d tests passed\n", passed);
-            printf("  %3d tests skipped\n", skipped);
-            printf("  %3d tests failed\n", failed);
-            printf("  %3d tests not started (parent test skipped or failed)\n",
-                   ignored);
-            printf("  %3d unexpected errors\n", unexped);
-            printf("  %3d tests considered", nresults);
-            if (nresults != passed + skipped + ignored + failed + unexped){
-                printf (" (totals don't add up??)");
-            }
-            printf ("\n");
-            if (reran != 0){
-                printf("  %3d test dir re-runs\n", reran);
-            }
-            if (failed || unexped){
-                printf("#### Something failed. Exiting with error status.\n\n");
-                exit 4;
-            }
-        }else{
-            for (key in RESULTS){
-                if (RESULTS[key] == "f" || RESULTS[key] == "e"){
-                    key = DIRS[key];
-                    if (!(key in RERUNS)){
-                        RERUNS[key] = 1;
-                        if (RERAN[key] < max_retries){
-                            printf("%s\n", key);
-                        }
-                    }
-                }
-            }
+        }
+        printf("\n");
+        if (skipped != 0){
+            printf("\nList of skipped tests:\n");
+            for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
+        }
+        if (empty != 0){
+            printf("\nList of directories returning no results:\n");
+            for (i=0; i < empty; i++) printf("    %s\n", blanks[i]);
+        }
+        if (failed != 0){
+            printf("\nList of failed tests:\n");
+            for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
+        }
+        if (unexped != 0){
+            printf("\nList of unexpected errors:\n");
+            for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
+        }
+        printf("\n");
+        printf("Summary:\n");
+        printf("  %3d tests passed\n", passed);
+        printf("  %3d tests skipped\n", skipped);
+        printf("  %3d tests failed\n", failed);
+        printf("  %3d tests not started (parent test skipped or failed)\n",
+               ignored);
+        printf("  %3d unexpected errors\n", unexped);
+        printf("  %3d tests considered", nresults);
+        if (nresults != passed + skipped + ignored + failed + unexped){
+            printf (" (totals don't add up??)");
+        }
+        printf ("\n");
+        if (reran != 0){
+            printf("  %3d test dir re-runs\n", reran);
+        }
+        if (failed || unexped){
+            printf("#### Something failed. Exiting with error status.\n\n");
+            exit 4;
         }
     }
 }
