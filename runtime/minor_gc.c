@@ -486,7 +486,7 @@ void caml_gc_dispatch (void)
   if (Caml_state->requested_minor_gc) {
     /* reset the pointers first because the end hooks might allocate */
     CAML_EV_BEGIN(EV_MINOR);
-    /* Caml_state->requested_minor_gc is reset later */
+    Caml_state->requested_minor_gc = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_mid;
     caml_update_young_limit();
     caml_empty_minor_heap ();
@@ -494,10 +494,8 @@ void caml_gc_dispatch (void)
   }
   if (Caml_state->requested_major_slice) {
     Caml_state->requested_major_slice = 0;
-    /* Ensure that opportunistically starting a major GC cycle doesn't
-       prevent another major GC slice when the minor heap becomes half-full.
-     */
-    if (!Caml_state->requested_minor_gc) {
+    /* If the minor heap hasn't just been emptied, update young_trigger */
+    if (Caml_state->young_ptr != Caml_state->young_alloc_end) {
       Caml_state->young_trigger = Caml_state->young_alloc_start;
       caml_update_young_limit();
     }
@@ -505,7 +503,6 @@ void caml_gc_dispatch (void)
     caml_major_collection_slice (-1);
     CAML_EV_END(EV_MAJOR);
   }
-  Caml_state->requested_minor_gc = 0;
 }
 
 /* Called by young allocations when [Caml_state->young_ptr] reaches
