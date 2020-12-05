@@ -58,7 +58,7 @@ CAMLprim value caml_array_get_addr(value array, value index)
 }
 
 /* [ float array -> int -> float ] */
-CAMLprim value caml_array_get_float(value array, value index)
+static value caml_array_get_float(value array, value index)
 {
   intnat idx = Long_val(index);
 #ifdef FLAT_FLOAT_ARRAY
@@ -124,7 +124,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 }
 
 /* [ float array -> int -> float -> unit ] */
-CAMLprim value caml_array_set_float(value array, value index, value newval)
+static value caml_array_set_float(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
 #ifdef FLAT_FLOAT_ARRAY
@@ -165,7 +165,7 @@ CAMLprim value caml_floatarray_set(value array, value index, value newval)
 }
 
 /* [ float array -> int -> float ] */
-CAMLprim value caml_array_unsafe_get_float(value array, value index)
+static value caml_array_unsafe_get_float(value array, value index)
 {
   intnat idx = Long_val (index);
 #ifdef FLAT_FLOAT_ARRAY
@@ -217,7 +217,7 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 }
 
 /* [ 'a array -> int -> 'a -> unit ] where 'a != float */
-CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
+static value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
   Modify(&Field(array, idx), newval);
@@ -225,7 +225,7 @@ CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 }
 
 /* [ float array -> int -> float -> unit ] */
-CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
+static value caml_array_unsafe_set_float(value array,value index,value newval)
 {
   intnat idx = Long_val(index);
 #ifdef FLAT_FLOAT_ARRAY
