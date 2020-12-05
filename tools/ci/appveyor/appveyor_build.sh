@@ -21,7 +21,7 @@ BUILD_PID=0
 CACHE_DIRECTORY=/cygdrive/c/projects/cache
 
 if [[ -z $APPVEYOR_PULL_REQUEST_HEAD_COMMIT ]] ; then
-  MAKE="make -j"
+  MAKE="make -j$NUMBER_OF_PROCESSORS"
 else
   MAKE=make
 fi
@@ -181,6 +181,8 @@ case "$1" in
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
     else
+      run "C deps: runtime" make -j64 -C runtime setup-depend
+      run "C deps: win32unix" make -j64 -C otherlibs/win32unix setup-depend
       run "$MAKE world" $MAKE world
       run "$MAKE bootstrap" $MAKE bootstrap
       run "$MAKE opt" $MAKE opt
