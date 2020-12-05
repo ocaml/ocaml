@@ -85,6 +85,7 @@ CAMLextern value caml_process_pending_signals_exn(void);
 void caml_set_action_pending (void);
 value caml_do_pending_actions_exn (void);
 value caml_process_pending_actions_with_root (value extra_root); // raises
+value caml_process_pending_actions_with_root_exn (value extra_root);
 int caml_set_signal_action(int signo, int action);
 CAMLextern void caml_setup_stack_overflow_detection(void);
 
