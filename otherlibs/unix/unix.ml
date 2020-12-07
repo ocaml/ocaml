@@ -598,13 +598,13 @@ type socket_bool_option =
     SO_DEBUG
   | SO_BROADCAST
   | SO_REUSEADDR
-  | SO_REUSEPORT
   | SO_KEEPALIVE
   | SO_DONTROUTE
   | SO_OOBINLINE
   | SO_ACCEPTCONN
   | TCP_NODELAY
   | IPV6_ONLY
+  | SO_REUSEPORT
 
 type socket_int_option =
     SO_SNDBUF
