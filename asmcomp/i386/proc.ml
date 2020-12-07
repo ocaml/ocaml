@@ -121,7 +121,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let float = ref first_float in
   let ofs = ref (-64) in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
+    match arg.(i) with
       Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
@@ -158,7 +158,7 @@ let loc_external_arguments _arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =
   match res with
-  | [|{typ=Int};{typ=Int}|] -> [|eax; edx|]
+  | [| Int; Int |] -> [|eax; edx|]
   | _ ->
       let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 

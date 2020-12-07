@@ -2311,6 +2311,52 @@ rm -f conftest.val
 
 } # ac_fn_c_compute_int
 
+# ac_fn_c_check_decl LINENO SYMBOL VAR INCLUDES
+# ---------------------------------------------
+# Tests whether SYMBOL is declared in INCLUDES, setting cache variable VAR
+# accordingly.
+ac_fn_c_check_decl ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  as_decl_name=`echo $2|sed 's/ *(.*//'`
+  as_decl_use=`echo $2|sed -e 's/(/((/' -e 's/)/) 0&/' -e 's/,/) 0& (/g'`
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $as_decl_name is declared" >&5
+$as_echo_n "checking whether $as_decl_name is declared... " >&6; }
+if eval \${$3+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+#ifndef $as_decl_name
+#ifdef __cplusplus
+  (void) $as_decl_use;
+#else
+  (void) $as_decl_name;
+#endif
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$3=yes"
+else
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_decl
+
 # ac_fn_c_check_member LINENO AGGR MEMBER VAR INCLUDES
 # ----------------------------------------------------
 # Tries to find if the field MEMBER exists in type AGGR, after including
@@ -13471,6 +13517,10 @@ if test x"$enable_shared" != "xno"; then :
     natdynlink=true ;; #(
   x86_64-*-linux*) :
     natdynlink=true ;; #(
+  arm64-*-darwin*) :
+    natdynlink=true ;; #(
+  aarch64-*-darwin*) :
+    natdynlink=true ;; #(
   x86_64-*-darwin*) :
     natdynlink=true ;; #(
   s390x*-*-linux*) :
@@ -13640,6 +13690,10 @@ fi; system=elf ;; #(
     arch=amd64; system=netbsd ;; #(
   x86_64-*-openbsd*) :
     arch=amd64; system=openbsd ;; #(
+  arm64-*-darwin*) :
+    arch=arm64; system=macosx ;; #(
+  aarch64-*-darwin*) :
+    arch=arm64; system=macosx ;; #(
   x86_64-*-darwin*) :
     arch=amd64; system=macosx ;; #(
   x86_64-*-mingw32) :
@@ -14271,6 +14325,14 @@ fi
 ac_fn_c_check_func "$LINENO" "getcwd" "ac_cv_func_getcwd"
 if test "x$ac_cv_func_getcwd" = xyes; then :
   $as_echo "#define HAS_GETCWD 1" >>confdefs.h
+
+fi
+
+
+ac_fn_c_check_decl "$LINENO" "system" "ac_cv_have_decl_system" "#include <stdlib.h>
+"
+if test "x$ac_cv_have_decl_system" = xyes; then :
+  $as_echo "#define HAS_SYSTEM 1" >>confdefs.h
 
 fi
 

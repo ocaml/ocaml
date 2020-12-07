@@ -96,8 +96,13 @@ class virtual selector_generic : object
       -> Reg.t array -> Reg.t array
     (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
+  method insert_move_extcall_arg :
+    environment -> Cmm.exttype -> Reg.t array -> Reg.t array -> unit
+    (* Can be overriden to deal with unusual unboxed calling conventions,
+       e.g. on a 64-bit platform, passing unboxed 32-bit arguments
+       in 32-bit stack slots. *)
   method emit_extcall_args :
-    environment -> Cmm.expression list -> Reg.t array * int
+    environment -> Cmm.exttype list -> Cmm.expression list -> Reg.t array * int
     (* Can be overridden to deal with stack-based calling conventions *)
   method emit_stores :
     environment -> Cmm.expression list -> Reg.t array -> unit

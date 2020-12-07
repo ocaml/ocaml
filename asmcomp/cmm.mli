@@ -68,6 +68,17 @@ val ge_component
   -> machtype_component
   -> bool
 
+type exttype =
+  | XInt                                (**r OCaml value, word-sized integer *)
+  | XInt32                              (**r 32-bit integer *)
+  | XInt64                              (**r 64-bit integer  *)
+  | XFloat                              (**r double-precision FP number  *)
+(** A variant of [machtype] used to describe arguments
+    to external C functions *)
+
+val machtype_of_exttype: exttype -> machtype
+val machtype_of_exttype_list: exttype list -> machtype
+
 type integer_comparison = Lambda.integer_comparison =
   | Ceq | Cne | Clt | Cgt | Cle | Cge
 
@@ -127,7 +138,10 @@ type memory_chunk =
 
 and operation =
     Capply of machtype
-  | Cextcall of string * machtype * bool * label option
+  | Cextcall of string * machtype * exttype list * bool * label option
+      (** The [machtype] is the machine type of the result.
+          The [exttype list] describes the unboxing types of the arguments.
+          An empty list means "all arguments are machine words [XInt]". *)
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment

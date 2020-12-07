@@ -47,8 +47,9 @@
   #include <sys/ucontext.h>
   #include <AvailabilityMacros.h>
 
-  #if !defined(MAC_OS_X_VERSION_10_5) \
-      || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+  #if (!defined(MAC_OS_X_VERSION_10_5)                            \
+       || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5)  \
+      && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
     #define CONTEXT_REG(r) r
   #else
     #define CONTEXT_REG(r) __##r
@@ -249,8 +250,9 @@
   #include <sys/ucontext.h>
   #include <AvailabilityMacros.h>
 
-  #if !defined(MAC_OS_X_VERSION_10_5) \
-      || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+  #if (!defined(MAC_OS_X_VERSION_10_5)                            \
+       || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5)  \
+      && !defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
     #define CONTEXT_REG(r) r
   #else
     #define CONTEXT_REG(r) __##r
