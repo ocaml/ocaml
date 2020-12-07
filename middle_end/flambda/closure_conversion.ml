@@ -170,7 +170,7 @@ let lambda_const_int i : Lambda.structured_constant =
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
-  | Lvar id ->
+  | Lvar id | Lmutvar id ->
     begin match Env.find_var_exn env id with
     | var -> Var var
     | exception Not_found ->

@@ -25,7 +25,7 @@ open Debuginfo.Scoped_location
 exception Real_reference
 
 let rec eliminate_ref id = function
-    Lvar v as lam ->
+    Lvar v | Lmutvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
   | Lconst _ as lam -> lam
   | Lapply ap ->
@@ -41,7 +41,7 @@ let rec eliminate_ref id = function
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
   | Lprim(Pfield 0, [Lvar v], _) when Ident.same v id ->
-      Lvar id
+      Lmutvar id
   | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v], loc) when Ident.same v id ->
@@ -120,7 +120,7 @@ let simplify_exits lam =
   in
 
   let rec count = function
-  | (Lvar _| Lconst _) -> ()
+  | (Lvar _ | Lmutvar _ | Lconst _) -> ()
   | Lapply ap -> count ap.ap_func; List.iter count ap.ap_args
   | Lfunction {body} -> count body
   | Llet(_str, _kind, _v, l1, l2) ->
@@ -203,7 +203,7 @@ let simplify_exits lam =
   let subst = Hashtbl.create 17 in
 
   let rec simplif = function
-  | (Lvar _|Lconst _) as l -> l
+  | (Lvar _ | Lmutvar _ | Lconst _) as l -> l
   | Lapply ap ->
       Lapply{ap with ap_func = simplif ap.ap_func;
                      ap_args = List.map simplif ap.ap_args}
@@ -406,7 +406,7 @@ let simplify_lets lam =
 
   let rec count bv = function
   | Lconst _ -> ()
-  | Lvar v ->
+  | Lvar v | Lmutvar v ->
       use_var bv v 1
   | Lapply{ap_func = ll; ap_args = args} ->
       let no_opt () = count bv ll; List.iter (count bv) args in
@@ -497,7 +497,7 @@ let simplify_lets lam =
 
 
   let rec simplif = function
-    Lvar v as l ->
+    Lvar v | Lmutvar v as l ->
       begin try
         Hashtbl.find subst v
       with Not_found ->
@@ -606,6 +606,7 @@ let simplify_lets lam =
 let rec emit_tail_infos is_tail lambda =
   match lambda with
   | Lvar _ -> ()
+  | Lmutvar _ -> ()
   | Lconst _ -> ()
   | Lapply ap ->
       begin

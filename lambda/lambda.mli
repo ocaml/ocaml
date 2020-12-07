@@ -264,6 +264,7 @@ type scoped_location = Debuginfo.Scoped_location.t
 
 type lambda =
     Lvar of Ident.t
+  | Lmutvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction

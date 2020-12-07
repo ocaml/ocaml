@@ -495,6 +495,8 @@ let apply_specialised_attribute ppf = function
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
+  | Lmutvar id ->
+      fprintf ppf "*%a" Ident.print id
   | Lconst cst ->
       struct_const ppf cst
   | Lapply ap ->
@@ -523,7 +525,7 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
         function_attribute attr return_kind return lam body
   | Llet(str, k, id, arg, body) ->
-      let kind = function
+     let kind = function
           Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v"
       in
       let rec letbody = function

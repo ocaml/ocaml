@@ -524,7 +524,7 @@ module Storer =
 let rec comp_expr env exp sz cont =
   if sz > !max_stack_used then max_stack_used := sz;
   match exp with
-    Lvar id ->
+    Lvar id | Lmutvar id ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
         Kacc(sz - pos) :: cont
