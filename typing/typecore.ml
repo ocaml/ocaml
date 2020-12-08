@@ -2415,9 +2415,9 @@ let check_partial_application statement exp =
 let generalizable level ty =
   let rec check ty =
     let ty = repr ty in
-    if ty.level < lowest_level then () else
-    if ty.level <= level then raise Exit else
-    if mark_type_node ty then iter_type_expr check ty
+    if not_marked_node ty then
+      if ty.level <= level then raise Exit else
+      (flip_mark_node ty; iter_type_expr check ty)
   in
   try check ty; unmark_type ty; true
   with Exit -> unmark_type ty; false
@@ -2441,7 +2441,7 @@ let create_package_type loc env (p, l) =
 let contains_variant_either ty =
   let rec loop ty =
     let ty = repr ty in
-    if mark_type_node ty then
+    if try_mark_node ty then
       begin match ty.desc with
         Tvariant row ->
           let row = row_repr row in

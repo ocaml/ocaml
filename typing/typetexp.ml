@@ -593,7 +593,7 @@ and transl_fields env policy o fields =
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =
   let ty = repr ty in
-  if Btype.mark_type_node ty then
+  if Btype.try_mark_node ty then
     begin match ty.desc with
     | Tvariant row ->
         let row = Btype.row_repr row in

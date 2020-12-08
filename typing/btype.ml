@@ -566,17 +566,19 @@ end
 (* Mark a type. *)
 let mirror_level level = pivot_level - level
 
+let not_marked_node ty = ty.level >= lowest_level
+    (* type nodes with negative levels are "marked" *)
+
+let flip_mark_node ty = (Internal.unlock ty).level <- mirror_level ty.level
+
+let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
+
 let rec mark_type ty =
   let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    (* type nodes with negative levels are "marked" *)
-    (Internal.unlock ty).level <- mirror_level ty.level;
+  if not_marked_node ty then begin
+    flip_mark_node ty;
     iter_type_expr mark_type ty
   end
-
-let mark_type_node ty =
-  ty.level >= lowest_level &&
-  ((Internal.unlock ty).level <- mirror_level ty.level; true)
 
 let mark_type_params ty =
   iter_type_expr mark_type ty
@@ -584,7 +586,7 @@ let mark_type_params ty =
 let type_iterators =
   let it_type_expr it ty =
     let ty = repr ty in
-    if mark_type_node ty then it.it_do_type_expr it ty
+    if try_mark_node ty then it.it_do_type_expr it ty
   in
   {type_iterators with it_type_expr}
 

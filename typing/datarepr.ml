@@ -25,7 +25,7 @@ let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
     let ty = repr ty in
-    if mark_type_node ty then
+    if try_mark_node ty then
       match ty.desc with
       | Tvar _ ->
           ret := TypeSet.add ty !ret

@@ -569,7 +569,7 @@ let really_closed = ref None
  *)
 let rec free_vars_rec real ty =
   let ty = repr ty in
-  if mark_type_node ty then
+  if try_mark_node ty then
     match ty.desc, !really_closed with
       Tvar _, _ ->
         free_variables := (ty, real) :: !free_variables
@@ -682,7 +682,7 @@ let closed_class params sign =
     (fun (lab, _, ty) -> if lab = dummy_method then mark_type ty)
     fields;
   try
-    ignore (mark_type_node (repr sign.csig_self));
+    ignore (try_mark_node (repr sign.csig_self));
     List.iter
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
@@ -1089,10 +1089,10 @@ let compute_univars ty =
 let fully_generic ty =
   let rec aux ty =
     let ty = repr ty in
-    if ty.level < lowest_level then () else
-    if ty.level = generic_level then
-      (if mark_type_node ty then iter_type_expr aux ty)
-    else raise Exit
+    if not_marked_node ty then
+      if ty.level = generic_level then
+        (flip_mark_node ty; iter_type_expr aux ty)
+      else raise Exit
   in
   let res = try aux ty; true with Exit -> false in
   unmark_type ty;
@@ -1936,18 +1936,18 @@ let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
     let ty = repr ty in
-    if TypeSet.is_empty bound then
-      (if mark_type_node ty then occur_desc bound ty)
-    else try
-      if ty.level < pivot_level then () else
-      let bound' = TypeMap.find ty !visited in
-      if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then begin
-        visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
+    if not_marked_node ty then 
+      if TypeSet.is_empty bound then
+        (flip_mark_node ty; occur_desc bound ty)
+      else try
+        let bound' = TypeMap.find ty !visited in
+        if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then begin
+          visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
+          occur_desc bound ty
+        end
+      with Not_found ->
+        visited := TypeMap.add ty bound !visited;
         occur_desc bound ty
-      end
-    with Not_found ->
-      visited := TypeMap.add ty bound !visited;
-      occur_desc bound ty
   and occur_desc bound ty =
       match ty.desc with
         Tunivar _ ->
@@ -2105,7 +2105,7 @@ let expand_trace env trace =
 let deep_occur t0 ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if mark_type_node ty then
+    if try_mark_node ty then
       begin
         if ty == t0 then raise Occur;
         iter_type_expr occur_rec ty
@@ -2424,7 +2424,7 @@ let find_lowest_level ty =
   let lowest = ref (mirror_level generic_level) in
   let rec find ty =
     let ty = repr ty in
-    if mark_type_node ty then
+    if try_mark_node ty then
       begin
         if ty.level > !lowest then lowest := ty.level;
         iter_type_expr find ty
@@ -3269,7 +3269,7 @@ let moregen_occur env level ty =
     let ty = repr ty in
     if ty.level <= level then () else
     if is_Tvar ty && ty.level >= generic_level - 1 then raise Occur else
-    if mark_type_node ty then iter_type_expr occur ty
+    if try_mark_node ty then iter_type_expr occur ty
   in
   begin try
     occur ty; unmark_type ty
@@ -3484,7 +3484,7 @@ let moregeneral env inst_nongen pat_sch subj_sch =
 
 let rec rigidify_rec vars ty =
   let ty = repr ty in
-  if mark_type_node ty then
+  if try_mark_node ty then
     begin match ty.desc with
     | Tvar _ ->
         if not (List.memq ty !vars) then vars := ty :: !vars

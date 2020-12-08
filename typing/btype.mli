@@ -133,7 +133,7 @@ type type_iterators =
     it_path: Path.t -> unit; }
 val type_iterators: type_iterators
         (* Iteration on arbitrary type information.
-           [it_type_expr] calls [mark_type_node] to avoid loops. *)
+           [it_type_expr] calls [mark_node] to avoid loops. *)
 val unmark_iterators: type_iterators
         (* Unmark any structure containing types. See [unmark_type] below. *)
 
@@ -172,13 +172,17 @@ val mirror_level: int -> int
         (* Type marking: ty.level <- pivot_level - ty.level *)
         (* mirror_level is used for unmarking; it must be involutive,
            invert order *)
+val not_marked_node: type_expr -> bool
+        (* Return true if a type node is not yet marked *)
+val flip_mark_node: type_expr -> unit
+        (* Mark a type node. No [repr]'ing *)
+val try_mark_node: type_expr -> bool
+        (* Mark a type node if it is not yet marked.
+           Return false if it was already marked *)
 val mark_type: type_expr -> unit
-        (* Mark a type *)
-val mark_type_node: type_expr -> bool
-        (* Just mark a node if its level was highe than lowest_level,
-           and return whether this was done. No [repr]'ing. *)
+        (* Mark a type recursively *)
 val mark_type_params: type_expr -> unit
-        (* Mark the sons of a type node *)
+        (* Mark the sons of a type node recursively *)
 val unmark_type: type_expr -> unit
 val unmark_type_decl: type_declaration -> unit
 val unmark_extension_constructor: extension_constructor -> unit
