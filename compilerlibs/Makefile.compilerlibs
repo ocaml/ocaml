@@ -263,11 +263,13 @@ OPTCOMP_CMI=$(MIDDLE_END_CMI) $(ASMCOMP_CMI)
 
 TOPLEVEL=toplevel/genprintval.cmo toplevel/byte/toploop.cmo \
   toplevel/byte/trace.cmo toplevel/byte/topdirs.cmo toplevel/byte/topmain.cmo
-TOPLEVEL_CMI=toplevel/byte/toploop.cmi toplevel/byte/trace.cmi toplevel/byte/topdirs.cmi toplevel/byte/topmain.cmi
+TOPLEVEL_CMI=toplevel/byte/toploop.cmi toplevel/byte/trace.cmi \
+  toplevel/byte/topdirs.cmi toplevel/byte/topmain.cmi
 
 OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/native/toploop.cmo \
   toplevel/native/topdirs.cmo toplevel/native/topmain.cmo
-OPTTOPLEVEL_CMI=toplevel/native/toploop.cmi toplevel/native/topdirs.cmi toplevel/native/topmain.cmi
+OPTTOPLEVEL_CMI=toplevel/native/toploop.cmi toplevel/native/topdirs.cmi \
+  toplevel/native/topmain.cmi
 
 TOPLEVEL_SHARED_MLIS = toploop.mli trace.mli topdirs.mli topmain.mli
 
@@ -282,8 +284,10 @@ beforedepend::
 	cp $(TOPLEVEL_SHARED_MLIS:%=toplevel/%) toplevel/native
 
 partialclean::
-	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=toplevel/byte/%.mli toplevel/byte/%.cmi)
-	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=toplevel/native/%.mli toplevel/native/%.cmi)
+	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=\
+	        toplevel/byte/%.mli toplevel/byte/%.cmi)
+	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=\
+	        toplevel/native/%.mli toplevel/native/%.cmi)
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
 $(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)

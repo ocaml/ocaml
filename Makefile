@@ -1069,7 +1069,9 @@ depend: beforedepend
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types asmcomp/debug \
          driver toplevel toplevel/byte toplevel/native; \
-         do $(CAMLDEP) $(DEPFLAGS) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
+	 do \
+	   $(CAMLDEP) $(DEPFLAGS) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml \
+	   || exit; \
          done) > .depend
 
 .PHONY: distclean
