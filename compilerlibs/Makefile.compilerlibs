@@ -261,14 +261,33 @@ MIDDLE_END_CMI=\
 OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
 OPTCOMP_CMI=$(MIDDLE_END_CMI) $(ASMCOMP_CMI)
 
-TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
-  toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
-TOPLEVEL_CMI=
+TOPLEVEL=toplevel/genprintval.cmo toplevel/byte/toploop.cmo \
+  toplevel/byte/trace.cmo toplevel/byte/topdirs.cmo toplevel/byte/topmain.cmo
+TOPLEVEL_CMI=toplevel/byte/toploop.cmi toplevel/byte/trace.cmi \
+  toplevel/byte/topdirs.cmi toplevel/byte/topmain.cmi
 
-OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/opttoploop.cmo \
-  toplevel/opttopdirs.cmo toplevel/opttopmain.cmo
-OPTTOPLEVEL_CMI=
+OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/native/toploop.cmo \
+  toplevel/native/topdirs.cmo toplevel/native/topmain.cmo
+OPTTOPLEVEL_CMI=toplevel/native/toploop.cmi toplevel/native/topdirs.cmi \
+  toplevel/native/topmain.cmi
 
+TOPLEVEL_SHARED_MLIS = toploop.mli trace.mli topdirs.mli topmain.mli
+
+toplevel/byte/%.mli toplevel/byte/%.cmi: toplevel/%.mli toplevel/%.cmi
+	cp  toplevel/$*.mli toplevel/$*.cmi $(@D)
+
+toplevel/native/%.mli toplevel/native/%.cmi: toplevel/%.mli toplevel/%.cmi
+	cp  toplevel/$*.mli toplevel/$*.cmi $(@D)
+
+beforedepend::
+	cp $(TOPLEVEL_SHARED_MLIS:%=toplevel/%) toplevel/byte
+	cp $(TOPLEVEL_SHARED_MLIS:%=toplevel/%) toplevel/native
+
+partialclean::
+	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=\
+	        toplevel/byte/%.mli toplevel/byte/%.cmi)
+	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=\
+	        toplevel/native/%.mli toplevel/native/%.cmi)
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
 $(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)
@@ -322,12 +341,12 @@ partialclean::
 
 
 compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMI) $(TOPLEVEL)
-	$(CAMLC) -a -o $@ $(TOPLEVEL)
+	$(CAMLC) -a -o $@ -I toplevel/byte $(TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
 compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ -I toplevel/native $(OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa \
 	  compilerlibs/ocamlopttoplevel.a compilerlibs/ocamlopttoplevel.lib

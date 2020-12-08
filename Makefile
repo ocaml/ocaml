@@ -67,8 +67,6 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-OPTTOPLEVELSTART=toplevel/opttopstart.cmo
-
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
@@ -373,6 +371,9 @@ endif
 	   driver/*.cmi \
 	   toplevel/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	   toplevel/byte/*.cmi \
+	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   utils/*.cmt utils/*.cmti utils/*.mli \
@@ -383,6 +384,9 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
 	   driver/*.cmt driver/*.cmti driver/*.mli \
 	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	   toplevel/byte/*.cmt \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -397,8 +401,8 @@ endif
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmt toplevel/topdirs.cmti \
-           toplevel/topdirs.mli \
+	   toplevel/byte/topdirs.cmt \
+	   toplevel/topdirs.cmti toplevel/byte/topdirs.mli \
 	   "$(INSTALL_LIBDIR)"
 endif
 	$(MAKE) -C tools install
@@ -538,10 +542,7 @@ installoptopt:
 	if test -f ocamlnat$(EXE) ; then \
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
 	  $(INSTALL_DATA) \
-	     toplevel/opttopdirs.cmi \
-	     "$(INSTALL_LIBDIR)"; \
-	  $(INSTALL_DATA) \
-	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
+	     $(TOPLEVELSTART:.cmo=.cmx) $(TOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
 	cd "$(INSTALL_COMPLIBDIR)" && \
@@ -555,7 +556,8 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
            file_formats/*.ml \
            lambda/*.ml \
-	   toplevel/*.ml middle_end/*.ml middle_end/closure/*.ml \
+	   toplevel/*.ml toplevel/byte/*.ml \
+	   middle_end/*.ml middle_end/closure/*.ml \
      middle_end/flambda/*.ml middle_end/flambda/base_types/*.ml \
 	   asmcomp/*.ml \
 	   asmcmp/debug/*.ml \
@@ -611,7 +613,7 @@ ocaml_dependencies := \
 
 .INTERMEDIATE: ocaml.tmp
 ocaml.tmp: $(ocaml_dependencies)
-	$(CAMLC) $(LINKFLAGS) -linkall -o $@ $^
+	$(CAMLC) $(LINKFLAGS) -I toplevel/byte -linkall -o $@ $^
 
 ocaml$(EXE): $(expunge) ocaml.tmp
 	- $(CAMLRUN) $^ $@ $(PERVASIVES)
@@ -1007,8 +1009,12 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     otherlibs/dynlink/dynlink.cmxa \
     compilerlibs/ocamlopttoplevel.cmxa \
-    $(OPTTOPLEVELSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -o $@ $^
+    $(TOPLEVELSTART:.cmo=.cmx)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+
+$(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
+     toplevel/native/topmain.cmx
+	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
 
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
@@ -1043,19 +1049,19 @@ endif
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $< -I $(@D)
 
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -c $< -I $(@D)
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
            lambda middle_end/closure middle_end/flambda \
            middle_end/flambda/base_types asmcomp/debug \
-           driver toplevel tools; do \
+           driver toplevel toplevel/byte toplevel/native tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.s $$d/*.asm \
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
@@ -1065,8 +1071,10 @@ depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types asmcomp/debug \
-         driver toplevel; \
-         do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
+         driver toplevel toplevel/byte toplevel/native; \
+	 do \
+	   $(CAMLDEP) $(DEPFLAGS) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml \
+	   || exit; \
          done) > .depend
 
 .PHONY: distclean

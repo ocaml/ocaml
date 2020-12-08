@@ -42,6 +42,9 @@ Working version
   to the implementation and the coercion.
   (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
+* #10061: remove modules `Opttoploop`, `Opttopstart`, which are replaced by
+  `Toploop` and `Topstart`, made available in native code.
+
 ### Build system:
 
 ### Bug fixes:

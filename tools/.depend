@@ -12,7 +12,7 @@ caml_tex.cmo : \
     ../parsing/ast_iterator.cmi \
     ../parsing/ast_helper.cmi
 caml_tex.cmx : \
-    ../toplevel/toploop.cmx \
+    ../toplevel/toploop.cmi \
     ../parsing/syntaxerr.cmx \
     ../parsing/parsetree.cmi \
     ../parsing/parse.cmx \
