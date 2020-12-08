@@ -1,5 +1,5 @@
-Working version
----------------
+OCaml 4.10.2 (8 December 2020)
+------------------------------
 
 ### Build system:
 
@@ -16,12 +16,12 @@ Working version
 
 ### Code generation and optimization
 
- - #9752, #10026: Revised handling of calling conventions for
-   external C functions.
-   Provide a more precise description of the types of unboxed arguments,
-   so that the ARM64 iOS/macOS calling conventions can be honored.
-   Backported from OCaml 4.12.0
-   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
+- #9752, #10026: Revised handling of calling conventions for
+  external C functions.
+  Provide a more precise description of the types of unboxed arguments,
+  so that the ARM64 iOS/macOS calling conventions can be honored.
+  Backported from OCaml 4.12.0
+  (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
 
 - #9969, #9981: Added mergeable flag tqo ELF sections containing mergeable
   constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
