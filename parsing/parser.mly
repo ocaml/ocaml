@@ -458,6 +458,7 @@ let extra_rhs_core_type ct ~pos =
 type let_binding =
   { lb_pattern: pattern;
     lb_expression: expression;
+    lb_is_pun: bool;
     lb_attributes: attributes;
     lb_docs: docs Lazy.t;
     lb_text: text Lazy.t;
@@ -469,10 +470,11 @@ type let_bindings =
     lbs_extension: string Asttypes.loc option;
     lbs_loc: Location.t }
 
-let mklb first ~loc (p, e) attrs =
+let mklb first ~loc (p, e, is_pun) attrs =
   {
     lb_pattern = p;
     lb_expression = e;
+    lb_is_pun = is_pun;
     lb_attributes = attrs;
     lb_docs = symbol_docs_lazy loc;
     lb_text = (if first then empty_text_lazy
@@ -480,16 +482,18 @@ let mklb first ~loc (p, e) attrs =
     lb_loc = make_loc loc;
   }
 
+let addlb lbs lb =
+  if lb.lb_is_pun && lbs.lbs_extension = None then syntax_error ();
+  { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
+
 let mklbs ~loc ext rf lb =
-  {
-    lbs_bindings = [lb];
+  let lbs = {
+    lbs_bindings = [];
     lbs_rec = rf;
     lbs_extension = ext ;
     lbs_loc = make_loc loc;
-  }
-
-let addlb lbs lb =
-  { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
+  } in
+  addlb lbs lb
 
 let val_of_let_bindings ~loc lbs =
   let bindings =
@@ -2418,7 +2422,7 @@ labeled_simple_expr:
 %inline let_ident:
     val_ident { mkpatvar ~loc:$sloc $1 }
 ;
-let_binding_body:
+let_binding_body_no_punning:
     let_ident strict_binding
       { ($1, $2) }
   | let_ident type_constraint EQUAL seq_expr
@@ -2454,6 +2458,12 @@ let_binding_body:
       { let loc = ($startpos($1), $endpos($3)) in
         (ghpat ~loc (Ppat_constraint($1, $3)), $5) }
 ;
+let_binding_body:
+  | let_binding_body_no_punning
+      { let p,e = $1 in (p,e,false) }
+  | val_ident %prec below_HASH
+      { (mkpatvar ~loc:$loc $1, mkexpvar ~loc:$loc $1, true) }
+;
 (* The formal parameter EXT can be instantiated with ext or no_ext
    so as to indicate whether an extension is allowed or disallowed. *)
 let_bindings(EXT):
@@ -2485,6 +2495,9 @@ and_let_binding:
 letop_binding_body:
     pat = let_ident exp = strict_binding
       { (pat, exp) }
+  | val_ident
+      (* Let-punning *)
+      { (mkpatvar ~loc:$loc $1, mkexpvar ~loc:$loc $1) }
   | pat = simple_pattern COLON typ = core_type EQUAL exp = seq_expr
       { let loc = ($startpos(pat), $endpos(typ)) in
         (ghpat ~loc (Ppat_constraint(pat, typ)), exp) }
@@ -2495,7 +2508,7 @@ letop_bindings:
     body = letop_binding_body
       { let let_pat, let_exp = body in
         let_pat, let_exp, [] }
-  | bindings = letop_bindings pbop_op = mkrhs(ANDOP) body = let_binding_body
+  | bindings = letop_bindings pbop_op = mkrhs(ANDOP) body = letop_binding_body
       { let let_pat, let_exp, rev_ands = bindings in
         let pbop_pat, pbop_exp = body in
         let pbop_loc = make_loc $sloc in

@@ -3,6 +3,11 @@ Working version
 
 ### Language features:
 
+- #10013: Let-punning
+  Allow 'let* x in ...' and 'let%ext x in ...' as shorthand for
+    'let* x = x in ...' and 'let%ext x = x in ...' respectively.
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
