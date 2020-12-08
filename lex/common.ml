@@ -71,14 +71,14 @@ let copy_chars =
     "Win32" | "Cygwin" -> copy_chars_win32
   | _       -> copy_chars_unix
 
-let copy_chunk ic oc trl loc add_parens =
+let copy_chunk ic oc trl loc ?(report_loc=loc) add_parens =
   if loc.start_pos < loc.end_pos || add_parens then begin
-    fprintf oc "# %d \"%s\"\n" loc.start_line loc.loc_file;
+    fprintf oc "# %d \"%s\"\n" report_loc.start_line report_loc.loc_file;
     if add_parens then begin
-      for _i = 1 to loc.start_col - 1 do output_char oc ' ' done;
+      for _i = 1 to report_loc.start_col - 1 do output_char oc ' ' done;
       output_char oc '(';
     end else begin
-      for _i = 1 to loc.start_col do output_char oc ' ' done;
+      for _i = 1 to report_loc.start_col do output_char oc ' ' done;
     end;
     seek_in ic loc.start_pos;
     copy_chars ic oc loc.start_pos loc.end_pos;
@@ -134,14 +134,14 @@ let output_env ic oc tr env =
          in apparition order *)
       let env =
         List.sort
-          (fun ((_,p1),_) ((_,p2),_) ->
+          (fun ((_,p1,_),_) ((_,p2,_),_) ->
             Stdlib.compare p1.start_pos  p2.start_pos)
           env in
 
       List.iter
-        (fun ((_,pos),v) ->
+        (fun ((_,pos,report_loc),v) ->
           fprintf oc "%s\n" !pref ;
-          copy_chunk ic oc tr pos false ;
+          copy_chunk ic oc tr pos ~report_loc false ;
           begin match v with
           | Ident_string (o,nstart,nend) ->
               fprintf oc

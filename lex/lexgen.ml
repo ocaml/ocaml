@@ -23,7 +23,7 @@ exception Memory_overflow
 
 (* Deep abstract syntax for regular expressions *)
 
-type ident = string *  Syntax.location
+type ident = string * Syntax.location * Syntax.location
 
 type tag_info = {id : string ; start : bool ; action : int}
 
@@ -83,7 +83,7 @@ type ('args,'action) automata_entry =
 module Ints =
   Set.Make(struct type t = int let compare (x:t) y = compare x y end)
 
-let id_compare (id1,_) (id2,_) = String.compare id1 id2
+let id_compare (id1,_,_) (id2,_,_) = String.compare id1 id2
 
 let tag_compare t1 t2 = Stdlib.compare t1 t2
 
@@ -284,7 +284,7 @@ let rec encode_regexp char_vars act = function
   | Repetition r ->
       let r = encode_regexp char_vars act r in
       Star r
-  | Bind (r,((name,_) as x)) ->
+  | Bind (r,((name,_,_) as x)) ->
       let r = encode_regexp char_vars act r in
       if IdSet.mem x char_vars then
         Seq (Tag {id=name ; start=true ; action=act},r)
@@ -314,7 +314,7 @@ let add_pos p i = match p with
 | None -> None
 
 let mem_name name id_set =
-  IdSet.exists (fun (id_name,_) -> name = id_name) id_set
+  IdSet.exists (fun (id_name,_,_) -> name = id_name) id_set
 
 let opt_regexp all_vars char_vars optional_vars double_vars r =
 
@@ -456,7 +456,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
   let r,_ = alloc_exp None r in
   let m =
     IdSet.fold
-      (fun ((name,_) as x) r ->
+      (fun ((name,_,_) as x) r ->
 
         let v =
           if IdSet.mem x char_vars then
@@ -1128,7 +1128,7 @@ let extract_tags l =
     (fun (act,m,_) ->
       envs.(act) <-
          List.fold_right
-           (fun ((name,_),v) r -> match v with
+           (fun ((name,_,_),v) r -> match v with
            | Ident_char (_,t) -> make_tag_entry name true act t r
            | Ident_string (_,t1,t2) ->
                make_tag_entry name true act t1

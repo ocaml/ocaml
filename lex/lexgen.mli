@@ -35,7 +35,7 @@ and memory_action =
 
 and tag_action = SetTag of int * int | EraseTag of int
 
-type ident = string *  Syntax.location
+type ident = string * Syntax.location * Syntax.location
 
 (* Representation of entry points *)
 type tag_base = Start | End | Mem of int

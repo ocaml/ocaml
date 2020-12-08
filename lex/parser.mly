@@ -23,6 +23,20 @@ open Syntax
 let named_regexps =
   (Hashtbl.create 13 : (string, regular_expression) Hashtbl.t)
 
+let relocate_binds regexp p =
+  let rec f regexp =
+    match regexp with
+    | Epsilon
+    | Characters _
+    | Eof -> regexp
+    | Sequence (l, r) -> Sequence (f l, f r)
+    | Alternative (l, r) -> Alternative (f l, f r)
+    | Repetition regexp -> Repetition (f regexp)
+    | Bind (regexp, (name, definition, _)) ->
+        Bind (f regexp, (name, definition, p))
+  in
+    f regexp
+
 let regexp_for_string s =
   let rec re_string n =
     if n >= String.length s then Epsilon
@@ -158,8 +172,16 @@ regexp:
   | Tlparen regexp Trparen
         { $2 }
   | Tident
-        { try
-            Hashtbl.find named_regexps $1
+        { let p1 = Parsing.rhs_start_pos 1
+          and p2 = Parsing.rhs_end_pos 2 in
+          let p = {
+            loc_file = p1.Lexing.pos_fname ;
+            start_pos = p1.Lexing.pos_cnum ;
+            end_pos = p2.Lexing.pos_cnum ;
+            start_line = p1.Lexing.pos_lnum ;
+            start_col = p1.Lexing.pos_cnum - p1.Lexing.pos_bol ; } in
+          try
+            relocate_binds (Hashtbl.find named_regexps $1) p
           with Not_found ->
             let p = Parsing.symbol_start_pos () in
             Printf.eprintf "File \"%s\", line %d, character %d:\n\
@@ -177,7 +199,7 @@ regexp:
            end_pos = p2.Lexing.pos_cnum ;
            start_line = p1.Lexing.pos_lnum ;
            start_col = p1.Lexing.pos_cnum - p1.Lexing.pos_bol ; } in
-         Bind ($1, ($3, p))}
+         Bind ($1, ($3, p, p))}
 ;
 
 ident:

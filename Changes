@@ -23,6 +23,10 @@ Working version
 
 ### Tools:
 
+- #10076, #10077: use the location of usage rather than definition
+  for ocamllex named regular expressions.
+  (David Allsopp, report by Léo Andrès, review by ???)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
