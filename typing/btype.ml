@@ -595,7 +595,7 @@ let rec unmark_type ty =
   let ty = repr ty in
   if ty.level < lowest_level then begin
     (* flip back the marked level *)
-    (Internal.unlock ty).level <- pivot_level - ty.level;
+    (Internal.unlock ty).level <- mirror_level ty.level;
     iter_type_expr unmark_type ty
   end
 
