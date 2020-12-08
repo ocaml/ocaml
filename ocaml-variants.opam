@@ -1,8 +1,8 @@
 opam-version: "2.0"
-version: "4.10.2"
-synopsis: "OCaml 4.10.2 official release"
+version: "4.10.3+trunk"
+synopsis: "OCaml development version"
 depends: [
-  "ocaml" {= "4.10.2" & post}
+  "ocaml" {= "4.10.3" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
