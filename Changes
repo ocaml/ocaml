@@ -549,6 +549,9 @@ OCaml 4.12.0
   builds)
   (David Allsopp, review by Xavier Leroy)
 
+- #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
+  (Damien Doligez and Gabriel Scherer, report by David Allsopp)
+
 ### Bug fixes:
 
 - #7538, #9669: Check for misplaced attributes on module aliases
