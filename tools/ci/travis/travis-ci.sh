@@ -211,7 +211,7 @@ EOF
   cd ..
   if command -v pdflatex &>/dev/null  ; then
     echo Ensuring that all library documentation compiles
-    $MAKE -C ocamldoc html_doc pdf_doc texi_doc
+    $MAKE -C api_docgen html latex texi
   fi
   $MAKE install
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then

@@ -1,7 +1,7 @@
 TOPDIR=$(abspath ../..)
 SRC=$(TOPDIR)
+include $(TOPDIR)/api_docgen/Makefile.docfiles
 include $(TOPDIR)/Makefile.tools
-include $(TOPDIR)/ocamldoc/Makefile.docfiles
 MANUAL=$(TOPDIR)/manual/manual
 
 .PHONY: all
@@ -35,7 +35,7 @@ check-stdlib:
 # check name collision between latex source file and module documentation
 # on case-insensitive file systems
 normalize = $(shell echo $(basename $(notdir $(1) )) | tr A-Z a-z)
-LOWER_MLIS= $(call normalize,$(DOC_ALL_MLIS))
+LOWER_MLIS= $(call normalize,$(ALL_DOC:%=%.mli))
 LOWER_ETEX= $(call normalize,$(wildcard $(MANUAL)/*/*.etex) $(wildcard *.etex))
 INTER = $(filter $(LOWER_ETEX), $(LOWER_MLIS))
 
