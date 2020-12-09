@@ -23,7 +23,7 @@ OCaml 4.10.2 (8 December 2020)
   Backported from OCaml 4.12.0
   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
 
-- #9969, #9981: Added mergeable flag tqo ELF sections containing mergeable
+- #9699, #9981: Added mergeable flag tqo ELF sections containing mergeable
   constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
   Backported from OCaml 4.12.0
   (Jacob Young, review by Nicolás Ojeda Bär)
