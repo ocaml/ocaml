@@ -130,7 +130,7 @@ let match_printer_type ppf desc typename =
   let printer_type =
     match
       Env.find_type_by_name
-        (Ldot(Lident "Opttopdirs", typename)) !toplevel_env
+        (Ldot(Lident "Topdirs", typename)) !toplevel_env
     with
     | (path, _) -> path
     | exception Not_found ->
