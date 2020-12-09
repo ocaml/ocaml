@@ -385,8 +385,8 @@ OCaml 4.12.0
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
-- #9869: Add Unix.SO_REUSEPORT
-  (Yishuai Li, review by Xavier Leroy)
+- #9869, #10073: Add Unix.SO_REUSEPORT
+  (Yishuai Li, review by Xavier Leroy, amended by David Allsopp)
 
 - #9906, #9914: Add Unix._exit as a way to exit the process immediately,
   skipping any finalization action
