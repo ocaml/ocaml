@@ -57,11 +57,27 @@ MENHIR ?= menhir
 
 unused_tokens := COMMENT DOCSTRING EOL GREATERRBRACKET
 
-## Menhir compilation flags
+## Menhir's flags.
 
-MENHIRFLAGS := --explain --dump --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer \
-	--lalr --strict --table -lg 1 -la 1 \
-        $(addprefix --unused-token ,$(unused_tokens)) --fixed-exception
+# The basic flags influence the analysis of the grammar and the construction
+# of the automaton. The complete set of flags includes extra flags that
+# influence type inference and code production.
+
+MENHIRBASICFLAGS := \
+  --lalr \
+  --explain \
+  --dump \
+  --strict \
+  -lg 1 \
+  -la 1 \
+  $(addprefix --unused-token ,$(unused_tokens)) \
+
+MENHIRFLAGS := \
+  $(MENHIRBASICFLAGS) \
+  --infer \
+  --ocamlc "$(CAMLC) $(COMPFLAGS)" \
+  --fixed-exception \
+  --table \
 
 ## promote-menhir
 
@@ -158,7 +174,7 @@ include .depend.menhir
 
 interpret-menhir:
 	@ echo "Please wait, I am building the LALR automaton..."
-	@ $(MENHIR) $(MENHIRFLAGS) parsing/parser.mly \
+	@ $(MENHIR) $(MENHIRBASICFLAGS) parsing/parser.mly \
 	    --interpret \
 	    --interpret-show-cst \
 	    --trace \
