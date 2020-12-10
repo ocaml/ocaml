@@ -132,7 +132,8 @@ test-menhir: parsing/parser.mly
 partialclean-menhir::
 	rm -f \
 	  $(addprefix parsing/parser.,ml mli) \
-	  $(addprefix parsing/camlinternalMenhirLib.,ml mli)
+	  $(addprefix parsing/camlinternalMenhirLib.,ml mli) \
+	  $(addprefix parsing/parser.,automaton conflicts) \
 
 clean-menhir: partialclean-menhir
 
