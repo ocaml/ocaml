@@ -15,6 +15,13 @@
 
 /* The parser definition */
 
+/* The commands [make list-errors] and [make generate-parse-errors]
+   run Menhir on a modified copy of the parser where every block of
+   text comprised between the markers [BEGIN AVOID] and -----------
+   [END AVOID] has been removed. This file should be formatted in
+   such a way that this results in a clean removal of certain
+   symbols, productions, or declarations. */
+
 %{
 
 open Asttypes

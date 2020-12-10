@@ -178,6 +178,7 @@ _build
 /parsing/parser.output
 /parsing/parser.automaton
 /parsing/parser.conflicts
+/parsing/parser.auto.messages
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
 

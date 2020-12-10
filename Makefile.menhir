@@ -151,6 +151,7 @@ partialclean-menhir::
 	  $(addprefix parsing/parser.,ml mli) \
 	  $(addprefix parsing/camlinternalMenhirLib.,ml mli) \
 	  $(addprefix parsing/parser.,automaton conflicts) \
+	  $(addprefix parsing/parser.,auto.messages) \
 
 clean-menhir: partialclean-menhir
 
@@ -179,3 +180,34 @@ interpret-menhir:
 	    --interpret \
 	    --interpret-show-cst \
 	    --trace \
+
+## list-errors
+
+# This rule runs Menhir's reachability analysis, which produces a list of all
+# states where a syntax error can be detected (and a corresponding list of of
+# erroneous sentences). This data is stored in parsing/parser.auto.messages.
+# This analysis requires about 3 minutes and 6GB of RAM.
+
+# The analysis is performed on a copy of the grammar where every block
+# of text comprised between the markers BEGIN AVOID and END AVOID has
+# been removed. This allows us to avoid certain syntactic forms in the
+# sentences that we produce. See parser.mly for more explanations.
+
+# Because of this, we must run Menhir twice: once on a modified copy of the
+# grammar to produce the sentences, and once on the original grammar to update
+# the auto-comments (which would otherwise be incorrect).
+
+.PHONY: list-errors
+list-errors:
+	@ tmp=`mktemp -d /tmp/parser.XXXX` && \
+	  sed -e '/BEGIN AVOID/,/END AVOID/d' \
+	    parsing/parser.mly > $$tmp/parser.mly && \
+	  $(MENHIR) $(MENHIRBASICFLAGS) $$tmp/parser.mly \
+	    --list-errors -la 2 \
+	    > parsing/parser.auto.messages && \
+	  rm -rf $$tmp
+	@ cp parsing/parser.auto.messages parsing/parser.auto.messages.bak
+	@ $(MENHIR) $(MENHIRBASICFLAGS) parsing/parser.mly \
+	    --update-errors parsing/parser.auto.messages.bak \
+	    > parsing/parser.auto.messages
+	@ rm -f parsing/parser.auto.messages.bak
