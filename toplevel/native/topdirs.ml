@@ -24,16 +24,51 @@ open Toploop
 (* The standard output formatter *)
 let std_out = std_formatter
 
+(* Directive sections (used in #help) *)
+let section_general = "General"
+let section_run = "Loading code"
+let section_env = "Environment queries"
+
+let section_print = "Pretty-printing"
+let section_trace = "Tracing"
+let section_options = "Compiler options"
+
+let section_undocumented = "Undocumented"
+
+(* we will print the sections in the first list,
+   then all user-defined sections,
+   then the sections in the second list,
+   then all undocumented directives *)
+let order_of_sections =
+  ([
+    section_general;
+    section_run;
+    section_env;
+  ], [
+    section_print;
+    section_trace;
+    section_options;
+
+    section_undocumented;
+  ])
+(* Do not forget to keep the directives synchronized with the manual in
+   manual/manual/cmds/top.etex *)
+
 (* To quit *)
 
 let dir_quit () = raise (Compenv.Exit_with_status 0)
 
-let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
+let _ = add_directive "quit" (Directive_none dir_quit)
+    {
+      section = section_general;
+      doc = "Exit the toplevel.";
+    }
 
 (* To add a directory to the load path *)
 
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
+  Dll.add_path [d];
   let dir = Load_path.Dir.create d in
   Load_path.add dir;
   toplevel_env :=
@@ -43,7 +78,13 @@ let dir_directory s =
       (Env.persistent_structures_of_dir dir)
       !toplevel_env
 
-let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
+let _ = add_directive "directory" (Directive_string dir_directory)
+    {
+      section = section_run;
+      doc = "Add the given directory to search path for source and compiled \
+             files.";
+    }
+
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
   let d = expand_directory Config.standard_library s in
@@ -53,60 +94,33 @@ let dir_remove_directory s =
     | fn -> Filename.dirname fn <> d
   in
   toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
-  Load_path.remove_dir s
+  Load_path.remove_dir s;
+  Dll.remove_path [d]
 
-let _ =
-  Hashtbl.add directive_table "remove_directory"
-    (Directive_string dir_remove_directory)
+let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
+    {
+      section = section_run;
+      doc = "Remove the given directory from the search path.";
+    }
 
-let _ = Hashtbl.add directive_table "show_dirs"
-  (Directive_none
-     (fun () ->
-        List.iter print_endline (Load_path.get_paths ())
-     ))
+let dir_show_dirs () =
+  List.iter print_endline (Load_path.get_paths ())
+
+let _ = add_directive "show_dirs" (Directive_none "show_dirs")
+    {
+      section = section_run;
+      doc = "List directories currently in the search path.";
+    }
 
 (* To change the current directory *)
 
 let dir_cd s = Sys.chdir s
 
-let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
-
-(* Load in-core a .cmxs file *)
-
-let load_file ppf name0 =
-  let name =
-    try Some (Load_path.find name0)
-    with Not_found -> None
-  in
-  match name with
-  | None -> fprintf ppf "File not found: %s@." name0; false
-  | Some name ->
-    let fn,tmp =
-      if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
-      then
-        let cmxs = Filename.temp_file "caml" ".cmxs" in
-        Asmlink.link_shared ~ppf_dump:ppf [name] cmxs;
-        cmxs,true
-      else
-        name,false
-    in
-    let success =
-      (* The Dynlink interface does not allow us to distinguish between
-          a Dynlink.Error exceptions raised in the loaded modules
-          or a genuine error during dynlink... *)
-      try Dynlink.loadfile fn; true
-      with
-      | Dynlink.Error err ->
-        fprintf ppf "Error while loading %s: %s.@."
-          name (Dynlink.error_message err);
-        false
-      | exn ->
-        print_exception_outcome ppf exn;
-        false
-    in
-    if tmp then (try Sys.remove fn with Sys_error _ -> ());
-    success
-
+let _ = add_directive "cd" (Directive_string dir_cd)
+    {
+      section = section_run;
+      doc = "Change the current working directory.";
+    }
 
 let dir_load ppf name = ignore (load_file ppf name)
 

@@ -168,64 +168,7 @@ let install_generic_printer = Printer.install_generic_printer
 let install_generic_printer' = Printer.install_generic_printer'
 let remove_printer = Printer.remove_printer
 
-(* Hooks for parsing functions *)
-
-let parse_toplevel_phrase = ref Parse.toplevel_phrase
-let parse_use_file = ref Parse.use_file
-let print_location = Location.print_loc
-let print_error = Location.print_report
-let print_warning = Location.print_warning
-let input_name = Location.input_name
-
-let parse_mod_use_file name lb =
-  let modname =
-    String.capitalize_ascii
-      (Filename.remove_extension (Filename.basename name))
-  in
-  let items =
-    List.concat
-      (List.map
-         (function Ptop_def s -> s | Ptop_dir _ -> [])
-         (!parse_use_file lb))
-  in
-  [ Ptop_def
-      [ Str.module_
-          (Mb.mk
-             (Location.mknoloc (Some modname))
-             (Mod.structure items)
-          )
-       ]
-   ]
-
-(* Hook for initialization *)
-
-let toplevel_startup_hook = ref (fun () -> ())
-
-type event = ..
-type event +=
-  | Startup
-  | After_setup
-
-let hooks = ref []
-
-let add_hook f = hooks := f :: !hooks
-
-let () =
-  add_hook (function
-      | Startup -> !toplevel_startup_hook ()
-      | _ -> ())
-
-let run_hooks hook = List.iter (fun f -> f hook) !hooks
-
 (* Load in-core and execute a lambda term *)
-
-let may_trace = ref false (* Global lock on tracing *)
-
-let backtrace = ref None
-
-let record_backtrace () =
-  if Printexc.backtrace_status ()
-  then backtrace := Some (Printexc.get_backtrace ())
 
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
@@ -284,10 +227,8 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     then Filename.concat (Sys.getcwd ()) dll
     else dll in
   match
-    may_trace := true;
     Fun.protect
       ~finally:(fun () ->
-          may_trace := false;
           (try Sys.remove dll with Sys_error _ -> ()))
             (* note: under windows, cannot remove a loaded dll
                (should remember the handles, close them in at_exit, and then
@@ -329,18 +270,6 @@ let print_exception_outcome ppf exn =
       | Some b ->
           print_string b;
           backtrace := None
-
-(* The table of toplevel directives.
-   Filled by functions from module topdirs. *)
-
-let directive_table = (Hashtbl.create 23 : (string, directive_fun) Hashtbl.t)
-
-let directive_info_table =
-  (Hashtbl.create 23 : (string, directive_info) Hashtbl.t)
-
-let add_directive name dir_fun dir_info =
-  Hashtbl.add directive_table name dir_fun;
-  Hashtbl.add directive_info_table name dir_info
 
 (* Execute a toplevel phrase *)
 
@@ -469,20 +398,6 @@ let execute_phrase print_outcome ppf phr =
 
 let use_print_results = ref true
 
-let preprocess_phrase ppf phr =
-  let phr =
-    match phr with
-    | Ptop_def str ->
-        let str =
-          Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
-        in
-        Ptop_def str
-    | phr -> phr
-  in
-  if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-  if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
-  phr
-
 let use_channel ppf ~wrap_in_module ic name filename =
   let lb = Lexing.from_channel ic in
   Location.init lb filename;
@@ -547,87 +462,6 @@ let use_file ppf name =
 let use_silently ppf name =
   protect_refs [ R (use_print_results, false) ] (fun () -> use_file ppf name)
 
-(* Reading function for interactive use *)
-
-let first_line = ref true
-let got_eof = ref false;;
-
-let read_input_default prompt buffer len =
-  output_string stdout prompt; flush stdout;
-  let i = ref 0 in
-  try
-    while true do
-      if !i >= len then raise Exit;
-      let c = input_char stdin in
-      Bytes.set buffer !i c;
-      incr i;
-      if c = '\n' then raise Exit;
-    done;
-    (!i, false)
-  with
-  | End_of_file ->
-      (!i, true)
-  | Exit ->
-      (!i, false)
-
-let read_interactive_input = ref read_input_default
-
-let refill_lexbuf buffer len =
-  if !got_eof then (got_eof := false; 0) else begin
-    let prompt =
-      if !Clflags.noprompt then ""
-      else if !first_line then "# "
-      else if !Clflags.nopromptcont then ""
-      else if Lexer.in_comment () then "* "
-      else "  "
-    in
-    first_line := false;
-    let (len, eof) = !read_interactive_input prompt buffer len in
-    if eof then begin
-      Location.echo_eof ();
-      if len > 0 then got_eof := true;
-      len
-    end else
-      len
-  end
-
-(* Toplevel initialization. Performed here instead of at the
-   beginning of loop() so that user code linked in with ocamlmktop
-   can call directives from Topdirs. *)
-
-let _ =
-  Sys.interactive := true;
-  Compmisc.init_path ();
-  Clflags.dlcode := true;
-  ()
-
-let find_ocamlinit () =
-  let ocamlinit = ".ocamlinit" in
-  if Sys.file_exists ocamlinit then Some ocamlinit else
-  let getenv var = match Sys.getenv var with
-    | exception Not_found -> None | "" -> None | v -> Some v
-  in
-  let exists_in_dir dir file = match dir with
-    | None -> None
-    | Some dir ->
-        let file = Filename.concat dir file in
-        if Sys.file_exists file then Some file else None
-  in
-  let home_dir () = getenv "HOME" in
-  let config_dir () =
-    if Sys.win32 then None else
-    match getenv "XDG_CONFIG_HOME" with
-    | Some _ as v -> v
-    | None ->
-        match home_dir () with
-        | None -> None
-        | Some dir -> Some (Filename.concat dir ".config")
-  in
-  let init_ml = Filename.concat "ocaml" "init.ml" in
-  match exists_in_dir (config_dir ()) init_ml with
-  | Some _ as v -> v
-  | None -> exists_in_dir (home_dir ()) ocamlinit
-
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
@@ -637,28 +471,6 @@ let load_ocamlinit ppf =
       match find_ocamlinit () with
       | None -> ()
       | Some file -> ignore (use_silently ppf file)
-;;
-
-let set_paths () =
-  (* Add whatever -I options have been specified on the command line,
-     but keep the directories that user code linked in with ocamlmktop
-     may have added to load_path. *)
-  let expand = Misc.expand_directory Config.standard_library in
-  let current_load_path = Load_path.get_paths () in
-  let load_path = List.concat [
-      [ "" ];
-      List.map expand (List.rev !Compenv.first_include_dirs);
-      List.map expand (List.rev !Clflags.include_dirs);
-      List.map expand (List.rev !Compenv.last_include_dirs);
-      current_load_path;
-      [expand "+camlp4"];
-    ]
-  in
-  Load_path.init load_path
-
-let initialize_toplevel_env () =
-  toplevel_env := Compmisc.initial_env()
-
 (* The interactive loop *)
 
 exception PPerror
@@ -694,13 +506,6 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-external caml_sys_modify_argv : string array -> unit =
-  "caml_sys_modify_argv"
-
-let override_sys_argv new_argv =
-  caml_sys_modify_argv new_argv;
-  Arg.current := 0
-
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
@@ -722,3 +527,43 @@ let run_script ppf name args =
 
 let getvalue _ = assert false
 let setvalue _ _ = assert false
+
+(* from opttopdirs *)
+
+(* Load in-core a .cmxs file *)
+
+let load_file ppf name0 =
+  let name =
+    try Some (Load_path.find name0)
+    with Not_found -> None
+  in
+  match name with
+  | None -> fprintf ppf "File not found: %s@." name0; false
+  | Some name ->
+    let fn,tmp =
+      if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
+      then
+        let cmxs = Filename.temp_file "caml" ".cmxs" in
+        Asmlink.link_shared ~ppf_dump:ppf [name] cmxs;
+        cmxs,true
+      else
+        name,false
+    in
+    let success =
+      (* The Dynlink interface does not allow us to distinguish between
+          a Dynlink.Error exceptions raised in the loaded modules
+          or a genuine error during dynlink... *)
+      try Dynlink.loadfile fn; true
+      with
+      | Dynlink.Error err ->
+        fprintf ppf "Error while loading %s: %s.@."
+          name (Dynlink.error_message err);
+        false
+      | exn ->
+        print_exception_outcome ppf exn;
+        false
+    in
+    if tmp then (try Sys.remove fn with Sys_error _ -> ());
+    success
+
+
