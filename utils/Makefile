@@ -39,6 +39,7 @@ SUBST_QUOTE2=\
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))
 
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
+FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
 
 config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	sed $(call SUBST,AFL_INSTRUMENT) \
@@ -64,6 +65,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST_STRING,MKDLL) \
 	    $(call SUBST_STRING,MKEXE) \
 	    $(call SUBST_STRING,FLEXLINK_LDFLAGS) \
+	    $(call SUBST_STRING,FLEXLINK_DLL_LDFLAGS) \
 	    $(call SUBST_STRING,MKMAINDLL) \
 	    $(call SUBST,MODEL) \
 	    $(call SUBST_STRING,NATIVECCLIBS) \
