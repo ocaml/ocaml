@@ -2746,25 +2746,34 @@ and type_expect_
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
-      begin_def (); (* one more level for non-returning functions *)
-      if !Clflags.principal then begin_def ();
-      let funct = type_exp env sfunct in
-      if !Clflags.principal then begin
+      let rec treat_apply_primitives sfunct sargs =
+        begin_def (); (* one more level for non-returning functions *)
+        if !Clflags.principal then begin_def ();
+        let funct = type_exp env sfunct in
+        if !Clflags.principal then begin
           end_def ();
           generalize_structure funct.exp_type
         end;
-      let rec lower_args seen ty_fun =
-        let ty = expand_head env ty_fun in
-        if List.memq ty seen then () else
-        match ty.desc with
-          Tarrow (_l, ty_arg, ty_fun, _com) ->
-            (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
-            lower_args (ty::seen) ty_fun
-        | _ -> ()
+        let rec lower_args seen ty_fun =
+          let ty = expand_head env ty_fun in
+          if List.memq ty seen then () else
+            match ty.desc with
+              Tarrow (_l, ty_arg, ty_fun, _com) ->
+                (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
+                lower_args (ty::seen) ty_fun
+            | _ -> ()
+        in
+        let ty = instance funct.exp_type in
+        end_def ();
+        wrap_trace_gadt_instances env (lower_args []) ty;
+        match funct.exp_desc, sargs with
+        | Texp_ident (_, _, {val_kind = Val_prim {Primitive.prim_name = "%revapply"}}),
+          [Nolabel, sarg; Nolabel, sfunct] ->
+            treat_apply_primitives sfunct [Nolabel, sarg]
+        | _ ->
+            funct, sargs
       in
-      let ty = instance funct.exp_type in
-      end_def ();
-      wrap_trace_gadt_instances env (lower_args []) ty;
+      let funct, sargs = treat_apply_primitives sfunct sargs in
       begin_def ();
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
