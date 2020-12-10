@@ -289,7 +289,6 @@ static void caml_thread_reinitialize(void)
   caml_acquire_domain_lock();
   // main_lock needs to be initialized and released.
   st_masterlock_init(&Thread_main_lock);
-  st_masterlock_release(&Thread_main_lock);
 }
 
 CAMLprim value caml_thread_initialize(value unit);
