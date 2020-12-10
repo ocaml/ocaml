@@ -48,7 +48,7 @@ MENHIR ?= menhir
 
 ## Unused tokens
 
-# tokens COMMENT, DOCSTRING and EOL are produced by special lexer
+# The tokens COMMENT, DOCSTRING and EOL are produced by special lexer
 # modes used by other consumers than the parser.
 
 # GREATERBRACKET ">]" was added by the parser by symmetry with "[<"
