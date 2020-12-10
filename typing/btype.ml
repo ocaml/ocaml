@@ -564,12 +564,11 @@ end = struct
 end
 
 (* Mark a type. *)
-let mirror_level level = pivot_level - level
 
 let not_marked_node ty = ty.level >= lowest_level
     (* type nodes with negative levels are "marked" *)
 
-let flip_mark_node ty = (Internal.unlock ty).level <- mirror_level ty.level
+let flip_mark_node ty = (Internal.unlock ty).level <- pivot_level - ty.level
 
 let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
 

@@ -2421,15 +2421,15 @@ let mcomp env t1 t2 =
 (* Real unification *)
 
 let find_lowest_level ty =
-  let lowest = ref (mirror_level generic_level) in
+  let lowest = ref generic_level in
   let rec find ty =
     let ty = repr ty in
-    if try_mark_node ty then
-      begin
-        if ty.level > !lowest then lowest := ty.level;
-        iter_type_expr find ty
-      end
-  in find ty; unmark_type ty; mirror_level !lowest
+    if not_marked_node ty then begin
+      if ty.level < !lowest then lowest := ty.level;
+      flip_mark_node ty;
+      iter_type_expr find ty
+    end
+  in find ty; unmark_type ty; !lowest
 
 let find_expansion_scope env path =
   (Env.find_type path env).type_expansion_scope

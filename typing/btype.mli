@@ -168,10 +168,7 @@ end
 val lowest_level: int
         (* Marked type: ty.level < lowest_level *)
 val pivot_level: int
-val mirror_level: int -> int
         (* Type marking: ty.level <- pivot_level - ty.level *)
-        (* mirror_level is used for unmarking; it must be involutive,
-           invert order *)
 val not_marked_node: type_expr -> bool
         (* Return true if a type node is not yet marked *)
 val flip_mark_node: type_expr -> unit
