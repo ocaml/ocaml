@@ -1403,6 +1403,8 @@ module Pp = struct
 
   let functor_param x = match Short_name.functor_param x with
     | Short_name.Unit -> Format.dprintf "()"
+    | Short_name.Named (None, Original (Mty_signature []) ) ->
+        Format.dprintf "(sig end)"
     | Short_name.Named (None, short_mty) ->
         Short_name.pp dmodtype short_mty
     | Short_name.Named (Some p, short_mty) ->
