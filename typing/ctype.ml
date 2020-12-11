@@ -816,7 +816,7 @@ let rec normalize_package_path env p =
 let rec check_scope_escape env level ty =
   let mark ty =
     (* Mark visited types with [ty.level < lowest_level]. *)
-    set_level ty (pivot_level - ty.level)
+    set_level ty (lowest_level - 1)
   in
   let ty = repr ty in
   (* If the type hasn't been marked, check it. Otherwise, we have already
