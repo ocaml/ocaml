@@ -18,8 +18,14 @@ let compute_thread () =
 
 let fork () =
   match Unix.fork() with
-  | 0 -> alloc_string (); print_endline "passed"
-  | pid -> exit 0
+  | 0 ->
+      alloc_string ();
+      print_string "passed";
+      print_newline ();
+      exit 0
+  | pid ->
+      Thread.delay 1.5;
+      exit 0
 
 let main () =
   ignore(compute_thread ());
