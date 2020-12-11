@@ -189,9 +189,9 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
 
-(* (\* Phrase buffer that stores the last toplevel phrase (see
- *    [Location.input_phrase_buffer]). *\)
- * let phrase_buffer = Buffer.create 1024 *)
+(* Phrase buffer that stores the last toplevel phrase (see
+   [Location.input_phrase_buffer]). *)
+let phrase_buffer = Buffer.create 1024
 
 (* Reading function for interactive use *)
 
@@ -207,7 +207,7 @@ let read_input_default prompt buffer len =
       let c = input_char stdin in
       Bytes.set buffer !i c;
       (* Also populate the phrase buffer as new characters are added. *)
-      (* Buffer.add_char phrase_buffer c; *)
+      Buffer.add_char phrase_buffer c;
       incr i;
       if c = '\n' then raise Exit;
     done;

@@ -22,7 +22,7 @@ open Parsetree
 open Types
 open Typedtree
 open Outcometree
-open Ast_helper
+open Topcommon
 
 type res = Ok of Obj.t | Err of string
 type evaluation_outcome = Result of Obj.t | Exception of exn
@@ -52,18 +52,6 @@ let dll_run dll entry =
           | Ok x -> Result x
           | Err s -> fatal_error ("Toploop.dll_run " ^ s)
 
-
-type directive_fun =
-   | Directive_none of (unit -> unit)
-   | Directive_string of (string -> unit)
-   | Directive_int of (int -> unit)
-   | Directive_ident of (Longident.t -> unit)
-   | Directive_bool of (bool -> unit)
-
-type directive_info = {
-  section: string;
-  doc: string;
-}
 
 let remembered = ref Ident.empty
 
@@ -137,38 +125,11 @@ module EvalPath = struct
   let same_value v1 v2 = (v1 == v2)
 end
 
-module Printer = Genprintval.Make(Obj)(EvalPath)
-
-let max_printer_depth = ref 100
-let max_printer_steps = ref 300
-
-let print_out_value = Oprint.out_value
-let print_out_type = Oprint.out_type
-let print_out_class_type = Oprint.out_class_type
-let print_out_module_type = Oprint.out_module_type
-let print_out_type_extension = Oprint.out_type_extension
-let print_out_sig_item = Oprint.out_sig_item
-let print_out_signature = Oprint.out_signature
-let print_out_phrase = Oprint.out_phrase
-
-let print_untyped_exception ppf obj =
-  !print_out_value ppf (Printer.outval_of_untyped_exception obj)
-let outval_of_value env obj ty =
-  Printer.outval_of_value !max_printer_steps !max_printer_depth
-    (fun _ _ _ -> None) env obj ty
-let print_value env obj ppf ty =
-  !print_out_value ppf (outval_of_value env obj ty)
-
-type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
-  | Zero of 'b
-  | Succ of ('a -> ('a, 'b) gen_printer)
-
-let install_printer = Printer.install_printer
-let install_generic_printer = Printer.install_generic_printer
-let install_generic_printer' = Printer.install_generic_printer'
-let remove_printer = Printer.remove_printer
+include Topcommon.MakePrinter(Obj)(Genprintval.Make(Obj)(EvalPath))
 
 (* Load in-core and execute a lambda term *)
+
+let may_trace = ref false (* Global lock on tracing *)
 
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
@@ -249,27 +210,6 @@ let pr_item =
           Some (outval_of_value env (toplevel_value id) val_type)
       | _ -> None
     )
-
-(* The current typing environment for the toplevel *)
-
-let toplevel_env = ref Env.empty
-
-(* Print an exception produced by an evaluation *)
-
-let print_out_exception ppf exn outv =
-  !print_out_phrase ppf (Ophr_exception (exn, outv))
-
-let print_exception_outcome ppf exn =
-  if exn = Out_of_memory then Gc.full_major ();
-  let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
-  print_out_exception ppf exn outv;
-  if Printexc.backtrace_status ()
-  then
-    match !backtrace with
-      | None -> ()
-      | Some b ->
-          print_string b;
-          backtrace := None
 
 (* Execute a toplevel phrase *)
 
@@ -361,11 +301,7 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
-      let d =
-        try Some (Hashtbl.find directive_table dir_name)
-        with Not_found -> None
-      in
-      begin match d with
+      begin match get_directive dir_name with
       | None ->
           fprintf ppf "Unknown directive `%s'.@." dir_name;
           false
@@ -462,49 +398,6 @@ let use_file ppf name =
 let use_silently ppf name =
   protect_refs [ R (use_print_results, false) ] (fun () -> use_file ppf name)
 
-let load_ocamlinit ppf =
-  if !Clflags.noinit then ()
-  else match !Clflags.init_file with
-  | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
-              else fprintf ppf "Init file not found: \"%s\".@." f
-  | None ->
-      match find_ocamlinit () with
-      | None -> ()
-      | Some file -> ignore (use_silently ppf file)
-(* The interactive loop *)
-
-exception PPerror
-
-let loop ppf =
-  Location.formatter_for_warnings := ppf;
-  if not !Clflags.noversion then
-    fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
-  initialize_toplevel_env ();
-  let lb = Lexing.from_function refill_lexbuf in
-  Location.init lb "//toplevel//";
-  Location.input_name := "//toplevel//";
-  Location.input_lexbuf := Some lb;
-  Sys.catch_break true;
-  run_hooks After_setup;
-  load_ocamlinit ppf;
-  while true do
-    let snap = Btype.snapshot () in
-    try
-      Lexing.flush_input lb;
-      Location.reset();
-      first_line := true;
-      let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = preprocess_phrase ppf phr  in
-      Env.reset_cache_toplevel ();
-      if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-      if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
-      ignore(execute_phrase true ppf phr)
-    with
-    | End_of_file -> raise (Compenv.Exit_with_status 0)
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
-    | PPerror -> ()
-    | x -> Location.report_exception ppf x; Btype.backtrack snap
-  done
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
@@ -532,7 +425,7 @@ let setvalue _ _ = assert false
 
 (* Load in-core a .cmxs file *)
 
-let load_file ppf name0 =
+let load_file _ (* fixme *) ppf name0 =
   let name =
     try Some (Load_path.find name0)
     with Not_found -> None

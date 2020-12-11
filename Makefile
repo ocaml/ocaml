@@ -67,6 +67,8 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
+TOPLEVELINIT=toplevel/topinit.cmo
+
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
@@ -1014,6 +1016,10 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamltoplevel.cmxa \
     $(TOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+
+$(TOPLEVELINIT:.cmo=.cmx): $(TOPLEVELINIT:.cmo=.ml) \
+     toplevel/native/toploop.cmx
+	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
 
 $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
      toplevel/native/topmain.cmx

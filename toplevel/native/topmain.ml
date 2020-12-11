@@ -38,12 +38,12 @@ let expand_position pos len =
 
 
 let prepare ppf =
-  Toploop.set_paths ();
+  Topcommon.set_paths ();
   try
     let res =
-      List.for_all (Topdirs.load_file ppf) (List.rev !preload_objects)
+      List.for_all (Toploop.load_file false ppf) (List.rev !preload_objects)
     in
-    Toploop.run_hooks Toploop.Startup;
+    Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false
@@ -65,15 +65,15 @@ let file_argument name =
     Printf.eprintf "For implementation reasons, the toplevel does not support\
     \ having script files (here %S) inside expanded arguments passed through\
     \ the -args{,0} command-line option.\n" name;
-    raise (Exit_with_status 2)
+    raise (Compenv.Exit_with_status 2)
   end else begin
     let newargs = Array.sub !argv !Arg.current
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
       if prepare ppf && Toploop.run_script ppf name newargs
-      then raise (Exit_with_status 0)
-      else raise (Exit_with_status 2)
+      then raise (Compenv.Exit_with_status 0)
+      else raise (Compenv.Exit_with_status 2)
     end
 
 let wrap_expand f s =
@@ -106,16 +106,16 @@ let main () =
       Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
     with
     | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg;
-                     raise (Exit_with_status 2)
+                     raise (Compenv.Exit_with_status 2)
     | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg;
-                      raise (Exit_with_status 0)
+                      raise (Compenv.Exit_with_status 0)
   end;
   Compmisc.read_clflags_from_env ();
-  if not (prepare Format.err_formatter) then raise (Exit_with_status 2);
+  if not (prepare Format.err_formatter) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Toploop.loop Format.std_formatter
+  Topinit.loop Format.std_formatter
 
 let main () =
   match main () with
-  | exception Exit_with_status n -> n
+  | exception Compenv.Exit_with_status n -> n
   | () -> 0

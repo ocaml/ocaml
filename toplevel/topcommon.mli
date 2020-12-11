@@ -127,6 +127,14 @@ val input_name : string ref
 
 (* Hooks for external line editor *)
 
+(* Phrase buffer that stores the last toplevel phrase (see
+   [Location.input_phrase_buffer]). *)
+val phrase_buffer : Buffer.t
+
+val first_line : bool ref
+
+val got_eof : bool ref
+
 val read_interactive_input : (string -> bytes -> int -> int * bool) ref
 
 (* Hooks *)

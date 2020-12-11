@@ -6110,15 +6110,17 @@ toplevel/genprintval.cmi : \
     typing/env.cmi
 toplevel/topcommon.cmo : \
     typing/types.cmi \
-    typing/typedtree.cmi \
     parsing/printast.cmi \
+    typing/predef.cmi \
     parsing/pprintast.cmi \
     driver/pparse.cmi \
+    typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/parse.cmi \
     typing/outcometree.cmi \
     typing/oprint.cmi \
     utils/misc.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
     parsing/lexer.cmi \
@@ -6133,15 +6135,17 @@ toplevel/topcommon.cmo : \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
     typing/types.cmx \
-    typing/typedtree.cmx \
     parsing/printast.cmx \
+    typing/predef.cmx \
     parsing/pprintast.cmx \
     driver/pparse.cmx \
+    typing/path.cmx \
     parsing/parsetree.cmi \
     parsing/parse.cmx \
     typing/outcometree.cmi \
     typing/oprint.cmx \
     utils/misc.cmx \
+    parsing/longident.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
     parsing/lexer.cmx \
@@ -6218,6 +6222,7 @@ toplevel/topinit.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
     toplevel/toploop.cmi \
+    toplevel/topcommon.cmi \
     bytecomp/symtable.cmi \
     parsing/location.cmi \
     typing/env.cmi \
@@ -6231,6 +6236,7 @@ toplevel/topinit.cmx : \
     utils/warnings.cmx \
     typing/typetexp.cmx \
     toplevel/toploop.cmi \
+    toplevel/topcommon.cmx \
     bytecomp/symtable.cmx \
     parsing/location.cmx \
     typing/env.cmx \
@@ -6284,6 +6290,7 @@ toplevel/byte/toploop.cmo : \
     parsing/lexer.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
+    toplevel/genprintval.cmi \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
     bytecomp/dll.cmi \
@@ -6323,6 +6330,7 @@ toplevel/byte/toploop.cmx : \
     parsing/lexer.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
+    toplevel/genprintval.cmx \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
     bytecomp/dll.cmx \
@@ -6403,36 +6411,6 @@ toplevel/byte/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
-toplevel/native/topdirs.cmo : \
-    utils/warnings.cmi \
-    typing/types.cmi \
-    toplevel/native/toploop.cmi \
-    typing/printtyp.cmi \
-    utils/misc.cmi \
-    parsing/longident.cmi \
-    utils/load_path.cmi \
-    typing/ident.cmi \
-    typing/env.cmi \
-    bytecomp/dll.cmi \
-    typing/ctype.cmi \
-    utils/config.cmi \
-    driver/compenv.cmi \
-    utils/clflags.cmi
-toplevel/native/topdirs.cmx : \
-    utils/warnings.cmx \
-    typing/types.cmx \
-    toplevel/native/toploop.cmx \
-    typing/printtyp.cmx \
-    utils/misc.cmx \
-    parsing/longident.cmx \
-    utils/load_path.cmx \
-    typing/ident.cmx \
-    typing/env.cmx \
-    bytecomp/dll.cmx \
-    typing/ctype.cmx \
-    utils/config.cmx \
-    driver/compenv.cmx \
-    utils/clflags.cmx
 toplevel/native/toploop.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
@@ -6440,20 +6418,17 @@ toplevel/native/toploop.cmo : \
     typing/typedtree.cmi \
     typing/typecore.cmi \
     lambda/translmod.cmi \
+    toplevel/topcommon.cmi \
     lambda/simplif.cmi \
     asmcomp/proc.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
-    parsing/printast.cmi \
     typing/predef.cmi \
-    parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
-    typing/oprint.cmi \
     utils/misc.cmi \
-    parsing/longident.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
     parsing/lexer.cmi \
@@ -6467,10 +6442,8 @@ toplevel/native/toploop.cmo : \
     utils/config.cmi \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
-    driver/compenv.cmi \
     middle_end/closure/closure_middle_end.cmi \
     utils/clflags.cmi \
-    typing/btype.cmi \
     middle_end/backend_intf.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
@@ -6485,20 +6458,17 @@ toplevel/native/toploop.cmx : \
     typing/typedtree.cmx \
     typing/typecore.cmx \
     lambda/translmod.cmx \
+    toplevel/topcommon.cmx \
     lambda/simplif.cmx \
     asmcomp/proc.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
-    parsing/printast.cmx \
     typing/predef.cmx \
-    parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
-    typing/oprint.cmx \
     utils/misc.cmx \
-    parsing/longident.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
     parsing/lexer.cmx \
@@ -6512,10 +6482,8 @@ toplevel/native/toploop.cmx : \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
-    driver/compenv.cmx \
     middle_end/closure/closure_middle_end.cmx \
     utils/clflags.cmx \
-    typing/btype.cmx \
     middle_end/backend_intf.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
@@ -6530,7 +6498,7 @@ toplevel/native/toploop.cmi : \
     typing/env.cmi
 toplevel/native/topmain.cmo : \
     toplevel/native/toploop.cmi \
-    toplevel/native/topdirs.cmo \
+    toplevel/topdirs.cmi \
     utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
@@ -6539,7 +6507,7 @@ toplevel/native/topmain.cmo : \
     toplevel/native/topmain.cmi
 toplevel/native/topmain.cmx : \
     toplevel/native/toploop.cmx \
-    toplevel/native/topdirs.cmx \
+    toplevel/topdirs.cmx \
     utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
