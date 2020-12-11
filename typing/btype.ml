@@ -568,7 +568,7 @@ end
 let not_marked_node ty = ty.level >= lowest_level
     (* type nodes with negative levels are "marked" *)
 
-let flip_mark_node ty = (Internal.unlock ty).level <- pivot_level - ty.level
+let flip_mark_node ty = Private_type_expr.set_level ty (pivot_level - ty.level)
 
 let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
 
@@ -595,7 +595,7 @@ let rec unmark_type ty =
   let ty = repr ty in
   if ty.level < lowest_level then begin
     (* flip back the marked level *)
-    (Internal.unlock ty).level <- mirror_level ty.level;
+    flip_mark_node ty;
     iter_type_expr unmark_type ty
   end
 
@@ -723,10 +723,10 @@ let extract_label l ls = extract_label_aux [] l ls
                   (**********************************)
 
 let undo_change = function
-    Ctype  (ty, desc) -> (Internal.unlock ty).desc <- desc
-  | Ccompress  (ty, desc, _) -> (Internal.unlock ty).desc <- desc
-  | Clevel (ty, level) -> (Internal.unlock ty).level <- level
-  | Cscope (ty, scope) -> (Internal.unlock ty).scope <- scope
+    Ctype  (ty, desc) -> Private_type_expr.set_desc ty desc
+  | Ccompress  (ty, desc, _) -> Private_type_expr.set_desc ty desc
+  | Clevel (ty, level) -> Private_type_expr.set_level ty level
+  | Cscope (ty, scope) -> Private_type_expr.set_scope ty scope
   | Cname  (r, v) -> r := v
   | Crow   (r, v) -> r := v
   | Ckind  (r, v) -> r := v
@@ -742,17 +742,17 @@ let log_type ty =
 let link_type ty ty' =
   log_type ty;
   let desc = ty.desc in
-  (Internal.unlock ty).desc <- Tlink ty';
+  Private_type_expr.set_desc ty (Tlink ty');
   (* Name is a user-supplied name for this unification variable (obtained
    * through a type annotation for instance). *)
   match desc, ty'.desc with
     Tvar name, Tvar name' ->
       begin match name, name' with
-      | Some _, None ->  log_type ty'; (Internal.unlock ty').desc <- Tvar name
+      | Some _, None ->  log_type ty'; Private_type_expr.set_desc ty' (Tvar name)
       | None, Some _ ->  ()
       | Some _, Some _ ->
           if ty.level < ty'.level then
-            (log_type ty'; (Internal.unlock ty').desc <- Tvar name)
+            (log_type ty'; Private_type_expr.set_desc ty' (Tvar name))
       | None, None   ->  ()
       end
   | _ -> ()
@@ -762,20 +762,20 @@ let link_type ty ty' =
 let set_type_desc ty td =
   if td != ty.desc then begin
     log_type ty;
-    (Internal.unlock ty).desc <- td
+    Private_type_expr.set_desc ty td
   end
 (* TODO: separate set_level into two specific functions: *)
 (*  set_lower_level and set_generic_level *)
  let set_level ty level =
   if level <> ty.level then begin
     if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
-    (Internal.unlock ty).level <- level
+    Private_type_expr.set_level ty level
   end
 (* TODO: introduce a guard and rename it to set_higher_scope? *)
 let set_scope ty scope =
   if scope <> ty.scope then begin
     if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
-    (Internal.unlock ty).scope <- scope
+    Private_type_expr.set_scope ty scope
   end
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
@@ -839,6 +839,6 @@ let undo_compress (changes, _old) =
       List.iter
         (fun r -> match !r with
           Change (Ccompress (ty, desc, d), next) when ty.desc == d ->
-            (Internal.unlock ty).desc <- desc; r := !next
+            Private_type_expr.set_desc ty desc; r := !next
         | _ -> ())
         log

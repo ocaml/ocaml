@@ -180,8 +180,8 @@ let extension_descr ~current_unit path_ext ext =
       cstr_uid = ext.ext_uid;
     }
 
-let none = Internal.lock
- {desc = Ttuple []; level = -1; scope = Btype.generic_level; id = -1}
+let none = Private_type_expr.create (Ttuple [])
+    ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;

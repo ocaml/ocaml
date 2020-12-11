@@ -509,5 +509,5 @@ let remove_option typ =
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
   in
-  Types.Internal.lock
-    { (Types.Internal.unlock typ) with Types.Internal.desc = iter typ.Types.desc }
+  Types.Private_type_expr.create (iter typ.Types.desc)
+    ~level:typ.Types.level ~scope:typ.Types.scope ~id:typ.Types.id

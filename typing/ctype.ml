@@ -1153,8 +1153,8 @@ let rec copy ?partial ?keep_names scope ty =
     For_copy.save_desc scope ty desc;
     let t = newvar() in          (* Stub *)
     set_scope t ty.scope;
-    (Internal.unlock ty).desc <- Tsubst t;
-    (Internal.unlock t).desc <-
+    Private_type_expr.set_desc ty (Tsubst t);
+    Private_type_expr.set_desc t
       begin match desc with
       | Tconstr (p, tl, _) ->
           let abbrevs = proper_abbrevs p tl !abbreviations in
@@ -1184,7 +1184,7 @@ let rec copy ?partial ?keep_names scope ty =
           begin match more.desc with
             Tsubst {desc = Ttuple [_;ty2]} ->
               (* This variant type has been already copied *)
-              (Internal.unlock ty).desc <- Tsubst ty2;
+              Private_type_expr.set_desc ty (Tsubst ty2);
               (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
@@ -1234,7 +1234,7 @@ let rec copy ?partial ?keep_names scope ty =
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
-              (Internal.unlock more).desc <- Tsubst(newgenty(Ttuple[more';t]));
+              Private_type_expr.set_desc more (Tsubst(newgenty(Ttuple[more';t])));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
@@ -1434,7 +1434,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
     if ty.level <> generic_level then ty else
     let t = newvar () in
     delayed_copy :=
-      lazy ((Internal.unlock t).desc <- Tlink (copy cleanup_scope ty))
+      lazy (Private_type_expr.set_desc t (Tlink (copy cleanup_scope ty)))
       :: !delayed_copy;
     t
   else try
@@ -1452,7 +1452,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           visited
     in
     let copy_rec = copy_sep cleanup_scope fixed free bound visited in
-    (Internal.unlock t).desc <-
+    Private_type_expr.set_desc t
       begin match ty.desc with
       | Tvariant row0 ->
           let row = row_repr row0 in
@@ -2057,7 +2057,7 @@ let polyfy env ty vars =
     | Tvar name when ty.level = generic_level ->
         For_copy.save_desc scope ty ty.desc;
         let t = newty (Tunivar name) in
-        (Internal.unlock ty).desc <- Tsubst t;
+        Private_type_expr.set_desc ty (Tsubst t);
         Some t
     | _ -> None
   in
@@ -2556,7 +2556,7 @@ let unify1_var env t1 t2 =
     update_level env t1.level t2;
     update_scope t1.scope t2
   with Unify _ as e ->
-    (Internal.unlock t1).desc <- d1;
+    Private_type_expr.set_desc t1 d1;
     raise e
 
 (* Can only be called when generate_equations is true *)
@@ -2844,7 +2844,7 @@ and unify3 env t1 t1' t2 t2' =
         | _ ->
             () (* t2 has already been expanded by update_level *)
     with Unify trace ->
-      (Internal.unlock t1').desc <- d1;
+      Private_type_expr.set_desc t1' d1;
       raise (Unify trace)
   end
 
