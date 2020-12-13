@@ -935,7 +935,7 @@ let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc prog args envopt proc input output error =
   let pid =
-    create_process_gen false prog args envopt input output error in
+    create_process_gen true prog args envopt input output error in
   Hashtbl.add popen_processes proc pid
 
 let open_process_args_in prog args =
