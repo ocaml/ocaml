@@ -430,9 +430,10 @@ caml_system__code_end:
         PUBLIC  caml_system__frametable
 caml_system__frametable LABEL QWORD
         QWORD   1           ; one descriptor
-        QWORD   L107        ; return address into callback
+        DWORD   0           ; no debuginfo
         WORD    -1          ; negative frame size => use callback link
         WORD    0           ; no roots here
+        QWORD   L107        ; return address into callback
         ALIGN   8
 
         PUBLIC  caml_negf_mask

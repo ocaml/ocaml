@@ -425,7 +425,7 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
 G(caml_system__frametable):
         .long   1               /* one descriptor */
-        .long   LBL(107)        /* return address into callback */
+        .long   0               /* no debuginfo */
 #ifndef SYS_solaris
         .word   -1              /* negative frame size => use callback link */
         .word   0               /* no roots here */
@@ -433,6 +433,7 @@ G(caml_system__frametable):
         .value  -1              /* negative frame size => use callback link */
         .value  0               /* no roots here */
 #endif
+        .long   LBL(107)        /* return address into callback */
 
         .globl  G(caml_extra_params)
 G(caml_extra_params):

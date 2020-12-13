@@ -654,9 +654,10 @@ caml_system__code_end:
         .type   caml_system__frametable, @object
 caml_system__frametable:
         datag   1               /* one descriptor */
-        datag   .L105 + 4       /* return address into callback */
+        .long   0               /* no debuginfo */
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
+        datag   .L105 + 4       /* return address into callback */
 
 /* TOC entries */
 

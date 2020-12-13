@@ -374,3 +374,10 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
   caml_stat_free(callstack);
   CAMLreturn(res);
 }
+
+CAMLprim value caml_raw_backtrace_entry_retaddr(value entry)
+{
+  backtrace_slot slot = Backtrace_slot_val(entry);
+  uintnat addr = caml_debuginfo_return_address(slot);
+  return caml_copy_nativeint((intnat)addr);
+}

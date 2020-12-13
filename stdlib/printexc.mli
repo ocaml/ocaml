@@ -149,6 +149,12 @@ type raw_backtrace_entry = private int
 val raw_backtrace_entries : raw_backtrace -> raw_backtrace_entry array
 (** @since 4.12.0 *)
 
+val return_address_of_raw_entry : raw_backtrace_entry -> Nativeint.t
+(** On native-code targets, gets the return address associated with
+    a backtrace entry. (Always returns 0 on bytecode)
+
+    @since 4.13.0 *)
+
 val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in

@@ -85,21 +85,27 @@ struct caml_context {
 
 /* Structure of frame descriptors */
 
+
 typedef struct {
-  uintnat retaddr;
+  /* Frame descriptors for allocations combined with Comballoc may have
+     multiple separate debug info entries, used to separately track the
+     allocations with Gc.Memprof. These are stored as additional
+     debug_info_offset fields *before* the frame_descr, so that the i'th
+     allocation's debug info is at (&d->debug_info_offset)[-i].
+     All but the last are tagged with a 1 in the lowest bit. */
+  uint32_t debug_info_offset;
+  /* Low 2 bits are flags:
+       frame_size & 1: debug info present (otherwise, debug_info_offset = 0)
+       frame_size & 2: Comballoc allocation info present */
   unsigned short frame_size;
   unsigned short num_live;
+  uintnat retaddr;
   unsigned short live_ofs[1 /* num_live */];
   /*
     If frame_size & 2, then allocation info follows:
   unsigned char num_allocs;
   unsigned char alloc_lengths[num_alloc];
-
-    If frame_size & 1, then debug info follows:
-  uint32_t debug_info_offset[num_debug];
-
-    Debug info is stored as relative offsets to debuginfo structures.
-    num_debug is num_alloc if frame_size & 2, otherwise 1. */
+  */
 } frame_descr;
 
 /* Allocation lengths are encoded as 0-255, giving sizes 1-256 */
@@ -110,6 +116,12 @@ typedef struct {
 #define Align_to(p, ty) \
   (void*)(((uintnat)(p) + sizeof(ty) - 1) & -sizeof(ty))
 
+Caml_inline frame_descr * caml_find_frame_descr_start(void* pv)
+{
+  uint32_t * p = Align_to(pv, void*);
+  while ((*p & 1) == 1) p++;
+  return (frame_descr*) p;
+}
 
 /* Hash table of frame descriptors */
 

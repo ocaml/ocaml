@@ -180,29 +180,46 @@ let emit_frames a =
   in
   let emit_frame fd =
     assert (fd.fd_frame_size land 3 = 0);
-    let flags =
+    let flags, debuginfo_first, debuginfo_extra =
       match fd.fd_debuginfo with
-      | Dbg_other d | Dbg_raise d ->
-        if Debuginfo.is_none d then 0 else 1
+      | Dbg_other dbg | Dbg_raise dbg when Debuginfo.is_none dbg ->
+         0, None, []
+      | Dbg_other dbg -> 1, Some (label_debuginfos false dbg), []
+      | Dbg_raise dbg -> 1, Some (label_debuginfos true dbg), []
+      | Dbg_alloc dbgs when
+             not !Clflags.debug
+             || List.for_all (fun d ->
+                    Debuginfo.is_none d.Debuginfo.alloc_dbg) dbgs ->
+         2, None, []
       | Dbg_alloc dbgs ->
-        if !Clflags.debug &&
-           List.exists (fun d ->
-             not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
-        then 3 else 2
+         let dbgs = dbgs |> List.map (fun Debuginfo.{alloc_dbg; _} ->
+           if Debuginfo.is_none alloc_dbg then None
+           else Some (label_debuginfos false alloc_dbg)) in
+         (* The first slot is used for backtraces from signal handlers,
+            so ensure it is populated if any slots are populated *)
+         let head = List.hd (List.filter Option.is_some dbgs) in
+         3, head, List.tl dbgs
     in
-    a.efa_code_label fd.fd_lbl;
+    a.efa_align Arch.size_addr;
+    let emit_debuginfo_ref ~is_head dbg =
+      let offs = if is_head then 0l else 1l in
+      match dbg with
+      | None -> a.efa_32 offs
+      | Some l -> a.efa_label_rel l offs in
+    let pad_debuginfos =
+      match Arch.size_addr with
+      | 4 -> false
+      | 8 -> List.length debuginfo_extra mod 2 = 1
+      | _ -> assert false in
+    if pad_debuginfos then emit_debuginfo_ref ~is_head:false None;
+    List.iter (emit_debuginfo_ref ~is_head:false) (List.rev debuginfo_extra);
+    emit_debuginfo_ref ~is_head:true debuginfo_first;
     a.efa_16 (fd.fd_frame_size + flags);
     a.efa_16 (List.length fd.fd_live_offset);
+    a.efa_code_label fd.fd_lbl;
     List.iter a.efa_16 fd.fd_live_offset;
     begin match fd.fd_debuginfo with
-    | _ when flags = 0 ->
-      ()
-    | Dbg_other dbg ->
-      a.efa_align 4;
-      a.efa_label_rel (label_debuginfos false dbg) Int32.zero
-    | Dbg_raise dbg ->
-      a.efa_align 4;
-      a.efa_label_rel (label_debuginfos true dbg) Int32.zero
+    | Dbg_other _ | Dbg_raise _ -> ()
     | Dbg_alloc dbg ->
       assert (List.length dbg < 256);
       a.efa_8 (List.length dbg);
@@ -212,16 +229,7 @@ let emit_frames a =
                 alloc_words - 1 <= Config.max_young_wosize &&
                 Config.max_young_wosize <= 256);
         a.efa_8 (alloc_words - 2)) dbg;
-      if flags = 3 then begin
-        a.efa_align 4;
-        List.iter (fun Debuginfo.{alloc_dbg; _} ->
-          if Debuginfo.is_none alloc_dbg then
-            a.efa_32 Int32.zero
-          else
-            a.efa_label_rel (label_debuginfos false alloc_dbg) Int32.zero) dbg
-      end
-    end;
-    a.efa_align Arch.size_addr
+    end
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
@@ -270,6 +278,7 @@ let emit_frames a =
     | d :: rest -> emit rs d rest in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
+  a.efa_align Arch.size_addr;
   Label_table.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
   Hashtbl.iter emit_defname defnames;

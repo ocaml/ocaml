@@ -516,9 +516,10 @@ G(caml_system__code_end):
 
 OBJECT(caml_system__frametable)
         .quad   1               /* one descriptor */
-        .quad   L(caml_retaddr) /* return address into callback */
+        .word   0               /* no debuginfo */
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots */
+        .quad   L(caml_retaddr) /* return address into callback */
         .align  3
         END_OBJECT(caml_system__frametable)
 
