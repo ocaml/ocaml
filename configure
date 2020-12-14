@@ -694,6 +694,7 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
+rlwrap
 DIRECT_LD
 INSTALL_DATA
 INSTALL_SCRIPT
@@ -14172,6 +14173,53 @@ fi
 if test -z "$ASPP"; then :
   ASPP="$default_aspp"
 fi
+
+# Utilities
+# Extract the first word of "rlwrap", so it can be a program name with args.
+set dummy rlwrap; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_rlwrap+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$rlwrap"; then
+  ac_cv_prog_rlwrap="$rlwrap" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_rlwrap="rlwrap"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+rlwrap=$ac_cv_prog_rlwrap
+if test -n "$rlwrap"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $rlwrap" >&5
+$as_echo "$rlwrap" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+case $rlwrap,$system in #(
+  rlwrap,win*|rlwrap,mingw*) :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: rlwrap doesn't work with native win32 - disabling" >&5
+$as_echo "$as_me: rlwrap doesn't work with native win32 - disabling" >&6;}
+     rlwrap='' ;; #(
+  *) :
+     ;;
+esac
 
 # Checks for library functions
 
