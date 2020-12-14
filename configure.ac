@@ -1110,6 +1110,13 @@ AS_IF([test -z "$AS"], [AS="$default_as"])
 
 AS_IF([test -z "$ASPP"], [ASPP="$default_aspp"])
 
+# Utilities
+AC_CHECK_PROG([rlwrap],[rlwrap],[rlwrap])
+AS_CASE([$rlwrap,$system],
+  [rlwrap,win*|rlwrap,mingw*],
+    [AC_MSG_NOTICE([rlwrap doesn't work with native win32 - disabling])
+     rlwrap=''])
+
 # Checks for library functions
 
 ## Check the semantics of signal handlers
