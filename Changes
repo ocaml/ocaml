@@ -59,6 +59,10 @@ Working version
 - #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
   (Damien Doligez and Gabriel Scherer, report by David Allsopp)
 
+- #10072, #10085: Check that sizes and offsets in stack frame descriptors
+  do not overflow the 16-bit fields where they are stored.
+  (Xavier Leroy, report by Github user pveber, review by Gabriel Scherer)
+
 
 OCaml 4.12.0
 ------------
