@@ -732,7 +732,6 @@ let undo_change = function
   | Ckind  (r, v) -> r := v
   | Ccommu (r, v) -> r := v
   | Cuniv  (r, v) -> r := v
-(*  | Ctypeset (r, v) -> r := v *)
 
 type snapshot = changes ref * int
 let last_snapshot = s_ref 0
@@ -787,10 +786,6 @@ let set_kind rk k =
   log_change (Ckind (rk, !rk)); rk := Some k
 let set_commu rc c =
   log_change (Ccommu (rc, !rc)); rc := c
-(*
-let set_typeset rs s =
-  log_change (Ctypeset (rs, !rs)); rs := s
-*)
 
 let snapshot () =
   let old = !last_snapshot in
