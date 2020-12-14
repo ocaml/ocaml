@@ -811,14 +811,23 @@ The precedences must be listed from low to high.
 
 /* Entry points */
 
+/* Several start symbols are marked with AVOID so that they are not used by
+   [make generate-parse-errors]. The three start symbols that we keep are
+   [implementation], [use_file], and [toplevel_phrase]. The latter two are
+   of marginal importance; only [implementation] really matters, since most
+   states in the automaton are reachable from it. */
+
 %start implementation                   /* for implementation files */
 %type <Parsetree.structure> implementation
+/* BEGIN AVOID */
 %start interface                        /* for interface files */
 %type <Parsetree.signature> interface
+/* END AVOID */
 %start toplevel_phrase                  /* for interactive use */
 %type <Parsetree.toplevel_phrase> toplevel_phrase
 %start use_file                         /* for the #use directive */
 %type <Parsetree.toplevel_phrase list> use_file
+/* BEGIN AVOID */
 %start parse_core_type
 %type <Parsetree.core_type> parse_core_type
 %start parse_expression
@@ -837,6 +846,8 @@ The precedences must be listed from low to high.
 %type <Longident.t> parse_mod_longident
 %start parse_any_longident
 %type <Longident.t> parse_any_longident
+/* END AVOID */
+
 %%
 
 /* macros */
@@ -1106,11 +1117,13 @@ implementation:
     { $1 }
 ;
 
+/* BEGIN AVOID */
 (* An .mli file. *)
 interface:
   signature EOF
     { $1 }
 ;
+/* END AVOID */
 
 (* A toplevel phrase. *)
 toplevel_phrase:
@@ -1163,6 +1176,7 @@ use_file:
       { $1 }
 ;
 
+/* BEGIN AVOID */
 parse_core_type:
   core_type EOF
     { $1 }
@@ -1207,6 +1221,8 @@ parse_any_longident:
   any_longident EOF
     { $1 }
 ;
+/* END AVOID */
+
 (* -------------------------------------------------------------------------- *)
 
 (* Functor arguments appear in module expressions and module types. *)
@@ -3586,6 +3602,7 @@ class_longident:
    mk_longident(mod_longident,LIDENT) { $1 }
 ;
 
+/* BEGIN AVOID */
 /* For compiler-libs: parse all valid longidents and a little more:
    final identifiers which are value specific are accepted even when
    the path prefix is only valid for types: (e.g. F(X).(::)) */
@@ -3595,6 +3612,7 @@ any_longident:
     ) { $1 }
   | constr_extra_nonprefix_ident { Lident $1 }
 ;
+/* END AVOID */
 
 /* Toplevel directives */
 
