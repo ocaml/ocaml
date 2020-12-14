@@ -67,6 +67,7 @@ MENHIRBASICFLAGS := \
   --lalr \
   --explain \
   --dump \
+  --require-aliases \
   --strict \
   -lg 1 \
   -la 1 \
