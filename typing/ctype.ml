@@ -1234,7 +1234,8 @@ let rec copy ?partial ?keep_names scope ty =
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
-              Private_type_expr.set_desc more (Tsubst(newgenty(Ttuple[more';t])));
+              Private_type_expr.set_desc
+                more (Tsubst(newgenty(Ttuple[more';t])));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
@@ -1936,7 +1937,7 @@ let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
     let ty = repr ty in
-    if not_marked_node ty then 
+    if not_marked_node ty then
       if TypeSet.is_empty bound then
         (flip_mark_node ty; occur_desc bound ty)
       else try

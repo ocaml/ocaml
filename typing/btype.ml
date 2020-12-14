@@ -746,12 +746,12 @@ let link_type ty ty' =
   match desc, ty'.desc with
     Tvar name, Tvar name' ->
       begin match name, name' with
-      | Some _, None ->  log_type ty'; Private_type_expr.set_desc ty' (Tvar name)
-      | None, Some _ ->  ()
+      | Some _, None -> log_type ty'; Private_type_expr.set_desc ty' (Tvar name)
+      | None, Some _ -> ()
       | Some _, Some _ ->
           if ty.level < ty'.level then
             (log_type ty'; Private_type_expr.set_desc ty' (Tvar name))
-      | None, None   ->  ()
+      | None, None   -> ()
       end
   | _ -> ()
   (* ; assert (check_memorized_abbrevs ()) *)

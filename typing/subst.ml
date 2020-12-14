@@ -131,7 +131,8 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  Private_type_expr.create desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
+  Private_type_expr.create
+    desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
