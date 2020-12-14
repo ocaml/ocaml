@@ -99,3 +99,20 @@ Error: This expression has type t1 but an expression was expected of type t2
        but the expected method type was 'a. 'a * ('a * < m : 'a. 'b >) as 'b
        The universal variable 'a would escape its scope
 |}]
+
+(* #9739
+   Recursive occurence checks are only done on type variables.
+   However, we are not guaranteed to still have a type variable when printing.
+*)
+
+let rec foo () = [42]
+and bar () =
+  let x = foo () in
+  x |> List.fold_left max 0 x
+[%%expect {|
+Line 4, characters 7-29:
+4 |   x |> List.fold_left max 0 x
+           ^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type int but an expression was expected of type
+         int list -> 'a
+|}]

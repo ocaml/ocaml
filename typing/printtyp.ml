@@ -2091,8 +2091,19 @@ let explanation intro prev env = function
   | Trace.Obj o -> explain_object o
   | Trace.Rec_occur(x,y) ->
       reset_and_mark_loops y;
-      Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
-            marked_type_expr x marked_type_expr y)
+      begin match x.desc with
+      | Tvar _ | Tunivar _  ->
+          Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
+                 marked_type_expr x marked_type_expr y)
+      | _ ->
+          (* We had a delayed unification of the type variable with
+             a non-variable after the occur check. *)
+          Some ignore
+           (* There is no need to search further for an explanation, but
+              we don't want to print a message of the form:
+                {[ The type int occurs inside int list -> 'a |}
+           *)
+      end
 
 let mismatch intro env trace =
   Trace.explain trace (fun ~prev h -> explanation intro prev env h)
