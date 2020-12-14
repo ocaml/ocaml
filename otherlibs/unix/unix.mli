@@ -881,6 +881,9 @@ val open_process_args_in : string -> string array -> in_channel
    The standard output of the command is redirected to a pipe, which can be read
    via the returned input channel.
 
+   The program is looked up in the [PATH] (this behaviour changed in 4.12;
+   previously the program was interpreted relative to the current directory).
+
     @since 4.08.0 *)
 
 val open_process_args_out : string -> string array -> out_channel
