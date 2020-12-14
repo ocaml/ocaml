@@ -625,16 +625,14 @@ runtop:
 	$(MAKE) ocamlc
 	$(MAKE) otherlibraries
 	$(MAKE) ocaml
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) ||\
-	  $(EXTRAPATH) $(RUNTOP)
+	@$(EXTRAPATH) $(RLWRAP) $(RUNTOP)
 
 .PHONY: natruntop
 natruntop:
 	$(MAKE) core
 	$(MAKE) opt
 	$(MAKE) ocamlnat
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) ||\
-	  $(EXTRAPATH) $(NATRUNTOP)
+	@$(FLEXLINK_ENV) $(EXTRAPATH) $(RLWRAP) $(NATRUNTOP)
 
 # Native dynlink
 
