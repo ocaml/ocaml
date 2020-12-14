@@ -78,7 +78,6 @@ type change =
   | Ckind of field_kind option ref * field_kind option
   | Ccommu of commutable ref * commutable
   | Cuniv of type_expr option ref * type_expr option
-(*  | Ctypeset of TypeSet.t ref * TypeSet.t *)
 
 type changes =
     Change of change * changes ref
