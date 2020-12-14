@@ -26,6 +26,7 @@ open Cmm
 type error =
   | Assembler_error of string
   | Mismatched_for_pack of string option
+  | Asm_generation of string * Emitaux.error
 
 exception Error of error
 
@@ -86,9 +87,13 @@ let if_emit_do f x = if should_emit () then f x else ()
 let emit_begin_assembly = if_emit_do Emit.begin_assembly
 let emit_end_assembly = if_emit_do Emit.end_assembly
 let emit_data = if_emit_do Emit.data
-let emit_fundecl =
-  if_emit_do
-    (Profile.record ~accumulate:true "emit" Emit.fundecl)
+let emit_fundecl fd =
+  if should_emit() then begin
+    try
+      Profile.record ~accumulate:true "emit" Emit.fundecl fd
+    with Emitaux.Error e ->
+      raise (Error (Asm_generation(fd.Linear.fun_name, e)))
+  end
 
 let rec regalloc ~ppf_dump round fd =
   if round > 50 then
@@ -279,6 +284,10 @@ let report_error ppf = function
      fprintf ppf
        "This input file cannot be compiled %s: it was generated %s."
        (msg !Clflags.for_package) (msg saved)
+  | Asm_generation(fn, err) ->
+     fprintf ppf
+       "Error producing assembly code for function %s: %a"
+       fn Emitaux.report_error err
 
 let () =
   Location.register_error_of_exn

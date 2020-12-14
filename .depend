@@ -2076,6 +2076,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/linscan.cmi \
     asmcomp/linearize.cmi \
     file_formats/linear_format.cmi \
+    asmcomp/linear.cmi \
     lambda/lambda.cmi \
     asmcomp/interval.cmi \
     asmcomp/interf.cmi \
@@ -2117,6 +2118,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/linscan.cmx \
     asmcomp/linearize.cmx \
     file_formats/linear_format.cmx \
+    asmcomp/linear.cmx \
     lambda/lambda.cmx \
     asmcomp/interval.cmx \
     asmcomp/interf.cmx \
@@ -2139,6 +2141,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : \
     lambda/lambda.cmi \
+    asmcomp/emitaux.cmi \
     asmcomp/cmm.cmi \
     middle_end/clambda.cmi \
     middle_end/backend_intf.cmi
