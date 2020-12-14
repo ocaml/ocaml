@@ -247,7 +247,6 @@ val set_row_field: row_field option ref -> row_field -> unit
 val set_univar: type_expr option ref -> type_expr -> unit
 val set_kind: field_kind option ref -> field_kind -> unit
 val set_commu: commutable ref -> commutable -> unit
-(* val set_typeset: TypeSet.t ref -> TypeSet.t -> unit *)
         (* Set references, logging the old value *)
 
 (**** Forward declarations ****)
