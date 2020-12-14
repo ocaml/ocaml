@@ -177,7 +177,8 @@ let set_fixed_row env loc p decl =
     match tm.desc with
       Tvariant row ->
         let row = Btype.row_repr row in
-        tm.desc <- Tvariant {row with row_fixed = Some Fixed_private};
+        Btype.set_type_desc tm
+          (Tvariant {row with row_fixed = Some Fixed_private});
         if Btype.static_row row then Btype.newgenty Tnil
         else row.row_more
     | Tobject (ty, _) ->
@@ -187,7 +188,7 @@ let set_fixed_row env loc p decl =
   in
   if not (Btype.is_Tvar rv) then
     raise (Error (loc, Bad_fixed_type "has no row variable"));
-  rv.desc <- Tconstr (p, decl.type_params, ref Mnil)
+  Btype.set_type_desc rv (Tconstr (p, decl.type_params, ref Mnil))
 
 (* Translate one type declaration *)
 
@@ -987,9 +988,10 @@ let transl_extension_constructor ~scope env type_path type_params
             Ctype.free_variables (Btype.newgenty (Ttuple args))
           in
             List.iter
-              (function {desc = Tvar (Some "_")} as ty ->
-                          if List.memq ty vars then ty.desc <- Tvar None
-                        | _ -> ())
+              (function {desc = Tvar (Some "_")} as ty
+                  when List.memq ty vars ->
+                    Btype.set_type_desc ty (Tvar None)
+                | _ -> ())
               typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)
