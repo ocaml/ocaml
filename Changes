@@ -673,6 +673,11 @@ OCaml 4.12.0
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
 
+- #9739, #9747: Avoid calling type variables, types that are not variables in
+  recursive occurence error messages
+  (for instance, "Type variable int occurs inside int list")
+  (Florian Angeletti, report by Stephen Dolan, review by Armaël Guéneau)
+
 - #9759, #9767: Spurious GADT ambiguity without -principal
   (Jacques Garrigue, report by Thomas Refis,
    review by Thomas Refis and Gabriel Scherer)
