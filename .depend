@@ -6498,20 +6498,24 @@ toplevel/native/toploop.cmi : \
     typing/env.cmi
 toplevel/native/topmain.cmo : \
     toplevel/native/toploop.cmi \
-    toplevel/topdirs.cmi \
+    toplevel/topinit.cmi \
+    toplevel/topcommon.cmi \
     utils/misc.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
     driver/compmisc.cmi \
+    driver/compenv.cmi \
     utils/clflags.cmi \
     toplevel/native/topmain.cmi
 toplevel/native/topmain.cmx : \
     toplevel/native/toploop.cmx \
-    toplevel/topdirs.cmx \
+    toplevel/topinit.cmx \
+    toplevel/topcommon.cmx \
     utils/misc.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
     driver/compmisc.cmx \
+    driver/compenv.cmx \
     utils/clflags.cmx \
     toplevel/native/topmain.cmi
 toplevel/native/topmain.cmi :
