@@ -345,8 +345,8 @@ compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMI) $(TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
-compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
+compilerlibs/ocamltoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ -I toplevel/native $(OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamlopttoplevel.cmxa \
-	  compilerlibs/ocamlopttoplevel.a compilerlibs/ocamlopttoplevel.lib
+	rm -f compilerlibs/ocamltoplevel.cmxa \
+	  compilerlibs/ocamltoplevel.a compilerlibs/ocamltoplevel.lib

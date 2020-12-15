@@ -1012,7 +1012,7 @@ endif
 ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     otherlibs/dynlink/dynlink.cmxa \
-    compilerlibs/ocamlopttoplevel.cmxa \
+    compilerlibs/ocamltoplevel.cmxa \
     $(TOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
@@ -1023,7 +1023,7 @@ $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
 
-toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+toplevel/native/toploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 

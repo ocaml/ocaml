@@ -36,7 +36,7 @@ let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
   match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
   | None ->
-    fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
+    fatal_error ("Toploop.global_symbol " ^ (Ident.unique_name id))
   | Some obj -> obj
 
 let need_symbol sym =
@@ -50,7 +50,7 @@ let dll_run dll entry =
     | Result r ->
         match Obj.magic r with
           | Ok x -> Result x
-          | Err s -> fatal_error ("Opttoploop.dll_run " ^ s)
+          | Err s -> fatal_error ("Toploop.dll_run " ^ s)
 
 
 type directive_fun =
