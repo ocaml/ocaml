@@ -36,6 +36,8 @@ val split_last: 'a list -> 'a list * 'a
 val samelist: ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
         (* Like [List.for_all2] but returns [false] if the two
            lists have different length. *)
+val list_iteri: (int -> 'a -> unit) -> 'a list -> unit
+        (* Like [List.iter] but provides the index as argument. *)
 
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
@@ -165,3 +167,12 @@ val cut_at : string -> char -> string * string
    Raise [Not_found] if the character does not appear in the string
    @since 4.01
 *)
+
+(* begin easytype *)
+(* Helper function to break a string that represents a type into 
+   multiple lines of fixed width, indenting lines after the first one. 
+   The function returns a list of strings. 
+   This code is used to report type errors related to applications
+   in the form of a table. *)
+val string_break_into_lines : int -> int -> string -> string list
+(* end easytype *)

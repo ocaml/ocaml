@@ -1,0 +1,82 @@
+
+*** Improved type error branch ****   (Arthur Chargueraud, 2014/12)
+
+
+Argumentation:
+http://www.chargueraud.org/research/2014/ocaml_errors/ocaml_errors.pdf
+
+Patch:
+https://github.com/charguer/ocaml/compare/ocaml:4.02...improved-errors
+
+Pull request
+https://github.com/ocaml/ocaml/pull/102/files#r21313335
+
+
+Overview:
+
+- New option "-new-type-errors" (automatically activates "-strict-sequence")
+
+- Modified the behavior of the type-checking algorithm as follow: 
+  (1) typecheck the code using the original algorithm
+  (2) if an error occurs, typecheck the top-level definition that
+      triggered the error using a new algorithm, that may (or may not)
+      produce improved error messages.
+
+- Types in error messages are separated from the text by new lines.
+
+Implementation notes:
+
+- CType.new_type_errors is a reference used to know whether we have already
+  switched to the new algorithm or not.
+
+- Function get_unification_error_easytype implements a better error reporting 
+  message construction, with more components to the error messages.
+
+- For detecting missing "rec" keywords, the original typechecking algorithm
+  is modified in such a way as to add "ghost" bindings in the environment
+  for variables that are bound non-recursively. The name of ghost variables
+  is the name of the variable prefixed by a special string (a triple star).
+
+- Function application is the most challenging modification. The new algorithm
+  type-checks and generalized the arguments one by one.
+  Functions extract_label_aux_easytype and type_applications_easytype
+  track more type information than in the original type-checker. This part
+  is not so pretty, but it could be simplified a lot the day we are ready
+  to abandon the old error messages (or refactor its code a little bit).
+
+- Pattern matching is modified, but more locally. Also, basic language 
+  constructs are processed more carefully to produce better messages,
+  in the new algorithm.
+
+
+Other generic improvements:
+
+- Many test files have been added to: testsuite/tests/typing-core-bugs/.
+
+- An abbreviation "expr_pairs" in introduced in "type.ml" to factorize lot
+  of copy-paste of "(type_expr * type_expr) list".
+
+
+Remaining issues:
+
+- If a top-level definition contains a type error, and this definition
+  involves GADTs (in application or in pattern matching constructs), then
+  the new algorithm will fail to report a useful error message.
+  (The algorithm basically ignores the existence of GADTs).
+
+- In rare occasions, the line returns get misplaced in error messages.
+
+- In testsuite/tests/typing-core-bugs/, some tests are marked as "pass"
+  even though they shoud be marked as "fail". Why?
+
+
+Open questions:
+
+- If a file contains only the code "print_newline", without parentheses,
+  should this file compile or not in mode "strict-sequence"?
+
+- Remark: there is an unfortunate duplication between "has_explanation" and
+  "explanation". I suggest using only "explaination", and have it return a
+  value of type "(unit -> unit) option", where the Some case carries the
+  message pretty-printing operation.
+

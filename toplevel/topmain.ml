@@ -62,6 +62,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let clear r () = r := false
 
   let _absname = set Location.absname
+  let _easy_type_errors () = easy_type_errors := true; strict_sequence := true
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs

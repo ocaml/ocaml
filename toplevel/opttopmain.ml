@@ -63,6 +63,7 @@ module Options = Main_args.Make_opttop_options (struct
 
   let _absname = set Location.absname
   let _compact = clear optimize_for_speed
+  let _easy_type_errors () = easy_type_errors := true; strict_sequence := true
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs

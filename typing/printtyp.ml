@@ -1268,7 +1268,7 @@ let type_path_expansion tp ppf tp' =
 let rec trace fst txt ppf = function
   | (t1, t1') :: (t2, t2') :: rem ->
       if not fst then fprintf ppf "@,";
-      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
+      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a.@] %a"
        (type_expansion t1) t1' txt (type_expansion t2) t2'
        (trace false txt) rem
   | _ -> ()
@@ -1321,7 +1321,22 @@ let print_tags ppf fields =
 
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
-    Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
+  (* special case handled specially by easy_type_errors *)
+  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
+     when (* question: below, should we generalize "ty1.desc" into "(expand_head env ty1).desc"? *) 
+       (* !use_easy_type_errors && *) (* Note: activated by default *)
+       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
+     -> true
+  (* special case handled specially by easy_type_errors *)
+  | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
+     (* note: we could restrict the application of this pattern to the case 
+        where ty1 and ty2 can be unified; however, this would need to be tested
+        without actually performing any side-effects on the two types. *)
+     when (* !use_easy_type_errors && *) (* Note: activated by default *)
+          (match p with Pdot(Pident id, "ref", pos) 
+           when Ident.same id ident_pervasive -> true | _ -> false) 
+     -> true
+  | Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
   | Tnil, Tconstr _ | Tconstr _, Tnil
   | _, Tvar _ | Tvar _, _
   | Tvariant _, Tvariant _ -> true
@@ -1340,6 +1355,17 @@ let rec mismatch unif = function
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
+  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
+     when (* !use_easy_type_errors && *) (* Note: activated by default *)
+       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
+      fprintf ppf
+        "@,@[You probably forgot to provide `()' as argument somewhere.@]"
+  | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
+     when (* !use_easy_type_errors && *) (* Note: activated by default *)
+          (match p with Pdot(Pident id, "ref", pos) 
+           when Ident.same id ident_pervasive -> true | _ -> false) ->
+      fprintf ppf
+        "@,@[You probably forgot a `!' or a `ref' somewhere.@]"
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       fprintf ppf "@,Self type cannot escape its class"
   | Tconstr (p, tl, _), Tvar _
@@ -1443,12 +1469,21 @@ let unification_error unif tr txt1 ppf txt2 =
       and t2, t2' = may_prepare_expansion (tr = []) t2 in
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
-      fprintf ppf
-        "@[<v>\
-          @[%t@;<1 2>%a@ \
-            %t@;<1 2>%a\
-          @]%a%t\
-         @]"
+      let show = 
+        if not !use_easy_type_errors then 
+            Format.fprintf ppf "@[<v>\
+            @[%t@;<1 2>%a@ \
+              %t@;<1 2>%a.\
+            @]%a%t\
+           @]"
+         else 
+            (* Uses newlines to isolate types from the text *)
+            Format.fprintf ppf 
+             "%t@\n@[<b 2>   %a@]@\n\
+             %t@\n@[<b 2>   %a.@]@\n\
+             %a%t"
+         in
+       show
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
         (trace false "is not compatible with type") tr
@@ -1461,7 +1496,41 @@ let unification_error unif tr txt1 ppf txt2 =
 let report_unification_error ppf env ?(unif=true)
     tr txt1 txt2 =
   wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
-;;
+
+(* begin easytype *)
+
+type easytype_piece = formatter -> unit -> unit
+type easytype_pieces = (easytype_piece * easytype_piece * easytype_piece * easytype_piece)
+
+let get_unification_error_easytype env ?(unif=true) tr =
+  (* Remark: some of the code below has been copied from the 
+     functions "unification_error" and "report_unification_error". *)
+  wrap_printing_env env (fun () ->
+    reset ();
+    trace_same_names tr;
+    let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
+    let mis = mismatch unif tr in
+    match tr with
+    | [] | _ :: [] -> assert false
+    | t1 :: t2 :: tr ->
+      try
+        let tr = filter_trace (mis = None) tr in
+        let t1, t1' = may_prepare_expansion (tr = []) t1
+        and t2, t2' = may_prepare_expansion (tr = []) t2 in
+        print_labels := not !Clflags.classic;
+        let tr = List.map prepare_expansion tr in
+        let m1 = fun ppf () -> type_expansion t1 ppf t1' in
+        let m2 = fun ppf () -> type_expansion t2 ppf t2' in
+        let m3 = fun ppf () -> ((trace false "is not compatible with type") ppf tr) in
+        let m4 = fun ppf () -> fprintf ppf "%t" (explanation unif mis) in
+        print_labels := true;
+        (m1,m2,m3,m4)
+      with exn ->
+        print_labels := true;
+        raise exn
+  )
+
+(* end easytype *)
 
 let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;
@@ -1510,3 +1579,5 @@ let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
            @]"
           txt2 type_path_list tpl
           txt3 (type_path_expansion tp0) tp0')
+
+

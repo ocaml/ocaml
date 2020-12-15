@@ -563,6 +563,29 @@ let rec extract_label_aux hd l = function
 
 let extract_label l ls = extract_label_aux [] l ls
 
+(* begin easytype *)
+
+let uncons_as_option = function
+   | [] -> (None, [])
+   | x::l -> (Some x,l)
+
+let rec extract_label_and_expr_aux hd hd_tys l ls tys =
+  match ls with
+    [] -> raise Not_found
+  | (l',t as p) :: ls ->
+      let (ty_opt,tys) = uncons_as_option tys in
+      if label_name l' = l then (l', t, ty_opt, List.rev hd, List.rev hd_tys, ls, tys)
+      else 
+         let hd_tys' = match ty_opt with  
+            | None -> hd_tys
+            | Some ty -> ty::hd_tys
+            in
+         extract_label_and_expr_aux (p::hd) hd_tys' l ls tys
+
+let extract_label_and_expr l ls tys = 
+  extract_label_and_expr_aux [] [] l ls tys
+
+(* end easytype *)
 
                   (**********************************)
                   (*  Utilities for backtracking    *)

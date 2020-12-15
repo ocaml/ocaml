@@ -98,7 +98,8 @@ module List = struct
     let _ =
       fold_left begin fun first elt ->
         if not first then fprintf f ";@ ";
-        pp_elt f elt;
+        (* Note: ideally, the expression below should be of type unit *)
+        ignore (pp_elt f elt);
         false
       end true ls in
     fprintf f "@ ]@]"

@@ -97,3 +97,4 @@ val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+val easy_type_errors : bool ref
