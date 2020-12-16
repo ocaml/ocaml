@@ -22,9 +22,10 @@ let fork () =
       alloc_string ();
       print_string "passed";
       print_newline ();
+      Thread.delay 1.0;
       exit 0
   | pid ->
-      Thread.delay 1.5;
+      Thread.delay 4.0;
       exit 0
 
 let main () =
