@@ -15,7 +15,7 @@
 
 /* The parser definition */
 
-/* The commands [make list-errors] and [make generate-parse-errors]
+/* The commands [make list-parse-errors] and [make generate-parse-errors]
    run Menhir on a modified copy of the parser where every block of
    text comprised between the markers [BEGIN AVOID] and -----------
    [END AVOID] has been removed. This file should be formatted in
@@ -2512,7 +2512,7 @@ let_binding_body:
 /* BEGIN AVOID */
   | val_ident %prec below_HASH
       { (mkpatvar ~loc:$loc $1, mkexpvar ~loc:$loc $1, true) }
-  (* The production that allows puns is marked so that [make list-errors]
+  (* The production that allows puns is marked so that [make list-parse-errors]
      does not attempt to exploit it. That would be problematic because it
      would then generate bindings such as [let x], which are rejected by the
      auxiliary function [addlb] via a call to [syntax_error]. *)

@@ -181,7 +181,7 @@ interpret-menhir:
 	    --interpret-show-cst \
 	    --trace \
 
-## list-errors
+## list-parse-errors
 
 # This rule runs Menhir's reachability analysis, which produces a list of all
 # states where a syntax error can be detected (and a corresponding list of of
@@ -197,8 +197,8 @@ interpret-menhir:
 # grammar to produce the sentences, and once on the original grammar to update
 # the auto-comments (which would otherwise be incorrect).
 
-.PHONY: list-errors
-list-errors:
+.PHONY: list-parse-errors
+list-parse-errors:
 	@ tmp=`mktemp -d /tmp/parser.XXXX` && \
 	  sed -e '/BEGIN AVOID/,/END AVOID/d' \
 	    parsing/parser.mly > $$tmp/parser.mly && \
@@ -214,7 +214,7 @@ list-errors:
 
 ## generate-parse-errors
 
-# This rule assumes that [make list-errors] has been run first.
+# This rule assumes that [make list-parse-errors] has been run first.
 
 # This rule turns the error sentences stored in parsing/parser.auto.messages
 # into one .ml file.
