@@ -45,11 +45,6 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
-utils/diffing.cmo : \
-    utils/diffing.cmi
-utils/diffing.cmx : \
-    utils/diffing.cmi
-utils/diffing.cmi :
 utils/config.cmo : \
     utils/config.cmi
 utils/config.cmx : \
@@ -63,6 +58,11 @@ utils/consistbl.cmx : \
     utils/consistbl.cmi
 utils/consistbl.cmi : \
     utils/misc.cmi
+utils/diffing.cmo : \
+    utils/diffing.cmi
+utils/diffing.cmx : \
+    utils/diffing.cmi
+utils/diffing.cmi :
 utils/domainstate.cmo : \
     utils/domainstate.cmi
 utils/domainstate.cmx : \
@@ -719,8 +719,8 @@ typing/includemod.cmo : \
     typing/includeclass.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    typing/ctype.cmi \
     utils/diffing.cmi \
+    typing/ctype.cmi \
     file_formats/cmt_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -745,8 +745,8 @@ typing/includemod.cmx : \
     typing/includeclass.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    typing/ctype.cmx \
     utils/diffing.cmx \
+    typing/ctype.cmx \
     file_formats/cmt_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
