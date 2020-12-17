@@ -40,11 +40,14 @@ let maybe_skip_phrase lexbuf =
   | Parser.SEMISEMI | Parser.EOF -> ()
   | _ -> skip_phrase lexbuf
 
-let wrap parsing_fun lexbuf =
+type 'a parser =
+  (Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> 'a
+
+let wrap (parser : 'a parser) lexbuf : 'a =
   try
     Docstrings.init ();
     Lexer.init ();
-    let ast = parsing_fun lexbuf in
+    let ast = parser token lexbuf in
     Parsing.clear_parser();
     Docstrings.warn_bad_docstrings ();
     last_token := Parser.EOF;
@@ -64,13 +67,13 @@ let wrap parsing_fun lexbuf =
       then maybe_skip_phrase lexbuf;
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
 
-(* The parsing loop is implemented by the function [I.loop]. As of 20201216,
-   this function can be instructed to use a simplified strategy for handling
-   errors. When a syntax error occurs, the current token is replaced with an
-   [error] token. The parser then continues shifting and reducing, as far as
-   possible. After (possibly) shifting the [error] token, though, the parser
-   remains in error-handling mode, and does not request the next token, so the
-   current token remains [error].
+(* We pass [--strategy simplified] to Menhir, which means that we wish to use
+   its "simplified" strategy for handling errors. When a syntax error occurs,
+   the current token is replaced with an [error] token. The parser then
+   continues shifting and reducing, as far as possible. After (possibly)
+   shifting the [error] token, though, the parser remains in error-handling
+   mode, and does not request the next token, so the current token remains
+   [error].
 
    In OCaml's grammar, the [error] token always appears at the end of a
    production, and this production always raises an exception. In such
@@ -85,31 +88,20 @@ let wrap parsing_fun lexbuf =
    In either case, the parser will not attempt to read one token past
    the syntax error. *)
 
-let wrap_menhir entry lexbuf =
-  let loop lexbuf =
-    let module I = Parser.MenhirInterpreter in
-    let strategy = `Simplified
-    and supplier = I.lexer_lexbuf_to_supplier token lexbuf
-    and initial = entry lexbuf.Lexing.lex_curr_p in
-    I.loop ~strategy supplier initial
-  in
-  wrap loop lexbuf
+let implementation = wrap Parser.implementation
+and interface = wrap Parser.interface
+and toplevel_phrase = wrap Parser.toplevel_phrase
+and use_file = wrap Parser.use_file
+and core_type = wrap Parser.parse_core_type
+and expression = wrap Parser.parse_expression
+and pattern = wrap Parser.parse_pattern
 
-let implementation = wrap_menhir Parser.Incremental.implementation
-and interface = wrap_menhir Parser.Incremental.interface
-and toplevel_phrase = wrap_menhir Parser.Incremental.toplevel_phrase
-and use_file = wrap_menhir Parser.Incremental.use_file
-and core_type = wrap_menhir Parser.Incremental.parse_core_type
-and expression = wrap_menhir Parser.Incremental.parse_expression
-and pattern = wrap_menhir Parser.Incremental.parse_pattern
-
-let longident = wrap_menhir Parser.Incremental.parse_any_longident
-let val_ident = wrap_menhir Parser.Incremental.parse_val_longident
-let constr_ident= wrap_menhir Parser.Incremental.parse_constr_longident
-let extended_module_path =
-  wrap_menhir Parser.Incremental.parse_mod_ext_longident
-let simple_module_path = wrap_menhir Parser.Incremental.parse_mod_longident
-let type_ident = wrap_menhir Parser.Incremental.parse_mty_longident
+let longident = wrap Parser.parse_any_longident
+let val_ident = wrap Parser.parse_val_longident
+let constr_ident= wrap Parser.parse_constr_longident
+let extended_module_path = wrap Parser.parse_mod_ext_longident
+let simple_module_path = wrap Parser.parse_mod_longident
+let type_ident = wrap Parser.parse_mty_longident
 
 (* Error reporting for Syntaxerr *)
 (* The code has been moved here so that one can reuse Pprintast.tyvar *)

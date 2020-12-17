@@ -46703,55 +46703,55 @@ end
 
 let use_file =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1810 lexer lexbuf) : (Parsetree.toplevel_phrase list))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1810 lexer lexbuf) : (Parsetree.toplevel_phrase list))
 
 and toplevel_phrase =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1790 lexer lexbuf) : (Parsetree.toplevel_phrase))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1790 lexer lexbuf) : (Parsetree.toplevel_phrase))
 
 and parse_val_longident =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1784 lexer lexbuf) : (Longident.t))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1784 lexer lexbuf) : (Longident.t))
 
 and parse_pattern =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1780 lexer lexbuf) : (Parsetree.pattern))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1780 lexer lexbuf) : (Parsetree.pattern))
 
 and parse_mty_longident =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1776 lexer lexbuf) : (Longident.t))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1776 lexer lexbuf) : (Longident.t))
 
 and parse_mod_longident =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1772 lexer lexbuf) : (Longident.t))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1772 lexer lexbuf) : (Longident.t))
 
 and parse_mod_ext_longident =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1768 lexer lexbuf) : (Longident.t))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1768 lexer lexbuf) : (Longident.t))
 
 and parse_expression =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1764 lexer lexbuf) : (Parsetree.expression))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1764 lexer lexbuf) : (Parsetree.expression))
 
 and parse_core_type =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1760 lexer lexbuf) : (Parsetree.core_type))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1760 lexer lexbuf) : (Parsetree.core_type))
 
 and parse_constr_longident =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1756 lexer lexbuf) : (Longident.t))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1756 lexer lexbuf) : (Longident.t))
 
 and parse_any_longident =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1738 lexer lexbuf) : (Longident.t))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1738 lexer lexbuf) : (Longident.t))
 
 and interface =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 1734 lexer lexbuf) : (Parsetree.signature))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 1734 lexer lexbuf) : (Parsetree.signature))
 
 and implementation =
   fun lexer lexbuf ->
-    (Obj.magic (MenhirInterpreter.entry `Legacy 0 lexer lexbuf) : (Parsetree.structure))
+    (Obj.magic (MenhirInterpreter.entry `Simplified 0 lexer lexbuf) : (Parsetree.structure))
 
 module Incremental = struct
   
