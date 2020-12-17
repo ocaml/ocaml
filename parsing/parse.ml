@@ -64,54 +64,36 @@ let wrap parsing_fun lexbuf =
       then maybe_skip_phrase lexbuf;
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
 
-let rec loop lexbuf in_error checkpoint =
-  let module I = Parser.MenhirInterpreter in
-  match checkpoint with
-  | I.InputNeeded _env ->
-      let triple =
-        if in_error then
-          (* The parser detected an error.
-             At this point we don't want to consume input anymore. In the
-             top-level, it would translate into waiting for the user to type
-             something, just to raise an error at some earlier position, rather
-             than just raising the error immediately.
+(* The parsing loop is implemented by the function [I.loop]. As of 20201216,
+   this function can be instructed to use a simplified strategy for handling
+   errors. When a syntax error occurs, the current token is replaced with an
+   [error] token. The parser then continues shifting and reducing, as far as
+   possible. After (possibly) shifting the [error] token, though, the parser
+   remains in error-handling mode, and does not request the next token, so the
+   current token remains [error].
 
-             This worked before with yacc because, AFAICT (@let-def):
-             - yacc eagerly reduces "default reduction" (when the next action
-               is to reduce the same production no matter what token is read,
-               yacc reduces it immediately rather than waiting for that token
-               to be read)
-             - error productions in OCaml grammar are always in a position that
-               allows default reduction ("error" symbol is the last producer,
-               and the lookahead token will not be used to disambiguate between
-               two possible error rules)
-             This solution is fragile because it relies on an optimization
-             (default reduction), that changes the semantics of the parser the
-             way it is implemented in Yacc (an optimization that changes
-             semantics? hmmmm).
+   In OCaml's grammar, the [error] token always appears at the end of a
+   production, and this production always raises an exception. In such
+   a situation, the strategy described above means that:
 
-             Rather than relying on implementation details of the parser, when
-             an error is detected in this loop we stop looking at the input and
-             fill the parser with EOF tokens.
-             The skip_phrase logic will resynchronize the input stream by
-             looking for the next ';;'.  *)
-          (Parser.EOF, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
-        else
-          let token = token lexbuf in
-          (token, lexbuf.Lexing.lex_start_p, lexbuf.Lexing.lex_curr_p)
-      in
-      let checkpoint = I.offer checkpoint triple in
-      loop lexbuf in_error checkpoint
-  | I.Shifting _ | I.AboutToReduce _ ->
-      loop lexbuf in_error (I.resume checkpoint)
-  | I.Accepted v -> v
-  | I.Rejected -> raise Parser.Error
-  | I.HandlingError _ ->
-      loop lexbuf true (I.resume checkpoint)
+   - either the parser will not be able to shift [error],
+     and will raise [Parser.Error];
+
+   - or it will be able to shift [error] and will then reduce
+     a production whose semantic action raises an exception.
+
+   In either case, the parser will not attempt to read one token past
+   the syntax error. *)
 
 let wrap_menhir entry lexbuf =
-  let initial = entry lexbuf.Lexing.lex_curr_p in
-  wrap (fun lexbuf -> loop lexbuf false initial) lexbuf
+  let loop lexbuf =
+    let module I = Parser.MenhirInterpreter in
+    let strategy = `Simplified
+    and supplier = I.lexer_lexbuf_to_supplier token lexbuf
+    and initial = entry lexbuf.Lexing.lex_curr_p in
+    I.loop ~strategy supplier initial
+  in
+  wrap loop lexbuf
 
 let implementation = wrap_menhir Parser.Incremental.implementation
 and interface = wrap_menhir Parser.Incremental.interface
