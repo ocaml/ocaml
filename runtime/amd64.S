@@ -191,7 +191,7 @@
 /* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r10 and %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
         movq    Caml_state(exn_handler), %rsp; \
-        CFI_DEF_CFA_OFFSET(16) \
+        CFI_DEF_CFA_OFFSET(16); \
         POP_EXN_HANDLER
 
 /* Switch between OCaml stacks. Clobbers %r12.
@@ -205,7 +205,7 @@
     /* switch stacks */ \
         movq    %r10, Caml_state(current_stack); \
         movq    Stack_sp(%r10), %rsp; \
-        CFI_DEF_CFA_OFFSET(8) \
+        CFI_DEF_CFA_OFFSET(8); \
     /* restore exn_handler for new stack */ \
         movq    Stack_exception(%r10), %r12; \
         movq    %r12, Caml_state(exn_handler)
