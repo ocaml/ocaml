@@ -287,9 +287,10 @@ static void caml_thread_reinitialize(void)
   // and acquired.
   caml_reset_domain_lock();
   caml_acquire_domain_lock();
-  // main_lock needs to be initialized and released.
+  // master_lock needs to be initialized again.
+  // this process will also be the effective owner of the lock.
+  // so there is no need to run st_masterlock_acquire (busy = 1)
   st_masterlock_init(&Thread_main_lock);
-  st_masterlock_release(&Thread_main_lock);
 }
 
 CAMLprim value caml_thread_initialize(value unit);
