@@ -111,6 +111,7 @@ testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
 testsuite/tests/win-unicode/*.ml                        typo.utf8
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
+testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
