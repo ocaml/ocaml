@@ -2765,11 +2765,13 @@ programs_man_section=1
 libraries_man_section=3
 
 # Command to build executalbes
-# In general this command is supposed to use the CFLAGs-related variables
-# ($OC_CFLAGS and $CFLAGS), but at the moment they are not taken into
-# account on Windows, because flexlink, which is used to build
-# executables on this platform, can not handle them.
-mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS)"
+# In general this command is supposed to use the CFLAGs- and LDFLAGS-
+# related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
+# flags, CFLAGS and LDFLAGS for generic flags chosen by the user), but
+# at the moment they are not taken into account on Windows, because
+# flexlink, which is used to build executables on this platform, can
+# not handle them.
+mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS) \$(LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
 mkexedebugflag="-g"
@@ -13624,8 +13626,9 @@ natdynlinkopts=""
 if test x"$enable_shared" != "xno"; then :
   case $host in #(
   *-apple-darwin*) :
-    mksharedlib="$CC -shared -flat_namespace -undefined suppress \
-                   -Wl,-no_compact_unwind"
+    mksharedlib="$CC -shared \
+                   -flat_namespace -undefined suppress -Wl,-no_compact_unwind \
+                   \$(LDFLAGS)"
       shared_libraries_supported=true ;; #(
   *-*-mingw32) :
     mksharedlib='$(FLEXLINK)'
@@ -13647,7 +13650,7 @@ fi
   powerpc-ibm-aix*) :
     case $CC in #(
   xlc*) :
-    mksharedlib="$CC -qmkshrobj -G"
+    mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true ;; #(
   *) :
      ;;
@@ -13657,9 +13660,9 @@ esac ;; #(
     sharedlib_cflags="-fPIC"
        case $CC,$host in #(
   gcc*,powerpc-*-linux*) :
-    mksharedlib="$CC -shared -mbss-plt" ;; #(
+    mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)" ;; #(
   *) :
-    mksharedlib="$CC -shared" ;;
+    mksharedlib="$CC -shared \$(LDFLAGS)" ;;
 esac
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
