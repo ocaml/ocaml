@@ -259,7 +259,7 @@ type local_attribute =
 
 type function_kind = Curried | Tupled
 
-type let_kind = Strict | Alias | StrictOpt | Variable
+type let_kind = Strict | Alias | StrictOpt
 
 type meth_kind = Self | Public | Cached
 
@@ -289,6 +289,7 @@ type lambda =
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
+  | Lmutlet of value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * scoped_location
   | Lswitch of lambda * lambda_switch * scoped_location
@@ -407,6 +408,10 @@ let make_key e =
         let ex = tr_rec env ex in
         let y = make_key x in
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
+    | Lmutlet (k,x,ex,e) ->
+        let ex = tr_rec env ex in
+        let y = make_key x in
+        Lmutlet (k,y,ex,tr_rec (Ident.add x (Lmutvar y) env) e)
     | Lprim (p,es,_) ->
         Lprim (p,tr_recs env es, Loc_unknown)
     | Lswitch (e,sw,loc) ->
@@ -487,7 +492,8 @@ let shallow_iter ~tail ~non_tail:f = function
       f fn; List.iter f args
   | Lfunction{body} ->
       f body
-  | Llet(_, _k, _id, arg, body) ->
+  | Llet(_, _k, _id, arg, body)
+  | Lmutlet(_k, _id, arg, body) ->
       f arg; tail body
   | Lletrec(decl, body) ->
       tail body;
@@ -544,7 +550,8 @@ let rec free_variables = function
   | Lfunction{body; params} ->
       Ident.Set.diff (free_variables body)
         (Ident.Set.of_list (List.map fst params))
-  | Llet(_str, _k, id, arg, body) ->
+  | Llet(_, _k, id, arg, body)
+  | Lmutlet(_k, id, arg, body) ->
       Ident.Set.union
         (free_variables arg)
         (Ident.Set.remove id (free_variables body))
@@ -735,6 +742,9 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
     | Llet(str, k, id, arg, body) ->
         let id, l' = bind id l in
         Llet(str, k, id, subst s l arg, subst s l' body)
+    | Lmutlet(k, id, arg, body) ->
+        let id, l' = bind id l in
+        Lmutlet(k, id, subst s l arg, subst s l' body)
     | Lletrec(decl, body) ->
         let decl, l' = bind_many decl l in
         Lletrec(List.map (subst_decl s l') decl, subst s l' body)
@@ -844,6 +854,8 @@ let shallow_map f = function
       Lfunction { kind; params; return; body = f body; attr; loc; }
   | Llet (str, k, v, e1, e2) ->
       Llet (str, k, v, f e1, f e2)
+  | Lmutlet (k, v, e1, e2) ->
+      Lmutlet (k, v, f e1, f e2)
   | Lletrec (idel, e2) ->
       Lletrec (List.map (fun (v, e) -> (v, f e)) idel, f e2)
   | Lprim (p, el, loc) ->

@@ -234,7 +234,7 @@ type local_attribute =
 
 type function_kind = Curried | Tupled
 
-type let_kind = Strict | Alias | StrictOpt | Variable
+type let_kind = Strict | Alias | StrictOpt
 (* Meaning of kinds for let x = e in e':
     Strict: e may have side-effects; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
@@ -243,7 +243,6 @@ type let_kind = Strict | Alias | StrictOpt | Variable
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
-    Variable: the variable x is assigned later in e'
  *)
 
 type meth_kind = Self | Public | Cached
@@ -269,6 +268,7 @@ type lambda =
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
+  | Lmutlet of value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * scoped_location
   | Lswitch of lambda * lambda_switch * scoped_location

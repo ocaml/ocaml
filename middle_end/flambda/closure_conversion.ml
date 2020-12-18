@@ -192,7 +192,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     let body = close t (Env.add_var env id var) body in
     Flambda.create_let var defining_expr body
-  | Llet (Variable, block_kind, id, defining_expr, body) ->
+  | Lmutlet (block_kind, id, defining_expr, body) ->
     let mut_var = Mutable_variable.create_with_same_name_as_ident id in
     let var = Variable.create_with_same_name_as_ident id in
     let defining_expr =

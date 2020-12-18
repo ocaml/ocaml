@@ -3549,6 +3549,7 @@ let simple_for_let ~scopes loc param pat body =
 
 let rec map_return f = function
   | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
+  | Lmutlet (k, id, l1, l2) -> Lmutlet (k, id, l1, map_return f l2)
   | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
   | Lifthenelse (lcond, lthen, lelse) ->
       Lifthenelse (lcond, map_return f lthen, map_return f lelse)

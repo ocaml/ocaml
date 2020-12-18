@@ -37,6 +37,8 @@ let rec eliminate_ref id = function
       else lam
   | Llet(str, kind, v, e1, e2) ->
       Llet(str, kind, v, eliminate_ref id e1, eliminate_ref id e2)
+  | Lmutlet(kind, v, e1, e2) ->
+      Lmutlet(kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
@@ -123,7 +125,8 @@ let simplify_exits lam =
   | (Lvar _ | Lmutvar _ | Lconst _) -> ()
   | Lapply ap -> count ap.ap_func; List.iter count ap.ap_args
   | Lfunction {body} -> count body
-  | Llet(_str, _kind, _v, l1, l2) ->
+  | Llet(_, _kind, _v, l1, l2)
+  | Lmutlet(_kind, _v, l1, l2) ->
       count l2; count l1
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count l) bindings;
@@ -210,6 +213,7 @@ let simplify_exits lam =
   | Lfunction{kind; params; return; body = l; attr; loc} ->
      Lfunction{kind; params; return; body = simplif l; attr; loc}
   | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
+  | Lmutlet(kind, v, l1, l2) -> Lmutlet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll, loc) -> begin
@@ -430,6 +434,8 @@ let simplify_lets lam =
       count (bind_var bv v) l2;
       (* If v is unused, l1 will be removed, so don't count its variables *)
       if str = Strict || count_var v > 0 then count bv l1
+  | Lmutlet(_kind, v, _l1, l2) ->
+      count (bind_var bv v) l2
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count bv l) bindings;
       count bv body
@@ -491,10 +497,17 @@ let simplify_lets lam =
 (* This (small)  optimisation is always legal, it may uncover some
    tail call later on. *)
 
-  let mklet str kind v e1 e2  = match e2 with
-  | Lvar w when optimize && Ident.same v w -> e1
-  | _ -> Llet (str, kind,v,e1,e2) in
+  let mklet str kind v e1 e2 =
+    match e2 with
+    | Lvar w when optimize && Ident.same v w -> e1
+    | _ -> Llet (str, kind,v,e1,e2)
+  in
 
+  let mkmutlet kind v e1 e2 =
+    match e2 with
+    | Lmutvar w when optimize && Ident.same v w -> e1
+    | _ -> Lmutlet (kind,v,e1,e2)
+  in
 
   let rec simplif = function
     Lvar v | Lmutvar v as l ->
@@ -545,7 +558,7 @@ let simplify_lets lam =
           | Some [field_kind] -> field_kind
           | Some _ -> assert false
         in
-        mklet Variable kind v slinit (eliminate_ref v slbody)
+        mkmutlet kind v slinit (eliminate_ref v slbody)
       with Real_reference ->
         mklet Strict kind v (Lprim(prim, [slinit], loc)) slbody
       end
@@ -561,6 +574,7 @@ let simplify_lets lam =
       | _ -> mklet StrictOpt kind v (simplif l1) (simplif l2)
       end
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
+  | Lmutlet(kind, v, l1, l2) -> mkmutlet kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
@@ -630,7 +644,8 @@ let rec emit_tail_infos is_tail lambda =
       list_emit_tail_infos false ap.ap_args
   | Lfunction {body = lam} ->
       emit_tail_infos true lam
-  | Llet (_str, _k, _, lam, body) ->
+  | Llet (_, _k, _, lam, body)
+  | Lmutlet (_k, _, lam, body) ->
       emit_tail_infos false lam;
       emit_tail_infos is_tail body
   | Lletrec (bindings, body) ->

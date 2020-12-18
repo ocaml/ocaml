@@ -663,7 +663,8 @@ let free_methods l =
     | Lsend _ -> ()
     | Lfunction{params} ->
         List.iter (fun (param, _) -> fv := Ident.Set.remove param !fv) params
-    | Llet(_str, _k, id, _arg, _body) ->
+    | Llet(_, _k, id, _arg, _body)
+    | Lmutlet(_k, id, _arg, _body) ->
         fv := Ident.Set.remove id !fv
     | Lletrec(decl, _body) ->
         List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
