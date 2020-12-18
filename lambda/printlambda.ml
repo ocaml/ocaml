@@ -524,29 +524,26 @@ let rec lam ppf = function
             fprintf ppf ")" in
       fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
         function_attribute attr return_kind return lam body
-  | Llet(str, k, id, arg, body) ->
-     let kind = function
-          Alias -> "a" | Strict -> "" | StrictOpt -> "o"
+  | Llet(_, k, id, arg, body)
+  | Lmutlet(k, id, arg, body) as l ->
+      let let_kind = begin function
+        | Llet(str,_,_,_,_) ->
+           begin match str with
+             Alias -> "a" | Strict -> "" | StrictOpt -> "o"
+           end
+        | Lmutlet _ -> "mut"
+        | _ -> assert false
+        end
       in
       let rec letbody = function
-        | Llet(str, k, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
-              Ident.print id (kind str) value_kind k lam arg;
-            letbody body
+        | Llet(_, k, id, arg, body)
+        | Lmutlet(k, id, arg, body) as l ->
+           fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
+             Ident.print id (let_kind l) value_kind k lam arg;
+           letbody body
         | expr -> expr in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s%a@ %a@]"
-        Ident.print id (kind str) value_kind k lam arg;
-      let expr = letbody body in
-      fprintf ppf ")@]@ %a)@]" lam expr
-  | Lmutlet(k, id, arg, body) ->
-      let rec letbody = function
-        | Lmutlet(k, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a =%a@ %a@]"
-              Ident.print id value_kind k lam arg;
-            letbody body
-        | expr -> expr in
-      fprintf ppf "@[<2>(let[mut]@ @[<hv 1>(@[<2>%a =%a@ %a@]"
-        Ident.print id value_kind k lam arg;
+        Ident.print id (let_kind l) value_kind k lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->
