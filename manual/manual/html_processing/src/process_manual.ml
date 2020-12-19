@@ -186,7 +186,7 @@ let update_navigation soup toc =
 
 
 (* extract the cut point (just after title) and the header of soup:
-   "clone_structure" needs them to insert external files after the cut point,
+   "insert_xfile_content" needs them to insert external files after the cut point,
    and include the TOC. *)
 let make_template soup =
   let header = soup $ "header" in
@@ -198,7 +198,7 @@ let make_template soup =
 (* Create a new file by keeping only the head/headers parts of "soup", deleting
    everything after the title, and inserting the content of external file (hence
    preserving TOC and headers) (WARNING: this mutates soup) *)
-let clone_structure soup (title, header) toc xfile =
+let insert_xfile_content soup (title, header) toc xfile =
   let xternal = parse (load_html xfile) in
   update_navigation xternal toc;
   Option.iter delete (xternal $? "hr");
@@ -445,7 +445,7 @@ let convert version (part_title, chapters) toc_table (file, title) =
      the end because it deeply mutates the original soup) *)
   let xfiles = get_xfiles toc in
   let template = make_template soup in
-  List.iter (clone_structure soup template toc_table) xfiles
+  List.iter (insert_xfile_content soup template toc_table) xfiles
 
 
 (* Completely process the given version of the manual. Returns the names of the
