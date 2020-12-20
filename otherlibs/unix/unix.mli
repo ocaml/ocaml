@@ -875,7 +875,7 @@ val open_process_full :
    {!open_process_full}. *)
 
 val open_process_args_in : string -> string array -> in_channel
-(** [open_process_args_in prog args] run the program [prog] with arguments
+(** [open_process_args_in prog args] runs the program [prog] with arguments
     [args].  The new process executes concurrently with the current process.
     The standard output of the new process is redirected to a pipe, which can be
     read via the returned input channel.
