@@ -875,10 +875,10 @@ val open_process_full :
    {!open_process_full}. *)
 
 val open_process_args_in : string -> string array -> in_channel
-(** [open_process_args_in prog args] run the program [prog] with arguments [args].
-    The new process executes concurrently with the current process.
-    The standard output of the new process is redirected to a pipe, which can be read
-    via the returned input channel.
+(** [open_process_args_in prog args] run the program [prog] with arguments
+    [args].  The new process executes concurrently with the current process.
+    The standard output of the new process is redirected to a pipe, which can be
+    read via the returned input channel.
 
     The executable file [prog] is searched in the path. This behaviour changed
     in 4.12; previously [prog] was looked up only in the current directory.
@@ -888,8 +888,8 @@ val open_process_args_in : string -> string array -> in_channel
     @since 4.08.0 *)
 
 val open_process_args_out : string -> string array -> out_channel
-(** Same as {!open_process_args_in}, but redirect the standard input of the
-    new process to a pipe.  Data written to the returned output channel is sent to
+(** Same as {!open_process_args_in}, but redirect the standard input of the new
+    process to a pipe.  Data written to the returned output channel is sent to
     the standard input of the program.  Warning: writes on output channels are
     buffered, hence be careful to call {!Stdlib.flush} at the right times to
     ensure correct synchronization.
