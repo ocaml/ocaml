@@ -898,7 +898,7 @@ val open_process_args_out : string -> string array -> out_channel
 
 val open_process_args : string -> string array -> in_channel * out_channel
 (** Same as {!open_process_args_out}, but redirects both the standard input and
-    standard output of the new proess to pipes connected to the two returned
+    standard output of the new process to pipes connected to the two returned
     channels.  The input channel is connected to the output of the program, and
     the output channel to the input of the program.
 
