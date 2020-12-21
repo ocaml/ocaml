@@ -429,7 +429,7 @@ Polymorphic type annotations in @"let"@-definitions behave in a way
 similar to polymorphic methods:
 
 \begin{center}
-@"let" pattern_1 ":" typ_1 \ldots typ_n "." typeexpr "=" expr  @
+@"let" pattern_1 ":" typ_1 \ldots typ_n "." typexpr "=" expr  @
 \end{center}
 
 These annotations explicitly require the defined value to be polymorphic,
