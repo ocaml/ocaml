@@ -15,6 +15,13 @@
 
 /* The parser definition */
 
+/* The commands [make list-parse-errors] and [make generate-parse-errors]
+   run Menhir on a modified copy of the parser where every block of
+   text comprised between the markers [BEGIN AVOID] and -----------
+   [END AVOID] has been removed. This file should be formatted in
+   such a way that this results in a clean removal of certain
+   symbols, productions, or declarations. */
+
 %{
 
 open Asttypes
@@ -222,6 +229,19 @@ let unclosed opening_name opening_loc closing_name closing_loc =
 
 let expecting loc nonterm =
     raise Syntaxerr.(Error(Expecting(make_loc loc, nonterm)))
+
+(* Using the function [not_expecting] in a semantic action means that this
+   syntactic form is recognized by the parser but is in fact incorrect. This
+   idiom is used in a few places to produce ad hoc syntax error messages. *)
+
+(* This idiom should be used as little as possible, because it confuses the
+   analyses performed by Menhir. Because Menhir views the semantic action as
+   opaque, it believes that this syntactic form is correct. This can lead
+   [make generate-parse-errors] to produce sentences that cause an early
+   (unexpected) syntax error and do not achieve the desired effect. This could
+   also lead a completion system to propose completions which in fact are
+   incorrect. In order to avoid these problems, the productions that use
+   [not_expecting] should be marked with AVOID. *)
 
 let not_expecting loc nonterm =
     raise Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
@@ -586,133 +606,143 @@ let mk_directive ~loc name arg =
 
 /* Tokens */
 
-%token AMPERAMPER
-%token AMPERSAND
-%token AND
-%token AS
-%token ASSERT
-%token BACKQUOTE
-%token BANG
-%token BAR
-%token BARBAR
-%token BARRBRACKET
-%token BEGIN
-%token <char> CHAR
-%token CLASS
-%token COLON
-%token COLONCOLON
-%token COLONEQUAL
-%token COLONGREATER
-%token COMMA
-%token CONSTRAINT
-%token DO
-%token DONE
-%token DOT
-%token DOTDOT
-%token DOWNTO
-%token ELSE
-%token END
-%token EOF
-%token EQUAL
-%token EXCEPTION
-%token EXTERNAL
-%token FALSE
-%token <string * char option> FLOAT
-%token FOR
-%token FUN
-%token FUNCTION
-%token FUNCTOR
-%token GREATER
-%token GREATERRBRACE
-%token GREATERRBRACKET
-%token IF
-%token IN
-%token INCLUDE
-%token <string> INFIXOP0
-%token <string> INFIXOP1
-%token <string> INFIXOP2
-%token <string> INFIXOP3
-%token <string> INFIXOP4
-%token <string> DOTOP
-%token <string> LETOP
-%token <string> ANDOP
-%token INHERIT
-%token INITIALIZER
-%token <string * char option> INT
-%token <string> LABEL
-%token LAZY
-%token LBRACE
-%token LBRACELESS
-%token LBRACKET
-%token LBRACKETBAR
-%token LBRACKETLESS
-%token LBRACKETGREATER
-%token LBRACKETPERCENT
-%token LBRACKETPERCENTPERCENT
-%token LESS
-%token LESSMINUS
-%token LET
-%token <string> LIDENT
-%token LPAREN
-%token LBRACKETAT
-%token LBRACKETATAT
-%token LBRACKETATATAT
-%token MATCH
-%token METHOD
-%token MINUS
-%token MINUSDOT
-%token MINUSGREATER
-%token MODULE
-%token MUTABLE
-%token NEW
-%token NONREC
-%token OBJECT
-%token OF
-%token OPEN
-%token <string> OPTLABEL
-%token OR
-/* %token PARSER */
-%token PERCENT
-%token PLUS
-%token PLUSDOT
-%token PLUSEQ
-%token <string> PREFIXOP
-%token PRIVATE
-%token QUESTION
-%token QUOTE
-%token RBRACE
-%token RBRACKET
-%token REC
-%token RPAREN
-%token SEMI
-%token SEMISEMI
-%token HASH
-%token <string> HASHOP
-%token SIG
-%token STAR
-%token <string * Location.t * string option> STRING
-%token
-  <string * Location.t * string * Location.t * string option> QUOTED_STRING_EXPR
-%token
-  <string * Location.t * string * Location.t * string option> QUOTED_STRING_ITEM
-%token STRUCT
-%token THEN
-%token TILDE
-%token TO
-%token TRUE
-%token TRY
-%token TYPE
-%token <string> UIDENT
-%token UNDERSCORE
-%token VAL
-%token VIRTUAL
-%token WHEN
-%token WHILE
-%token WITH
-%token <string * Location.t> COMMENT
-%token <Docstrings.docstring> DOCSTRING
+/* The alias that follows each token is used by Menhir when it needs to
+   produce a sentence (that is, a sequence of tokens) in concrete syntax. */
 
-%token EOL
+/* Some tokens represent multiple concrete strings. In most cases, an
+   arbitrary concrete string can be chosen. In a few cases, one must
+   be careful: e.g., in PREFIXOP and INFIXOP2, one must choose a concrete
+   string that will not trigger a syntax error; see how [not_expecting]
+   is used in the definition of [type_variance]. */
+
+%token AMPERAMPER             "&&"
+%token AMPERSAND              "&"
+%token AND                    "and"
+%token AS                     "as"
+%token ASSERT                 "assert"
+%token BACKQUOTE              "`"
+%token BANG                   "!"
+%token BAR                    "|"
+%token BARBAR                 "||"
+%token BARRBRACKET            "|]"
+%token BEGIN                  "begin"
+%token <char> CHAR            "'a'" (* just an example *)
+%token CLASS                  "class"
+%token COLON                  ":"
+%token COLONCOLON             "::"
+%token COLONEQUAL             ":="
+%token COLONGREATER           ":>"
+%token COMMA                  ","
+%token CONSTRAINT             "constraint"
+%token DO                     "do"
+%token DONE                   "done"
+%token DOT                    "."
+%token DOTDOT                 ".."
+%token DOWNTO                 "downto"
+%token ELSE                   "else"
+%token END                    "end"
+%token EOF                    ""
+%token EQUAL                  "="
+%token EXCEPTION              "exception"
+%token EXTERNAL               "external"
+%token FALSE                  "false"
+%token <string * char option> FLOAT "42.0" (* just an example *)
+%token FOR                    "for"
+%token FUN                    "fun"
+%token FUNCTION               "function"
+%token FUNCTOR                "functor"
+%token GREATER                ">"
+%token GREATERRBRACE          ">}"
+%token GREATERRBRACKET        ">]"
+%token IF                     "if"
+%token IN                     "in"
+%token INCLUDE                "include"
+%token <string> INFIXOP0      "!="   (* just an example *)
+%token <string> INFIXOP1      "@"    (* just an example *)
+%token <string> INFIXOP2      "+!"   (* chosen with care; see above *)
+%token <string> INFIXOP3      "land" (* just an example *)
+%token <string> INFIXOP4      "**"   (* just an example *)
+%token <string> DOTOP         ".+"
+%token <string> LETOP         "let*" (* just an example *)
+%token <string> ANDOP         "and*" (* just an example *)
+%token INHERIT                "inherit"
+%token INITIALIZER            "initializer"
+%token <string * char option> INT "42"  (* just an example *)
+%token <string> LABEL         "~label:" (* just an example *)
+%token LAZY                   "lazy"
+%token LBRACE                 "{"
+%token LBRACELESS             "{<"
+%token LBRACKET               "["
+%token LBRACKETBAR            "[|"
+%token LBRACKETLESS           "[<"
+%token LBRACKETGREATER        "[>"
+%token LBRACKETPERCENT        "[%"
+%token LBRACKETPERCENTPERCENT "[%%"
+%token LESS                   "<"
+%token LESSMINUS              "<-"
+%token LET                    "let"
+%token <string> LIDENT        "lident" (* just an example *)
+%token LPAREN                 "("
+%token LBRACKETAT             "[@"
+%token LBRACKETATAT           "[@@"
+%token LBRACKETATATAT         "[@@@"
+%token MATCH                  "match"
+%token METHOD                 "method"
+%token MINUS                  "-"
+%token MINUSDOT               "-."
+%token MINUSGREATER           "->"
+%token MODULE                 "module"
+%token MUTABLE                "mutable"
+%token NEW                    "new"
+%token NONREC                 "nonrec"
+%token OBJECT                 "object"
+%token OF                     "of"
+%token OPEN                   "open"
+%token <string> OPTLABEL      "?label:" (* just an example *)
+%token OR                     "or"
+/* %token PARSER              "parser" */
+%token PERCENT                "%"
+%token PLUS                   "+"
+%token PLUSDOT                "+."
+%token PLUSEQ                 "+="
+%token <string> PREFIXOP      "!+" (* chosen with care; see above *)
+%token PRIVATE                "private"
+%token QUESTION               "?"
+%token QUOTE                  "'"
+%token RBRACE                 "}"
+%token RBRACKET               "]"
+%token REC                    "rec"
+%token RPAREN                 ")"
+%token SEMI                   ";"
+%token SEMISEMI               ";;"
+%token HASH                   "#"
+%token <string> HASHOP        "##" (* just an example *)
+%token SIG                    "sig"
+%token STAR                   "*"
+%token <string * Location.t * string option>
+       STRING                 "\"hello\"" (* just an example *)
+%token <string * Location.t * string * Location.t * string option>
+       QUOTED_STRING_EXPR     "{%hello|world|}"  (* just an example *)
+%token <string * Location.t * string * Location.t * string option>
+       QUOTED_STRING_ITEM     "{%%hello|world|}" (* just an example *)
+%token STRUCT                 "struct"
+%token THEN                   "then"
+%token TILDE                  "~"
+%token TO                     "to"
+%token TRUE                   "true"
+%token TRY                    "try"
+%token TYPE                   "type"
+%token <string> UIDENT        "UIdent" (* just an example *)
+%token UNDERSCORE             "_"
+%token VAL                    "val"
+%token VIRTUAL                "virtual"
+%token WHEN                   "when"
+%token WHILE                  "while"
+%token WITH                   "with"
+%token <string * Location.t> COMMENT    "(* comment *)"
+%token <Docstrings.docstring> DOCSTRING "(** documentation *)"
+
+%token EOL                    "\\n"      (* not great, but EOL is unused *)
 
 /* Precedences and associativities.
 
@@ -781,14 +811,23 @@ The precedences must be listed from low to high.
 
 /* Entry points */
 
+/* Several start symbols are marked with AVOID so that they are not used by
+   [make generate-parse-errors]. The three start symbols that we keep are
+   [implementation], [use_file], and [toplevel_phrase]. The latter two are
+   of marginal importance; only [implementation] really matters, since most
+   states in the automaton are reachable from it. */
+
 %start implementation                   /* for implementation files */
 %type <Parsetree.structure> implementation
+/* BEGIN AVOID */
 %start interface                        /* for interface files */
 %type <Parsetree.signature> interface
+/* END AVOID */
 %start toplevel_phrase                  /* for interactive use */
 %type <Parsetree.toplevel_phrase> toplevel_phrase
 %start use_file                         /* for the #use directive */
 %type <Parsetree.toplevel_phrase list> use_file
+/* BEGIN AVOID */
 %start parse_core_type
 %type <Parsetree.core_type> parse_core_type
 %start parse_expression
@@ -807,6 +846,8 @@ The precedences must be listed from low to high.
 %type <Longident.t> parse_mod_longident
 %start parse_any_longident
 %type <Longident.t> parse_any_longident
+/* END AVOID */
+
 %%
 
 /* macros */
@@ -1076,11 +1117,13 @@ implementation:
     { $1 }
 ;
 
+/* BEGIN AVOID */
 (* An .mli file. *)
 interface:
   signature EOF
     { $1 }
 ;
+/* END AVOID */
 
 (* A toplevel phrase. *)
 toplevel_phrase:
@@ -1133,6 +1176,7 @@ use_file:
       { $1 }
 ;
 
+/* BEGIN AVOID */
 parse_core_type:
   core_type EOF
     { $1 }
@@ -1177,6 +1221,8 @@ parse_any_longident:
   any_longident EOF
     { $1 }
 ;
+/* END AVOID */
+
 (* -------------------------------------------------------------------------- *)
 
 (* Functor arguments appear in module expressions and module types. *)
@@ -2185,8 +2231,10 @@ expr:
       { dotop_set ~loc:$sloc (ldot $3) brace $4 $1 $6 $9 }
   | expr attribute
       { Exp.attr $1 $2 }
+/* BEGIN AVOID */
   | UNDERSCORE
      { not_expecting $loc($1) "wildcard \"_\"" }
+/* END AVOID */
 ;
 %inline expr_attrs:
   | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
@@ -2461,8 +2509,14 @@ let_binding_body_no_punning:
 let_binding_body:
   | let_binding_body_no_punning
       { let p,e = $1 in (p,e,false) }
+/* BEGIN AVOID */
   | val_ident %prec below_HASH
       { (mkpatvar ~loc:$loc $1, mkexpvar ~loc:$loc $1, true) }
+  (* The production that allows puns is marked so that [make list-parse-errors]
+     does not attempt to exploit it. That would be problematic because it
+     would then generate bindings such as [let x], which are rejected by the
+     auxiliary function [addlb] via a call to [syntax_error]. *)
+/* END AVOID */
 ;
 (* The formal parameter EXT can be instantiated with ext or no_ext
    so as to indicate whether an extension is allowed or disallowed. *)
@@ -3548,6 +3602,7 @@ class_longident:
    mk_longident(mod_longident,LIDENT) { $1 }
 ;
 
+/* BEGIN AVOID */
 /* For compiler-libs: parse all valid longidents and a little more:
    final identifiers which are value specific are accepted even when
    the path prefix is only valid for types: (e.g. F(X).(::)) */
@@ -3557,6 +3612,7 @@ any_longident:
     ) { $1 }
   | constr_extra_nonprefix_ident { Lident $1 }
 ;
+/* END AVOID */
 
 /* Toplevel directives */
 
@@ -3601,7 +3657,9 @@ rec_flag:
 ;
 %inline no_nonrec_flag:
     /* empty */ { Recursive }
+/* BEGIN AVOID */
   | NONREC      { not_expecting $loc "nonrec flag" }
+/* END AVOID */
 ;
 direction_flag:
     TO                                          { Upto }
@@ -3765,7 +3823,9 @@ ext:
 ;
 %inline no_ext:
   | /* empty */     { None }
+/* BEGIN AVOID */
   | PERCENT attr_id { not_expecting $loc "extension" }
+/* END AVOID */
 ;
 %inline ext_attributes:
   ext attributes    { $1, $2 }
