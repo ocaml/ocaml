@@ -26,6 +26,12 @@ Working version
 
 ### Other libraries:
 
+* #10084: Unix.open_process_args* functions now look up the program in the PATH.
+  This was already the case under Windows, but this is now also done under
+  Unix. Note that previously the program was interpreted relative to the current
+  directory.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
+
 ### Tools:
 
 ### Manual and documentation:
