@@ -55,8 +55,8 @@ Working version
   sentences that covers all error states of the LR automaton. Add these
   sentences to the test suite. This can be used to evaluate the quality of the
   parser's syntax error messages and (in the future) to evaluate the impact of
-  changes in the parser. (François Pottier, review by Gabriel Scherer and
-  Xavier Leroy.)
+  changes in the parser.
+  (François Pottier, review by Gabriel Scherer and Xavier Leroy.)
 
 ### Build system:
 
