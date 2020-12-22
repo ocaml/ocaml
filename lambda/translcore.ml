@@ -856,7 +856,8 @@ and transl_function ~scopes e param cases partial =
 and transl_scoped_exp ~scopes expr =
   match expr.exp_desc with
   | Texp_function { arg_label = _; param; cases; partial } ->
-     transl_function ~scopes expr param cases partial
+     Translobj.oo_wrap expr.exp_env true
+       (transl_function ~scopes expr param cases) partial
   | _ ->
      transl_exp ~scopes expr
 
