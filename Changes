@@ -83,7 +83,6 @@ Working version
   do not overflow the 16-bit fields where they are stored.
   (Xavier Leroy, report by Github user pveber, review by Gabriel Scherer)
 
-
 OCaml 4.12.0
 ------------
 
@@ -768,8 +767,17 @@ OCaml 4.12.0
 - #10048: Fix bug with generalized local opens.
   (Leo White, review by Thomas Refis)
 
-OCaml 4.11.1
-------------
+OCaml 4.11 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9096, #10096: fix a 4.11.0 performance regression in classes/objects
+  declared within a function
+  (Gabriel Scherer, review by Leo White, report by Sacha Ayoun)
+
+OCaml 4.11.1 (31 August 2020)
+-----------------------------
 
 ### Bug fixes:
 
@@ -782,7 +790,7 @@ OCaml 4.11.1
   (Florian Angeletti, review by Thomas Refis)
 
 OCaml 4.11.0 (19 August 2020)
----------------------------
+-----------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
