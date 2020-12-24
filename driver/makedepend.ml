@@ -15,6 +15,7 @@
 
 open Parsetree
 module String = Misc.Stdlib.String
+module Json = Misc.Json
 
 let ppf = Format.err_formatter
 (* Print the dependencies *)
@@ -38,6 +39,7 @@ let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
+let print_json = ref false
 
 module Error_occurred : sig
   val set : unit -> unit
@@ -58,6 +60,9 @@ let fix_slash s =
     String.map (function '\\' -> '/' | c -> c) s
   end
 
+let report_errorf fmt =
+  Error_occurred.set ();
+  Location.errorf fmt
 (* Since we reinitialize load_path after reading OCAMLCOMP,
   we must use a cache instead of calling Sys.readdir too often. *)
 let dirs = ref String.Map.empty
@@ -69,8 +74,8 @@ let readdir dir =
       try
         Sys.readdir dir
       with Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-        Error_occurred.set ();
+        report_errorf "@[Bad -I option: %s@]@." msg
+        |> Location.print_report Format.err_formatter;
         [||]
     in
     dirs := String.Map.add dir contents !dirs;
@@ -85,15 +90,15 @@ let add_to_load_path dir =
     let contents = readdir dir in
     add_to_list load_path (dir, contents)
   with Sys_error msg ->
-    Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-    Error_occurred.set ()
+    report_errorf "@[Bad -I option: %s@]@." msg
+    |> Location.print_report Format.err_formatter
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
     add_to_list synonyms suffix
   else begin
-    Format.fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
-    Error_occurred.set ()
+    report_errorf "@[Bad suffix: '%s'@]@." suffix
+    |> Location.print_report Format.err_formatter
   end
 
 (* Find file 'name' (capitalized) in search path *)
@@ -224,15 +229,28 @@ let print_dependencies target_files deps =
   List.iter print_dep deps;
   print_string "\n"
 
+let not_predef dep =
+  (String.length dep > 0) &&
+  (
+    match dep.[0] with
+    | 'A'..'Z' | '\128'..'\255' -> true
+    | _ -> false
+  )
+
+let json_dependencies source_file deps =
+  let elements = List.map (fun x -> `String x)
+      (List.filter not_predef (String.Set.elements deps)) in
+  `Assoc[
+    "source",`String source_file;
+    "depends_on",`List elements;
+  ]
+
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;
   String.Set.iter
     (fun dep ->
        (* filter out "*predef*" *)
-      if (String.length dep > 0)
-          && (match dep.[0] with
-              | 'A'..'Z' | '\128'..'\255' -> true
-              | _ -> false) then
+      if not_predef dep then
         begin
           print_char ' ';
           print_string dep
@@ -372,13 +390,23 @@ let print_mli_dependencies source_file extracted_deps pp_deps =
       extracted_deps ([], []) in
   print_dependencies [basename ^ ".cmi"] (byt_deps @ pp_deps)
 
-let print_file_dependencies (source_file, kind, extracted_deps, pp_deps) =
-  if !raw_dependencies then begin
-    print_raw_dependencies source_file extracted_deps
+let print_file_dependencies sorted =
+  if !print_json then begin
+    if !raw_dependencies then begin
+      let json = List.map (fun (file,_,deps,_) -> json_dependencies file deps) in
+      Format.printf "@[%a@]@." Json.print @@ `List(json sorted);
+    end else
+      report_errorf "this output is not supported in json format"
+      |> Location.print_report Format.err_formatter;
   end else
-    match kind with
-    | ML -> print_ml_dependencies source_file extracted_deps pp_deps
-    | MLI -> print_mli_dependencies source_file extracted_deps pp_deps
+    List.iter (fun (source_file, kind, extracted_deps, pp_deps) ->
+      if !raw_dependencies then begin
+        print_raw_dependencies source_file extracted_deps
+      end else
+        match kind with
+        | ML -> print_ml_dependencies source_file extracted_deps pp_deps
+        | MLI -> print_mli_dependencies source_file extracted_deps pp_deps
+    ) sorted
 
 
 let ml_file_dependencies source_file =
@@ -502,12 +530,15 @@ let sort_files_by_dependencies files =
       List.sort (fun (file1, _) (file2, _) -> String.compare file1 file2) !li
     in
     List.iter (fun (file, deps) ->
-      Format.fprintf Format.err_formatter "\t@[%s: " file;
+      report_errorf "\t@[%s: " file
+      |> Location.print_report Format.err_formatter;
       List.iter (fun (modname, kind) ->
-        Format.fprintf Format.err_formatter "%s.%s " modname
-          (if kind=ML then "ml" else "mli");
+        report_errorf "%s.%s " modname
+          (if kind=ML then "ml" else "mli")
+        |> Location.print_report Format.err_formatter;
       ) !deps;
-      Format.fprintf Format.err_formatter "@]@.";
+      report_errorf "@]@."
+      |> Location.print_report Format.err_formatter;
       Printf.printf "%s " file) sorted_deps;
     Error_occurred.set ()
   end;
@@ -622,6 +653,9 @@ let run_main argv =
         "<e>  Consider <e> as a synonym of the .mli extension";
      "-modules", Arg.Set raw_dependencies,
         " Print module dependencies in raw form (not suitable for make)";
+     "-json", Arg.Set print_json,
+        " Print module dependencies in JSON format only supported with \
+          -modules for now.";
      "-native", Arg.Set native_only,
         " Generate dependencies for native-code only (no .cmo files)";
      "-bytecode", Arg.Set bytecode_only,
@@ -661,7 +695,7 @@ let run_main argv =
   process_dep_args (List.rev !dep_args_rev);
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
-  else List.iter print_file_dependencies (List.sort compare !files);
+  else print_file_dependencies (List.sort compare !files);
   exit (if Error_occurred.get () then 2 else 0)
 
 let main () =

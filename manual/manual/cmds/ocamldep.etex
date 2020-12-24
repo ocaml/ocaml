@@ -95,6 +95,9 @@ units referenced within the file "filename", but these names are not
 resolved to source file names.  Such raw dependencies cannot be used
 by "make", but can be post-processed by other tools such as "Omake".
 
+\item["-json"]
+Print module dependencies in JSON format only supported with -modules for now.
+
 \item["-native"]
 Generate dependencies for a pure native-code program (no bytecode
 version).  When an implementation file (".ml" file) has no explicit
