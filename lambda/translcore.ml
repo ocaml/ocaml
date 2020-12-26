@@ -219,6 +219,14 @@ let transl_ident loc env ty path desc =
   |  _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
 
 let rec transl_exp ~scopes e =
+  transl_exp1 ~scopes ~in_new_scope:false e
+
+(* ~in_new_scope tracks whether we just opened a new scope.
+
+   We go to some trouble to avoid introducing many new anonymous function
+   scopes, as `let f a b = ...` is desugared to several Pexp_fun.
+*)
+and transl_exp1 ~scopes ~in_new_scope e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
@@ -226,10 +234,10 @@ let rec transl_exp ~scopes e =
       Texp_function _ | Texp_for _ | Texp_while _ -> false
     | _ -> true
   in
-  if eval_once then transl_exp0 ~scopes e else
-  Translobj.oo_wrap e.exp_env true (transl_exp0 ~scopes) e
+  if eval_once then transl_exp0 ~scopes ~in_new_scope  e else
+  Translobj.oo_wrap e.exp_env true (transl_exp0 ~scopes ~in_new_scope) e
 
-and transl_exp0 ~scopes e =
+and transl_exp0 ~in_new_scope ~scopes e =
   match e.exp_desc with
   | Texp_ident(path, _, desc) ->
       transl_ident (of_location ~scopes e.exp_loc)
@@ -240,7 +248,10 @@ and transl_exp0 ~scopes e =
       transl_let ~scopes rec_flag pat_expr_list
         (event_before ~scopes body (transl_exp ~scopes body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
-      let scopes = enter_anonymous_function ~scopes in
+      let scopes =
+        if in_new_scope then scopes
+        else enter_anonymous_function ~scopes
+      in
       transl_function ~scopes e param cases partial
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
@@ -850,18 +861,11 @@ and transl_function ~scopes e param cases partial =
   let lam = Lfunction{kind; params; return; body; attr; loc} in
   Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
 
-(* Like transl_exp, but used when introducing a new scope.
-   Goes to some trouble to avoid introducing many new anonymous function
-   scopes, as `let f a b = ...` is desugared to several Pexp_fun *)
+(* Like transl_exp, but used when a new scope was just introduced. *)
 and transl_scoped_exp ~scopes expr =
-  match expr.exp_desc with
-  | Texp_function { arg_label = _; param; cases; partial } ->
-     transl_function ~scopes expr param cases partial
-  | _ ->
-     transl_exp ~scopes expr
+  transl_exp1 ~scopes ~in_new_scope:true expr
 
-(* Calls transl_scoped_exp or transl_exp, according to whether a pattern
-   binding should introduce a new scope *)
+(* Decides whether a pattern binding should introduce a new scope. *)
 and transl_bound_exp ~scopes ~in_structure pat expr =
   let should_introduce_scope =
     match expr.exp_desc with
