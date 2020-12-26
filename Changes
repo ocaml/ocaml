@@ -14,6 +14,15 @@ Working version
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
 
+OCaml 4.11 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9096, #10096: fix a 4.11.0 performance regression in classes/objects
+  declared within a function
+  (Gabriel Scherer, review by Leo White, report by Sacha Ayoun)
+
 OCaml 4.11.1 (31 August 2020)
 -----------------------------
 
@@ -28,7 +37,7 @@ OCaml 4.11.1 (31 August 2020)
   (Florian Angeletti, review by Thomas Refis)
 
 OCaml 4.11.0 (19 August 2020)
----------------------------
+-----------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
