@@ -446,12 +446,12 @@ and expression i ppf x =
       module_expr i ppf o.open_expr;
       attributes i ppf o.open_attributes;
       expression i ppf e;
-  | Texp_functor (s, {pack_path= p; pack_fields= l; _}, e) ->
-      line i ppf "Texp_functor %a %a\n" fmt_ident s.txt fmt_path p;
+  | Texp_functor (s, _, {pack_path= p; pack_fields= l; _}, e) ->
+      line i ppf "Texp_functor %a %a\n" fmt_ident s fmt_path p;
       list i package_with ppf l;
       expression i ppf e
-  | Texp_functor_apply (e, p, _) ->
-      line i ppf "Texp_functor_apply %a\n" fmt_path p.txt;
+  | Texp_functor_apply (e, p, _, _) ->
+      line i ppf "Texp_functor_apply %a\n" fmt_path p;
       expression i ppf e
 
 and value_description i ppf x =

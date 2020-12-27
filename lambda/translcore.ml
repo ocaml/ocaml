@@ -611,7 +611,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Llet(pure, Pgenval, oid,
                !transl_module ~scopes Tcoerce_none None od.open_expr, body)
       end
-  | Texp_functor (id, _pack, body) ->
+  | Texp_functor (id, _name, _pack, body) ->
       let name = Ident.create_local "*functor*" in
       let kind = Curried in
       let params = [name, Pgenval] in
@@ -621,17 +621,17 @@ and transl_exp0 ~in_new_scope ~scopes e =
         let defining_expr =
           Levent (Lvar name, {
             lev_loc = loc;
-            lev_kind = Lev_module_definition id.txt;
+            lev_kind = Lev_module_definition id;
             lev_repr = None;
             lev_env = Env.empty;
           })
         in
-        Llet(Strict, Pgenval, id.txt, defining_expr, transl_exp ~scopes body)
+        Llet(Strict, Pgenval, id, defining_expr, transl_exp ~scopes body)
       in
       let attr = default_function_attribute in
       let lam = Lfunction{kind; params; return; body; attr; loc} in
       Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
-  | Texp_functor_apply (funct, _path, modl) ->
+  | Texp_functor_apply (funct, _path, _lid, modl) ->
       let arg =
         (* Fake expression, since we don't have a dedicated expression for the
            argument.

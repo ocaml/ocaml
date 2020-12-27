@@ -3808,8 +3808,7 @@ and type_expect_
       unify_var env (newvar()) ty;
       (* Use [scoped_ident] in the AST, for consistency with nodes below. *)
       rue {
-        exp_desc =
-          Texp_functor(Location.mkloc scoped_ident name.loc, pack, body);
+        exp_desc = Texp_functor(scoped_ident, name, pack, body);
         exp_loc = loc; exp_extra = [];
         exp_type = ty;
         exp_attributes = sexp.pexp_attributes;
@@ -3856,7 +3855,7 @@ and type_expect_
       generalize ty_res;
       unify_var env (newvar()) ty_res;
       rue {
-        exp_desc = Texp_functor_apply(funct, mkloc path lid.loc, modl);
+        exp_desc = Texp_functor_apply(funct, path, lid, modl);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_res;
         exp_attributes = sexp.pexp_attributes;

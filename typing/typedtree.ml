@@ -147,8 +147,8 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_open of open_declaration * expression
-  | Texp_functor of Ident.t loc * package_type * expression
-  | Texp_functor_apply of expression * Path.t loc * module_expr
+  | Texp_functor of Ident.t * string loc * package_type * expression
+  | Texp_functor_apply of expression * Path.t * Longident.t loc * module_expr
 
 and meth =
     Tmeth_name of string
