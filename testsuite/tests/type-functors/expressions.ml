@@ -587,8 +587,6 @@ val unpack_exposes_type_alias :
 let rec f {T : Type} = g () and g () = f {Int};;
 
 [%%expect{|
-Line 1, characters 10-27:
-1 | let rec f {T : Type} = g () and g () = f {Int};;
-              ^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val f : {T : Type} -> 'a = <fun>
+val g : unit -> 'a = <fun>
 |}]

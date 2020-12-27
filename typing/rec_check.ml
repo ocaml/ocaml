@@ -821,7 +821,7 @@ let rec expression : Typedtree.expression -> term_judg =
     | Texp_open (od, e) ->
       open_declaration od >> expression e
     | Texp_functor (id, _pack, e) ->
-      remove_id id.txt (expression e)
+      remove_id id.txt (expression e) << Delay
     | Texp_functor_apply (e, pth, _mexpr) ->
       join [expression e; path pth.txt] << Dereference
 
