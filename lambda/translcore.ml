@@ -631,12 +631,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
       let attr = default_function_attribute in
       let lam = Lfunction{kind; params; return; body; attr; loc} in
       Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
-  | Texp_functor_apply (funct, _path, _lid, modl) ->
+  | Texp_functor_apply (funct, _path, lid, modl) ->
       let arg =
         (* Fake expression, since we don't have a dedicated expression for the
            argument.
         *)
-        {e with exp_desc=Texp_pack modl }
+        {e with exp_desc=Texp_pack modl; exp_loc= lid.loc}
       in
       transl_apply ~scopes (transl_exp ~scopes funct) [(Nolabel, Some arg)]
         (of_location ~scopes e.exp_loc)
