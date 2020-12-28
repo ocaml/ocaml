@@ -816,7 +816,7 @@ void caml_memprof_renew_minor_sample(void)
 }
 
 /* Called when exceeding the threshold for the next sample in the
-   minor heap. Execute allocation callbacks immediately unless if
+   minor heap. Executes allocation callbacks immediately unless if
    called from C code or if asynchronous callbacks are masked. */
 void caml_memprof_track_young(uintnat wosize, int from_caml,
                               int nallocs, unsigned char* encoded_alloc_lens)
@@ -880,7 +880,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       t_idx = new_tracked(n_samples, alloc_wosz, SRC_NORMAL, 1,
                           Placeholder_offs(alloc_ofs), callstack);
       if (t_idx == Invalid_index) continue;
-      if (Caml_state->mask_async_callbacks == CAML_MASK_NONE)
+      if (Caml_state->mask_async_callbacks < CAML_MASK_UNINTERRUPTIBLE)
         res = run_alloc_callback_exn(t_idx);
       /* Has [caml_memprof_stop] been called during the callback? */
       stopped = local->entries.len == 0;

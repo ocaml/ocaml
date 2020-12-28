@@ -41,28 +41,30 @@ CAMLextern void caml_leave_blocking_section (void);
    - non-raising actions, such as non-raising signal handlers (e.g.
      systhread's yield).
 
-   - unrestricted asynchronous callbacks: possibly-raising signal
-     handlers, memprof callbacks and finalisers (including GC alarms).
+   - unrestricted asynchronous callbacks: signal handlers, memprof
+     callbacks and finalisers (including GC alarms), that can possibly
+     _interrupt_ the program by raising an exception.
 
    Signal handlers in particular are defined as one of two kinds,
    non-raising and raising. Non-raising handlers must guarantee that
    they do not raise or fail, but also that they are brief (typically,
-   systhread's yield()), because themselves cannot be interrupted.
+   systhread's yield()), because they cannot be interrupted
+   themselves.
 
-   In contrast, asynchronous callbacks of the second kind are allowed
-   to raise an exception (typically, when handling SIGINT or SIGALRM),
+   In contrast, unrestricted asynchronous callbacks are allowed to
+   raise an exception (typically, when handling SIGINT or SIGALRM),
    are not limited in what they can express (typically, finalisers and
-   memprof callbacks), and can themselves be interrupted by
+   memprof callbacks), and can themselves become interrupted by
    asynchronous callbacks.
 
    Masking temporarily delays the execution of asynchronous callbacks.
    There are two kinds of masking:
 
-   - The _nonpreemptible mask_ delays execution of all asynchronous
-     callbacks.
+   - the _nonpreemptible mask_ delays execution of all asynchronous
+     callbacks, whereas
 
-   - The _uninterruptible mask_ delays the execution of unrestricted
-     asynchronous callbacks, whereas
+   - the _uninterruptible mask_ delays the execution of unrestricted
+     asynchronous callbacks.
 
    This gives three possible values for
    [Caml_state->mask_async_callbacks]: CAML_MASK_NONE,
