@@ -473,6 +473,8 @@ OCAML_CC_VENDOR
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
     [CPP="$CC -E -qnoppline"], # suppress incompatible XLC line directives
+  [sunc-*],
+    [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
     [CPP="$CC -nologo -EP"])
 
