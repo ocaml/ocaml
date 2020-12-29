@@ -852,11 +852,6 @@ AS_IF([test x"$enable_shared" != "xno"],
                [xlc*],
                [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true])],
-    [sparc-sun-solaris*],
-      [AS_CASE([$ocaml_cv_cc_vendor],
-               [sunc*],
-               [mksharedlib="$CC -G"
-                shared_libraries_supported=true])],
     [*-*-solaris*],
       [sharedlib_cflags="-fPIC"
       mksharedlib="$CC -shared"
