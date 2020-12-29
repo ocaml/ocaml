@@ -406,6 +406,8 @@ CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 
 AS_CASE([$host],
+  [sparc-sun-solaris*],
+    [DEP_CC="false"],
   [*-pc-windows],
     [AC_CHECK_TOOLS(
       [DEP_CC],
@@ -1231,6 +1233,8 @@ AS_CASE([$host],
 AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
   [
     AS_CASE([$host],
+    [sparc-sun-solaris*],
+      [instrumented_runtime=false],
     [*-*-windows],
       [instrumented_runtime=true],
     [*-apple-darwin*], [

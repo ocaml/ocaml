@@ -12233,6 +12233,8 @@ CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 
 case $host in #(
+  sparc-sun-solaris*) :
+    DEP_CC="false" ;; #(
   *-pc-windows) :
     if test -n "$ac_tool_prefix"; then
   for ac_prog in $DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc
@@ -12564,6 +12566,8 @@ case $ocaml_cv_cc_vendor in #(
     warn_error_flag=''
     cc_warnings='-qflag=i:i' ;; #(
   # all warnings enabled
+  sunc-*) :
+    outputobj='-o $(EMPTY)'; cc_warnings="" ;; #(
   msvc-*) :
     outputobj='-Fo'
     warn_error_flag='-WX'
@@ -12651,6 +12655,9 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+      internal_cflags="$cc_warnings" ;; #(
+  sunc-*) :
+    common_cflags="-O2 -xc99=all $CFLAGS";
       internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
@@ -13595,9 +13602,17 @@ fi
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true ;; #(
   powerpc-ibm-aix*) :
-    case $CC in #(
+    case $ocaml_cv_cc_vendor in #(
   xlc*) :
     mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
+                shared_libraries_supported=true ;; #(
+  *) :
+     ;;
+esac ;; #(
+  sparc-sun-solaris*) :
+    case $ocaml_cv_cc_vendor in #(
+  sunc*) :
+    mksharedlib="$CC -G"
                 shared_libraries_supported=true ;; #(
   *) :
      ;;
@@ -14387,6 +14402,8 @@ esac
 if test "x$enable_instrumented_runtime" != "xno" ; then :
 
     case $host in #(
+  sparc-sun-solaris*) :
+    instrumented_runtime=false ;; #(
   *-*-windows) :
     instrumented_runtime=true ;; #(
   *-apple-darwin*) :
@@ -15105,12 +15122,14 @@ fi
 
 
 ## -fdebug-prefix-map support by the C compiler
-case $CC,$host in #(
+case $ocaml_cv_cc_vendor,$host in #(
   *,*-*-mingw32) :
     cc_has_debug_prefix_map=false ;; #(
   *,*-pc-windows) :
     cc_has_debug_prefix_map=false ;; #(
   xlc*,powerpc-ibm-aix*) :
+    cc_has_debug_prefix_map=false ;; #(
+  sunc*,sparc-sun-*) :
     cc_has_debug_prefix_map=false ;; #(
   *) :
 
