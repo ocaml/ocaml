@@ -127,13 +127,13 @@ val compare : t -> t -> int
     behaves like {!Stdlib.compare} on strings but may be more efficient. *)
 
 val starts_with :
-  prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
+  string -> prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> bool
 (** [starts_with ][~][prefix s] is [true] iff [s] starts with [prefix].
 
     @since 4.12.0 *)
 
 val ends_with :
-  suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
+  string -> suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> bool
 (** [ends_with suffix s] is [true] iff [s] ends with [suffix].
 
     @since 4.12.0 *)
