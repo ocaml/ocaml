@@ -166,6 +166,7 @@ stdlib/sharpbang text eol=lf
 tools/autogen text eol=lf
 tools/ci/inria/remove-sinh-primitive.patch text eol=lf
 tools/check-typo text eol=lf
+tools/check-symbol-names text eol=lf
 tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
 tools/gdb-macros text eol=lf
