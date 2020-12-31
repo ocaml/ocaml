@@ -9,13 +9,20 @@ let oc = ref stdout
 
 let copy_buffer = Bytes.create 1024
 
+let copy_chars_win32 m copy_buffer =
+  let f i c = if i < m && c <> '\r' then output_char !oc c in
+  Bytes.iteri f copy_buffer
+
 let copy_chunk (Location(start,stop)) =
   seek_in !ic start;
   let tocopy = ref(stop - start) in
   while !tocopy > 0 do
     let m =
       input !ic copy_buffer 0 (min !tocopy (Bytes.length copy_buffer)) in
-    output !oc copy_buffer 0 m;
+    if Sys.win32 || Sys.cygwin then
+      copy_chars_win32 m copy_buffer
+    else
+      output !oc copy_buffer 0 m;
     tocopy := !tocopy - m
   done
 

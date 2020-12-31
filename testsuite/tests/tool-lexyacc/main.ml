@@ -27,7 +27,7 @@ let main () =
       Filename.chop_suffix source_name ".mll" ^ ".ml"
     else
       source_name ^ ".ml" in
-  ic := open_in source_name;
+  ic := open_in_bin source_name;
 (*  oc := open_out dest_name; *) ignore dest_name;
   oc := stdout;
   let lexbuf = Lexing.from_channel !ic in
