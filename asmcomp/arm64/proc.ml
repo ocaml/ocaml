@@ -33,11 +33,10 @@ let word_addressed = false
     x0 - x15              general purpose (caller-save)
     x16, x17              temporaries (used by call veeners)
     x18                   platform register (reserved)
-    x19 - x24             general purpose (callee-save)
-    x25                   domain state pointer
+    x19 - x25             general purpose (callee-save)
     x26                   trap pointer
     x27                   alloc pointer
-    x28                   alloc limit
+    x28                   domain state pointer
     x29                   frame pointer
     x30                   return address
     sp / xzr              stack pointer / zero register
@@ -48,10 +47,11 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-  [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";
-     "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15";
-     "x19"; "x20"; "x21"; "x22"; "x23"; "x24";
-     "x25"; "x26"; "x27"; "x28"; "x16"; "x17" |]
+  [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";  (* 0 - 7 *)
+     "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15"; (* 8 - 15 *)
+     "x19"; "x20"; "x21"; "x22"; "x23"; "x24"; "x25";        (* 16 - 22 *)
+     "x26"; "x27"; "x28";                                    (* 23 - 25 *)
+     "x16"; "x17" |]                                         (* 26 - 27 *)
 
 let float_reg_name =
   [| "d0";  "d1";  "d2";  "d3";  "d4";  "d5";  "d6";  "d7";
@@ -67,7 +67,7 @@ let register_class r =
   | Float -> 1
 
 let num_available_registers =
-  [| 22; 32 |] (* first 22 int regs allocatable; all float regs allocatable *)
+  [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
 
 let first_available_register =
   [| 0; 100 |]
@@ -269,16 +269,16 @@ let destroyed_at_reloadretaddr = [| |]
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall _ -> 8
-  | Ialloc _ -> 24
-  | _ -> 25
+  | Iextcall _ -> 7
+  | Ialloc _ -> 22
+  | _ -> 23
 
 let max_register_pressure = function
-  | Iextcall _ -> [| 10; 8 |]
-  | Ialloc _ -> [| 24; 32 |]
+  | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
+  | Ialloc _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _, _) -> [| 25; 31 |]
-  | _ -> [| 25; 32 |]
+  | Iload(Single, _) | Istore(Single, _, _) -> [| 23; 31 |]
+  | _ -> [| 23; 32 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)

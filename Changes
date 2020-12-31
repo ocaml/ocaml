@@ -16,6 +16,11 @@ Working version
 
 ### Code generation and optimizations:
 
+- #9876: do not cache the young_limit GC variable in a processor register.
+  This affects the ARM64, PowerPC and RISC-V ports, making signal handling
+  and minor GC triggers more reliable, at the cost of a small slowdown.
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 - #9937: improvements in ARM64 code generation (constants, sign extensions)
   (Xavier Leroy, review by Stephen Dolan)
 
