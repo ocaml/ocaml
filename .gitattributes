@@ -180,20 +180,9 @@ runtime/caml/sizeclasses.h typo.missing-header typo.white-at-eol
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
 testsuite/tests/basic-modules/anonymous.ml text eol=lf
-testsuite/tests/formatting/test_locations.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
-testsuite/tests/parsing/attributes.ml text eol=lf
-testsuite/tests/parsing/extensions.ml text eol=lf
-testsuite/tests/parsing/hash_ambiguity.ml text eol=lf
-testsuite/tests/parsing/int_and_float_with_modifier.ml text eol=lf
-testsuite/tests/parsing/pr6865.ml text eol=lf
-testsuite/tests/parsing/quotedextensions.ml text eol=lf
-testsuite/tests/parsing/shortcut_ext_attr.ml text eol=lf
-testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_impl.ml text eol=lf
-testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_intf.mli text eol=lf
-testsuite/tests/tool-ocamlc-stop-after/stop_after_typing_impl.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
 
-# This is forced to \n to allow the Cygwin testsuite to pass on a
-# Windows-checkout
-testsuite/tests/parsetree/locations_test.ml text eol=lf
+# This test includes newlines in an attribute. These survive lexing, so use Unix
+# line endings, even on Windows.
+testsuite/tests/parsing/quotedextensions.ml text eol=lf

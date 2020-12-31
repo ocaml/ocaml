@@ -277,8 +277,7 @@ let fmt_position with_name f l =
   let fname = if with_name then l.pos_fname else "" in
   if l.pos_lnum = -1
   then Format.fprintf f "%s[%d]" fname l.pos_cnum
-  else Format.fprintf f "%s[%d,%d+%d]" fname l.pos_lnum l.pos_bol
-                      (l.pos_cnum - l.pos_bol)
+  else Format.fprintf f "%s[%d+%d]" fname l.pos_lnum (l.pos_cnum - l.pos_bol)
 
 
 let dump f loc =
