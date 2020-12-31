@@ -197,6 +197,9 @@ val print_loc: formatter -> t -> unit
 val print_locs: formatter -> t list -> unit
 val separate_new_message: formatter -> unit
 
+val dump: formatter -> t -> unit
+    (** Used by -dparsetree and -dtypedtree to print locations. *)
+
 module Doc: sig
   val separate_new_message: unit Format_doc.printer
   val filename: string Format_doc.printer

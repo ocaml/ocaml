@@ -1,14 +1,14 @@
 [
-  structure_item (stop_after_typing_impl.ml[13,365+0]..stop_after_typing_impl.ml[13,365+37])
+  structure_item (stop_after_typing_impl.ml[13,365+0]..[13,365+37])
     Tstr_primitive
-    value_description apply (stop_after_typing_impl.ml[13,365+0]..stop_after_typing_impl.ml[13,365+37])
-      core_type (stop_after_typing_impl.ml[13,365+16]..stop_after_typing_impl.ml[13,365+26])
+    value_description apply (stop_after_typing_impl.ml[13,365+0]..[13,365+37])
+      core_type (stop_after_typing_impl.ml[13,365+16]..[13,365+26])
         Ttyp_arrow
         Nolabel
-        core_type (stop_after_typing_impl.ml[13,365+16]..stop_after_typing_impl.ml[13,365+19])
+        core_type (stop_after_typing_impl.ml[13,365+16]..[13,365+19])
           Ttyp_constr "int!"
           []
-        core_type (stop_after_typing_impl.ml[13,365+23]..stop_after_typing_impl.ml[13,365+26])
+        core_type (stop_after_typing_impl.ml[13,365+23]..[13,365+26])
           Ttyp_constr "int!"
           []
       [

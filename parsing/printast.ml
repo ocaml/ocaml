@@ -15,25 +15,10 @@
 
 open Asttypes
 open Format
-open Lexing
 open Location
 open Parsetree
 
-let fmt_position with_name f l =
-  let fname = if with_name then l.pos_fname else "" in
-  if l.pos_lnum = -1
-  then fprintf f "%s[%d]" fname l.pos_cnum
-  else fprintf f "%s[%d,%d+%d]" fname l.pos_lnum l.pos_bol
-               (l.pos_cnum - l.pos_bol)
-
-let fmt_location f loc =
-  if not !Clflags.locations then ()
-  else begin
-    let p_2nd_name = loc.loc_start.pos_fname <> loc.loc_end.pos_fname in
-    fprintf f "(%a..%a)" (fmt_position true) loc.loc_start
-                         (fmt_position p_2nd_name) loc.loc_end;
-    if loc.loc_ghost then fprintf f " ghost";
-  end
+let fmt_location = Location.dump
 
 let rec fmt_longident_aux f x =
   match x with
