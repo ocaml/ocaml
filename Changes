@@ -282,7 +282,8 @@ Working version
   (David Allsopp, review by Sébastien Hinderer)
 
 - #12297: Don't include bol (beginning-of-line) offsets for -dparsetree and
-  -dtypedtree (allows tests to run with CRLF-formatted source files).
+  -dtypedtree and use line-relative locations in -dlambda (allows tests to
+  run with CRLF-formatted source files).
   (David Allsopp, review by ???)
 
 - #12347: error messages: always report missing polyvariant tags
