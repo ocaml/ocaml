@@ -313,48 +313,6 @@ let emit_frames a =
         else
           partially_pack_info rs d (rest <> [])
       in
-      let () =
-        let overflows_old =
-          d.dinfo_line > 0xFFFFF
-          || d.dinfo_char_start > 0xFF
-          || d.dinfo_char_end > 0x3FF
-        and overflows_new =
-          d.dinfo_line > 0x7FFFF
-          || d.dinfo_end_line - d.dinfo_line > 0x3FFFF
-          || d.dinfo_char_start > 0xFFFF
-          || char_end > 0xFFFF
-          || d.dinfo_char_end > 0x3FFFFFFF
-        and overhead_new =
-          if is_fully_packable then
-            0
-          else
-            let l = String.length defname + 1 in
-            let defname_overhead =
-              if Hashtbl.mem defnames (d.dinfo_file, defname, None) then
-                4 + l + l mod 4
-              else
-                0
-            in
-            8 + defname_overhead
-        in
-          let status =
-            match overflows_old, overflows_new with
-            | false, false -> ""
-            | false, true -> " (broken)"
-            | true, false -> " (fixed)"
-            | true, true -> " (unfixed)"
-          in
-          Printf.eprintf "<debuginfo> +%d%s %s in %s at %d, %d, %d, %d, %d\n%!"
-            overhead_new
-            status
-            defname
-            d.dinfo_file
-            d.dinfo_line
-            d.dinfo_char_start
-            d.dinfo_end_line
-            char_end
-            d.dinfo_char_end
-      in
       let loc =
         if is_fully_packable then
           None
