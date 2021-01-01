@@ -174,7 +174,6 @@ tools/magic text eol=lf
 tools/make-opcodes text eol=lf
 tools/make-package-macosx text eol=lf
 tools/ocaml-objcopy-macosx text eol=lf
-tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
