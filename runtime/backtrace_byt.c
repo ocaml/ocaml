@@ -575,9 +575,11 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
   li->loc_defname = event->ev_defname;
-  li->loc_lnum = event->ev_start_lnum;
-  li->loc_startchr = event->ev_start_chr;
-  li->loc_endchr = event->ev_end_offset;
+  li->loc_start_lnum = event->ev_start_lnum;
+  li->loc_start_chr = event->ev_start_chr;
+  li->loc_end_lnum = event->ev_end_lnum;
+  li->loc_end_chr = event->ev_end_chr;
+  li->loc_end_offset = event->ev_end_offset;
 }
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)

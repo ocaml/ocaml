@@ -332,19 +332,22 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
     li->loc_defname = name_and_loc_info->name;
     li->loc_filename =
       (char *)name_and_loc_info + name_and_loc_info->filename_offs;
-    li->loc_lnum = (info2 >> 12) & 0x7FFFF;
-    li->loc_startchr = name_and_loc_info->start_chr;
-    li->loc_endchr = name_and_loc_info->end_offset;
+    li->loc_start_lnum = li->loc_end_lnum = (info2 >> 12) & 0x7FFFF;
+    li->loc_end_lnum += ((info2 & 0xFFF) << 6) | (info1 >> 26);
+    li->loc_start_chr = name_and_loc_info->start_chr;
+    li->loc_end_chr = name_and_loc_info->end_chr;
+    li->loc_end_offset = name_and_loc_info->end_offset;
   } else {
     struct name_info * name_info =
       (struct name_info*)((char *) dbg + (info1 & 0x3FFFFFC));
     li->loc_defname = name_info->name;
     li->loc_filename =
       (char *)name_info + name_info->filename_offs;
-    li->loc_lnum = info2 >> 19;
-    li->loc_startchr = (info2 >> 10) & 0x3F;
-    li->loc_endchr = (info2 >> 3) & 0x7F;
-    li->loc_endchr += (((info2 & 0x7) << 6) | (info1 >> 26));
+    li->loc_start_lnum = li->loc_end_lnum = info2 >> 19;
+    li->loc_end_lnum += (info2 >> 16) & 0x7;
+    li->loc_start_chr = (info2 >> 10) & 0x3F;
+    li->loc_end_chr = li->loc_end_offset = (info2 >> 3) & 0x7F;
+    li->loc_end_offset += (((info2 & 0x7) << 6) | (info1 >> 26));
   }
 }
 
