@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+- #10111: Increase the detail of location information for debugging events to
+  allow the end line number and character offset to be reported.
+  (David Allsopp, review by ???)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -14,6 +18,10 @@ Working version
 * #7812, #10475: `Filename.chop_suffix name suff` now checks that `suff`
   is actually a suffix of `name` and raises Invalid_argument otherwise.
   (Xavier Leroy, report by whitequark, review by David Allsopp)
+
+- #10111: Add end_line and end_col members to Printexc.location for line-ending-
+  agnostic location reporting.
+  (David Allsopp, review by ???)
 
 * #10482: mark the Stream and Genlex modules as deprecated, in preparation
   for a future removal.  These modules (without deprecation alert)
