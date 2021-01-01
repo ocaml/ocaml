@@ -153,13 +153,13 @@ let emit_frames a =
       lbl
   in
   let defnames = Hashtbl.create 7 in
-  let label_defname filename defname =
+  let label_defname filename defname loc =
     try
-      snd (Hashtbl.find defnames (filename, defname))
+      snd (Hashtbl.find defnames (filename, defname, loc))
     with Not_found ->
       let file_lbl = label_filename filename in
       let def_lbl = Cmm.new_label () in
-      Hashtbl.add defnames (filename, defname) (file_lbl, def_lbl);
+      Hashtbl.add defnames (filename, defname, loc) (file_lbl, def_lbl);
       def_lbl
   in
   let module Label_table =
@@ -238,7 +238,7 @@ let emit_frames a =
     a.efa_def_label lbl;
     a.efa_string name
   in
-  let emit_defname (_filename, defname) (file_lbl, lbl) =
+  let emit_defname (_filename, defname, _loc) (file_lbl, lbl) =
     (* These must be 32-bit aligned, both because they contain a
        32-bit value, and because emit_debuginfo assumes the low 2 bits
        of their addresses are 0. *)
@@ -269,8 +269,58 @@ let emit_frames a =
       let open Debuginfo in
       let info = pack_info rs d (rest <> []) in
       let defname = Scoped_location.string_of_scopes d.dinfo_scopes in
+      let char_end = d.dinfo_char_end + d.dinfo_start_bol - d.dinfo_end_bol in
+      let is_fully_packable =
+        d.dinfo_line <= 0xFFF
+        && d.dinfo_end_line - d.dinfo_line <= 0x7
+        && d.dinfo_char_start <= 0x3F
+        && char_end <= 0x7F
+        && d.dinfo_end_bol - d.dinfo_start_bol <= 0x1FF
+      in
+      let () =
+        let overflows_old =
+          d.dinfo_line > 0xFFFFF
+          || d.dinfo_char_start > 0xFF
+          || d.dinfo_char_end > 0x3FF
+        and overflows_new =
+          d.dinfo_line > 0x7FFFF
+          || d.dinfo_end_line - d.dinfo_line > 0x3FFFF
+          || d.dinfo_char_start > 0xFFFF
+          || char_end > 0xFFFF
+          || d.dinfo_char_end > 0x3FFFFFFF
+        and overhead_new =
+          if is_fully_packable then
+            0
+          else
+            let l = String.length defname + 1 in
+            let defname_overhead =
+              if Hashtbl.mem defnames (d.dinfo_file, defname, None) then
+                4 + l + l mod 4
+              else
+                0
+            in
+            8 + defname_overhead
+        in
+          let status =
+            match overflows_old, overflows_new with
+            | false, false -> ""
+            | false, true -> " (broken)"
+            | true, false -> " (fixed)"
+            | true, true -> " (unfixed)"
+          in
+          Printf.eprintf "<debuginfo> +%d%s %s in %s at %d, %d, %d, %d, %d\n%!"
+            overhead_new
+            status
+            defname
+            d.dinfo_file
+            d.dinfo_line
+            d.dinfo_char_start
+            d.dinfo_end_line
+            char_end
+            d.dinfo_char_end
+      in
       a.efa_label_rel
-        (label_defname d.dinfo_file defname)
+        (label_defname d.dinfo_file defname None)
         (Int64.to_int32 info);
       a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
       match rest with
