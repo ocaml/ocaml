@@ -238,24 +238,55 @@ let emit_frames a =
     a.efa_def_label lbl;
     a.efa_string name
   in
-  let emit_defname (_filename, defname, _loc) (file_lbl, lbl) =
+  let emit_defname (_filename, defname, loc) (file_lbl, lbl) =
+    let emit_loc (start_chr, end_chr, end_offset) =
+      a.efa_16 start_chr;
+      a.efa_16 end_chr;
+      a.efa_32 (Int32.of_int end_offset)
+    in
     (* These must be 32-bit aligned, both because they contain a
        32-bit value, and because emit_debuginfo assumes the low 2 bits
        of their addresses are 0. *)
     a.efa_align 4;
     a.efa_def_label lbl;
     a.efa_label_rel file_lbl 0l;
+    (* Include the additional 64-bits of location information which didn't pack
+       in the main 64-bit word *)
+    Option.iter emit_loc loc;
     a.efa_string defname
   in
-  let pack_info fd_raise d has_next =
-    let line = Int.min 0xFFFFF d.Debuginfo.dinfo_line
-    and char_start = Int.min 0xFF d.Debuginfo.dinfo_char_start
-    and char_end = Int.min 0x3FF d.Debuginfo.dinfo_char_end
+  let fully_pack_info fd_raise d has_next =
+    (* See format in caml_debuginfo_location in runtime/backtrace-nat.c *)
+    let open Debuginfo in
+    let kind = if fd_raise then 1 else 0
+    and has_next = if has_next then 1 else 0
+    and char_end = d.dinfo_char_end + d.dinfo_start_bol - d.dinfo_end_bol in
+    let char_end_offset = d.dinfo_end_bol - d.dinfo_start_bol in
+    Int64.(add (shift_left (of_int d.dinfo_line) 51)
+             (add (shift_left (of_int (d.dinfo_end_line - d.dinfo_line)) 48)
+                (add (shift_left (of_int d.dinfo_char_start) 42)
+                   (add (shift_left (of_int char_end) 35)
+                      (add (shift_left (of_int char_end_offset) 26)
+                         (add (shift_left (of_int kind) 1)
+                            (of_int has_next)))))))
+  in
+  let partially_pack_info fd_raise d has_next =
+    (* Partially packed debuginfo:
+       1lllllllllmmmmmmmmddddddddddddkn
+         1           - d points to a name_and_loc_info struct
+         l (19 bits) - start line number
+         m (18 bits) - offset of end line number from start
+         d (24 bits) - memory offset to name_and_loc_info struct
+         k (1 bit)   - fd_raise flag
+         n (1 bit)   - has_next flag *)
+    let open Debuginfo in
+    let start_line = Int.min 0x7FFFF d.dinfo_line
+    and end_line = Int.min 0x3FFFF (d.dinfo_end_line - d.dinfo_line)
     and kind = if fd_raise then 1 else 0
     and has_next = if has_next then 1 else 0 in
-    Int64.(add (shift_left (of_int line) 44)
-             (add (shift_left (of_int char_start) 36)
-                (add (shift_left (of_int char_end) 26)
+    Int64.(add (shift_left Int64.one 63)
+             (add (shift_left (of_int start_line) 44)
+                (add (shift_left (of_int end_line) 26)
                    (add (shift_left (of_int kind) 1)
                       (of_int has_next)))))
   in
@@ -267,7 +298,6 @@ let emit_frames a =
     a.efa_def_label lbl;
     let rec emit rs d rest =
       let open Debuginfo in
-      let info = pack_info rs d (rest <> []) in
       let defname = Scoped_location.string_of_scopes d.dinfo_scopes in
       let char_end = d.dinfo_char_end + d.dinfo_start_bol - d.dinfo_end_bol in
       let is_fully_packable =
@@ -276,6 +306,12 @@ let emit_frames a =
         && d.dinfo_char_start <= 0x3F
         && char_end <= 0x7F
         && d.dinfo_end_bol - d.dinfo_start_bol <= 0x1FF
+      in
+      let info =
+        if is_fully_packable then
+          fully_pack_info rs d (rest <> [])
+        else
+          partially_pack_info rs d (rest <> [])
       in
       let () =
         let overflows_old =
@@ -319,8 +355,16 @@ let emit_frames a =
             char_end
             d.dinfo_char_end
       in
+      let loc =
+        if is_fully_packable then
+          None
+        else
+          Some (Int.min 0xFFFF d.dinfo_char_start,   (* start_chr *)
+                Int.min 0xFFFF char_end,             (* end_chr *)
+                Int.min 0x3FFFFFFF d.dinfo_char_end) (* end_offset *)
+      in
       a.efa_label_rel
-        (label_defname d.dinfo_file defname None)
+        (label_defname d.dinfo_file defname loc)
         (Int64.to_int32 info);
       a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
       match rest with
