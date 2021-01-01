@@ -5,6 +5,10 @@ Working version
 
 ### Runtime system:
 
+- #10111: Increase the detail of location information for debugging events to
+  allow the end line number and character offset to be reported.
+  (David Allsopp, review by Nick Barnes, Enguerrand Decorne and Stephen Dolan)
+
 - #10403, #12202: introduce `caml_ext_table_add_noexc` that does not
   raise `Out_of_memory` exceptions and use it inside the blocking sections
   of `caml_read_directory`.  Also, check for overflows in ext table sizes.

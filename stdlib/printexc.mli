@@ -261,16 +261,17 @@ val backtrace_slots_of_raw_entry :
     @since 4.12
 *)
 
-
 type location = {
   filename : string;
   line_number : int;
   start_char : int;
   end_char : int;
+  end_line : int; (** @since 5.2 *)
+  end_col : int; (** @since 5.2 *)
 }
 (** The type of location information found in backtraces. [start_char]
-    and [end_char] are positions relative to the beginning of the
-    line.
+    and [end_char] are positions relative to the beginning of [line_number].
+    [end_col] is relative to the beginning of [end_line].
 
     @since 4.02
 *)

@@ -205,6 +205,8 @@ type location = {
   line_number : int;
   start_char : int;
   end_char : int;
+  end_line : int;
+  end_col : int;
 }
 
 let backtrace_slot_location = function
@@ -215,6 +217,8 @@ let backtrace_slot_location = function
       line_number = l.start_lnum;
       start_char  = l.start_char;
       end_char    = l.end_offset;
+      end_line    = l.end_lnum;
+      end_col     = l.end_char;
     }
 
 let backtrace_slot_defname = function
