@@ -197,6 +197,7 @@ runtime/caml/sizeclasses.h typo.missing-header typo.white-at-eol
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
 testsuite/tests/backtrace/names.ml text eol=lf
+testsuite/tests/backtrace/print_location.ml text eol=lf
 testsuite/tests/basic-modules/anonymous.ml text eol=lf
 testsuite/tests/formatting/test_locations.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
