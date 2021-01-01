@@ -65,3 +65,5 @@ val test_pass : Variables.t
 val test_skip : Variables.t
 
 val test_fail : Variables.t
+
+val timeout : Variables.t

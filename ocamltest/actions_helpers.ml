@@ -107,7 +107,7 @@ let run_cmd
     ?(stdout_variable=Builtin_variables.stdout)
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
-    ?(timeout=0)
+    ?timeout
     log env original_cmd
   =
   let log_redirection std filename =
@@ -150,6 +150,13 @@ let run_cmd
     Array.append
       environment
       (Environments.to_system_env env)
+  in
+  let timeout =
+    match timeout with
+    | Some timeout -> timeout
+    | None ->
+        Option.value ~default:0
+          (Environments.lookup_as_int Builtin_variables.timeout env)
   in
   let n =
     Run_command.run {
@@ -273,6 +280,9 @@ let run_hook hook_name log input_env =
     Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
     Environments.to_system_env hookenv in
+  let timeout =
+    Option.value ~default:0
+      (Environments.lookup_as_int Builtin_variables.timeout input_env) in
   let open Run_command in
   let settings = {
     progname = "sh";
@@ -282,7 +292,7 @@ let run_hook hook_name log input_env =
     stdout_filename = "";
     stderr_filename = "";
     append = false;
-    timeout = 0;
+    timeout = timeout;
     log = log;
   } in let exit_status = run settings in
   let final_value = match exit_status with
