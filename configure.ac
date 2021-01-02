@@ -630,8 +630,9 @@ AS_CASE([$host],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
       internal_cflags="$cc_warnings"],
-    [sunc-*],
-      [common_cflags="-O2 -xc99=all $CFLAGS";
+    [sunc-*], # Optimization should be >= O4 to inline functions
+              # and prevent unresolved externals
+      [common_cflags="-O4 -xc99=all $CFLAGS";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
