@@ -12808,7 +12808,7 @@ esac
     common_cppflags="$common_cppflags -U_WIN32"
     if $with_sharedlibs; then :
   flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | tr -d '\015'`
+      flexdir="$(flexlink -where | tr -d '\r')"
       if test -z "$flexdir"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: native shared libraries won't be available.
         " >&5
@@ -12839,10 +12839,12 @@ fi
   *) :
      ;;
 esac
-      flexlink="flexlink -chain $flexdll_chain -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | tr -d '\015'`
-      if test -z "$flexdir"; then :
+      if test -e 'flexdll/Makefile'; then :
   flexdir='$(ROOTDIR)/flexdll'
+else
+  flexlink="flexlink -chain $flexdll_chain -merge-manifest \
+-stack 16777216"
+         flexdir="$($flexlink -where | tr -d '\r')"
 fi
       iflexdir="-I\"$flexdir\""
       mkexedebugflag="-link -g"
@@ -12866,10 +12868,12 @@ fi
      ;;
 esac
     if $with_sharedlibs; then :
-  flexlink="flexlink -chain $flexdll_chain -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | tr -d '\015'`
-      if test -z "$flexdir"; then :
+  if test -e 'flexdll/Makefile'; then :
   flexdir='$(ROOTDIR)/flexdll'
+else
+  flexlink="flexlink -chain $flexdll_chain -merge-manifest \
+-stack 16777216"
+         flexdir="$($flexlink -where | tr -d '\r')"
 fi
       iflexdir="-I\"$flexdir\""
       mkexedebugflag=''

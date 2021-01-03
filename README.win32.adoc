@@ -62,9 +62,10 @@ methods are available, the officially supported environment for doing this is
 Only the `make` Cygwin package is required. `diffutils` is required if you wish
 to be able to run the test suite.
 
-Unless you are also compiling the Cygwin port of OCaml, you should not install
-the `gcc-core` or `flexdll` packages. If you do, care may be required to ensure
-that a particular build is using the correct installation of `flexlink`.
+Unless you are also compiling the Cygwin port of OCaml, you do not need the
+`gcc-core` or `flexdll` packages. If you do install them, care may be required
+to ensure that a particular build is using the correct installation of
+`flexlink`.
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
@@ -290,9 +291,7 @@ is, naturally, written in OCaml.  This creates a circular dependency if you wish
 to build entirely from sources.  Since OCaml 4.03 and FlexDLL 0.35, it is now
 possible to bootstrap the two programs simultaneously.  The process is identical
 for both ports.  If you choose to compile this way, it is not necessary to
-install FlexDLL separately -- indeed, if you do install FlexDLL separately, you
-may need to be careful to ensure that `ocamlopt` picks up the correct `flexlink`
-in your `PATH`.
+install FlexDLL separately.
 
 You must extract the FlexDLL sources for Version 0.35 or later in the directory
 `flexdll/` at the top-level directory of the OCaml distribution.  This can be
