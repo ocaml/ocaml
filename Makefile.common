@@ -70,7 +70,8 @@ ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   ocamlopt_cmd = $(ocamlopt)
 else
   FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe"
+    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun$(EXE) \
+                    $(ROOTDIR)/boot/flexlink.byte$(EXE)"
   CAMLOPT_CMD = $(FLEXLINK_ENV) $(CAMLOPT)
   OCAMLOPT_CMD = $(FLEXLINK_ENV) $(OCAMLOPT)
   MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)

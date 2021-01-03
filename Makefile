@@ -94,8 +94,8 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD = \
-    FLEXLINK_CMD="../boot/ocamlruns$(EXE) ../flexdll/flexlink.exe"
-endif # ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+    FLEXLINK_CMD="../boot/ocamlruns$(EXE) ../boot/flexlink.byte$(EXE)"
+endif # ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 endif # ifeq "$(UNIX_OR_WIN32)" "win32"
 
 expunge := expunge$(EXE)
@@ -170,7 +170,9 @@ coldstart: boot/ocamlruns$(EXE)
 	  OCAMLRUN='$$(ROOTDIR)/boot/ocamlruns$(EXE)' NATDYNLINK=false \
 	  OCAMLOPT='$(value BOOT_OCAMLC) $(USE_RUNTIME_PRIMS) $(USE_STDLIB)' \
 	  flexlink.exe
+	mv flexdll/flexlink.exe boot/flexlink.byte$(EXE)
 	$(MAKE) -C flexdll $(FLEXLINK_BUILD_ENV) support
+	mv flexdll/flexdll_*.$(O) boot/
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 endif # ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
@@ -252,6 +254,11 @@ opt.opt: checknative
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
 	  $(OCAMLTEST_OPT)
+ifeq "$(UNIX_OR_WIN32)" "win32"
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+	$(MAKE) flexlink.opt$(EXE)
+endif
+endif
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -334,32 +341,17 @@ flexlink: flexdll/Makefile
 	@echo WARNING! make flexlink is no longer required
 	@echo This target will be removed in a future release.
 
-.PHONY: flexlink.opt
-flexlink.opt: flexdll/Makefile
-	cd flexdll && \
-	mv flexlink.exe flexlink && \
-	($(MAKE) $(FLEXLINK_BUILD_ENV) \
-             OCAML_FLEXLINK='$(value OCAMLRUN) ./flexlink" \
-	           OCAMLOPT="../ocamlopt.opt$(EXE) -nostdlib -I ../stdlib" \
-	           flexlink.exe || \
-	 (mv flexlink flexlink.exe && false)) && \
-	mv flexlink.exe flexlink.opt && \
-	mv flexlink flexlink.exe
+flexlink.opt$(EXE): flexdll/Makefile
+	$(MAKE) -C flexdll $(FLEXLINK_BUILD_ENV) \
+    OCAML_FLEXLINK='$(value OCAMLRUN) $$(ROOTDIR)/boot/flexlink.byte$(EXE)' \
+	  OCAMLOPT="../ocamlopt.opt$(EXE) -nostdlib -I ../stdlib" flexlink.exe
+	mv flexdll/flexlink.exe $@
+
+partialclean::
+	rm -f flexlink.opt$(EXE)
 
 INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
-
-.PHONY: install-flexdll
-install-flexdll:
-	$(INSTALL_PROG) flexdll/flexlink.exe "$(INSTALL_BINDIR)/flexlink$(EXE)"
-ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
-	$(INSTALL_DATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
-    "$(INSTALL_BINDIR)/"
-endif
-	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
-	  $(MKDIR) "$(INSTALL_FLEXDLLDIR)" ; \
-	  $(INSTALL_DATA) flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLLDIR)" ; \
-	fi
 
 # Installation
 .PHONY: install
@@ -441,9 +433,18 @@ endif
 	  $(MAKE) -C debugger install; \
 	fi
 ifeq "$(UNIX_OR_WIN32)" "win32"
-	if test -n "$(FLEXDLL_SUBMODULE_PRESENT)"; then \
-	  $(MAKE) install-flexdll; \
-	fi
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
+	$(INSTALL_DATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
+    "$(INSTALL_BINDIR)/"
+endif
+	$(MKDIR) "$(INSTALL_FLEXDLLDIR)"
+	$(INSTALL_DATA) boot/flexdll_*.$(O) "$(INSTALL_FLEXDLLDIR)"
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
+	$(INSTALL_PROG) \
+	  boot/flexlink.byte$(EXE) "$(INSTALL_BINDIR)/flexlink.byte$(EXE)"
+endif
+endif
 endif
 	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
@@ -451,6 +452,8 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   (test -f flexlink.byte$(EXE) && \
+	      $(LN) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
 	fi
 else
 	if test -f ocamlopt$(EXE); then $(MAKE) installopt; fi
@@ -517,15 +520,13 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   (test -f flexlink.byte$(EXE) && \
+	     $(LN) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
 	fi
 else
 	if test -f ocamlopt.opt$(EXE); then $(MAKE) installoptopt; fi
 endif
 	$(MAKE) -C tools installopt
-	if test -f ocamlopt.opt$(EXE) -a -f flexdll/flexlink.opt ; then \
-	  $(INSTALL_PROG) \
-	    flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
-	fi
 
 .PHONY: installoptopt
 installoptopt:
@@ -536,6 +537,13 @@ installoptopt:
 	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
+ifeq "$(UNIX_OR_WIN32)" "win32"
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+	$(INSTALL_PROG) flexlink.opt$(EXE) "$(INSTALL_BINDIR)"
+	cd "$(INSTALL_BINDIR)"; \
+	  $(LN) flexlink.opt$(EXE) flexlink$(EXE)
+endif
+endif
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
 	   file_formats/*.cmx \
@@ -1108,6 +1116,8 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
+	      boot/flexlink.byte boot/flexlink.byte.exe \
+	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
 	rm -f runtime/caml/m.h runtime/caml/s.h

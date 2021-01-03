@@ -50,8 +50,8 @@ else # Windows
     FLEXLINK_ENV =
   else
     FLEXLINK_ENV = \
-      OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun \
-                      $(ROOTDIR_HOST)/flexdll/flexlink.exe"
+      OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+                      $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
   endif
 endif
 
@@ -62,8 +62,9 @@ else
     ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
   else
     FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-    MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun $(ROOTDIR_HOST)/flexdll/flexlink.exe \
-                                       $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+    MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+          $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
+          $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
 
     ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
                                  $(ocamltest_program)

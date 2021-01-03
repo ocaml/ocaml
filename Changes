@@ -361,8 +361,8 @@ Working version
 - #10135: Overhaul the FlexDLL bootstrap process. A separate non-shared version
   of the runtime is built, and shared artefacts are no longer built twice. The
   flexdll target no longer has to be separately built, but is folded into the
-  default make target. If the flexdll code is present, any flexlink in PATH is
-  ignored.
+  default make target. flexlink.opt is now built automatically with opt.opt. If
+  the flexdll code is present, any flexlink in PATH is ignored.
   (David Allsopp, review by Sébastien Hinderer)
 
 - #10156: configure script: fix sockets feature detection.

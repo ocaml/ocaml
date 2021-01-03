@@ -317,13 +317,10 @@ OCaml is then compiled normally for the port you require.
  * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the
    FlexDLL object files in `lib/`.
- * If you don't include `make flexlink.opt`, `flexlink.exe` will be a
-   bytecode program.  `make install` always installs the "best"
-   `flexlink.exe` (i.e. there is never a `flexlink.opt.exe` installed).
- * If you have populated `flexdll/`, you *must* run
-   `make flexdll`.  If you wish to revert to using an externally
-   installed FlexDLL, you must erase the contents of `flexdll/` before
-   compiling.
+ * If you have populated `flexdll/`, the build will always use it, ignoring
+   any externally installed FlexDLL. You can override this behaviour by either
+   erasing the contents of `flexdll/` or passing the `--without-flexdll` option
+   to `configure`.
 
 == Unicode support
 
