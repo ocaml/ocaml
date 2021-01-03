@@ -96,10 +96,9 @@ ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD =
 else
   BOOT_FLEXLINK_CMD = \
-    FLEXLINK_CMD="../boot/ocamlrun$(EXE) ../flexdll/flexlink.exe"
-endif
-else
-endif
+    FLEXLINK_CMD="../boot/ocamlruns$(EXE) ../flexdll/flexlink.exe"
+endif # ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+endif # ifeq "$(UNIX_OR_WIN32)" "win32"
 
 expunge := expunge$(EXE)
 
@@ -300,23 +299,27 @@ flexdll: flexdll/Makefile flexlink
 
 # Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
 FLEXLINK_OCAMLOPT = \
-   ../boot/ocamlrun$(EXE) ../boot/ocamlc \
+   ../boot/ocamlruns$(EXE) ../boot/ocamlc \
    -use-prims ../runtime/primitives -nostdlib -I ../boot
 
+# Command to coldstart the standard library when bootstrapping flexlink
+FLEXLINK_STDLIB_CAMLC = \
+  ../boot/ocamlruns$(EXE) ../boot/ocamlc -use-prims ../runtime/primitives
+
+runtime/ocamlruns$(EXE):
+	$(MAKE) -C runtime ocamlruns$(EXE)
+
 .PHONY: flexlink
-flexlink: flexdll/Makefile
-	$(MAKE) -C runtime BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
-	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
+flexlink: flexdll/Makefile runtime/ocamlruns$(EXE)
+	cp runtime/ocamlruns$(EXE) boot/ocamlruns$(EXE)
 	$(MAKE) -C stdlib \
-                COMPILER="../boot/ocamlc -use-prims ../runtime/primitives" \
+                CAMLC="$(FLEXLINK_STDLIB_CAMLC)" \
                 $(filter-out *.cmi,$(LIBFILES))
 	cd stdlib && cp $(LIBFILES) ../boot/
 	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
 	  CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	  OCAMLOPT="$(FLEXLINK_OCAMLOPT)" \
 	  flexlink.exe
-	$(MAKE) -C runtime clean
-	$(MAKE) partialclean
 
 .PHONY: flexlink.opt
 flexlink.opt:
@@ -1091,7 +1094,8 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
-	boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
+	      boot/ocamlruns boot/ocamlruns.exe \
+	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
 	rm -f runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache

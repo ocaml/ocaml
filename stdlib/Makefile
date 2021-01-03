@@ -158,7 +158,7 @@ camlhead%: tmphead%.exe
 # Again, pattern weirdness here means that the dot is always present so that
 # tmpheader.exe matches.
 tmpheader%exe: $(HEADERPROGRAM)%$(O)
-	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
+	$(call MKEXE_USING_COMPILER,$@,$^ $(EXTRALIBS))
 # FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
 ifneq "$(UNIX_OR_WIN32)" "win32"
 	strip $@
@@ -176,7 +176,7 @@ camlheader_ur: camlheader
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
-	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
+	$(call MKEXE_USING_COMPILER,$@,$^ $(EXTRALIBS))
 	strip $@
 
 $(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c

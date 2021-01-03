@@ -358,6 +358,10 @@ Working version
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    report by Ralph Seichter)
 
+- #10135: Speed-up the FlexDLL bootstrap by building a separate non-shared
+  version of the runtime and keeping shared artefacts.
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 

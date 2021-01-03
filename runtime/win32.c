@@ -48,7 +48,12 @@
 #include "caml/sys.h"
 
 #include "caml/config.h"
-#ifdef SUPPORT_DYNAMIC_LINKING
+
+#if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
+#define WITH_DYNAMIC_LINKING
+#endif
+
+#ifdef WITH_DYNAMIC_LINKING
 #include <flexdll.h>
 #endif
 
@@ -214,7 +219,7 @@ wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
   return res;
 }
 
-#ifdef SUPPORT_DYNAMIC_LINKING
+#ifdef WITH_DYNAMIC_LINKING
 
 void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
@@ -275,7 +280,7 @@ char * caml_dlerror(void)
   return "dynamic loading not supported on this platform";
 }
 
-#endif
+#endif /* WITH_DYNAMIC_LINKING */
 
 /* Proper emulation of signal(), including ctrl-C and ctrl-break */
 
