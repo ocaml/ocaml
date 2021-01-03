@@ -84,11 +84,11 @@ is implemented}
 \entree{"times"}{partially implemented, will not report timings for child
 processes}
 \entree{"getitimer", "setitimer"}{not implemented}
-\entree{"getuid", "geteuid", "getgid", "getegid"}{always returns 1}
+\entree{"getuid", "geteuid", "getgid", "getegid"}{always return 1}
 \entree{"setuid", "setgid", "setgroups", "initgroups"}{not implemented}
 \entree{"getgroups"}{always returns "[|1|]" (since 2.00)}
-\entree{"getpwnam", "getpwuid"}{always raises "Not_found"}
-\entree{"getgrnam", "getgrgid"}{always raises "Not_found"}
+\entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
+\entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
 \entree{type "socket_domain"}{"PF_INET" is fully supported;
 "PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is not supported }
 \entree{"establish_server"}{not implemented; use threads}
