@@ -23,7 +23,7 @@
 
 (* NOTE:
    When a new function is added which is not implemented on Windows (or
-   partially implemented), or the Windows-status of an existing functions is
+   partially implemented), or the Windows-status of an existing function is
    changed, remember to update the sumamry table in
    manual/manual/library/libunix.etex
 *)
