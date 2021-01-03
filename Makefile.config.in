@@ -204,6 +204,7 @@ NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@
 IFLEXDIR=@iflexdir@
+FLEXDLL_CHAIN=@flexdll_chain@
 EXTRALIBS=@extralibs@
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
@@ -270,18 +271,16 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   FIND=/usr/bin/find
   SORT=/usr/bin/sort
   SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
-  FLEXLINK_CMD=flexlink
-  FLEXDLL_CHAIN=@flexdll_chain@
-  # FLEXLINK_FLAGS must be safe to insert in an OCaml string
-  FLEXLINK_FLAGS=@flexlink_flags@
-  FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 else # ifeq "$(UNIX_OR_WIN32)" "win32"
   # On Unix, make sure FLEXLINK is defined but empty
-  FLEXLINK =
   SORT=sort
   CYGPATH=echo
   SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 endif # ifeq "$(UNIX_OR_WIN32)" "win32"
+
+FLEXLINK_FLAGS=@flexlink_flags@
+FLEXLINK_CMD=flexlink
+FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 
 # Deprecated variables
 

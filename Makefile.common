@@ -34,11 +34,7 @@ INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
 
-ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
-else
-FLEXDLL_SUBMODULE_PRESENT =
-endif
 
 # Variables used to represent the OCaml runtime system
 # Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.

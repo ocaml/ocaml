@@ -12799,31 +12799,36 @@ case $CC,$host in #(
   *,*-*-cygwin*) :
     case $target in #(
   i686-*) :
-    flavor=cygwin ;; #(
+    flexdll_chain=cygwin ;; #(
   x86_64-*) :
-    flavor=cygwin64 ;; #(
+    flexdll_chain=cygwin64 ;; #(
   *) :
     as_fn_error $? "unknown cygwin variant" "$LINENO" 5 ;;
 esac
     common_cppflags="$common_cppflags -U_WIN32"
     if $with_sharedlibs; then :
-  flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
-      flexdir="$(flexlink -where | tr -d '\r')"
-      if test -z "$flexdir"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: native shared libraries won't be available.
-        " >&5
-$as_echo "$as_me: WARNING: flexlink not found: native shared libraries won't be available.
-        " >&2;}
-        with_sharedlibs=false
+  if test -e 'flexdll/Makefile'; then :
+  flexdir='$(ROOTDIR)/flexdll'
 else
+  flexlink="flexlink -chain $flexdll_chain -merge-manifest \
+-stack 16777216"
+        flexdir="$($flexlink -where | tr -d '\r')"
+        if test -z "$flexdir"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: native shared libraries won't be available.
+          " >&5
+$as_echo "$as_me: WARNING: flexlink not found: native shared libraries won't be available.
+          " >&2;}
+          with_sharedlibs=false
+
+fi
+
+fi
+fi
+    if $with_sharedlibs; then :
   iflexdir="-I\"$flexdir\""
-        mkexe="$flexlink -exe"
-        mkexedebugflag="-link -g"
-
-fi
-
-fi
-    if ! $with_sharedlibs; then :
+      mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+      mkexedebugflag="-link -g"
+else
   mkexe="$mkexe -Wl,--stack,16777216"
       oc_ldflags="-Wl,--stack,16777216"
 
@@ -13695,8 +13700,8 @@ fi
       mkmaindll='$(FLEXLINK) -maindll'
       shared_libraries_supported=$with_sharedlibs ;; #(
   *-*-cygwin*) :
-    mksharedlib="$flexlink"
-      mkmaindll="$flexlink -maindll"
+    mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
       shared_libraries_supported=true ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
@@ -17255,6 +17260,12 @@ esac
 
 # Define flexlink chain and flags correctly for the different Windows ports
 case $host in #(
+  i686-*-cygwin) :
+    flexdll_chain='cygwin'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
+  x86_64-*-cygwin) :
+    flexdll_chain='cygwin64'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
   i686-w64-mingw32) :
     flexdll_chain='mingw'
     flexlink_flags="-chain $flexdll_chain -stack 16777216" ;; #(

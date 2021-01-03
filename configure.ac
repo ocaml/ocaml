@@ -685,24 +685,27 @@ AS_CASE([$CC,$host],
   [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
     [AS_CASE([$target],
-      [i686-*], [flavor=cygwin],
-      [x86_64-*], [flavor=cygwin64],
+      [i686-*], [flexdll_chain=cygwin],
+      [x86_64-*], [flexdll_chain=cygwin64],
       [AC_MSG_ERROR([unknown cygwin variant])])
     common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$with_sharedlibs],
-      [flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
-      flexdir="$(flexlink -where | tr -d '\r')"
-      AS_IF([test -z "$flexdir"],
-        [AC_MSG_WARN(
-          [flexlink not found: native shared libraries won't be available.]
-        )
-        with_sharedlibs=false],
-        [iflexdir="-I\"$flexdir\""
-        mkexe="$flexlink -exe"
-        mkexedebugflag="-link -g"]
-      )]
-    )
-    AS_IF([! $with_sharedlibs],
+      [AS_IF([test -e 'flexdll/Makefile'],
+        [flexdir='$(ROOTDIR)/flexdll'],
+        [flexlink="flexlink -chain $flexdll_chain -merge-manifest \
+-stack 16777216"
+        flexdir="$($flexlink -where | tr -d '\r')"
+        AS_IF([test -z "$flexdir"],
+          [AC_MSG_WARN(
+            [flexlink not found: native shared libraries won't be available.]
+          )
+          with_sharedlibs=false]
+        )]
+      )])
+    AS_IF([$with_sharedlibs],
+      [iflexdir="-I\"$flexdir\""
+      mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+      mkexedebugflag="-link -g"],
       [mkexe="$mkexe -Wl,--stack,16777216"
       oc_ldflags="-Wl,--stack,16777216"]
     )
@@ -867,8 +870,8 @@ AS_IF([test x"$enable_shared" != "xno"],
       mkmaindll='$(FLEXLINK) -maindll'
       shared_libraries_supported=$with_sharedlibs],
     [*-*-cygwin*],
-      [mksharedlib="$flexlink"
-      mkmaindll="$flexlink -maindll"
+      [mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
       shared_libraries_supported=true],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
@@ -1873,6 +1876,12 @@ AS_CASE([$host],
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],
+  [i686-*-cygwin],
+    [flexdll_chain='cygwin'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216"],
+  [x86_64-*-cygwin],
+    [flexdll_chain='cygwin64'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216"],
   [i686-w64-mingw32],
     [flexdll_chain='mingw'
     flexlink_flags="-chain $flexdll_chain -stack 16777216"],
