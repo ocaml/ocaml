@@ -207,8 +207,7 @@ opt: checknative
 .PHONY: opt.opt
 opt.opt: checknative
 	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
+	$(MAKE) coreall
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
