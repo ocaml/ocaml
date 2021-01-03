@@ -17,9 +17,16 @@
    If this file is unixLabels.mli, run tools/sync_stdlib_docs after editing it
    to generate unix.mli.
 
-   If this file is unix.mli, do not edit it directly -- edit
-   unixLabels.mli instead.
- *)
+   If this file is unix.mli, do not edit it directly -- edit unixLabels.mli
+   instead.
+*)
+
+(* NOTE:
+   When a new function is added which is not implemented on Windows (or
+   partially implemented), or the Windows-status of an existing functions is
+   changed, remember to update the sumamry table in
+   manual/manual/library/libunix.etex
+*)
 
 (** Interface to the Unix system.
 
