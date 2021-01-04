@@ -273,6 +273,25 @@ Algorithm:
 
 */
 
+static void do_print_help(void)
+{
+  printf("%s\n",
+    "Usage: ocamlrun [<options>] [--] <executable> [<command-line>]\n"
+    "Options are:\n"
+    "  -b  Set runtime parameter b (detailed exception backtraces)\n"
+    "  -I <dir>  Add <dir> to the list of DLL search directories\n"
+    "  -m  Print the magic number of <executable> and exit\n"
+    "  -M  Print the magic number expected by this runtime and exit\n"
+    "  -p  Print the names of the primitives known to this runtime\n"
+    "  -t  Trace the execution of the bytecode interpreter (specify multiple\n"
+    "      times to increase verbosity)\n"
+    "  -v  Set runtime parameter v=61 (GC event information)\n"
+    "  -version  Print version string and exit\n"
+    "  -vnum  Print short version number and exit\n"
+    "  -help  Display this list of options\n"
+    "  --help  Display this list of options");
+}
+
 /* Parse options on the command line */
 
 static int parse_command_line(char_os **argv)
@@ -327,6 +346,10 @@ static int parse_command_line(char_os **argv)
         exit(0);
       } else if (!strcmp_os(argv[i], T("-vnum"))) {
         printf("%s\n", OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-help")) ||
+                 !strcmp_os(argv[i], T("--help"))) {
+        do_print_help();
         exit(0);
       } else {
         parsed = 0;
