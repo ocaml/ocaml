@@ -203,7 +203,6 @@ OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
 NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@
-IFLEXDIR=@iflexdir@
 FLEXDLL_CHAIN=@flexdll_chain@
 EXTRALIBS=@extralibs@
 CCOMPTYPE=@ccomptype@

@@ -46,14 +46,14 @@ else # Windows
   find := /usr/bin/find
 endif
 
-ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
+  FLEXLINK_ENV =
+else
   # The testsuite needs an absolute path to the runtime, so override the
 	# definition in Makefile.common
   FLEXLINK_ENV = \
     OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
                     $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
-else
-  FLEXLINK_ENV =
 endif
 
 ifeq "$(ocamltest_program)" ""

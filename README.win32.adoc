@@ -76,7 +76,7 @@ bootstrap FlexDLL, you will need to ensure that the directory to which you
 install FlexDLL is included in your `PATH` environment variable. Note: binary
 distributions of FlexDLL are compatible only with Visual Studio 2013 and
 earlier; for Visual Studio 2015 and later, you will need to compile the C
-objects from source, or bootstrap FlexDLL (see below).
+objects from source, or configure ocaml with the `--with-flexdll` option.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...) of all three
 ports runs without any additional tools.
@@ -246,7 +246,7 @@ C code (`ocamlc -custom`) require the appropriate Mingw-w64 gcc and the
 `mingw64-i686-gcc-core` package for 32-bit and the `mingw64-x86_64-gcc-core`
 package for 64-bit.
 
-  - Do not try to use the Cygwin version of flexdll for this port.
+  - The Cygwin version of flexdll does not work with this port.
 
   - The standalone mingw toolchain from the Mingw-w64 project
     (http://mingw-w64.org/) is not supported. Please use the version packaged in

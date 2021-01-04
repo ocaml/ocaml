@@ -358,12 +358,13 @@ Working version
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    report by Ralph Seichter)
 
-- #10135: Overhaul the FlexDLL bootstrap process. A separate non-shared version
-  of the runtime is built, and shared artefacts are no longer built twice. The
-  flexdll target no longer has to be separately built, but is folded into the
-  default make target. flexlink.opt is now built automatically with opt.opt. If
-  the flexdll code is present, any flexlink in PATH is ignored. The Cygwin port
-  now also supports bootstrapping FlexDLL.
+- #10135: Overhaul the FlexDLL bootstrap process. It's now fully integrated
+  with the default build target and controlled by --with-flexdll which allows
+  externally downloaded sources for FlexDLL to be specified. A separate
+  non-shared version of the runtime is built, and shared artefacts are no longer
+  built twice. When bootstrapping, any flexlink in PATH is now ignored and the
+  Cygwin port also supports bootstrapping FlexDLL. flexlink.opt is automatically
+  built and installed as part of opt.opt/world.opt.
   (David Allsopp, review by Sébastien Hinderer)
 
 - #10156: configure script: fix sockets feature detection.
