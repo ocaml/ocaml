@@ -280,7 +280,7 @@ OCaml 4.12.0
 
 - #10107: Ensure modules compiled with -afl-instrument can still link on
   platforms without AFL support.
-  (David Allsopp, review by ???)
+  (David Allsopp, review by Xavier Leroy)
 
 ### Code generation and optimizations:
 
