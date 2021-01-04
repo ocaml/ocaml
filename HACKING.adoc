@@ -361,6 +361,29 @@ most packages are incompatible with the in-progress development version.
 
 === Continuous integration
 
+[#check-typo]
+==== check-typo
+
+The `tools/check-typo` script enforces various typographical rules in the
+OCaml compiler codebase.
+
+Running `./tools/check-typo` from the repository root will check all
+source files. This can be fairly slow (2 minutes for example). Use
+`./tools/check-typo <path>` to run it on some file or directory
+(recursively) only.
+
+Running `./toos/check-typo-since trunk` checks all files that changed
+in the commits since `trunk` -- this work with any git reference. It
+runs much faster than a full `./tools/check-typo`, typically instantly.
+
+You can also setup a git commit-hook to automatically run `check-typo`
+on the changes you commit, by copying the file
+`tools/pre-commit-githook` to `.git/hooks/pre-commit`.
+
+Some files need special rules to opt out of `check-typo` checks; this
+is specified in the `.gitattributes` file at the root of the
+repository, using `typo.foo` attributes.
+
 ==== Github's CI: Travis and AppVeyor
 
 The script that is run on Travis continuous integration servers is

@@ -66,10 +66,7 @@ contribution.
 You should not leave trailing whitespace; not have line longer than 80
 columns, not use tab characters (spaces only), and not use non-ASCII
 characters. These typographical rules can be checked with the script
-`tools/check-typo`.
-
-If you are working from a Git clone, you can automate this process by
-copying the file `tools/pre-commit-githook` to `.git/hooks/pre-commit`.
+`tools/check-typo`, see [HACKING.adoc: check-typo](HACKING.adoc#check-typo).
 
 Otherwise, there are no strongly enforced guidelines specific to the
 compiler -- and, as a result, the style may differ in the different
