@@ -68,10 +68,10 @@ val iter_error : ('e -> unit) -> ('a, 'e) result -> unit
 (** {1:preds Predicates and comparisons} *)
 
 val is_ok : ('a, 'e) result -> bool
-(** [is_ok r] is [true] iff [r] is [Ok _]. *)
+(** [is_ok r] is [true] if and only if [r] is [Ok _]. *)
 
 val is_error : ('a, 'e) result -> bool
-(** [is_error r] is [true] iff [r] is [Error _]. *)
+(** [is_error r] is [true] if and only if [r] is [Error _]. *)
 
 val equal :
   ok:('a -> 'a -> bool) -> error:('e -> 'e -> bool) -> ('a, 'e) result ->
