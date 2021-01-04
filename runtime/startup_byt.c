@@ -277,49 +277,66 @@ Algorithm:
 
 static int parse_command_line(char_os **argv)
 {
-  int i, j;
+  int i, j, len, parsed;
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
-    switch(argv[i][1]) {
-    case 't':
-      ++ caml_trace_level; /* ignored unless DEBUG mode */
-      break;
-    case 'v':
-      if (!strcmp_os (argv[i], T("-version"))){
-        printf ("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
-        exit (0);
-      }else if (!strcmp_os (argv[i], T("-vnum"))){
-        printf ("%s\n", OCAML_VERSION_STRING);
-        exit (0);
-      }else{
+    len = strlen_os(argv[i]);
+    parsed = 1;
+    if (len == 2) {
+      /* Single-letter options, e.g. -v */
+      switch(argv[i][1]) {
+      case '-':
+        return i + 1;
+        break;
+      case 't':
+        ++ caml_trace_level; /* ignored unless DEBUG mode */
+        break;
+      case 'v':
         caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        break;
+      case 'p':
+        for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
+          printf("%s\n", caml_names_of_builtin_cprim[j]);
+        exit(0);
+        break;
+      case 'b':
+        caml_record_backtrace(Val_true);
+        break;
+      case 'I':
+        if (argv[i + 1] != NULL) {
+          caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
+          i++;
+        } else {
+          error("option '-I' needs an argument.");
+        }
+        break;
+      case 'm':
+        print_magic = 1;
+        break;
+      case 'M':
+        printf("%s\n", EXEC_MAGIC);
+        exit(0);
+        break;
+      default:
+        parsed = 0;
       }
-      break;
-    case 'p':
-      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
-        printf("%s\n", caml_names_of_builtin_cprim[j]);
-      exit(0);
-      break;
-    case 'b':
-      caml_record_backtrace(Val_true);
-      break;
-    case 'I':
-      if (argv[i + 1] != NULL) {
-        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
-        i++;
+    } else {
+      /* Named options, e.g. -version */
+      if (!strcmp_os(argv[i], T("-version"))) {
+        printf("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
+        exit(0);
+      } else if (!strcmp_os(argv[i], T("-vnum"))) {
+        printf("%s\n", OCAML_VERSION_STRING);
+        exit(0);
+      } else {
+        parsed = 0;
       }
-      break;
-    case 'm':
-      print_magic = 1;
-      break;
-    case 'M':
-      printf ( "%s\n", EXEC_MAGIC);
-      exit(0);
-      break;
-    default:
-      error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
     }
+
+    if (!parsed)
+      error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
   }
+
   return i;
 }
 
