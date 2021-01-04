@@ -99,7 +99,7 @@ BUILD_PREFIX=🐫реализация
 if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   case "$PORT" in
     cygwin*) ;;
-    *) PATH=$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH;;
+    *) export PATH="$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH";;
   esac
 fi
 
