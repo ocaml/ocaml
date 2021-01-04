@@ -24,6 +24,15 @@ module A = struct
   (* Mutually recursive declarations work as well *)
   type p = q [@@immediate]
   and q = int
+
+  (* Variants with only constant constructors are immediate *)
+  type o = Foo | Bar | Baz [@@immediate]
+
+  (* Can declare with a weaker immediacy than necessary *)
+  type m = int [@@immediate64]
+
+  (* ... and yet use the stronger one by expansion later *)
+  type n = m [@@immediate]
 end;;
 [%%expect{|
 module A :
@@ -33,6 +42,9 @@ module A :
     type r = s
     type p = q [@@immediate]
     and q = int
+    type o = Foo | Bar | Baz
+    type m = int [@@immediate64]
+    type n = m [@@immediate]
   end
 |}];;
 
@@ -109,6 +121,30 @@ end;;
 Line 2, characters 2-31:
 2 |   type t = string [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
+|}];;
+
+(* Cannot directly declare a non-immediate type as immediate (variant) *)
+module B = struct
+  type t = Foo of int | Bar [@@immediate]
+end;;
+[%%expect{|
+Line 2, characters 2-41:
+2 |   type t = Foo of int | Bar [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
+|}];;
+
+(* Cannot directly declare a non-immediate type as immediate (record) *)
+module B = struct
+  type t = { foo : int } [@@immediate]
+end;;
+[%%expect{|
+Line 2, characters 2-38:
+2 |   type t = { foo : int } [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be non-pointer types
        like int or bool.
 |}];;

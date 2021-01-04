@@ -4925,21 +4925,23 @@ let rec check_type_immediate env ty imm =
   match (repr ty).desc with
   | Tconstr(p, _args, _abbrev) ->
      begin match Env.find_type p env with
+     | exception Not_found -> Type_immediacy.coerce Unknown ~as_:imm
      | { type_unboxed = { unboxed = true; _ }; _ } ->
         begin match get_unboxed_type_representation env ty with
         | Some ty' -> check_type_immediate env ty' imm
         | None -> Type_immediacy.coerce Unknown ~as_:imm
         end
-     | { type_kind = k; _ } when
-         Result.is_ok (Type_immediacy.coerce (kind_immediacy k) ~as_:imm) ->
-        Ok ()
-     | { type_kind = Type_abstract _; _ } ->
-        begin match try_expand_head try_expand_once_opt env ty with
-        | ty' -> check_type_immediate env ty' imm
-        | exception Cannot_expand -> Type_immediacy.coerce Unknown ~as_:imm
+     | { type_kind = Type_abstract {immediate}; _ } ->
+        (* Check the declaration first, to avoid expanding if possible *)
+        begin match Type_immediacy.coerce immediate ~as_:imm with
+        | Ok () -> Ok ()
+        | Error _ ->
+           match try_expand_head try_expand_once_opt env ty with
+           | ty' -> check_type_immediate env ty' imm
+           | exception Cannot_expand -> Type_immediacy.coerce Unknown ~as_:imm
         end
-     | _ -> Type_immediacy.coerce Unknown ~as_:imm
-     | exception Not_found -> Type_immediacy.coerce Unknown ~as_:imm
+     | { type_kind = k; _ } ->
+        Type_immediacy.coerce (kind_immediacy k) ~as_:imm
      end
   | Tvariant row ->
       let row = Btype.row_repr row in

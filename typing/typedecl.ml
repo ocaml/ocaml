@@ -384,6 +384,11 @@ let transl_declaration env sdecl (id, uid) =
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
+    let kind_imm = Ctype.kind_immediacy kind in
+    begin match Type_immediacy.coerce kind_imm ~as_:immediate with
+    | Ok () -> ()
+    | Error v -> raise(Error(sdecl.ptype_loc, Immediacy v))
+    end;
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
       | Some sty ->
@@ -407,10 +412,6 @@ let transl_declaration env sdecl (id, uid) =
         type_unboxed = unboxed_status;
         type_uid = uid;
       } in
-    begin match Ctype.check_decl_immediate env decl immediate with
-    | Ok () -> ()
-    | Error v -> raise(Error(sdecl.ptype_loc, Immediacy v))
-    end;
   (* Check constraints *)
     List.iter
       (fun (cty, cty', loc) ->
@@ -553,9 +554,12 @@ let check_constraints env sdecl (_, decl) =
   end
 
 (*
+   Check that the type expression (if present) is compatible with the kind.
    If both a variant/record definition and a type equation are given,
    need to check that the equation refers to a type of the same kind
    with the same constructors and labels.
+   If the kind is Type_abstract {immediate}, need to check that the equation
+   refers to a sufficiently-immediate type.
 *)
 let check_coherence env loc dpath decl =
   match decl with
@@ -592,7 +596,7 @@ let check_coherence env loc dpath decl =
      | Ok () -> ()
      | Error v -> raise(Error(loc, Immediacy v))
      end
-  | _ -> ()
+  | { type_manifest = None } -> ()
 
 let check_abbrev env sdecl (id, decl) =
   check_coherence env sdecl.ptype_loc (Path.Pident id) decl

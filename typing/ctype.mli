@@ -392,5 +392,6 @@ val mcomp : Env.t -> type_expr -> type_expr -> unit
 
 val get_unboxed_type_representation : Env.t -> type_expr -> type_expr option
 
+val kind_immediacy : type_kind -> Type_immediacy.t
 val check_decl_immediate : Env.t -> type_declaration -> Type_immediacy.t -> (unit, Type_immediacy.Violation.t) result
 val check_type_immediate : Env.t -> type_expr -> Type_immediacy.t -> (unit, Type_immediacy.Violation.t) result

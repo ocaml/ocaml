@@ -439,9 +439,10 @@ let may_equal_constr c1 c2 = match c1.cstr_tag,c2.cstr_tag with
 
 let kind_abstract = Type_abstract { immediate = Unknown }
 
-let decl_is_abstract = function
-  | { type_kind = Type_abstract _; _ } -> true
-  | _ -> false
+let decl_is_abstract decl =
+  match decl.type_kind with
+  | Type_abstract _ -> true
+  | Type_record _ | Type_variant _ | Type_open -> false
 
 type label_description =
   { lbl_name: string;                   (* Short name *)
