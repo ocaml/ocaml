@@ -223,13 +223,16 @@ better than adding redundant explanations.)
 Changes affecting the compiler libraries should be reflected in the
 documentation comments of the relevant `.mli` files.
 
-It is recommended to included changes to the OCaml Reference Manual
+It is recommended to include changes to the OCaml Reference Manual
 (in particular for any change in the surface language), which is now
 part of the main repository (under `manual/`).
 
 Finally, changes in command-line options should be integrated in the
 manual, but also in the man pages present in the `man/` sub-directory
 of the OCaml distribution.
+
+You should build the OCaml reference manual in manual/ to check your
+changes. See the instructions in manual/README.md.
 
 ### Changelog
 
