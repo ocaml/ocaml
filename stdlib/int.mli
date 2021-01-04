@@ -103,7 +103,7 @@ external shift_right_logical : int -> int -> int = "%lsrint"
 (** {1:preds Predicates and comparisons} *)
 
 val equal : int -> int -> bool
-(** [equal x y] is [true] iff [x = y]. *)
+(** [equal x y] is [true] if and only if [x = y]. *)
 
 val compare : int -> int -> int
 (** [compare x y] is {!Stdlib.compare}[ x y] but more efficient. *)

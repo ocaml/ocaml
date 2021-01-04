@@ -58,7 +58,7 @@ val pred : t -> t
     @raise Invalid_argument if [u] is {!min}. *)
 
 val is_valid : int -> bool
-(** [is_valid n] is [true] iff [n] is a Unicode scalar value
+(** [is_valid n] is [true] if and only if [n] is a Unicode scalar value
     (i.e. in the ranges [0x0000]...[0xD7FF] or [0xE000]...[0x10FFFF]).*)
 
 val of_int : int -> t
@@ -74,7 +74,7 @@ val to_int : t -> int
 (** [to_int u] is [u] as an integer. *)
 
 val is_char : t -> bool
-(** [is_char u] is [true] iff [u] is a latin1 OCaml character. *)
+(** [is_char u] is [true] if and only if [u] is a latin1 OCaml character. *)
 
 val of_char : char -> t
 (** [of_char c] is [c] as a Unicode character. *)
