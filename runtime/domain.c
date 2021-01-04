@@ -795,9 +795,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   // Don't take the lock if there's already a stw leader
   if (atomic_load_acq(&stw_leader)) {
-    caml_ev_begin("stw/leader_collision");
     caml_handle_incoming_interrupts();
-    caml_ev_end("stw/leader_collision");
     return 0;
   }
 
@@ -807,9 +805,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_plat_lock(&all_domains_lock);
   if (atomic_load_acq(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
-    caml_ev_begin("stw/leader_collision");
     caml_handle_incoming_interrupts();
-    caml_ev_end("stw/leader_collision");
     return 0;
   } else {
     atomic_store_rel(&stw_leader, (uintnat)domain_self);
