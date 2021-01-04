@@ -13,17 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Module [Seq]: functional iterators *)
+(** Functional iterators.
 
-(** {1 Functional Iterators} *)
-
-(** The type ['a t] is a {b delayed list}, i.e. a list where some evaluation
+    The type ['a t] is a {b delayed list}, i.e. a list where some evaluation
     is needed to access the next element. This makes it possible to build
     infinite sequences, to build sequences as we traverse them, and to transform
     them in a lazy fashion rather than upfront.
-*)
 
-(** @since 4.07 *)
+    @since 4.07
+*)
 
 type 'a t = unit -> 'a node
 (** The type of delayed lists containing elements of type ['a].
