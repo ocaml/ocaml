@@ -278,6 +278,10 @@ OCaml 4.12.0
 - #10062: set ARCH_INT64_PRINTF_FORMAT correctly for both modes of mingw-w64
   (David Allsopp, review by Xavier Leroy)
 
+- #10107: Ensure modules compiled with -afl-instrument can still link on
+  platforms without AFL support.
+  (David Allsopp, review by ???)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
