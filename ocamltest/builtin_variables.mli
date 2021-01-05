@@ -25,6 +25,8 @@ val commandline : Variables.t
 
 val exit_status : Variables.t
 
+val file : Variables.t
+
 val files : Variables.t
 
 val make : Variables.t
