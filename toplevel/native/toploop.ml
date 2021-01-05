@@ -459,4 +459,7 @@ let load_file _ (* fixme *) ppf name0 =
     if tmp then (try Sys.remove fn with Sys_error _ -> ());
     success
 
-
+let init () =
+  Compmisc.init_path ();
+  Clflags.dlcode := true;
+  ()

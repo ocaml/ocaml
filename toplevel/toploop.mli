@@ -54,3 +54,5 @@ include Topcommon.PRINTER with type Printer.t = Obj.t
 
 (* For topmain.ml. Maybe shouldn't be there *)
 val load_file : bool -> formatter -> string -> bool
+
+val init: unit -> unit

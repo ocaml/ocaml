@@ -5,16 +5,12 @@ open Toploop
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
    can call directives from Topdirs. *)
-
 let _ =
   if !Sys.interactive then (* PR#6108 *)
     invalid_arg "The ocamltoplevel.cma library from compiler-libs \
                  cannot be loaded inside the OCaml toplevel";
   Sys.interactive := true;
-  let crc_intfs = Symtable.init_toplevel() in
-  Compmisc.init_path ();
-  Env.import_crcs ~source:Sys.executable_name crc_intfs;
-  ()
+  Toploop.init ()
 
 let find_ocamlinit () =
   let ocamlinit = ".ocamlinit" in
