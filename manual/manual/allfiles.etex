@@ -87,8 +87,8 @@ and as a
 \input{libdynlink.tex}
 \input{libbigarray.tex}
 
-\part{Appendix}
-\label{p:appendix}
+\part{Indexes}
+\label{p:indexes}
 
 \ifouthtml
 \begin{links}

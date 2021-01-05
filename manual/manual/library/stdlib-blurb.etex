@@ -15,6 +15,7 @@ provided by these modules, or to add "open" directives.
 
 \label{stdlib:top}
 
+\begin{latexonly}
 \section*{s:stdlib-conv}{Conventions}
 
 For easy reference, the modules are listed below in alphabetical order
@@ -24,7 +25,6 @@ one by one in typewriter font, followed by a short comment.
 All modules and the identifiers they export are indexed at the end of
 this report.
 
-\begin{latexonly}
 \section*{s:stdlib-overview}{Overview}
 
 Here is a short listing, by theme, of the standard library modules.
