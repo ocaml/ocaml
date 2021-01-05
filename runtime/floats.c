@@ -18,9 +18,7 @@
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
 /* Needed for uselocale */
-#if !defined(__SUNPRO_C)
 #define _XOPEN_SOURCE 700
-#endif
 
 /* Needed for strtod_l */
 #define _GNU_SOURCE

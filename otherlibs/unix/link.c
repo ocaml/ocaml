@@ -15,9 +15,7 @@
 
 /* Needed to get linkat exposed in compliant OS.
    Must be defined before the first system .h is included. */
-#if !defined(__SUNPRO_C)
 #define _XOPEN_SOURCE 700
-#endif
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
