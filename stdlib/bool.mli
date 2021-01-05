@@ -42,7 +42,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
 (** {1:preds Predicates and comparisons} *)
 
 val equal : bool -> bool -> bool
-(** [equal b0 b1] is [true] only if [b0] and [b1] are both [true]
+(** [equal b0 b1] is [true] if and only if [b0] and [b1] are both [true]
     or both [false]. *)
 
 val compare : bool -> bool -> int
