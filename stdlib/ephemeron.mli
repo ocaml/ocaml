@@ -334,7 +334,7 @@ module GenHashTable: sig
   type equal =
   | ETrue
   | EFalse
-  | EDead
+  | EDead (** the container is dead *)
 
   module MakeSeeded(H:
   sig
