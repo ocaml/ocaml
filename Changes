@@ -63,6 +63,13 @@ Working version
   (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
   Angeletti and Gabriel Scherer)
 
+- #10095: simplify the syntax error messages produced by the compiler.
+  In many cases, the compiler would produce an error message that looked
+  potentially helpful but was actually misguided and arguably confusing,
+  because the error message implicitly referred to an earlier point in
+  the source code than the point explicitly shown in the error message.
+  (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
+
 ### Internal/compiler-libs changes:
 
 - #9650, #9651: keep refactoring the pattern-matching compiler
