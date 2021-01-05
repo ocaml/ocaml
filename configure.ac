@@ -632,7 +632,7 @@ AS_CASE([$host],
       internal_cflags="$cc_warnings"],
     [sunc-*], # Optimization should be >= O4 to inline functions
               # and prevent unresolved externals
-      [common_cflags="-O4 -xc99=all $CFLAGS";
+      [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
