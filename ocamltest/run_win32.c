@@ -13,7 +13,10 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Run programs with rediretions and timeouts under Windows */
+/* Run programs with redirections and timeouts under Windows */
+
+/* GetTickCount64() requires Windows Vista or Server 2008 */
+#define _WIN32_WINNT 0x0600
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -257,7 +260,8 @@ int run_command(const command_settings *settings)
   STARTUPINFO startup_info;
   PROCESS_INFORMATION process_info;
   BOOL wait_result;
-  DWORD status, stamp, cur;
+  DWORD status;
+  ULONGLONG stamp, cur;
   DWORD timeout = (settings->timeout > 0) ? settings->timeout * 1000 : INFINITE;
 
   JOBOBJECT_ASSOCIATE_COMPLETION_PORT port = {NULL, NULL};
@@ -359,7 +363,7 @@ int run_command(const command_settings *settings)
   ResumeThread(process_info.hThread);
   CloseHandle(process_info.hThread);
 
-  stamp = GetTickCount();
+  stamp = GetTickCount64();
   while ((wait_result = GetQueuedCompletionStatus(port.CompletionPort,
                                                   &completion_code,
                                                   &completion_key,
@@ -369,10 +373,12 @@ int run_command(const command_settings *settings)
   {
     if (timeout != INFINITE)
     {
-      cur = GetTickCount();
-      stamp = (cur > stamp ? cur - stamp : MAXDWORD - stamp + cur);
-      timeout = (timeout > stamp ? timeout - stamp : 0);
-      stamp = cur;
+      cur = GetTickCount64();
+      if (cur > stamp) {
+        ULONGLONG elapsed = cur - stamp;
+        timeout = (timeout > elapsed ? timeout - elapsed : 0);
+        stamp = cur;
+      }
     }
   }
   if (wait_result)

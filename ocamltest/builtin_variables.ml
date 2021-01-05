@@ -101,7 +101,8 @@ let test_skip = Variables.make ("TEST_SKIP",
 let test_fail = Variables.make ("TEST_FAIL",
   "Exit code to let a script report failure")
 
-
+let timeout = Variables.make ("timeout",
+  "Maximal execution time for every command (in seconds)")
 
 let _ = List.iter Variables.register_variable
   [
@@ -129,4 +130,5 @@ let _ = List.iter Variables.register_variable
     test_pass;
     test_skip;
     test_fail;
+    timeout;
   ]
