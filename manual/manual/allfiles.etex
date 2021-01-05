@@ -78,12 +78,12 @@ and as a
 \input{stdlib-blurb.tex}
 \input{compilerlibs.tex}
 \input{libunix.tex}
-\input{libnum.tex}
 \input{libstr.tex}
 \input{libthreads.tex}
-\input{libgraph.tex}
+%\input{libgraph.tex}
 \input{libdynlink.tex}
-\input{libbigarray.tex}
+%\input{libbigarray.tex}
+\input{libnum.tex}
 
 \part{Indexes}
 \label{p:indexes}
