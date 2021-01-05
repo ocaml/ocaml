@@ -318,7 +318,7 @@ let keep_original_error_size = ref false
 let main fname =
   if not !keep_original_error_size then
     Clflags.error_size := 0;
-  Toploop.override_sys_argv
+  Topcommon.override_sys_argv
     (Array.sub Sys.argv ~pos:!Arg.current
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
@@ -335,7 +335,7 @@ let main fname =
         Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
   end;
   Compmisc.init_path ();
-  Toploop.initialize_toplevel_env ();
+  Topcommon.initialize_toplevel_env ();
   Sys.interactive := false;
   process_expect_file fname;
   exit 0

@@ -31,10 +31,10 @@ let () =
            ; cmi      = Marshal.from_string Cached_cmi.foo 0
            }
     | _ -> old_loader unit_name);
-  Toploop.add_hook (function
-      | Toploop.After_setup ->
-          Toploop.toplevel_env :=
+  Topcommon.add_hook (function
+      | Topcommon.After_setup ->
+          Topcommon.toplevel_env :=
             Env.add_persistent_structure (Ident.create_persistent "Foo")
-              !Toploop.toplevel_env
+              !Topcommon.toplevel_env
       | _ -> ());
   exit (Topmain.main ())
