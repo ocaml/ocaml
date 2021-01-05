@@ -58,7 +58,8 @@ By default, build is 32-bit. For 64-bit build, please set environment variable `
   your build will break (`ocamlrun` segfaults).
 +
 * For Solaris/Illumos on SPARC machines with Sun PRO compiler only 64-bit
-  bytecode target is supported (due to alignment issues):
+  bytecode target is supported (32-bit fails due to alignment issues; the optimization
+  is preset to `-O4` for inlining):
 
     ./configure CC="cc -m64"
 +
