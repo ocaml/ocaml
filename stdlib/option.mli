@@ -55,14 +55,14 @@ val iter : ('a -> unit) -> 'a option -> unit
 (** {1:preds Predicates and comparisons} *)
 
 val is_none : 'a option -> bool
-(** [is_none o] is [true] iff [o] is [None]. *)
+(** [is_none o] is [true] if and only if [o] is [None]. *)
 
 val is_some : 'a option -> bool
-(** [is_some o] is [true] iff [o] is [Some o]. *)
+(** [is_some o] is [true] if and only if [o] is [Some o]. *)
 
 val equal : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
-(** [equal eq o0 o1] is [true] iff [o0] and [o1] are both [None] or if
-    they are [Some v0] and [Some v1] and [eq v0 v1] is [true]. *)
+(** [equal eq o0 o1] is [true] if and only if [o0] and [o1] are both [None]
+    or if they are [Some v0] and [Some v1] and [eq v0 v1] is [true]. *)
 
 val compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 (** [compare cmp o0 o1] is a total order on options using [cmp] to compare
