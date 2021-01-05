@@ -123,23 +123,24 @@ val epsilon : float
     floating-point number greater than [1.0]. *)
 
 val is_finite : float -> bool
-(** [is_finite x] is [true] iff [x] is finite i.e., not infinite and
+(** [is_finite x] is [true] if and only if [x] is finite i.e., not infinite and
    not {!nan}.
 
    @since 4.08.0 *)
 
 val is_infinite : float -> bool
-(** [is_infinite x] is [true] iff [x] is {!infinity} or {!neg_infinity}.
+(** [is_infinite x] is [true] if and only if [x] is {!infinity} or
+    {!neg_infinity}.
 
    @since 4.08.0 *)
 
 val is_nan : float -> bool
-(** [is_nan x] is [true] iff [x] is not a number (see {!nan}).
+(** [is_nan x] is [true] if and only if [x] is not a number (see {!nan}).
 
    @since 4.08.0 *)
 
 val is_integer : float -> bool
-(** [is_integer x] is [true] iff [x] is an integer.
+(** [is_integer x] is [true] if and only if [x] is an integer.
 
    @since 4.08.0 *)
 
@@ -320,7 +321,7 @@ external copy_sign : float -> float -> float
 
 external sign_bit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
-(** [sign_bit x] is [true] iff the sign bit of [x] is set.
+(** [sign_bit x] is [true] if and only if the sign bit of [x] is set.
     For example [sign_bit 1.] and [signbit 0.] are [false] while
     [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
 
