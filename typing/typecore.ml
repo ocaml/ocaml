@@ -2771,7 +2771,8 @@ and type_expect_
       if maybe_expansive arg then lower_contravariant env arg.exp_type;
       generalize arg.exp_type;
       let cases, partial =
-        type_cases Computation env arg.exp_type ty_expected true loc caselist in
+        type_cases Computation env
+          arg.exp_type ty_expected_explained true loc caselist in
       re {
         exp_desc = Texp_match(arg, cases, partial);
         exp_loc = loc; exp_extra = [];
@@ -2781,7 +2782,8 @@ and type_expect_
   | Pexp_try(sbody, caselist) ->
       let body = type_expect env sbody ty_expected_explained in
       let cases, _ =
-        type_cases Value env Predef.type_exn ty_expected false loc caselist in
+        type_cases Value env
+          Predef.type_exn ty_expected_explained false loc caselist in
       re {
         exp_desc = Texp_try(body, cases);
         exp_loc = loc; exp_extra = [];
@@ -3648,7 +3650,8 @@ and type_expect_
       let exp, ands = type_andops env slet.pbop_exp sands ty_andops in
       let scase = Ast_helper.Exp.case spat_params sbody in
       let cases, partial =
-        type_cases Value env ty_params ty_func_result true loc [scase]
+        type_cases Value env
+          ty_params (mk_expected ty_func_result) true loc [scase]
       in
       let body =
         match cases with
@@ -3779,8 +3782,8 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
     generalize_structure ty_res
   end;
   let cases, partial =
-    type_cases Value ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
-      true loc caselist in
+    type_cases Value ~in_function:(loc_fun,ty_fun) env
+      ty_arg (mk_expected ty_res) true loc caselist in
   let not_nolabel_function ty =
     let ls, tvar = list_labels env ty in
     List.for_all ((<>) Nolabel) ls && not tvar
@@ -4572,8 +4575,10 @@ and type_cases
     : type k . k pattern_category ->
            ?in_function:_ -> _ -> _ -> _ -> _ -> _ -> Parsetree.case list ->
            k case list * partial
-  = fun category ?in_function env ty_arg ty_res partial_flag loc caselist ->
+  = fun category ?in_function env
+        ty_arg ty_res_explained partial_flag loc caselist ->
   (* ty_arg is _fully_ generalized *)
+  let { ty = ty_res; explanation } = ty_res_explained in
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
   let contains_polyvars = List.exists contains_polymorphic_variant patterns in
   let erase_either = contains_polyvars && contains_variant_either ty_arg in
@@ -4714,7 +4719,8 @@ and type_cases
                    (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
-          type_unpacks ?in_function ext_env unpacks pc_rhs (mk_expected ty_res')
+          type_unpacks ?in_function ext_env
+            unpacks pc_rhs (mk_expected ?explanation ty_res')
         in
         {
          c_lhs = pat;

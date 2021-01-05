@@ -680,6 +680,11 @@ OCaml 4.12.0
 - #10048: Fix bug with generalized local opens.
   (Leo White, review by Thomas Refis)
 
+- #10106, #10112: some expected-type explanations where forgotten
+  after some let-bindings
+  (Gabriel Scherer, review by Thomas Refis and Florian Angeletti,
+   report by Daniil Baturin)
+
 OCaml 4.11 maintenance branch
 -----------------------------
 
