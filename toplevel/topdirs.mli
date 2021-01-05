@@ -30,5 +30,16 @@ val dir_remove_printer : formatter -> Longident.t -> unit
  * val dir_untrace : formatter -> Longident.t -> unit
  * val dir_untrace_all : formatter -> unit -> unit *)
 
+val section_general : string
+val section_run : string
+val section_env : string
+
+val section_print : string
+val section_trace : string
+val section_options : string
+
+val section_undocumented : string
+
+
 type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit

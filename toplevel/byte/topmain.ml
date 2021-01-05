@@ -89,12 +89,10 @@ let dir_untrace_all ppf () =
     !traced_functions;
   traced_functions := []
 
-let section_trace = "Tracing" (* dirty *)
-
 let _ = Topcommon.add_directive "trace"
     (Directive_ident (dir_trace Format.std_formatter))
     {
-      section = section_trace;
+      section = Topdirs.section_trace;
       doc = "All calls to the function \
           named function-name will be traced.";
     }
@@ -102,14 +100,14 @@ let _ = Topcommon.add_directive "trace"
 let _ = Topcommon.add_directive "untrace"
     (Directive_ident (dir_untrace Format.std_formatter))
     {
-      section = section_trace;
+      section = Topdirs.section_trace;
       doc = "Stop tracing the given function.";
     }
 
 let _ = Topcommon.add_directive "untrace_all"
     (Directive_none (dir_untrace_all Format.std_formatter))
     {
-      section = section_trace;
+      section = Topdirs.section_trace;
       doc = "Stop tracing all functions traced so far.";
     }
 
