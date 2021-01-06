@@ -64,7 +64,6 @@ tools/mantis2gh_stripped.csv typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
-/tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
 /tools/ci/inria/bootstrap/remove-sinh-primitive.patch typo.prune
 /release-info/howto.md                    typo.missing-header typo.long-line
 /release-info/templates/*.md              typo.missing-header typo.very-long-line=may
