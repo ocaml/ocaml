@@ -14142,9 +14142,6 @@ esac ;; #(
   amd64,solaris) :
     default_as="${toolpref}as --64"
     default_aspp="${toolpref}gcc -m64 -c" ;; #(
-  i386,solaris) :
-    default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c" ;; #(
   power,elf) :
     case $model in #(
   ppc64le) :

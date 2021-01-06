@@ -1091,9 +1091,6 @@ AS_CASE(["$arch,$system"],
   [amd64,solaris],
     [default_as="${toolpref}as --64"
     default_aspp="${toolpref}gcc -m64 -c"],
-  [i386,solaris],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c"],
   [power,elf],
     [AS_CASE([$model],
       [ppc64le],
