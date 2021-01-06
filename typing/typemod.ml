@@ -448,16 +448,21 @@ let params_are_constrained =
   loop
 ;;
 
+let transl_modtype_longident loc env lid =
+  let (path, _info) = Env.lookup_modtype ~loc lid env in
+  path
+
 let merge_constraint initial_env remove_aliases loc sg constr =
   let lid =
     match constr with
-    | Pwith_type (lid, _) | Pwith_module (lid, _)
-    | Pwith_typesubst (lid, _) | Pwith_modsubst (lid, _) -> lid
+    | Pwith_type (lid, _) | Pwith_module (lid, _) | Pwith_module_type (lid,_)
+    | Pwith_typesubst (lid, _) | Pwith_modsubst (lid, _)
+    | Pwith_module_typesubst (lid, _) -> lid
   in
   let destructive_substitution =
     match constr with
-    | Pwith_type _ | Pwith_module _ -> false
-    | Pwith_typesubst _ | Pwith_modsubst _ -> true
+    | Pwith_type _ | Pwith_module _ | Pwith_module_type _ -> false
+    | Pwith_typesubst _ | Pwith_modsubst _ | Pwith_module_typesubst _  -> true
   in
   let real_ids = ref [] in
   let rec merge sig_env sg namelist row_id =
@@ -529,6 +534,33 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             real_ids := [Pident id];
             (Pident id, lid, Twith_typesubst tdecl),
             update_rec_next rs rem
+        end
+    | (Sig_modtype(id, mtd, priv) :: rem, [s],
+       (Pwith_module_type (_, lmty) | Pwith_module_typesubst (_,lmty))
+      )
+      when Ident.name id = s ->
+        let path = transl_modtype_longident lmty.loc initial_env lmty.txt in
+        let () = match mtd.mtd_type with
+          | None -> ()
+          | Some previous_mty ->
+              Includemod.check_modtype_equiv ~loc sig_env
+                previous_mty (Mty_ident path)
+        in
+        if not destructive_substitution then
+          let mtd': modtype_declaration =
+            {
+              mtd_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+              mtd_type = Some (Mty_ident path);
+              mtd_attributes = [];
+              mtd_loc = loc;
+            }
+          in
+          (Pident id, lid, Twith_module_type (path,lmty)),
+          Sig_modtype(id, mtd', priv) :: rem
+        else begin
+          real_ids := [Pident id];
+          (Pident id, lid, Twith_module_typesubst (path,lmty)),
+          rem
         end
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
@@ -635,6 +667,12 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
+    | (_, _, Twith_module_typesubst (p,_)) ->
+        let add s = function
+          | Pident id -> Subst.add_modtype id (Mty_ident p) s
+          | _ -> s in
+        let sub = List.fold_left add Subst.identity !real_ids in
+        Subst.signature Make_local sub sg
     | _ ->
        sg
     in
@@ -722,8 +760,10 @@ let rec approx_modtype env smty =
       List.iter
         (fun sdecl ->
           match sdecl with
-          | Pwith_type _ -> ()
-          | Pwith_typesubst _ -> ()
+          | Pwith_type _
+          | Pwith_typesubst _
+          | Pwith_module_type _
+          | Pwith_module_typesubst _  -> ()
           | Pwith_module (_, lid') ->
               (* Lookup the module to make sure that it is not recursive.
                  (GPR#1626) *)
@@ -1102,10 +1142,6 @@ let has_remove_aliases_attribute attr =
   | Some _ -> true
 
 (* Check and translate a module type expression *)
-
-let transl_modtype_longident loc env lid =
-  let (path, _info) = Env.lookup_modtype ~loc lid env in
-  path
 
 let transl_module_alias loc env lid =
   Env.lookup_module_path ~load:false ~loc lid env

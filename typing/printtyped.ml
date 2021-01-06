@@ -780,6 +780,10 @@ and with_constraint i ppf x =
       type_declaration (i+1) ppf td;
   | Twith_module (li,_) -> line i ppf "Twith_module %a\n" fmt_path li;
   | Twith_modsubst (li,_) -> line i ppf "Twith_modsubst %a\n" fmt_path li;
+  | Twith_module_type (p,_) ->
+      line i ppf "Twith_module_type %a\n" fmt_path p
+  | Twith_module_typesubst (p,_) ->
+      line i ppf "Twith_module_typesubst %a\n" fmt_path p
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.mod_loc;

@@ -419,8 +419,11 @@ and include_declaration = module_expr include_infos
 and with_constraint =
     Twith_type of type_declaration
   | Twith_module of Path.t * Longident.t loc
+  | Twith_module_type of Path.t * Longident.t loc
   | Twith_typesubst of type_declaration
   | Twith_modsubst of Path.t * Longident.t loc
+  | Twith_module_typesubst of Path.t * Longident.t loc
+
 
 and core_type =
 (* mutable because of [Typeclass.declare_method] *)

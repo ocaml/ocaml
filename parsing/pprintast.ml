@@ -1059,25 +1059,32 @@ and module_type ctxt f x =
         end
     | Pmty_with (mt, []) -> module_type ctxt f mt
     | Pmty_with (mt, l) ->
-        let with_constraint f = function
-          | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
-              let ls = List.map fst ls in
-              pp f "type@ %a %a =@ %a"
-                (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
-                ls longident_loc li (type_declaration ctxt) td
-          | Pwith_module (li, li2) ->
-              pp f "module %a =@ %a" longident_loc li longident_loc li2;
-          | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
-              let ls = List.map fst ls in
-              pp f "type@ %a %a :=@ %a"
-                (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
-                ls longident_loc li
-                (type_declaration ctxt) td
-          | Pwith_modsubst (li, li2) ->
-             pp f "module %a :=@ %a" longident_loc li longident_loc li2 in
         pp f "@[<hov2>%a@ with@ %a@]"
-          (module_type1 ctxt) mt (list with_constraint ~sep:"@ and@ ") l
+          (module_type1 ctxt) mt
+          (list (with_constraint ctxt) ~sep:"@ and@ ") l
     | _ -> module_type1 ctxt f x
+
+and with_constraint ctxt f = function
+  | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
+      let ls = List.map fst ls in
+      pp f "type@ %a %a =@ %a"
+        (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
+        ls longident_loc li (type_declaration ctxt) td
+  | Pwith_module (li, li2) ->
+      pp f "module %a =@ %a" longident_loc li longident_loc li2;
+  | Pwith_module_type (li, li2) ->
+      pp f "module type %a =@ %a" longident_loc li longident_loc li2
+  | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
+      let ls = List.map fst ls in
+      pp f "type@ %a %a :=@ %a"
+        (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
+        ls longident_loc li
+        (type_declaration ctxt) td
+  | Pwith_modsubst (li, li2) ->
+      pp f "module %a :=@ %a" longident_loc li longident_loc li2
+  | Pwith_module_typesubst (li, li2) ->
+      pp f "module type %a :=@ %a" longident_loc li longident_loc li2
+
 
 and module_type1 ctxt f x =
   if x.pmty_attributes <> [] then module_type ctxt f x
