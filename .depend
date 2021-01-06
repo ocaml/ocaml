@@ -6171,7 +6171,7 @@ toplevel/topcommon.cmi : \
 toplevel/topdirs.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
-    toplevel/toploop.cmi \
+    toplevel/topeval.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
@@ -6195,7 +6195,7 @@ toplevel/topdirs.cmo : \
 toplevel/topdirs.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
-    toplevel/toploop.cmi \
+    toplevel/topeval.cmi \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
@@ -6218,10 +6218,15 @@ toplevel/topdirs.cmx : \
     toplevel/topdirs.cmi
 toplevel/topdirs.cmi : \
     parsing/longident.cmi
+toplevel/topeval.cmi : \
+    toplevel/topcommon.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    typing/env.cmi
 toplevel/topinit.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
-    toplevel/toploop.cmi \
+    toplevel/topeval.cmi \
     toplevel/topcommon.cmi \
     parsing/location.cmi \
     typing/env.cmi \
@@ -6233,7 +6238,7 @@ toplevel/topinit.cmo : \
 toplevel/topinit.cmx : \
     utils/warnings.cmx \
     typing/typetexp.cmx \
-    toplevel/toploop.cmi \
+    toplevel/topeval.cmi \
     toplevel/topcommon.cmx \
     parsing/location.cmx \
     typing/env.cmx \
@@ -6243,11 +6248,6 @@ toplevel/topinit.cmx : \
     typing/btype.cmx \
     toplevel/topinit.cmi
 toplevel/topinit.cmi :
-toplevel/toploop.cmi : \
-    toplevel/topcommon.cmi \
-    typing/path.cmi \
-    parsing/parsetree.cmi \
-    typing/env.cmi
 toplevel/topmain.cmi :
 toplevel/topstart.cmo : \
     toplevel/topmain.cmi
@@ -6258,7 +6258,7 @@ toplevel/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
-toplevel/byte/toploop.cmo : \
+toplevel/byte/topeval.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
@@ -6297,8 +6297,8 @@ toplevel/byte/toploop.cmo : \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
     parsing/asttypes.cmi \
-    toplevel/byte/toploop.cmi
-toplevel/byte/toploop.cmx : \
+    toplevel/byte/topeval.cmi
+toplevel/byte/topeval.cmx : \
     utils/warnings.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
@@ -6337,16 +6337,16 @@ toplevel/byte/toploop.cmx : \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
     parsing/asttypes.cmi \
-    toplevel/byte/toploop.cmi
-toplevel/byte/toploop.cmi : \
+    toplevel/byte/topeval.cmi
+toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
 toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
-    toplevel/byte/toploop.cmi \
     toplevel/topinit.cmi \
+    toplevel/byte/topeval.cmi \
     toplevel/topdirs.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
@@ -6362,8 +6362,8 @@ toplevel/byte/topmain.cmo : \
     toplevel/byte/topmain.cmi
 toplevel/byte/topmain.cmx : \
     toplevel/byte/trace.cmx \
-    toplevel/byte/toploop.cmx \
     toplevel/topinit.cmx \
+    toplevel/byte/topeval.cmx \
     toplevel/topdirs.cmx \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
@@ -6380,7 +6380,7 @@ toplevel/byte/topmain.cmx : \
 toplevel/byte/topmain.cmi :
 toplevel/byte/trace.cmo : \
     typing/types.cmi \
-    toplevel/byte/toploop.cmi \
+    toplevel/byte/topeval.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
@@ -6393,7 +6393,7 @@ toplevel/byte/trace.cmo : \
     toplevel/byte/trace.cmi
 toplevel/byte/trace.cmx : \
     typing/types.cmx \
-    toplevel/byte/toploop.cmx \
+    toplevel/byte/topeval.cmx \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
@@ -6409,7 +6409,7 @@ toplevel/byte/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
-toplevel/native/toploop.cmo : \
+toplevel/native/topeval.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
     typing/typemod.cmi \
@@ -6448,8 +6448,8 @@ toplevel/native/toploop.cmo : \
     asmcomp/asmlink.cmi \
     asmcomp/asmgen.cmi \
     asmcomp/arch.cmo \
-    toplevel/native/toploop.cmi
-toplevel/native/toploop.cmx : \
+    toplevel/native/topeval.cmi
+toplevel/native/topeval.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
     typing/typemod.cmx \
@@ -6488,15 +6488,15 @@ toplevel/native/toploop.cmx : \
     asmcomp/asmlink.cmx \
     asmcomp/asmgen.cmx \
     asmcomp/arch.cmx \
-    toplevel/native/toploop.cmi
-toplevel/native/toploop.cmi : \
+    toplevel/native/topeval.cmi
+toplevel/native/topeval.cmi : \
     toplevel/topcommon.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
 toplevel/native/topmain.cmo : \
-    toplevel/native/toploop.cmi \
     toplevel/topinit.cmi \
+    toplevel/native/topeval.cmi \
     toplevel/topcommon.cmi \
     utils/misc.cmi \
     driver/main_args.cmi \
@@ -6506,8 +6506,8 @@ toplevel/native/topmain.cmo : \
     utils/clflags.cmi \
     toplevel/native/topmain.cmi
 toplevel/native/topmain.cmx : \
-    toplevel/native/toploop.cmx \
     toplevel/topinit.cmx \
+    toplevel/native/topeval.cmx \
     toplevel/topcommon.cmx \
     utils/misc.cmx \
     driver/main_args.cmx \

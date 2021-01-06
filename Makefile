@@ -1018,11 +1018,11 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
 
-toplevel/topdirs.cmx: toplevel/topdirs.ml toplevel/native/toploop.cmx
+toplevel/topdirs.cmx: toplevel/topdirs.ml toplevel/native/topeval.cmx
 	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
 
 $(TOPLEVELINIT:.cmo=.cmx): $(TOPLEVELINIT:.cmo=.ml) \
-     toplevel/native/toploop.cmx
+     toplevel/native/topeval.cmx
 	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
 
 $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
@@ -1032,7 +1032,7 @@ $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
 
-toplevel/native/toploop.cmx: otherlibs/dynlink/dynlink.cmxa
+toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 

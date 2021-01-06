@@ -1,6 +1,6 @@
 open Format
 open Topcommon
-open Toploop
+open Topeval
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
@@ -10,7 +10,7 @@ let _ =
     invalid_arg "The ocamltoplevel.cma library from compiler-libs \
                  cannot be loaded inside the OCaml toplevel";
   Sys.interactive := true;
-  Toploop.init ()
+  Topeval.init ()
 
 let find_ocamlinit () =
   let ocamlinit = ".ocamlinit" in

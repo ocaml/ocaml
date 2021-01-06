@@ -262,20 +262,20 @@ OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
 OPTCOMP_CMI=$(MIDDLE_END_CMI) $(ASMCOMP_CMI)
 
 TOPLEVEL=toplevel/genprintval.cmo toplevel/topcommon.cmo \
-  toplevel/byte/toploop.cmo toplevel/byte/trace.cmo toplevel/topdirs.cmo \
+  toplevel/byte/topeval.cmo toplevel/byte/trace.cmo toplevel/topdirs.cmo \
   toplevel/topinit.cmo toplevel/byte/topmain.cmo
-TOPLEVEL_CMI=toplevel/topcommon.cmi toplevel/byte/toploop.cmi \
+TOPLEVEL_CMI=toplevel/topcommon.cmi toplevel/byte/topeval.cmi \
   toplevel/byte/trace.cmi toplevel/topdirs.cmi toplevel/topinit.cmi \
   toplevel/byte/topmain.cmi
 
 OPTTOPLEVEL=toplevel/genprintval.cmo toplevel/topcommon.cmo \
-  toplevel/native/toploop.cmo toplevel/native/trace.cmo toplevel/topdirs.cmo \
+  toplevel/native/topeval.cmo toplevel/native/trace.cmo toplevel/topdirs.cmo \
   toplevel/topinit.cmo toplevel/native/topmain.cmo
-OPTTOPLEVEL_CMI=toplevel/topcommon.cmi toplevel/native/toploop.cmi \
+OPTTOPLEVEL_CMI=toplevel/topcommon.cmi toplevel/native/topeval.cmi \
   toplevel/native/trace.cmi toplevel/topdirs.cmi toplevel/topinit.cmi \
   toplevel/native/topmain.cmi
 
-TOPLEVEL_SHARED_MLIS = toploop.mli trace.mli topmain.mli
+TOPLEVEL_SHARED_MLIS = topeval.mli trace.mli topmain.mli
 
 toplevel/byte/%.mli toplevel/byte/%.cmi: toplevel/%.mli toplevel/%.cmi
 	cp  toplevel/$*.mli toplevel/$*.cmi $(@D)

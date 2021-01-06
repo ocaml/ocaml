@@ -17,10 +17,10 @@
 
 (* These types represent messages that the toplevel displays as normal
    results or errors. The real displaying is customisable using the hooks:
-      [Toploop.print_out_value]
-      [Toploop.print_out_type]
-      [Toploop.print_out_sig_item]
-      [Toploop.print_out_phrase] *)
+      [Topcommon.print_out_value]
+      [Topcommon.print_out_type]
+      [Topcommon.print_out_sig_item]
+      [Topcommon.print_out_phrase] *)
 
 (** An [out_name] is a string representation of an identifier which can be
     rewritten on the fly to avoid name collisions *)

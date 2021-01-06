@@ -20,7 +20,7 @@ open Misc
 open Longident
 open Types
 open Topcommon
-open Toploop
+open Topeval
 
 (* The standard output formatter *)
 let std_out = std_formatter
@@ -142,9 +142,9 @@ let _ = add_directive "load_rec"
 
 (* Load commands from a file *)
 
-let dir_use ppf name = ignore(Toploop.use_file ppf name)
-let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
-let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
+let dir_use ppf name = ignore(Topeval.use_file ppf name)
+let dir_use_output ppf name = ignore(Topeval.use_output ppf name)
+let dir_mod_use ppf name = ignore(Topeval.mod_use_file ppf name)
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
     {

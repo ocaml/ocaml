@@ -169,7 +169,7 @@ val override_sys_argv : string array -> unit
 
 (**/**)
 
-(* internal functions used by [Toploop] *)
+(* internal functions used by [Topeval] *)
 
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
