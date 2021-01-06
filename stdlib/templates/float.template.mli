@@ -22,7 +22,7 @@
    templates/float.template.mli instead.
  *)
 
-(** {1 Floating-point arithmetic}
+(** Floating-point arithmetic.
 
     OCaml's floating-point numbers follow the
     IEEE 754 standard, using double precision (64 bits) numbers.
@@ -400,7 +400,9 @@ val hash: t -> int
 module Array : sig
 FLOATARRAY
 end
+(** Float arrays with packed representation. *)
 
 module ArrayLabels : sig
 FLOATARRAYLAB
 end
+(** Float arrays with packed representation (labeled functions). *)
