@@ -34,6 +34,9 @@ let commandline = Variables.make ("commandline",
 let exit_status = Variables.make ("exit_status",
   "Expected program exit status")
 
+let file = Variables.make ("file",
+  "File whose existence should be tested")
+
 let files = Variables.make ("files",
   "Files used by the tests")
 
@@ -110,6 +113,7 @@ let _ = List.iter Variables.register_variable
     cwd;
     commandline;
     exit_status;
+    file;
     files;
     make;
     ocamltest_response;

@@ -59,6 +59,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
+  (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
+  Angeletti and Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #9650, #9651: keep refactoring the pattern-matching compiler

@@ -635,8 +635,13 @@ let process_action
   | ProcessCFile name ->
       readenv ppf (Before_compile name);
       Location.input_name := name;
-      if Ccomp.compile_file name <> 0 then raise (Exit_with_status 2);
-      ccobjs := c_object_of_filename name :: !ccobjs
+      let obj_name = match !output_name with
+        | None -> c_object_of_filename name
+        | Some n -> n
+      in
+      if Ccomp.compile_file ~output:obj_name name <> 0
+      then raise (Exit_with_status 2);
+      ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs
   | ProcessDLLs names ->
@@ -687,14 +692,10 @@ let process_deferred_actions env =
   begin
     match final_output_name with
     | None -> ()
-    | Some output_name ->
+    | Some _output_name ->
         if !compile_only then begin
-          if List.filter (function
-              | ProcessCFile name -> c_object_of_filename name <> output_name
-              | _ -> false) !deferred_actions <> [] then
-            fatal "Options -c and -o are incompatible when compiling C files";
-
           if List.length (List.filter (function
+              | ProcessCFile _
               | ProcessImplementation _
               | ProcessInterface _ -> true
               | _ -> false) !deferred_actions) > 1 then

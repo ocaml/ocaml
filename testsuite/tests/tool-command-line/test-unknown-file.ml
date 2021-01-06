@@ -28,4 +28,7 @@ compiler_output = "compiler-output"
 
 *)
 
-(* this file is just a test driver, the test does not contain real OCamlcode *)
+(*
+  This file is just a test driver, the test does not contain any
+  real OCaml code
+*)
