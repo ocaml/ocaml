@@ -861,8 +861,9 @@ let close_var env id =
 let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
   let module B = (val backend : Backend_intf.S) in
   match lam with
-  | Lvar id | Lmutvar id ->
-      close_approx_var env id
+  | Lvar id ->
+     close_approx_var env id
+  | Lmutvar id -> (Uvar id, Value_unknown)
   | Lconst cst ->
       let str ?(shared = true) cst =
         let name =

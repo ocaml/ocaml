@@ -170,16 +170,21 @@ let lambda_const_int i : Lambda.structured_constant =
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
-  | Lvar id | Lmutvar id ->
-    begin match Env.find_var_exn env id with
-    | var -> Var var
-    | exception Not_found ->
-      match Env.find_mutable_var_exn env id with
-      | mut_var ->
-        name_expr (Read_mutable mut_var) ~name:Names.read_mutable
-      | exception Not_found ->
+  | Lvar id ->
+     begin match Env.find_var_exn env id with
+     | var -> Var var
+     | exception Not_found ->
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id
+     end
+  | Lmutvar id ->
+    begin match Env.find_mutable_var_exn env id with
+    | mut_var ->
+       name_expr (Read_mutable mut_var) ~name:Names.read_mutable
+    | exception Not_found ->
+       Misc.fatal_errorf
+         "Closure_conversion.close: unbound mutable identifier %a"
+         Ident.print id
     end
   | Lconst cst ->
     let cst, name = close_const t cst in

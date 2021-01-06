@@ -25,9 +25,9 @@ open Debuginfo.Scoped_location
 exception Real_reference
 
 let rec eliminate_ref id = function
-    Lvar v | Lmutvar v as lam ->
+    Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
-  | Lconst _ as lam -> lam
+  | Lmutvar _ | Lconst _ as lam -> lam
   | Lapply ap ->
       Lapply{ap with ap_func = eliminate_ref id ap.ap_func;
                      ap_args = List.map (eliminate_ref id) ap.ap_args}
@@ -410,8 +410,9 @@ let simplify_lets lam =
 
   let rec count bv = function
   | Lconst _ -> ()
-  | Lvar v | Lmutvar v ->
-      use_var bv v 1
+  | Lvar v ->
+     use_var bv v 1
+  | Lmutvar _ -> ()
   | Lapply{ap_func = ll; ap_args = args} ->
       let no_opt () = count bv ll; List.iter (count bv) args in
       begin match ll with
@@ -434,8 +435,9 @@ let simplify_lets lam =
       count (bind_var bv v) l2;
       (* If v is unused, l1 will be removed, so don't count its variables *)
       if str = Strict || count_var v > 0 then count bv l1
-  | Lmutlet(_kind, v, _l1, l2) ->
-      count (bind_var bv v) l2
+  | Lmutlet(_kind, _v, l1, l2) ->
+     count bv l1;
+     count bv l2
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count bv l) bindings;
       count bv body
