@@ -47,7 +47,7 @@ let rec eliminate_ref id = function
   | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v], loc) when Ident.same v id ->
-      Lassign(id, Lprim(Poffsetint delta, [Lvar id], loc))
+      Lassign(id, Lprim(Poffsetint delta, [Lmutvar id], loc))
   | Lprim(p, el, loc) ->
       Lprim(p, List.map (eliminate_ref id) el, loc)
   | Lswitch(e, sw, loc) ->
@@ -512,13 +512,13 @@ let simplify_lets lam =
   in
 
   let rec simplif = function
-    Lvar v | Lmutvar v as l ->
+    Lvar v as l ->
       begin try
         Hashtbl.find subst v
       with Not_found ->
         l
       end
-  | Lconst _ as l -> l
+  | Lmutvar _ | Lconst _ as l -> l
   | Lapply ({ap_func = ll; ap_args = args} as ap) ->
       let no_opt () =
         Lapply {ap with ap_func = simplif ap.ap_func;

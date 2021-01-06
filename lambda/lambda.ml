@@ -730,6 +730,8 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
        begin match Ident.Map.find id l with
           | id' -> Lmutvar id'
           | exception Not_found ->
+             (* Note: a mutable [id] should not appear in [s].
+                Keeping the behavior of Lvar case for now. *)
              begin try Ident.Map.find id s with Not_found -> lam end
         end
     | Lconst _ as l -> l
