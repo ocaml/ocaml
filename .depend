@@ -6223,11 +6223,9 @@ toplevel/topinit.cmo : \
     typing/typetexp.cmi \
     toplevel/toploop.cmi \
     toplevel/topcommon.cmi \
-    bytecomp/symtable.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     utils/config.cmi \
-    driver/compmisc.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -6237,11 +6235,9 @@ toplevel/topinit.cmx : \
     typing/typetexp.cmx \
     toplevel/toploop.cmi \
     toplevel/topcommon.cmx \
-    bytecomp/symtable.cmx \
     parsing/location.cmx \
     typing/env.cmx \
     utils/config.cmx \
-    driver/compmisc.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
@@ -6351,6 +6347,7 @@ toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
     toplevel/byte/toploop.cmi \
     toplevel/topinit.cmi \
+    toplevel/topdirs.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
@@ -6367,6 +6364,7 @@ toplevel/byte/topmain.cmx : \
     toplevel/byte/trace.cmx \
     toplevel/byte/toploop.cmx \
     toplevel/topinit.cmx \
+    toplevel/topdirs.cmx \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
