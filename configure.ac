@@ -1076,6 +1076,8 @@ AS_IF([test -n "$host_alias"], [toolpref="${host_alias}-"], [toolpref=""])
 # One may want to check whether the user provided values first
 # and only compute values if none has been provided
 
+AC_CHECK_TOOL([SYSTEM_AS],[as])
+
 AS_CASE(["$arch,$system"],
   [i386,win32],
     [default_as="ml -nologo -coff -Cp -c -Fo"],
@@ -1089,8 +1091,18 @@ AS_CASE(["$arch,$system"],
       [default_as="${toolpref}as -arch x86_64"
       default_aspp="${toolpref}gcc -arch x86_64 -c"])],
   [amd64,solaris],
-    [default_as="${toolpref}as --64"
-    default_aspp="${toolpref}gcc -m64 -c"],
+    [AS_CASE([$ocaml_cv_cc_vendor],
+      [sunc-*],
+        [AS_IF([test x"$SYSTEM_AS" = "x"],
+          [AC_MSG_ERROR([GNU as assembler is required.])],
+          [default_as="${toolpref}as --64"
+          default_aspp="${toolpref}cc -m64 -c"])],
+      [gcc-*],
+        [AS_IF([test x"$SYSTEM_AS" = "x"],
+          [default_as="${toolpref}gcc -m64 -c"
+          default_aspp="${toolpref}gcc -m64 -c"],
+          [default_as="${toolpref}as --64"
+          default_aspp="${toolpref}gcc -m64 -c"])])],
   [power,elf],
     [AS_CASE([$model],
       [ppc64le],
