@@ -55,8 +55,9 @@ See also the following language extensions:
 \hyperref[s:signature-substitution]{substitution inside a signature},
 \hyperref[s:module-alias]{type-level module aliases},
 \hyperref[s:attributes]{attributes},
-\hyperref[s:extension-nodes]{extension nodes} and
-\hyperref[s:generative-functors]{generative functors}.
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:generative-functors]{generative functors},
+and \hyperref[ss:module-type-substitution]{module type substitutions}.
 
 \subsection{ss:mty-simple}{Simple module types}
 

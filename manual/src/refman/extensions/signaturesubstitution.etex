@@ -97,3 +97,41 @@ module type S = sig
   type 'a poly_list := [ `Cons of 'a * 'a poly_list | `Nil ]
 end [@@expect error];;
 \end{caml_example}
+
+\subsection{ss:module-type-substitution}{Module type substitutions}
+
+(Introduced in OCaml 4.13)
+
+\begin{syntax}
+mod-constraint:
+          ...
+        | 'module ' 'type' modtype-path  '=' modtype-path
+        | 'module ' 'type' modtype-path  ':=' modtype-path
+\end{syntax}
+
+Module type substitution essentially behaves like type substitution.
+They make it possible to refine abstract module type in a signature into
+a concrete module type,
+
+\begin{caml_example}{toplevel}
+module type ENDO = sig
+  module type T
+  module F: T -> T
+end
+module Endo(X: sig module type T end): ENDO with module type T = X.T =
+struct
+    module type T = X.T
+    module F(X:T) = X
+ end;;
+\end{caml_example}
+
+Destructive module type substitution removes the module type substitution
+from the signature
+\begin{caml_example}{toplevel}
+module type ENDO' = ENDO with module type T := ENDO;;
+\end{caml_example}
+
+
+\section{s:module-alias}{Type-level module aliases}
+\ikwd{module\@\texttt{module}}
+%HEVEA\cutname{modulealias.html}
