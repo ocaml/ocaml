@@ -197,22 +197,22 @@ let capitalize_ascii s =
 let uncapitalize_ascii s =
   B.uncapitalize_ascii (bos s) |> bts
 
-let starts_with ~prefix s =
+let starts_with ~sub s =
   let len_s = length s
-  and len_pre = length prefix in
+  and len_pre = length sub in
   let rec aux i =
     if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
+    else if unsafe_get s i <> unsafe_get sub i then false
     else aux (i + 1)
   in len_s >= len_pre && aux 0
 
-let ends_with ~suffix s =
+let ends_with ~sub s =
   let len_s = length s
-  and len_suf = length suffix in
+  and len_suf = length sub in
   let diff = len_s - len_suf in
   let rec aux i =
     if i = len_suf then true
-    else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
+    else if unsafe_get s (diff + i) <> unsafe_get sub i then false
     else aux (i + 1)
   in diff >= 0 && aux 0
 
