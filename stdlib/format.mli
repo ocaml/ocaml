@@ -285,8 +285,8 @@ outputs a single space or break the line.)
 
 The user gets 2 ways to fix the indentation of new lines:
 
-{b When defining the box}: when you open a box, you can fix the indentation added
-to each new line opened within that box.
+{b When defining the box}: when you open a box, you can fix the indentation
+added to each new line opened within that box.
 
 For instance: [open_hovbox 1] opens a "hov" box with new lines indented 1 more
 than the initial indentation of the box. With output "---\[--b--b--b--", we
@@ -313,14 +313,14 @@ for:
      --b--
 ]}
 
-{b When defining the break that makes the new line}. As said above, you output a
-break hint using [print_break sp indent]. The [indent] integer is used to fix the
-additional indentation of the new line. Namely, it is added to the default
+{b When defining the break that makes the new line}. As said above, you output
+a break hint using [print_break sp indent]. The [indent] integer is used to fix
+the additional indentation of the new line. Namely, it is added to the default
 indentation offset of the box where the break occurs.
 
 For instance, if \[ stands for the opening of a "hov" box with 1 as extra
-indentation (as obtained by [open_hovbox 1]), and b is [print_break 1 2], then from
-output "---\[--b--b--b--", we get:
+indentation (as obtained by [open_hovbox 1]), and b is [print_break 1 2], then
+  from output "---\[--b--b--b--", we get:
 
 {[
    ---\[-- --
@@ -376,8 +376,8 @@ this:
 
 When writing a pretty-printing routine, follow these simple rules:
 
-+ Boxes must be opened and closed consistently ([open_*] and {!close_box} must be
-nested like parentheses).
++ Boxes must be opened and closed consistently ([open_*] and {!close_box} must
+be nested like parentheses).
 + Never hesitate to open a box.
 + Output many break hints, otherwise the pretty-printer is in a bad situation
 where it tries to do its best, which is always "worse than your bad".
@@ -387,12 +387,12 @@ unless you explicitly don't want the line to be broken here. For instance,
 imagine you want to pretty print an OCaml definition, more precisely a [let rec
 ident = expression] value definition. You will probably treat the first three
 spaces as "unbreakable spaces" and write them directly in the string constants
-for keywords, and print ["let rec"] before the identifier, and similarly write [=]
-to get an unbreakable space after the identifier; in contrast, the space
+for keywords, and print ["let rec"] before the identifier, and similarly write
+[=] to get an unbreakable space after the identifier; in contrast, the space
 after the [=] sign is certainly a break hint, since breaking the line after [=]
-is a usual (and elegant) way to indent the expression part of a definition.
-In short, it is often necessary to print unbreakable spaces; however, most
-of the time a space should be considered a break hint.
+is a usual (and elegant) way to indent the expression part of a definition.  In
+short, it is often necessary to print unbreakable spaces; however, most of the
+time a space should be considered a break hint.
 + Do not try to force new lines, let the pretty-printer do it for you: that's
 its only job.  In particular, do not use {!force_newline}: this procedure
 effectively leads to a newline, but it also as the unfortunate side effect to
