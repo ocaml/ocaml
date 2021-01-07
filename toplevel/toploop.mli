@@ -53,11 +53,13 @@ val add_directive : string -> directive_fun -> directive_info -> unit
 
            @since 4.03 *)
 
-(* val directive_table : (string, directive_fun) Hashtbl.t
- *   (\* Deprecated: please use [add_directive] instead of inserting
- *      in this table directly. *\)
- * 
- * val directive_info_table : (string, directive_info) Hashtbl.t *)
+val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
+  (* @deprecated please use [add_directive] instead of inserting
+     in this table directly. *)
+
+val[@deprecated] directive_info_table : (string, directive_info) Hashtbl.t
+  (* @deprecated please use [add_directive] instead of inserting
+     in this table directly. *)
 
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)

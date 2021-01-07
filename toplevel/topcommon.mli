@@ -116,6 +116,14 @@ val get_directive_info : string -> directive_info option
 
 val all_directive_names : unit -> string list
 
+val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
+  (* @deprecated please use [add_directive] instead of inserting
+     in this table directly. *)
+
+val[@deprecated] directive_info_table : (string, directive_info) Hashtbl.t
+  (* @deprecated please use [add_directive] instead of inserting
+     in this table directly. *)
+
 (* Hooks for external parsers and printers *)
 
 val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
