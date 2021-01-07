@@ -89,23 +89,24 @@ function set_configuration {
 }
 
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
+FLEXDLLROOT="$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll"
 OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
 
 if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   case "$PORT" in
     cygwin*) ;;
-    *) export PATH="$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH";;
+    *) export PATH="$FLEXDLLROOT:$PATH";;
   esac
 fi
 
 case "$1" in
   install)
     if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
-      mkdir -p "$OCAMLROOT/bin/flexdll"
+      mkdir -p "$FLEXDLLROOT"
       cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
       # The objects are always built from the sources
       for f in flexdll.h flexlink.exe default*.manifest ; do
-        cp "$f" "$OCAMLROOT/bin/flexdll/"
+        cp "$f" "$FLEXDLLROOT/"
       done
     fi
     case "$PORT" in
@@ -162,8 +163,8 @@ case "$1" in
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
       $MAKE MSVC_DETECT=0 CHAINS=${PORT%32} support
-      cp -f *.obj "$OCAMLROOT/bin/flexdll/" || \
-      cp -f *.o "$OCAMLROOT/bin/flexdll/"
+      cp -f *.obj "$FLEXDLLROOT/" 2>/dev/null || \
+      cp -f *.o "$FLEXDLLROOT/"
       cd ..
     fi
 
