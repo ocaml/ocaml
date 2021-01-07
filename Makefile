@@ -402,8 +402,8 @@ endif
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   toplevel/byte/topdirs.cmt \
-	   toplevel/topdirs.cmti toplevel/byte/topdirs.mli \
+	   toplevel/topdirs.cmt \
+	   toplevel/topdirs.cmti toplevel/topdirs.mli \
 	   "$(INSTALL_LIBDIR)"
 endif
 	$(MAKE) -C tools install
