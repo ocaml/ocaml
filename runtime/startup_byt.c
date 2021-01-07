@@ -71,6 +71,7 @@
 
 static char magicstr[EXEC_MAGIC_LENGTH+1];
 static int print_magic = 0;
+static int print_config = 0;
 
 /* Print the specified error message followed by an end-of-line and exit */
 static void error(char *msg, ...)
@@ -279,6 +280,7 @@ static void do_print_help(void)
     "Usage: ocamlrun [<options>] [--] <executable> [<command-line>]\n"
     "Options are:\n"
     "  -b  Set runtime parameter b (detailed exception backtraces)\n"
+    "  -config  Print configuration values and exit\n"
     "  -I <dir>  Add <dir> to the list of DLL search directories\n"
     "  -m  Print the magic number of <executable> and exit\n"
     "  -M  Print the magic number expected by this runtime and exit\n"
@@ -351,6 +353,8 @@ static int parse_command_line(char_os **argv)
                  !strcmp_os(argv[i], T("--help"))) {
         do_print_help();
         exit(0);
+      } else if (!strcmp_os(argv[i], T("-config"))) {
+        print_config = 1;
       } else {
         parsed = 0;
       }
@@ -361,6 +365,78 @@ static int parse_command_line(char_os **argv)
   }
 
   return i;
+}
+
+/* Print the configuration of the runtime to stdout; memory allocated is not
+   freed, since the runtime will terminate after calling this. */
+static void do_print_config(void)
+{
+  int i;
+  char_os * dir;
+
+  /* Print the runtime configuration */
+  printf("version: %s\n", OCAML_VERSION_STRING);
+  printf("standard_library_default: %s\n",
+         caml_stat_strdup_of_os(OCAML_STDLIB_DIR));
+  printf("standard_library: %s\n",
+         caml_stat_strdup_of_os(caml_get_stdlib_location()));
+  printf("int_size: %d\n", 8 * (int)sizeof(value));
+  printf("word_size: %d\n", 8 * (int)sizeof(value) - 1);
+  printf("os_type: %s\n", OCAML_OS_TYPE);
+  printf("host: %s\n", HOST);
+  printf("flat_float_array: %s\n",
+#ifdef FLAT_FLOAT_ARRAY
+         "true");
+#else
+         "false");
+#endif
+  printf("supports_afl: %s\n",
+#ifdef HAS_SYS_SHM_H
+         "true");
+#else
+         "false");
+#endif
+  printf("windows_unicode: %s\n",
+#if WINDOWS_UNICODE
+         "true");
+#else
+         "false");
+#endif
+  printf("supports_shared_libraries: %s\n",
+#ifdef SUPPORT_DYNAMIC_LINKING
+         "true");
+#else
+         "false");
+#endif
+  printf("no_naked_pointers: %s\n",
+#ifdef NO_NAKED_POINTERS
+         "true");
+#else
+         "false");
+#endif
+  printf("profinfo: %s\n"
+         "profinfo_width: %d\n",
+#ifdef WITH_PROFINFO
+         "true", PROFINFO_WIDTH);
+#else
+         "false", 0);
+#endif
+  printf("exec_magic_number: %s\n", EXEC_MAGIC);
+
+  /* Parse ld.conf and print the effective search path */
+  puts("shared_libs_path:");
+  caml_parse_ld_conf();
+  for (i = 0; i < caml_shared_libs_path.size; i++) {
+    dir = caml_shared_libs_path.contents[i];
+    if (dir[0] == 0)
+#ifdef _WIN32
+      /* See caml_search_in_path in win32.c */
+      continue;
+#else
+      dir = ".";
+#endif
+    printf("  %s\n", caml_stat_strdup_of_os(dir));
+  }
 }
 
 #ifdef _WIN32
@@ -428,6 +504,10 @@ CAMLexport void caml_main(char_os **argv)
 
   if (fd < 0) {
     pos = parse_command_line(argv);
+    if (print_config) {
+      do_print_config();
+      exit(0);
+    }
     if (argv[pos] == 0) {
       error("no bytecode file specified");
     }

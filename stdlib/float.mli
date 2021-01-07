@@ -22,7 +22,7 @@
    templates/float.template.mli instead.
  *)
 
-(** {1 Floating-point arithmetic}
+(** Floating-point arithmetic.
 
     OCaml's floating-point numbers follow the
     IEEE 754 standard, using double precision (64 bits) numbers.
@@ -617,6 +617,7 @@ module Array : sig
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
 end
+(** Float arrays with packed representation. *)
 
 module ArrayLabels : sig
   type t = floatarray
@@ -838,3 +839,4 @@ module ArrayLabels : sig
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
 end
+(** Float arrays with packed representation (labeled functions). *)

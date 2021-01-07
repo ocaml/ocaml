@@ -47,3 +47,5 @@ val run : Actions.t
 val script : Actions.t
 
 val check_program_output : Actions.t
+
+val file_exists : Actions.t

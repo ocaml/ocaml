@@ -97,31 +97,23 @@ Error: Syntax error
 File "implementation: CLASS LIDENT COLON LIDENT WITH", line 1, characters 22-26:
 Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT LBRACKETAT AND RBRACKET WHILE", line 1, characters 42-47:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT UNDERSCORE EQUAL LIDENT INITIALIZER", line 1, characters 44-55:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT UNDERSCORE EQUAL LIDENT INITIALIZER", line 1, characters 15-21:
   This 'object' might be unmatched
 File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT WITH", line 1, characters 33-37:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT CONSTRAINT WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT END WITH", line 1, characters 26-30:
 Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT INHERIT LBRACKETAT AND RBRACKET WHILE", line 1, characters 39-44:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT INHERIT LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 46-50:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 15-21:
   This 'object' might be unmatched
 File "implementation: CLASS LIDENT COLON OBJECT INHERIT WITH", line 1, characters 30-34:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT INHERIT WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 31-36:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
@@ -135,81 +127,49 @@ Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT LPAREN UNDERSCORE RPAREN WITH", line 1, characters 15-21:
   This 'object' might be unmatched
 File "implementation: CLASS LIDENT COLON OBJECT LPAREN UNDERSCORE WITH", line 1, characters 26-30:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT LPAREN UNDERSCORE WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT LPAREN WITH", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT LPAREN WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD LBRACKETAT AND RBRACKET WHILE", line 1, characters 38-43:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON UNDERSCORE INITIALIZER", line 1, characters 40-51:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON UNDERSCORE INITIALIZER", line 1, characters 15-21:
   This 'object' might be unmatched
 File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON WITH", line 1, characters 38-42:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT COLON WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT WITH", line 1, characters 36-40:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD LIDENT WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD PRIVATE WITH", line 1, characters 37-41:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD PRIVATE WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD VIRTUAL PRIVATE WITH", line 1, characters 45-49:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD VIRTUAL PRIVATE WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD VIRTUAL WITH", line 1, characters 37-41:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD VIRTUAL WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT METHOD WITH", line 1, characters 29-33:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT METHOD WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 39-43:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 15-21:
   This 'object' might be unmatched
 File "implementation: CLASS LIDENT COLON OBJECT VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 35-40:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 37-41:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 15-21:
   This 'object' might be unmatched
 File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON WITH", line 1, characters 35-39:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT COLON WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT WITH", line 1, characters 33-37:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL LIDENT WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT VAL MUTABLE WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL MUTABLE WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT VAL VIRTUAL MUTABLE WITH", line 1, characters 42-46:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL VIRTUAL MUTABLE WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT VAL VIRTUAL WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL VIRTUAL WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT VAL WITH", line 1, characters 26-30:
-Error: Syntax error: 'end' expected
-File "implementation: CLASS LIDENT COLON OBJECT VAL WITH", line 1, characters 15-21:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: CLASS LIDENT COLON OBJECT WITH", line 1, characters 22-26:
 Error: Syntax error: 'end' expected
 File "implementation: CLASS LIDENT COLON OBJECT WITH", line 1, characters 15-21:
@@ -411,13 +371,13 @@ Error: Syntax error
 File "implementation: FUN LBRACKETAT AND RBRACKET ASSERT", line 1, characters 13-19:
 Error: Syntax error
 File "implementation: FUN LPAREN TYPE LIDENT DOT", line 1, characters 18-19:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN LPAREN TYPE LIDENT RPAREN WITH", line 1, characters 20-24:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN LPAREN TYPE LIDENT WITH", line 1, characters 18-22:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN LPAREN TYPE WITH", line 1, characters 11-15:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN LPAREN WITH", line 1, characters 6-10:
 Error: Syntax error: operator expected.
 File "implementation: FUN OPTLABEL LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 20-24:
@@ -461,11 +421,11 @@ Error: Syntax error
 File "implementation: FUN UNDERSCORE COLON WITH", line 1, characters 8-12:
 Error: Syntax error
 File "implementation: FUN UNDERSCORE LPAREN TYPE LIDENT DOT", line 1, characters 20-21:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN UNDERSCORE LPAREN TYPE LIDENT RPAREN WITH", line 1, characters 22-26:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN UNDERSCORE LPAREN TYPE WITH", line 1, characters 13-17:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: FUN UNDERSCORE LPAREN WITH", line 1, characters 8-12:
 Error: Syntax error: operator expected.
 File "implementation: FUN UNDERSCORE MINUSGREATER WITH", line 1, characters 9-13:
@@ -657,9 +617,7 @@ Error: Syntax error: '>}' expected
 File "implementation: LBRACELESS LIDENT EQUAL UIDENT WITH", line 1, characters 0-2:
   This '{<' might be unmatched
 File "implementation: LBRACELESS LIDENT EQUAL WITH", line 1, characters 12-16:
-Error: Syntax error: '>}' expected
-File "implementation: LBRACELESS LIDENT EQUAL WITH", line 1, characters 0-2:
-  This '{<' might be unmatched
+Error: Syntax error
 File "implementation: LBRACELESS LIDENT SEMI WITH", line 1, characters 12-16:
 Error: Syntax error: '>}' expected
 File "implementation: LBRACELESS LIDENT SEMI WITH", line 1, characters 0-2:
@@ -1005,17 +963,13 @@ Error: Syntax error: '}' expected
 File "implementation: LETOP LBRACE LIDENT COLON UNDERSCORE WITH", line 1, characters 5-6:
   This '{' might be unmatched
 File "implementation: LETOP LBRACE LIDENT COLON WITH", line 1, characters 16-20:
-Error: Syntax error: '}' expected
-File "implementation: LETOP LBRACE LIDENT COLON WITH", line 1, characters 5-6:
-  This '{' might be unmatched
+Error: Syntax error
 File "implementation: LETOP LBRACE LIDENT EQUAL UNDERSCORE WITH", line 1, characters 18-22:
 Error: Syntax error: '}' expected
 File "implementation: LETOP LBRACE LIDENT EQUAL UNDERSCORE WITH", line 1, characters 5-6:
   This '{' might be unmatched
 File "implementation: LETOP LBRACE LIDENT EQUAL WITH", line 1, characters 16-20:
-Error: Syntax error: '}' expected
-File "implementation: LETOP LBRACE LIDENT EQUAL WITH", line 1, characters 5-6:
-  This '{' might be unmatched
+Error: Syntax error
 File "implementation: LETOP LBRACE LIDENT SEMI UNDERSCORE SEMI WITH", line 1, characters 20-24:
 Error: Syntax error: '}' expected
 File "implementation: LETOP LBRACE LIDENT SEMI UNDERSCORE SEMI WITH", line 1, characters 5-6:
@@ -1061,11 +1015,11 @@ Error: Syntax error
 File "implementation: LETOP LIDENT IN WITH", line 1, characters 15-19:
 Error: Syntax error
 File "implementation: LETOP LIDENT LPAREN TYPE LIDENT DOT", line 1, characters 26-27:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LETOP LIDENT LPAREN TYPE LIDENT RPAREN WITH", line 1, characters 28-32:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LETOP LIDENT LPAREN TYPE WITH", line 1, characters 19-23:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LETOP LIDENT LPAREN WITH", line 1, characters 14-18:
 Error: Syntax error: operator expected.
 File "implementation: LETOP LIDENT UNDERSCORE COLONGREATER LIDENT EQUAL WITH", line 1, characters 26-30:
@@ -1081,17 +1035,17 @@ Error: Syntax error: ')' expected
 File "implementation: LETOP LPAREN MINUS WITH", line 1, characters 5-6:
   This '(' might be unmatched
 File "implementation: LETOP LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 23-28:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LETOP LPAREN MODULE PERCENT AND WHILE", line 1, characters 20-25:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LETOP LPAREN MODULE UNDERSCORE COLON UIDENT VAL", line 1, characters 25-28:
 Error: Syntax error: ')' expected
 File "implementation: LETOP LPAREN MODULE UNDERSCORE COLON UIDENT VAL", line 1, characters 5-6:
   This '(' might be unmatched
 File "implementation: LETOP LPAREN MODULE UNDERSCORE COLON WITH", line 1, characters 18-22:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LETOP LPAREN MODULE UNDERSCORE WITH", line 1, characters 16-20:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LETOP LPAREN MODULE WITH", line 1, characters 14-18:
 Error: Syntax error: module-expr expected.
 File "implementation: LETOP LPAREN PLUS WITH", line 1, characters 9-13:
@@ -1137,7 +1091,7 @@ Error: Syntax error
 File "implementation: LETOP UNDERSCORE AS WITH", line 1, characters 10-14:
 Error: Syntax error: identifier expected.
 File "implementation: LETOP UNDERSCORE BAR UNDERSCORE WITH", line 1, characters 11-15:
-Error: Syntax error: pattern expected.
+Error: Syntax error
 File "implementation: LETOP UNDERSCORE BAR WITH", line 1, characters 9-13:
 Error: Syntax error: pattern expected.
 File "implementation: LETOP UNDERSCORE COLON UNDERSCORE EQUAL WITH", line 1, characters 13-17:
@@ -1147,7 +1101,7 @@ Error: Syntax error
 File "implementation: LETOP UNDERSCORE COLON WITH", line 1, characters 9-13:
 Error: Syntax error
 File "implementation: LETOP UNDERSCORE COLONCOLON UNDERSCORE WITH", line 1, characters 12-16:
-Error: Syntax error: pattern expected.
+Error: Syntax error
 File "implementation: LETOP UNDERSCORE COLONCOLON WITH", line 1, characters 10-14:
 Error: Syntax error: pattern expected.
 File "implementation: LETOP UNDERSCORE COMMA CHAR COMMA UNDERSCORE WITH", line 1, characters 17-21:
@@ -1155,7 +1109,7 @@ Error: Syntax error
 File "implementation: LETOP UNDERSCORE COMMA CHAR COMMA WITH", line 1, characters 15-19:
 Error: Syntax error
 File "implementation: LETOP UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 11-15:
-Error: Syntax error: pattern expected.
+Error: Syntax error
 File "implementation: LETOP UNDERSCORE COMMA WITH", line 1, characters 9-13:
 Error: Syntax error: pattern expected.
 File "implementation: LETOP UNDERSCORE EQUAL CHAR WITH", line 1, characters 13-17:
@@ -1177,35 +1131,35 @@ Error: Syntax error: ')' expected
 File "implementation: LPAREN BANG WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN COLONCOLON WITH", line 1, characters 5-9:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LBRACE RBRACE WITH", line 1, characters 9-13:
 Error: Syntax error: ')' expected
 File "implementation: LPAREN DOTOP LBRACE RBRACE WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN DOTOP LBRACE SEMI DOTDOT WITH", line 1, characters 12-16:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LBRACE WITH", line 1, characters 7-11:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LBRACKET RBRACKET WITH", line 1, characters 9-13:
 Error: Syntax error: ')' expected
 File "implementation: LPAREN DOTOP LBRACKET RBRACKET WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN DOTOP LBRACKET SEMI DOTDOT WITH", line 1, characters 12-16:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LBRACKET WITH", line 1, characters 7-11:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LPAREN RPAREN WITH", line 1, characters 9-13:
 Error: Syntax error: ')' expected
 File "implementation: LPAREN DOTOP LPAREN RPAREN WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN DOTOP LPAREN SEMI DOTDOT WITH", line 1, characters 12-16:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LPAREN SEMI WITH", line 1, characters 9-13:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP LPAREN WITH", line 1, characters 7-11:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN DOTOP WITH", line 1, characters 5-9:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: LPAREN LETOP WITH", line 1, characters 7-11:
 Error: Syntax error: ')' expected
 File "implementation: LPAREN LETOP WITH", line 1, characters 0-1:
@@ -1219,19 +1173,17 @@ Error: Syntax error: ')' expected
 File "implementation: LPAREN MINUSDOT WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN MODULE LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 18-26:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LPAREN MODULE PERCENT AND WHILE", line 1, characters 15-20:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LPAREN MODULE UIDENT COLON UIDENT VAL", line 1, characters 25-28:
-Error: Syntax error: ')' expected
-File "implementation: LPAREN MODULE UIDENT COLON UIDENT VAL", line 1, characters 0-1:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: LPAREN MODULE UIDENT COLON WITH", line 1, characters 18-22:
 Error: Syntax error: ')' expected
 File "implementation: LPAREN MODULE UIDENT COLON WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN MODULE UIDENT WITH", line 1, characters 16-20:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: LPAREN MODULE WITH", line 1, characters 9-13:
 Error: Syntax error: module-expr expected.
 File "implementation: LPAREN PLUS WITH", line 1, characters 4-8:
@@ -1251,27 +1203,17 @@ Error: Syntax error: ')' expected
 File "implementation: LPAREN STAR WITH", line 1, characters 0-1:
   This '(' might be unmatched
 File "implementation: LPAREN UIDENT COLON UNDERSCORE COLONGREATER UNDERSCORE WITH", line 1, characters 18-22:
-Error: Syntax error: ')' expected
-File "implementation: LPAREN UIDENT COLON UNDERSCORE COLONGREATER UNDERSCORE WITH", line 1, characters 0-1:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: LPAREN UIDENT COLON UNDERSCORE COLONGREATER WITH", line 1, characters 16-20:
-Error: Syntax error: ')' expected
-File "implementation: LPAREN UIDENT COLON UNDERSCORE COLONGREATER WITH", line 1, characters 0-1:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: LPAREN UIDENT COLON UNDERSCORE WITH", line 1, characters 13-17:
-Error: Syntax error: ')' expected
-File "implementation: LPAREN UIDENT COLON UNDERSCORE WITH", line 1, characters 0-1:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: LPAREN UIDENT COLON WITH", line 1, characters 11-15:
 Error: Syntax error
 File "implementation: LPAREN UIDENT COLONGREATER LIDENT SEMI", line 1, characters 19-20:
-Error: Syntax error: ')' expected
-File "implementation: LPAREN UIDENT COLONGREATER LIDENT SEMI", line 1, characters 0-1:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: LPAREN UIDENT COLONGREATER UNDERSCORE WITH", line 1, characters 14-18:
-Error: Syntax error: ')' expected
-File "implementation: LPAREN UIDENT COLONGREATER UNDERSCORE WITH", line 1, characters 0-1:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: LPAREN UIDENT COLONGREATER WITH", line 1, characters 12-16:
 Error: Syntax error
 File "implementation: LPAREN UIDENT WITH", line 1, characters 9-13:
@@ -1449,311 +1391,161 @@ Error: Syntax error
 File "implementation: NEW WITH", line 1, characters 4-8:
 Error: Syntax error
 File "implementation: OBJECT CONSTRAINT HASH WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT HASH WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT GREATER", line 1, characters 29-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT GREATER", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF AMPERSAND WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF AMPERSAND WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE AMPERSAND UNDERSCORE WITH", line 1, characters 38-42:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE AMPERSAND UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE AMPERSAND WITH", line 1, characters 36-40:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE AMPERSAND WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF WITH", line 1, characters 32-36:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT OF WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT WITH", line 1, characters 29-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BACKQUOTE UIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BAR UNDERSCORE GREATER", line 1, characters 24-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BAR UNDERSCORE GREATER", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET BAR WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET BAR WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE BAR UNDERSCORE GREATER", line 1, characters 26-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE BAR UNDERSCORE GREATER", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE BAR WITH", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE BAR WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE RBRACKET", line 1, characters 22-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE RBRACKET", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKET WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKET WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETAT AND RBRACKET GREATER", line 1, characters 27-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETAT AND RBRACKET GREATER", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETGREATER BAR ASSERT", line 1, characters 23-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETGREATER BAR ASSERT", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETGREATER UNDERSCORE GREATER", line 1, characters 23-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETGREATER UNDERSCORE GREATER", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETGREATER WITH", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETGREATER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETLESS BACKQUOTE UIDENT LBRACKETAT AND RBRACKET WHILE", line 1, characters 39-44:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETLESS BACKQUOTE UIDENT LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETLESS BAR ASSERT", line 1, characters 23-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETLESS BAR ASSERT", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE BAR WITH", line 1, characters 25-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE BAR WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE GREATER BACKQUOTE LIDENT WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE GREATER BACKQUOTE LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE GREATER WITH", line 1, characters 25-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETLESS UNDERSCORE GREATER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LBRACKETLESS WITH", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LBRACKETLESS WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS DOTDOT WITH", line 1, characters 23-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS DOTDOT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT DOT UNDERSCORE WITH", line 1, characters 42-46:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT DOT UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT DOT WITH", line 1, characters 40-44:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT DOT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT QUOTE LIDENT WITH", line 1, characters 47-51:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON QUOTE UIDENT QUOTE LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE LBRACKETAT AND RBRACKET FUNCTOR", line 1, characters 40-47:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE LBRACKETAT AND RBRACKET FUNCTOR", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE RBRACE", line 1, characters 31-32:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE RBRACE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE SEMI LBRACKETAT AND RBRACKET CONSTRAINT", line 1, characters 42-52:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE SEMI LBRACKETAT AND RBRACKET CONSTRAINT", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE SEMI WITH", line 1, characters 33-37:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE SEMI WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE WITH", line 1, characters 31-35:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON WITH", line 1, characters 29-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS LIDENT WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS UNDERSCORE SEMI WITH", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS UNDERSCORE SEMI WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS UNDERSCORE WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LESS WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LESS WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LIDENT COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 32-36:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LIDENT COLON UNDERSCORE MINUSGREATER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LIDENT COLON UNDERSCORE WITH", line 1, characters 29-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LIDENT COLON UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LIDENT COLON WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LIDENT COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LIDENT WHILE", line 1, characters 25-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LIDENT WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 36-41:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN MODULE PERCENT AND FUNCTION", line 1, characters 33-41:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN MODULE PERCENT AND FUNCTION", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN MODULE UIDENT VAL", line 1, characters 34-37:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN MODULE UIDENT VAL", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN MODULE WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN MODULE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT COMMA UNDERSCORE WITH", line 1, characters 35-39:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT COMMA UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT COMMA WITH", line 1, characters 33-37:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT COMMA WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT RPAREN HASH WITH", line 1, characters 35-39:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT RPAREN HASH WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT RPAREN WITH", line 1, characters 33-37:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA LIDENT RPAREN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 26-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA WITH", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE COMMA WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT LPAREN WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT LPAREN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT OPTLABEL UNDERSCORE MINUSGREATER WITH", line 1, characters 31-35:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT OPTLABEL UNDERSCORE MINUSGREATER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT OPTLABEL UNDERSCORE WITH", line 1, characters 28-32:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT OPTLABEL UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT OPTLABEL WITH", line 1, characters 26-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT OPTLABEL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT QUESTION LIDENT WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT QUESTION LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT QUESTION WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT QUESTION WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT QUOTE WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT QUOTE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE AMPERSAND", line 1, characters 20-21:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE AMPERSAND", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE AS QUOTE WITH", line 1, characters 25-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE AS QUOTE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE AS WITH", line 1, characters 23-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE AS WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL UNDERSCORE WITH", line 1, characters 24-28:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL UNDERSCORE WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE HASH WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE HASH WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE MINUSGREATER WITH", line 1, characters 23-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE MINUSGREATER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR LIDENT STAR UNDERSCORE WHILE", line 1, characters 33-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR LIDENT STAR UNDERSCORE WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR LIDENT STAR WITH", line 1, characters 31-35:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR LIDENT STAR WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR UNDERSCORE WHILE", line 1, characters 24-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR UNDERSCORE WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE STAR WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE WHILE", line 1, characters 20-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT UNDERSCORE WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT CONSTRAINT WITH", line 1, characters 18-22:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT CONSTRAINT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT END WHILE", line 1, characters 11-16:
 Error: Syntax error
 File "implementation: OBJECT INHERIT BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 26-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 43-47:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 0-6:
@@ -1763,121 +1555,71 @@ Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT BANG QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT BANG WITH", line 1, characters 17-21:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT BANG WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT FUN LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT FUN LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER QUOTED_STRING_EXPR WITH", line 1, characters 40-44:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER WITH", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT FUN UNDERSCORE MINUSGREATER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT FUN UNDERSCORE WITH", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT FUN UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT FUN WITH", line 1, characters 19-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT FUN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 23-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE COMMA UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE COMMA WITH", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE COMMA WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE RBRACKET WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE WITH", line 1, characters 19-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LBRACKET UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LBRACKET WITH", line 1, characters 17-21:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LBRACKET WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LBRACKETAT AND RBRACKET FOR", line 1, characters 24-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LBRACKETAT AND RBRACKET FOR", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN QUOTED_STRING_EXPR WITH", line 1, characters 48-52:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN WITH", line 1, characters 32-36:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR IN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR LBRACKETATAT AND RBRACKET VAL", line 1, characters 39-42:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET CHAR EQUAL CHAR LBRACKETATAT AND RBRACKET VAL", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 35-40:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 52-56:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN WITH", line 1, characters 36-40:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT IN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT WITH", line 1, characters 33-37:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN BANG UIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN BANG WITH", line 1, characters 26-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN BANG WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN LBRACKETAT AND RBRACKET WHILE", line 1, characters 33-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 50-54:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT LET OPEN UIDENT IN QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT LET OPEN UIDENT IN WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN UIDENT IN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN UIDENT WITH", line 1, characters 31-35:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN UIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET OPEN WITH", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET OPEN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET REC ASSERT", line 1, characters 23-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET REC ASSERT", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET UNDERSCORE EQUAL CHAR WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET UNDERSCORE EQUAL CHAR WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LET WITH", line 1, characters 19-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LET WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LIDENT UIDENT WITH", line 1, characters 29-33:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT LIDENT UIDENT WITH", line 1, characters 0-6:
@@ -1891,17 +1633,13 @@ Error: Syntax error: ')' expected
 File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR COLON QUOTED_STRING_EXPR VAL", line 1, characters 15-16:
   This '(' might be unmatched
 File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR COLON WITH", line 1, characters 35-39:
-Error: Syntax error: ')' expected
-File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR COLON WITH", line 1, characters 15-16:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR WITH", line 1, characters 33-37:
 Error: Syntax error: ')' expected
 File "implementation: OBJECT INHERIT LPAREN QUOTED_STRING_EXPR WITH", line 1, characters 15-16:
   This '(' might be unmatched
 File "implementation: OBJECT INHERIT LPAREN WITH", line 1, characters 17-21:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT LPAREN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 31-36:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT OBJECT LBRACKETAT AND RBRACKET WHILE", line 1, characters 15-21:
@@ -1919,29 +1657,21 @@ Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR AS LIDENT WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR AS WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR AS WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 31-35:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INHERIT QUOTED_STRING_EXPR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INHERIT WITH", line 1, characters 15-19:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INHERIT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INITIALIZER LBRACKETAT AND RBRACKET AND", line 1, characters 28-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INITIALIZER LBRACKETAT AND RBRACKET AND", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT INITIALIZER UIDENT WITH", line 1, characters 26-30:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT INITIALIZER UIDENT WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT INITIALIZER WITH", line 1, characters 19-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT INITIALIZER WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT LBRACKETAT AND RBRACKET CLASS", line 1, characters 16-21:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT LBRACKETAT AND RBRACKET CLASS", line 1, characters 0-6:
@@ -1951,157 +1681,85 @@ Error: Syntax error: 'end' expected
 File "implementation: OBJECT LBRACKETATATAT AND RBRACKET WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 15-19:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT LPAREN UNDERSCORE COLON UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT LPAREN UNDERSCORE COLON WITH", line 1, characters 13-17:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT LPAREN UNDERSCORE COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT LPAREN UNDERSCORE RPAREN COMMENT", line 1, characters 0-2:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT LPAREN UNDERSCORE RPAREN COMMENT", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT LPAREN UNDERSCORE WITH", line 1, characters 11-15:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT LPAREN UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT LPAREN WITH", line 1, characters 9-13:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT LPAREN WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 25-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 43-47:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 41-45:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 39-43:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 37-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE WITH", line 1, characters 30-34:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON TYPE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 29-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON UNDERSCORE VAL", line 1, characters 27-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON UNDERSCORE VAL", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT COLON WITH", line 1, characters 25-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG LIDENT WITH", line 1, characters 23-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG PRIVATE LETOP", line 1, characters 24-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG PRIVATE LETOP", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD BANG WITH", line 1, characters 16-20:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD BANG WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LBRACKETAT AND RBRACKET WHILE", line 1, characters 23-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT DOT UNDERSCORE WITH", line 1, characters 36-40:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT DOT UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT DOT WITH", line 1, characters 34-38:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT DOT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT QUOTE LIDENT WITH", line 1, characters 41-45:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON QUOTE LIDENT QUOTE LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 41-45:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT UNDERSCORE EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 39-43:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 37-41:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT DOT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 35-36:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON TYPE LIDENT RPAREN", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON TYPE WITH", line 1, characters 28-32:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON TYPE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE VAL", line 1, characters 25-28:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE VAL", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE WITH", line 1, characters 25-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON UNDERSCORE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT COLON WITH", line 1, characters 23-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD LIDENT EQUAL CHAR WITH", line 1, characters 27-31:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT METHOD LIDENT EQUAL CHAR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT METHOD LIDENT WITH", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD PRIVATE WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD PRIVATE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD VIRTUAL LIDENT COLON WITH", line 1, characters 31-35:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD VIRTUAL LIDENT COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD VIRTUAL LIDENT WITH", line 1, characters 29-33:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD VIRTUAL LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD VIRTUAL PRIVATE WITH", line 1, characters 30-34:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD VIRTUAL PRIVATE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD VIRTUAL WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD VIRTUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT METHOD WITH", line 1, characters 14-18:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT METHOD WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT PERCENT AND COLON", line 1, characters 13-14:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT PERCENT AND COLON", line 1, characters 0-6:
@@ -2111,85 +1769,49 @@ Error: Syntax error: 'end' expected
 File "implementation: OBJECT QUOTED_STRING_ITEM WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT VAL BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 22-27:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL BANG LIDENT COLONGREATER LIDENT EQUAL WITH", line 1, characters 32-36:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG LIDENT COLONGREATER LIDENT EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL BANG LIDENT COLONGREATER LIDENT SEMI", line 1, characters 30-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG LIDENT COLONGREATER LIDENT SEMI", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL BANG LIDENT EQUAL WITH", line 1, characters 22-26:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG LIDENT EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL BANG LIDENT WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL BANG MUTABLE LETOP", line 1, characters 21-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG MUTABLE LETOP", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL BANG WITH", line 1, characters 13-17:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL BANG WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 20-25:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL LIDENT COLONGREATER LIDENT EQUAL WITH", line 1, characters 30-34:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL LIDENT COLONGREATER LIDENT EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL LIDENT COLONGREATER LIDENT SEMI", line 1, characters 28-29:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL LIDENT COLONGREATER LIDENT SEMI", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL LIDENT EQUAL CHAR WITH", line 1, characters 24-28:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT VAL LIDENT EQUAL CHAR WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT VAL LIDENT EQUAL WITH", line 1, characters 20-24:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL LIDENT EQUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL LIDENT WITH", line 1, characters 18-22:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL MUTABLE WITH", line 1, characters 19-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL MUTABLE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL VIRTUAL LIDENT COLON UNDERSCORE WITH", line 1, characters 30-34:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT VAL VIRTUAL LIDENT COLON UNDERSCORE WITH", line 1, characters 0-6:
   This 'object' might be unmatched
 File "implementation: OBJECT VAL VIRTUAL LIDENT COLON WITH", line 1, characters 28-32:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL VIRTUAL LIDENT COLON WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL VIRTUAL LIDENT WITH", line 1, characters 26-30:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL VIRTUAL LIDENT WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL VIRTUAL MUTABLE WITH", line 1, characters 27-31:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL VIRTUAL MUTABLE WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL VIRTUAL WITH", line 1, characters 19-23:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL VIRTUAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT VAL WITH", line 1, characters 11-15:
-Error: Syntax error: 'end' expected
-File "implementation: OBJECT VAL WITH", line 1, characters 0-6:
-  This 'object' might be unmatched
+Error: Syntax error
 File "implementation: OBJECT WITH", line 1, characters 7-11:
 Error: Syntax error: 'end' expected
 File "implementation: OBJECT WITH", line 1, characters 0-6:
@@ -2221,9 +1843,7 @@ Error: Syntax error: ')' expected
 File "implementation: OPEN LPAREN UIDENT COLON UIDENT VAL", line 1, characters 5-6:
   This '(' might be unmatched
 File "implementation: OPEN LPAREN UIDENT COLON WITH", line 1, characters 16-20:
-Error: Syntax error: ')' expected
-File "implementation: OPEN LPAREN UIDENT COLON WITH", line 1, characters 5-6:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: OPEN LPAREN UIDENT WITH", line 1, characters 14-18:
 Error: Syntax error: ')' expected
 File "implementation: OPEN LPAREN UIDENT WITH", line 1, characters 5-6:
@@ -2231,25 +1851,17 @@ File "implementation: OPEN LPAREN UIDENT WITH", line 1, characters 5-6:
 File "implementation: OPEN LPAREN VAL LBRACKETAT AND RBRACKET VIRTUAL", line 1, characters 20-27:
 Error: Syntax error
 File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT COLONGREATER UIDENT VAL", line 1, characters 37-40:
-Error: Syntax error: ')' expected
-File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT COLONGREATER UIDENT VAL", line 1, characters 5-6:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT COLONGREATER WITH", line 1, characters 30-34:
-Error: Syntax error: ')' expected
-File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT COLONGREATER WITH", line 1, characters 5-6:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT VAL", line 1, characters 27-30:
-Error: Syntax error: ')' expected
-File "implementation: OPEN LPAREN VAL UIDENT COLON UIDENT VAL", line 1, characters 5-6:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: OPEN LPAREN VAL UIDENT COLON WITH", line 1, characters 20-24:
 Error: Syntax error: ')' expected
 File "implementation: OPEN LPAREN VAL UIDENT COLON WITH", line 1, characters 5-6:
   This '(' might be unmatched
 File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER UIDENT VAL", line 1, characters 28-31:
-Error: Syntax error: ')' expected
-File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER UIDENT VAL", line 1, characters 5-6:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER WITH", line 1, characters 21-25:
 Error: Syntax error: ')' expected
 File "implementation: OPEN LPAREN VAL UIDENT COLONGREATER WITH", line 1, characters 5-6:
@@ -2531,9 +2143,9 @@ Error: Syntax error
 File "implementation: TYPE UIDENT DOT WITH", line 1, characters 14-18:
 Error: Syntax error
 File "implementation: TYPE UIDENT LPAREN UIDENT DOT WITH", line 1, characters 23-27:
-Error: Syntax error: module path expected.
+Error: Syntax error
 File "implementation: TYPE UIDENT LPAREN UIDENT WITH", line 1, characters 21-25:
-Error: Syntax error: module path expected.
+Error: Syntax error
 File "implementation: TYPE UIDENT LPAREN WITH", line 1, characters 14-18:
 Error: Syntax error: module path expected.
 File "implementation: TYPE UIDENT WITH", line 1, characters 12-16:
@@ -2589,21 +2201,19 @@ File "implementation: UIDENT DOT LBRACKETBAR UIDENT RPAREN", line 1, characters 
 File "implementation: UIDENT DOT LBRACKETBAR WITH", line 1, characters 12-16:
 Error: Syntax error
 File "implementation: UIDENT DOT LPAREN COLONCOLON WITH", line 1, characters 14-18:
-Error: Syntax error: operator expected.
+Error: Syntax error
 File "implementation: UIDENT DOT LPAREN MODULE LBRACKETAT AND RBRACKET WHILE", line 1, characters 27-32:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: UIDENT DOT LPAREN MODULE PERCENT AND FUNCTION", line 1, characters 24-32:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON UIDENT VAL", line 1, characters 34-37:
-Error: Syntax error: ')' expected
-File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON UIDENT VAL", line 1, characters 9-10:
-  This '(' might be unmatched
+Error: Syntax error
 File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON WITH", line 1, characters 27-31:
 Error: Syntax error: ')' expected
 File "implementation: UIDENT DOT LPAREN MODULE UIDENT COLON WITH", line 1, characters 9-10:
   This '(' might be unmatched
 File "implementation: UIDENT DOT LPAREN MODULE UIDENT WITH", line 1, characters 25-29:
-Error: Syntax error: module-expr expected.
+Error: Syntax error
 File "implementation: UIDENT DOT LPAREN MODULE WITH", line 1, characters 18-22:
 Error: Syntax error: module-expr expected.
 File "implementation: UIDENT DOT LPAREN UIDENT WITH", line 1, characters 18-22:

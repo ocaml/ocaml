@@ -221,6 +221,29 @@ let check_program_output = make
     Builtin_variables.output
     Builtin_variables.reference)
 
+let file_exists_action _log env =
+  match Environments.lookup Builtin_variables.file env with
+    | None ->
+      let reason = reason_with_fallback env "the file variable is undefined" in
+      let result = Result.fail_with_reason reason in
+      (result, env)
+    | Some filename ->
+      if Sys.file_exists filename
+      then begin
+        let default_reason = Printf.sprintf "File %s exists" filename in
+        let reason = reason_with_fallback env default_reason in
+        let result = Result.pass_with_reason reason in
+        (result, env)
+      end else begin
+        let default_reason =
+          Printf.sprintf "File %s does not exist" filename
+        in
+        let reason = reason_with_fallback env default_reason in
+        let result = Result.fail_with_reason reason in
+        (result, env)
+      end
+let file_exists = make "file-exists" file_exists_action
+
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings
   [
@@ -263,5 +286,6 @@ let _ =
     arch_i386;
     arch_power;
     function_sections;
-    naked_pointers
+    naked_pointers;
+    file_exists;
   ]

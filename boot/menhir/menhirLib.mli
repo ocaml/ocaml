@@ -222,9 +222,9 @@ module type INCREMENTAL_ENGINE = sig
     | Rejected
 
   (* [offer] allows the user to resume the parser after it has suspended
-     itself with a checkpoint of the form [InputNeeded env]. [offer] expects the
-     old checkpoint as well as a new token and produces a new checkpoint. It does not
-     raise any exception. *)
+     itself with a checkpoint of the form [InputNeeded env]. [offer] expects
+     the old checkpoint as well as a new token and produces a new checkpoint.
+     It does not raise any exception. *)
 
   val offer:
     'a checkpoint ->
@@ -233,10 +233,30 @@ module type INCREMENTAL_ENGINE = sig
 
   (* [resume] allows the user to resume the parser after it has suspended
      itself with a checkpoint of the form [AboutToReduce (env, prod)] or
-     [HandlingError env]. [resume] expects the old checkpoint and produces a new
-     checkpoint. It does not raise any exception. *)
+     [HandlingError env]. [resume] expects the old checkpoint and produces a
+     new checkpoint. It does not raise any exception. *)
+
+  (* The optional argument [strategy] influences the manner in which [resume]
+     deals with checkpoints of the form [ErrorHandling _]. Its default value
+     is [`Legacy]. It can be briefly described as follows:
+
+     - If the [error] token is used only to report errors (that is, if the
+       [error] token appears only at the end of a production, whose semantic
+       action raises an exception) then the simplified strategy should be
+       preferred. (This includes the case where the [error] token does not
+       appear at all in the grammar.)
+
+     - If the [error] token is used to recover after an error, or if
+       perfect backward compatibility is required, the legacy strategy
+       should be selected.
+
+     More details on these strategies appear in the file [Engine.ml]. *)
+
+  type strategy =
+    [ `Legacy | `Simplified ]
 
   val resume:
+    ?strategy:strategy ->
     'a checkpoint ->
     'a checkpoint
 
@@ -246,7 +266,8 @@ module type INCREMENTAL_ENGINE = sig
   type supplier =
     unit -> token * position * position
 
-  (* A pair of a lexer and a lexing buffer can be easily turned into a supplier. *)
+  (* A pair of a lexer and a lexing buffer can be easily turned into a
+     supplier. *)
 
   val lexer_lexbuf_to_supplier:
     (Lexing.lexbuf -> token) ->
@@ -261,9 +282,11 @@ module type INCREMENTAL_ENGINE = sig
   (* [loop supplier checkpoint] begins parsing from [checkpoint], reading
      tokens from [supplier]. It continues parsing until it reaches a
      checkpoint of the form [Accepted v] or [Rejected]. In the former case, it
-     returns [v]. In the latter case, it raises the exception [Error]. *)
+     returns [v]. In the latter case, it raises the exception [Error].
+     The optional argument [strategy], whose default value is [Legacy],
+     is passed to [resume] and influences the error-handling strategy. *)
 
-  val loop: supplier -> 'a checkpoint -> 'a
+  val loop: ?strategy:strategy -> supplier -> 'a checkpoint -> 'a
 
   (* [loop_handle succeed fail supplier checkpoint] begins parsing from
      [checkpoint], reading tokens from [supplier]. It continues parsing until
@@ -272,10 +295,10 @@ module type INCREMENTAL_ENGINE = sig
      observed first). In the former case, it calls [succeed v]. In the latter
      case, it calls [fail] with this checkpoint. It cannot raise [Error].
 
-     This means that Menhir's traditional error-handling procedure (which pops
-     the stack until a state that can act on the [error] token is found) does
-     not get a chance to run. Instead, the user can implement her own error
-     handling code, in the [fail] continuation. *)
+     This means that Menhir's error-handling procedure does not get a chance
+     to run. For this reason, there is no [strategy] parameter. Instead, the
+     user can implement her own error handling code, in the [fail]
+     continuation. *)
 
   val loop_handle:
     ('a -> 'answer) ->
@@ -943,6 +966,7 @@ module type MONOLITHIC_ENGINE = sig
   exception Error
 
   val entry:
+    (* strategy: *) [ `Legacy | `Simplified ] -> (* see [IncrementalEngine] *)
     state ->
     (Lexing.lexbuf -> token) ->
     Lexing.lexbuf ->
@@ -1066,11 +1090,19 @@ type 'a buffer
    which internally relies on [lexer] and updates [buffer] on the fly whenever
    a token is demanded. *)
 
+(* The type of the buffer is [(position * position) buffer], which means that
+   it stores two pairs of positions, which are the start and end positions of
+   the last two tokens. *)
+
 open Lexing
 
 val wrap:
   (lexbuf -> 'token) ->
   (position * position) buffer * (lexbuf -> 'token)
+
+val wrap_supplier:
+  (unit -> 'token * position * position) ->
+  (position * position) buffer * (unit -> 'token * position * position)
 
 (* [show f buffer] prints the contents of the buffer, producing a string that
    is typically of the form "after '%s' and before '%s'". The function [f] is
@@ -1084,6 +1116,76 @@ val show: ('a -> string) -> 'a buffer -> string
 val last: 'a buffer -> 'a
 
 (* -------------------------------------------------------------------------- *)
+
+(* [extract text (pos1, pos2)] extracts the sub-string of [text] delimited
+   by the positions [pos1] and [pos2]. *)
+
+val extract: string -> position * position -> string
+
+(* [sanitize text] eliminates any special characters from the text [text].
+   A special character is a character whose ASCII code is less than 32.
+   Every special character is replaced with a single space character. *)
+
+val sanitize: string -> string
+
+(* [compress text] replaces every run of at least one whitespace character
+   with exactly one space character. *)
+
+val compress: string -> string
+
+(* [shorten k text] limits the length of [text] to [2k+3] characters. If the
+   text is too long, a fragment in the middle is replaced with an ellipsis. *)
+
+val shorten: int -> string -> string
+
+(* [expand f text] searches [text] for occurrences of [$k], where [k]
+   is a nonnegative integer literal, and replaces each such occurrence
+   with the string [f k]. *)
+
+val expand: (int -> string) -> string -> string
+end
+module LexerUtil : sig
+(******************************************************************************)
+(*                                                                            *)
+(*                                   Menhir                                   *)
+(*                                                                            *)
+(*                       François Pottier, Inria Paris                        *)
+(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
+(*                                                                            *)
+(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
+(*  terms of the GNU Library General Public License version 2, with a         *)
+(*  special exception on linking, as described in the file LICENSE.           *)
+(*                                                                            *)
+(******************************************************************************)
+
+open Lexing
+
+(* [init filename lexbuf] initializes the lexing buffer [lexbuf] so
+   that the positions that are subsequently read from it refer to the
+   file [filename]. It returns [lexbuf]. *)
+
+val init: string -> lexbuf -> lexbuf
+
+(* [read filename] reads the entire contents of the file [filename] and
+   returns a pair of this content (a string) and a lexing buffer that
+   has been initialized, based on this string. *)
+
+val read: string -> string * lexbuf
+
+(* [newline lexbuf] increments the line counter stored within [lexbuf]. It
+   should be invoked by the lexer itself every time a newline character is
+   consumed. This allows maintaining a current the line number in [lexbuf]. *)
+
+val newline: lexbuf -> unit
+
+(* [range (startpos, endpos)] prints a textual description of the range
+   delimited by the start and end positions [startpos] and [endpos].
+   This description is one line long and ends in a newline character.
+   This description mentions the file name, the line number, and a range
+   of characters on this line. The line number is correct only if [newline]
+   has been correctly used, as described dabove. *)
+
+val range: position * position -> string
 end
 module Printers : sig
 (******************************************************************************)
@@ -1701,5 +1803,5 @@ module MakeEngineTable
      and type nonterminal = int
 end
 module StaticVersion : sig
-val require_20190924 : unit
+val require_20201216: unit
 end

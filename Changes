@@ -10,6 +10,10 @@ Working version
 
 ### Runtime system:
 
+- #9284: Add -config option to display the configuration of ocamlrun on stdout,
+  including the search path for shared stub libraries.
+  (David Allsopp, review by Xavier Leroy)
+
 - #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
   (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
    Jourdan)
@@ -55,6 +59,17 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
+  (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
+  Angeletti and Gabriel Scherer)
+
+- #10095: simplify the syntax error messages produced by the compiler.
+  In many cases, the compiler would produce an error message that looked
+  potentially helpful but was actually misguided and arguably confusing,
+  because the error message implicitly referred to an earlier point in
+  the source code than the point explicitly shown in the error message.
+  (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
+
 ### Internal/compiler-libs changes:
 
 - #9650, #9651: keep refactoring the pattern-matching compiler
@@ -80,6 +95,11 @@ Working version
   parser's syntax error messages and (in the future) to evaluate the impact of
   changes in the parser.
   (François Pottier, review by Gabriel Scherer and Xavier Leroy.)
+
+- #10113: add a `-timeout` option to ocamltest and use it in the test suite.
+  (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
+   and David Allsopp)
+
 
 ### Build system:
 
@@ -2249,6 +2269,16 @@ OCaml 4.09.0 (19 September 2019)
 
 - #8944: Fix "open struct .. end" on clambda backend
   (Thomas Refis, review by Leo White, report by Damon Wang and Mark Shinwell)
+
+OCaml 4.08 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9326, #10125: Gc.set incorrectly handles the three `custom_*` fields,
+  causing a performance regression
+  (report by Emilio Jesús Gallego Arias, analysis and fix by Stephen Dolan,
+   code by Xavier Leroy, review by Hugo Heuzard and Gabriel Scherer)
 
 OCaml 4.08.1 (5 August 2019)
 ----------------------------
