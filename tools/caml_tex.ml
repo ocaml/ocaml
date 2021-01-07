@@ -184,7 +184,7 @@ module Toplevel = struct
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
     Compmisc.init_path ();
     try
-      Topcommon.initialize_toplevel_env ();
+      Toploop.initialize_toplevel_env ();
       Sys.interactive := false
     with _ ->
       (eprintf "Invalid repo root: %s?%!" !repo_root; exit 2)

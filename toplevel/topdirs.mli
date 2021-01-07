@@ -13,9 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
-
 (* The toplevel directives. *)
+
+open Format
 
 val dir_quit : unit -> unit
 val dir_directory : string -> unit
@@ -26,9 +26,12 @@ val dir_use : formatter -> string -> unit
 val dir_use_output : formatter -> string -> unit
 val dir_install_printer : formatter -> Longident.t -> unit
 val dir_remove_printer : formatter -> Longident.t -> unit
-(* val dir_trace : formatter -> Longident.t -> unit
- * val dir_untrace : formatter -> Longident.t -> unit
- * val dir_untrace_all : formatter -> unit -> unit *)
+
+(* These are now injected from [Topeval], for the bytecode toplevel only:
+val dir_trace : formatter -> Longident.t -> unit
+val dir_untrace : formatter -> Longident.t -> unit
+val dir_untrace_all : formatter -> unit -> unit
+ *)
 
 val section_general : string
 val section_run : string
