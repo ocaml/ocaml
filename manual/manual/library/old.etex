@@ -1,5 +1,5 @@
 \chapter{Recently removed or moved libraries (Graphics, Bigarray, Num, LablTk)}
-%HEVEA\cutname{libnum.html}
+%HEVEA\cutname{old.html}
 
 This chapter describes three libraries which were formerly part of the OCaml
 distribution (Graphics, Num, and LablTk), and a library which has now become
