@@ -183,7 +183,8 @@ case "$1" in
           "../$BUILD_PREFIX-$PORT/build.log" |
             sed -e 's/\d027\[K//g' \
                 -e 's/\d027\[m/\d027[0m/g' \
-                -e 's/\d027\[01\([m;]\)/\d027[1\1/g';;
+                -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
+        rm -f build.log;;
     steps)
       run "C deps: runtime" make -j64 -C runtime setup-depend
       run "C deps: win32unix" make -j64 -C otherlibs/win32unix setup-depend
