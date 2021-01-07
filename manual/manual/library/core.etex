@@ -15,12 +15,14 @@ unqualified identifiers to refer to the functions provided by the
 "Stdlib" module, without adding a "open Stdlib" directive.
 \end{itemize}
 
+\begin{latexonly}
 \section*{s:core-conventions}{Conventions}
 
 The declarations of the built-in types and the components of module
 "Stdlib" are printed one by one in typewriter font, followed by a
 short comment.  All library modules and the components they provide are
 indexed at the end of this report.
+\end{latexonly}
 
 \input{builtin.tex}
 \ifouthtml

@@ -36,8 +36,8 @@ OTHERLIB_INTF = Unix.tex UnixLabels.tex Str.tex \
 INTF = $(CORE_INTF) $(STDLIB_INTF) $(COMPILER_LIBS_INTF) $(OTHERLIB_INTF)
 
 BLURB = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
-  libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdynlink.tex libbigarray.tex
+  libunix.tex libstr.tex old.tex \
+  libthreads.tex libdynlink.tex
 
 FILES = $(BLURB) $(INTF)
 
