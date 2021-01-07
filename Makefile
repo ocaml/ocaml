@@ -67,7 +67,7 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-TOPLEVELINIT=toplevel/topinit.cmo
+TOPLEVELINIT=toplevel/toploop.cmo
 
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 

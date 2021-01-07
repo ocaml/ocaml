@@ -6223,7 +6223,7 @@ toplevel/topeval.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
-toplevel/topinit.cmo : \
+toplevel/toploop.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
     toplevel/topeval.cmi \
@@ -6234,8 +6234,8 @@ toplevel/topinit.cmo : \
     driver/compenv.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
-    toplevel/topinit.cmi
-toplevel/topinit.cmx : \
+    toplevel/toploop.cmi
+toplevel/toploop.cmx : \
     utils/warnings.cmx \
     typing/typetexp.cmx \
     toplevel/topeval.cmi \
@@ -6246,8 +6246,8 @@ toplevel/topinit.cmx : \
     driver/compenv.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
-    toplevel/topinit.cmi
-toplevel/topinit.cmi :
+    toplevel/toploop.cmi
+toplevel/toploop.cmi :
 toplevel/topmain.cmi :
 toplevel/topstart.cmo : \
     toplevel/topmain.cmi
@@ -6343,9 +6343,14 @@ toplevel/byte/topeval.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
+toplevel/byte/topimpl.cmi : \
+    toplevel/topcommon.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    typing/env.cmi
 toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
-    toplevel/topinit.cmi \
+    toplevel/toploop.cmi \
     toplevel/byte/topeval.cmi \
     toplevel/topdirs.cmi \
     toplevel/topcommon.cmi \
@@ -6362,7 +6367,7 @@ toplevel/byte/topmain.cmo : \
     toplevel/byte/topmain.cmi
 toplevel/byte/topmain.cmx : \
     toplevel/byte/trace.cmx \
-    toplevel/topinit.cmx \
+    toplevel/toploop.cmx \
     toplevel/byte/topeval.cmx \
     toplevel/topdirs.cmx \
     toplevel/topcommon.cmx \
@@ -6494,8 +6499,13 @@ toplevel/native/topeval.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
+toplevel/native/topimpl.cmi : \
+    toplevel/topcommon.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    typing/env.cmi
 toplevel/native/topmain.cmo : \
-    toplevel/topinit.cmi \
+    toplevel/toploop.cmi \
     toplevel/native/topeval.cmi \
     toplevel/topcommon.cmi \
     utils/misc.cmi \
@@ -6506,7 +6516,7 @@ toplevel/native/topmain.cmo : \
     utils/clflags.cmi \
     toplevel/native/topmain.cmi
 toplevel/native/topmain.cmx : \
-    toplevel/topinit.cmx \
+    toplevel/toploop.cmx \
     toplevel/native/topeval.cmx \
     toplevel/topcommon.cmx \
     utils/misc.cmx \

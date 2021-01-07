@@ -218,7 +218,7 @@ let main () =
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Topinit.loop Format.std_formatter
+  Toploop.loop Format.std_formatter
 
 let main () =
   match main () with
