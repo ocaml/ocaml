@@ -81,6 +81,10 @@ Working version
   `Opttoploop`, `Opttopstart`, which are replaced by `Toploop` and `Topstart` in
   library `ocamltoplevel`, made available in native code.
 
+- #10124: remove duplicated code from the native toplevel, split toplevel
+  implementation into the shared part (`Topcommon`, etc.) and specific ones
+  (`Topeval`, `Trace`, `Topmain`).
+
 * #10086: add the commands `make list-parse-errors` and `make
   generate-parse-errors` to generate a set of syntactically incorrect
   sentences that covers all error states of the LR automaton. Add these
