@@ -180,9 +180,7 @@ Within a "v" box:
 
 {[
 --b
-
 --b
-
 --
 ]}
 
@@ -198,9 +196,7 @@ But "---b---b---" that cannot fit on the line is written
 
 {[
 ---b
-
 ---b
-
 ---
 ]}
 
@@ -216,7 +212,6 @@ But if "---b---b---" cannot fit on the line, it is written as
 
 {[
 ---b---b
-
 ---
 ]}
 
@@ -228,9 +223,7 @@ written as:
 
 {[
 ---b
-
 ---b
-
 ---
 ]}
 
