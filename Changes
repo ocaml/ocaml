@@ -96,10 +96,12 @@ Working version
   changes in the parser.
   (François Pottier, review by Gabriel Scherer and Xavier Leroy.)
 
+- #10090: Distinguished constructors for ref variables at lambda level
+  (Keryan Didier, review by Gabriel Scherer and Vincent Laviron)
+
 - #10113: add a `-timeout` option to ocamltest and use it in the test suite.
   (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
    and David Allsopp)
-
 
 ### Build system:
 
