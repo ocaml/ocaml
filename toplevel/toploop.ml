@@ -1,6 +1,6 @@
 open Format
-open Topcommon
-open Topeval
+include Topcommon
+include Topeval
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
