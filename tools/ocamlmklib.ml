@@ -58,10 +58,6 @@ and rpath = ref []          (* rpath options *)
 and debug = ref false       (* -g option *)
 and verbose = ref false
 
-let starts_with s pref =
-  String.length s >= String.length pref &&
-  String.sub s 0 (String.length pref) = pref
-let ends_with = Filename.check_suffix
 let chop_prefix s pref =
   String.sub s (String.length pref) (String.length s - String.length pref)
 let chop_suffix = Filename.chop_suffix
@@ -97,14 +93,14 @@ let parse_arguments argv =
       push_args ~first:0 (Arg.read_arg (next_arg s))
     else if s = "-args0" then
       push_args ~first:0 (Arg.read_arg0 (next_arg s))
-    else if ends_with s ".cmo" || ends_with s ".cma" then
+    else if String.(ends_with s ~sub:".cmo" || ends_with s ~sub:".cma") then
       bytecode_objs := s :: !bytecode_objs
-    else if ends_with s ".cmx" then
+    else if String.ends_with s ~sub:".cmx" then
       native_objs := s :: !native_objs
-    else if ends_with s ".ml" || ends_with s ".mli" then
+    else if String.(ends_with s ~sub:".ml" || ends_with s ~sub:".mli") then
      (bytecode_objs := s :: !bytecode_objs;
       native_objs := s :: !native_objs)
-    else if List.exists (ends_with s)
+    else if List.exists (fun sub -> String.ends_with s ~sub)
                         [".o"; ".a"; ".obj"; ".lib"; ".dll"; ".dylib"; ".so"]
     then
       c_objs := s :: !c_objs
@@ -126,15 +122,15 @@ let parse_arguments argv =
       ld_opts := next_arg s :: !ld_opts
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
-    else if starts_with s "-l" then
+    else if String.starts_with s ~sub:"-l" then
       let s =
         if Config.ccomp_type = "msvc" then
-          String.sub s 2 (String.length s - 2) ^ ".lib"
+          chop_prefix s "-l" ^ ".lib"
         else
           s
       in
       c_libs := s :: !c_libs
-    else if starts_with s "-L" then
+    else if String.starts_with s ~sub:"-L" then
      (c_Lopts := s :: !c_Lopts;
       let l = chop_prefix s "-L" in
       if not (Filename.is_relative l) then rpath := l :: !rpath)
@@ -152,16 +148,16 @@ let parse_arguments argv =
       output_c := next_arg s
     else if s = "-dllpath" || s = "-R" || s = "-rpath" then
       rpath := next_arg s :: !rpath
-    else if starts_with s "-R" then
+    else if String.starts_with s ~sub:"-R" then
       rpath := chop_prefix s "-R" :: !rpath
     else if s = "-Wl,-rpath" then
      (let a = next_arg s in
-      if starts_with a "-Wl,"
+      if String.starts_with a ~sub:"-Wl,"
       then rpath := chop_prefix a "-Wl," :: !rpath
       else raise (Bad_argument("Option -Wl,-rpath expects a -Wl, argument")))
-    else if starts_with s "-Wl,-rpath," then
+    else if String.starts_with s ~sub:"-Wl,-rpath," then
       rpath := chop_prefix s "-Wl,-rpath," :: !rpath
-    else if starts_with s "-Wl,-R" then
+    else if String.starts_with s ~sub:"-Wl,-R" then
       rpath := chop_prefix s "-Wl,-R" :: !rpath
     else if s = "-v" || s = "-verbose" then
       verbose := true
@@ -169,11 +165,11 @@ let parse_arguments argv =
       print_version ()
     else if s = "-vnum" then
       print_version_num ()
-    else if starts_with s "-F" then
+    else if String.starts_with s ~sub:"-F" then
       c_opts := s :: !c_opts
     else if s = "-framework" then
       (let a = next_arg s in c_opts := a :: s :: !c_opts)
-    else if starts_with s "-" then
+    else if String.starts_with s ~sub:"-" then
       prerr_endline ("Unknown option " ^ s)
     else
       raise (Bad_argument("Don't know what to do with " ^ s))
