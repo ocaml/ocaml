@@ -906,6 +906,16 @@ OCaml 4.09.0 (19 September 2019):
 - #8944: Fix "open struct .. end" on clambda backend
   (Thomas Refis, review by Leo White, report by Damon Wang and Mark Shinwell)
 
+OCaml 4.08 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9326, #10125: Gc.set incorrectly handles the three `custom_*` fields,
+  causing a performance regression
+  (report by Emilio Jesús Gallego Arias, analysis and fix by Stephen Dolan,
+   code by Xavier Leroy, review by Hugo Heuzard and Gabriel Scherer)
+
 OCaml 4.08.1 (5 August 2019)
 ----------------------------
 

@@ -470,21 +470,21 @@ CAMLprim value caml_gc_set(value v)
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){
-    new_custom_maj = norm_custom_maj (Field (v, 8));
+    new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
     if (new_custom_maj != caml_custom_major_ratio){
       caml_custom_major_ratio = new_custom_maj;
       caml_gc_message (0x20, "New custom major ratio: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_major_ratio);
     }
-    new_custom_min = norm_custom_min (Field (v, 9));
+    new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
     if (new_custom_min != caml_custom_minor_ratio){
       caml_custom_minor_ratio = new_custom_min;
       caml_gc_message (0x20, "New custom minor ratio: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_minor_ratio);
     }
-    new_custom_sz = Field (v, 10);
+    new_custom_sz = Long_val (Field (v, 10));
     if (new_custom_sz != caml_custom_minor_max_bsz){
       caml_custom_minor_max_bsz = new_custom_sz;
       caml_gc_message (0x20, "New custom minor size limit: %"
