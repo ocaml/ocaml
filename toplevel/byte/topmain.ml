@@ -30,14 +30,16 @@ let dir_trace ppf lid =
       (* Check if this is a primitive *)
       match desc.val_kind with
       | Val_prim _ ->
-          Format.fprintf ppf "%a is an external function and cannot be traced.@."
+          Format.fprintf ppf
+            "%a is an external function and cannot be traced.@."
           Printtyp.longident lid
       | _ ->
           let clos = Topeval.eval_value_path !Topcommon.toplevel_env path in
           (* Nothing to do if it's not a closure *)
           if Obj.is_block clos
           && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
-          && (match Ctype.(repr (expand_head !Topcommon.toplevel_env desc.val_type))
+          && (match
+                Ctype.(repr (expand_head !Topcommon.toplevel_env desc.val_type))
               with {desc=Tarrow _} -> true | _ -> false)
           then begin
           match is_traced clos with
@@ -52,7 +54,8 @@ let dir_trace ppf lid =
                   closure = clos;
                   actual_code = get_code_pointer clos;
                   instrumented_fun =
-                    instrument_closure !Topcommon.toplevel_env lid ppf desc.val_type }
+                    instrument_closure
+                      !Topcommon.toplevel_env lid ppf desc.val_type }
                 :: !traced_functions;
               (* Redirect the code field of the closure to point
                  to the instrumentation function *)
@@ -74,7 +77,8 @@ let dir_untrace ppf lid =
       | f :: rem ->
           if Path.same f.path path then begin
             set_code_pointer f.closure f.actual_code;
-            Format.fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
+            Format.fprintf ppf "%a is no longer traced.@."
+              Printtyp.longident lid;
             rem
           end else f :: remove rem in
       traced_functions := remove !traced_functions

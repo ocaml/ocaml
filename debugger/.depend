@@ -274,10 +274,6 @@ int64ops.cmo : \
 int64ops.cmx : \
     int64ops.cmi
 int64ops.cmi :
-lexer.cmo : \
-    parser.cmi
-lexer.cmx : \
-    parser.cmx
 loadprinter.cmo : \
     ../typing/types.cmi \
     ../bytecomp/symtable.cmi \
@@ -368,23 +364,6 @@ parameters.cmx : \
     ../utils/config.cmx \
     parameters.cmi
 parameters.cmi :
-parser.cmo : \
-    parser_aux.cmi \
-    ../parsing/longident.cmi \
-    int64ops.cmi \
-    input_handling.cmi \
-    debugcom.cmi \
-    parser.cmi
-parser.cmx : \
-    parser_aux.cmi \
-    ../parsing/longident.cmx \
-    int64ops.cmx \
-    input_handling.cmx \
-    debugcom.cmx \
-    parser.cmi
-parser.cmi : \
-    parser_aux.cmi \
-    ../parsing/longident.cmi
 parser_aux.cmi : \
     ../parsing/longident.cmi \
     debugcom.cmi
