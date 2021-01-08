@@ -210,7 +210,8 @@ case "$1" in
       *64)
         ARG='-8';;
     esac
-    find "../$BUILD_PREFIX-$PORT" -type f -name \*.dll | xargs rebase -i "$ARG"
+    find "../$BUILD_PREFIX-$PORT" -type f \( -name \*.dll -o -name \*.so \) | \
+      xargs rebase -i "$ARG"
 
     ;;
 esac
