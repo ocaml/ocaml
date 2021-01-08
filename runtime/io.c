@@ -103,8 +103,6 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
-  channel->revealed = 0;
-  channel->old_revealed = 0;
   channel->refcount = 0;
   channel->flags = descriptor_is_in_binary_mode(fd) ? 0 : CHANNEL_TEXT_MODE;
   channel->next = caml_all_opened_channels;
