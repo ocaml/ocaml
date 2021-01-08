@@ -1,0 +1,37 @@
+name: main
+
+on: [push, pull_request]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+  # Ensure that make distclean can be run from an empty tree
+    # - name: distclean
+    #   run: |
+    #     MAKE_ARG=-j make distclean
+    - name: configure tree
+      run: |
+        MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
+    - name: Build
+      run: |
+        MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        OCAMLRUNPARAM=v=0,V=1 USE_RUNTIME=d bash -xe tools/ci/actions/runner.sh test
+  macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: configure tree
+      run: |
+        MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
+    - name: Build
+      run: |
+        MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+    - name: Run the testsuite
+      run: |
+        bash -xe tools/ci/actions/runner.sh test
