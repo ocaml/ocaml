@@ -1883,7 +1883,11 @@ AS_CASE([$host],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
     AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])])
+    AC_DEFINE([HAS_NICE])],
+  [*-*-solaris*],
+    # This is required as otherwise floats are printed
+    # as "Infinity" and "Inf" instead of the expected "inf"
+    [AC_DEFINE([HAS_BROKEN_PRINTF])])
 
 AS_IF([test x"$enable_stdlib_manpages" != "xno"],
   [stdlib_manpages=true],[stdlib_manpages=false])
