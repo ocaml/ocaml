@@ -50,30 +50,35 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXLINK_ENV =
 else
   # The testsuite needs an absolute path to the runtime, so override the
-	# definition in Makefile.common
+  # definition in Makefile.common
+  FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
+  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
+ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
   FLEXLINK_ENV = \
     OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
                     $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
-endif
+  MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
+        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+  MKEXE=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
+        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
+        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
+else
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR_HOST)/flexlink.opt$(EXE) \
+      -I $(ROOTDIR_HOST)/stdlib/flexdll"
+  MKDLL=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
+        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+  MKEXE=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
+        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
+endif # ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
+endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 ifeq "$(ocamltest_program)" ""
   ocamltest = $(error ocamltest not found in $(ocamltest_directory))
 else
-  ifeq "$(FLEXLINK_ENV)" ""
-    ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
-  else
-    FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-    FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-    MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-          $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-          $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
-    MKEXE=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-          $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-          $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
-
-    ocamltest := $(FLEXLINK_ENV) MKEXE="$(MKEXE)" MKDLL="$(MKDLL)" \
-                                 SORT=$(SORT) MAKE=$(MAKE)$(ocamltest_program)
-  endif
+  ocamltest := $(FLEXLINK_ENV) MKEXE="$(MKEXE)" MKDLL="$(MKDLL)" SORT=$(SORT) \
+                               MAKE=$(MAKE) $(ocamltest_program)
 endif
 
 # PROMOTE is only meant to be used internally in recursive calls;

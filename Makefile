@@ -135,6 +135,8 @@ $(foreach program, $(programs), $(eval $(call PROGRAM_SYNONYM,$(program))))
 USE_RUNTIME_PRIMS = -use-prims ../runtime/primitives
 USE_STDLIB = -nostdlib -I ../stdlib
 
+FLEXDLL_OBJECTS = \
+  flexdll_$(FLEXDLL_CHAIN).$(O) flexdll_initer_$(FLEXDLL_CHAIN).$(O)
 FLEXLINK_BUILD_ENV = \
   MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
   CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=..
@@ -171,7 +173,7 @@ else
 	  flexlink.exe
 	mv $(FLEXDLL_SOURCES)/flexlink.exe boot/flexlink.byte$(EXE)
 	$(MAKE) -C $(FLEXDLL_SOURCES) $(FLEXLINK_BUILD_ENV) support
-	mv $(FLEXDLL_SOURCES)/flexdll_*.$(O) boot/
+	cp $(addprefix $(FLEXDLL_SOURCES)/, $(FLEXDLL_OBJECTS)) boot/
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
@@ -450,7 +452,8 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	  boot/flexlink.byte$(EXE) "$(INSTALL_BINDIR)/flexlink.byte$(EXE)"
 endif # ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(MKDIR) "$(INSTALL_FLEXDLLDIR)"
-	$(INSTALL_DATA) boot/flexdll_*.$(O) "$(INSTALL_FLEXDLLDIR)"
+	$(INSTALL_DATA) $(addprefix stdlib/flexdll/, $(FLEXDLL_OBJECTS)) \
+    "$(INSTALL_FLEXDLLDIR)"
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
@@ -767,6 +770,14 @@ partialclean::
 
 .PHONY: runtime
 runtime: stdlib/libcamlrun.$(A)
+
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+runtime: $(addprefix stdlib/flexdll/, $(FLEXDLL_OBJECTS))
+stdlib/flexdll/flexdll%.$(O): $(FLEXDLL_SOURCES)/flexdll%.$(O) | stdlib/flexdll
+	cp $< $@
+stdlib/flexdll:
+	$(MKDIR) $@
+endif
 
 .PHONY: makeruntime
 makeruntime:
