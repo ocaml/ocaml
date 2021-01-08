@@ -29,7 +29,6 @@
 #include "unixsupport.h"
 
 #include <windows.h>
-#include <fileapi.h>
 #include <stdio.h>
 
 CAMLprim value unix_realpath (value p)
