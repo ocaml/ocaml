@@ -518,8 +518,6 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   return Val_unit;
 }
 
-#define Pair_tag 0
-
 CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
@@ -535,7 +533,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
     if (channel->max == NULL) {
       chan = caml_alloc_channel (channel);
       tail = res;
-      res = caml_alloc_small (2, Pair_tag);
+      res = caml_alloc_small (2, Tag_cons);
       Field (res, 0) = chan;
       Field (res, 1) = tail;
     }
