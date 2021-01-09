@@ -256,10 +256,6 @@ OCaml 4.12.0
    and more generally all other data that is not a well-formed OCaml value
    (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
 
-- #9533: Added String.starts_with and String.ends_with.
-  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
-  Alain Frisch)
-
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
