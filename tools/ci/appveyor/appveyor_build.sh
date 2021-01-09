@@ -89,28 +89,24 @@ function set_configuration {
 }
 
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
-# These directory names are specified here, because getting UTF-8 correctly
-# through appveyor.yml -> Command Script -> Bash is quite painful...
-OCAMLROOT=$(echo "$PROGRAMFILES/Бактріан🐫" | cygpath -f - -m)
-
-# This must be kept in sync with appveyor_build.cmd
-BUILD_PREFIX=🐫реализация
+FLEXDLLROOT="$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll"
+OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
 
 if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   case "$PORT" in
     cygwin*) ;;
-    *) PATH=$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH;;
+    *) export PATH="$FLEXDLLROOT:$PATH";;
   esac
 fi
 
 case "$1" in
   install)
     if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
-      mkdir -p "$OCAMLROOT/bin/flexdll"
+      mkdir -p "$FLEXDLLROOT"
       cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
       # The objects are always built from the sources
       for f in flexdll.h flexlink.exe default*.manifest ; do
-        cp "$f" "$OCAMLROOT/bin/flexdll/"
+        cp "$f" "$FLEXDLLROOT/"
       done
     fi
     case "$PORT" in
@@ -167,8 +163,8 @@ case "$1" in
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
       $MAKE MSVC_DETECT=0 CHAINS=${PORT%32} support
-      cp -f *.obj "$OCAMLROOT/bin/flexdll/" || \
-      cp -f *.o "$OCAMLROOT/bin/flexdll/"
+      cp -f *.obj "$FLEXDLLROOT/" 2>/dev/null || \
+      cp -f *.o "$FLEXDLLROOT/"
       cd ..
     fi
 
@@ -188,7 +184,8 @@ case "$1" in
           "../$BUILD_PREFIX-$PORT/build.log" |
             sed -e 's/\d027\[K//g' \
                 -e 's/\d027\[m/\d027[0m/g' \
-                -e 's/\d027\[01\([m;]\)/\d027[1\1/g';;
+                -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
+        rm -f build.log;;
     steps)
       run "C deps: runtime" make -j64 -C runtime setup-depend
       run "C deps: win32unix" make -j64 -C otherlibs/win32unix setup-depend
@@ -213,7 +210,8 @@ case "$1" in
       *64)
         ARG='-8';;
     esac
-    find "../$BUILD_PREFIX-$PORT" -type f -name \*.dll | xargs rebase -i "$ARG"
+    find "../$BUILD_PREFIX-$PORT" -type f \( -name \*.dll -o -name \*.so \) | \
+      xargs rebase -i "$ARG"
 
     ;;
 esac
