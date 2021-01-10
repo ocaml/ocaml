@@ -1,24 +1,23 @@
 \chapter{The core language} \label{c:core-xamples}
 %HEVEA\cutname{coreexamples.html}
 
-This part of the manual is a tutorial introduction to the
-OCaml language. A good familiarity with programming in a conventional
-languages (say, C or Java) is assumed, but no prior exposure to
-functional languages is required. The present chapter introduces the
-core language. Chapter~\ref{c:moduleexamples} deals with the
-module system, chapter~\ref{c:objectexamples} with the
-object-oriented features, chapter~\ref{c:labl-examples} with
-extensions to the core language (labeled arguments and polymorphic
-variants), and chapter~\ref{c:advexamples} gives some advanced examples.
+This part of the manual is a tutorial introduction to the OCaml language. A
+good familiarity with programming in a conventional languages (say, C or Java)
+is assumed, but no prior exposure to functional languages is required. The
+present chapter introduces the core language. Chapter~\ref{c:moduleexamples}
+deals with the module system, chapter~\ref{c:objectexamples} with the
+object-oriented features, chapter~\ref{c:labl-examples} with extensions to the
+core language (labeled arguments and polymorphic variants),
+chapter~\ref{c:polymorphism} with the limitations of polymorphism, and
+chapter~\ref{c:advexamples} gives some advanced examples.
 
 \section{s:basics}{Basics}
 
-For this overview of OCaml, we use the interactive system, which
-is started by running "ocaml" from the Unix shell, or by launching the
-"OCamlwin.exe" application under Windows. This tutorial is presented
-as the transcript of a session with the interactive system:
-lines starting with "#" represent user input; the system responses are
-printed below, without a leading "#".
+For this overview of OCaml, we use the interactive system, which is started by
+running "ocaml" from the Unix shell or Windows command prompt. This tutorial is
+presented as the transcript of a session with the interactive system: lines
+starting with "#" represent user input; the system responses are printed below,
+without a leading "#".
 
 Under the interactive system, the user types OCaml phrases terminated
 by ";;" in response to the "#" prompt, and the system compiles them
@@ -973,6 +972,4 @@ multiple source files, and can link with precompiled libraries.
 Chapters~\ref{c:camlc} and~\ref{c:nativecomp} explain how to use the
 batch compilers "ocamlc" and "ocamlopt".  Recompilation of
 multi-file OCaml projects can be automated using third-party
-build systems, such as the
-\href{https://github.com/ocaml/ocamlbuild/}{ocamlbuild}
-compilation manager.
+build systems, such as \href{https://github.com/ocaml/dune}{dune}.
