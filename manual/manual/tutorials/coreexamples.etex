@@ -347,7 +347,7 @@ of the more advanced features of OCaml described in later chapters.
 Secondly, for records, OCaml can also deduce the right record type by
 looking at the whole set of fields used in a expression or pattern:
 \begin{caml_example}{toplevel}
-let project_and_rotate {x; y; _} = { x= - y; y = x ; z = 0} ;;
+let project_and_rotate {x; y; _} = { x= - y; y = x; z = 0} ;;
 \end{caml_example}
 Since the fields "x" and "y" can only appear simultaneously in the first
 record type, OCaml infers that the type of "project_and_rotate" is
