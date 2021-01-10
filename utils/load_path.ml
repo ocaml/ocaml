@@ -109,14 +109,14 @@ let is_basename fn = Filename.basename fn = fn
 
 let find fn =
   assert (not Config.merlin || Local_store.is_bound ());
-  if is_basename fn then
+  if is_basename fn && not !Sys.interactive then
     SMap.find fn !files
   else
     Misc.find_in_path (get_paths ()) fn
 
 let find_uncap fn =
   assert (not Config.merlin || Local_store.is_bound ());
-  if is_basename fn then
+  if is_basename fn && not !Sys.interactive then
     SMap.find (String.uncapitalize_ascii fn) !files_uncap
   else
     Misc.find_in_path_uncap (get_paths ()) fn
