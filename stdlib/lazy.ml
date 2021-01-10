@@ -55,7 +55,6 @@ external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward"
 
 external force : 'a t -> 'a = "%lazy_force"
 
-(* let force = force *)
 
 let force_val = CamlinternalLazy.force_val
 

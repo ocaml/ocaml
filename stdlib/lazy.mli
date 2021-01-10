@@ -57,7 +57,6 @@ type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined
 
-(* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
    If [x] has already been forced, [Lazy.force x] returns the
@@ -67,9 +66,39 @@ external force : 'a t -> 'a = "%lazy_force"
    recursively.
 *)
 
+
+(** {1 Already-forced suspensions} *)
+
+val is_val : 'a t -> bool
+(** [is_val x] returns [true] if [x] has already been forced and
+    did not raise an exception.
+    @since 4.00.0 *)
+
+val from_val : 'a -> 'a t
+(** [from_val v] evaluates [v] first (as any function would) and returns
+    an already-forced suspension of its result.
+    It is the same as [let x = v in lazy x], but uses dynamic tests
+    to optimize suspension creation in some cases.
+    @since 4.00.0 *)
+
+
+(** {1 Advanced}
+
+   The following definitions are for advanced uses only; they require
+   familiary with the lazy compilation scheme to be used appropriately. *)
+
+val from_fun : (unit -> 'a) -> 'a t
+(** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
+
+    It should only be used if the function [f] is already defined.
+    In particular it is always less efficient to write
+    [from_fun (fun () -> expr)] than [lazy expr].
+
+    @since 4.00.0 *)
+
 val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
-    result.  If [x] has already been forced, [force_val x]
+    result. If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
 
     If the computation of [x] raises an exception, it is unspecified
@@ -78,25 +107,8 @@ val force_val : 'a t -> 'a
     recursively.
 *)
 
-val from_fun : (unit -> 'a) -> 'a t
-(** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
 
-    [from_fun] should only be used if the function [f] is already defined.
-    In particular it is always less efficient to write
-    [from_fun (fun () -> expr)] than [lazy expr].
-
-    @since 4.00.0 *)
-
-val from_val : 'a -> 'a t
-(** [from_val v] returns an already-forced suspension of [v].
-    This is for special purposes only and should not be confused with
-    [lazy (v)].
-    @since 4.00.0 *)
-
-val is_val : 'a t -> bool
-(** [is_val x] returns [true] if [x] has already been forced and
-    did not raise an exception.
-    @since 4.00.0 *)
+(** {1 Deprecated} *)
 
 val lazy_from_fun : (unit -> 'a) -> 'a t
   [@@ocaml.deprecated "Use Lazy.from_fun instead."]
