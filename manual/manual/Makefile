@@ -4,15 +4,7 @@ export LD_LIBRARY_PATH   ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
 export DYLD_LIBRARY_PATH ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
 SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
-OCAMLDOC = $(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
-  $(SRC)/ocamldoc/ocamldoc.opt,\
-  $(SET_LD_PATH) $(SRC)/runtime/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
-  -hide Stdlib -lib Stdlib -nostdlib \
-  -pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk"
-
-
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
-
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
 

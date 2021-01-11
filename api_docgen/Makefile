@@ -99,13 +99,13 @@ html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc)
 	$(MKDIR) -p html/libref
 	$(OCAMLDOC_RUN) -html -d html/libref \
 	-charset="utf8" \
-	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
+	-nonavbar -nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_LIBREF:%=build/%.odoc))
 
 html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc)
 	$(MKDIR) -p html/compilerlibref
 	$(OCAMLDOC_RUN) -html -d html/compilerlibref \
-	-nostdlib -hide Stdlib -t "OCaml compiler library" \
+	-nonavbar -nostdlib -hide Stdlib -t "OCaml compiler library" \
 	-charset="utf8" \
 	-intro Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))

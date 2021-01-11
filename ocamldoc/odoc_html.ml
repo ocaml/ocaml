@@ -30,6 +30,7 @@ let index_only = ref false
 let colorize_code = ref false
 let html_short_functors = ref false
 let charset = ref "iso-8859-1"
+let show_navbar = ref true
 
 
 (** The functions used for naming files and html marks.*)
@@ -2396,7 +2397,7 @@ class html =
         bs b "<html>\n";
         self#print_header b (self#inner_title title);
         bs b "<body>\n";
-        self#print_navbar b None None "";
+        if !show_navbar then self#print_navbar b None None "";
         bs b "<h1>";
         bs b title;
         bs b "</h1>\n" ;
@@ -2478,7 +2479,7 @@ class html =
           ~comments: (Class.class_comments cl)
           (self#inner_title cl.cl_name);
         bs b "<body>\n";
-        self#print_navbar b pre_name post_name cl.cl_name;
+        if !show_navbar then self#print_navbar b pre_name post_name cl.cl_name;
         bs b "<h1>";
         bs b (Odoc_messages.clas^" ");
         if cl.cl_virtual then bs b "virtual " ;
@@ -2526,7 +2527,7 @@ class html =
           (self#inner_title clt.clt_name);
 
         bs b "<body>\n";
-        self#print_navbar b pre_name post_name clt.clt_name;
+        if !show_navbar then self#print_navbar b pre_name post_name clt.clt_name;
         bs b "<h1>";
         bs b (Odoc_messages.class_type^" ");
         if clt.clt_virtual then bs b "virtual ";
@@ -2571,7 +2572,7 @@ class html =
           ~comments: (Module.module_type_comments mt)
           (self#inner_title mt.mt_name);
         bs b "<body>\n";
-        self#print_navbar b pre_name post_name mt.mt_name;
+        if !show_navbar then self#print_navbar b pre_name post_name mt.mt_name;
         bp b "<h1>";
         bs b (Odoc_messages.module_type^" ");
         (
@@ -2639,7 +2640,7 @@ class html =
           ~comments: (Module.module_comments modu)
           (self#inner_title modu.m_name);
         bs b "<body>\n" ;
-        self#print_navbar b pre_name post_name modu.m_name ;
+        if !show_navbar then self#print_navbar b pre_name post_name modu.m_name ;
         bs b "<h1>";
         if modu.m_text_only then
           bs b modu.m_name
