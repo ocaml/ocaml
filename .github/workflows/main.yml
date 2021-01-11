@@ -16,9 +16,6 @@ jobs:
             os: ubuntu-latest
           - name: macos
             os: macos-latest
-          - name: macos-debug
-            os: macos-latest
-            env: OCAMLRUNPARAM=v=0,V=1 USE_RUNTIME=d
 
     steps:
       - name: Checkout
