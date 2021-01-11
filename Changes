@@ -198,6 +198,15 @@ Working version
   the source code than the point explicitly shown in the error message.
   (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
 
+* #10118, #10140: enable warning 6 [labels-omitted] by default.
+  The following now warns:
+    let f ~x y = ... in f 3 5
+  the callsite (f 3 5) has to be turned into (f ~x:3 5).
+  This prevents mistakes where two arguments of the same types are swapped.
+  (Note: Dune already enables this warning by default.)
+  (Gabriel Scherer, review by Xavier Leroy and Florian Angeletti,
+   report by ygrek)
+
 - #10196, #10197: better error message on empty character literals ''.
   (Gabriel Scherer, review by David Allsopp and Florian Angeletti
    and Daniel Bünzli, report by Robin Björklin)
