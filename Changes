@@ -1,5 +1,5 @@
-Working version
----------------
+OCaml 4.11 maintenance branch
+-----------------------------
 
 ### Build system:
 
@@ -13,9 +13,6 @@ Working version
   heap in caml_memprof_renew_minor_sample (regression from #8684)
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
-
-OCaml 4.11 maintenance branch
------------------------------
 
 ### Bug fixes:
 
