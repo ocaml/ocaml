@@ -588,7 +588,7 @@ example, we can defer the computation of "1+1" until we need the result of that
 expression, "2". Let us see how we initialize a lazy expression. 
 
 \begin{caml_example}{toplevel}
-let lazy_two = lazy ( print_endline "lazy_two evaluation"; 1 + 1 );;
+let lazy_two = lazy (print_endline "lazy_two evaluation"; 1 + 1);;
 \end{caml_example}
 
 We added "print_endline \"lazy_two evaluation\"" to see when the lazy

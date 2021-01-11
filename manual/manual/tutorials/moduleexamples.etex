@@ -75,9 +75,9 @@ let x = 1 :: empty [@@expect error];;
 
 A partial solution to this conundrum is to open modules locally,
 making the components of the module available only in the
-concerned expression. This can also make the code easier to read
--- the open statement is closer to where it is used -- and to refactor
--- the code fragment is more self-contained.
+concerned expression. This can also make the code both easier to read
+(since the open statement is closer to where it is used) and easier to refactor
+(since the code fragment is more self-contained).
 Two constructions are available for this purpose:
 \begin{caml_example}{toplevel}
 let open PrioQueue in
