@@ -33,6 +33,11 @@ OCaml 4.11 maintenance branch
   declared within a function
   (Gabriel Scherer, review by Leo White, report by Sacha Ayoun)
 
+- #9326, #10125: Gc.set incorrectly handles the three `custom_*` fields,
+  causing a performance regression
+  (report by Emilio Jesús Gallego Arias, analysis and fix by Stephen Dolan,
+   code by Xavier Leroy, review by Hugo Heuzard and Gabriel Scherer)
+
 OCaml 4.11.1 (31 August 2020)
 -----------------------------
 
