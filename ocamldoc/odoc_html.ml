@@ -744,7 +744,7 @@ class virtual info =
           | Some d ->
                bs b "<div class=\"info-deprecated\">\n";
                bs b "<span class=\"warning\">";
-               bs b Odoc_messages.deprecated ;
+               bs b (Odoc_messages.deprecated^". ");
                bs b "</span>" ;
                self#html_of_text b d;
                bs b "</div>\n"
@@ -1183,32 +1183,34 @@ class html =
        @param post optional name for optional next module/class
        @param name name of current module/class *)
     method print_navbar b pre post name =
-      bs b "<div class=\"navbar\">";
-      (
-       match pre with
-         None -> ()
-       | Some name ->
-           bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
-             (fst (Naming.html_files name))
-             name
-             Odoc_messages.previous
-      );
-      bs b "&nbsp;";
-      let father = Name.father name in
-      let href = if father = "" then self#index else fst (Naming.html_files father) in
-      let father_name = if father = "" then "Index" else father in
-      bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
-      bs b "&nbsp;";
-      (
-       match post with
-         None -> ()
-       | Some name ->
-           bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
-             (fst (Naming.html_files name))
-             name
-             Odoc_messages.next
-      );
-      bs b "</div>\n"
+      if !show_navbar then begin
+        bs b "<div class=\"navbar\">";
+        (
+         match pre with
+           None -> ()
+         | Some name ->
+             bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
+               (fst (Naming.html_files name))
+               name
+               Odoc_messages.previous
+        );
+        bs b "&nbsp;";
+        let father = Name.father name in
+        let href = if father = "" then self#index else fst (Naming.html_files father) in
+        let father_name = if father = "" then "Index" else father in
+        bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
+        bs b "&nbsp;";
+        (
+         match post with
+           None -> ()
+         | Some name ->
+             bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
+               (fst (Naming.html_files name))
+               name
+               Odoc_messages.next
+        );
+        bs b "</div>\n"
+      end
 
     (** Return html code with the given string in the keyword style.*)
     method keyword s =
@@ -2397,7 +2399,7 @@ class html =
         bs b "<html>\n";
         self#print_header b (self#inner_title title);
         bs b "<body>\n";
-        if !show_navbar then self#print_navbar b None None "";
+        self#print_navbar b None None "";
         bs b "<h1>";
         bs b title;
         bs b "</h1>\n" ;
@@ -2479,7 +2481,7 @@ class html =
           ~comments: (Class.class_comments cl)
           (self#inner_title cl.cl_name);
         bs b "<body>\n";
-        if !show_navbar then self#print_navbar b pre_name post_name cl.cl_name;
+        self#print_navbar b pre_name post_name cl.cl_name;
         bs b "<h1>";
         bs b (Odoc_messages.clas^" ");
         if cl.cl_virtual then bs b "virtual " ;
@@ -2527,7 +2529,7 @@ class html =
           (self#inner_title clt.clt_name);
 
         bs b "<body>\n";
-        if !show_navbar then self#print_navbar b pre_name post_name clt.clt_name;
+        self#print_navbar b pre_name post_name clt.clt_name;
         bs b "<h1>";
         bs b (Odoc_messages.class_type^" ");
         if clt.clt_virtual then bs b "virtual ";
@@ -2572,7 +2574,7 @@ class html =
           ~comments: (Module.module_type_comments mt)
           (self#inner_title mt.mt_name);
         bs b "<body>\n";
-        if !show_navbar then self#print_navbar b pre_name post_name mt.mt_name;
+        self#print_navbar b pre_name post_name mt.mt_name;
         bp b "<h1>";
         bs b (Odoc_messages.module_type^" ");
         (
@@ -2640,7 +2642,7 @@ class html =
           ~comments: (Module.module_comments modu)
           (self#inner_title modu.m_name);
         bs b "<body>\n" ;
-        if !show_navbar then self#print_navbar b pre_name post_name modu.m_name ;
+        self#print_navbar b pre_name post_name modu.m_name ;
         bs b "<h1>";
         if modu.m_text_only then
           bs b modu.m_name
