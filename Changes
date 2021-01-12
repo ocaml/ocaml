@@ -122,6 +122,12 @@ Working version
   do not overflow the 16-bit fields where they are stored.
   (Xavier Leroy, report by Github user pveber, review by Gabriel Scherer)
 
+- #10087, #10138: In the toplevel REPL, don't use the cache
+  of included directories, so that files created or deleted while
+  the REPL is running are correctly handled.
+  (Xavier Leroy, report by Github user quakerquickoats, review by
+   Jeremie Dimino)
+
 OCaml 4.12.0
 ------------
 
