@@ -55,6 +55,11 @@ Working version
 
 ### Tools:
 
+- #10139: Remove confusing navigation bar from stdlib documentation.
+  Adds a -nonavbar option to ocamldoc, and uses it to improve navigation within
+  the reference manual.
+  (John Whitington, review by David Allsopp)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
