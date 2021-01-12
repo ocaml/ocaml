@@ -2569,8 +2569,8 @@ let unify_exp env exp expected_ty =
   with Error(loc, env, Expr_type_clash(trace, tfc, None)) ->
     raise (Error(loc, env, Expr_type_clash(trace, tfc, Some exp.exp_desc)))
 
-(* If [is_inferred e] is true, [e] will be typechecked without using the "expected type"
-   provided by the context. *)
+(* If [is_inferred e] is true, [e] will be typechecked without using
+   the "expected type" provided by the context. *)
 
 let rec is_inferred sexp =
   match sexp.pexp_desc with
@@ -2770,7 +2770,8 @@ and type_expect_
           if List.memq ty seen then () else
             match ty.desc with
               Tarrow (_l, ty_arg, ty_fun, _com) ->
-                (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
+                (try unify_var env (newvar()) ty_arg
+                 with Unify _ -> assert false);
                 lower_args (ty::seen) ty_fun
             | _ -> ()
         in
@@ -2778,10 +2779,10 @@ and type_expect_
         end_def ();
         wrap_trace_gadt_instances env (lower_args []) ty;
         match funct.exp_desc, sargs with
-        | Texp_ident (_, _, {val_kind = Val_prim {Primitive.prim_name = "%revapply"}}),
+        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%revapply"}}),
           [Nolabel, sarg; Nolabel, sfunct] when is_inferred sfunct ->
             treat_apply_primitives sfunct [Nolabel, sarg]
-        | Texp_ident (_, _, {val_kind = Val_prim {Primitive.prim_name = "%apply"}}),
+        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%apply"}}),
           [Nolabel, sfunct; Nolabel, sarg] ->
             treat_apply_primitives sfunct [Nolabel, sarg]
         | _ ->
