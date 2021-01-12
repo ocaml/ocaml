@@ -2569,6 +2569,17 @@ let unify_exp env exp expected_ty =
   with Error(loc, env, Expr_type_clash(trace, tfc, None)) ->
     raise (Error(loc, env, Expr_type_clash(trace, tfc, Some exp.exp_desc)))
 
+(* If [is_inferred e] is true, [e] will be typechecked without using the "expected type"
+   provided by the context. *)
+
+let rec is_inferred sexp =
+  match sexp.pexp_desc with
+  | Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
+  | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
+  | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
+  | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
+  | _ -> false
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -2768,7 +2779,10 @@ and type_expect_
         wrap_trace_gadt_instances env (lower_args []) ty;
         match funct.exp_desc, sargs with
         | Texp_ident (_, _, {val_kind = Val_prim {Primitive.prim_name = "%revapply"}}),
-          [Nolabel, sarg; Nolabel, sfunct] ->
+          [Nolabel, sarg; Nolabel, sfunct] when is_inferred sfunct ->
+            treat_apply_primitives sfunct [Nolabel, sarg]
+        | Texp_ident (_, _, {val_kind = Val_prim {Primitive.prim_name = "%apply"}}),
+          [Nolabel, sfunct; Nolabel, sarg] ->
             treat_apply_primitives sfunct [Nolabel, sarg]
         | _ ->
             funct, sargs
@@ -4154,14 +4168,6 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   let no_labels ty =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) Nolabel) ls
-  in
-  let rec is_inferred sexp =
-    match sexp.pexp_desc with
-      Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
-    | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
-    | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
-    | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
-    | _ -> false
   in
   match expand_head env ty_expected' with
     {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv}
