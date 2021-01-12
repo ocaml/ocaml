@@ -44,11 +44,6 @@ Caml_inline double fmin(double a, double b) {
 
 #define MARK_STACK_INIT_SIZE 2048
 
-typedef struct {
-  value block;
-  uintnat offset;
-} mark_entry;
-
 struct mark_stack {
   mark_entry* stack;
   uintnat count;
@@ -135,7 +130,17 @@ int caml_naked_pointers_detected = 0;
 #endif
 
 void (*caml_major_gc_hook)(void) = NULL;
-
+// FIXME: use this if possible, but work accounting is tricky
+//static mark_entry get_mark_entry(value v)
+//{
+//  mark_entry m = {Op_val(v), Op_val(v) + Wosize_val(v)};
+//  CAMLassert(Tag_val(v) < No_scan_tag);
+//  CAMLassert(Is_black_val(v));
+//  if (Tag_val(v) == Closure_tag) {
+//    m.start += Start_env_closinfo(Closinfo_val(block));
+//  }
+//}
+//
 /* This function prunes the mark stack if it's about to overflow. It does so
    by building a skiplist of major heap chunks and then iterating through the
    mark stack and setting redarken_start/redarken_end on each chunk to indicate
@@ -157,20 +162,17 @@ static void mark_stack_prune (struct mark_stack* stk)
 
   for( entry = 0; entry < mark_stack_count ; entry++ ) {
     mark_entry me = mark_stack[entry];
-    value* block_op = Op_val(me.block);
     uintnat chunk_addr = 0, chunk_addr_below = 0;
 
-    if( caml_skiplist_find_below(&chunk_sklist, (uintnat)me.block,
+    if( caml_skiplist_find_below(&chunk_sklist, (uintnat)me.start,
           &chunk_addr, &chunk_addr_below)
-        && me.block < chunk_addr_below ) {
+        && (uintnat)me.start < chunk_addr_below ) {
+      heap_chunk_head* ch = Chunk_head(chunk_addr);
+      if (ch->redarken_first.start > me.start)
+        ch->redarken_first = me;
 
-      if( Chunk_redarken_start(chunk_addr) > block_op ) {
-        Chunk_redarken_start(chunk_addr) = block_op;
-      }
-
-      if( Chunk_redarken_end(chunk_addr) < block_op ) {
-        Chunk_redarken_end(chunk_addr) = block_op;
-      }
+      if (ch->redarken_end < me.end)
+        ch->redarken_end = me.end;
 
       if( redarken_first_chunk == NULL
           || redarken_first_chunk > (char*)chunk_addr ) {
@@ -275,8 +277,8 @@ Caml_inline void mark_stack_push(struct mark_stack* stk, value block,
 
   me = &stk->stack[stk->count++];
 
-  me->block = block;
-  me->offset = offset;
+  me->start = Op_val(block) + offset;
+  me->end = Op_val(block) + Wosize_val(block);
 }
 
 #if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
@@ -351,30 +353,37 @@ void caml_shrink_mark_stack () {
    wasteful. Subsequent calls will continue progress.
  */
 static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
-  value* p = Chunk_redarken_start(heap_chunk);
-  value* end = Chunk_redarken_end(heap_chunk);
-
-  while (p <= end) {
-    header_t hd = Hd_op(p);
-
-    if( Is_black_hd(hd) && Tag_hd(hd) < No_scan_tag ) {
-      if( stk->count < stk->size/4 ) {
-        mark_stack_push(stk, Val_op(p), 0, NULL);
-      } else {
-        /* Only fill up a quarter of the mark stack, we can resume later
-           for more if we need to */
-        Chunk_redarken_start(heap_chunk) = p;
-        return 0;
-      }
+  heap_chunk_head* chunk = Chunk_head(heap_chunk);
+  mark_entry me = chunk->redarken_first;
+  value* end = chunk->redarken_end;
+  while (me.end <= end) {
+    value v;
+    if (stk->count < stk->size/4) {
+      stk->stack[stk->count++] = me;
+    } else {
+      /* Only fill up a quarter of the mark stack, we can resume later
+         for more if we need to */
+      chunk->redarken_first = me;
+      return 0;
     }
 
-    p += Whsize_hp(Hp_op(p));
+    v = Val_hp(me.end);
+    while (Op_val(v) < end &&
+           (Tag_val(v) >= No_scan_tag || !Is_black_val(v))) {
+      v = Val_hp(Op_val(v) + Wosize_val(v));
+    }
+    me.start = Op_val(v);
+    me.end = me.start + Wosize_val(v);
+    if (Tag_val(v) == Closure_tag) {
+      me.start += Start_env_closinfo(Closinfo_val(v));
+    }
   }
 
-  Chunk_redarken_start(heap_chunk) =
+  chunk->redarken_first.start =
       (value*)(heap_chunk + Chunk_size(heap_chunk));
+  chunk->redarken_first.end = chunk->redarken_first.start;
+  chunk->redarken_end = (value*)heap_chunk;
 
-  Chunk_redarken_end(heap_chunk) = 0;
   return 1;
 }
 
@@ -411,8 +420,8 @@ static void init_sweep_phase(void)
   if (caml_major_gc_hook) (*caml_major_gc_hook)();
 }
 
-/* auxiliary function of mark_slice */
-Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
+/* auxiliary function of mark_ephe_aux */
+Caml_inline void mark_ephe_darken(struct mark_stack* stk, value v, mlsize_t i,
                                        int in_ephemeron, int *slice_pointers,
                                        intnat *work)
 {
@@ -538,7 +547,7 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
     *work -= Whsize_wosize(i);
 
     if (alive_data){
-      mark_slice_darken(stk, v, CAML_EPHE_DATA_OFFSET, /*in_ephemeron=*/1,
+      mark_ephe_darken(stk, v, CAML_EPHE_DATA_OFFSET, /*in_ephemeron=*/1,
                           slice_pointers, work);
     } else { /* not triggered move to the next one */
       ephes_to_check = &Field(v,CAML_EPHE_LINK_OFFSET);
@@ -564,10 +573,178 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
   }
 }
 
+
+#define Pb_size 256
+#define Pb_min 64
+#define Pb_mask (Pb_size - 1)
+#define Queue_prefetch_distance 4
+
+//#define __builtin_prefetch(p, a, b)
+//  asm volatile("prefetchw %0" :: "m" (*(unsigned long *)(p)))
+
+static void prefetch(value v)
+{
+  __builtin_prefetch(Hp_val(v), 1, 3);
+  __builtin_prefetch(&Field(v, Queue_prefetch_distance - 1), 1, 2);
+}
+
+static uintnat rotate1(uintnat x)
+{
+  return (x << ((sizeof x)*8 - 1)) | (x >> 1);
+}
+
+//struct pbstats {
+//  uintnat size_occ, size_now;
+//  uintnat cont_occ, cont_yes;
+//  //uintnat size_hist[Pb_size];
+//};
+//static struct pbstats pbstats_glob;
+CAMLnoinline static intnat do_some_marking(intnat work)
+{
+  //New version: assume prefetching of head of gray stack
+  uintnat pb_enqueued = 0, pb_dequeued = 0;
+  int darkened_anything = 0;
+  value pb[Pb_size];
+  uintnat min_pb = Pb_min;
+  struct mark_stack stk = *Caml_state->mark_stack;
+  //struct pbstats stats = pbstats_glob;
+
+  uintnat young_start = (uintnat)Caml_state->young_start;
+  uintnat half_young_len = ((uintnat)Caml_state->young_end - (uintnat)Caml_state->young_start) >> 1;
+#define Is_block_and_not_young(v) \
+  (((intnat)rotate1((uintnat)v - young_start)) > (intnat)half_young_len)
+#ifdef NO_NAKED_POINTERS
+  #define Is_major_block(v) Is_block_and_not_young(v)
+  //#define Is_major_block(v) (Is_block(v) && !Is_young(v))
+#else
+#define Is_major_block(v) (Is_block_and_not_young(v) && Is_in_heap(v))
+#endif
+
+  while (1) {
+    value *scan, *obj_end, *scan_end;
+
+    if (pb_enqueued > pb_dequeued + min_pb) {
+      //value *line_end;
+      /* Dequeue from prefetch buffer */
+      value block = pb[(pb_dequeued++) & Pb_mask];
+      header_t hd = Hd_val(block);
+
+      CAMLassert(Wosize_hd(hd) > 0 || block == Atom(Tag_hd(hd)));
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+      /* See [caml_darken] for a description of this assertion. */
+      CAMLassert (Is_in_heap (v) || Is_black_hd (hd));
+#endif
+      CAMLassert(Is_white_hd(hd) || Is_black_hd(hd));
+
+      /* FIXME: Forward_tag */
+      if (Tag_hd(hd) == Forward_tag) {
+
+      } else if (Tag_hd(hd) == Infix_tag) {
+        block -= Infix_offset_val(block);
+        hd = Hd_val(block);
+      }
+      if (!Is_white_hd (hd)) {
+        /* Already black, nothing to do */
+        continue;
+      }
+      // FIXME work accounting
+      hd = Blackhd_hd (hd);
+      Hd_val (block) = hd;
+      darkened_anything = 1;
+      work--; // header word
+      if (Tag_hd (hd) >= No_scan_tag) {
+        /* Nothing to scan here */
+        work -= Wosize_hd (hd);
+        continue;
+      }
+      scan = Op_val(block);
+      obj_end = scan + Wosize_hd(hd);
+      /*
+      obj_end = Op_val(block) + Wosize_hd(hd);
+      //line_end = (value*)(((uintnat)Op_val(scan + Queue_prefetch_distance - 1) + 63) & -64);
+      //scan_end = (line_end < obj_end) ? line_end : obj_end;
+      //(void)line_end;
+      scan_end = obj_end;
+      */
+
+      if (Tag_hd (hd) == Closure_tag) {
+        uintnat env_offset = Start_env_closinfo(Closinfo_val(block));
+        work -= env_offset;
+        scan += env_offset;
+      }
+    } else if (work <= 0 || stk.count == 0) {
+      if (min_pb > 0) {
+        // drain pb before quitting
+        min_pb = 0;
+        continue;
+      } else {
+        // done
+        break;
+      }
+    } else {
+      mark_entry m = stk.stack[--stk.count];
+      scan = m.start;
+      obj_end = m.end;
+    }
+
+    scan_end = obj_end;
+    work -= obj_end - scan;
+    if (work < 0) {
+      scan_end += work;
+    }
+
+    //if (pb_enqueued < pb_dequeued + Pb_size - 8)
+    for (; scan < scan_end; scan++) {
+      value v = *scan;
+      if (Is_major_block(v)) {
+        if (pb_enqueued == pb_dequeued + Pb_size) {
+          break; /* Prefetch buffer is full */
+        }
+        prefetch(v);
+        //stats.size_hist[pb_enqueued - pb_dequeued]++;
+        pb[(pb_enqueued++) & Pb_mask] = v;
+      }
+    }
+
+    if (scan < obj_end) {
+      /* Didn't finish scanning this object, either because work <= 0,
+         or the prefetch buffer filled up. Leave the rest on the stack. */
+      mark_entry m = { scan, obj_end };
+      work += obj_end - scan;
+      __builtin_prefetch(scan+1, 0, 3);
+      //__builtin_prefetch(scan+8, 1, 3);
+      if (__builtin_expect(stk.count == stk.size, 0)) {
+      //if (stk.count == stk.size) {
+        *Caml_state->mark_stack = stk;
+        realloc_mark_stack(Caml_state->mark_stack);
+        stk = *Caml_state->mark_stack;
+      }
+      stk.stack[stk.count++] = m;
+      min_pb = Pb_min;
+    }
+  }
+  //pbstats_glob = stats;
+  CAMLassert(pb_enqueued == pb_dequeued);
+  *Caml_state->mark_stack = stk;
+  if (darkened_anything)
+    ephe_list_pure = 0;
+  return work;
+}
+
+__attribute__((destructor)) void print_pb_stats() {
+  //struct pbstats s = pbstats_glob;
+  //int i;
+  if (!getenv("PBSTATS")) return;
+  /*
+  fprintf(stderr, "avg pb occupancy: %.1f\n", (double)s.size_now / (double)s.size_occ);
+  for (i=0;i<Pb_size;i++){
+    fprintf(stderr, "pb=%.2d: %lu\n", i, s.size_hist[i]);
+  }
+  */
+}
+
 static void mark_slice (intnat work)
 {
-  mark_entry me = {0, 0};
-  mlsize_t me_end = 0;
 #ifdef CAML_INSTR
   int slice_fields = 0; /** eventlog counters */
 #endif /*CAML_INSTR*/
@@ -579,47 +756,14 @@ static void mark_slice (intnat work)
 
   marked_words += work;
   while (1){
-    int can_mark = 0;
+    work = do_some_marking(work);
 
-    if (me.offset == me_end) {
-      if (stk->count > 0)
-      {
-        me = stk->stack[--stk->count];
-        me_end = Wosize_val(me.block);
-        can_mark = 1;
-      }
-    } else {
-      can_mark = 1;
-    }
-
-    if (work <= 0) {
-      if( can_mark ) {
-        mark_stack_push(stk, me.block, me.offset, NULL);
-        CAML_EVENTLOG_DO({
-          CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_REMAIN, me_end - me.offset);
-        });
-      }
+    if (work <= 0)
       break;
-    }
 
-    if( can_mark ) {
-      CAMLassert(Is_block(me.block) &&
-                 Is_black_val (me.block) &&
-                 Tag_val(me.block) < No_scan_tag);
+    CAMLassert (stk->count == 0);
 
-      mark_slice_darken(stk, me.block, me.offset++, /*in_ephemeron=*/ 0,
-                                              &slice_pointers, &work);
-
-      work--;
-
-      CAML_EVENTLOG_DO({
-        slice_fields++;
-      });
-
-      if( me.offset == me_end ) {
-        work--; /* Include header word */
-      }
-    } else if( redarken_first_chunk != NULL ) {
+    if( redarken_first_chunk != NULL ) {
       /* There are chunks that need to be redarkened because we
          overflowed our mark stack */
       if( redarken_chunk(redarken_first_chunk, stk) ) {
