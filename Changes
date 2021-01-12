@@ -62,6 +62,11 @@ Working version
 
 ### Manual and documentation:
 
+- #10139: Remove confusing navigation bar from stdlib documentation.
+  Removes the 'Up', 'Previous' and 'Next' links from the top of each standard
+  library module's documentation.
+  (John Whitington, review by David Allsopp)
+
 ### Compiler user-interface and warnings:
 
 - #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
