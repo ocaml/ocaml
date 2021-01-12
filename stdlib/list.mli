@@ -486,7 +486,7 @@ val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     Not tail-recursive (sum of the lengths of the arguments).
  *)
 
-(** {1 Iterators} *)
+(** {1 Lists and Sequences} *)
 
 val to_seq : 'a list -> 'a Seq.t
 (** Iterate on the list.

@@ -584,7 +584,7 @@ module Array : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
@@ -806,7 +806,7 @@ module ArrayLabels : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the

@@ -311,7 +311,7 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
     faster on typical input. *)
 
 
-(** {1 Iterators} *)
+(** {1 Arrays and Sequences} *)
 
 val to_seq : 'a array -> 'a Seq.t
 (** Iterate on the array, in increasing order. Modifications of the

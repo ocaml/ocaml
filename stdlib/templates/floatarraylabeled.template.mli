@@ -200,7 +200,7 @@ val fast_sort : cmp:(float -> float -> int) -> t -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is faster
     on typical input. *)
 
-(** {2 Iterators} *)
+(** {2 Float arrays and Sequences} *)
 
 val to_seq : t -> float Seq.t
 (** Iterate on the floatarray, in increasing order. Modifications of the

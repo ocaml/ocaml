@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Functional iterators.
+(** Sequences (functional iterators).
 
     The type ['a t] is a {b delayed list}, i.e. a list where some evaluation
     is needed to access the next element. This makes it possible to build

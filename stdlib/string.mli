@@ -297,7 +297,7 @@ val rindex_opt : string -> char -> int option
 
     @since 4.05 *)
 
-(** {1:converting Converting} *)
+(** {1 Strings and Sequences} *)
 
 val to_seq : t -> char Seq.t
 (** [to_seq s] is a sequence made of the string's characters in
