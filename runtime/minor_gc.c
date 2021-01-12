@@ -45,8 +45,11 @@ extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
 static atomic_intnat domains_finished_minor_gc;
+static atomic_intnat domain_finished_root;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
+
+static caml_plat_mutex global_roots_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 double caml_extra_heap_resources_minor = 0;
 
@@ -538,11 +541,17 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
   caml_ev_begin("minor_gc");
 
-  caml_ev_begin("minor_gc/global_roots");
   if( participating[0] == caml_domain_self() || !not_alone ) { // TODO: We should distribute this work
-    caml_scan_global_young_roots(oldify_one, &st);
+    if(domain_finished_root == 0){
+      if (caml_plat_try_lock(&global_roots_lock)){
+        caml_ev_begin("minor_gc/global_roots");
+        caml_scan_global_young_roots(oldify_one, &st);
+        caml_ev_end("minor_gc/global_roots");
+        atomic_store_explicit(&domain_finished_root, 1, memory_order_release);
+        caml_plat_unlock(&global_roots_lock);
+      }
+    }
   }
-  caml_ev_end("minor_gc/global_roots");
 
   caml_ev_begin("minor_gc/remembered_set");
 
@@ -701,6 +710,7 @@ void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
 */
 void caml_empty_minor_heap_setup(struct domain* domain) {
   atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
+  atomic_store_explicit(&domain_finished_root, 0, memory_order_release);
 }
 
 /* must be called within a STW section */
