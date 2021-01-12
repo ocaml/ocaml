@@ -45,3 +45,24 @@ why the change is desirable and why it should go into stdlib.
 
 So: be prepared for some serious review process!  But yes, yes,
 contributions are welcome and appreciated.  Promised.
+
+## Naming functions and API
+
+Naming functions or finding the a suitable argument order is a
+notoriously hard task. In general the name of a function should
+be descriptive and already make the usage clear. In case a similar
+function already exists in another module of the standard library
+one should use the same name and argument order.
+
+If the function takes several arguments with the same type it is okay to
+use labels for some of the arguments in order to avoid confusion about
+argument order.
+
+A good starting point for function names and API
+is checking if these functions are already contained in some of the
+popular alternative standard library function such as
+(Base)[https://github.com/janestreet/base],
+(OCaml Batteries)[https://github.com/ocaml-batteries-team/batteries-included]
+or (ExtLib)[https://github.com/ygrek/ocaml-extlib].
+One can also take a look at the standard libraries from other
+programming languages for inspiration regarding names and API.
