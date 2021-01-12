@@ -217,7 +217,7 @@ let string_of_info i =
   let module M = Odoc_types in
   (match i.M.i_deprecated with
     None -> ""
-  | Some d -> Odoc_messages.deprecated^".! "^(string_of_text d)^"\n")^
+  | Some d -> Odoc_messages.deprecated^". "^(string_of_text d)^"\n")^
   (match i.M.i_desc with
     None -> ""
   | Some d when d = [Odoc_types.Raw ""] -> ""
