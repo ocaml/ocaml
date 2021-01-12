@@ -650,9 +650,9 @@ Read debugger commands from the script \var{filename}.
 
 \section{s:inf-debugger}{Running the debugger under Emacs}
 
-The most user-friendly way to use the debugger is to run it under Emacs.
-See the file "emacs/README" in the distribution for information on how
-to load the Emacs Lisp files for OCaml support.
+The most user-friendly way to use the debugger is to run it under Emacs with
+the OCaml mode available through MELPA and also at
+\url{https://github.com/ocaml/caml-mode}.
 
 The OCaml debugger is started under Emacs by the command "M-x
 camldebug", with argument the name of the executable file
