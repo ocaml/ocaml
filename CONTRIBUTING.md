@@ -338,8 +338,9 @@ log -u` to make sure the rebase patches make sense), but:
 
 ## Contributing to the standard library
 
-For additional guidelines about standard library content, see
-[stdlib/CONTRIBUTING.md(]stdlib/CONTRIBUTING.md).
+Contributions to the standard library are very welcome.
+See the dedicated [stdlib/CONTRIBUTING.md](stdlib/CONTRIBUTING.md)
+for more information.
 
 ## Contributing optimizations
 

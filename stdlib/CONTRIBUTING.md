@@ -62,7 +62,8 @@ A good starting point for function names and API
 is checking if these functions are already contained in some of the
 popular alternative standard library function such as
 (Base)[https://github.com/janestreet/base],
-(OCaml Batteries)[https://github.com/ocaml-batteries-team/batteries-included]
-or (ExtLib)[https://github.com/ygrek/ocaml-extlib].
+(OCaml Batteries)[https://github.com/ocaml-batteries-team/batteries-included],
+(ExtLib)[https://github.com/ygrek/ocaml-extlib] or
+(OCaml-containers)[https://github.com/c-cube/ocaml-containers].
 One can also take a look at the standard libraries from other
 programming languages for inspiration regarding names and API.
