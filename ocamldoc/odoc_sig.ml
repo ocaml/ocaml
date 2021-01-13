@@ -513,6 +513,7 @@ module Analyser =
            end
         | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
           if is_erased name.txt erased then acc else take_item m
+        | Parsetree.Psig_modtypesubst _  -> acc
         | Parsetree.Psig_recmodule mods ->
           (match List.filter
                    (fun pmd ->
@@ -1291,7 +1292,8 @@ module Analyser =
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
             (maybe_more, new_env, mods)
 
-        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
+        | Parsetree.Psig_modtype {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl}
+        | Parsetree.Psig_modtypesubst {Parsetree.pmtd_name=name; pmtd_type=pmodtype_decl} ->
             let complete_name = Name.concat current_module_name name.txt in
             let sig_mtype =
               try Signature_search.search_module_type table name.txt

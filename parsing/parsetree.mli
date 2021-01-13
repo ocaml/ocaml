@@ -769,6 +769,8 @@ and signature_item_desc =
   | Psig_modtype of module_type_declaration
         (* module type S = MT
            module type S *)
+  | Psig_modtypesubst of module_type_declaration
+        (* module type S :=  ...  *)
   | Psig_open of open_description
         (* open X *)
   | Psig_include of include_description

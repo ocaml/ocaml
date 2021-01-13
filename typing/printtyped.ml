@@ -738,6 +738,10 @@ and signature_item i ppf x =
       line i ppf "Tsig_modtype \"%a\"\n" fmt_ident x.mtd_id;
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
+  | Tsig_modtypesubst x ->
+      line i ppf "Tsig_modtypesubst \"%a\"\n" fmt_ident x.mtd_id;
+      attributes i ppf x.mtd_attributes;
+      modtype_declaration i ppf x.mtd_type
   | Tsig_open od ->
       line i ppf "Tsig_open %a %a\n"
         fmt_override_flag od.open_override

@@ -318,6 +318,8 @@ module MT = struct
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
     | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
+    | Psig_modtypesubst x ->
+        modtype_subst ~loc (sub.module_type_declaration sub x)
     | Psig_open x -> open_ ~loc (sub.open_description sub x)
     | Psig_include x -> include_ ~loc (sub.include_description sub x)
     | Psig_class l -> class_ ~loc (List.map (sub.class_description sub) l)

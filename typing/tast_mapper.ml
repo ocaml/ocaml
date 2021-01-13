@@ -416,7 +416,9 @@ let signature_item sub x =
         Tsig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype x ->
         Tsig_modtype (sub.module_type_declaration sub x)
-    | Tsig_include incl ->
+   | Tsig_modtypesubst x ->
+        Tsig_modtypesubst (sub.module_type_declaration sub x)
+   | Tsig_include incl ->
         Tsig_include (include_infos (sub.module_type sub) incl)
     | Tsig_class list ->
         Tsig_class (List.map (sub.class_description sub) list)

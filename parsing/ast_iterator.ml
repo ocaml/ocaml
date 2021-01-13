@@ -285,7 +285,7 @@ module MT = struct
     | Psig_modsubst x -> sub.module_substitution sub x
     | Psig_recmodule l ->
         List.iter (sub.module_declaration sub) l
-    | Psig_modtype x -> sub.module_type_declaration sub x
+    | Psig_modtype x | Psig_modtypesubst x -> sub.module_type_declaration sub x
     | Psig_open x -> sub.open_description sub x
     | Psig_include x -> sub.include_description sub x
     | Psig_class l -> List.iter (sub.class_description sub) l

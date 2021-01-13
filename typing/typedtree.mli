@@ -494,6 +494,7 @@ and signature_item_desc =
   | Tsig_modsubst of module_substitution
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
+  | Tsig_modtypesubst of module_type_declaration
   | Tsig_open of open_description
   | Tsig_include of include_description
   | Tsig_class of class_description list

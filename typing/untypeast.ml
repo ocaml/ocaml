@@ -559,6 +559,8 @@ let signature_item sub item =
         Psig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype mtd ->
         Psig_modtype (sub.module_type_declaration sub mtd)
+    | Tsig_modtypesubst mtd ->
+        Psig_modtypesubst (sub.module_type_declaration sub mtd)
     | Tsig_open od ->
         Psig_open (sub.open_description sub od)
     | Tsig_include incl ->

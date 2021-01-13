@@ -730,6 +730,10 @@ and signature_item i ppf x =
       line i ppf "Psig_modtype %a\n" fmt_string_loc x.pmtd_name;
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
+  | Psig_modtypesubst x ->
+      line i ppf "Psig_modtypesubst %a\n" fmt_string_loc x.pmtd_name;
+      attributes i ppf x.pmtd_attributes;
+      modtype_declaration i ppf x.pmtd_type
   | Psig_open od ->
       line i ppf "Psig_open %a %a\n" fmt_override_flag od.popen_override
         fmt_longident_loc od.popen_expr;

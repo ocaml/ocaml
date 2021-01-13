@@ -382,7 +382,7 @@ and add_sig_item (bv, m) item =
       let bv' = add bv and m' = add m in
       List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
       (bv', m')
-  | Psig_modtype x ->
+  | Psig_modtype x | Psig_modtypesubst x->
       begin match x.pmtd_type with
         None -> ()
       | Some mty -> add_modtype bv mty
