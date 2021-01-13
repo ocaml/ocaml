@@ -27,10 +27,3 @@ script:
 # For speed, only run a few compiler/OS combinations
 matrix:
   include:
-  - compiler: gcc
-    os: linux
-    env:
-    - USE_RUNTIME: d
-    - OCAMLRUNPARAM: v=0,V=1
-  - compiler: clang
-    os: osx

@@ -1,0 +1,31 @@
+name: main
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: linux-debug
+            os: ubuntu-latest
+            env: OCAMLRUNPARAM=v=0,V=1 USE_RUNTIME=d
+          - name: linux
+            os: ubuntu-latest
+          - name: macos
+            os: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: configure tree
+        run: |
+          MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
+      - name: Build
+        run: |
+          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+      - name: Run the testsuite
+        run: |
+          ${{ matrix.env }} bash -xe tools/ci/actions/runner.sh test
