@@ -13,11 +13,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** This module provides two alternative implementations for internals of
+    [Toploop], for bytecode and native code.
+
+    You should not use it directly, refer to the functions in [Toploop] instead.
+*)
+
+(**/**)
+
 open Format
 
-(* Accessors for the table of toplevel value bindings.  These functions
-   must appear as first and second exported functions in this module.
-   (See module Translmod.) *)
+(* Accessors for the table of toplevel value bindings. For the bytecode
+   toplevel, these functions must appear as first and second exported functions
+   in this module.
+   (See module Translmod.)
+   They aren't used for the native toplevel.
+*)
 val getvalue : string -> Obj.t
 val setvalue : string -> Obj.t -> unit
 

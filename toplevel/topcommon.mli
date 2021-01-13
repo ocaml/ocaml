@@ -13,6 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** This module provides common implementations for internals of [Toploop], for
+    bytecode and native code (see [Topeval] for the diverging parts of the
+    implementation).
+
+    You should not use it directly, refer to the functions in [Toploop] instead.
+*)
+
+(**/**)
+
 (* Definitions for the interactive toplevel loop that are common between
    bytecode and native *)
 
