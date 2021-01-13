@@ -531,6 +531,9 @@ OCaml 4.12.0
    version, and a quick-search functionality for the API.
    (San Vũ Ngọc, review by David Allsopp and Florian Angeletti)
 
+- #10142, #10154: improved rendering and latex code for toplevel code examples.
+  (Florian Angeletti, report by John Whitington, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #1931: rely on levels to enforce principality in patterns

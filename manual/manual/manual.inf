@@ -5,7 +5,6 @@
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\?}{\black\#\blue }
-\renewcommand{\:}{\maroon}
 
 \newcommand{\ocamlkeyword}{\bfseries}
 \newcommand{\ocamlhighlight}{\bfseries\underline}
