@@ -1018,7 +1018,7 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
 
-toplevel/topdirs.cmx: toplevel/topdirs.ml toplevel/native/topeval.cmx
+toplevel/topdirs.cmx: toplevel/topdirs.ml
 	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
 
 $(TOPLEVELINIT:.cmo=.cmx): $(TOPLEVELINIT:.cmo=.ml) \

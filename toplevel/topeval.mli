@@ -21,20 +21,7 @@ open Format
 val getvalue : string -> Obj.t
 val setvalue : string -> Obj.t -> unit
 
-(* Read and execute a script from the given file *)
-
-val run_script : formatter -> string -> string array -> bool
-        (* true if successful, false if error *)
-
 val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
-        (* Execute the given toplevel phrase. Return [true] if the
-           phrase executed with no errors and [false] otherwise.
-           First bool says whether the values and types of the results
-           should be printed. Uncaught exceptions are always printed. *)
-val use_file : formatter -> string -> bool
-val use_output : formatter -> string -> bool
-val use_silently : formatter -> string -> bool
-val mod_use_file : formatter -> string -> bool
         (* Read and execute commands from a file.
            [use_file] prints the types and values of the results.
            [use_silently] does not print them.

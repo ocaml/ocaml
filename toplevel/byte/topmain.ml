@@ -34,7 +34,7 @@ let dir_trace ppf lid =
             "%a is an external function and cannot be traced.@."
           Printtyp.longident lid
       | _ ->
-          let clos = Topeval.eval_value_path !Topcommon.toplevel_env path in
+          let clos = Toploop.eval_value_path !Topcommon.toplevel_env path in
           (* Nothing to do if it's not a closure *)
           if Obj.is_block clos
           && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
@@ -179,7 +179,7 @@ let file_argument name =
       in
       Compenv.readenv ppf Before_link;
       Compmisc.read_clflags_from_env ();
-      if prepare ppf && Topeval.run_script ppf name newargs
+      if prepare ppf && Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end

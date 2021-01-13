@@ -53,6 +53,12 @@ val add_directive : string -> directive_fun -> directive_info -> unit
 
            @since 4.03 *)
 
+val get_directive : string -> directive_fun option
+
+val get_directive_info : string -> directive_info option
+
+val all_directive_names : unit -> string list
+
 val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
   (* @deprecated please use [add_directive] instead of inserting
      in this table directly. *)

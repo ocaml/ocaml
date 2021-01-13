@@ -17,6 +17,99 @@ open Format
 include Topcommon
 include Topeval
 
+(* Read and execute commands from a file, or from stdin if [name] is "". *)
+
+let use_print_results = ref true
+
+let use_channel ppf ~wrap_in_module ic name filename =
+  let lb = Lexing.from_channel ic in
+  Warnings.reset_fatal ();
+  Location.init lb filename;
+  (* Skip initial #! line if any *)
+  Lexer.skip_hash_bang lb;
+  Misc.protect_refs
+    [ R (Location.input_name, filename);
+      R (Location.input_lexbuf, Some lb); ]
+    (fun () ->
+    try
+      List.iter
+        (fun ph ->
+          let ph = preprocess_phrase ppf ph in
+          if not (execute_phrase !use_print_results ppf ph) then raise Exit)
+        (if wrap_in_module then
+           parse_mod_use_file name lb
+         else
+           !parse_use_file lb);
+      true
+    with
+    | Exit -> false
+    | Sys.Break -> fprintf ppf "Interrupted.@."; false
+    | x -> Location.report_exception ppf x; false)
+
+let use_output ppf command =
+  let fn = Filename.temp_file "ocaml" "_toploop.ml" in
+  Misc.try_finally ~always:(fun () ->
+      try Sys.remove fn with Sys_error _ -> ())
+    (fun () ->
+       match
+         Printf.ksprintf Sys.command "%s > %s"
+           command
+           (Filename.quote fn)
+       with
+       | 0 ->
+         let ic = open_in_bin fn in
+         Misc.try_finally ~always:(fun () -> close_in ic)
+           (fun () ->
+              use_channel ppf ~wrap_in_module:false ic "" "(command-output)")
+       | n ->
+         fprintf ppf "Command exited with code %d.@." n;
+         false)
+
+let use_file ppf ~wrap_in_module name =
+  match name with
+  | "" ->
+    use_channel ppf ~wrap_in_module stdin name "(stdin)"
+  | _ ->
+    match Load_path.find name with
+    | filename ->
+      let ic = open_in_bin filename in
+      Misc.try_finally ~always:(fun () -> close_in ic)
+        (fun () -> use_channel ppf ~wrap_in_module ic name filename)
+    | exception Not_found ->
+      fprintf ppf "Cannot find file %s.@." name;
+      false
+
+let mod_use_file ppf name =
+  use_file ppf ~wrap_in_module:true name
+let use_file ppf name =
+  use_file ppf ~wrap_in_module:false name
+
+let use_silently ppf name =
+  Misc.protect_refs
+    [ R (use_print_results, false) ]
+    (fun () -> use_file ppf name)
+
+(* Execute a script.  If [name] is "", read the script from stdin. *)
+
+let run_script ppf name args =
+  override_sys_argv args;
+  Compmisc.init_path ~dir:(Filename.dirname name) ();
+                   (* Note: would use [Filename.abspath] here, if we had it. *)
+  begin
+    try toplevel_env := Compmisc.initial_env()
+    with Env.Error _ | Typetexp.Error _ as exn ->
+      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+  end;
+  Sys.interactive := false;
+  run_hooks After_setup;
+  let explicit_name =
+    (* Prevent use_silently from searching in the path. *)
+    if name <> "" && Filename.is_implicit name
+    then Filename.concat Filename.current_dir_name name
+    else name
+  in
+  use_silently ppf explicit_name
+
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
    can call directives from Topdirs. *)

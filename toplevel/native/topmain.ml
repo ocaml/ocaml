@@ -71,7 +71,7 @@ let file_argument name =
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
-      if prepare ppf && Topeval.run_script ppf name newargs
+      if prepare ppf && Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end

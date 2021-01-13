@@ -6171,8 +6171,8 @@ toplevel/topcommon.cmi : \
 toplevel/topdirs.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
+    toplevel/toploop.cmi \
     toplevel/topeval.cmi \
-    toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -6195,8 +6195,8 @@ toplevel/topdirs.cmo : \
 toplevel/topdirs.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
+    toplevel/toploop.cmx \
     toplevel/topeval.cmi \
-    toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -6228,9 +6228,13 @@ toplevel/toploop.cmo : \
     typing/typetexp.cmi \
     toplevel/topeval.cmi \
     toplevel/topcommon.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
+    parsing/lexer.cmi \
     typing/env.cmi \
     utils/config.cmi \
+    driver/compmisc.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -6240,9 +6244,13 @@ toplevel/toploop.cmx : \
     typing/typetexp.cmx \
     toplevel/topeval.cmi \
     toplevel/topcommon.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
+    utils/load_path.cmx \
+    parsing/lexer.cmx \
     typing/env.cmx \
     utils/config.cmx \
+    driver/compmisc.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
@@ -6268,7 +6276,6 @@ toplevel/trace.cmi : \
     typing/env.cmi
 toplevel/byte/topeval.cmo : \
     utils/warnings.cmi \
-    typing/typetexp.cmi \
     typing/types.cmi \
     typing/typemod.cmi \
     typing/typedtree.cmi \
@@ -6291,7 +6298,6 @@ toplevel/byte/topeval.cmo : \
     bytecomp/meta.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
-    parsing/lexer.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
     toplevel/genprintval.cmi \
@@ -6300,7 +6306,6 @@ toplevel/byte/topeval.cmo : \
     bytecomp/dll.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
-    driver/compenv.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
@@ -6308,7 +6313,6 @@ toplevel/byte/topeval.cmo : \
     toplevel/byte/topeval.cmi
 toplevel/byte/topeval.cmx : \
     utils/warnings.cmx \
-    typing/typetexp.cmx \
     typing/types.cmx \
     typing/typemod.cmx \
     typing/typedtree.cmx \
@@ -6331,7 +6335,6 @@ toplevel/byte/topeval.cmx : \
     bytecomp/meta.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
-    parsing/lexer.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
     toplevel/genprintval.cmx \
@@ -6340,7 +6343,6 @@ toplevel/byte/topeval.cmx : \
     bytecomp/dll.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
-    driver/compenv.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
@@ -6437,7 +6439,6 @@ toplevel/native/topeval.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
-    parsing/lexer.cmi \
     lambda/lambda.cmi \
     typing/includemod.cmi \
     middle_end/flambda/import_approx.cmi \
@@ -6477,7 +6478,6 @@ toplevel/native/topeval.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
-    parsing/lexer.cmx \
     lambda/lambda.cmx \
     typing/includemod.cmx \
     middle_end/flambda/import_approx.cmx \

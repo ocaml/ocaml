@@ -19,8 +19,7 @@ open Format
 open Misc
 open Longident
 open Types
-open Topcommon
-open Topeval
+open Toploop
 
 (* The standard output formatter *)
 let std_out = std_formatter
@@ -123,7 +122,7 @@ let _ = add_directive "cd" (Directive_string dir_cd)
       doc = "Change the current working directory.";
     }
 
-let dir_load ppf name = ignore (load_file false ppf name)
+let dir_load ppf name = ignore (Topeval.load_file false ppf name)
 
 let _ = add_directive "load" (Directive_string (dir_load std_out))
     {
@@ -131,7 +130,7 @@ let _ = add_directive "load" (Directive_string (dir_load std_out))
       doc = "Load in memory a bytecode object, produced by ocamlc.";
     }
 
-let dir_load_rec ppf name = ignore (load_file true ppf name)
+let dir_load_rec ppf name = ignore (Topeval.load_file true ppf name)
 
 let _ = add_directive "load_rec"
     (Directive_string (dir_load_rec std_out))
@@ -142,9 +141,9 @@ let _ = add_directive "load_rec"
 
 (* Load commands from a file *)
 
-let dir_use ppf name = ignore(Topeval.use_file ppf name)
-let dir_use_output ppf name = ignore(Topeval.use_output ppf name)
-let dir_mod_use ppf name = ignore(Topeval.mod_use_file ppf name)
+let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
+let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
     {
@@ -608,7 +607,7 @@ let directive_sections () =
       ((name, dir, doc)
        :: (try Hashtbl.find sections section with Not_found -> []))
   in
-  List.iter add_dir (Topcommon.all_directive_names ());
+  List.iter add_dir (all_directive_names ());
   let take_section section =
     if not (Hashtbl.mem sections section) then (section, [])
     else begin
