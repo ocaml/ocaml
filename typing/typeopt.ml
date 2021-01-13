@@ -115,9 +115,19 @@ let array_type_kind env ty =
       (* This can happen with e.g. Obj.field *)
       Pgenarray
 
-let array_kind exp = array_type_kind exp.exp_env exp.exp_type
+let array_expression_kind kind exp =
+  match kind with
+  | Floatarray ->
+      Pfloatarray
+  | Genarray ->
+      array_type_kind exp.exp_env exp.exp_type
 
-let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
+let array_pattern_kind kind pat =
+  match kind with
+  | Floatarray ->
+      Pfloatarray
+  | Genarray ->
+      array_type_kind pat.pat_env pat.pat_type
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with

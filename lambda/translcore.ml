@@ -384,8 +384,8 @@ and transl_exp0 ~in_new_scope ~scopes e =
       in
       Lprim(access, [transl_exp ~scopes arg; transl_exp ~scopes newval],
             of_location ~scopes e.exp_loc)
-  | Texp_array expr_list ->
-      let kind = array_kind e in
+  | Texp_array (kind, expr_list) ->
+      let kind = array_expression_kind kind e in
       let ll = transl_list ~scopes expr_list in
       begin try
         (* For native code the decision as to which compilation strategy to

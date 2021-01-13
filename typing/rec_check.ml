@@ -584,8 +584,8 @@ let rec expression : Typedtree.expression -> term_judg =
         join [expression e; list arg args] << app_mode
     | Texp_tuple exprs ->
       list expression exprs << Guard
-    | Texp_array exprs ->
-      let array_mode = match Typeopt.array_kind exp with
+    | Texp_array (kind, exprs) ->
+      let array_mode = match Typeopt.array_expression_kind kind exp with
         | Lambda.Pfloatarray ->
             (* (flat) float arrays unbox their elements *)
             Dereference
