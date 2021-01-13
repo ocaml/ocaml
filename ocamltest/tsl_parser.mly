@@ -33,6 +33,7 @@ let mkenvstmt envstmt =
 
 %token TSL_BEGIN_C_STYLE TSL_END_C_STYLE
 %token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
+%token TSL_BEGIN_OCAML_STYLE_AT_EOF TSL_END_OCAML_STYLE_AT_EOF
 %token COMMA
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
@@ -49,6 +50,7 @@ let mkenvstmt envstmt =
 tsl_block:
 | TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }
 | TSL_BEGIN_OCAML_STYLE tsl_items TSL_END_OCAML_STYLE { $2 }
+| TSL_BEGIN_OCAML_STYLE_AT_EOF tsl_items TSL_END_OCAML_STYLE_AT_EOF { $2 }
 
 tsl_items:
 | { [] }
