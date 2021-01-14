@@ -561,6 +561,12 @@ OCaml 4.12.0
   builds)
   (David Allsopp, review by Xavier Leroy)
 
+- #10063: (Re-)enable building on illumos (SmartOS, OmniOS, ...) and
+  Oracle Solaris; x86_64/GCC and 64-bit SPARC/Sun PRO C compilers.
+  (partially revert #2024).
+  (Tõivo Leedjärv and Konstantin Romanov,
+   review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
+
 - #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
   (Damien Doligez and Gabriel Scherer, report by David Allsopp)
 
