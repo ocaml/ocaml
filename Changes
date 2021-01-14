@@ -128,6 +128,9 @@ Working version
   (Xavier Leroy, report by Github user quakerquickoats, review by
    Jeremie Dimino)
 
+- #10147, #10148: Fix building runtime with GCC on macOS.
+  (David Allsopp, report by John Skaller)
+
 OCaml 4.12.0
 ------------
 
