@@ -193,6 +193,10 @@ AS_CASE([$host],
     SO=dll
     outputexe=-Fe
     syslib='$(1).lib'],
+  [i386-*-solaris*],
+    [AC_MSG_ERROR([Building for 32 bits target is not supported. \
+If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
+(or "cc -m64" if you don't have GCC).])],
   [ccomptype=cc
   S=s
   SO=so
@@ -407,6 +411,8 @@ CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 
 AS_CASE([$host],
+  [sparc-sun-solaris*],
+    [DEP_CC="false"],
   [*-pc-windows],
     [AC_CHECK_TOOLS(
       [DEP_CC],
@@ -472,6 +478,8 @@ OCAML_CC_VENDOR
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
     [CPP="$CC -E -qnoppline"], # suppress incompatible XLC line directives
+  [sunc-*],
+    [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
     [CPP="$CC -nologo -EP"])
 
@@ -544,6 +552,8 @@ AS_CASE([$ocaml_cv_cc_vendor],
     [outputobj='-o $(EMPTY)'
     warn_error_flag=''
     cc_warnings='-qflag=i:i'], # all warnings enabled
+  [sunc-*],
+    [outputobj='-o $(EMPTY)'; cc_warnings=""],
   [msvc-*],
     [outputobj='-Fo'
     warn_error_flag='-WX'
@@ -624,6 +634,10 @@ AS_CASE([$host],
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+      internal_cflags="$cc_warnings"],
+    [sunc-*], # Optimization should be >= O4 to inline functions
+              # and prevent unresolved externals
+      [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
@@ -840,10 +854,16 @@ AS_IF([test x"$enable_shared" != "xno"],
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true],
     [powerpc-ibm-aix*],
-      [AS_CASE([$CC],
+      [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
                [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true])],
+    [*-*-solaris*],
+      [sharedlib_cflags="-fPIC"
+      mksharedlib="$CC -shared"
+      rpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      shared_libraries_supported=true],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
@@ -876,6 +896,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [x86_64-*-darwin*], [natdynlink=true],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
+    [x86_64-*-solaris*], [natdynlink=true],
     [i686-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-dragonfly*], [natdynlink=true],
@@ -973,6 +994,8 @@ AS_CASE([$host],
     [arch=amd64; system=gnu],
   [x86_64-*-dragonfly*],
     [arch=amd64; system=dragonfly],
+  [x86_64-*-solaris*],
+    [arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
     [arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
@@ -1012,7 +1035,6 @@ AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
   [AS_CASE(["$arch,$CC,$system,$model"],
     [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [amd64,gcc*,solaris,*], [PACKLD_FLAGS=' -m elf_x86_64'],
     [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
     [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
     [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
@@ -1059,6 +1081,8 @@ AS_IF([test -n "$host_alias"], [toolpref="${host_alias}-"], [toolpref=""])
 # One may want to check whether the user provided values first
 # and only compute values if none has been provided
 
+AC_CHECK_TOOL([SYSTEM_AS],[as])
+
 AS_CASE(["$arch,$system"],
   [i386,win32],
     [default_as="ml -nologo -coff -Cp -c -Fo"],
@@ -1072,11 +1096,18 @@ AS_CASE(["$arch,$system"],
       [default_as="${toolpref}as -arch x86_64"
       default_aspp="${toolpref}gcc -arch x86_64 -c"])],
   [amd64,solaris],
-    [default_as="${toolpref}as --64"
-    default_aspp="${toolpref}gcc -m64 -c"],
-  [i386,solaris],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c"],
+    [AS_CASE([$ocaml_cv_cc_vendor],
+      [sunc-*],
+        [AS_IF([test x"$SYSTEM_AS" = "x"],
+          [AC_MSG_ERROR([GNU as assembler is required.])],
+          [default_as="${toolpref}as --64"
+          default_aspp="${toolpref}cc -m64 -c"])],
+      [gcc-*],
+        [AS_IF([test x"$SYSTEM_AS" = "x"],
+          [default_as="${toolpref}gcc -m64 -c"
+          default_aspp="${toolpref}gcc -m64 -c"],
+          [default_as="${toolpref}as --64"
+          default_aspp="${toolpref}gcc -m64 -c"])])],
   [power,elf],
     [AS_CASE([$model],
       [ppc64le],
@@ -1214,6 +1245,8 @@ AS_CASE([$host],
 AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
   [
     AS_CASE([$host],
+    [sparc-sun-solaris*],
+      [instrumented_runtime=false],
     [*-*-windows],
       [instrumented_runtime=true],
     [*-apple-darwin*], [
@@ -1268,6 +1301,9 @@ AS_CASE([$host],
     sockets=true],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
+    sockets=true],
+  [*-*-solaris*],
+    [cclibs="$cclibs -lsocket -lnsl"
     sockets=true],
   [
     AC_CHECK_FUNC([socket])
@@ -1492,10 +1528,11 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$CC,$host],
+AS_CASE([$ocaml_cv_cc_vendor,$host],
   [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
+  [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
   [OCAML_CC_HAS_DEBUG_PREFIX_MAP])
 
 ## Does stat support nanosecond precision
@@ -1640,7 +1677,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
       AS_CASE([$host],
-        [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
         [*-*-haiku*], [pthread_link=""],
         [*-*-android*], [pthread_link=""],
         [pthread_link="-lpthread"])
@@ -1696,7 +1732,7 @@ AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
    AS_CASE(["$arch","$system"],
     [amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd],
+    |amd64,freebsd|amd64,solaris],
       [naked_pointers_checker=true
       AC_DEFINE([NAKED_POINTERS_CHECKER])],
     [*],
@@ -1852,7 +1888,11 @@ AS_CASE([$host],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
     AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])])
+    AC_DEFINE([HAS_NICE])],
+  [*-*-solaris*],
+    # This is required as otherwise floats are printed
+    # as "Infinity" and "Inf" instead of the expected "inf"
+    [AC_DEFINE([HAS_BROKEN_PRINTF])])
 
 AS_IF([test x"$enable_stdlib_manpages" != "xno"],
   [stdlib_manpages=true],[stdlib_manpages=false])

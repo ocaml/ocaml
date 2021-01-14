@@ -172,6 +172,7 @@ OTHERLIBRARIES=@otherlibraries@
 # Needed for the "systhreads" package
 PTHREAD_LINK=@pthread_link@
 PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
+PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
 
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
