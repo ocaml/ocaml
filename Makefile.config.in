@@ -217,7 +217,8 @@ MKMAINDLL=@mkmaindll@
 
 MKEXEDEBUGFLAG=@mkexedebugflag@
 RUNTIMED=@debug_runtime@
-RUNTIMEI=@instrumented_runtime@
+INSTRUMENTED_RUNTIME=@instrumented_runtime@
+INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
 WITH_DEBUGGER=@with_debugger@
 WITH_CAMLTEX=@with_camltex@
 WITH_OCAMLDOC=@ocamldoc@
@@ -278,3 +279,9 @@ else # ifeq "$(UNIX_OR_WIN32)" "win32"
   # On Unix, make sure FLEXLINK is defined but empty
   FLEXLINK =
 endif # ifeq "$(UNIX_OR_WIN32)" "win32"
+
+# Deprecated variables
+
+## Variables renamed in OCaml 4.13
+
+RUNTIMEI=$(INSTRUMENTED_RUNTIME)

@@ -64,7 +64,7 @@ profinfo=false
 profinfo_width=0
 extralibs=
 instrumented_runtime=false
-instrumented_runtime_ldlibs=""
+instrumented_runtime_libs=""
 
 # Information about the package
 
@@ -129,6 +129,7 @@ AC_SUBST([natdynlinkopts])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
+AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([has_monotonic_clock])
 AC_SUBST([otherlibraries])
 AC_SUBST([cc_has_debug_prefix_map])
@@ -1237,8 +1238,8 @@ but no proper monotonic clock source was found.])
           [
             instrumented_runtime=true
             AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
-              [instrumented_runtime_ldlibs=""],
-              [instrumented_runtime_ldlibs=$ac_cv_search_clock_gettime]
+              [instrumented_runtime_libs=""],
+              [instrumented_runtime_libs=$ac_cv_search_clock_gettime]
             )
           ],
         [yes,false,*],
@@ -1797,7 +1798,7 @@ AS_CASE([$host],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
+  [bytecclibs="$cclibs $DLLIBS $pthread_link"
   nativecclibs="$cclibs $DLLIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],

@@ -50,7 +50,7 @@ ifeq "$(RUNTIMED)" "true"
 all: camlheaderd target_camlheaderd
 endif
 
-ifeq "$(RUNTIMEI)" "true"
+ifeq "$(INSTRUMENTED_RUNTIME)" "true"
 all: camlheaderi target_camlheaderi
 endif
 
@@ -75,7 +75,7 @@ install::
 	$(INSTALL_DATA) target_camlheaderd "$(INSTALL_LIBDIR)/camlheaderd"
 endif
 
-ifeq "$(RUNTIMEI)" "true"
+ifeq "$(INSTRUMENTED_RUNTIME)" "true"
 install::
 	$(INSTALL_DATA) target_camlheaderi "$(INSTALL_LIBDIR)/camlheaderi"
 endif
