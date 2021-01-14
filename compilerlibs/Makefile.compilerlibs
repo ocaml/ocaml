@@ -31,7 +31,7 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
 	utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
 	utils/consistbl.cmo utils/strongly_connected_components.cmo \
 	utils/targetint.cmo utils/int_replace_polymorphic_compare.cmo \
-	utils/domainstate.cmo utils/binutils.cmo
+	utils/domainstate.cmo utils/binutils.cmo utils/lazy_backtrack.cmo
 UTILS_CMI=
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
@@ -51,7 +51,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo file_formats/cmi_format.cmo \
-  typing/envLazy.cmo typing/persistent_env.cmo typing/env.cmo \
+  typing/persistent_env.cmo typing/env.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \

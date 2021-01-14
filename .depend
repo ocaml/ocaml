@@ -558,7 +558,7 @@ typing/env.cmo : \
     utils/local_store.cmi \
     utils/load_path.cmi \
     typing/ident.cmi \
-    typing/envLazy.cmi \
+    utils/lazy_backtrack.cmi \
     typing/datarepr.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
@@ -579,7 +579,7 @@ typing/env.cmx : \
     utils/local_store.cmx \
     utils/load_path.cmx \
     typing/ident.cmx \
-    typing/envLazy.cmx \
+    utils/lazy_backtrack.cmx \
     typing/datarepr.cmx \
     file_formats/cmi_format.cmx \
     utils/clflags.cmx \
@@ -599,11 +599,11 @@ typing/env.cmi : \
     typing/ident.cmi \
     file_formats/cmi_format.cmi \
     parsing/asttypes.cmi
-typing/envLazy.cmo : \
-    typing/envLazy.cmi
-typing/envLazy.cmx : \
-    typing/envLazy.cmi
-typing/envLazy.cmi :
+utils/lazy_backtrack.cmo : \
+    utils/lazy_backtrack.cmi
+utils/lazy_backtrack.cmx : \
+    utils/lazy_backtrack.cmi
+utils/lazy_backtrack.cmi :
 typing/envaux.cmo : \
     typing/subst.cmi \
     typing/printtyp.cmi \
@@ -885,7 +885,7 @@ typing/persistent_env.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
-    typing/envLazy.cmi \
+    utils/lazy_backtrack.cmi \
     utils/consistbl.cmi \
     utils/config.cmi \
     file_formats/cmi_format.cmi \
@@ -896,7 +896,7 @@ typing/persistent_env.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
-    typing/envLazy.cmx \
+    utils/lazy_backtrack.cmx \
     utils/consistbl.cmx \
     utils/config.cmx \
     file_formats/cmi_format.cmx \
@@ -906,7 +906,7 @@ typing/persistent_env.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
-    typing/envLazy.cmi \
+    utils/lazy_backtrack.cmi \
     utils/consistbl.cmi \
     file_formats/cmi_format.cmi
 typing/predef.cmo : \

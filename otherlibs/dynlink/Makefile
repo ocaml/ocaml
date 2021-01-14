@@ -88,6 +88,7 @@ COMPILERLIBS_SOURCES=\
   utils/local_store.ml \
   utils/load_path.ml \
   utils/int_replace_polymorphic_compare.ml \
+  utils/lazy_backtrack.ml \
   parsing/location.ml \
   parsing/longident.ml \
   parsing/docstrings.ml \
@@ -106,7 +107,6 @@ COMPILERLIBS_SOURCES=\
   typing/predef.ml \
   typing/datarepr.ml \
   file_formats/cmi_format.ml \
-  typing/envLazy.ml \
   typing/persistent_env.ml \
   typing/env.ml \
   lambda/debuginfo.ml \
