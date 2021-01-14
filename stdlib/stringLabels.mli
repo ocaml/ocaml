@@ -40,7 +40,7 @@ v}
     {ul
     {- An {e index} [i] of [s] is an integer in the range \[[0];[n-1]\].
        It represents the [i]th byte (character) of [s] which can be
-       acccessed using the constant time string indexing operator
+       accessed using the constant time string indexing operator
        [s.[i]].}
     {- A {e position} [i] of [s] is an integer in the range
        \[[0];[n]\]. It represents either the point at the beginning of

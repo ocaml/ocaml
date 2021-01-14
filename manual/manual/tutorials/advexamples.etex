@@ -446,7 +446,7 @@ class ['a, 'b] small_hashtbl : ['a, 'b] hash_table =
   object
     val mutable table = []
     method find key = List.assoc key table
-    method add key valeur = table <- (key, valeur) :: table
+    method add key value = table <- (key, value) :: table
   end;;
 \end{caml_example}
 A better implementation, and one that scales up better, is to use a
