@@ -1657,7 +1657,7 @@ AC_MSG_CHECKING([whether stack overflows can be detected])
 
 AS_CASE([$arch,$system],
   [i386,linux_elf|amd64,linux|amd64,macosx \
-    |amd64,solaris|amd64,openbsd|i386,bsd_elf],
+    |amd64,openbsd|i386,bsd_elf],
     [AC_DEFINE([HAS_STACK_OVERFLOW_DETECTION])
     AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])])

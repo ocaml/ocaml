@@ -15920,7 +15920,7 @@ $as_echo_n "checking whether stack overflows can be detected... " >&6; }
 
 case $arch,$system in #(
   i386,linux_elf|amd64,linux|amd64,macosx \
-    |amd64,solaris|amd64,openbsd|i386,bsd_elf) :
+    |amd64,openbsd|i386,bsd_elf) :
     $as_echo "#define HAS_STACK_OVERFLOW_DETECTION 1" >>confdefs.h
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
