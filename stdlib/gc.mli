@@ -525,10 +525,10 @@ module Memprof :
        over their lifetime in the minor and major heap.
 
        Sampling is temporarily disabled when calling a callback
-       for the current thread. So they do not need to be reentrant if
+       for the current thread. So they do not need to be re-entrant if
        the program is single-threaded. However, if threads are used,
        it is possible that a context switch occurs during a callback,
-       in this case the callback functions must be reentrant.
+       in this case the callback functions must be re-entrant.
 
        Note that the callback can be postponed slightly after the
        actual event. The callstack passed to the callback is always
