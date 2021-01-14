@@ -1,2 +1,2 @@
 #!/bin/sh
-grep -oE '[a-zA-Z_]+\.ml(:[0-9]+)?|(line|characters) [0-9-]+'
+sed -e "s/^.*in file/File/" -e 's/ (inlined)//' -e "s/, raise.*//" | grep ^File
