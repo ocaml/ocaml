@@ -37,7 +37,7 @@ let bytecode =
     check_ocamlc_byte_output;
     run;
     check_program_output;
-  ] @ (if Ocamltest_config.arch<>"none" then opt_actions else [])
+  ] @ (if Ocamltest_config.native_compiler then opt_actions else [])
 }
 
 let native =
