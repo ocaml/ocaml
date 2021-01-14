@@ -755,7 +755,7 @@ There is a "printf" function in the \stdmoduleref{Printf} module
 output more concisely.
 It follows the behavior of the "printf" function from the C standard library.
 The "printf" function takes a format string that describes the desired output
-as a text interspered with specifiers (for instance "%d", "%f").
+as a text interspersed with specifiers (for instance "%d", "%f").
 Next, the specifiers are substituted by the following arguments in their order
 of apparition in the format string:
 \begin{caml_example}{toplevel}
