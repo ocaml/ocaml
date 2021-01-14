@@ -116,7 +116,6 @@ default:
 
 .PHONY: all
 all:
-	@rm -f $(TESTLOG)
 	@$(MAKE) --no-print-directory new-without-report
 	@$(MAKE) --no-print-directory report
 
@@ -128,7 +127,7 @@ new-without-report: lib tools
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV=""; \
-	done || echo outer loop >> $(failstamp)) 2>&1 | tee -a $(TESTLOG)
+	done || echo outer loop >> $(failstamp)) 2>&1 | tee $(TESTLOG)
 	@$(MAKE) check-failstamp
 
 .PHONY: check-failstamp
