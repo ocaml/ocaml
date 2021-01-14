@@ -1,7 +1,7 @@
 = Contributing to the standard library
 
 For guidelines about standard library content, see
-link:../CONTRIBUTING.md#contributing-to-the-standard-library[].
+link:CONTRIBUTING.md[].
 
 Note: All paths are given relative to the root of the repository.
 
