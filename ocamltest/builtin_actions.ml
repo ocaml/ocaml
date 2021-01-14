@@ -62,12 +62,6 @@ let dumpenv = make
   (fun log env ->
     Environments.dump log env; (Result.pass, env))
 
-let hasinstrumentedruntime = make
-  "hasinstrumentedruntime"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.has_instrumented_runtime)
-    "instrumented runtime available"
-    "instrumented runtime not available")
-
 let hasunix = make
   "hasunix"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix <> None)
@@ -262,7 +256,6 @@ let _ =
     fail;
     cd;
     dumpenv;
-    hasinstrumentedruntime;
     hasunix;
     hassysthreads;
     hasstr;

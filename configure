@@ -786,6 +786,7 @@ as_has_debug_prefix_map
 cc_has_debug_prefix_map
 otherlibraries
 has_monotonic_clock
+instrumented_runtime_libs
 instrumented_runtime
 debug_runtime
 cmxs
@@ -2793,7 +2794,7 @@ profinfo=false
 profinfo_width=0
 extralibs=
 instrumented_runtime=false
-instrumented_runtime_ldlibs=""
+instrumented_runtime_libs=""
 
 # Information about the package
 
@@ -2841,6 +2842,7 @@ VERSION=4.13.0+dev0-2020-10-19
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -14519,9 +14521,9 @@ fi
 
             instrumented_runtime=true
             if test "x$ac_cv_search_clock_gettime" = "xnone required"; then :
-  instrumented_runtime_ldlibs=""
+  instrumented_runtime_libs=""
 else
-  instrumented_runtime_ldlibs=$ac_cv_search_clock_gettime
+  instrumented_runtime_libs=$ac_cv_search_clock_gettime
 
 fi
            ;; #(
@@ -16902,7 +16904,7 @@ case $host in #(
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
+    bytecclibs="$cclibs $DLLIBS $pthread_link"
   nativecclibs="$cclibs $DLLIBS" ;;
 esac
 
