@@ -214,15 +214,19 @@ one: lib tools
     echo "File '$(LIST)' does not exist."; exit 1; \
   fi
 	@if [ -n '$(DIR)' ] ; then \
-    $(MAKE) --no-print-directory exec-one DIR=$(DIR); fi
+    $(MAKE) --no-print-directory exec-one DIR=$(DIR) \
+      2>&1 | tee $(TESTLOG).one ; \
+   fi
 	@if [ -n '$(TEST)' ] ; then \
-    TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST); fi
-	@$(MAKE) check-failstamp
+    TERM=dumb $(OCAMLTESTENV) $(ocamltest) $(OCAMLTESTFLAGS) $(TEST) \
+     2>&1 | tee $(TESTLOG).one; fi
 	@if [ -n '$(LIST)' ] ; then \
      while IFS='' read -r LINE; do \
        $(MAKE) --no-print-directory exec-one DIR=$$LINE ; \
-     done < $$LIST 2>&1 | tee $(TESTLOG) ; \
-     $(MAKE) report ; fi
+     done < $$LIST 2>&1 | tee $(TESTLOG).one ; \
+   fi
+	@$(MAKE) check-failstamp
+	@$(MAKE) TESTLOG=$(TESTLOG).one report
 
 .PHONY: exec-one
 exec-one:
