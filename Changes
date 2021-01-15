@@ -63,6 +63,13 @@ Working version
   (Sébastien Hinderer, reported by Daniel Bünzli, review by Florian
   Angeletti and Gabriel Scherer)
 
+- #10095: simplify the syntax error messages produced by the compiler.
+  In many cases, the compiler would produce an error message that looked
+  potentially helpful but was actually misguided and arguably confusing,
+  because the error message implicitly referred to an earlier point in
+  the source code than the point explicitly shown in the error message.
+  (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
+
 ### Internal/compiler-libs changes:
 
 - #9650, #9651: keep refactoring the pattern-matching compiler
@@ -89,10 +96,12 @@ Working version
   changes in the parser.
   (François Pottier, review by Gabriel Scherer and Xavier Leroy.)
 
+- #10090: Distinguished constructors for ref variables at lambda level
+  (Keryan Didier, review by Gabriel Scherer and Vincent Laviron)
+
 - #10113: add a `-timeout` option to ocamltest and use it in the test suite.
   (Xavier Leroy and Gabriel Scherer, review by Sébastien Hinderer
    and David Allsopp)
-
 
 ### Build system:
 
@@ -100,6 +109,12 @@ Working version
   flexlink-using systems.
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    report by Ralph Seichter)
+
+- #10063: (Re-)enable building on illumos (SmartOS, OmniOS, ...) and
+  Oracle Solaris; x86_64/GCC and 64-bit SPARC/Sun PRO C compilers.
+  (partially revert #2024).
+  (Tõivo Leedjärv and Konstantin Romanov,
+   review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
 
 ### Bug fixes:
 
@@ -112,6 +127,12 @@ Working version
 - #10072, #10085: Check that sizes and offsets in stack frame descriptors
   do not overflow the 16-bit fields where they are stored.
   (Xavier Leroy, report by Github user pveber, review by Gabriel Scherer)
+
+- #10087, #10138: In the toplevel REPL, don't use the cache
+  of included directories, so that files created or deleted while
+  the REPL is running are correctly handled.
+  (Xavier Leroy, report by Github user quakerquickoats, review by
+   Jeremie Dimino)
 
 OCaml 4.12.0
 ------------
@@ -2262,6 +2283,16 @@ OCaml 4.09.0 (19 September 2019)
 
 - #8944: Fix "open struct .. end" on clambda backend
   (Thomas Refis, review by Leo White, report by Damon Wang and Mark Shinwell)
+
+OCaml 4.08 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9326, #10125: Gc.set incorrectly handles the three `custom_*` fields,
+  causing a performance regression
+  (report by Emilio Jesús Gallego Arias, analysis and fix by Stephen Dolan,
+   code by Xavier Leroy, review by Hugo Heuzard and Gabriel Scherer)
 
 OCaml 4.08.1 (5 August 2019)
 ----------------------------

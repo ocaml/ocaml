@@ -256,7 +256,7 @@ ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \
-	    $(call SUBST,RUNTIMEI) \
+	    $(call SUBST,INSTRUMENTED_RUNTIME) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,unix) \

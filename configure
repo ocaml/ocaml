@@ -695,6 +695,7 @@ PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
 rlwrap
+SYSTEM_AS
 DIRECT_LD
 INSTALL_DATA
 INSTALL_SCRIPT
@@ -786,6 +787,7 @@ as_has_debug_prefix_map
 cc_has_debug_prefix_map
 otherlibraries
 has_monotonic_clock
+instrumented_runtime_libs
 instrumented_runtime
 debug_runtime
 cmxs
@@ -2793,7 +2795,7 @@ profinfo=false
 profinfo_width=0
 extralibs=
 instrumented_runtime=false
-instrumented_runtime_ldlibs=""
+instrumented_runtime_libs=""
 
 # Information about the package
 
@@ -2841,6 +2843,7 @@ VERSION=4.13.0+dev0-2020-10-19
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -3062,6 +3065,10 @@ case $host in #(
     SO=dll
     outputexe=-Fe
     syslib='$(1).lib' ;; #(
+  i386-*-solaris*) :
+    as_fn_error $? "Building for 32 bits target is not supported. \
+If your host is 64 bits, you can try with './configure CC=\"gcc -m64\"' \
+(or \"cc -m64\" if you don't have GCC)." "$LINENO" 5 ;; #(
   *) :
     ccomptype=cc
   S=s
@@ -12289,6 +12296,8 @@ CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 
 case $host in #(
+  sparc-sun-solaris*) :
+    DEP_CC="false" ;; #(
   *-pc-windows) :
     if test -n "$ac_tool_prefix"; then
   for ac_prog in $DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc
@@ -12468,6 +12477,8 @@ clang __clang_major__ __clang_minor__
 gcc __GNUC__ __GNUC_MINOR__
 #elif defined(__xlc__) && defined(__xlC__)
 xlc __xlC__ __xlC_ver__
+#elif defined(__SUNPRO_C)
+sunc __SUNPRO_C __SUNPRO_C
 #else
 unknown
 #endif
@@ -12506,6 +12517,9 @@ case $ocaml_cv_cc_vendor in #(
   xlc-*) :
     CPP="$CC -E -qnoppline" ;; #(
   # suppress incompatible XLC line directives
+  sunc-*) :
+    CPP="$CC -E -Qn" ;; #(
+  # suppress generation of Sun PRO ident string
   msvc-*) :
     CPP="$CC -nologo -EP" ;; #(
   *) :
@@ -12618,6 +12632,8 @@ case $ocaml_cv_cc_vendor in #(
     warn_error_flag=''
     cc_warnings='-qflag=i:i' ;; #(
   # all warnings enabled
+  sunc-*) :
+    outputobj='-o $(EMPTY)'; cc_warnings="" ;; #(
   msvc-*) :
     outputobj='-Fo'
     warn_error_flag='-WX'
@@ -12705,6 +12721,11 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+      internal_cflags="$cc_warnings" ;; #(
+  sunc-*) :
+    # Optimization should be >= O4 to inline functions
+              # and prevent unresolved externals
+      common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
       internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
@@ -13649,13 +13670,19 @@ fi
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true ;; #(
   powerpc-ibm-aix*) :
-    case $CC in #(
+    case $ocaml_cv_cc_vendor in #(
   xlc*) :
     mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true ;; #(
   *) :
      ;;
 esac ;; #(
+  *-*-solaris*) :
+    sharedlib_cflags="-fPIC"
+      mksharedlib="$CC -shared"
+      rpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      shared_libraries_supported=true ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
@@ -13706,6 +13733,8 @@ if test x"$enable_shared" != "xno"; then :
   s390x*-*-linux*) :
     natdynlink=true ;; #(
   powerpc*-*-linux*) :
+    natdynlink=true ;; #(
+  x86_64-*-solaris*) :
     natdynlink=true ;; #(
   i686-*-kfreebsd*) :
     natdynlink=true ;; #(
@@ -13892,6 +13921,8 @@ fi; system=elf ;; #(
     arch=amd64; system=gnu ;; #(
   x86_64-*-dragonfly*) :
     arch=amd64; system=dragonfly ;; #(
+  x86_64-*-solaris*) :
+    arch=amd64; system=solaris ;; #(
   x86_64-*-freebsd*) :
     arch=amd64; system=freebsd ;; #(
   x86_64-*-netbsd*) :
@@ -14038,8 +14069,6 @@ if test -z "$PARTIALLD"; then :
   case "$arch,$CC,$system,$model" in #(
   amd64,gcc*,macosx,*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
-  amd64,gcc*,solaris,*) :
-    PACKLD_FLAGS=' -m elf_x86_64' ;; #(
   power,gcc*,elf,ppc) :
     PACKLD_FLAGS=' -m elf32ppclinux' ;; #(
   power,gcc*,elf,ppc64) :
@@ -14103,6 +14132,99 @@ fi
 # One may want to check whether the user provided values first
 # and only compute values if none has been provided
 
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_SYSTEM_AS+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$SYSTEM_AS"; then
+  ac_cv_prog_SYSTEM_AS="$SYSTEM_AS" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_SYSTEM_AS="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+SYSTEM_AS=$ac_cv_prog_SYSTEM_AS
+if test -n "$SYSTEM_AS"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SYSTEM_AS" >&5
+$as_echo "$SYSTEM_AS" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_SYSTEM_AS"; then
+  ac_ct_SYSTEM_AS=$SYSTEM_AS
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_SYSTEM_AS+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_SYSTEM_AS"; then
+  ac_cv_prog_ac_ct_SYSTEM_AS="$ac_ct_SYSTEM_AS" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_SYSTEM_AS="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_SYSTEM_AS=$ac_cv_prog_ac_ct_SYSTEM_AS
+if test -n "$ac_ct_SYSTEM_AS"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_SYSTEM_AS" >&5
+$as_echo "$ac_ct_SYSTEM_AS" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_SYSTEM_AS" = x; then
+    SYSTEM_AS=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    SYSTEM_AS=$ac_ct_SYSTEM_AS
+  fi
+else
+  SYSTEM_AS="$ac_cv_prog_SYSTEM_AS"
+fi
+
+
 case "$arch,$system" in #(
   i386,win32) :
     default_as="ml -nologo -coff -Cp -c -Fo" ;; #(
@@ -14118,11 +14240,25 @@ case "$arch,$system" in #(
       default_aspp="${toolpref}gcc -arch x86_64 -c" ;;
 esac ;; #(
   amd64,solaris) :
-    default_as="${toolpref}as --64"
-    default_aspp="${toolpref}gcc -m64 -c" ;; #(
-  i386,solaris) :
-    default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c" ;; #(
+    case $ocaml_cv_cc_vendor in #(
+  sunc-*) :
+    if test x"$SYSTEM_AS" = "x"; then :
+  as_fn_error $? "GNU as assembler is required." "$LINENO" 5
+else
+  default_as="${toolpref}as --64"
+          default_aspp="${toolpref}cc -m64 -c"
+fi ;; #(
+  gcc-*) :
+    if test x"$SYSTEM_AS" = "x"; then :
+  default_as="${toolpref}gcc -m64 -c"
+          default_aspp="${toolpref}gcc -m64 -c"
+else
+  default_as="${toolpref}as --64"
+          default_aspp="${toolpref}gcc -m64 -c"
+fi ;; #(
+  *) :
+     ;;
+esac ;; #(
   power,elf) :
     case $model in #(
   ppc64le) :
@@ -14433,6 +14569,8 @@ esac
 if test "x$enable_instrumented_runtime" != "xno" ; then :
 
     case $host in #(
+  sparc-sun-solaris*) :
+    instrumented_runtime=false ;; #(
   *-*-windows) :
     instrumented_runtime=true ;; #(
   *-apple-darwin*) :
@@ -14519,9 +14657,9 @@ fi
 
             instrumented_runtime=true
             if test "x$ac_cv_search_clock_gettime" = "xnone required"; then :
-  instrumented_runtime_ldlibs=""
+  instrumented_runtime_libs=""
 else
-  instrumented_runtime_ldlibs=$ac_cv_search_clock_gettime
+  instrumented_runtime_libs=$ac_cv_search_clock_gettime
 
 fi
            ;; #(
@@ -14556,6 +14694,9 @@ case $host in #(
     sockets=true ;; #(
   *-*-haiku) :
     cclibs="$cclibs -lnetwork"
+    sockets=true ;; #(
+  *-*-solaris*) :
+    cclibs="$cclibs -lsocket -lnsl"
     sockets=true ;; #(
   *) :
 
@@ -15148,12 +15289,14 @@ fi
 
 
 ## -fdebug-prefix-map support by the C compiler
-case $CC,$host in #(
+case $ocaml_cv_cc_vendor,$host in #(
   *,*-*-mingw32) :
     cc_has_debug_prefix_map=false ;; #(
   *,*-pc-windows) :
     cc_has_debug_prefix_map=false ;; #(
   xlc*,powerpc-ibm-aix*) :
+    cc_has_debug_prefix_map=false ;; #(
+  sunc*,sparc-sun-*) :
     cc_has_debug_prefix_map=false ;; #(
   *) :
 
@@ -16432,8 +16575,6 @@ if test "x$ax_pthread_ok" = "xyes"; then
         systhread_support=true
       otherlibraries="$otherlibraries systhreads"
       case $host in #(
-  *-*-solaris*) :
-    pthread_link="-lpthread -lposix4" ;; #(
   *-*-haiku*) :
     pthread_link="" ;; #(
   *-*-android*) :
@@ -16677,7 +16818,7 @@ fi
    case "$arch","$system" in #(
   amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd) :
+    |amd64,freebsd|amd64,solaris) :
     naked_pointers_checker=true
       $as_echo "#define NAKED_POINTERS_CHECKER 1" >>confdefs.h
  ;; #(
@@ -16902,7 +17043,7 @@ case $host in #(
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
+    bytecclibs="$cclibs $DLLIBS $pthread_link"
   nativecclibs="$cclibs $DLLIBS" ;;
 esac
 
@@ -16984,6 +17125,11 @@ case $host in #(
     $as_echo "#define HAS_IPV6 1" >>confdefs.h
 
     $as_echo "#define HAS_NICE 1" >>confdefs.h
+ ;; #(
+  *-*-solaris*) :
+    # This is required as otherwise floats are printed
+    # as "Infinity" and "Inf" instead of the expected "inf"
+    $as_echo "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
  ;; #(
   *) :
      ;;

@@ -1,6 +1,0 @@
-\chapter{The browser/editor (ocamlbrowser)} \label{c:browser}
-%HEVEA\cutname{browser.html}
-
-Since OCaml version 4.02, the OCamlBrowser tool and the Labltk library
-are distributed separately from the OCaml compiler. The project is now
-hosted at \url{https://forge.ocamlcore.org/projects/labltk/}.

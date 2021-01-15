@@ -20,6 +20,10 @@
 @rem Do not call setlocal!
 @echo off
 
+chcp 65001 > nul
+set BUILD_PREFIX=🐫реализация
+set OCAMLROOT=%PROGRAMFILES%\Бактріан🐫
+
 if "%1" neq "install" goto %1
 setlocal enabledelayedexpansion
 echo AppVeyor Environment
@@ -68,9 +72,14 @@ if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
 goto :EOF
 
 :install
-chcp 65001 > nul
-rem This must be kept in sync with appveyor_build.sh
-set BUILD_PREFIX=🐫реализация
+
+if defined SDK set SDK=call %SDK%
+if not defined SDK (
+  if "%PORT%" equ "msvc64" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+  if "%PORT%" equ "msvc32" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
+)
+%SDK%
+
 git worktree add "..\%BUILD_PREFIX%-%PORT%" -b appveyor-build-%PORT%
 
 cd "..\%BUILD_PREFIX%-%PORT%"
@@ -125,21 +134,6 @@ call :UpgradeCygwin
 goto :EOF
 
 :build
-rem Testing %SDK% is tricky, since it can contain double-quotes. The "trick",
-rem is to make SDK_TEST the second character of %SDK%. If %SDK% is un-set then
-rem SDK_TEST will be the literal string %SDK:~1,1%, obviously. However, that
-rem means %SDK_TEST:~1,1% only expands to the empty string if SDK was itself
-rem un-set. <sigh>
-set SDK_TEST=%SDK:~1,1%
-if "%SDK_TEST:~1,1%" neq "" (
-  if "%PORT%" equ "msvc64" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-  if "%PORT%" equ "msvc32" set SDK=call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
-) else (
-  set SDK=call %SDK%
-)
-
-%SDK%
-
 "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
 goto :EOF
 
