@@ -100,9 +100,9 @@
     Format.print_string "TEXT";
    ]
    leads to output [<>PRETTYTEXT].
-
-   A tutorial to the Format module is provided at {!Format_tutorial}.
 *)
+
+(* A tutorial to the Format module is provided at {!Format_tutorial}. *)
 
 (** {1 Formatters} *)
 

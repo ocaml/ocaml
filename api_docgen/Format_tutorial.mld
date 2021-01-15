@@ -1,6 +1,4 @@
-{1 Tutorial}
-
-{2 Principles}
+{1 Principles}
 
 Line breaking is based on three concepts:
 
@@ -33,7 +31,7 @@ Line breaking is based on three concepts:
             the additional hint breaking indentation, as defined by break
             hint [bh].}}}}
 
-{2 Boxes}
+{1 Boxes}
 
 There are 4 types of boxes. (The most often used is the "hov" box type, so skip
 the rest at first reading).
@@ -122,7 +120,7 @@ written as:
 ---
 ]}
 
-{2 Printing spaces}
+{1 Printing spaces}
 
 Break hints are also used to output spaces (if the line is not split when the
 break is encountered, otherwise the new line indicates properly the separation
@@ -169,7 +167,7 @@ outputs a single space or break the line.)
 
 
 
-{2 Indentation of new lines}
+{1 Indentation of new lines}
 
 The user gets 2 ways to fix the indentation of new lines:
 
@@ -216,7 +214,7 @@ indentation (as obtained by [open_hovbox 1]), and b is [print_break 1 2], then
          --
 ]}
 
-{2 Refinement on "hov" boxes}
+{1 Refinement on "hov" boxes}
 
 
 The "hov" box type is refined into two categories.
@@ -260,7 +258,7 @@ this:
 )
 ]}
 
-{2 Practical advice}
+{1 Practical advice}
 
 When writing a pretty-printing routine, follow these simple rules:
 
@@ -296,7 +294,7 @@ vertical box!
 pretty-printer tables (hence the output).  (Note that the top-level loop of the
 interactive system does it as well, just before a new input.)
 
-{2 Printing to stdout: using printf}
+{1 Printing to stdout: using printf}
 
 The format module provides a general printing facility "a la" printf. In
 addition to the usual conversion facility provided by printf, you can write
@@ -324,7 +322,7 @@ Prix TTC = 100 Euros
 - : unit = ()
 v}
 
-{2  A concrete example}
+{1  A concrete example}
 
 Let me give a full example: the shortest non trivial example you could imagine,
 that is the lambda calculus :)
@@ -376,7 +374,7 @@ val print_other_applications : lambda -> unit = <fun>
 val print_lambda : lambda -> unit = <fun>
 v}
 
-{3 Most general pretty-printing: using fprintf}
+{2 Most general pretty-printing: using fprintf}
 
 We use the [fprintf] function to write the most versatile version of the
 pretty-printing functions for lambda-terms.  Now, the functions get an extra
@@ -432,5 +430,3 @@ let eprint_lambda = pr_lambda err_formatter;;
 val print_lambda : lambda -> unit
 val eprint_lambda : lambda -> unit
 v}
-
-This concludes the tutorial.
