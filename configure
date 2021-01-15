@@ -778,7 +778,6 @@ endianness
 ASPP
 x_libraries
 x_includes
-pthread_link
 ocamltest
 ocamldoc
 with_camltex
@@ -2895,7 +2894,6 @@ VERSION=4.13.0+dev0-2020-10-19
 
 
  # TODO: rename this variable
-
 
 
 
@@ -16015,10 +16013,12 @@ fi
 # (e.g. DEC) have both -lpthread and -lpthreads, where one of the
 # libraries is broken (non-POSIX).
 
-# Create a list of thread flags to try.  Items starting with a "-" are
-# C compiler flags, and other items are library names, except for "none"
-# which indicates that we try without any flags at all, and "pthread-config"
-# which is a program returning the flags for the Pth emulation library.
+# Create a list of thread flags to try. Items with a "," contain both
+# C compiler flags (before ",") and linker flags (after ","). Other items
+# starting with a "-" are C compiler flags, and remaining items are
+# library names, except for "none" which indicates that we try without
+# any flags at all, and "pthread-config" which is a program returning
+# the flags for the Pth emulation library.
 
 ax_pthread_flags="pthreads none -Kthread -pthread -pthreads -mthreads pthread --thread-safe -mt pthread-config"
 
@@ -16094,38 +16094,9 @@ rm -f conftest*
         # that too in a future libc.)  So we'll check first for the
         # standard Solaris way of linking pthreads (-mt -lpthread).
 
-        ax_pthread_flags="-mt,pthread pthread $ax_pthread_flags"
+        ax_pthread_flags="-mt,-lpthread pthread $ax_pthread_flags"
         ;;
 esac
-
-# GCC generally uses -pthread, or -pthreads on some platforms (e.g. SPARC)
-
-if test "x$GCC" = "xyes"; then :
-  ax_pthread_flags="-pthread -pthreads $ax_pthread_flags"
-fi
-
-# The presence of a feature test macro requesting re-entrant function
-# definitions is, on some systems, a strong hint that pthreads support is
-# correctly enabled
-
-case $host_os in
-        darwin* | hpux* | linux* | osf* | solaris*)
-        ax_pthread_check_macro="_REENTRANT"
-        ;;
-
-        aix*)
-        ax_pthread_check_macro="_THREAD_SAFE"
-        ;;
-
-        *)
-        ax_pthread_check_macro="--"
-        ;;
-esac
-if test "x$ax_pthread_check_macro" = "x--"; then :
-  ax_pthread_check_cond=0
-else
-  ax_pthread_check_cond="!defined($ax_pthread_check_macro)"
-fi
 
 # Are we compiling with Clang?
 
@@ -16158,107 +16129,51 @@ fi
 $as_echo "$ax_cv_PTHREAD_CLANG" >&6; }
 ax_pthread_clang="$ax_cv_PTHREAD_CLANG"
 
-ax_pthread_clang_warning=no
 
-# Clang needs special handling, because older versions handle the -pthread
-# option in a rather... idiosyncratic way
+# GCC generally uses -pthread, or -pthreads on some platforms (e.g. SPARC)
 
-if test "x$ax_pthread_clang" = "xyes"; then
+# Note that for GCC and Clang -pthread generally implies -lpthread,
+# except when -nostdlib is passed.
+# This is problematic using libtool to build C++ shared libraries with pthread:
+# [1] https://gcc.gnu.org/bugzilla/show_bug.cgi?id=25460
+# [2] https://bugzilla.redhat.com/show_bug.cgi?id=661333
+# [3] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=468555
+# To solve this, first try -pthread together with -lpthread for GCC
 
-        # Clang takes -pthread; it has never supported any other flag
+if test "x$GCC" = "xyes"; then :
+  ax_pthread_flags="-pthread,-lpthread -pthread -pthreads $ax_pthread_flags"
+fi
 
-        # (Note 1: This will need to be revisited if a system that Clang
-        # supports has POSIX threads in a separate library.  This tends not
-        # to be the way of modern systems, but it's conceivable.)
+# Clang takes -pthread (never supported any other flag), but we'll try with -lpthread first
 
-        # (Note 2: On some systems, notably Darwin, -pthread is not needed
-        # to get POSIX threads support; the API is always present and
-        # active.  We could reasonably leave PTHREAD_CFLAGS empty.  But
-        # -pthread does define _REENTRANT, and while the Darwin headers
-        # ignore this macro, third-party headers might not.)
+if test "x$ax_pthread_clang" = "xyes"; then :
+  ax_pthread_flags="-pthread,-lpthread -pthread"
+fi
 
-        PTHREAD_CFLAGS="-pthread"
-        PTHREAD_LIBS=
 
-        ax_pthread_ok=yes
+# The presence of a feature test macro requesting re-entrant function
+# definitions is, on some systems, a strong hint that pthreads support is
+# correctly enabled
 
-        # However, older versions of Clang make a point of warning the user
-        # that, in an invocation where only linking and no compilation is
-        # taking place, the -pthread option has no effect ("argument unused
-        # during compilation").  They expect -pthread to be passed in only
-        # when source code is being compiled.
-        #
-        # Problem is, this is at odds with the way Automake and most other
-        # C build frameworks function, which is that the same flags used in
-        # compilation (CFLAGS) are also used in linking.  Many systems
-        # supported by AX_PTHREAD require exactly this for POSIX threads
-        # support, and in fact it is often not straightforward to specify a
-        # flag that is used only in the compilation phase and not in
-        # linking.  Such a scenario is extremely rare in practice.
-        #
-        # Even though use of the -pthread flag in linking would only print
-        # a warning, this can be a nuisance for well-run software projects
-        # that build with -Werror.  So if the active version of Clang has
-        # this misfeature, we search for an option to squash it.
+case $host_os in
+        darwin* | hpux* | linux* | osf* | solaris*)
+        ax_pthread_check_macro="_REENTRANT"
+        ;;
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Clang needs flag to prevent \"argument unused\" warning when linking with -pthread" >&5
-$as_echo_n "checking whether Clang needs flag to prevent \"argument unused\" warning when linking with -pthread... " >&6; }
-if ${ax_cv_PTHREAD_CLANG_NO_WARN_FLAG+:} false; then :
-  $as_echo_n "(cached) " >&6
+        aix*)
+        ax_pthread_check_macro="_THREAD_SAFE"
+        ;;
+
+        *)
+        ax_pthread_check_macro="--"
+        ;;
+esac
+if test "x$ax_pthread_check_macro" = "x--"; then :
+  ax_pthread_check_cond=0
 else
-  ax_cv_PTHREAD_CLANG_NO_WARN_FLAG=unknown
-             # Create an alternate version of $ac_link that compiles and
-             # links in two steps (.c -> .o, .o -> exe) instead of one
-             # (.c -> exe), because the warning occurs only in the second
-             # step
-             ax_pthread_save_ac_link="$ac_link"
-             ax_pthread_sed='s/conftest\.\$ac_ext/conftest.$ac_objext/g'
-             ax_pthread_link_step=`$as_echo "$ac_link" | sed "$ax_pthread_sed"`
-             ax_pthread_2step_ac_link="($ac_compile) && (echo ==== >&5) && ($ax_pthread_link_step)"
-             ax_pthread_save_CFLAGS="$CFLAGS"
-             for ax_pthread_try in '' -Qunused-arguments -Wno-unused-command-line-argument unknown; do
-                if test "x$ax_pthread_try" = "xunknown"; then :
-  break
+  ax_pthread_check_cond="!defined($ax_pthread_check_macro)"
 fi
-                CFLAGS="-Werror -Wunknown-warning-option $ax_pthread_try -pthread $ax_pthread_save_CFLAGS"
-                ac_link="$ax_pthread_save_ac_link"
-                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int main(void){return 0;}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_link="$ax_pthread_2step_ac_link"
-                     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int main(void){return 0;}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  break
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
 
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-             done
-             ac_link="$ax_pthread_save_ac_link"
-             CFLAGS="$ax_pthread_save_CFLAGS"
-             if test "x$ax_pthread_try" = "x"; then :
-  ax_pthread_try=no
-fi
-             ax_cv_PTHREAD_CLANG_NO_WARN_FLAG="$ax_pthread_try"
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_PTHREAD_CLANG_NO_WARN_FLAG" >&5
-$as_echo "$ax_cv_PTHREAD_CLANG_NO_WARN_FLAG" >&6; }
-
-        case "$ax_cv_PTHREAD_CLANG_NO_WARN_FLAG" in
-                no | unknown) ;;
-                *) PTHREAD_CFLAGS="$ax_cv_PTHREAD_CLANG_NO_WARN_FLAG $PTHREAD_CFLAGS" ;;
-        esac
-
-fi # $ax_pthread_clang = yes
 
 if test "x$ax_pthread_ok" = "xno"; then
 for ax_pthread_try_flag in $ax_pthread_flags; do
@@ -16269,11 +16184,11 @@ for ax_pthread_try_flag in $ax_pthread_flags; do
 $as_echo_n "checking whether pthreads work without any flags... " >&6; }
                 ;;
 
-                -mt,pthread)
-                { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether pthreads work with -mt -lpthread" >&5
-$as_echo_n "checking whether pthreads work with -mt -lpthread... " >&6; }
-                PTHREAD_CFLAGS="-mt"
-                PTHREAD_LIBS="-lpthread"
+                *,*)
+                PTHREAD_CFLAGS=`echo $ax_pthread_try_flag | sed "s/^\(.*\),\(.*\)$/\1/"`
+                PTHREAD_LIBS=`echo $ax_pthread_try_flag | sed "s/^\(.*\),\(.*\)$/\2/"`
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether pthreads work with \"$PTHREAD_CFLAGS\" and \"$PTHREAD_LIBS\"" >&5
+$as_echo_n "checking whether pthreads work with \"$PTHREAD_CFLAGS\" and \"$PTHREAD_LIBS\"... " >&6; }
                 ;;
 
                 -*)
@@ -16356,7 +16271,13 @@ $as_echo_n "checking for the pthreads library -l$ax_pthread_try_flag... " >&6; }
 #                       if $ax_pthread_check_cond
 #                        error "$ax_pthread_check_macro must be defined"
 #                       endif
-                        static void routine(void *a) { a = 0; }
+                        static void *some_global = NULL;
+                        static void routine(void *a)
+                          {
+                             /* To avoid any unused-parameter or
+                                unused-but-set-parameter warning.  */
+                             some_global = a;
+                          }
                         static void *start_routine(void *a) { return a; }
 int
 main ()
@@ -16390,6 +16311,104 @@ fi
         PTHREAD_CFLAGS=""
 done
 fi
+
+
+# Clang needs special handling, because older versions handle the -pthread
+# option in a rather... idiosyncratic way
+
+if test "x$ax_pthread_clang" = "xyes"; then
+
+        # Clang takes -pthread; it has never supported any other flag
+
+        # (Note 1: This will need to be revisited if a system that Clang
+        # supports has POSIX threads in a separate library.  This tends not
+        # to be the way of modern systems, but it's conceivable.)
+
+        # (Note 2: On some systems, notably Darwin, -pthread is not needed
+        # to get POSIX threads support; the API is always present and
+        # active.  We could reasonably leave PTHREAD_CFLAGS empty.  But
+        # -pthread does define _REENTRANT, and while the Darwin headers
+        # ignore this macro, third-party headers might not.)
+
+        # However, older versions of Clang make a point of warning the user
+        # that, in an invocation where only linking and no compilation is
+        # taking place, the -pthread option has no effect ("argument unused
+        # during compilation").  They expect -pthread to be passed in only
+        # when source code is being compiled.
+        #
+        # Problem is, this is at odds with the way Automake and most other
+        # C build frameworks function, which is that the same flags used in
+        # compilation (CFLAGS) are also used in linking.  Many systems
+        # supported by AX_PTHREAD require exactly this for POSIX threads
+        # support, and in fact it is often not straightforward to specify a
+        # flag that is used only in the compilation phase and not in
+        # linking.  Such a scenario is extremely rare in practice.
+        #
+        # Even though use of the -pthread flag in linking would only print
+        # a warning, this can be a nuisance for well-run software projects
+        # that build with -Werror.  So if the active version of Clang has
+        # this misfeature, we search for an option to squash it.
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Clang needs flag to prevent \"argument unused\" warning when linking with -pthread" >&5
+$as_echo_n "checking whether Clang needs flag to prevent \"argument unused\" warning when linking with -pthread... " >&6; }
+if ${ax_cv_PTHREAD_CLANG_NO_WARN_FLAG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ax_cv_PTHREAD_CLANG_NO_WARN_FLAG=unknown
+             # Create an alternate version of $ac_link that compiles and
+             # links in two steps (.c -> .o, .o -> exe) instead of one
+             # (.c -> exe), because the warning occurs only in the second
+             # step
+             ax_pthread_save_ac_link="$ac_link"
+             ax_pthread_sed='s/conftest\.\$ac_ext/conftest.$ac_objext/g'
+             ax_pthread_link_step=`$as_echo "$ac_link" | sed "$ax_pthread_sed"`
+             ax_pthread_2step_ac_link="($ac_compile) && (echo ==== >&5) && ($ax_pthread_link_step)"
+             ax_pthread_save_CFLAGS="$CFLAGS"
+             for ax_pthread_try in '' -Qunused-arguments -Wno-unused-command-line-argument unknown; do
+                if test "x$ax_pthread_try" = "xunknown"; then :
+  break
+fi
+                CFLAGS="-Werror -Wunknown-warning-option $ax_pthread_try -pthread $ax_pthread_save_CFLAGS"
+                ac_link="$ax_pthread_save_ac_link"
+                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main(void){return 0;}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_link="$ax_pthread_2step_ac_link"
+                     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main(void){return 0;}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  break
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+             done
+             ac_link="$ax_pthread_save_ac_link"
+             CFLAGS="$ax_pthread_save_CFLAGS"
+             if test "x$ax_pthread_try" = "x"; then :
+  ax_pthread_try=no
+fi
+             ax_cv_PTHREAD_CLANG_NO_WARN_FLAG="$ax_pthread_try"
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_PTHREAD_CLANG_NO_WARN_FLAG" >&5
+$as_echo "$ax_cv_PTHREAD_CLANG_NO_WARN_FLAG" >&6; }
+
+        case "$ax_cv_PTHREAD_CLANG_NO_WARN_FLAG" in
+                no | unknown) ;;
+                *) PTHREAD_CFLAGS="$ax_cv_PTHREAD_CLANG_NO_WARN_FLAG $PTHREAD_CFLAGS" ;;
+        esac
+
+fi # $ax_pthread_clang = yes
+
+
 
 # Various other checks:
 if test "x$ax_pthread_ok" = "xyes"; then
@@ -16472,6 +16491,7 @@ int
 main ()
 {
 int i = PTHREAD_PRIO_INHERIT;
+                                               return i;
   ;
   return 0;
 }
@@ -16574,21 +16594,13 @@ test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
 if test "x$ax_pthread_ok" = "xyes"; then
         systhread_support=true
       otherlibraries="$otherlibraries systhreads"
-      case $host in #(
-  *-*-haiku*) :
-    pthread_link="" ;; #(
-  *-*-android*) :
-    pthread_link="" ;; #(
-  *) :
-    pthread_link="-lpthread" ;;
-esac
-      common_cppflags="$common_cppflags -D_REENTRANT"
+      common_cflags="$common_cflags $PTHREAD_CFLAGS"
       { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is supported" >&5
 $as_echo "$as_me: the POSIX threads library is supported" >&6;}
       saved_CFLAGS="$CFLAGS"
       saved_LIBS="$LIBS"
       CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $pthread_link"
+      LIBS="$LIBS $PTHREAD_LIBS"
       ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
 if test "x$ac_cv_func_sigwait" = xyes; then :
   $as_echo "#define HAS_SIGWAIT 1" >>confdefs.h
@@ -17043,7 +17055,7 @@ case $host in #(
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $pthread_link"
+    bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
   nativecclibs="$cclibs $DLLIBS" ;;
 esac
 

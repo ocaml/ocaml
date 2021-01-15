@@ -170,9 +170,8 @@ OTHERLIBRARIES=@otherlibraries@
 
 ### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
 # Needed for the "systhreads" package
-PTHREAD_LINK=@pthread_link@
-PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
-PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
+PTHREAD_LIBS=@PTHREAD_LIBS@
+PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
 
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
@@ -286,3 +285,13 @@ endif # ifeq "$(UNIX_OR_WIN32)" "win32"
 ## Variables renamed in OCaml 4.13
 
 RUNTIMEI=$(INSTRUMENTED_RUNTIME)
+
+### pthread-related variables
+
+PTHREAD_LINK=$(PTHREAD_LIBS)
+PTHREAD_CAML_LINK=$(PTHREAD_CAML_LIBS)
+
+### It is expected that the value of PTHREAD_LINK changes between OCaml
+### 4.12 and 4.13. Indeed, for OCaml 4.12 most of the time the variable
+### contained -lpthread. From 4.13 onward it will most of the time be
+### empty since we have -pthread in CFLAGS which implies -lpthread.
