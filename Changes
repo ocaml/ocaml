@@ -147,6 +147,9 @@ Working version
   (Tõivo Leedjärv and Konstantin Romanov,
    review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
 
+- #10156: configure script: fix sockets feature detection.
+  (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
+
 ### Bug fixes:
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
