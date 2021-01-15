@@ -139,6 +139,8 @@ let _ = add_directive "load_rec"
       doc = "As #load, but loads dependencies recursively.";
     }
 
+let load_file = Topeval.load_file false
+
 (* Load commands from a file *)
 
 let dir_use ppf name = ignore(Toploop.use_file ppf name)

@@ -97,6 +97,8 @@ val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
 
+val load_file: formatter -> string -> bool
+
 (* Printing of values *)
 
 val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit

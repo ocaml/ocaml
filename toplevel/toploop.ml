@@ -89,6 +89,8 @@ let use_silently ppf name =
     [ R (use_print_results, false) ]
     (fun () -> use_file ppf name)
 
+let load_file = load_file false
+
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
