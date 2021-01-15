@@ -129,7 +129,7 @@ struct entry_array {
 #define MIN_ENTRIES_LOCAL_ALLOC_LEN 16
 #define MIN_ENTRIES_GLOBAL_ALLOC_LEN 128
 
-/* Entries for other blocks. This variable is shared accross threads. */
+/* Entries for other blocks. This variable is shared across threads. */
 static struct entry_array entries_global =
   { NULL, MIN_ENTRIES_GLOBAL_ALLOC_LEN, 0, 0, 0, 0 };
 
