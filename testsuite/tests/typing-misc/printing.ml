@@ -101,7 +101,7 @@ Error: This expression has type t1 but an expression was expected of type t2
 |}]
 
 (* #9739
-   Recursive occurence checks are only done on type variables.
+   Recursive occurrence checks are only done on type variables.
    However, we are not guaranteed to still have a type variable when printing.
 *)
 

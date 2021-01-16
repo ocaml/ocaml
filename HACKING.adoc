@@ -372,7 +372,7 @@ source files. This can be fairly slow (2 minutes for example). Use
 `./tools/check-typo <path>` to run it on some file or directory
 (recursively) only.
 
-Running `./toos/check-typo-since trunk` checks all files that changed
+Running `./tools/check-typo-since trunk` checks all files that changed
 in the commits since `trunk` -- this work with any git reference. It
 runs much faster than a full `./tools/check-typo`, typically instantly.
 
