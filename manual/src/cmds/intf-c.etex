@@ -1628,7 +1628,7 @@ contain the executable file name.
 
 An alternative is to embed the bytecode in the C code. The
 "-output-obj" and "-output-complete-obj" options to "ocamlc" are
-provided for this purpose. It causes the "ocamlc" compiler to output a
+provided for this purpose. They cause the "ocamlc" compiler to output a
 C object file (".o" file, ".obj" under Windows) containing the
 bytecode for the OCaml part of the program, as well as a
 "caml_startup" function. The C object file produced by "ocamlc
@@ -1651,16 +1651,19 @@ C code by instead using the "caml_startup_exn" function and testing the result
 using {\tt Is_exception_result} (followed by {\tt Extract_exception} if
 appropriate).
 
-The "-output-obj" option can also be used to obtain the C source file.
-More interestingly, the "-output-complete-obj" option can also produce
+The "-output-obj" and "-output-complete-obj" options can also be used to
+obtain the C source file.
+More interestingly, these options can also produce
 directly a shared library (".so" file, ".dll" under Windows) that
 contains the OCaml code, the OCaml runtime system and any other static
 C code given to "ocamlc" (".o", ".a", respectively, ".obj", ".lib").
-This use of "-output-complete-obj" is very similar to a normal linking
+This use of "-output-obj" and "-output-complete-obj"
+is very similar to a normal linking
 step, but instead of producing a main program that automatically runs
 the OCaml code, it produces a shared library that can run the OCaml
-code on demand. The three possible behaviors of "-output-complete-obj"
-to produce a C source code ".c", a C object file ".o", a shared library ".so",
+code on demand. The three possible behaviors of "-output-obj"
+and "-output-complete-obj"
+(to produce a C source code ".c", a C object file ".o", a shared library ".so"),
 are selected according to the extension of the resulting file (given
 with "-o").
 

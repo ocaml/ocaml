@@ -444,8 +444,8 @@ Specify the name of the output file produced by the
 default output name is "a.out" under Unix and "camlprog.exe" under
 Windows. If the "-a" option is given, specify the name of the library
 produced.  If the "-pack" option is given, specify the name of the
-packed object file produced.  If the "-output-obj" or "-output-complete-obj" options are given,
-specify the name of the output file produced.
+packed object file produced.  If the "-output-obj" or "-output-complete-obj"
+options are given, specify the name of the output file produced.
 \nat{If the "-shared" option is given, specify the name of plugin
 file produced.}
 \comp{If the "-c" option is given, specify the name of the object
@@ -514,8 +514,8 @@ is embedded in the C code so it is no longer accessible to tools such as
 
 \notop{%
 \item["-output-complete-obj"]
-Same as "-output-obj" options except the object file produced includes the runtime and
-autolink libraries.
+Same as "-output-obj" options except the object file produced includes the
+runtime and autolink libraries.
 }%notop
 
 \nat{%
