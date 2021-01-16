@@ -285,6 +285,11 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
+let debug_info_to_string () =
+  let str = Marshal.to_string (Array.of_list !debug_info) [] in
+  debug_info := [];
+  str
+
 (* Output a list of strings with 0-termination *)
 
 let output_stringlist oc l =
@@ -456,6 +461,11 @@ let output_cds_file outfile =
        Bytesections.write_toc_and_trailer outchan;
     )
 
+let output_debug_file outfile =
+  let oc = open_out_bin outfile in
+  Fun.protect ~finally:(fun () -> close_out_noerr oc)
+    (fun () -> output_string oc (debug_info_to_string ()))
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile with_main =
@@ -503,6 +513,24 @@ let link_bytecode_as_c tolink outfile with_main =
        Symtable.output_primitive_table outchan;
        (* The entry point *)
        if with_main then begin
+         if !Clflags.debug then begin
+           let debug_file_name = (Filename.chop_extension outfile) ^ ".debug" in
+           output_debug_file debug_file_name;
+           Printf.fprintf outchan "\
+\n#define INCBIN_STYLE INCBIN_STYLE_SNAKE\
+\n#include <caml/incbin.h>\
+\n#include <caml/backtrace.h>\
+\nINCBIN(caml_debug,\"%s\");\
+\nvoid read_main_debug_info(struct debug_info *di)\
+\n{\
+\n  caml_read_main_debug_info_from_value(di, (char *)gcaml_debug_data, gcaml_debug_size);\
+\n}" debug_file_name
+         end else
+           output_string outchan "\
+\nvoid read_main_debug_info(struct debug_info *di)\
+\n{\
+\n  return;\
+\n}";
          output_string outchan "\
 \n#ifdef _WIN32\
 \nint wmain(int argc, wchar_t **argv)\
@@ -510,7 +538,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \nint main(int argc, char **argv)\
 \n#endif\
 \n{\
-\n  caml_byte_program_mode = COMPLETE_EXE;\
+\n  caml_read_main_debug_info = &read_main_debug_info;\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
