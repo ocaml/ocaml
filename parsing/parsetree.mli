@@ -391,7 +391,7 @@ and expression_desc =
         (* . *)
   | Pexp_functor of string loc * package_type * expression
         (* fun {M : S} -> E *)
-  | Pexp_functor_apply of expression * Longident.t loc
+  | Pexp_functor_apply of expression * module_expr
         (* E {M} *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)

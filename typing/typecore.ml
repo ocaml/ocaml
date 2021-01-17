@@ -111,6 +111,7 @@ type error =
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
   | Cannot_infer_functor_signature of type_expr
+  | Cannot_infer_functor_path
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
@@ -3814,16 +3815,13 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
 
-  | Pexp_functor_apply (sfunct, lid) ->
+  | Pexp_functor_apply (sfunct, smodl) ->
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
       if !Clflags.principal then begin
         end_def ();
         generalize_structure funct.exp_type
       end;
-      (* This instance generates a new bound identifier that we can erase with
-         a scope escape.
-      *)
       let funct_ty = instance funct.exp_type in
       let id, (p, nl, tl), ty_res =
         match (Ctype.expand_head env funct_ty).desc with
@@ -3832,30 +3830,43 @@ and type_expect_
         | _ ->
             raise (Error(loc, env, Cannot_infer_functor_signature funct_ty))
       in
-      let (modl, tl') =
-        let m =
-          { pmod_desc= Pmod_ident lid
-          ; pmod_loc= loc
-          ; pmod_attributes= []
-        } in
-        !type_package env m p nl
-      in
-      begin try List.iter2 (unify env) tl tl'
+      let (modl, tl') = !type_package env smodl p nl in
+      begin try
+        unify env
+          (newty (Tpackage (p, nl, tl')))
+          (newty (Tpackage (p, nl, tl)))
       with Unify trace ->
-        raise(Error(loc, env, Expr_type_clash(trace, None, None)))
+        raise (Error(smodl.pmod_loc, env, Expr_type_clash(trace, None, None)))
       end;
-      let path =
-        Env.lookup_module_path ~use:true ~loc ~load:true lid.txt env
+      (* NOTE: We extract the module path here rather than creating a local
+         module in the environment and erasing it with a scope escape.
+         This avoids a limitation in aliasing with functor application, where
+           struct
+             module N = F(M)
+             module O = F(N)
+             let x : F(F(M)).t = O.x
+           end
+         will not typecheck when F is opaque. *)
+      let rec get_module_path me =
+        match me.mod_desc with
+        | Tmod_ident (path, _) -> path
+        | Tmod_apply (me1, me2, _) ->
+            let path1 = get_module_path me1 in
+            let path2 = get_module_path me2 in
+            Path.Papply (path1, path2)
+        | Tmod_constraint (me, _, Tmodtype_implicit, _) -> get_module_path me
+        | _ ->
+            raise (Error (me.mod_loc, env, Cannot_infer_functor_path))
       in
-      begin_def ();
+      let path = get_module_path modl in
       let subst = Subst.add_module id path Subst.identity in
       let ty_res = Subst.type_expr subst ty_res in
-      end_def ();
-      check_scope_escape loc env (Ctype.get_current_level ()) ty_res;
-      generalize ty_res;
-      unify_var env (newvar()) ty_res;
+      begin try unify env ty_expected ty_res;
+      with Unify trace ->
+        raise (Error(loc, env, Expr_type_clash(trace, None, None)))
+      end;
       rue {
-        exp_desc = Texp_functor_apply(funct, path, lid, modl);
+        exp_desc = Texp_functor_apply(funct, modl);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_res;
         exp_attributes = sexp.pexp_attributes;
@@ -5679,6 +5690,8 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "The signature for this functor couldn't be inferred from the type@ %a"
         Printtyp.type_expr ty
+  | Cannot_infer_functor_path ->
+      Location.errorf ~loc "This module does not have a canonical path."
   | Unexpected_existential (reason, name, types) ->
       let reason_str =
         match reason with

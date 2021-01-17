@@ -195,7 +195,7 @@ module Exp:
       ?loc:loc -> ?attrs:attrs -> str-> (lid * (lid * core_type) list)
       -> expression -> expression
     val functor_apply:
-      ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
+      ?loc:loc -> ?attrs:attrs -> expression -> module_expr -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op

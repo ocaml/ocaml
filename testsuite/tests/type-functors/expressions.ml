@@ -296,9 +296,9 @@ let no_widen_sig {F : Functor} (f : {M : Monad} -> 'a M.t -> 'b M.t) x =
   f {F} x;;
 
 [%%expect{|
-Line 2, characters 2-7:
+Line 2, characters 5-6:
 2 |   f {F} x;;
-      ^^^^^
+         ^
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a F.t val map : ('a -> 'b) -> 'a t -> 'b t end
@@ -326,11 +326,12 @@ val apply_with_type_bindings : int = 8
 let fail_with_type_bindings = with_type_bindings {Bool};;
 
 [%%expect{|
-Line 1, characters 30-55:
+Line 1, characters 50-54:
 1 | let fail_with_type_bindings = with_type_bindings {Bool};;
-                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type int but an expression was expected of type
-         Bool.t = bool
+                                                      ^^^^
+Error: This expression has type (module Type with type t = Bool.t)
+       but an expression was expected of type (module Type with type t = int)
+       Type Bool.t = bool is not compatible with type int
 |}]
 
 (* Scope escapes *)
@@ -445,9 +446,9 @@ let fail_apply_nested_type_with_sig =
 [%%expect{|
 module List_functor :
   sig type 'a t = 'a List.t val map : ('a -> 'b) -> 'a t -> 'b t end
-Line 4, characters 2-55:
+Line 4, characters 42-54:
 4 |   nested_type_with_sig {Option_with_sig} {List_functor} [1; 2; 3] ((+) 1);;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                              ^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a List.t val map : ('a -> 'b) -> 'a t -> 'b t end
@@ -566,10 +567,9 @@ let fail_unpack_apply2 {F : Functor} =
 Line 3, characters 2-11:
 3 |   bind {F'};;
       ^^^^^^^^^
-Error: This expression has type
-         ('a -> 'b Free_monad(F').t) ->
-         'a Free_monad(F').t -> 'b Free_monad(F').t
-       but an expression was expected of type 'c
+Error: This expression has type 'a but an expression was expected of type
+         ('b -> 'c Free_monad(F').t) ->
+         'b Free_monad(F').t -> 'c Free_monad(F').t
        The type constructor Free_monad(F').t would escape its scope
 |}]
 
@@ -589,4 +589,388 @@ let rec f {T : Type} = g () and g () = f {Int};;
 [%%expect{|
 val f : {T : Type} -> 'a = <fun>
 val g : unit -> 'a = <fun>
+|}]
+
+(* Apply to functor modules *)
+
+module type Createable = sig
+  type 'a t
+
+  val create : 'a -> 'a t
+end;;
+
+[%%expect{|
+module type Createable = sig type 'a t val create : 'a -> 'a t end
+|}]
+
+let create {M : Createable} x = M.create x;;
+
+[%%expect{|
+val create : {M : Createable} -> 'a -> 'a M.t = <fun>
+|}]
+
+module Int_create = struct
+  type _ t = int
+  let create _ = 19
+end;;
+
+module type Int_create = module type of Int_create;;
+
+module Option_create = struct
+  type 'a t = 'a option
+  let create x = Some x
+end;;
+
+module List_create = struct
+  type 'a t = 'a list
+  let create x = [x]
+end;;
+
+module Pair_create (T1 : Createable) (T2 : Createable) = struct
+  type 'a t = 'a T1.t * 'a T2.t
+
+  let create x = (T1.create x, T2.create x)
+end;;
+
+module List_of_create (T : Createable) = struct
+  type 'a t = 'a T.t list
+  let create x = [T.create x]
+end;;
+
+[%%expect{|
+module Int_create : sig type _ t = int val create : 'a -> int end
+module type Int_create = sig type _ t = int val create : 'a -> int end
+module Option_create :
+  sig type 'a t = 'a option val create : 'a -> 'a option end
+module List_create : sig type 'a t = 'a list val create : 'a -> 'a list end
+module Pair_create :
+  functor (T1 : Createable) (T2 : Createable) ->
+    sig
+      type 'a t = 'a T1.t * 'a T2.t
+      val create : 'a -> 'a T1.t * 'a T2.t
+    end
+module List_of_create :
+  functor (T : Createable) ->
+    sig type 'a t = 'a T.t list val create : 'a -> 'a T.t list end
+|}]
+
+let create_apply_functors =
+  create {Pair_create(Pair_create(Int_create)(Option_create))(List_of_create(Option_create))} 15;;
+
+[%%expect{|
+val create_apply_functors :
+  int
+  Pair_create(Pair_create(Int_create)(Option_create))(List_of_create(Option_create)).t =
+  ((19, Some 15), [Some 15])
+|}]
+
+(* Apply to different module kinds. *)
+
+module Opaque_create : Createable = struct
+  type 'a t = 'a option
+  let create x = Some x
+end;;
+
+module Opaque_of_create (T : Createable) : Createable = struct
+  include T
+end;;
+
+module Opaque_of_left_create (T1 : Createable) (T2 : Createable) =
+  Opaque_of_create(T1);;
+
+[%%expect{|
+module Opaque_create : Createable
+module Opaque_of_create : functor (T : Createable) -> Createable
+module Opaque_of_left_create :
+  functor (T1 : Createable) (T2 : Createable) ->
+    sig type 'a t = 'a Opaque_of_create(T1).t val create : 'a -> 'a t end
+|}]
+
+let create_apply_opaque = create {Opaque_create} 15;;
+
+[%%expect{|
+val create_apply_opaque : int Opaque_create.t = <abstr>
+|}]
+
+let create_apply_opaque_functor =
+  create {Pair_create(Opaque_create)(Opaque_create)} 15;;
+
+[%%expect{|
+val create_apply_opaque_functor :
+  int Pair_create(Opaque_create)(Opaque_create).t = (<abstr>, <abstr>)
+|}]
+
+let create_apply_functor_opaque =
+  create {Opaque_of_create(Int_create)} 15;;
+
+[%%expect{|
+val create_apply_functor_opaque : int Opaque_of_create(Int_create).t =
+  <abstr>
+|}]
+
+(* We would like the next several examples to typecheck, but without proper
+   support in the environment for functor aliases we would have confusing and
+   inconsistent behaviour.
+   [create_opaque_apply_left] and [create_opaque_apply_left_inline] below are
+   designed to exercise this inconsistency.
+*)
+
+let create_apply_inline =
+  create
+    {struct
+      type 'a t = 'a option
+      let create x = Some x
+    end}
+    15;;
+
+[%%expect{|
+Lines 3-6, characters 5-7:
+3 | .....struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end.
+Error: This module does not have a canonical path.
+|}]
+
+let create_apply_functor_inline =
+  create
+    {List_of_create(struct
+      type 'a t = 'a option
+      let create x = Some x
+    end)}
+    15;;
+
+[%%expect{|
+Lines 3-6, characters 20-7:
+3 | ....................struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end..
+Error: This module does not have a canonical path.
+|}]
+
+let create_apply_opaque_functor_inline_fail =
+  create
+    {Opaque_of_create(struct
+      type 'a t = 'a option
+      let create x = Some x
+    end)}
+    15;;
+
+[%%expect{|
+Lines 3-6, characters 22-7:
+3 | ......................struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end..
+Error: This module does not have a canonical path.
+|}]
+
+let create_apply_unpacked =
+  create {(val (module Int_create : Int_create))} ();;
+
+[%%expect{|
+Line 2, characters 10-48:
+2 |   create {(val (module Int_create : Int_create))} ();;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This module does not have a canonical path.
+|}]
+
+let create_apply_unpacked_opaque =
+  create {(val (module Opaque_create : Createable))} ();;
+
+[%%expect{|
+Line 2, characters 10-51:
+2 |   create {(val (module Opaque_create : Createable))} ();;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This module does not have a canonical path.
+|}]
+
+let create_opaque {T : Createable} (x : 'a) : 'a Opaque_of_create(T).t =
+  let module M = Opaque_of_create(T) in
+  M.create x;;
+
+[%%expect{|
+val create_opaque : {T : Createable} -> 'a -> 'a Opaque_of_create(T).t =
+  <fun>
+|}]
+
+let create_opaque_apply_functors =
+  create_opaque
+    {Pair_create(Pair_create(Int_create)(Option_create))(List_of_create(Option_create))}
+    15;;
+
+[%%expect{|
+val create_opaque_apply_functors :
+  int
+  Opaque_of_create(Pair_create(Pair_create(Int_create)(Option_create))(List_of_create(Option_create))).t =
+  <abstr>
+|}]
+
+let create_opaque_inline_fail =
+  create_opaque
+    {struct
+      type 'a t = 'a option
+      let create x = Some x
+    end}
+    15;;
+
+[%%expect{|
+Lines 3-6, characters 5-7:
+3 | .....struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end.
+Error: This module does not have a canonical path.
+|}]
+
+let create_opaque_apply_left =
+  create_opaque {Opaque_of_left_create(Opaque_create)(Int_create)} 15;;
+
+[%%expect{|
+val create_opaque_apply_left :
+  int Opaque_of_create(Opaque_of_left_create(Opaque_create)(Int_create)).t =
+  <abstr>
+|}]
+
+(* We would like this to have type
+   [int Opaque_of_create(Opaque_of_create(Opaque_create)).t],
+   but currently functor application erases aliases, and so the identity
+   [Opaque_of_left_create(Opaque_create)(_) = Opaque_create(Opaque_create)]
+   is lost.
+*)
+
+let create_opaque_apply_left_inline =
+  create_opaque
+    {Opaque_of_left_create(Opaque_create)
+      (struct
+        type 'a t = 'a option
+        let create x = Some x
+      end)}
+    15;;
+
+[%%expect{|
+Lines 4-7, characters 7-9:
+4 | .......struct
+5 |         type 'a t = 'a option
+6 |         let create x = Some x
+7 |       end..
+Error: This module does not have a canonical path.
+|}]
+
+let create_opaque_apply_unpacked =
+  create_opaque {(val (module Int_create : Int_create))} ();;
+
+[%%expect{|
+Line 2, characters 17-55:
+2 |   create_opaque {(val (module Int_create : Int_create))} ();;
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This module does not have a canonical path.
+|}]
+
+let create_opaque_apply_unpacked_opaque =
+  create_opaque {(val (module Opaque_create : Createable))} ();;
+
+[%%expect{|
+Line 2, characters 17-58:
+2 |   create_opaque {(val (module Opaque_create : Createable))} ();;
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This module does not have a canonical path.
+|}]
+
+let create_unused {M : Createable} () = ();;
+
+[%%expect{|
+val create_unused : {M : Createable} -> unit -> unit = <fun>
+|}]
+
+let create_unused_apply_opaque = create_unused {Opaque_create} ();;
+
+[%%expect{|
+val create_unused_apply_opaque : unit = ()
+|}]
+
+let create_unused_apply_opaque_functor =
+  create_unused {Pair_create(Opaque_create)(Opaque_create)} ();;
+
+[%%expect{|
+val create_unused_apply_opaque_functor : unit = ()
+|}]
+
+let create_unused_apply_functor_opaque =
+  create_unused {Opaque_of_create(Int_create)} ();;
+
+[%%expect{|
+val create_unused_apply_functor_opaque : unit = ()
+|}]
+
+let create_unused_apply_inline =
+  create_unused
+    {struct
+      type 'a t = 'a option
+      let create x = Some x
+    end}
+    ();;
+
+[%%expect{|
+Lines 3-6, characters 5-7:
+3 | .....struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end.
+Error: This module does not have a canonical path.
+|}]
+
+let create_unused_apply_functor_inline =
+  create_unused
+    {List_of_create(struct
+      type 'a t = 'a option
+      let create x = Some x
+    end)}
+    ();;
+
+[%%expect{|
+Lines 3-6, characters 20-7:
+3 | ....................struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end..
+Error: This module does not have a canonical path.
+|}]
+
+let create_unused_apply_opaque_functor_inline =
+  create_unused
+    {Opaque_of_create(struct
+      type 'a t = 'a option
+      let create x = Some x
+    end)}
+    ();;
+
+[%%expect{|
+Lines 3-6, characters 22-7:
+3 | ......................struct
+4 |       type 'a t = 'a option
+5 |       let create x = Some x
+6 |     end..
+Error: This module does not have a canonical path.
+|}]
+
+let create_unused_apply_unpacked =
+  create_unused {(val (module Int_create : Int_create))} ();;
+
+[%%expect{|
+Line 2, characters 17-55:
+2 |   create_unused {(val (module Int_create : Int_create))} ();;
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This module does not have a canonical path.
+|}]
+
+let create_unused_apply_unpacked_opaque =
+  create_unused {(val (module Opaque_create : Createable))} ();;
+
+[%%expect{|
+Line 2, characters 17-58:
+2 |   create_unused {(val (module Opaque_create : Createable))} ();;
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This module does not have a canonical path.
 |}]

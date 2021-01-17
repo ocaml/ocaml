@@ -272,7 +272,7 @@ let rec add_expr bv exp =
   | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
   | Pexp_functor (_, pack, e) -> add_package_type bv pack; add_expr bv e
-  | Pexp_functor_apply (e, li) -> add_expr bv e; add_module_path bv li
+  | Pexp_functor_apply (e, me) -> add_expr bv e; add_module_expr bv me
 
 and add_cases bv cases =
   List.iter (add_case bv) cases

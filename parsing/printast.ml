@@ -408,9 +408,10 @@ and expression i ppf x =
       line i ppf "Pexp_functor %a %a\n" fmt_string_loc s fmt_longident_loc li;
       list i package_with ppf l;
       expression i ppf e
-  | Pexp_functor_apply (e, li) ->
-      line i ppf "Pexp_functor_apply %a\n" fmt_longident_loc li;
-      expression i ppf e
+  | Pexp_functor_apply (e, me) ->
+      line i ppf "Pexp_functor_apply\n";
+      expression i ppf e;
+      module_expr i ppf me
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

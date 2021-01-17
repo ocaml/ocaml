@@ -450,9 +450,10 @@ and expression i ppf x =
       line i ppf "Texp_functor %a %a\n" fmt_ident s fmt_path p;
       list i package_with ppf l;
       expression i ppf e
-  | Texp_functor_apply (e, p, _, _) ->
-      line i ppf "Texp_functor_apply %a\n" fmt_path p;
-      expression i ppf e
+  | Texp_functor_apply (e, me) ->
+      line i ppf "Texp_functor_apply\n";
+      expression i ppf e;
+      module_expr i ppf me
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location

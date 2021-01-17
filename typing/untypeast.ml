@@ -513,8 +513,8 @@ let expression sub exp =
         Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
     | Texp_functor (_, name, pack, e) ->
         Pexp_functor (name, sub.package_type sub pack, sub.expr sub e)
-    | Texp_functor_apply (e, _, li, _mexpr) ->
-        Pexp_functor_apply (sub.expr sub e, li)
+    | Texp_functor_apply (e, mexpr) ->
+        Pexp_functor_apply (sub.expr sub e, sub.module_expr sub mexpr)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

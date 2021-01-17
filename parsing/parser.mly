@@ -627,7 +627,7 @@ let mk_directive ~loc name arg =
 
 type apply_kinds =
   | Apply_label of (arg_label * expression)
-  | Apply_module of Longident.t Location.loc
+  | Apply_module of module_expr
 
 let accumulate_apply_kinds e loc labeled_exprs =
   let e, labeled_exprs, _ =
@@ -1333,6 +1333,39 @@ module_expr:
         { Pmod_apply(me1, me2) }
     | (* Application to unit is sugar for application to an empty structure. *)
       me1 = module_expr LPAREN RPAREN
+        { (* TODO review mkmod location *)
+          Pmod_apply(me1, mkmod ~loc:$sloc (Pmod_structure [])) }
+    | (* An extension. *)
+      ex = extension
+        { Pmod_extension ex }
+    )
+    { $1 }
+;
+
+module_expr_without_parens:
+  | STRUCT attrs = attributes s = structure END
+      { mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
+  | STRUCT attributes structure error
+      { unclosed "struct" $loc($1) "end" $loc($4) }
+  | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
+      { wrap_mod_attrs ~loc:$sloc attrs (
+          List.fold_left (fun acc (startpos, arg) ->
+            mkmod ~loc:(startpos, $endpos) (Pmod_functor (arg, acc))
+          ) me args
+        ) }
+  | me = module_expr_without_parens attr = attribute
+      { Mod.attr me attr }
+  | LPAREN VAL attrs = attributes e = expr_colon_package_type RPAREN
+      { mkmod ~loc:$sloc ~attrs (Pmod_unpack e) }
+  | mkmod(
+      (* A module identifier. *)
+      x = mkrhs(mod_longident)
+        { Pmod_ident x }
+    | (* In a functor application, the actual argument must be parenthesized. *)
+      me1 = module_expr_without_parens me2 = paren_module_expr
+        { Pmod_apply(me1, me2) }
+    | (* Application to unit is sugar for application to an empty structure. *)
+      me1 = module_expr_without_parens LPAREN RPAREN
         { (* TODO review mkmod location *)
           Pmod_apply(me1, mkmod ~loc:$sloc (Pmod_structure [])) }
     | (* An extension. *)
@@ -2487,8 +2520,8 @@ labeled_simple_expr:
 apply_kinds:
     labeled_simple_expr
       { ($endpos, Apply_label $1) }
-  | LBRACE mkrhs(mod_longident) RBRACE
-      { ($endpos, Apply_module $2) }
+  | LBRACE module_expr_without_parens RBRACE
+      { ($endpos, Apply_module $2 ) }
 ;
 %inline lident_list:
   xs = mkrhs(LIDENT)+

@@ -378,8 +378,8 @@ let expr sub x =
         Texp_open (sub.open_declaration sub od, sub.expr sub e)
     | Texp_functor (id, name, pack, e) ->
         Texp_functor (id, name, sub.package_type sub pack, sub.expr sub e)
-    | Texp_functor_apply (e, p, li, mexpr) ->
-        Texp_functor_apply (sub.expr sub e, p, li, sub.module_expr sub mexpr)
+    | Texp_functor_apply (e, mexpr) ->
+        Texp_functor_apply (sub.expr sub e, sub.module_expr sub mexpr)
   in
   {x with exp_extra; exp_desc; exp_env}
 

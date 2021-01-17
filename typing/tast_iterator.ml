@@ -264,7 +264,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_functor (_, _, pack, e) ->
       sub.package_type sub pack;
       sub.expr sub e
-  | Texp_functor_apply (e, _, _, mexpr) ->
+  | Texp_functor_apply (e, mexpr) ->
       sub.expr sub e;
       sub.module_expr sub mexpr
 

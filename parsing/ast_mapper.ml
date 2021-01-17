@@ -463,8 +463,8 @@ module E = struct
         functor_ ~loc ~attrs (map_loc sub s)
           (map_loc sub li, List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
           (sub.expr sub e)
-    | Pexp_functor_apply (e, li) ->
-        functor_apply ~loc ~attrs (sub.expr sub e) (map_loc sub li)
+    | Pexp_functor_apply (e, me) ->
+        functor_apply ~loc ~attrs (sub.expr sub e) (sub.module_expr sub me)
 
   let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     let open Exp in

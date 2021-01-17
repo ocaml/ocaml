@@ -822,8 +822,8 @@ let rec expression : Typedtree.expression -> term_judg =
       open_declaration od >> expression e
     | Texp_functor (id, _name, _pack, e) ->
       remove_id id (expression e) << Delay
-    | Texp_functor_apply (e, pth, _li, _mexpr) ->
-      join [expression e; path pth] << Dereference
+    | Texp_functor_apply (e, mexpr) ->
+      join [expression e; modexp mexpr] << Dereference
 
 and binding_op : Typedtree.binding_op -> term_judg =
   fun bop ->
