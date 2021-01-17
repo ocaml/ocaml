@@ -167,8 +167,9 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Cannot_infer_functor_signature of type_expr
+  | Cannot_infer_functor_signature
   | Cannot_infer_functor_path
+  | Not_a_functor of type_expr
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index

@@ -376,8 +376,12 @@ let expr sub x =
         e
     | Texp_open (od, e) ->
         Texp_open (sub.open_declaration sub od, sub.expr sub e)
-    | Texp_functor (id, name, pack, e) ->
-        Texp_functor (id, name, sub.package_type sub pack, sub.expr sub e)
+    | Texp_functor (id, name, pack, pack_opt, e) ->
+        Texp_functor ( id
+                     , name
+                     , sub.package_type sub pack
+                     , pack_opt
+                     , sub.expr sub e )
     | Texp_functor_apply (e, mexpr) ->
         Texp_functor_apply (sub.expr sub e, sub.module_expr sub mexpr)
   in

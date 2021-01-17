@@ -820,7 +820,7 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_open (od, e) ->
       open_declaration od >> expression e
-    | Texp_functor (id, _name, _pack, e) ->
+    | Texp_functor (id, _name, _pack, _pack_opt, e) ->
       remove_id id (expression e) << Delay
     | Texp_functor_apply (e, mexpr) ->
       join [expression e; modexp mexpr] << Dereference

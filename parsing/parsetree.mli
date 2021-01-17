@@ -389,7 +389,7 @@ and expression_desc =
         (* [%id] *)
   | Pexp_unreachable
         (* . *)
-  | Pexp_functor of string loc * package_type * expression
+  | Pexp_functor of string loc * package_type option * expression
         (* fun {M : S} -> E *)
   | Pexp_functor_apply of expression * module_expr
         (* E {M} *)

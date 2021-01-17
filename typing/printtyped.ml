@@ -446,7 +446,7 @@ and expression i ppf x =
       module_expr i ppf o.open_expr;
       attributes i ppf o.open_attributes;
       expression i ppf e;
-  | Texp_functor (s, _, {pack_path= p; pack_fields= l; _}, e) ->
+  | Texp_functor (s, _, {pack_path= p; pack_fields= l; _}, _, e) ->
       line i ppf "Texp_functor %a %a\n" fmt_ident s fmt_path p;
       list i package_with ppf l;
       expression i ppf e

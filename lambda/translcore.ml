@@ -611,7 +611,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Llet(pure, Pgenval, oid,
                !transl_module ~scopes Tcoerce_none None od.open_expr, body)
       end
-  | Texp_functor (id, _name, _pack, body) ->
+  | Texp_functor (id, _name, _pack, _pack_opt, body) ->
       let name = Ident.create_local "*functor*" in
       let kind = Curried in
       let params = [name, Pgenval] in

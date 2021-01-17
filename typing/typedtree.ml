@@ -147,7 +147,9 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_open of open_declaration * expression
-  | Texp_functor of Ident.t * string loc * package_type * expression
+  | Texp_functor of
+      Ident.t * string loc * package_type * Parsetree.package_type option *
+        expression
   | Texp_functor_apply of expression * module_expr
 
 and meth =

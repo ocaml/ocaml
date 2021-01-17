@@ -404,9 +404,12 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
-  | Pexp_functor (s, (li, l), e) ->
-      line i ppf "Pexp_functor %a %a\n" fmt_string_loc s fmt_longident_loc li;
-      list i package_with ppf l;
+  | Pexp_functor (s, pack_opt, e) ->
+      line i ppf "Pexp_functor %a\n" fmt_string_loc s;
+      option i (fun i ppf (li, l) ->
+          line i ppf "%a\n" fmt_longident_loc li;
+          list i package_with ppf l)
+        ppf pack_opt;
       expression i ppf e
   | Pexp_functor_apply (e, me) ->
       line i ppf "Pexp_functor_apply\n";

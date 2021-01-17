@@ -192,7 +192,7 @@ module Exp:
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
     val functor_:
-      ?loc:loc -> ?attrs:attrs -> str-> (lid * (lid * core_type) list)
+      ?loc:loc -> ?attrs:attrs -> str-> (lid * (lid * core_type) list) option
       -> expression -> expression
     val functor_apply:
       ?loc:loc -> ?attrs:attrs -> expression -> module_expr -> expression

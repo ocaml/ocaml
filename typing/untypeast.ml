@@ -511,8 +511,8 @@ let expression sub exp =
                              ])
     | Texp_open (od, exp) ->
         Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
-    | Texp_functor (_, name, pack, e) ->
-        Pexp_functor (name, sub.package_type sub pack, sub.expr sub e)
+    | Texp_functor (_, name, _, pack_opt, e) ->
+        Pexp_functor (name, pack_opt, sub.expr sub e)
     | Texp_functor_apply (e, mexpr) ->
         Pexp_functor_apply (sub.expr sub e, sub.module_expr sub mexpr)
   in

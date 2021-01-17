@@ -974,3 +974,112 @@ Line 2, characters 17-58:
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This module does not have a canonical path.
 |}]
+
+(* Inferring functor type. *)
+
+let infer_arg_type : {T : Type} -> T.t -> T.t = fun {M} x -> x;;
+
+[%%expect{|
+val infer_arg_type : {T : Type} -> T.t -> T.t = <fun>
+|}]
+
+let infer_arg_type_mismatch_fail : {T1 : Type} -> {T2 : Type} -> T1.t -> T2.t =
+  fun {T1} {T2} x -> x;;
+
+[%%expect{|
+Line 2, characters 21-22:
+2 |   fun {T1} {T2} x -> x;;
+                         ^
+Error: This expression has type T1.t but an expression was expected of type
+         T2.t
+|}]
+
+let infer_arg_type_ambiguous_fail : _ = fun {T1} x -> x;;
+
+[%%expect{|
+Line 1, characters 40-55:
+1 | let infer_arg_type_ambiguous_fail : _ = fun {T1} x -> x;;
+                                            ^^^^^^^^^^^^^^^
+Error: The signature for this functor couldn't be inferred.
+|}]
+
+let infer_arg_type_ambiguous_nested_fail : {T1 : Type} -> _ =
+  fun {T1} {T2} x -> x;;
+
+[%%expect{|
+Line 2, characters 11-22:
+2 |   fun {T1} {T2} x -> x;;
+               ^^^^^^^^^^^
+Error: The signature for this functor couldn't be inferred.
+|}]
+
+let incompatible_type_sig : int * bool = fun {T : Type} x -> x;;
+
+[%%expect{|
+Line 1, characters 41-62:
+1 | let incompatible_type_sig : int * bool = fun {T : Type} x -> x;;
+                                             ^^^^^^^^^^^^^^^^^^^^^
+Error: This expression is functor, but the expected type is int * bool
+|}]
+
+let incompatible_type_nosig : int * bool = fun {T} x -> x;;
+
+[%%expect{|
+Line 1, characters 43-57:
+1 | let incompatible_type_nosig : int * bool = fun {T} x -> x;;
+                                               ^^^^^^^^^^^^^^
+Error: This expression is functor, but the expected type is int * bool
+|}]
+
+let infer_arg_type_apply (f : ({T : Type} -> T.t -> T.t) -> int -> int) =
+  f (fun {T} x -> x) 0;;
+
+[%%expect{|
+val infer_arg_type_apply : (({T : Type} -> T.t -> T.t) -> int -> int) -> int =
+  <fun>
+|}]
+
+let infer_arg_type_with_constraint
+  : {T : Type with type t = bool} -> T.t -> int =
+  fun {T} x -> if x then 1 else 0;;
+
+[%%expect{|
+val infer_arg_type_with_constraint :
+  {T : Type with type t = bool} -> T.t -> int = <fun>
+|}]
+
+let infer_arg_type_with_constraint_fail
+  : {T : Type with type t = int} -> T.t -> int =
+  fun {T} x -> if x then 1 else 0;;
+
+[%%expect{|
+Line 3, characters 18-19:
+3 |   fun {T} x -> if x then 1 else 0;;
+                      ^
+Error: This expression has type T.t = int
+       but an expression was expected of type bool
+       because it is in the condition of an if-statement
+|}]
+
+let escape_check_with_inferred_arg : {T : Type} -> 'arg -> 'ret =
+  fun {T} (x : T.t) -> x
+
+[%%expect{|
+Line 2, characters 10-19:
+2 |   fun {T} (x : T.t) -> x
+              ^^^^^^^^^
+Error: This pattern matches values of type T.t
+       but a pattern was expected which matches values of type 'arg
+       The type constructor T.t would escape its scope
+|}]
+
+let mismatched_annotation : {T : Type} -> T.t -> T.t =
+  fun {F : Foldable} (x : _ F.t) -> x;;
+
+[%%expect{|
+Line 2, characters 2-37:
+2 |   fun {F : Foldable} (x : _ F.t) -> x;;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type {T : Foldable} -> 'a
+       but an expression was expected of type {T : Type} -> 'b
+|}]

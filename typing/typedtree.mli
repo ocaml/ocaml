@@ -279,7 +279,9 @@ and expression_desc =
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_open of open_declaration * expression
         (** let open[!] M in e *)
-  | Texp_functor of Ident.t * string loc * package_type * expression
+  | Texp_functor of
+      Ident.t * string loc * package_type * Parsetree.package_type option *
+        expression
         (** fun {M : S} -> E *)
   | Texp_functor_apply of expression * module_expr
         (** E {M} *)

@@ -110,8 +110,9 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Cannot_infer_functor_signature of type_expr
+  | Cannot_infer_functor_signature
   | Cannot_infer_functor_path
+  | Not_a_functor of type_expr
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
@@ -3759,28 +3760,89 @@ and type_expect_
             exp_env = env;
             exp_attributes = sexp.pexp_attributes; }
 
-  | Pexp_functor (name, (p, l), sbody) ->
-      let l, mty = Typetexp.create_package_mty loc env (p, l) in
-      let z = Typetexp.narrow () in
-      let mty = !Typetexp.transl_modtype env mty in
-      Typetexp.widen z;
-      let pack, pack_ty =
-        let ptys =
-          List.map
-            (fun (s, pty) -> (s, Typetexp.transl_simple_type env false pty))
-            l
-        in
-        let path = !Typetexp.transl_modtype_longident p.loc env p.txt in
-        let ty =
-          ( path
-          , List.map (fun (s, _pty) -> s.txt) l
-          , List.map (fun (_, cty) -> cty.ctyp_type) ptys )
-        in
-        ( { pack_path = path
-          ; pack_type = mty.mty_type
-          ; pack_fields = ptys
-          ; pack_txt = p }
-        , ty )
+  | Pexp_functor (name, pack_opt, sbody) ->
+      let pack, pack_ty, expected_res =
+        match pack_opt with
+        | Some (p, l) ->
+            let l, mty = Typetexp.create_package_mty loc env (p, l) in
+            let z = Typetexp.narrow () in
+            let mty = !Typetexp.transl_modtype env mty in
+            Typetexp.widen z;
+            let ptys =
+              List.map
+                (fun (s, pty) ->
+                  (s, Typetexp.transl_simple_type env false pty))
+                l
+            in
+            let path = !Typetexp.transl_modtype_longident p.loc env p.txt in
+            let nl = List.map (fun (s, _pty) -> s.txt) l in
+            let tl = List.map (fun (_, cty) -> cty.ctyp_type) ptys in
+            let expected_res =
+              match Ctype.expand_head env (instance ty_expected) with
+              | {desc = Tfunctor (id, pack, res)} ->
+                  if !Clflags.principal &&
+                    (Ctype.expand_head env ty_expected).level
+                      < Btype.generic_level
+                  then
+                    Location.prerr_warning loc
+                      (Warnings.Not_principal "this module packing");
+                  (* Check that the functor arguments are consistent before we
+                     substitute, otherwise we may have dangling or invalid
+                     paths. *)
+                  begin try
+                    unify env
+                      (newty (Tfunctor (id, (path, nl, tl), newvar())))
+                      (newty (Tfunctor (id, pack, newvar())))
+                  with Unify trace ->
+                    raise (Error(loc, env, Expr_type_clash(trace, None, None)))
+                  end;
+                  Some (id, res)
+              | {desc = Tvar _} ->
+                  None
+              | _ ->
+                  raise (Error (loc, env, Not_a_functor ty_expected))
+            in
+            ( { pack_path = path
+              ; pack_type = mty.mty_type
+              ; pack_fields = ptys
+              ; pack_txt = p }
+            , (path, nl, tl)
+            , expected_res )
+        | None ->
+            let (id, ((p, nl, tl) as pack_ty), ty_res) =
+              match Ctype.expand_head env (instance ty_expected) with
+              | {desc = Tfunctor (id, pack, res)} ->
+                  if !Clflags.principal &&
+                    (Ctype.expand_head env ty_expected).level
+                      < Btype.generic_level
+                  then
+                    Location.prerr_warning loc
+                      (Warnings.Not_principal "this module packing");
+                  (id, pack, res)
+              | {desc = Tvar _} ->
+                  raise (Error (loc, env, Cannot_infer_functor_signature))
+              | _ ->
+                  raise (Error (loc, env, Not_a_functor ty_expected))
+            in
+            let mty = !Ctype.mty_of_package' env pack_ty in
+            let loc_ghost = {loc with loc_ghost= true} in
+            let ptys =
+              List.map2
+                (fun s ty ->
+                  ( mknoloc s
+                  , { ctyp_desc = Ttyp_any (* Dummy *)
+                    ; ctyp_type = ty
+                    ; ctyp_env = env
+                    ; ctyp_loc = loc_ghost
+                    ; ctyp_attributes = [] } ))
+                nl tl
+            in
+            ( { pack_path = p
+              ; pack_type = mty
+              ; pack_fields = ptys
+              ; pack_txt = mkloc (Untypeast.lident_of_path p) loc_ghost }
+            , pack_ty
+            , Some (id, ty_res) )
       in
       (* Add the package constraints to the module type.
          This allows types such as
@@ -3789,14 +3851,36 @@ and type_expect_
       *)
       let mty_type =
         let (_, nl, tl) = pack_ty in
-        !Typetexp.package_constraints env loc mty.mty_type nl tl
+        !Typetexp.package_constraints env loc pack.pack_type nl tl
       in
       begin_def();
       let scoped_ident =
         Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
       in
       let new_env = Env.add_module scoped_ident Mp_present mty_type env in
-      let body = type_expect new_env sbody (mk_expected (newvar ())) in
+      let expected_res =
+        match expected_res with
+        | Some (id, res_ty) ->
+            let separate =
+              !Clflags.principal || Env.has_local_constraints env
+            in
+            if separate then
+              begin_def();
+            let res_ty' =
+              let subst =
+                Subst.add_module id (Path.Pident scoped_ident) Subst.identity
+              in
+              Subst.type_expr subst res_ty
+            in
+            unify_var env (newvar()) res_ty';
+            if separate then begin
+              end_def ();
+              generalize_structure res_ty'
+            end;
+            res_ty'
+        | None -> newvar()
+      in
+      let body = type_expect new_env sbody (mk_expected expected_res) in
       end_def();
       let ident = Ident.create_unscoped name.txt in
       (* Substitute [scoped_ident] for [ident]. *)
@@ -3809,7 +3893,7 @@ and type_expect_
       unify_var env (newvar()) ty;
       (* Use [scoped_ident] in the AST, for consistency with nodes below. *)
       rue {
-        exp_desc = Texp_functor(scoped_ident, name, pack, body);
+        exp_desc = Texp_functor(scoped_ident, name, pack, pack_opt, body);
         exp_loc = loc; exp_extra = [];
         exp_type = ty;
         exp_attributes = sexp.pexp_attributes;
@@ -3827,8 +3911,10 @@ and type_expect_
         match (Ctype.expand_head env funct_ty).desc with
         | Tfunctor (id, pack, ty) ->
             id, pack, ty
+        | Tvar _ ->
+            raise (Error (loc, env, Cannot_infer_functor_signature))
         | _ ->
-            raise (Error(loc, env, Cannot_infer_functor_signature funct_ty))
+            raise (Error (loc, env, Not_a_functor funct_ty))
       in
       let (modl, tl') = !type_package env smodl p nl in
       begin try
@@ -5686,12 +5772,15 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This expression is packed module, but the expected type is@ %a"
         Printtyp.type_expr ty
-  | Cannot_infer_functor_signature ty ->
+  | Cannot_infer_functor_signature ->
       Location.errorf ~loc
-        "The signature for this functor couldn't be inferred from the type@ %a"
-        Printtyp.type_expr ty
+        "The signature for this functor couldn't be inferred."
   | Cannot_infer_functor_path ->
       Location.errorf ~loc "This module does not have a canonical path."
+  | Not_a_functor ty ->
+      Location.errorf ~loc
+        "This expression is functor, but the expected type is@ %a"
+        Printtyp.type_expr ty
   | Unexpected_existential (reason, name, types) ->
       let reason_str =
         match reason with
