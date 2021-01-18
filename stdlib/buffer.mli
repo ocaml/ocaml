@@ -21,10 +21,10 @@
    concatenated pairwise). For example:
 
 {[
-            let concat_strings ss =
-              let b = Buffer.create 16 in
-                List.iter (Buffer.add_string b) ss;
-                Buffer.contents b
+     let concat_strings ss =
+       let b = Buffer.create 16 in
+         List.iter (Buffer.add_string b) ss;
+         Buffer.contents b
 
 ]}
 

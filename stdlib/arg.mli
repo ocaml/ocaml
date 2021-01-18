@@ -19,21 +19,21 @@
    arguments from the command line to the program. For example:
 
 {[
-        let usage_msg = "append [-verbose] <file1> [<file2>] ... -o <output>"
-        let verbose = ref false
-        let input_files = ref []
-        let output_file = ref ""
+     let usage_msg = "append [-verbose] <file1> [<file2>] ... -o <output>"
+     let verbose = ref false
+     let input_files = ref []
+     let output_file = ref ""
 
-        let anon_fun filename =
-          input_files := filename::!input_files
+     let anon_fun filename =
+       input_files := filename::!input_files
 
-        let speclist =
-          [("-verbose", Arg.Set verbose, "Output debug information");
-           ("-o", Arg.Set_string output_file, "Set output file name")]
+     let speclist =
+       [("-verbose", Arg.Set verbose, "Output debug information");
+        ("-o", Arg.Set_string output_file, "Set output file name")]
 
-        let () =
-          Arg.parse speclist anon_fun usage_msg;
-          (* Main functionality here *)
+     let () =
+       Arg.parse speclist anon_fun usage_msg;
+       (* Main functionality here *)
 ]}
 
    Syntax of command lines:
