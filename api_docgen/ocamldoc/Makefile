@@ -62,10 +62,12 @@ man/Stdlib.3o: $(ALL_COMPILED_DOC)
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
+HTML_OPTIONS= -charset="utf8" -colorize-code
+
 html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc)
 	$(MKDIR) -p html/libref
 	$(OCAMLDOC_RUN) -html -d html/libref \
-	-charset="utf8" \
+	$(HTML_OPTIONS) \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_LIBREF:%=build/%.odoc))
 
@@ -73,7 +75,7 @@ html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc)
 	$(MKDIR) -p html/compilerlibref
 	$(OCAMLDOC_RUN) -html -d html/compilerlibref \
 	-nostdlib -hide Stdlib -t "OCaml compiler library" \
-	-charset="utf8" \
+	$(HTML_OPTIONS) \
 	-intro $(DOCGEN)/Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))
 
