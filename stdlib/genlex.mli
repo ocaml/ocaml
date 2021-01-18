@@ -23,7 +23,7 @@
 
 
    Example: a lexer suitable for a desk calculator is obtained by
-   {[     let lexer = make_lexer ["+";"-";"*";"/";"let";"="; "("; ")"]  ]}
+   {[     let lexer = make_lexer ["+"; "-"; "*"; "/"; "let"; "="; "("; ")"]]}
 
    The associated parser would be a function from [token stream]
    to, for instance, [int], and would have rules such as:
@@ -35,7 +35,7 @@
              | [< 'Int n >] -> n
              | [< 'Kwd "("; n = parse_expr; 'Kwd ")" >] -> n
            and parse_remainder n1 = parser
-             | [< 'Kwd "+"; n2 = parse_expr >] -> n1+n2
+             | [< 'Kwd "+"; n2 = parse_expr >] -> n1 + n2
              | [< >] -> n1
    ]}
 
