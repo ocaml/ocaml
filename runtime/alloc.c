@@ -282,7 +282,7 @@ CAMLexport int caml_convert_flag_list(value list, const int *flags)
   res = 0;
   while (list != Val_int(0)) {
     res |= flags[Int_field(list, 0)];
-    list = Field_imm(list, 1);
+    list = Field(list, 1);
   }
   return res;
 }

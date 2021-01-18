@@ -532,12 +532,12 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_GET_ENVIRONMENT:
       i = caml_getword(dbg_in);
-      putval(dbg_out, Field_imm(Env(frame), i));
+      putval(dbg_out, Field(Env(frame), i));
       caml_flush(dbg_out);
       break;
     case REQ_GET_GLOBAL:
       i = caml_getword(dbg_in);
-      putval(dbg_out, Field_imm(caml_read_root(caml_global_data), i));
+      putval(dbg_out, Field(caml_read_root(caml_global_data), i));
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
