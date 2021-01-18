@@ -214,6 +214,12 @@ EOF
     $MAKE -C ocamldoc html_doc pdf_doc texi_doc
   fi
   $MAKE install
+  if command -v hevea &>/dev/null ; then
+    echo Ensuring that the manual compiles
+    # These steps rely on the compiler being installed and in PATH
+    $MAKE -C manual/manual/html_processing duniverse
+    $MAKE -C manual web
+  fi
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
@@ -230,6 +236,7 @@ EOF
   $MAKE -C manual clean
   # check that the `distclean` target definitely cleans the tree
   $MAKE distclean
+  $MAKE -C manual distclean
   # Check the working tree is clean
   test -z "$(git status --porcelain)"
   # Check that there are no ignored files
