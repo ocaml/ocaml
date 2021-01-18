@@ -546,7 +546,9 @@ installoptopt:
 	if test -f ocamlnat$(EXE) ; then \
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
 	  $(INSTALL_DATA) \
-	     $(TOPLEVELSTART:.cmo=.cmx) $(TOPLEVELSTART:.cmo=.$(O)) \
+	     toplevel/*.cmx \
+	     toplevel/native/*.cmx \
+	     $(TOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
 	cd "$(INSTALL_COMPLIBDIR)" && \
