@@ -290,7 +290,7 @@ CAMLprim value caml_raw_backtrace_slot(value bt, value index)
   if (i >= Wosize_val(bt))
     caml_invalid_argument("Printexc.get_raw_backtrace_slot: "
                           "index out of bounds");
-  dbg = caml_debuginfo_extract(Backtrace_slot_val(Field_imm(bt, i)));
+  dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
   return Val_debuginfo(dbg);
 }
 

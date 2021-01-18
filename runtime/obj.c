@@ -224,15 +224,15 @@ CAMLprim value caml_lazy_make_forward (value v)
 
 CAMLprim value caml_get_public_method (value obj, value tag)
 {
-  value meths = Field_imm(obj, 0);
-  int li = 3, hi = Field_imm(meths,0), mi;
+  value meths = Field(obj, 0);
+  int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field_imm(meths,mi)) hi = mi-2;
+    if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
   /* return 0 if tag is not there */
-  return (tag == Field_imm(meths,li) ? Field_imm (meths, li-1) : 0);
+  return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
 
 /* Allocate OO ids in chunks, to avoid contention */

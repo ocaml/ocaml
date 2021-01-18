@@ -399,28 +399,28 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access in heap-allocated environment */
 
     Instruct(ENVACC1):
-      accu = Field_imm(env, 1); Next;
+      accu = Field(env, 1); Next;
     Instruct(ENVACC2):
-      accu = Field_imm(env, 2); Next;
+      accu = Field(env, 2); Next;
     Instruct(ENVACC3):
-      accu = Field_imm(env, 3); Next;
+      accu = Field(env, 3); Next;
     Instruct(ENVACC4):
-      accu = Field_imm(env, 4); Next;
+      accu = Field(env, 4); Next;
 
     Instruct(PUSHENVACC1):
-      *--sp = accu; accu = Field_imm(env, 1); Next;
+      *--sp = accu; accu = Field(env, 1); Next;
     Instruct(PUSHENVACC2):
-      *--sp = accu; accu = Field_imm(env, 2); Next;
+      *--sp = accu; accu = Field(env, 2); Next;
     Instruct(PUSHENVACC3):
-      *--sp = accu; accu = Field_imm(env, 3); Next;
+      *--sp = accu; accu = Field(env, 3); Next;
     Instruct(PUSHENVACC4):
-      *--sp = accu; accu = Field_imm(env, 4); Next;
+      *--sp = accu; accu = Field(env, 4); Next;
 
     Instruct(PUSHENVACC):
       *--sp = accu;
       /* Fallthrough */
     Instruct(ENVACC):
-      accu = Field_imm(env, *pc++);
+      accu = Field(env, *pc++);
       Next;
 
 /* Function application */
@@ -577,8 +577,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int num_args = Wosize_val(env) - 2;
       int i;
       sp -= num_args;
-      for (i = 0; i < num_args; i++) sp[i] = Field_imm(env, i + 2);
-      env = Field_imm(env, 1);
+      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 2);
+      env = Field(env, 1);
       extra_args += num_args;
       Next;
     }
@@ -691,7 +691,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBAL):
-      accu = Field_imm(caml_read_root(caml_global_data), *pc);
+      accu = Field(caml_read_root(caml_global_data), *pc);
       pc++;
       Next;
 
@@ -699,7 +699,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBALFIELD): {
-      accu = Field_imm(caml_read_root(caml_global_data), *pc);
+      accu = Field(caml_read_root(caml_global_data), *pc);
       pc++;
       Accu_field(*pc);
       pc++;
@@ -802,15 +802,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access to components of blocks */
 
     Instruct(GETFIELD0):
-      accu = Field_imm(accu, 0); Next;
+      accu = Field(accu, 0); Next;
     Instruct(GETFIELD1):
-      accu = Field_imm(accu, 1); Next;
+      accu = Field(accu, 1); Next;
     Instruct(GETFIELD2):
-      accu = Field_imm(accu, 2); Next;
+      accu = Field(accu, 2); Next;
     Instruct(GETFIELD3):
-      accu = Field_imm(accu, 3); Next;
+      accu = Field(accu, 3); Next;
     Instruct(GETFIELD):
-      accu = Field_imm(accu, *pc); pc++; Next;
+      accu = Field(accu, *pc); pc++; Next;
     Instruct(GETMUTABLEFIELD0):
       Accu_field(0); Next;
     Instruct(GETMUTABLEFIELD1):
@@ -1189,14 +1189,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
          caml_cache_public_method2 in obj.c */
 
     Instruct(GETMETHOD):
-      accu = Field_imm (Field_imm(sp[0], 0), Int_val(accu));
+      accu = Field (Field(sp[0], 0), Int_val(accu));
       Next;
 
 #define CAML_METHOD_CACHE
 #ifdef CAML_METHOD_CACHE
     Instruct(GETPUBMET): {
       /* accu == object, pc[0] == tag, pc[1] == cache */
-      value meths = Field_imm (accu, 0);
+      value meths = Field (accu, 0);
       value ofs;
 #ifdef CAML_TEST_CACHE
       static int calls = 0, hits = 0;
@@ -1208,7 +1208,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
       *--sp = accu;
       accu = Val_int(*pc++);
-      ofs = *pc & Field_imm(meths,1);
+      ofs = *pc & Field(meths,1);
       if (*(value*)(((char*)(Op_val(meths)+3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
@@ -1217,14 +1217,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       }
       else
       {
-        int li = 3, hi = Field_imm(meths,0), mi;
+        int li = 3, hi = Field(meths,0), mi;
         while (li < hi) {
           mi = ((li+hi) >> 1) | 1;
-          if (accu < Field_imm(meths,mi)) hi = mi-2;
+          if (accu < Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
         *pc = (li-3)*sizeof(value);
-        accu = Field_imm (meths, li-1);
+        accu = Field (meths, li-1);
       }
       pc++;
       Next;
@@ -1238,14 +1238,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
     Instruct(GETDYNMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
-      value meths = Field_imm (sp[0], 0);
-      int li = 3, hi = Field_imm (meths,0), mi;
+      value meths = Field (sp[0], 0);
+      int li = 3, hi = Field (meths,0), mi;
       while (li < hi) {
         mi = ((li+hi) >> 1) | 1;
-        if (accu < Field_imm (meths,mi)) hi = mi-2;
+        if (accu < Field (meths,mi)) hi = mi-2;
         else li = mi;
       }
-      accu = Field_imm (meths, li-1);
+      accu = Field (meths, li-1);
       Next;
     }
 
@@ -1289,7 +1289,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 do_resume: {
       struct stack_info* stk = Ptr_val(accu);
       if (stk == NULL) {
-         accu = Field_imm(caml_read_root(caml_global_data), CONTINUATION_ALREADY_TAKEN_EXN);
+         accu = Field(caml_read_root(caml_global_data), CONTINUATION_ALREADY_TAKEN_EXN);
          goto raise_exception;
       }
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);
@@ -1323,7 +1323,7 @@ do_resume: {
       struct stack_info* parent_stack = Stack_parent(old_stack);
 
       if (parent_stack == NULL) {
-        accu = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        accu = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
         goto raise_exception;
       }
 
@@ -1368,7 +1368,7 @@ do_resume: {
       if (parent == NULL) {
         accu = caml_continuation_use(cont);
         resume_fn = caml_read_root(raise_unhandled);
-        resume_arg = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        resume_arg = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
         goto do_resume;
       }
 
