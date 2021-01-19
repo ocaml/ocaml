@@ -19,7 +19,6 @@
 \usepackage[normalem]{ulem}% for underlining errors in code examples
 
 \input{macros.tex}
-\newcommand{\hash}{\#}
 \lstnewenvironment{camloutput}{
   \lstset{
     basicstyle=\small\ttfamily\slshape,
@@ -105,7 +104,7 @@
 \fi
 }{}
 
-
+\newcommand{\?}{\color{black}\normalsize\tt\#{}}
 
 % Add meta tag to the generated head tag
 \ifouthtml
