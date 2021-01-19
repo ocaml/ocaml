@@ -34,9 +34,9 @@ type error =
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
   | Definition_mismatch of type_expr * Includecore.type_mismatch option
-  | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
-  | Type_clash of Env.t * Ctype.Unification_trace.t
+  | Constraint_failed of Env.t * Errortrace.unification Errortrace.t
+  | Inconsistent_constraint of Env.t * Errortrace.unification Errortrace.t
+  | Type_clash of Env.t * Errortrace.unification Errortrace.t
   | Non_regular of {
       definition: Path.t;
       used_as: type_expr;
@@ -49,7 +49,7 @@ type error =
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch
-  | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
+  | Rebind_wrong_type of Longident.t * Env.t * Errortrace.unification Errortrace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
@@ -277,8 +277,11 @@ let make_constructor env type_path type_params sargs sret_type =
       begin match (Ctype.repr ret_type).desc with
         | Tconstr (p', _, _) when Path.same type_path p' -> ()
         | _ ->
-            raise (Error (sret_type.ptyp_loc, Constraint_failed
-                            (ret_type, Ctype.newconstr type_path type_params)))
+          raise (Error (sret_type.ptyp_loc,
+                        Constraint_failed
+                          (env, [Errortrace.diff
+                                   ret_type
+                                   (Ctype.newconstr type_path type_params)])))
       end;
       widen z;
       targs, Some tret_type, args, Some ret_type
@@ -480,8 +483,11 @@ let rec check_constraints_rec env loc visited ty =
         with Not_found ->
           raise (Error(loc, Unavailable_type_constructor path)) in
       let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
-      if not (Ctype.matches env ty ty') then
-        raise (Error(loc, Constraint_failed (ty, ty')));
+      begin
+        try Ctype.matches env ty ty'
+        with Ctype.Matches_failure (env, trace) ->
+          raise (Error(loc, Constraint_failed (env, trace)))
+      end;
       List.iter (check_constraints_rec env loc visited) args
   | Tpoly (ty, tl) ->
       let _, ty = Ctype.instance_poly false tl ty in
@@ -576,16 +582,19 @@ let check_coherence env loc dpath decl =
             let err =
               if List.length args <> List.length decl.type_params
               then Some Includecore.Arity
-              else if not (Ctype.equal env false args decl.type_params)
-              then Some Includecore.Constraint
-              else
-                Includecore.type_declarations ~loc ~equality:true env
-                  ~mark:true
-                  (Path.last path)
-                  decl'
-                  dpath
-                  (Subst.type_declaration
-                     (Subst.add_type_path dpath path Subst.identity) decl)
+              else begin
+                match Ctype.equal env false args decl.type_params with
+                | exception Ctype.Equality trace ->
+                    Some (Includecore.Constraint (env, trace))
+                | () ->
+                    Includecore.type_declarations ~loc ~equality:true env
+                      ~mark:true
+                      (Path.last path)
+                      decl'
+                      dpath
+                      (Subst.type_declaration
+                         (Subst.add_type_path dpath path Subst.identity) decl)
+              end
             in
             if err <> None then
               raise(Error(loc, Definition_mismatch (ty, err)))
@@ -655,7 +664,7 @@ let check_well_founded env loc path to_check ty =
   in
   let snap = Btype.snapshot () in
   try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
-  with Ctype.Unify _ ->
+  with Ctype.Escape _ ->
     (* Will be detected by check_recursion *)
     Btype.backtrack snap
 
@@ -688,7 +697,7 @@ let check_recursion ~orig_env env loc path decl to_check =
       match ty.desc with
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
-            if not (Ctype.equal orig_env false args args') then
+            if not (Ctype.is_equal orig_env false args args') then
               raise (Error(loc,
                      Non_regular {
                        definition=path;
@@ -711,9 +720,8 @@ let check_recursion ~orig_env env loc path decl to_check =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
                 try List.iter2 (Ctype.unify orig_env) params args'
-                with Ctype.Unify _ ->
-                  raise (Error(loc, Constraint_failed
-                                 (ty, Ctype.newconstr path' params0)));
+                with Ctype.Unify trace ->
+                  raise (Error(loc, Constraint_failed (orig_env, trace)));
               end;
               check_regular path' args
                 (path' :: prev_exp) ((ty,body) :: prev_expansions)
@@ -1015,7 +1023,7 @@ let transl_extension_constructor ~scope env type_path type_params
              (Tconstr(type_path, type_params, ref Mnil)))
           :: type_params
         in
-        if not (Ctype.equal env true cstr_types ext_types) then
+        if not (Ctype.is_equal env true cstr_types ext_types) then
           raise (Error(lid.loc,
                        Rebind_mismatch(lid.txt, cstr_type_path, type_path)));
         (* Disallow rebinding private constructors to non-private *)
@@ -1603,7 +1611,7 @@ let explain_unbound_gen ppf tv tl typ kwd pr =
       Btype.newgenty (Tobject(tv, ref None)) in
     Printtyp.reset_and_mark_loops_list [typ ti; ty0];
     fprintf ppf
-      ".@.@[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
+      ".@ @[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
       kwd pr ti Printtyp.marked_type_expr tv
   with Not_found -> ()
 
@@ -1665,14 +1673,12 @@ let report_error ppf = function
         Printtyp.type_expr ty
         (Includecore.report_type_mismatch "the original" "this" "definition")
         err
-  | Constraint_failed (ty, ty') ->
-      Printtyp.reset_and_mark_loops ty;
-      Printtyp.mark_loops ty';
-      Printtyp.Naming_context.reset ();
-      fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
-        "Constraints are not satisfied in this type."
-        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
-        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
+  | Constraint_failed (env, trace) ->
+      fprintf ppf "@[<v>Constraints are not satisfied in this type.@ ";
+      Printtyp.report_error Printtyp.unification ppf env trace
+        (fun ppf -> fprintf ppf "Type")
+        (fun ppf -> fprintf ppf "should be an instance of");
+      fprintf ppf "@]"
   | Non_regular { definition; used_as; defined_as; expansions } ->
       let pp_expansion ppf (ty,body) =
         Format.fprintf ppf "%a = %a"
@@ -1709,12 +1715,13 @@ let report_error ppf = function
             pp_expansions expansions
       end
   | Inconsistent_constraint (env, trace) ->
-      fprintf ppf "The type constraints are not consistent.@.";
-      Printtyp.report_unification_error ppf env trace
+      fprintf ppf "@[<v>The type constraints are not consistent.@ ";
+      Printtyp.report_error Printtyp.unification ppf env trace
         (fun ppf -> fprintf ppf "Type")
-        (fun ppf -> fprintf ppf "is not compatible with type")
+        (fun ppf -> fprintf ppf "is not compatible with type");
+      fprintf ppf "@]"
   | Type_clash (env, trace) ->
-      Printtyp.report_unification_error ppf env trace
+      Printtyp.report_error Printtyp.unification ppf env trace
         (function ppf ->
            fprintf ppf "This type constructor expands to type")
         (function ppf ->
@@ -1726,7 +1733,7 @@ let report_error ppf = function
                    requires a second stub function@ \
                    for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
-      fprintf ppf "A type variable is unbound in this type declaration";
+      fprintf ppf "@[A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
@@ -1744,11 +1751,13 @@ let report_error ppf = function
       | Type_abstract, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()
-      end
+      end;
+      fprintf ppf "@]"
   | Unbound_type_var_ext (ty, ext) ->
-      fprintf ppf "A type variable is unbound in this extension constructor";
+      fprintf ppf "@[A type variable is unbound in this extension constructor";
       let args = tys_of_constr_args ext.ext_args in
-      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
+      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "");
+      fprintf ppf "@]"
   | Cannot_extend_private_type path ->
       fprintf ppf "@[%s@ %a@]"
         "Cannot extend private type definition"
@@ -1766,7 +1775,7 @@ let report_error ppf = function
            "the type" "this extension" "definition")
         err
   | Rebind_wrong_type (lid, env, trace) ->
-      Printtyp.report_unification_error ppf env trace
+      Printtyp.report_error Printtyp.unification ppf env trace
         (function ppf ->
            fprintf ppf "The constructor %a@ has type"
              Printtyp.longident lid)

@@ -213,7 +213,7 @@ Line 1, characters 0-59:
 1 | type 'a t = <a : 'a; b : 'b> constraint <a : 'a; ..> = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: A type variable is unbound in this type declaration.
-In method b: 'b the variable 'b is unbound
+       In method b: 'b the variable 'b is unbound
 |}]
 
 module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
@@ -267,7 +267,7 @@ Line 3, characters 13-23:
 3 |   constraint 'a = float
                  ^^^^^^^^^^
 Error: The type constraints are not consistent.
-Type int is not compatible with type float
+       Type int is not compatible with type float
 |}]
 
 type ('a,'b) t = T
@@ -279,8 +279,8 @@ Line 4, characters 13-20:
 4 |   constraint 'a = 'b
                  ^^^^^^^
 Error: The type constraints are not consistent.
-Type int -> float is not compatible with type bool -> char
-Type int is not compatible with type bool
+       Type int -> float is not compatible with type bool -> char
+       Type int is not compatible with type bool
 |}]
 
 class type ['a, 'b] a = object
@@ -293,6 +293,6 @@ Line 4, characters 2-31:
 4 |   constraint 'b = float * float
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The class constraints are not consistent.
-Type int * int is not compatible with type float * float
-Type int is not compatible with type float
+       Type int * int is not compatible with type float * float
+       Type int is not compatible with type float
 |}]

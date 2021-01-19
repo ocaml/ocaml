@@ -976,6 +976,7 @@ Line 3, characters 13-29:
                  ^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type (float, string) t should be an instance of (int, int) t
+       Type float is not compatible with type int
 |}]
 
 (* Example of wrong expansion *)

@@ -22,6 +22,7 @@ open Types
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
   | Value_descriptions of Ident.t * value_description * value_description
+                          * Includecore.value_mismatch
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch
   | Extension_constructors of Ident.t * extension_constructor
@@ -158,7 +159,7 @@ let value_descriptions ~loc env ~mark subst id vd1 vd2 =
   let vd2 = Subst.value_description subst vd2 in
   try
     Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
-  with Includecore.Dont_match ->
+  with Includecore.Dont_match _err ->
     Error Error.(Core (Value_descriptions (sdiff vd1 vd2)))
 
 (* Inclusion between type declarations *)
@@ -982,7 +983,6 @@ module Functor_app_diff = struct
     Diffing.variadic_diff ~weight ~test ~update state args params
 
 end
-
 
 (* Hide the context and substitution parameters to the outside world *)
 

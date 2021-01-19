@@ -37,7 +37,7 @@ Line 1, characters 0-25:
 1 | type polyvariant = [> `C]
     ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: A type variable is unbound in this type declaration.
-In type [> `C ] as 'a the variable 'a is unbound
+       In type [> `C ] as 'a the variable 'a is unbound
 |}]
 
 type 'a only_one = 'a * 'b
