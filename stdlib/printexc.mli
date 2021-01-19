@@ -153,6 +153,7 @@ val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in
     a raw format. Same restriction usage than {!print_backtrace}.
+    Does not raise.
 
     @since 4.01.0
 *)
