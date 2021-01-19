@@ -35,14 +35,14 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 \ikwd{type\@\texttt{type}}
 \ikwd{of\@\texttt{of}}
 \ikwd{include\@\texttt{include}}
-\input{recoveringtype.tex}
+\input{moduletypeof.tex}
 
 \section{s:signature-substitution}{Substituting inside a signature}
 \ikwd{with\@\texttt{with}}
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
 %HEVEA\cutname{signaturesubstitution.html}
-\input{substitutingsig.tex}
+\input{signaturesubstitution.tex}
 
 \section{s:module-alias}{Type-level module aliases}
 \ikwd{module\@\texttt{module}}

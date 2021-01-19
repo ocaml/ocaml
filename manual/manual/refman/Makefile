@@ -12,7 +12,7 @@ TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
 
 FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
-  firstclassmodules.tex recoveringtype.tex substitutingsig.tex \
+  firstclassmodules.tex moduletypeof.tex signaturesubstitution.tex \
   modulealias.tex overridingopen.tex gadts.tex bigarray.tex \
   attributes.tex extensionnodes.etex extensiblevariants.tex \
   generativefunctors.tex extensionsyntax.tex inlinerecords.tex \
