@@ -12,6 +12,8 @@
 ;*                                                                        *
 ;**************************************************************************
 
+(copy_files# byte/*.ml)
+
 (library
  (name ocamltoplevel)
  (wrapped false)
