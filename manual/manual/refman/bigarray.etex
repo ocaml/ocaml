@@ -1,0 +1,37 @@
+(Introduced in Objective Caml 3.00)
+
+\begin{syntax}
+expr:
+          ...
+        | expr '.{' expr { ',' expr } '}'
+        | expr '.{' expr { ',' expr } '}' '<-' expr
+\end{syntax}
+
+This extension provides syntactic sugar for getting and setting
+elements in the arrays provided by the \stdmoduleref{Bigarray} module.
+
+The short expressions are translated into calls to functions of the
+"Bigarray" module as described in the following table.
+
+\begin{tableau}{|l|l|}{expression}{translation}
+\entree{@expr_0'.{'expr_1'}'@}
+       {"Bigarray.Array1.get "@expr_0 expr_1@}
+\entree{@expr_0'.{'expr_1'}' '<-'expr@}
+       {"Bigarray.Array1.set "@expr_0 expr_1 expr@}
+\entree{@expr_0'.{'expr_1',' expr_2'}'@}
+       {"Bigarray.Array2.get "@expr_0 expr_1 expr_2@}
+\entree{@expr_0'.{'expr_1',' expr_2'}' '<-'expr@}
+       {"Bigarray.Array2.set "@expr_0 expr_1 expr_2 expr@}
+\entree{@expr_0'.{'expr_1',' expr_2',' expr_3'}'@}
+       {"Bigarray.Array3.get "@expr_0 expr_1 expr_2 expr_3@}
+\entree{@expr_0'.{'expr_1',' expr_2',' expr_3'}' '<-'expr@}
+       {"Bigarray.Array3.set "@expr_0 expr_1 expr_2 expr_3 expr@}
+\entree{@expr_0'.{'expr_1',' \ldots',' expr_n'}'@}
+       {"Bigarray.Genarray.get "@ expr_0 '[|' expr_1',' \ldots ','
+        expr_n '|]'@}
+\entree{@expr_0'.{'expr_1',' \ldots',' expr_n'}' '<-'expr@}
+       {"Bigarray.Genarray.set "@ expr_0 '[|' expr_1',' \ldots ','
+        expr_n '|]' expr@}
+\end{tableau}
+
+The last two entries are valid for any $n > 3$.
