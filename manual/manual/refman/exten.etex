@@ -13,6 +13,7 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 \section{s:recursive-modules}{Recursive modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{and\@\texttt{and}}
+%HEVEA\cutname{recursivemodules.html}
 \input{recursivemodules.tex}
 
 \section{s:locally-abstract}{Locally abstract types}
