@@ -217,7 +217,7 @@ EOF
   if command -v hevea &>/dev/null ; then
     echo Ensuring that the manual compiles
     # These steps rely on the compiler being installed and in PATH
-    $MAKE -C manual/manual/html_processing duniverse
+    $MAKE -C manual/src/html_processing duniverse
     $MAKE -C manual web
   fi
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then

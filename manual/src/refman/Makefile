@@ -10,14 +10,15 @@ CAMLLATEX = $(SET_LD_PATH) \
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
 TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
-VPATH = extensions
-FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
+EXTENSION_FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
   firstclassmodules.tex moduletypeof.tex signaturesubstitution.tex \
   modulealias.tex overridingopen.tex gadts.tex bigarray.tex \
   attributes.tex extensionnodes.etex extensiblevariants.tex \
   generativefunctors.tex extensionsyntax.tex inlinerecords.tex \
   doccomments.tex indexops.tex emptyvariants.tex alerts.tex \
-  generalizedopens.tex bindingops.tex extensionnodes.tex \
+  generalizedopens.tex bindingops.tex extensionnodes.tex
+
+FILES =  $(addprefix extensions/,$(EXTENSION_FILES)) \
   refman.tex lex.tex names.tex values.tex const.tex types.tex \
   patterns.tex expr.tex typedecl.tex modtypes.tex modules.tex compunit.tex \
   exten.tex classes.tex
