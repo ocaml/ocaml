@@ -684,8 +684,7 @@ module Illegal_permutation = struct
         | None -> raise Not_found
         | Some mt -> find env ctx path mt
         end
-    | Mty_alias p, _ ->
-        find env ctx path (Env.find_module p env).md_type
+    | Mty_alias p, _ -> assert false
     | Mty_signature s , [] -> List.rev ctx, s
     | Mty_signature s, Item k :: q ->
         begin match runtime_item k s with
