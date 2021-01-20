@@ -137,6 +137,9 @@ Working version
 - #10147, #10148: Fix building runtime with GCC on macOS.
   (David Allsopp, report by John Skaller)
 
+- #10166: Fix illegal permutation error reporting in module aliases.
+  (Matthew Ryan)
+
 OCaml 4.12.0
 ------------
 
