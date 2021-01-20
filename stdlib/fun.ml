@@ -45,11 +45,9 @@ type _mask_kind = Mask_none | Mask_uninterruptible | Mask_nonpreemptible
 external set_mask : _mask_kind -> _mask_kind = "caml_sys_set_mask" [@@noalloc]
 external unset_mask : _mask_kind -> unit = "caml_sys_unset_mask" [@@noalloc]
 
-let with_resource ~acquire x ~scope ~(release : _ -> unit) =
+let[@inline never] with_resource ~acquire x ~scope ~(release : _ -> unit) =
   (* we inline Sys.mask to avoid allocations *)
-  let release_no_exn (* BEGIN ATOMIC *) ~release resource =
-    let old_mask = set_mask Mask_uninterruptible in
-    (* END ATOMIC *)
+  let release_no_exn release resource old_mask =
     match release resource with
     | () -> unset_mask old_mask
     | exception e -> (
@@ -75,13 +73,16 @@ let with_resource ~acquire x ~scope ~(release : _ -> unit) =
     scope resource
   with
   | (* BEGIN ATOMIC *) result -> (
-      release_no_exn ~release resource ;
+      let old_mask = set_mask Mask_uninterruptible in
       (* END ATOMIC *)
+      release_no_exn release resource old_mask ;
       result
     )
   | (* BEGIN ATOMIC *) exception e -> (
+      let old_mask = set_mask Mask_uninterruptible in
+      (* END ATOMIC *)
       let work_bt = Printexc.get_raw_backtrace () in
-      release_no_exn ~release resource ;
+      release_no_exn release resource old_mask (* BEGIN ATOMIC *) ;
       Printexc.raise_with_backtrace e work_bt
       (* END ATOMIC *)
     )
