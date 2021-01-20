@@ -706,7 +706,7 @@ static void sweep_slice (intnat work)
   limit = sweep_chunk + Chunk_size(sweep_chunk);
   while (work > 0){
     if (sweep_hp < limit){
-      caml_prefetch(sweep_hp + 4096);
+      caml_prefetch(sweep_hp + 4000);
       hp = sweep_hp;
       hd = Hd_hp (hp);
       work -= Whsize_hd (hd);
