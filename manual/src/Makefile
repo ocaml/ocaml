@@ -115,7 +115,7 @@ version.tex: $(SRC)/VERSION
 
 warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
-	 echo "% according to a rule in manual/manual/Makefile.";\
+	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\
