@@ -75,6 +75,11 @@ utils/int_replace_polymorphic_compare.cmo : \
 utils/int_replace_polymorphic_compare.cmx : \
     utils/int_replace_polymorphic_compare.cmi
 utils/int_replace_polymorphic_compare.cmi :
+utils/lazy_backtrack.cmo : \
+    utils/lazy_backtrack.cmi
+utils/lazy_backtrack.cmx : \
+    utils/lazy_backtrack.cmi
+utils/lazy_backtrack.cmi :
 utils/load_path.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
@@ -557,6 +562,7 @@ typing/env.cmo : \
     parsing/location.cmi \
     utils/local_store.cmi \
     utils/load_path.cmi \
+    utils/lazy_backtrack.cmi \
     typing/ident.cmi \
     typing/datarepr.cmi \
     file_formats/cmi_format.cmi \
@@ -577,6 +583,7 @@ typing/env.cmx : \
     parsing/location.cmx \
     utils/local_store.cmx \
     utils/load_path.cmx \
+    utils/lazy_backtrack.cmx \
     typing/ident.cmx \
     typing/datarepr.cmx \
     file_formats/cmi_format.cmx \
@@ -878,6 +885,7 @@ typing/persistent_env.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    utils/lazy_backtrack.cmi \
     utils/consistbl.cmi \
     utils/config.cmi \
     file_formats/cmi_format.cmi \
@@ -888,6 +896,7 @@ typing/persistent_env.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    utils/lazy_backtrack.cmx \
     utils/consistbl.cmx \
     utils/config.cmx \
     file_formats/cmi_format.cmx \
@@ -897,6 +906,7 @@ typing/persistent_env.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/lazy_backtrack.cmi \
     utils/consistbl.cmi \
     file_formats/cmi_format.cmi
 typing/predef.cmo : \
