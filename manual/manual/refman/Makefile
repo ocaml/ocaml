@@ -10,7 +10,7 @@ CAMLLATEX = $(SET_LD_PATH) \
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
 TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
-
+VPATH = extensions
 FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
   firstclassmodules.tex moduletypeof.tex signaturesubstitution.tex \
   modulealias.tex overridingopen.tex gadts.tex bigarray.tex \
