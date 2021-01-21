@@ -35,6 +35,7 @@ void caml_init_domain ()
   Caml_state->exception_pointer = NULL;
 
   Caml_state->young_ptr = NULL;
+  Caml_state->young_limit_c = NULL;
   Caml_state->young_base = NULL;
   Caml_state->young_start = NULL;
   Caml_state->young_end = NULL;
@@ -81,6 +82,8 @@ void caml_init_domain ()
   Caml_state->local_roots = NULL;
   Caml_state->requested_major_slice = 0;
   Caml_state->requested_minor_gc = 0;
+
+  Caml_state->mask_async_callbacks = CAML_MASK_NONE;
 
   Caml_state->eventlog_enabled = 0;
   Caml_state->eventlog_paused = 0;

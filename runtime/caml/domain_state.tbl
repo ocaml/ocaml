@@ -21,6 +21,7 @@ DOMAIN_STATE(value*, young_limit)
 DOMAIN_STATE(char*, exception_pointer)
 /* Exception pointer that points into the current stack */
 
+DOMAIN_STATE(value*, young_limit_c)
 DOMAIN_STATE(void*, young_base)
 DOMAIN_STATE(value*, young_start)
 DOMAIN_STATE(value*, young_end)
@@ -65,6 +66,9 @@ DOMAIN_STATE(intnat, compare_unordered)
 DOMAIN_STATE(intnat, requested_major_slice)
 DOMAIN_STATE(intnat, requested_minor_gc)
 DOMAIN_STATE(struct caml__roots_block *, local_roots)
+
+DOMAIN_STATE(caml_mask_kind, mask_async_callbacks)
+/* See signals.c */
 
 DOMAIN_STATE(double, stat_minor_words)
 DOMAIN_STATE(double, stat_promoted_words)

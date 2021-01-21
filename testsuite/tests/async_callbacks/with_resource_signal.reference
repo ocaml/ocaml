@@ -1,0 +1,210 @@
+
+=== Test Run, tick = 100 us ===
+---Control 1:---
+Passed
+---Control 2:---
+Passed
+---Control 3:---
+Passed
+---Test 1:---
+Passed
+---Test inside=id, outside=id---
+Passed
+---Test inside=id, outside=print---
+Passed
+---Test inside=id, outside=wait---
+Passed
+---Test inside=id, outside=openclose---
+Passed
+---Test inside=print, outside=id---
+Passed
+---Test inside=print, outside=print---
+Passed
+---Test inside=print, outside=wait---
+Passed
+---Test inside=print, outside=openclose---
+Passed
+---Test inside=wait, outside=id---
+Passed
+---Test inside=wait, outside=print---
+Passed
+---Test inside=wait, outside=wait---
+Passed
+---Test inside=wait, outside=openclose---
+Passed
+---Test inside=openclose, outside=id---
+Passed
+---Test inside=openclose, outside=print---
+Passed
+---Test inside=openclose, outside=wait---
+Passed
+---Test inside=openclose, outside=openclose---
+Passed
+
+=== Test Run, tick = 40 us ===
+---Control 1:---
+Passed
+---Control 2:---
+Passed
+---Control 3:---
+Passed
+---Test 1:---
+Passed
+---Test inside=id, outside=id---
+Passed
+---Test inside=id, outside=print---
+Passed
+---Test inside=id, outside=wait---
+Passed
+---Test inside=id, outside=openclose---
+Passed
+---Test inside=print, outside=id---
+Passed
+---Test inside=print, outside=print---
+Passed
+---Test inside=print, outside=wait---
+Passed
+---Test inside=print, outside=openclose---
+Passed
+---Test inside=wait, outside=id---
+Passed
+---Test inside=wait, outside=print---
+Passed
+---Test inside=wait, outside=wait---
+Passed
+---Test inside=wait, outside=openclose---
+Passed
+---Test inside=openclose, outside=id---
+Passed
+---Test inside=openclose, outside=print---
+Passed
+---Test inside=openclose, outside=wait---
+Passed
+---Test inside=openclose, outside=openclose---
+Passed
+
+=== Test Run, tick = 10 us ===
+---Control 1:---
+Passed
+---Control 2:---
+Passed
+---Control 3:---
+Passed
+---Test 1:---
+Passed
+---Test inside=id, outside=id---
+Passed
+---Test inside=id, outside=print---
+Passed
+---Test inside=id, outside=wait---
+Passed
+---Test inside=id, outside=openclose---
+Passed
+---Test inside=print, outside=id---
+Passed
+---Test inside=print, outside=print---
+Passed
+---Test inside=print, outside=wait---
+Passed
+---Test inside=print, outside=openclose---
+Passed
+---Test inside=wait, outside=id---
+Passed
+---Test inside=wait, outside=print---
+Passed
+---Test inside=wait, outside=wait---
+Passed
+---Test inside=wait, outside=openclose---
+Passed
+---Test inside=openclose, outside=id---
+Passed
+---Test inside=openclose, outside=print---
+Passed
+---Test inside=openclose, outside=wait---
+Passed
+---Test inside=openclose, outside=openclose---
+Passed
+
+=== Test Run, tick = 4 us ===
+---Control 1:---
+Passed
+---Control 2:---
+Passed
+---Control 3:---
+Passed
+---Test 1:---
+Passed
+---Test inside=id, outside=id---
+Passed
+---Test inside=id, outside=print---
+Passed
+---Test inside=id, outside=wait---
+Passed
+---Test inside=id, outside=openclose---
+Passed
+---Test inside=print, outside=id---
+Passed
+---Test inside=print, outside=print---
+Passed
+---Test inside=print, outside=wait---
+Passed
+---Test inside=print, outside=openclose---
+Passed
+---Test inside=wait, outside=id---
+Passed
+---Test inside=wait, outside=print---
+Passed
+---Test inside=wait, outside=wait---
+Passed
+---Test inside=wait, outside=openclose---
+Passed
+---Test inside=openclose, outside=id---
+Passed
+---Test inside=openclose, outside=print---
+Passed
+---Test inside=openclose, outside=wait---
+Passed
+---Test inside=openclose, outside=openclose---
+Passed
+
+=== Test Run, tick = 1 us ===
+---Control 1:---
+Passed
+---Control 2:---
+Passed
+---Control 3:---
+Passed
+---Test 1:---
+Passed
+---Test inside=id, outside=id---
+Passed
+---Test inside=id, outside=print---
+Passed
+---Test inside=id, outside=wait---
+Passed
+---Test inside=id, outside=openclose---
+Passed
+---Test inside=print, outside=id---
+Passed
+---Test inside=print, outside=print---
+Passed
+---Test inside=print, outside=wait---
+Passed
+---Test inside=print, outside=openclose---
+Passed
+---Test inside=wait, outside=id---
+Passed
+---Test inside=wait, outside=print---
+Passed
+---Test inside=wait, outside=wait---
+Passed
+---Test inside=wait, outside=openclose---
+Passed
+---Test inside=openclose, outside=id---
+Passed
+---Test inside=openclose, outside=print---
+Passed
+---Test inside=openclose, outside=wait---
+Passed
+---Test inside=openclose, outside=openclose---
+Passed

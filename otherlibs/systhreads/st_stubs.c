@@ -94,6 +94,7 @@ struct caml_thread_struct {
   backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
   value backtrace_last_exn;  /* Saved Caml_state->backtrace_last_exn (root) */
   struct caml_memprof_th_ctx *memprof_ctx;
+  caml_mask_kind mask_async_callbacks;  /* Caml_state->mask_async_callbacks */
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -206,6 +207,7 @@ Caml_inline void caml_thread_save_runtime_state(void)
   curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
   curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
   caml_memprof_leave_thread();
+  curr_thread->mask_async_callbacks = Caml_state->mask_async_callbacks;
 }
 
 Caml_inline void caml_thread_restore_runtime_state(void)
@@ -228,6 +230,7 @@ Caml_inline void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_pos = curr_thread->backtrace_pos;
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
+  Caml_state->mask_async_callbacks = curr_thread->mask_async_callbacks;
   caml_memprof_enter_thread(curr_thread->memprof_ctx);
 }
 
@@ -236,6 +239,10 @@ Caml_inline void caml_thread_restore_runtime_state(void)
 
 static void caml_thread_enter_blocking_section(void)
 {
+  if (Caml_state->mask_async_callbacks == CAML_MASK_NONPREEMPTIBLE)
+    caml_invalid_argument("Cannot enter a blocking section inside a "
+                          "non-preemptible mask");
+
   /* Save the current runtime state in the thread descriptor
      of the current thread */
   caml_thread_save_runtime_state();
@@ -359,6 +366,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->backtrace_buffer = NULL;
   th->backtrace_last_exn = Val_unit;
   th->memprof_ctx = caml_memprof_new_th_ctx();
+  th->mask_async_callbacks = CAML_MASK_NONE;
   return th;
 }
 
@@ -718,19 +726,21 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 
 CAMLprim value caml_thread_yield(value unit)        /* ML */
 {
-  if (st_masterlock_waiters(&caml_master_lock) == 0) return Val_unit;
+  if (Caml_state->mask_async_callbacks == CAML_MASK_NONPREEMPTIBLE
+      || st_masterlock_waiters(&caml_master_lock) == 0)
+    return Val_unit;
 
   /* Do all the parts of a blocking section enter/leave except lock
      manipulation, which we'll do more efficiently in st_thread_yield. (Since
      our blocking section doesn't contain anything interesting, don't bother
      with saving errno.)
   */
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_raise_if_exception(caml_process_pending_actions_exn());
   caml_thread_save_runtime_state();
   st_thread_yield(&caml_master_lock);
   curr_thread = st_tls_get(thread_descriptor_key);
   caml_thread_restore_runtime_state();
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_raise_if_exception(caml_process_pending_actions_exn());
 
   return Val_unit;
 }

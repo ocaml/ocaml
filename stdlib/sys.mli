@@ -223,6 +223,22 @@ external signal :
 val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)
 
+val mask : ('a -> 'b) -> 'a -> 'b
+(** [mask f x] executes [f x] and guarantees that no asynchronous
+    exceptions can be raised from the moment it receives its argument
+    to the moment the caller receives the result or the exception
+    arising (if any) is caught.
+
+    @since 4.XX *)
+
+val nonpreemptible_mask : ('a -> 'b) -> 'a -> 'b
+(** [nonpreemptible_mask f x] executes [f x] and guarantees that no
+    OCaml code can run asynchronously or concurrently from the moment
+    it receives its argument to the moment the caller receives the
+    result or the exception arising (if any) is caught.
+
+    @since 4.XX *)
+
 
 (** {2 Signal numbers for the standard POSIX signals.} *)
 

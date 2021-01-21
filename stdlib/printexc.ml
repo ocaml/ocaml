@@ -97,8 +97,14 @@ type raw_backtrace = raw_backtrace_entry array
 
 let raw_backtrace_entries bt = bt
 
-external get_raw_backtrace:
+let empty_backtrace : raw_backtrace = [| |]
+
+external get_exception_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
+
+let get_raw_backtrace () =
+  try get_exception_raw_backtrace ()
+  with Out_of_memory -> empty_backtrace
 
 external raise_with_backtrace: exn -> raw_backtrace -> 'a
   = "%raise_with_backtrace"
@@ -316,14 +322,6 @@ let uncaught_exception_handler = ref default_uncaught_exception_handler
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
-let empty_backtrace : raw_backtrace = [| |]
-
-let try_get_raw_backtrace () =
-  try
-    get_raw_backtrace ()
-  with _ (* Out_of_memory? *) ->
-    empty_backtrace
-
 let handle_uncaught_exception' exn debugger_in_use =
   try
     (* Get the backtrace now, in case one of the [at_exit] function
@@ -332,13 +330,13 @@ let handle_uncaught_exception' exn debugger_in_use =
       if debugger_in_use (* Same test as in [runtime/printexc.c] *) then
         empty_backtrace
       else
-        try_get_raw_backtrace ()
+        get_raw_backtrace ()
     in
     (try Stdlib.do_at_exit () with _ -> ());
     try
       !uncaught_exception_handler exn raw_backtrace
     with exn' ->
-      let raw_backtrace' = try_get_raw_backtrace () in
+      let raw_backtrace' = get_raw_backtrace () in
       eprintf "Fatal error: exception %s\n" (to_string exn);
       print_raw_backtrace stderr raw_backtrace;
       eprintf "Fatal error in uncaught exception handler: exception %s\n"
@@ -351,7 +349,8 @@ let handle_uncaught_exception' exn debugger_in_use =
           "Fatal error: out of memory in uncaught exception handler"
 
 (* This function is called by [caml_fatal_uncaught_exception] in
-   [runtime/printexc.c] which expects no exception is raised. *)
+   [runtime/printexc.c] which expects no exception is raised. It is
+   called with asynchronous exceptions disabled. *)
 let handle_uncaught_exception exn debugger_in_use =
   try
     handle_uncaught_exception' exn debugger_in_use

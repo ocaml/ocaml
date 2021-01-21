@@ -24,11 +24,11 @@
 #include "caml/callback.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
+#include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
-#include "caml/memory.h"
-#include "caml/memprof.h"
+#include "caml/signals.h"
 
 struct stringbuf {
   char * ptr;
@@ -135,28 +135,41 @@ static void default_fatal_uncaught_exception(value exn)
 
 int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
-void caml_fatal_uncaught_exception(value exn)
+static void handle_uncaught_exception(value exn)
 {
-  const value *handle_uncaught_exception;
+  const value *handle_uncaught_exception_caml;
 
-  handle_uncaught_exception =
+  handle_uncaught_exception_caml =
     caml_named_value("Printexc.handle_uncaught_exception");
 
-  /* If the callback allocates, memprof could be called. In this case,
-     memprof's callback could raise an exception while
-     [handle_uncaught_exception] is running, so that the printing of
-     the exception fails. */
-  caml_memprof_set_suspended(1);
+  /* Prevent asynchronous exceptions while [handle_uncaught_exception]
+     is running, to prevent the printing from failing. The mask stays
+     until the end of the program. */
+  caml_mask(CAML_MASK_UNINTERRUPTIBLE);
 
-  if (handle_uncaught_exception != NULL)
-    /* [Printexc.handle_uncaught_exception] does not raise exception. */
-    caml_callback2(*handle_uncaught_exception, exn, Val_bool(DEBUGGER_IN_USE));
+  if (handle_uncaught_exception_caml != NULL)
+    /* [Printexc.handle_uncaught_exception] does not raise exceptions. */
+    caml_callback2(*handle_uncaught_exception_caml, exn,
+                   Val_bool(DEBUGGER_IN_USE));
   else
     default_fatal_uncaught_exception(exn);
+}
+
+void caml_fatal_uncaught_exception(value exn)
+{
+  handle_uncaught_exception(exn);
   /* Terminate the process */
   if (caml_abort_on_uncaught_exn) {
     abort();
   } else {
     exit(2);
   }
+}
+
+CAMLprim value caml_uncaught_exception_in_destructor(value exn)
+{
+  handle_uncaught_exception(exn);
+  caml_fatal_error("Uncaught exception in destructor");
+  // does not return
+  return Val_unit;
 }

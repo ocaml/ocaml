@@ -153,6 +153,7 @@ val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in
     a raw format. Same restriction usage than {!print_backtrace}.
+    Does not raise.
 
     @since 4.01.0
 *)
@@ -212,7 +213,8 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
     are not passed to this function as they are caught by the toplevel itself.
 
     If [fn] raises an exception, both the exceptions passed to [fn] and raised
-    by [fn] will be printed with their respective backtrace.
+    by [fn] will be printed with their respective backtrace. It is guaranteed
+    that no asynchronous exception arises while [fn] is called.
 
     @since 4.02.0
 *)
