@@ -80,9 +80,9 @@ val to_seq : 'a t -> 'a Seq.t
     @since 4.07 *)
 
 val add_seq : 'a t -> 'a Seq.t -> unit
-(** Add the elements from the iterator on the top of the stack.
+(** Add the elements from the sequence on the top of the stack.
     @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a t
-(** Create a stack from the iterator
+(** Create a stack from the sequence.
     @since 4.07 *)

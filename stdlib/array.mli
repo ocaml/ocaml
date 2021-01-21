@@ -315,13 +315,13 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 
 val to_seq : 'a array -> 'a Seq.t
 (** Iterate on the array, in increasing order. Modifications of the
-    array during iteration will be reflected in the iterator.
+    array during iteration will be reflected in the sequence.
     @since 4.07 *)
 
 val to_seqi : 'a array -> (int * 'a) Seq.t
 (** Iterate on the array, in increasing order, yielding indices along elements.
     Modifications of the array during iteration will be reflected in the
-    iterator.
+    sequence.
     @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a array

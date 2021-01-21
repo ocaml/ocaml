@@ -494,6 +494,6 @@ val to_seq : 'a list -> 'a Seq.t
  *)
 
 val of_seq : 'a Seq.t -> 'a list
-(** Create a list from the iterator.
+(** Create a list from a sequence.
     @since 4.07
  *)
