@@ -35,7 +35,7 @@ thread_MLIS := \
 	threadUnix.mli semaphore.mli
 
 libref= \
-	$(filter-out pervasives,$(STDLIB_MODS)) \
+	$(filter-out pervasives,$(STDLIB_MODULE_BASENAMES)) \
 	$(str_MLIS:%.mli=%) \
 	$(unix_MLIS:%.mli=%) \
 	$(dynlink_MLIS:%.mli=%) \

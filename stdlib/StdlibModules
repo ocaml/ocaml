@@ -27,8 +27,9 @@ define add_stdlib_prefix
   $(or $(filter stdlib camlinternal%,$1), stdlib__$1)
 endef
 
-# Modules should be listed in dependency order.
-STDLIB_MODS=\
+# Basenames of the source files for the standard library (i.e. unprefixed and
+# with lowercase first letters). These must be listed in dependency order.
+STDLIB_MODULE_BASENAMES=\
   camlinternalFormatBasics camlinternalAtomic \
   stdlib pervasives seq option either result bool char uchar \
   sys list bytes string unit marshal obj array float int int32 int64 nativeint \
@@ -40,4 +41,5 @@ STDLIB_MODS=\
   stdLabels bigarray
 
 STDLIB_MODULES=\
-  $(foreach module, $(STDLIB_MODS), $(call add_stdlib_prefix,$(module)))
+  $(foreach module, $(STDLIB_MODULE_BASENAMES), \
+    $(call add_stdlib_prefix,$(module)))
