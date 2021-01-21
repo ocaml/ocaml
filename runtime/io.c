@@ -212,6 +212,16 @@ CAMLexport void caml_flush(struct channel *channel)
 
 /* Output data */
 
+#define Putch(channel, ch) do{                                            \
+  if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
+  *((channel)->curr)++ = (ch);                                            \
+}while(0)
+
+CAMLexport void caml_putch(struct channel *channel, int ch)
+{
+  Putch(channel, ch);
+}
+
 CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 {
   if (! caml_channel_binary_mode(channel))
@@ -297,6 +307,16 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   return (unsigned char)(channel->buff[0]);
 }
 
+#define Getch(channel)                                                      \
+  ((channel)->curr >= (channel)->max                                        \
+   ? caml_refill(channel)                                                   \
+   : (unsigned char) *((channel)->curr)++)
+
+CAMLexport unsigned char caml_getch(struct channel *channel)
+{
+  return Getch(channel);
+}
+
 CAMLexport uint32_t caml_getword(struct channel *channel)
 {
   int i;
@@ -306,7 +326,7 @@ CAMLexport uint32_t caml_getword(struct channel *channel)
     caml_failwith("input_binary_int: not a binary channel");
   res = 0;
   for(i = 0; i < 4; i++) {
-    res = (res << 8) + caml_getch(channel);
+    res = (res << 8) + Getch(channel);
   }
   return res;
 }
@@ -654,7 +674,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
   struct channel * channel = Channel(vchannel);
 
   Lock(channel);
-  caml_putch(channel, Long_val(ch));
+  Putch(channel, Long_val(ch));
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -737,7 +757,7 @@ CAMLprim value caml_ml_input_char(value vchannel)
   unsigned char c;
 
   Lock(channel);
-  c = caml_getch(channel);
+  c = Getch(channel);
   Unlock(channel);
   CAMLreturn (Val_long(c));
 }
