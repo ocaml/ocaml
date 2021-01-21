@@ -139,7 +139,6 @@ static void unlink_channel(struct channel *channel)
 CAMLexport void caml_close_channel(struct channel *channel)
 {
   close(channel->fd);
-  if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
   caml_stat_free(channel->name);
@@ -548,9 +547,11 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   for (channel = caml_all_opened_channels;
        channel != NULL;
        channel = channel->next)
-    /* Testing channel->fd >= 0 looks unnecessary, as
+    /* Include only output channels opened from OCaml and not closed yet.
+       Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
-    if (channel->max == NULL) {
+    if (channel->max == NULL
+        && channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) {
       chan = caml_alloc_channel (channel);
       tail = res;
       res = caml_alloc_small (2, Tag_cons);
