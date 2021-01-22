@@ -22,6 +22,15 @@ module type t'' = t with module type x := x
 module type t'' = sig module M : x end
 |}]
 
+module type t3 = t with module type x = sig type t end
+[%%expect {|
+module type t3 = sig module type x = sig type t end module M : x end
+|}]
+
+module type t4 = t with module type x := sig type t end
+[%%expect {|
+module type t4 = sig module M : sig type t end end
+|}]
 
 (** nested *)
 
@@ -43,17 +52,17 @@ module type ENDO_2' = sig module Inner : sig module F : ENDO -> ENDO end end
 |}]
 
 
-(** Functor applications *)
-module F(X:sig end) = struct module type t end
-module Empty = struct end
-module type ENDO3 = ENDO with module type Inner.T := F(Empty).t
+module type S = sig
+  module M: sig
+    module type T
+  end
+  module N: M.T
+end
+module type R = S with module type M.T := sig end
 [%%expect {|
-module F : functor (X : sig end) -> sig module type t end
-module Empty : sig end
-module type ENDO3 =
-  sig module Inner : sig module F : F(Empty).t -> F(Empty).t end end
+module type S = sig module M : sig module type T end module N : M.T end
+module type R = sig module M : sig end module N : sig end end
 |}]
-
 
 
 (** Adding equalities *)
@@ -71,31 +80,6 @@ module type base = sig type t = X of int | Y of float end
 module type u =
   sig module type t = sig type t = X of int | Y of float end module M : t end
 module type s = sig module M : base end
-|}]
-
-
-
-
-type ext = X of int | Y of float
-module type base_ext = base with type t = ext
-module type r =
-  u with module type t := base_ext
-[%%expect {|
-type ext = X of int | Y of float
-module type base_ext = sig type t = ext = X of int | Y of float end
-Line 4, characters 2-34:
-4 |   u with module type t := base_ext
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of t
-       does not match its original definition in the constrained signature:
-       Modules do not match:
-         sig type t = X of int | Y of float end
-       is not included in
-         base_ext
-       Type declarations do not match:
-         type t = X of int | Y of float
-       is not included in
-         type t = ext = X of int | Y of float
 |}]
 
 
@@ -168,7 +152,6 @@ Error: In this `with' constraint, the new definition of t
        The types are not equal.
 |}]
 
-
 (** First class module types require an identity *)
 
 module type fst = sig
@@ -184,4 +167,104 @@ module type fst = sig module type t val x : (module t) end
 module type ext
 module type fst_ext = sig module type t = ext val x : (module t) end
 module type fst_ext = sig val x : (module ext) end
+|}]
+
+
+
+module type fst_erased = fst with module type t := sig end
+[%%expect {|
+Line 1, characters 25-58:
+1 | module type fst_erased = fst with module type t := sig end
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This `with' constraint t := sig end makes a packed module ill-typed.
+|}]
+
+module type fst_ok = fst with module type t = sig end
+[%%expect {|
+module type fst_ok = sig module type t = sig end val x : (module t) end
+|}]
+
+module type S = sig
+  module M: sig
+    module type T
+  end
+  val x: (module M.T)
+end
+
+module type R = S with module type M.T := sig end
+[%%expect {|
+module type S = sig module M : sig module type T end val x : (module M.T) end
+Line 8, characters 16-49:
+8 | module type R = S with module type M.T := sig end
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This `with' constraint M.T := sig end makes a packed module ill-typed.
+|}]
+
+
+module type S = sig
+  module M: sig
+    module type T
+    val x: (module T)
+  end
+end
+
+module type R = S with module type M.T := sig end
+[%%expect {|
+module type S = sig module M : sig module type T val x : (module T) end end
+Line 8, characters 16-49:
+8 | module type R = S with module type M.T := sig end
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This `with' constraint T := sig end makes a packed module ill-typed.
+|}]
+
+
+(** local module type substitutions *)
+
+module type s = sig
+  module type u := sig type a type b type c end
+  module type r = sig type r include u end
+  module type s = sig include u type a = A end
+end
+[%%expect {|
+module type s =
+  sig
+    module type r = sig type r type a type b type c end
+    module type s = sig type b type c type a = A end
+  end
+|}]
+
+
+module type s = sig
+  module type u := sig type a type b type c end
+  module type wrong = sig type a include u end
+end
+[%%expect {|
+Line 3, characters 33-42:
+3 |   module type wrong = sig type a include u end
+                                     ^^^^^^^^^
+Error: Multiple definition of the type name a.
+       Names must be unique in a given structure or signature.
+|}]
+
+module type fst = sig
+  module type t := sig end
+  val x: (module t)
+end
+[%%expect {|
+Line 3, characters 2-19:
+3 |   val x: (module t)
+      ^^^^^^^^^^^^^^^^^
+Error: The module type t is not a valid type for a packed module:
+       it is defined as a local substitution for a non-path module type.
+|}]
+
+
+module type hidden = sig
+  module type t := sig type u end
+  include t
+  val x: (module t)
+  val x: int
+end
+[%%expect {|
+module type hidden = sig type u val x : int end
 |}]
