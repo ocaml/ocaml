@@ -27,7 +27,8 @@ Working version
    Florian Angeletti)
 
 - #?????: module type substitutions
-  Allow 'SIG with module type T = F(X).S' and 'SIG with module type T := F(X).S'
+  Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
+  and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and ?)
 
 ### Runtime system:
