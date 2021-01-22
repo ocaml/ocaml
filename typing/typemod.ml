@@ -667,10 +667,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
-    | (_, _, Twith_module_typesubst (p,_)) ->
-        let add s = function
-          | Pident id -> Subst.add_modtype id (Mty_ident p) s
-          | _ -> s in
+    | (_, _, Twith_module_typesubst (rhs_path,_)) ->
+        let add s p = Subst.add_modtype_path p (Mty_ident rhs_path) s in
         let sub = List.fold_left add Subst.identity !real_ids in
         Subst.signature Make_local sub sg
     | _ ->
