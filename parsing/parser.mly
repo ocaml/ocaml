@@ -3231,9 +3231,9 @@ with_constraint:
       { Pwith_module ($2, $4) }
   | MODULE mkrhs(mod_longident) COLONEQUAL mkrhs(mod_ext_longident)
       { Pwith_modsubst ($2, $4) }
-  | MODULE TYPE l=mkrhs(mty_longident) EQUAL rhs=mkrhs(mty_longident)
+  | MODULE TYPE l=mkrhs(mty_longident) EQUAL rhs=module_type
       { Pwith_module_type (l, rhs) }
-  | MODULE TYPE l=mkrhs(mty_longident) COLONEQUAL rhs=mkrhs(mty_longident)
+  | MODULE TYPE l=mkrhs(mty_longident) COLONEQUAL rhs=module_type
       { Pwith_module_typesubst (l, rhs) }
 ;
 with_type_binder:

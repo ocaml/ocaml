@@ -103,6 +103,7 @@ type error =
   | Cannot_hide_id of hiding_error
   | Invalid_type_subst_rhs
   | Unpackable_local_modtype_subst of Path.t
+  | With_cannot_remove_packed_modtype of Path.t * module_type
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -344,9 +345,7 @@ let retype_applicative_functor_type ~loc env funct arg =
    - aliases: module A = M still makes sense but it doesn't mean the same thing
      anymore, so it's forbidden until it's clear what we should do with it.
    This function would be called with M.N.t and N.t to check for these uses. *)
-let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
-  let iterator =
-    let env, super = iterator_with_env env in
+let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
     { super with
       Btype.it_signature_item = (fun self -> function
       | Sig_module (id, _, { md_type = Mty_alias aliased_path; _ }, _, _)
@@ -374,9 +373,6 @@ let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
         )
       );
     }
-  in
-  iterator.Btype.it_signature iterator signature;
-  Btype.unmark_iterators.Btype.it_signature Btype.unmark_iterators signature
 
 (* When doing a module type destructive substitution [with module type T = RHS]
    where RHS is not a module type path, we need to check that the module type
@@ -391,6 +387,34 @@ let check_usage_of_module_types ~error ~paths ~loc env super =
        end
     | _ -> super.Btype.it_do_type_expr it ty in
   { super with Btype.it_do_type_expr }
+
+let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
+  let env, super = iterator_with_env env in
+  let last, rest = match List.rev paths with
+    | [] -> assert false
+    | last :: rest -> last, rest
+  in
+  (* The last item is the one that's removed. We don't need to check how
+        it's used since it's replaced by a more specific type/module. *)
+  assert (match last with Pident _ -> true | _ -> false);
+  let deep_path_check it = match rest with
+    | [] -> it
+    | _ :: _ -> check_usage_of_path_of_substituted_item rest ~loc ~lid env it
+  in
+  let modtype_check it = match unpackable_modtype with
+    | None -> it
+    | Some mty ->
+       let error p = With_cannot_remove_packed_modtype(p,mty) in
+       check_usage_of_module_types ~error ~paths ~loc env it
+  in
+  let iterator = super |> modtype_check |> deep_path_check in
+  iterator.Btype.it_signature iterator sg;
+  Btype.(unmark_iterators.it_signature unmark_iterators) sg
+
+let check_usage_after_substitution env ~loc ~lid paths unpackable_modtype sg =
+  match paths, unpackable_modtype with
+  | [_], None -> ()
+  | _ -> do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg
 
 (* After substitution one also needs to re-check the well-foundedness
    of type declarations in recursive modules *)
@@ -463,11 +487,7 @@ let params_are_constrained =
   loop
 ;;
 
-let transl_modtype_longident loc env lid =
-  let (path, _info) = Env.lookup_modtype ~loc lid env in
-  path
-
-let merge_constraint initial_env remove_aliases loc sg constr =
+let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
   let lid =
     match constr with
     | Pwith_type (lid, _) | Pwith_module (lid, _) | Pwith_module_type (lid,_)
@@ -480,6 +500,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
     | Pwith_typesubst _ | Pwith_modsubst _ | Pwith_module_typesubst _  -> true
   in
   let real_ids = ref [] in
+  let unpackable_modtype = ref None in
   let rec merge sig_env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
@@ -551,30 +572,35 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             update_rec_next rs rem
         end
     | (Sig_modtype(id, mtd, priv) :: rem, [s],
-       (Pwith_module_type (_, lmty) | Pwith_module_typesubst (_,lmty))
+       (Pwith_module_type (_, mty) | Pwith_module_typesubst (_,mty))
       )
       when Ident.name id = s ->
-        let path = transl_modtype_longident lmty.loc initial_env lmty.txt in
+        let mty = transl_modtype initial_env mty in
         let () = match mtd.mtd_type with
           | None -> ()
           | Some previous_mty ->
               Includemod.check_modtype_equiv ~loc sig_env
-                previous_mty (Mty_ident path)
+                previous_mty mty.mty_type
         in
         if not destructive_substitution then
           let mtd': modtype_declaration =
             {
               mtd_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
-              mtd_type = Some (Mty_ident path);
+              mtd_type = Some mty.mty_type;
               mtd_attributes = [];
               mtd_loc = loc;
             }
           in
-          (Pident id, lid, Twith_module_type (path,lmty)),
+          (Pident id, lid, Twith_module_type mty),
           Sig_modtype(id, mtd', priv) :: rem
         else begin
-          real_ids := [Pident id];
-          (Pident id, lid, Twith_module_typesubst (path,lmty)),
+          let path = Pident id in
+          real_ids := [path];
+          begin match mty.mty_type with
+          | Mty_ident _ -> ()
+          | mty -> unpackable_modtype := Some mty
+          end;
+          (Pident id, lid, Twith_module_typesubst mty),
           rem
         end
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
@@ -630,19 +656,9 @@ let merge_constraint initial_env remove_aliases loc sg constr =
   try
     let names = Longident.flatten lid.txt in
     let (tcstr, sg) = merge_signature initial_env sg names in
-    if destructive_substitution then (
-      match List.rev !real_ids with
-      | [] -> assert false
-      | last :: rest ->
-        (* The last item is the one that's removed. We don't need to check how
-           it's used since it's replaced by a more specific type/module. *)
-        assert (match last with Pident _ -> true | _ -> false);
-        match rest with
-        | [] -> ()
-        | _ :: _ ->
-          check_usage_of_path_of_substituted_item
-            rest initial_env sg ~loc ~lid;
-    );
+    if destructive_substitution then
+      check_usage_after_substitution ~loc ~lid initial_env !real_ids
+        !unpackable_modtype sg;
     let sg =
     match tcstr with
     | (_, _, Twith_typesubst tdecl) ->
@@ -682,8 +698,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
-    | (_, _, Twith_module_typesubst (rhs_path,_)) ->
-        let add s p = Subst.add_modtype_path p (Mty_ident rhs_path) s in
+    | (_, _, Twith_module_typesubst tmty) ->
+        let add s p = Subst.add_modtype_path p tmty.mty_type s in
         let sub = List.fold_left add Subst.identity !real_ids in
         Subst.signature Make_local sub sg
     | _ ->
@@ -1198,6 +1214,10 @@ let has_remove_aliases_attribute attr =
 
 (* Check and translate a module type expression *)
 
+let transl_modtype_longident loc env lid =
+  let (path, _info) = Env.lookup_modtype ~loc lid env in
+  path
+
 let transl_module_alias loc env lid =
   Env.lookup_module_path ~load:false ~loc lid env
 
@@ -1280,7 +1300,8 @@ and transl_modtype_aux env smty =
         List.fold_left
           (fun (rev_tcstrs,sg) sdecl ->
             let (tcstr, sg) =
-              merge_constraint env remove_aliases smty.pmty_loc sg sdecl
+              merge_constraint transl_modtype env remove_aliases
+                smty.pmty_loc sg sdecl
             in
             (tcstr :: rev_tcstrs, sg)
         )
@@ -2951,6 +2972,10 @@ let report_error ppf = function
         "@[<v>Destructive substitutions are not supported for constrained @ \
               types (other than when replacing a type constructor with @ \
               a type constructor with the same arguments).@]"
+  | With_cannot_remove_packed_modtype (p,mty) ->
+      fprintf ppf
+        "This `with' constraint@ %s := %a@ makes a packed module ill-typed."
+        (Path.name p) Printtyp.modtype mty
   | Repeated_name(kind, name) ->
       fprintf ppf
         "@[Multiple definition of the %s name %s.@ \

@@ -311,10 +311,10 @@ and add_modtype bv mty =
         (function
           | Pwith_type (_, td) -> add_type_declaration bv td
           | Pwith_module (_, lid) -> add_module_path bv lid
-          | Pwith_module_type (_, l) -> add bv l
+          | Pwith_module_type (_, mty) -> add_modtype bv mty
           | Pwith_typesubst (_, td) -> add_type_declaration bv td
           | Pwith_modsubst (_, lid) -> add_module_path bv lid
-          | Pwith_module_typesubst (_, l) -> add bv l
+          | Pwith_module_typesubst (_, mty) -> add_modtype bv mty
         )
         cstrl
   | Pmty_typeof m -> add_module_expr bv m
