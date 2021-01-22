@@ -308,7 +308,7 @@ OCaml 4.12.0
   information before the first load.
   (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
 
-* #9757, #9846: check proper ownership when operating over mutexes.
+* #9757, #9846, #10161: check proper ownership when operating over mutexes.
   Now, unlocking a mutex held by another thread or not locked at all
   reliably raises a Sys_error exception.  Before, it was undefined
   behavior, but the documentation did not say so.

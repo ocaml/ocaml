@@ -106,6 +106,12 @@ Caml_inline void st_tls_set(st_tlskey k, void * v)
   pthread_setspecific(k, v);
 }
 
+/* Windows-specific hook. */
+Caml_inline void st_thread_set_id(intnat id)
+{
+  return;
+}
+
 /* The master lock.  This is a mutex that is held most of the time,
    so we implement it in a slightly convoluted way to avoid
    all risks of busy-waiting.  Also, we count the number of waiting
