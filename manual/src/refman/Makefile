@@ -41,3 +41,4 @@ all: $(FILES)
 .PHONY: clean
 clean:
 	rm -f *.tex
+	rm -f extensions/*.tex
