@@ -49,21 +49,26 @@ typedef LONG st_tid;
 #define Tid_Atomic_Compare_Exchange InterlockedCompareExchange
 #endif
 
-/* Return the identifier for the current thread.  Defined in st_stubs.c.
-   The 0 value is reserved. */
-static intnat st_current_thread_id(void);
-
 /* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
+
+/* Thread-local storage for the OCaml thread ID. */
+static DWORD st_thread_id_key;
 
 /* OS-specific initialization */
 
 static DWORD st_initialize(void)
 {
+  DWORD result = 0;
   st_thread_sem_key = TlsAlloc();
   if (st_thread_sem_key == TLS_OUT_OF_INDEXES)
     return GetLastError();
-  return 0;
+  st_thread_id_key = TlsAlloc();
+  if (st_thread_id_key == TLS_OUT_OF_INDEXES) {
+    result = GetLastError();
+    TlsFree(st_thread_sem_key);
+  }
+  return result;
 }
 
 /* Thread creation.  Created in detached mode if [res] is NULL. */
@@ -132,6 +137,22 @@ Caml_inline void * st_tls_get(st_tlskey k)
 Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   TlsSetValue(k, v);
+}
+
+/* OS-specific handling of the OCaml thread ID (must be called with the runtime
+   lock). */
+Caml_inline void st_thread_set_id(intnat id)
+{
+  CAMLassert(id != 0);
+  st_tls_set(st_thread_id_key, (void *)id);
+}
+
+/* Return the identifier for the current thread. The 0 value is reserved. */
+Caml_inline intnat st_current_thread_id(void)
+{
+  intnat id = (intnat)st_tls_get(st_thread_id_key);
+  CAMLassert(id != 0);
+  return id;
 }
 
 /* The master lock.  */
