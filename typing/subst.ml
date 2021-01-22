@@ -29,14 +29,14 @@ type type_replacement =
 type t =
   { types: type_replacement Path.Map.t;
     modules: Path.t Path.Map.t;
-    modtypes: module_type Ident.Map.t;
+    modtypes: module_type Path.Map.t;
     for_saving: bool;
   }
 
 let identity =
   { types = Path.Map.empty;
     modules = Path.Map.empty;
-    modtypes = Ident.Map.empty;
+    modtypes = Path.Map.empty;
     for_saving = false;
   }
 
@@ -49,7 +49,8 @@ let add_type_function id ~params ~body s =
 let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
 let add_module id p s = add_module_path (Pident id) p s
 
-let add_modtype id ty s = { s with modtypes = Ident.Map.add id ty s.modtypes }
+let add_modtype_path p ty s = { s with modtypes = Path.Map.add p ty s.modtypes }
+let add_modtype id ty s = add_modtype_path (Pident id) ty s
 
 let for_saving s = { s with for_saving = true }
 
@@ -87,17 +88,18 @@ let rec module_path s path =
     | Papply(p1, p2) ->
        Papply(module_path s p1, module_path s p2)
 
-let modtype_path s = function
-    Pident id as p ->
-      begin try
-        match Ident.Map.find id s.modtypes with
-          | Mty_ident p -> p
-          | _ -> fatal_error "Subst.modtype_path"
-      with Not_found -> p end
-  | Pdot(p, n) ->
-      Pdot(module_path s p, n)
-  | Papply _ ->
-      fatal_error "Subst.modtype_path"
+let modtype_path s path =
+      match Path.Map.find path s.modtypes with
+      | Mty_ident p -> p
+      | Mty_alias _ | Mty_signature _ | Mty_functor _ ->
+         fatal_error "Subst.modtype_path"
+      | exception Not_found ->
+         match path with
+         | Pdot(p, n) ->
+            Pdot(module_path s p, n)
+         | Papply _ ->
+            fatal_error "Subst.modtype_path"
+         | Pident _ -> path
 
 let type_path s path =
   match Path.Map.find path s.types with
@@ -465,13 +467,16 @@ let rename_bound_idents scoping s sg =
 
 let rec modtype scoping s = function
     Mty_ident p as mty ->
-      begin match p with
-        Pident id ->
-          begin try Ident.Map.find id s.modtypes with Not_found -> mty end
-      | Pdot(p, n) ->
-          Mty_ident(Pdot(module_path s p, n))
-      | Papply _ ->
-          fatal_error "Subst.modtype"
+      begin match Path.Map.find p s.modtypes with
+       | mty -> mty
+       | exception Not_found ->
+          begin match p with
+          | Pident _ -> mty
+          | Pdot(p, n) ->
+             Mty_ident(Pdot(module_path s p, n))
+          | Papply _ ->
+             fatal_error "Subst.modtype"
+          end
       end
   | Mty_signature sg ->
       Mty_signature(signature scoping s sg)
@@ -538,9 +543,6 @@ and modtype_declaration scoping s decl  =
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
 
-let merge_tbls f m1 m2 =
-  Ident.Map.fold (fun k d accu -> Ident.Map.add k (f d) accu) m1 m2
-
 let merge_path_maps f m1 m2 =
   Path.Map.fold (fun k d accu -> Path.Map.add k (f d) accu) m1 m2
 
@@ -558,6 +560,6 @@ let type_replacement s = function
 let compose s1 s2 =
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
-    modtypes = merge_tbls (modtype Keep s2) s1.modtypes s2.modtypes;
+    modtypes = merge_path_maps (modtype Keep s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
   }

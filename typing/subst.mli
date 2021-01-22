@@ -40,6 +40,8 @@ val add_type_function:
 val add_module: Ident.t -> Path.t -> t -> t
 val add_module_path: Path.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
+val add_modtype_path: Path.t -> module_type -> t -> t
+
 val for_saving: t -> t
 val reset_for_saving: unit -> unit
 
