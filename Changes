@@ -61,6 +61,10 @@ Working version
 - #10136: Minor clean-ups in runtime/io.c and runtime/caml/io.h
   (Xavier Leroy, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
+- #10171: Tweak the naked pointers checker so that processes which trigger the
+  alarm always exit with non-zero status (i.e. exit(0) becomes exit(70)).
+  (David Allsopp, review by Xavier Leroy)
+
 - #10188, #10213: Switch the default allocation policy to best-fit and adjust
   the default overhead parameter accordingly.
   (Damien Doligez, review by Josh Berdine and Xavier Leroy)
