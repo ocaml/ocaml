@@ -90,8 +90,8 @@ _build
 /lex/ocamllex.opt
 /lex/parser.output
 
-/manual/manual/cmds/warnings-help.etex
-/manual/manual/warnings-help.etex
+/manual/src/cmds/warnings-help.etex
+/manual/src/warnings-help.etex
 
 /api_docgen/man
 /api_docgen/html
