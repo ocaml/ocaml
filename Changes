@@ -138,7 +138,7 @@ Working version
   (David Allsopp, report by John Skaller)
 
 - #10166: Fix illegal permutation error reporting in module aliases.
-  (Matthew Ryan)
+  (Matthew Ryan, review by Florian Angeletti)
 
 OCaml 4.12.0
 ------------
