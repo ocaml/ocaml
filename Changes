@@ -30,6 +30,9 @@ Working version
 - #10101: Add -help/--help option to ocamlrun.
   (David Allsopp, review by Xavier Leroy)
 
+- #10136: Minor clean-ups in runtime/io.c and runtime/caml/io.h
+  (Xavier Leroy, review by David Allsopp and Guillaume Munch-Maccagnoni)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
