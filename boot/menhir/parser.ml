@@ -381,14 +381,14 @@ let mkexp_cons ~loc consloc args =
   mkexp ~loc (mkexp_cons_desc consloc args)
 
 let mkpat_cons_desc consloc args =
-  Ppat_construct(mkrhs (Lident "::") consloc, None, Some args)
+  Ppat_construct(mkrhs (Lident "::") consloc, Some (args, None))
 let mkpat_cons ~loc consloc args =
   mkpat ~loc (mkpat_cons_desc consloc args)
 
 let ghexp_cons_desc consloc args =
   Pexp_construct(ghrhs (Lident "::") consloc, Some args)
 let ghpat_cons_desc consloc args =
-  Ppat_construct(ghrhs (Lident "::") consloc, None, Some args)
+  Ppat_construct(ghrhs (Lident "::") consloc, Some (args, None))
 
 let rec mktailexp nilloc = let open Location in function
     [] ->
@@ -403,7 +403,7 @@ let rec mktailexp nilloc = let open Location in function
 let rec mktailpat nilloc = let open Location in function
     [] ->
       let nil = ghloc ~loc:nilloc (Lident "[]") in
-      Ppat_construct (nil, None, None), nilloc
+      Ppat_construct (nil, None), nilloc
   | p1 :: pl ->
       let pat_pl, el_loc = mktailpat nilloc pl in
       let loc = (p1.ppat_loc.loc_start, snd el_loc) in
@@ -28061,7 +28061,7 @@ module Tables = struct
             in
             
 # 2719 "parsing/parser.mly"
-        ( Ppat_construct(_1, None, Some _2) )
+        ( Ppat_construct(_1, Some (_2, None)) )
 # 28066 "parsing/parser.ml"
             
           in
@@ -28096,9 +28096,9 @@ module Tables = struct
           MenhirLib.EngineTypes.endp = _endpos__10_;
           MenhirLib.EngineTypes.next = {
             MenhirLib.EngineTypes.state = _;
-            MenhirLib.EngineTypes.semv = _9;
-            MenhirLib.EngineTypes.startp = _startpos__9_;
-            MenhirLib.EngineTypes.endp = _endpos__9_;
+            MenhirLib.EngineTypes.semv = ty;
+            MenhirLib.EngineTypes.startp = _startpos_ty_;
+            MenhirLib.EngineTypes.endp = _endpos_ty_;
             MenhirLib.EngineTypes.next = {
               MenhirLib.EngineTypes.state = _;
               MenhirLib.EngineTypes.semv = _8;
@@ -28106,9 +28106,9 @@ module Tables = struct
               MenhirLib.EngineTypes.endp = _endpos__8_;
               MenhirLib.EngineTypes.next = {
                 MenhirLib.EngineTypes.state = _;
-                MenhirLib.EngineTypes.semv = _7;
-                MenhirLib.EngineTypes.startp = _startpos__7_;
-                MenhirLib.EngineTypes.endp = _endpos__7_;
+                MenhirLib.EngineTypes.semv = pat;
+                MenhirLib.EngineTypes.startp = _startpos_pat_;
+                MenhirLib.EngineTypes.endp = _endpos_pat_;
                 MenhirLib.EngineTypes.next = {
                   MenhirLib.EngineTypes.state = _;
                   MenhirLib.EngineTypes.semv = _6;
@@ -28151,9 +28151,9 @@ module Tables = struct
           };
         } = _menhir_stack in
         let _10 : unit = Obj.magic _10 in
-        let _9 : (Parsetree.core_type) = Obj.magic _9 in
+        let ty : (Parsetree.core_type) = Obj.magic ty in
         let _8 : unit = Obj.magic _8 in
-        let _7 : (Parsetree.pattern) = Obj.magic _7 in
+        let pat : (Parsetree.pattern) = Obj.magic pat in
         let _6 : unit = Obj.magic _6 in
         let _5 : unit = Obj.magic _5 in
         let xs : (string Asttypes.loc list) = Obj.magic xs in
@@ -28165,12 +28165,12 @@ module Tables = struct
         let _endpos = _endpos__10_ in
         let _v : (Parsetree.pattern) = let _1 =
           let _1 =
-            let _4 = 
+            let newtypes = 
 # 2461 "parsing/parser.mly"
     ( xs )
 # 28172 "parsing/parser.ml"
              in
-            let _1 =
+            let constr =
               let _endpos = _endpos__1_ in
               let _symbolstartpos = _startpos__1_ in
               let _sloc = (_symbolstartpos, _endpos) in
@@ -28182,7 +28182,7 @@ module Tables = struct
             in
             
 # 2722 "parsing/parser.mly"
-        ( Ppat_construct(_1, Some (_4, _9), Some _7) )
+        ( Ppat_construct(constr, Some (pat, Some (newtypes, ty))) )
 # 28187 "parsing/parser.ml"
             
           in
@@ -40033,7 +40033,7 @@ module Tables = struct
             in
             
 # 2758 "parsing/parser.mly"
-      ( Ppat_construct(_1, None, None) )
+      ( Ppat_construct(_1, None) )
 # 40038 "parsing/parser.ml"
             
           in
@@ -40295,7 +40295,7 @@ module Tables = struct
             let _sloc = (_symbolstartpos, _endpos) in
             
 # 2766 "parsing/parser.mly"
-    ( Ppat_open(_1, mkpat ~loc:_sloc (Ppat_construct(_3, None, None))) )
+    ( Ppat_open(_1, mkpat ~loc:_sloc (Ppat_construct(_3, None))) )
 # 40300 "parsing/parser.ml"
             
           in
@@ -40390,7 +40390,7 @@ module Tables = struct
             let _sloc = (_symbolstartpos, _endpos) in
             
 # 2768 "parsing/parser.mly"
-    ( Ppat_open(_1, mkpat ~loc:_sloc (Ppat_construct(_3, None, None))) )
+    ( Ppat_open(_1, mkpat ~loc:_sloc (Ppat_construct(_3, None))) )
 # 40395 "parsing/parser.ml"
             
           in

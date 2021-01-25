@@ -173,10 +173,13 @@ let rec add_pattern bv pat =
   | Ppat_interval _
   | Ppat_constant _ -> ()
   | Ppat_tuple pl -> List.iter (add_pattern bv) pl
-  | Ppat_construct(c, t, op) ->
+  | Ppat_construct(c, opt) ->
       add bv c;
-      add_opt (fun bv (_,t) -> add_type bv t) bv t;
-      add_opt add_pattern bv op
+      add_opt
+        (fun bv (p,vto) ->
+          add_pattern bv p;
+          add_opt (fun bv (_,t) -> add_type bv t) bv vto)
+        bv opt
   | Ppat_record(pl, _) ->
       List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl
   | Ppat_array pl -> List.iter (add_pattern bv) pl

@@ -53,7 +53,7 @@ let iterator =
   in
   let pat self pat =
     begin match pat.ppat_desc with
-    | Ppat_construct (_, _, Some ({ppat_desc = Ppat_tuple _} as p))
+    | Ppat_construct (_, Some ({ppat_desc = Ppat_tuple _} as p, _))
       when Builtin_attributes.explicit_arity pat.ppat_attributes ->
         super.pat self p (* allow unary tuple, see GPR#523. *)
     | _ ->
@@ -63,7 +63,7 @@ let iterator =
     match pat.ppat_desc with
     | Ppat_tuple ([] | [_]) -> invalid_tuple loc
     | Ppat_record ([], _) -> empty_record loc
-    | Ppat_construct (id, _, _) -> simple_longident id
+    | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
     | _ -> ()

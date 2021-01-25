@@ -503,7 +503,7 @@ and build_as_type_aux env p =
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
-  | Tpat_construct(_, cstr, pl) ->
+  | Tpat_construct(_, cstr, pl, _) ->
       let keep = cstr.cstr_private = Private || cstr.cstr_existentials <> [] in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
@@ -1076,7 +1076,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
      true
   | Ppat_any
   | Ppat_variant (_, None)
-  | Ppat_construct (_, _, None)
+  | Ppat_construct (_, None)
   | Ppat_type _
   | Ppat_var _
   | Ppat_unpack _
@@ -1084,7 +1084,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
      false
   | Ppat_exception p
   | Ppat_variant (_, Some p)
-  | Ppat_construct (_, _, Some p)
+  | Ppat_construct (_, Some (p, _))
   | Ppat_constraint (p, _)
   | Ppat_alias (p, _)
   | Ppat_lazy p
@@ -1525,7 +1525,7 @@ and type_pat_aux
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
-  | Ppat_construct(lid, oty, sarg) ->
+  | Ppat_construct(lid, sarg) ->
       let expected_type =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
@@ -1565,16 +1565,16 @@ and type_pat_aux
       let sargs =
         match sarg with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when
+        | Some({ppat_desc = Ppat_tuple spl}, _) when
             constr.cstr_arity > 1 ||
             Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
-        | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
+        | Some({ppat_desc = Ppat_any} as sp, _) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
               Location.prerr_warning sp.ppat_loc
                                      Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
-        | Some sp -> [sp] in
+        | Some(sp, _) -> [sp] in
       if Builtin_attributes.warn_on_literal_pattern constr.cstr_attributes then
         begin match List.filter has_literal_pattern sargs with
         | sp :: _ ->
@@ -1596,14 +1596,13 @@ and type_pat_aux
         unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
       in
       let expansion_scope = get_gadt_equations_level () in
-      let ty_args, ty_res, equated_types =
-        match oty with
-          None ->
+      let ty_args, ty_res, equated_types, vto =
+        match sarg with
+          None | Some (_, None) ->
             let ty_args, ty_res, _ =
               instance_constructor ~in_pattern:(env, expansion_scope) constr in
-            let eqt = unify_res ty_res in
-            ty_args, ty_res, eqt
-        | Some (nl, sty) ->
+            ty_args, ty_res, unify_res ty_res, None
+        | Some (_, Some (nl, sty)) ->
             let ty_args, ty_res, ty_ex = instance_constructor constr in
             let eqt = unify_res ty_res in
             let ids =
@@ -1613,7 +1612,7 @@ and type_pat_aux
                   let (id, new_env) =
                     Env.enter_type ~scope:expansion_scope name.txt decl !env in
                   env := new_env;
-                  id)
+                  {name with txt = id})
                 nl
             in
             let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
@@ -1626,6 +1625,7 @@ and type_pat_aux
                 unify_pat_types cty.ctyp_loc env ty (newty (Ttuple ty_args))
             end;
             ignore (
+            let ids = List.map (fun x -> x.txt) ids in
             List.fold_left
               (fun rem tv ->
                 match repr tv with
@@ -1636,7 +1636,7 @@ and type_pat_aux
                     raise (Error (cty.ctyp_loc, !env,
                                   Unbound_existential (ids, ty))))
               ids ty_ex);
-            ty_args, ty_res, eqt
+            ty_args, ty_res, eqt, Some (ids, cty)
       in
       end_def ();
       generalize_structure expected_ty;
@@ -1682,7 +1682,7 @@ and type_pat_aux
         (List.combine sargs ty_args)
         (fun args ->
           rvp k {
-            pat_desc=Tpat_construct(lid, constr, args);
+            pat_desc=Tpat_construct(lid, constr, args, vto);
             pat_loc = loc; pat_extra=[];
             pat_type = instance expected_ty;
             pat_attributes = sp.ppat_attributes;
@@ -2501,12 +2501,14 @@ let contains_variant_either ty =
 let shallow_iter_ppat f p =
   match p.ppat_desc with
   | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_interval _
+  | Ppat_construct (_, None)
   | Ppat_extension _
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
-  | Ppat_variant (_, arg) | Ppat_construct (_, _, arg) -> Option.iter f arg
+  | Ppat_variant (_, arg) -> Option.iter f arg
   | Ppat_tuple lst ->  List.iter f lst
+  | Ppat_construct (_, Some (p, _))
   | Ppat_exception p | Ppat_alias (p,_)
   | Ppat_open (_,p)
   | Ppat_constraint (p,_) | Ppat_lazy p -> f p
@@ -2531,7 +2533,7 @@ let contains_polymorphic_variant p =
 let contains_gadt p =
   exists_general_pattern { f = fun (type k) (p : k general_pattern) ->
      match p.pat_desc with
-     | Tpat_construct (_, cd, _) when cd.cstr_generalized -> true
+     | Tpat_construct (_, cd, _, _) when cd.cstr_generalized -> true
      | _ -> false } p
 
 (* There are various things that we need to do in presence of GADT constructors
@@ -2749,14 +2751,12 @@ and type_expect_
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-             None
-             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"))))
+             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"), None)))
           (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
-             None
              None)
           default;
        ]
