@@ -76,6 +76,11 @@
 
 /* Define HAS_SOCKETS if you have BSD sockets. */
 
+#undef HAS_SOCKETPAIR
+
+/* Define HAS_SOCKETPAIR if you have the socketpair function. Only
+   relevant on Windows. */
+
 #undef HAS_SOCKLEN_T
 
 /* Define HAS_SOCKLEN_T if the type socklen_t is defined in

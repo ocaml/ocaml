@@ -1391,7 +1391,8 @@ sockets=true
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [cclibs="$cclibs -lws2_32"
-    AC_SEARCH_LIBS([socket], [ws2_32])],
+    AC_SEARCH_LIBS([socket], [ws2_32])
+    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
     AC_SEARCH_LIBS([socket], [network])],

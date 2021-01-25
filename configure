@@ -15142,6 +15142,12 @@ if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 fi
+
+    ac_fn_c_check_func "$LINENO" "socketpair" "ac_cv_func_socketpair"
+if test "x$ac_cv_func_socketpair" = xyes; then :
+  $as_echo "#define HAS_SOCKETPAIR 1" >>confdefs.h
+
+fi
  ;; #(
   *-*-haiku) :
     cclibs="$cclibs -lnetwork"

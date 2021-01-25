@@ -10,6 +10,10 @@ Working version
 
 ### Other libraries:
 
+- #10192: Add support for Unix domain sockets on Windows and use them
+  to emulate Unix.socketpair (only available on Windows 1803+)
+  (Antonin Décimo, review by David Allsopp)
+
 ### Tools:
 
 ### Manual and documentation:
