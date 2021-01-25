@@ -10,6 +10,11 @@ Working version
 
 ### Type system:
 
+- #9584, #7074: Allow to name existentials in pattern-matching
+  One can now write '(Cstr (type a) (x, y : int * a))' to give a name to
+  existentials freshly introduced by GADT constructors.
+  (Jacques Garrigue, review by Leo White and Gabriel Scherer)
+
 - #10174: Make Tsubst more robust by avoiding strange workarounds
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
@@ -208,9 +213,6 @@ OCaml 4.12.0
   -principal mode.
   For the time being, infringing code should result in a principality warning.
   (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
-
-- #9584, #7074: Allow to name existentials in pattern-matching
-  (Jacques Garrigue, review by ?)
 
 ### Runtime system:
 
