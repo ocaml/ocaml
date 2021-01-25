@@ -189,6 +189,7 @@
       Some
         pattern (extensions.ml[19,418+13]..[19,418+14])
           Ppat_var "y" (extensions.ml[19,418+13]..[19,418+14])
+        None
     <when>
       expression (extensions.ml[19,418+20]..[19,418+25])
         Pexp_apply
@@ -219,11 +220,13 @@
                 Some
                   pattern (extensions.ml[20,445+16]..[20,445+17])
                     Ppat_var "x" (extensions.ml[20,445+16]..[20,445+17])
+                  None
               pattern (extensions.ml[20,445+20]..[20,445+25])
                 Ppat_construct "Baz" (extensions.ml[20,445+20]..[20,445+23])
                 Some
                   pattern (extensions.ml[20,445+24]..[20,445+25])
                     Ppat_var "x" (extensions.ml[20,445+24]..[20,445+25])
+                  None
           core_type (extensions.ml[20,445+31]..[20,445+44])
             Ptyp_extension "foo"
             pattern (extensions.ml[20,445+38]..[20,445+42])
