@@ -527,6 +527,7 @@ typing/ctype.cmi : \
     typing/type_immediacy.cmi \
     typing/path.cmi \
     parsing/longident.cmi \
+    parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi

@@ -174,14 +174,14 @@ let mkexp_cons ~loc consloc args =
   mkexp ~loc (mkexp_cons_desc consloc args)
 
 let mkpat_cons_desc consloc args =
-  Ppat_construct(mkrhs (Lident "::") consloc, None, Some args)
+  Ppat_construct(mkrhs (Lident "::") consloc, Some (args, None))
 let mkpat_cons ~loc consloc args =
   mkpat ~loc (mkpat_cons_desc consloc args)
 
 let ghexp_cons_desc consloc args =
   Pexp_construct(ghrhs (Lident "::") consloc, Some args)
 let ghpat_cons_desc consloc args =
-  Ppat_construct(ghrhs (Lident "::") consloc, None, Some args)
+  Ppat_construct(ghrhs (Lident "::") consloc, Some (args, None))
 
 let rec mktailexp nilloc = let open Location in function
     [] ->
@@ -196,7 +196,7 @@ let rec mktailexp nilloc = let open Location in function
 let rec mktailpat nilloc = let open Location in function
     [] ->
       let nil = ghloc ~loc:nilloc (Lident "[]") in
-      Ppat_construct (nil, None, None), nilloc
+      Ppat_construct (nil, None), nilloc
   | p1 :: pl ->
       let pat_pl, el_loc = mktailpat nilloc pl in
       let loc = (p1.ppat_loc.loc_start, snd el_loc) in
@@ -2723,10 +2723,10 @@ pattern_gen:
       { $1 }
   | mkpat(
       mkrhs(constr_longident) pattern %prec prec_constr_appl
-        { Ppat_construct($1, None, Some $2) }
-    | mkrhs(constr_longident) LPAREN TYPE lident_list RPAREN
-        LPAREN pattern COLON core_type RPAREN
-        { Ppat_construct($1, Some ($4, $9), Some $7) }
+        { Ppat_construct($1, Some ($2, None)) }
+    | constr=mkrhs(constr_longident) LPAREN TYPE newtypes=lident_list RPAREN
+        LPAREN pat=pattern COLON ty=core_type RPAREN
+        { Ppat_construct(constr, Some (pat, Some (newtypes, ty))) }
     | name_tag pattern %prec prec_constr_appl
         { Ppat_variant($1, Some $2) }
     ) { $1 }
@@ -2762,7 +2762,7 @@ simple_pattern_not_ident:
   | signed_constant DOTDOT signed_constant
       { Ppat_interval ($1, $3) }
   | mkrhs(constr_longident)
-      { Ppat_construct($1, None, None) }
+      { Ppat_construct($1, None) }
   | name_tag
       { Ppat_variant($1, None) }
   | HASH mkrhs(type_longident)
@@ -2770,9 +2770,9 @@ simple_pattern_not_ident:
   | mkrhs(mod_longident) DOT simple_delimited_pattern
       { Ppat_open($1, $3) }
   | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
-    { Ppat_open($1, mkpat ~loc:$sloc (Ppat_construct($3, None, None))) }
+    { Ppat_open($1, mkpat ~loc:$sloc (Ppat_construct($3, None))) }
   | mkrhs(mod_longident) DOT mkrhs(LPAREN RPAREN {Lident "()"})
-    { Ppat_open($1, mkpat ~loc:$sloc (Ppat_construct($3, None, None))) }
+    { Ppat_open($1, mkpat ~loc:$sloc (Ppat_construct($3, None))) }
   | mkrhs(mod_longident) DOT LPAREN pattern RPAREN
       { Ppat_open ($1, $4) }
   | mod_longident DOT LPAREN pattern error

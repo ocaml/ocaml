@@ -222,9 +222,15 @@ and pattern i ppf x =
   | Ppat_tuple (l) ->
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
-  | Ppat_construct (li, _, po) ->
+  | Ppat_construct (li, po) ->
       line i ppf "Ppat_construct %a\n" fmt_longident_loc li;
-      option i pattern ppf po;
+      option i
+        (fun i ppf (p, vto) ->
+          pattern i ppf p;
+          option i
+            (fun i ppf (vl,t) -> list i string_loc ppf vl; core_type i ppf t)
+            ppf vto)
+        ppf po
   | Ppat_variant (l, po) ->
       line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;

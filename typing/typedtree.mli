@@ -89,7 +89,7 @@ and 'k pattern_desc =
          *)
   | Tpat_construct :
       Longident.t loc * Types.constructor_description *
-        value general_pattern list ->
+        value general_pattern list * (Ident.t loc list * core_type) option ->
       value pattern_desc
         (** C                []
             C P              [P]
