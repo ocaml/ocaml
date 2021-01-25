@@ -15368,6 +15368,28 @@ if test "x$ac_cv_func_inet_aton" = xyes; then :
 fi
 
 
+## Unix domain sockets support on Windows
+
+case $host in #(
+  *-*-mingw32|*-pc-windows) :
+    for ac_header in afunix.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "afunix.h" "ac_cv_header_afunix_h" "#include <winsock2.h>
+"
+if test "x$ac_cv_header_afunix_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_AFUNIX_H 1
+_ACEOF
+ $as_echo "#define HAS_AFUNIX_H 1" >>confdefs.h
+
+fi
+
+done
+ ;; #(
+  *) :
+     ;;
+esac
+
 ## IPv6 support
 
 ipv6=true

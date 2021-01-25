@@ -90,7 +90,7 @@ processes}
 \entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
 \entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
 \entree{type "socket_domain"}{"PF_INET" is fully supported;
-"PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is not supported }
+"PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is supported since 4.14.0, but only works on Windows 10 1803 and later.}
 \entree{"establish_server"}{not implemented; use threads}
 \entree{terminal functions ("tc*")}{not implemented}
 \entree{"setsid"}{not implemented}
