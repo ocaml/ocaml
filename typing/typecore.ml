@@ -1569,10 +1569,11 @@ and type_pat_aux
             constr.cstr_arity > 1 ||
             Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
-        | Some({ppat_desc = Ppat_any} as sp, _) when constr.cstr_arity <> 1 ->
-            if constr.cstr_arity = 0 then
-              Location.prerr_warning sp.ppat_loc
-                                     Warnings.Wildcard_arg_to_constant_constr;
+        | Some({ppat_desc = Ppat_any} as sp, None) when constr.cstr_arity = 0 ->
+            Location.prerr_warning sp.ppat_loc
+              Warnings.Wildcard_arg_to_constant_constr;
+            []
+        | Some({ppat_desc = Ppat_any} as sp, _) when constr.cstr_arity > 1 ->
             replicate_list sp constr.cstr_arity
         | Some(sp, _) -> [sp] in
       if Builtin_attributes.warn_on_literal_pattern constr.cstr_attributes then
@@ -1618,7 +1619,7 @@ and type_pat_aux
             let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
             pattern_force := force :: !pattern_force;
             begin match ty_args with
-              [] -> ()
+              [] -> assert false
             | [ty_arg] ->
                 unify_pat_types cty.ctyp_loc env ty ty_arg
             | _ ->

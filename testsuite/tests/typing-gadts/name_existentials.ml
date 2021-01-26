@@ -75,3 +75,25 @@ let rec test : type a. a expr -> a = function
 [%%expect{|
 val test : 'a expr -> 'a = <fun>
 |}]
+
+(* Strange wildcard *)
+
+[@@@warning "-28"]
+let () =
+  match None with
+  | None (type a) (_ : a * int) -> ()
+  | Some _ -> ()
+[%%expect{|
+Line 4, characters 4-31:
+4 |   | None (type a) (_ : a * int) -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The constructor None expects 0 argument(s),
+       but is applied here to 1 argument(s)
+|}]
+
+let () =
+  match None with
+  | None _ -> ()
+  | Some _ -> ()
+[%%expect{|
+|}]
