@@ -14938,15 +14938,26 @@ if $sockets; then :
 
 fi
 
-## socklen_t in sys/socket.h
+## socklen_t
 
-ac_fn_c_check_type "$LINENO" "socklen_t" "ac_cv_type_socklen_t" "#include <sys/socket.h>
+case $host in #(
+  *-*-mingw32|*-pc-windows) :
+    ac_fn_c_check_type "$LINENO" "socklen_t" "ac_cv_type_socklen_t" "#include <ws2tcpip.h>
 "
 if test "x$ac_cv_type_socklen_t" = xyes; then :
   $as_echo "#define HAS_SOCKLEN_T 1" >>confdefs.h
 
 fi
+ ;; #(
+  *) :
+    ac_fn_c_check_type "$LINENO" "socklen_t" "ac_cv_type_socklen_t" "#include <sys/socket.h>
+"
+if test "x$ac_cv_type_socklen_t" = xyes; then :
+  $as_echo "#define HAS_SOCKLEN_T 1" >>confdefs.h
 
+fi
+ ;;
+esac
 
 ac_fn_c_check_func "$LINENO" "inet_aton" "ac_cv_func_inet_aton"
 if test "x$ac_cv_func_inet_aton" = xyes; then :
@@ -14959,7 +14970,18 @@ fi
 
 ipv6=true
 
-ac_fn_c_check_type "$LINENO" "struct sockaddr_in6" "ac_cv_type_struct_sockaddr_in6" "
+case $host in #(
+  *-*-mingw32|*-pc-windows) :
+    ac_fn_c_check_type "$LINENO" "struct sockaddr_in6" "ac_cv_type_struct_sockaddr_in6" "#include <ws2tcpip.h>
+"
+if test "x$ac_cv_type_struct_sockaddr_in6" = xyes; then :
+
+else
+  ipv6=false
+fi
+ ;; #(
+  *) :
+    ac_fn_c_check_type "$LINENO" "struct sockaddr_in6" "ac_cv_type_struct_sockaddr_in6" "
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -14972,6 +14994,8 @@ else
   ipv6=false
 fi
 
+ ;;
+esac
 
 if $ipv6; then :
   ac_fn_c_check_func "$LINENO" "getaddrinfo" "ac_cv_func_getaddrinfo"
@@ -17329,7 +17353,14 @@ fi
 # but whose value is not guessed properly by configure
 # (all this should be understood and fixed)
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32) :
+    $as_echo "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
+
+    $as_echo "#define HAS_STRERROR 1" >>confdefs.h
+
+    $as_echo "#define HAS_NICE 1" >>confdefs.h
+ ;; #(
+  *-pc-windows) :
     $as_echo "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
     $as_echo "#define HAS_STRERROR 1" >>confdefs.h
