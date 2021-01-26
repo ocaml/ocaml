@@ -1608,7 +1608,7 @@ and type_pat_aux
             let ids =
               List.map
                 (fun name ->
-                  let decl = new_local_type ~expansion_scope ~loc:name.loc () in
+                  let decl = new_local_type ~loc:name.loc () in
                   let (id, new_env) =
                     Env.enter_type ~scope:expansion_scope name.txt decl !env in
                   env := new_env;

@@ -1288,8 +1288,12 @@ let get_new_abstract_name s =
   if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
   Printf.sprintf "%s%d" s index
 
-let new_local_type ?(loc = Location.none)
-    ?(expansion_scope = Btype.lowest_level) ?manifest () =
+let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
+  let manifest, expansion_scope =
+    match manifest_and_scope with
+      None -> None, Btype.lowest_level
+    | Some (ty, scope) -> Some ty, scope
+  in
   {
     type_params = [];
     type_arity = 0;
@@ -1315,13 +1319,13 @@ let instance_constructor ?in_pattern cstr =
   For_copy.with_scope (fun scope ->
     begin match in_pattern with
     | None -> ()
-    | Some (env, expansion_scope) ->
+    | Some (env, fresh_constr_scope) ->
         let process existential =
-          let decl = new_local_type ~expansion_scope () in
+          let decl = new_local_type () in
           let name = existential_name cstr existential in
           let (id, new_env) =
             Env.enter_type (get_new_abstract_name name) decl !env
-              ~scope:expansion_scope in
+              ~scope:fresh_constr_scope in
           env := new_env;
           let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
           let tv = copy scope existential in
@@ -2130,7 +2134,7 @@ let reify env t =
   let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let decl = new_local_type ~expansion_scope:fresh_constr_scope () in
+    let decl = new_local_type () in
     let (id, new_env) =
       Env.enter_type (get_new_abstract_name name) decl !env
         ~scope:fresh_constr_scope in
@@ -2439,7 +2443,8 @@ let add_gadt_equation env source destination =
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())
     in
-    let decl = new_local_type ~expansion_scope ~manifest:destination () in
+    let decl =
+      new_local_type ~manifest_and_scope:(destination, expansion_scope) () in
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end
