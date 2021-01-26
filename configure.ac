@@ -1294,11 +1294,15 @@ sockets=true
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
-    [cclibs="$cclibs -lws2_32"],
+    [cclibs="$cclibs -lws2_32"
+    AC_SEARCH_LIBS([socket], [ws2_32])],
   [*-*-haiku],
-    [cclibs="$cclibs -lnetwork"],
+    [cclibs="$cclibs -lnetwork"
+    AC_SEARCH_LIBS([socket], [network])],
   [*-*-solaris*],
-    [cclibs="$cclibs -lsocket -lnsl"],
+    [cclibs="$cclibs -lsocket -lnsl"
+    AC_SEARCH_LIBS([socket], [socket])
+    AC_SEARCH_LIBS([inet_ntop], [nsl])],
   [
     AC_CHECK_FUNCS(
       [socket socketpair bind listen accept connect],
