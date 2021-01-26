@@ -63,7 +63,7 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
   | Tpat_construct (_, cstr, vs, vto) ->
       let name = cstr.cstr_name in
       begin match (name, vs, vto) with
-        ("::", [v1;v2], _) ->
+        ("::", [v1;v2], None) ->
           fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
       | (_, _, None) ->
           fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
@@ -106,13 +106,13 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "@[(%a)@]" pretty_or v
 
 and pretty_car ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [_ ; _], _)
+| Tpat_construct (_,cstr, [_ ; _], None)
     when is_cons cstr ->
       fprintf ppf "(%a)" pretty_val v
 | _ -> pretty_val ppf v
 
 and pretty_cdr ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [v1 ; v2], _)
+| Tpat_construct (_,cstr, [v1 ; v2], None)
     when is_cons cstr ->
       fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
 | _ -> pretty_val ppf v
