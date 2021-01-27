@@ -99,6 +99,12 @@ val map_val : ('a -> 'b) -> 'a t -> 'b t
    a suspension, but on the other hand it performs more work eagerly
    that may not be useful if you never force the function result.
 
+   If [f] raises an exception, it will be raised immediately when
+   [is_val x], or raised only when forcing the thunk otherwise.
+
+   If [map_val f x] does not raise an exception, then
+   [is_val (map_val f x)] is equal to [is_val x].
+
     @since 4.13.0 *)
 
 
