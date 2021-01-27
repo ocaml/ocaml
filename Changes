@@ -137,6 +137,9 @@ Working version
 
 ### Standard library:
 
+- #10177: Seq.(delay : (unit -> 'a t) -> 'a t)
+  (Gabriel Scherer, review by Jeremy Yallop and François Pottier)
+
 - #14381: Add String.find_{first,last}_index, String.find_{first,last},
   String.[r]find_all.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, Ali Caglayan and

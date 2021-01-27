@@ -434,6 +434,32 @@ val iterate : ('a -> 'a) -> 'a -> 'a t
 
     @since 4.14 *)
 
+val delay : (unit -> 'a t) -> 'a t
+(** [delay (fun () -> seq)] has the same elements as [seq], but the expression
+    [seq] is only evaluated when the first element is requested.
+
+   For example,
+   {[
+   let rec of_tree t =
+     match t with
+     | Leaf v -> Seq.return v
+     | Node(l, r) -> Seq.append (of_tree l) (of_tree r)
+   ]}
+   does not behave as expected, as it traverses its input tree strictly
+   even if the output sequence is not forced.
+
+   This function could instead be written as follows:
+   {[
+   let rec of_tree t =
+     Seq.delay @@ fun () ->
+     match t with
+     | Leaf v -> Seq.return v
+     | Node(l, r) -> Seq.append (of_tree l) (of_tree r)
+   ]}
+
+   @since 5.5
+*)
+
 (** {1 Transforming sequences} *)
 
 (** The functions in this section are lazy: that is, they return sequences

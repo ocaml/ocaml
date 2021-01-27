@@ -320,4 +320,14 @@ let () =
   assert (!!(Seq.(take 3 (map head matrix))) = [(0, 0); (0, 1); (0, 2)]);
   ()
 
+(* delay *)
+let () =
+  let do_not_force_too_much =
+    Seq.cons
+      (Seq.return ())
+      (Seq.delay @@ fun () -> Seq.return (assert false)) in
+  match Seq.concat do_not_force_too_much () with
+  | Seq.Nil -> assert false
+  | Seq.Cons ((), seq) -> ignore seq
+
 let () = print_endline "OK";;
