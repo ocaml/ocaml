@@ -592,3 +592,11 @@ let of_seq seq =
       | Seq.Cons (x, next) -> x :: direct (depth-1) next
   in
   direct 500 seq
+(* retrieve elements from list : retrieve_n_first [1;2;3] 2 => output: [1;2] *)  
+let retrieve_n_first list n=
+    let rec aux list n = 
+        match n, list with 
+        | _, [] -> []
+        | 0, _ -> []
+        | k, x :: l -> x :: aux l (k-1) in
+    aux list n
