@@ -84,7 +84,7 @@ let lazy_is_val = is_val
 let map f x =
   lazy (f (force x))
 
-let opportune_map f x =
+let map_val f x =
   if is_val x
   then lazy_from_val (f (force x))
   else lazy (f (force x))

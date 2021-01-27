@@ -30,14 +30,14 @@ let _ =
   let log, show_log = logger () in
   let x = lazy (log "x"; 41) in
   let y =
-    log "opportune_map";
-    Lazy.opportune_map (fun n -> log "y"; n+1) x in
+    log "map_val";
+    Lazy.map_val (fun n -> log "y"; n+1) x in
   assert (not (Lazy.is_val y));
   log "force y";
   show_log (Lazy.force y)
 ;;
 [%%expect{|
-- : string list * int = (["opportune_map"; "force y"; "x"; "y"], 42)
+- : string list * int = (["map_val"; "force y"; "x"; "y"], 42)
 |}]
 
 let _ =
@@ -46,13 +46,12 @@ let _ =
   log "force x";
   let () = ignore (Lazy.force x) in
   let y =
-    log "opportune_map";
-    Lazy.opportune_map (fun n -> log "y"; n+1) x in
+    log "map_val";
+    Lazy.map_val (fun n -> log "y"; n+1) x in
   assert (Lazy.is_val y);
   log "y is val";
   show_log (Lazy.force y)
 ;;
 [%%expect{|
-- : string list * int =
-(["force x"; "x"; "opportune_map"; "y"; "y is val"], 42)
+- : string list * int = (["force x"; "x"; "map_val"; "y"; "y is val"], 42)
 |}]

@@ -77,18 +77,7 @@ val map : ('a -> 'b) -> 'a t -> 'b t
     @since 4.13.0
 *)
 
-val opportune_map : ('a -> 'b) -> 'a t -> 'b t
-(** [opportune_map f x] applies [f] directly if [x] is already
-    forced, otherwise it behaves as [map f x].
-
-   When [x] is already forced, this behavior saves the construction
-   of a suspension, but on the other hand it performs more work
-   eagerly that may not be useful if you never force the function result.
-
-    @since 4.13.0
-*)
-
-(** {1 Already-forced suspensions} *)
+(** {1 Reasoning on already-forced suspensions} *)
 
 val is_val : 'a t -> bool
 (** [is_val x] returns [true] if [x] has already been forced and
@@ -101,6 +90,16 @@ val from_val : 'a -> 'a t
     It is the same as [let x = v in lazy x], but uses dynamic tests
     to optimize suspension creation in some cases.
     @since 4.00.0 *)
+
+val map_val : ('a -> 'b) -> 'a t -> 'b t
+(** [map_val f x] applies [f] directly if [x] is already forced,
+   otherwise it behaves as [map f x].
+
+   When [x] is already forced, this behavior saves the construction of
+   a suspension, but on the other hand it performs more work eagerly
+   that may not be useful if you never force the function result.
+
+    @since 4.13.0 *)
 
 
 (** {1 Advanced}
