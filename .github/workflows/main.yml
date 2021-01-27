@@ -9,7 +9,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: configure tree
-      run: ./configure --disable-naked-pointers --disable-stdlib-manpages
+      run: ./configure --disable-naked-pointers --disable-stdlib-manpages --disable-dependency-generation --enable-ocamltest
     - name: Build
       run: |
         make -j world.opt
