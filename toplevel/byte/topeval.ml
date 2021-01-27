@@ -37,6 +37,8 @@ let getvalue name =
 let setvalue name v =
   toplevel_value_bindings := String.Map.add name v !toplevel_value_bindings
 
+let implementation_label = ""
+
 (* Return the value referred to by a path *)
 
 let rec eval_address = function
