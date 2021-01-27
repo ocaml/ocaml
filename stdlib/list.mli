@@ -497,3 +497,11 @@ val of_seq : 'a Seq.t -> 'a list
 (** Create a list from the iterator.
     @since 4.07
  *)
+
+let retrieve_n_first : 'a list -> int -> 'a list
+(*
+Retrieve the first n elements from a list to get a sublist
+example :
+retrieve_n_first [1;2;3] 2 
+output : [1;2]
+*)
