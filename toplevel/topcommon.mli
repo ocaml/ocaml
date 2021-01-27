@@ -68,7 +68,7 @@ val print_out_phrase :
 
 module type PRINTER = sig
 
-  module Printer: Genprintval.S
+  module Printer: Genprintval.S with type t = Obj.t
 
   val print_value: Env.t -> Printer.t -> formatter -> Types.type_expr -> unit
 
@@ -97,9 +97,8 @@ module type PRINTER = sig
 
 end
 
-module MakePrinter (O : Genprintval.OBJ) (P : Genprintval.S with type t = O.t):
+module MakePrinter (P : Genprintval.S with type t = Obj.t):
   PRINTER with module Printer = P
-           and type Printer.t = O.t
 
 (* Interface with toplevel directives *)
 

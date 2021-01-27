@@ -125,7 +125,7 @@ module EvalPath = struct
   let same_value v1 v2 = (v1 == v2)
 end
 
-include Topcommon.MakePrinter(Obj)(Genprintval.Make(Obj)(EvalPath))
+include Topcommon.MakePrinter(Genprintval.Make(Obj)(EvalPath))
 
 (* Load in-core and execute a lambda term *)
 
