@@ -1319,17 +1319,18 @@ and exhaust_single_row ext p ps n =
      best way to make a non-fragile distinction between "all As" and
      "at least one B".
   *)
-  List.to_seq [Some p; None] |> Seq.flat_map
-    (function
-      | Some p ->
-          let sub_witnesses = exhaust ext [ps] (n - 1) in
-          Seq.map (fun row -> p :: row) sub_witnesses
-      | None ->
-          (* note: calling [exhaust] recursively of p would
-             result in an infinite loop in the case n=1 *)
-          let p_witnesses = specialize_and_exhaust ext [[p]] 1 in
-          Seq.map (fun p_row -> p_row @ omegas (n - 1)) p_witnesses
-    )
+  let sub_witnesses =
+    exhaust ext [ps] (n - 1)
+    |> Seq.map (fun row -> p :: row)
+  in
+  let p_witnesses () =
+    let omega_row = omegas (n - 1) in
+    (* note: calling [exhaust] recursively of p would
+       result in an infinite loop in the case n=1 *)
+    specialize_and_exhaust ext [[p]] 1
+    |> Seq.map (fun p_row -> p_row @ omega_row)
+  in
+  Seq.append sub_witnesses (Seq.delay p_witnesses)
 
 and specialize_and_exhaust ext pss n =
   let pss = simplify_first_col pss in

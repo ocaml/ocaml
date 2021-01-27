@@ -27,6 +27,8 @@ let return x () = Cons (x, empty)
 
 let cons x next () = Cons (x, next)
 
+let delay delayed_seq () = delayed_seq () ()
+
 let rec append seq1 seq2 () =
   match seq1() with
   | Nil -> seq2()
