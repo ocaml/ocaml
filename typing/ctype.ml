@@ -1134,7 +1134,7 @@ let rec copy ?partial ?keep_names scope ty =
   let copy = copy ?partial ?keep_names scope in
   let ty = repr ty in
   match ty.desc with
-    Tsubst ty -> ty
+    Tsubst (ty, _) -> ty
   | _ ->
     if ty.level <> generic_level && partial = None then ty else
     (* We only forget types that are non generic and do not contain
@@ -1153,7 +1153,7 @@ let rec copy ?partial ?keep_names scope ty =
     For_copy.save_desc scope ty desc;
     let t = newvar() in          (* Stub *)
     set_scope t ty.scope;
-    Private_type_expr.set_desc ty (Tsubst t);
+    Private_type_expr.set_desc ty (Tsubst (t, None));
     Private_type_expr.set_desc t
       begin match desc with
       | Tconstr (p, tl, _) ->
@@ -1182,9 +1182,9 @@ let rec copy ?partial ?keep_names scope ty =
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
           begin match more.desc with
-            Tsubst {desc = Ttuple [_;ty2]} ->
+            Tsubst (_, Some ty2) ->
               (* This variant type has been already copied *)
-              Private_type_expr.set_desc ty (Tsubst ty2);
+              Private_type_expr.set_desc ty (Tsubst (ty2, None));
               (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
@@ -1192,7 +1192,7 @@ let rec copy ?partial ?keep_names scope ty =
               let keep = more.level <> generic_level && partial = None in
               let more' =
                 match more.desc with
-                  Tsubst ty -> ty
+                  Tsubst (ty, None) -> ty
                   (* TODO: is this case possible?
                      possibly an interaction with (copy more) below? *)
                 | Tconstr _ | Tnil ->
@@ -1235,7 +1235,7 @@ let rec copy ?partial ?keep_names scope ty =
               in
               (* Register new type first for recursion *)
               Private_type_expr.set_desc
-                more (Tsubst(newgenty(Ttuple[more';t])));
+                more (Tsubst (more', Some t));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
@@ -2058,7 +2058,7 @@ let polyfy env ty vars =
     | Tvar name when ty.level = generic_level ->
         For_copy.save_desc scope ty ty.desc;
         let t = newty (Tunivar name) in
-        Private_type_expr.set_desc ty (Tsubst t);
+        Private_type_expr.set_desc ty (Tsubst (t, None));
         Some t
     | _ -> None
   in

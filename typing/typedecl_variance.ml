@@ -94,7 +94,7 @@ let compute_variance env visited vari ty =
     | Tfield (_, _, ty1, ty2) ->
         compute_same ty1;
         compute_same ty2
-    | Tsubst ty ->
+    | Tsubst (ty, _) ->
         compute_same ty
     | Tvariant row ->
         let row = Btype.row_repr row in

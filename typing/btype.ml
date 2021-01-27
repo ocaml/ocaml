@@ -321,7 +321,7 @@ let fold_type_expr f init ty =
     f result ty2
   | Tnil                -> init
   | Tlink ty            -> f init ty
-  | Tsubst ty           -> f init ty
+  | Tsubst (ty, _)      -> f init ty
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
     let result = f init ty in

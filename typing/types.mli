@@ -108,7 +108,7 @@ and type_desc =
   | Tlink of type_expr
   (** Indirection used by unification engine. *)
 
-  | Tsubst of type_expr         (* for copying *)
+  | Tsubst of type_expr * type_expr option    (* for copying *)
   (** [Tsubst] is used temporarily to store information in low-level
       functions manipulating representation of types, such as
       instantiation or copy.

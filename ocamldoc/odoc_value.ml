@@ -76,7 +76,7 @@ let parameter_list_from_arrows typ =
       Types.Tarrow (l, t1, t2, _) ->
         (l, t1) :: (iter t2)
     | Types.Tlink texp
-    | Types.Tsubst texp ->
+    | Types.Tsubst (texp, _) ->
         iter texp
     | Types.Tpoly (texp, _) -> iter texp
     | Types.Tvar _
@@ -115,7 +115,7 @@ let dummy_parameter_list typ =
               Odoc_parameter.sn_type = t ;
               Odoc_parameter.sn_text = None }
     | Types.Tlink t2
-    | Types.Tsubst t2 ->
+    | Types.Tsubst (t2, _) ->
         (iter (label, t2))
 
     | _ ->

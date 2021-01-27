@@ -518,7 +518,7 @@ and raw_type_desc ppf = function
         raw_type t1 raw_type t2
   | Tnil -> fprintf ppf "Tnil"
   | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
-  | Tsubst t -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
+  | Tsubst (t, _) -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
   | Tunivar name -> fprintf ppf "Tunivar %a" print_name name
   | Tpoly (t, tl) ->
       fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"
@@ -915,7 +915,7 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil -> ()
-    | Tsubst ty -> mark_loops_rec visited ty
+    | Tsubst (ty, _) -> mark_loops_rec visited ty
     | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
     | Tpoly (ty, tyl) ->
         List.iter (fun t -> add_alias t) tyl;
@@ -1022,7 +1022,7 @@ let rec tree_of_typexp sch ty =
         tree_of_typobject sch fi !nm
     | Tnil | Tfield _ ->
         tree_of_typobject sch ty None
-    | Tsubst ty ->
+    | Tsubst (ty, _) ->
         tree_of_typexp sch ty
     | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
@@ -1162,7 +1162,7 @@ let filter_params tyl =
     List.fold_left
       (fun tyl ty ->
         let ty = repr ty in
-        if List.memq ty tyl then Btype.newgenty (Tsubst ty) :: tyl
+        if List.memq ty tyl then Btype.newgenty (Tsubst (ty, None)) :: tyl
         else ty :: tyl)
       [] tyl
   in List.rev params

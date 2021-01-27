@@ -155,12 +155,12 @@ let rec typexp copy_scope s ty =
           else newty2 ty.level desc
         in
         For_copy.save_desc copy_scope ty desc;
-        Private_type_expr.set_desc ty (Tsubst ty');
+        Private_type_expr.set_desc ty (Tsubst (ty', None));
         (* TODO: move this line to btype.ml
            there is a similar problem also in ctype.ml *)
         ty'
       else ty
-  | Tsubst ty ->
+  | Tsubst (ty, _) ->
       ty
   | Tfield (m, k, _t1, _t2) when not s.for_saving && m = dummy_method
       && field_kind_repr k <> Fabsent && (repr ty).level < generic_level ->
@@ -179,8 +179,7 @@ let rec typexp copy_scope s ty =
     (* Make a stub *)
     let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
     Private_type_expr.set_scope ty' ty.scope;
-    (* TODO: figure out why not use set_scope *)
-    Private_type_expr.set_desc ty (Tsubst ty');
+    Private_type_expr.set_desc ty (Tsubst (ty', None));
     Private_type_expr.set_desc ty'
       begin if has_fixed_row then
         match tm.desc with (* PR#7348 *)
@@ -216,9 +215,9 @@ let rec typexp copy_scope s ty =
           (* We must substitute in a subtle way *)
           (* Tsubst takes a tuple containing the row var and the variant *)
           begin match more.desc with
-            Tsubst {desc = Ttuple [_;ty2]} ->
+            Tsubst (_, Some ty2) ->
               (* This variant type has been already copied *)
-              Private_type_expr.set_desc ty (Tsubst ty2);
+              Private_type_expr.set_desc ty (Tsubst (ty2, None));
               (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
@@ -228,7 +227,7 @@ let rec typexp copy_scope s ty =
               (* Various cases for the row variable *)
               let more' =
                 match more.desc with
-                  Tsubst ty -> ty
+                  Tsubst (ty, None) -> ty
                 | Tconstr _ | Tnil -> typexp copy_scope s more
                 | Tunivar _ | Tvar _ ->
                     For_copy.save_desc copy_scope more more.desc;
@@ -238,7 +237,7 @@ let rec typexp copy_scope s ty =
               in
               (* Register new type first for recursion *)
               Private_type_expr.set_desc more
-                (Tsubst(newgenty(Ttuple[more';ty'])));
+                (Tsubst (more', Some ty'));
               (* TODO: check if more' can be eliminated *)
               (* Return a new copy *)
               let row =

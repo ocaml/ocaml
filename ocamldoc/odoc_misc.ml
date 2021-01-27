@@ -507,7 +507,7 @@ let remove_option typ =
     | Types.Tvariant _
     | Types.Tpackage _ -> t
     | Types.Tlink t2
-    | Types.Tsubst t2 -> iter t2.Types.desc
+    | Types.Tsubst (t2, _) -> iter t2.Types.desc
   in
   Types.Private_type_expr.create (iter typ.Types.desc)
     ~level:typ.Types.level ~scope:typ.Types.scope ~id:typ.Types.id
