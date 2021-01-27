@@ -635,7 +635,7 @@ let f x = (x : < m : 'a. 'b * (< n : 'a; .. > as 'a) > as 'b)#m;;
 fun (x : < p : 'a. < m : 'a ; n : 'b ; .. > as 'a > as 'b) -> x#p;;
 fun (x : <m:'a. 'a * <p:'b. 'b * 'c * 'd> as 'c> as 'd) -> x#m;;
 (* printer is wrong on the next (no official syntax) *)
-fun (x : <m:'a.<p:'a;..> >) -> x#m;;
+fun (x : <m:'a. <p:'a;..> >) -> x#m;;
 [%%expect {|
 - : (< m : 'a. 'a * 'b > as 'b) -> 'c * 'b = <fun>
 - : (< m : 'a. 'b * 'a list > as 'b) -> 'b * 'c list = <fun>
@@ -833,7 +833,7 @@ Error: This field value has type 'b option ref which is less general than
 
 (* Type variable scope *)
 
-let f (x: <m:'a.<p: 'a * 'b> as 'b>) (y : 'b) = ();;
+let f (x: <m:'a. <p: 'a * 'b> as 'b>) (y : 'b) = ();;
 let f (x: <m:'a. 'a * (<p:int*'b> as 'b)>) (y : 'b) = ();;
 [%%expect {|
 val f : < m : 'a. < p : 'a * 'c > as 'c > -> 'b -> unit = <fun>
