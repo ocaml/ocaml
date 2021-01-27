@@ -498,7 +498,7 @@ val of_seq : 'a Seq.t -> 'a list
     @since 4.07
  *)
 
-let retrieve_n_first : 'a list -> int -> 'a list
+val retrieve_n_first : 'a list -> int -> 'a list
 (*
 Retrieve the first n elements from a list to get a sublist
 example :
