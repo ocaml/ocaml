@@ -149,6 +149,11 @@ Working version
   (Oghenevwogaga Ebresafe, review by Nicolás Ojeda Bär,
   Gabriel Scherer and Xavier Van de Woestyne)
 
+- #10352: Seq.(concat : 'a t t -> 'a t)
+  Seq.concat_map as an alias to Seq.flat_map,
+  (Gabriel Scherer, review by Ulugbek Abdullaev and Daniel Bünzli
+   and Nicolás Ojeda Bär and Florian Angeletti)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`
