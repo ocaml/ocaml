@@ -483,28 +483,32 @@ static void realloc_mark_stack (struct mark_stack* stk)
   mark_entry* new;
   uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
 
-  if ( mark_stack_bsize < caml_heap_size(Caml_state->shared_heap) / 32) {
-    caml_gc_log ("Growing mark stack to %"ARCH_INTNAT_PRINTF_FORMAT"uk bytes\n",
-                 (intnat) mark_stack_bsize * 2 / 1024);
+  caml_gc_log ("Growing mark stack to %"ARCH_INTNAT_PRINTF_FORMAT"uk bytes\n",
+               (intnat) mark_stack_bsize * 2 / 1024);
 
-    new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
-                                                2 * mark_stack_bsize);
-    if (new != NULL) {
-      stk->stack = new;
-      stk->size *= 2;
-      return;
-    }
-    caml_gc_log ("No room for growing mark stack. Pruning..\n");
+  new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                              2 * mark_stack_bsize);
+  if (new != NULL) {
+    stk->stack = new;
+    stk->size *= 2;
+    return;
   }
-  caml_gc_log ("Mark stack size is %"ARCH_INTNAT_PRINTF_FORMAT"u"
-               "bytes (> 32 * major heap size of this domain %"
-               ARCH_INTNAT_PRINTF_FORMAT"u bytes. Pruning..\n",
-               mark_stack_bsize,
-               caml_heap_size(Caml_state->shared_heap));
-  mark_stack_prune(stk);
+
+  caml_fatal_error("No room for growing mark stack.\n");
+  /* TODO: re-enable mark stack prune when safe to remark a pool
+    from a foreign domain which is also allocating from that pool
+   */
+  if (0) {
+    caml_gc_log ("Mark stack size is %"ARCH_INTNAT_PRINTF_FORMAT"u"
+                "bytes (> 32 * major heap size of this domain %"
+                ARCH_INTNAT_PRINTF_FORMAT"u bytes. Pruning..\n",
+                mark_stack_bsize,
+                caml_heap_size(Caml_state->shared_heap));
+    mark_stack_prune(stk);
+  }
 }
 
-static void mark_stack_push(struct mark_stack* stk, value block, 
+static void mark_stack_push(struct mark_stack* stk, value block,
       uintnat offset, intnat* work)
 {
   value v;
@@ -1402,7 +1406,7 @@ static void mark_stack_prune (struct mark_stack* stk)
       mark_stack[large_idx++] = me;
       continue;
     }
-    caml_skiplist_insert(&chunk_sklist, (uintnat)pool, 
+    caml_skiplist_insert(&chunk_sklist, (uintnat)pool,
     (uintnat)pool + sizeof(pool));
   }
 
@@ -1417,7 +1421,7 @@ static void mark_stack_prune (struct mark_stack* stk)
   });
 
   caml_gc_log("Mark stack overflow. Postponing %d pools", Caml_state->pools_to_rescan_count);
-  
+
   stk->count = large_idx;
 }
 
