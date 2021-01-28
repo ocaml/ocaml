@@ -1169,7 +1169,7 @@ let filter_params tyl =
     List.fold_left
       (fun tyl ty ->
         let ty = repr ty in
-        if List.memq ty tyl then Btype.newgenty (Tsubst (ty, None)) :: tyl
+        if List.memq ty tyl then Btype.newgenty (Ttuple [ty]) :: tyl
         else ty :: tyl)
       (* Two parameters might be identical due to a constraint but we need to
          print them differently in order to make the output syntactically valid.

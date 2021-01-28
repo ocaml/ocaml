@@ -1477,6 +1477,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
   end
 
 let instance_poly' cleanup_scope ~keep_names fixed univars sch =
+  (* In order to compute univars below, [sch] schould not contain [Tsubst] *)
   let univars = List.map repr univars in
   let copy_var ty =
     match ty.desc with
@@ -1498,7 +1499,6 @@ let instance_poly ?(keep_names=false) fixed univars sch =
 
 let instance_label fixed lbl =
   For_copy.with_scope (fun scope ->
-    let ty_res = copy scope lbl.lbl_res in
     let vars, ty_arg =
       match repr lbl.lbl_arg with
         {desc = Tpoly (ty, tl)} ->
@@ -1506,6 +1506,8 @@ let instance_label fixed lbl =
       | _ ->
           [], copy scope lbl.lbl_arg
     in
+    (* call [copy] after [instance_poly] to avoid introducing [Tsubst] *)
+    let ty_res = copy scope lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
 
