@@ -917,8 +917,7 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil -> ()
-    | Tsubst (ty, None) -> mark_loops_rec visited ty
-    | Tsubst (_, Some _) -> ()
+    | Tsubst _ -> ()  (* we do not print arguments *)
     | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
     | Tpoly (ty, tyl) ->
         List.iter (fun t -> add_alias t) tyl;
@@ -1025,10 +1024,7 @@ let rec tree_of_typexp sch ty =
         tree_of_typobject sch fi !nm
     | Tnil | Tfield _ ->
         tree_of_typobject sch ty None
-    | Tsubst (ty, None) ->
-        tree_of_typexp sch ty
-          (* See filter_params below *)
-    | Tsubst (_, Some _) ->
+    | Tsubst _ ->
         Otyp_stuff "<Tsubst>"
           (* This case should not happen *)
     | Tlink _ ->
@@ -1173,7 +1169,8 @@ let filter_params tyl =
         else ty :: tyl)
       (* Two parameters might be identical due to a constraint but we need to
          print them differently in order to make the output syntactically valid.
-         We use Tsubst because it does not appear in a valid type. *)
+         We use [Ttuple [ty]] because it is printed as [ty]. *)
+      (* Replacing fold_left by fold_right does not work! *)
       [] tyl
   in List.rev params
 
