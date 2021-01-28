@@ -78,6 +78,10 @@ case "${OCAML_ARCH}" in
   linux) ;;
   cygwin|cygwin64|mingw|mingw64|msvc|msvc64)
     error "Don't run this test under Windows";;
+  solaris)
+    echo This version of OCaml does not support Solaris. Exiting.
+    exit
+  ;;
   *) arch_error;;
 esac
 

@@ -106,6 +106,10 @@ case "${OCAML_ARCH}" in
     . "$HOME/.profile"
     . "$HOME/.msenv64"
   ;;
+  solaris)
+    echo This version of OCaml does not support Solaris. Exiting.
+    exit
+  ;;
   *) arch_error;;
 esac
 
