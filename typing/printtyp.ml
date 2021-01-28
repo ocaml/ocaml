@@ -917,7 +917,7 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil -> ()
-    | Tsubst (ty, _) -> mark_loops_rec visited ty
+    | Tsubst _ -> ()
     | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
     | Tpoly (ty, tyl) ->
         List.iter (fun t -> add_alias t) tyl;
@@ -1024,8 +1024,8 @@ let rec tree_of_typexp sch ty =
         tree_of_typobject sch fi !nm
     | Tnil | Tfield _ ->
         tree_of_typobject sch ty None
-    | Tsubst (ty, _) ->
-        tree_of_typexp sch ty
+    | Tsubst _ ->
+        Otyp_stuff "<Tsubst>"
     | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
