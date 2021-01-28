@@ -300,7 +300,7 @@ let rec fold_row f init row =
 let iter_row f row =
   fold_row (fun () v -> f v) () row
 
-let fold_type_expr f init ty =
+let rec fold_type_expr f init ty =
   match ty.desc with
     Tvar _              -> init
   | Tarrow (_, ty1, ty2, _) ->
@@ -320,7 +320,7 @@ let fold_type_expr f init ty =
     let result = f init ty1 in
     f result ty2
   | Tnil                -> init
-  | Tlink ty            -> f init ty
+  | Tlink ty            -> fold_type_expr f init ty
   | Tsubst _            -> assert false
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
