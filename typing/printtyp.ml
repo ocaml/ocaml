@@ -917,7 +917,8 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil -> ()
-    | Tsubst _ -> ()
+    | Tsubst (ty, None) -> mark_loops_rec visited ty
+    | Tsubst (_, Some _) -> ()
     | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
     | Tpoly (ty, tyl) ->
         List.iter (fun t -> add_alias t) tyl;
@@ -1024,8 +1025,12 @@ let rec tree_of_typexp sch ty =
         tree_of_typobject sch fi !nm
     | Tnil | Tfield _ ->
         tree_of_typobject sch ty None
-    | Tsubst _ ->
+    | Tsubst (ty, None) ->
+        tree_of_typexp sch ty
+          (* See filter_params below *)
+    | Tsubst (_, Some _) ->
         Otyp_stuff "<Tsubst>"
+          (* This case should not happen *)
     | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
@@ -1166,6 +1171,9 @@ let filter_params tyl =
         let ty = repr ty in
         if List.memq ty tyl then Btype.newgenty (Tsubst (ty, None)) :: tyl
         else ty :: tyl)
+      (* Two parameters might be identical due to a constraint but we need to
+         print them differently in order to make the output syntactically valid.
+         We use Tsubst because it does not appear in a valid type. *)
       [] tyl
   in List.rev params
 
