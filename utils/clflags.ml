@@ -112,6 +112,7 @@ and dump_instr = ref false              (* -dinstr *)
 and keep_camlprimc_file = ref false     (* -dcamlprimc *)
 
 let keep_asm_file = ref false           (* -S *)
+let asm_compiler = ref (None: string option) (* -asm *)
 let optimize_for_speed = ref true       (* -compact *)
 and opaque = ref false                  (* -opaque *)
 

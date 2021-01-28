@@ -137,6 +137,7 @@ val dump_flambda_let : int option ref
 val dump_instr : bool ref
 val keep_camlprimc_file : bool ref
 val keep_asm_file : bool ref
+val asm_compiler : string option ref
 val optimize_for_speed : bool ref
 val dump_cmm : bool ref
 val dump_selection : bool ref

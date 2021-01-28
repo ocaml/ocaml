@@ -230,6 +230,7 @@ module type Optcomp_options = sig
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
+  val _asm : string -> unit
   val _shared : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
@@ -242,6 +243,7 @@ module type Opttop_options = sig
   include Optcommon_options
   val _verbose : unit -> unit
   val _S : unit -> unit
+  val _asm : string -> unit
 end;;
 
 module type Ocamldoc_options = sig
