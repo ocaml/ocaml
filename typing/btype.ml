@@ -487,15 +487,6 @@ let rec copy_kind = function
 let copy_commu c =
   if commu_repr c = Cok then Cok else Clink (ref Cunknown)
 
-(* Since univars may be used as row variables, we need to do some
-   encoding during substitution *)
-let rec norm_univar ty =
-  match ty.desc with
-    Tunivar _ | Tsubst _ -> ty
-  | Tlink ty           -> norm_univar ty
-  | Ttuple (ty :: _)   -> norm_univar ty
-  | _                  -> assert false
-
 let rec copy_type_desc ?(keep_names=false) f = function
     Tvar _ as ty        -> if keep_names then ty else Tvar None
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
@@ -512,7 +503,7 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tsubst _            -> assert false
   | Tunivar _ as ty     -> ty (* always keep the name *)
   | Tpoly (ty, tyl)     ->
-      let tyl = List.map (fun x -> norm_univar (f x)) tyl in
+      let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
   | Tpackage (p, n, l)  -> Tpackage (p, n, List.map f l)
 
