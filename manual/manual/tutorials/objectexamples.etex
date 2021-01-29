@@ -1091,11 +1091,13 @@ class virtual comparable =
   end;;
 \end{caml_example}
 We then define a subclass "money" of "comparable". The class "money"
-simply wraps floats as comparable objects. We will extend it below with
-more operations. We have to use a type constraint on the class parameter "x"
-because the primitive "<=" is a polymorphic function in
-OCaml.  The "inherit" clause ensures that the type of objects
-of this class is an instance of "#comparable".
+simply wraps floats as comparable objects.\footnote{floats are an
+approximation of decimal numbers, they are unsuitable for use in most
+monetary calculations as they may introduce errors.}  We will extend
+"money" below with more operations. We have to use a type constraint on
+the class parameter "x" because the primitive "<=" is a polymorphic
+function in OCaml.  The "inherit" clause ensures that the type of
+objects of this class is an instance of "#comparable".
 \begin{caml_example}{toplevel}
 class money (x : float) =
   object
