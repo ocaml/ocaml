@@ -473,8 +473,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 find row.row_fields
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
-          | Tsubst (ty, _) ->
-              tree_of_val (depth - 1) obj ty
+          | Tsubst _ ->
+              assert false
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
