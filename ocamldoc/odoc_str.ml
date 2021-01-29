@@ -32,11 +32,12 @@ let string_of_variance t (co,cn) =
 let rec is_arrow_type t =
   match t.Types.desc with
     Types.Tarrow _ -> true
-  | Types.Tlink t2 | Types.Tsubst (t2, _) -> is_arrow_type t2
+  | Types.Tlink t2 -> is_arrow_type t2
   | Types.Ttuple _
   | Types.Tconstr _
   | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
+  | Types.Tsubst _ -> assert false
 
 let raw_string_of_type_list sep type_list =
   let buf = Buffer.create 256 in
