@@ -856,13 +856,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (caml_something_to_do) {
-        /* We must check here so that if a signal is pending and its
-           handler triggers an exception, the exception is trapped
-           by the current try...with, not the enclosing one. */
-        pc--; /* restart the POPTRAP after processing the signal */
-        goto process_actions;
-      }
       Caml_state->trapsp = sp + Long_val(Trap_link_offset(sp));
       sp += 4;
       Next;
@@ -915,13 +908,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (caml_something_to_do) goto process_actions;
-      Next;
-
-    process_actions:
-      Setup_for_event;
-      caml_process_pending_actions();
-      Restore_after_event;
+      if (caml_check_pending_actions()) {
+        Setup_for_event;
+        caml_process_pending_actions();
+        Restore_after_event;
+      };
       Next;
 
 /* Calling C functions */

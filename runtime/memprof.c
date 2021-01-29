@@ -143,9 +143,8 @@ static uintnat callback_idx;
 
 /* Structure for thread-local variables. */
 struct caml_memprof_th_ctx {
-  /* [suspended] is used for masking memprof callbacks when
-     a callback is running or when an uncaught exception handler is
-     called. */
+  /* [suspended] is used for masking memprof sampling and callbacks
+     when a callback is running. */
   int suspended;
 
   /* [callback_status] contains:
@@ -564,7 +563,7 @@ void caml_memprof_set_suspended(int s)
 }
 
 /* In case of a thread context switch during a callback, this can be
-   called in a reetrant way. */
+   called in a reentrant way. */
 value caml_memprof_handle_postponed_exn(void)
 {
   value res = Val_unit;
@@ -817,8 +816,8 @@ void caml_memprof_renew_minor_sample(void)
 }
 
 /* Called when exceeding the threshold for the next sample in the
-   minor heap, from the C code (the handling is different when called
-   from natively compiled OCaml code). */
+   minor heap. Executes allocation callbacks immediately unless if
+   called from C code or if asynchronous callbacks are masked. */
 void caml_memprof_track_young(uintnat wosize, int from_caml,
                               int nallocs, unsigned char* encoded_alloc_lens)
 {
@@ -881,7 +880,8 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       t_idx = new_tracked(n_samples, alloc_wosz, SRC_NORMAL, 1,
                           Placeholder_offs(alloc_ofs), callstack);
       if (t_idx == Invalid_index) continue;
-      res = run_alloc_callback_exn(t_idx);
+      if (Caml_state->mask_async_callbacks < CAML_MASK_UNINTERRUPTIBLE)
+        res = run_alloc_callback_exn(t_idx);
       /* Has [caml_memprof_stop] been called during the callback? */
       stopped = local->entries.len == 0;
       if (stopped) {
@@ -947,10 +947,10 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
            [caml_memprof_track_young]. */
         t->block = Val_hp(Caml_state->young_ptr + Offs_placeholder(t->block));
 
-        /* We make sure that the action pending flag is not set
+        /* We make sure that the action_pending flag is not set
            systematically, which is to be expected, since we created
            a new block in the global entry array, but this new block
-           does not need promotion or deallocationc callback. */
+           does not need promotion or deallocation callback. */
         if (callback_idx == entries_global.len - 1)
           callback_idx = entries_global.len;
       }

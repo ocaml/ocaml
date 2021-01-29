@@ -215,14 +215,27 @@ enum caml_alloc_small_flags {
 
 extern void caml_alloc_small_dispatch (intnat wosize, int flags,
                                        int nallocs, unsigned char* alloc_lens);
-// Do not call asynchronous callbacks from allocation functions
+
+// When called from C (as opposed to the bytecode interpreter or via
+// caml_garbage_collection), do not call asynchronous callbacks from
+// allocation functions.
 #define Alloc_small_origin CAML_FROM_C
+
+// Stop at young_limit_c, which records the next major slice, minor
+// collection and memprof sample. Avoid stopping at young_limit,
+// because long-running user C code will keep taking the expensive
+// path repeatedly until it manually processes the asynchronous
+// callbacks.
+#define Alloc_small_limit                                               \
+  ((Alloc_small_origin == CAML_FROM_C) ?                                \
+   Caml_state_field(young_limit_c) : Caml_state_field(young_limit))
+
 #define Alloc_small_aux(result, wosize, tag, profinfo, track) do {     \
   CAMLassert ((wosize) >= 1);                                          \
   CAMLassert ((tag_t) (tag) < 256);                                    \
   CAMLassert ((wosize) <= Max_young_wosize);                           \
   Caml_state_field(young_ptr) -= Whsize_wosize (wosize);               \
-  if (Caml_state_field(young_ptr) < Caml_state_field(young_limit)) {   \
+  if (Caml_state_field(young_ptr) < Alloc_small_limit) {               \
     Setup_for_gc;                                                      \
     caml_alloc_small_dispatch((wosize), (track) | Alloc_small_origin,  \
                               1, NULL);                                \

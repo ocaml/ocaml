@@ -351,7 +351,8 @@ let handle_uncaught_exception' exn debugger_in_use =
           "Fatal error: out of memory in uncaught exception handler"
 
 (* This function is called by [caml_fatal_uncaught_exception] in
-   [runtime/printexc.c] which expects no exception is raised. *)
+   [runtime/printexc.c] which expects no exception is raised. It is
+   called with asynchronous exceptions disabled. *)
 let handle_uncaught_exception exn debugger_in_use =
   try
     handle_uncaught_exception' exn debugger_in_use
