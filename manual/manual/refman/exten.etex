@@ -1269,7 +1269,7 @@ explicitly.
 \begin{syntax}
 pattern:
      ...
-   | constr '(' "type" {{typeconstr-name}} ')' '(' pattern ':' typexpr ')'
+   | constr '(' "type" {{typeconstr-name}} ')' '(' pattern ')'
 ;
 \end{syntax}
 
@@ -1278,8 +1278,13 @@ and uses this name.
 
 \begin{caml_example*}{verbatim}
 type _ closure = Closure : ('a -> 'b) * 'a -> 'b closure
-let eval = fun (Closure (type a) (f, x : (a -> _) * _)) -> f (x : a)
+let eval = fun (Closure (type a) ((f : (a -> _)), x) -> f (x : a)
 \end{caml_example*}
+All existential type variables of the constructor must by introduced by
+the ("type" ...) construct and bound by type annotations on the
+outside of the constructor arguments. It is not always necessary
+to annotate all arguments, as it is enough for each existential type
+variable to appear once in those annotations.
 
 \lparagraph{p:gadt-equation-nonlocal-abstract}{Equations on non-local abstract types} (Introduced in OCaml
 4.04)

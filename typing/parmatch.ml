@@ -509,7 +509,7 @@ let do_set_args ~erase_mutable q r = match q with
 | {pat_desc = Tpat_construct (lid, c, omegas, _)} ->
     let args,rest = read_args omegas r in
     make_pat
-      (Tpat_construct (lid, c, args, None))
+      (Tpat_construct (lid, c, args, []))
       q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_variant (l, omega, row)} ->
@@ -834,7 +834,7 @@ let complete_tags nconsts nconstrs tags =
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
    Tpat_construct (mknoloc (Longident.Lident cstr.cstr_name),
-                   cstr, omegas cstr.cstr_arity, None)}
+                   cstr, omegas cstr.cstr_arity, [])}
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
@@ -1762,7 +1762,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
 | Tpat_construct (lid,c1,ps1,_), Tpat_construct (_,c2,ps2,_)
       when  Types.equal_tag c1.cstr_tag c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
-        make_pat (Tpat_construct (lid, c1, rs, None))
+        make_pat (Tpat_construct (lid, c1, rs, []))
           p.pat_type p.pat_env
 | Tpat_variant(l1,Some p1,row), Tpat_variant(l2,Some p2,_)
           when  l1=l2 ->
@@ -1899,8 +1899,8 @@ module Conv = struct
           let arg =
             match List.map loop lst with
             | []  -> None
-            | [p] -> Some (p, None)
-            | lst -> Some (mkpat (Ppat_tuple lst), None)
+            | [p] -> Some (p, [])
+            | lst -> Some (mkpat (Ppat_tuple lst), [])
           in
           mkpat (Ppat_construct(lid, arg))
       | Tpat_variant(label,p_opt,_row_desc) ->

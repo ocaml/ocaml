@@ -439,10 +439,9 @@ module P = struct
     | Ppat_construct (l, p) ->
         iter_loc sub l;
         iter_opt
-          (fun (p,vto) ->
+          (fun (p,vl) ->
             sub.pat sub p;
-            iter_opt (fun (vl,t) -> List.iter (iter_loc sub) vl; sub.typ sub t)
-              vto)
+            List.iter (iter_loc sub) vl)
           p
     | Ppat_variant (_l, p) -> iter_opt (sub.pat sub) p
     | Ppat_record (lpl, _cf) ->

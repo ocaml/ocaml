@@ -245,15 +245,11 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   | Tpat_tuple (l) ->
       line i ppf "Tpat_tuple\n";
       list i pattern ppf l;
-  | Tpat_construct (li, _, po, vto) ->
+  | Tpat_construct (li, _, po, vl) ->
       line i ppf "Tpat_construct %a\n" fmt_longident li;
       list i pattern ppf po;
-      option i
-        (fun i ppf (vl,ct) ->
-          let names = List.map (fun {txt} -> "\""^Ident.name txt^"\"") vl in
-          line i ppf "[%s]\n" (String.concat "; " names);
-          core_type i ppf ct)
-        ppf vto
+      let names = List.map (fun {txt} -> "\""^Ident.name txt^"\"") vl in
+      line i ppf "[%s]\n" (String.concat "; " names);
   | Tpat_variant (l, po, _) ->
       line i ppf "Tpat_variant \"%s\"\n" l;
       option i pattern ppf po;

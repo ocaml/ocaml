@@ -89,13 +89,13 @@ and 'k pattern_desc =
          *)
   | Tpat_construct :
       Longident.t loc * Types.constructor_description *
-        value general_pattern list * (Ident.t loc list * core_type) option ->
+        value general_pattern list * Ident.t loc list ->
       value pattern_desc
-        (** C                             ([], None)
-            C P                           ([P], None)
-            C (P1, ..., Pn)               ([P1; ...; Pn], None)
-            C (type a) (P : t)            ([P], Some ([a], t))
-            C (type a) (P1, ..., Pn : t)  ([P1; ...; Pn], Some ([a], t))
+        (** C                             ([], [])
+            C P                           ([P], [])
+            C (P1, ..., Pn)               ([P1; ...; Pn], [])
+            C (type a) (P : t)            ([P], [a])
+            C (type a) (P1, ..., Pn : t)  ([P1; ...; Pn], [a])
           *)
   | Tpat_variant :
       label * value general_pattern option * Types.row_desc ref ->
