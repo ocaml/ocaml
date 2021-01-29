@@ -58,18 +58,18 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
   | Tpat_construct (_, cstr, [], _) ->
       fprintf ppf "%s" cstr.cstr_name
-  | Tpat_construct (_, cstr, [w], None) ->
+  | Tpat_construct (_, cstr, [w], []) ->
       fprintf ppf "@[<2>%s@ %a@]" cstr.cstr_name pretty_arg w
-  | Tpat_construct (_, cstr, vs, vto) ->
+  | Tpat_construct (_, cstr, vs, vl) ->
       let name = cstr.cstr_name in
-      begin match (name, vs, vto) with
-        ("::", [v1;v2], None) ->
+      begin match (name, vs, vl) with
+        ("::", [v1;v2], []) ->
           fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
-      | (_, _, None) ->
+      | (_, _, []) ->
           fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
-      | (_, _, Some (vl, _t)) ->
+      | (_, _, vl) ->
           let vars = List.map (fun x -> Ident.name x.txt) vl in
-          fprintf ppf "@[<2>%s@ (type %s)@ @[(%a : _)@]@]"
+          fprintf ppf "@[<2>%s@ (type %s)@ @[(%a)@]@]"
             name (String.concat " " vars) (pretty_vals ",") vs
       end
   | Tpat_variant (l, None, _) ->
@@ -106,19 +106,19 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "@[(%a)@]" pretty_or v
 
 and pretty_car ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [_ ; _], None)
+| Tpat_construct (_,cstr, [_ ; _], [])
     when is_cons cstr ->
       fprintf ppf "(%a)" pretty_val v
 | _ -> pretty_val ppf v
 
 and pretty_cdr ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [v1 ; v2], None)
+| Tpat_construct (_,cstr, [v1 ; v2], [])
     when is_cons cstr ->
       fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
 | _ -> pretty_val ppf v
 
 and pretty_arg ppf v = match v.pat_desc with
-| Tpat_construct (_,_,_::_,None)
+| Tpat_construct (_,_,_::_,[])
 | Tpat_variant (_, Some _, _) -> fprintf ppf "(%a)" pretty_val v
 |  _ -> pretty_val ppf v
 

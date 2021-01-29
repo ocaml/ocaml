@@ -423,7 +423,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
     | {ppat_desc =
          Ppat_construct
            ({ txt = Lident("::") ;_},
-            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_}, None));
+            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_}, []));
        ppat_attributes = []}
 
       ->
@@ -442,13 +442,12 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
           pp f "%a" pattern_list_helper x
         else
           (match po with
-           | Some (x, None) ->
+           | Some (x, []) ->
                pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
-           | Some (x, Some (vl, t)) ->
+           | Some (x, vl) ->
                pp f "%a@ (type %a)@;%a" longident_loc li
                  (list ~sep:"@ " tyvar_loc) vl
-                 (simple_pattern ctxt)
-                 {x with ppat_desc = Ppat_constraint (x, t)}
+                 (simple_pattern ctxt) x
            | None -> pp f "%a" longident_loc li)
     | _ -> simple_pattern ctxt f x
 

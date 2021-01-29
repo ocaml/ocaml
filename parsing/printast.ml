@@ -225,11 +225,9 @@ and pattern i ppf x =
   | Ppat_construct (li, po) ->
       line i ppf "Ppat_construct %a\n" fmt_longident_loc li;
       option i
-        (fun i ppf (p, vto) ->
+        (fun i ppf (p, vl) ->
           pattern i ppf p;
-          option i
-            (fun i ppf (vl,t) -> list i string_loc ppf vl; core_type i ppf t)
-            ppf vto)
+          if vl <> [] then list i string_loc ppf vl)
         ppf po
   | Ppat_variant (l, po) ->
       line i ppf "Ppat_variant \"%s\"\n" l;

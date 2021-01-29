@@ -329,20 +329,14 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
     | Tpat_constant cst -> Ppat_constant (constant cst)
     | Tpat_tuple list ->
         Ppat_tuple (List.map (sub.pat sub) list)
-    | Tpat_construct (lid, _, args, vto) ->
-        let vto =
-          Option.map
-            (fun (vl,t) ->
-              List.map (fun x -> {x with txt = Ident.name x.txt}) vl,
-              sub.typ sub t)
-            vto
-        in
+    | Tpat_construct (lid, _, args, vl) ->
+        let vl = List.map (fun x -> {x with txt = Ident.name x.txt}) vl in
         Ppat_construct (map_loc sub lid,
           (match args with
               [] -> None
-            | [arg] -> Some (sub.pat sub arg, vto)
+            | [arg] -> Some (sub.pat sub arg, vl)
             | args ->
-                Some (Pat.tuple ~loc (List.map (sub.pat sub) args), vto)
+                Some (Pat.tuple ~loc (List.map (sub.pat sub) args), vl)
           ))
     | Tpat_variant (label, pato, _) ->
         Ppat_variant (label, Option.map (sub.pat sub) pato)

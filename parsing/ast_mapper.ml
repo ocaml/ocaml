@@ -483,10 +483,7 @@ module P = struct
     | Ppat_construct (l, p) ->
         construct ~loc ~attrs (map_loc sub l)
           (map_opt
-             (fun (p, vto) ->
-               sub.pat sub p,
-               map_opt (fun (l,ty) -> List.map (map_loc sub) l, sub.typ sub ty)
-                 vto)
+             (fun (p, vl) -> sub.pat sub p, List.map (map_loc sub) vl)
              p)
     | Ppat_variant (l, p) -> variant ~loc ~attrs l (map_opt (sub.pat sub) p)
     | Ppat_record (lpl, cf) ->

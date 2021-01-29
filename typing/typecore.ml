@@ -1569,7 +1569,7 @@ and type_pat_aux
             constr.cstr_arity > 1 ||
             Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
-        | Some({ppat_desc = Ppat_any} as sp, None) when constr.cstr_arity = 0 ->
+        | Some({ppat_desc = Ppat_any} as sp, []) when constr.cstr_arity = 0 ->
             Location.prerr_warning sp.ppat_loc
               Warnings.Wildcard_arg_to_constant_constr;
             []
@@ -1597,13 +1597,13 @@ and type_pat_aux
         unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
       in
       let expansion_scope = get_gadt_equations_level () in
-      let ty_args, ty_res, equated_types, vto =
+      let ty_args, ty_res, equated_types, vl =
         match sarg with
-          None | Some (_, None) ->
+          None | Some (_, []) ->
             let ty_args, ty_res, _ =
               instance_constructor ~in_pattern:(env, expansion_scope) constr in
-            ty_args, ty_res, unify_res ty_res, None
-        | Some (_, Some (nl, sty)) ->
+            ty_args, ty_res, unify_res ty_res, []
+        | Some (_, nl) ->
             let ty_args, ty_res, ty_ex = instance_constructor constr in
             let eqt = unify_res ty_res in
             let ids =
@@ -1616,16 +1616,17 @@ and type_pat_aux
                   {name with txt = id})
                 nl
             in
-            let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
-            pattern_force := force :: !pattern_force;
-            begin match ty_args with
-              [] -> assert false
-            | [ty_arg] ->
-                unify_pat_types cty.ctyp_loc env ty ty_arg
-            | _ ->
-                unify_pat_types cty.ctyp_loc env ty (newty (Ttuple ty_args))
-            end;
-            ignore (
+            List.iter2
+              (fun ty_arg sarg ->
+                match sarg.ppat_desc with
+                  Ppat_constraint (_, sty) ->
+                    let cty, ty, force =
+                      Typetexp.transl_simple_type_delayed !env sty in
+                    pattern_force := force :: !pattern_force;
+                    unify_pat_types cty.ctyp_loc env ty ty_arg
+                | _ -> ())
+              ty_args sargs;
+            ignore(
             let ids = List.map (fun x -> x.txt) ids in
             List.fold_left
               (fun rem tv ->
@@ -1634,10 +1635,10 @@ and type_pat_aux
                   when List.mem id rem ->
                     list_remove id rem
                 | _ ->
-                    raise (Error (cty.ctyp_loc, !env,
-                                  Unbound_existential (ids, ty))))
-              ids ty_ex);
-            ty_args, ty_res, eqt, Some (ids, cty)
+                    raise (Error (loc, !env, Unbound_existential(
+                                  ids, newgenty (Ttuple ty_args)))))
+                ids ty_ex);
+            ty_args, ty_res, eqt, ids
       in
       end_def ();
       generalize_structure expected_ty;
@@ -1683,7 +1684,7 @@ and type_pat_aux
         (List.combine sargs ty_args)
         (fun args ->
           rvp k {
-            pat_desc=Tpat_construct(lid, constr, args, vto);
+            pat_desc=Tpat_construct(lid, constr, args, vl);
             pat_loc = loc; pat_extra=[];
             pat_type = instance expected_ty;
             pat_attributes = sp.ppat_attributes;
@@ -2752,7 +2753,7 @@ and type_expect_
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"), None)))
+             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"), [])))
           (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
