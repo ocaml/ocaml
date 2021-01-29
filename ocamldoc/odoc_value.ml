@@ -114,10 +114,10 @@ let dummy_parameter_list typ =
             { Odoc_parameter.sn_name = normal_name label ;
               Odoc_parameter.sn_type = t ;
               Odoc_parameter.sn_text = None }
-    | Types.Tlink t2
-    | Types.Tsubst (t2, _) ->
+    | Types.Tlink t2 ->
         (iter (label, t2))
-
+    | Types.Tsubst _ ->
+        assert false
     | _ ->
         Odoc_parameter.Simple_name
           { Odoc_parameter.sn_name = normal_name label ;

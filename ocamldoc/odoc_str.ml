@@ -45,11 +45,11 @@ let raw_string_of_type_list sep type_list =
   let rec need_parent t =
     match t.Types.desc with
       Types.Tarrow _ | Types.Ttuple _ -> true
-    | Types.Tlink t2 | Types.Tsubst (t2, _) -> need_parent t2
-    | Types.Tconstr _ ->
-        false
+    | Types.Tlink t2 -> need_parent t2
+    | Types.Tconstr _
     | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
+    | Types.Tsubst _ -> assert false
   in
   let print_one_type variance t =
     Printtyp.mark_loops t;
