@@ -29,7 +29,6 @@ extern unsigned short caml_win32_revision;
 
 #include "misc.h"
 #include "memory.h"
-
 #define Io_interrupted (-1)
 
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
@@ -155,6 +154,8 @@ CAMLextern value caml_copy_string_of_utf16(const wchar_t *s);
 CAMLextern int caml_win32_isatty(int fd);
 
 CAMLextern void caml_expand_command_line (int *, wchar_t ***);
+
+CAMLextern void *caml_load_win32_resource(int name, int *size);
 
 #endif /* _WIN32 */
 

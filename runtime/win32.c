@@ -1014,3 +1014,30 @@ int caml_num_rows_fd(int fd)
 {
   return -1;
 }
+
+/* read the debugging info from a Windows resource */
+
+CAMLexport void *caml_load_win32_resource(int name, int *size)
+{
+  HRSRC hRes;
+  HGLOBAL hResLoad;
+  LPVOID lpResLock;
+  DWORD dwSize;
+
+  *size = 0;
+
+  hRes = FindResource(NULL, MAKEINTRESOURCE(name), RT_RCDATA);
+  if (hRes == NULL) return NULL;
+
+  hResLoad = LoadResource(NULL, hRes);
+  if (hResLoad == NULL) return NULL;
+
+  lpResLock = LockResource(hResLoad);
+  if (lpResLock == NULL) return NULL;
+
+  dwSize = SizeofResource(NULL, hRes);
+  if (dwSize == 0) return NULL;
+
+  *size = dwSize;
+  return lpResLock;
+}

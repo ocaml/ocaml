@@ -461,10 +461,29 @@ let output_cds_file outfile =
        Bytesections.write_toc_and_trailer outchan;
     )
 
-let output_debug_file outfile =
-  let oc = open_out_bin outfile in
-  Fun.protect ~finally:(fun () -> close_out_noerr oc)
-    (fun () -> output_string oc (debug_info_to_string ()))
+let debug_info_to_file filename =
+  let f oc = output_string oc (debug_info_to_string ()) in
+  Misc.protect_writing_to_file ~filename ~f
+
+let debug_info_resource_id = 1459 (* arbitrary, must fit in 16 bits *)
+
+let output_win32_resource oc type_ name data =
+  let buf = Bytes.make 32 '\x00' in
+  Bytes.set_int32_le buf 0 (Int32.of_int (String.length data)); (* DataSize *)
+  Bytes.set_int32_le buf 4 32l; (* HeaderSize *)
+  Bytes.set_int16_le buf 8 0xffff;
+  Bytes.set_int16_le buf 10 type_; (* TYPE *)
+  Bytes.set_int16_le buf 12 0xffff;
+  Bytes.set_int16_le buf 14 name; (* NAME *)
+  output_bytes oc buf;
+  output_string oc data
+
+let debug_info_to_win32_resource filename =
+  let f oc =
+    output_win32_resource oc 0 0 "";
+    output_win32_resource oc 10 debug_info_resource_id (debug_info_to_string ())
+  in
+  Misc.protect_writing_to_file ~filename ~f
 
 (* Output a bytecode executable as a C file *)
 
@@ -514,8 +533,21 @@ let link_bytecode_as_c tolink outfile with_main =
        (* The entry point *)
        if with_main then begin
          if !Clflags.debug then begin
+           if Config.ccomp_type = "msvc" then begin
+           let debug_file_name = Filename.chop_extension outfile ^ ".res" in
+           debug_info_to_win32_resource debug_file_name;
+           Printf.fprintf outchan "\
+\n#include <caml/osdeps.h>\
+\n#include <caml/backtrace.h>\
+\nvoid read_main_debug_info(struct debug_info *di)\
+\n{\
+\n  int size;\
+\n  char *data = caml_load_win32_resource(%d, &size);\
+\n  caml_read_main_debug_info_from_value(di, data, size);\
+\n}" debug_info_resource_id
+           end else
            let debug_file_name = (Filename.chop_extension outfile) ^ ".debug" in
-           output_debug_file debug_file_name;
+           debug_info_to_file debug_file_name;
            Printf.fprintf outchan "\
 \n#define INCBIN_STYLE INCBIN_STYLE_SNAKE\
 \n#include <caml/incbin.h>\
@@ -611,11 +643,18 @@ let build_custom_runtime prim_name exec_name =
           flag
     else
       [] in
+  let debug_info =
+    if !Clflags.output_complete_executable && Config.ccomp_type = "msvc" then
+      let flag = [Filename.chop_extension prim_name ^ ".res"] in
+      if Ccomp.linker_is_flexlink then "-link" :: flag else flag
+    else
+      []
+  in
   let exitcode =
     (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
   in
   Ccomp.call_linker Ccomp.Exe exec_name
-    (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
+    (debug_prefix_map @ debug_info @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
     exitcode = 0
 
 let append_bytecode bytecode_name exec_name =
@@ -727,7 +766,7 @@ let link objfiles output_name =
       (fun () ->
          link_bytecode_as_c tolink c_file !Clflags.output_complete_executable;
          if !Clflags.output_complete_executable then begin
-           temps := c_file :: !temps;
+           if false then temps := c_file :: !temps;
            if not (build_custom_runtime c_file output_name) then
              raise(Error Custom_runtime)
          end else if not (Filename.check_suffix output_name ".c") then begin
