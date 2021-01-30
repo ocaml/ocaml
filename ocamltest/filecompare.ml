@@ -32,15 +32,10 @@ type tool =
                 }
   | Internal of ignore
 
-let cmp_result_of_exitcode commandline = function
-  | 0 -> Same
-  | 1 -> Different
-  | exit_code -> (Error (commandline, exit_code))
-
 let make_cmp_tool ~ignore =
   Internal ignore
 
-let make_comparison_tool ?(result_of_exitcode = cmp_result_of_exitcode)
+let make_comparison_tool ~result_of_exitcode
                          name flags =
   External
     {
