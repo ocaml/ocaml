@@ -502,6 +502,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
+\n#include <caml/backtrace.h>\
 \n#include <caml/startup.h>\n";
        output_string outchan "static int caml_code[] = {\n";
        Symtable.init();
@@ -538,7 +539,6 @@ let link_bytecode_as_c tolink outfile with_main =
            debug_info_to_win32_resource debug_file_name;
            Printf.fprintf outchan "\
 \n#include <caml/osdeps.h>\
-\n#include <caml/backtrace.h>\
 \nvoid read_main_debug_info(struct debug_info *di)\
 \n{\
 \n  int size;\
@@ -550,12 +550,12 @@ let link_bytecode_as_c tolink outfile with_main =
            debug_info_to_file debug_file_name;
            Printf.fprintf outchan "\
 \n#define INCBIN_STYLE INCBIN_STYLE_SNAKE\
+\n#define INCBIN_PREFIX\
 \n#include <caml/incbin.h>\
-\n#include <caml/backtrace.h>\
 \nINCBIN(caml_debug,\"%s\");\
 \nvoid read_main_debug_info(struct debug_info *di)\
 \n{\
-\n  caml_read_main_debug_info_from_value(di, (char *)gcaml_debug_data, gcaml_debug_size);\
+\n  caml_read_main_debug_info_from_value(di, (char *)caml_debug_data, caml_debug_size);\
 \n}" debug_file_name
          end else
            output_string outchan "\
