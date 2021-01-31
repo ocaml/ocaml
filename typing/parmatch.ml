@@ -509,7 +509,7 @@ let do_set_args ~erase_mutable q r = match q with
 | {pat_desc = Tpat_construct (lid, c, omegas, _)} ->
     let args,rest = read_args omegas r in
     make_pat
-      (Tpat_construct (lid, c, args, []))
+      (Tpat_construct (lid, c, args, None))
       q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_variant (l, omega, row)} ->
@@ -834,7 +834,7 @@ let complete_tags nconsts nconstrs tags =
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
    Tpat_construct (mknoloc (Longident.Lident cstr.cstr_name),
-                   cstr, omegas cstr.cstr_arity, [])}
+                   cstr, omegas cstr.cstr_arity, None)}
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
@@ -1762,7 +1762,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
 | Tpat_construct (lid,c1,ps1,_), Tpat_construct (_,c2,ps2,_)
       when  Types.equal_tag c1.cstr_tag c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
-        make_pat (Tpat_construct (lid, c1, rs, []))
+        make_pat (Tpat_construct (lid, c1, rs, None))
           p.pat_type p.pat_env
 | Tpat_variant(l1,Some p1,row), Tpat_variant(l2,Some p2,_)
           when  l1=l2 ->

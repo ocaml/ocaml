@@ -60,7 +60,7 @@ and 'k pattern_desc =
   | Tpat_tuple : value general_pattern list -> value pattern_desc
   | Tpat_construct :
       Longident.t loc * constructor_description * value general_pattern list
-      * Ident.t loc list ->
+      * (Ident.t loc list * core_type) option ->
       value pattern_desc
   | Tpat_variant :
       label * value general_pattern option * row_desc ref ->

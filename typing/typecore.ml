@@ -130,6 +130,7 @@ type error =
   | Andop_type_clash of string * Ctype.Unification_trace.t
   | Bindings_type_clash of Ctype.Unification_trace.t
   | Unbound_existential of Ident.t list * type_expr
+  | Missing_type_constraint
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1562,6 +1563,17 @@ and type_pat_aux
          correct head *)
       if constr.cstr_generalized then
         unify_head_only ~refine loc env (instance expected_ty) constr;
+      let sarg =
+        match sarg with
+          None -> None
+        | Some ({ppat_desc = Ppat_constraint (sp, sty)}, vl) ->
+            
+            Some (sp, Some (vl, sty))
+        | Some (sp, []) ->
+            Some (sp, None)
+        | Some (sp, _) ->
+            raise (Error (sp.ppat_loc, !env, Missing_type_constraint))
+      in
       let sargs =
         match sarg with
           None -> []
@@ -1597,14 +1609,17 @@ and type_pat_aux
         unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
       in
       let expansion_scope = get_gadt_equations_level () in
-      let ty_args, ty_res, equated_types, vl =
+      let ty_args, ty_res, equated_types, vto =
         match sarg with
-          None | Some ([], _) ->
+          None | Some (_, None) ->
             let ty_args, ty_res, _ =
               instance_constructor ~in_pattern:(env, expansion_scope) constr in
-            ty_args, ty_res, unify_res ty_res, []
-        | Some (nl, _) ->
-            let ty_args, ty_res, ty_ex = instance_constructor constr in
+            ty_args, ty_res, unify_res ty_res, None
+        | Some (_, Some (nl, sty)) ->
+            let in_pattern =
+              if nl = [] then Some (env, expansion_scope) else None in
+            let ty_args, ty_res, ty_ex =
+              instance_constructor ?in_pattern constr in
             let eqt = unify_res ty_res in
             let ids =
               List.map
@@ -1616,29 +1631,43 @@ and type_pat_aux
                   {name with txt = id})
                 nl
             in
-            List.iter2
-              (fun ty_arg sarg ->
-                match sarg.ppat_desc with
-                  Ppat_constraint (_, sty) ->
-                    let cty, ty, force =
-                      Typetexp.transl_simple_type_delayed !env sty in
-                    pattern_force := force :: !pattern_force;
-                    unify_pat_types cty.ctyp_loc env ty ty_arg
-                | _ -> ())
-              ty_args sargs;
-            ignore(
-            let ids = List.map (fun x -> x.txt) ids in
-            List.fold_left
-              (fun rem tv ->
-                match repr tv with
-                  {desc = Tconstr(Path.Pident id, [], _)}
-                  when List.mem id rem ->
-                    list_remove id rem
-                | _ ->
-                    raise (Error (loc, !env, Unbound_existential(
-                                  ids, newgenty (Ttuple ty_args)))))
-                ids ty_ex);
-            ty_args, ty_res, eqt, ids
+            begin_def ();
+            let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
+            end_def ();
+            generalize_structure ty;
+            pattern_force := force :: !pattern_force;
+            let ty_args =
+              let ty1 = instance ty and ty2 = instance ty in
+              match ty_args with
+                [] -> assert false
+              | [ty_arg] ->
+                  unify_pat_types cty.ctyp_loc env ty1 ty_arg;
+                  [ty2]
+              | _ ->
+                  unify_pat_types cty.ctyp_loc env ty1 (newty (Ttuple ty_args));
+                  match repr (expand_head !env ty2) with
+                    {desc = Ttuple tyl} -> tyl
+                  | _ -> assert false
+            in
+            if in_pattern = None then ignore begin
+              let ids = List.map (fun x -> x.txt) ids in
+              let rem =
+                List.fold_left
+                  (fun rem tv ->
+                    match repr tv with
+                      {desc = Tconstr(Path.Pident id, [], _)}
+                      when List.mem id rem ->
+                        list_remove id rem
+                    | _ ->
+                        raise (Error (cty.ctyp_loc, !env,
+                                      Unbound_existential (ids, ty))))
+                  ids ty_ex
+              in
+              if rem <> [] then
+                raise (Error (cty.ctyp_loc, !env,
+                              Unbound_existential (ids, ty)))
+            end;
+            ty_args, ty_res, eqt, Some (ids, cty)
       in
       end_def ();
       generalize_structure expected_ty;
@@ -1684,7 +1713,7 @@ and type_pat_aux
         (List.combine sargs ty_args)
         (fun args ->
           rvp k {
-            pat_desc=Tpat_construct(lid, constr, args, vl);
+            pat_desc=Tpat_construct(lid, constr, args, vto);
             pat_loc = loc; pat_extra=[];
             pat_type = instance expected_ty;
             pat_attributes = sp.ppat_attributes;
@@ -5638,6 +5667,11 @@ let report_error ~loc env = function
         "This type does not bind all existentials in the constructor"
         (String.concat " " (List.map Ident.name ids))
         Printtyp.type_expr ty
+  | Missing_type_constraint ->
+      Location.errorf ~loc
+        "@[%s@ %s@]"
+        "Existential types introduced in a constructor pattern"
+        "must be bound by a type constraint on the argument."
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env
