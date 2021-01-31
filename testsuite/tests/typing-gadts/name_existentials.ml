@@ -108,3 +108,12 @@ let () =
   | Some _ -> ()
 [%%expect{|
 |}]
+
+(* Also allow annotations on multiary types *)
+type ('a,'b) pair = Pair of 'a * 'b
+
+let f = function Pair (x, y : int * _) -> x + y
+[%%expect{|
+type ('a, 'b) pair = Pair of 'a * 'b
+val f : (int, int) pair -> int = <fun>
+|}]
