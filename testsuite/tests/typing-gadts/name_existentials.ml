@@ -109,7 +109,7 @@ let () =
 [%%expect{|
 |}]
 
-(* Also allow annotations on multiary types *)
+(* Also allow annotations on multiary constructors *)
 type ('a,'b) pair = Pair of 'a * 'b
 
 let f = function Pair (x, y : int * _) -> x + y
