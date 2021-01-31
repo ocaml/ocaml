@@ -1899,8 +1899,8 @@ module Conv = struct
           let arg =
             match List.map loop lst with
             | []  -> None
-            | [p] -> Some (p, [])
-            | lst -> Some (mkpat (Ppat_tuple lst), [])
+            | [p] -> Some ([], p)
+            | lst -> Some ([], mkpat (Ppat_tuple lst))
           in
           mkpat (Ppat_construct(lid, arg))
       | Tpat_variant(label,p_opt,_row_desc) ->

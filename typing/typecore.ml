@@ -1084,7 +1084,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
      false
   | Ppat_exception p
   | Ppat_variant (_, Some p)
-  | Ppat_construct (_, Some (p, _))
+  | Ppat_construct (_, Some (_, p))
   | Ppat_constraint (p, _)
   | Ppat_alias (p, _)
   | Ppat_lazy p
@@ -1565,17 +1565,17 @@ and type_pat_aux
       let sargs =
         match sarg with
           None -> []
-        | Some({ppat_desc = Ppat_tuple spl}, _) when
+        | Some(_, {ppat_desc = Ppat_tuple spl}) when
             constr.cstr_arity > 1 ||
             Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
-        | Some({ppat_desc = Ppat_any} as sp, []) when constr.cstr_arity = 0 ->
+        | Some([], ({ppat_desc = Ppat_any} as sp)) when constr.cstr_arity = 0 ->
             Location.prerr_warning sp.ppat_loc
               Warnings.Wildcard_arg_to_constant_constr;
             []
-        | Some({ppat_desc = Ppat_any} as sp, _) when constr.cstr_arity > 1 ->
+        | Some(_, ({ppat_desc = Ppat_any} as sp)) when constr.cstr_arity > 1 ->
             replicate_list sp constr.cstr_arity
-        | Some(sp, _) -> [sp] in
+        | Some(_, sp) -> [sp] in
       if Builtin_attributes.warn_on_literal_pattern constr.cstr_attributes then
         begin match List.filter has_literal_pattern sargs with
         | sp :: _ ->
@@ -1599,11 +1599,11 @@ and type_pat_aux
       let expansion_scope = get_gadt_equations_level () in
       let ty_args, ty_res, equated_types, vl =
         match sarg with
-          None | Some (_, []) ->
+          None | Some ([], _) ->
             let ty_args, ty_res, _ =
               instance_constructor ~in_pattern:(env, expansion_scope) constr in
             ty_args, ty_res, unify_res ty_res, []
-        | Some (_, nl) ->
+        | Some (nl, _) ->
             let ty_args, ty_res, ty_ex = instance_constructor constr in
             let eqt = unify_res ty_res in
             let ids =
@@ -2510,7 +2510,7 @@ let shallow_iter_ppat f p =
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) -> Option.iter f arg
   | Ppat_tuple lst ->  List.iter f lst
-  | Ppat_construct (_, Some (p, _))
+  | Ppat_construct (_, Some (_, p))
   | Ppat_exception p | Ppat_alias (p,_)
   | Ppat_open (_,p)
   | Ppat_constraint (p,_) | Ppat_lazy p -> f p
@@ -2753,7 +2753,7 @@ and type_expect_
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"), [])))
+             (Some ([], Pat.var ~loc:default_loc (mknoloc "*sth*"))))
           (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
