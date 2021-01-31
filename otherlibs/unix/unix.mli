@@ -25,7 +25,7 @@
    When a new function is added which is not implemented on Windows (or
    partially implemented), or the Windows-status of an existing function is
    changed, remember to update the summary table in
-   manual/manual/library/libunix.etex
+   manual/src/library/libunix.etex
 *)
 
 (** Interface to the Unix system.
