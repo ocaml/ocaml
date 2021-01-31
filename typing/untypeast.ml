@@ -346,7 +346,7 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
         Ppat_construct (map_loc sub lid,
           match tyo, arg with
           | Some ty, Some arg ->
-              Some (Pat.mk ~loc (vl, Ppat_constraint (arg, ty)))
+              Some (vl, Pat.mk ~loc (Ppat_constraint (arg, ty)))
           | _ -> None)
     | Tpat_variant (label, pato, _) ->
         Ppat_variant (label, Option.map (sub.pat sub) pato)

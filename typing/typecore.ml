@@ -1563,31 +1563,30 @@ and type_pat_aux
          correct head *)
       if constr.cstr_generalized then
         unify_head_only ~refine loc env (instance expected_ty) constr;
-      let sarg =
+      let sarg' =
         match sarg with
           None -> None
-        | Some ({ppat_desc = Ppat_constraint (sp, sty)}, vl) ->
-            
+        | Some (vl, {ppat_desc = Ppat_constraint (sp, sty)}) ->
             Some (sp, Some (vl, sty))
-        | Some (sp, []) ->
+        | Some ([], sp) ->
             Some (sp, None)
-        | Some (sp, _) ->
+        | Some (_, sp) ->
             raise (Error (sp.ppat_loc, !env, Missing_type_constraint))
       in
       let sargs =
-        match sarg with
+        match sarg' with
           None -> []
-        | Some(_, {ppat_desc = Ppat_tuple spl}) when
+        | Some({ppat_desc = Ppat_tuple spl}, _) when
             constr.cstr_arity > 1 ||
             Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
-        | Some([], ({ppat_desc = Ppat_any} as sp)) when constr.cstr_arity = 0 ->
+        | Some({ppat_desc = Ppat_any} as sp, None) when constr.cstr_arity = 0 ->
             Location.prerr_warning sp.ppat_loc
               Warnings.Wildcard_arg_to_constant_constr;
             []
-        | Some(_, ({ppat_desc = Ppat_any} as sp)) when constr.cstr_arity > 1 ->
+        | Some({ppat_desc = Ppat_any} as sp, _) when constr.cstr_arity > 1 ->
             replicate_list sp constr.cstr_arity
-        | Some(_, sp) -> [sp] in
+        | Some(sp, _) -> [sp] in
       if Builtin_attributes.warn_on_literal_pattern constr.cstr_attributes then
         begin match List.filter has_literal_pattern sargs with
         | sp :: _ ->
@@ -1610,7 +1609,7 @@ and type_pat_aux
       in
       let expansion_scope = get_gadt_equations_level () in
       let ty_args, ty_res, equated_types, vto =
-        match sarg with
+        match sarg' with
           None | Some (_, None) ->
             let ty_args, ty_res, _ =
               instance_constructor ~in_pattern:(env, expansion_scope) constr in
@@ -1706,7 +1705,10 @@ and type_pat_aux
         | _ ->
             ()
       in
-      if constr.cstr_inlined <> None then List.iter check_non_escaping sargs;
+      if constr.cstr_inlined <> None then begin
+        List.iter check_non_escaping sargs;
+        Option.iter (fun (_, sarg) -> check_non_escaping sarg) sarg
+      end;
 
       map_fold_cont
         (fun (p,t) -> type_pat Value p t)
