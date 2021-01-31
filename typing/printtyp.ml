@@ -1025,8 +1025,8 @@ let rec tree_of_typexp sch ty =
     | Tnil | Tfield _ ->
         tree_of_typobject sch ty None
     | Tsubst _ ->
+        (* This case should only happen when debugging the compiler *)
         Otyp_stuff "<Tsubst>"
-          (* This case should not happen *)
     | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
