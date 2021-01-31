@@ -404,9 +404,7 @@ val in_channel_of_descr : file_descr -> in_channel
 
    Closing the channel [ic] returned by [in_channel_of_descr fd]
    using [close_in ic] also closes the underlying descriptor [fd].
-   Closing both the channel [ic] and the descriptor [fd] is
-   incorrect and will result in a {!Stdlib.Sys_error} or {!Unix.error}
-   exception.
+   It is incorrect to close both the channel [ic] and the descriptor [fd].
 
    If several channels are created on the same descriptor, one of the
    channels must be closed, but not the others.
@@ -435,9 +433,7 @@ val out_channel_of_descr : file_descr -> out_channel
 
    Closing the channel [oc] returned by [out_channel_of_descr fd]
    using [close_out oc] also closes the underlying descriptor [fd].
-   Closing both the channel [oc] and the descriptor [fd] is incorrect
-   and will result in a {!Stdlib.Sys_error} or {!Unix.error}
-   exception.
+   It is incorrect to close both the channel [ic] and the descriptor [fd].
 
    See {!Unix.in_channel_of_descr} for a discussion of the closing
    protocol when several channels are created on the same descriptor.
