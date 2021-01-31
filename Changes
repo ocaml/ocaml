@@ -8,6 +8,12 @@ Working version
     'let* x = x in ...' and 'let%ext x = x in ...' respectively.
   (Stephen Dolan, review by Gabriel Scherer)
 
+### Type system:
+
+- #10174: Make Tsubst more robust by avoiding strange workarounds
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
+   Florian Angeletti)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,

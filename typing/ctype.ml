@@ -1449,8 +1449,10 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
       match ty.desc with
         Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
           (ty,(t,bound)) :: visited
-      | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ | Tlink _ | Tsubst _ ->
+      | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
           visited
+      | Tlink _ | Tsubst _ ->
+          assert false
     in
     let copy_rec = copy_sep cleanup_scope fixed free bound visited in
     Private_type_expr.set_desc t
