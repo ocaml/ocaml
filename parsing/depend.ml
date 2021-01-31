@@ -176,7 +176,7 @@ let rec add_pattern bv pat =
   | Ppat_construct(c, opt) ->
       add bv c;
       add_opt
-        (fun bv (p,_) -> add_pattern bv p)
+        (fun bv (_,p) -> add_pattern bv p)
         bv opt
   | Ppat_record(pl, _) ->
       List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl

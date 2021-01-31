@@ -216,11 +216,11 @@ and pattern_desc =
            Invariant: n >= 2
         *)
   | Ppat_construct of
-      Longident.t loc * (pattern * string loc list) option
+      Longident.t loc * (string loc list * pattern) option
         (* C                    None
-           C P                  Some (P, None)
-           C (P1, ..., Pn)      Some (Ppat_tuple [P1; ...; Pn], None)
-           C (type a b) P       Some (P, [a; b])
+           C P                  Some ([], P)
+           C (P1, ..., Pn)      Some ([], Ppat_tuple [P1; ...; Pn])
+           C (type a b) P       Some ([a; b], P)
          *)
   | Ppat_variant of label * pattern option
         (* `A             (None)
