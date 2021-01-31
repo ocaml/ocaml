@@ -504,8 +504,10 @@ and build_as_type_aux env p =
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
-  | Tpat_construct(_, cstr, pl, _) ->
-      let keep = cstr.cstr_private = Private || cstr.cstr_existentials <> [] in
+  | Tpat_construct(_, cstr, pl, vto) ->
+      let keep =
+        cstr.cstr_private = Private || cstr.cstr_existentials <> [] ||
+        vto <> None (* be lazy and keep the type for node constraints *) in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
       let ty_args, ty_res, _ = instance_constructor cstr in
@@ -1566,7 +1568,8 @@ and type_pat_aux
       let sarg' =
         match sarg with
           None -> None
-        | Some (vl, {ppat_desc = Ppat_constraint (sp, sty)}) ->
+        | Some (vl, {ppat_desc = Ppat_constraint (sp, sty)})
+          when vl <> [] || constr.cstr_arity > 1 ->
             Some (sp, Some (vl, sty))
         | Some ([], sp) ->
             Some (sp, None)
