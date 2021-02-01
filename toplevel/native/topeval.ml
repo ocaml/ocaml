@@ -32,6 +32,8 @@ let _dummy = (Ok (Obj.magic 0), Err "")
 external ndl_run_toplevel: string -> string -> res
   = "caml_natdynlink_run_toplevel"
 
+let implementation_label = "native toplevel"
+
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
   match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
@@ -125,7 +127,7 @@ module EvalPath = struct
   let same_value v1 v2 = (v1 == v2)
 end
 
-include Topcommon.MakePrinter(Obj)(Genprintval.Make(Obj)(EvalPath))
+include Topcommon.MakePrinter(Genprintval.Make(Obj)(EvalPath))
 
 (* Load in-core and execute a lambda term *)
 

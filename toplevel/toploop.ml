@@ -167,7 +167,10 @@ let loop ppf =
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "        OCaml version %s@.@." Config.version;
+    fprintf ppf "        OCaml version %s%s%s@.@."
+      Config.version
+      (if Topeval.implementation_label = "" then "" else " - ")
+      Topeval.implementation_label;
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
