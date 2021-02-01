@@ -394,16 +394,27 @@ val in_channel_of_descr : file_descr -> in_channel
    Text mode is supported only if the descriptor refers to a file
    or pipe, but is not supported if it refers to a socket.
 
-   On Windows: [set_binary_mode_in] always fails on channels created
-   with this function.
+   On Windows: {!Stdlib.set_binary_mode_in} always fails on channels
+   created with this function.
 
-   Beware that channels are buffered so more characters may have been
-   read from the file descriptor than those accessed using channel functions.
-   Channels also keep a copy of the current position in the file.
+   Beware that input channels are buffered, so more characters may
+   have been read from the descriptor than those accessed using
+   channel functions.  Channels also keep a copy of the current
+   position in the file.
 
-   You need to explicitly close all channels created with this function.
-   Closing the channel also closes the underlying file descriptor (unless
-   it was already closed). *)
+   Closing the channel [ic] returned by [in_channel_of_descr fd]
+   using [close_in ic] also closes the underlying descriptor [fd].
+   It is incorrect to close both the channel [ic] and the descriptor [fd].
+
+   If several channels are created on the same descriptor, one of the
+   channels must be closed, but not the others.
+   Consider for example a descriptor [s] connected to a socket and two
+   channels [ic = in_channel_of_descr s] and [oc = out_channel_of_descr s].
+   The recommended closing protocol is to perform [close_out oc],
+   which flushes buffered output to the socket then closes the socket.
+   The [ic] channel must not be closed and will be collected by the GC
+   eventually.
+*)
 
 val out_channel_of_descr : file_descr -> out_channel
 (** Create an output channel writing on the given descriptor.
@@ -412,17 +423,21 @@ val out_channel_of_descr : file_descr -> out_channel
    Text mode is supported only if the descriptor refers to a file
    or pipe, but is not supported if it refers to a socket.
 
-   On Windows: [set_binary_mode_out] always fails on channels created
+   On Windows: {!Stdlib.set_binary_mode_out} always fails on channels created
    with this function.
 
-   Beware that channels are buffered so you may have to [flush] them
-   to ensure that all data has been sent to the file descriptor.
-   Channels also keep a copy of the current position in the file.
+   Beware that output channels are buffered, so you may have to call
+   {!Stdlib.flush} to ensure that all data has been sent to the
+   descriptor.  Channels also keep a copy of the current position in
+   the file.
 
-   You need to explicitly close all channels created with this function.
-   Closing the channel flushes the data and closes the underlying file
-   descriptor (unless it has already been closed, in which case the
-   buffered data is lost).*)
+   Closing the channel [oc] returned by [out_channel_of_descr fd]
+   using [close_out oc] also closes the underlying descriptor [fd].
+   It is incorrect to close both the channel [ic] and the descriptor [fd].
+
+   See {!Unix.in_channel_of_descr} for a discussion of the closing
+   protocol when several channels are created on the same descriptor.
+*)
 
 val descr_of_in_channel : in_channel -> file_descr
 (** Return the descriptor corresponding to an input channel. *)
@@ -1587,14 +1602,23 @@ val open_connection : sockaddr -> in_channel * out_channel
 (** Connect to a server at the given address.
    Return a pair of buffered channels connected to the server.
    Remember to call {!Stdlib.flush} on the output channel at the right
-   times to ensure correct synchronization. *)
+   times to ensure correct synchronization.
+
+   The two channels returned by [open_connection] share a descriptor
+   to a socket.  Therefore, when the connection is over, you should
+   call {!Stdlib.close_out} on the output channel, which will also close
+   the underlying socket.  Do not call {!Stdlib.close_in} on the input
+   channel; it will be collected by the GC eventually.
+*)
+
 
 val shutdown_connection : in_channel -> unit
 (** ``Shut down'' a connection established with {!open_connection};
    that is, transmit an end-of-file condition to the server reading
-   on the other side of the connection. This does not fully close the
-   file descriptor associated with the channel, which you must remember
-   to free via {!Stdlib.close_in}. *)
+   on the other side of the connection. This does not close the
+   socket and the channels used by the connection.
+   See {!Unix.open_connection} for how to close them once the
+   connection is over. *)
 
 val establish_server :
   (in_channel -> out_channel -> unit) -> addr:sockaddr -> unit
@@ -1603,6 +1627,13 @@ val establish_server :
    with two buffered channels connected to the client. A new process
    is created for each connection. The function {!establish_server}
    never returns normally.
+
+   The two channels given to the function share a descriptor to a
+   socket.  The function does not need to close the channels, since this
+   occurs automatically when the function returns.  If the function
+   prefers explicit closing, it should close the output channel using
+   {!Stdlib.close_out} and leave the input channel unclosed,
+   for reasons explained in {!Unix.in_channel_of_descr}.
 
    On Windows: not implemented (use threads). *)
 
