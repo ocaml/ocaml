@@ -263,9 +263,7 @@ _build
 /tools/caml-tex
 /tools/eventlog_metadata
 
-/toplevel/byte/topdirs.mli
 /toplevel/byte/topeval.mli
-/toplevel/byte/toploop.mli
 /toplevel/byte/trace.mli
 /toplevel/byte/topmain.mli
 /toplevel/native/topeval.mli
