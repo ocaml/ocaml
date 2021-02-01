@@ -461,7 +461,7 @@ module Compiler_pass = struct
   (* If you add a new pass, the following must be updated:
      - the variable `passes` below
      - the manpages in man/ocaml{c,opt}.m
-     - the manual manual/manual/cmds/unified-options.etex
+     - the manual manual/src/cmds/unified-options.etex
   *)
   type t = Parsing | Typing | Scheduling | Emit
 

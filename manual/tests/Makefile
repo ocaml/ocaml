@@ -2,7 +2,7 @@ TOPDIR=$(abspath ../..)
 SRC=$(TOPDIR)
 include $(TOPDIR)/api_docgen/Makefile.docfiles
 include $(TOPDIR)/Makefile.tools
-MANUAL=$(TOPDIR)/manual/manual
+MANUAL=$(TOPDIR)/manual/src
 
 .PHONY: all
 all: check-cross-references check-stdlib check-case-collision
