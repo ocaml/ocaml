@@ -331,7 +331,7 @@ module type S =
     (** Same as {!S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
-    (** {1 Iterators} *)
+    (** {1 Maps and Sequences} *)
 
     val to_seq : 'a t -> (key * 'a) Seq.t
     (** Iterate on the whole map, in ascending order of keys

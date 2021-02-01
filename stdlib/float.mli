@@ -584,16 +584,16 @@ module Array : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
-      floatarray during iteration will be reflected in the iterator. *)
+      floatarray during iteration will be reflected in the sequence. *)
 
   val to_seqi : t -> (int * float) Seq.t
   (** Iterate on the floatarray, in increasing order, yielding indices along
       elements. Modifications of the floatarray during iteration will be
-      reflected in the iterator. *)
+      reflected in the sequence. *)
 
   val of_seq : float Seq.t -> t
   (** Create an array from the generator. *)
@@ -806,16 +806,16 @@ module ArrayLabels : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
-      floatarray during iteration will be reflected in the iterator. *)
+      floatarray during iteration will be reflected in the sequence. *)
 
   val to_seqi : t -> (int * float) Seq.t
   (** Iterate on the floatarray, in increasing order, yielding indices along
       elements. Modifications of the floatarray during iteration will be
-      reflected in the iterator. *)
+      reflected in the sequence. *)
 
   val of_seq : float Seq.t -> t
   (** Create an array from the generator. *)
