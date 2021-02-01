@@ -65,9 +65,9 @@ stands for the value of the break that is explained below):
 
 Within a "h" box:
 
-   [
-   --b--b--
-   ]
+{[
+--b--b--
+]}
 
 Within a "v" box:
 
@@ -130,7 +130,6 @@ be thought as: print [sp] spaces or output a new line.
 
 For instance, if b is [break 1 0] in the output "--b--b--", we get
 
-
 within a "h" box:
 
 {[
@@ -164,8 +163,6 @@ Generally speaking, a printing routine using "format", should not directly
 output white spaces: the routine should use break hints instead. (For instance
 [print_space ()] that is a convenient abbreviation for [print_break 1 0] and
 outputs a single space or break the line.)
-
-
 
 {1 Indentation of new lines}
 
@@ -216,7 +213,6 @@ indentation (as obtained by [open_hovbox 1]), and b is [print_break 1 2], then
 
 {1 Refinement on "hov" boxes}
 
-
 The "hov" box type is refined into two categories.
 
 - {b the vertical or horizontal {i packing} box} (as obtained by the
@@ -227,7 +223,6 @@ procedure): similar to the "hov" packing box, the break hints are used to cut
 the line when there is no more room on the line; in addition, break hints that
 can show the box structure lead to new lines even if there is enough room on
 the current line.
-
 
 The difference between a packing and a structural "hov" box is shown by a
 routine that closes boxes and parentheses at the end of printing: with packing
@@ -387,9 +382,7 @@ special [%a] conversion, that prints a [fprintf] argument with a user's supplied
 function (these user's supplied functions also have a formatter as first
 argument).
 
-
 Using [fprintf], the lambda-terms printing routines can be written as follows:
-
 
 {v
 open Format;;
