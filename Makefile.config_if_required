@@ -13,9 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-ifeq "$(MAKECMDGOALS)" ""
-MAKECMDGOALS += defaultentry
-endif
+MAKECMDGOALS ?= defaultentry
 
 CLEAN_TARGET_NAMES=clean partialclean distclean
 
