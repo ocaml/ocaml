@@ -290,7 +290,6 @@ beforedepend::
 	cp $(TOPLEVEL_SHARED_MLIS:%=toplevel/%) toplevel/native
 
 partialclean::
-	rm toplevel/byte/topdirs.mli toplevel/byte/toploop.mli
 	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=\
 	        toplevel/byte/%.mli toplevel/byte/%.cmi)
 	rm -f $(TOPLEVEL_SHARED_MLIS:%.mli=\
