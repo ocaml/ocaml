@@ -8,6 +8,12 @@ Working version
     'let* x = x in ...' and 'let%ext x = x in ...' respectively.
   (Stephen Dolan, review by Gabriel Scherer)
 
+### Type system:
+
+- #10174: Make Tsubst more robust by avoiding strange workarounds
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
+   Florian Angeletti)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
@@ -69,7 +75,7 @@ Working version
   with respect to closing.
   (Xavier Leroy, report by Jacques-Henri Jourdan, review by Guillaume
    Munch-Maccagnoni, Gabriel Scherer, Jacques-Henri Jourdan)
-  
+
 - #10139: Remove confusing navigation bar from stdlib documentation.
   Removes the 'Up', 'Previous' and 'Next' links from the top of each standard
   library module's documentation.
