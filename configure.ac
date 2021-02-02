@@ -138,8 +138,6 @@ AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
 AC_SUBST([ocamltest])
-AC_SUBST([x_includes])
-AC_SUBST([x_libraries])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
