@@ -1754,7 +1754,7 @@ enum {
   policy_best_fit = 2,
 };
 
-uintnat caml_allocation_policy = policy_next_fit;
+uintnat caml_allocation_policy = policy_best_fit;
 
 /********************* exported functions *****************************/
 
