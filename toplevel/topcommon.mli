@@ -66,7 +66,28 @@ val print_out_signature :
 val print_out_phrase :
   (formatter -> Outcometree.out_phrase -> unit) ref
 
-module type PRINTER = sig
+
+exception Undefined_global of string
+
+module type EVAL_BASE = sig
+
+  (* Return the value referred to by a base ident
+     @raise [Undefined_global] if not found *)
+  val eval_ident: Ident.t -> Obj.t
+
+end
+
+
+module MakeEvalPrinter (_ : EVAL_BASE) : sig
+
+  val eval_address: Env.address -> Obj.t
+    (* Used for printers *)
+
+  val eval_module_path: Env.t -> Path.t -> Obj.t
+  val eval_value_path: Env.t -> Path.t -> Obj.t
+  val eval_extension_path: Env.t -> Path.t -> Obj.t
+  val eval_class_path: Env.t -> Path.t -> Obj.t
+    (* Return the toplevel object referred to by the given path *)
 
   module Printer: Genprintval.S with type t = Obj.t
 
@@ -97,8 +118,6 @@ module type PRINTER = sig
 
 end
 
-module MakePrinter (P : Genprintval.S with type t = Obj.t):
-  PRINTER with module Printer = P
 
 (* Interface with toplevel directives *)
 
