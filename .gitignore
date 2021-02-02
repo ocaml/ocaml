@@ -96,8 +96,8 @@ _build
 /api_docgen/man
 /api_docgen/html
 /api_docgen/build
-/api_docgen/html
 /api_docgen/latex
+/api_docgen/texi
 /api_docgen/Compiler_libs.mld
 
 /ocamldoc/ocamldoc
