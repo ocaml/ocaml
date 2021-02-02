@@ -66,7 +66,7 @@ man: man/Stdlib.3o
 html: html/libref/Stdlib.html html/compilerlibref/Compiler_libs.html
 latex: latex/Stdlib.tex
 
-LD_PATH := "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
+LD_PATH := "$(ROOTDIR)/otherlibs/unix/:$(ROOTDIR)/otherlibs/str/"
 SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_PATH)
 
 

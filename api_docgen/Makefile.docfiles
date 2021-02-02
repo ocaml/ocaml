@@ -13,9 +13,13 @@
 #*                                                                        *
 #**************************************************************************
 
+# Capitalize first letter of argument
+define up
+$(shell echo $(1) | cut -c1 | tr '[:lower:]' '[:upper:]')
+endef
+
 define capitalize_one
-$(shell echo $(1) | cut -c1 | tr '[:lower:]' '[:upper:]')$\
-$(shell echo $(1) | cut -c2-)
+$(call up,$(1))$(shell echo $(1) | cut -c2-)
 endef
 
 define capitalize
