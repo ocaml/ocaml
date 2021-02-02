@@ -6284,8 +6284,6 @@ toplevel/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
-toplevel/byte/topdirs.cmi : \
-    parsing/longident.cmi
 toplevel/byte/topeval.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
@@ -6365,20 +6363,11 @@ toplevel/byte/topeval.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
-toplevel/byte/toploop.cmi : \
-    utils/warnings.cmi \
-    typing/types.cmi \
-    typing/path.cmi \
-    parsing/parsetree.cmi \
-    typing/outcometree.cmi \
-    parsing/longident.cmi \
-    parsing/location.cmi \
-    typing/env.cmi
 toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
-    toplevel/byte/toploop.cmi \
+    toplevel/toploop.cmi \
     toplevel/byte/topeval.cmi \
-    toplevel/byte/topdirs.cmi \
+    toplevel/topdirs.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
@@ -6393,9 +6382,9 @@ toplevel/byte/topmain.cmo : \
     toplevel/byte/topmain.cmi
 toplevel/byte/topmain.cmx : \
     toplevel/byte/trace.cmx \
-    toplevel/byte/toploop.cmi \
+    toplevel/toploop.cmx \
     toplevel/byte/topeval.cmx \
-    toplevel/byte/topdirs.cmi \
+    toplevel/topdirs.cmx \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
