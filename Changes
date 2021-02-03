@@ -141,7 +141,7 @@ Working version
 
 ### Build system:
 
-- #9191, #10091: take the LDFLAGS variable into account, except on
+- #9191, #10091, #10182: take the LDFLAGS variable into account, except on
   flexlink-using systems.
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    report by Ralph Seichter)
