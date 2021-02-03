@@ -1662,6 +1662,7 @@ static header_t *bf_merge_block (value bp, char *limit)
     }
     caml_fl_cur_wsz += Whsize_val (cur);
   next:
+    caml_prefetch(Hp_val(cur + 4096));
     cur = Next_in_mem (cur);
     if (Hp_val (cur) >= (header_t *) limit){
       CAMLassert (Hp_val (cur) == (header_t *) limit);
