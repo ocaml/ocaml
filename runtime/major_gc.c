@@ -950,6 +950,8 @@ void caml_major_collection_slice (intnat howmuch)
   }
 
   if (caml_gc_phase == Phase_idle){
+    double previous_overhead; // overhead at the end of the previous cycle
+
     CAML_EV_BEGIN(EV_MAJOR_CHECK_AND_COMPACT);
     caml_gc_message (0x200, "marked words = %"
                      ARCH_INTNAT_PRINTF_FORMAT "u words\n",
@@ -958,13 +960,15 @@ void caml_major_collection_slice (intnat howmuch)
                      ARCH_INTNAT_PRINTF_FORMAT "u words\n",
                      heap_wsz_at_cycle_start);
     if (marked_words == 0){
-      caml_gc_message (0x200, "actual overhead at start of cycle = +inf\n");
+      previous_overhead = 1000000.;
+      caml_gc_message (0x200, "overhead at start of cycle = +inf\n");
     }else{
-      caml_gc_message (0x200, "actual overhead at start of cycle = %.0f%%\n",
-                       100.0 * (heap_wsz_at_cycle_start - marked_words)
-                       / marked_words);
+      previous_overhead =
+        100.0 * (heap_wsz_at_cycle_start - marked_words) / marked_words;
+      caml_gc_message (0x200, "overhead at start of cycle = %.0f%%\n",
+                       previous_overhead);
     }
-    caml_compact_heap_maybe ();
+    caml_compact_heap_maybe (previous_overhead);
     CAML_EV_END(EV_MAJOR_CHECK_AND_COMPACT);
   }
 

@@ -460,17 +460,8 @@ void caml_compact_heap (intnat new_allocation_policy)
   }
 }
 
-void caml_compact_heap_maybe (void)
+void caml_compact_heap_maybe (double previous_overhead)
 {
-  /* Estimated free+garbage words in the heap:
-         FW = fl_size_at_phase_change + 3 * (caml_fl_cur_wsz
-                                             - caml_fl_wsz_at_phase_change)
-         FW = 3 * caml_fl_cur_wsz - 2 * caml_fl_wsz_at_phase_change
-     Estimated live words:      LW = Caml_state->stat_heap_wsz - FW
-     Estimated free percentage: FP = 100 * FW / LW
-     We compact the heap if FP > caml_percent_max
-  */
-  double fw, fp;
   CAMLassert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
   if (Caml_state->stat_major_collections < 3) return;
@@ -482,25 +473,9 @@ void caml_compact_heap_maybe (void)
     return;
 #endif
 
-  fw = 3.0 * caml_fl_cur_wsz - 2.0 * caml_fl_wsz_at_phase_change;
-  if (fw < 0) fw = caml_fl_cur_wsz;
+  if (previous_overhead >= caml_percent_max){
+    double current_overhead;
 
-  if (fw >= Caml_state->stat_heap_wsz){
-    fp = 1000000.0;
-  }else{
-    fp = 100.0 * fw / (Caml_state->stat_heap_wsz - fw);
-    if (fp > 1000000.0) fp = 1000000.0;
-  }
-  caml_gc_message (0x200, "FL size at phase change = %"
-                          ARCH_INTNAT_PRINTF_FORMAT "u words\n",
-                   (uintnat) caml_fl_wsz_at_phase_change);
-  caml_gc_message (0x200, "FL current size = %"
-                          ARCH_INTNAT_PRINTF_FORMAT "u words\n",
-                   (uintnat) caml_fl_cur_wsz);
-  caml_gc_message (0x200, "Estimated overhead = %"
-                          ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                   (uintnat) fp);
-  if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n");
     caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
     caml_gc_message
@@ -508,12 +483,14 @@ void caml_compact_heap_maybe (void)
     caml_finish_major_cycle ();
     ++ Caml_state->stat_forced_major_collections;
 
-    fw = caml_fl_cur_wsz;
-    fp = 100.0 * fw / (Caml_state->stat_heap_wsz - fw);
-    caml_gc_message (0x200, "Measured overhead: %"
+    /* Note: There is no floating garbage because we just did a complete
+       major cycle*/
+    current_overhead =
+      100.0 * caml_fl_cur_wsz / (Caml_state->stat_heap_wsz - caml_fl_cur_wsz);
+    caml_gc_message (0x200, "Current overhead: %"
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                     (uintnat) fp);
-    if (fp >= caml_percent_max)
+                     (uintnat) current_overhead);
+    if (current_overhead >= caml_percent_max)
       caml_compact_heap (-1);
     else
       caml_gc_message (0x200, "Automatic compaction aborted.\n");

@@ -88,6 +88,11 @@ Working version
   experimental.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #10194: Change compaction-triggering heuristic: use the overhead measured
+  by the previous GC cycle instead of an indirect (and noisy) computation
+  of the current overhead.
+  (Damien Doligez, review by Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
