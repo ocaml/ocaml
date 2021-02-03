@@ -2441,8 +2441,8 @@ let find_expansion_scope env path =
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
+  occur_univar !env destination;
   if local_non_recursive_abbrev !env source destination then begin
-    occur_univar !env destination;
     let destination = duplicate_type destination in
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())

@@ -25,3 +25,9 @@ Error: This pattern matches values of type i t
        a -> b
        The universal variable 'c would escape its scope
 |}]
+
+let g (type a b) (y : (a,b) j t option) =
+  let None = y in () ;;
+[%%expect{|
+val g : ('a, 'b) j t option -> unit = <fun>
+|}]
