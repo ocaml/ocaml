@@ -1,7 +1,10 @@
 (* TEST
 files = "main.c"
-arguments = "-DSORT -DFUN=quicksort main.c"
 * asmgen
+arguments = "-DSORT -DFUN=quicksort main.c"
+** run
+arguments = "100 42"
+*** check-program-output
 *)
 
 (**************************************************************************)

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "caml/config.h"
 
 void caml_ml_array_bound_error(void)
 {
@@ -29,7 +30,7 @@ void print_string(char * s)
   fputs(s, stdout);
 }
 
-void printf_int(char * fmt, int arg)
+void printf_int(char * fmt, intnat arg)
 {
   printf(fmt, arg);
 }
@@ -48,8 +49,8 @@ void printf_int(char * fmt, int arg)
 
 int cmpint(const void * i, const void * j)
 {
-  long vi = *((long *) i);
-  long vj = *((long *) j);
+  intnat vi = *((intnat *) i);
+  intnat vj = *((intnat *) j);
   if (vi == vj) return 0;
   if (vi < vj) return -1;
   return 1;
@@ -60,9 +61,9 @@ int cmpint(const void * i, const void * j)
 int main(int argc, char **argv)
 {
 #ifdef UNIT_INT
-  { extern long FUN(void);
-    extern long call_gen_code(long (*)(void));
-    printf("%ld\n", call_gen_code(FUN));
+  { extern intnat FUN(void);
+    extern intnat call_gen_code(intnat (*)(void));
+    printf("%"ARCH_INTNAT_PRINTF_FORMAT"d\n", call_gen_code(FUN));
   }
 #else
   if (argc < 2) {
@@ -70,46 +71,50 @@ int main(int argc, char **argv)
     exit(2);
   }
 #ifdef INT_INT
-  { extern long FUN(long);
-    extern long call_gen_code(long (*)(long), long);
-    printf("%ld\n", call_gen_code(FUN, atoi(argv[1])));
+  { extern intnat FUN(intnat);
+    extern intnat call_gen_code(intnat (*)(intnat), intnat);
+    printf("%"ARCH_INTNAT_PRINTF_FORMAT"d\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef INT_FLOAT
-  { extern double FUN(long);
-    extern double call_gen_code(double (*)(long), long);
+  { extern double FUN(intnat);
+    extern double call_gen_code(double (*)(intnat), intnat);
     printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef FLOAT_CATCH
-  { extern double FUN(long);
-    extern double call_gen_code(double (*)(long), long);
+  { extern double FUN(intnat);
+    extern double call_gen_code(double (*)(intnat), intnat);
     double result = call_gen_code(FUN, 1);
     FLOATTEST(result, 1110.0)
     printf("%f\n", result);
   }
 #endif
 #ifdef SORT
-  { extern void FUN(long, long, long *);
-    extern void call_gen_code(void (*)(long, long, long *), long, long, long *);
-    long n;
-    long * a, * b;
-    long i;
+  { extern void FUN(intnat, intnat, intnat *);
+    extern void call_gen_code(void (*)(intnat, intnat, intnat *), intnat, intnat, intnat *);
+    intnat n;
+    intnat * a, * b;
+    intnat i;
 
     srand(argc >= 3 ? atoi(argv[2]) : time((time_t *) 0));
     n = atoi(argv[1]);
-    a = (long *) malloc(n * sizeof(long));
+    a = (intnat *) malloc(n * sizeof(intnat));
     for (i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
 #ifdef DEBUG
-    for (i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
+    for (i = 0; i < n; i++)
+      printf("%"ARCH_INTNAT_PRINTF_FORMAT"d ", a[i]);
+    printf("\n");
 #endif
-    b = (long *) malloc(n * sizeof(long));
+    b = (intnat *) malloc(n * sizeof(intnat));
     for (i = 0; i < n; i++) b[i] = a[i];
     call_gen_code(FUN, 0, n-1, a);
 #ifdef DEBUG
-    for (i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
+    for (i = 0; i < n; i++)
+      printf("%"ARCH_INTNAT_PRINTF_FORMAT"d ", a[i]);
+    printf("\n");
 #endif
-    qsort(b, n, sizeof(long), cmpint);
+    qsort(b, n, sizeof(intnat), cmpint);
     for (i = 0; i < n; i++) {
       if (a[i] != b[i]) { printf("Bug!\n"); return 2; }
     }
@@ -118,19 +123,19 @@ int main(int argc, char **argv)
 #endif
 #endif
 #ifdef CHECKBOUND
-  { extern void checkbound1(long), checkbound2(long, long);
+  { extern void checkbound1(intnat), checkbound2(intnat, intnat);
     extern void call_gen_code(void *, ...);
-    long x, y;
+    intnat x, y;
     x = atoi(argv[1]);
     if (argc >= 3) {
       y = atoi(argv[2]);
-      if ((unsigned long) x < (unsigned long) y)
+      if ((uintnat) x < (uintnat) y)
         printf("Should not trap\n");
       else
         printf("Should trap\n");
       call_gen_code(checkbound2, y, x);
     } else {
-      if (2 < (unsigned long) x)
+      if (2 < (uintnat) x)
         printf("Should not trap\n");
       else
         printf("Should trap\n");
