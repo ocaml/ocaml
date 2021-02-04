@@ -2582,6 +2582,20 @@ let record_equation t1 t2 =
   | Forbidden -> assert false
   | Allowed { equated_types } -> TypePairs.add equated_types (t1, t2) ()
 
+(* Called from unify3 *)
+let unify3_var env t1' t2 t2' =
+  occur !env t1' t2;
+  try
+    occur_univar !env t2;
+    link_type t1' t2;
+  with Unify _ when !umode = Pattern ->
+    if can_generate_equations () then begin
+      occur_univar ~inj_only:true !env t2';
+      reify env t1';
+      reify env t2';
+      record_equation t1' t2';
+    end
+
 (*
    1. When unifying two non-abbreviated types, one type is made a link
       to the other. When unifying an abbreviated type with a
@@ -2622,9 +2636,15 @@ let rec unify (env:Env.t ref) t1 t2 =
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar _, _) ->
-        unify1_var !env t1 t2
+        if !umode = Pattern && has_free_univars !env t2 then
+          unify2 env t1 t2
+        else
+          unify1_var !env t1 t2
     | (_, Tvar _) ->
-        unify1_var !env t2 t1
+        if !umode = Pattern && has_free_univars !env t1 then
+          unify2 env t1 t2
+        else
+          unify1_var !env t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
         update_level !env t1.level t2;
@@ -2702,13 +2722,9 @@ and unify3 env t1 t1' t2 t2' =
       unify_univar t1' t2' !univar_pairs;
       link_type t1' t2'
   | (Tvar _, _) ->
-      occur !env t1' t2;
-      occur_univar !env t2;
-      link_type t1' t2;
+      unify3_var env t1' t2 t2'
   | (_, Tvar _) ->
-      occur !env t2' t1;
-      occur_univar !env t1;
-      link_type t2' t1;
+      unify3_var env t2' t1 t1'
   | (Tfield _, Tfield _) -> (* special case for GADTs *)
       unify_fields env t1' t2'
   | _ ->
