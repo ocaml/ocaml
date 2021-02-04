@@ -2446,7 +2446,9 @@ let find_expansion_scope env path =
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
-  occur_univar !env destination;
+  let univar_leaks =
+    try occur_univar !env destination; false with Unify _ -> true in
+  if univar_leaks then occur_univar ~must_occur:true !env destination else
   if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =

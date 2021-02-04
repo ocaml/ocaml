@@ -32,6 +32,61 @@ let g (type a b) (y : (a,b) j t option) =
 val g : ('a, 'b) j t option -> unit = <fun>
 |}]
 
+module M = struct
+  type 'a d = D
+  type j = <m : 'c. 'c -> 'c d >
+end ;;
+let g (y : M.j t option) =
+  let None = y in () ;;
+[%%expect{|
+module M : sig type 'a d = D type j = < m : 'c. 'c -> 'c d > end
+val g : M.j t option -> unit = <fun>
+|}]
+
+module M = struct
+  type 'a d
+  type j = <m : 'c. 'c -> 'c d >
+end ;;
+let g (y : M.j t option) =
+  let None = y in () ;;
+[%%expect{|
+module M : sig type 'a d type j = < m : 'c. 'c -> 'c d > end
+Line 6, characters 2-20:
+6 |   let None = y in () ;;
+      ^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some A
+val g : M.j t option -> unit = <fun>
+|}]
+
+module M = struct
+  type e
+  type 'a d
+  type i = <m : 'c. 'c -> 'c d >
+  type j = <m : 'c. 'c -> e >
+end ;;
+type _ t = A : M.i t
+let g (y : M.j t option) =
+  let None = y in () ;;
+[%%expect{|
+module M :
+  sig
+    type e
+    type 'a d
+    type i = < m : 'c. 'c -> 'c d >
+    type j = < m : 'c. 'c -> e >
+  end
+type _ t = A : M.i t
+Line 9, characters 2-20:
+9 |   let None = y in () ;;
+      ^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some A
+val g : M.j t option -> unit = <fun>
+|}]
+
 (* more examples by @lpw25 *)
 module M = struct
   type a
