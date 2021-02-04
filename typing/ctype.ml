@@ -2589,10 +2589,10 @@ let unify3_var env t1' t2 t2' =
     occur_univar !env t2;
     link_type t1' t2;
   with Unify _ when !umode = Pattern ->
+    reify env t1';
+    reify env t2';
     if can_generate_equations () then begin
       occur_univar ~inj_only:true !env t2';
-      reify env t1';
-      reify env t2';
       record_equation t1' t2';
     end
 
