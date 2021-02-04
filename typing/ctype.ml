@@ -1936,8 +1936,9 @@ let rec unify_univar t1 t2 = function
   | [] -> raise (Unify [])
 
 (* Test the occurrence of free univars in a type *)
-(* that's way too expensive. Must do some kind of caching *)
-let occur_univar ?(must_occur=false) env ty =
+(* If [inj_only=true], only check injective positions *)
+(* That's way too expensive. Must do some kind of caching *)
+let occur_univar ?(inj_only=false) env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
     let ty = repr ty in
@@ -1946,7 +1947,7 @@ let occur_univar ?(must_occur=false) env ty =
         (flip_mark_node ty; occur_desc bound ty)
       else try
         let bound' = TypeMap.find ty !visited in
-        if TypeSet.exists (fun x -> not (TypeSet.mem x bound)) bound' then begin
+        if not (TypeSet.subset bound' bound) then begin
           visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
           occur_desc bound ty
         end
@@ -1974,11 +1975,11 @@ let occur_univar ?(must_occur=false) env ty =
                    in this position. Physical expansion, as done in `occur`,
                    would be costly here, since we need to check inside
                    object and variant types too. *)
-                if Variance.(if must_occur then mem Inj v else not (eq v null))
+                if Variance.(if inj_only then mem Inj v else not (eq v null))
                 then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
-            if not must_occur then List.iter (occur_rec bound) tl
+            if not inj_only then List.iter (occur_rec bound) tl
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
@@ -1986,6 +1987,11 @@ let occur_univar ?(must_occur=false) env ty =
       occur_rec TypeSet.empty ty
     )
     ~always:(fun () -> unmark_type ty)
+
+let has_free_univars env ty =
+  try occur_univar ~inj_only:false env ty; false with Unify _ -> true
+let has_injective_univars env ty =
+  try occur_univar ~inj_only:true env ty; false with Unify _ -> true
 
 (* Grouping univars by families according to their binders *)
 let add_univars =
@@ -2265,14 +2271,14 @@ let rec mcomp type_pairs env t1 t2 =
             mcomp_list type_pairs env tl1 tl2
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
-        | (Tconstr (p, tl, _), td) | (td, Tconstr (p, tl, _)) ->
+        | (Tconstr (_, [], _), _) when has_injective_univars env t2' ->
+            raise (Unify [])
+        | (_, Tconstr (_, [], _)) when has_injective_univars env t1' ->
+            raise (Unify [])
+        | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
-              if tl = [] &&
-                (try occur_univar ~must_occur:true env (newgenty td); false
-                  with Unify _ -> true)
-              || (let decl = Env.find_type p env in
-                  non_aliasable p decl || is_datatype decl)
-              then raise (Unify [])
+              let decl = Env.find_type p env in
+              if non_aliasable p decl || is_datatype decl then raise (Unify [])
             with Not_found -> ()
             end
         (*
@@ -2446,10 +2452,9 @@ let find_expansion_scope env path =
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
-  let univar_leaks =
-    try occur_univar !env destination; false with Unify _ -> true in
-  if univar_leaks then occur_univar ~must_occur:true !env destination else
-  if local_non_recursive_abbrev !env source destination then begin
+  if has_free_univars !env destination then
+    occur_univar ~inj_only:true !env destination
+  else if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())
@@ -3066,11 +3071,8 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       in
       let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
       (* PR#6744 *)
-      let split_univars =
-        List.partition
-          (fun ty -> try occur_univar !env ty; true with Unify _ -> false) in
-      let (tl1',tlu1) = split_univars tl1'
-      and (tl2',tlu2) = split_univars tl2' in
+      let (tlu1,tl1') = List.partition (has_free_univars !env) tl1'
+      and (tlu2,tl2') = List.partition (has_free_univars !env) tl2' in
       begin match tlu1, tlu2 with
         [], [] -> ()
       | (tu1::tlu1), _ :: _ ->
