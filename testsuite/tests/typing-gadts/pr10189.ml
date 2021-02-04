@@ -87,6 +87,26 @@ Some A
 val g : M.j t option -> unit = <fun>
 |}]
 
+module M = struct
+  type 'a d
+  type i = <m : 'c. 'c -> 'c d >
+  type 'a j = <m : 'c. 'c -> 'a >
+end ;;
+type _ t = A : M.i t
+(* Should warn *)
+let g (y : 'a M.j t option) =
+  let None = y in () ;;
+[%%expect{|
+module M :
+  sig
+    type 'a d
+    type i = < m : 'c. 'c -> 'c d >
+    type 'a j = < m : 'c. 'c -> 'a >
+  end
+type _ t = A : M.i t
+val g : 'a M.j t option -> unit = <fun>
+|}]
+
 (* more examples by @lpw25 *)
 module M = struct
   type a
