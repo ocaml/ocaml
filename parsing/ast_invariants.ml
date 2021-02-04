@@ -53,7 +53,7 @@ let iterator =
   in
   let pat self pat =
     begin match pat.ppat_desc with
-    | Ppat_construct (_, Some ({ppat_desc = Ppat_tuple _} as p))
+    | Ppat_construct (_, Some (_, ({ppat_desc = Ppat_tuple _} as p)))
       when Builtin_attributes.explicit_arity pat.ppat_attributes ->
         super.pat self p (* allow unary tuple, see GPR#523. *)
     | _ ->

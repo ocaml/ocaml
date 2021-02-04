@@ -423,7 +423,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
     | {ppat_desc =
          Ppat_construct
            ({ txt = Lident("::") ;_},
-            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_}));
+            Some ([], {ppat_desc = Ppat_tuple([pat1; pat2]);_}));
        ppat_attributes = []}
 
       ->
@@ -434,21 +434,28 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->
         pp f "@[<2>`%s@;%a@]" l (simple_pattern ctxt) p
-    | Ppat_construct (({txt=Lident("()"|"[]");_}), _) -> simple_pattern ctxt f x
+    | Ppat_construct (({txt=Lident("()"|"[]");_}), _) ->
+        simple_pattern ctxt f x
     | Ppat_construct (({txt;_} as li), po) ->
         (* FIXME The third field always false *)
         if txt = Lident "::" then
           pp f "%a" pattern_list_helper x
         else
           (match po with
-           | Some x -> pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
+           | Some ([], x) ->
+               pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
+           | Some (vl, x) ->
+               pp f "%a@ (type %a)@;%a" longident_loc li
+                 (list ~sep:"@ " tyvar_loc) vl
+                 (simple_pattern ctxt) x
            | None -> pp f "%a" longident_loc li)
     | _ -> simple_pattern ctxt f x
 
 and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
   if x.ppat_attributes <> [] then pattern ctxt f x
   else match x.ppat_desc with
-    | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _) -> pp f  "%s" x
+    | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), None) ->
+        pp f  "%s" x
     | Ppat_any -> pp f "_";
     | Ppat_var ({txt = txt;_}) -> protect_ident f txt
     | Ppat_array l ->
@@ -492,7 +499,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         let with_paren =
         match p.ppat_desc with
         | Ppat_array _ | Ppat_record _
-        | Ppat_construct (({txt=Lident ("()"|"[]");_}), _) -> false
+        | Ppat_construct (({txt=Lident ("()"|"[]");_}), None) -> false
         | _ -> true in
         pp f "@[<2>%a.%a @]" longident_loc lid
           (paren with_paren @@ pattern1 ctxt) p

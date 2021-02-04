@@ -211,8 +211,9 @@ let pat
     | Tpat_var _
     | Tpat_constant _ -> x.pat_desc
     | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
-    | Tpat_construct (loc, cd, l) ->
-        Tpat_construct (loc, cd, List.map (sub.pat sub) l)
+    | Tpat_construct (loc, cd, l, vto) ->
+        let vto = Option.map (fun (vl,cty) -> vl, sub.typ sub cty) vto in
+        Tpat_construct (loc, cd, List.map (sub.pat sub) l, vto)
     | Tpat_variant (l, po, rd) ->
         Tpat_variant (l, Option.map (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->

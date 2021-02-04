@@ -966,7 +966,7 @@ let transl_extension_constructor ~scope env type_path type_params
     | Pext_rebind lid ->
         let usage = if priv = Public then Env.Positive else Env.Privatize in
         let cdescr = Env.lookup_constructor ~loc:lid.loc usage lid.txt env in
-        let (args, cstr_res) = Ctype.instance_constructor cdescr in
+        let (args, cstr_res, _ex) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
             let params = Ctype.instance_list type_params in

@@ -256,8 +256,8 @@ module Analyser =
               (List.map iter_pattern patlist,
                Odoc_env.subst_type env pat.pat_type)
 
-        | Typedtree.Tpat_construct (_, cons_desc, _) when
-            (* we give a name to the parameter only if it unit *)
+        | Typedtree.Tpat_construct (_, cons_desc, _, _) when
+            (* we give a name to the parameter only if it is unit *)
             (match cons_desc.cstr_res.desc with
               Tconstr (p, _, _) ->
                 Path.same p Predef.path_unit
