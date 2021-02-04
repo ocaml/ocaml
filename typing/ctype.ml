@@ -3068,8 +3068,7 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       (* PR#6744 *)
       let split_univars =
         List.partition
-          (fun ty ->
-            try occur_univar !env ty; true with Unify _ -> false) in
+          (fun ty -> try occur_univar !env ty; true with Unify _ -> false) in
       let (tl1',tlu1) = split_univars tl1'
       and (tl2',tlu2) = split_univars tl2' in
       begin match tlu1, tlu2 with
