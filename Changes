@@ -83,6 +83,10 @@ Working version
   the source code than the point explicitly shown in the error message.
   (François Pottier, review by Gabriel Scherer and Frédéric Bour.)
 
+- #10196, #10197: better error message on empty character literals ''.
+  (Gabriel Scherer, review by David Allsopp and Florian Angeletti
+   and Daniel Bünzli, report by Robin Björklin)
+
 ### Internal/compiler-libs changes:
 
 - #9650, #9651: keep refactoring the pattern-matching compiler
