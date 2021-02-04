@@ -1937,7 +1937,7 @@ let rec unify_univar t1 t2 = function
 
 (* Test the occurrence of free univars in a type *)
 (* that's way too expensive. Must do some kind of caching *)
-let occur_univar env ty =
+let occur_univar ?(must_occur=false) env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
     let ty = repr ty in
@@ -1974,10 +1974,11 @@ let occur_univar env ty =
                    in this position. Physical expansion, as done in `occur`,
                    would be costly here, since we need to check inside
                    object and variant types too. *)
-                if not Variance.(eq v null) then occur_rec bound t)
+                if Variance.(if must_occur then mem Inj v else not (eq v null))
+                then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
-            List.iter (occur_rec bound) tl
+            if not must_occur then List.iter (occur_rec bound) tl
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
@@ -2264,10 +2265,14 @@ let rec mcomp type_pairs env t1 t2 =
             mcomp_list type_pairs env tl1 tl2
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
-        | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
+        | (Tconstr (p, tl, _), td) | (td, Tconstr (p, tl, _)) ->
             begin try
-              let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then raise (Unify [])
+              if tl = [] &&
+                (try occur_univar ~must_occur:true env (newgenty td); false
+                  with Unify _ -> true)
+              || (let decl = Env.find_type p env in
+                  non_aliasable p decl || is_datatype decl)
+              then raise (Unify [])
             with Not_found -> ()
             end
         (*
@@ -3061,7 +3066,8 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
       (* PR#6744 *)
       let split_univars =
         List.partition
-          (fun ty -> try occur_univar !env ty; true with Unify _ -> false) in
+          (fun ty ->
+            try occur_univar !env ty; true with Unify _ -> false) in
       let (tl1',tlu1) = split_univars tl1'
       and (tl2',tlu2) = split_univars tl2' in
       begin match tlu1, tlu2 with

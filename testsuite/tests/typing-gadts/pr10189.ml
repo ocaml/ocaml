@@ -31,3 +31,62 @@ let g (type a b) (y : (a,b) j t option) =
 [%%expect{|
 val g : ('a, 'b) j t option -> unit = <fun>
 |}]
+
+(* more examples by @lpw25 *)
+module M = struct
+  type a
+  type i = C of <m : 'c. 'c -> 'c >
+  type j = C of <m : 'c. 'c -> a >
+end
+type _ t = A : M.i t;;
+let f (y : M.j t) = match y with _ -> .;;
+[%%expect{|
+module M :
+  sig
+    type a
+    type i = C of < m : 'c. 'c -> 'c >
+    type j = C of < m : 'c. 'c -> a >
+  end
+type _ t = A : M.i t
+val f : M.j t -> 'a = <fun>
+|}]
+
+module M = struct
+  type a
+  type i = C of <m : 'c. 'c -> 'c -> 'c >
+  type j = C of <m : 'c. 'c -> a >
+end
+type _ t = A : M.i t;;
+let f (y : M.j t) = match y with _ -> .;;
+[%%expect{|
+module M :
+  sig
+    type a
+    type i = C of < m : 'c. 'c -> 'c -> 'c >
+    type j = C of < m : 'c. 'c -> a >
+  end
+type _ t = A : M.i t
+val f : M.j t -> 'a = <fun>
+|}]
+
+module M = struct
+  type 'a a
+  type i = C of <m : 'c. 'c -> 'c -> 'c >
+  type j = C of <m : 'c. 'c -> 'c a >
+end
+type _ t = A : M.i t;;
+let f (y : M.j t) = match y with _ -> .;;
+[%%expect{|
+module M :
+  sig
+    type 'a a
+    type i = C of < m : 'c. 'c -> 'c -> 'c >
+    type j = C of < m : 'c. 'c -> 'c a >
+  end
+type _ t = A : M.i t
+Line 7, characters 33-34:
+7 | let f (y : M.j t) = match y with _ -> .;;
+                                     ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: A
+|}]
