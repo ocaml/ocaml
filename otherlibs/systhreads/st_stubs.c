@@ -370,6 +370,12 @@ CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 
 static void caml_thread_stop(void)
 {
+  caml_thread_t next = Current_thread->next;
+
+  // The main domain thread does not go through caml_thread_stop.
+  // There is always one more thread in the chaining at this point in time.
+  Assert(next != Current_thread);
+
   caml_threadstatus_terminate(Terminated(Current_thread->descr));
   caml_thread_remove_info(Current_thread);
   // FIXME: tricky bit with backup thread
@@ -378,7 +384,8 @@ static void caml_thread_stop(void)
   // However it may very well be that there's no runnable dec next
   // (eg: next dec is blocking.), so we set it to next for now to give a
   // valid state to the backup thread.
-  Current_thread = Current_thread->next;
+  Current_thread = next;
+
   caml_thread_restore_runtime_state();
   st_masterlock_release(&Thread_main_lock);
 }
