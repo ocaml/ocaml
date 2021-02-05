@@ -2635,10 +2635,6 @@ let rec unify (env:Env.t ref) t1 t2 =
           unify2 env t1 t2
         else
           unify1_var !env t2 t1
-    | (Tvar _, _) ->
-        unify1_var !env t1 t2
-    | (_, Tvar _) ->
-        unify1_var !env t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
         update_level !env t1.level t2;
