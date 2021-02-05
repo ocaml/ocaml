@@ -695,6 +695,9 @@ OCaml 4.12.0
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti,
    report by Daniil Baturin)
 
+- #10189: Universal variables leaking through GADT equations
+  (Jacques Garrigue, report by Leo White)
+
 OCaml 4.11 maintenance branch
 -----------------------------
 

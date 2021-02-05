@@ -1931,8 +1931,9 @@ let rec unify_univar t1 t2 = function
   | [] -> raise (Unify [])
 
 (* Test the occurrence of free univars in a type *)
-(* that's way too expensive. Must do some kind of caching *)
-let occur_univar env ty =
+(* If [inj_only=true], only check injective positions *)
+(* That's way too expensive. Must do some kind of caching *)
+let occur_univar ?(inj_only=false) env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
     let ty = repr ty in
@@ -1969,10 +1970,11 @@ let occur_univar env ty =
                    in this position. Physical expansion, as done in `occur`,
                    would be costly here, since we need to check inside
                    object and variant types too. *)
-                if not Variance.(eq v null) then occur_rec bound t)
+                if Variance.(if inj_only then mem Inj v else not (eq v null))
+                then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
-            List.iter (occur_rec bound) tl
+            if not inj_only then List.iter (occur_rec bound) tl
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
@@ -1980,6 +1982,9 @@ let occur_univar env ty =
       occur_rec TypeSet.empty ty
     )
     ~always:(fun () -> unmark_type ty)
+
+let has_free_univars env ty =
+  try occur_univar ~inj_only:false env ty; false with Unify _ -> true
 
 (* Grouping univars by families according to their binders *)
 let add_univars =
@@ -2461,7 +2466,9 @@ let find_expansion_scope env path =
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
-  if local_non_recursive_abbrev !env source destination then begin
+  if has_free_univars !env destination then
+    occur_univar ~inj_only:true !env destination
+  else if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())
@@ -2589,6 +2596,20 @@ let record_equation t1 t2 =
   | Forbidden -> assert false
   | Allowed { equated_types } -> TypePairs.add equated_types (t1, t2) ()
 
+(* Called from unify3 *)
+let unify3_var env t1' t2 t2' =
+  occur !env t1' t2;
+  try
+    occur_univar !env t2;
+    link_type t1' t2;
+  with Unify _ when !umode = Pattern ->
+    reify env t1';
+    reify env t2';
+    if can_generate_equations () then begin
+      occur_univar ~inj_only:true !env t2';
+      record_equation t1' t2';
+    end
+
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
   if t1 == t2 then () else
@@ -2604,6 +2625,16 @@ let rec unify (env:Env.t ref) t1 t2 =
         unify2 env t1 t2
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
+    | (Tvar _, _) ->
+        if !umode = Pattern && has_free_univars !env t2 then
+          unify2 env t1 t2
+        else
+          unify1_var !env t1 t2
+    | (_, Tvar _) ->
+        if !umode = Pattern && has_free_univars !env t1 then
+          unify2 env t1 t2
+        else
+          unify1_var !env t2 t1
     | (Tvar _, _) ->
         unify1_var !env t1 t2
     | (_, Tvar _) ->
@@ -2685,13 +2716,9 @@ and unify3 env t1 t1' t2 t2' =
       unify_univar t1' t2' !univar_pairs;
       link_type t1' t2'
   | (Tvar _, _) ->
-      occur !env t1' t2;
-      occur_univar !env t2;
-      link_type t1' t2;
+      unify3_var env t1' t2 t2'
   | (_, Tvar _) ->
-      occur !env t2' t1;
-      occur_univar !env t1;
-      link_type t2' t1;
+      unify3_var env t2' t1 t1'
   | (Tfield _, Tfield _) -> (* special case for GADTs *)
       unify_fields env t1' t2'
   | _ ->
