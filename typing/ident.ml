@@ -23,9 +23,9 @@ type t =
   | Scoped of { name: string; stamp: int; scope: int }
   | Global of string
   | Predef of { name: string; stamp: int }
-  | Unscoped of { name: string; stamp: int }
       (* the stamp is here only for fast comparison, but the name of
          predefined identifiers is always unique. *)
+  | Unscoped of { name: string; stamp: int }
 
 exception No_scope of t
 
