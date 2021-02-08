@@ -46,6 +46,7 @@ and as a
 \input{moduleexamples.tex}
 \input{objectexamples.tex}
 \input{lablexamples.tex}
+\input{polyvariant.tex}
 \input{polymorphism.tex}
 \input{advexamples.tex}
 
