@@ -12,7 +12,7 @@ TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
 
 FILES = coreexamples.tex lablexamples.tex polyvariant.tex objectexamples.tex \
-  moduleexamples.tex advexamples.tex polymorphism.tex
+  gadtexamples.tex moduleexamples.tex advexamples.tex polymorphism.tex
 
 
 etex-files: $(FILES)
