@@ -35,7 +35,7 @@ typedef struct {
   asize_t size;          /* in bytes */
   char *next;
   mark_entry redarken_first;  /* first block in chunk to redarken */
-  value* redarken_end;        /* end of last block in chunk that needs redarkening */
+  value* redarken_end;        /* end of last block that needs redarkening */
 } heap_chunk_head;
 
 #define Chunk_head(c) (((heap_chunk_head *) (c)) - 1)

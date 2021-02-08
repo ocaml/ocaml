@@ -579,35 +579,18 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
 #define Pb_mask (Pb_size - 1)
 #define Queue_prefetch_distance 4
 
-//#define __builtin_prefetch(p, a, b)
-//  asm volatile("prefetchw %0" :: "m" (*(unsigned long *)(p)))
-
-static void prefetch(value v)
-{
-  __builtin_prefetch(Hp_val(v), 1, 3);
-  __builtin_prefetch(&Field(v, Queue_prefetch_distance - 1), 1, 2);
-}
-
 static uintnat rotate1(uintnat x)
 {
   return (x << ((sizeof x)*8 - 1)) | (x >> 1);
 }
 
-//struct pbstats {
-//  uintnat size_occ, size_now;
-//  uintnat cont_occ, cont_yes;
-//  //uintnat size_hist[Pb_size];
-//};
-//static struct pbstats pbstats_glob;
 CAMLnoinline static intnat do_some_marking(intnat work)
 {
-  //New version: assume prefetching of head of gray stack
   uintnat pb_enqueued = 0, pb_dequeued = 0;
   int darkened_anything = 0;
   value pb[Pb_size];
   uintnat min_pb = Pb_min;
   struct mark_stack stk = *Caml_state->mark_stack;
-  //struct pbstats stats = pbstats_glob;
 
   uintnat young_start = (uintnat)Caml_state->young_start;
   uintnat half_young_len = ((uintnat)Caml_state->young_end - (uintnat)Caml_state->young_start) >> 1;
@@ -624,17 +607,9 @@ CAMLnoinline static intnat do_some_marking(intnat work)
     value *scan, *obj_end, *scan_end;
 
     if (pb_enqueued > pb_dequeued + min_pb) {
-      //value *line_end;
       /* Dequeue from prefetch buffer */
       value block = pb[(pb_dequeued++) & Pb_mask];
       header_t hd = Hd_val(block);
-
-      CAMLassert(Wosize_hd(hd) > 0 || block == Atom(Tag_hd(hd)));
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-      /* See [caml_darken] for a description of this assertion. */
-      CAMLassert (Is_in_heap (v) || Is_black_hd (hd));
-#endif
-      CAMLassert(Is_white_hd(hd) || Is_black_hd(hd));
 
       /* FIXME: Forward_tag */
       if (Tag_hd(hd) == Forward_tag) {
@@ -643,6 +618,12 @@ CAMLnoinline static intnat do_some_marking(intnat work)
         block -= Infix_offset_val(block);
         hd = Hd_val(block);
       }
+
+#ifdef NO_NAKED_POINTERS
+      /* See [caml_darken] for a description of this assertion. */
+      CAMLassert (Is_in_heap (block) || Is_black_hd (hd));
+#endif
+      CAMLassert(Is_white_hd(hd) || Is_black_hd(hd));
       if (!Is_white_hd (hd)) {
         /* Already black, nothing to do */
         continue;
@@ -659,13 +640,6 @@ CAMLnoinline static intnat do_some_marking(intnat work)
       }
       scan = Op_val(block);
       obj_end = scan + Wosize_hd(hd);
-      /*
-      obj_end = Op_val(block) + Wosize_hd(hd);
-      //line_end = (value*)(((uintnat)Op_val(scan + Queue_prefetch_distance - 1) + 63) & -64);
-      //scan_end = (line_end < obj_end) ? line_end : obj_end;
-      //(void)line_end;
-      scan_end = obj_end;
-      */
 
       if (Tag_hd (hd) == Closure_tag) {
         uintnat env_offset = Start_env_closinfo(Closinfo_val(block));
@@ -693,15 +667,14 @@ CAMLnoinline static intnat do_some_marking(intnat work)
       scan_end += work;
     }
 
-    //if (pb_enqueued < pb_dequeued + Pb_size - 8)
     for (; scan < scan_end; scan++) {
       value v = *scan;
       if (Is_major_block(v)) {
         if (pb_enqueued == pb_dequeued + Pb_size) {
           break; /* Prefetch buffer is full */
         }
-        prefetch(v);
-        //stats.size_hist[pb_enqueued - pb_dequeued]++;
+        caml_prefetch(Hp_val(v));
+        caml_prefetch(&Field(v, Queue_prefetch_distance - 1));
         pb[(pb_enqueued++) & Pb_mask] = v;
       }
     }
@@ -711,10 +684,8 @@ CAMLnoinline static intnat do_some_marking(intnat work)
          or the prefetch buffer filled up. Leave the rest on the stack. */
       mark_entry m = { scan, obj_end };
       work += obj_end - scan;
-      __builtin_prefetch(scan+1, 0, 3);
-      //__builtin_prefetch(scan+8, 1, 3);
-      if (__builtin_expect(stk.count == stk.size, 0)) {
-      //if (stk.count == stk.size) {
+      caml_prefetch(scan+1);
+      if (stk.count == stk.size) {
         *Caml_state->mark_stack = stk;
         realloc_mark_stack(Caml_state->mark_stack);
         stk = *Caml_state->mark_stack;
@@ -723,24 +694,11 @@ CAMLnoinline static intnat do_some_marking(intnat work)
       min_pb = Pb_min;
     }
   }
-  //pbstats_glob = stats;
   CAMLassert(pb_enqueued == pb_dequeued);
   *Caml_state->mark_stack = stk;
   if (darkened_anything)
     ephe_list_pure = 0;
   return work;
-}
-
-__attribute__((destructor)) void print_pb_stats() {
-  //struct pbstats s = pbstats_glob;
-  //int i;
-  if (!getenv("PBSTATS")) return;
-  /*
-  fprintf(stderr, "avg pb occupancy: %.1f\n", (double)s.size_now / (double)s.size_occ);
-  for (i=0;i<Pb_size;i++){
-    fprintf(stderr, "pb=%.2d: %lu\n", i, s.size_hist[i]);
-  }
-  */
 }
 
 static void mark_slice (intnat work)
