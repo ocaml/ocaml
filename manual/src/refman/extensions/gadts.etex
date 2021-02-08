@@ -276,6 +276,31 @@ which could not be named using one of the previous schemes.
 As shown by the last item, the current behavior is imperfect
 and may be improved in future versions.
 
+\lparagraph{p:explicit-existential-name}{Explicit naming of
+  existentials} (Introduced in OCaml 4.13.0)
+
+As explained above, pattern-matching on a GADT constructor may
+introduce existential types. The following syntax allows to name them
+explicitly.
+
+\begin{syntax}
+pattern:
+     ...
+   | constr '(' "type" {{typeconstr-name}} ')' '(' pattern ')'
+;
+\end{syntax}
+
+For instance, the following code names the type of the argument of f
+and uses this name.
+
+\begin{caml_example*}{verbatim}
+type _ closure = Closure : ('a -> 'b) * 'a -> 'b closure
+let eval = fun (Closure (type a) (f, x : (a -> _) * _)) -> f (x : a)
+\end{caml_example*}
+All existential type variables of the constructor must by introduced by
+the ("type" ...) construct and bound by a type annotation on the
+outside of the constructor argument.
+
 \lparagraph{p:gadt-equation-nonlocal-abstract}{Equations on non-local abstract types} (Introduced in OCaml
 4.04)
 
