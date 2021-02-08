@@ -220,7 +220,7 @@ type mapping =
       The [map] argument contains the specific binding time attributed to each
       types.
   *)
-  | Uniquely_associated_to of Ident.t * out_name
+  | Uniquely_associated_to of Ident.t * out_name * mapping option
     (** For now, the name [Ident.name id] has been attributed to [id],
         [out_name] is used to expand this name if a conflict arises
         at a later point
@@ -246,6 +246,8 @@ let map = Array.make Namespace.size M.empty
 let get namespace = map.(Namespace.id namespace)
 let set namespace x = map.(Namespace.id namespace) <- x
 
+let override_map = ref Ident.Map.empty
+
 (* Names used in recursive definitions are not considered when determining
    if a name is already attributed in the current environment.
    This is a weaker version of hidden_rec_items used by short-path. *)
@@ -260,7 +262,7 @@ let pervasives_name namespace name =
   match M.find name (get namespace) with
   | Associated_to_pervasives r -> r
   | Need_unique_name _ -> Out_name.create (pervasives name)
-  | Uniquely_associated_to (id',r) ->
+  | Uniquely_associated_to (id', r, _) ->
       let hid, map = add_hid_id id' Ident.Map.empty in
       Out_name.set r (human_unique hid id');
       Conflicts.collect_explanation namespace hid id';
@@ -280,34 +282,54 @@ let env_ident namespace name =
   | exception Not_found -> None
 
 (** Associate a name to the identifier [id] within [namespace] *)
-let ident_name_simple namespace id =
+let rec ident_name_simple namespace id =
   if not !enabled then Out_name.create (Ident.name id) else
   let name = Ident.name id in
   match M.find name (get namespace) with
-  | Uniquely_associated_to (id',r) when Ident.same id id' ->
+  | Uniquely_associated_to (id', r, _) when Ident.same id id' ->
       r
   | Need_unique_name map ->
       let hid, m = find_hid id map in
       Conflicts.collect_explanation namespace hid id;
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
-      Out_name.create (human_unique hid id)
-  | Uniquely_associated_to (id',r) ->
+      begin try
+        let r = Ident.Map.find id !override_map in
+        Out_name.set r (human_unique hid id);
+        r
+      with Not_found -> Out_name.create (human_unique hid id) end
+  | Uniquely_associated_to (id', r, None) ->
       let hid', m = find_hid id' Ident.Map.empty in
       let hid, m = find_hid id m in
       Out_name.set r (human_unique hid' id');
       List.iter (fun (id,hid) -> Conflicts.collect_explanation namespace hid id)
         [id, hid; id', hid' ];
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
-      Out_name.create (human_unique hid id)
+      begin try
+        let r = Ident.Map.find id !override_map in
+        Out_name.set r (human_unique hid id);
+        r
+      with Not_found -> Out_name.create (human_unique hid id) end
+  | Uniquely_associated_to (id', r, Some rest) ->
+      set namespace @@ M.add name rest (get namespace);
+      let tmp_out_name = ident_name_simple namespace id' in
+      Out_name.set r (Out_name.print tmp_out_name);
+      ident_name_simple namespace id
   | Associated_to_pervasives r ->
       Out_name.set r ("Stdlib." ^ Out_name.print r);
       let hid, m = find_hid id Ident.Map.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
-      Out_name.create (human_unique hid id)
+      begin try
+        let r = Ident.Map.find id !override_map in
+        Out_name.set r (human_unique hid id);
+        r
+      with Not_found -> Out_name.create (human_unique hid id) end
   | exception Not_found ->
-      let r = Out_name.create name in
+      let r =
+        try Ident.Map.find id !override_map
+        with Not_found -> Out_name.create name
+      in
       set namespace
-      @@ M.add name (Uniquely_associated_to (id,r) ) (get namespace);
+      @@ M.add name (Uniquely_associated_to (id, r, None) ) (get namespace);
       r
 
 (** Same as {!ident_name_simple} but lookup to existing named identifiers
@@ -319,30 +341,44 @@ let ident_name namespace id =
   end;
   ident_name_simple namespace id
 
+let shadow_ident_name namespace id =
+  if not !enabled then Out_name.create (Ident.name id) else
+  let name = Ident.name id in
+  let rest =
+    try Some (M.find name (get namespace))
+    with Not_found -> None
+  in
+  let r =
+    try Ident.Map.find id !override_map
+    with Not_found ->
+      let r = Out_name.create name in
+      override_map := Ident.Map.add id r !override_map;
+      r
+  in
+  set namespace
+  @@ M.add name (Uniquely_associated_to (id, r, rest)) (get namespace);
+  r
+
 (** Remove the association of the identifier [id] with [namespace]. *)
-let remove_ident_name namespace id =
+let remove_ident_shadow namespace id =
   if !enabled then
   let name = Ident.name id in
   match M.find name (get namespace) with
-  | Uniquely_associated_to (id', _r) ->
-      if Ident.same id id' then
-        set namespace @@ M.remove name (get namespace)
-  | Need_unique_name map ->
-      let map = Ident.Map.remove id map in
-      if Ident.Map.is_empty map then
-        set namespace @@ M.remove name (get namespace)
-      else
-        set namespace @@ M.add name (Need_unique_name map) (get namespace)
-  | Associated_to_pervasives _
-  | exception Not_found ->
+  | Uniquely_associated_to (id', _r, Some rest) when Ident.same id id' ->
+      set namespace @@ M.add name rest (get namespace)
+  | Uniquely_associated_to (id', _r, None) when Ident.same id id' ->
+      set namespace @@ M.remove name (get namespace)
+  | _ | exception Not_found ->
       ()
 
 let reset () =
-  Array.iteri ( fun i _ -> map.(i) <- M.empty ) map
+  Array.iteri ( fun i _ -> map.(i) <- M.empty ) map;
+  override_map := Ident.Map.empty
 
 end
 let ident_name = Naming_context.ident_name
-let remove_ident_name = Naming_context.remove_ident_name
+let shadow_ident_name = Naming_context.shadow_ident_name
+let remove_ident_shadow = Naming_context.remove_ident_shadow
 let reset_naming_context = Naming_context.reset
 
 let ident ppf id = pp_print_string ppf
@@ -1077,9 +1113,9 @@ let rec tree_of_typexp sch ty =
         Otyp_module (tree_of_package_type sch pack)
     | Tfunctor (id, pack, ty) ->
         let pack = tree_of_package_type sch pack in
-        let ident = ident_name Module id in
+        let ident = shadow_ident_name Module id in
         let ty = tree_of_typexp sch ty in
-        remove_ident_name Module id;
+        remove_ident_shadow Module id;
         Otyp_functor (ident, pack, ty)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;

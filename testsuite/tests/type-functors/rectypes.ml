@@ -44,15 +44,21 @@ let f (x : (({X : S} -> X.t * ({Y : S} -> X.t * 'a)) as 'a)) =
 Line 2, characters 3-4:
 2 |   (x  : ({Z : S} -> Z.t * 'a));;
        ^
-Error: This expression has type {X : S} -> X.t * ({Y : S} -> X.t * 'a) as 'a
-       but an expression was expected of type {Z : S} -> Z.t * 'a
-       Type X.t is not compatible with type Z.t
+Error: This expression has type
+         {X/1 : S} -> X/1.t * ({Y : S} -> X/1.t * 'a as 'b) as 'a
+       but an expression was expected of type
+         {Z : S} -> Z.t * ({X/2 : S} -> X/2.t * 'b)
+       Type X/1.t is not compatible with type X/2.t
 |}, Principal{|
 Line 2, characters 3-4:
 2 |   (x  : ({Z : S} -> Z.t * 'a));;
        ^
-Error: This expression has type {X : S} -> X.t * ({Y : S} -> X.t * 'a) as 'a
+Error: This expression has type
+         {X/3 : S} -> X/3.t * ({Y : S} -> X/3.t * 'a) as 'a
        but an expression was expected of type
-         {Z : S} -> Z.t * ({X : S} -> X.t * ({Y : S} -> X.t * 'b) as 'b)
-       Type X/1.t is not compatible with type X/2.t
+         {Z : S} ->
+         Z.t *
+         ({X/1 : S} ->
+          X/1.t * ({Y : S} -> X/2.t * ({X : S} -> X.t * 'b) as 'b))
+       Type X/3.t is not compatible with type X/1.t
 |}]

@@ -138,7 +138,7 @@ type 'a class_type =
 type independent = {M : S} -> unit
 type plain = {M : S} -> M.t
 type 'a type_variable = {M : S} -> 'a
-type nested = {M/1 : S} -> M/1.t -> {M/2 : S} -> M/2.t
+type nested = {M : S} -> M.t -> {M : S} -> M.t
 type constructor_arg = A of ({M : S} -> M.t)
 type 'a constructor_arg_param = B of ({M : S} -> 'a -> 'a M.u)
 type _ constructor_arg_gadt =
@@ -234,7 +234,7 @@ val plain : ({M : S} -> M.t) -> plain = <fun>
 val plain2 : plain -> {M : S} -> M.t = <fun>
 val type_variable : ({M : S} -> 'a) -> 'a type_variable = <fun>
 val type_variable2 : 'a type_variable -> {M : S} -> 'a = <fun>
-val nested : nested -> {M/1 : S} -> M/1.t -> {M/2 : S} -> M/2.t = <fun>
+val nested : nested -> {M : S} -> M.t -> {M : S} -> M.t = <fun>
 val constructor_arg : ({M : S} -> M.t) -> constructor_arg = <fun>
 val constructor_arg2 : constructor_arg -> {M : S} -> M.t = <fun>
 val constructor_arg_param :
@@ -312,7 +312,7 @@ Line 3, characters 19-20:
 3 |   if b then x else y;;
                        ^
 Error: This expression has type
-         {M/1 : S} -> {M/2 : S} -> {M/3 : S} -> M/3.t -> M/3.t -> M/3.t
+         {M : S} -> {M : S} -> {M : S} -> M.t -> M.t -> M.t
        but an expression was expected of type
          {A : S} -> {B : S} -> {C : S} -> A.t -> B.t -> C.t
        Type M.t is not compatible with type A.t
@@ -338,19 +338,18 @@ Line 4, characters 19-20:
 4 |   if b then x else y;;
                        ^
 Error: This expression has type
-         {M : S} ->
-         M.t ->
-         'a M.u ->
-         {A/1 : S} -> M.t -> 'a M.u -> {A/2 : S} -> M.t -> 'a M.u -> unit
+         {M/1 : S} ->
+         M/1.t ->
+         'a M/1.u ->
+         {A : S} -> M/1.t -> 'a M/1.u -> {A : S} -> M/1.t -> 'a M/1.u -> unit
        but an expression was expected of type
          'a recursive_scoping =
            {M : S} -> M.t -> 'a M.u -> ('a, ('a, unit) scoping_fn) scoping_fn
        Type
-         {A/1 : S} ->
-         M/1.t -> 'a M/1.u -> {A/2 : S} -> M/1.t -> 'a M/1.u -> unit
+         {A : S} -> M/1.t -> 'a M/1.u -> {A : S} -> M/1.t -> 'a M/1.u -> unit
        is not compatible with type
          ('a, ('a, unit) scoping_fn) scoping_fn =
-           {M/2 : S} -> M/2.t -> 'a M/2.u -> ('a, unit) scoping_fn
+           {M : S} -> M.t -> 'a M.u -> ('a, unit) scoping_fn
        Type M/1.t is not compatible with type M/2.t
 |}]
 
@@ -403,8 +402,8 @@ let distinct_types b (f : {M : T'} -> M.t) (g : {M : T'} -> M.u) =
 Line 2, characters 19-20:
 2 |   if b then f else g;;
                        ^
-Error: This expression has type {M : T'} -> M.u
-       but an expression was expected of type {M : T'} -> M.t
+Error: This expression has type {M/1 : T'} -> M/1.u
+       but an expression was expected of type {M/2 : T'} -> M/2.t
        Type M/1.u is not compatible with type M/2.t
 |}]
 
