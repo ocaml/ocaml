@@ -15,7 +15,7 @@ type-param:
         | [variance] '_'
 \end{syntax}
 
-Refuation cases. (Introduced in OCaml 4.03)
+Refutation cases. (Introduced in OCaml 4.03)
 
 \begin{syntax}
 matching-case:
