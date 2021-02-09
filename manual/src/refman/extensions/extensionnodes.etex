@@ -81,6 +81,10 @@ the attributes are considered to apply to the payload:
 fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
 
+An additional shorthand "let%foo x in ..." is available for
+convenience when extension nodes are used to implement binding
+operators (See \ref{ss:letops-punning}).
+
 Furthermore, quoted strings "{|...|}" can be combined with extension nodes
 to embed foreign syntax fragments. Those fragments can be interpreted
 by a preprocessor and turned into OCaml code without requiring escaping
