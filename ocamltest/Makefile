@@ -204,10 +204,6 @@ ocamllex := $(BEST_OCAMLLEX)
 
 ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
-ocamlcdefaultflags :=
-
-ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
-
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
@@ -262,8 +258,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,str) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST_STRING,CPP) \
-	    $(call SUBST_STRING,ocamlcdefaultflags) \
-	    $(call SUBST_STRING,ocamloptdefaultflags) \
 	    $(call SUBST_STRING,ocamlsrcdir) \
 	    $(call SUBST,FLAMBDA) \
 	    $(call SUBST,FORCE_SAFE_STRING) \
