@@ -57,6 +57,7 @@ module type S =
     val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val find_last: (key -> bool) -> 'a t -> key * 'a
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
+    val find_or_add: key -> (unit -> 'a) -> 'a t -> 'a t * 'a
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
@@ -139,6 +140,21 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           if c = 0 then d
           else find x (if c < 0 then l else r)
+
+    let rec find_or_add x f_data = function
+      | Empty ->
+          let data = f_data() in
+          Node{l=Empty; v=x; d=data; r=Empty; h=1}, data
+      | Node {l; v; d; r} as m ->
+          let c = Ord.compare x v in
+          if c = 0 then
+            m, d
+          else if c < 0 then
+            let ll, data = find_or_add x f_data l in
+            (if l == ll then m else bal ll v d r), data
+          else
+            let rr, data = find_or_add x f_data r in
+            (if r == rr then m else bal l v d rr), data
 
     let rec find_first_aux v0 d0 f = function
         Empty ->

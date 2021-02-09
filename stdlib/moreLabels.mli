@@ -119,6 +119,14 @@ module Hashtbl : sig
      The current binding is returned first, then the previous
      bindings, in reverse order of introduction in the table. *)
 
+  val find_or_add : ('a, 'b) t -> key:'a -> data:(unit -> 'b) -> 'b
+  (** [Hashtbl.find_or_add tbl ~key ~data] returns the data associated with
+      [key] if it exists. Otherwise, it adds a binding from [key] to [data()]
+      in the table, and returns it. This function only calculates the hash of
+      [x] once, and only evaluates [data()] if [key] is not bound in the
+      table.
+      @since 4.12.0 *)
+
   val mem : ('a, 'b) t -> 'a -> bool
   (** [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
 
@@ -133,6 +141,17 @@ module Hashtbl : sig
      a binding of [key] to [data] is added to [tbl].
      This is functionally equivalent to {!remove}[ tbl key]
      followed by {!add}[ tbl key data]. *)
+
+  val update : ('a, 'b) t -> key:'a -> f:('b option -> 'b option) -> unit
+  (** [Hashtbl.update tbl ~key ~f] updates the bindings of [key] depending on
+      the value it's currently bound to. Depending on the value of [y], where
+      [y] is [f (find_opt key tbl)], the binding of [key] can be added,
+      replaced, or removed. If [y] is [None], the current binding is removed
+      if it exists,restoring the previous binding, if it exists. If [y] is
+      [Some data], then [key] is bound to [data], replacing the previously
+      bound value if it existed. This function only calculates the hash of
+      [key] once.
+      @since 4.12.0 *)
 
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
   (** [Hashtbl.iter ~f tbl] applies [f] to all bindings in table [tbl].
@@ -357,11 +376,17 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
+      val update : 'a t -> key -> ('a option -> 'a option) -> unit
+      (** @since 4.12.0 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option
       (** @since 4.05.0 *)
 
       val find_all : 'a t -> key -> 'a list
+      val find_or_add : 'a t -> key -> (unit -> 'a) -> 'a
+      (** @since 4.12.0 *)
+
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
@@ -436,10 +461,17 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
+      val update : 'a t -> key -> ('a option -> 'a option) -> unit
+      (** @since 4.12.0 *)
+
       val find : 'a t -> key -> 'a
-      val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
+      val find_opt : 'a t -> key -> 'a option
+      (** @since 4.05.0 *)
 
       val find_all : 'a t -> key -> 'a list
+      val find_or_add : 'a t -> key -> (unit -> 'a) -> 'a
+      (** @since 4.12.0 *)
+
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
@@ -834,6 +866,13 @@ module Map : sig
          exists.
           @since 4.05
          *)
+
+      val find_or_add: key:key -> data:(unit -> 'a) -> 'a t -> 'a t * 'a
+      (** [find_or_add ~key ~data m] returns a tuple with [m] and the current
+          value of [key] in [m], if it exists. If it does not exist, it returns
+          a tuple with a map containing the same bindings as [m] plus a binding
+          of [key] to [data()], and [data()].
+          @since 4.12.0 *)
 
       val map: f:('a -> 'b) -> 'a t -> 'b t
       (** [map ~f m] returns a map with same domain as [m], where the

@@ -102,6 +102,14 @@ val find_all : ('a, 'b) t -> 'a -> 'b list
    The current binding is returned first, then the previous
    bindings, in reverse order of introduction in the table. *)
 
+val find_or_add : ('a, 'b) t -> 'a -> (unit -> 'b) -> 'b
+(** [Hashtbl.find_or_add tbl key data] returns the data associated with
+    [key] if it exists. Otherwise, it adds a binding from [key] to [data()]
+    in the table, and returns it. This function only calculates the hash of
+    [x] once, and only evaluates [data()] if [key] is not bound in the
+    table.
+    @since 4.12.0 *)
+
 val mem : ('a, 'b) t -> 'a -> bool
 (** [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
 
@@ -116,6 +124,17 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
    a binding of [key] to [data] is added to [tbl].
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
+
+val update : ('a, 'b) t -> 'a -> ('b option -> 'b option) -> unit
+(** [Hashtbl.update tbl key f] updates the bindings of [key] depending on
+    the value it's currently bound to. Depending on the value of [y], where
+    [y] is [f (find_opt key tbl)], the binding of [key] can be added,
+    replaced, or removed. If [y] is [None], the current binding is removed
+    if it exists,restoring the previous binding, if it exists. If [y] is
+    [Some data], then [key] is bound to [data], replacing the previously
+    bound value if it existed. This function only calculates the hash of
+    [key] once.
+    @since 4.12.0 *)
 
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
@@ -340,11 +359,17 @@ module type S =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val update : 'a t -> key -> ('a option -> 'a option) -> unit
+    (** @since 4.12.0 *)
+
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
     (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
+    val find_or_add : 'a t -> key -> (unit -> 'a) -> 'a
+    (** @since 4.12.0 *)
+
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
@@ -417,10 +442,17 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val update : 'a t -> key -> ('a option -> 'a option) -> unit
+    (** @since 4.12.0 *)
+
     val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
+    val find_opt : 'a t -> key -> 'a option
+    (** @since 4.05.0 *)
 
     val find_all : 'a t -> key -> 'a list
+    val find_or_add : 'a t -> key -> (unit -> 'a) -> 'a
+    (** @since 4.12.0 *)
+
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit

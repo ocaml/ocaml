@@ -338,6 +338,7 @@ module type MapT =
     val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val find_last : (key -> bool) -> 'a t -> key * 'a
     val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
+    val find_or_add : key -> (unit -> 'a) -> 'a t -> 'a t * 'a
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
@@ -391,6 +392,7 @@ module SSMap :
     val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val find_last : (key -> bool) -> 'a t -> key * 'a
     val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
+    val find_or_add : key -> (unit -> 'a) -> 'a t -> 'a t * 'a
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t

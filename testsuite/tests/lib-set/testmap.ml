@@ -29,6 +29,15 @@ let test x v s1 s2 =
     (let s = M.add x v s1 in
      fun i -> img i s = (if i = x then Some v else img i s1));
 
+  check "find_or_add" (
+    let s, d = M.find_or_add x (fun () -> v) s1 in
+    fun i ->
+      match img x s1 with
+      (* If x was already in s1, physical equality must hold *)
+      | Some existing -> s == s1 && d = existing
+      | None -> img i s = (if i = x then Some v else img i s1)
+   );
+
   check "singleton"
     (let s = M.singleton x v in
      fun i -> img i s = (if i = x then Some v else None));
