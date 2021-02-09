@@ -155,8 +155,6 @@ cmo_files := $(ml_files:.ml=.cmo)
 
 cmx_files := $(ml_files:.ml=.cmx)
 
-ocaml_objects := $(ml_files:.ml=.$(O))
-
 # List of .mli files for ocamldep
 mli_files := \
   $(filter %.mli,$(subst .mly,.mli,$(sources)))
