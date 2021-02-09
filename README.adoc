@@ -1,8 +1,8 @@
 |=====
 | Branch `trunk` | Branch `4.12` | Branch `4.11` | Branch `4.10`
 
-| image:https://github.com/ocaml/ocaml/workflows/main/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
-     link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["Github CI Hygiene Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
