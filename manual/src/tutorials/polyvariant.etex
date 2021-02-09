@@ -18,7 +18,7 @@ system will just check that it is an admissible value according to its
 use. You need not define a type before using a variant tag. A variant
 type will be inferred independently for each of its uses.
 
-\subsection*{ss:polyvariant:basic-use}{Basic use}
+\section{s:polyvariant:basic-use}{Basic use}
 
 In programs, polymorphic variants work like usual ones. You just have
 to prefix their names with a backquote character "`".
@@ -53,7 +53,7 @@ let rec map f : 'a vlist -> 'b vlist = function
 ;;
 \end{caml_example}
 
-\subsection*{ss:polyvariant-advanced}{Advanced use}
+\section{s:polyvariant-advanced}{Advanced use}
 
 Type-checking polymorphic variants is a subtle thing, and some
 expressions may result in more complex type information.
@@ -138,7 +138,7 @@ let g = function
   | `Tag3 -> "Tag3";;
 \end{caml_example}
 
-\subsection{ss:polyvariant-weaknesses}{Weaknesses of polymorphic variants}
+\section{s:polyvariant-weaknesses}{Weaknesses of polymorphic variants}
 
 After seeing the power of polymorphic variants, one may wonder why
 they were added to core language variants, rather than replacing them.

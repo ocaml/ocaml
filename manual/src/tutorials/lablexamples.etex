@@ -88,7 +88,7 @@ pattern, but you must prefix it with the label.
 h (fun ~x:_ ~y -> y+1);;
 \end{caml_example}
 
-\subsection{ss:optional-arguments}{Optional arguments}
+\section{s:optional-arguments}{Optional arguments}
 
 An interesting feature of labeled arguments is that they can be made
 optional. For optional parameters, the question mark "?" replaces the
@@ -152,7 +152,7 @@ let test2 ?x ?y () = test ?x ?y () ();;
 test2 ?x:None;;
 \end{caml_example}
 
-\subsection{ss:label-inference}{Labels and type inference}
+\section{s:label-inference}{Labels and type inference}
 
 While they provide an increased comfort for writing function
 applications, labels and optional arguments have the pitfall that they
@@ -218,7 +218,7 @@ including side-effects. That is, if the application of optional
 parameters shall produce side-effects, these are delayed until the
 received function is really applied to an argument.
 
-\subsection{ss:label-suggestions}{Suggestions for labeling}
+\section{s:label-suggestions}{Suggestions for labeling}
 
 Like for names, choosing labels for functions is not an easy task. A
 good labeling is a labeling which
