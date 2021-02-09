@@ -745,11 +745,11 @@ let generalize ty =
 
 (* Generalize the structure and lower the variables *)
 
-let rec generalize_structure var_level ty =
+let rec generalize_structure ty =
   let ty = repr ty in
   if ty.level <> generic_level then begin
-    if is_Tvar ty && ty.level > var_level then
-      set_level ty var_level
+    if is_Tvar ty && ty.level > !current_level then
+      set_level ty !current_level
     else if
       ty.level > !current_level &&
       match ty.desc with
@@ -758,13 +758,13 @@ let rec generalize_structure var_level ty =
       | _ -> true
     then begin
       set_level ty generic_level;
-      iter_type_expr (generalize_structure var_level) ty
+      iter_type_expr generalize_structure ty
     end
   end
 
 let generalize_structure ty =
   simple_abbrevs := Mnil;
-  generalize_structure !current_level ty
+  generalize_structure ty
 
 (* Generalize the spine of a function, if the level >= !current_level *)
 
