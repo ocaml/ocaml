@@ -91,6 +91,10 @@ Working version
   library module's documentation.
   (John Whitington, review by David Allsopp)
 
+- #1351: Document `-output-complete-obj` option in the manual.
+  (François Bobot, Nicolás Ojeda Bär, review by Daniel Bünzli and Damien
+  Doligez)
+
 ### Compiler user-interface and warnings:
 
 - #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
@@ -160,6 +164,9 @@ Working version
   (partially revert #2024).
   (Tõivo Leedjärv and Konstantin Romanov,
    review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
+
+- #10156: configure script: fix sockets feature detection.
+  (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
 ### Bug fixes:
 

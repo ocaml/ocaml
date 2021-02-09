@@ -475,6 +475,12 @@ must be set with the
 option.
 This option can also be used to produce a compiled shared/dynamic
 library (.so extension).
+.B \-output\-complete\-obj
+Same as
+.B \-output\-obj
+except the object file produced includes the runtime and
+autolink libraries.
+.TP
 .TP
 .B \-pack
 Build an object file (.cmx and .o files) and its associated compiled

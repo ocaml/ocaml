@@ -1290,26 +1290,20 @@ but no proper monotonic clock source was found.])
 
 ## TODO: check whether the different libraries are really useful
 
-sockets=false
+sockets=true
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
-    [cclibs="$cclibs -lws2_32"
-    sockets=true],
+    [cclibs="$cclibs -lws2_32"],
   [*-*-haiku],
-    [cclibs="$cclibs -lnetwork"
-    sockets=true],
+    [cclibs="$cclibs -lnetwork"],
   [*-*-solaris*],
-    [cclibs="$cclibs -lsocket -lnsl"
-    sockets=true],
+    [cclibs="$cclibs -lsocket -lnsl"],
   [
-    AC_CHECK_FUNC([socket])
-    AC_CHECK_FUNC([socketpair])
-    AC_CHECK_FUNC([bind])
-    AC_CHECK_FUNC([listen])
-    AC_CHECK_FUNC([accept])
-    AC_CHECK_FUNC([connect])
-    sockets=true
+    AC_CHECK_FUNCS(
+      [socket socketpair bind listen accept connect],
+      [],
+      [sockets=false])
   ]
 )
 
