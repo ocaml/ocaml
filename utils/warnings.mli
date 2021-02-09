@@ -99,7 +99,7 @@ type t =
 
 type alert = {kind:string; message:string; def:loc; use:loc}
 
-val parse_options : bool -> string -> unit;;
+val parse_options : bool -> string -> alert option;;
 
 val parse_alert_option: string -> unit
   (** Disable/enable alerts based on the parameter to the -alert

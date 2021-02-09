@@ -487,15 +487,43 @@ let parse_alert_option s =
   in
   scan 0
 
+let letter_alert seen =
+  if Array.for_all (fun c -> c = 0 ) seen then None
+  else
+    let print_char ppf i count =
+      if count = 0 then () else
+        Format.fprintf ppf "%c%c"
+          (if count>0 then '+' else '-') (Char.chr (i+97))
+    in
+    let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
+    let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
+    Some { kind="ocaml_deprecated_cli";
+      use=nowhere; def=nowhere;
+      message=
+        Format.asprintf
+          "@[Setting a warning with a single lowercase or@ \
+           uppercase letter is deprecated.@ \
+           Prefix each letter with either '+' or '-':@ %t.@?@]"
+          (fun ppf -> Array.iteri (print_char ppf) seen)
+    }
+
 let parse_opt error active errflag s =
+  let deprecated_single_letter_uses = Array.make 26 0 in
   let flags = if errflag then error else active in
   let set i =
     if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
     else flags.(i) <- true
   in
+  let letter_set i =
+    deprecated_single_letter_uses.(Char.code i - 97) <- 1;
+    letter i in
   let clear i =
     if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
     else flags.(i) <- false
+  in
+  let letter_clear i =
+    deprecated_single_letter_uses.(Char.code i - 97) <- -1;
+    letter i
   in
   let set_all i =
     if i = 3 then begin
@@ -527,11 +555,11 @@ let parse_opt error active errflag s =
     if i >= String.length s then () else
     match s.[i] with
     | 'A' .. 'Z' ->
-       List.iter set (letter (Char.lowercase_ascii s.[i]));
-       loop (i+1)
+        List.iter set (letter_set (Char.lowercase_ascii s.[i]));
+        loop (i+1)
     | 'a' .. 'z' ->
-       List.iter clear (letter s.[i]);
-       loop (i+1)
+        List.iter clear (letter_clear s.[i]);
+        loop (i+1)
     | '+' -> loop_letter_num set (i+1)
     | '-' -> loop_letter_num clear (i+1)
     | '@' -> loop_letter_num set_all (i+1)
@@ -551,7 +579,7 @@ let parse_opt error active errflag s =
        loop (i+1)
     | _ -> error ()
   in
-  match name_to_number s with
+  begin match name_to_number s with
   | Some n -> set n
   | None ->
       if s = "" then loop 0
@@ -563,20 +591,23 @@ let parse_opt error active errflag s =
         | '@', Some n -> set_all n
         | _ -> loop 0
       end
+  end;
+  letter_alert deprecated_single_letter_uses
 ;;
 
 let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
-  parse_opt error active errflag s;
-  current := {(!current) with error; active}
+  let alerts = parse_opt error active errflag s in
+  current := {(!current) with error; active};
+  alerts
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66-67-68";;
 let defaults_warn_error = "-a+31";;
 
-let () = parse_options false defaults_w;;
-let () = parse_options true defaults_warn_error;;
+let () = ignore @@ parse_options false defaults_w;;
+let () = ignore @@ parse_options true defaults_warn_error;;
 
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual
