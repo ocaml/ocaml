@@ -487,54 +487,69 @@ let parse_alert_option s =
   in
   scan 0
 
-let letter_alert seen =
-  if Array.for_all (fun c -> c = 0 ) seen then None
-  else
-    let print_char ppf i count =
-      if count = 0 then () else
-        Format.fprintf ppf "%c%c"
-          (if count>0 then '+' else '-') (Char.chr (i+97))
-    in
-    let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
-    let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
-    Some { kind="ocaml_deprecated_cli";
-      use=nowhere; def=nowhere;
-      message=
-        Format.asprintf
-          "@[Setting a warning with a single lowercase or@ \
-           uppercase letter is deprecated.@ \
-           Prefix each letter with either '+' or '-':@ %t.@?@]"
-          (fun ppf -> Array.iteri (print_char ppf) seen)
-    }
+type modifier =
+  | Set (** +a *)
+  | Clear (** -a *)
+  | Set_all (** @a *)
 
-let parse_opt error active errflag s =
-  let deprecated_single_letter_uses = Array.make 26 0 in
-  let flags = if errflag then error else active in
-  let set i =
-    if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
-    else flags.(i) <- true
+type token =
+  | Letter of char * modifier option
+  | Num of int * int * modifier
+
+let letter_alert tokens =
+  let deprecated = function Letter (c,None) -> Some c | _ -> None in
+  let print_char ppf c =
+    let lowercase = Char.lowercase_ascii c = c in
+    Format.fprintf ppf "%c%c"
+      (if lowercase then '-' else '+') c
   in
-  let letter_set i =
-    deprecated_single_letter_uses.(Char.code i - 97) <- 1;
-    letter i in
-  let clear i =
-    if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
-    else flags.(i) <- false
+  let print_modifier ppf = function
+    | Set_all -> Format.fprintf ppf "@"
+    | Clear -> Format.fprintf ppf "-"
+    | Set -> Format.fprintf ppf "+"
   in
-  let letter_clear i =
-    deprecated_single_letter_uses.(Char.code i - 97) <- -1;
-    letter i
+  let print_token ppf = function
+    | Num (a,b,m) -> if a = b then
+          Format.fprintf ppf "%a%d" print_modifier m a
+        else
+          Format.fprintf ppf "%a%d..%d" print_modifier m a b
+    | Letter(l,Some m) -> Format.fprintf ppf "%a%c" print_modifier m l
+    | Letter(l,None) -> print_char ppf l
   in
-  let set_all i =
-    if i = 3 then begin
-      set_alert ~error:false ~enable:true "deprecated";
-      set_alert ~error:true ~enable:true "deprecated"
-    end
-    else begin
-      active.(i) <- true;
-      error.(i) <- true
-    end
-  in
+  match List.find_map deprecated tokens with
+  | None -> None
+  | Some example ->
+      let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
+      let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
+      let spelling_hint ppf =
+        if List.length (List.filter_map deprecated tokens) >= 5 then
+          Format.fprintf ppf
+            "@ @[Hint: Did you make a spelling mistake \
+             when using a mnemonic name?@]"
+        else
+          ()
+      in
+      let message =
+        Format.asprintf
+          "@[<v>@[Setting a warning with single lowercase \
+           or uppercase letters, like '%c' or '%c',@ is deprecated.@]@ \
+           @[Use the equivalent signed form:@ %t.@]@ \
+           @[Hint: Enabling or disabling a warning by its mnemonic name \
+           requires a + or - prefix.@]\
+           %t@?@]"
+          (Char.lowercase_ascii example)
+          (Char.uppercase_ascii example)
+          (fun ppf -> List.iter (print_token ppf) tokens)
+          spelling_hint
+      in
+      Some {
+        kind="ocaml_deprecated_cli";
+        use=nowhere; def=nowhere;
+        message
+      }
+
+
+let parse_warnings s =
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec get_num n i =
     if i >= String.length s then i, n
@@ -551,48 +566,74 @@ let parse_opt error active errflag s =
     else
       i, n1, n1
   in
-  let rec loop i =
-    if i >= String.length s then () else
+  let rec loop tokens i =
+    if i >= String.length s then List.rev tokens else
     match s.[i] with
-    | 'A' .. 'Z' ->
-        List.iter set (letter_set (Char.lowercase_ascii s.[i]));
-        loop (i+1)
-    | 'a' .. 'z' ->
-        List.iter clear (letter_clear s.[i]);
-        loop (i+1)
-    | '+' -> loop_letter_num set (i+1)
-    | '-' -> loop_letter_num clear (i+1)
-    | '@' -> loop_letter_num set_all (i+1)
+    | 'A' .. 'Z' | 'a' .. 'z' ->
+        loop (Letter(s.[i],None)::tokens) (i+1)
+    | '+' -> loop_letter_num tokens Set (i+1)
+    | '-' -> loop_letter_num tokens Clear (i+1)
+    | '@' -> loop_letter_num tokens Set_all (i+1)
     | _ -> error ()
-  and loop_letter_num myset i =
+  and loop_letter_num tokens modifier i =
     if i >= String.length s then error () else
     match s.[i] with
     | '0' .. '9' ->
         let i, n1, n2 = get_range i in
-        for n = n1 to min n2 last_warning_number do myset n done;
-        loop i
-    | 'A' .. 'Z' ->
-       List.iter myset (letter (Char.lowercase_ascii s.[i]));
-       loop (i+1)
-    | 'a' .. 'z' ->
-       List.iter myset (letter s.[i]);
-       loop (i+1)
+        loop (Num(n1,n2,modifier)::tokens) i
+    | 'A' .. 'Z' | 'a' .. 'z' ->
+       loop (Letter(s.[i],Some modifier)::tokens) (i+1)
     | _ -> error ()
   in
-  begin match name_to_number s with
-  | Some n -> set n
+  loop [] 0
+
+let parse_opt error active errflag s =
+  let flags = if errflag then error else active in
+  let action modifier i = match modifier with
+    | Set ->
+        if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
+        else flags.(i) <- true
+    | Clear ->
+        if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
+        else flags.(i) <- false
+    | Set_all ->
+        if i = 3 then begin
+          set_alert ~error:false ~enable:true "deprecated";
+          set_alert ~error:true ~enable:true "deprecated"
+        end
+        else begin
+          active.(i) <- true;
+          error.(i) <- true
+        end
+  in
+  let eval = function
+    | Letter(c, m) ->
+        let lc = Char.lowercase_ascii c in
+        let modifier = match m with
+          | None -> if c = lc then Clear else Set
+          | Some m -> m
+        in
+        List.iter (action modifier) (letter lc)
+    | Num(n1,n2,modifier) ->
+        for n = n1 to min n2 last_warning_number do action modifier n done
+  in
+  let parse_and_eval s =
+    let tokens = parse_warnings s in
+    List.iter eval tokens;
+    letter_alert tokens
+  in
+   match name_to_number s with
+  | Some n -> action Set n; None
   | None ->
-      if s = "" then loop 0
+      if s = "" then parse_and_eval s
       else begin
         let rest = String.sub s 1 (String.length s - 1) in
         match s.[0], name_to_number rest with
-        | '+', Some n -> set n
-        | '-', Some n -> clear n
-        | '@', Some n -> set_all n
-        | _ -> loop 0
+        | '+', Some n -> action Set n; None
+        | '-', Some n -> action Clear n; None
+        | '@', Some n -> action Set_all n; None
+        | _ -> parse_and_eval s
       end
-  end;
-  letter_alert deprecated_single_letter_uses
 ;;
 
 let parse_options errflag s =
