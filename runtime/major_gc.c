@@ -460,7 +460,6 @@ Caml_inline void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
     if (Is_white_hd (chd)){
       ephe_list_pure = 0;
       Hd_val (child) = Blackhd_hd (chd);
-      marked_words += Whsize_hd (chd);
       if( Tag_hd(chd) < No_scan_tag ) {
         mark_stack_push(stk, child, 0, work);
       } else {
@@ -576,6 +575,7 @@ static void mark_slice (intnat work)
   caml_gc_message (0x40, "Marking %"ARCH_INTNAT_PRINTF_FORMAT"d words\n", work);
   caml_gc_message (0x40, "Subphase = %d\n", caml_gc_subphase);
 
+  marked_words += work;
   while (1){
     int can_mark = 0;
 
@@ -625,7 +625,9 @@ static void mark_slice (intnat work)
       }
     } else if (caml_gc_subphase == Subphase_mark_roots) {
       CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
+      marked_words -= work;
       work = caml_darken_all_roots_slice (work);
+      marked_words += work;
       CAML_EV_END(EV_MAJOR_MARK_ROOTS);
       if (work > 0){
         caml_gc_subphase = Subphase_mark_main;
@@ -664,6 +666,7 @@ static void mark_slice (intnat work)
           /* Initialise the sweep phase. */
           init_sweep_phase();
         }
+        marked_words -= work;
         work = 0;
         CAML_EV_END(EV_MAJOR_MARK_FINAL);
       }
@@ -672,6 +675,7 @@ static void mark_slice (intnat work)
       }
     }
   }
+  marked_words -= work;  /* work may be negative */
   CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_FIELDS, slice_fields);
   CAML_EV_COUNTER(EV_C_MAJOR_MARK_SLICE_POINTERS, slice_pointers);
 }
