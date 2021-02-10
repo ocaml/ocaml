@@ -727,7 +727,6 @@ let duplicate_class_type ty =
 *)
 let rec generalize ty =
   let ty = repr ty in
-  (* generalize the type iff ty.level <= !current_level *)
   if (ty.level > !current_level) && (ty.level <> generic_level) then begin
     set_level ty generic_level;
     (* recur into abbrev for the speed *)
