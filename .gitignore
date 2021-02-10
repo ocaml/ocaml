@@ -251,7 +251,6 @@ _build
 /tools/keywords
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
-/tools/ocamlmklibconfig.ml
 /tools/ocamlcmt
 /tools/ocamlcmt.opt
 /tools/cmpbyt

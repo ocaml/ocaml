@@ -139,20 +139,8 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+$(call byte_and_opt,ocamlmklib,config.cmo \
 	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
-
-
-ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
-	(echo 'let bindir = "$(BINDIR)"'; \
-         echo 'let default_rpath = "$(RPATH)"'; \
-         echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"';) \
-        > $@
-
-beforedepend:: ocamlmklibconfig.ml
-
-clean::
-	rm -f ocamlmklibconfig.ml
 
 # To make custom toplevels
 
