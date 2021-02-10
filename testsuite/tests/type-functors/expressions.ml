@@ -1101,6 +1101,8 @@ end
 module Type_pair (T : sig type t end) (M : sig type t end) = struct
   type t = T.t * M.t
 
+  type t_ctor = A of T.t * M.t
+
   module Opaque : sig
     type 'a t
     val create : 'a -> 'a t
@@ -1123,6 +1125,7 @@ module Type_pair :
   functor (T : sig type t end) (M : sig type t end) ->
     sig
       type t = T.t * M.t
+      type t_ctor = A of T.t * M.t
       module Opaque : sig type 'a t val create : 'a -> 'a t end
       module type S = sig type t = M.t * T.t end
     end
@@ -1158,6 +1161,19 @@ let test_normalise_functor_type = normalise_functor_type {Normalise_test};;
 val test_normalise_functor_type : int * Normalise_test.t = (1, 15)
 |}]
 
+let normalise_functor_type_ctor =
+  let module Int2 = Int in
+  let f {M : Normalise} : Type_pair(Int2)(M).t_ctor = A (1, M.create ()) in
+  f;;
+
+[%%expect{|
+val normalise_functor_type_ctor : {M : Normalise} -> Type_pair(Int)(M).t_ctor =
+  <fun>
+|}]
+
+let test_normalise_functor_type_ctor =
+  normalise_functor_type_ctor {Normalise_test};;
+
 let normalise_functor_type_opaque =
   let module Int2 = Int in
   let f {M : Normalise} : M.t Type_pair(Int2)(M).Opaque.t =
@@ -1167,6 +1183,8 @@ let normalise_functor_type_opaque =
   f;;
 
 [%%expect{|
+val test_normalise_functor_type_ctor : Type_pair(Int)(Normalise_test).t_ctor =
+  Type_pair(Int)(Normalise_test).A (1, 15)
 val normalise_functor_type_opaque :
   {M : Normalise} -> M.t Type_pair(Int)(M).Opaque.t = <fun>
 |}]
