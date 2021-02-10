@@ -68,3 +68,24 @@ jobs:
           && (startsWith(github.event.ref, 'refs/heads/4.')
              || github.event.ref == 'refs/heads/trunk')
           && always()
+
+      - name: Check that labelled/unlabelled .mli files are in sync
+        run: tools/ci/actions/check-labelled-interfaces.sh
+        if: always()
+
+        # If this step fails, it leaves behind the file compiler-failed-to-build
+        # the presence of which can be felt by the last two steps, allowing them
+        # to skip, rather than go beserk with a faulty compiler.
+      - name: Build a minimal compiler for alldepend
+        run: tools/ci/actions/runner.sh basic-compiler
+        if: always()
+
+      - name: Check that dependency info is up-to-date
+        run: tools/ci/actions/check-alldepend.sh
+        if: hashFiles('compiler-failed-to-build') == '' && always()
+
+      - name: Check global structure of the reference manual
+        run: |
+          # Required configuration info is left-over from the previous step
+          make -C manual/tests check-stdlib check-case-collision
+        if: hashFiles('compiler-failed-to-build') == '' && always()
