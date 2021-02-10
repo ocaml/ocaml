@@ -1083,3 +1083,117 @@ Line 2, characters 2-37:
 Error: This expression has type {T : Foldable} -> 'a
        but an expression was expected of type {T : Type} -> 'b
 |}]
+
+(* Expansions and normalisations in the module type *)
+
+module type Normalise = sig
+  type t
+  type _ t_alias = t
+  val create : unit -> t
+end
+
+module Normalise_test = struct
+  type t = int
+  type _ t_alias = t
+  let create () = 15
+end
+
+module Type_pair (T : sig type t end) (M : sig type t end) = struct
+  type t = T.t * M.t
+
+  module Opaque : sig
+    type 'a t
+    val create : 'a -> 'a t
+  end = struct
+    type 'a t = unit
+    let create _ = ()
+  end
+
+  module type S = sig
+    type t = M.t * T.t
+  end
+end;;
+
+[%%expect{|
+module type Normalise =
+  sig type t type _ t_alias = t val create : unit -> t end
+module Normalise_test :
+  sig type t = int type _ t_alias = t val create : unit -> int end
+module Type_pair :
+  functor (T : sig type t end) (M : sig type t end) ->
+    sig
+      type t = T.t * M.t
+      module Opaque : sig type 'a t val create : 'a -> 'a t end
+      module type S = sig type t = M.t * T.t end
+    end
+|}]
+
+let expand_alias =
+  let module Int2 = Int in
+  let f {M : Normalise} : Int2.t M.t_alias = M.create () in
+  f;;
+
+[%%expect{|
+val expand_alias : {M : Normalise} -> M.t = <fun>
+|}]
+
+let test_expand_alias = expand_alias {Normalise_test};;
+
+[%%expect{|
+val test_expand_alias : Normalise_test.t = 15
+|}]
+
+let normalise_functor_type =
+  let module Int2 = Int in
+  let f {M : Normalise} : Type_pair(Int2)(M).t = (1, M.create ()) in
+  f;;
+
+[%%expect{|
+val normalise_functor_type : {M : Normalise} -> int * M.t = <fun>
+|}]
+
+let test_normalise_functor_type = normalise_functor_type {Normalise_test};;
+
+[%%expect{|
+val test_normalise_functor_type : int * Normalise_test.t = (1, 15)
+|}]
+
+let normalise_functor_type_opaque =
+  let module Int2 = Int in
+  let f {M : Normalise} : M.t Type_pair(Int2)(M).Opaque.t =
+    let module N = Type_pair(Int2)(M) in
+    N.Opaque.create (M.create ())
+  in
+  f;;
+
+[%%expect{|
+val normalise_functor_type_opaque :
+  {M : Normalise} -> M.t Type_pair(Int)(M).Opaque.t = <fun>
+|}]
+
+let test_normalise_functor_type_opaque =
+  normalise_functor_type_opaque {Normalise_test};;
+
+[%%expect{|
+val test_normalise_functor_type_opaque :
+  Normalise_test.t Type_pair(Int)(Normalise_test).Opaque.t = <abstr>
+|}]
+
+let normalise_functor_mty =
+  let module Int2 = Int in
+  let f {M : Normalise} : (module Type_pair(Int2)(M).S) =
+    (module struct type t = M.t * Int2.t end)
+  in
+  f;;
+
+[%%expect{|
+val normalise_functor_mty : {M : Normalise} -> (module Type_pair(Int)(M).S) =
+  <fun>
+|}]
+
+let test_normalise_functor_mty = normalise_functor_mty {Normalise_test};;
+
+[%%expect{|
+val test_normalise_functor_mty : (module Type_pair(Int)(Normalise_test).S) =
+  <module>
+|}]
