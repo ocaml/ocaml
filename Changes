@@ -182,6 +182,11 @@ Working version
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
+- #10186: configure wasn't using library link flags when searching for
+  network functions on systems where they're not in libc. Fix IPv6 and
+  socklen_t detection on Windows.
+  (Antonin Décimo, review by David Allsopp and Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
