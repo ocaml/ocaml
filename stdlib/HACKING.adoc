@@ -17,7 +17,7 @@ To add a new module, you must:
   the same style as the rest of the code, in particular the
   alphabetical ordering and whitespace alignment of module aliases.
 
-* Add `module_name` to the definition of `STDLIB_MODS` in
+* Add `module_name` to the definition of `STDLIB_MODULE_BASENAMES` in
   `stdlib/StdlibModules`. You must keep the list sorted in dependency order.
 
 * Run `make alldepend` to update all the `.depend` files. These files are not

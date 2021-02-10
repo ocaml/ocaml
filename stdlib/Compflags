@@ -25,17 +25,17 @@ case $1 in
   camlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
   camlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)
-  stdlib__buffer.cmx) echo ' -inline 3';;
+  stdlib__Buffer.cmx) echo ' -inline 3';;
                            # make sure add_char is inlined (PR#5872)
-  stdlib__buffer.cm[io]) echo ' -w A';;
+  stdlib__Buffer.cm[io]) echo ' -w A';;
   camlinternalFormat.cm[io]) echo ' -w Ae';;
-  stdlib__printf.cm[io]|stdlib__format.cm[io]|stdlib__scanf.cm[io])
+  stdlib__Printf.cm[io]|stdlib__Format.cm[io]|stdlib__Scanf.cm[io])
       echo ' -w Ae';;
-  stdlib__scanf.cmx) echo ' -inline 9';;
+  stdlib__Scanf.cmx) echo ' -inline 9';;
   *Labels.cmi) echo ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
-  stdlib__float.cm[ox]) echo ' -nolabels -no-alias-deps';;
-  stdlib__oo.cmi) echo ' -no-principal';;
+  stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
+  stdlib__Oo.cmi) echo ' -no-principal';;
     # preserve structure sharing in Oo.copy (PR#9767)
   *) echo ' ';;
 esac
