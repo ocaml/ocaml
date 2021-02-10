@@ -171,6 +171,9 @@ val not_marked_node: type_expr -> bool
         (* Return true if a type node is not yet marked *)
 val flip_mark_node: type_expr -> unit
         (* Mark a type node. No [repr]'ing *)
+val logged_mark_node: type_expr -> unit
+        (* Mark a type node, logging the marking so it can be backtracked.
+           No [repr]'ing *)
 val try_mark_node: type_expr -> bool
         (* Mark a type node if it is not yet marked.
            Return false if it was already marked *)
