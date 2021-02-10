@@ -41,7 +41,7 @@ Working version
 
 - #10188: Switch the default allocation policy to best-fit and adjust the
   default overhead parameter accordingly.
-  (Damien Doligez, review by xxx)
+  (Damien Doligez, review by Josh Berdine and Xavier Leroy)
 
 ### Code generation and optimizations:
 
