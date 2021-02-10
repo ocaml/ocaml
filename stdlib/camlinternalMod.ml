@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-external _make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
-
 type shape =
   | Function
   | Lazy
@@ -27,7 +25,7 @@ let rec init_mod_field modu i loc shape =
     match shape with
     | Function ->
        let rec fn (x : 'a) =
-         let fn' : 'a -> 'b = Obj.obj modu.(i) in
+         let fn' : 'a -> 'b = Obj.obj (Obj.field modu i) in
          if fn == fn' then
            raise (Undefined_recursive_module loc)
          else
@@ -36,7 +34,7 @@ let rec init_mod_field modu i loc shape =
     | Lazy ->
        let rec l =
          lazy (
-           let l' = Obj.obj modu.(i) in
+           let l' = Obj.obj (Obj.field modu i) in
            if l == l' then
              raise (Undefined_recursive_module loc)
            else
@@ -48,11 +46,11 @@ let rec init_mod_field modu i loc shape =
        Obj.repr (init_mod_block loc comps)
     | Value v -> v
   in
-  modu.(i) <- init
+  Obj.set_field modu i init
 
 and init_mod_block loc comps =
   let length = Array.length comps in
-  let modu = Array.make length (Obj.repr 0) in
+  let modu = Obj.new_block 0 length in
   for i = 0 to length - 1 do
     init_mod_field modu i loc comps.(i)
   done;
@@ -72,8 +70,9 @@ let rec update_mod_field modu i shape n =
      () (* the value is already there *)
   | Class ->
      assert (Obj.tag n = 0 && Obj.size n = 4);
+     let cl = Obj.field modu i in
      for j = 0 to 3 do
-       Obj.set_field (Obj.field modu i) j (Obj.field n j)
+       Obj.set_field cl j (Obj.field n j)
      done
   | Module comps ->
      update_mod_block comps (Obj.field modu i) n
