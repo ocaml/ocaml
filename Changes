@@ -49,6 +49,10 @@ Working version
 - #10136: Minor clean-ups in runtime/io.c and runtime/caml/io.h
   (Xavier Leroy, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
+- #10188: Switch the default allocation policy to best-fit and adjust the
+  default overhead parameter accordingly.
+  (Damien Doligez, review by Josh Berdine and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
