@@ -1764,25 +1764,25 @@ uintnat caml_allocation_policy = policy_best_fit;
    [caml_fl_allocate] returns a head pointer, or NULL if no suitable block
    is found in the free set.
 */
-header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz) = &nf_allocate;
+header_t *(*caml_fl_p_allocate) (mlsize_t wo_sz) = &bf_allocate;
 
 /* Initialize the merge_block machinery (at start of sweeping). */
-void (*caml_fl_p_init_merge) (void) = &nf_init_merge;
+void (*caml_fl_p_init_merge) (void) = &bf_init_merge;
 
 /* These are called internally. */
-static void (*caml_fl_p_init) (void) = &nf_init;
-static void (*caml_fl_p_reset) (void) = &nf_reset;
+static void (*caml_fl_p_init) (void) = &bf_init;
+static void (*caml_fl_p_reset) (void) = &bf_reset;
 
 /* [caml_fl_merge_block] returns the head pointer of the next block after [bp],
    because merging blocks may change the size of [bp]. */
-header_t *(*caml_fl_p_merge_block) (value bp, char *limit) = &nf_merge_block;
+header_t *(*caml_fl_p_merge_block) (value bp, char *limit) = &bf_merge_block;
 
 /* [bp] must point to a list of blocks of wosize >= 1 chained by their field 0,
    terminated by Val_NULL, and field 1 of the first block must point to
    the last block.
    The blocks must be blue.
 */
-void (*caml_fl_p_add_blocks) (value bp) = &nf_add_blocks;
+void (*caml_fl_p_add_blocks) (value bp) = &bf_add_blocks;
 
 /* Cut a block of memory into pieces of size [Max_wosize], give them headers,
    and optionally merge them into the free list.
@@ -1796,9 +1796,10 @@ void (*caml_fl_p_add_blocks) (value bp) = &nf_add_blocks;
 */
 void (*caml_fl_p_make_free_blocks)
   (value *p, mlsize_t size, int do_merge, int color)
-  = &nf_make_free_blocks;
+  = &bf_make_free_blocks;
+
 #ifdef DEBUG
-void (*caml_fl_p_check) (void) = &nf_check;
+void (*caml_fl_p_check) (void) = &bf_check;
 #endif
 
 void caml_set_allocation_policy (intnat p)
