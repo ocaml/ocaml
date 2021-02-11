@@ -1,0 +1,70 @@
+name: Hygiene
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  hygiene:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Context
+        run: echo $GITHUB_CONTEXT
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        # Comment out the line below to enable (debugging) display of the github
+        # context variable.
+        if: failure()
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+
+      - name: Changes updated
+        run: >-
+          tools/ci/actions/check-changes-modified.sh
+          'pull_request'
+          '${{ github.event.pull_request.base.ref }}'
+          '${{ github.event.pull_request.base.sha }}'
+          '${{ github.event.pull_request.head.ref }}'
+          '${{ github.event.pull_request.head.sha }}'
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'no-change-entry-needed')
+          && github.event_name == 'pull_request'
+
+      - name: configure correctly generated
+        run: >-
+          tools/ci/actions/check-configure.sh
+          '${{ github.event_name }}'
+          '${{ github.event.pull_request.base.ref }}'
+          '${{ github.event.pull_request.base.sha }}'
+          '${{ github.event.pull_request.head.ref }}'
+          '${{ github.event.pull_request.head.sha }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.before }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.after }}'
+        if: ${{ always() }}
+
+      - name: check-typo revered
+        run: >-
+          tools/ci/actions/check-typo.sh
+          '${{ github.event_name }}'
+          '${{ github.event.pull_request.base.ref }}'
+          '${{ github.event.pull_request.base.sha }}'
+          '${{ github.event.pull_request.head.ref }}'
+          '${{ github.event.pull_request.head.sha }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.before }}'
+          '${{ github.event.ref }}'
+          '${{ github.event.after }}'
+        if: ${{ always() }}
+
+      - name: check-typo on whole tree
+        run: tools/check-typo
+        if: >-
+          github.event_name == 'push'
+          && (startsWith(github.event.ref, 'refs/heads/4.')
+             || github.event.ref == 'refs/heads/trunk')
+          && always()
