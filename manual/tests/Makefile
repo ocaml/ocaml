@@ -1,5 +1,6 @@
 TOPDIR=$(abspath ../..)
 SRC=$(TOPDIR)
+include $(TOPDIR)/stdlib/StdlibModules
 include $(TOPDIR)/api_docgen/Makefile.docfiles
 include $(TOPDIR)/Makefile.tools
 MANUAL=$(TOPDIR)/manual/src
