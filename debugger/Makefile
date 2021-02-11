@@ -20,13 +20,14 @@ include $(ROOTDIR)/Makefile.best_binaries
 
 DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
 UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
-CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+OCAMLYACCFLAGS =
 
 CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
-CAMLLEX=$(BEST_OCAMLLEX)
+OCAMLLEX ?= $(BEST_OCAMLLEX)
 CAMLDEP=$(BEST_OCAMLDEP)
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
@@ -77,14 +78,14 @@ depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
-debugger_lexer.ml: debugger_lexer.mll
-	$(CAMLLEX) $(OCAMLLEXFLAGS) $<
+%.ml: %.mll
+	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
 clean::
 	rm -f debugger_lexer.ml
 beforedepend:: debugger_lexer.ml
 
-debugger_parser.ml debugger_parser.mli: debugger_parser.mly
-	$(CAMLYACC) debugger_parser.mly
+%.ml %.mli: %.mly
+	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
 clean::
 	rm -f debugger_parser.ml debugger_parser.mli
 beforedepend:: debugger_parser.ml debugger_parser.mli

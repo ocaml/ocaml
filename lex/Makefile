@@ -19,7 +19,8 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+OCAMLYACCFLAGS = -v
 
 CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
@@ -27,7 +28,8 @@ CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
-CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+BOOT_OCAMLLEX ?= $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLLEX ?= $(BOOT_OCAMLLEX)
 CAMLDEP = $(BOOT_OCAMLC) -depend
 DEPFLAGS = -slash
 DEPINCLUDES =
@@ -54,16 +56,16 @@ clean::
 	rm -f $(programs) $(programs:=.exe)
 	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.o *.obj
 
-parser.ml parser.mli: parser.mly
-	$(CAMLYACC) -v parser.mly
+%.ml %.mli: %.mly
+	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
 
 clean::
 	rm -f parser.ml parser.mli parser.output
 
 beforedepend:: parser.ml parser.mli
 
-lexer.ml: lexer.mll
-	$(CAMLLEX) $(OCAMLLEXFLAGS) $<
+%.ml: %.mll
+	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
 
 clean::
 	rm -f lexer.ml
