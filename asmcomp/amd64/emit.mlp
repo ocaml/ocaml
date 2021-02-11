@@ -703,7 +703,7 @@ let emit_instr env fallthrough i =
       let a0, a1 = if need_swap then arg i 1, arg i 0 else arg i 0, arg i 1 in
       I.cmpsd cond a1 a0;
       I.movd a0 (res i 0);
-      I.neg (res i 0);
+      I.neg (res i 0)
   | Lop(Inegf) ->
       I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->
