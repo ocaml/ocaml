@@ -108,7 +108,7 @@ type control =
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
-       Default: 100. *)
+       Default: 120. *)
 
     mutable verbose : int;
     [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.verbose = ...}"]
@@ -173,7 +173,7 @@ type control =
 
         Note: If you change to next-fit, you may need to reduce
         the [space_overhead] setting, for example using [80] instead
-        of the default [100] which is tuned for best-fit. Otherwise,
+        of the default [120] which is tuned for best-fit. Otherwise,
         your program will need more memory.
 
         Note: changing the allocation policy at run-time forces
