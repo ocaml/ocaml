@@ -123,9 +123,7 @@ let pseudoregs_for_operation op arg res =
          to transfer the argument to the fixed register. *)
       let treg = Reg.create Float in
       let _,_,_,is_swapped = float_cond_and_swap cond () () in
-      if is_swapped
-      then ([| arg.(0); treg |], [| res.(0); treg |])
-      else ([| treg; arg.(1) |], [| res.(0); treg |])
+      (if is_swapped then [| arg.(0); treg |] else [| treg; arg.(1) |]), [| res.(0); treg |]
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
