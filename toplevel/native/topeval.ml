@@ -91,43 +91,19 @@ let toplevel_value id =
 
 (* Return the value referred to by a path *)
 
-let rec eval_address = function
-  | Env.Aident id ->
+module EvalBase = struct
+
+  let eval_ident id =
+    try
       if Ident.persistent id || Ident.global id
       then global_symbol id
       else toplevel_value id
-  | Env.Adot(a, pos) ->
-      Obj.field (eval_address a) pos
+    with _ ->
+      raise (Undefined_global (Ident.name id))
 
-let eval_path find env path =
-  match find path env with
-  | addr -> eval_address addr
-  | exception Not_found ->
-      fatal_error ("Cannot find address for: " ^ (Path.name path))
-
-let eval_module_path env path =
-  eval_path Env.find_module_address env path
-
-let eval_value_path env path =
-  eval_path Env.find_value_address env path
-
-let eval_extension_path env path =
-  eval_path Env.find_constructor_address env path
-
-let eval_class_path env path =
-  eval_path Env.find_class_address env path
-
-(* To print values *)
-
-module EvalPath = struct
-  type valu = Obj.t
-  exception Error
-  let eval_address addr =
-    try eval_address addr with _ -> raise Error
-  let same_value v1 v2 = (v1 == v2)
 end
 
-include Topcommon.MakePrinter(Genprintval.Make(Obj)(EvalPath))
+include Topcommon.MakeEvalPrinter(EvalBase)
 
 (* Load in-core and execute a lambda term *)
 
