@@ -159,15 +159,15 @@ open X86_ast
 (* Certain float conditions aren't represented directly in the opcode for
    float comparison, so we have to swap the arguments. The swap information
    is also needed downstream because one of the arguments is clobbered. *)
-let float_cond_and_swap cond a0 a1 =
+let float_cond_and_need_swap cond =
   match (cond : Lambda.float_comparison) with
-  | CFeq  -> EQf,  a0, a1, false
-  | CFneq -> NEQf, a0, a1, false
-  | CFlt  -> LTf,  a0, a1, false
-  | CFnlt -> NLTf, a0, a1, false
-  | CFgt  -> LTf,  a1, a0, true
-  | CFngt -> NLTf, a1, a0, true
-  | CFle  -> LEf,  a0, a1, false
-  | CFnle -> NLEf, a0, a1, false
-  | CFge  -> LEf,  a1 ,a0, true
-  | CFnge -> NLEf, a1, a0, true
+  | CFeq  -> EQf,  false
+  | CFneq -> NEQf, false
+  | CFlt  -> LTf,  false
+  | CFnlt -> NLTf, false
+  | CFgt  -> LTf,  true
+  | CFngt -> NLTf, true
+  | CFle  -> LEf,  false
+  | CFnle -> NLEf, false
+  | CFge  -> LEf,  true
+  | CFnge -> NLEf, true
