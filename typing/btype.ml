@@ -782,6 +782,7 @@ let flip_mark_node ty = Private_type_expr.set_level ty (pivot_level - ty.level)
 let logged_mark_node ty = set_level ty (pivot_level - ty.level)
 
 let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
+let try_logged_mark_node ty = not_marked_node ty && (logged_mark_node ty; true)
 
 let rec mark_type ty =
   let ty = repr ty in

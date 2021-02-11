@@ -814,14 +814,14 @@ let rec normalize_package_path env p =
 
 let rec check_scope_escape env level ty =
   let ty = repr ty in
-  if not_marked_node ty then begin
+  let orig_level = ty.level in
+  if try_logged_mark_node ty then begin
     if level < ty.scope then
       raise(Trace.scope_escape ty);
     begin match ty.desc with
     | Tconstr (p, _, _) when level < Path.scope p ->
         begin match !forward_try_expand_once env ty with
         | ty' ->
-            logged_mark_node ty;
             check_scope_escape env level ty'
         | exception Cannot_expand ->
             raise Trace.(Unify [escape (Constructor p)])
@@ -829,12 +829,9 @@ let rec check_scope_escape env level ty =
     | Tpackage (p, nl, tl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-        let orig_level = ty.level in
-        logged_mark_node ty;
         check_scope_escape env level
           (Btype.newty2 orig_level (Tpackage (p', nl, tl)))
     | _ ->
-      logged_mark_node ty;
       iter_type_expr (check_scope_escape env level) ty
     end;
   end
