@@ -2303,10 +2303,13 @@ let expanded_unscoped ~pre_id_pairs ~id_pairs env ty =
 
 (* Test the occurrence of free univars and unscoped identifiers in a type *)
 (* If [inj_only=true], only check injective positions *)
-(* When [pre_id_pairs <> []], check for escaping unscoped identifiers. *)
 (* That's way too expensive. Must do some kind of caching *)
-let occur_univar_or_unscoped ?(inj_only=false) env ?(pre_id_pairs = [])
+let occur_univar_or_unscoped ?(inj_only=false) env ?(check_unscoped = true)
     id_pairs ty =
+  let pre_id_pairs, id_pairs =
+    if check_unscoped then id_pairs, []
+    else [], id_pairs
+  in
   let visited = ref TypeMap.empty in
   let rec occur_rec bound env id_pairs ty =
     let ty = repr ty in
@@ -2560,13 +2563,7 @@ let get_gadt_equations_level () =
 (* a local constraint can be added only if the rhs
    of the constraint does not contain any Tvars.
    They need to be removed using this function *)
-(* [pre_id_pairs] represents substitutions that may apply in the type, but
-   which will not be valid in the reified type. [id_pairs] represents
-   substitutions that are valid in both.
-   When [pre_id_pairs <> []], any unscoped identifiers in the type that are not
-   present in [id_pairs] will be erased. If this is not possible, an escape
-   error will be raised. *)
-let reify env ?(pre_id_pairs = []) id_pairs t =
+let reify env id_pairs t =
   let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
@@ -2609,11 +2606,6 @@ let reify env ?(pre_id_pairs = []) id_pairs t =
           iter_row (iterator env id_pairs) r
       | Tconstr (p, _, _) when is_object_type p ->
           iter_type_expr (iterator env id_pairs) (full_expand env id_pairs ty)
-      | _ when pre_id_pairs <> []
-               && expanded_unscoped ~pre_id_pairs ~id_pairs env ty ->
-          (* Re-attempt reification now that this node has been expanded. *)
-          visited := TypeSet.remove ty !visited;
-          iterator env id_pairs ty
       | Tfunctor (id, (p, _nl, tl), t) ->
           List.iter (iterator env id_pairs) tl;
           let p = Path.subst id_pairs p in
@@ -3067,20 +3059,10 @@ let unify_eq t1 t2 =
 let unify1_var ~stub_unify env id_pairs t1 t2 =
   assert (is_Tvar t1);
   occur env id_pairs t1 t2;
-  let id_pairs, pre_id_pairs =
-    (* If the target variable is a stub, provide the full [id_pairs].
-       Otherwise, provide it as [pre_id_pairs] to check identifier escapes.
-    *)
-    if stub_unify then id_pairs, []
-    else [], id_pairs
-  in
-  occur_univar_or_unscoped env ~pre_id_pairs id_pairs t2;
+  occur_univar_or_unscoped env ~check_unscoped:(not stub_unify) id_pairs t2;
   let d1 = t1.desc in
   link_type t1 t2;
   try
-    (* We need not pass [pre_id_pairs] here: the check above guarantees that
-       the substituted identifiers do not appear in [t2].
-    *)
     update_level env id_pairs t1.level t2;
     update_scope t1.scope t2
   with Unify _ as e ->
@@ -3094,20 +3076,17 @@ let record_equation t1 t2 =
   | Allowed { equated_types } -> TypePairs.add equated_types (t1, t2) ()
 
 (* Called from unify3 *)
-let unify3_var ~stub_unify env id_pairs2 t1' t2 t2' =
+let unify3_var ~stub_unify:stub env id_pairs2 t1' t2 t2' =
   occur !env id_pairs2 t1' t2;
-  let id_pairs, pre_id_pairs =
-    if stub_unify then id_pairs2, []
-    else [], id_pairs2
-  in
   try
-    occur_univar_or_unscoped !env ~pre_id_pairs id_pairs t2;
+    occur_univar_or_unscoped !env ~check_unscoped:(not stub) id_pairs2 t2;
     link_type t1' t2;
   with Unify _ when !umode = Pattern ->
     reify env [] t1';
-    reify env ~pre_id_pairs id_pairs t2';
+    reify env id_pairs2 t2';
     if can_generate_equations () then begin
-      occur_univar_or_unscoped ~inj_only:true !env id_pairs2 t2';
+      occur_univar_or_unscoped ~inj_only:true !env ~check_unscoped:(not stub)
+        id_pairs2 t2';
       record_equation t1' t2';
     end
 
@@ -3336,14 +3315,14 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
         when is_instantiable !env path && is_instantiable !env path'
         && can_generate_equations () ->
           begin try
-            let source, destination, pre_id_pairs =
+            let source, destination, id_pairs =
               if Path.scope path > Path.scope path'
               then  path , t2', id_pairs2
               else  path', t1', id_pairs1
             in
-            reify env ~pre_id_pairs [] destination;
+            reify env id_pairs destination;
             record_equation t1' t2';
-            add_gadt_equation env [] source destination
+            add_gadt_equation env id_pairs source destination
           with Ident.No_scope id ->
             (* This should not be possible, due to [expand_head_unif] calls
                before entering [unify3].
@@ -3352,14 +3331,14 @@ and unify3 ?(stub_unify = false) env id_pairs1 id_pairs2 t1 t1' t2 t2' =
           end
       | (Tconstr (path,[],_), _)
         when is_instantiable !env path && can_generate_equations () ->
-          reify env ~pre_id_pairs:id_pairs2 [] t2';
+          reify env id_pairs2 t2';
           record_equation t1' t2';
-          add_gadt_equation env [] path t2'
+          add_gadt_equation env id_pairs2 path t2'
       | (_, Tconstr (path,[],_))
         when is_instantiable !env path && can_generate_equations () ->
-          reify env ~pre_id_pairs:id_pairs1 [] t1';
+          reify env id_pairs1 t1';
           record_equation t1' t2';
-          add_gadt_equation env [] path t1'
+          add_gadt_equation env id_pairs1 path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env id_pairs1 t1';
           reify env id_pairs2 t2';
@@ -3934,8 +3913,7 @@ let moregen_occur env id_pairs level ty =
   with Occur ->
     unmark_type ty; raise (Unify [])
   end;
-  (* also check for free univars *)
-  occur_univar_or_unscoped env ~pre_id_pairs:id_pairs [] ty;
+  occur_univar_or_unscoped env id_pairs ty;
   update_level env [] level ty
 
 let may_instantiate inst_nongen t1 =
