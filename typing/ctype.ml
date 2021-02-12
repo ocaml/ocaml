@@ -2256,61 +2256,31 @@ let rec unify_univar t1 t2 = function
       end
   | [] -> raise (Unify [])
 
-(* Attempt to expand any unscoped identifiers which may escape when unifying
-   with a type variable or instantiable constructor.
-   - [pre_id_pairs] are the identifier substitutions that are valid within this
-     type in its original context but not in the new context.
-   - [id_pairs] are the substitutions valid within both contexts, e.g. those
-     from [Tfunctor] nodes that will appear below the variable/constructor.
-*)
-let expanded_unscoped ~pre_id_pairs ~id_pairs env ty =
-  match ty.desc with
-  | Tconstr (p, _, _)
-    when Option.is_some (Path.find_unscoped_subst id_pairs p) ->
-      (* Unscoped identifier, attempt to expand. *)
-      let ty' =
-        try try_expand_safe env (id_pairs @ pre_id_pairs) ty
-        with Cannot_expand -> raise Trace.(Unify [escape (Constructor p)])
-      in
-      if ty == ty' then raise Trace.(Unify [escape (Constructor p)]);
-      link_type ty ty';
-      true
-  | Tpackage (p, nl, tl)
-    when Option.is_some (Path.find_unscoped_subst id_pairs p) ->
-      (* Unscoped identifier, attempt to expand. *)
-      let full_id_pairs = id_pairs @ pre_id_pairs in
-      let p' =
-        p |> Path.subst full_id_pairs
-          |> normalize_package_path env
-          |> Path.unsubst full_id_pairs
-      in
-      if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-      set_type_desc ty (Tpackage (p', nl, tl));
-      true
-  | Tfunctor (id, (p, nl, tl), t)
-    when Option.is_some (Path.find_unscoped_subst id_pairs p) ->
-      (* Unscoped identifier, attempt to expand. *)
-      let full_id_pairs = id_pairs @ pre_id_pairs in
-      let p' =
-        p |> Path.subst full_id_pairs
-          |> normalize_package_path env
-          |> Path.unsubst full_id_pairs
-      in
-      if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-      set_type_desc ty (Tfunctor (id, (p', nl, tl), t));
-      true
-  | _ -> false
-
 (* Test the occurrence of free univars and unscoped identifiers in a type *)
 (* If [inj_only=true], only check injective positions *)
 (* That's way too expensive. Must do some kind of caching *)
 let occur_univar_or_unscoped ?(inj_only=false) env ?(check_unscoped = true)
     id_pairs ty =
+  (* [pre_id_pairs] are the identifier substitutions that are valid within this
+     type in its original context but not in the new context.
+  *)
   let pre_id_pairs, id_pairs =
     if check_unscoped then id_pairs, []
     else [], id_pairs
   in
   let visited = ref TypeMap.empty in
+  let force_revisit ty =
+    (* Reset this node to revisit it now that it has been expanded. *)
+    begin if not_marked_node ty then
+      (* We add a dummy type to the visited set for this type, so that we
+         will satisfy the recheck condition without losing track of the
+         univars we have already checked for. *)
+      visited :=
+        TypeMap.add ty
+          (TypeSet.add (newgenvar ()) (TypeMap.find ty !visited))
+          !visited
+    else flip_mark_node ty end
+  in
   let rec occur_rec bound env id_pairs ty =
     let ty = repr ty in
     if not_marked_node ty then
@@ -2333,18 +2303,45 @@ let occur_univar_or_unscoped ?(inj_only=false) env ?(check_unscoped = true)
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound env id_pairs ty
-      | _ when pre_id_pairs <> []
-               && expanded_unscoped ~pre_id_pairs ~id_pairs env ty ->
-          (* Reset this node to revisit it now that it has been expanded. *)
-          begin if not_marked_node ty then
-            (* We add a dummy type to the visited set for this type, so that we
-               will satisfy the recheck condition without losing track of the
-               univars we have already checked for. *)
-            visited :=
-              TypeMap.add ty
-                (TypeSet.add (newgenvar ()) (TypeMap.find ty !visited))
-                !visited
-          else flip_mark_node ty end;
+      | Tconstr (p, _, _)
+        when pre_id_pairs <> []
+             && Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+          (* Unscoped identifier, attempt to expand. *)
+          let ty' =
+            try try_expand_safe env (id_pairs @ pre_id_pairs) ty
+            with Cannot_expand -> raise Trace.(Unify [escape (Constructor p)])
+          in
+          if ty == ty' then raise Trace.(Unify [escape (Constructor p)]);
+          link_type ty ty';
+          force_revisit ty;
+          occur_rec bound env id_pairs ty
+      | Tpackage (p, nl, tl)
+        when pre_id_pairs <> []
+             && Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+          (* Unscoped identifier, attempt to expand. *)
+          let full_id_pairs = id_pairs @ pre_id_pairs in
+          let p' =
+            p |> Path.subst full_id_pairs
+              |> normalize_package_path env
+              |> Path.unsubst full_id_pairs
+          in
+          if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+          set_type_desc ty (Tpackage (p', nl, tl));
+          force_revisit ty;
+          occur_rec bound env id_pairs ty
+      | Tfunctor (id, (p, nl, tl), t)
+        when pre_id_pairs <> []
+             && Option.is_some (Path.find_unscoped_subst id_pairs p) ->
+          (* Unscoped identifier, attempt to expand. *)
+          let full_id_pairs = id_pairs @ pre_id_pairs in
+          let p' =
+            p |> Path.subst full_id_pairs
+              |> normalize_package_path env
+              |> Path.unsubst full_id_pairs
+          in
+          if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+          set_type_desc ty (Tfunctor (id, (p', nl, tl), t));
+          force_revisit ty;
           occur_rec bound env id_pairs ty
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
