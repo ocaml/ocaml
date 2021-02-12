@@ -69,6 +69,9 @@ Working version
   to the debugger via a socket.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #xxxxx: Fix a segfault in a corner case of compaction (reported in #9853)
+  (Damien Doligez, report by Sadiq Jaffer, review by xxxx)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.

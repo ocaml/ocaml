@@ -122,10 +122,7 @@ static char *compact_allocate (mlsize_t size)
 {
   char *chunk, *adr;
 
-  while (Chunk_size (compact_fl) - Chunk_alloc (compact_fl) <= Bhsize_wosize (3)
-         && Chunk_size (Chunk_next (compact_fl))
-            - Chunk_alloc (Chunk_next (compact_fl))
-            <= Bhsize_wosize (3)){
+  while (Chunk_size(compact_fl) - Chunk_alloc(compact_fl) <= Bhsize_wosize(0)){
     compact_fl = Chunk_next (compact_fl);
   }
   chunk = compact_fl;
