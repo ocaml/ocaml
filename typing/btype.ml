@@ -553,61 +553,6 @@ end = struct
     res
 end
 
-(* Mark a type. *)
-
-let not_marked_node ty = ty.level >= lowest_level
-    (* type nodes with negative levels are "marked" *)
-
-let flip_mark_node ty = Private_type_expr.set_level ty (pivot_level - ty.level)
-
-let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
-
-let rec mark_type ty =
-  let ty = repr ty in
-  if not_marked_node ty then begin
-    flip_mark_node ty;
-    iter_type_expr mark_type ty
-  end
-
-let mark_type_params ty =
-  iter_type_expr mark_type ty
-
-let type_iterators =
-  let it_type_expr it ty =
-    let ty = repr ty in
-    if try_mark_node ty then it.it_do_type_expr it ty
-  in
-  {type_iterators with it_type_expr}
-
-
-(* Remove marks from a type. *)
-let rec unmark_type ty =
-  let ty = repr ty in
-  if ty.level < lowest_level then begin
-    (* flip back the marked level *)
-    flip_mark_node ty;
-    iter_type_expr unmark_type ty
-  end
-
-let unmark_iterators =
-  let it_type_expr _it ty = unmark_type ty in
-  {type_iterators with it_type_expr}
-
-let unmark_type_decl decl =
-  unmark_iterators.it_type_declaration unmark_iterators decl
-
-let unmark_extension_constructor ext =
-  List.iter unmark_type ext.ext_type_params;
-  iter_type_expr_cstr_args unmark_type ext.ext_args;
-  Option.iter unmark_type ext.ext_ret_type
-
-let unmark_class_signature sign =
-  unmark_type sign.csig_self;
-  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars
-
-let unmark_class_type cty =
-  unmark_iterators.it_class_type unmark_iterators cty
-
 
                   (*******************************************)
                   (*  Memorization of abbreviation expansion *)
@@ -827,3 +772,60 @@ let undo_compress (changes, _old) =
             Private_type_expr.set_desc ty desc; r := !next
         | _ -> ())
         log
+
+(* Mark a type. *)
+
+let not_marked_node ty = ty.level >= lowest_level
+    (* type nodes with negative levels are "marked" *)
+
+let flip_mark_node ty = Private_type_expr.set_level ty (pivot_level - ty.level)
+let logged_mark_node ty = set_level ty (pivot_level - ty.level)
+
+let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
+let try_logged_mark_node ty = not_marked_node ty && (logged_mark_node ty; true)
+
+let rec mark_type ty =
+  let ty = repr ty in
+  if not_marked_node ty then begin
+    flip_mark_node ty;
+    iter_type_expr mark_type ty
+  end
+
+let mark_type_params ty =
+  iter_type_expr mark_type ty
+
+let type_iterators =
+  let it_type_expr it ty =
+    let ty = repr ty in
+    if try_mark_node ty then it.it_do_type_expr it ty
+  in
+  {type_iterators with it_type_expr}
+
+
+(* Remove marks from a type. *)
+let rec unmark_type ty =
+  let ty = repr ty in
+  if ty.level < lowest_level then begin
+    (* flip back the marked level *)
+    flip_mark_node ty;
+    iter_type_expr unmark_type ty
+  end
+
+let unmark_iterators =
+  let it_type_expr _it ty = unmark_type ty in
+  {type_iterators with it_type_expr}
+
+let unmark_type_decl decl =
+  unmark_iterators.it_type_declaration unmark_iterators decl
+
+let unmark_extension_constructor ext =
+  List.iter unmark_type ext.ext_type_params;
+  iter_type_expr_cstr_args unmark_type ext.ext_args;
+  Option.iter unmark_type ext.ext_ret_type
+
+let unmark_class_signature sign =
+  unmark_type sign.csig_self;
+  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars
+
+let unmark_class_type cty =
+  unmark_iterators.it_class_type unmark_iterators cty
