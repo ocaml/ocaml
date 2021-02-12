@@ -33,60 +33,57 @@ libref=$(stdlib_UNPREFIXED) $(otherlibref)
 ALL_MAN= $(ALL_DOC:%=man/%.3o)
 ALL_LATEX= $(ALL_DOC:%=latex/%.tex)
 
-latex/ifocamldoc.tex:
+latex/ifocamldoc.tex: | latex/
 	printf '\\newif\ifocamldoc\ocamldoctrue\n' > $@
 
-$(libref:%=build/libref/%.odoc):build/libref/%.odoc:%.mli
+$(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
 "$(AWK) -v ocamldoc=true -f $(ROOTDIR)/stdlib/expand_module_aliases.awk" \
 	$(DOC_STDLIB_INCLUDES) $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
-build/compilerlibref/%.odoc:%.mli
+build/compilerlibref/%.odoc: %.mli | build/compilerlibref
 	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib \
 	$(DOC_ALL_INCLUDES) $< -dump  $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/%.odoc):\
-build/compilerlibref/%.odoc:$(DOCGEN)/%.mld
+build/compilerlibref/%.odoc: $(DOCGEN)/%.mld | build/compilerlibref
 	$(OCAMLDOC_RUN) $(DOC_ALL_INCLUDES) -text $< -dump  $@
 
 $(libref_TEXT:%=build/libref/%.odoc):\
-build/libref/%.odoc:$(DOCGEN)/%.mld
+build/libref/%.odoc: $(DOCGEN)/%.mld | build/libref
 	$(OCAMLDOC_RUN) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
 
 ALL_COMPILED_DOC=$(ALL_DOC:%=build/%.odoc)
-man/Stdlib.3o: $(ALL_COMPILED_DOC)
+man/Stdlib.3o: $(ALL_COMPILED_DOC) | man/
 	$(MKDIR) man
 	$(OCAMLDOC_RUN) -man -d man -man-mini \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
-HTML_OPTIONS= -charset="utf8" -colorize-code
+HTML_OPTIONS= -charset="utf8" -colorize-code -nonavbar
 
-html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc)
-	$(MKDIR) -p html/libref
+html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc) | html/libref
 	$(OCAMLDOC_RUN) -html -d html/libref \
 	$(HTML_OPTIONS) \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_LIBREF:%=build/%.odoc))
 
-html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc)
-	$(MKDIR) -p html/compilerlibref
+html/compilerlibref/Compiler_libs.html: $(ALL_COMPILERLIBREF:%=build/%.odoc) \
+| html/compilerlibref
 	$(OCAMLDOC_RUN) -html -d html/compilerlibref \
 	-nostdlib -hide Stdlib -t "OCaml compiler library" \
 	$(HTML_OPTIONS) \
 	-intro $(DOCGEN)/Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))
 
-texi/stdlib.texi: $(ALL_COMPILED_DOC)
-	$(MKDIR) texi
+texi/stdlib.texi: $(ALL_COMPILED_DOC) | texi/
 	$(OCAMLDOC_RUN) -texi -o $@ \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
-
-latex/Stdlib.tex: $(ALL_COMPILED_DOC)
+latex/Stdlib.tex: $(ALL_COMPILED_DOC) | latex/
 	$(OCAMLDOC_RUN) -latex -o latex/all.tex \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-sepfiles \
@@ -99,7 +96,7 @@ latex/Stdlib.tex: $(ALL_COMPILED_DOC)
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
-latex/alldoc.pdf: latex/Stdlib.tex latex/alldoc.tex
+latex/alldoc.pdf: latex/Stdlib.tex latex/alldoc.tex | latex/
 	cd latex && TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
 	cd latex && TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
 
@@ -107,14 +104,14 @@ stdlib_INPUT=$(foreach module,\
 $(filter-out stdlib.mli camlinternal%,$(stdlib_UNPREFIXED)),\
 \\input{$(call capitalize,$(module)).tex}\
 )
-latex/stdlib_input.tex:
-	echo $(stdlib_INPUT)> $@
+latex/stdlib_input.tex: | latex/
+	echo $(stdlib_INPUT) > $@
 
 compilerlibs_INPUT=$(foreach module,\
 $(filter-out camlinternal%,$(compilerlibref)),\
 \\input{$(call capitalize,$(module)).tex})
-latex/compilerlibs_input.tex:
-	echo $(compilerlibs_INPUT)> $@
+latex/compilerlibs_input.tex: | latex/
+	echo $(compilerlibs_INPUT) > $@
 
 INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
 .PHONY:install

@@ -38,9 +38,9 @@ thread_MLIS := \
 	thread.mli condition.mli mutex.mli event.mli \
 	threadUnix.mli semaphore.mli
 
-STDLIB=$(filter-out stdlib__pervasives, $(STDLIB_MODULE_BASENAMES))
+STDLIB=$(filter-out stdlib__Pervasives, $(STDLIB_MODULES))
 
-stdlib_UNPREFIXED=$(STDLIB:stdlib__%=%)
+stdlib_UNPREFIXED=$(filter-out pervasives, $(STDLIB_MODULE_BASENAMES))
 
 otherlibref= \
 	$(str_MLIS:%.mli=%) \
