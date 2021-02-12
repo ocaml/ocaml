@@ -1,12 +1,11 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
 #*                                                                        *
-#*            Sebastien Hinderer, projet Gallium, INRIA Paris             *
+#*                 David Allsopp, OCaml Labs, Cambridge.                  *
 #*                                                                        *
-#*   Copyright 2016 Institut National de Recherche en Informatique et     *
-#*     en Automatique.                                                    *
+#*   Copyright 2021 David Allsopp Ltd.                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
 #*   the GNU Lesser General Public License version 2.1, with the          *
@@ -14,13 +13,25 @@
 #*                                                                        *
 #**************************************************************************
 
-# This script provides command-line options to use by default
-# when invoking ocamlopt
+set -e
 
-# It is used to add that disable annoying linker warnings on some versions
-# of OpenBSD
+# Hygiene Checks: Ensure that *Labels module docs are in sync with the
+# unlabelled version.
 
-case "$1" in
-  i386-*-openbsd5.[5-9]*|i386-*-openbsd[6-9].*)
-    echo "-ccopt -nopie";;
-esac
+MSG='CheckSyncStdlibDocs is a no-op'
+
+tools/sync_stdlib_docs
+if git diff --quiet --exit-code; then
+  echo -e "$MSG: \e[32mYES\e[0m"
+else
+  echo -e "$MSG: \e[31mNO\e[0m"
+  echo "CheckSyncStdlibDocs: failure with the following differences:"
+  git --no-pager diff
+  cat<<EOF
+------------------------------------------------------------------------
+This should be fixable by just running tools/sync_stdlib_docs and
+eviewing the changes it makes.
+------------------------------------------------------------------------
+EOF
+  exit 1
+fi

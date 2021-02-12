@@ -1290,37 +1290,37 @@ but no proper monotonic clock source was found.])
 
 ## TODO: check whether the different libraries are really useful
 
-sockets=false
+sockets=true
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [cclibs="$cclibs -lws2_32"
-    sockets=true],
+    AC_SEARCH_LIBS([socket], [ws2_32])],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
-    sockets=true],
+    AC_SEARCH_LIBS([socket], [network])],
   [*-*-solaris*],
     [cclibs="$cclibs -lsocket -lnsl"
-    sockets=true],
+    AC_SEARCH_LIBS([socket], [socket])
+    AC_SEARCH_LIBS([inet_ntop], [nsl])],
   [
-    AC_CHECK_FUNC([socket])
-    AC_CHECK_FUNC([socketpair])
-    AC_CHECK_FUNC([bind])
-    AC_CHECK_FUNC([listen])
-    AC_CHECK_FUNC([accept])
-    AC_CHECK_FUNC([connect])
-    sockets=true
+    AC_CHECK_FUNCS(
+      [socket socketpair bind listen accept connect],
+      [],
+      [sockets=false])
   ]
 )
 
 AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS])])
 
-## socklen_t in sys/socket.h
+## socklen_t
 
-AC_CHECK_TYPE(
-  [socklen_t],
-  [AC_DEFINE([HAS_SOCKLEN_T])], [],
-  [#include <sys/socket.h>])
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
+      [#include <ws2tcpip.h>])],
+  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
+    [#include <sys/socket.h>])])
 
 AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
 
@@ -1328,13 +1328,18 @@ AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
 
 ipv6=true
 
-AC_CHECK_TYPE(
-  [struct sockaddr_in6], [], [ipv6=false],
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [AC_CHECK_TYPE(
+      [struct sockaddr_in6], [], [ipv6=false], [#include <ws2tcpip.h>])],
+  [AC_CHECK_TYPE(
+    [struct sockaddr_in6], [], [ipv6=false],
 [
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 ]
+  )]
 )
 
 AS_IF([$ipv6],
@@ -1877,7 +1882,11 @@ AS_IF([test x"$prefix" = "xNONE"],
 # but whose value is not guessed properly by configure
 # (all this should be understood and fixed)
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32],
+    [AC_DEFINE([HAS_BROKEN_PRINTF])
+    AC_DEFINE([HAS_STRERROR])
+    AC_DEFINE([HAS_NICE])],
+  [*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
     AC_DEFINE([HAS_IPV6])

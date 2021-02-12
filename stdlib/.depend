@@ -1,708 +1,708 @@
-stdlib__arg.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__printf.cmi \
-    stdlib__list.cmi \
-    stdlib__buffer.cmi \
-    stdlib__array.cmi \
-    stdlib__arg.cmi
-stdlib__arg.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__printf.cmx \
-    stdlib__list.cmx \
-    stdlib__buffer.cmx \
-    stdlib__array.cmx \
-    stdlib__arg.cmi
-stdlib__arg.cmi :
-stdlib__array.cmo : \
-    stdlib__seq.cmi \
-    stdlib__array.cmi
-stdlib__array.cmx : \
-    stdlib__seq.cmx \
-    stdlib__array.cmi
-stdlib__array.cmi : \
-    stdlib__seq.cmi
-stdlib__arrayLabels.cmo : \
-    stdlib__array.cmi \
-    stdlib__arrayLabels.cmi
-stdlib__arrayLabels.cmx : \
-    stdlib__array.cmx \
-    stdlib__arrayLabels.cmi
-stdlib__arrayLabels.cmi : \
-    stdlib__seq.cmi
-stdlib__atomic.cmo : \
+stdlib__Arg.cmo : arg.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Printf.cmi \
+    stdlib__List.cmi \
+    stdlib__Buffer.cmi \
+    stdlib__Array.cmi \
+    stdlib__Arg.cmi
+stdlib__Arg.cmx : arg.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Printf.cmx \
+    stdlib__List.cmx \
+    stdlib__Buffer.cmx \
+    stdlib__Array.cmx \
+    stdlib__Arg.cmi
+stdlib__Arg.cmi : arg.mli
+stdlib__Array.cmo : array.ml \
+    stdlib__Seq.cmi \
+    stdlib__Array.cmi
+stdlib__Array.cmx : array.ml \
+    stdlib__Seq.cmx \
+    stdlib__Array.cmi
+stdlib__Array.cmi : array.mli \
+    stdlib__Seq.cmi
+stdlib__ArrayLabels.cmo : arrayLabels.ml \
+    stdlib__Array.cmi \
+    stdlib__ArrayLabels.cmi
+stdlib__ArrayLabels.cmx : arrayLabels.ml \
+    stdlib__Array.cmx \
+    stdlib__ArrayLabels.cmi
+stdlib__ArrayLabels.cmi : arrayLabels.mli \
+    stdlib__Seq.cmi
+stdlib__Atomic.cmo : atomic.ml \
     camlinternalAtomic.cmi \
-    stdlib__atomic.cmi
-stdlib__atomic.cmx : \
+    stdlib__Atomic.cmi
+stdlib__Atomic.cmx : atomic.ml \
     camlinternalAtomic.cmx \
-    stdlib__atomic.cmi
-stdlib__atomic.cmi :
-stdlib__bigarray.cmo : \
-    stdlib__sys.cmi \
-    stdlib__complex.cmi \
-    stdlib__array.cmi \
-    stdlib__bigarray.cmi
-stdlib__bigarray.cmx : \
-    stdlib__sys.cmx \
-    stdlib__complex.cmx \
-    stdlib__array.cmx \
-    stdlib__bigarray.cmi
-stdlib__bigarray.cmi : \
-    stdlib__complex.cmi
-stdlib__bool.cmo : \
+    stdlib__Atomic.cmi
+stdlib__Atomic.cmi : atomic.mli
+stdlib__Bigarray.cmo : bigarray.ml \
+    stdlib__Sys.cmi \
+    stdlib__Complex.cmi \
+    stdlib__Array.cmi \
+    stdlib__Bigarray.cmi
+stdlib__Bigarray.cmx : bigarray.ml \
+    stdlib__Sys.cmx \
+    stdlib__Complex.cmx \
+    stdlib__Array.cmx \
+    stdlib__Bigarray.cmi
+stdlib__Bigarray.cmi : bigarray.mli \
+    stdlib__Complex.cmi
+stdlib__Bool.cmo : bool.ml \
     stdlib.cmi \
-    stdlib__bool.cmi
-stdlib__bool.cmx : \
+    stdlib__Bool.cmi
+stdlib__Bool.cmx : bool.ml \
     stdlib.cmx \
-    stdlib__bool.cmi
-stdlib__bool.cmi :
-stdlib__buffer.cmo : \
-    stdlib__uchar.cmi \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__seq.cmi \
-    stdlib__char.cmi \
-    stdlib__bytes.cmi \
-    stdlib__buffer.cmi
-stdlib__buffer.cmx : \
-    stdlib__uchar.cmx \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__seq.cmx \
-    stdlib__char.cmx \
-    stdlib__bytes.cmx \
-    stdlib__buffer.cmi
-stdlib__buffer.cmi : \
-    stdlib__uchar.cmi \
-    stdlib__seq.cmi
-stdlib__bytes.cmo : \
-    stdlib__sys.cmi \
+    stdlib__Bool.cmi
+stdlib__Bool.cmi : bool.mli
+stdlib__Buffer.cmo : buffer.ml \
+    stdlib__Uchar.cmi \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Char.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Buffer.cmi
+stdlib__Buffer.cmx : buffer.ml \
+    stdlib__Uchar.cmx \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Seq.cmx \
+    stdlib__Char.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Buffer.cmi
+stdlib__Buffer.cmi : buffer.mli \
+    stdlib__Uchar.cmi \
+    stdlib__Seq.cmi
+stdlib__Bytes.cmo : bytes.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
-    stdlib__seq.cmi \
-    stdlib__char.cmi \
-    stdlib__bytes.cmi
-stdlib__bytes.cmx : \
-    stdlib__sys.cmx \
+    stdlib__Seq.cmi \
+    stdlib__Char.cmi \
+    stdlib__Bytes.cmi
+stdlib__Bytes.cmx : bytes.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
-    stdlib__seq.cmx \
-    stdlib__char.cmx \
-    stdlib__bytes.cmi
-stdlib__bytes.cmi : \
-    stdlib__seq.cmi
-stdlib__bytesLabels.cmo : \
-    stdlib__bytes.cmi \
-    stdlib__bytesLabels.cmi
-stdlib__bytesLabels.cmx : \
-    stdlib__bytes.cmx \
-    stdlib__bytesLabels.cmi
-stdlib__bytesLabels.cmi : \
-    stdlib__seq.cmi
-stdlib__callback.cmo : \
-    stdlib__obj.cmi \
-    stdlib__callback.cmi
-stdlib__callback.cmx : \
-    stdlib__obj.cmx \
-    stdlib__callback.cmi
-stdlib__callback.cmi :
+    stdlib__Seq.cmx \
+    stdlib__Char.cmx \
+    stdlib__Bytes.cmi
+stdlib__Bytes.cmi : bytes.mli \
+    stdlib__Seq.cmi
+stdlib__BytesLabels.cmo : bytesLabels.ml \
+    stdlib__Bytes.cmi \
+    stdlib__BytesLabels.cmi
+stdlib__BytesLabels.cmx : bytesLabels.ml \
+    stdlib__Bytes.cmx \
+    stdlib__BytesLabels.cmi
+stdlib__BytesLabels.cmi : bytesLabels.mli \
+    stdlib__Seq.cmi
+stdlib__Callback.cmo : callback.ml \
+    stdlib__Obj.cmi \
+    stdlib__Callback.cmi
+stdlib__Callback.cmx : callback.ml \
+    stdlib__Obj.cmx \
+    stdlib__Callback.cmi
+stdlib__Callback.cmi : callback.mli
 camlinternalAtomic.cmo : \
     camlinternalAtomic.cmi
 camlinternalAtomic.cmx : \
     camlinternalAtomic.cmi
 camlinternalAtomic.cmi :
 camlinternalFormat.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__int.cmi \
-    stdlib__char.cmi \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Int.cmi \
+    stdlib__Char.cmi \
     camlinternalFormatBasics.cmi \
-    stdlib__bytes.cmi \
-    stdlib__buffer.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Buffer.cmi \
     camlinternalFormat.cmi
 camlinternalFormat.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__int.cmx \
-    stdlib__char.cmx \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Int.cmx \
+    stdlib__Char.cmx \
     camlinternalFormatBasics.cmx \
-    stdlib__bytes.cmx \
-    stdlib__buffer.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Buffer.cmx \
     camlinternalFormat.cmi
 camlinternalFormat.cmi : \
     camlinternalFormatBasics.cmi \
-    stdlib__buffer.cmi
+    stdlib__Buffer.cmi
 camlinternalFormatBasics.cmo : \
     camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmx : \
     camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmi :
 camlinternalLazy.cmo : \
-    stdlib__sys.cmi \
-    stdlib__obj.cmi \
+    stdlib__Sys.cmi \
+    stdlib__Obj.cmi \
     camlinternalLazy.cmi
 camlinternalLazy.cmx : \
-    stdlib__sys.cmx \
-    stdlib__obj.cmx \
+    stdlib__Sys.cmx \
+    stdlib__Obj.cmx \
     camlinternalLazy.cmi
 camlinternalLazy.cmi :
 camlinternalMod.cmo : \
-    stdlib__sys.cmi \
-    stdlib__obj.cmi \
-    stdlib__nativeint.cmi \
+    stdlib__Sys.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Nativeint.cmi \
     camlinternalOO.cmi \
-    stdlib__array.cmi \
+    stdlib__Array.cmi \
     camlinternalMod.cmi
 camlinternalMod.cmx : \
-    stdlib__sys.cmx \
-    stdlib__obj.cmx \
-    stdlib__nativeint.cmx \
+    stdlib__Sys.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Nativeint.cmx \
     camlinternalOO.cmx \
-    stdlib__array.cmx \
+    stdlib__Array.cmx \
     camlinternalMod.cmi
 camlinternalMod.cmi : \
-    stdlib__obj.cmi
+    stdlib__Obj.cmi
 camlinternalOO.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__obj.cmi \
-    stdlib__map.cmi \
-    stdlib__list.cmi \
-    stdlib__char.cmi \
-    stdlib__array.cmi \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Map.cmi \
+    stdlib__List.cmi \
+    stdlib__Char.cmi \
+    stdlib__Array.cmi \
     camlinternalOO.cmi
 camlinternalOO.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__obj.cmx \
-    stdlib__map.cmx \
-    stdlib__list.cmx \
-    stdlib__char.cmx \
-    stdlib__array.cmx \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Map.cmx \
+    stdlib__List.cmx \
+    stdlib__Char.cmx \
+    stdlib__Array.cmx \
     camlinternalOO.cmi
 camlinternalOO.cmi : \
-    stdlib__obj.cmi
-stdlib__char.cmo : \
-    stdlib__char.cmi
-stdlib__char.cmx : \
-    stdlib__char.cmi
-stdlib__char.cmi :
-stdlib__complex.cmo : \
-    stdlib__complex.cmi
-stdlib__complex.cmx : \
-    stdlib__complex.cmi
-stdlib__complex.cmi :
-stdlib__digest.cmo : \
-    stdlib__string.cmi \
-    stdlib__char.cmi \
-    stdlib__bytes.cmi \
-    stdlib__digest.cmi
-stdlib__digest.cmx : \
-    stdlib__string.cmx \
-    stdlib__char.cmx \
-    stdlib__bytes.cmx \
-    stdlib__digest.cmi
-stdlib__digest.cmi :
-stdlib__either.cmo : \
-    stdlib__either.cmi
-stdlib__either.cmx : \
-    stdlib__either.cmi
-stdlib__either.cmi :
-stdlib__ephemeron.cmo : \
-    stdlib__sys.cmi \
-    stdlib__seq.cmi \
-    stdlib__random.cmi \
-    stdlib__obj.cmi \
-    stdlib__lazy.cmi \
-    stdlib__hashtbl.cmi \
-    stdlib__array.cmi \
-    stdlib__ephemeron.cmi
-stdlib__ephemeron.cmx : \
-    stdlib__sys.cmx \
-    stdlib__seq.cmx \
-    stdlib__random.cmx \
-    stdlib__obj.cmx \
-    stdlib__lazy.cmx \
-    stdlib__hashtbl.cmx \
-    stdlib__array.cmx \
-    stdlib__ephemeron.cmi
-stdlib__ephemeron.cmi : \
-    stdlib__hashtbl.cmi
-stdlib__filename.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__random.cmi \
-    stdlib__printf.cmi \
-    stdlib__list.cmi \
-    stdlib__lazy.cmi \
-    stdlib__buffer.cmi \
-    stdlib__filename.cmi
-stdlib__filename.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__random.cmx \
-    stdlib__printf.cmx \
-    stdlib__list.cmx \
-    stdlib__lazy.cmx \
-    stdlib__buffer.cmx \
-    stdlib__filename.cmi
-stdlib__filename.cmi :
-stdlib__float.cmo : \
+    stdlib__Obj.cmi
+stdlib__Char.cmo : char.ml \
+    stdlib__Char.cmi
+stdlib__Char.cmx : char.ml \
+    stdlib__Char.cmi
+stdlib__Char.cmi : char.mli
+stdlib__Complex.cmo : complex.ml \
+    stdlib__Complex.cmi
+stdlib__Complex.cmx : complex.ml \
+    stdlib__Complex.cmi
+stdlib__Complex.cmi : complex.mli
+stdlib__Digest.cmo : digest.ml \
+    stdlib__String.cmi \
+    stdlib__Char.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Digest.cmi
+stdlib__Digest.cmx : digest.ml \
+    stdlib__String.cmx \
+    stdlib__Char.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Digest.cmi
+stdlib__Digest.cmi : digest.mli
+stdlib__Either.cmo : either.ml \
+    stdlib__Either.cmi
+stdlib__Either.cmx : either.ml \
+    stdlib__Either.cmi
+stdlib__Either.cmi : either.mli
+stdlib__Ephemeron.cmo : ephemeron.ml \
+    stdlib__Sys.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Random.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Lazy.cmi \
+    stdlib__Hashtbl.cmi \
+    stdlib__Array.cmi \
+    stdlib__Ephemeron.cmi
+stdlib__Ephemeron.cmx : ephemeron.ml \
+    stdlib__Sys.cmx \
+    stdlib__Seq.cmx \
+    stdlib__Random.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Lazy.cmx \
+    stdlib__Hashtbl.cmx \
+    stdlib__Array.cmx \
+    stdlib__Ephemeron.cmi
+stdlib__Ephemeron.cmi : ephemeron.mli \
+    stdlib__Hashtbl.cmi
+stdlib__Filename.cmo : filename.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Random.cmi \
+    stdlib__Printf.cmi \
+    stdlib__List.cmi \
+    stdlib__Lazy.cmi \
+    stdlib__Buffer.cmi \
+    stdlib__Filename.cmi
+stdlib__Filename.cmx : filename.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Random.cmx \
+    stdlib__Printf.cmx \
+    stdlib__List.cmx \
+    stdlib__Lazy.cmx \
+    stdlib__Buffer.cmx \
+    stdlib__Filename.cmi
+stdlib__Filename.cmi : filename.mli
+stdlib__Float.cmo : float.ml \
     stdlib.cmi \
-    stdlib__seq.cmi \
-    stdlib__list.cmi \
-    stdlib__array.cmi \
-    stdlib__float.cmi
-stdlib__float.cmx : \
+    stdlib__Seq.cmi \
+    stdlib__List.cmi \
+    stdlib__Array.cmi \
+    stdlib__Float.cmi
+stdlib__Float.cmx : float.ml \
     stdlib.cmx \
-    stdlib__seq.cmx \
-    stdlib__list.cmx \
-    stdlib__array.cmx \
-    stdlib__float.cmi
-stdlib__float.cmi : \
+    stdlib__Seq.cmx \
+    stdlib__List.cmx \
+    stdlib__Array.cmx \
+    stdlib__Float.cmi
+stdlib__Float.cmi : float.mli \
     stdlib.cmi \
-    stdlib__seq.cmi
-stdlib__format.cmo : \
-    stdlib__string.cmi \
+    stdlib__Seq.cmi
+stdlib__Format.cmo : format.ml \
+    stdlib__String.cmi \
     stdlib.cmi \
-    stdlib__stack.cmi \
-    stdlib__seq.cmi \
-    stdlib__queue.cmi \
-    stdlib__list.cmi \
-    stdlib__int.cmi \
+    stdlib__Stack.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Queue.cmi \
+    stdlib__List.cmi \
+    stdlib__Int.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
-    stdlib__buffer.cmi \
-    stdlib__format.cmi
-stdlib__format.cmx : \
-    stdlib__string.cmx \
+    stdlib__Buffer.cmi \
+    stdlib__Format.cmi
+stdlib__Format.cmx : format.ml \
+    stdlib__String.cmx \
     stdlib.cmx \
-    stdlib__stack.cmx \
-    stdlib__seq.cmx \
-    stdlib__queue.cmx \
-    stdlib__list.cmx \
-    stdlib__int.cmx \
+    stdlib__Stack.cmx \
+    stdlib__Seq.cmx \
+    stdlib__Queue.cmx \
+    stdlib__List.cmx \
+    stdlib__Int.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
-    stdlib__buffer.cmx \
-    stdlib__format.cmi
-stdlib__format.cmi : \
+    stdlib__Buffer.cmx \
+    stdlib__Format.cmi
+stdlib__Format.cmi : format.mli \
     stdlib.cmi \
-    stdlib__seq.cmi \
-    stdlib__buffer.cmi
-stdlib__fun.cmo : \
-    stdlib__printexc.cmi \
-    stdlib__fun.cmi
-stdlib__fun.cmx : \
-    stdlib__printexc.cmx \
-    stdlib__fun.cmi
-stdlib__fun.cmi :
-stdlib__gc.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__printf.cmi \
-    stdlib__printexc.cmi \
-    stdlib__gc.cmi
-stdlib__gc.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__printf.cmx \
-    stdlib__printexc.cmx \
-    stdlib__gc.cmi
-stdlib__gc.cmi : \
-    stdlib__printexc.cmi
-stdlib__genlex.cmo : \
-    stdlib__string.cmi \
-    stdlib__stream.cmi \
-    stdlib__list.cmi \
-    stdlib__hashtbl.cmi \
-    stdlib__char.cmi \
-    stdlib__bytes.cmi \
-    stdlib__genlex.cmi
-stdlib__genlex.cmx : \
-    stdlib__string.cmx \
-    stdlib__stream.cmx \
-    stdlib__list.cmx \
-    stdlib__hashtbl.cmx \
-    stdlib__char.cmx \
-    stdlib__bytes.cmx \
-    stdlib__genlex.cmi
-stdlib__genlex.cmi : \
-    stdlib__stream.cmi
-stdlib__hashtbl.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__seq.cmi \
-    stdlib__random.cmi \
-    stdlib__obj.cmi \
-    stdlib__lazy.cmi \
-    stdlib__array.cmi \
-    stdlib__hashtbl.cmi
-stdlib__hashtbl.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__seq.cmx \
-    stdlib__random.cmx \
-    stdlib__obj.cmx \
-    stdlib__lazy.cmx \
-    stdlib__array.cmx \
-    stdlib__hashtbl.cmi
-stdlib__hashtbl.cmi : \
-    stdlib__seq.cmi
-stdlib__int.cmo : \
+    stdlib__Seq.cmi \
+    stdlib__Buffer.cmi
+stdlib__Fun.cmo : fun.ml \
+    stdlib__Printexc.cmi \
+    stdlib__Fun.cmi
+stdlib__Fun.cmx : fun.ml \
+    stdlib__Printexc.cmx \
+    stdlib__Fun.cmi
+stdlib__Fun.cmi : fun.mli
+stdlib__Gc.cmo : gc.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Printf.cmi \
+    stdlib__Printexc.cmi \
+    stdlib__Gc.cmi
+stdlib__Gc.cmx : gc.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Printf.cmx \
+    stdlib__Printexc.cmx \
+    stdlib__Gc.cmi
+stdlib__Gc.cmi : gc.mli \
+    stdlib__Printexc.cmi
+stdlib__Genlex.cmo : genlex.ml \
+    stdlib__String.cmi \
+    stdlib__Stream.cmi \
+    stdlib__List.cmi \
+    stdlib__Hashtbl.cmi \
+    stdlib__Char.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Genlex.cmi
+stdlib__Genlex.cmx : genlex.ml \
+    stdlib__String.cmx \
+    stdlib__Stream.cmx \
+    stdlib__List.cmx \
+    stdlib__Hashtbl.cmx \
+    stdlib__Char.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Genlex.cmi
+stdlib__Genlex.cmi : genlex.mli \
+    stdlib__Stream.cmi
+stdlib__Hashtbl.cmo : hashtbl.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Random.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Lazy.cmi \
+    stdlib__Array.cmi \
+    stdlib__Hashtbl.cmi
+stdlib__Hashtbl.cmx : hashtbl.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Seq.cmx \
+    stdlib__Random.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Lazy.cmx \
+    stdlib__Array.cmx \
+    stdlib__Hashtbl.cmi
+stdlib__Hashtbl.cmi : hashtbl.mli \
+    stdlib__Seq.cmi
+stdlib__Int.cmo : int.ml \
     stdlib.cmi \
-    stdlib__int.cmi
-stdlib__int.cmx : \
+    stdlib__Int.cmi
+stdlib__Int.cmx : int.ml \
     stdlib.cmx \
-    stdlib__int.cmi
-stdlib__int.cmi :
-stdlib__int32.cmo : \
-    stdlib__sys.cmi \
+    stdlib__Int.cmi
+stdlib__Int.cmi : int.mli
+stdlib__Int32.cmo : int32.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
-    stdlib__int32.cmi
-stdlib__int32.cmx : \
-    stdlib__sys.cmx \
+    stdlib__Int32.cmi
+stdlib__Int32.cmx : int32.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
-    stdlib__int32.cmi
-stdlib__int32.cmi :
-stdlib__int64.cmo : \
+    stdlib__Int32.cmi
+stdlib__Int32.cmi : int32.mli
+stdlib__Int64.cmo : int64.ml \
     stdlib.cmi \
-    stdlib__int64.cmi
-stdlib__int64.cmx : \
+    stdlib__Int64.cmi
+stdlib__Int64.cmx : int64.ml \
     stdlib.cmx \
-    stdlib__int64.cmi
-stdlib__int64.cmi :
-stdlib__lazy.cmo : \
-    stdlib__obj.cmi \
+    stdlib__Int64.cmi
+stdlib__Int64.cmi : int64.mli
+stdlib__Lazy.cmo : lazy.ml \
+    stdlib__Obj.cmi \
     camlinternalLazy.cmi \
-    stdlib__lazy.cmi
-stdlib__lazy.cmx : \
-    stdlib__obj.cmx \
+    stdlib__Lazy.cmi
+stdlib__Lazy.cmx : lazy.ml \
+    stdlib__Obj.cmx \
     camlinternalLazy.cmx \
-    stdlib__lazy.cmi
-stdlib__lazy.cmi : \
+    stdlib__Lazy.cmi
+stdlib__Lazy.cmi : lazy.mli \
     camlinternalLazy.cmi
-stdlib__lexing.cmo : \
-    stdlib__sys.cmi \
-    stdlib__string.cmi \
-    stdlib__bytes.cmi \
-    stdlib__array.cmi \
-    stdlib__lexing.cmi
-stdlib__lexing.cmx : \
-    stdlib__sys.cmx \
-    stdlib__string.cmx \
-    stdlib__bytes.cmx \
-    stdlib__array.cmx \
-    stdlib__lexing.cmi
-stdlib__lexing.cmi :
-stdlib__list.cmo : \
-    stdlib__sys.cmi \
-    stdlib__seq.cmi \
-    stdlib__either.cmi \
-    stdlib__list.cmi
-stdlib__list.cmx : \
-    stdlib__sys.cmx \
-    stdlib__seq.cmx \
-    stdlib__either.cmx \
-    stdlib__list.cmi
-stdlib__list.cmi : \
-    stdlib__seq.cmi \
-    stdlib__either.cmi
-stdlib__listLabels.cmo : \
-    stdlib__list.cmi \
-    stdlib__listLabels.cmi
-stdlib__listLabels.cmx : \
-    stdlib__list.cmx \
-    stdlib__listLabels.cmi
-stdlib__listLabels.cmi : \
-    stdlib__seq.cmi \
-    stdlib__either.cmi
-stdlib__map.cmo : \
-    stdlib__seq.cmi \
-    stdlib__map.cmi
-stdlib__map.cmx : \
-    stdlib__seq.cmx \
-    stdlib__map.cmi
-stdlib__map.cmi : \
-    stdlib__seq.cmi
-stdlib__marshal.cmo : \
-    stdlib__bytes.cmi \
-    stdlib__marshal.cmi
-stdlib__marshal.cmx : \
-    stdlib__bytes.cmx \
-    stdlib__marshal.cmi
-stdlib__marshal.cmi :
-stdlib__moreLabels.cmo : \
-    stdlib__set.cmi \
-    stdlib__map.cmi \
-    stdlib__hashtbl.cmi \
-    stdlib__moreLabels.cmi
-stdlib__moreLabels.cmx : \
-    stdlib__set.cmx \
-    stdlib__map.cmx \
-    stdlib__hashtbl.cmx \
-    stdlib__moreLabels.cmi
-stdlib__moreLabels.cmi : \
-    stdlib__set.cmi \
-    stdlib__seq.cmi \
-    stdlib__map.cmi \
-    stdlib__hashtbl.cmi
-stdlib__nativeint.cmo : \
-    stdlib__sys.cmi \
+stdlib__Lexing.cmo : lexing.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Array.cmi \
+    stdlib__Lexing.cmi
+stdlib__Lexing.cmx : lexing.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Array.cmx \
+    stdlib__Lexing.cmi
+stdlib__Lexing.cmi : lexing.mli
+stdlib__List.cmo : list.ml \
+    stdlib__Sys.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Either.cmi \
+    stdlib__List.cmi
+stdlib__List.cmx : list.ml \
+    stdlib__Sys.cmx \
+    stdlib__Seq.cmx \
+    stdlib__Either.cmx \
+    stdlib__List.cmi
+stdlib__List.cmi : list.mli \
+    stdlib__Seq.cmi \
+    stdlib__Either.cmi
+stdlib__ListLabels.cmo : listLabels.ml \
+    stdlib__List.cmi \
+    stdlib__ListLabels.cmi
+stdlib__ListLabels.cmx : listLabels.ml \
+    stdlib__List.cmx \
+    stdlib__ListLabels.cmi
+stdlib__ListLabels.cmi : listLabels.mli \
+    stdlib__Seq.cmi \
+    stdlib__Either.cmi
+stdlib__Map.cmo : map.ml \
+    stdlib__Seq.cmi \
+    stdlib__Map.cmi
+stdlib__Map.cmx : map.ml \
+    stdlib__Seq.cmx \
+    stdlib__Map.cmi
+stdlib__Map.cmi : map.mli \
+    stdlib__Seq.cmi
+stdlib__Marshal.cmo : marshal.ml \
+    stdlib__Bytes.cmi \
+    stdlib__Marshal.cmi
+stdlib__Marshal.cmx : marshal.ml \
+    stdlib__Bytes.cmx \
+    stdlib__Marshal.cmi
+stdlib__Marshal.cmi : marshal.mli
+stdlib__MoreLabels.cmo : moreLabels.ml \
+    stdlib__Set.cmi \
+    stdlib__Map.cmi \
+    stdlib__Hashtbl.cmi \
+    stdlib__MoreLabels.cmi
+stdlib__MoreLabels.cmx : moreLabels.ml \
+    stdlib__Set.cmx \
+    stdlib__Map.cmx \
+    stdlib__Hashtbl.cmx \
+    stdlib__MoreLabels.cmi
+stdlib__MoreLabels.cmi : moreLabels.mli \
+    stdlib__Set.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Map.cmi \
+    stdlib__Hashtbl.cmi
+stdlib__Nativeint.cmo : nativeint.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
-    stdlib__nativeint.cmi
-stdlib__nativeint.cmx : \
-    stdlib__sys.cmx \
+    stdlib__Nativeint.cmi
+stdlib__Nativeint.cmx : nativeint.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
-    stdlib__nativeint.cmi
-stdlib__nativeint.cmi :
-stdlib__obj.cmo : \
-    stdlib__sys.cmi \
-    stdlib__nativeint.cmi \
-    stdlib__marshal.cmi \
-    stdlib__int32.cmi \
-    stdlib__obj.cmi
-stdlib__obj.cmx : \
-    stdlib__sys.cmx \
-    stdlib__nativeint.cmx \
-    stdlib__marshal.cmx \
-    stdlib__int32.cmx \
-    stdlib__obj.cmi
-stdlib__obj.cmi : \
-    stdlib__int32.cmi
-stdlib__oo.cmo : \
+    stdlib__Nativeint.cmi
+stdlib__Nativeint.cmi : nativeint.mli
+stdlib__Obj.cmo : obj.ml \
+    stdlib__Sys.cmi \
+    stdlib__Nativeint.cmi \
+    stdlib__Marshal.cmi \
+    stdlib__Int32.cmi \
+    stdlib__Obj.cmi
+stdlib__Obj.cmx : obj.ml \
+    stdlib__Sys.cmx \
+    stdlib__Nativeint.cmx \
+    stdlib__Marshal.cmx \
+    stdlib__Int32.cmx \
+    stdlib__Obj.cmi
+stdlib__Obj.cmi : obj.mli \
+    stdlib__Int32.cmi
+stdlib__Oo.cmo : oo.ml \
     camlinternalOO.cmi \
-    stdlib__oo.cmi
-stdlib__oo.cmx : \
+    stdlib__Oo.cmi
+stdlib__Oo.cmx : oo.ml \
     camlinternalOO.cmx \
-    stdlib__oo.cmi
-stdlib__oo.cmi : \
+    stdlib__Oo.cmi
+stdlib__Oo.cmi : oo.mli \
     camlinternalOO.cmi
-stdlib__option.cmo : \
-    stdlib__seq.cmi \
-    stdlib__option.cmi
-stdlib__option.cmx : \
-    stdlib__seq.cmx \
-    stdlib__option.cmi
-stdlib__option.cmi : \
-    stdlib__seq.cmi
-stdlib__parsing.cmo : \
-    stdlib__obj.cmi \
-    stdlib__lexing.cmi \
-    stdlib__array.cmi \
-    stdlib__parsing.cmi
-stdlib__parsing.cmx : \
-    stdlib__obj.cmx \
-    stdlib__lexing.cmx \
-    stdlib__array.cmx \
-    stdlib__parsing.cmi
-stdlib__parsing.cmi : \
-    stdlib__obj.cmi \
-    stdlib__lexing.cmi
-stdlib__pervasives.cmo : \
+stdlib__Option.cmo : option.ml \
+    stdlib__Seq.cmi \
+    stdlib__Option.cmi
+stdlib__Option.cmx : option.ml \
+    stdlib__Seq.cmx \
+    stdlib__Option.cmi
+stdlib__Option.cmi : option.mli \
+    stdlib__Seq.cmi
+stdlib__Parsing.cmo : parsing.ml \
+    stdlib__Obj.cmi \
+    stdlib__Lexing.cmi \
+    stdlib__Array.cmi \
+    stdlib__Parsing.cmi
+stdlib__Parsing.cmx : parsing.ml \
+    stdlib__Obj.cmx \
+    stdlib__Lexing.cmx \
+    stdlib__Array.cmx \
+    stdlib__Parsing.cmi
+stdlib__Parsing.cmi : parsing.mli \
+    stdlib__Obj.cmi \
+    stdlib__Lexing.cmi
+stdlib__Pervasives.cmo : pervasives.ml \
     camlinternalFormatBasics.cmi
-stdlib__pervasives.cmx : \
+stdlib__Pervasives.cmx : pervasives.ml \
     camlinternalFormatBasics.cmx
-stdlib__printexc.cmo : \
+stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
-    stdlib__printf.cmi \
-    stdlib__obj.cmi \
-    stdlib__buffer.cmi \
-    stdlib__atomic.cmi \
-    stdlib__array.cmi \
-    stdlib__printexc.cmi
-stdlib__printexc.cmx : \
+    stdlib__Printf.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Buffer.cmi \
+    stdlib__Atomic.cmi \
+    stdlib__Array.cmi \
+    stdlib__Printexc.cmi
+stdlib__Printexc.cmx : printexc.ml \
     stdlib.cmx \
-    stdlib__printf.cmx \
-    stdlib__obj.cmx \
-    stdlib__buffer.cmx \
-    stdlib__atomic.cmx \
-    stdlib__array.cmx \
-    stdlib__printexc.cmi
-stdlib__printexc.cmi :
-stdlib__printf.cmo : \
+    stdlib__Printf.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Buffer.cmx \
+    stdlib__Atomic.cmx \
+    stdlib__Array.cmx \
+    stdlib__Printexc.cmi
+stdlib__Printexc.cmi : printexc.mli
+stdlib__Printf.cmo : printf.ml \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
-    stdlib__buffer.cmi \
-    stdlib__printf.cmi
-stdlib__printf.cmx : \
+    stdlib__Buffer.cmi \
+    stdlib__Printf.cmi
+stdlib__Printf.cmx : printf.ml \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
-    stdlib__buffer.cmx \
-    stdlib__printf.cmi
-stdlib__printf.cmi : \
-    stdlib__buffer.cmi
-stdlib__queue.cmo : \
-    stdlib__seq.cmi \
-    stdlib__queue.cmi
-stdlib__queue.cmx : \
-    stdlib__seq.cmx \
-    stdlib__queue.cmi
-stdlib__queue.cmi : \
-    stdlib__seq.cmi
-stdlib__random.cmo : \
-    stdlib__string.cmi \
+    stdlib__Buffer.cmx \
+    stdlib__Printf.cmi
+stdlib__Printf.cmi : printf.mli \
+    stdlib__Buffer.cmi
+stdlib__Queue.cmo : queue.ml \
+    stdlib__Seq.cmi \
+    stdlib__Queue.cmi
+stdlib__Queue.cmx : queue.ml \
+    stdlib__Seq.cmx \
+    stdlib__Queue.cmi
+stdlib__Queue.cmi : queue.mli \
+    stdlib__Seq.cmi
+stdlib__Random.cmo : random.ml \
+    stdlib__String.cmi \
     stdlib.cmi \
-    stdlib__nativeint.cmi \
-    stdlib__int64.cmi \
-    stdlib__int32.cmi \
-    stdlib__int.cmi \
-    stdlib__digest.cmi \
-    stdlib__char.cmi \
-    stdlib__array.cmi \
-    stdlib__random.cmi
-stdlib__random.cmx : \
-    stdlib__string.cmx \
+    stdlib__Nativeint.cmi \
+    stdlib__Int64.cmi \
+    stdlib__Int32.cmi \
+    stdlib__Int.cmi \
+    stdlib__Digest.cmi \
+    stdlib__Char.cmi \
+    stdlib__Array.cmi \
+    stdlib__Random.cmi
+stdlib__Random.cmx : random.ml \
+    stdlib__String.cmx \
     stdlib.cmx \
-    stdlib__nativeint.cmx \
-    stdlib__int64.cmx \
-    stdlib__int32.cmx \
-    stdlib__int.cmx \
-    stdlib__digest.cmx \
-    stdlib__char.cmx \
-    stdlib__array.cmx \
-    stdlib__random.cmi
-stdlib__random.cmi : \
-    stdlib__nativeint.cmi \
-    stdlib__int64.cmi \
-    stdlib__int32.cmi
-stdlib__result.cmo : \
-    stdlib__seq.cmi \
-    stdlib__result.cmi
-stdlib__result.cmx : \
-    stdlib__seq.cmx \
-    stdlib__result.cmi
-stdlib__result.cmi : \
-    stdlib__seq.cmi
-stdlib__scanf.cmo : \
-    stdlib__string.cmi \
+    stdlib__Nativeint.cmx \
+    stdlib__Int64.cmx \
+    stdlib__Int32.cmx \
+    stdlib__Int.cmx \
+    stdlib__Digest.cmx \
+    stdlib__Char.cmx \
+    stdlib__Array.cmx \
+    stdlib__Random.cmi
+stdlib__Random.cmi : random.mli \
+    stdlib__Nativeint.cmi \
+    stdlib__Int64.cmi \
+    stdlib__Int32.cmi
+stdlib__Result.cmo : result.ml \
+    stdlib__Seq.cmi \
+    stdlib__Result.cmi
+stdlib__Result.cmx : result.ml \
+    stdlib__Seq.cmx \
+    stdlib__Result.cmi
+stdlib__Result.cmi : result.mli \
+    stdlib__Seq.cmi
+stdlib__Scanf.cmo : scanf.ml \
+    stdlib__String.cmi \
     stdlib.cmi \
-    stdlib__printf.cmi \
-    stdlib__list.cmi \
+    stdlib__Printf.cmi \
+    stdlib__List.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
-    stdlib__bytes.cmi \
-    stdlib__buffer.cmi \
-    stdlib__scanf.cmi
-stdlib__scanf.cmx : \
-    stdlib__string.cmx \
+    stdlib__Bytes.cmi \
+    stdlib__Buffer.cmi \
+    stdlib__Scanf.cmi
+stdlib__Scanf.cmx : scanf.ml \
+    stdlib__String.cmx \
     stdlib.cmx \
-    stdlib__printf.cmx \
-    stdlib__list.cmx \
+    stdlib__Printf.cmx \
+    stdlib__List.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
-    stdlib__bytes.cmx \
-    stdlib__buffer.cmx \
-    stdlib__scanf.cmi
-stdlib__scanf.cmi : \
+    stdlib__Bytes.cmx \
+    stdlib__Buffer.cmx \
+    stdlib__Scanf.cmi
+stdlib__Scanf.cmi : scanf.mli \
     stdlib.cmi
-stdlib__seq.cmo : \
-    stdlib__seq.cmi
-stdlib__seq.cmx : \
-    stdlib__seq.cmi
-stdlib__seq.cmi :
-stdlib__set.cmo : \
-    stdlib__seq.cmi \
-    stdlib__list.cmi \
-    stdlib__set.cmi
-stdlib__set.cmx : \
-    stdlib__seq.cmx \
-    stdlib__list.cmx \
-    stdlib__set.cmi
-stdlib__set.cmi : \
-    stdlib__seq.cmi
-stdlib__stack.cmo : \
-    stdlib__seq.cmi \
-    stdlib__list.cmi \
-    stdlib__stack.cmi
-stdlib__stack.cmx : \
-    stdlib__seq.cmx \
-    stdlib__list.cmx \
-    stdlib__stack.cmi
-stdlib__stack.cmi : \
-    stdlib__seq.cmi
-stdlib__stdLabels.cmo : \
-    stdlib__stringLabels.cmi \
-    stdlib__listLabels.cmi \
-    stdlib__bytesLabels.cmi \
-    stdlib__arrayLabels.cmi \
-    stdlib__stdLabels.cmi
-stdlib__stdLabels.cmx : \
-    stdlib__stringLabels.cmx \
-    stdlib__listLabels.cmx \
-    stdlib__bytesLabels.cmx \
-    stdlib__arrayLabels.cmx \
-    stdlib__stdLabels.cmi
-stdlib__stdLabels.cmi : \
-    stdlib__stringLabels.cmi \
-    stdlib__listLabels.cmi \
-    stdlib__bytesLabels.cmi \
-    stdlib__arrayLabels.cmi
+stdlib__Seq.cmo : seq.ml \
+    stdlib__Seq.cmi
+stdlib__Seq.cmx : seq.ml \
+    stdlib__Seq.cmi
+stdlib__Seq.cmi : seq.mli
+stdlib__Set.cmo : set.ml \
+    stdlib__Seq.cmi \
+    stdlib__List.cmi \
+    stdlib__Set.cmi
+stdlib__Set.cmx : set.ml \
+    stdlib__Seq.cmx \
+    stdlib__List.cmx \
+    stdlib__Set.cmi
+stdlib__Set.cmi : set.mli \
+    stdlib__Seq.cmi
+stdlib__Stack.cmo : stack.ml \
+    stdlib__Seq.cmi \
+    stdlib__List.cmi \
+    stdlib__Stack.cmi
+stdlib__Stack.cmx : stack.ml \
+    stdlib__Seq.cmx \
+    stdlib__List.cmx \
+    stdlib__Stack.cmi
+stdlib__Stack.cmi : stack.mli \
+    stdlib__Seq.cmi
+stdlib__StdLabels.cmo : stdLabels.ml \
+    stdlib__StringLabels.cmi \
+    stdlib__ListLabels.cmi \
+    stdlib__BytesLabels.cmi \
+    stdlib__ArrayLabels.cmi \
+    stdlib__StdLabels.cmi
+stdlib__StdLabels.cmx : stdLabels.ml \
+    stdlib__StringLabels.cmx \
+    stdlib__ListLabels.cmx \
+    stdlib__BytesLabels.cmx \
+    stdlib__ArrayLabels.cmx \
+    stdlib__StdLabels.cmi
+stdlib__StdLabels.cmi : stdLabels.mli \
+    stdlib__StringLabels.cmi \
+    stdlib__ListLabels.cmi \
+    stdlib__BytesLabels.cmi \
+    stdlib__ArrayLabels.cmi
 std_exit.cmo :
 std_exit.cmx :
-stdlib__stream.cmo : \
-    stdlib__string.cmi \
-    stdlib__list.cmi \
-    stdlib__lazy.cmi \
-    stdlib__bytes.cmi \
-    stdlib__stream.cmi
-stdlib__stream.cmx : \
-    stdlib__string.cmx \
-    stdlib__list.cmx \
-    stdlib__lazy.cmx \
-    stdlib__bytes.cmx \
-    stdlib__stream.cmi
-stdlib__stream.cmi :
-stdlib__string.cmo : \
+stdlib__Stream.cmo : stream.ml \
+    stdlib__String.cmi \
+    stdlib__List.cmi \
+    stdlib__Lazy.cmi \
+    stdlib__Bytes.cmi \
+    stdlib__Stream.cmi
+stdlib__Stream.cmx : stream.ml \
+    stdlib__String.cmx \
+    stdlib__List.cmx \
+    stdlib__Lazy.cmx \
+    stdlib__Bytes.cmx \
+    stdlib__Stream.cmi
+stdlib__Stream.cmi : stream.mli
+stdlib__String.cmo : string.ml \
     stdlib.cmi \
-    stdlib__bytes.cmi \
-    stdlib__string.cmi
-stdlib__string.cmx : \
+    stdlib__Bytes.cmi \
+    stdlib__String.cmi
+stdlib__String.cmx : string.ml \
     stdlib.cmx \
-    stdlib__bytes.cmx \
-    stdlib__string.cmi
-stdlib__string.cmi : \
-    stdlib__seq.cmi
-stdlib__stringLabels.cmo : \
-    stdlib__string.cmi \
-    stdlib__stringLabels.cmi
-stdlib__stringLabels.cmx : \
-    stdlib__string.cmx \
-    stdlib__stringLabels.cmi
-stdlib__stringLabels.cmi : \
-    stdlib__seq.cmi
-stdlib__sys.cmo : \
-    stdlib__sys.cmi
-stdlib__sys.cmx : \
-    stdlib__sys.cmi
-stdlib__sys.cmi :
-stdlib__uchar.cmo : \
+    stdlib__Bytes.cmx \
+    stdlib__String.cmi
+stdlib__String.cmi : string.mli \
+    stdlib__Seq.cmi
+stdlib__StringLabels.cmo : stringLabels.ml \
+    stdlib__String.cmi \
+    stdlib__StringLabels.cmi
+stdlib__StringLabels.cmx : stringLabels.ml \
+    stdlib__String.cmx \
+    stdlib__StringLabels.cmi
+stdlib__StringLabels.cmi : stringLabels.mli \
+    stdlib__Seq.cmi
+stdlib__Sys.cmo : sys.ml \
+    stdlib__Sys.cmi
+stdlib__Sys.cmx : sys.ml \
+    stdlib__Sys.cmi
+stdlib__Sys.cmi : sys.mli
+stdlib__Uchar.cmo : uchar.ml \
     stdlib.cmi \
-    stdlib__char.cmi \
-    stdlib__uchar.cmi
-stdlib__uchar.cmx : \
+    stdlib__Char.cmi \
+    stdlib__Uchar.cmi
+stdlib__Uchar.cmx : uchar.ml \
     stdlib.cmx \
-    stdlib__char.cmx \
-    stdlib__uchar.cmi
-stdlib__uchar.cmi :
-stdlib__unit.cmo : \
-    stdlib__unit.cmi
-stdlib__unit.cmx : \
-    stdlib__unit.cmi
-stdlib__unit.cmi :
-stdlib__weak.cmo : \
-    stdlib__sys.cmi \
-    stdlib__obj.cmi \
-    stdlib__hashtbl.cmi \
-    stdlib__array.cmi \
-    stdlib__weak.cmi
-stdlib__weak.cmx : \
-    stdlib__sys.cmx \
-    stdlib__obj.cmx \
-    stdlib__hashtbl.cmx \
-    stdlib__array.cmx \
-    stdlib__weak.cmi
-stdlib__weak.cmi : \
-    stdlib__hashtbl.cmi
+    stdlib__Char.cmx \
+    stdlib__Uchar.cmi
+stdlib__Uchar.cmi : uchar.mli
+stdlib__Unit.cmo : unit.ml \
+    stdlib__Unit.cmi
+stdlib__Unit.cmx : unit.ml \
+    stdlib__Unit.cmi
+stdlib__Unit.cmi : unit.mli
+stdlib__Weak.cmo : weak.ml \
+    stdlib__Sys.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Hashtbl.cmi \
+    stdlib__Array.cmi \
+    stdlib__Weak.cmi
+stdlib__Weak.cmx : weak.ml \
+    stdlib__Sys.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Hashtbl.cmx \
+    stdlib__Array.cmx \
+    stdlib__Weak.cmi
+stdlib__Weak.cmi : weak.mli \
+    stdlib__Hashtbl.cmi
 stdlib.cmo : \
     camlinternalFormatBasics.cmi \
     camlinternalAtomic.cmi \

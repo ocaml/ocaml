@@ -12,9 +12,13 @@ operator-name :
         | let-operator
         | and-operator
 ;
+letop-binding :
+          pattern '=' expr
+        | value-name
+;
 expr:
           ...
-        | let-operator let-binding { and-operator let-binding } in expr
+        | let-operator letop-binding { and-operator letop-binding } in expr
 ;
 \end{syntax}
 
@@ -91,6 +95,27 @@ let sum3 z1 z2 z3 =
   ( let+ ) (( and+ ) (( and+ ) z1 z2) z3)
     (fun ((x1, x2), x3) -> x1 + x2 + x3)
 \end{caml_example}
+
+
+\subsection{ss:letops-punning}{Short notation for variable bindings (let-punning)}
+
+(Introduced in 4.13.0)
+
+When the expression being bound is a variable, it can be convenient to
+use the shorthand notation "let+ x in ...", which expands to "let+ x =
+x in ...".  This notation, also known as let-punning, allows the
+"sum3" function above can be written more concisely as:
+
+\begin{caml_example}{verbatim}
+open ZipSeq
+let sum3 z1 z2 z3 =
+  let+ z1 and+ z2 and+ z3 in
+  z1 + z2 + z3
+\end{caml_example}
+
+This notation is also supported for extension nodes, expanding
+"let%foo x in ..." to "let%foo x = x in ...". However, to avoid
+confusion, this notation is not supported for plain "let" bindings.
 
 \subsection{ss:letops-rationale}{Rationale}
 

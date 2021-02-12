@@ -759,7 +759,6 @@ let duplicate_class_type ty =
 *)
 let rec generalize ty =
   let ty = repr ty in
-  (* generalize the type iff ty.level <= !current_level *)
   if (ty.level > !current_level) && (ty.level <> generic_level) then begin
     set_level ty generic_level;
     (* recur into abbrev for the speed *)
@@ -777,11 +776,11 @@ let generalize ty =
 
 (* Generalize the structure and lower the variables *)
 
-let rec generalize_structure var_level ty =
+let rec generalize_structure ty =
   let ty = repr ty in
   if ty.level <> generic_level then begin
-    if is_Tvar ty && ty.level > var_level then
-      set_level ty var_level
+    if is_Tvar ty && ty.level > !current_level then
+      set_level ty !current_level
     else if
       ty.level > !current_level &&
       match ty.desc with
@@ -790,13 +789,13 @@ let rec generalize_structure var_level ty =
       | _ -> true
     then begin
       set_level ty generic_level;
-      iter_type_expr (generalize_structure var_level) ty
+      iter_type_expr generalize_structure ty
     end
   end
 
 let generalize_structure ty =
   simple_abbrevs := Mnil;
-  generalize_structure !current_level ty
+  generalize_structure ty
 
 (* Generalize the spine of a function, if the level >= !current_level *)
 
@@ -850,22 +849,15 @@ let rec normalize_package_path env p =
       | _ -> p
 
 let rec check_scope_escape env id_pairs level ty =
-  let mark ty =
-    (* Mark visited types with [ty.level < lowest_level]. *)
-    set_level ty (lowest_level - 1)
-  in
   let ty = repr ty in
-  (* If the type hasn't been marked, check it. Otherwise, we have already
-     checked it.
-  *)
-  if ty.level >= lowest_level then begin
+  let orig_level = ty.level in
+  if try_logged_mark_node ty then begin
     if level < ty.scope then
       raise(Trace.scope_escape ty);
     begin match ty.desc with
     | Tconstr (p, _, _) when level < Path.scope_subst id_pairs p ->
         begin match !forward_try_expand_once env id_pairs ty with
         | ty' ->
-            mark ty;
             check_scope_escape env id_pairs level ty'
         | exception Cannot_expand ->
             raise Trace.(Unify [escape (Constructor p)])
@@ -877,8 +869,6 @@ let rec check_scope_escape env id_pairs level ty =
             |> Path.unsubst id_pairs
         in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-        let orig_level = ty.level in
-        mark ty;
         check_scope_escape env id_pairs level
           (Btype.newty2 orig_level (Tpackage (p', nl, tl)))
     | Tfunctor (id, (p, nl, tl), t) when level < Path.scope_subst id_pairs p ->
@@ -889,7 +879,6 @@ let rec check_scope_escape env id_pairs level ty =
         in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
         let orig_level = ty.level in
-        mark ty;
         check_scope_escape env id_pairs level
           (Btype.newty2 orig_level (Tfunctor (id, (p', nl, tl), t)))
     | Tfunctor (id, (p, _nl, tl), t) ->
@@ -906,7 +895,6 @@ let rec check_scope_escape env id_pairs level ty =
         let id_pairs' = (id, scoped_id) :: id_pairs in
         check_scope_escape env id_pairs' level t
     | _ ->
-        mark ty;
         iter_type_expr (check_scope_escape env id_pairs level) ty
     end;
   end

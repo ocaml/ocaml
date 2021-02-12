@@ -29,8 +29,6 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 NATIVE_CPPFLAGS = \
   -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
-
 LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
 CAMLC=$(BEST_OCAMLC) $(LIBS)

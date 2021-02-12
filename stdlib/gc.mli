@@ -108,7 +108,7 @@ type control =
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
-       Default: 80. *)
+       Default: 120. *)
 
     mutable verbose : int;
     [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.verbose = ...}"]
@@ -164,30 +164,23 @@ type control =
           memory than both next-fit and first-fit.
           (since OCaml 4.10)
 
-        The current default is next-fit, as the best-fit policy is new
-        and not yet widely tested. We expect best-fit to become the
-        default in the future.
+        The default is best-fit.
 
         On one example that was known to be bad for next-fit and first-fit,
         next-fit takes 28s using 855Mio of memory,
         first-fit takes 47s using 566Mio of memory,
         best-fit takes 27s using 545Mio of memory.
 
-        Note: When changing to a low-fragmentation policy, you may
-        need to augment the [space_overhead] setting, for example
-        using [100] instead of the default [80] which is tuned for
-        next-fit. Indeed, the difference in fragmentation behavior
-        means that different policies will have different proportion
-        of "wasted space" for a given program. Less fragmentation
-        means a smaller heap so, for the same amount of wasted space,
-        a higher proportion of wasted space. This makes the GC work
-        harder, unless you relax it by increasing [space_overhead].
+        Note: If you change to next-fit, you may need to reduce
+        the [space_overhead] setting, for example using [80] instead
+        of the default [120] which is tuned for best-fit. Otherwise,
+        your program will need more memory.
 
         Note: changing the allocation policy at run-time forces
         a heap compaction, which is a lengthy operation unless the
         heap is small (e.g. at the start of the program).
 
-        Default: 0.
+        Default: 2.
 
         @since 3.11.0 *)
 

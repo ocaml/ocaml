@@ -6127,7 +6127,6 @@ toplevel/genprintval.cmi : \
     typing/outcometree.cmi \
     typing/env.cmi
 toplevel/topcommon.cmo : \
-    typing/types.cmi \
     parsing/printast.cmi \
     typing/predef.cmi \
     parsing/pprintast.cmi \
@@ -6142,6 +6141,7 @@ toplevel/topcommon.cmo : \
     parsing/location.cmi \
     utils/load_path.cmi \
     parsing/lexer.cmi \
+    typing/ident.cmi \
     toplevel/genprintval.cmi \
     typing/env.cmi \
     bytecomp/dll.cmi \
@@ -6152,7 +6152,6 @@ toplevel/topcommon.cmo : \
     parsing/ast_helper.cmi \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
-    typing/types.cmx \
     parsing/printast.cmx \
     typing/predef.cmx \
     parsing/pprintast.cmx \
@@ -6167,6 +6166,7 @@ toplevel/topcommon.cmx : \
     parsing/location.cmx \
     utils/load_path.cmx \
     parsing/lexer.cmx \
+    typing/ident.cmx \
     toplevel/genprintval.cmx \
     typing/env.cmx \
     bytecomp/dll.cmx \
@@ -6184,6 +6184,7 @@ toplevel/topcommon.cmi : \
     typing/outcometree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    typing/ident.cmi \
     toplevel/genprintval.cmi \
     typing/env.cmi
 toplevel/topdirs.cmo : \
@@ -6238,9 +6239,7 @@ toplevel/topdirs.cmi : \
     parsing/longident.cmi
 toplevel/topeval.cmi : \
     toplevel/topcommon.cmi \
-    typing/path.cmi \
-    parsing/parsetree.cmi \
-    typing/env.cmi
+    parsing/parsetree.cmi
 toplevel/toploop.cmo : \
     utils/warnings.cmi \
     typing/typetexp.cmi \
@@ -6308,7 +6307,6 @@ toplevel/byte/topeval.cmo : \
     bytecomp/printinstr.cmi \
     typing/predef.cmi \
     typing/persistent_env.cmi \
-    typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     bytecomp/opcodes.cmi \
@@ -6318,7 +6316,6 @@ toplevel/byte/topeval.cmo : \
     utils/load_path.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
-    toplevel/genprintval.cmi \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
     bytecomp/dll.cmi \
@@ -6345,7 +6342,6 @@ toplevel/byte/topeval.cmx : \
     bytecomp/printinstr.cmx \
     typing/predef.cmx \
     typing/persistent_env.cmx \
-    typing/path.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     bytecomp/opcodes.cmx \
@@ -6355,7 +6351,6 @@ toplevel/byte/topeval.cmx : \
     utils/load_path.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
-    toplevel/genprintval.cmx \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
     bytecomp/dll.cmx \
@@ -6368,9 +6363,7 @@ toplevel/byte/topeval.cmx : \
     toplevel/byte/topeval.cmi
 toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
-    typing/path.cmi \
-    parsing/parsetree.cmi \
-    typing/env.cmi
+    parsing/parsetree.cmi
 toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
     toplevel/toploop.cmi \
@@ -6451,7 +6444,6 @@ toplevel/native/topeval.cmo : \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
     typing/predef.cmi \
-    typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     utils/misc.cmi \
@@ -6461,7 +6453,6 @@ toplevel/native/topeval.cmo : \
     typing/includemod.cmi \
     middle_end/flambda/import_approx.cmi \
     typing/ident.cmi \
-    toplevel/genprintval.cmi \
     middle_end/flambda/flambda_middle_end.cmi \
     typing/env.cmi \
     utils/config.cmi \
@@ -6490,7 +6481,6 @@ toplevel/native/topeval.cmx : \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
     typing/predef.cmx \
-    typing/path.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     utils/misc.cmx \
@@ -6500,7 +6490,6 @@ toplevel/native/topeval.cmx : \
     typing/includemod.cmx \
     middle_end/flambda/import_approx.cmx \
     typing/ident.cmx \
-    toplevel/genprintval.cmx \
     middle_end/flambda/flambda_middle_end.cmx \
     typing/env.cmx \
     utils/config.cmx \
@@ -6517,9 +6506,7 @@ toplevel/native/topeval.cmx : \
     toplevel/native/topeval.cmi
 toplevel/native/topeval.cmi : \
     toplevel/topcommon.cmi \
-    typing/path.cmi \
-    parsing/parsetree.cmi \
-    typing/env.cmi
+    parsing/parsetree.cmi
 toplevel/native/topmain.cmo : \
     toplevel/toploop.cmi \
     toplevel/native/topeval.cmi \

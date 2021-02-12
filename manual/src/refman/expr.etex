@@ -437,6 +437,9 @@ and allow one to use this polymorphism in recursive occurrences
 (when using @"let" "rec"@). Note however that this is a normal polymorphic
 type, unifiable with any instance of itself.
 
+\subsubsection{sss:expr-local-exception}{Local exceptions}
+(Introduced in 4.04)
+
 It is possible to define local exceptions in expressions:
 @ "let" exception constr-decl "in" expr @ .
 The syntactic scope of the exception constructor is the inner

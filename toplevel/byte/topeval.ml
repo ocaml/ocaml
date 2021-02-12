@@ -39,52 +39,27 @@ let setvalue name v =
 
 let implementation_label = ""
 
-(* Return the value referred to by a path *)
-
-let rec eval_address = function
-  | Env.Aident id ->
-      if Ident.persistent id || Ident.global id then
-        Symtable.get_global_value id
-      else begin
-        let name = Translmod.toplevel_name id in
-        try
-          String.Map.find name !toplevel_value_bindings
-        with Not_found ->
-          raise (Symtable.Error(Symtable.Undefined_global name))
-      end
-  | Env.Adot(p, pos) ->
-      Obj.field (eval_address p) pos
-
-let eval_path find env path =
-  match find path env with
-  | addr -> eval_address addr
-  | exception Not_found ->
-      fatal_error ("Cannot find address for: " ^ (Path.name path))
-
-let eval_module_path env path =
-  eval_path Env.find_module_address env path
-
-let eval_value_path env path =
-  eval_path Env.find_value_address env path
-
-let eval_extension_path env path =
-  eval_path Env.find_constructor_address env path
-
-let eval_class_path env path =
-  eval_path Env.find_class_address env path
-
 (* To print values *)
 
-module EvalPath = struct
-  type valu = Obj.t
-  exception Error
-  let eval_address addr =
-    try eval_address addr with Symtable.Error _ -> raise Error
-  let same_value v1 v2 = (v1 == v2)
+module EvalBase = struct
+
+  let eval_ident id =
+    if Ident.persistent id || Ident.global id then begin
+      try
+        Symtable.get_global_value id
+      with Symtable.Error (Undefined_global name) ->
+        raise (Undefined_global name)
+    end else begin
+      let name = Translmod.toplevel_name id in
+      try
+        String.Map.find name !toplevel_value_bindings
+      with Not_found ->
+        raise (Undefined_global name)
+    end
+
 end
 
-include Topcommon.MakePrinter(Genprintval.Make(Obj)(EvalPath))
-
+include Topcommon.MakeEvalPrinter(EvalBase)
 
 (* Load in-core and execute a lambda term *)
 
