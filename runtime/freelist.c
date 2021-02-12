@@ -1755,6 +1755,9 @@ enum {
   policy_best_fit = 2,
 };
 
+/* If you change [caml_allocation_policy] don't forget to change all the
+   function pointers below.
+*/
 uintnat caml_allocation_policy = policy_best_fit;
 
 /********************* exported functions *****************************/
