@@ -24,4 +24,8 @@ done
 
 rm -f $TMPDIR/stdlib-$$-*
 
+if [ $exitcode -eq 0 ]; then
+  echo "All Standard Library modules are referenced"
+fi
+
 exit $exitcode
