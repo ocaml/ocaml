@@ -887,7 +887,7 @@ enable_str_lib
 enable_unix_lib
 enable_bigarray_lib
 enable_ocamldoc
-enable_odoc_documentation
+with_odoc
 enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
@@ -1557,8 +1557,6 @@ Optional Features:
   --disable-unix-lib      do not build the unix library
   --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
-  --enable-odoc-documentation
-                          build documentation with odoc
   --disable-ocamltest     do not build the ocamltest driver
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
@@ -1596,6 +1594,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-odoc             build documentation with odoc
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -3162,9 +3161,10 @@ else
 fi
 
 
-# Check whether --enable-odoc-documentation was given.
-if test "${enable_odoc_documentation+set}" = set; then :
-  enableval=$enable_odoc_documentation;
+
+# Check whether --with-odoc was given.
+if test "${with_odoc+set}" = set; then :
+  withval=$with_odoc;
 fi
 
 
@@ -17057,7 +17057,7 @@ else
   ocamldoc=ocamldoc
 fi
 
-if test x"$enable_odoc_documentation" = "xyes"; then :
+if test x"$with_odoc" = "xyes"; then :
   documentation_mode="odoc"
 else
   documentation_mode="ocamldoc"

@@ -267,8 +267,8 @@ AC_ARG_ENABLE([ocamldoc],
   [],
   [ocamldoc=auto])
 
-AC_ARG_ENABLE([odoc-documentation],
-  [AS_HELP_STRING([--enable-odoc-documentation],
+AC_ARG_WITH([odoc],
+  [AS_HELP_STRING([--with-odoc],
     [build documentation with odoc])])
 
 
@@ -1744,7 +1744,7 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
 
-AS_IF([test x"$enable_odoc_documentation" = "xyes"],
+AS_IF([test x"$with_odoc" = "xyes"],
   [documentation_mode="odoc"],
   [documentation_mode="ocamldoc"])
 
