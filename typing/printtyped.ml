@@ -339,7 +339,7 @@ and expression i ppf x =
   | Texp_apply (e, l) ->
       line i ppf "Texp_apply\n";
       expression i ppf e;
-      list i label_x_expression ppf l;
+      list i argument ppf l;
   | Texp_match (e, l, _partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
@@ -450,10 +450,6 @@ and expression i ppf x =
       line i ppf "Texp_functor %a %a\n" fmt_ident s fmt_path p;
       list i package_with ppf l;
       expression i ppf e
-  | Texp_functor_apply (e, me) ->
-      line i ppf "Texp_functor_apply\n";
-      expression i ppf e;
-      module_expr i ppf me
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
@@ -940,6 +936,12 @@ and label_x_expression i ppf (l, e) =
   line i ppf "<arg>\n";
   arg_label (i+1) ppf l;
   (match e with None -> () | Some e -> expression (i+1) ppf e)
+
+and argument i ppf = function
+  | Targ_expression (l, e) -> label_x_expression i ppf (l, e)
+  | Targ_module me ->
+      line i ppf "<module-arg>\n";
+      module_expr (i+1) ppf me
 
 and ident_x_expression_def i ppf (l, e) =
   line i ppf "<def> \"%a\"\n" fmt_ident l;

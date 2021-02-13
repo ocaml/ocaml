@@ -140,7 +140,7 @@ let ghstr ~loc d = Str.mk ~loc:(ghost_loc loc) d
 let ghsig ~loc d = Sig.mk ~loc:(ghost_loc loc) d
 
 let mkinfix arg1 op arg2 =
-  Pexp_apply(op, [Nolabel, arg1; Nolabel, arg2])
+  Pexp_apply (op, [Exp.arg_expr Nolabel arg1; Exp.arg_expr Nolabel arg2])
 
 let neg_string f =
   if String.length f > 0 && f.[0] = '-'
@@ -154,7 +154,8 @@ let mkuminus ~oploc name arg =
   | ("-" | "-."), Pexp_constant(Pconst_float (f, m)) ->
       Pexp_constant(Pconst_float(neg_string f, m))
   | _ ->
-      Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
+      Pexp_apply
+        (mkoperator ~loc:oploc ("~" ^ name), [Exp.arg_expr Nolabel arg])
 
 let mkuplus ~oploc name arg =
   let desc = arg.pexp_desc in
@@ -162,7 +163,8 @@ let mkuplus ~oploc name arg =
   | "+", Pexp_constant(Pconst_integer _)
   | ("+" | "+."), Pexp_constant(Pconst_float _) -> desc
   | _ ->
-      Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
+      Pexp_apply
+        (mkoperator ~loc:oploc ("~" ^ name), [Exp.arg_expr Nolabel arg])
 
 (* TODO define an abstraction boundary between locations-as-pairs
    and locations-as-Location.t; it should be clear when we move from
@@ -280,7 +282,7 @@ type ('dot,'index) array_family = {
 
   index:
     Lexing.position * Lexing.position -> paren_kind -> 'index
-    -> index_dim * (arg_label * expression) list
+    -> index_dim * argument list
    (*
      [index (start,stop) paren index] computes the dimension of the
      index argument and how it should be desugared when transformed
@@ -315,14 +317,18 @@ let builtin_arraylike_name loc _ ~assign paren_kind n =
    ghloc ~loc (Ldot(prefix,opname))
 
 let builtin_arraylike_index loc paren_kind index = match paren_kind with
-    | Paren | Bracket -> One, [Nolabel, index]
+    | Paren | Bracket -> One, [Exp.arg_expr Nolabel index]
     | Brace ->
        (* Multi-indices for bigarray are comma-separated ([a.{1,2,3,4}]) *)
        match bigarray_untuplify index with
-     | [x] -> One, [Nolabel, x]
-     | [x;y] -> Two, [Nolabel, x; Nolabel, y]
-     | [x;y;z] -> Three, [Nolabel, x; Nolabel, y; Nolabel, z]
-     | coords -> Many, [Nolabel, ghexp ~loc (Pexp_array coords)]
+     | [x] -> One, [Exp.arg_expr Nolabel x]
+     | [x;y] -> Two, [Exp.arg_expr Nolabel x; Exp.arg_expr Nolabel y]
+     | [x;y;z] ->
+         ( Three
+         , [ Exp.arg_expr Nolabel x
+           ; Exp.arg_expr Nolabel y
+           ; Exp.arg_expr Nolabel z ] )
+     | coords -> Many, [Exp.arg_expr Nolabel (ghexp ~loc (Pexp_array coords))]
 
 let builtin_indexing_operators : (unit, expression) array_family  =
   { index = builtin_arraylike_index; name = builtin_arraylike_name }
@@ -349,8 +355,8 @@ let user_index loc _ index =
   (* Multi-indices for user-defined operators are semicolon-separated
      ([a.%[1;2;3;4]]) *)
   match index with
-    | [a] -> One, [Nolabel, a]
-    | l -> Many, [Nolabel, mkexp ~loc (Pexp_array l)]
+    | [a] -> One, [Exp.arg_expr Nolabel a]
+    | l -> Many, [Exp.arg_expr Nolabel (mkexp ~loc (Pexp_array l))]
 
 let user_indexing_operators:
       (Longident.t option * string, expression list) array_family
@@ -363,8 +369,8 @@ let mk_indexop_expr array_indexing_operator ~loc
   let fn = array_indexing_operator.name loc dot ~assign paren n in
   let set_arg = match set_expr with
     | None -> []
-    | Some expr -> [Nolabel, expr] in
-  let args = (Nolabel,array) :: index @ set_arg in
+    | Some expr -> [Exp.arg_expr Nolabel expr] in
+  let args = Exp.arg_expr Nolabel array :: index @ set_arg in
   mkexp ~loc (Pexp_apply(ghexp ~loc (Pexp_ident fn), args))
 
 let indexop_unclosed_error loc_s s loc_e =
@@ -624,31 +630,6 @@ let mk_directive ~loc name arg =
       pdir_arg = arg;
       pdir_loc = make_loc loc;
     }
-
-type apply_kinds =
-  | Apply_label of (arg_label * expression)
-  | Apply_module of module_expr
-
-let accumulate_apply_kinds e loc labeled_exprs =
-  let e, labeled_exprs, _ =
-    List.fold_left (fun (e, labeled_exprs, loc) (end_pos, apply_kind) ->
-        match apply_kind with
-        | Apply_label labeled_expr -> (* One of [f x], [f ~x], [f ?x]. *)
-            (* Accumulate arguments for a [Pexp_apply]. *)
-            (e, labeled_expr :: labeled_exprs, (fst loc, end_pos))
-        | Apply_module lid -> (* [f {M}] *)
-            let e =
-              (* Consume all accumulated arguments to create a [Pexp_apply]. *)
-              if labeled_exprs = [] then e
-              else mkexp ~loc (Pexp_apply (e, List.rev labeled_exprs))
-            in
-            let loc = (fst loc, end_pos) in
-            let e = mkexp ~loc (Pexp_functor_apply (e, lid)) in
-            (e, [], loc) )
-      (e, [], loc) labeled_exprs
-  in
-  if labeled_exprs = [] then e.pexp_desc
-  else Pexp_apply (e, List.rev labeled_exprs)
 
 %}
 
@@ -2366,8 +2347,8 @@ expr:
       { unclosed "object" $loc($1) "end" $loc($4) }
 ;
 %inline expr_:
-  | simple_expr nonempty_llist(apply_kinds)
-      { accumulate_apply_kinds $1 $loc($1) $2 }
+  | simple_expr nonempty_llist(argument)
+      { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
       { Pexp_tuple($1) }
   | mkrhs(constr_longident) simple_expr %prec below_HASH
@@ -2427,9 +2408,9 @@ simple_expr:
   | name_tag %prec prec_constant_constructor
       { Pexp_variant($1, None) }
   | op(PREFIXOP) simple_expr
-      { Pexp_apply($1, [Nolabel,$2]) }
+      { Pexp_apply($1, [Exp.arg_expr Nolabel $2]) }
   | op(BANG {"!"}) simple_expr
-      { Pexp_apply($1, [Nolabel,$2]) }
+      { Pexp_apply($1, [Exp.arg_expr Nolabel $2]) }
   | LBRACELESS object_expr_content GREATERRBRACE
       { Pexp_override $2 }
   | LBRACELESS object_expr_content error
@@ -2519,11 +2500,12 @@ labeled_simple_expr:
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
 ;
-apply_kinds:
+argument:
     labeled_simple_expr
-      { ($endpos, Apply_label $1) }
+      { let (lbl, expr) = $1 in
+        Parg_expression (lbl, expr) }
   | LBRACE module_expr_without_parens RBRACE
-      { ($endpos, Apply_module $2 ) }
+      { Parg_module $2 }
 ;
 %inline lident_list:
   xs = mkrhs(LIDENT)+

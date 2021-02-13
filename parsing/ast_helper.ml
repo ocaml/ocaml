@@ -220,8 +220,6 @@ module Exp = struct
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let unreachable ?loc ?attrs () = mk ?loc ?attrs Pexp_unreachable
   let functor_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_functor (a, b, c))
-  let functor_apply ?loc ?attrs a b =
-    mk ?loc ?attrs (Pexp_functor_apply (a, b))
 
   let case lhs ?guard rhs =
     {
@@ -237,6 +235,9 @@ module Exp = struct
       pbop_exp = exp;
       pbop_loc = loc;
     }
+
+  let arg_expr label expr = Parg_expression (label, expr)
+  let arg_mod mexpr = Parg_module mexpr
 end
 
 module Mty = struct

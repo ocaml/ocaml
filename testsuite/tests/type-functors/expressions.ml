@@ -567,9 +567,15 @@ let fail_unpack_apply2 {F : Functor} =
 Line 3, characters 2-11:
 3 |   bind {F'};;
       ^^^^^^^^^
-Error: This expression has type 'a but an expression was expected of type
-         ('b -> 'c Free_monad(F').t) ->
-         'b Free_monad(F').t -> 'c Free_monad(F').t
+Warning 5 [ignored-partial-application]: this function application is partial,
+maybe some arguments are missing.
+Line 3, characters 2-11:
+3 |   bind {F'};;
+      ^^^^^^^^^
+Error: This expression has type
+         ('a -> 'b Free_monad(F').t) ->
+         'a Free_monad(F').t -> 'b Free_monad(F').t
+       but an expression was expected of type 'c
        The type constructor Free_monad(F').t would escape its scope
 |}]
 

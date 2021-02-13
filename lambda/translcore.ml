@@ -256,10 +256,15 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
-    && List.for_all (fun (_, arg) -> arg <> None) oargs ->
+    && List.for_all (function
+          | Targ_expression (_, arg) -> arg <> None
+          | Targ_module _ -> false) oargs ->
       let argl, extra_args = cut p.prim_arity oargs in
       let arg_exps =
-         List.map (function _, Some x -> x | _ -> assert false) argl
+         List.map (function
+             | Targ_expression (_, Some x) -> x
+             | _ -> assert false)
+           argl
       in
       let args = transl_list ~scopes arg_exps in
       let prim_exp = if extra_args = [] then Some e else None in
@@ -631,15 +636,6 @@ and transl_exp0 ~in_new_scope ~scopes e =
       let attr = default_function_attribute in
       let lam = Lfunction{kind; params; return; body; attr; loc} in
       Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
-  | Texp_functor_apply (funct, modl) ->
-      let arg =
-        (* Fake expression, since we don't have a dedicated expression for the
-           argument.
-        *)
-        {e with exp_desc=Texp_pack modl; exp_loc= modl.mod_loc}
-      in
-      transl_apply ~scopes (transl_exp ~scopes funct) [(Nolabel, Some arg)]
-        (of_location ~scopes e.exp_loc)
 
 and pure_module m =
   match m.mod_desc with
@@ -767,10 +763,14 @@ and transl_apply ~scopes
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  (build_apply lam [] (List.map (fun (l, x) ->
-                                   Option.map (transl_exp ~scopes) x,
-                                   Btype.is_optional l)
-                                sargs)
+  (build_apply lam [] (List.map (function
+         | Targ_expression (l, x) ->
+             ( Option.map (transl_exp ~scopes) x
+             , Btype.is_optional l )
+         | Targ_module modl ->
+             ( Some (!transl_module ~scopes Tcoerce_none None modl)
+             , false ))
+       sargs)
      : Lambda.lambda)
 
 and transl_curried_function

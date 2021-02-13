@@ -193,22 +193,8 @@ and expression_desc =
               [Partial] if the pattern match is partial
               [Total] otherwise.
          *)
-  | Texp_apply of expression * (arg_label * expression option) list
-        (** E0 ~l1:E1 ... ~ln:En
-
-            The expression can be None if the expression is abstracted over
-            this argument. It currently appears when a label is applied.
-
-            For example:
-            let f x ~y = x + y in
-            f ~y:3
-
-            The resulting typedtree for the application is:
-            Texp_apply (Texp_ident "f/1037",
-                        [(Nolabel, None);
-                         (Labelled "y", Some (Texp_constant Const_int 3))
-                        ])
-         *)
+  | Texp_apply of expression * argument list
+        (** E0 ~l1:E1 ... ~ln:En *)
   | Texp_match of expression * computation case list * partial
         (** match E0 with
             | P1 -> E1
@@ -283,8 +269,6 @@ and expression_desc =
       Ident.t * string loc * package_type * Parsetree.package_type option *
         expression
         (** fun {M : S} -> E *)
-  | Texp_functor_apply of expression * module_expr
-        (** E {M} *)
 
 and meth =
     Tmeth_name of string
@@ -312,6 +296,24 @@ and binding_op =
     bop_exp : expression;
     bop_loc : Location.t;
   }
+
+and argument =
+  | Targ_expression of arg_label * expression option
+    (* The expression can be None if the expression is abstracted over this
+       argument. It currently appears when a label is applied.
+
+       For example:
+       let f x ~y = x + y in
+       f ~y:3
+
+       The resulting typedtree for the application is:
+       Texp_apply
+         ( Texp_ident "f/1037"
+         , [ Targ_expression (Nolabel, None)
+           ; Targ_expression (Labelled "y", Some (Texp_constant Const_int 3)) ]
+         )
+    *)
+  | Targ_module of module_expr
 
 (* Value expressions for the class language *)
 

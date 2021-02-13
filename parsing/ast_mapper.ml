@@ -27,6 +27,7 @@ open Location
 module String = Misc.Stdlib.String
 
 type mapper = {
+  argument: mapper -> argument -> argument;
   attribute: mapper -> attribute -> attribute;
   attributes: mapper -> attribute list -> attribute list;
   binding_op: mapper -> binding_op -> binding_op;
@@ -396,7 +397,7 @@ module E = struct
           (sub.expr sub e)
     | Pexp_function pel -> function_ ~loc ~attrs (sub.cases sub pel)
     | Pexp_apply (e, l) ->
-        apply ~loc ~attrs (sub.expr sub e) (List.map (map_snd (sub.expr sub)) l)
+        apply ~loc ~attrs (sub.expr sub e) (List.map (sub.argument sub) l)
     | Pexp_match (e, pel) ->
         match_ ~loc ~attrs (sub.expr sub e) (sub.cases sub pel)
     | Pexp_try (e, pel) -> try_ ~loc ~attrs (sub.expr sub e) (sub.cases sub pel)
@@ -466,8 +467,6 @@ module E = struct
               (List.map (map_tuple (map_loc sub) (sub.typ sub))))
             pack_opt)
           (sub.expr sub e)
-    | Pexp_functor_apply (e, me) ->
-        functor_apply ~loc ~attrs (sub.expr sub e) (sub.module_expr sub me)
 
   let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     let open Exp in
@@ -476,6 +475,10 @@ module E = struct
     let exp = sub.expr sub pbop_exp in
     let loc = sub.location sub pbop_loc in
     binding_op op pat exp loc
+
+  let map_argument sub = function
+    | Parg_expression (lbl, e) -> Exp.arg_expr lbl (sub.expr sub e)
+    | Parg_module me -> Exp.arg_mod (sub.module_expr sub me)
 
 end
 
@@ -627,6 +630,7 @@ let default_mapper =
     pat = P.map;
     expr = E.map;
     binding_op = E.map_binding_op;
+    argument = E.map_argument;
 
     module_declaration =
       (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->

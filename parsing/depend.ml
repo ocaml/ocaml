@@ -210,7 +210,7 @@ let rec add_expr bv exp =
   | Pexp_function pel ->
       add_cases bv pel
   | Pexp_apply(e, el) ->
-      add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) el
+      add_expr bv e; List.iter (add_argument bv) el
   | Pexp_match(e, pel) -> add_expr bv e; add_cases bv pel
   | Pexp_try(e, pel) -> add_expr bv e; add_cases bv pel
   | Pexp_tuple el -> List.iter (add_expr bv) el
@@ -273,7 +273,6 @@ let rec add_expr bv exp =
   | Pexp_unreachable -> ()
   | Pexp_functor (_, pack_opt, e) ->
       Option.iter (add_package_type bv) pack_opt; add_expr bv e
-  | Pexp_functor_apply (e, me) -> add_expr bv e; add_module_expr bv me
 
 and add_cases bv cases =
   List.iter (add_case bv) cases
@@ -292,6 +291,10 @@ and add_bindings recf bv pel =
 and add_binding_op bv bv' pbop =
   add_expr bv pbop.pbop_exp;
   add_pattern bv' pbop.pbop_pat
+
+and add_argument bv = function
+  | Parg_expression (_lbl, e) -> add_expr bv e
+  | Parg_module me -> add_module_expr bv me
 
 and add_modtype bv mty =
   match mty.pmty_desc with

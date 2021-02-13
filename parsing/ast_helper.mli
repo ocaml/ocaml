@@ -140,8 +140,8 @@ module Exp:
     val fun_: ?loc:loc -> ?attrs:attrs -> arg_label -> expression option
               -> pattern -> expression -> expression
     val function_: ?loc:loc -> ?attrs:attrs -> case list -> expression
-    val apply: ?loc:loc -> ?attrs:attrs -> expression
-               -> (arg_label * expression) list -> expression
+    val apply: ?loc:loc -> ?attrs:attrs -> expression -> argument list
+               -> expression
     val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list
                 -> expression
     val try_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
@@ -194,11 +194,12 @@ module Exp:
     val functor_:
       ?loc:loc -> ?attrs:attrs -> str-> (lid * (lid * core_type) list) option
       -> expression -> expression
-    val functor_apply:
-      ?loc:loc -> ?attrs:attrs -> expression -> module_expr -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
+
+    val arg_expr: arg_label -> expression -> argument
+    val arg_mod: module_expr -> argument
   end
 
 (** Value declarations *)

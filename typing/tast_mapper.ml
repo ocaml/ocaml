@@ -21,6 +21,7 @@ open Typedtree
 
 type mapper =
   {
+    argument: mapper -> argument -> argument;
     binding_op: mapper -> binding_op -> binding_op;
     case: 'k . mapper -> 'k case -> 'k case;
     class_declaration: mapper -> class_declaration -> class_declaration;
@@ -252,10 +253,7 @@ let expr sub x =
         let cases = List.map (sub.case sub) cases in
         Texp_function { arg_label; param; cases; partial; }
     | Texp_apply (exp, list) ->
-        Texp_apply (
-          sub.expr sub exp,
-          List.map (tuple2 id (Option.map (sub.expr sub))) list
-        )
+        Texp_apply (sub.expr sub exp, List.map (sub.argument sub) list)
     | Texp_match (exp, cases, p) ->
         Texp_match (
           sub.expr sub exp,
@@ -382,8 +380,6 @@ let expr sub x =
                      , sub.package_type sub pack
                      , pack_opt
                      , sub.expr sub e )
-    | Texp_functor_apply (e, mexpr) ->
-        Texp_functor_apply (sub.expr sub e, sub.module_expr sub mexpr)
   in
   {x with exp_extra; exp_desc; exp_env}
 
@@ -394,6 +390,11 @@ let package_type sub x =
 
 let binding_op sub x =
   { x with bop_exp = sub.expr sub x.bop_exp }
+
+let argument sub = function
+  | Targ_expression (lbl, e) ->
+      Targ_expression (lbl, Option.map (sub.expr sub) e)
+  | Targ_module me -> Targ_module (sub.module_expr sub me)
 
 let signature sub x =
   let sig_final_env = sub.env sub x.sig_final_env in
@@ -711,6 +712,7 @@ let env _sub x = x
 
 let default =
   {
+    argument;
     binding_op;
     case;
     class_declaration;

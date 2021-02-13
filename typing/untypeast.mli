@@ -18,6 +18,7 @@ open Parsetree
 val lident_of_path : Path.t -> Longident.t
 
 type mapper = {
+  argument: mapper -> Typedtree.argument -> argument option;
   attribute: mapper -> Typedtree.attribute -> attribute;
   attributes: mapper -> Typedtree.attribute list -> attribute list;
   binding_op:
