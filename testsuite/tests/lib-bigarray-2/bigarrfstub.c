@@ -49,7 +49,7 @@ value c_filltab(value unit)
 {
   filltab();
   return alloc_bigarray_dims(BIGARRAY_FLOAT64 | BIGARRAY_C_LAYOUT,
-                             2, ctab, DIMX, DIMY);
+                             2, ctab, (intnat)DIMX, (intnat)DIMY);
 }
 
 value c_printtab(value ba)
