@@ -37,10 +37,6 @@ Working version
    Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
    Sivaramakrishnan)
 
-- #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
-  (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
-   Jourdan)
-
 - #10102: Ignore PROFINFO_WIDTH if WITH_PROFINFO is not defined (technically
   a breaking change if the configuration system was being abused before).
   (David Allsopp, review by Xavier Leroy)
@@ -427,6 +423,10 @@ OCaml 4.12.0
 - #9969, #9981: Added mergeable flag to ELF sections containing mergeable
   constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
   (Jacob Young, review by Nicolás Ojeda Bär)
+
+- #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
+  (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
+   Jourdan)
 
 ### Standard library:
 
