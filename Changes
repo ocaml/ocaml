@@ -71,6 +71,10 @@ Working version
 - #9582: Add Array.{find_opt,find_map,split,combine}.
   (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
 
+- #9533: Added String.starts_with and String.ends_with.
+  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
+  Alain Frisch)
+
 * #10169: Use capitalized module names in the Standard Library prefixing scheme
   to match Dune, e.g. Stdlib__String instead of Stdlib__string. This is a
   breaking change only to code which attempted to use the internal names before.
@@ -478,10 +482,6 @@ OCaml 4.12.0
    to manipulate out-of-heap pointers in no-naked-pointer mode,
    and more generally all other data that is not a well-formed OCaml value
    (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
-
-- #9533: Added String.starts_with and String.ends_with.
-  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
-  Alain Frisch)
 
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
