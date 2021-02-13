@@ -68,12 +68,12 @@ Working version
 
 ### Standard library:
 
-- #9582: Add Array.{find_opt,find_map,split,combine}.
-  (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
-
 - #9533: Added String.starts_with and String.ends_with.
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
   Alain Frisch)
+
+- #9582: Add Array.{find_opt,find_map,split,combine}.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
 
 * #10169: Use capitalized module names in the Standard Library prefixing scheme
   to match Dune, e.g. Stdlib__String instead of Stdlib__string. This is a
@@ -198,9 +198,6 @@ Working version
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
-
-- #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
-  (Damien Doligez and Gabriel Scherer, report by David Allsopp)
 
 - #10072, #10085: Check that sizes and offsets in stack frame descriptors
   do not overflow the 16-bit fields where they are stored.
@@ -787,6 +784,9 @@ OCaml 4.12.0
   only builds (fixes a "configuration regression" from 4.08 for the Windows
   builds)
   (David Allsopp, review by Xavier Leroy)
+
+- #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
+  (Damien Doligez and Gabriel Scherer, report by David Allsopp)
 
 ### Bug fixes:
 
