@@ -219,13 +219,57 @@ Working version
 OCaml 4.12.0
 ------------
 
-### Supported platforms:
+### Supported platforms (highlights):
 
 - #9699: add support for iOS and macOS on ARM 64 bits
   (Eduardo Rafael, review by Xavier Leroy, Nicolás Ojeda Bär
    and Anil Madhavapeddy, additional testing by Michael Schmidt)
 
-### Language features:
+### Standard library (highlights):
+
+- #9797: Add Sys.mkdir and Sys.rmdir.
+  (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
+   Xavier Leroy)
+
+* #9765: add init functions to Bigarray.
+  (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär, and
+   Xavier Leroy)
+
+* #9668: List.equal, List.compare
+  (This could break code using "open List" by shadowing
+   Stdlib.{equal,compare}.)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, Daniel Bünzli and Alain Frisch)
+
+- #9066: a new Either module with
+  type 'a Either.t = Left of 'a | Right of 'b
+  (Gabriel Scherer, review by Daniel Bünzli, Thomas Refis, Jeremy Yallop)
+
+- #9066: List.partition_map :
+    ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
+  (Gabriel Scherer, review by Jeremy Yallop)
+
+- #9865: add Format.pp_print_seq
+  (Raphaël Proust, review by Nicolás Ojeda Bär)
+
+### Compiler user-interface and warnings (highlights):
+
+- #9657: Warnings can now be referred to by their mnemonic name. The names are
+  displayed using `-warn-help` and can be utilized anywhere where a warning list
+  specification is expected.
+      ocamlc -w +fragile-match
+      ...[@@ocaml.warning "-fragile-match"]
+  Note that only a single warning name at a time is supported for now:
+  "-w +foo-bar" does not work, you must use "-w +foo -w -bar".
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Florian Angeletti and
+   Leo White)
+
+- #8939: Command-line option to save Linear IR before emit.
+  (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
+
+- #9003: Start compilation from Emit when the input file is in Linear IR format.
+  (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
+
+### Language features (highlights):
 
 * #9500, #9727, #9866, #9870, #9873: Injectivity annotations
   One can now mark type parameters as injective, which is useful for
@@ -238,15 +282,7 @@ OCaml 4.12.0
   Note that this change required making the regularity check stricter.
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
-
-- #1655: pattern aliases do not ignore type constraints
-  (Thomas Refis, review by Jacques Garrigue and Gabriel Scherer)
-
-- #9429: Add unary operators containing `#` to the parser for use in ppx
-  rewriters
-  (Leo White, review by Damien Doligez)
-
-### Runtime system:
+### Runtime system (highlights):
 
 - #9534, #9947: Introduce a naked pointers checker mode to the runtime
   (configure option --enable-naked-pointers-checker).  Alarms are printed
@@ -265,25 +301,12 @@ OCaml 4.12.0
    Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
    Henri Jourdan)
 
-- #9756: garbage collector colors change
-  removes the gray color from the major gc
-  (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy,
-  KC Sivaramakrishnan, Damien Doligez and Jacques-Henri Jourdan)
-
 * #5154, #9569, #9734: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`,
   `caml_alloc_some`, and `Tag_some`. As these macros are sometimes defined by
   authors of C bindings, this change may cause warnings/errors in case of
   redefinition.
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
-
-- #9619: Change representation of function closures so that code pointers
-  can be easily distinguished from environment variables
-  (Xavier Leroy, review by Mark Shinwell and Damien Doligez)
-
-- #9654: More efficient management of code fragments.
-  (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
-  Stephen Dolan)
 
 * #9674: Memprof: guarantee that an allocation callback is always run
   in the same thread the allocation takes place
@@ -293,10 +316,90 @@ OCaml 4.12.0
   (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
    Jourdan)
 
+- #9619: Change representation of function closures so that code pointers
+  can be easily distinguished from environment variables
+  (Xavier Leroy, review by Mark Shinwell and Damien Doligez)
+
+- #9654: More efficient management of code fragments.
+  (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
+  Stephen Dolan)
+
+### Other libraries (highlights):
+
+- #9573: reimplement Unix.create_process and related functions without
+  Unix.fork, for better efficiency and compatibility with threads.
+  (Xavier Leroy, review by Gabriel Scherer and Anil Madhavapeddy)
+
+- #9575: Add Unix.is_inet6_addr
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
+
+- #9930: new module Semaphore in the thread library, implementing
+  counting semaphores and binary semaphores
+  (Xavier Leroy, review by Daniel Bünzli and Damien Doligez,
+   additional suggestions by Stephen Dolan and Craig Ferguson)
+
+* #9206, #9419: update documentation of the threads library;
+  deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
+  and the whole ThreadUnix module.
+  (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
+   and Gabriel Scherer)
+
+### Manual and documentation (highlights):
+
+- #9755: Manual: post-processing the html generated by ocamldoc and
+   hevea. Improvements on design and navigation, including a mobile
+   version, and a quick-search functionality for the API.
+   (San Vũ Ngọc, review by David Allsopp and Florian Angeletti)
+
+- #9468: HACKING.adoc: using dune to get merlin support
+  (Thomas Refis, review by Gabriel Scherer)
+
+- #9684: document in address_class.h the runtime value model in
+  naked-pointers and no-naked-pointers mode
+  (Xavier Leroy and Gabriel Scherer)
+
+### Internal/compiler-libs changes (highlights):
+
+- #9464, #9493, #9520, #9563, #9599, #9608, #9647: refactor
+  the pattern-matching compiler
+  (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
+
+- #9696: ocamltest now shows its log when a test fails. In addition, the log
+  contains the output of executed programs.
+  (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
+  Scherer)
+
+### Build system (highlights):
+
+- #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
+  (Sébastien Hinderer, review by David Allsopp)
+
+- #10063: (Re-)enable building on illumos (SmartOS, OmniOS, ...) and
+  Oracle Solaris; x86_64/GCC and 64-bit SPARC/Sun PRO C compilers.
+  (partially revert #2024).
+  (Tõivo Leedjärv and Konstantin Romanov,
+   review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
+
+
+### Language features:
+
+- #1655: pattern aliases do not ignore type constraints
+  (Thomas Refis, review by Jacques Garrigue and Gabriel Scherer)
+
+- #9429: Add unary operators containing `#` to the parser for use in ppx
+  rewriters
+  (Leo White, review by Damien Doligez)
+
+### Runtime system:
 
 * #9697: Remove the Is_in_code_area macro and the registration of DLL code
   areas in the page table, subsumed by the new code fragment management API
   (Xavier Leroy, review by Jacques-Henri Jourdan)
+
+- #9756: garbage collector colors change
+  removes the gray color from the major gc
+  (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy,
+  KC Sivaramakrishnan, Damien Doligez and Jacques-Henri Jourdan)
 
 * #9513: Selectively initialise blocks in `Obj.new_block`. Reject `Custom_tag`
   objects and zero-length `String_tag` objects.
@@ -341,10 +444,10 @@ OCaml 4.12.0
   (David Allsopp, review by Gabriel Scherer and Xavier Leroy)
 
 - #9466: Memprof: optimize random samples generation.
-  (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
+  (Jacques-Henri Jourdan, review by Xavier Leroy and Stephen Dolan)
 
 - #9628: Memprof: disable sampling when memprof is suspended.
-  (Jacques-Henri Jourdan review by Gabriel Scherer and Stephen Dolan)
+  (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
 
 - #10056: Memprof: ensure young_trigger is within the bounds of the minor
   heap in caml_memprof_renew_minor_sample (regression from #8684)
@@ -399,7 +502,6 @@ OCaml 4.12.0
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer,
    Anil Madhavapeddy, and Xavier Leroy)
 
-
 - #9620: Limit the number of parameters for an uncurried or untupled
    function.  Functions with more parameters than that are left
    partially curried or tupled.
@@ -424,31 +526,6 @@ OCaml 4.12.0
   (Jacob Young, review by Nicolás Ojeda Bär)
 
 ### Standard library:
-
-- #9865: add Format.pp_print_seq
-  (Raphaël Proust, review by Nicolás Ojeda Bär)
-
-- #9797: Add Sys.mkdir and Sys.rmdir.
-  (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
-   Xavier Leroy)
-
-* #9668: List.equal, List.compare
-  (This could break code using "open List" by shadowing
-   Stdlib.{equal,compare}.)
-  (Gabriel Scherer, review by Nicolás Ojeda Bär, Daniel Bünzli and Alain Frisch)
-
-- #9066: a new Either module with
-  type 'a Either.t = Left of 'a | Right of 'b
-  (Gabriel Scherer, review by Daniel Bünzli, Thomas Refis, Jeremy Yallop)
-
-- #9066: List.partition_map :
-    ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
-  (Gabriel Scherer, review by Jeremy Yallop)
-
-* #9765: add init functions to Bigarray.
-  (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär, and
-   Xavier Leroy)
-
 
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
@@ -497,25 +574,6 @@ OCaml 4.12.0
   (Nicolás Ojeda Bär, review by Alain Frisch and Xavier Leroy)
 
 ### Other libraries:
-
-- #9573: reimplement Unix.create_process and related functions without
-  Unix.fork, for better efficiency and compatibility with threads.
-  (Xavier Leroy, review by Gabriel Scherer and Anil Madhavapeddy)
-
-- #9575: Add Unix.is_inet6_addr
-  (Nicolás Ojeda Bär, review by Xavier Leroy)
-
-- #9930: new module Semaphore in the thread library, implementing
-  counting semaphores and binary semaphores
-  (Xavier Leroy, review by Daniel Bünzli and Damien Doligez,
-   additional suggestions by Stephen Dolan and Craig Ferguson)
-
-* #9206, #9419: update documentation of the threads library;
-  deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
-  and the whole ThreadUnix module.
-  (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
-   and Gabriel Scherer)
-
 
 - #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
   to allow it to work with directories.
@@ -580,24 +638,10 @@ OCaml 4.12.0
   (Xavier Leroy, report by Jacques Garrigue and Virgile Prevosto,
   review by David Allsopp and Jacques-Henri Jourdan)
 
-
 - #9948: Remove Spacetime.
   (Nicolás Ojeda Bär, review by Stephen Dolan and Xavier Leroy)
 
 ### Manual and documentation:
-
-- #9755: Manual: post-processing the html generated by ocamldoc and
-   hevea. Improvements on design and navigation, including a mobile
-   version, and a quick-search functionality for the API.
-   (San Vũ Ngọc, review by David Allsopp and Florian Angeletti)
-
-- #9468: HACKING.adoc: using dune to get merlin support
-  (Thomas Refis, review by Gabriel Scherer)
-
-- #9684: document in address_class.h the runtime value model in
-  naked-pointers and no-naked-pointers mode
-  (Xavier Leroy and Gabriel Scherer)
-
 
 - #10142, #10154: improved rendering and latex code for toplevel code examples.
   (Florian Angeletti, report by John Whitington, review by Gabriel Scherer)
@@ -612,23 +656,6 @@ OCaml 4.12.0
    and Marcello Seri)
 
 ### Compiler user-interface and warnings:
-
-- #9657: Warnings can now be referred to by their mnemonic name. The names are
-  displayed using `-warn-help` and can be utilized anywhere where a warning list
-  specification is expected.
-      ocamlc -w +fragile-match
-      ...[@@ocaml.warning "-fragile-match"]
-  Note that only a single warning name at a time is supported for now:
-  "-w +foo-bar" does not work, you must use "-w +foo -w -bar".
-  (Nicolás Ojeda Bär, review by Gabriel Scherer, Florian Angeletti and
-   Leo White)
-
-- #8939: Command-line option to save Linear IR before emit.
-  (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
-
-- #9003: Start compilation from Emit when the input file is in Linear IR format.
-  (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
-
 
 - #1931: rely on levels to enforce principality in patterns
   (Thomas Refis and Leo White, review by Jacques Garrigue)
@@ -682,16 +709,6 @@ OCaml 4.12.0
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
-
-- #9464, #9493, #9520, #9563, #9599, #9608, #9647: refactor
-  the pattern-matching compiler
-  (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
-
-- #9696: ocamltest now shows its log when a test fails. In addition, the log
-  contains the output of executed programs.
-  (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
-  Scherer)
-
 
 - #8987: Make some locations more accurate
   (Thomas Refis, review by Gabriel Scherer)
@@ -759,20 +776,10 @@ OCaml 4.12.0
 
 ### Build system:
 
-- #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
-  (Sébastien Hinderer, review by David Allsopp)
-
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
   dependencies are generated on-the-fly in development mode. For incremental
   compilation, the MSVC ports require GCC to be present.
   (David Allsopp, review by Sébastien Hinderer, YAML-fu by Stephen Dolan)
-
-- #10063: (Re-)enable building on illumos (SmartOS, OmniOS, ...) and
-  Oracle Solaris; x86_64/GCC and 64-bit SPARC/Sun PRO C compilers.
-  (partially revert #2024).
-  (Tõivo Leedjärv and Konstantin Romanov,
-   review by Gabriel Scherer, Sébastien Hinderer and Xavier Leroy)
-
 
 - #7121, #9558: Always have the autoconf-discovered ld in PACKLD, with
   extra flags in new variable PACKLD_FLAGS. For
