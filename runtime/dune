@@ -67,5 +67,11 @@
   (action (copy libcamlrun.a %{targets})))
 
 (rule
+ (targets dllruntime_stubs.so)
+ (action
+   (progn
+     (run %{cc} %{null} -shared -o %{targets})))) ; hack
+
+(rule
   (targets runtime.ml)
   (action (write-file %{targets} "let linkme = ()")))
