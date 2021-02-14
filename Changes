@@ -4,7 +4,7 @@ OCaml 4.12.0
 ### Supported platforms:
 
 - #9699: add support for iOS and macOS on ARM 64 bits
-  (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
+  (Eduardo Rafael, review by Xavier Leroy, Nicolás Ojeda Bär
    and Anil Madhavapeddy, additional testing by Michael Schmidt)
 
 ### Language features:
@@ -190,7 +190,7 @@ OCaml 4.12.0
 - #9752: Revised handling of calling conventions for external C functions.
    Provide a more precise description of the types of unboxed arguments,
    so that the ARM64 iOS/macOS calling conventions can be honored.
-   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
+   (Xavier Leroy, review by Mark Shinwell and Eduardo Rafael)
 
 - #9838: Ensure that Cmm immediates are generated as Cconst_int where
   possible, improving instruction selection.
@@ -656,7 +656,7 @@ OCaml 4.12.0
   (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
 
 - #9753: fix build for Android
-  (Github user @EduardoRFS, review by Xavier Leroy)
+  (Eduardo Rafael, review by Xavier Leroy)
 
 - #9848, #9855: Fix double free of bytecode in toplevel
   (Stephen Dolan, report by Sampsa Kiiskinen, review by Gabriel Scherer)
