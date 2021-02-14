@@ -41,6 +41,10 @@ Working version
   a breaking change if the configuration system was being abused before).
   (David Allsopp, review by Xavier Leroy)
 
+- #10107: Ensure modules compiled with -afl-instrument can still link on
+  platforms without AFL support.
+  (David Allsopp, review by Xavier Leroy)
+
 * #10098: Improve command-line parsing in ocamlrun: strictly recognise options,
   be more informative for `ocamlrun -I` and support `--` for terminating options
   parsing.
@@ -382,10 +386,6 @@ OCaml 4.12.0
   Jacques-Henri Jourdan)
 
 - #10062: set ARCH_INT64_PRINTF_FORMAT correctly for both modes of mingw-w64
-  (David Allsopp, review by Xavier Leroy)
-
-- #10107: Ensure modules compiled with -afl-instrument can still link on
-  platforms without AFL support.
   (David Allsopp, review by Xavier Leroy)
 
 ### Code generation and optimizations:
