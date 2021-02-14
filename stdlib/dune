@@ -30,8 +30,26 @@
 
 (rule
  (targets sys.ml)
- (deps (:version ../VERSION) (:p sys.mlp))
+ (deps
+   (:version ../VERSION)
+   (:p sys.mlp)
+   camlheader) ; camlheader here is a hack
  (action
    (with-stdout-to %{targets}
      (bash
        "sed -e \"s|%%VERSION%%|`sed -e 1q %{version} | tr -d '\r'`|\" %{p}"))))
+
+(rule
+ (targets camlheader)
+ (deps
+   ../Makefile.config
+   ../Makefile.build_config
+   ../Makefile.config_if_required
+   ../Makefile.common
+   Makefile
+   StdlibModules)
+ (action
+   (progn
+     (bash "touch .depend") ; hack.
+     (run make %{targets} COMPUTE_DEPS=false)
+     (bash "rm .depend"))))
