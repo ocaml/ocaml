@@ -110,18 +110,13 @@ module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
   module Id2 = Id
 end;;
 [%%expect{|
-Lines 2-5, characters 57-3:
-2 | .........................................................struct
-3 |   module Id = T'.T.Id
-4 |   module Id2 = Id
-5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig module Id : sig end module Id2 = Id end
-       is not included in
-         sig module Id2 = T'.Term0.Id end
-       In module Id2:
-       Module T'.Term0.Id cannot be aliased
+module Make2 :
+  functor
+    (T' : sig
+            module Term0 : sig module Id : sig end end
+            module T : sig module Id : sig end end
+          end)
+    -> sig module Id2 : sig end end
 |}]
 
 module Make3 (T' : S) = struct

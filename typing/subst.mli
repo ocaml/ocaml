@@ -70,6 +70,12 @@ type scoping =
   | Make_local
   | Rescope of int
 
+val add_module_alias:
+  Path.t -> Path.t -> (string list -> scoping -> module_type) -> t -> t
+(** Add a module alias substitution.
+    [Mty_alias _] nodes are expanded to the module type returned by the
+    function, where the argument is the path below the substituted module. *)
+
 val modtype: scoping -> t -> module_type -> module_type
 val signature: scoping -> t -> signature -> signature
 val signature_item: scoping -> t -> signature_item -> signature_item

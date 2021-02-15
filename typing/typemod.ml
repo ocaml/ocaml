@@ -628,10 +628,28 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        Subst.signature Make_local sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
        let sub =
-         List.fold_left
-           (fun s path -> Subst.add_module_path path real_path s)
-           Subst.identity
-           !real_ids
+         let add_subst =
+           if Env.is_functor_arg real_path initial_env then begin
+               let get_mty names scoping =
+                 let real_path =
+                   List.fold_left (fun path name -> Pdot (path, name))
+                     real_path names
+                 in
+                 let md = Env.find_module real_path initial_env in
+                 let mty =
+                   md.md_type
+                   |> Mtype.scrape_for_type_of ~remove_aliases initial_env
+                 in
+                 let mty =
+                   Mtype.strengthen ~aliasable:false initial_env mty real_path
+                 in
+                 Subst.modtype scoping Subst.identity mty
+               in
+               fun s path -> Subst.add_module_alias path real_path get_mty s
+           end else
+             fun s path -> Subst.add_module_path path real_path s
+         in
+         List.fold_left add_subst Subst.identity !real_ids
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
@@ -1357,7 +1375,25 @@ and transl_signature env sg =
               Env.enter_module_declaration ~scope pms.pms_name.txt pres md env
             in
             let info =
-              `Substituted_away (Subst.add_module id path Subst.identity)
+              if aliasable then
+                `Substituted_away (Subst.add_module id path Subst.identity)
+              else
+                let get_mty names scoping =
+                  let path =
+                    List.fold_left (fun path name -> Pdot (path, name))
+                      path names
+                  in
+                  let md = Env.find_module path env in
+                  let mty =
+                    md.md_type
+                    |> Mtype.scrape_for_type_of ~remove_aliases:false env
+                  in
+                  let mty = Mtype.strengthen ~aliasable:false env mty path in
+                  Subst.modtype scoping Subst.identity mty
+                in
+                `Substituted_away
+                  (Subst.add_module_alias (Pident id) path get_mty
+                    Subst.identity)
             in
             Signature_names.check_module ~info names pms.pms_name.loc id;
             let (trem, rem, final_env) = transl_sig newenv srem in

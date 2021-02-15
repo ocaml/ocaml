@@ -22,13 +22,23 @@ open Btype
 
 open Local_store
 
+type scoping =
+  | Keep
+  | Make_local
+  | Rescope of int
+
 type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
+type module_replacement =
+  | Module_path of Path.t
+  | Module_alias of
+      { path: Path.t; module_type: string list -> scoping -> module_type }
+
 type t =
   { types: type_replacement Path.Map.t;
-    modules: Path.t Path.Map.t;
+    modules: module_replacement Path.Map.t;
     modtypes: module_type Ident.Map.t;
     for_saving: bool;
   }
@@ -46,7 +56,14 @@ let add_type id p s = add_type_path (Pident id) p s
 let add_type_function id ~params ~body s =
   { s with types = Path.Map.add id (Type_function { params; body }) s.types }
 
-let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
+let add_module_path id p s =
+  { s with modules = Path.Map.add id (Module_path p) s.modules }
+
+let add_module_alias id path get_mty s =
+  { s with
+    modules =
+      Path.Map.add id (Module_alias {path; module_type= get_mty}) s.modules }
+
 let add_module id p s = add_module_path (Pident id) p s
 
 let add_modtype id ty s = { s with modtypes = Ident.Map.add id ty s.modtypes }
@@ -78,14 +95,33 @@ let attrs s x =
     else x
 
 let rec module_path s path =
-  try Path.Map.find path s.modules
-  with Not_found ->
+  match Path.Map.find path s.modules with
+  | Module_path path | Module_alias {path; _} -> path
+  | exception Not_found ->
     match path with
     | Pident _ -> path
     | Pdot(p, n) ->
        Pdot(module_path s p, n)
     | Papply(p1, p2) ->
        Papply(module_path s p1, module_path s p2)
+
+let module_alias scoping s p =
+  let rec module_alias path names =
+    match Path.Map.find path s.modules with
+    | Module_path path ->
+        let path =
+          List.fold_left (fun path name -> Pdot (path, name)) path names
+        in
+        Mty_alias path
+    | Module_alias {module_type; _} ->
+        module_type names scoping
+    | exception Not_found ->
+      match path with
+      | Pident _ -> Mty_alias p
+      | Pdot (p, n) -> module_alias p (n :: names)
+      | Papply _ -> assert false
+  in
+  module_alias p []
 
 let modtype_path s = function
     Pident id as p ->
@@ -406,11 +442,6 @@ let extension_constructor s ext =
   For_copy.with_scope
     (fun copy_scope -> extension_constructor' copy_scope s ext)
 
-type scoping =
-  | Keep
-  | Make_local
-  | Rescope of int
-
 let rename_bound_idents scoping s sg =
   let rename =
     let open Ident in
@@ -484,7 +515,7 @@ let rec modtype scoping s = function
       Mty_functor(Named (Some id', (modtype scoping s) arg),
                   modtype scoping (add_module id (Pident id') s) res)
   | Mty_alias p ->
-      Mty_alias (module_path s p)
+      module_alias scoping s p
 
 and signature scoping s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations
@@ -506,7 +537,19 @@ and signature_item' copy_scope scoping s comp =
   | Sig_typext(id, ext, es, vis) ->
       Sig_typext(id, extension_constructor' copy_scope s ext, es, vis)
   | Sig_module(id, pres, d, rs, vis) ->
-      Sig_module(id, pres, module_declaration scoping s d, rs, vis)
+      let d' = module_declaration scoping s d in
+      let pres =
+        (* A [Module_alias] expansion may have substituted an alias for another
+           kind, so presence may have changed.
+           For example, an alias to a functor application would be invalid, so
+           destructively substituting a module forces us to provide a specific
+           instance of its application. *)
+        match d.md_type, d'.md_type with
+        | Mty_alias _, Mty_alias _ -> pres
+        | Mty_alias _, _ -> Mp_present
+        | _ -> pres
+      in
+      Sig_module(id, pres, d', rs, vis)
   | Sig_modtype(id, d, vis) ->
       Sig_modtype(id, modtype_declaration scoping s d, vis)
   | Sig_class(id, d, rs, vis) ->
@@ -552,12 +595,41 @@ let type_replacement s = function
      let body = typexp copy_scope s body in
      Type_function { params; body })
 
+let module_replacement s = function
+  | Module_path p ->
+      let rec resolve_alias path names =
+        match Path.Map.find path s.modules with
+        | Module_path path ->
+            let path =
+              List.fold_left (fun path name -> Pdot (path, name)) path names
+            in
+            Module_path path
+        | Module_alias {path; module_type} ->
+            let path =
+              List.fold_left (fun path name -> Pdot (path, name)) path names
+            in
+            let module_type names' = module_type (names @ names') in
+            Module_alias {path; module_type}
+        | exception Not_found ->
+          match path with
+          | Pident _ -> Module_path p
+          | Pdot(p, n) -> resolve_alias p (n :: names)
+          | Papply _ -> assert false
+      in
+      resolve_alias p []
+  | Module_alias {path; module_type} ->
+      let path = module_path s path in
+      let module_type names scoping =
+        modtype scoping s (module_type names scoping)
+      in
+      Module_alias {path; module_type}
+
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
-    modules = merge_path_maps (module_path s2) s1.modules s2.modules;
+    modules = merge_path_maps (module_replacement s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype Keep s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
   }

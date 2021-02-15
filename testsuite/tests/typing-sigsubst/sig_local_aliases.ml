@@ -42,6 +42,15 @@ end;;
 module type Accepted2 = sig val foo : F(M).t -> int end
 |}]
 
+module type Accepted3 = sig
+  module M := F(M)
+
+  module N = M
+end;;
+[%%expect{|
+module type Accepted3 = sig module N : sig type t = M.t end end
+|}]
+
 module type Reject1 = sig
   module M := Funct(M)
 end;;

@@ -685,18 +685,15 @@ module rec Bad : A = Bad;;
 [%%expect{|
 module type Alias = sig module N : sig end module M = N end
 module F : functor (X : sig end) -> sig type t end
-Line 1:
-Error: Module type declarations do not match:
-         module type A = sig module M = F(List) end
-       does not match
-         module type A = sig module M = F(List) end
-       At position module type A = <here>
-       Modules do not match:
-         sig module M = F(List) end
-       is not included in
-         sig module M = F(List) end
-       At position module type A = sig module M : <here> end
-       Module F(List) cannot be aliased
+module type A = sig module M : sig type t = F(List).t end end
+module rec Bad : A
+|}];;
+
+module F (X : sig end) : Alias with module N := X = struct
+  module M = X
+end;;
+[%%expect{|
+module F : functor (X : sig end) -> sig module M : sig end end
 |}];;
 
 (* Shinwell 2014-04-23 *)
