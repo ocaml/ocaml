@@ -332,7 +332,7 @@ clean::
 # Common stuff
 
 %.ml: %.mll
-	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
+	$(CAMLLEX) $(OCAMLLEXFLAGS) $<
 
 %.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) - $<

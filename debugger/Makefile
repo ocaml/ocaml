@@ -78,7 +78,7 @@ depend: beforedepend
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 debugger_lexer.ml: debugger_lexer.mll
-	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
+	$(CAMLLEX) $(OCAMLLEXFLAGS) $<
 clean::
 	rm -f debugger_lexer.ml
 beforedepend:: debugger_lexer.ml

@@ -67,7 +67,7 @@ ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
 # By default, request ocamllex to be quiet
-OCAMLLEX_FLAGS ?= -q
+OCAMLLEXFLAGS ?= -q
 
 # Escape special characters in the argument string.
 # There are four characters that need escaping:
