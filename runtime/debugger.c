@@ -109,24 +109,23 @@ static void open_connection(void)
   SOCKET sock = WSASocket(sock_domain, SOCK_STREAM, 0,
                           NULL, 0,
                           0 /* not WSA_FLAG_OVERLAPPED */);
-  if (sock != INVALID_SOCKET &&
-      connect(sock, &sock_addr.s_gen, sock_addr_len) == 0)
-    dbg_socket = _open_osfhandle(sock, 0);
-  if (dbg_socket == -1) {
+  if (sock == INVALID_SOCKET
+      || connect(sock, &sock_addr.s_gen, sock_addr_len) != 0)
+    caml_fatal_error("cannot connect to debugger at %s\n"
+                     "WSA error code: %d",
+                     (dbg_addr ? dbg_addr : "(none)"),
+                     WSAGetLastError());
+  dbg_socket = _open_osfhandle(sock, 0);
+  if (dbg_socket != -1)
 #else
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
   if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1) {
+      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
 #endif
-    caml_fatal_error
-    (
-      "cannot connect to debugger at %s\n"
-      "error: %s",
-      (dbg_addr ? dbg_addr : "(none)"),
-      strerror (errno)
-    );
-  }
-
+    caml_fatal_error("cannot connect to debugger at %s\n"
+                     "error: %s",
+                     (dbg_addr ? dbg_addr : "(none)"),
+                     strerror (errno));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* The code in this file does not bracket channel I/O operations with
