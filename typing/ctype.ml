@@ -1203,7 +1203,7 @@ let rec copy ?partial ?keep_names scope ty =
                 match partial with
                   Some (free_univars, false) ->
                     let more' =
-                      if more.id != more'.id then
+                      if more.id <> more'.id then
                         more' (* we've already made a copy *)
                       else
                         newvar ()
