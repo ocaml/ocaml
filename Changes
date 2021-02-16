@@ -94,6 +94,9 @@ Working version
   directory.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
 
+- #10184: Remove expensive debug assertion from dynlink.
+  (Leo White, review by David Allsopp and Xavier Leroy)
+
 - #10185: Consider that IPv6 is always enabled on Windows.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
