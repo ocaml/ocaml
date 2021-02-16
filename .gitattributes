@@ -31,7 +31,7 @@
 
 # configure is a shell-script; the linguist-generated attribute suppresses
 # changes being displayed by default in pull requests.
-/configure text eol=lf -diff linguist-generated
+/configure text eol=lf linguist-generated
 
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
