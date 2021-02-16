@@ -116,7 +116,7 @@ static void open_connection(void)
                      (dbg_addr ? dbg_addr : "(none)"),
                      WSAGetLastError());
   dbg_socket = _open_osfhandle(sock, 0);
-  if (dbg_socket != -1)
+  if (dbg_socket == -1)
 #else
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
   if (dbg_socket == -1 ||
