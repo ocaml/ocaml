@@ -66,6 +66,9 @@ static atomic_uintnat num_domains_to_final_update_last;
 
 static atomic_uintnat terminated_domains_allocated_words;
 
+static atomic_uintnat domain_finished_global_roots;
+static caml_plat_mutex global_roots_lock = CAML_PLAT_MUTEX_INITIALIZER;
+
 gc_phase_t caml_gc_phase;
 
 uintnat caml_get_num_domains_to_mark () {
@@ -1000,6 +1003,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   if (caml_params->verify_heap) {
     struct heap_verify_state* ver = caml_verify_begin();
     caml_do_roots (&caml_verify_root, ver, domain, 1);
+    caml_scan_global_roots(&caml_verify_root, ver);
     caml_verify_heap(ver);
     caml_gc_log("Heap verified");
     caml_global_barrier();
@@ -1017,6 +1021,13 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
 
   caml_ev_begin("major_gc/roots");
   caml_do_roots (&caml_darken, NULL, domain, 0);
+  if (atomic_load_acq(&domain_finished_global_roots) == 0){
+    if(caml_plat_try_lock(&global_roots_lock)){
+      caml_scan_global_roots(&caml_darken, NULL);
+      atomic_store(&domain_finished_global_roots, 1);
+      caml_plat_unlock(&global_roots_lock);
+    }
+  }
   caml_ev_end("major_gc/roots");
 
   if (domain->state->mark_stack->count == 0) {
@@ -1280,6 +1291,9 @@ mark_again:
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
       ignoring whether caml_try_run_on_all_domains succeeds. */
+
+    atomic_store(&domain_finished_global_roots, 0);
+    
     while (saved_major_cycle == caml_major_cycles_completed) {
       if (barrier_participants) {
         cycle_all_domains_callback(d, (void*)0, participant_count, barrier_participants);
