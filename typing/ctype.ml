@@ -1203,9 +1203,10 @@ let rec copy ?partial ?keep_names scope ty =
                 match partial with
                   Some (free_univars, false) ->
                     let more' =
-                      if more.id != more'.id then more' else
-                      let lv = if keep then more.level else !current_level in
-                      newty2 lv (Tvar None)
+                      if more.id != more'.id then
+                        more' (* we've already made a copy *)
+                      else
+                        newvar ()
                     in
                     let not_reither (_, f) =
                       match row_field_repr f with
