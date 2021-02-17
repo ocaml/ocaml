@@ -451,14 +451,14 @@ module Analyser =
     let erased_names_of_constraints constraints acc =
       List.fold_right (fun constraint_ acc ->
         match constraint_ with
-        | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ | Parsetree.Pwith_module_type _ -> acc
+        | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ | Parsetree.Pwith_modtype _ -> acc
         | Parsetree.Pwith_typesubst (s, typedecl) ->
            constraint_for_subitem acc s (fun s -> Parsetree.Pwith_typesubst (s, typedecl))
         | Parsetree.Pwith_modsubst (s, modpath) ->
            constraint_for_subitem acc s (fun s -> Parsetree.Pwith_modsubst (s, modpath))
-        | Parsetree.Pwith_module_typesubst (s, modpath) ->
+        | Parsetree.Pwith_modtypesubst (s, modpath) ->
             constraint_for_subitem acc s
-              (fun s -> Parsetree.Pwith_module_typesubst (s, modpath)))
+              (fun s -> Parsetree.Pwith_modtypesubst (s, modpath)))
         constraints acc
 
     let is_erased ident map =

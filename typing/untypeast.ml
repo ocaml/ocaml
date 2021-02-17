@@ -638,16 +638,16 @@ let with_constraint sub (_path, lid, cstr) =
       Pwith_type (map_loc sub lid, sub.type_declaration sub decl)
   | Twith_module (_path, lid2) ->
       Pwith_module (map_loc sub lid, map_loc sub lid2)
-  | Twith_module_type mty ->
+  | Twith_modtype mty ->
       let mty = sub.module_type sub mty in
-      Pwith_module_type (map_loc sub lid,mty)
+      Pwith_modtype (map_loc sub lid,mty)
   | Twith_typesubst decl ->
      Pwith_typesubst (map_loc sub lid, sub.type_declaration sub decl)
   | Twith_modsubst (_path, lid2) ->
       Pwith_modsubst (map_loc sub lid, map_loc sub lid2)
-  | Twith_module_typesubst mty ->
+  | Twith_modtypesubst mty ->
       let mty = sub.module_type sub mty in
-      Pwith_module_typesubst (map_loc sub lid, mty)
+      Pwith_modtypesubst (map_loc sub lid, mty)
 
 let module_expr (sub : mapper) mexpr =
   let loc = sub.location sub mexpr.mod_loc in

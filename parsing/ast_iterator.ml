@@ -263,13 +263,13 @@ module MT = struct
         iter_loc sub lid; sub.type_declaration sub d
     | Pwith_module (lid, lid2) ->
         iter_loc sub lid; iter_loc sub lid2
-    | Pwith_module_type (lid, mty) ->
+    | Pwith_modtype (lid, mty) ->
         iter_loc sub lid; sub.module_type sub mty
     | Pwith_typesubst (lid, d) ->
         iter_loc sub lid; sub.type_declaration sub d
     | Pwith_modsubst (s, lid) ->
         iter_loc sub s; iter_loc sub lid
-    | Pwith_module_typesubst (lid, mty) ->
+    | Pwith_modtypesubst (lid, mty) ->
         iter_loc sub lid; sub.module_type sub mty
 
   let iter_signature_item sub {psig_desc = desc; psig_loc = loc} =

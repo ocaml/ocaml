@@ -775,12 +775,12 @@ and with_constraint i ppf x =
       line i ppf "Pwith_modsubst %a = %a\n"
         fmt_longident_loc lid1
         fmt_longident_loc lid2;
-  | Pwith_module_type (lid1, mty) ->
-      line i ppf "Pwith_module_type %a\n"
+  | Pwith_modtype (lid1, mty) ->
+      line i ppf "Pwith_modtype %a\n"
         fmt_longident_loc lid1;
       module_type (i+1) ppf mty
-  | Pwith_module_typesubst (lid1, mty) ->
-     line i ppf "Pwith_module_typesubst %a\n"
+  | Pwith_modtypesubst (lid1, mty) ->
+     line i ppf "Pwith_modtypesubst %a\n"
         fmt_longident_loc lid1;
       module_type (i+1) ppf mty
 

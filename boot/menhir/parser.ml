@@ -47549,7 +47549,7 @@ module Tables = struct
         in
         
 # 3235 "parsing/parser.mly"
-      ( Pwith_module_type (l, rhs) )
+      ( Pwith_modtype (l, rhs) )
 # 47554 "parsing/parser.ml"
          in
         {
@@ -47613,7 +47613,7 @@ module Tables = struct
         in
         
 # 3237 "parsing/parser.mly"
-      ( Pwith_module_typesubst (l, rhs) )
+      ( Pwith_modtypesubst (l, rhs) )
 # 47618 "parsing/parser.ml"
          in
         {

@@ -854,9 +854,9 @@ and with_constraint =
            the name of the type_declaration. *)
   | Pwith_module of Longident.t loc * Longident.t loc
         (* with module X.Y = Z *)
-  | Pwith_module_type of Longident.t loc * module_type
+  | Pwith_modtype of Longident.t loc * module_type
         (* with module type X.Y = Z *)
-  | Pwith_module_typesubst of Longident.t loc * module_type
+  | Pwith_modtypesubst of Longident.t loc * module_type
         (* with module type X.Y := sig end *)
   | Pwith_typesubst of Longident.t loc * type_declaration
         (* with type X.t := ..., same format as [Pwith_type] *)

@@ -490,14 +490,14 @@ let params_are_constrained =
 let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
   let lid =
     match constr with
-    | Pwith_type (lid, _) | Pwith_module (lid, _) | Pwith_module_type (lid,_)
+    | Pwith_type (lid, _) | Pwith_module (lid, _) | Pwith_modtype (lid,_)
     | Pwith_typesubst (lid, _) | Pwith_modsubst (lid, _)
-    | Pwith_module_typesubst (lid, _) -> lid
+    | Pwith_modtypesubst (lid, _) -> lid
   in
   let destructive_substitution =
     match constr with
-    | Pwith_type _ | Pwith_module _ | Pwith_module_type _ -> false
-    | Pwith_typesubst _ | Pwith_modsubst _ | Pwith_module_typesubst _  -> true
+    | Pwith_type _ | Pwith_module _ | Pwith_modtype _ -> false
+    | Pwith_typesubst _ | Pwith_modsubst _ | Pwith_modtypesubst _  -> true
   in
   let real_ids = ref [] in
   let unpackable_modtype = ref None in
@@ -572,7 +572,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
             update_rec_next rs rem
         end
     | (Sig_modtype(id, mtd, priv) :: rem, [s],
-       (Pwith_module_type (_, mty) | Pwith_module_typesubst (_,mty))
+       (Pwith_modtype (_, mty) | Pwith_modtypesubst (_,mty))
       )
       when Ident.name id = s ->
         let mty = transl_modtype initial_env mty in
@@ -591,7 +591,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
               mtd_loc = loc;
             }
           in
-          (Pident id, lid, Twith_module_type mty),
+          (Pident id, lid, Twith_modtype mty),
           Sig_modtype(id, mtd', priv) :: rem
         else begin
           let path = Pident id in
@@ -600,7 +600,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
           | Mty_ident _ -> ()
           | mty -> unpackable_modtype := Some mty
           end;
-          (Pident id, lid, Twith_module_typesubst mty),
+          (Pident id, lid, Twith_modtypesubst mty),
           rem
         end
     | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
@@ -698,7 +698,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
-    | (_, _, Twith_module_typesubst tmty) ->
+    | (_, _, Twith_modtypesubst tmty) ->
         let add s p = Subst.add_modtype_path p tmty.mty_type s in
         let sub = List.fold_left add Subst.identity !real_ids in
         Subst.signature Make_local sub sg
@@ -791,8 +791,8 @@ let rec approx_modtype env smty =
           match sdecl with
           | Pwith_type _
           | Pwith_typesubst _
-          | Pwith_module_type _
-          | Pwith_module_typesubst _  -> ()
+          | Pwith_modtype _
+          | Pwith_modtypesubst _  -> ()
           | Pwith_module (_, lid') ->
               (* Lookup the module to make sure that it is not recursive.
                  (GPR#1626) *)
