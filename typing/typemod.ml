@@ -389,7 +389,7 @@ let check_usage_of_module_types ~error ~paths ~loc env super =
   { super with Btype.it_do_type_expr }
 
 let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
-  let env, super = iterator_with_env env in
+  let env, iterator = iterator_with_env env in
   let last, rest = match List.rev paths with
     | [] -> assert false
     | last :: rest -> last, rest
@@ -397,17 +397,17 @@ let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
   (* The last item is the one that's removed. We don't need to check how
         it's used since it's replaced by a more specific type/module. *)
   assert (match last with Pident _ -> true | _ -> false);
-  let deep_path_check it = match rest with
-    | [] -> it
-    | _ :: _ -> check_usage_of_path_of_substituted_item rest ~loc ~lid env it
+  let iterator = match rest with
+    | [] -> iterator
+    | _ :: _ ->
+        check_usage_of_path_of_substituted_item rest ~loc ~lid env iterator
   in
-  let modtype_check it = match unpackable_modtype with
-    | None -> it
+  let iterator = match unpackable_modtype with
+    | None -> iterator
     | Some mty ->
        let error p = With_cannot_remove_packed_modtype(p,mty) in
-       check_usage_of_module_types ~error ~paths ~loc env it
+       check_usage_of_module_types ~error ~paths ~loc env iterator
   in
-  let iterator = super |> modtype_check |> deep_path_check in
   iterator.Btype.it_signature iterator sg;
   Btype.(unmark_iterators.it_signature unmark_iterators) sg
 
