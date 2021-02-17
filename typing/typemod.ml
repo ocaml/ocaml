@@ -1506,25 +1506,27 @@ and transl_signature env sg =
               decls rem,
             final_env
         | Psig_modtype pmtd ->
-            let newenv, mtd, sg = transl_modtype_decl names env pmtd in
+            let newenv, mtd, sg = transl_modtype_decl env pmtd in
+            Signature_names.check_modtype names pmtd.pmtd_loc mtd.mtd_id;
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
             sg :: rem,
             final_env
         | Psig_modtypesubst pmtd ->
-            let info id tmty =
-              let mty = match tmty with
+            let newenv, mtd, _sg = transl_modtype_decl env pmtd in
+            let info =
+              let mty = match mtd.mtd_type with
                 | Some tmty -> tmty.mty_type
                 | None ->
                     (* parsetree invariant, see Ast_invariants *)
                     assert false
               in
-              let subst = Subst.add_modtype id mty Subst.identity in
+              let subst = Subst.add_modtype mtd.mtd_id mty Subst.identity in
               match mty with
               | Mty_ident _ -> `Substituted_away subst
-              | _ -> `Unpackable_modtype_substituted_away (id,subst)
+              | _ -> `Unpackable_modtype_substituted_away (mtd.mtd_id,subst)
             in
-            let newenv, mtd, _sg = transl_modtype_decl ~info names env pmtd in
+            Signature_names.check_modtype ~info names pmtd.pmtd_loc mtd.mtd_id;
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtypesubst mtd) env loc :: trem,
             rem,
@@ -1634,11 +1636,11 @@ and transl_signature env sg =
        sg
     )
 
-and transl_modtype_decl ?info names env pmtd =
+and transl_modtype_decl env pmtd =
   Builtin_attributes.warning_scope pmtd.pmtd_attributes
-    (fun () -> transl_modtype_decl_aux ?info names env pmtd)
+    (fun () -> transl_modtype_decl_aux env pmtd)
 
-and transl_modtype_decl_aux ?info names env
+and transl_modtype_decl_aux env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
   let tmty =
     Option.map (transl_modtype (Env.in_signature true env)) pmtd_type
@@ -1653,8 +1655,6 @@ and transl_modtype_decl_aux ?info names env
   in
   let scope = Ctype.create_scope () in
   let (id, newenv) = Env.enter_modtype ~scope pmtd_name.txt decl env in
-  let info = Option.map (fun info -> info id tmty) info in
-  Signature_names.check_modtype ?info names pmtd_loc id;
   let mtd =
     {
      mtd_id=id;
@@ -2466,7 +2466,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         newenv
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
-        let newenv, mtd, sg = transl_modtype_decl names env pmtd in
+        let newenv, mtd, sg = transl_modtype_decl env pmtd in
+        Signature_names.check_modtype names pmtd.pmtd_loc mtd.mtd_id;
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
         let (od, sg, newenv) =
