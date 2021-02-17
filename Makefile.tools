@@ -94,8 +94,3 @@ OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib$(EXE) \
            -ocamlopt "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
                       $(OTOPDIR)/ocamlopt$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(ROOTDIR)/yacc/ocamlyacc$(EXE)
-DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj$(EXE)
-OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo$(EXE)
-
-#FORTRAN_COMPILER=
-#FORTRAN_LIBRARY=
