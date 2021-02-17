@@ -2974,7 +2974,7 @@ let report_error ppf = function
               a type constructor with the same arguments).@]"
   | With_cannot_remove_packed_modtype (p,mty) ->
       fprintf ppf
-        "This `with' constraint@ %s := %a@ makes a packed module ill-typed."
+        "This `with' constraint@ %s := %a@ makes a packed module ill-formed."
         (Path.name p) Printtyp.modtype mty
   | Repeated_name(kind, name) ->
       fprintf ppf
