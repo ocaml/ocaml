@@ -99,5 +99,3 @@ OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo$(EXE)
 
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
-
-UNIXLIBVAR=`case "$(OTHERLIBRARIES)" in *win32unix*) echo win32;; esac`
