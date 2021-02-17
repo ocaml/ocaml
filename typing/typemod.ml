@@ -1103,20 +1103,21 @@ end = struct
     val x: (module T)
     ]}
     should raise an error.
-   *)
+  *)
   let check_unpackable_modtypes ~loc ~env to_remove component =
-    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then
-       let iterator =
-         let error p = Unpackable_local_modtype_subst p in
-         let paths =
-           List.map (fun id -> Pident id)
-             (Ident.Set.elements to_remove.unpackable_modtypes)
-         in
-         check_usage_of_module_types ~loc ~error ~paths
-           (ref (lazy env)) Btype.type_iterators
-       in
-       iterator.Btype.it_signature_item iterator component;
-       Btype.(unmark_iterators.it_signature_item unmark_iterators) component
+    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then begin
+      let iterator =
+        let error p = Unpackable_local_modtype_subst p in
+        let paths =
+          List.map (fun id -> Pident id)
+            (Ident.Set.elements to_remove.unpackable_modtypes)
+        in
+        check_usage_of_module_types ~loc ~error ~paths
+          (ref (lazy env)) Btype.type_iterators
+      in
+      iterator.Btype.it_signature_item iterator component;
+      Btype.(unmark_iterators.it_signature_item unmark_iterators) component
+    end
 
   (* We usually require name uniqueness of signature components (e.g. types,
      modules, etc), however in some situation reusing the name is allowed: if
