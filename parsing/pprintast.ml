@@ -1159,19 +1159,22 @@ and signature_item ctxt f x : unit =
       pp f "@[<hov2>include@ %a@]%a"
         (module_type ctxt) incl.pincl_mod
         (item_attributes ctxt) incl.pincl_attributes
-  | Psig_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs}
-  | Psig_modtypesubst {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} as p ->
+  | Psig_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
       pp f "@[<hov2>module@ type@ %s%a@]%a"
         s.txt
-        (fun f md -> match md, p with
-           | None, _ -> ()
-           | Some mt, Psig_modtype _ ->
+        (fun f md -> match md with
+           | None -> ()
+           | Some mt ->
                pp_print_space f () ;
                pp f "@ =@ %a" (module_type ctxt) mt
-           | Some mt, _ ->
-               pp_print_space f () ;
-               pp f "@ :=@ %a" (module_type ctxt) mt
         ) md
+        (item_attributes ctxt) attrs
+  | Psig_modtypesubst {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
+      let md = match md with
+        | None -> assert false (* ast invariant *)
+        | Some mt -> mt in
+      pp f "@[<hov2>module@ type@ %s@ :=@ %a@]%a"
+        s.txt (module_type ctxt) md
         (item_attributes ctxt) attrs
   | Psig_class_type (l) -> class_type_declaration_list ctxt f l
   | Psig_recmodule decls ->
