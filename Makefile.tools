@@ -88,9 +88,4 @@ OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt$(EXE) $(OCFLAGS) \
          $(RUNTIME_VARIANT)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc$(EXE)
 OCAMLLEX ?= $(OCAMLRUN) $(OTOPDIR)/lex/ocamllex$(EXE)
-OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib$(EXE) \
-           -ocamlc "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
-                    $(OTOPDIR)/ocamlc$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)" \
-           -ocamlopt "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
-                      $(OTOPDIR)/ocamlopt$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(ROOTDIR)/yacc/ocamlyacc$(EXE)
