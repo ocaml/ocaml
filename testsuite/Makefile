@@ -18,8 +18,8 @@
 BASEDIR := $(shell pwd)
 
 FIND=find
-TOPDIR := ..
-include $(TOPDIR)/Makefile.tools
+ROOTDIR = ..
+include $(ROOTDIR)/Makefile.tools
 
 OCAMLTESTDIR_CYGPATH=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)
 
@@ -59,7 +59,7 @@ else
     ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
   else
     FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-    MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
+    MKDLL=$(WINROOTDIR)/boot/ocamlrun $(WINROOTDIR)/flexdll/flexlink.exe \
                                      $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
 
     ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \

@@ -15,11 +15,11 @@
 
 .NOTPARALLEL:
 
-TOPDIR = ../..
+ROOTDIR = ../..
 COMPFLAGS ?=
 RUNTIME_VARIANT ?=
 
-include $(TOPDIR)/Makefile.tools
+include $(ROOTDIR)/Makefile.tools
 
 libraries := testing.cmi testing.cma lib.cmo
 

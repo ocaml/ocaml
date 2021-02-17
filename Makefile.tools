@@ -17,22 +17,20 @@
 # interpreter, lexer and other associated tools. It is intended to be
 # included within other makefiles.
 # See manual/tools/Makefile and manual/src/tutorials/Makefile as examples.
-# Note that these makefile should define the $(TOPDIR) variable on their
-# own.
 
-WINTOPDIR=`cygpath -m "$(TOPDIR)"`
+WINTOPDIR=`cygpath -m "$(ROOTDIR)"`
 
-# TOPDIR is the root directory of the OCaml sources, in Unix syntax.
+# ROOTDIR is the root directory of the OCaml sources, in Unix syntax.
 # WINTOPDIR is the same directory, in Windows syntax.
 
-OTOPDIR=$(TOPDIR)
+OTOPDIR=$(ROOTDIR)
 CYGPATH=echo
 DIFF=diff -q
 SORT=sort
 SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
 # The variables above may be overridden by .../Makefile.config
-# OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
+# OTOPDIR is either ROOTDIR or WINTOPDIR, whichever is appropriate for
 #   arguments given to the OCaml compiler.
 # CYGPATH is the command that translates unix-style file names into
 #   whichever syntax is appropriate for arguments of OCaml programs.
@@ -44,8 +42,6 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   variable. Note that for Windows we add Unix-syntax directory names in
 #   PATH, and Cygwin will translate it to Windows syntax.
 
-# TOPDIR is legacy, our makefiles should use ROOTDIR now
-ROOTDIR=$(TOPDIR)
 include $(ROOTDIR)/Makefile.config_if_required
 
 # Make sure USE_RUNTIME is defined
@@ -63,7 +59,7 @@ RUNTIME_VARIANT=-I $(OTOPDIR)/runtime \
 export OCAMLRUNPARAM?=v=0
 endif
 
-OCAMLRUN=$(TOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE)
+OCAMLRUN=$(ROOTDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
@@ -97,7 +93,7 @@ OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib$(EXE) \
                     $(OTOPDIR)/ocamlc$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)" \
            -ocamlopt "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
                       $(OTOPDIR)/ocamlopt$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)"
-OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
+OCAMLYACC=$(ROOTDIR)/yacc/ocamlyacc$(EXE)
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj$(EXE)
 OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo$(EXE)
 

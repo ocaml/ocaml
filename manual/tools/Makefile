@@ -1,6 +1,6 @@
-TOPDIR=../..
-COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
-include $(TOPDIR)/Makefile.tools
+ROOTDIR = ../..
+COMPFLAGS = -I $(ROOTDIR)/otherlibs/str -I $(ROOTDIR)/otherlibs/unix
+include $(ROOTDIR)/Makefile.tools
 
 all: texquote2 transf
 
