@@ -29,7 +29,7 @@ let raw_clambda_dump_if ppf
     end;
   if !Clflags.dump_cmm then Format.fprintf ppf "@.cmm:@."
 
-let lambda_to_clambda ~backend ~filename:_ ~prefixname:_ ~ppf_dump
+let lambda_to_clambda ~backend ~prefixname:_ ~ppf_dump
       (lambda : Lambda.program) =
   let clambda =
     Closure.intro ~backend ~size:lambda.main_module_block_size lambda.code

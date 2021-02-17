@@ -49,7 +49,7 @@ module GenHashTable = struct
     type 'a t =
       { mutable size: int;                  (* number of entries *)
         mutable data: 'a bucketlist array;  (* the buckets *)
-        mutable seed: int;                  (* for randomization *)
+        seed: int;                          (* for randomization *)
         initial_size: int;                  (* initial array size *)
       }
 
