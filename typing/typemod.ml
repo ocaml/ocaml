@@ -1515,7 +1515,9 @@ and transl_signature env sg =
             let info id tmty =
               let mty = match tmty with
                 | Some tmty -> tmty.mty_type
-                | None -> assert false (* unparsable *)
+                | None ->
+                    (* parsetree invariant, see Ast_invariants *)
+                    assert false
               in
               let subst = Subst.add_modtype id mty Subst.identity in
               match mty with
