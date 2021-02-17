@@ -265,7 +265,6 @@ endif # ifeq "$(TOOLCHAIN)" "msvc"
 # the compiler's build system
 ifeq "$(UNIX_OR_WIN32)" "win32"
   OTOPDIR=$(WINTOPDIR)
-  CTOPDIR=$(WINTOPDIR)
   CYGPATH=cygpath -m
   DIFF=/usr/bin/diff -q --strip-trailing-cr
   FIND=/usr/bin/find
