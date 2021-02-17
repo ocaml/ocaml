@@ -26,6 +26,16 @@ type loc = {
   loc_ghost: bool;
 }
 
+type field_usage_warning =
+  | Unused
+  | Not_read
+  | Not_mutated
+
+type constructor_usage_warning =
+  | Unused
+  | Not_constructed
+  | Only_exported_private
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -63,8 +73,8 @@ type t =
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string * bool * bool (* 37 *)
-  | Unused_extension of string * bool * bool * bool (* 38 *)
+  | Unused_constructor of string * constructor_usage_warning (* 37 *)
+  | Unused_extension of string * bool * constructor_usage_warning (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
   | Ambiguous_name of string list * string list * bool * string (* 41 *)
@@ -95,6 +105,7 @@ type t =
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
+  | Unused_field of string * field_usage_warning (* 69 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}

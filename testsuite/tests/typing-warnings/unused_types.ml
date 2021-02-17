@@ -353,6 +353,14 @@ module Unused_record : sig end = struct
   let _ = foo
 end;;
 [%%expect {|
+Line 2, characters 13-21:
+2 |   type t = { a : int; b : int }
+                 ^^^^^^^^
+Warning 69 [unused-field]: unused record field a.
+Line 2, characters 22-29:
+2 |   type t = { a : int; b : int }
+                          ^^^^^^^
+Warning 69 [unused-field]: unused record field b.
 module Unused_record : sig end
 |}]
 
@@ -362,6 +370,11 @@ module Unused_field : sig end = struct
   let _ = foo
 end;;
 [%%expect {|
+Line 2, characters 13-20:
+2 |   type t = { a : int }
+                 ^^^^^^^
+Warning 69 [unused-field]: record field a is never read.
+(However, this field is used to build or mutate values.)
 module Unused_field : sig end
 |}]
 
@@ -373,6 +386,11 @@ module Unused_field : sig end = struct
   let _ = foo, bar, baz
 end;;
 [%%expect {|
+Line 2, characters 22-30:
+2 |   type t = { a : int; b : int; c : int }
+                          ^^^^^^^^
+Warning 69 [unused-field]: record field b is never read.
+(However, this field is used to build or mutate values.)
 module Unused_field : sig end
 |}]
 
@@ -383,6 +401,10 @@ module Unused_mutable_field : sig end = struct
   let _ = foo, bar
 end;;
 [%%expect {|
+Line 2, characters 22-37:
+2 |   type t = { a : int; mutable b : int }
+                          ^^^^^^^^^^^^^^^
+Warning 69 [unused-field]: mutable record field b is never mutated.
 module Unused_mutable_field : sig end
 |}]
 
@@ -414,6 +436,10 @@ end = struct
   let _ = foo
 end;;
 [%%expect {|
+Line 4, characters 22-37:
+4 |   type t = { a : int; mutable b : int }
+                          ^^^^^^^^^^^^^^^
+Warning 69 [unused-field]: mutable record field b is never mutated.
 module Unused_mutable_field_exported_private :
   sig type t = private { a : int; mutable b : int; } end
 |}]
