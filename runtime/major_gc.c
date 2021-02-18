@@ -919,6 +919,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   CAMLassert(atomic_load(&num_domains_to_mark) == 0);
   CAMLassert(atomic_load(&num_domains_to_sweep) == 0);
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
+  CAMLassert(caml_global_barrier_leave_when_done() == 0);
 
   caml_empty_minor_heap_no_major_slice_from_stw(domain, (void*)0, participating_count, participating);
 
