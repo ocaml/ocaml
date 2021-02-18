@@ -35,7 +35,7 @@ static int fdlist_to_fdset(value fdlist, fd_set *fdset, int *maxfd)
 {
   value l;
   FD_ZERO(fdset);
-  for (l = fdlist; l != Val_int(0); l = Field_imm(l, 1)) {
+  for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
     long fd = Long_field(l, 0);
     /* PR#5563: harden against bad fds */
     if (fd < 0 || fd >= FD_SETSIZE) return -1;
@@ -51,8 +51,8 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   value res = Val_int(0);
 
   Begin_roots2(l, res);
-    for (l = fdlist; l != Val_int(0); l = Field_imm(l, 1)) {
-      int fd = Int_val(Field_imm(l, 0));
+    for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
+      int fd = Int_val(Field(l, 0));
       if (FD_ISSET(fd, fdset)) {
         value newres = caml_alloc_2(0,
           Val_int(fd),

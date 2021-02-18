@@ -223,7 +223,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Forward_tag: forwarding pointer that the GC may silently shortcut.
    See stdlib/lazy.ml. */
 #define Forward_tag 250
-#define Forward_val(v) Field_imm(v, 0) /* FIXME: not immutable once shortcutting is implemented */
+#define Forward_val(v) Field(v, 0) /* FIXME: not immutable once shortcutting is implemented */
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
@@ -236,7 +236,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 /* Another special case: objects */
 #define Object_tag 248
-#define Class_val(val) Field_imm((val), 0)
+#define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_field((val), 1)
 CAMLextern value caml_get_public_method (value obj, value tag);
 /* Called as:
@@ -263,7 +263,7 @@ static inline void* Ptr_val(value val)
 #define Closure_tag 247
 #define Bytecode_val(val) (Pc_val(val))
 #define Val_bytecode(code) (Val_pc(code))
-#define Code_val(val) Bytecode_val(Field_imm((val), 0))
+#define Code_val(val) Bytecode_val(Field((val), 0))
 
 /* This tag is used (with Forcing_tag & Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */
@@ -412,15 +412,6 @@ CAMLextern value caml_atom(tag_t);
 CAMLextern value caml_set_oo_id(value obj);
 
 CAMLextern value caml_set_oo_id(value obj);
-
-/* Field access macros and functions */
-
-static inline value Field_imm(value x, int i) {
-  Assert (Hd_val(x));
-  Assert (Tag_val(x) == Infix_tag || i < Wosize_val(x));
-  value v = Op_val(x)[i];
-  return v;
-}
 
 static inline void caml_read_field(value x, intnat i, value* ret) {
   Assert (Hd_val(x));

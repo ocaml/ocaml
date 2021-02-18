@@ -72,12 +72,12 @@ enum {
 };
 
 /* Accessors in a compiled regexp */
-#define Prog(re) Field_imm(re, 0)
-#define Cpool(re) Field_imm(re, 1)
-#define Normtable(re) Field_imm(re, 2)
-#define Numgroups(re) Int_val(Field_imm(re, 3))
-#define Numregisters(re) Int_val(Field_imm(re, 4))
-#define Startchars(re) Int_val(Field_imm(re, 5))
+#define Prog(re) Field(re, 0)
+#define Cpool(re) Field(re, 1)
+#define Normtable(re) Field(re, 2)
+#define Numgroups(re) Int_val(Field(re, 3))
+#define Numregisters(re) Int_val(Field(re, 4))
+#define Startchars(re) Int_val(Field(re, 5))
 
 /* Record positions of matched groups */
 #define DEFAULT_NUM_GROUPS 10

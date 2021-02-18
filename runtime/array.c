@@ -474,7 +474,7 @@ CAMLprim value caml_array_concat(value al)
   value l, res;
 
   /* Length of list = number of arrays */
-  for (n = 0, l = al; l != Val_int(0); l = Field_imm(l, 1)) n++;
+  for (n = 0, l = al; l != Val_int(0); l = Field(l, 1)) n++;
   /* Allocate extra storage if too many arrays */
   if (n <= STATIC_SIZE) {
     arrays = static_arrays;
@@ -495,10 +495,10 @@ CAMLprim value caml_array_concat(value al)
     }
   }
   /* Build the parameters to caml_array_gather */
-  for (i = 0, l = al; l != Val_int(0); l = Field_imm(l, 1), i++) {
-    arrays[i] = Field_imm(l, 0);
+  for (i = 0, l = al; l != Val_int(0); l = Field(l, 1), i++) {
+    arrays[i] = Field(l, 0);
     offsets[i] = 0;
-    lengths[i] = caml_array_length(Field_imm(l, 0));
+    lengths[i] = caml_array_length(Field(l, 0));
   }
   /* Do the concatenation */
   res = caml_array_gather(n, arrays, offsets, lengths);
