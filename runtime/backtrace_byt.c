@@ -122,7 +122,7 @@ static struct ev_info *process_debug_events(code_t code_start,
   /* Compute the size of the required event buffer. */
   *num_events = 0;
   for (i = 0; i < caml_array_length(events_heap); i++)
-    for (l = Field_imm(events_heap, i); l != Val_int(0); l = Field_imm(l, 1))
+    for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1))
       (*num_events)++;
 
   if (*num_events == 0)
@@ -134,16 +134,16 @@ static struct ev_info *process_debug_events(code_t code_start,
 
   j = 0;
   for (i = 0; i < caml_array_length(events_heap); i++) {
-    for (l = Field_imm(events_heap, i); l != Val_int(0); l = Field_imm(l, 1)) {
-      ev = Field_imm(l, 0);
+    for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1)) {
+      ev = Field(l, 0);
 
       events[j].ev_pc = (code_t)((char*)code_start
-                                 + Long_val(Field_imm(ev, EV_POS)));
+                                 + Long_val(Field(ev, EV_POS)));
 
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
 
       {
-        uintnat fnsz = caml_string_length(Field_imm(ev_start, POS_FNAME)) + 1;
+        uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
         events[j].ev_filename = (char*)caml_stat_alloc_noexc(fnsz);
         if(events[j].ev_filename == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
@@ -420,8 +420,8 @@ static void read_main_debug_info(struct debug_info *di)
       evl = caml_input_val(chan);
       caml_input_val(chan); /* Skip the list of absolute directory names */
       /* Relocate events in event list */
-      for (l = evl; l != Val_int(0); l = Field_imm(l, 1)) {
-        value ev = Field_imm(l, 0);
+      for (l = evl; l != Val_int(0); l = Field(l, 1)) {
+        value ev = Field(l, 0);
         Store_field (ev, EV_POS, Val_long(Long_val(Field(ev, EV_POS)) + orig));
       }
       /* Record event list */

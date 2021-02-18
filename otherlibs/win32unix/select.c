@@ -890,7 +890,7 @@ static DWORD caml_list_length (value lst)
   CAMLparam1 (lst);
   CAMLlocal1 (l);
 
-  for (res = 0, l = lst; l != Val_int(0); l = Field_imm(l, 1), res++)
+  for (res = 0, l = lst; l != Val_int(0); l = Field(l, 1), res++)
   { }
 
   CAMLreturnT(DWORD, res);
@@ -920,13 +920,13 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
 
   for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
   {
-    list = Field_imm(list, 1);
+    list = Field(list, 1);
   }
 
   if (list == Val_unit)
     caml_failwith ("select.c: original file handle not found");
 
-  result = Field_imm(list, 0);
+  result = Field(list, 0);
 
   CAMLreturn( result );
 }
@@ -962,8 +962,8 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
 {
   value res = Val_int(0);
   Begin_roots2(fdlist, res)
-    for (/*nothing*/; fdlist != Val_int(0); fdlist = Field_imm(fdlist, 1)) {
-      value s = Field_imm(fdlist, 0);
+    for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
+      value s = Field(fdlist, 0);
       if (FD_ISSET(Socket_val(s), fdset)) {
         res = caml_alloc_2(0, s, res);
       }
@@ -1093,9 +1093,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Dispatch read fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = readfds; l != Val_int(0); l = Field_imm(l, 1))
+      for (l = readfds; l != Val_int(0); l = Field(l, 1))
         {
-          fd = Field_imm(l, 0);
+          fd = Field(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
@@ -1113,9 +1113,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Dispatch write fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = writefds; l != Val_int(0); l = Field_imm(l, 1))
+      for (l = writefds; l != Val_int(0); l = Field(l, 1))
         {
-          fd = Field_imm(l, 0);
+          fd = Field(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
@@ -1133,9 +1133,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       DEBUG_PRINT("Dispatch exceptional fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
-      for (l = exceptfds; l != Val_int(0); l = Field_imm(l, 1))
+      for (l = exceptfds; l != Val_int(0); l = Field(l, 1))
         {
-          fd = Field_imm(l, 0);
+          fd = Field(l, 0);
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));

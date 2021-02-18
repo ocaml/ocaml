@@ -67,8 +67,8 @@ CAMLexport char * caml_format_exception(value exn)
      class. */
   if (Tag_val(exn) == 0) {
     /* Field 0 of exn is the exception class, which is immutable */
-    exnclass = Field_imm(exn, 0);
-    add_string(&buf, String_val(Field_imm(exnclass, 0)));
+    exnclass = Field(exn, 0);
+    add_string(&buf, String_val(Field(exnclass, 0)));
     /* Check for exceptions in the style of Match_failure and Assert_failure */
     if (Wosize_val(exn) == 2) {
       caml_read_field(exn, 1, &field1);
@@ -104,7 +104,7 @@ CAMLexport char * caml_format_exception(value exn)
   } else {
     /* Exception without parameters */
     exnclass = exn;
-    add_string(&buf, String_val(Field_imm(exnclass, 0)));
+    add_string(&buf, String_val(Field(exnclass, 0)));
   }
 
   *buf.ptr = 0;              /* Terminate string */
