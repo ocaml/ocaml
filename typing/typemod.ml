@@ -487,17 +487,24 @@ let params_are_constrained =
   loop
 ;;
 
-let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
-  let lid =
-    match constr with
-    | Pwith_type (lid, _) | Pwith_module (lid, _) | Pwith_modtype (lid,_)
-    | Pwith_typesubst (lid, _) | Pwith_modsubst (lid, _)
-    | Pwith_modtypesubst (lid, _) -> lid
-  in
+type with_info =
+  | With_type of Parsetree.type_declaration
+  | With_typesubst of Parsetree.type_declaration
+  | With_module of {
+        lid:Longident.t loc;
+        path:Path.t;
+        md:Types.module_declaration;
+        remove_aliases:bool
+      }
+  | With_modsubst of Longident.t loc * Path.t * Types.module_declaration
+  | With_modtype of Typedtree.module_type
+  | With_modtypesubst of Typedtree.module_type
+
+let merge_constraint initial_env loc sg lid constr =
   let destructive_substitution =
     match constr with
-    | Pwith_type _ | Pwith_module _ | Pwith_modtype _ -> false
-    | Pwith_typesubst _ | Pwith_modsubst _ | Pwith_modtypesubst _  -> true
+    | With_type _ | With_module _ | With_modtype _ -> false
+    | With_typesubst _ | With_modsubst _ | With_modtypesubst _  -> true
   in
   let real_ids = ref [] in
   let unpackable_modtype = ref None in
@@ -506,7 +513,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
       ([], _, _) ->
         raise(Error(loc, sig_env, With_no_component lid.txt))
     | (Sig_type(id, decl, rs, priv) :: rem, [s],
-       Pwith_type (_, ({ptype_kind = Ptype_abstract} as sdecl)))
+       With_type ({ptype_kind = Ptype_abstract} as sdecl))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
           let arity = List.length sdecl.ptype_params in
@@ -555,7 +562,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
         :: Sig_type(id, newdecl, rs, priv)
         :: rem
     | (Sig_type(id, sig_decl, rs, priv) :: rem , [s],
-       (Pwith_type (_, sdecl) | Pwith_typesubst (_, sdecl) as constr))
+       (With_type sdecl | With_typesubst sdecl as constr))
       when Ident.name id = s ->
         let tdecl =
           Typedecl.transl_with_constraint id None
@@ -563,19 +570,18 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
         let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
         check_type_decl sig_env loc id row_id newdecl sig_decl rs rem;
         begin match constr with
-          Pwith_type _ ->
+          With_type _ ->
             (Pident id, lid, Twith_type tdecl),
             Sig_type(id, newdecl, rs, priv) :: rem
-        | (* Pwith_typesubst *) _ ->
+        | (* With_typesubst *) _ ->
             real_ids := [Pident id];
             (Pident id, lid, Twith_typesubst tdecl),
             update_rec_next rs rem
         end
     | (Sig_modtype(id, mtd, priv) :: rem, [s],
-       (Pwith_modtype (_, mty) | Pwith_modtypesubst (_,mty))
+       (With_modtype mty | With_modtypesubst mty)
       )
       when Ident.name id = s ->
-        let mty = transl_modtype initial_env mty in
         let () = match mtd.mtd_type with
           | None -> ()
           | Some previous_mty ->
@@ -603,12 +609,12 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
           (Pident id, lid, Twith_modtypesubst mty),
           rem
         end
-    | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
+    | (Sig_type(id, _, _, _) :: rem, [s], (With_type _ | With_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge sig_env rem namelist (Some id)
-    | (Sig_module(id, pres, md, rs, priv) :: rem, [s], Pwith_module (_, lid'))
+    | (Sig_module(id, pres, md, rs, priv) :: rem, [s],
+       With_module {lid=lid'; md=md'; path; remove_aliases})
       when Ident.name id = s ->
-        let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
@@ -617,9 +623,8 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
                  newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
         Sig_module(id, pres, newmd, rs, priv) :: rem
-    | (Sig_module(id, _, md, rs, _) :: rem, [s], Pwith_modsubst (_, lid'))
+    | (Sig_module(id, _, md, rs, _) :: rem, [s], With_modsubst (lid',path,md'))
       when Ident.name id = s ->
-        let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
@@ -635,7 +640,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
         real_ids := path :: !real_ids;
         let item =
           match md.md_type, constr with
-            Mty_alias _, (Pwith_module _ | Pwith_type _) ->
+            Mty_alias _, (With_module _ | With_type _) ->
               (* A module alias cannot be refined, so keep it
                  and just check that the constraint is correct *)
               item
@@ -665,7 +670,7 @@ let merge_constraint transl_modtype initial_env remove_aliases loc sg constr =
        let how_to_extend_subst =
          let sdecl =
            match constr with
-           | Pwith_typesubst (_, sdecl) -> sdecl
+           | With_typesubst sdecl -> sdecl
            | _ -> assert false
          in
          match type_decl_is_alias sdecl with
@@ -1298,14 +1303,7 @@ and transl_modtype_aux env smty =
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
       let remove_aliases = has_remove_aliases_attribute smty.pmty_attributes in
       let (rev_tcstrs, final_sg) =
-        List.fold_left
-          (fun (rev_tcstrs,sg) sdecl ->
-            let (tcstr, sg) =
-              merge_constraint transl_modtype env remove_aliases
-                smty.pmty_loc sg sdecl
-            in
-            (tcstr :: rev_tcstrs, sg)
-        )
+        List.fold_left (transl_with ~loc:smty.pmty_loc env remove_aliases)
         ([],init_sg) constraints in
       let scope = Ctype.create_scope () in
       mkmty (Tmty_with ( body, List.rev rev_tcstrs))
@@ -1317,6 +1315,28 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+
+and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
+  let lid, with_info = match constr with
+    | Pwith_type (l,decl) ->l , With_type decl
+    | Pwith_typesubst (l,decl) ->l , With_typesubst decl
+    | Pwith_module (l,l') ->
+        let path, md = Env.lookup_module ~loc l'.txt env in
+        l , With_module {lid=l';path;md; remove_aliases}
+    | Pwith_modsubst (l,l') ->
+        let path, md' = Env.lookup_module ~loc l'.txt env in
+        l , With_modsubst (l',path,md')
+    | Pwith_modtype (l,smty) ->
+        let mty = transl_modtype env smty in
+        l, With_modtype mty
+    | Pwith_modtypesubst (l,smty) ->
+        let mty = transl_modtype env smty in
+        l, With_modtypesubst mty
+  in
+  let (tcstr, sg) = merge_constraint env loc sg lid with_info in
+  (tcstr :: rev_tcstrs, sg)
+
+
 
 and transl_signature env sg =
   let names = Signature_names.create () in
