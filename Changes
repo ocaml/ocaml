@@ -26,10 +26,10 @@ Working version
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
 
-- #?????: module type substitutions
+- #10133: module type substitutions
   Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
   and their local equivalent `module type T := sig type u end`
-  (Florian Angeletti, review by Gabriel Radanne and ?)
+  (Florian Angeletti, review by Gabriel Radanne and Leo White)
 
 ### Runtime system:
 
