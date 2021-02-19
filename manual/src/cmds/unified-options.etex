@@ -623,7 +623,8 @@ supported passes are:
 \item["-save-ir-after" \var{pass}]
 Save intermediate representation after the given compilation pass
 to a file.
-The currently supported passes are: "scheduling".
+The currently supported passes and the corresponding file extensions are:
+"scheduling" (".cmir-linear").
 
 This experimental feature enables external tools to inspect and manipulate
 compiler's intermediate representation of the program
