@@ -59,6 +59,7 @@ module type S =
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
+    val of_list: (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
@@ -496,6 +497,42 @@ module Make(Ord: OrderedType) = struct
     let choose = min_binding
 
     let choose_opt = min_binding_opt
+
+    let of_sorted_list l =
+      let rec sub n l =
+        match n, l with
+        | 0, l -> Empty, l
+        | 1, (x0,d0) :: l -> Node {l=Empty; v=x0; d=d0; r=Empty; h=1}, l
+        | 2, (x0,d0) :: (x1,d1) :: l ->
+            Node{l=Node{l=Empty; v=x0; d=d0; r=Empty; h=1}; v=x1; d=d1;
+                 r=Empty; h=2}, l
+        | 3, (x0,d0) :: (x1,d1) :: (x2,d2) :: l ->
+            Node{l=Node{l=Empty; v=x0; d=d0; r=Empty; h=1}; v=x1; d=d1;
+                 r=Node{l=Empty; v=x2; d=d2; r=Empty; h=1}; h=2}, l
+        | n, l ->
+          let nl = n / 2 in
+          let left, l = sub nl l in
+          match l with
+          | [] -> assert false
+          | (v,d) :: l ->
+            let right, l = sub (n - nl - 1) l in
+            create left v d right, l
+      in
+      fst (sub (List.length l) l)
+
+    let of_list l =
+      match l with
+      | [] -> empty
+      | [(x0,d0)] -> singleton x0 d0
+      | [(x0,d0); (x1,d1)] -> add x1 d1 (singleton x0 d0)
+      | [(x0,d0); (x1,d1); (x2,d2)] -> add x2 d2 (add x1 d1 (singleton x0 d0))
+      | [(x0,d0); (x1,d1); (x2,d2); (x3,d3)] ->
+          add x3 d3 (add x2 d2 (add x1 d1 (singleton x0 d0)))
+      | [(x0,d0); (x1,d1); (x2,d2); (x3,d3); (x4,d4)] ->
+          add x4 d4 (add x3 d3 (add x2 d2 (add x1 d1 (singleton x0 d0))))
+      | _ ->
+          of_sorted_list
+            (List.sort_uniq (fun (x1,_) (x2,_) -> Ord.compare x1 x2) l)
 
     let add_seq i m =
       Seq.fold_left (fun m (k,v) -> add k v m) m i

@@ -846,6 +846,15 @@ module Map : sig
       (** Same as {!S.map}, but the function receives as arguments both the
          key and the associated value for each binding of the map. *)
 
+      val of_list: (key * 'a) list -> 'a t
+      (** [of_list l] creates a map from a list of bindings.
+          This is usually more efficient than folding [add] over the list,
+          except perhaps for lists with many duplicated elements.
+          If the list contains multiple bindings for keys that are equal
+          with respect to [Ord.compare], it is unspecified which of the
+          bindings the map contains.
+          @since 4.13 *)
+
       (** {1 Maps and Sequences} *)
 
       val to_seq : 'a t -> (key * 'a) Seq.t
