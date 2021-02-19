@@ -638,7 +638,7 @@ An external tool can perform low-level optimisations,
 such as code layout, by transforming this file.
 To continue compilation, the compiler can be invoked with (a possibly modified)
 ".cmir-linear" file as input instead of the corresponding source file.
-}%notop
+}%nat
 
 \nat{%
 \item["-S"]
