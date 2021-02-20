@@ -142,12 +142,14 @@ val compare : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> int
     a lexicographic comparison of the two input lists,
     using the same ['a -> 'a -> int] interface as {!Stdlib.compare}:
 
-    - [a1 :: l1] is smaller than [a2 :: l2] (negative result)
-      if [a1] is smaller than [a2], or if they are equal (0 result)
-      and [l1] is smaller than [l2]
-    - the empty list [[]] is strictly smaller than non-empty lists
+    - If `a1 == b1` or if `cmp a1 b1 = 0`, the result of the comparison
+      is the same as `compare cmp [a2; ...; an] [b2; ...; bn]`.
+    - If `a1 != b1` and `cmp a1 b1 <> 0`, the result is the same as `cmp a1 b1`.
+    - If both list are empty, the result is `0`.
+    - If only the first list is empty, the result is strictly negative;
+      if only the second list is empty the result is strictly positive.
 
-    Note: the [cmp] function will be called even if the lists have
+    Note: the [cmp] function may be called even if the lists have
     different lengths.
 
     @since 4.12.0
