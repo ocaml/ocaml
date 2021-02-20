@@ -335,9 +335,9 @@ module type S =
     (** [of_list l] creates a map from a list of bindings.
         This is usually more efficient than folding [add] over the list,
         except perhaps for lists with many duplicated elements.
-        If the list contains multiple bindings for keys that are equal with
-        respect to [Ord.compare], then the map contains the first such
-        binding and the rest are ignored.
+        If the list contains multiple bindings for keys that are equal
+        with respect to [Ord.compare], it is unspecified which of the
+        bindings the map contains.
         @since 4.13 *)
 
     (** {1 Maps and Sequences} *)
