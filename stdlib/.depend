@@ -418,9 +418,11 @@ stdlib__ListLabels.cmi : listLabels.mli \
     stdlib__Either.cmi
 stdlib__Map.cmo : map.ml \
     stdlib__Seq.cmi \
+    stdlib__List.cmi \
     stdlib__Map.cmi
 stdlib__Map.cmx : map.ml \
     stdlib__Seq.cmx \
+    stdlib__List.cmx \
     stdlib__Map.cmi
 stdlib__Map.cmi : map.mli \
     stdlib__Seq.cmi
