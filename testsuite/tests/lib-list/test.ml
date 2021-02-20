@@ -122,4 +122,17 @@ let () =
   test (threshold + 1) (* Tail-recursive case *)
 ;;
 
+(* Sort *)
+let () =
+  let cmp_fst (x, _) (y, _) = compare x y in
+  (* [sort_uniq cmp l] is a sublist of [sort cmp l] *)
+  assert (
+    let three_equal = [(1, 1); (1, 2); (1, 3)] in
+    List.hd (List.sort_uniq cmp_fst three_equal)
+    = List.hd (List.sort cmp_fst three_equal));
+  assert (
+    let six_equal = [(1, 1); (1, 2); (1, 3); (1, 4); (1, 5); (1, 6)] in
+    List.hd (List.sort_uniq cmp_fst six_equal)
+    = List.hd (List.sort cmp_fst six_equal))
+
 let () = print_endline "OK";;
