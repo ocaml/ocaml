@@ -1239,7 +1239,7 @@ let pp_print_result ~ok ~error ppf = function
 
 let pp_print_either ~left ~right ppf = function
 | Either.Left l -> left ppf l
-| Either.Right r -> error ppf r
+| Either.Right r -> right ppf r
 
  (**************************************************************)
 
