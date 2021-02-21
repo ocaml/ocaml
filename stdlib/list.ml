@@ -430,7 +430,7 @@ let sort_uniq cmp l =
     | l1, [] -> rev_append l1 accu
     | h1::t1, h2::t2 ->
         let c = cmp h1 h2 in
-        if c = 0 then rev_merge t1 t2 (h1::accu)
+        if c = 0 then rev_merge t1 t2 (h2::accu)
         else if c < 0
         then rev_merge t1 l2 (h1::accu)
         else rev_merge l1 t2 (h2::accu)
@@ -441,7 +441,7 @@ let sort_uniq cmp l =
     | l1, [] -> rev_append l1 accu
     | h1::t1, h2::t2 ->
         let c = cmp h1 h2 in
-        if c = 0 then rev_merge_rev t1 t2 (h1::accu)
+        if c = 0 then rev_merge_rev t1 t2 (h2::accu)
         else if c > 0
         then rev_merge_rev t1 l2 (h1::accu)
         else rev_merge_rev l1 t2 (h2::accu)
@@ -451,7 +451,7 @@ let sort_uniq cmp l =
     | 2, x1 :: x2 :: tl ->
         let s =
           let c = cmp x1 x2 in
-          if c = 0 then [x1] else if c < 0 then [x1; x2] else [x2; x1]
+          if c = 0 then [x2] else if c < 0 then [x1; x2] else [x2; x1]
         in
         (s, tl)
     | 3, x1 :: x2 :: x3 :: tl ->
@@ -459,23 +459,23 @@ let sort_uniq cmp l =
           let c = cmp x1 x2 in
           if c = 0 then
             let c = cmp x2 x3 in
-            if c = 0 then [x1] else if c < 0 then [x2; x3] else [x3; x2]
+            if c = 0 then [x3] else if c < 0 then [x2; x3] else [x3; x2]
           else if c < 0 then
             let c = cmp x2 x3 in
-            if c = 0 then [x1; x2]
+            if c = 0 then [x1; x3]
             else if c < 0 then [x1; x2; x3]
             else
               let c = cmp x1 x3 in
-              if c = 0 then [x1; x2]
+              if c = 0 then [x3; x2]
               else if c < 0 then [x1; x3; x2]
               else [x3; x1; x2]
           else
             let c = cmp x1 x3 in
-            if c = 0 then [x2; x1]
+            if c = 0 then [x2; x3]
             else if c < 0 then [x2; x1; x3]
             else
               let c = cmp x2 x3 in
-              if c = 0 then [x2; x1]
+              if c = 0 then [x3; x1]
               else if c < 0 then [x2; x3; x1]
               else [x3; x2; x1]
         in
@@ -491,7 +491,7 @@ let sort_uniq cmp l =
     | 2, x1 :: x2 :: tl ->
         let s =
           let c = cmp x1 x2 in
-          if c = 0 then [x1] else if c > 0 then [x1; x2] else [x2; x1]
+          if c = 0 then [x2] else if c > 0 then [x1; x2] else [x2; x1]
         in
         (s, tl)
     | 3, x1 :: x2 :: x3 :: tl ->
@@ -499,23 +499,23 @@ let sort_uniq cmp l =
           let c = cmp x1 x2 in
           if c = 0 then
             let c = cmp x2 x3 in
-            if c = 0 then [x1] else if c > 0 then [x2; x3] else [x3; x2]
+            if c = 0 then [x3] else if c > 0 then [x2; x3] else [x3; x2]
           else if c > 0 then
             let c = cmp x2 x3 in
-            if c = 0 then [x1; x2]
+            if c = 0 then [x1; x3]
             else if c > 0 then [x1; x2; x3]
             else
               let c = cmp x1 x3 in
-              if c = 0 then [x1; x2]
+              if c = 0 then [x3; x2]
               else if c > 0 then [x1; x3; x2]
               else [x3; x1; x2]
           else
             let c = cmp x1 x3 in
-            if c = 0 then [x2; x1]
+            if c = 0 then [x2; x3]
             else if c > 0 then [x2; x1; x3]
             else
               let c = cmp x2 x3 in
-              if c = 0 then [x2; x1]
+              if c = 0 then [x3; x1]
               else if c > 0 then [x2; x3; x1]
               else [x3; x2; x1]
         in

@@ -124,15 +124,29 @@ let () =
 
 (* Sort *)
 let () =
+  let remove_nonlast_dups cmp = function
+    | [] -> []
+    | x :: xs ->
+        let rec loop pred = function
+          | curr :: rest ->
+              if cmp pred curr = 0 then loop curr rest
+              else pred :: loop curr rest
+          | [] -> [pred]
+        in
+        loop x xs
+  in
+  let check_sort_uniq_keeps_last_dup cmp l =
+    let s = remove_nonlast_dups cmp (List.stable_sort cmp l) in
+    let u = List.sort_uniq cmp l in
+    assert (compare s u = 0)
+  in
   let cmp_fst (x, _) (y, _) = compare x y in
-  (* [sort_uniq cmp l] is a sublist of [sort cmp l] *)
-  assert (
-    let three_equal = [(1, 1); (1, 2); (1, 3)] in
-    List.hd (List.sort_uniq cmp_fst three_equal)
-    = List.hd (List.sort cmp_fst three_equal));
-  assert (
-    let six_equal = [(1, 1); (1, 2); (1, 3); (1, 4); (1, 5); (1, 6)] in
-    List.hd (List.sort_uniq cmp_fst six_equal)
-    = List.hd (List.sort cmp_fst six_equal))
+  List.iter (check_sort_uniq_keeps_last_dup cmp_fst)
+    [ [(2, 0); (2, 1)]
+    ; [(2, 0); (2, 0); (2, 1)]
+    ; [(1, 0); (1, 1); (2, 0)]
+    ; [(0, 0); (0, 0); (0, 0); (0, 1)]
+    ; [(0, 0); (0, 0); (2, 0); (2, 1)]
+    ; [(0, 0); (0, 0); (3, 0); (3, 1); (0, 0)] ]
 
 let () = print_endline "OK";;
