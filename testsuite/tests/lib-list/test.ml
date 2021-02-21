@@ -124,6 +124,7 @@ let () =
 
 (* Sort *)
 let () =
+  (* check that List.sort_uniq keeps the last duplicate element, see PR#10238 *)
   let remove_nonlast_dups cmp = function
     | [] -> []
     | x :: xs ->
