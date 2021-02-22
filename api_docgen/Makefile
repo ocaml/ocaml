@@ -28,8 +28,4 @@ ocamldoc-%:
 	$(MAKE) -C ocamldoc $* ROOTDIR=../..
 
 clean:
-	rm -rf build man html latex texi
-	rm -rf odoc/build odoc/man odoc/html odoc/latex
-	rm -rf ocamldoc/build ocamldoc/man ocamldoc/html ocamldoc/latex \
-	ocamldoc/texi
-	rm -rf Compiler_libs.mld
+	rm -rf build odoc/build ocamldoc/build

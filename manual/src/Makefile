@@ -23,21 +23,22 @@ TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 APIDOC=$(SRC)/api_docgen
 .PHONY: html_files
 .PHONY: latex_files
-ifeq ($(DOCUMENTATION_MODE),odoc)
+ifeq ($(DOCUMENTATION_TOOL),odoc)
 latex_files:
 	make -C $(APIDOC) latex
-	cp $(APIDOC)/latex/*/*.tex library
+	cp $(APIDOC)/build/latex/*/*.tex library
 html_files:
 	make -C $(APIDOC) html
-	cp -r $(APIDOC)/html/*  htmlman
+	cp -r $(APIDOC)/build/html/*  htmlman
 else
 latex_files:
 	$(MAKE) -C $(APIDOC) latex
-	cp $(APIDOC)/latex/*.tex library
+	cp $(APIDOC)/build/latex/*.tex library
 html_files:
 	$(MAKE) -C $(APIDOC) html
 	mkdir -p htmlman/libref
-	cp -r $(APIDOC)/html/libref $(APIDOC)/html/compilerlibref htmlman
+	cp -r $(APIDOC)/build/html/libref htmlman
+	cp -r $(APIDOC)/build/html/compilerlibref htmlman
 	cp style.css htmlman/libref
 	cp style.css htmlman/compilerlibref
 endif
@@ -146,8 +147,8 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	done
 
 ifocamldoc.tex: $(SRC)/Makefile.config
-	$(MAKE) -C $(APIDOC) latex/ifocamldoc.tex
-	cp $(APIDOC)/latex/ifocamldoc.tex $@
+	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
+	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
 
 .PHONY: clean
 clean:

@@ -30,23 +30,27 @@ DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
 .PHONY: all
 all: html pdf man
 
-DIRS = $(add_prefix build/,libref compilerlibref man/ latex/ texi/ \
-  html/ html/libref html/compilerlibref)
+DIRS = $(addprefix build/,libref compilerlibref man latex texi \
+  html html/libref html/compilerlibref)
 
 $(DIRS):
 	$(MKDIR) $@
 
-pdf: latex/alldoc.pdf
+pdf: build/latex/alldoc.pdf
 latex:
 man:
 html:
-latex/alldoc.pdf: latex/stdlib_input.tex latex/compilerlibs_input.tex \
-	| latex/ifocamldoc.tex
+build/latex/alldoc.pdf: build/latex/stdlib_input.tex \
+  build/latex/compilerlibs_input.tex | build/latex/ifocamldoc.tex
 
-$(DOCGEN)/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld
+$(DOCGEN)/build/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld
 	cp $< $@ && echo "{!modules:$(compilerlibref_C)}" >> $@
 
-latex/ifocamldoc.tex: $(ROOTDIR)/Makefile.config | latex/
+build/latex/ifocamldoc.tex: $(ROOTDIR)/Makefile.config | build/latex
 
-latex/alldoc.tex:$(DOCGEN)/alldoc.tex | latex/
+build/latex/alldoc.tex:$(DOCGEN)/alldoc.tex | build/latex
+	cp $< $@
+
+$(compilerlibref_TEXT:%=build/%.mld) $(libref_TEXT:%=build/%.mld): \
+build/%.mld:$(DOCGEN)/%.mld
 	cp $< $@
