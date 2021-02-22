@@ -633,12 +633,6 @@ using "compiler-libs" library (see
 \ahref{compilerlibref/Compiler\_libs.html}{ \texttt{Compiler_libs} }
 \else section~\ref{Compiler-underscorelibs}\fi
 ).
-For example, "-save-ir-after scheduling" saves a low-level intermediate representation
-of each compilation unit implementation to a separate ".cmir-linear" file.
-An external tool can perform low-level optimisations,
-such as code layout, by transforming this file.
-To continue compilation, the compiler can be invoked with (a possibly modified)
-".cmir-linear" file as input instead of the corresponding source file.
 }%nat
 
 \nat{%
