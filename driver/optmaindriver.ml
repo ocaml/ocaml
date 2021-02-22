@@ -106,7 +106,8 @@ let main argv ppf =
           (Compenv.get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
     end
-    else if not !Compenv.stop_early && !objfiles <> [] then begin
+    else if not !Compenv.stop_early &&
+            (!objfiles <> [] || !Compenv.has_linker_inputs) then begin
       let target =
         if !output_c_object then
           let s = Compenv.extract_output !output_name in
