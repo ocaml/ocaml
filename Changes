@@ -126,6 +126,9 @@ Working version
   (Gabriel Scherer, review by David Allsopp and Florian Angeletti
    and Daniel Bünzli, report by Robin Björklin)
 
+- #8877: Call the linker when ocamlopt is invoked with .o and .a files only.
+  (Greta Yorsh, review by Leo White)
+
 ### Internal/compiler-libs changes:
 
 - #9243, simplify parser rules for array indexing operations
