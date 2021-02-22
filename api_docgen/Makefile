@@ -12,7 +12,7 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-ROOTDIR =  ..
+ROOTDIR = ..
 -include $(ROOTDIR)/Makefile.config
 
 ifeq ($(DOCUMENTATION_MODE),odoc)

@@ -14,7 +14,7 @@
 #**************************************************************************
 include $(ROOTDIR)/api_docgen/Makefile.common
 
-vpath %.cmti $(ROOTDIR)/stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
+vpath %.cmti $(ROOTDIR)/stdlib $(DOC_COMPILERLIBS_DIRS) $(DOC_STDLIB_DIRS)
 vpath %.cmt $(ROOTDIR)/stdlib
 
 odoc=odoc
@@ -32,7 +32,7 @@ endef
 latex/ifocamldoc.tex: | latex/
 	printf '\\newif\ifocamldoc\ocamldocfalse\n' > $@
 
-stdlib_INPUT=$(foreach module,\
+stdlib_INPUT= $(foreach module,\
 $(filter-out stdlib camlinternal%, $(STDLIB:stdlib__%=%)),\
 \\input{libref/Stdlib.$(call capitalize,$(module)).tex}\
 )
@@ -71,8 +71,8 @@ TARGET_UNITS= \
 	$(compilerlibref:%=compilerlibref/%) \
 	libref/stdlib $(otherlibref:%=libref/%) \
 	$(addprefix libref/,$(filter camlinternal%,$(STDLIB)))
-ALL_UNITS=$(compilerlibref:%=compilerlibref/%) $(libref:%=libref/%)
-ALL_PAGED_DOC= $(TARGET_UNITS) $(ALL_PAGE_TEXT)
+ALL_UNITS = $(compilerlibref:%=compilerlibref/%) $(libref:%=libref/%)
+ALL_PAGED_DOC = $(TARGET_UNITS) $(ALL_PAGE_TEXT)
 
 ALL_HTML= $(ALL_PAGED_DOC:%=build/%.html.stamp)
 ALL_MAN=  $(ALL_PAGED_DOC:%=build/%.3o.stamp)

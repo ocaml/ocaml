@@ -20,19 +20,15 @@ include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 include $(DOCGEN)/Makefile.docfiles
 
-DOC_COMPILERLIBS_DIRS= $(addprefix $(ROOTDIR)/, \
-parsing utils typing bytecomp driver file_formats lambda\
-)
+DOC_COMPILERLIBS_DIRS= $(addprefix $(ROOTDIR)/,\
+  parsing utils typing bytecomp driver file_formats lambda)
 
 DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
-	otherlibs/str \
-	otherlibs/$(UNIXLIB) otherlibs/dynlink \
-	otherlibs/systhreads\
-)
+  otherlibs/str otherlibs/$(UNIXLIB) otherlibs/dynlink \
+  otherlibs/systhreads)
 
+.PHONY: all
 all: html pdf man
-.PHONY:all
-.SUFFIXES:
 
 .PHONY: setup
 setup:
