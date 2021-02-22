@@ -70,8 +70,8 @@ Working version
 - #9937: improvements in ARM64 code generation (constants, sign extensions)
   (Xavier Leroy, review by Stephen Dolan)
 
-- #??: Better code-generation for inlined comparisons
-  (Stephen Dolan, review by ??)
+- #10228: Better code-generation for inlined comparisons
+  (Stephen Dolan, review by Alain Frisch and Xavier Leroy)
 
 ### Standard library:
 
