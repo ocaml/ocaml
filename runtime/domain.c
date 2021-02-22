@@ -683,6 +683,11 @@ int caml_global_barrier_num_domains()
   return stw_request.num_domains;
 }
 
+int caml_global_barrier_leave_when_done()
+{
+  return stw_request.leave_when_done;
+}
+
 static void decrement_stw_domains_still_processing()
 {
   /* we check if we are the last to leave a stw section
