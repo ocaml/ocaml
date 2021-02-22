@@ -74,17 +74,17 @@ TARGET_UNITS= \
 ALL_UNITS=$(compilerlibref:%=compilerlibref/%) $(libref:%=libref/%)
 ALL_PAGED_DOC= $(TARGET_UNITS) $(ALL_PAGE_TEXT)
 
-ALL_HTML= $(ALL_PAGED_DOC:%=build/%.html.witness)
-ALL_MAN=  $(ALL_PAGED_DOC:%=build/%.3o.witness)
-ALL_LATEX= $(ALL_PAGED_DOC:%=build/%.tex.witness)
+ALL_HTML= $(ALL_PAGED_DOC:%=build/%.html.stamp)
+ALL_MAN=  $(ALL_PAGED_DOC:%=build/%.3o.stamp)
+ALL_LATEX= $(ALL_PAGED_DOC:%=build/%.tex.stamp)
 
-build/libref/stdlib.html.witness:$(STDLIB:%=build/libref/%.odocl) | build/libref
-build/libref/stdlib.3o.witness:$(STDLIB:%=build/libref/%.odocl) | build/libref
-build/libref/stdlib.tex.witness:$(STDLIB:%=build/libref/%.odocl) | build/libref
+build/libref/stdlib.html.stamp:$(STDLIB:%=build/libref/%.odocl) | build/libref
+build/libref/stdlib.3o.stamp:$(STDLIB:%=build/libref/%.odocl) | build/libref
+build/libref/stdlib.tex.stamp:$(STDLIB:%=build/libref/%.odocl) | build/libref
 
 man: $(ALL_MAN)
 html: $(ALL_HTML) html/odoc.css
-html: build/libref/index.html.witness build/compilerlibref/index.html.witness
+html: build/libref/index.html.stamp build/compilerlibref/index.html.stamp
 latex: $(ALL_LATEX)
 
 
@@ -102,12 +102,12 @@ $(ALL_PAGE_TEXT:%=build/%.odocl):%.odocl:%.odoc \
 	| $(ALL_PAGED_DOC:%=build/%.odoc)
 	$(odoc) link -I build/libref -I build/compilerlibref $<
 
-$(ALL_HTML): %.html.witness: %.odocl | html/
+$(ALL_HTML): %.html.stamp: %.odocl | html/
 	$(odoc) html-generate --output-dir html  $<
 	touch $@
 
-$(build/libref.html.witness build/compilerlibref.html.witness):
-%.html.witness: %.mld | build/
+$(build/libref.html.stamp build/compilerlibref.html.stamp):
+%.html.stamp: %.mld | build/
 	$(odoc) html-generate --output-dir html  $<
 	touch $@
 
@@ -117,29 +117,29 @@ stdlib_INDEX=\
 build/libref.mld:
 	echo {0 OCaml standard library} {!modules:$(stdlib_INDEX)} > $@
 
-build/libref/index.html.witness: $(ALL_HTML) build/libref.mld | build/libref
+build/libref/index.html.stamp: $(ALL_HTML) build/libref.mld | build/libref
 	$(odoc) compile --package libref build/libref.mld
 	$(odoc) link -I build/libref build/page-libref.odoc
 	$(odoc) html-generate build/page-libref.odocl --output-dir html
 	mv html/libref/libref.html html/libref/index.html
 	touch $@
 
-build/compilerlibref/index.html.witness: $(ALL_HTML) \
-  build/compilerlibref/page-Compiler_libs.html.witness | build/compilerlibref
+build/compilerlibref/index.html.stamp: $(ALL_HTML) \
+  build/compilerlibref/page-Compiler_libs.html.stamp | build/compilerlibref
 	cp html/compilerlibref/Compiler_libs.html html/compilerlibref/index.html
 	touch $@
 
 NOT_STDLIB=$(filter-out libref/stdlib,$(ALL_PAGED_DOC))
-$(NOT_STDLIB:%=build/%.tex.witness):\
-build/%.tex.witness: build/%.odocl | build/
+$(NOT_STDLIB:%=build/%.tex.stamp):\
+build/%.tex.stamp: build/%.odocl | build/
 	$(odoc) latex-generate --with-children=true --output-dir latex  $<
 	touch $@
 
-build/libref/stdlib.tex.witness: build/libref/stdlib.odocl | build/libref
+build/libref/stdlib.tex.stamp: build/libref/stdlib.odocl | build/libref
 	$(odoc) latex-generate --with-children=false --output-dir latex  $<
 	touch $@
 
-$(ALL_PAGED_DOC:%=build/%.3o.witness):build/%.3o.witness:build/%.odocl | build/
+$(ALL_PAGED_DOC:%=build/%.3o.stamp):build/%.3o.stamp:build/%.odocl | build/
 	$(odoc) man-generate --output-dir man  $<
 	touch $@
 
