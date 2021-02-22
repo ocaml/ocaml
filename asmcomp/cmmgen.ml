@@ -424,7 +424,7 @@ let rec transl env e =
       let args = List.map (transl env) args in
       send kind met obj args dbg
   | Ulet(str, kind, id, exp, body) ->
-      transl_let env str kind id exp body
+      transl_let env str kind id exp (fun env -> transl env body)
   | Uphantom_let (var, defining_expr, body) ->
       let defining_expr =
         match defining_expr with
@@ -1117,7 +1117,7 @@ and transl_unbox_sized size dbg env exp =
   | Thirty_two -> transl_unbox_int dbg env Pint32 exp
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 
-and transl_let' env str kind id exp transl_body =
+and transl_let env str kind id exp transl_body =
   let dbg = Debuginfo.none in
   let cexp = transl env exp in
   let unboxing =
@@ -1166,9 +1166,6 @@ and transl_let' env str kind id exp transl_body =
       | Mutable, bn -> Clet_mut (v, typ_of_boxed_number bn, cexp, body)
       end
 
-and transl_let env str kind id exp body =
-  transl_let' env str kind id exp (fun env -> transl env body)
-
 and make_catch ncatch body handler dbg = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
 | _ ->  ccatch (ncatch, [], body, handler, dbg)
@@ -1206,7 +1203,7 @@ and transl_if env (approx : then_else)
         then_dbg then_
         else_dbg else_
   | Ulet(str, kind, id, exp, cond) ->
-      transl_let' env str kind id exp (fun env ->
+      transl_let env str kind id exp (fun env ->
         transl_if env approx dbg cond then_dbg then_ else_dbg else_)
   | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
       transl_sequand env approx
