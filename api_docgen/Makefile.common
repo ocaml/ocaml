@@ -30,16 +30,8 @@ DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
 .PHONY: all
 all: html pdf man
 
-.PHONY: setup
-setup:
-	$(MKDIR) build build/libref build/compilerlibref
-	$(MKDIR) html html/libref html/compilerlibref
-	$(MKDIR) man man/libref man/compilerlibref
-	$(MKDIR) latex latex/libref latex/compilerlibref
-	$(MKDIR) texi
-
-DIRS= build/libref build/compilerlibref man/ latex/ texi/ \
-	html/ html/libref html/compilerlibref
+DIRS = $(add_prefix build/,libref compilerlibref man/ latex/ texi/ \
+  html/ html/libref html/compilerlibref)
 
 $(DIRS):
 	$(MKDIR) $@
