@@ -776,7 +776,7 @@ AS
 endianness
 ASPP
 ocamltest
-documentation_mode
+documentation_tool
 ocamldoc
 with_camltex
 with_debugger
@@ -17058,9 +17058,9 @@ else
 fi
 
 if test x"$with_odoc" = "xyes"; then :
-  documentation_mode="odoc"
+  documentation_tool="odoc"
 else
-  documentation_mode="ocamldoc"
+  documentation_tool="ocamldoc"
 fi
 
 case $enable_ocamltest,4.13.0+dev0-2020-10-19 in #(

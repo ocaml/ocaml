@@ -137,7 +137,7 @@ AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
-AC_SUBST([documentation_mode])
+AC_SUBST([documentation_tool])
 AC_SUBST([ocamltest])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
@@ -1745,8 +1745,8 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=ocamldoc])
 
 AS_IF([test x"$with_odoc" = "xyes"],
-  [documentation_mode="odoc"],
-  [documentation_mode="ocamldoc"])
+  [documentation_tool="odoc"],
+  [documentation_tool="ocamldoc"])
 
 AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
   [yes,*|,*+dev*],[ocamltest='ocamltest'],
