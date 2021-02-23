@@ -129,6 +129,7 @@ and array_kind = Lambda.array_kind =
 and value_kind = Lambda.value_kind =
   (* CR mshinwell: Pfloatval should be renamed to Pboxedfloatval *)
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
+  | Pblock of { tag : int; fields : value_kind list }
 
 and block_shape = Lambda.block_shape
 and boxed_integer = Primitive.boxed_integer =

@@ -691,7 +691,7 @@ and transl_catch env nfail ids body handler dbg =
          let strict =
            match kind with
            | Pfloatval | Pboxedintval _ -> false
-           | Pintval | Pgenval -> true
+           | Pintval | Pgenval | Pblock _ -> true
          in
          u := join_unboxed_number_kind ~strict !u
              (is_unboxed_number_cmm ~strict c)
@@ -1144,7 +1144,7 @@ and transl_let env str kind id exp transl_body =
            we do it only if this indeed allows us to get rid of
            some allocations in the bound expression. *)
         is_unboxed_number_cmm ~strict:false cexp
-    | _, Pgenval ->
+    | _, (Pgenval | Pblock _) ->
         (* Here we don't know statically that the bound expression
            evaluates to an unboxable number type.  We need to be stricter
            and ensure that all possible branches in the expression

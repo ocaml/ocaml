@@ -149,6 +149,7 @@ and float_comparison =
 
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
+  | Pblock of { tag : int; fields : value_kind list }
 
 and block_shape =
   value_kind list option
@@ -186,13 +187,17 @@ let equal_primitive =
      than 100 constructors... *)
   (=)
 
-let equal_value_kind x y =
+let rec equal_value_kind x y =
   match x, y with
   | Pgenval, Pgenval -> true
   | Pfloatval, Pfloatval -> true
   | Pboxedintval bi1, Pboxedintval bi2 -> equal_boxed_integer bi1 bi2
   | Pintval, Pintval -> true
-  | (Pgenval | Pfloatval | Pboxedintval _ | Pintval), _ -> false
+  | Pblock { tag = tag1; fields = fields1 },
+    Pblock { tag = tag2; fields = fields2 } ->
+    tag1 = tag2 && List.length fields1 = List.length fields2 &&
+    List.for_all2 equal_value_kind fields1 fields2
+  | (Pgenval | Pfloatval | Pboxedintval _ | Pintval | Pblock _), _ -> false
 
 
 type structured_constant =

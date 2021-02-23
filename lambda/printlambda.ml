@@ -53,23 +53,35 @@ let boxed_integer_name = function
   | Pint32 -> "int32"
   | Pint64 -> "int64"
 
-let value_kind ppf = function
+let rec value_kind ppf = function
+  | Pgenval -> pp_print_string ppf "*"
+  | Pintval -> pp_print_string ppf "int"
+  | Pfloatval -> pp_print_string ppf "float"
+  | Pboxedintval bi -> pp_print_string ppf (boxed_integer_name bi)
+  | Pblock { tag; fields } ->
+    fprintf ppf "[%i: %a]" tag
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+         value_kind) fields
+
+let argument_kind ppf = function
   | Pgenval -> ()
   | Pintval -> fprintf ppf "[int]"
   | Pfloatval -> fprintf ppf "[float]"
   | Pboxedintval bi -> fprintf ppf "[%s]" (boxed_integer_name bi)
+  | Pblock { tag; fields } ->
+    fprintf ppf "[%i: %a]" tag
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+         value_kind) fields
 
 let return_kind ppf = function
   | Pgenval -> ()
   | Pintval -> fprintf ppf ": int@ "
   | Pfloatval -> fprintf ppf ": float@ "
   | Pboxedintval bi -> fprintf ppf ": %s@ " (boxed_integer_name bi)
-
-let field_kind = function
-  | Pgenval -> "*"
-  | Pintval -> "int"
-  | Pfloatval -> "float"
-  | Pboxedintval bi -> boxed_integer_name bi
+  | Pblock { tag; fields } ->
+    fprintf ppf ": [%i: %a]@ " tag
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+         value_kind) fields
 
 let print_boxed_integer_conversion ppf bi1 bi2 =
   fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
@@ -118,11 +130,11 @@ let block_shape ppf shape = match shape with
   | None | Some [] -> ()
   | Some l when List.for_all ((=) Pgenval) l -> ()
   | Some [elt] ->
-      Format.fprintf ppf " (%s)" (field_kind elt)
+      Format.fprintf ppf " (%a)" value_kind elt
   | Some (h :: t) ->
-      Format.fprintf ppf " (%s" (field_kind h);
+      Format.fprintf ppf " (%a" value_kind h;
       List.iter (fun elt ->
-          Format.fprintf ppf ",%s" (field_kind elt))
+          Format.fprintf ppf ",%a" value_kind elt)
         t;
       Format.fprintf ppf ")"
 
@@ -507,7 +519,7 @@ let rec lam ppf = function
         match kind with
         | Curried ->
             List.iter (fun (param, k) ->
-                fprintf ppf "@ %a%a" Ident.print param value_kind k) params
+                fprintf ppf "@ %a%a" Ident.print param argument_kind k) params
         | Tupled ->
             fprintf ppf " (";
             let first = ref true in
@@ -515,7 +527,7 @@ let rec lam ppf = function
               (fun (param, k) ->
                 if !first then first := false else fprintf ppf ",@ ";
                 Ident.print ppf param;
-                value_kind ppf k)
+                argument_kind ppf k)
               params;
             fprintf ppf ")" in
       fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
@@ -534,12 +546,12 @@ let rec lam ppf = function
       let rec letbody = function
         | Llet(_, k, id, arg, body)
         | Lmutlet(k, id, arg, body) as l ->
-           fprintf ppf "@ @[<2>%a =%s%a@ %a@]"
-             Ident.print id (let_kind l) value_kind k lam arg;
+           fprintf ppf "@ @[<2>%a %a=%s@ %a@]"
+             Ident.print id return_kind k (let_kind l) lam arg;
            letbody body
         | expr -> expr in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s%a@ %a@]"
-        Ident.print id (let_kind l) value_kind k lam arg;
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a %a=%s@ %a@]"
+        Ident.print id return_kind k (let_kind l) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->
@@ -604,7 +616,7 @@ let rec lam ppf = function
         lam lbody i
         (fun ppf vars ->
            List.iter
-             (fun (x, k) -> fprintf ppf " %a%a" Ident.print x value_kind k)
+             (fun (x, k) -> fprintf ppf " %a%a" Ident.print x argument_kind k)
              vars
         )
         vars
