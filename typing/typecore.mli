@@ -78,7 +78,8 @@ val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_class_arg_pattern:
         string -> Env.t -> Env.t -> arg_label -> Parsetree.pattern ->
-        Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
+        Typedtree.pattern *
+        (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
         string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
@@ -89,7 +90,7 @@ val type_self_pattern:
         Env.t * Env.t * Env.t
 val check_partial:
         ?lev:int -> Env.t -> type_expr ->
-        Location.t -> Typedtree.case list -> Typedtree.partial
+        Location.t -> Typedtree.value Typedtree.case list -> Typedtree.partial
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expected -> Typedtree.expression
@@ -109,16 +110,15 @@ val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
 
 val name_pattern : string -> Typedtree.pattern list -> Ident.t
-
-val name_cases : string -> Typedtree.case list -> Ident.t
+val name_cases : string -> Typedtree.value Typedtree.case list -> Ident.t
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Ctype.Unification_trace.t
-  | Pattern_type_clash of
-      Ctype.Unification_trace.t * Typedtree.pattern_desc option
+  | Pattern_type_clash :
+      Ctype.Unification_trace.t * _ Typedtree.pattern_desc option -> error
   | Or_pattern_type_clash of Ident.t * Ctype.Unification_trace.t
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list

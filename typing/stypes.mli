@@ -20,7 +20,7 @@
 open Typedtree;;
 
 type annotation =
-  | Ti_pat   of pattern
+  | Ti_pat : 'k pattern_category * 'k general_pattern -> annotation
   | Ti_expr  of expression
   | Ti_class of class_expr
   | Ti_mod   of module_expr

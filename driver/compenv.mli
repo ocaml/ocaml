@@ -34,6 +34,8 @@ val get_objfiles : with_ocamlparam:bool -> string list
 val last_objfiles : string list ref
 val first_objfiles : string list ref
 
+val stop_early : bool ref
+
 type filename = string
 
 type readenv_position =

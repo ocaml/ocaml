@@ -869,7 +869,7 @@ let half_simplify_cases args cls =
         | Tpat_variant _
         | Tpat_array _
         | Tpat_lazy _
-        | Tpat_exception _ ->
+          ->
             cl
       )
   in
@@ -3240,7 +3240,6 @@ let is_lazy_pat p = match p.pat_desc with
   | Tpat_var _
   | Tpat_any ->
       false
-  | Tpat_exception _ -> assert false
 
 let has_lazy p =
   Typedtree.exists_pattern is_lazy_pat p
@@ -3265,7 +3264,6 @@ let is_record_with_mutable_field p =
   | Tpat_var _
   | Tpat_any ->
       false
-  | Tpat_exception _ -> assert false
 
 let has_mutable p =
   Typedtree.exists_pattern is_record_with_mutable_field p
@@ -3290,10 +3288,13 @@ let check_partial has_mutable has_lazy pat_act_list = function
       else
         Total
 
-let check_partial_list =
+let check_partial_list pats_act_list =
   check_partial (List.exists has_mutable) (List.exists has_lazy)
+    pats_act_list
 
-let check_partial = check_partial has_mutable has_lazy
+let check_partial pat_act_list =
+  check_partial has_mutable has_lazy
+    pat_act_list
 
 (* have toplevel handler when appropriate *)
 

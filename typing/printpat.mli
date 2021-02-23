@@ -15,8 +15,13 @@
 
 
 
-val pretty_const : Asttypes.constant -> string
-val top_pretty : Format.formatter -> Typedtree.pattern -> unit
-val pretty_pat : Typedtree.pattern -> unit
-val pretty_line : Format.formatter -> Typedtree.pattern list -> unit
-val pretty_matrix : Format.formatter -> Typedtree.pattern list list -> unit
+val pretty_const
+    : Asttypes.constant -> string
+val top_pretty
+    : Format.formatter -> 'k Typedtree.general_pattern -> unit
+val pretty_pat
+    : 'k Typedtree.general_pattern -> unit
+val pretty_line
+    : Format.formatter -> 'k Typedtree.general_pattern list -> unit
+val pretty_matrix
+    : Format.formatter -> 'k Typedtree.general_pattern list list -> unit

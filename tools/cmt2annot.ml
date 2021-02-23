@@ -21,7 +21,7 @@ open Tast_iterator
 
 let variables_iterator scope =
   let super = default_iterator in
-  let pat sub p =
+  let pat sub (type k) (p : k general_pattern) =
     begin match p.pat_desc with
     | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
         Stypes.record (Stypes.An_ident (p.pat_loc,
@@ -116,8 +116,8 @@ let rec iterator ~scope rebuild_env =
     Stypes.record (Stypes.Ti_expr exp);
     super.expr sub exp
 
-  and pat sub p =
-    Stypes.record (Stypes.Ti_pat p);
+  and pat sub (type k) (p : k general_pattern) =
+    Stypes.record (Stypes.Ti_pat (classify_pattern p, p));
     super.pat sub p
   in
 
@@ -166,7 +166,7 @@ let binary_part iter x =
   | Partial_structure x -> iter.structure iter x
   | Partial_structure_item x -> iter.structure_item iter x
   | Partial_expression x -> iter.expr iter x
-  | Partial_pattern x -> iter.pat iter x
+  | Partial_pattern (_, x) -> iter.pat iter x
   | Partial_class_expr x -> iter.class_expr iter x
   | Partial_signature x -> iter.signature iter x
   | Partial_signature_item x -> iter.signature_item iter x

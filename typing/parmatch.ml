@@ -141,8 +141,6 @@ end = struct
       | Tpat_lazy p ->
           Lazy, [p]
       | Tpat_or _ -> invalid_arg "Parmatch.Pattern_head.deconstruct: (P | Q)"
-      | Tpat_exception _ ->
-          invalid_arg "Parmatch.Pattern_head.deconstruct: (exception P)"
     in
     let desc, pats = deconstruct_desc q.pat_desc in
     { desc; typ = q.pat_type; loc = q.pat_loc;
@@ -1229,8 +1227,6 @@ let rec has_instance p = match p.pat_desc with
   | Tpat_record (lps,_) -> has_instances (List.map (fun (_,_,x) -> x) lps)
   | Tpat_lazy p
     -> has_instance p
-  | Tpat_exception _ -> assert false
-
 
 and has_instances = function
   | [] -> true
@@ -1955,10 +1951,15 @@ and lubs ps qs = match ps,qs with
 (* Apply pressure to variants *)
 
 let pressure_variants tdefs patl =
+  ignore (pressure_variants
+            (Some tdefs)
+            (List.map (fun p -> [p; omega]) patl))
+
+let pressure_variants_in_computation_pattern tdefs patl =
   let add_row pss p_opt =
     match p_opt with
     | None -> pss
-    | Some p -> [p; omega] :: pss
+    | Some p -> p :: pss
   in
   let val_pss, exn_pss =
     List.fold_right (fun pat (vpss, epss)->
@@ -1966,8 +1967,8 @@ let pressure_variants tdefs patl =
       add_row vpss vp, add_row epss ep
     ) patl ([], [])
   in
-  ignore (pressure_variants (Some tdefs) val_pss);
-  ignore (pressure_variants (Some tdefs) exn_pss)
+  pressure_variants tdefs val_pss;
+  pressure_variants tdefs exn_pss
 
 (*****************************)
 (* Utilities for diagnostics *)
@@ -2055,8 +2056,6 @@ module Conv = struct
           mkpat (Ppat_array (List.map loop lst))
       | Tpat_lazy p ->
           mkpat (Ppat_lazy (loop p))
-      | Tpat_exception _ ->
-          assert false
     in
     let ps = loop typed in
     (ps, constrs, labels)
@@ -2182,7 +2181,6 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_lazy p
     ->
     collect_paths_from_pat r p
-| Tpat_exception _ -> assert false
 
 
 (*
@@ -2314,7 +2312,6 @@ let inactive ~partial pat =
               ldps
         | Tpat_or (p,q,_) ->
             loop p && loop q
-        | Tpat_exception _ -> assert false
       in
       loop pat
   end

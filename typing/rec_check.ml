@@ -1152,8 +1152,9 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
    m' is the mode under which the scrutinee of p
    (the value matched against p) is placed.
 *)
-and case : Typedtree.case -> mode -> Env.t * mode =
-  fun { Typedtree.c_lhs; c_guard; c_rhs } ->
+and case
+    : 'k . 'k Typedtree.case -> mode -> Env.t * mode
+  = fun { Typedtree.c_lhs; c_guard; c_rhs } ->
     (*
        Ge |- e : m    Gg |- g : m[Dereference]
        G := Ge+Gg     p : mp -| G
@@ -1173,7 +1174,7 @@ and case : Typedtree.case -> mode -> Env.t * mode =
 
    m is the mode under which the scrutinee of p is placed.
 *)
-and pattern : pattern -> Env.t -> mode = fun pat env ->
+and pattern : type k . k general_pattern -> Env.t -> mode = fun pat env ->
   (*
     mp := | Dereference if p is destructuring
           | Guard       otherwise
@@ -1192,7 +1193,7 @@ and pattern : pattern -> Env.t -> mode = fun pat env ->
   in
   Mode.join m_pat m_env
 
-and is_destructuring_pattern : Typedtree.pattern -> bool =
+and is_destructuring_pattern : type k . k general_pattern -> bool =
   fun pat -> match pat.pat_desc with
     | Tpat_any -> false
     | Tpat_var (_, _) -> false
@@ -1203,10 +1204,11 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_variant _ -> true
     | Tpat_record (_, _) -> true
     | Tpat_array _ -> true
+    | Tpat_lazy _ -> true
+    | Tpat_value pat -> is_destructuring_pattern (pat :> pattern)
+    | Tpat_exception _ -> false
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
-    | Tpat_lazy _ -> true
-    | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
   let ty = expression expr Return in

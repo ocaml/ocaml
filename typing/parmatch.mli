@@ -90,7 +90,10 @@ val ppat_of_type :
     (string, constructor_description) Hashtbl.t *
     (string, label_description) Hashtbl.t
 
-val pressure_variants: Env.t -> pattern list -> unit
+val pressure_variants:
+  Env.t -> pattern list -> unit
+val pressure_variants_in_computation_pattern:
+  Env.t -> computation general_pattern list -> unit
 
 (** [check_partial pred loc caselist] and [check_unused refute pred caselist]
     are called with a function [pred] which will be given counter-example
@@ -103,13 +106,13 @@ val check_partial:
     ((string, constructor_description) Hashtbl.t ->
      (string, label_description) Hashtbl.t ->
      Parsetree.pattern -> pattern option) ->
-    Location.t -> case list -> partial
+    Location.t -> value case list -> partial
 val check_unused:
     (bool ->
      (string, constructor_description) Hashtbl.t ->
      (string, label_description) Hashtbl.t ->
      Parsetree.pattern -> pattern option) ->
-    case list -> unit
+    value case list -> unit
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool
@@ -121,7 +124,7 @@ val irrefutable : pattern -> bool
 val inactive : partial:partial -> pattern -> bool
 
 (* Ambiguous bindings *)
-val check_ambiguous_bindings : case list -> unit
+val check_ambiguous_bindings : value case list -> unit
 
 (* The tag used for open polymorphic variant types with an abstract row *)
 val some_private_tag : label
