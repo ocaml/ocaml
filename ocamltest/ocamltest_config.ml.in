@@ -47,8 +47,8 @@ let ocamlsrcdir = "%%ocamlsrcdir%%"
 
 let flambda = %%FLAMBDA%%
 
-let ocamlc_default_flags = "%%ocamlcdefaultflags%%"
-let ocamlopt_default_flags = "%%ocamloptdefaultflags%%"
+let ocamlc_default_flags = ""
+let ocamlopt_default_flags = ""
 
 let safe_string = %%FORCE_SAFE_STRING%%
 

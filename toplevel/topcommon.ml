@@ -71,43 +71,52 @@ let toplevel_env = ref Env.empty
 
 let backtrace = ref None
 
-(* Generic printer *)
+(* Generic evaluator and printer *)
 
-module type PRINTER = sig
+exception Undefined_global of string
 
-  module Printer: Genprintval.S with type t = Obj.t
+module type EVAL_BASE = sig
 
-  val print_value: Env.t -> Printer.t -> formatter -> Types.type_expr -> unit
-  val print_untyped_exception: formatter -> Printer.t -> unit
-
-  val print_exception_outcome : formatter -> exn -> unit
-
-  val outval_of_value:
-    Env.t -> Printer.t -> Types.type_expr -> Outcometree.out_value
-
-  type ('a, 'b) gen_printer =
-    | Zero of 'b
-    | Succ of ('a -> ('a, 'b) gen_printer)
-
-  val install_printer :
-    Path.t -> Types.type_expr -> (formatter -> Printer.t -> unit) -> unit
-  val install_generic_printer :
-    Path.t -> Path.t ->
-    (int -> (int -> Printer.t -> Outcometree.out_value,
-            Printer.t-> Outcometree.out_value) gen_printer) -> unit
-  val install_generic_printer' :
-    Path.t -> Path.t -> (formatter -> Printer.t -> unit,
-                         formatter -> Printer.t -> unit) gen_printer -> unit
-  val remove_printer : Path.t -> unit
+  (* Return the value referred to by a base ident.
+     @raise [Undefined_global] if not found *)
+  val eval_ident: Ident.t -> Obj.t
 
 end
 
-module MakePrinter
-    (Printer: Genprintval.S with type t = Obj.t)
-  : PRINTER
-= struct
+module MakeEvalPrinter (E: EVAL_BASE) = struct
 
-  module Printer = Printer
+  let rec eval_address = function
+    | Env.Aident id -> E.eval_ident id
+    | Env.Adot(p, pos) -> Obj.field (eval_address p) pos
+
+  let eval_path find env path =
+    match find path env with
+    | addr -> eval_address addr
+    | exception Not_found ->
+        Misc.fatal_error ("Cannot find address for: " ^ (Path.name path))
+
+  let eval_module_path env path =
+    eval_path Env.find_module_address env path
+
+  let eval_value_path env path =
+    eval_path Env.find_value_address env path
+
+  let eval_extension_path env path =
+    eval_path Env.find_constructor_address env path
+
+  let eval_class_path env path =
+    eval_path Env.find_class_address env path
+
+
+  module Printer = Genprintval.Make(Obj)(struct
+      type valu = Obj.t
+      exception Error
+      let eval_address addr =
+        try eval_address addr
+        with Undefined_global _ ->
+          raise Error
+      let same_value v1 v2 = (v1 == v2)
+    end)
 
   let print_untyped_exception ppf obj =
     !print_out_value ppf (Printer.outval_of_untyped_exception obj)

@@ -66,7 +66,7 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 #include <netdb.h>
 #else
 #define ATOM ATOM_WS
-#include <winsock.h>
+#include <winsock2.h>
 #undef ATOM
 #include <process.h>
 #endif
@@ -103,42 +103,29 @@ static struct skiplist event_points_table = SKIPLIST_STATIC_INITIALIZER;
 static void open_connection(void)
 {
 #ifdef _WIN32
-  /* Set socket to synchronous mode so that file descriptor-oriented
-     functions (read()/write() etc.) can be used */
-
-  int oldvalue, oldvaluelen, newvalue, retcode;
-  oldvaluelen = sizeof(oldvalue);
-  retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                       (char *) &oldvalue, &oldvaluelen);
-  if (retcode == 0) {
-      newvalue = SO_SYNCHRONOUS_NONALERT;
-      setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                 (char *) &newvalue, sizeof(newvalue));
-  }
-#endif
-  dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
-#ifdef _WIN32
-  if (retcode == 0) {
-    /* Restore initial mode */
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-               (char *) &oldvalue, oldvaluelen);
-  }
-#endif
-  if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error
-    (
-      "cannot connect to debugger at %s\n"
-      "error: %s",
-      (dbg_addr ? dbg_addr : "(none)"),
-      strerror (errno)
-    );
-  }
-#ifdef _WIN32
-  dbg_socket = _open_osfhandle(dbg_socket, 0);
+  /* Set socket to synchronous mode (= non-overlapped) so that file
+     descriptor-oriented functions (read()/write() etc.) can be
+     used */
+  SOCKET sock = WSASocket(sock_domain, SOCK_STREAM, 0,
+                          NULL, 0,
+                          0 /* not WSA_FLAG_OVERLAPPED */);
+  if (sock == INVALID_SOCKET
+      || connect(sock, &sock_addr.s_gen, sock_addr_len) != 0)
+    caml_fatal_error("cannot connect to debugger at %s\n"
+                     "WSA error code: %d",
+                     (dbg_addr ? dbg_addr : "(none)"),
+                     WSAGetLastError());
+  dbg_socket = _open_osfhandle(sock, 0);
   if (dbg_socket == -1)
-    caml_fatal_error("_open_osfhandle failed");
+#else
+  dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
+  if (dbg_socket == -1 ||
+      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
 #endif
+    caml_fatal_error("cannot connect to debugger at %s\n"
+                     "error: %s",
+                     (dbg_addr ? dbg_addr : "(none)"),
+                     strerror (errno));
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* The code in this file does not bracket channel I/O operations with

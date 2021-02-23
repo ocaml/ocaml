@@ -167,17 +167,33 @@ end
 
 val lowest_level: int
         (* Marked type: ty.level < lowest_level *)
+
 val not_marked_node: type_expr -> bool
         (* Return true if a type node is not yet marked *)
+
+val logged_mark_node: type_expr -> unit
+        (* Mark a type node, logging the marking so it can be backtracked.
+           No [repr]'ing *)
+val try_logged_mark_node: type_expr -> bool
+        (* Mark a type node if it is not yet marked, logging the marking so it
+           can be backtracked.
+           Return false if it was already marked *)
+
 val flip_mark_node: type_expr -> unit
-        (* Mark a type node. No [repr]'ing *)
+        (* Mark a type node. No [repr]'ing.
+           The marking is not logged and will have to be manually undone using
+           one of the various [unmark]'ing functions below. *)
 val try_mark_node: type_expr -> bool
         (* Mark a type node if it is not yet marked.
+           The marking is not logged and will have to be manually undone using
+           one of the various [unmark]'ing functions below.
+
            Return false if it was already marked *)
 val mark_type: type_expr -> unit
         (* Mark a type recursively *)
 val mark_type_params: type_expr -> unit
         (* Mark the sons of a type node recursively *)
+
 val unmark_type: type_expr -> unit
 val unmark_type_decl: type_declaration -> unit
 val unmark_extension_constructor: extension_constructor -> unit

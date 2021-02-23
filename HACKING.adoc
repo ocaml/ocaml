@@ -189,6 +189,7 @@ has excellent documentation.
   ocamltest/::            test driver
   otherlibs/::            several additional libraries
   parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
+  release-info/::         documentation and tools to prepare releases
   runtime/::              bytecode interpreter and runtime systems
   stdlib/::               standard library
   testsuite/::            tests -- see link:testsuite/HACKING.adoc[]
