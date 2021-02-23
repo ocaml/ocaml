@@ -244,6 +244,13 @@ let find_all p =
 
 let filter = find_all
 
+let filteri p l =
+  let rec aux i acc = function
+  | [] -> rev acc
+  | x::l -> aux (i + 1) (if p i x then x::acc else acc) l
+  in
+  aux 0 [] l
+
 let filter_map f =
   let rec aux accu = function
     | [] -> rev accu

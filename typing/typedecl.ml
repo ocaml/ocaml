@@ -37,7 +37,12 @@ type error =
   | Constraint_failed of type_expr * type_expr
   | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
   | Type_clash of Env.t * Ctype.Unification_trace.t
-  | Parameters_differ of Path.t * type_expr * type_expr
+  | Non_regular of {
+      definition: Path.t;
+      used_as: type_expr;
+      defined_as: type_expr;
+      expansions: (type_expr * type_expr) list;
+    }
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
@@ -780,7 +785,7 @@ let check_recursion env loc path decl to_check =
 
   let visited = ref [] in
 
-  let rec check_regular cpath args prev_exp ty =
+  let rec check_regular cpath args prev_exp prev_expansions ty =
     let ty = Ctype.repr ty in
     if not (List.memq ty !visited) then begin
       visited := ty :: !visited;
@@ -789,7 +794,12 @@ let check_recursion env loc path decl to_check =
           if Path.same path path' then begin
             if not (Ctype.equal env false args args') then
               raise (Error(loc,
-                     Parameters_differ(cpath, ty, Ctype.newconstr path args)))
+                     Non_regular {
+                       definition=path;
+                       used_as=ty;
+                       defined_as=Ctype.newconstr path args;
+                       expansions=List.rev prev_expansions;
+                     }))
           end
           (* Attempt to expand a type abbreviation if:
               1- [to_check path'] holds
@@ -809,15 +819,18 @@ let check_recursion env loc path decl to_check =
                   raise (Error(loc, Constraint_failed
                                  (ty, Ctype.newconstr path' params0)));
               end;
-              check_regular path' args (path' :: prev_exp) body
+              check_regular path' args
+                (path' :: prev_exp) ((ty,body) :: prev_expansions)
+                body
             with Not_found -> ()
           end;
-          List.iter (check_regular cpath args prev_exp) args'
+          List.iter (check_regular cpath args prev_exp prev_expansions) args'
       | Tpoly (ty, tl) ->
           let (_, ty) = Ctype.instance_poly ~keep_names:true false tl ty in
-          check_regular cpath args prev_exp ty
+          check_regular cpath args prev_exp prev_expansions ty
       | _ ->
-          Btype.iter_type_expr (check_regular cpath args prev_exp) ty
+          Btype.iter_type_expr
+            (check_regular cpath args prev_exp prev_expansions) ty
     end in
 
   Option.iter
@@ -825,7 +838,7 @@ let check_recursion env loc path decl to_check =
       let (args, body) =
         Ctype.instance_parameterized_type
           ~keep_names:true decl.type_params body in
-      check_regular path args [] body)
+      check_regular path args [] [] body)
     decl.type_manifest
 
 let check_abbrev_recursion env id_loc_list to_check tdecl =
@@ -1793,15 +1806,41 @@ let report_error ppf = function
         "Constraints are not satisfied in this type."
         !Oprint.out_type (Printtyp.tree_of_typexp false ty)
         !Oprint.out_type (Printtyp.tree_of_typexp false ty')
-  | Parameters_differ (path, ty, ty') ->
-      Printtyp.reset_and_mark_loops ty;
-      Printtyp.mark_loops ty';
+  | Non_regular { definition; used_as; defined_as; expansions } ->
+      let pp_expansion ppf (ty,body) =
+        Format.fprintf ppf "%a = %a"
+          Printtyp.type_expr ty
+          Printtyp.type_expr body in
+      let comma ppf () = Format.fprintf ppf ",@;<1 2>" in
+      let pp_expansions ppf expansions =
+        Format.(pp_print_list ~pp_sep:comma pp_expansion) ppf expansions in
+      Printtyp.reset_and_mark_loops used_as;
+      Printtyp.mark_loops defined_as;
       Printtyp.Naming_context.reset ();
-      fprintf ppf
-        "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
-        (Path.name path)
-        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
-        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
+      begin match expansions with
+      | [] ->
+          fprintf ppf
+            "@[<hv>This recursive type is not regular.@ \
+             The type constructor %s is defined as@;<1 2>type %a@ \
+             but it is used as@;<1 2>%a.@ \
+             All uses need to match the definition for the recursive type \
+             to be regular.@]"
+            (Path.name definition)
+            !Oprint.out_type (Printtyp.tree_of_typexp false defined_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp false used_as)
+      | _ :: _ ->
+          fprintf ppf
+            "@[<hv>This recursive type is not regular.@ \
+             The type constructor %s is defined as@;<1 2>type %a@ \
+             but it is used as@;<1 2>%a@ \
+             after the following expansion(s):@;<1 2>%a@ \
+             All uses need to match the definition for the recursive type \
+             to be regular.@]"
+            (Path.name definition)
+            !Oprint.out_type (Printtyp.tree_of_typexp false defined_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp false used_as)
+            pp_expansions expansions
+      end
   | Inconsistent_constraint (env, trace) ->
       fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf env trace

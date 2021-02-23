@@ -176,3 +176,24 @@ Error: This expression has type t but an expression was expected of type
          [ `A ]
        The first variant type is private, it may not allow the tag(s) `A
 |}]
+
+
+(** Check that the non-regularity error message is robust to permutation *)
+
+type ('a,'b,'c,'d,'e) a = [ `A of ('d,'a,'e,'c,'b) b ]
+and  ('a,'b,'c,'d,'e) b = [ `B of ('c,'d,'e,'a,'b) c ]
+and  ('a,'b,'c,'d,'e) c = [ `C of ('a,'b,'c,'d,'e) a ]
+[%%expect {|
+Line 3, characters 0-54:
+3 | type ('a,'b,'c,'d,'e) a = [ `A of ('d,'a,'e,'c,'b) b ]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This recursive type is not regular.
+       The type constructor a is defined as
+         type ('a, 'b, 'c, 'd, 'e) a
+       but it is used as
+         ('e, 'c, 'b, 'd, 'a) a
+       after the following expansion(s):
+         ('d, 'a, 'e, 'c, 'b) b = [ `B of ('e, 'c, 'b, 'd, 'a) c ],
+         ('e, 'c, 'b, 'd, 'a) c = [ `C of ('e, 'c, 'b, 'd, 'a) a ]
+       All uses need to match the definition for the recursive type to be regular.
+|}]

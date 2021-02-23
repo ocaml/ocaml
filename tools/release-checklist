@@ -132,12 +132,55 @@ git push
 git push --tags
 ```
 
+## 5-bis: Alternative for branching
+
+This needs to be more tested, tread with care.
+```
+# at this point, the VERSION file contains N+devD
+# increment it into N+dev(D+1); for example,
+#   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
+# Rename the "Working version" header in Changes
+# to "OCaml $VERSION"
+./autogen
+git commit -a -m "last commit before branching $VERSION"
+git branch $VERSION
+
+# update VERSION with the new future branch,
+#   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
+# Update ocaml-variants.opam with new version.
+./autogen
+# Add a "Working version" section" to Changes
+# Add common subsections in Changes, see Changelog.
+git commit -m "first commit after branching $VERSION" -a
+git push
+
+# Switch to the new branch
+git checkout $VERSION
+# increment VERSION, for instance
+#   4.07.0+dev1-2018-06-26 => 4.07.0+dev2-2018-06-30
+./autogen
+git commit -m "first commit on branch $VERSION" -a
+git push $VERSION
+```
+
+Adjust github branch settings:
+
+Go to
+  https://github.com/ocaml/ocaml/settings/branches
+and add a rule for protecting the new branch
+(copy the rights from the previous version)
+
 ## 5.1: create the release on github (only for a production release)
 
 open https://github.com/ocaml/ocaml/releases
 # and click "Draft a new release"
 # for a minor release, the description is:
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
+
+## 5.2: Inria CI
+
+After creating a new branch, add it to the Inria CI list.
+Remove the oldest branch from this list.
 
 
 ## 6: create OPAM packages
@@ -148,6 +191,18 @@ switch configuration choices from the previous version.
 Do not forget to add/update the checksum field for the tarballs in the
 "url" section of the opam files. Use opam-lint before sending the pull
 request.
+
+## 6.1 Update OPAM dev packages after branching
+
+Create a new ocaml/ocaml.$NEXT/opam file.
+Copy the opam dev files from ocaml-variants/ocaml-variants.$VERSION+trunk*
+into ocaml-variants/ocaml-variants.$NEXT+trunk+* .
+Update the version in those opam files.
+
+Update the synopsis and "src" field in the opam $VERSION packages.
+The "src" field should point to
+ src: "https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz"
+The synopsis should be "latest $VERSION development(,...)".
 
 ## 7: build the release archives
 
@@ -385,4 +440,32 @@ We want to know about all bugs. Please report them here:
 Happy hacking,
 
 -- Damien Doligez for the OCaml team.
+```
+
+#Changelog
+
+A list of common subsection for the "Changes" file:
+
+```
+### Language features
+
+### Runtime system:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+### Internal/compiler-libs changes:
+
+### Build system:
+
+### Bug fixes:
 ```
