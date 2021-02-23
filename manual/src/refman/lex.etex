@@ -348,16 +348,16 @@ longest first token.
 
 \begin{syntax}
 linenum-directive:
-        '#' {{"0" \ldots "9"}}
-      | '#' {{"0" \ldots "9"}} '"' { string-character } '"'
+     '#' {{"0" \ldots "9"}} '"' { string-character } '"'
 \end{syntax}
 
 Preprocessors that generate OCaml source code can insert line number
 directives in their output so that error messages produced by the
 compiler contain line numbers and file names referring to the source
 file before preprocessing, instead of after preprocessing.
-A line number directive is composed of a @"#"@ (sharp sign), followed by
-a positive integer (the source line number), optionally followed by a
+A line number directive starts at the beginning of a line,
+is composed of a @"#"@ (sharp sign), followed by
+a positive integer (the source line number), followed by a
 character string (the source file name).
 Line number directives are treated as blanks during lexical
 analysis.
