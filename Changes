@@ -116,6 +116,11 @@ Working version
 
 ### Manual and documentation:
 
+- #10247: Add initial tranche of examples to reference manual.
+  Adds some eighty examples to the reference manual, principally to the
+  expressions and patterns sections.
+  (John Whitington, review by ...)
+
 - #9786, #10181: improved documentation of Unix.{in,out}_channel_of_descr
   with respect to closing.
   (Xavier Leroy, report by Jacques-Henri Jourdan, review by Guillaume
