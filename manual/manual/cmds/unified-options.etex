@@ -609,8 +609,25 @@ code such as C stubs.
 \notop{
 \item["-stop-after" \var{pass}]
 Stop compilation after the given compilation pass. The currently
-supported passes are: "parsing", "typing".
+supported passes are:
+"parsing", "typing"\nat{, "scheduling", "emit"}.
 }%notop
+
+\nat{
+\item["-save-ir-after" \var{pass}]
+Save intermediate representation after the given compilation pass
+to a file.
+The currently supported passes and the corresponding file extensions are:
+"scheduling" (".cmir-linear").
+
+This experimental feature enables external tools to inspect and manipulate
+compiler's intermediate representation of the program
+using "compiler-libs" library (see
+\ifouthtml chapter~\ref{c:parsinglib} and
+\ahref{compilerlibref/Compiler\_libs.html}{ \texttt{Compiler_libs} }
+\else section~\ref{Compiler-underscorelibs}\fi
+).
+}%nat
 
 \nat{%
 \item["-S"]

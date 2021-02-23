@@ -437,6 +437,9 @@ OCaml 4.12.0
   (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
    and Marcello Seri)
 
+- #10233: Document `-save-ir-after scheduling` and update `-stop-after` options.
+  (Greta Yorsh, review by Gabriel Scherer and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #1931: rely on levels to enforce principality in patterns
