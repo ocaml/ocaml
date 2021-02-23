@@ -16,6 +16,17 @@ no intervening blanks. Comments are treated as blank characters.
 Comments do not occur inside string or character literals. Nested
 comments are handled correctly.
 
+\begin{caml_example}{verbatim}
+(* single line comment *)
+
+(* multiple line comment, commenting out part of a program, and containing a
+nested comment:
+let f = function
+  | 'A'..'Z' -> "Uppercase"
+    (* Add other cases later... *)
+*)
+\end{caml_example}
+
 \subsubsection*{sss:lex:identifiers}{Identifiers}
 
 \begin{syntax}
@@ -80,6 +91,13 @@ representable integer values is undefined.
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within integer literals.
 
+\begin{caml_example}{toplevel}
+let house_number = 37
+let million = 1_000_000
+let copyright = 0x00A9
+let counter64bit = ref 0L;;
+\end{caml_example}
+
 \subsubsection*{sss:floating-point-literals}{Floating-point literals}
 
 \begin{syntax}
@@ -116,6 +134,12 @@ It is written in decimal and interpreted as a power of 2.
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within floating-point literals.
 
+\begin{caml_example}{toplevel}
+let pi = 3.14159265358979312
+let small_negative = -1e-5
+let hex = 0x1.fp3;;
+\end{caml_example}
+
 \subsubsection*{sss:character-literals}{Character literals}
 \label{s:characterliteral}
 
@@ -149,6 +173,11 @@ The two single quotes enclose either one character different from
 \entree{"\\o"\var{ooo}}{the character with ASCII code \var{ooo} in octal}
 \end{tableau}
 
+\begin{caml_example}{toplevel}
+let a = 'a'
+let single_quote = '\''
+let copyright = '\xA9';;
+\end{caml_example}
 \subsubsection*{sss:stringliterals}{String literals}
 
 \begin{syntax}
@@ -158,7 +187,6 @@ string-literal:
 ;
 quoted-string-id:
      { 'a'...'z' || '_' }
-;
 ;
 string-character:
           regular-string-char
@@ -178,10 +206,24 @@ encoding of the specified Unicode scalar value. The Unicode scalar
 value, an integer in the ranges 0x0000...0xD7FF or 0xE000...0x10FFFF,
 is defined using 1 to 6 hexadecimal digits; leading zeros are allowed.
 
+\begin{caml_example}{toplevel}
+let greeting = "Hello, World!\n"
+let superscript_plus = "\u{207A}";;
+\end{caml_example}
+
 To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{spaces-or-tabs} (a backslash at the end of a line
 followed by any number of spaces and horizontal tabulations at the
 beginning of the next line) is ignored inside string literals.
+
+\begin{caml_example}{toplevel}
+let longstr =
+  "Call me Ishmael. Some years ago — never mind how long \
+  precisely — having little or no money in my purse, and \
+  nothing particular to interest me on shore, I thought I\
+   would sail about a little and see the watery part of t\
+  he world.";;
+\end{caml_example}
 
 Quoted string literals provide an alternative lexical syntax for
 string literals. They are useful to represent strings of arbitrary content
@@ -192,8 +234,12 @@ any character in a special way but requires that the
 sequence @'|' quoted-string-id '}'@ does not occur in the string itself.
 The identifier @quoted-string-id@ is a (possibly empty) sequence of
 lowercase letters and underscores that can be freely chosen to avoid
-such issue (e.g. "{|hello|}", "{ext|hello {|world|}|ext}", ...).
+such issue.
 
+\begin{caml_example}{toplevel}
+let greeting_with_quotation_marks = {|"Hello, World!"|}
+let nested = {ext|hello {|world|}|ext};;
+\end{caml_example}
 
 The current implementation places practically no restrictions on the
 length of string literals.
@@ -302,16 +348,16 @@ longest first token.
 
 \begin{syntax}
 linenum-directive:
-     '#' {{"0" \ldots "9"}} '"' { string-character } '"'
+        '#' {{"0" \ldots "9"}}
+      | '#' {{"0" \ldots "9"}} '"' { string-character } '"'
 \end{syntax}
 
 Preprocessors that generate OCaml source code can insert line number
 directives in their output so that error messages produced by the
 compiler contain line numbers and file names referring to the source
 file before preprocessing, instead of after preprocessing.
-A line number directive starts at the beginning of a line,
-is composed of a @"#"@ (sharp sign), followed by
-a positive integer (the source line number), followed by a
+A line number directive is composed of a @"#"@ (sharp sign), followed by
+a positive integer (the source line number), optionally followed by a
 character string (the source file name).
 Line number directives are treated as blanks during lexical
 analysis.

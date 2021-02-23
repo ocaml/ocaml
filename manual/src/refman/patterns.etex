@@ -59,15 +59,41 @@ A pattern that consists in a value name matches any value,
 binding the name to the value. The pattern @"_"@ also matches
 any value, but does not bind any name.
 
+\begin{caml_example}{toplevel}
+let print_int_opt = function
+  | Some x -> print_int x
+  | _ -> ();;
+\end{caml_example}
+
 Patterns are {\em linear\/}: a variable cannot be bound several times by
 a given pattern. In particular, there is no way to test for equality
-between two parts of a data structure using only a pattern (but
-@"when"@ guards can be used for this purpose).
+between two parts of a data structure using only a pattern:
+
+\begin{caml_example}{toplevel}[error]
+let pair_equal = function
+  | x, x -> true
+  | x, y -> false;;
+\end{caml_example}
+
+However, we can use a @"when"@ guard for this purpose:
+
+\begin{caml_example}{toplevel}
+let pair_equal = function
+  | x, y when x = y -> true
+  | _ -> false;;
+\end{caml_example}
 
 \subsubsection*{sss:pat-const}{Constant patterns}
 
 A pattern consisting in a constant matches the values that
 are equal to this constant.
+
+\begin{caml_example}{toplevel}
+let bool_of_string = function
+  | "true" -> true
+  | "false" -> false
+  | _ -> raise (Invalid_argument "bool_of_string");;
+\end{caml_example}
 
 %% FIXME for negative numbers, blanks are allowed between the minus
 %% sign and the first digit.
@@ -80,6 +106,13 @@ The pattern @pattern_1 "as" value-name@ matches the same values as
 the name @value-name@ is bound to the matched value, in addition to the
 bindings performed by the matching against @pattern_1@.
 
+\begin{caml_example}{toplevel}
+let option_exception f x =
+  try Some (f x) with
+  | Assert_failure _ as e -> raise e
+  | _ -> None;;
+\end{caml_example}
+
 \subsubsection*{sss:pat-parenthesized}{Parenthesized patterns}
 
 The pattern @"(" pattern_1 ")"@ matches the same values as
@@ -87,6 +120,11 @@ The pattern @"(" pattern_1 ")"@ matches the same values as
 parenthesized pattern, as in @"(" pattern_1 ":" typexpr ")"@. This
 constraint forces the type of @pattern_1@ to be compatible with
 @typexpr@.
+
+\begin{caml_example}{toplevel}
+let int_triple_is_ordered ((a, b, c) : int * int * int) =
+  a < b && b < c;;
+\end{caml_example}
 
 \subsubsection*{sss:pat-or}{``Or'' patterns}
 
@@ -101,6 +139,14 @@ in case some value~$v$ matches @pattern_1 "|" pattern_2@, the bindings
 performed are those of @pattern_1@ when $v$ matches @pattern_1@.
 Otherwise, value~$v$ matches @pattern_2@ whose bindings are performed.
 
+\begin{caml_example}{toplevel}
+type shape =
+  Square of float | Rect of (float * float) | Circle of float
+
+let is_rectangular = function
+  | Square _ | Rect _ -> true
+  | _ -> false;;
+\end{caml_example}
 
 \subsubsection*{sss:pat-variant}{Variant patterns}
 
@@ -113,6 +159,14 @@ number of arguments expected by the constructor.
 The pattern @constr '_'@ matches all variants whose constructor is
 @constr@.
 
+\begin{caml_example}{toplevel}
+type 'a tree = Lf | Br of 'a tree * 'a * 'a tree
+
+let rec total = function
+  | Br (l, x, r) -> total l + x + total r
+  | Lf -> 0;;
+\end{caml_example}
+
 The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose
 heads match @pattern_1@, and whose tails match @pattern_2@.
 
@@ -121,11 +175,28 @@ of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,
 respectively. This pattern behaves like
 @pattern_1 "::" \ldots "::" pattern_n "::" "[]"@.
 
+\begin{caml_example}{toplevel}
+let rec destutter = function
+  | [] -> []
+  | [a] -> [a]
+  | a::b::t -> if a = b then destutter (b::t) else a::destutter (b::t);;
+\end{caml_example}
+
 \subsubsection*{sss:pat-polyvar}{Polymorphic variant patterns}
 
 The pattern @"`"tag-name pattern_1@ matches all polymorphic variants
 whose tag is equal to @tag-name@, and whose argument matches
 @pattern_1@.
+
+\begin{caml_example}{toplevel}
+let rec split = function
+  | [] -> ([], [])
+  | h::t ->
+      let ss, gs = split t in
+        match h with
+        | `Sheep _ as s -> (s::ss, gs)
+        | `Goat _ as g -> (ss, g::gs);;
+\end{caml_example}
 
 \subsubsection*{sss:pat-polyvar-abbrev}{Polymorphic variant abbreviation patterns}
 
@@ -135,12 +206,25 @@ is a shorthand for the following or-pattern:
 @"(" "`"tag-name_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag-name_n"(_"
 ":" typexpr_n"))"@. It matches all values of type @"[<" typeconstr "]"@.
 
+\begin{caml_example}{toplevel}
+type 'a any_rectangle = [`Square of 'a | `Rectangle of 'a * 'a]
+
+let to_string = function
+  | #any_rectangle -> "Rectangle"
+  | `Circle _ -> "Circle";;
+\end{caml_example}
+
 \subsubsection*{sss:pat-tuple}{Tuple patterns}
 
 The pattern @pattern_1 "," \ldots "," pattern_n@ matches $n$-tuples
 whose components match the patterns @pattern_1@ through @pattern_n@. That
 is, the pattern matches the tuple values $(v_1, \ldots, v_n)$ such that
 @pattern_i@ matches $v_i$ for \fromoneto{i}{n}.
+
+\begin{caml_example}{toplevel}
+let vector (x0, y0) (x1, y1) =
+  (x1 -. x0, y1 -. y0);;
+\end{caml_example}
 
 \subsubsection*{sss:pat-record}{Record patterns}
 
@@ -161,12 +245,29 @@ Optional type constraints can be added field by field with
 \ldots ";"field_n ":" typexpr_n "=" pattern_n "}"@ to force the type
 of @field_k@ to be compatible with @typexpr_k@.
 
+\begin{caml_example}{toplevel}
+let bytes_allocated
+    {Gc.minor_words = minor;
+     Gc.major_words = major;
+     Gc.promoted_words = prom;
+     _}
+  =
+    (Sys.word_size / 4) * int_of_float (minor +. major -. prom);;
+\end{caml_example}
 
 \subsubsection*{sss:pat-array}{Array patterns}
 
 The pattern @"[|" pattern_1 ";" \ldots ";" pattern_n "|]"@
 matches arrays of length $n$ such that the $i$-th array element
 matches the pattern @pattern_i@, for \fromoneto{i}{n}.
+
+\begin{caml_example}{toplevel}
+let matrix3_is_symmetric = function
+  | [|[|_; b; c|];
+      [|d; _; f|];
+      [|g; h; _|]|] -> b = d && c = g && f = h
+  | _ -> failwith "matrix3_is_symmetric: not a 3x3 matrix";;
+\end{caml_example}
 
 \subsubsection*{sss:pat-range}{Range patterns}
 
@@ -179,6 +280,16 @@ The pattern
 where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
 instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
+
+\begin{caml_example}{toplevel}
+type char_class = Uppercase | Lowercase | Digit | Other
+
+let classify_char = function
+  | 'A'..'Z' -> Uppercase
+  | 'a'..'z' -> Lowercase
+  | '0'..'9' -> Digit
+  | _ -> Other;;
+\end{caml_example}
 
 \subsubsection{sss:pat-lazy}{Lazy patterns}
 
@@ -198,6 +309,12 @@ those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
 Matching a value with a @pattern-matching@ where some patterns
 contain @"lazy"@ sub-patterns may imply forcing parts of the value,
 even when the pattern selected in the end has no @"lazy"@ sub-pattern.
+
+\begin{caml_example}{toplevel}
+let lazy_option_map f = function
+  | lazy (Some x) -> Some (Lazy.force f x)
+  | _ -> None;;
+\end{caml_example}
 
 For more information, see the description of module "Lazy" in the
 standard library (module \stdmoduleref{Lazy}).
@@ -229,6 +346,13 @@ A pattern match must contain at least one value case. It is an error if
 all cases are exceptions, because there would be no code to handle
 the return of a value.
 
+\begin{caml_example}{toplevel}
+let range l =
+  match (List.hd l, List.hd (List.rev l)) with
+  | (f, l) -> Some (l - f)
+  | exception (Failure _) -> None;;
+\end{caml_example}
+
 \subsubsection*{sss:pat-open}{Local opens for patterns}
 \ikwd{open\@\texttt{open}}
 (Introduced in OCaml 4.04)
@@ -243,3 +367,9 @@ When the body of a local open pattern is delimited by
 For example, @module-path'.['pattern']'@ is equivalent to
 @module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
+
+\begin{caml_example}{toplevel}
+let bytes_allocated Gc.{minor_words; major_words; promoted_words; _} =
+    (Sys.word_size / 4)
+  * int_of_float (minor_words +. major_words -. promoted_words);;
+\end{caml_example}
