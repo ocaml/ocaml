@@ -433,12 +433,6 @@ let transl_declaration env sdecl (id, uid) =
       in
       set_fixed_row env sdecl.ptype_loc p decl
     end;
-  (* Check for cyclic abbreviations *)
-    begin match decl.type_manifest with None -> ()
-      | Some ty ->
-        if Ctype.cyclic_abbrev env id ty then
-          raise(Error(sdecl.ptype_loc, Recursive_abbrev sdecl.ptype_name.txt));
-    end;
     {
       typ_id = id;
       typ_name = sdecl.ptype_name;
