@@ -130,9 +130,6 @@ Working version
   (François Bobot, Nicolás Ojeda Bär, review by Daniel Bünzli and Damien
   Doligez)
 
-- #10233: Document `-save-ir-after scheduling` and update `-stop-after` options.
-  (Greta Yorsh, review by Gabriel Scherer and Florian Angeletti)
-
 ### Compiler user-interface and warnings:
 
 - #9960: extend ocamlc/ocamlopt's -o option to work when compiling C files
@@ -674,6 +671,9 @@ OCaml 4.12.0
   conjunction of single-index ones.
   (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
    and Marcello Seri)
+
+- #10233: Document `-save-ir-after scheduling` and update `-stop-after` options.
+  (Greta Yorsh, review by Gabriel Scherer and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
