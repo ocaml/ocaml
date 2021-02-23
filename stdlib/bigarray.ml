@@ -234,7 +234,9 @@ module Array1 = struct
   let to_floatarray ba =
     let l = dim ba in
     let res = Float.Array.create l in
-    for i = 0 to l - 1 do Float.Array.unsafe_set res i (unsafe_get ba i) done;
+    for i = 0 to l - 1 do
+      Float.Array.unsafe_set res i (unsafe_get ba i)
+    done;
     res
 end
 
