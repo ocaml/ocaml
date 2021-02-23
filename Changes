@@ -11,6 +11,10 @@ Working version
 
 ### Standard library:
 
+- #9059: Added List.filteri function, same as List.filter but
+  with the index of the element.
+  (Léo Andrès, review by Alain Frisch)
+
 ### Other libraries:
 
 ### Tools:
@@ -19,12 +23,22 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9074: reworded error message for non-regular structural types
+  (Florian Angeletti, review by Jacques Garrigue and Leo White,
+   report by Chas Emerick)
+
 ### Internal/compiler-libs changes:
+
+- #9078: make all compilerlibs/ available to ocamltest.
+  (Gabriel Scherer, review by Sébastien Hinderer)
 
 ### Build system:
 
 ### Bug fixes:
 
+- #7683, #1499: Fixes one case where the evaluation order in native-code
+  may not match the one in bytecode.
+  (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
 
 OCaml 4.10.0
 ------------
@@ -466,6 +480,9 @@ OCaml 4.09 maintenance branch:
 
 - #8965, #8979: Alpine build failure caused by check-parser-uptodate-or-warn.sh
   (Gabriel Scherer and David Allsopp, report by Anton Kochkov)
+
+- #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
+  (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
 
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------

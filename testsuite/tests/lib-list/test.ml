@@ -33,6 +33,8 @@ let () =
     assert (List.find_map (f ~limit:30) l = None);
   end;
 
+  assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
+
   assert (List.compare_lengths [] [] = 0);
   assert (List.compare_lengths [1;2] ['a';'b'] = 0);
   assert (List.compare_lengths [] [1;2] < 0);

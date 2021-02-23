@@ -972,7 +972,14 @@ type 'a u = < m : 'a v > and 'a v = 'a list u;;
 Line 1, characters 0-24:
 1 | type 'a u = < m : 'a v > and 'a v = 'a list u;;
     ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the definition of v, type 'a list u should be 'a u
+Error: This recursive type is not regular.
+       The type constructor u is defined as
+         type 'a u
+       but it is used as
+         'a list u
+       after the following expansion(s):
+         'a v = 'a list u
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 
 (* PR#8198: Ctype.matches *)
@@ -1450,7 +1457,12 @@ type 'x t = < f : 'y. 'y t >;;
 Line 1, characters 0-28:
 1 | type 'x t = < f : 'y. 'y t >;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the definition of t, type 'y t should be 'x t
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type 'x t
+       but it is used as
+         'y t.
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 
 (* PR#6056, PR#6057 *)

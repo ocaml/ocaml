@@ -74,7 +74,12 @@ type error =
   | Constraint_failed of type_expr * type_expr
   | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
   | Type_clash of Env.t * Ctype.Unification_trace.t
-  | Parameters_differ of Path.t * type_expr * type_expr
+  | Non_regular of {
+      definition: Path.t;
+      used_as: type_expr;
+      defined_as: type_expr;
+      expansions: (type_expr * type_expr) list;
+    }
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration

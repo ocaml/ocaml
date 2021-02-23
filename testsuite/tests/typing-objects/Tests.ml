@@ -179,7 +179,14 @@ and 'a d = <f : int c>;;
 Line 1, characters 0-32:
 1 | type 'a c = <f : 'a c; g : 'a d>
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the definition of d, type int c should be 'a c
+Error: This recursive type is not regular.
+       The type constructor c is defined as
+         type 'a c
+       but it is used as
+         int c
+       after the following expansion(s):
+         'a d = < f : int c >
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
 and 'a d = <f : 'a c>;;
