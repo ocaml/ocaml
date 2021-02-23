@@ -123,7 +123,7 @@ constraint forces the type of @pattern_1@ to be compatible with
 
 \begin{caml_example}{toplevel}
 let int_triple_is_ordered ((a, b, c) : int * int * int) =
-  a < b && b < c;;
+  a <= b && b <= c;;
 \end{caml_example}
 
 \subsubsection*{sss:pat-or}{``Or'' patterns}

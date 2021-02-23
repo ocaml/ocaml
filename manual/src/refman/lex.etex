@@ -220,8 +220,8 @@ beginning of the next line) is ignored inside string literals.
 let longstr =
   "Call me Ishmael. Some years ago — never mind how long \
   precisely — having little or no money in my purse, and \
-  nothing particular to interest me on shore, I thought I\
-   would sail about a little and see the watery part of t\
+  nothing particular to interest me on shore, I thought I \
+  would sail about a little and see the watery part of t\
   he world.";;
 \end{caml_example}
 
