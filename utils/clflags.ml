@@ -420,26 +420,40 @@ module Compiler_pass = struct
      - the manpages in man/ocaml{c,opt}.m
      - the manual manual/manual/cmds/unified-options.etex
   *)
-  type t = Parsing | Typing
+  type t = Parsing | Typing | Scheduling
 
   let to_string = function
     | Parsing -> "parsing"
     | Typing -> "typing"
+    | Scheduling -> "scheduling"
 
   let of_string = function
     | "parsing" -> Some Parsing
     | "typing" -> Some Typing
+    | "scheduling" -> Some Scheduling
     | _ -> None
 
   let rank = function
     | Parsing -> 0
     | Typing -> 1
+    | Scheduling -> 50
 
   let passes = [
     Parsing;
     Typing;
+    Scheduling;
   ]
-  let pass_names = List.map to_string passes
+  let is_compilation_pass _ = true
+  let is_native_only = function
+    | Scheduling -> true
+    | _ -> false
+
+  let enabled is_native t = not (is_native_only t) || is_native
+
+  let available_pass_names ~native =
+    passes
+    |> List.filter (enabled native)
+    |> List.map to_string
 end
 
 let stop_after = ref None (* -stop-after *)

@@ -27,7 +27,14 @@ Working version
   (Florian Angeletti, review by Jacques Garrigue and Leo White,
    report by Chas Emerick)
 
+- #8938: Extend ocamlopt option "-stop-after" to handle "scheduling" argument.
+  (Greta Yorsh, review by Florian Angeletti and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
+
+- #8970: separate value patterns (matching on values) from computation patterns
+  (matching on the effects of a copmutation) in the typedtree.
+  (Gabriel Scherer, review by Jacques Garrigue and Alain Frisch)
 
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)

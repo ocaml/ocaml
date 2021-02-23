@@ -131,6 +131,10 @@ let rec push_defaults loc bindings cases partial =
       let env = Env.add_value param desc exp.exp_env in
       let name = Ident.name param in
       let exp =
+        let cases =
+          let pure_case ({c_lhs; _} as case) =
+            {case with c_lhs = as_computation_pattern c_lhs} in
+          List.map pure_case cases in
         { exp with exp_loc = loc; exp_env = env; exp_desc =
           Texp_match
             ({exp with exp_type = pat.pat_type; exp_env = env; exp_desc =
@@ -1001,7 +1005,7 @@ and transl_match e arg pat_expr_list partial =
       assert (static_handlers = []);
       Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
     | arg, _ :: _ ->
-        let val_id = Typecore.name_cases "val" pat_expr_list in
+        let val_id = Typecore.name_pattern "val" (List.map fst val_cases) in
         let k = Typeopt.value_kind arg.exp_env arg.exp_type in
         static_catch [transl_exp arg] [val_id, k]
           (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)

@@ -30,7 +30,7 @@ open Typedtree;;
 let output_int oc i = output_string oc (Int.to_string i)
 
 type annotation =
-  | Ti_pat   of pattern
+  | Ti_pat : 'k pattern_category * 'k general_pattern -> annotation
   | Ti_expr  of expression
   | Ti_class of class_expr
   | Ti_mod   of module_expr
@@ -40,7 +40,7 @@ type annotation =
 
 let get_location ti =
   match ti with
-    Ti_pat p   -> p.pat_loc
+  | Ti_pat (_, p)   -> p.pat_loc
   | Ti_expr e  -> e.exp_loc
   | Ti_class c -> c.cl_loc
   | Ti_mod m   -> m.mod_loc
@@ -149,8 +149,8 @@ let print_ident_annot pp str k =
 let print_info pp prev_loc ti =
   match ti with
   | Ti_class _ | Ti_mod _ -> prev_loc
-  | Ti_pat  {pat_loc = loc; pat_type = typ; pat_env = env}
-  | Ti_expr {exp_loc = loc; exp_type = typ; exp_env = env} ->
+  | Ti_pat  (_, {pat_loc = loc; pat_type = typ; pat_env = env})
+  | Ti_expr     {exp_loc = loc; exp_type = typ; exp_env = env} ->
       if loc <> prev_loc then begin
         print_location pp loc;
         output_char pp '\n'

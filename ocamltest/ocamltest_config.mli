@@ -49,6 +49,9 @@ val str : bool
 val objext : string
 (** Extension of object files *)
 
+val asmext : string
+(** Extension of assembly files *)
+
 val system : string
 (** The content of the SYSTEM Make variable *)
 

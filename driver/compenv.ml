@@ -56,6 +56,7 @@ let first_ppx = ref []
 let last_ppx = ref []
 let first_objfiles = ref []
 let last_objfiles = ref []
+let stop_early = ref false
 
 (* Check validity of module name *)
 let is_unit_name name =
@@ -432,17 +433,15 @@ let read_one_param ppf position name v =
 
   | "stop-after" ->
     let module P = Clflags.Compiler_pass in
-    begin match P.of_string v with
+    let passes = P.available_pass_names ~native:!native_code in
+    begin match List.find_opt (String.equal v) passes with
     | None ->
         Printf.ksprintf (print_error ppf)
           "bad value %s for option \"stop-after\" (expected one of: %s)"
-          v (String.concat ", " P.pass_names)
-    | Some pass ->
-        Clflags.stop_after := Some pass;
-        begin match pass with
-        | P.Parsing | P.Typing ->
-            compile_only := true
-        end;
+          v (String.concat ", " passes)
+    | Some v ->
+        let pass = Option.get (P.of_string v)  in
+        Clflags.stop_after := Some pass
     end
   | _ ->
     if not (List.mem name !can_discard) then begin
@@ -672,3 +671,9 @@ let process_deferred_actions env =
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
+  stop_early :=
+    !compile_only ||
+    !print_types ||
+    match !stop_after with
+    | None -> false
+    | Some p -> Clflags.Compiler_pass.is_compilation_pass p;

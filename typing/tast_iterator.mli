@@ -23,8 +23,7 @@ open Typedtree
 type iterator =
   {
     binding_op: iterator -> binding_op -> unit;
-    case: iterator -> case -> unit;
-    cases: iterator -> case list -> unit;
+    case: 'k . iterator -> 'k case -> unit;
     class_declaration: iterator -> class_declaration -> unit;
     class_description: iterator -> class_description -> unit;
     class_expr: iterator -> class_expr -> unit;
@@ -45,7 +44,7 @@ type iterator =
     module_type: iterator -> module_type -> unit;
     module_type_declaration: iterator -> module_type_declaration -> unit;
     package_type: iterator -> package_type -> unit;
-    pat: iterator -> pattern -> unit;
+    pat: 'k . iterator -> 'k general_pattern -> unit;
     row_field: iterator -> row_field -> unit;
     object_field: iterator -> object_field -> unit;
     open_declaration: iterator -> open_declaration -> unit;

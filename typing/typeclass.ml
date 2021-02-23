@@ -1023,7 +1023,8 @@ and class_expr_aux cl_num val_env met_env scl =
       in
       if !Clflags.principal then begin
         Ctype.end_def ();
-        iter_pattern (fun {pat_type=ty} -> Ctype.generalize_structure ty) pat
+        let gen {pat_type = ty} = Ctype.generalize_structure ty in
+        iter_pattern gen pat
       end;
       let pv =
         List.map
