@@ -220,6 +220,22 @@ module Array1 = struct
     in
     for i = 0 to Array.length data - 1 do unsafe_set ba (i + ofs) data.(i) done;
     ba
+  let of_floatarray (type t) kind (layout: t layout) data =
+    let ba = create kind layout (Float.Array.length data) in
+    let ofs =
+      match layout with
+        C_layout -> 0
+      | Fortran_layout -> 1
+    in
+    for i = 0 to Float.Array.length data - 1 do
+      unsafe_set ba (i + ofs) (Float.Array.unsafe_get data i)
+    done;
+    ba
+  let to_floatarray ba =
+    let l = dim ba in
+    let res = Float.Array.create l in
+    for i = 0 to l - 1 do Float.Array.unsafe_set res i (unsafe_get ba i) done;
+    res
 end
 
 module Array2 = struct

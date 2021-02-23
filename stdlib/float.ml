@@ -198,6 +198,13 @@ module Array = struct
       done;
       res
 
+  let make_matrix sx sy init =
+    let res = Array.make sx (create 0) in
+    for x = 0 to (sx - 1) do
+      Array.unsafe_set res x (make sy init)
+    done;
+    res
+
   let append a1 a2 =
     let l1 = length a1 in
     let l2 = length a2 in
@@ -517,6 +524,40 @@ module Array = struct
     let r = create l in
     for i = 0 to l - 1 do
       unsafe_set r i (f (Array.unsafe_get a i))
+    done;
+    r
+
+  let to_array a =
+    let l = length a in
+    let r = Array.create_float l in
+    for i = 0 to l - 1 do
+      Array.unsafe_set r i (unsafe_get a i)
+    done;
+    r
+
+  let from_array a =
+    let l = Array.length a in
+    let r = create l in
+    for i = 0 to l - 1 do
+      unsafe_set r i (Array.unsafe_get a i)
+    done;
+    r
+
+  let mapi_to_array f a =
+    let l = length a in
+    if l = 0 then [| |] else begin
+      let r = Array.make l (f 0 (unsafe_get a 0)) in
+      for i = 1 to l - 1 do
+        Array.unsafe_set r i (f i (unsafe_get a i))
+      done;
+      r
+    end
+
+  let mapi_from_array f a =
+    let l = Array.length a in
+    let r = create l in
+    for i = 0 to l - 1 do
+      unsafe_set r i (f i (Array.unsafe_get a i))
     done;
     r
 

@@ -506,6 +506,19 @@ module Array : sig
       applied to the integers [0] to [n-1].
       @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
+  val make_matrix : int -> int -> float -> t array
+(** [make_matrix dimx dimy e] returns a two-dimensional array
+   (an array of arrays) with first dimension [dimx] and
+   second dimension [dimy]. All the elements of this new matrix
+   are initially physically equal to [e].
+   The element ([x,y]) of a matrix [m] is accessed
+   with the notation [m.(x).(y)].
+
+   @raise Invalid_argument if [dimx] or [dimy] is negative or
+   greater than {!Sys.max_array_length}.
+   If the value of [e] is a floating-point number, then the maximum
+   size is only [Sys.max_array_length / 2]. *)
+
   val append : t -> t -> t
   (** [append v1 v2] returns a fresh floatarray containing the
       concatenation of the floatarrays [v1] and [v2].
@@ -681,6 +694,20 @@ module Array : sig
   (** [map_from_array f a] applies function [f] to all the elements of [a],
       and builds a floatarray with the results returned by [f]. *)
 
+  val to_array : t -> float array
+  (** [to_array a] builds the float array equivalent of a:
+      [[a.(0); a.(1); ...; a.(length a - 1) |]]. *)
+
+  val from_array : float array -> t
+  (** [from_array a] builds the floatarray equivalent of a. *)
+
+  val mapi_to_array : (int -> float -> 'a) -> t -> 'a array
+  (** Same as {!map_to_array}, but the function is applied to the index of the
+      element as first argument, and the element itself as second argument. *)
+
+  val mapi_from_array : (int -> 'a -> float) -> 'a array -> t
+  (** Same as {!map_from_array}, but the function is applied to the index of the
+      element as first argument, and the element itself as second argument. *)
   (**/**)
 
   (** {2 Undocumented functions} *)

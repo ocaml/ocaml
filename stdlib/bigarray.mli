@@ -661,6 +661,14 @@ module Array1 : sig
   (** Build a one-dimensional Bigarray initialized from the
      given array.  *)
 
+  val of_floatarray: (float, 'b) kind -> 'c layout -> floatarray ->
+                     (float, 'b, 'c) t
+  (** Build a one-dimensional Bigarray initialized from the
+      given floatarray. *)
+
+  val to_floatarray: (float, 'b, 'c) t -> floatarray
+  (** Build a floatarray from the given Bigarray *)
+
   external unsafe_get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
   (** Like {!Bigarray.Array1.get}, but bounds checking is not always performed.
       Use with caution and only when the program logic guarantees that
