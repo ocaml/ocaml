@@ -26,8 +26,6 @@ type type_definition = type_declaration
    a single argument, [argument_to_unbox] represents the
    information we need to check the argument for separability. *)
 type argument_to_unbox = {
-  kind: parameter_kind; (* for error messages *)
-  mutability: Asttypes.mutable_flag;
   argument_type: type_expr;
   result_type_parameter_instances: type_expr list;
   (** result_type_parameter_instances represents the domain of the
@@ -38,23 +36,7 @@ type argument_to_unbox = {
      For example, [type 'a t = 'b constraint 'a = 'b * int] has
      [['b * int]] as [result_type_parameter_instances], and so does
      [type _ t = T : 'b -> ('b * int) t]. *)
-  location : Location.t;
 }
-and parameter_kind =
-  | Record_field
-  | Constructor_parameter
-  | Constructor_field (** inlined records *)
-
-(** ['a multiplicity] counts the number of ['a] in
-    a structure in which expect to see only one ['a]. *)
-type 'a multiplicity =
-  | Zero
-  | One of 'a
-  | Several
-
-type arity = argument_to_unbox multiplicity (**how many parameters?*)
-
-type branching = arity multiplicity (**how many constructors?*)
 
 (** Summarize the right-hand-side of a type declaration,
     for separability-checking purposes. See {!structure} below. *)
@@ -62,14 +44,8 @@ type type_structure =
   | Synonym of type_expr
   | Abstract
   | Open
-  | Algebraic of branching
-
-let demultiply_list
-  : type a b. a list -> (a -> b) -> b multiplicity
-  = fun li f -> match li with
-  | [] -> Zero
-  | [v] -> One (f v)
-  | _::_::_ -> Several
+  | Algebraic
+  | Unboxed of argument_to_unbox
 
 let structure : type_definition -> type_structure = fun def ->
   match def.type_kind with
@@ -79,51 +55,24 @@ let structure : type_definition -> type_structure = fun def ->
       | None -> Abstract
       | Some type_expr -> Synonym type_expr
       end
-  | Type_record (labels, _) ->
-      Algebraic (One (
-        demultiply_list labels @@ fun ld -> {
-          location = ld.ld_loc;
-          kind = Record_field;
-          mutability = ld.ld_mutable;
-          argument_type = ld.ld_type;
-          result_type_parameter_instances = def.type_params;
-        }
-      ))
-  | Type_variant constructors ->
-      Algebraic (demultiply_list constructors @@ fun cd ->
-        let result_type_parameter_instances =
-          match cd.cd_res with
-          (* cd_res is the optional return type (in a GADT);
-             if None, just use the type parameters *)
-          | None -> def.type_params
-          | Some ret_type ->
-              begin match Ctype.repr ret_type with
-              | {desc=Tconstr (_, tyl, _)} ->
-                  List.map Ctype.repr tyl
-              | _ -> assert false
-              end
-        in
-        begin match cd.cd_args with
-        | Cstr_tuple tys ->
-            demultiply_list tys @@ fun argument_type -> {
-              location = cd.cd_loc;
-              kind = Constructor_parameter;
-              mutability = Asttypes.Immutable;
-              argument_type;
-              result_type_parameter_instances;
-            }
-        | Cstr_record labels ->
-            demultiply_list labels @@ fun ld ->
-              let argument_type = ld.ld_type in
-              {
-                location = ld.ld_loc;
-                kind = Constructor_field;
-                mutability = ld.ld_mutable;
-                argument_type;
-                result_type_parameter_instances;
-              }
-        end)
 
+  | ( Type_record ([{ld_type = ty; _}], _)
+    | Type_variant [{cd_args = Cstr_tuple [ty]; _}]
+    | Type_variant [{cd_args = Cstr_record [{ld_type = ty; _}]; _}])
+       when def.type_unboxed.unboxed ->
+     let params =
+       match def.type_kind with
+       | Type_variant [{cd_res = Some ret_type}] ->
+          begin match Ctype.repr ret_type with
+          | {desc=Tconstr (_, tyl, _)} ->
+             List.map Ctype.repr tyl
+          | _ -> assert false
+          end
+       | _ -> def.type_params
+     in
+     Unboxed { argument_type = ty; result_type_parameter_instances = params }
+
+  | Type_record _ | Type_variant _ -> Algebraic
 
 type error =
   | Non_separable_evar of string option
@@ -665,20 +614,15 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
 let check_def
   : Env.t -> type_definition -> Sep.signature
   = fun env def ->
-  let boxed = not def.type_unboxed.unboxed in
   match structure def with
   | Abstract ->
-      assert boxed;
       msig_of_external_type def
   | Synonym type_expr ->
       check_type env type_expr Sep
       |> msig_of_context ~decl_loc:def.type_loc ~parameters:def.type_params
-  | Open | Algebraic (Zero | Several | One (Zero | Several)) ->
-      assert boxed;
+  | Open | Algebraic ->
       best_msig def
-  | Algebraic (One (One constructor)) ->
-    if boxed then best_msig def
-    else
+  | Unboxed constructor ->
       check_type env constructor.argument_type Sep
       |> msig_of_context ~decl_loc:def.type_loc
            ~parameters:constructor.result_type_parameter_instances
