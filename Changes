@@ -39,6 +39,11 @@ Working version
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)
 
+- #9079: typecore/parmatch: refactor ppat_of_type and refine
+  the use of backtracking on wildcard patterns
+  (Florian Angeletti, Jacques Garrigue, Gabriel Scherer,
+   review by Thomas Refis)
+
 ### Build system:
 
 ### Bug fixes:

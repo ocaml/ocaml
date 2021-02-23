@@ -1283,15 +1283,17 @@ and type_pat_aux
       | Counter_example {explosion_fuel; _} when explosion_fuel <= 0 ->
           k' Tpat_any
       | Counter_example ({explosion_fuel; _} as info) ->
-         begin match Parmatch.ppat_of_type !env expected_ty with
-         | exception Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
-         | (sp, constrs, labels) ->
-            if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
-            if must_backtrack_on_gadt then raise Need_backtrack else
+         let open Parmatch in
+         begin match ppat_of_type !env expected_ty with
+         | PT_empty -> raise (Error (loc, !env, Empty_pattern))
+         | PT_any -> k' Tpat_any
+         | PT_pattern (explosion, sp, constrs, labels) ->
             let explosion_fuel =
-              match sp.ppat_desc with
-                Parsetree.Ppat_or _ -> explosion_fuel - 5
-              | _ -> explosion_fuel - 1
+              match explosion with
+              | PE_single -> explosion_fuel - 1
+              | PE_gadt_cases ->
+                  if must_backtrack_on_gadt then raise Need_backtrack;
+                  explosion_fuel - 5
             in
             let mode =
               Counter_example { info with explosion_fuel; constrs; labels }
