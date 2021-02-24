@@ -15786,15 +15786,8 @@ fi
 fi
 
 
-## newlocale() and <locale.h>
-# Note: the detection fails on msvc so we hardcode the result
-# (should be debugged later)
-case $host in #(
-  *-pc-windows) :
-    $as_echo "#define HAS_LOCALE_H 1" >>confdefs.h
- ;; #(
-  *) :
-    ac_fn_c_check_header_mongrel "$LINENO" "locale.h" "ac_cv_header_locale_h" "$ac_includes_default"
+## <locale.h>
+ac_fn_c_check_header_mongrel "$LINENO" "locale.h" "ac_cv_header_locale_h" "$ac_includes_default"
 if test "x$ac_cv_header_locale_h" = xyes; then :
   ac_fn_c_check_func "$LINENO" "newlocale" "ac_cv_func_newlocale"
 if test "x$ac_cv_func_newlocale" = xyes; then :
@@ -15804,7 +15797,20 @@ if test "x$ac_cv_func_freelocale" = xyes; then :
 if test "x$ac_cv_func_uselocale" = xyes; then :
   $as_echo "#define HAS_LOCALE_H 1" >>confdefs.h
 
+         $as_echo "#define HAS_USELOCALE 1" >>confdefs.h
+
 fi
+
+fi
+
+else
+  ac_fn_c_check_func "$LINENO" "_wsetlocale" "ac_cv_func__wsetlocale"
+if test "x$ac_cv_func__wsetlocale" = xyes; then :
+  $as_echo "#define HAS_LOCALE_H 1" >>confdefs.h
+
+       ac_fn_c_check_func "$LINENO" "_configthreadlocale" "ac_cv_func__configthreadlocale"
+if test "x$ac_cv_func__configthreadlocale" = xyes; then :
+  $as_echo "#define HAS_CONFIGTHREADLOCALE 1" >>confdefs.h
 
 fi
 
@@ -15812,8 +15818,9 @@ fi
 
 fi
 
- ;;
-esac
+fi
+
+
 
 ac_fn_c_check_header_mongrel "$LINENO" "xlocale.h" "ac_cv_header_xlocale_h" "$ac_includes_default"
 if test "x$ac_cv_header_xlocale_h" = xyes; then :
@@ -15824,6 +15831,8 @@ if test "x$ac_cv_func_freelocale" = xyes; then :
   ac_fn_c_check_func "$LINENO" "uselocale" "ac_cv_func_uselocale"
 if test "x$ac_cv_func_uselocale" = xyes; then :
   $as_echo "#define HAS_XLOCALE_H 1" >>confdefs.h
+
+         $as_echo "#define HAS_USELOCALE 1" >>confdefs.h
 
 fi
 
@@ -15836,20 +15845,46 @@ fi
 
 
 ## strtod_l
-# Note: not detected on MSVC so hardcoding the result
-# (should be debugged later)
-case $host in #(
-  *-pc-windows) :
-    $as_echo "#define HAS_STRTOD_L 1" >>confdefs.h
- ;; #(
-  *) :
-    ac_fn_c_check_func "$LINENO" "strtod_l" "ac_cv_func_strtod_l"
+ac_fn_c_check_func "$LINENO" "strtod_l" "ac_cv_func_strtod_l"
 if test "x$ac_cv_func_strtod_l" = xyes; then :
   $as_echo "#define HAS_STRTOD_L 1" >>confdefs.h
 
+   $as_echo "#define STRTOD_L strtod_l" >>confdefs.h
+
+else
+  ac_fn_c_check_func "$LINENO" "_create_locale" "ac_cv_func__create_locale"
+if test "x$ac_cv_func__create_locale" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "_strtod_l" "ac_cv_func__strtod_l"
+if test "x$ac_cv_func__strtod_l" = xyes; then :
+  $as_echo "#define HAS_STRTOD_L 1" >>confdefs.h
+
+       $as_echo "#define STRTOD_L _strtod_l" >>confdefs.h
+
 fi
- ;;
-esac
+
+fi
+
+fi
+
+
+## vsnprintf_l
+ac_fn_c_check_func "$LINENO" "vsnprintf_l" "ac_cv_func_vsnprintf_l"
+if test "x$ac_cv_func_vsnprintf_l" = xyes; then :
+  $as_echo "#define HAS_VSNPRINTF_L 1" >>confdefs.h
+
+else
+  ac_fn_c_check_func "$LINENO" "_create_locale" "ac_cv_func__create_locale"
+if test "x$ac_cv_func__create_locale" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "_vsnprintf_l" "ac_cv_func__vsnprintf_l"
+if test "x$ac_cv_func__vsnprintf_l" = xyes; then :
+  $as_echo "#define HAS_VSNPRINTF_L 1" >>confdefs.h
+
+fi
+
+fi
+
+fi
+
 
 ## shared library support
 if $shared_libraries_supported; then :

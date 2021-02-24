@@ -4,6 +4,10 @@ Working version
 
 ### Runtime system:
 
+- #10258: Overhaul the locale code used for mingw/msvc in float<->string
+  conversions.
+  (David Allsopp, review by ???)
+
 ### Code generation and optimizations:
 
 ### Standard library:
