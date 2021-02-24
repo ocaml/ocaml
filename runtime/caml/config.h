@@ -50,10 +50,6 @@
 
 #include <stddef.h>
 
-#if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
-#define HAS_LOCALE
-#endif
-
 #ifdef HAS_STDINT_H
 #include <stdint.h>
 #endif

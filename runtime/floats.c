@@ -17,11 +17,13 @@
 
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
+#ifndef _WIN32
 /* Needed for uselocale */
 #define _XOPEN_SOURCE 700
 
 /* Needed for strtod_l */
 #define _GNU_SOURCE
+#endif /* _WIN32 */
 
 #include <math.h>
 #include <stdio.h>
@@ -38,9 +40,7 @@
 #include "caml/reverse.h"
 #include "caml/fiber.h"
 
-#if defined(HAS_LOCALE) || defined(__MINGW32__)
-
-#if defined(HAS_LOCALE_H) || defined(__MINGW32__)
+#if defined(HAS_LOCALE_H)
 #include <locale.h>
 #endif
 
@@ -48,19 +48,14 @@
 #include <xlocale.h>
 #endif
 
-#if defined(_MSC_VER)
-#ifndef locale_t
+#ifdef _WIN32
+/* Make the Microsoft CRT locale.h look like the POSIX version. */
 #define locale_t _locale_t
-#endif
-#ifndef freelocale
+#define newlocale(category_mask, locale, base) \
+  _create_locale(category_mask, locale)
 #define freelocale _free_locale
+#define LC_NUMERIC_MASK LC_NUMERIC
 #endif
-#ifndef strtod_l
-#define strtod_l _strtod_l
-#endif
-#endif
-
-#endif /* defined(HAS_LOCALE) */
 
 #ifdef _MSC_VER
 #include <float.h>
@@ -108,15 +103,18 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
  standard "C" locale by default, but it is possible that
  third-party code loaded into process does.
 */
-#ifdef HAS_LOCALE
+
+#if defined(HAS_USELOCALE) || defined(HAS_VSNPRINTF_L) || defined(HAS_STRTOD_L)
+#define HAVE_CAML_LOCALE
 locale_t caml_locale = (locale_t)0;
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-/* there is no analogue to uselocale in MSVC so just set locale for thread */
-#define USE_LOCALE setlocale(LC_NUMERIC,"C")
-#define RESTORE_LOCALE do {} while(0)
-#elif defined(HAS_LOCALE)
+#if defined(_WIN32)
+#define USE_LOCALE \
+  char* saved_locale = setlocale(LC_NUMERIC, NULL); \
+  setlocale(LC_NUMERIC, "C")
+#define RESTORE_LOCALE setlocale(LC_NUMERIC, saved_locale)
+#elif defined(HAS_USELOCALE)
 #define USE_LOCALE locale_t saved_locale = uselocale(caml_locale)
 #define RESTORE_LOCALE uselocale(saved_locale)
 #else
@@ -126,24 +124,21 @@ locale_t caml_locale = (locale_t)0;
 
 void caml_init_locale(void)
 {
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if defined(HAS_CONFIGTHREADLOCALE) \
+    && (!defined(HAS_VSNPRINTF_L) || !defined(HAS_STRTOD_L))
   _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
 #endif
-#ifdef HAS_LOCALE
+#ifdef HAVE_CAML_LOCALE
   if ((locale_t)0 == caml_locale)
   {
-#if defined(_MSC_VER)
-    caml_locale = _create_locale(LC_NUMERIC, "C");
-#else
-    caml_locale = newlocale(LC_NUMERIC_MASK,"C",(locale_t)0);
-#endif
+    caml_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
   }
 #endif
 }
 
 void caml_free_locale(void)
 {
-#ifdef HAS_LOCALE
+#ifdef HAVE_CAML_LOCALE
   if ((locale_t)0 != caml_locale) freelocale(caml_locale);
   caml_locale = (locale_t)0;
 #endif
@@ -171,6 +166,84 @@ CAMLexport void caml_Store_double_array_field(value val, mlsize_t i, double dbl)
 }
 #endif /* ! FLAT_FLOAT_ARRAY */
 
+#ifdef HAS_VSNPRINTF_L
+static value caml_alloc_sprintf_l(locale_t loc, const char * format, ...)
+{
+  va_list args;
+  char buf[128];
+  int n;
+  value res;
+
+#ifndef _WIN32
+  /* BSD-compatible implementation */
+  va_start(args, format);
+  /* "vsnprintf_l(dest, sz, loc, format, args)" writes at most "sz" characters
+     into "dest", including the terminating '\0'.
+     It returns the number of characters of the formatted string,
+     excluding the terminating '\0'. */
+  n = vsnprintf_l(buf, sizeof(buf), loc, format, args);
+  va_end(args);
+  if (n < sizeof(buf)) {
+    /* All output characters were written to buf, including the
+       terminating '\0'.  Allocate a Caml string with length "n" as
+       computed by vsnprintf_l, and copy the output of vsnprintf_l into it. */
+    res = caml_alloc_initialized_string(n, buf);
+  } else {
+    /* PR#7568: if the format is in the Caml heap, the following
+       caml_alloc_string could move or free the format.  To prevent
+       this, take a copy of the format outside the Caml heap. */
+    char * saved_format = caml_stat_strdup(format);
+    /* Allocate a Caml string with length "n" as computed by vsnprintf_l. */
+    res = caml_alloc_string(n);
+    /* Re-do the formatting, outputting directly in the Caml string.
+       Note that caml_alloc_string left room for a '\0' at position n,
+       so the size passed to vsnprintf_l is n+1. */
+    va_start(args, format);
+    vsnprintf_l((char *)String_val(res), n + 1, loc, saved_format, args);
+    va_end(args);
+    caml_stat_free(saved_format);
+  }
+  return res;
+#else
+  /* Implementation specific to the Microsoft UCRT/CRT library */
+  va_start(args, format);
+  /* "_vsnprintf_l(dest, sz, format, loc, args)" writes at most "sz" characters
+     into "dest".  Let "len" be the number of characters of the formatted
+     string.
+     If "len" < "sz", a null terminator was appended, and "len" is returned.
+     If "len" == "sz", no null termination, and "len" is returned.
+     If "len" > "sz", a negative value is returned. */
+  n = _vsnprintf_l(buf, sizeof(buf), format, loc, args);
+  va_end(args);
+  if (n >= 0 && n <= sizeof(buf)) {
+    /* All output characters were written to buf.
+       "n" is the actual length of the output.
+       Allocate a Caml string of length "n" and copy the characters into it. */
+    res = caml_alloc_string(n);
+    memcpy((char *)String_val(res), buf, n);
+  } else {
+    /* PR#7568: if the format is in the Caml heap, the following
+       caml_alloc_string could move or free the format.  To prevent
+       this, take a copy of the format outside the Caml heap. */
+    char * saved_format = caml_stat_strdup(format);
+    /* Determine actual length of output, excluding final '\0' */
+    va_start(args, format);
+    n = _vscprintf_l(format, loc, args);
+    va_end(args);
+    res = caml_alloc_string(n);
+    /* Re-do the formatting, outputting directly in the Caml string.
+       Note that caml_alloc_string left room for a '\0' at position n,
+       so the size passed to _vsnprintf_l is n+1. */
+    va_start(args, format);
+    _vsnprintf_l((char *)String_val(res), n + 1, saved_format, loc, args);
+    va_end(args);
+    caml_stat_free(saved_format);
+  }
+  return res;
+#endif /* !_WIN32 */
+}
+#endif /* HAS_VSNPRINTF_L */
+
 CAMLprim value caml_format_float(value fmt, value arg)
 {
   value res;
@@ -179,9 +252,13 @@ CAMLprim value caml_format_float(value fmt, value arg)
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
+#if defined(HAS_VSNPRINTF_L)
+    res = caml_alloc_sprintf_l(caml_locale, String_val(fmt), d);
+#else
     USE_LOCALE;
     res = caml_alloc_sprintf(String_val(fmt), d);
     RESTORE_LOCALE;
+#endif
 #ifdef HAS_BROKEN_PRINTF
   } else {
     if (isnan(d)) {
@@ -402,8 +479,8 @@ CAMLprim value caml_float_of_string(value vs)
     if (sign < 0) d = -d;
   } else {
     /* Convert using strtod */
-#if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
-    d = strtod_l((const char *) buf, &end, caml_locale);
+#ifdef HAS_STRTOD_L
+    d = STRTOD_L((const char *) buf, &end, caml_locale);
 #else
     USE_LOCALE;
     d = strtod((const char *) buf, &end);
