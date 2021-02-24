@@ -94,6 +94,9 @@ Working version
 - #10244: Optimise Int32.unsigned_to_int
   (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
 
+- #10251: inlining and type-specialization for Stdlib.{min,max}
+  (Alain Frisch, review by ...)
+
 ### Type system:
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
