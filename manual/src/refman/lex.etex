@@ -137,7 +137,7 @@ For convenience and readability, underscore characters (@"_"@) are accepted
 \begin{caml_example}{toplevel}
 let pi = 3.141_592_653_589_793_12
 let small_negative = -1e-5
-let hex = 0x1.fp3;;
+let machine_epsilon = 0x1p-52;;
 \end{caml_example}
 
 \subsubsection*{sss:character-literals}{Character literals}
