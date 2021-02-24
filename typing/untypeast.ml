@@ -21,6 +21,7 @@ open Ast_helper
 module T = Typedtree
 
 type mapper = {
+  argument: mapper -> T.argument -> argument option;
   attribute: mapper -> T.attribute -> attribute;
   attributes: mapper -> T.attribute list -> attribute list;
   binding_op: mapper -> T.binding_op -> T.pattern -> binding_op;
@@ -420,12 +421,7 @@ let expression sub exp =
           Exp.match_ ~loc (Exp.ident ~loc {loc;txt= Lident name})
                           (List.map (sub.case sub) cases))
     | Texp_apply (exp, list) ->
-        Pexp_apply (sub.expr sub exp,
-          List.fold_right (fun (label, expo) list ->
-              match expo with
-                None -> list
-              | Some exp -> (label, sub.expr sub exp) :: list
-          ) list [])
+        Pexp_apply (sub.expr sub exp, List.filter_map (sub.argument sub) list)
     | Texp_match (exp, cases, _) ->
       Pexp_match (sub.expr sub exp, List.map (sub.case sub) cases)
     | Texp_try (exp, cases) ->
@@ -511,6 +507,8 @@ let expression sub exp =
                              ])
     | Texp_open (od, exp) ->
         Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
+    | Texp_functor (_, name, _, pack_opt, e) ->
+        Pexp_functor (name, pack_opt, sub.expr sub e)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
@@ -521,6 +519,11 @@ let binding_op sub bop pat =
   let pbop_exp = sub.expr sub bop.bop_exp in
   let pbop_loc = bop.bop_loc in
   {pbop_op; pbop_pat; pbop_exp; pbop_loc}
+
+let argument sub = function
+  | Targ_expression (l, Some e) -> Some (Parg_expression (l, sub.expr sub e))
+  | Targ_expression (_, None) -> None
+  | Targ_module me -> Some (Parg_module (sub.module_expr sub me))
 
 let package_type sub pack =
   (map_loc sub pack.pack_txt,
@@ -764,6 +767,9 @@ let core_type sub ct =
         let list = List.map (fun v -> mkloc v loc) list in
         Ptyp_poly (list, sub.typ sub ct)
     | Ttyp_package pack -> Ptyp_package (sub.package_type sub pack)
+    | Ttyp_functor (name, pack, ct) ->
+        let name = Location.mkloc (Ident.name name.txt) name.loc in
+        Ptyp_functor (name, sub.package_type sub pack, sub.typ sub ct)
   in
   Typ.mk ~loc ~attrs desc
 
@@ -844,6 +850,7 @@ let location _sub l = l
 
 let default_mapper =
   {
+    argument = argument;
     attribute = attribute;
     attributes = attributes;
     binding_op = binding_op;

@@ -102,7 +102,7 @@ and expression_desc =
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of { arg_label : arg_label; param : Ident.t;
       cases : value case list; partial : partial; }
-  | Texp_apply of expression * (arg_label * expression option) list
+  | Texp_apply of expression * argument list
   | Texp_match of expression * computation case list * partial
   | Texp_try of expression * value case list
   | Texp_tuple of expression list
@@ -147,6 +147,9 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_open of open_declaration * expression
+  | Texp_functor of
+      Ident.t * string loc * package_type * Parsetree.package_type option *
+        expression
 
 and meth =
     Tmeth_name of string
@@ -172,6 +175,10 @@ and binding_op =
     bop_exp : expression;
     bop_loc : Location.t;
   }
+
+and argument =
+  | Targ_expression of arg_label * expression option
+  | Targ_module of module_expr
 
 (* Value expressions for the class language *)
 
@@ -443,6 +450,7 @@ and core_type_desc =
   | Ttyp_variant of row_field list * closed_flag * label list option
   | Ttyp_poly of string list * core_type
   | Ttyp_package of package_type
+  | Ttyp_functor of Ident.t loc * package_type * core_type
 
 and package_type = {
   pack_path : Path.t;

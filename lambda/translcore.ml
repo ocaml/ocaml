@@ -231,7 +231,7 @@ and transl_exp1 ~scopes ~in_new_scope e =
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
-      Texp_function _ | Texp_for _ | Texp_while _ -> false
+      Texp_function _ | Texp_for _ | Texp_while _ | Texp_functor _ -> false
     | _ -> true
   in
   if eval_once then transl_exp0 ~scopes ~in_new_scope  e else
@@ -256,10 +256,15 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
-    && List.for_all (fun (_, arg) -> arg <> None) oargs ->
+    && List.for_all (function
+          | Targ_expression (_, arg) -> arg <> None
+          | Targ_module _ -> false) oargs ->
       let argl, extra_args = cut p.prim_arity oargs in
       let arg_exps =
-         List.map (function _, Some x -> x | _ -> assert false) argl
+         List.map (function
+             | Targ_expression (_, Some x) -> x
+             | _ -> assert false)
+           argl
       in
       let args = transl_list ~scopes arg_exps in
       let prim_exp = if extra_args = [] then Some e else None in
@@ -611,6 +616,26 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Llet(pure, Pgenval, oid,
                !transl_module ~scopes Tcoerce_none None od.open_expr, body)
       end
+  | Texp_functor (id, _name, _pack, _pack_opt, body) ->
+      let name = Ident.create_local "*functor*" in
+      let kind = Curried in
+      let params = [name, Pgenval] in
+      let return = value_kind body.exp_env body.exp_type in
+      let loc = of_location ~scopes e.exp_loc in
+      let body =
+        let defining_expr =
+          Levent (Lvar name, {
+            lev_loc = loc;
+            lev_kind = Lev_module_definition id;
+            lev_repr = None;
+            lev_env = Env.empty;
+          })
+        in
+        Llet(Strict, Pgenval, id, defining_expr, transl_exp ~scopes body)
+      in
+      let attr = default_function_attribute in
+      let lam = Lfunction{kind; params; return; body; attr; loc} in
+      Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
 
 and pure_module m =
   match m.mod_desc with
@@ -738,10 +763,14 @@ and transl_apply ~scopes
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  (build_apply lam [] (List.map (fun (l, x) ->
-                                   Option.map (transl_exp ~scopes) x,
-                                   Btype.is_optional l)
-                                sargs)
+  (build_apply lam [] (List.map (function
+         | Targ_expression (l, x) ->
+             ( Option.map (transl_exp ~scopes) x
+             , Btype.is_optional l )
+         | Targ_module modl ->
+             ( Some (!transl_module ~scopes Tcoerce_none None modl)
+             , false ))
+       sargs)
      : Lambda.lambda)
 
 and transl_curried_function

@@ -129,8 +129,17 @@ and type_desc =
       where 'a1 ... 'an are names given to types in tyl
       and occurrences of those types in ty. *)
 
-  | Tpackage of Path.t * Longident.t list * type_expr list
+  | Tpackage of type_package
   (** Type of a first-class module (a.k.a package). *)
+
+  | Tfunctor of Ident.t * type_package * type_expr
+  (** [Tfunctor(`A',S,t)] ==> [{A : S} -> t]
+      A functor from a named module to a type. *)
+
+and type_package = Path.t * Longident.t list * type_expr list
+(** [(P,[l1;...;ln],[t1;...;tn]] ==> [P with type l1 = t1 and ... type ln = tn]
+    Representation of the module type for first-class modules (a.k.a.
+    packages). *)
 
 (** [  `X | `Y ]       (row_closed = true)
     [< `X | `Y ]       (row_closed = true)

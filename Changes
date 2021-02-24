@@ -26,6 +26,11 @@ Working version
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
 
+- #9187: Type-system support for functions parameterised by modules.
+  Syntax: "{M : S} -> ...", where "..." can refer to types in M.
+  Inspired by https://arxiv.org/pdf/1512.01895.pdf.
+  (Matthew Ryan, review by Thomas Refis and Leo White)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,

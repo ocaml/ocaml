@@ -253,7 +253,15 @@ let rec typexp copy_scope s ty =
           end
       | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
           Tlink (typexp copy_scope s t2)
-      | _ -> copy_type_desc (typexp copy_scope s) desc
+      | Tfunctor (id, (p, n, tl), t) ->
+          let p = modtype_path s p in
+          let tl = List.map (typexp copy_scope s) tl in
+          (* Create a new identifier [id'] to replace [id] with in the copy. *)
+          let id' = Ident.create_unscoped (Ident.name id) in
+          (* Substitute the old identifier for the new one inside [t]. *)
+          let s = add_module id (Pident id') s in
+          Tfunctor (id', (p, n, tl), typexp copy_scope s t)
+      | _ -> copy_type_desc (typexp copy_scope s) [] desc
       end;
     ty'
 

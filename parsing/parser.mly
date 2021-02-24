@@ -140,7 +140,7 @@ let ghstr ~loc d = Str.mk ~loc:(ghost_loc loc) d
 let ghsig ~loc d = Sig.mk ~loc:(ghost_loc loc) d
 
 let mkinfix arg1 op arg2 =
-  Pexp_apply(op, [Nolabel, arg1; Nolabel, arg2])
+  Pexp_apply (op, [Exp.arg_expr Nolabel arg1; Exp.arg_expr Nolabel arg2])
 
 let neg_string f =
   if String.length f > 0 && f.[0] = '-'
@@ -154,7 +154,8 @@ let mkuminus ~oploc name arg =
   | ("-" | "-."), Pexp_constant(Pconst_float (f, m)) ->
       Pexp_constant(Pconst_float(neg_string f, m))
   | _ ->
-      Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
+      Pexp_apply
+        (mkoperator ~loc:oploc ("~" ^ name), [Exp.arg_expr Nolabel arg])
 
 let mkuplus ~oploc name arg =
   let desc = arg.pexp_desc in
@@ -162,7 +163,8 @@ let mkuplus ~oploc name arg =
   | "+", Pexp_constant(Pconst_integer _)
   | ("+" | "+."), Pexp_constant(Pconst_float _) -> desc
   | _ ->
-      Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
+      Pexp_apply
+        (mkoperator ~loc:oploc ("~" ^ name), [Exp.arg_expr Nolabel arg])
 
 (* TODO define an abstraction boundary between locations-as-pairs
    and locations-as-Location.t; it should be clear when we move from
@@ -280,7 +282,7 @@ type ('dot,'index) array_family = {
 
   index:
     Lexing.position * Lexing.position -> paren_kind -> 'index
-    -> index_dim * (arg_label * expression) list
+    -> index_dim * argument list
    (*
      [index (start,stop) paren index] computes the dimension of the
      index argument and how it should be desugared when transformed
@@ -315,14 +317,18 @@ let builtin_arraylike_name loc _ ~assign paren_kind n =
    ghloc ~loc (Ldot(prefix,opname))
 
 let builtin_arraylike_index loc paren_kind index = match paren_kind with
-    | Paren | Bracket -> One, [Nolabel, index]
+    | Paren | Bracket -> One, [Exp.arg_expr Nolabel index]
     | Brace ->
        (* Multi-indices for bigarray are comma-separated ([a.{1,2,3,4}]) *)
        match bigarray_untuplify index with
-     | [x] -> One, [Nolabel, x]
-     | [x;y] -> Two, [Nolabel, x; Nolabel, y]
-     | [x;y;z] -> Three, [Nolabel, x; Nolabel, y; Nolabel, z]
-     | coords -> Many, [Nolabel, ghexp ~loc (Pexp_array coords)]
+     | [x] -> One, [Exp.arg_expr Nolabel x]
+     | [x;y] -> Two, [Exp.arg_expr Nolabel x; Exp.arg_expr Nolabel y]
+     | [x;y;z] ->
+         ( Three
+         , [ Exp.arg_expr Nolabel x
+           ; Exp.arg_expr Nolabel y
+           ; Exp.arg_expr Nolabel z ] )
+     | coords -> Many, [Exp.arg_expr Nolabel (ghexp ~loc (Pexp_array coords))]
 
 let builtin_indexing_operators : (unit, expression) array_family  =
   { index = builtin_arraylike_index; name = builtin_arraylike_name }
@@ -349,8 +355,8 @@ let user_index loc _ index =
   (* Multi-indices for user-defined operators are semicolon-separated
      ([a.%[1;2;3;4]]) *)
   match index with
-    | [a] -> One, [Nolabel, a]
-    | l -> Many, [Nolabel, mkexp ~loc (Pexp_array l)]
+    | [a] -> One, [Exp.arg_expr Nolabel a]
+    | l -> Many, [Exp.arg_expr Nolabel (mkexp ~loc (Pexp_array l))]
 
 let user_indexing_operators:
       (Longident.t option * string, expression list) array_family
@@ -363,8 +369,8 @@ let mk_indexop_expr array_indexing_operator ~loc
   let fn = array_indexing_operator.name loc dot ~assign paren n in
   let set_arg = match set_expr with
     | None -> []
-    | Some expr -> [Nolabel, expr] in
-  let args = (Nolabel,array) :: index @ set_arg in
+    | Some expr -> [Exp.arg_expr Nolabel expr] in
+  let args = Exp.arg_expr Nolabel array :: index @ set_arg in
   mkexp ~loc (Pexp_apply(ghexp ~loc (Pexp_ident fn), args))
 
 let indexop_unclosed_error loc_s s loc_e =
@@ -1308,6 +1314,39 @@ module_expr:
         { Pmod_apply(me1, me2) }
     | (* Application to unit is sugar for application to an empty structure. *)
       me1 = module_expr LPAREN RPAREN
+        { (* TODO review mkmod location *)
+          Pmod_apply(me1, mkmod ~loc:$sloc (Pmod_structure [])) }
+    | (* An extension. *)
+      ex = extension
+        { Pmod_extension ex }
+    )
+    { $1 }
+;
+
+module_expr_without_parens:
+  | STRUCT attrs = attributes s = structure END
+      { mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
+  | STRUCT attributes structure error
+      { unclosed "struct" $loc($1) "end" $loc($4) }
+  | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
+      { wrap_mod_attrs ~loc:$sloc attrs (
+          List.fold_left (fun acc (startpos, arg) ->
+            mkmod ~loc:(startpos, $endpos) (Pmod_functor (arg, acc))
+          ) me args
+        ) }
+  | me = module_expr_without_parens attr = attribute
+      { Mod.attr me attr }
+  | LPAREN VAL attrs = attributes e = expr_colon_package_type RPAREN
+      { mkmod ~loc:$sloc ~attrs (Pmod_unpack e) }
+  | mkmod(
+      (* A module identifier. *)
+      x = mkrhs(mod_longident)
+        { Pmod_ident x }
+    | (* In a functor application, the actual argument must be parenthesized. *)
+      me1 = module_expr_without_parens me2 = paren_module_expr
+        { Pmod_apply(me1, me2) }
+    | (* Application to unit is sugar for application to an empty structure. *)
+      me1 = module_expr_without_parens LPAREN RPAREN
         { (* TODO review mkmod location *)
           Pmod_apply(me1, mkmod ~loc:$sloc (Pmod_structure [])) }
     | (* An extension. *)
@@ -2276,6 +2315,11 @@ expr:
   | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
         Pexp_fun(l, o, p, $4), $2 }
+  | FUN ext_attributes LBRACE mkrhs(UIDENT) COLON module_type RBRACE fun_def
+      { let (lid, cstrs, _attrs) = package_type_of_module_type $6 in
+        Pexp_functor ($4, Some (lid, cstrs), $8), $2 }
+  | FUN ext_attributes LBRACE mkrhs(UIDENT) RBRACE fun_def
+      { Pexp_functor ($4, None, $6), $2 }
   | FUN ext_attributes LPAREN TYPE lident_list RPAREN fun_def
       { (mk_newtypes ~loc:$sloc $5 $7).pexp_desc, $2 }
   | MATCH ext_attributes seq_expr WITH match_cases
@@ -2303,7 +2347,7 @@ expr:
       { unclosed "object" $loc($1) "end" $loc($4) }
 ;
 %inline expr_:
-  | simple_expr nonempty_llist(labeled_simple_expr)
+  | simple_expr nonempty_llist(argument)
       { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
       { Pexp_tuple($1) }
@@ -2364,9 +2408,9 @@ simple_expr:
   | name_tag %prec prec_constant_constructor
       { Pexp_variant($1, None) }
   | op(PREFIXOP) simple_expr
-      { Pexp_apply($1, [Nolabel,$2]) }
+      { Pexp_apply($1, [Exp.arg_expr Nolabel $2]) }
   | op(BANG {"!"}) simple_expr
-      { Pexp_apply($1, [Nolabel,$2]) }
+      { Pexp_apply($1, [Exp.arg_expr Nolabel $2]) }
   | LBRACELESS object_expr_content GREATERRBRACE
       { Pexp_override $2 }
   | LBRACELESS object_expr_content error
@@ -2455,6 +2499,13 @@ labeled_simple_expr:
         (Optional label, mkexpvar ~loc label) }
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
+;
+argument:
+    labeled_simple_expr
+      { let (lbl, expr) = $1 in
+        Parg_expression (lbl, expr) }
+  | LBRACE module_expr_without_parens RBRACE
+      { Parg_module $2 }
 ;
 %inline lident_list:
   xs = mkrhs(LIDENT)+
@@ -2575,6 +2626,13 @@ strict_binding:
       { let (l, o, p) = $1 in ghexp ~loc:$sloc (Pexp_fun(l, o, p, $2)) }
   | LPAREN TYPE lident_list RPAREN fun_binding
       { mk_newtypes ~loc:$sloc $3 $5 }
+  | mkexp(LBRACE mkrhs(UIDENT) COLON module_type RBRACE fun_binding
+      { let (lid, cstrs, _attrs) = package_type_of_module_type $4 in
+        Pexp_functor ($2, Some (lid, cstrs), $6) })
+      { $1 }
+  | mkexp(LBRACE mkrhs(UIDENT) RBRACE fun_binding
+      { Pexp_functor ($2, None, $4) })
+      { $1 }
 ;
 %inline match_cases:
   xs = preceded_or_separated_nonempty_llist(BAR, match_case)
@@ -2602,6 +2660,13 @@ fun_def:
       }
   | LPAREN TYPE lident_list RPAREN fun_def
       { mk_newtypes ~loc:$sloc $3 $5 }
+  | mkexp(LBRACE mkrhs(UIDENT) COLON module_type RBRACE fun_def
+      { let (lid, cstrs, _attrs) = package_type_of_module_type $4 in
+        Pexp_functor ($2, Some (lid, cstrs), $6) })
+      { $1 }
+  | mkexp(LBRACE mkrhs(UIDENT) RBRACE fun_def
+      { Pexp_functor ($2, None, $4) })
+      { $1 }
 ;
 %inline expr_comma_list:
   es = separated_nontrivial_llist(COMMA, expr)
@@ -3298,6 +3363,18 @@ function_type:
       MINUSGREATER
       codomain = function_type
         { Ptyp_arrow(label, domain, codomain) }
+    )
+    { $1 }
+  | mktyp(
+      LBRACE
+      name = mkrhs(UIDENT)
+      COLON
+      mty = module_type
+      RBRACE
+      MINUSGREATER
+      codomain = function_type
+        { let (lid, cstrs, _attrs) = package_type_of_module_type mty in
+          Ptyp_functor (name, (lid, cstrs), codomain) }
     )
     { $1 }
 ;

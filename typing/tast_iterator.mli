@@ -22,6 +22,7 @@ open Typedtree
 
 type iterator =
   {
+    argument: iterator -> argument -> unit;
     binding_op: iterator -> binding_op -> unit;
     case: 'k . iterator -> 'k case -> unit;
     class_declaration: iterator -> class_declaration -> unit;

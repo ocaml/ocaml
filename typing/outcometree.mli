@@ -75,8 +75,11 @@ type out_type =
   | Otyp_variant of
       bool * out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
-  | Otyp_module of out_ident * string list * out_type list
+  | Otyp_module of out_package_type
   | Otyp_attribute of out_type * out_attribute
+  | Otyp_functor of out_name * out_package_type * out_type
+
+and out_package_type = out_ident * string list * out_type list
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list

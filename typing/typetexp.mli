@@ -21,6 +21,7 @@ val valid_tyvar_name : string -> bool
 
 val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
+        (* [bool] argument is [fixed]. *)
 val transl_simple_type_univars:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_delayed
@@ -73,6 +74,9 @@ val transl_modtype_longident:  (* from Typemod *)
     (Location.t -> Env.t -> Longident.t -> Path.t) ref
 val transl_modtype: (* from Typemod *)
     (Env.t -> Parsetree.module_type -> Typedtree.module_type) ref
+val package_constraints: (* from Typemod *)
+    ( Env.t -> Location.t -> module_type -> Longident.t list ->
+      type_expr list -> module_type) ref
 val create_package_mty:
     Location.t -> Env.t -> Parsetree.package_type ->
     (Longident.t Asttypes.loc * Parsetree.core_type) list *

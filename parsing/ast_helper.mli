@@ -84,6 +84,8 @@ module Typ :
     val package: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list
                  -> core_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> core_type
+    val functor_ : ?loc:loc -> ?attrs:attrs -> str
+                   -> (lid * (lid * core_type) list) -> core_type -> core_type
 
     val force_poly: core_type -> core_type
 
@@ -138,8 +140,8 @@ module Exp:
     val fun_: ?loc:loc -> ?attrs:attrs -> arg_label -> expression option
               -> pattern -> expression -> expression
     val function_: ?loc:loc -> ?attrs:attrs -> case list -> expression
-    val apply: ?loc:loc -> ?attrs:attrs -> expression
-               -> (arg_label * expression) list -> expression
+    val apply: ?loc:loc -> ?attrs:attrs -> expression -> argument list
+               -> expression
     val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list
                 -> expression
     val try_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
@@ -189,9 +191,15 @@ module Exp:
                -> binding_op list -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
+    val functor_:
+      ?loc:loc -> ?attrs:attrs -> str-> (lid * (lid * core_type) list) option
+      -> expression -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
+
+    val arg_expr: arg_label -> expression -> argument
+    val arg_mod: module_expr -> argument
   end
 
 (** Value declarations *)

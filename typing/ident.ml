@@ -25,6 +25,9 @@ type t =
   | Predef of { name: string; stamp: int }
       (* the stamp is here only for fast comparison, but the name of
          predefined identifiers is always unique. *)
+  | Unscoped of { name: string; stamp: int }
+
+exception No_scope of t
 
 (* A stamp of 0 denotes a persistent identifier *)
 
@@ -46,15 +49,21 @@ let create_predef s =
 let create_persistent s =
   Global s
 
+let create_unscoped s =
+  incr currentstamp;
+  Unscoped { name = s; stamp = !currentstamp }
+
 let name = function
   | Local { name; _ }
   | Scoped { name; _ }
   | Global name
-  | Predef { name; _ } -> name
+  | Predef { name; _ }
+  | Unscoped { name; _ } -> name
 
 let rename = function
   | Local { name; stamp = _ }
-  | Scoped { name; stamp = _; scope = _ } ->
+  | Scoped { name; stamp = _; scope = _ }
+  | Unscoped { name; stamp = _ } ->
       incr currentstamp;
       Local { name; stamp = !currentstamp }
   | id ->
@@ -62,7 +71,8 @@ let rename = function
 
 let unique_name = function
   | Local { name; stamp }
-  | Scoped { name; stamp } -> name ^ "_" ^ Int.to_string stamp
+  | Scoped { name; stamp }
+  | Unscoped { name; stamp } -> name ^ "_" ^ Int.to_string stamp
   | Global name ->
       (* we're adding a fake stamp, because someone could have named his unit
          [Foo_123] and since we're using unique_name to produce symbol names,
@@ -75,7 +85,8 @@ let unique_name = function
 
 let unique_toplevel_name = function
   | Local { name; stamp }
-  | Scoped { name; stamp } -> name ^ "/" ^ Int.to_string stamp
+  | Scoped { name; stamp }
+  | Unscoped { name; stamp } -> name ^ "/" ^ Int.to_string stamp
   | Global name
   | Predef { name; _ } -> name
 
@@ -87,6 +98,7 @@ let equal i1 i2 =
   match i1, i2 with
   | Local { name = name1; _ }, Local { name = name2; _ }
   | Scoped { name = name1; _ }, Scoped { name = name2; _ }
+  | Unscoped { name = name1; _ }, Unscoped { name = name2; _ }
   | Global name1, Global name2 ->
       name1 = name2
   | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
@@ -99,7 +111,8 @@ let same i1 i2 =
   match i1, i2 with
   | Local { stamp = s1; _ }, Local { stamp = s2; _ }
   | Scoped { stamp = s1; _ }, Scoped { stamp = s2; _ }
-  | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
+  | Predef { stamp = s1; _ }, Predef { stamp = s2 }
+  | Unscoped { stamp = s1; _ }, Unscoped { stamp = s2; _ } ->
       s1 = s2
   | Global name1, Global name2 ->
       name1 = name2
@@ -108,13 +121,15 @@ let same i1 i2 =
 
 let stamp = function
   | Local { stamp; _ }
-  | Scoped { stamp; _ } -> stamp
+  | Scoped { stamp; _ }
+  | Unscoped { stamp; _ } -> stamp
   | _ -> 0
 
 let scope = function
   | Scoped { scope; _ } -> scope
   | Local _ -> highest_scope
   | Global _ | Predef _ -> lowest_scope
+  | Unscoped _ as i -> raise (No_scope i)
 
 let reinit_level = ref (-1)
 
@@ -125,12 +140,17 @@ let reinit () =
 
 let global = function
   | Local _
-  | Scoped _ -> false
+  | Scoped _
+  | Unscoped _ -> false
   | Global _
   | Predef _ -> true
 
 let is_predef = function
   | Predef _ -> true
+  | _ -> false
+
+let is_unscoped = function
+  | Unscoped _ -> true
   | _ -> false
 
 let print ~with_scope ppf =
@@ -147,6 +167,9 @@ let print ~with_scope ppf =
       fprintf ppf "%s%s%s" name
         (if !Clflags.unique_ids then sprintf "/%i" n else "")
         (if with_scope then sprintf "[%i]" scope else "")
+  | Unscoped { name; stamp = n } ->
+      fprintf ppf "%s%s" name
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
 
 let print_with_scope ppf id = print ~with_scope:true ppf id
 
@@ -319,7 +342,8 @@ let make_key_generator () =
   let c = ref 1 in
   function
   | Local _
-  | Scoped _ ->
+  | Scoped _
+  | Unscoped _ ->
       let stamp = !c in
       decr c ;
       Local { name = key_name; stamp = stamp }
@@ -340,6 +364,12 @@ let compare x y =
       else compare x.name y.name
   | Scoped _, _ -> 1
   | _, Scoped _ -> (-1)
+  | Unscoped x, Unscoped y ->
+      let c = x.stamp - y.stamp in
+      if c <> 0 then c
+      else compare x.name y.name
+  | Unscoped _, _ -> 1
+  | _, Unscoped _ -> (-1)
   | Global x, Global y -> compare x y
   | Global _, _ -> 1
   | _, Global _ -> (-1)

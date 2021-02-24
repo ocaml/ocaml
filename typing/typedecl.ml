@@ -485,6 +485,24 @@ let rec check_constraints_rec env loc visited ty =
   | Tpoly (ty, tl) ->
       let _, ty = Ctype.instance_poly false tl ty in
       check_constraints_rec env loc visited ty
+  | Tfunctor (id, ((_, _, tl) as pack), t) ->
+      List.iter (check_constraints_rec env loc visited) tl;
+      let scoped_id =
+        Ident.create_scoped ~scope:(Ctype.get_current_level ()) (Ident.name id)
+      in
+      let desc = ty.desc in
+      (* Avoid an infinite recursion between this and subst. *)
+      Private_type_expr.set_desc ty (Tsubst (ty, None));
+      let t =
+        Subst.type_expr (Subst.add_module id (Pident scoped_id) Subst.identity)
+          t
+      in
+      Private_type_expr.set_desc ty desc;
+      let env =
+        Env.add_module scoped_id Mp_present (!Ctype.mty_of_package' env pack)
+          env
+      in
+      check_constraints_rec env loc visited t
   | _ ->
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end

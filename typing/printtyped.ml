@@ -221,6 +221,10 @@ let rec core_type i ppf x =
   | Ttyp_package { pack_path = s; pack_fields = l } ->
       line i ppf "Ttyp_package %a\n" fmt_path s;
       list i package_with ppf l;
+  | Ttyp_functor (name, {pack_path= s; pack_fields= l; _}, ct) ->
+      line i ppf "Ttyp_functor \"%a\" : %a\n" fmt_ident name.txt fmt_path s;
+      list i package_with ppf l;
+      core_type i ppf ct
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident s;
@@ -335,7 +339,7 @@ and expression i ppf x =
   | Texp_apply (e, l) ->
       line i ppf "Texp_apply\n";
       expression i ppf e;
-      list i label_x_expression ppf l;
+      list i argument ppf l;
   | Texp_match (e, l, _partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
@@ -442,6 +446,10 @@ and expression i ppf x =
       module_expr i ppf o.open_expr;
       attributes i ppf o.open_attributes;
       expression i ppf e;
+  | Texp_functor (s, _, {pack_path= p; pack_fields= l; _}, _, e) ->
+      line i ppf "Texp_functor %a %a\n" fmt_ident s fmt_path p;
+      list i package_with ppf l;
+      expression i ppf e
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
@@ -928,6 +936,12 @@ and label_x_expression i ppf (l, e) =
   line i ppf "<arg>\n";
   arg_label (i+1) ppf l;
   (match e with None -> () | Some e -> expression (i+1) ppf e)
+
+and argument i ppf = function
+  | Targ_expression (l, e) -> label_x_expression i ppf (l, e)
+  | Targ_module me ->
+      line i ppf "<module-arg>\n";
+      module_expr (i+1) ppf me
 
 and ident_x_expression_def i ppf (l, e) =
   line i ppf "<def> \"%a\"\n" fmt_ident l;

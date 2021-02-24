@@ -148,6 +148,8 @@ and core_type_desc =
         (* (module S) *)
   | Ptyp_extension of extension
         (* [%id] *)
+  | Ptyp_functor of string loc * package_type * core_type
+        (* {M : S} -> ... *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
       (*
@@ -290,10 +292,10 @@ and expression_desc =
            - "fun P1 P2 .. Pn -> E1" is represented as nested Pexp_fun.
            - "let f P = E" is represented using Pexp_fun.
          *)
-  | Pexp_apply of expression * (arg_label * expression) list
+  | Pexp_apply of expression * argument list
         (* E0 ~l1:E1 ... ~ln:En
-           li can be empty (non labeled argument) or start with '?'
-           (optional argument).
+           li can be empty (non labeled argument), start with '?'
+           (optional argument), or take the form {M} (functor argument).
 
            Invariant: n > 0
          *)
@@ -387,6 +389,8 @@ and expression_desc =
         (* [%id] *)
   | Pexp_unreachable
         (* . *)
+  | Pexp_functor of string loc * package_type option * expression
+        (* fun {M : S} -> E *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {
@@ -409,6 +413,10 @@ and binding_op =
     pbop_exp : expression;
     pbop_loc : Location.t;
   }
+
+and argument =
+  | Parg_expression of arg_label * expression
+  | Parg_module of module_expr
 
 (* Value descriptions *)
 

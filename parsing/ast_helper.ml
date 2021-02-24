@@ -72,6 +72,7 @@ module Typ = struct
   let poly ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_poly (a, b))
   let package ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_package (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Ptyp_extension a)
+  let functor_ ?loc ?attrs a b c = mk ?loc ?attrs (Ptyp_functor (a, b, c))
 
   let force_poly t =
     match t.ptyp_desc with
@@ -116,6 +117,11 @@ module Typ = struct
             Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
         | Ptyp_extension (s, arg) ->
             Ptyp_extension (s, arg)
+        | Ptyp_functor (name, (longident, lst), codomain) ->
+            Ptyp_functor
+              ( name
+              , (longident, List.map (fun (n, typ) -> (n, loop typ)) lst)
+              , loop codomain)
       in
       {t with ptyp_desc = desc}
     and loop_row_field field =
@@ -213,6 +219,7 @@ module Exp = struct
     mk ?loc ?attrs (Pexp_letop {let_; ands; body})
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let unreachable ?loc ?attrs () = mk ?loc ?attrs Pexp_unreachable
+  let functor_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_functor (a, b, c))
 
   let case lhs ?guard rhs =
     {
@@ -228,6 +235,9 @@ module Exp = struct
       pbop_exp = exp;
       pbop_loc = loc;
     }
+
+  let arg_expr label expr = Parg_expression (label, expr)
+  let arg_mod mexpr = Parg_module mexpr
 end
 
 module Mty = struct

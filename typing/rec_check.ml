@@ -117,9 +117,10 @@ let is_ref : Types.value_description -> bool = function
 
 (* See the note on abstracted arguments in the documentation for
     Typedtree.Texp_apply *)
-let is_abstracted_arg : arg_label * expression option -> bool = function
-  | (_, None) -> true
-  | (_, Some _) -> false
+let is_abstracted_arg : argument -> bool = function
+  | Targ_expression (_, None) -> true
+  | Targ_expression (_, Some _) -> false
+  | Targ_module _ -> false
 
 let classify_expression : Typedtree.expression -> sd =
   (* We need to keep track of the size of expressions
@@ -192,7 +193,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_function _
     | Texp_lazy _
     | Texp_unreachable
-    | Texp_extension_constructor _ ->
+    | Texp_extension_constructor _
+    | Texp_functor _ ->
         Static
 
     | Texp_match _
@@ -564,7 +566,8 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_instvar (self_path, pth, _inst_var) ->
         join [path self_path << Dereference; path pth]
-    | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
+    | Texp_apply
+        ({exp_desc = Texp_ident (_, _, vd)}, [Targ_expression (_, Some arg)])
       when is_ref vd ->
       (*
         G |- e: m[Guard]
@@ -573,7 +576,6 @@ let rec expression : Typedtree.expression -> term_judg =
       *)
       expression arg << Guard
     | Texp_apply (e, args)  ->
-        let arg (_, eo) = option expression eo in
         let app_mode = if List.exists is_abstracted_arg args
           then (* see the comment on Texp_apply in typedtree.mli;
                   the non-abstracted arguments are bound to local
@@ -581,7 +583,7 @@ let rec expression : Typedtree.expression -> term_judg =
             Guard
           else Dereference
         in
-        join [expression e; list arg args] << app_mode
+        join [expression e; list argument args] << app_mode
     | Texp_tuple exprs ->
       list expression exprs << Guard
     | Texp_array exprs ->
@@ -818,10 +820,17 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_open (od, e) ->
       open_declaration od >> expression e
+    | Texp_functor (id, _name, _pack, _pack_opt, e) ->
+      remove_id id (expression e) << Delay
 
 and binding_op : Typedtree.binding_op -> term_judg =
   fun bop ->
     join [path bop.bop_op_path; expression bop.bop_exp]
+
+and argument : Typedtree.argument -> term_judg = function
+  | Targ_expression (_, eo) -> option expression eo
+  | Targ_module me -> modexp me
+
 
 and class_structure : Typedtree.class_structure -> term_judg =
   fun cs -> list class_field cs.cstr_fields

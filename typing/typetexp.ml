@@ -59,6 +59,7 @@ type variable_context = int * type_expr TyVarMap.t
 
 let transl_modtype_longident = ref (fun _ -> assert false)
 let transl_modtype = ref (fun _ -> assert false)
+let package_constraints = ref (fun _ -> assert false)
 
 let create_package_mty fake loc env (p, l) =
   let l =
@@ -523,6 +524,54 @@ and transl_type_aux env policy styp =
            }) ty
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Ptyp_functor (name, (p, l), st) ->
+      let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
+      let z = narrow () in
+      let mty = !transl_modtype env mty in
+      widen z;
+      let pack, pack_ty =
+        let ptys = List.map (fun (s, pty) ->
+                               s, transl_type env policy pty
+                            ) l in
+        let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
+        let ty =
+          ( path
+          , List.map (fun (s, _pty) -> s.txt) l
+          , List.map (fun (_, cty) -> cty.ctyp_type) ptys )
+        in
+        ( { pack_path = path
+          ; pack_type = mty.mty_type
+          ; pack_fields = ptys
+          ; pack_txt = p }
+        , ty )
+      in
+      (* Add the package constraints to the module type.
+         This allows types such as
+           'a -> {M : S with type t = 'b} -> (M.t as 'a)
+         to pass typechecking.
+      *)
+      let mty_type =
+        let (_, nl, tl) = pack_ty in
+        !package_constraints env loc mty.mty_type nl tl
+      in
+      begin_def();
+      let scoped_ident =
+        Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
+      in
+      let env = Env.add_module scoped_ident Mp_present mty_type env in
+      let cty = transl_type env policy st in
+      end_def();
+      let ident = Ident.create_unscoped name.txt in
+      (* Substitute [scoped_ident] for [ident]. *)
+      let ctyp_type =
+        Subst.type_expr
+          (Subst.add_module scoped_ident (Path.Pident ident) Subst.identity)
+          cty.ctyp_type
+      in
+      let ty = Btype.newgenty (Tfunctor (ident, pack_ty, ctyp_type)) in
+      unify_var env (newvar()) ty;
+      (* Use [scoped_ident] in the AST, for consistency with nodes below. *)
+      ctyp (Ttyp_functor (Location.mkloc scoped_ident name.loc, pack, cty)) ty
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
@@ -730,13 +779,13 @@ let report_error env ppf = function
          anywhere so it's unclear how it should be handled *)
       fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
-      Printtyp.report_unification_error ppf Env.empty trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "This type")
         (function ppf ->
            fprintf ppf "should be an instance of type")
   | Alias_type_mismatch trace ->
-      Printtyp.report_unification_error ppf Env.empty trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "This alias is bound to type")
         (function ppf ->

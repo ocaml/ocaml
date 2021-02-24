@@ -38,7 +38,10 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
-  | Tpackage of Path.t * Longident.t list * type_expr list
+  | Tpackage of type_package
+  | Tfunctor of Ident.t * type_package * type_expr
+
+and type_package = Path.t * Longident.t list * type_expr list
 
 and row_desc =
     { row_fields: (label * row_field) list;

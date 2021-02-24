@@ -314,6 +314,9 @@ and core_type ctxt f x =
                         (list tyvar_loc ~sep:"@;")  l)
                l)
           sl (core_type ctxt) ct
+    | Ptyp_functor (name, pack, ct) ->
+        pp f "@[<2>@[<hov2>{%s :@ %a}@]@;->@;%a@]" name.txt (package_type ctxt)
+          pack (core_type ctxt) ct
     | _ -> pp f "@[<2>%a@]" (core_type1 ctxt) x
 
 and core_type1 ctxt f x =
@@ -383,16 +386,19 @@ and core_type1 ctxt f x =
         pp f "@[<hov2>%a#%a@]"
           (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")") l
           longident_loc li
-    | Ptyp_package (lid, cstrs) ->
-        let aux f (s, ct) =
-          pp f "type %a@ =@ %a" longident_loc s (core_type ctxt) ct  in
-        (match cstrs with
-         |[] -> pp f "@[<hov2>(module@ %a)@]" longident_loc lid
-         |_ ->
-             pp f "@[<hov2>(module@ %a@ with@ %a)@]" longident_loc lid
-               (list aux  ~sep:"@ and@ ")  cstrs)
+    | Ptyp_package pack ->
+        pp f "@[<hov2>(module@ %a)@]" (package_type ctxt) pack
     | Ptyp_extension e -> extension ctxt f e
     | _ -> paren true (core_type ctxt) f x
+
+and package_type ctxt f (lid, cstrs) =
+  let aux f (s, ct) =
+    pp f "type %a@ =@ %a" longident_loc s (core_type ctxt) ct
+  in
+  (match cstrs with
+   |[] -> longident_loc f lid
+   |_ ->
+       pp f "%a@ with@ %a" longident_loc lid (list aux  ~sep:"@ and@ ")  cstrs)
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
@@ -535,7 +541,9 @@ and sugar_expr ctxt f e =
   else match e.pexp_desc with
   | Pexp_apply ({ pexp_desc = Pexp_ident {txt = id; _};
                   pexp_attributes=[]; _}, args)
-    when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
+    when List.for_all (function
+           | Parg_expression (lab, _) -> lab = Nolabel
+           | Parg_module _ -> false) args -> begin
       let print_indexop a path_prefix assign left sep right print_index indices
           rem_args =
         let print_path ppf = function
@@ -552,7 +560,13 @@ and sugar_expr ctxt f e =
                 left (list ~sep print_index) indices right
                 (simple_expr ctxt) v; true
             | _ -> false in
-      match id, List.map snd args with
+      let args =
+        List.map (function
+            | Parg_expression (_, e) -> e
+            | Parg_module _ -> assert false)
+          args
+      in
+      match id, args with
       | Lident "!", [e] ->
         pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
       | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
@@ -611,8 +625,8 @@ and expression ctxt f x =
     pp f "((%a)@,%a)" (expression ctxt) {x with pexp_attributes=[]}
       (attributes ctxt) x.pexp_attributes
   else match x.pexp_desc with
-    | Pexp_function _ | Pexp_fun _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
-    | Pexp_newtype _
+    | Pexp_function _ | Pexp_fun _ | Pexp_functor _ | Pexp_match _ | Pexp_try _
+    | Pexp_sequence _ | Pexp_newtype _
       when ctxt.pipe || ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
@@ -624,6 +638,10 @@ and expression ctxt f x =
     | Pexp_fun (l, e0, p, e) ->
         pp f "@[<2>fun@;%a->@;%a@]"
           (label_exp ctxt) (l, e0, p)
+          (expression ctxt) e
+    | Pexp_functor (l, mty, e) ->
+        pp f "@[<2>fun@;{%s%a}->@;%a@]" l.txt
+          (option ~first:" : " (package_type ctxt)) mty
           (expression ctxt) e
     | Pexp_newtype (lid, e) ->
         pp f "@[<2>fun@;(type@;%s)@;->@;%a@]" lid.txt
@@ -650,15 +668,16 @@ and expression ctxt f x =
             match view_fixity_of_exp e with
             | `Infix s ->
                 begin match l with
-                | [ (Nolabel, _) as arg1; (Nolabel, _) as arg2 ] ->
-                    (* FIXME associativity label_x_expression_param *)
+                | [ Parg_expression (Nolabel, _) as arg1
+                  ; Parg_expression (Nolabel, _) as arg2 ] ->
+                    (* FIXME associativity argument *)
                     pp f "@[<2>%a@;%s@;%a@]"
-                      (label_x_expression_param reset_ctxt) arg1 s
-                      (label_x_expression_param ctxt) arg2
+                      (argument reset_ctxt) arg1 s
+                      (argument ctxt) arg2
                 | _ ->
                     pp f "@[<2>%a %a@]"
                       (simple_expr ctxt) e
-                      (list (label_x_expression_param ctxt)) l
+                      (list (argument ctxt)) l
                 end
             | `Prefix s ->
                 let s =
@@ -666,21 +685,21 @@ and expression ctxt f x =
                    (match l with
                     (* See #7200: avoid turning (~- 1) into (- 1) which is
                        parsed as an int literal *)
-                    |[(_,{pexp_desc=Pexp_constant _})] -> false
+                    |[Parg_expression (_,{pexp_desc=Pexp_constant _})] -> false
                     | _ -> true)
                   then String.sub s 1 (String.length s -1)
                   else s in
                 begin match l with
-                | [(Nolabel, x)] ->
+                | [Parg_expression (Nolabel, x)] ->
                   pp f "@[<2>%s@;%a@]" s (simple_expr ctxt) x
                 | _   ->
                   pp f "@[<2>%a %a@]" (simple_expr ctxt) e
-                    (list (label_x_expression_param ctxt)) l
+                    (list (argument ctxt)) l
                 end
             | _ ->
                 pp f "@[<hov2>%a@]" begin fun f (e,l) ->
                   pp f "%a@ %a" (expression2 ctxt) e
-                    (list (label_x_expression_param reset_ctxt))  l
+                    (list (argument reset_ctxt))  l
                     (* reset here only because [function,match,try,sequence]
                        are lower priority *)
                 end (e,l)
@@ -1242,6 +1261,10 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
               (label_exp ctxt) (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
           pp f "(type@ %s)@ %a" str.txt pp_print_pexp_function e
+      | Pexp_functor (str, mty, e) ->
+          pp f "{%s%a}@ %a" str.txt
+            (option ~first:" : " (package_type ctxt)) mty
+            pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
   let tyvars_str tyvars = List.map (fun v -> v.txt) tyvars in
@@ -1633,6 +1656,10 @@ and label_x_expression_param ctxt f (l,e) =
         pp f "~%s" lbl
       else
         pp f "~%s:%a" lbl (simple_expr ctxt) e
+
+and argument ctxt f = function
+  | Parg_expression (l, e) -> label_x_expression_param ctxt f (l, e)
+  | Parg_module me -> pp f "{%a}" (module_expr ctxt) me
 
 and directive_argument f x =
   match x.pdira_desc with

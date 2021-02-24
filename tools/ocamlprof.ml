@@ -212,7 +212,10 @@ and rw_exp iflag sexp =
 
   | Pexp_apply(sfunct, sargs) ->
     rewrite_exp iflag sfunct;
-    rewrite_exp_list iflag (List.map snd sargs)
+    List.iter (function
+        | Parg_expression (_lbl, sarg) -> rewrite_exp iflag sarg
+        | Parg_module smod -> rewrite_mod iflag smod)
+      sargs
 
   | Pexp_tuple sexpl ->
     rewrite_exp_list iflag sexpl
@@ -303,6 +306,8 @@ and rw_exp iflag sexp =
       rewrite_exp iflag let_.pbop_exp;
       List.iter (fun {pbop_exp; _} -> rewrite_exp iflag pbop_exp) ands;
       rewrite_exp iflag body
+  | Pexp_functor (_, _, e) ->
+      rewrite_exp iflag e
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
 

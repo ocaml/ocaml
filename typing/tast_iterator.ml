@@ -18,6 +18,7 @@ open Typedtree
 
 type iterator =
   {
+    argument: iterator -> argument -> unit;
     binding_op: iterator -> binding_op -> unit;
     case: 'k . iterator -> 'k case -> unit;
     class_declaration: iterator -> class_declaration -> unit;
@@ -198,8 +199,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_function {cases; _} ->
      List.iter (sub.case sub) cases
   | Texp_apply (exp, list) ->
-      sub.expr sub exp;
-      List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
+      sub.expr sub exp; List.iter (sub.argument sub) list
   | Texp_match (exp, cases, _) ->
       sub.expr sub exp;
       List.iter (sub.case sub) cases
@@ -261,12 +261,19 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_open (od, e) ->
       sub.open_declaration sub od;
       sub.expr sub e
+  | Texp_functor (_, _, pack, _, e) ->
+      sub.package_type sub pack;
+      sub.expr sub e
 
 
 let package_type sub {pack_fields; _} =
   List.iter (fun (_, p) -> sub.typ sub p) pack_fields
 
 let binding_op sub {bop_exp; _} = sub.expr sub bop_exp
+
+let argument sub = function
+  | Targ_expression (_lbl, e) -> Option.iter (sub.expr sub) e
+  | Targ_module me -> sub.module_expr sub me
 
 let signature sub {sig_items; sig_final_env; _} =
   sub.env sub sig_final_env;
@@ -424,6 +431,8 @@ let typ sub {ctyp_desc; ctyp_env; _} =
   | Ttyp_variant (list, _, _) -> List.iter (sub.row_field sub) list
   | Ttyp_poly (_, ct) -> sub.typ sub ct
   | Ttyp_package pack -> sub.package_type sub pack
+  | Ttyp_functor (_, pack, ct) ->
+      sub.package_type sub pack; sub.typ sub ct
 
 let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;
@@ -468,6 +477,7 @@ let env _sub _ = ()
 
 let default_iterator =
   {
+    argument;
     binding_op;
     case;
     class_declaration;
