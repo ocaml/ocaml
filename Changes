@@ -18,6 +18,10 @@ Working version
 
 ### Runtime system:
 
+- #10258: Overhaul the locale code used for mingw/msvc in float<->string
+  conversions.
+  (David Allsopp, review by Antonin Décimo)
+
 - #13629: Major GC ephemeron cleanup.
   (Nick Barnes, review by Stephen Dolan and Tim McGilchrist).
 
