@@ -60,9 +60,9 @@ binding the name to the value. The pattern @"_"@ also matches
 any value, but does not bind any name.
 
 \begin{caml_example}{toplevel}
-let print_int_opt = function
-  | Some x -> print_int x
-  | _ -> ();;
+let is_empty = function
+  | [] -> true
+  | _ :: _ -> false;;
 \end{caml_example}
 
 Patterns are {\em linear\/}: a variable cannot be bound several times by
@@ -138,12 +138,11 @@ performed are those of @pattern_1@ when $v$ matches @pattern_1@.
 Otherwise, value~$v$ matches @pattern_2@ whose bindings are performed.
 
 \begin{caml_example}{toplevel}
-type shape =
-  Square of float | Rect of (float * float) | Circle of float
+type shape = Square of float | Rect of (float * float) | Circle of float
 
 let is_rectangular = function
   | Square _ | Rect _ -> true
-  | _ -> false;;
+  | Circle _ -> false;;
 \end{caml_example}
 
 \subsubsection*{sss:pat-variant}{Variant patterns}
@@ -345,10 +344,10 @@ all cases are exceptions, because there would be no code to handle
 the return of a value.
 
 \begin{caml_example}{toplevel}
-let range l =
-  match (List.hd l, List.hd (List.rev l)) with
-  | (f, l) -> Some (l - f)
-  | exception (Failure _) -> None;;
+let find_opt p l =
+  match List.find p l with
+  | exception Not_found -> None
+  | x -> Some x;;
 \end{caml_example}
 
 \subsubsection*{sss:pat-open}{Local opens for patterns}
