@@ -116,6 +116,11 @@ Working version
 
 ### Manual and documentation:
 
+- #10206: Split labels and polymorphic variants tutorials
+  Splits the labels and polymorphic variants tutorial into two. Moves the GADTs
+  tutorial from the Language Extensions chapter to the tutorials.
+  (John Whitington, review by ...)
+
 - #9786, #10181: improved documentation of Unix.{in,out}_channel_of_descr
   with respect to closing.
   (Xavier Leroy, report by Jacques-Henri Jourdan, review by Guillaume
