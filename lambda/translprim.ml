@@ -81,6 +81,7 @@ type prim =
   | Primitive of Lambda.primitive * int
   | External of Primitive.description
   | Comparison of comparison * comparison_kind
+  | Choose of comparison * comparison_kind (* if (e1 CMP e2) then e1 else e2 *)
   | Raise of Lambda.raise_kind
   | Raise_with_backtrace
   | Lazy_force
@@ -358,6 +359,8 @@ let primitives_table =
     "%greaterequal", Comparison(Greater_equal, Compare_generic);
     "%greaterthan", Comparison(Greater_than, Compare_generic);
     "%compare", Comparison(Compare, Compare_generic);
+    "%min", Choose(Less_equal, Compare_generic);
+    "%max", Choose(Greater_equal, Compare_generic);
   ]
 
 
@@ -453,6 +456,8 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       Comparison(comp, Compare_ints)
   | Comparison(comp, Compare_generic), p1 :: _ ->
       Comparison(comp, specialize_comparison_kind env p1)
+  | Choose(comp, Compare_generic), p1 :: _ ->
+      Choose(comp, specialize_comparison_kind env p1)
   | _ ->
       prim
 
@@ -614,6 +619,17 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Comparison(comp, knd), ([_;_] as args) ->
       let prim = comparison_primitive comp knd in
       Lprim(prim, args, loc)
+  | Choose(comp, knd), [e1;e2] ->
+      let prim = comparison_primitive comp knd in
+      name_lambda Strict e2
+        (fun x2 ->
+           name_lambda Strict e1
+             (fun x1 ->
+                Lifthenelse(Lprim(prim, [Lvar x1;Lvar x2], loc),
+                            Lvar x1,
+                            Lvar x2)
+             )
+        )
   | Raise kind, [arg] ->
       let kind =
         match kind, arg with
@@ -656,7 +672,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Send_cache, [obj; meth; cache; pos] ->
       Lsend(Cached, meth, obj, [cache; pos], loc)
   | (Raise _ | Raise_with_backtrace
-    | Lazy_force | Loc _ | Primitive _ | Comparison _
+    | Lazy_force | Loc _ | Primitive _ | Comparison _ | Choose _
     | Send | Send_self | Send_cache), _ ->
       raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
@@ -666,7 +682,7 @@ let check_primitive_arity loc p =
     match prim with
     | Primitive (_,arity) -> arity = p.prim_arity
     | External _ -> true
-    | Comparison _ -> p.prim_arity = 2
+    | Comparison _ | Choose _ -> p.prim_arity = 2
     | Raise _ -> p.prim_arity = 1
     | Raise_with_backtrace -> p.prim_arity = 2
     | Lazy_force -> p.prim_arity = 1
@@ -737,7 +753,7 @@ let primitive_needs_event_after = function
   | External _ -> true
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
-  | Lazy_force | Send | Send_self | Send_cache -> true
+  | Lazy_force | Send | Send_self | Send_cache | Choose _ -> true
   | Raise _ | Raise_with_backtrace | Loc _ -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
