@@ -178,12 +178,12 @@ external compare : 'a -> 'a -> int = "%compare"
    required by the {!Set.Make} and {!Map.Make} functors, as well as
    the {!List.sort} and {!Array.sort} functions. *)
 
-val min : 'a -> 'a -> 'a
+external min : 'a -> 'a -> 'a = "%min"
 (** Return the smaller of the two arguments.
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 
-val max : 'a -> 'a -> 'a
+external max : 'a -> 'a -> 'a = "%max"
 (** Return the greater of the two arguments.
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
