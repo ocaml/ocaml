@@ -374,15 +374,6 @@ let lookup_primitive_and_mark_used loc p env path =
   | External _ as e -> add_used_primitive loc env path; e
   | x -> x
 
-let simplify_constant_constructor = function
-  | Equal -> true
-  | Not_equal -> true
-  | Less_equal -> false
-  | Less_than -> false
-  | Greater_equal -> false
-  | Greater_than -> false
-  | Compare -> false
-
 (* The following function computes the greatest lower bound in the
    semilattice of array kinds:
           gen
@@ -407,6 +398,18 @@ let glb_array_type t1 t2 =
 
 (* Specialize a primitive from available type information. *)
 
+let specialize_comparison_kind env p1 =
+  if is_base_type env p1 Predef.path_int
+  || is_base_type env p1 Predef.path_char
+  || maybe_pointer_type env p1 = Immediate then  Compare_ints
+  else if is_base_type env p1 Predef.path_float then Compare_floats
+  else if is_base_type env p1 Predef.path_string then Compare_strings
+  else if is_base_type env p1 Predef.path_bytes then Compare_bytes
+  else if is_base_type env p1 Predef.path_nativeint then Compare_nativeints
+  else if is_base_type env p1 Predef.path_int32 then Compare_int32s
+  else if is_base_type env p1 Predef.path_int64 then Compare_int64s
+  else Compare_generic
+
 let specialize_primitive env ty ~has_constant_constructor prim =
   let param_tys =
     match is_function_type env ty with
@@ -417,80 +420,56 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       | Some (p2, _) -> [p1;p2]
   in
   match prim, param_tys with
-  | Primitive (Psetfield(n, Pointer, init), arity), [_; p2] -> begin
-      match maybe_pointer_type env p2 with
-      | Pointer -> None
-      | Immediate -> Some (Primitive (Psetfield(n, Immediate, init), arity))
-    end
-  | Primitive (Parraylength t, arity), [p] -> begin
+  | Primitive (Psetfield(n, Pointer, init), arity), [_; p2] ->
+      begin match maybe_pointer_type env p2 with
+      | Pointer -> prim
+      | Immediate -> Primitive (Psetfield(n, Immediate, init), arity)
+      end
+  | Primitive (Parraylength t, arity), [p] ->
       let array_type = glb_array_type t (array_type_kind env p) in
-      if t = array_type then None
-      else Some (Primitive (Parraylength array_type, arity))
-    end
-  | Primitive (Parrayrefu t, arity), p1 :: _ -> begin
+      if t = array_type then prim
+      else Primitive (Parraylength array_type, arity)
+  | Primitive (Parrayrefu t, arity), p1 :: _ ->
       let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then None
-      else Some (Primitive (Parrayrefu array_type, arity))
-    end
-  | Primitive (Parraysetu t, arity), p1 :: _ -> begin
+      if t = array_type then prim
+      else Primitive (Parrayrefu array_type, arity)
+  | Primitive (Parraysetu t, arity), p1 :: _ ->
       let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then None
-      else Some (Primitive (Parraysetu array_type, arity))
-    end
-  | Primitive (Parrayrefs t, arity), p1 :: _ -> begin
+      if t = array_type then prim
+      else Primitive (Parraysetu array_type, arity)
+  | Primitive (Parrayrefs t, arity), p1 :: _ ->
       let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then None
-      else Some (Primitive (Parrayrefs array_type, arity))
-    end
-  | Primitive (Parraysets t, arity), p1 :: _ -> begin
+      if t = array_type then prim
+      else Primitive (Parrayrefs array_type, arity)
+  | Primitive (Parraysets t, arity), p1 :: _ ->
       let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then None
-      else Some (Primitive (Parraysets array_type, arity))
-    end
+      if t = array_type then prim
+      else Primitive (Parraysets array_type, arity)
   | Primitive (Pbigarrayref(unsafe, n, Pbigarray_unknown,
-                            Pbigarray_unknown_layout), arity), p1 :: _ -> begin
+                            Pbigarray_unknown_layout), arity), p1 :: _ ->
       let (k, l) = bigarray_type_kind_and_layout env p1 in
-      match k, l with
-      | Pbigarray_unknown, Pbigarray_unknown_layout -> None
-      | _, _ -> Some (Primitive (Pbigarrayref(unsafe, n, k, l), arity))
-    end
+      begin match k, l with
+      | Pbigarray_unknown, Pbigarray_unknown_layout -> prim
+      | _ -> Primitive (Pbigarrayref(unsafe, n, k, l), arity)
+      end
   | Primitive (Pbigarrayset(unsafe, n, Pbigarray_unknown,
-                            Pbigarray_unknown_layout), arity), p1 :: _ -> begin
+                            Pbigarray_unknown_layout), arity), p1 :: _ ->
       let (k, l) = bigarray_type_kind_and_layout env p1 in
-      match k, l with
-      | Pbigarray_unknown, Pbigarray_unknown_layout -> None
-      | _, _ -> Some (Primitive (Pbigarrayset(unsafe, n, k, l), arity))
-    end
-  | Primitive (Pmakeblock(tag, mut, None), arity), fields -> begin
+      begin match k, l with
+      | Pbigarray_unknown, Pbigarray_unknown_layout -> prim
+      | _ -> Primitive (Pbigarrayset(unsafe, n, k, l), arity)
+      end
+  | Primitive (Pmakeblock(tag, mut, None), arity), fields ->
       let shape = List.map (Typeopt.value_kind env) fields in
       let useful = List.exists (fun knd -> knd <> Pgenval) shape in
-      if useful then Some (Primitive (Pmakeblock(tag, mut, Some shape), arity))
-      else None
-    end
+      if useful then Primitive (Pmakeblock(tag, mut, Some shape), arity)
+      else prim
+  | Comparison((Equal | Not_equal) as comp, Compare_generic), _ when has_constant_constructor ->
+      Comparison(comp, Compare_ints)
   | Comparison(comp, Compare_generic), p1 :: _ ->
-    if (has_constant_constructor
-        && simplify_constant_constructor comp) then begin
-      Some (Comparison(comp, Compare_ints))
-    end else if (is_base_type env p1 Predef.path_int
-        || is_base_type env p1 Predef.path_char
-        || (maybe_pointer_type env p1 = Immediate)) then begin
-      Some (Comparison(comp, Compare_ints))
-    end else if is_base_type env p1 Predef.path_float then begin
-      Some (Comparison(comp, Compare_floats))
-    end else if is_base_type env p1 Predef.path_string then begin
-      Some (Comparison(comp, Compare_strings))
-    end else if is_base_type env p1 Predef.path_bytes then begin
-      Some (Comparison(comp, Compare_bytes))
-    end else if is_base_type env p1 Predef.path_nativeint then begin
-      Some (Comparison(comp, Compare_nativeints))
-    end else if is_base_type env p1 Predef.path_int32 then begin
-      Some (Comparison(comp, Compare_int32s))
-    end else if is_base_type env p1 Predef.path_int64 then begin
-      Some (Comparison(comp, Compare_int64s))
-    end else begin
-      None
-    end
-  | _ -> None
+      Comparison(comp, specialize_comparison_kind env p1)
+  | _ ->
+      prim
 
 let caml_equal =
   Primitive.simple ~name:"caml_equal" ~arity:2 ~alloc:true
@@ -717,11 +696,7 @@ let check_primitive_arity loc p =
 let transl_primitive loc p env ty path =
   let prim = lookup_primitive_and_mark_used (to_location loc) p env path in
   let has_constant_constructor = false in
-  let prim =
-    match specialize_primitive env ty ~has_constant_constructor prim with
-    | None -> prim
-    | Some prim -> prim
-  in
+  let prim = specialize_primitive env ty ~has_constant_constructor prim in
   let rec make_params n =
     if n <= 0 then []
     else (Ident.create_local "prim", Pgenval) :: make_params (n-1)
@@ -791,22 +766,11 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
     | [{exp_desc = Texp_variant(_, None)}; _] -> true
     | _ -> false
   in
-  let prim =
-    match specialize_primitive env ty ~has_constant_constructor prim with
-    | None -> prim
-    | Some prim -> prim
-  in
+  let prim = specialize_primitive env ty ~has_constant_constructor prim in
   let lam = lambda_of_prim p.prim_name prim loc args (Some arg_exps) in
-  let lam =
-    if primitive_needs_event_after prim then begin
-      match exp with
-      | None -> lam
-      | Some exp -> event_after loc exp lam
-    end else begin
-      lam
-    end
-  in
-  lam
+  match exp with
+  | Some exp when primitive_needs_event_after prim -> event_after loc exp lam
+  | _ -> lam
 
 (* Error report *)
 
