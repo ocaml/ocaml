@@ -426,45 +426,30 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       | Immediate -> Primitive (Psetfield(n, Immediate, init), arity)
       end
   | Primitive (Parraylength t, arity), [p] ->
-      let array_type = glb_array_type t (array_type_kind env p) in
-      if t = array_type then prim
-      else Primitive (Parraylength array_type, arity)
+      Primitive (Parraylength (glb_array_type t (array_type_kind env p)), arity)
   | Primitive (Parrayrefu t, arity), p1 :: _ ->
-      let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then prim
-      else Primitive (Parrayrefu array_type, arity)
+      Primitive (Parrayrefu (glb_array_type t (array_type_kind env p1)), arity)
   | Primitive (Parraysetu t, arity), p1 :: _ ->
-      let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then prim
-      else Primitive (Parraysetu array_type, arity)
+      Primitive (Parraysetu (glb_array_type t (array_type_kind env p1)), arity)
   | Primitive (Parrayrefs t, arity), p1 :: _ ->
-      let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then prim
-      else Primitive (Parrayrefs array_type, arity)
+      Primitive (Parrayrefs (glb_array_type t (array_type_kind env p1)), arity)
   | Primitive (Parraysets t, arity), p1 :: _ ->
-      let array_type = glb_array_type t (array_type_kind env p1) in
-      if t = array_type then prim
-      else Primitive (Parraysets array_type, arity)
+      Primitive (Parraysets (glb_array_type t (array_type_kind env p1)), arity)
   | Primitive (Pbigarrayref(unsafe, n, Pbigarray_unknown,
                             Pbigarray_unknown_layout), arity), p1 :: _ ->
       let (k, l) = bigarray_type_kind_and_layout env p1 in
-      begin match k, l with
-      | Pbigarray_unknown, Pbigarray_unknown_layout -> prim
-      | _ -> Primitive (Pbigarrayref(unsafe, n, k, l), arity)
-      end
+      Primitive (Pbigarrayref(unsafe, n, k, l), arity)
   | Primitive (Pbigarrayset(unsafe, n, Pbigarray_unknown,
                             Pbigarray_unknown_layout), arity), p1 :: _ ->
       let (k, l) = bigarray_type_kind_and_layout env p1 in
-      begin match k, l with
-      | Pbigarray_unknown, Pbigarray_unknown_layout -> prim
-      | _ -> Primitive (Pbigarrayset(unsafe, n, k, l), arity)
-      end
+      Primitive (Pbigarrayset(unsafe, n, k, l), arity)
   | Primitive (Pmakeblock(tag, mut, None), arity), fields ->
       let shape = List.map (Typeopt.value_kind env) fields in
       let useful = List.exists (fun knd -> knd <> Pgenval) shape in
       if useful then Primitive (Pmakeblock(tag, mut, Some shape), arity)
       else prim
-  | Comparison((Equal | Not_equal) as comp, Compare_generic), _ when has_constant_constructor ->
+  | Comparison((Equal | Not_equal) as comp, Compare_generic), _
+    when has_constant_constructor ->
       Comparison(comp, Compare_ints)
   | Comparison(comp, Compare_generic), p1 :: _ ->
       Comparison(comp, specialize_comparison_kind env p1)
