@@ -47,8 +47,8 @@ and as a
 \input{objectexamples.tex}
 \input{lablexamples.tex}
 \input{polyvariant.tex}
-\input{gadtexamples.tex}
 \input{polymorphism.tex}
+\input{gadtexamples.tex}
 \input{advexamples.tex}
 
 \part{The OCaml language}
