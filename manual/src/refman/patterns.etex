@@ -107,10 +107,8 @@ the name @value-name@ is bound to the matched value, in addition to the
 bindings performed by the matching against @pattern_1@.
 
 \begin{caml_example}{toplevel}
-let option_exception f x =
-  try Some (f x) with
-  | Assert_failure _ as e -> raise e
-  | _ -> None;;
+let sort_pair ((x, y) as p) =
+  if x <= y then p else (y, x);;
 \end{caml_example}
 
 \subsubsection*{sss:pat-parenthesized}{Parenthesized patterns}
@@ -179,7 +177,7 @@ respectively. This pattern behaves like
 let rec destutter = function
   | [] -> []
   | [a] -> [a]
-  | a::b::t -> if a = b then destutter (b::t) else a::destutter (b::t);;
+  | a :: b :: t -> if a = b then destutter (b :: t) else a :: destutter (b :: t);;
 \end{caml_example}
 
 \subsubsection*{sss:pat-polyvar}{Polymorphic variant patterns}
@@ -191,11 +189,11 @@ whose tag is equal to @tag-name@, and whose argument matches
 \begin{caml_example}{toplevel}
 let rec split = function
   | [] -> ([], [])
-  | h::t ->
+  | h :: t ->
       let ss, gs = split t in
         match h with
-        | `Sheep _ as s -> (s::ss, gs)
-        | `Goat _ as g -> (ss, g::gs);;
+        | `Sheep _ as s -> (s :: ss, gs)
+        | `Goat _ as g -> (ss, g :: gs);;
 \end{caml_example}
 
 \subsubsection*{sss:pat-polyvar-abbrev}{Polymorphic variant abbreviation patterns}

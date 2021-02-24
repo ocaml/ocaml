@@ -214,14 +214,14 @@ let y = (1 + 2) * 3;;
 \begin{caml_example}{toplevel}
 let f a b =
   if a = b then
-    print_string "Equal"
-  else
-    begin
+    print_endline "Equal"
+  else begin
       print_string "Not Equal: ";
       print_int a;
       print_string " and ";
-      print_int b
-    end;;
+      print_int b;
+      print_newline ()
+  end;;
 \end{caml_example}
 
 Parenthesized expressions can contain a type constraint, as in @'('
@@ -342,7 +342,7 @@ matches the argument, the exception "Match_failure" is raised.
 (function (0, 0) -> "both zero"
         | (0, _) -> "first only zero"
         | (_, 0) -> "second only zero"
-        | _ -> "neither zero")
+        | (_, _) -> "neither zero")
 (7, 0);;
 \end{caml_example}
 
@@ -357,8 +357,8 @@ This expression is equivalent to:
 \end{center}
 
 \begin{caml_example}{toplevel}
-let p = (fun a -> fun b -> fun c -> a + b + c)
-let q = (fun a b c -> a + b + c);;
+let f = (fun a -> fun b -> fun c -> a + b + c)
+let g = (fun a b c -> a + b + c);;
 \end{caml_example}
 
 An optional type constraint @typexpr@ can be added before "->" to enforce
@@ -414,14 +414,12 @@ is a fresh variable, except that it is unspecified when @expr_0@ is evaluated.
 
 \begin{caml_example}{toplevel}
 let open_file_for_input ?binary filename =
-  (match binary with
-   | Some false -> open_in
-   | Some true -> open_in_bin
-   | None -> open_in)
-  filename
+  match binary with
+  | Some true -> open_in_bin filename
+  | Some false | None -> open_in filename
 
 let open_file_for_input' ?(binary=false) filename =
-  (if binary then open_in_bin else open_in) filename;;
+  if binary then open_in_bin filename else open_in filename;;
 \end{caml_example}
 
 After these two transformations, expressions are of the form
@@ -467,9 +465,9 @@ is resumed against the patterns following @pattern_i@.
 
 \begin{caml_example}{toplevel}
 let rec repeat f = function
-  | n when n < 0 -> raise (Invalid_argument "repeat")
   | 0 -> ()
-  | n -> f (); repeat f (n - 1);; 
+  | n when n > 0 -> f (); repeat f (n - 1)
+  | _ -> raise (Invalid_argument "repeat");;
 \end{caml_example}
 
 \subsubsection*{sss:expr-localdef}{Local definitions}
@@ -612,7 +610,7 @@ let print_pair (a, b) =
   print_string (string_of_int a);
   print_string ",";
   print_string (string_of_int b);
-  print_string ")";;
+  print_endline ")";;
 \end{caml_example}
 
 \subsubsection*{sss:expr-conditional}{Conditional}
@@ -635,7 +633,7 @@ The @"else" expr_3@ part can be omitted, in which case it defaults to
 let debug = ref false
 
 let log msg =
-  if !debug then prerr_string (msg ^ "\n");;
+  if !debug then prerr_endline msg;;
 \end{caml_example}
 
 \subsubsection*{sss:expr-case}{Case expression}\ikwd{match\@\texttt{match}}
@@ -660,7 +658,7 @@ selected.
 let rec sum l =
   match l with
   | [] -> 0
-  | h::t -> h + sum t;; 
+  | h :: t -> h + sum t;; 
 \end{caml_example}
 
 If none of the patterns match the value of @expr@, the
@@ -722,7 +720,7 @@ let chars_of_string s =
   let i = ref 0 in
   let chars = ref [] in
     while !i < String.length s do
-      chars := s.[!i]::!chars;
+      chars := s.[!i] :: !chars;
       i := !i + 1
     done;
     List.rev !chars;;
@@ -741,7 +739,7 @@ bound to the values
 let chars_of_string s =
   let l = ref [] in
     for p = 0 to String.length s - 1 do
-      l := s.[p]::!l
+      l := s.[p] :: !l
     done;
     List.rev !l;;
 \end{caml_example}
@@ -755,7 +753,7 @@ evaluates similarly, except that @name@ is successively bound to the values
 let chars_of_string s =
   let l = ref [] in
     for p = String.length s - 1 downto 0 do
-      l := s.[p]::!l
+      l := s.[p] :: !l
     done;
     !l;;
 \end{caml_example}
@@ -789,7 +787,7 @@ through'' the @'try'@ construct.
 \begin{caml_example}{toplevel}
 let option_exception f x =
   try Some (f x) with
-  | Assert_failure _ as e -> raise e
+  | Assert_failure (a, b, c) -> raise (Assert_failure (a, b, c))
   | _ -> None;;
 \end{caml_example}
 
@@ -834,7 +832,7 @@ expr_n ']'@ is equivalent to @expr_1 '::' \ldots '::' expr_n '::'
 values of @expr_1@ to @expr_n@.
 
 \begin{caml_example}{toplevel}
-0::[1; 2; 3] = 0::1::2::3::[];;
+0 :: [1; 2; 3] = 0 :: 1 :: 2 :: 3 :: [];;
 \end{caml_example}
 
 \subsubsection*{sss:expr-polyvars}{Polymorphic variants}
@@ -939,13 +937,13 @@ the value of @expr_3@. The exception "Invalid_argument" is raised if
 the access is out of bounds. The value of the whole expression is @'()'@.
 
 \begin{caml_example}{toplevel}
-let mul arr n =
+let scale arr n =
   for x = 0 to Array.length arr - 1 do
     arr.(x) <- arr.(x) * n
   done
 
 let x = [|1; 10; 100|]
-let _ = mul x 2;;
+let _ = scale x 2;;
 \end{caml_example}
 
 \subsubsection*{sss:expr-strings}{Strings}

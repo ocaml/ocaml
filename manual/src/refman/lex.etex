@@ -135,7 +135,7 @@ For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within floating-point literals.
 
 \begin{caml_example}{toplevel}
-let pi = 3.14159265358979312
+let pi = 3.141_592_653_589_793_12
 let small_negative = -1e-5
 let hex = 0x1.fp3;;
 \end{caml_example}
@@ -220,8 +220,8 @@ beginning of the next line) is ignored inside string literals.
 let longstr =
   "Call me Ishmael. Some years ago — never mind how long \
   precisely — having little or no money in my purse, and \
-  nothing particular to interest me on shore, I thought I \
-  would sail about a little and see the watery part of t\
+  nothing particular to interest me on shore, I thought I\
+  \ would sail about a little and see the watery part of t\
   he world.";;
 \end{caml_example}
 
@@ -237,7 +237,7 @@ lowercase letters and underscores that can be freely chosen to avoid
 such issue.
 
 \begin{caml_example}{toplevel}
-let greeting_with_quotation_marks = {|"Hello, World!"|}
+let quoted_greeting = {|"Hello, World!"|}
 let nested = {ext|hello {|world|}|ext};;
 \end{caml_example}
 
