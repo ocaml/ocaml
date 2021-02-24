@@ -1,6 +1,10 @@
 OCaml 4.11 maintenance branch
 -----------------------------
 
+
+OCaml 4.11.2 (24 February 2021)
+-------------------------------
+
 ### Build system:
 
 - #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
