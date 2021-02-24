@@ -211,6 +211,10 @@ Working version
 
 ### Bug fixes:
 
+* #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
+  when the systhreads library is loaded.
+  (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
+
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
