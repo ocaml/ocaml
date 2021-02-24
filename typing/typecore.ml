@@ -2757,7 +2757,7 @@ and type_expect_
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
-      let rec treat_apply_primitives sfunct sargs =
+      let type_sfunct sfunct =
         begin_def (); (* one more level for non-returning functions *)
         if !Clflags.principal then begin_def ();
         let funct = type_exp env sfunct in
@@ -2778,17 +2778,20 @@ and type_expect_
         let ty = instance funct.exp_type in
         end_def ();
         wrap_trace_gadt_instances env (lower_args []) ty;
+        funct
+      in
+      let funct, sargs =
+        let funct = type_sfunct sfunct in
         match funct.exp_desc, sargs with
         | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%revapply"}}),
           [Nolabel, sarg; Nolabel, sfunct] when is_inferred sfunct ->
-            treat_apply_primitives sfunct [Nolabel, sarg]
+            type_sfunct sfunct, [Nolabel, sarg]
         | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%apply"}}),
           [Nolabel, sfunct; Nolabel, sarg] ->
-            treat_apply_primitives sfunct [Nolabel, sarg]
+            type_sfunct sfunct, [Nolabel, sarg]
         | _ ->
             funct, sargs
       in
-      let funct, sargs = treat_apply_primitives sfunct sargs in
       begin_def ();
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
