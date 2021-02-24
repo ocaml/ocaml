@@ -306,8 +306,8 @@ let type_declaration' copy_scope s decl =
     type_kind =
       begin match decl.type_kind with
         Type_abstract -> Type_abstract
-      | Type_variant cstrs ->
-          Type_variant (List.map (constructor_declaration copy_scope s) cstrs)
+      | Type_variant (cstrs, rep) ->
+          Type_variant (List.map (constructor_declaration copy_scope s) cstrs, rep)
       | Type_record(lbls, rep) ->
           Type_record (List.map (label_declaration copy_scope s) lbls, rep)
       | Type_open -> Type_open
@@ -326,7 +326,7 @@ let type_declaration' copy_scope s decl =
     type_loc = loc s decl.type_loc;
     type_attributes = attrs s decl.type_attributes;
     type_immediate = decl.type_immediate;
-    type_unboxed = decl.type_unboxed;
+    type_unboxed_default = decl.type_unboxed_default;
     type_uid = decl.type_uid;
   }
 

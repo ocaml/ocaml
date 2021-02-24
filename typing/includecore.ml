@@ -393,9 +393,15 @@ let compare_records_with_representation ~loc env params1 params2 n
   =
   match compare_records ~loc env params1 params2 n labels1 labels2 with
   | None when rep1 <> rep2 ->
-      let pos = if rep2 = Record_float then Second else First in
-      Some (Unboxed_float_representation pos)
-  | err -> err
+      Some (match rep1, rep2 with
+            | _, Record_unboxed _ -> Unboxed_representation Second
+            | Record_unboxed _, _ -> Unboxed_representation First
+            | _, Record_float ->
+               Record_mismatch (Unboxed_float_representation Second)
+            | _, _ ->
+               Record_mismatch (Unboxed_float_representation First))
+  | None -> None
+  | Some err -> Some (Record_mismatch err)
 
 let private_variant env row1 params1 row2 params2 =
     let r1, r2, pairs =
@@ -548,18 +554,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           | () -> None
   in
   if err <> None then err else
-  let err =
-    match (decl2.type_kind, decl1.type_unboxed.unboxed,
-           decl2.type_unboxed.unboxed) with
-    | Type_abstract, _, _ -> None
-    | _, true, false -> Some (Unboxed_representation First)
-    | _, false, true -> Some (Unboxed_representation Second)
-    | _ -> None
-  in
-  if err <> None then err else
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> None
-    | (Type_variant cstrs1, Type_variant cstrs2) ->
+    | (Type_variant (cstrs1, rep1), Type_variant (cstrs2, rep2)) ->
         if mark then begin
           let mark usage cstrs =
             List.iter (Env.mark_constructor_used usage) cstrs
@@ -571,10 +568,17 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage cstrs1;
           if equality then mark Env.Exported cstrs2
         end;
-        Option.map
-          (fun var_err -> Variant_mismatch var_err)
-          (compare_variants ~loc env decl1.type_params decl2.type_params 1
-             cstrs1 cstrs2)
+        begin match rep1, rep2 with
+        | Variant_unboxed, Variant_regular ->
+           Some (Unboxed_representation First)
+        | Variant_regular, Variant_unboxed ->
+           Some (Unboxed_representation Second)
+        | _ ->
+          Option.map
+            (fun var_err -> Variant_mismatch var_err)
+            (compare_variants ~loc env decl1.type_params decl2.type_params 1
+               cstrs1 cstrs2)
+        end
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         if mark then begin
           let mark usage lbls =
@@ -587,11 +591,10 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage labels1;
           if equality then mark Env.Exported labels2
         end;
-        Option.map (fun rec_err -> Record_mismatch rec_err)
-          (compare_records_with_representation ~loc env
-             decl1.type_params decl2.type_params 1
-             labels1 labels2
-             rep1 rep2)
+        compare_records_with_representation ~loc env
+          decl1.type_params decl2.type_params 1
+          labels1 labels2
+          rep1 rep2
     | (Type_open, Type_open) -> None
     | (_, _) -> Some Kind
   in

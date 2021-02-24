@@ -1111,7 +1111,7 @@ let find_type_data path env =
       in
       let cstr =
         begin match tda.tda_descriptions with
-        | Type_variant cstrs -> begin
+        | Type_variant (cstrs, _) -> begin
             try
               List.find (fun cstr -> cstr.cstr_name = s) cstrs
             with Not_found -> assert false
@@ -1671,7 +1671,7 @@ let rec components_of_module_maker
               (Subst.type_path prefixing_sub (Path.Pident id));
             let descrs =
               match decl.type_kind with
-              | Type_variant _ ->
+              | Type_variant (_,repr) ->
                   let cstrs = List.map snd
                     (Datarepr.constructors_of_type path final_decl
                         ~current_unit:(get_unit_name ()))
@@ -1685,7 +1685,7 @@ let rec components_of_module_maker
                       c.comp_constrs <-
                         add_to_tbl descr.cstr_name cda c.comp_constrs
                     ) cstrs;
-                 Type_variant cstrs
+                 Type_variant (cstrs, repr)
               | Type_record (_, repr) ->
                   let lbls = List.map snd
                     (Datarepr.labels_of_type path final_decl)
@@ -1899,11 +1899,11 @@ and store_type ~check id info env =
   let descrs, env =
     let path = Pident id in
     match info.type_kind with
-    | Type_variant _ ->
+    | Type_variant (_,repr) ->
         let constructors = Datarepr.constructors_of_type path info
                             ~current_unit:(get_unit_name ())
         in
-        Type_variant (List.map snd constructors),
+        Type_variant (List.map snd constructors, repr),
         List.fold_left
           (fun env (cstr_id, cstr) ->
             store_constructor ~check info id cstr_id cstr env)
@@ -2942,7 +2942,7 @@ let lookup_all_constructors_from_type ~use ~loc usage ty_path env =
   match find_type_descrs ty_path env with
   | exception Not_found -> []
   | Type_record _ | Type_abstract | Type_open -> []
-  | Type_variant cstrs ->
+  | Type_variant (cstrs, _) ->
       List.map
         (fun cstr ->
            let use_fun () =

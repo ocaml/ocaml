@@ -79,10 +79,10 @@ let get_unboxed_from_attributes sdecl =
   let boxed = Builtin_attributes.has_boxed sdecl.ptype_attributes in
   match boxed, unboxed, !Clflags.unboxed_types with
   | true, true, _ -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
-  | true, false, _ -> unboxed_false_default_false
-  | false, true, _ -> unboxed_true_default_false
-  | false, false, false -> unboxed_false_default_true
-  | false, false, true -> unboxed_true_default_true
+  | true, false, _ -> false, false
+  | false, true, _ -> true, false
+  | false, false, false -> false, true
+  | false, false, true -> true, true
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -122,7 +122,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = Unknown;
-      type_unboxed = unboxed_false_default_false;
+      type_unboxed_default = false;
       type_uid = uid;
     }
   in
@@ -299,8 +299,9 @@ let transl_declaration env sdecl (id, uid) =
       transl_simple_type env false sty', loc)
     sdecl.ptype_cstrs
   in
-  let raw_status = get_unboxed_from_attributes sdecl in
-  if raw_status.unboxed && not raw_status.default then begin
+  let raw_status_unboxed, raw_unboxed_default =
+    get_unboxed_from_attributes sdecl in
+  if raw_status_unboxed && not raw_unboxed_default then begin
     let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
     match sdecl.ptype_kind with
     | Ptype_abstract    -> bad "it is abstract"
@@ -332,14 +333,14 @@ let transl_declaration env sdecl (id, uid) =
           end
       end
   end;
-  let unboxed_status =
+  let unbox, unboxed_default =
     match sdecl.ptype_kind with
     | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
     | Ptype_variant [{pcd_args = Pcstr_record [{pld_mutable=Immutable; _}]; _}]
-    | Ptype_record [{pld_mutable=Immutable; _}] -> raw_status
-    | _ -> unboxed_false_default_false (* Not unboxable, mark as boxed *)
+    | Ptype_record [{pld_mutable=Immutable; _}] ->
+      raw_status_unboxed, raw_unboxed_default
+    | _ -> false, false (* Not unboxable, mark as boxed *)
   in
-  let unbox = unboxed_status.unboxed in
   let (tkind, kind) =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract
@@ -389,8 +390,9 @@ let transl_declaration env sdecl (id, uid) =
           Builtin_attributes.warning_scope scstr.pcd_attributes
             (fun () -> make_cstr scstr)
         in
+        let rep = if unbox then Variant_unboxed else Variant_regular in
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
-          Ttype_variant tcstrs, Type_variant cstrs
+          Ttype_variant tcstrs, Type_variant (cstrs, rep)
       | Ptype_record lbls ->
           let lbls, lbls' = transl_labels env true lbls in
           let rep =
@@ -423,7 +425,7 @@ let transl_declaration env sdecl (id, uid) =
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
         type_immediate = Unknown;
-        type_unboxed = unboxed_status;
+        type_unboxed_default = unboxed_default;
         type_uid = uid;
       } in
 
@@ -516,7 +518,7 @@ let check_constraints env sdecl (_, decl) =
     sdecl.ptype_params decl.type_params;
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant l ->
+  | Type_variant (l, _rep) ->
       let find_pl = function
           Ptype_variant pl -> pl
         | Ptype_record _ | Ptype_abstract | Ptype_open -> assert false
@@ -1324,7 +1326,7 @@ let check_unboxable env loc ty =
     try match ty.desc with
       | Tconstr (p, _, _) ->
         let tydecl = Env.find_type p env in
-        if tydecl.type_unboxed.default then
+        if tydecl.type_unboxed_default then
           Path.Set.add p acc
         else acc
       | _ -> acc
@@ -1473,11 +1475,11 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   if arity_ok && sig_decl.type_kind <> Type_abstract
   && sdecl.ptype_private = Private then
     Location.deprecated loc "spurious use of private";
-  let type_kind, type_unboxed =
+  let type_kind, type_unboxed_default =
     if arity_ok && man <> None then
-      sig_decl.type_kind, sig_decl.type_unboxed
+      sig_decl.type_kind, sig_decl.type_unboxed_default
     else
-      Type_abstract, unboxed_false_default_false
+      Type_abstract, false
   in
   let new_sig_decl =
     { type_params = params;
@@ -1492,7 +1494,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_loc = loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = Unknown;
-      type_unboxed;
+      type_unboxed_default;
       type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
     }
   in
@@ -1526,7 +1528,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_kind = new_sig_decl.type_kind;
       type_private = new_sig_decl.type_private;
       type_manifest = new_sig_decl.type_manifest;
-      type_unboxed = new_sig_decl.type_unboxed;
+      type_unboxed_default = new_sig_decl.type_unboxed_default;
       type_is_newtype = new_sig_decl.type_is_newtype;
       type_expansion_scope = new_sig_decl.type_expansion_scope;
       type_loc = new_sig_decl.type_loc;
@@ -1571,7 +1573,7 @@ let abstract_type_decl ~injective arity =
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = Unknown;
-      type_unboxed = unboxed_false_default_false;
+      type_unboxed_default = false;
       type_uid = Uid.internal_not_actually_unique;
      } in
   Ctype.end_def();
@@ -1737,7 +1739,7 @@ let report_error ppf = function
       fprintf ppf "@[A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
-      | Type_variant tl, _ ->
+      | Type_variant (tl, _rep), _ ->
           explain_unbound_gen ppf ty tl (fun c ->
               let tl = tys_of_constr_args c.Types.cd_args in
               Btype.newgenty (Ttuple tl)
