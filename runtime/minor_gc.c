@@ -793,8 +793,8 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
     &caml_stw_empty_minor_heap, 0, /* stw handler */
     &caml_empty_minor_heap_setup, /* leader setup */
     &caml_do_opportunistic_major_slice, 0, /* enter spin work */
-    0, 0, /* leave spin work */
-    1); /* leave when done */
+    0, 0 /* leave spin work */);
+    /* leaves when done by default*/
 }
 
 /* must be called outside a STW section, will retry until we have emptied our minor heap */
