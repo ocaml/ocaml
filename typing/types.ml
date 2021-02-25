@@ -138,6 +138,7 @@ end
 module Meths = Misc.Stdlib.String.Map
 module Vars = Meths
 
+
 (* Value descriptions *)
 
 type value_description =
@@ -153,17 +154,21 @@ and value_kind =
   | Val_prim of Primitive.description   (* Primitive *)
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of
-      self_var_kind *
-      (Ident.t * mutable_flag * virtual_flag * type_expr) Vars.t *
-      string
+      class_signature * self_meths * Ident.t Vars.t * string
                                         (* Self *)
-  | Val_anc of (Ident.t * type_expr) Meths.t * string
+  | Val_anc of class_signature * Ident.t Meths.t * string
                                         (* Ancestor *)
 
-and self_var_kind =
-  | Self_concrete of (Ident.t * private_flag * virtual_flag * type_expr) Meths.t
-  | Self_virtual of
-      (Ident.t * private_flag * virtual_flag * type_expr) Meths.t ref * type_expr
+and self_meths =
+  | Self_concrete of Ident.t Meths.t
+  | Self_virtual of Ident.t Meths.t ref
+
+and class_signature =
+  { csig_self: type_expr;
+    mutable csig_self_row: type_expr;
+    mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
+    mutable csig_meths: (private_flag * virtual_flag * type_expr) Meths.t;
+    mutable csig_inher: (Path.t * type_expr list) list }
 
 (* Variance *)
 
@@ -311,13 +316,6 @@ type class_type =
     Cty_constr of Path.t * type_expr list * class_type
   | Cty_signature of class_signature
   | Cty_arrow of arg_label * type_expr * class_type
-
-and class_signature =
-  { csig_self: type_expr;
-    mutable csig_self_row: type_expr;
-    csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
-    mutable csig_meths: (private_flag * virtual_flag * type_expr) Meths.t;
-    csig_inher: (Path.t * type_expr list) list }
 
 type class_declaration =
   { cty_params: type_expr list;

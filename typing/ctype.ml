@@ -399,47 +399,6 @@ let remove_object_name ty =
   | Tconstr (_, _, _) -> ()
   | _                 -> fatal_error "Ctype.remove_object_name"
 
-(**** Hiding of private methods ****)
-
-let hide_private_methods ty =
-  match get_desc ty with
-    Tobject (fi, nm) ->
-      nm := None;
-      let (fl, _) = flatten_fields fi in
-      List.iter
-        (function (_, k, _) ->
-          match field_kind_repr k with
-            Fvar r -> set_kind r Fabsent
-          | _      -> ())
-        fl
-  | _ ->
-      assert false
-
-
-                              (*******************************)
-                              (*  Operations on class types  *)
-                              (*******************************)
-
-
-let rec signature_of_class_type =
-  function
-    Cty_constr (_, _, cty) -> signature_of_class_type cty
-  | Cty_signature sign     -> sign
-  | Cty_arrow (_, _, cty)   -> signature_of_class_type cty
-
-let self_type cty =
-  (signature_of_class_type cty).csig_self
-
-let self_type_row cty =
-  (signature_of_class_type cty).csig_self_row
-
-let rec class_type_arity =
-  function
-    Cty_constr (_, _, cty) ->  class_type_arity cty
-  | Cty_signature _        ->  0
-  | Cty_arrow (_, _, cty)    ->  1 + class_type_arity cty
-
-
                   (*******************************************)
                   (*  Miscellaneous operations on row types  *)
                   (*******************************************)
@@ -916,12 +875,11 @@ let lower_contravariant env ty =
   simple_abbrevs := Mnil;
   lower_contravariant env !nongen_level (Hashtbl.create 7) false ty
 
-(* Generalize a class type *)
-let rec generalize_class_type gen =
+let rec generalize_class_type' gen =
   function
     Cty_constr (_, params, cty) ->
       List.iter gen params;
-      generalize_class_type gen cty
+      generalize_class_type' gen cty
   | Cty_signature csig ->
       gen csig.csig_self;
       gen csig.csig_self_row;
@@ -930,11 +888,13 @@ let rec generalize_class_type gen =
       List.iter (fun (_,tl) -> List.iter gen tl) csig.csig_inher
   | Cty_arrow (_, ty, cty) ->
       gen ty;
-      generalize_class_type gen cty
+      generalize_class_type' gen cty
 
-let generalize_class_type vars =
-  let gen = if vars then generalize else generalize_structure in
-  generalize_class_type gen
+let generalize_class_type cty =
+  generalize_class_type' generalize cty
+
+let generalize_class_type_structure cty =
+  generalize_class_type' generalize_structure cty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
@@ -985,6 +945,8 @@ let limited_generalize ty0 ty =
        if get_level ty <> generic_level then set_level ty !current_level)
     graph
 
+let limited_generalize_class_type rv cty =
+  generalize_class_type' (limited_generalize rv) cty
 
 (* Compute statically the free univars of all nodes in a type *)
 (* This avoids doing it repeatedly during instantiation *)
@@ -3378,33 +3340,193 @@ let filter_method env name priv ty =
   | _ ->
       raise (Filter_method_failed (Not_an_object ty))
 
-let check_filter_method env name priv ty =
-  ignore(filter_method env name priv ty)
+(* Operations on class signatures *)
 
-let filter_self_method env lab priv' virt' meths ty =
-  match Meths.find lab meths with
-  | (id, priv, virt, ty) as data->
-      let meths, data =
-        match priv, priv', virt, virt' with
-        | Private, Public, Virtual, Concrete ->
-            let data = (id, Public, Concrete, ty) in
-            let meths = Meths.add lab data meths in
-            meths, data
-        | Private, Public, _, _ ->
-            let data = (id, Public, virt, ty) in
-            let meths = Meths.add lab data meths in
-            meths, data
-        | _, _, Virtual, Concrete ->
-            let data = (id, priv, Concrete, ty) in
-            let meths = Meths.add lab data meths in
-            meths, data
-        | _, _, _, _ -> meths, data
-      in
-      true, meths, data
-  | exception Not_found ->
-      let ty' = filter_method env lab priv' ty in
-      let data = (Ident.create_local lab, priv', virt', ty') in
-      false, Meths.add lab data meths, data
+let new_class_signature () =
+  let row = newvar () in
+  let self = newobj row in
+  { csig_self = self;
+    csig_self_row = row;
+    csig_vars = Vars.empty;
+    csig_meths = Meths.empty;
+    csig_inher = []; }
+
+let add_dummy_method env ~scope sign =
+  unify env (filter_method_field env dummy_method Private sign.csig_self_row)
+    (new_scoped_ty scope (Ttuple []))
+
+type add_method_failure =
+  | Unexpected_method
+  | Type_mismatch of Errortrace.unification_error
+
+exception Add_method_failed of add_method_failure
+
+let add_method env label priv virt ty sign =
+  let meths = sign.csig_meths in
+  let priv, virt =
+    match Meths.find label meths with
+    | (priv', virt', ty') -> begin
+        let priv =
+          match priv' with
+          | Public -> Public
+          | Private -> priv
+        in
+        let virt =
+          match virt' with
+          | Concrete -> Concrete
+          | Virtual -> virt
+        in
+        match unify env ty ty' with
+        | () -> priv, virt
+        | exception Unify trace ->
+            raise (Add_method_failed (Type_mismatch trace))
+      end
+    | exception Not_found -> begin
+        let ty' =
+          match filter_method env label priv sign.csig_self with
+          | ty' -> ty'
+          | exception Filter_method_failed _ ->
+              raise (Add_method_failed Unexpected_method)
+        in
+        match unify env ty ty' with
+        | () -> priv, virt
+        | exception Unify trace ->
+            raise (Add_method_failed (Type_mismatch trace))
+      end
+  in
+  let meths = Meths.add label (priv, virt, ty) meths in
+  sign.csig_meths <- meths
+
+type add_instance_variable_failure =
+  | Mutability_mismatch of mutable_flag
+  | Type_mismatch of Errortrace.unification_error
+
+exception Add_instance_variable_failed of add_instance_variable_failure
+
+let check_mutability mut mut' =
+  match mut, mut' with
+  | Mutable, Mutable -> ()
+  | Immutable, Immutable -> ()
+  | Mutable, Immutable | Immutable, Mutable ->
+      raise (Add_instance_variable_failed (Mutability_mismatch mut))
+
+let add_instance_variable ~strict env label mut virt ty sign =
+  let vars = sign.csig_vars in
+  let virt =
+    match Vars.find label vars with
+    | (mut', virt', ty') ->
+        let virt =
+          match virt' with
+          | Concrete -> Concrete
+          | Virtual -> virt
+        in
+        if strict then begin
+          check_mutability mut mut';
+          match unify env ty ty' with
+          | () -> ()
+          | exception Unify trace ->
+              raise (Add_instance_variable_failed (Type_mismatch trace))
+        end;
+        virt
+    | exception Not_found -> virt
+  in
+  let vars = Vars.add label (mut, virt, ty) vars in
+  sign.csig_vars <- vars
+
+type inherit_class_signature_failure =
+  | Self_type_mismatch of Errortrace.unification_error
+  | Method of label * add_method_failure
+  | Instance_variable of label * add_instance_variable_failure
+
+exception Inherit_class_signature_failed of inherit_class_signature_failure
+
+let unify_self_types env sign1 sign2 =
+  let self_type1 = sign1.csig_self in
+  let self_type2 = sign2.csig_self in
+  match unify env self_type1 self_type2 with
+  | () -> ()
+  | exception Unify err -> begin
+      match err.trace with
+      | Errortrace.Diff _ :: Errortrace.Incompatible_fields {name; _} :: rem ->
+          let err = Errortrace.unification_error ~trace:rem in
+          let failure = Method (name, Type_mismatch err) in
+          raise (Inherit_class_signature_failed failure)
+      | _ ->
+          raise (Inherit_class_signature_failed (Self_type_mismatch err))
+    end
+
+(* Unify components of sign2 into sign1 *)
+let inherit_class_signature ~strict env sign1 sign2 =
+  unify_self_types env sign1 sign2;
+  Meths.iter
+    (fun label (priv, virt, ty) ->
+       match add_method env label priv virt ty sign1 with
+       | () -> ()
+       | exception Add_method_failed failure ->
+           let failure = Method(label, failure) in
+           raise (Inherit_class_signature_failed failure))
+    sign2.csig_meths;
+  Vars.iter
+    (fun label (mut, virt, ty) ->
+       match add_instance_variable ~strict env label mut virt ty sign1 with
+       | () -> ()
+       | exception Add_instance_variable_failed failure ->
+           let failure = Instance_variable(label, failure) in
+           raise (Inherit_class_signature_failed failure))
+    sign2.csig_vars
+
+let update_class_signature env sign =
+  let self = expand_head env sign.Types.csig_self in
+  let fields, row = flatten_fields (object_fields self) in
+  let meths, implicitly_public, implicitly_declared =
+    List.fold_left
+      (fun (meths, implicitly_public, implicitly_declared) (lab, k, ty) ->
+         if lab = dummy_method then
+           meths, implicitly_public, implicitly_declared
+         else begin
+           match Meths.find lab meths with
+           | priv, virt, ty' ->
+               let meths, implicitly_public =
+                 match priv, field_kind_repr k with
+                 | Public, _ -> meths, implicitly_public
+                 | Private, Fpresent ->
+                     let meths = Meths.add lab (Public, virt, ty') meths in
+                     let implicitly_public = lab :: implicitly_public in
+                     meths, implicitly_public
+                 | Private, _ -> meths, implicitly_public
+               in
+               meths, implicitly_public, implicitly_declared
+           | exception Not_found ->
+               let meths, implicitly_declared =
+                 match field_kind_repr k with
+                 | Fpresent ->
+                     let meths = Meths.add lab (Public, Virtual, ty) meths in
+                     let implicitly_declared = lab :: implicitly_declared in
+                     meths, implicitly_declared
+                 | Fvar _ ->
+                     let meths = Meths.add lab (Private, Virtual, ty) meths in
+                     let implicitly_declared = lab :: implicitly_declared in
+                     meths, implicitly_declared
+                 | Fabsent -> meths, implicitly_declared
+               in
+               meths, implicitly_public, implicitly_declared
+         end)
+      (sign.csig_meths, [], []) fields
+  in
+  sign.csig_meths <- meths;
+  sign.csig_self_row <- row;
+  implicitly_public, implicitly_declared
+
+let hide_private_methods env sign =
+  let self = expand_head env sign.Types.csig_self in
+  remove_object_name self;
+  let fields, _ = flatten_fields (object_fields self) in
+  List.iter
+    (fun (_, k, _) ->
+       match field_kind_repr k with
+       | Fvar r -> set_kind r Fabsent
+       | _      -> ())
+    fields
 
                         (***********************************)
                         (*  Matching between type schemes  *)
@@ -4185,7 +4307,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              messages, we have to manually perform the regeneralization rather
              than backtracking. *)
           current_level := generic_level - 2;
-          generalize_class_type true subj_inst;
+          generalize_class_type subj_inst;
           res
       in
       current_level := old_level;
@@ -4813,47 +4935,70 @@ let rec arity ty =
   | _ -> 0
 
 (* Check for non-generalizable type variables *)
-exception Non_closed0
+exception Nongen
 let visited = ref TypeSet.empty
 
-let rec closed_schema_rec env ty =
+let rec nongen_schema_rec env ty =
   if TypeSet.mem ty !visited then () else begin
     visited := TypeSet.add ty !visited;
     match get_desc ty with
       Tvar _ when get_level ty <> generic_level ->
-        raise Non_closed0
+        raise Nongen
     | Tconstr _ ->
         let old = !visited in
-        begin try iter_type_expr (closed_schema_rec env) ty
-        with Non_closed0 -> try
+        begin try iter_type_expr (nongen_schema_rec env) ty
+        with Nongen -> try
           visited := old;
-          closed_schema_rec env
-            (try_expand_head try_expand_safe env ty)
+          nongen_schema_rec env (try_expand_head try_expand_safe env ty)
         with Cannot_expand ->
-          raise Non_closed0
+          raise Nongen
         end
     | Tfield(_, kind, t1, t2) ->
         if field_kind_repr kind = Fpresent then
-          closed_schema_rec env t1;
-        closed_schema_rec env t2
+          nongen_schema_rec env t1;
+        nongen_schema_rec env t2
     | Tvariant row ->
         let row = row_repr row in
-        iter_row (closed_schema_rec env) row;
-        if not (static_row row) then closed_schema_rec env row.row_more
+        iter_row (nongen_schema_rec env) row;
+        if not (static_row row) then nongen_schema_rec env row.row_more
     | _ ->
-        iter_type_expr (closed_schema_rec env) ty
+        iter_type_expr (nongen_schema_rec env) ty
   end
 
 (* Return whether all variables of type [ty] are generic. *)
-let closed_schema env ty =
+let nongen_schema env ty =
   visited := TypeSet.empty;
   try
-    closed_schema_rec env ty;
-    visited := TypeSet.empty;
-    true
-  with Non_closed0 ->
+    nongen_schema_rec env ty;
     visited := TypeSet.empty;
     false
+  with Nongen ->
+    visited := TypeSet.empty;
+    true
+
+(* Check that all type variables are generalizable *)
+(* Use Env.empty to prevent expansion of recursively defined object types;
+   cf. typing-poly/poly.ml *)
+let rec nongen_class_type = function
+  | Cty_constr (_, params, _) ->
+      List.exists (nongen_schema Env.empty) params
+  | Cty_signature sign ->
+      nongen_schema Env.empty sign.csig_self
+      || nongen_schema Env.empty sign.csig_self_row
+      || Meths.exists
+           (fun _ (_, _, ty) -> nongen_schema Env.empty ty)
+           sign.csig_meths
+      || Vars.exists
+           (fun _ (_, _, ty) -> nongen_schema Env.empty ty)
+           sign.csig_vars
+  | Cty_arrow (_, ty, cty) ->
+      nongen_schema Env.empty ty
+      || nongen_class_type cty
+
+let nongen_class_declaration cty =
+  List.exists (nongen_schema Env.empty) cty.cty_params
+  || nongen_class_type cty.cty_type
+
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)

@@ -144,10 +144,8 @@ Lines 4-7, characters 4-7:
 5 |       inherit child1 self
 6 |       inherit child2
 7 |     end
-Error: Cannot close type of object literal:
-       < child : '_weak1; previous : 'a option; _.. > as 'a
-       it has been unified with the self type of a class that is not yet
-       completely defined.
+Error: This object has undeclared virtual methods.
+       The following methods were not declared : previous child
 |}]
 
 class assertion_failure = object(self : 'a)
@@ -171,7 +169,7 @@ Lines 4-10, characters 4-7:
  9 |       method child = assert false
 10 |     end
 Error: Cannot close type of object literal:
-       < child : '_weak2; previous : 'a option; _.. > as 'a
+       < child : '_weak1; previous : 'a option; _.. > as 'a
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}]
