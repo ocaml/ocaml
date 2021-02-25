@@ -630,7 +630,6 @@ static struct {
   atomic_uintnat num_domains_still_processing;
   void (*callback)(struct domain*, void*, int participating_count, struct domain** others_participating);
   void* data;
-  int leave_when_done;
   int num_domains;
   atomic_uintnat barrier;
   void (*enter_spin_callback)(struct domain*, void*);
@@ -645,7 +644,6 @@ static struct {
   ATOMIC_UINTNAT_INIT(0),
   NULL,
   NULL,
-  0,
   0,
   ATOMIC_UINTNAT_INIT(0),
   NULL,
@@ -694,11 +692,6 @@ void caml_global_barrier()
 int caml_global_barrier_num_domains()
 {
   return stw_request.num_domains;
-}
-
-int caml_global_barrier_leave_when_done()
-{
-  return stw_request.leave_when_done;
 }
 
 static void decrement_stw_domains_still_processing()
@@ -750,16 +743,6 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 
   decrement_stw_domains_still_processing();
 
-  if( !stw_request.leave_when_done ) {
-    SPIN_WAIT {
-      if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
-        break;
-
-      if (stw_request.leave_spin_callback)
-        stw_request.leave_spin_callback(domain, stw_request.leave_spin_data);
-    }
-  }
-
   CAML_EV_END(EV_STW_HANDLER);
 
   /* poll the GC to check for deferred work
@@ -801,9 +784,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(struct domain*, void*, int, struct domain**), void* data,
   void (*leader_setup)(struct domain*),
   void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data,
-  void (*leave_spin_callback)(struct domain*, void*), void* leave_spin_data,
-  int leave_when_done
-  )
+  void (*leave_spin_callback)(struct domain*, void*), void* leave_spin_data)
 {
 #ifdef DEBUG
   caml_domain_state* domain_state = Caml_state;
@@ -843,7 +824,6 @@ int caml_try_run_on_all_domains_with_spin_work(
   stw_request.data = data;
   stw_request.leave_spin_callback = leave_spin_callback;
   stw_request.leave_spin_data = leave_spin_data;
-  stw_request.leave_when_done = leave_when_done;
   atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
@@ -901,24 +881,14 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   decrement_stw_domains_still_processing();
 
-  if( !leave_when_done ) {
-    SPIN_WAIT {
-      if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
-        break;
-    }
-  }
-
   CAML_EV_END(EV_STW_LEADER);
-  /* other domains might not have finished stw_handler yet, but they
-     will finish as soon as they notice num_domains_still_processing
-     == 0, which will remain the case until they have responded to
-     another interrupt from caml_run_on_all_domains */
+
   return 1;
 }
 
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void* data, void (*leader_setup)(struct domain*), int leave_when_done)
+int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void* data, void (*leader_setup)(struct domain*))
 {
-  return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0, 0, 0, leave_when_done);
+  return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0, 0, 0);
 }
 
 void caml_interrupt_self() {

@@ -936,7 +936,6 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   CAMLassert(atomic_load(&num_domains_to_mark) == 0);
   CAMLassert(atomic_load(&num_domains_to_sweep) == 0);
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
-  CAMLassert(caml_global_barrier_leave_when_done() == 0);
 
   caml_empty_minor_heap_no_major_slice_from_stw(domain, (void*)0, participating_count, participating);
 
@@ -1071,6 +1070,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   domain->state->final_info->updated_first = 0;
   domain->state->final_info->updated_last = 0;
 
+  caml_global_barrier();
   CAML_EV_END(EV_MAJOR_GC_STW);
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }
@@ -1290,7 +1290,7 @@ mark_again:
       if (barrier_participants) {
         try_complete_gc_phase (d, (void*)0, participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0, 0);
+        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
       }
       if (budget > 0) goto mark_again;
     }
@@ -1319,7 +1319,7 @@ mark_again:
       if (barrier_participants) {
         cycle_all_domains_callback(d, (void*)0, participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0, 0);
+        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
       }
     }
   }
@@ -1369,7 +1369,7 @@ void caml_finish_major_cycle ()
   uintnat saved_major_cycles = caml_major_cycles_completed;
 
   while( saved_major_cycles == caml_major_cycles_completed ) {
-    caml_try_run_on_all_domains(&finish_major_cycle_callback, (void*)caml_major_cycles_completed, 0, 0);
+    caml_try_run_on_all_domains(&finish_major_cycle_callback, (void*)caml_major_cycles_completed, 0);
   }
 }
 
