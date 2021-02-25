@@ -213,6 +213,12 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @raise Invalid_argument if the arrays are not the same size.
    @since 4.03.0 (4.05.0 in ArrayLabels) *)
 
+val map_with_floatarray : ('a -> float -> 'b) -> 'a array -> floatarray ->
+                          'b array
+(** [map_with_floatarray f a b] applies function [f] to all the
+   elements of the array [a] and the floatarray [b], and builds an
+   array with the results returned by [f].
+   @raise Invalid_argument if the arrays are not the same size. *)
 
 (** {1 Array scanning} *)
 

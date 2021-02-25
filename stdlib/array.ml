@@ -138,6 +138,21 @@ let mapi f a =
     r
   end
 
+let map_with_floatarray f a b =
+  let la = length a in
+  let lb = Floatarray.length b in
+  if la <> lb then
+    invalid_arg "Array.map_with_floatarray: arrays must have the same length"
+  else begin
+    if la = 0 then [||] else begin
+      let r = create la (f (unsafe_get a 0) (Floatarray.unsafe_get b 0)) in
+      for i = 1 to la - 1 do
+        unsafe_set r i (f (unsafe_get a i) (Floatarray.unsafe_get b i))
+      done;
+      r
+    end
+  end
+
 let to_list a =
   let rec tolist i res =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
