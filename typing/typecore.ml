@@ -1756,9 +1756,7 @@ let type_pat category ?no_existentials ?(mode=Normal)
         type_pat category ~no_existentials ~mode
           ~env sp expected_ty (fun x -> x)
       in
-      iter_general_pattern
-        { f = fun p -> p.pat_env <- !env } r;
-      r
+      map_general_pattern { f = fun p -> { p with pat_env = !env } } r
     )
 
 (* this function is passed to Partial.parmatch

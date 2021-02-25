@@ -168,7 +168,7 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live raise_ dbg =
+let record_frame_label ?label live dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -186,11 +186,11 @@ let record_frame_label ?label live raise_ dbg =
       | _ -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in
   `{emit_label lbl}:`
 
 (* Record calls to caml_call_gc, emitted out of line. *)
@@ -218,7 +218,7 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -357,11 +357,11 @@ let emit_instr i =
         emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
         emit_call func;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
@@ -387,7 +387,7 @@ let emit_instr i =
         else begin
           emit_load_symbol_addr reg_r7 func;
           emit_call "caml_c_call";
-          `{record_frame i.live false i.dbg ~label:label_after}\n`
+          `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`
         end
 
      | Lop(Istackoffset n) ->
@@ -424,23 +424,22 @@ let emit_instr i =
           | Double | Double_u -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
-        let lbl_redo = new_label() in
+    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
+        let lbl_after_alloc = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label i.live (Dbg_alloc dbginfo) ?label:label_after_call_gc
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
+            gc_return_lbl = lbl_after_alloc;
             gc_frame_lbl = lbl_frame } :: !call_gc_sites;
-        `{emit_label lbl_redo}:`;
-        `	lay	{emit_reg i.res.(0)}, {emit_int(-n+8)}(%r11)\n`;
+        `	lay     %r11, {emit_int(-n)}(%r11)\n`;
         let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
-        `	clg	{emit_reg i.res.(0)}, {emit_int offset}(%r10)\n`;
-        `	brcl	12, {emit_label lbl_call_gc}\n`;
-                                                 (* less than or equal *)
-        `	lay	%r11, -8({emit_reg i.res.(0)})\n`
+        `	clg	%r11, {emit_int offset}(%r10)\n`;
+        `	brcl    4, {emit_label lbl_call_gc}\n`;  (* less than *)
+        `{emit_label lbl_after_alloc}:`;
+        `	la      {emit_reg i.res.(0)}, 8(%r11)\n`
 
     | Lop(Iintop Imulh) ->
        (* Hacker's Delight section 8.3:
@@ -641,10 +640,10 @@ let emit_instr i =
           `	lghi	%r1, 0\n`;
           `	stg	%r1, {emit_int offset}(%r10)\n`;
           emit_call "caml_raise_exn";
-          `{record_frame Reg.Set.empty true i.dbg}\n`
+          `{record_frame Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_reraise ->
           emit_call "caml_raise_exn";
-          `{record_frame Reg.Set.empty true i.dbg}\n`
+          `{record_frame Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
@@ -782,6 +781,7 @@ let end_assembly() =
   emit_frames
     { efa_code_label = (fun l -> `	.quad	{emit_label l}\n`);
       efa_data_label = (fun l -> `	.quad	{emit_label l}\n`);
+      efa_8 = (fun n -> `	.byte	{emit_int n}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
       efa_word = (fun n -> `	.quad	{emit_int n}\n`);

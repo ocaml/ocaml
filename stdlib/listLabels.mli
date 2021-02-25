@@ -159,6 +159,13 @@ val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
     @since 4.10.0
 *)
 
+val fold_left_map :
+  f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b list -> 'a * 'c list
+(** [fold_left_map] is  a combination of [fold_left] and [map] hat threads an
+    accumulator through calls to [f]
+    @since 4.11.0
+*)
+
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)

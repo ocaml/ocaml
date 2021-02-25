@@ -269,6 +269,14 @@ let concat_map f l =
        aux f (rev_append xs acc) l
   in aux f [] l
 
+let fold_left_map f accu l =
+  let rec aux accu l_accu = function
+    | [] -> accu, rev l_accu
+    | x :: l ->
+        let accu, x = f accu x in
+        aux accu (x :: l_accu) l in
+  aux accu [] l
+
 let partition p l =
   let rec part yes no = function
   | [] -> (rev yes, rev no)

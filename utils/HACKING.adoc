@@ -46,10 +46,5 @@ tested on a large scale: this is when tool authors may update their
 tools to test the new release, and if you update *after* that you risk
 breaking them again without them noticing.
 
-For example, the magic numbers for 4.07 were updated in
-  7c416d1c01f82122b767cd6f08ca7d0839fd15fa
-and
-  c10b2edccc9704fd99673812f688c103e2ffcfcf
-
-(There are two commits as one kind of magic number was forgotten,
-ideally there should be only one commit.)
+For example, the magic numbers for 4.10 were updated in
+  6423e5c9d11cfac1c07208aec9f761f37c1640f0
