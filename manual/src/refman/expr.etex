@@ -785,10 +785,8 @@ exception value is raised again, thereby transparently ``passing
 through'' the @'try'@ construct.
 
 \begin{caml_example}{toplevel}
-let option_exception f x =
-  try Some (f x) with
-  | Assert_failure (a, b, c) -> raise (Assert_failure (a, b, c))
-  | _ -> None;;
+let find_opt p l =
+  try Some (List.find p l) with Not_found -> None;;
 \end{caml_example}
 
 \subsection{ss:expr-ops-on-data}{Operations on data structures}

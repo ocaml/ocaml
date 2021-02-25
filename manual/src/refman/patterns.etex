@@ -204,11 +204,12 @@ is a shorthand for the following or-pattern:
 ":" typexpr_n"))"@. It matches all values of type @"[<" typeconstr "]"@.
 
 \begin{caml_example}{toplevel}
-type 'a any_rectangle = [`Square of 'a | `Rectangle of 'a * 'a]
+type 'a rectangle = [`Square of 'a | `Rectangle of 'a * 'a]
+type 'a shape = [`Circle of 'a | 'a rectangle]
 
-let to_string = function
-  | #any_rectangle -> "Rectangle"
-  | `Circle _ -> "Circle";;
+let try_rectangle = function
+  | #rectangle as r -> Some r
+  | `Circle _ -> None;;
 \end{caml_example}
 
 \subsubsection*{sss:pat-tuple}{Tuple patterns}
@@ -308,9 +309,9 @@ contain @"lazy"@ sub-patterns may imply forcing parts of the value,
 even when the pattern selected in the end has no @"lazy"@ sub-pattern.
 
 \begin{caml_example}{toplevel}
-let lazy_option_map f = function
-  | lazy (Some x) -> Some (Lazy.force f x)
-  | _ -> None;;
+let force_opt = function
+  | Some (lazy n) -> n
+  | None -> 0;;
 \end{caml_example}
 
 For more information, see the description of module "Lazy" in the
