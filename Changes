@@ -239,7 +239,7 @@ OCaml 4.12.0 (24 February 2021)
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
 
-- #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
+- #9506: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
 
