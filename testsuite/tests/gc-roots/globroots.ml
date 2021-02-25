@@ -43,7 +43,7 @@ module Test(G: GLOBREF) = struct
 
   let test n =
     for i = 1 to n do
-      change();
+      change(); check ();
       print_string "."; flush stdout
     done
 end
