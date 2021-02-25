@@ -29,6 +29,11 @@ type item = {
 
 type t = item list
 
+type alloc_dbginfo_item =
+  { alloc_words : int;
+    alloc_dbg : t }
+type alloc_dbginfo = alloc_dbginfo_item list
+
 let none = []
 
 let is_none = function

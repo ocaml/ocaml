@@ -38,7 +38,8 @@ type cmm_label = int
   (* Do not introduce a dependency to Cmm *)
 
 type specific_operation =
-  | Ifar_alloc of { bytes : int; label_after_call_gc : cmm_label option; }
+  | Ifar_alloc of { bytes : int; label_after_call_gc : cmm_label option;
+                    dbginfo : Debuginfo.alloc_dbginfo }
   | Ifar_intop_checkbound of { label_after_error : cmm_label option; }
   | Ifar_intop_imm_checkbound of
       { bound : int; label_after_error : cmm_label option; }

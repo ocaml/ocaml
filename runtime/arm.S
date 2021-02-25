@@ -137,9 +137,9 @@ caml_system__code_begin:
 
 FUNCTION(caml_call_gc)
         CFI_STARTPROC
+.Lcaml_call_gc:
     /* Record return address */
         str     lr, Caml_state(last_return_address)
-.Lcaml_call_gc:
     /* Record lowest stack address */
         str     sp, Caml_state(bottom_of_stack)
 #if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
@@ -176,81 +176,41 @@ FUNCTION(caml_call_gc)
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
-.Lcaml_alloc1:
         sub     alloc_ptr, alloc_ptr, 8
         ldr     r7, Caml_state(young_limit)
         cmp     alloc_ptr, r7
-        bcc     1f
+        bcc     .Lcaml_call_gc
         bx      lr
-1:      add     alloc_ptr, alloc_ptr, 8
-    /* Record return address */
-        str     lr, Caml_state(last_return_address)
-    /* Call GC */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldr     lr, Caml_state(last_return_address)
-    /* Try again */
-        b       .Lcaml_alloc1
         CFI_ENDPROC
         .size   caml_alloc1, .-caml_alloc1
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
-.Lcaml_alloc2:
         sub     alloc_ptr, alloc_ptr, 12
         ldr     r7, Caml_state(young_limit)
         cmp     alloc_ptr, r7
-        bcc     1f
+        bcc     .Lcaml_call_gc
         bx      lr
-1:      add     alloc_ptr, alloc_ptr, 12
-    /* Record return address */
-        str     lr, Caml_state(last_return_address)
-    /* Call GC */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldr     lr, Caml_state(last_return_address)
-    /* Try again */
-        b       .Lcaml_alloc2
         CFI_ENDPROC
         .size   caml_alloc2, .-caml_alloc2
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
-.Lcaml_alloc3:
         sub     alloc_ptr, alloc_ptr, 16
         ldr     r7, Caml_state(young_limit)
         cmp     alloc_ptr, r7
-        bcc     1f
+        bcc     .Lcaml_call_gc
         bx      lr
-1:      add     alloc_ptr, alloc_ptr, 16
-    /* Record return address */
-        str     lr, Caml_state(last_return_address)
-    /* Call GC */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldr     lr, Caml_state(last_return_address)
-    /* Try again */
-        b       .Lcaml_alloc3
         CFI_ENDPROC
         .size   caml_alloc3, .-caml_alloc3
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
-.Lcaml_allocN:
         sub     alloc_ptr, alloc_ptr, r7
-        ldr     r12, Caml_state(young_limit)
-        cmp     alloc_ptr, r12
-        bcc     1f
+        ldr     r7, Caml_state(young_limit)
+        cmp     alloc_ptr, r7
+        bcc     .Lcaml_call_gc
         bx      lr
-1:      add     alloc_ptr, alloc_ptr, r7
-    /* Record return address */
-        str     lr, Caml_state(last_return_address)
-    /* Call GC (preserves r7) */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldr     lr, Caml_state(last_return_address)
-    /* Try again */
-        b       .Lcaml_allocN
         CFI_ENDPROC
         .size   caml_allocN, .-caml_allocN
 

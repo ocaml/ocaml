@@ -47,7 +47,8 @@ type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of                       (* allocation in large functions *)
-      { bytes : int; label_after_call_gc : int (*Cmm.label*) option; }
+      { bytes : int; label_after_call_gc : int (*Cmm.label*) option;
+        dbginfo : Debuginfo.alloc_dbginfo }
 
 (* note: we avoid introducing a dependency to Cmm since this dep
    is not detected when "make depend" is run under amd64 *)

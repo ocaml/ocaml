@@ -308,7 +308,7 @@ let adjust_stack_offset delta =
 
 (* Record live pointers at call points *)
 
-let record_frame ?label live raise_ dbg =
+let record_frame ?label live dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -326,7 +326,7 @@ let record_frame ?label live raise_ dbg =
       | _ -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset dbg;
   `{emit_label lbl}:\n`
 
 (* Record floating-point literals (for PPC32) *)
@@ -398,38 +398,8 @@ let name_for_specific = function
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-
-module IntSet = Stdlib.Set.Make(Stdlib.Int)
-module IntMap = Stdlib.Map.Make(Stdlib.Int)
-
-(* Labels of glue code for calling the GC.
-   There is one label per size allocated. *)
-let call_gc_labels : label IntMap.t ref = ref IntMap.empty
-                     (* size -> label *)
-
-(* Return the label of the call GC point for the given size *)
-
-let label_for_call_gc ?label_after_call_gc sz =
-  match IntMap.find_opt sz !call_gc_labels with
-  | Some lbl -> lbl
-  | None ->
-      let lbl =
-        match label_after_call_gc with Some l -> l | None -> new_label() in
-      call_gc_labels := IntMap.add sz lbl !call_gc_labels;
-      lbl
-
-(* Number of call GC points *)
-
-let num_call_gc instr =
-  let rec loop i cg =
-    match i.desc with
-    | Lend -> IntSet.cardinal cg
-    | Lop (Ialloc {bytes = sz}) -> loop i.next (IntSet.add sz cg)
-    (* The following should never be seen, since this function is run
-       before branch relaxation. *)
-    | Lop (Ispecific (Ialloc_far _)) -> assert false
-    | _ -> loop i.next cg
-  in loop instr IntSet.empty
+(* Label of glue code for calling the GC *)
+let call_gc_label = ref 0
 
 (* Relaxation of branches that exceed the span of a relative branch. *)
 
@@ -546,8 +516,8 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 2
     | Lraise _ -> 6
 
-  let relax_allocation ~num_bytes:bytes ~label_after_call_gc =
-    Lop (Ispecific (Ialloc_far { bytes; label_after_call_gc; }))
+  let relax_allocation ~num_bytes:bytes ~label_after_call_gc ~dbginfo =
+    Lop (Ispecific (Ialloc_far { bytes; label_after_call_gc; dbginfo }))
 
   (* [classify_addr], above, never identifies these instructions as needing
      relaxing.  As such, these functions should never be called. *)
@@ -652,26 +622,26 @@ let emit_instr i =
         | ELF32 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after
+          record_frame i.live (Dbg_other i.dbg) ~label:label_after
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
           `	mtctr	0\n`;
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after;
+          record_frame i.live (Dbg_other i.dbg) ~label:label_after;
           emit_reload_toc()
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
           `	bctrl\n`;
-          record_frame i.live false i.dbg ~label:label_after;
+          record_frame i.live (Dbg_other i.dbg) ~label:label_after;
           emit_reload_toc()
         end
     | Lop(Icall_imm { func; label_after; }) ->
         begin match abi with
         | ELF32 ->
             emit_call func;
-            record_frame i.live false i.dbg ~label:label_after
+            record_frame i.live (Dbg_other i.dbg) ~label:label_after
         | ELF64v1 | ELF64v2 ->
         (* For PPC64, we cannot just emit a "bl s; nop" sequence, because
            of the following scenario:
@@ -691,7 +661,7 @@ let emit_instr i =
                 Cost: 3 instructions if same TOC, 7 if different TOC.
            Let's try option 2. *)
             emit_call func;
-            record_frame i.live false i.dbg ~label:label_after;
+            record_frame i.live (Dbg_other i.dbg) ~label:label_after;
             `	nop\n`;
             emit_reload_toc()
         end
@@ -751,11 +721,11 @@ let emit_instr i =
             `	addis	25, 0, {emit_upper emit_symbol func}\n`;
             `	addi	25, 25, {emit_lower emit_symbol func}\n`;
             emit_call "caml_c_call";
-            record_frame i.live false i.dbg
+            record_frame i.live (Dbg_other i.dbg)
           | ELF64v1 | ELF64v2 ->
             emit_tocload emit_gpr 25 (TocSym func);
             emit_call "caml_c_call";
-            record_frame i.live false i.dbg;
+            record_frame i.live (Dbg_other i.dbg);
             `	nop\n`
         end
     | Lop(Istackoffset n) ->
@@ -786,23 +756,29 @@ let emit_instr i =
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
-        let call_gc_lbl = label_for_call_gc ?label_after_call_gc n in
+    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
+        if !call_gc_label = 0 then begin
+          match label_after_call_gc with
+          | None -> call_gc_label := new_label ()
+          | Some label -> call_gc_label := label
+        end;
         `	addi    31, 31, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	31, 30\n`;
+        `	bltl	{emit_label !call_gc_label}\n`;
+        record_frame i.live (Dbg_alloc dbginfo);
         `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
-        `	bltl	{emit_label call_gc_lbl}\n`;
-        (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none
-    | Lop(Ispecific(Ialloc_far { bytes = n; label_after_call_gc; })) ->
-        let call_gc_lbl = label_for_call_gc ?label_after_call_gc n in
+    | Lop(Ispecific(Ialloc_far { bytes = n; label_after_call_gc; dbginfo })) ->
+        if !call_gc_label = 0 then begin
+          match label_after_call_gc with
+          | None -> call_gc_label := new_label ()
+          | Some label -> call_gc_label := label
+        end;
         let lbl = new_label() in
         `	addi    31, 31, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	31, 30\n`;
         `	bge	{emit_label lbl}\n`;
-        `	bl	{emit_label call_gc_lbl}\n`;
-        (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none;
+        `	bl	{emit_label !call_gc_label}\n`;
+        record_frame i.live (Dbg_alloc dbginfo);
         `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -821,7 +797,7 @@ let emit_instr i =
         end
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
+          record_frame Reg.Set.empty (Dbg_other i.dbg) ?label:label_after_error;
         `	{emit_string tglle}   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
@@ -839,7 +815,7 @@ let emit_instr i =
         end
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
         if !Clflags.debug then
-          record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
+          record_frame Reg.Set.empty (Dbg_other i.dbg) ?label:label_after_error;
         `	{emit_string tglle}i   {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in
@@ -1023,11 +999,11 @@ let emit_instr i =
             | _ -> `	std	0, {emit_int (backtrace_pos * 8)}(28)\n`
             end;
             emit_call "caml_raise_exn";
-            record_frame Reg.Set.empty true i.dbg;
+            record_frame Reg.Set.empty (Dbg_raise i.dbg);
             emit_call_nop()
         | Lambda.Raise_reraise ->
             emit_call "caml_raise_exn";
-            record_frame Reg.Set.empty true i.dbg;
+            record_frame Reg.Set.empty (Dbg_raise i.dbg);
             emit_call_nop()
         | Lambda.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
@@ -1051,7 +1027,7 @@ let fundecl fundecl =
   function_name := fundecl.fun_name;
   tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
-  call_gc_labels := IntMap.empty;
+  call_gc_label := 0;
   float_literals := [];
   jumptables := []; jumptables_lbl := -1;
   for i = 0 to Proc.num_register_classes - 1 do
@@ -1088,30 +1064,14 @@ let fundecl fundecl =
   end;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  let num_call_gc = num_call_gc fundecl.fun_body in
-  let max_out_of_line_code_offset = max (num_call_gc - 1) 0 in
-  BR.relax fundecl.fun_body ~max_out_of_line_code_offset;
+  (* On this target, there is at most one "out of line" code block per
+     function: a single "call GC" point.  It comes immediately after the
+     function's body. *)
+  BR.relax fundecl.fun_body ~max_out_of_line_code_offset:0;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
-  assert (IntMap.cardinal !call_gc_labels = num_call_gc);
-  if num_call_gc > 0 then begin
-    (* Replace sizes by deltas with next size *)
-    let rec delta_encode = function
-      | (sz1, lbl1) :: ((sz2, _) :: _ as l) ->
-           (sz1 - sz2, lbl1) :: delta_encode l
-      | ([] | [(_,_)]) as l -> l in
-    (* Enumerate the GC call points by decreasing size.  This is not
-       necessary for correctness, but it is nice for two reasons:
-       1- all deltas are positive, making the generated code
-          easier to read, and
-       2- smaller allocation sizes, which are more frequent, execute
-          fewer instructions before calling the GC. *)
-    let delta_lbl_list =
-      delta_encode (List.rev (IntMap.bindings !call_gc_labels)) in
-    List.iter
-      (fun (delta, lbl) ->
-        `{emit_label lbl}:	addi	31, 31, {emit_int delta}\n`)
-      delta_lbl_list;
+  if !call_gc_label > 0 then begin
+    `{emit_label !call_gc_label}:\n`;
     match abi with
     | ELF32 ->
       `	b	{emit_symbol "caml_call_gc"}\n`
@@ -1249,6 +1209,7 @@ let end_assembly() =
          (fun l -> `	{emit_string datag}	{emit_label l}\n`);
       efa_data_label =
          (fun l -> `	{emit_string datag}	{emit_label l}\n`);
+      efa_8 = (fun n -> `	.byte	{emit_int n}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
       efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);

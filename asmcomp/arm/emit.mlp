@@ -105,7 +105,7 @@ let emit_addressing addr r n =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live raise_ dbg =
+let record_frame_label ?label live dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -123,11 +123,11 @@ let record_frame_label ?label live raise_ dbg =
       | _ -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in `{emit_label lbl}:`
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in `{emit_label lbl}:`
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -155,7 +155,7 @@ let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_label ?label dbg =
   if !Clflags.debug || !bound_error_sites = [] then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error;
         bd_frame_lbl = lbl_frame } :: !bound_error_sites;
@@ -542,15 +542,15 @@ let emit_instr i =
     | Lop(Icall_ind { label_after; }) ->
         if !arch >= ARMv5 then begin
           `	blx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame i.live false i.dbg ~label:label_after}\n`; 1
+          `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`; 1
         end else begin
           `	mov	lr, pc\n`;
           `	bx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame i.live false i.dbg ~label:label_after}\n`; 2
+          `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`; 2
         end
     | Lop(Icall_imm { func; label_after; }) ->
         `	{emit_call func}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`; 1
+        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`; 1
     | Lop(Itailcall_ind { label_after = _; }) ->
         output_epilogue begin fun () ->
           if !contains_calls then
@@ -572,7 +572,7 @@ let emit_instr i =
     | Lop(Iextcall { func; alloc = true; label_after; }) ->
         let ninstr = emit_load_symbol_addr (phys_reg 7 (* r7 *)) func in
         `	{emit_call "caml_c_call"}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`;
+        `{record_frame i.live (Dbg_other i.dbg) ~label:label_after}\n`;
         1 + ninstr
     | Lop(Istackoffset n) ->
         assert (n mod 8 = 0);
@@ -642,34 +642,28 @@ let emit_instr i =
           | Double_u -> "fstd"
           | _ (* 32-bit quantities *) -> "str" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
-    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
         let lbl_frame =
-          record_frame_label i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label i.live (Dbg_alloc dbginfo) ?label:label_after_call_gc
         in
         if !fastcode_flag then begin
-          let lbl_redo = new_label() in
-          `{emit_label lbl_redo}:`;
-          let first = ref true in
-          let ninstr =
-            decompose_intconst (Int32.of_int (n - 4)) (fun a ->
-              if !first
-              then `	sub	{emit_reg i.res.(0)}, alloc_ptr, #{emit_int32 a}\n`
-              else `	sub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #{emit_int32 a}\n`;
-              first := false) in
+          let ninstr = decompose_intconst
+                         (Int32.of_int n)
+                         (fun i ->
+                           `   sub     alloc_ptr, alloc_ptr, #{emit_int32 i}\n`) in
           let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
-          let tmp = if i.res.(0).loc = Reg 8 (* r12 *) then phys_reg 7 (* r7 *)
-                    else phys_reg 8 (* r12 *)
-          in
-          `	ldr	{emit_reg tmp}, [domain_state_ptr, {emit_int offset}]\n`;
-          `	cmp	{emit_reg i.res.(0)}, {emit_reg tmp}\n`;
+          `	ldr	{emit_reg i.res.(0)}, [domain_state_ptr, {emit_int offset}]\n`;
+          `     cmp     alloc_ptr, {emit_reg i.res.(0)}\n`;
           let lbl_call_gc = new_label() in
-          `	bls	{emit_label lbl_call_gc}\n`;
-          `	sub	alloc_ptr, {emit_reg i.res.(0)}, #4\n`;
+          `     bcc     {emit_label lbl_call_gc}\n`;
+          let lbl_after_alloc = new_label() in
+          `{emit_label lbl_after_alloc}:`;
+          `     add     {emit_reg i.res.(0)}, alloc_ptr, #4\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
-              gc_return_lbl = lbl_redo;
+              gc_return_lbl = lbl_after_alloc;
               gc_frame_lbl = lbl_frame } :: !call_gc_sites;
-          3 + ninstr
+          4 + ninstr
         end else begin
           let ninstr =
             begin match n with
@@ -912,10 +906,10 @@ let emit_instr i =
           `	mov	r12, #0\n`;
           `	str	r12, [domain_state_ptr, {emit_int offset}]\n`;
           `	{emit_call "caml_raise_exn"}\n`;
-          `{record_frame Reg.Set.empty true i.dbg}\n`; 3
+          `{record_frame Reg.Set.empty (Dbg_raise i.dbg)}\n`; 3
         | Lambda.Raise_reraise ->
           `	{emit_call "caml_raise_exn"}\n`;
-          `{record_frame Reg.Set.empty true i.dbg}\n`; 1
+          `{record_frame Reg.Set.empty (Dbg_raise i.dbg)}\n`; 1
         | Lambda.Raise_notrace ->
           `	mov	sp, trap_ptr\n`;
           `	pop	\{trap_ptr, pc}\n`; 2
@@ -1072,6 +1066,7 @@ let end_assembly () =
       efa_data_label = (fun lbl ->
                        `	.type	{emit_label lbl}, %object\n`;
                        `	.word	{emit_label lbl}\n`);
+      efa_8 = (fun n -> `	.byte	{emit_int n}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
       efa_word = (fun n -> `	.word	{emit_int n}\n`);

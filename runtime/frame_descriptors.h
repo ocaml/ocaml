@@ -12,8 +12,18 @@ typedef struct {
   uintnat retaddr;
   unsigned short frame_size;
   unsigned short num_live;
-  unsigned short live_ofs[1];
+  unsigned short live_ofs[1 /* num_live */];
+  /*
+    If frame_size & 1, then debug info follows:
+  uint32_t debug_info_offset;
+    Debug info is stored as a relative offset to a debuginfo structure. */
 } frame_descr;
+
+/* Used to compute offsets in frame tables.
+   ty must have power-of-2 size */
+#define Align_to(p, ty) \
+  (void*)(((uintnat)(p) + sizeof(ty) - 1) & -sizeof(ty))
+
 
 void caml_init_frame_descriptors(void);
 void caml_register_frametable(intnat *table);

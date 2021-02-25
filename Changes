@@ -15,6 +15,9 @@ Working version
   with the index of the element.
   (Léo Andrès, review by Alain Frisch)
 
+- #8894: Added List.fold_left_map function combining map and fold.
+  (Bernhard Schommer, review by Alain Frisch and github user @cfcs)
+
 ### Other libraries:
 
 ### Tools:
@@ -30,6 +33,10 @@ Working version
 - #8938: Extend ocamlopt option "-stop-after" to handle "scheduling" argument.
   (Greta Yorsh, review by Florian Angeletti and Sébastien Hinderer)
 
+- #8945: Fix toplevel show directive to work with constructors
+  (Simon Parry, review by Gabriel Scherer, Jeremy Yallop,
+  Alain Frisch, Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #8970: separate value patterns (matching on values) from computation patterns
@@ -44,6 +51,9 @@ Working version
   (Florian Angeletti, Jacques Garrigue, Gabriel Scherer,
    review by Thomas Refis)
 
+- #9081: typedtree, make the pat_env field of pattern data immutable
+  (Gabriel Scherer, review by Jacques Garrigue, report by Alain Frisch)
+
 ### Build system:
 
 ### Bug fixes:
@@ -51,6 +61,9 @@ Working version
 - #7683, #1499: Fixes one case where the evaluation order in native-code
   may not match the one in bytecode.
   (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
+
+- #9064: Relax the level handling when unifying row fields
+  (Leo White, review by Jacques Garrigue)
 
 OCaml 4.10.0
 ------------
@@ -258,6 +271,10 @@ OCaml 4.10.0
   the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+- #8637, #8805: Record debug info for each allocation
+  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
+   KC Sivaramakrishnan and Xavier Leroy)
+
 - #8713: Introduce a state table in the runtime to contain the global variables
    which must be duplicated for each domain in the multicore runtime.
    (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
@@ -332,6 +349,9 @@ OCaml 4.10.0
 - #8950: manual, move local opens in pattern out of the extension chapter
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- #9088, #9097: manual, fix operator character classes
+  (Florian Angelettion, review by Gabriel Scherer,
+   report by Clément Busschaert)
 
 ### Compiler user-interface and warnings:
 
@@ -512,7 +532,6 @@ OCaml 4.09.0 (19 September 2019):
 
 - #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
   (Jeremy Yallop, report by Marcello Seri)
-
 
 - #2075, #7729: rename _T macro used to support Unicode in the (Windows) runtime
   in order to avoid compiler warning
