@@ -1662,6 +1662,8 @@ signature_item:
         { let (ext, l) = $1 in (Psig_recmodule l, ext) }
     | module_type_declaration
         { let (body, ext) = $1 in (Psig_modtype body, ext) }
+    | module_type_subst
+        { let (body, ext) = $1 in (Psig_modtypesubst body, ext) }
     | open_description
         { let (body, ext) = $1 in (Psig_open body, ext) }
     | include_statement(module_type)
@@ -1773,6 +1775,23 @@ module_subst:
     Md.mk name mty ~attrs ~loc ~text ~docs
   }
 ;
+
+(* A module type substitution *)
+module_type_subst:
+  MODULE TYPE
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(ident)
+  COLONEQUAL
+  typ=module_type
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Mtd.mk id ~typ ~attrs ~loc ~docs, ext
+  }
+
 
 (* -------------------------------------------------------------------------- *)
 
@@ -3212,6 +3231,10 @@ with_constraint:
       { Pwith_module ($2, $4) }
   | MODULE mkrhs(mod_longident) COLONEQUAL mkrhs(mod_ext_longident)
       { Pwith_modsubst ($2, $4) }
+  | MODULE TYPE l=mkrhs(mty_longident) EQUAL rhs=module_type
+      { Pwith_modtype (l, rhs) }
+  | MODULE TYPE l=mkrhs(mty_longident) COLONEQUAL rhs=module_type
+      { Pwith_modtypesubst (l, rhs) }
 ;
 with_type_binder:
     EQUAL          { Public }

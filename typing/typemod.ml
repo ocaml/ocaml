@@ -102,6 +102,8 @@ type error =
   | Badly_formed_signature of string * Typedecl.error
   | Cannot_hide_id of hiding_error
   | Invalid_type_subst_rhs
+  | Unpackable_local_modtype_subst of Path.t
+  | With_cannot_remove_packed_modtype of Path.t * module_type
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -343,9 +345,7 @@ let retype_applicative_functor_type ~loc env funct arg =
    - aliases: module A = M still makes sense but it doesn't mean the same thing
      anymore, so it's forbidden until it's clear what we should do with it.
    This function would be called with M.N.t and N.t to check for these uses. *)
-let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
-  let iterator =
-    let env, super = iterator_with_env env in
+let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
     { super with
       Btype.it_signature_item = (fun self -> function
       | Sig_module (id, _, { md_type = Mty_alias aliased_path; _ }, _, _)
@@ -373,9 +373,48 @@ let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
         )
       );
     }
+
+(* When doing a module type destructive substitution [with module type T = RHS]
+   where RHS is not a module type path, we need to check that the module type
+   T was not used as a path for a packed module
+*)
+let check_usage_of_module_types ~error ~paths ~loc env super =
+  let it_do_type_expr it ty = match ty.desc with
+    | Tpackage (p, _, _) ->
+       begin match List.find_opt (Path.same p) paths with
+       | Some p -> raise (Error(loc,Lazy.force !env,error p))
+       | _ -> super.Btype.it_do_type_expr it ty
+       end
+    | _ -> super.Btype.it_do_type_expr it ty in
+  { super with Btype.it_do_type_expr }
+
+let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
+  let env, iterator = iterator_with_env env in
+  let last, rest = match List.rev paths with
+    | [] -> assert false
+    | last :: rest -> last, rest
   in
-  iterator.Btype.it_signature iterator signature;
-  Btype.unmark_iterators.Btype.it_signature Btype.unmark_iterators signature
+  (* The last item is the one that's removed. We don't need to check how
+        it's used since it's replaced by a more specific type/module. *)
+  assert (match last with Pident _ -> true | _ -> false);
+  let iterator = match rest with
+    | [] -> iterator
+    | _ :: _ ->
+        check_usage_of_path_of_substituted_item rest ~loc ~lid env iterator
+  in
+  let iterator = match unpackable_modtype with
+    | None -> iterator
+    | Some mty ->
+       let error p = With_cannot_remove_packed_modtype(p,mty) in
+       check_usage_of_module_types ~error ~paths ~loc env iterator
+  in
+  iterator.Btype.it_signature iterator sg;
+  Btype.(unmark_iterators.it_signature unmark_iterators) sg
+
+let check_usage_after_substitution env ~loc ~lid paths unpackable_modtype sg =
+  match paths, unpackable_modtype with
+  | [_], None -> ()
+  | _ -> do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg
 
 (* After substitution one also needs to re-check the well-foundedness
    of type declarations in recursive modules *)
@@ -448,24 +487,33 @@ let params_are_constrained =
   loop
 ;;
 
-let merge_constraint initial_env remove_aliases loc sg constr =
-  let lid =
-    match constr with
-    | Pwith_type (lid, _) | Pwith_module (lid, _)
-    | Pwith_typesubst (lid, _) | Pwith_modsubst (lid, _) -> lid
-  in
+type with_info =
+  | With_type of Parsetree.type_declaration
+  | With_typesubst of Parsetree.type_declaration
+  | With_module of {
+        lid:Longident.t loc;
+        path:Path.t;
+        md:Types.module_declaration;
+        remove_aliases:bool
+      }
+  | With_modsubst of Longident.t loc * Path.t * Types.module_declaration
+  | With_modtype of Typedtree.module_type
+  | With_modtypesubst of Typedtree.module_type
+
+let merge_constraint initial_env loc sg lid constr =
   let destructive_substitution =
     match constr with
-    | Pwith_type _ | Pwith_module _ -> false
-    | Pwith_typesubst _ | Pwith_modsubst _ -> true
+    | With_type _ | With_module _ | With_modtype _ -> false
+    | With_typesubst _ | With_modsubst _ | With_modtypesubst _  -> true
   in
   let real_ids = ref [] in
+  let unpackable_modtype = ref None in
   let rec merge sig_env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
         raise(Error(loc, sig_env, With_no_component lid.txt))
     | (Sig_type(id, decl, rs, priv) :: rem, [s],
-       Pwith_type (_, ({ptype_kind = Ptype_abstract} as sdecl)))
+       With_type ({ptype_kind = Ptype_abstract} as sdecl))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
           let arity = List.length sdecl.ptype_params in
@@ -514,7 +562,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         :: Sig_type(id, newdecl, rs, priv)
         :: rem
     | (Sig_type(id, sig_decl, rs, priv) :: rem , [s],
-       (Pwith_type (_, sdecl) | Pwith_typesubst (_, sdecl) as constr))
+       (With_type sdecl | With_typesubst sdecl as constr))
       when Ident.name id = s ->
         let tdecl =
           Typedecl.transl_with_constraint id None
@@ -522,20 +570,51 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
         check_type_decl sig_env loc id row_id newdecl sig_decl rs rem;
         begin match constr with
-          Pwith_type _ ->
+          With_type _ ->
             (Pident id, lid, Twith_type tdecl),
             Sig_type(id, newdecl, rs, priv) :: rem
-        | (* Pwith_typesubst *) _ ->
+        | (* With_typesubst *) _ ->
             real_ids := [Pident id];
             (Pident id, lid, Twith_typesubst tdecl),
             update_rec_next rs rem
         end
-    | (Sig_type(id, _, _, _) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
+    | (Sig_modtype(id, mtd, priv) :: rem, [s],
+       (With_modtype mty | With_modtypesubst mty)
+      )
+      when Ident.name id = s ->
+        let () = match mtd.mtd_type with
+          | None -> ()
+          | Some previous_mty ->
+              Includemod.check_modtype_equiv ~loc sig_env
+                previous_mty mty.mty_type
+        in
+        if not destructive_substitution then
+          let mtd': modtype_declaration =
+            {
+              mtd_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+              mtd_type = Some mty.mty_type;
+              mtd_attributes = [];
+              mtd_loc = loc;
+            }
+          in
+          (Pident id, lid, Twith_modtype mty),
+          Sig_modtype(id, mtd', priv) :: rem
+        else begin
+          let path = Pident id in
+          real_ids := [path];
+          begin match mty.mty_type with
+          | Mty_ident _ -> ()
+          | mty -> unpackable_modtype := Some mty
+          end;
+          (Pident id, lid, Twith_modtypesubst mty),
+          rem
+        end
+    | (Sig_type(id, _, _, _) :: rem, [s], (With_type _ | With_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge sig_env rem namelist (Some id)
-    | (Sig_module(id, pres, md, rs, priv) :: rem, [s], Pwith_module (_, lid'))
+    | (Sig_module(id, pres, md, rs, priv) :: rem, [s],
+       With_module {lid=lid'; md=md'; path; remove_aliases})
       when Ident.name id = s ->
-        let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
@@ -544,9 +623,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
                  newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
         Sig_module(id, pres, newmd, rs, priv) :: rem
-    | (Sig_module(id, _, md, rs, _) :: rem, [s], Pwith_modsubst (_, lid'))
+    | (Sig_module(id, _, md, rs, _) :: rem, [s], With_modsubst (lid',path,md'))
       when Ident.name id = s ->
-        let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
@@ -562,7 +640,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         real_ids := path :: !real_ids;
         let item =
           match md.md_type, constr with
-            Mty_alias _, (Pwith_module _ | Pwith_type _) ->
+            Mty_alias _, (With_module _ | With_type _) ->
               (* A module alias cannot be refined, so keep it
                  and just check that the constraint is correct *)
               item
@@ -583,26 +661,16 @@ let merge_constraint initial_env remove_aliases loc sg constr =
   try
     let names = Longident.flatten lid.txt in
     let (tcstr, sg) = merge_signature initial_env sg names in
-    if destructive_substitution then (
-      match List.rev !real_ids with
-      | [] -> assert false
-      | last :: rest ->
-        (* The last item is the one that's removed. We don't need to check how
-           it's used since it's replaced by a more specific type/module. *)
-        assert (match last with Pident _ -> true | _ -> false);
-        match rest with
-        | [] -> ()
-        | _ :: _ ->
-          check_usage_of_path_of_substituted_item
-            rest initial_env sg ~loc ~lid;
-    );
+    if destructive_substitution then
+      check_usage_after_substitution ~loc ~lid initial_env !real_ids
+        !unpackable_modtype sg;
     let sg =
     match tcstr with
     | (_, _, Twith_typesubst tdecl) ->
        let how_to_extend_subst =
          let sdecl =
            match constr with
-           | Pwith_typesubst (_, sdecl) -> sdecl
+           | With_typesubst sdecl -> sdecl
            | _ -> assert false
          in
          match type_decl_is_alias sdecl with
@@ -635,6 +703,10 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
+    | (_, _, Twith_modtypesubst tmty) ->
+        let add s p = Subst.add_modtype_path p tmty.mty_type s in
+        let sub = List.fold_left add Subst.identity !real_ids in
+        Subst.signature Make_local sub sg
     | _ ->
        sg
     in
@@ -722,8 +794,10 @@ let rec approx_modtype env smty =
       List.iter
         (fun sdecl ->
           match sdecl with
-          | Pwith_type _ -> ()
-          | Pwith_typesubst _ -> ()
+          | Pwith_type _
+          | Pwith_typesubst _
+          | Pwith_modtype _
+          | Pwith_modtypesubst _  -> ()
           | Pwith_module (_, lid') ->
               (* Lookup the module to make sure that it is not recursive.
                  (GPR#1626) *)
@@ -816,6 +890,13 @@ and approx_sig env ssg =
             Env.enter_modtype ~scope d.pmtd_name.txt info env
           in
           Sig_modtype(id, info, Exported) :: approx_sig newenv srem
+      | Psig_modtypesubst d ->
+          let info = approx_modtype_info env d in
+          let scope = Ctype.create_scope () in
+          let (_id, newenv) =
+            Env.enter_modtype ~scope d.pmtd_name.txt info env
+          in
+          approx_sig newenv srem
       | Psig_open sod ->
           let _, env = type_open_descr env sod in
           approx_sig env srem
@@ -865,6 +946,7 @@ module Signature_names : sig
     | `From_open
     | `Shadowable of Ident.t * Location.t
     | `Substituted_away of Subst.t
+    | `Unpackable_modtype_substituted_away of Ident.t * Subst.t
   ]
 
   val create : unit -> t
@@ -891,6 +973,7 @@ end = struct
   type info = [
     | `From_open
     | `Substituted_away of Subst.t
+    | `Unpackable_modtype_substituted_away of Ident.t * Subst.t
     | bound_info
   ]
 
@@ -901,6 +984,7 @@ end = struct
   type to_be_removed = {
     mutable subst: Subst.t;
     mutable hide: (Sig_component_kind.t * Location.t * hide_reason) Ident.Map.t;
+    mutable unpackable_modtypes: Ident.Set.t;
   }
 
   type names_infos = (string, bound_info) Hashtbl.t
@@ -935,6 +1019,7 @@ end = struct
     to_be_removed = {
       subst = Subst.identity;
       hide = Ident.Map.empty;
+      unpackable_modtypes = Ident.Set.empty;
     };
   }
 
@@ -953,7 +1038,11 @@ end = struct
     let to_be_removed = t.to_be_removed in
     match info with
     | `Substituted_away s ->
-        to_be_removed.subst <- Subst.compose s to_be_removed.subst
+        to_be_removed.subst <- Subst.compose s to_be_removed.subst;
+    | `Unpackable_modtype_substituted_away (id,s) ->
+        to_be_removed.subst <- Subst.compose s to_be_removed.subst;
+        to_be_removed.unpackable_modtypes <-
+          Ident.Set.add id to_be_removed.unpackable_modtypes
     | `From_open ->
         to_be_removed.hide <-
           Ident.Map.add id (cl, loc, From_open) to_be_removed.hide
@@ -1010,6 +1099,31 @@ end = struct
     in
     check component_kind names loc id info
 
+  (*
+    Before applying local module type substitutions where the
+    right-hand side is not a path, we need to check that those module types
+    where never used to pack modules. For instance
+    {[
+    module type T := sig end
+    val x: (module T)
+    ]}
+    should raise an error.
+  *)
+  let check_unpackable_modtypes ~loc ~env to_remove component =
+    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then begin
+      let iterator =
+        let error p = Unpackable_local_modtype_subst p in
+        let paths =
+          List.map (fun id -> Pident id)
+            (Ident.Set.elements to_remove.unpackable_modtypes)
+        in
+        check_usage_of_module_types ~loc ~error ~paths
+          (ref (lazy env)) Btype.type_iterators
+      in
+      iterator.Btype.it_signature_item iterator component;
+      Btype.(unmark_iterators.it_signature_item unmark_iterators) component
+    end
+
   (* We usually require name uniqueness of signature components (e.g. types,
      modules, etc), however in some situation reusing the name is allowed: if
      the component is a value or an extension, or if the name is introduced by
@@ -1050,7 +1164,10 @@ end = struct
           if to_remove.subst == Subst.identity then
             component
           else
-            Subst.signature_item Keep to_remove.subst component
+            begin
+              check_unpackable_modtypes ~loc:user_loc ~env to_remove component;
+              Subst.signature_item Keep to_remove.subst component
+            end
         in
         let component =
           match ids_to_remove with
@@ -1186,13 +1303,7 @@ and transl_modtype_aux env smty =
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
       let remove_aliases = has_remove_aliases_attribute smty.pmty_attributes in
       let (rev_tcstrs, final_sg) =
-        List.fold_left
-          (fun (rev_tcstrs,sg) sdecl ->
-            let (tcstr, sg) =
-              merge_constraint env remove_aliases smty.pmty_loc sg sdecl
-            in
-            (tcstr :: rev_tcstrs, sg)
-        )
+        List.fold_left (transl_with ~loc:smty.pmty_loc env remove_aliases)
         ([],init_sg) constraints in
       let scope = Ctype.create_scope () in
       mkmty (Tmty_with ( body, List.rev rev_tcstrs))
@@ -1204,6 +1315,28 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+
+and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
+  let lid, with_info = match constr with
+    | Pwith_type (l,decl) ->l , With_type decl
+    | Pwith_typesubst (l,decl) ->l , With_typesubst decl
+    | Pwith_module (l,l') ->
+        let path, md = Env.lookup_module ~loc l'.txt env in
+        l , With_module {lid=l';path;md; remove_aliases}
+    | Pwith_modsubst (l,l') ->
+        let path, md' = Env.lookup_module ~loc l'.txt env in
+        l , With_modsubst (l',path,md')
+    | Pwith_modtype (l,smty) ->
+        let mty = transl_modtype env smty in
+        l, With_modtype mty
+    | Pwith_modtypesubst (l,smty) ->
+        let mty = transl_modtype env smty in
+        l, With_modtypesubst mty
+  in
+  let (tcstr, sg) = merge_constraint env loc sg lid with_info in
+  (tcstr :: rev_tcstrs, sg)
+
+
 
 and transl_signature env sg =
   let names = Signature_names.create () in
@@ -1393,10 +1526,30 @@ and transl_signature env sg =
               decls rem,
             final_env
         | Psig_modtype pmtd ->
-            let newenv, mtd, sg = transl_modtype_decl names env pmtd in
+            let newenv, mtd, sg = transl_modtype_decl env pmtd in
+            Signature_names.check_modtype names pmtd.pmtd_loc mtd.mtd_id;
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
             sg :: rem,
+            final_env
+        | Psig_modtypesubst pmtd ->
+            let newenv, mtd, _sg = transl_modtype_decl env pmtd in
+            let info =
+              let mty = match mtd.mtd_type with
+                | Some tmty -> tmty.mty_type
+                | None ->
+                    (* parsetree invariant, see Ast_invariants *)
+                    assert false
+              in
+              let subst = Subst.add_modtype mtd.mtd_id mty Subst.identity in
+              match mty with
+              | Mty_ident _ -> `Substituted_away subst
+              | _ -> `Unpackable_modtype_substituted_away (mtd.mtd_id,subst)
+            in
+            Signature_names.check_modtype ~info names pmtd.pmtd_loc mtd.mtd_id;
+            let (trem, rem, final_env) = transl_sig newenv srem in
+            mksig (Tsig_modtypesubst mtd) env loc :: trem,
+            rem,
             final_env
         | Psig_open sod ->
             let (od, newenv) = type_open_descr env sod in
@@ -1503,11 +1656,11 @@ and transl_signature env sg =
        sg
     )
 
-and transl_modtype_decl names env pmtd =
+and transl_modtype_decl env pmtd =
   Builtin_attributes.warning_scope pmtd.pmtd_attributes
-    (fun () -> transl_modtype_decl_aux names env pmtd)
+    (fun () -> transl_modtype_decl_aux env pmtd)
 
-and transl_modtype_decl_aux names env
+and transl_modtype_decl_aux env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
   let tmty =
     Option.map (transl_modtype (Env.in_signature true env)) pmtd_type
@@ -1522,7 +1675,6 @@ and transl_modtype_decl_aux names env
   in
   let scope = Ctype.create_scope () in
   let (id, newenv) = Env.enter_modtype ~scope pmtd_name.txt decl env in
-  Signature_names.check_modtype names pmtd_loc id;
   let mtd =
     {
      mtd_id=id;
@@ -2334,7 +2486,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         newenv
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
-        let newenv, mtd, sg = transl_modtype_decl names env pmtd in
+        let newenv, mtd, sg = transl_modtype_decl env pmtd in
+        Signature_names.check_modtype names pmtd.pmtd_loc mtd.mtd_id;
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
         let (od, sg, newenv) =
@@ -2843,6 +2996,10 @@ let report_error ppf = function
         "@[<v>Destructive substitutions are not supported for constrained @ \
               types (other than when replacing a type constructor with @ \
               a type constructor with the same arguments).@]"
+  | With_cannot_remove_packed_modtype (p,mty) ->
+      fprintf ppf
+        "This `with' constraint@ %s := %a@ makes a packed module ill-formed."
+        (Path.name p) Printtyp.modtype mty
   | Repeated_name(kind, name) ->
       fprintf ppf
         "@[Multiple definition of the %s name %s.@ \
@@ -2928,6 +3085,12 @@ let report_error ppf = function
         Ident.print opened_item_id
   | Invalid_type_subst_rhs ->
       fprintf ppf "Only type synonyms are allowed on the right of :="
+  | Unpackable_local_modtype_subst p ->
+      fprintf ppf
+        "The module type@ %s@ is not a valid type for a packed module:@ \
+         it is defined as a local substitution for a non-path module type."
+        (Path.name p)
+
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)

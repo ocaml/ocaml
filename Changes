@@ -26,6 +26,11 @@ Working version
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
 
+- #10133: module type substitutions
+  Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
+  and their local equivalent `module type T := sig type u end`
+  (Florian Angeletti, review by Gabriel Radanne and Leo White)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,

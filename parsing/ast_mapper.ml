@@ -293,10 +293,14 @@ module MT = struct
         Pwith_type (map_loc sub lid, sub.type_declaration sub d)
     | Pwith_module (lid, lid2) ->
         Pwith_module (map_loc sub lid, map_loc sub lid2)
+    | Pwith_modtype (lid, mty) ->
+        Pwith_modtype (map_loc sub lid, sub.module_type sub mty)
     | Pwith_typesubst (lid, d) ->
         Pwith_typesubst (map_loc sub lid, sub.type_declaration sub d)
     | Pwith_modsubst (s, lid) ->
         Pwith_modsubst (map_loc sub s, map_loc sub lid)
+    | Pwith_modtypesubst (lid, mty) ->
+        Pwith_modtypesubst (map_loc sub lid, sub.module_type sub mty)
 
   let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
     let open Sig in
@@ -314,6 +318,8 @@ module MT = struct
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
     | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
+    | Psig_modtypesubst x ->
+        modtype_subst ~loc (sub.module_type_declaration sub x)
     | Psig_open x -> open_ ~loc (sub.open_description sub x)
     | Psig_include x -> include_ ~loc (sub.include_description sub x)
     | Psig_class l -> class_ ~loc (List.map (sub.class_description sub) l)
