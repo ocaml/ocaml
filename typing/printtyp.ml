@@ -1475,7 +1475,7 @@ let tree_of_method sch (lab, priv, virt, ty) =
 
 let rec prepare_class_type params = function
   | Cty_constr (_p, tyl, cty) ->
-      let sty = Ctype.self_type_row cty in
+      let sty = Btype.self_type_row cty in
       if List.memq (proxy sty) !visited_objects
       || not (List.for_all is_Tvar params)
       || List.exists (deep_occur sty) tyl
@@ -1496,7 +1496,7 @@ let rec prepare_class_type params = function
 let rec tree_of_class_type sch params =
   function
   | Cty_constr (p', tyl, cty) ->
-      let sty = Ctype.self_type_row cty in
+      let sty = Btype.self_type_row cty in
       if List.memq (proxy sty) !visited_objects
       || not (List.for_all is_Tvar params)
       then
@@ -1579,7 +1579,7 @@ let tree_of_class_declaration id cl rs =
   reset_except_context ();
   List.iter add_alias params;
   prepare_class_type params cl.cty_type;
-  let row = Ctype.self_type_row cl.cty_type in
+  let row = Btype.self_type_row cl.cty_type in
   List.iter mark_loops params;
 
   List.iter check_name_of_type (List.map proxy params);
@@ -1601,13 +1601,13 @@ let tree_of_cltype_declaration id cl rs =
   reset_except_context ();
   List.iter add_alias params;
   prepare_class_type params cl.clty_type;
-  let row = Ctype.self_type_row cl.clty_type in
+  let row = Btype.self_type_row cl.clty_type in
   List.iter mark_loops params;
 
   List.iter check_name_of_type (List.map proxy params);
   if is_aliased row then check_name_of_type (proxy row);
 
-  let sign = Ctype.signature_of_class_type cl.clty_type in
+  let sign = Btype.signature_of_class_type cl.clty_type in
   let has_virtual_vars =
     Vars.fold (fun _ (_,vr,_) b -> vr = Virtual || b)
       sign.csig_vars false

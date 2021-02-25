@@ -286,9 +286,9 @@ class printable_color_point y c = object (self)
     Format.print_string ")"
 end;;
 [%%expect{|
-Line 3, characters 10-27:
+Line 3, characters 2-36:
 3 |   inherit printable_point y as super
-              ^^^^^^^^^^^^^^^^^
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class printable_point :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)

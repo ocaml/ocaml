@@ -470,9 +470,9 @@ class e () = object
   method b = b
 end;;
 [%%expect{|
-Line 3, characters 10-13:
+Line 3, characters 2-13:
 3 |   inherit c 5
-              ^^^
+      ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class c :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
@@ -481,9 +481,9 @@ Line 4, characters 6-7:
           ^
 Warning 13 [instance-variable-override]: the instance variable y is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-Line 6, characters 10-13:
+Line 6, characters 2-13:
 6 |   inherit d 7
-              ^^^
+      ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class d :
   t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
