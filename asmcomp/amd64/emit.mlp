@@ -409,12 +409,16 @@ let emit_float_test cmp i lbl =
 
 (* Deallocate the stack frame before a return or tail call *)
 
-let output_epilogue f =
+let output_epilogue ?scratch f =
   if !frame_required then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
-      I.add (int n) rsp;
+      (match scratch with
+      | Some reg when not !fastcode_flag && n = 8 ->
+        I.pop reg
+      | _ ->
+        I.add (int n) rsp);
       cfi_adjust_cfa_offset (-n);
     end;
     if fp then I.pop rbp;
@@ -492,7 +496,10 @@ let emit_instr fallthrough i =
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0
       then begin
-        I.sub (int n) rsp;
+        if n = 8 && not !fastcode_flag then
+          (I.push rax)
+        else
+          (I.sub (int n) rsp);
         cfi_adjust_cfa_offset n;
       end;
     end
@@ -728,7 +735,7 @@ let emit_instr fallthrough i =
   | Lreloadretaddr ->
       ()
   | Lreturn ->
-      output_epilogue begin fun () ->
+      output_epilogue ~scratch:rbx begin fun () ->
         I.ret ()
       end
   | Llabel lbl ->
