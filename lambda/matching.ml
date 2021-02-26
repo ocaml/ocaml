@@ -1153,7 +1153,7 @@ let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
 
   Note: we assume that the first column of each pattern is coherent -- all
   patterns match values of the same type. This comes from the fact that
-  we make agressive splitting decisions, splitting pattern heads that
+  we make aggressive splitting decisions, splitting pattern heads that
   may be different into different submatrices; in particular, in a given
   submatrix the first column is formed of first arguments to the same
   constructor.
@@ -1168,7 +1168,7 @@ let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
   in a leftmost column.
 
   Parmatch has to be more conservative because it splits less
-  agressively: submatrices will contain not just the arguments of
+  aggressively: submatrices will contain not just the arguments of
   a given pattern head, but also other lines that may be compatible with
   it, in particular those with a leftmost omega and those starting with
   an extension constructor that may be equal to it.
@@ -1323,7 +1323,7 @@ and precompile_var args cls def k =
                        (fun (mat, e) -> add_omega_column mat, e)
                        top_default (* assuming it'd been bound. *)
                    ]}
-                   As we would be loosing information: [def] is more precise
+                   As we would be losing information: [def] is more precise
                    than [add_omega_column (pop_column def)]. *)
                 List.fold_right
                   (fun (e, pmh) ->
@@ -3429,8 +3429,23 @@ let rec map_return f = function
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
   | Lstaticcatch (l1, b, l2) ->
       Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Lswitch (s, sw, loc) ->
+      let map_cases cases =
+        List.map (fun (i, l) -> i, map_return f l) cases in
+      Lswitch (s,
+               { sw with sw_consts = map_cases sw.sw_consts;
+                         sw_blocks = map_cases sw.sw_blocks;
+                         sw_failaction =
+                           Option.map (map_return f) sw.sw_failaction },
+               loc)
+  | Lstringswitch (s, cases, def, loc) ->
+      Lstringswitch(s,
+                    List.map (fun (s,l) -> s, map_return f l) cases,
+                    Option.map (map_return f) def,
+                    loc)
   | (Lstaticraise _ | Lprim (Praise _, _, _)) as l -> l
-  | l -> f l
+  | (Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lsend _ | Lprim _
+    | Lwhile _ | Lfor _ | Lassign _ | Lifused _) as l -> f l
 
 (* The 'opt' reference indicates if the optimization is worthy.
 

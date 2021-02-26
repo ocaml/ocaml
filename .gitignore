@@ -121,6 +121,7 @@ _build
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
+/ocamltest/ocamltest.html
 
 /otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli

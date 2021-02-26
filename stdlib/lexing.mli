@@ -110,7 +110,7 @@ val from_function : ?with_positions:bool -> (bytes -> int -> int) -> lexbuf
 
 val set_position : lexbuf -> position -> unit
 (** Set the initial tracked input position for [lexbuf] to a custom value.
-   Ignores [pos_fname]. See {!set_file} for changing this field.
+   Ignores [pos_fname]. See {!set_filename} for changing this field.
    @since 4.11 *)
 
 val set_filename: lexbuf -> string -> unit

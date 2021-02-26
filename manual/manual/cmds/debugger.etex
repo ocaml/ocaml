@@ -315,7 +315,7 @@ Set a breakpoint at code address \var{frag}":"\var{pc}.  The integer
 \var{frag} is the identifier of a code fragment, a set of modules that
 have been loaded at once, either initially or with the "Dynlink"
 module. The integer \var{pc} is the instruction counter within this
-code fragment.  If \var{frag} is ommited, it defaults to 0, which is
+code fragment.  If \var{frag} is omitted, it defaults to 0, which is
 the code fragment of the program loaded initially.
 
 \item["delete "\optvar{breakpoint-numbers}]
