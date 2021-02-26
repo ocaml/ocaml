@@ -887,7 +887,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
             str (Uconst_float_array (List.map float_of_string sl))
         | Const_immstring s ->
             str (Uconst_string s)
-        | Const_base (Const_string (s, _)) ->
+        | Const_base (Const_string (s, _, _)) ->
               (* Strings (even literal ones) must be assumed to be mutable...
                  except when OCaml has been configured with
                  -safe-string.  Passing -safe-string at compilation

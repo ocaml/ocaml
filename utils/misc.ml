@@ -56,9 +56,7 @@ let protect_refs =
   fun refs f ->
     let backup = List.map (fun (R (r, _)) -> R (r, !r)) refs in
     set_refs refs;
-    match f () with
-    | x           -> set_refs backup; x
-    | exception e -> set_refs backup; raise e
+    Fun.protect ~finally:(fun () -> set_refs backup) f
 
 (* List functions *)
 

@@ -178,7 +178,11 @@ let check_consistency file_name cu =
             then Consistbl.set crc_interfaces name crc file_name
             else Consistbl.check crc_interfaces name crc file_name)
       cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
+  with Consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = user;
+      original_source = auth;
+    } ->
     raise(Error(Inconsistent_import(name, user, auth)))
   end;
   begin try

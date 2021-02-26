@@ -66,7 +66,7 @@ let match_expect_extension (ext : Parsetree.extension) =
     in
     let string_constant (e : Parsetree.expression) =
       match e.pexp_desc with
-      | Pexp_constant (Pconst_string (str, Some tag)) ->
+      | Pexp_constant (Pconst_string (str, _, Some tag)) ->
         { str; tag }
       | _ -> invalid_payload ()
     in

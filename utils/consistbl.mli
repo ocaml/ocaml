@@ -69,11 +69,12 @@ end) : sig
         (* [filter pred tbl] removes from [tbl] table all (name, CRC) pairs
            such that [pred name] is [false]. *)
 
-  exception Inconsistency of Module_name.t * filepath * filepath
-        (* Raised by [check] when a CRC mismatch is detected.
-           First string is the name of the compilation unit.
-           Second string is the source that caused the inconsistency.
-           Third string is the source that set the CRC. *)
+  exception Inconsistency of {
+    unit_name : Module_name.t;
+    inconsistent_source : string;
+    original_source : string;
+  }
+  (* Raised by [check] when a CRC mismatch is detected. *)
 
   exception Not_available of Module_name.t
         (* Raised by [check_noadd] when a name doesn't have an associated

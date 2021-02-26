@@ -2631,7 +2631,7 @@ let combine_constant loc arg cst partial ctx def
           List.map
             (fun (c, act) ->
               match c with
-              | Const_string (s, _) -> (s, act)
+              | Const_string (s, _, _) -> (s, act)
               | _ -> assert false)
             const_lambda_list
         in
@@ -3345,7 +3345,7 @@ let partial_function loc () =
               Lconst
                 (Const_block
                    ( 0,
-                     [ Const_base (Const_string (fname, None));
+                     [ Const_base (Const_string (fname, loc, None));
                        Const_base (Const_int line);
                        Const_base (Const_int char)
                      ] ))

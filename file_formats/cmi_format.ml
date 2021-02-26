@@ -28,17 +28,24 @@ type error =
 
 exception Error of error
 
+(* these type abbreviations are not exported;
+   they are used to provide consistency across
+   input_value and output_value usage. *)
+type signature = Types.signature_item list
+type flags = pers_flags list
+type header = modname * signature
+
 type cmi_infos = {
-    cmi_name : Misc.modname;
-    cmi_sign : Types.signature_item list;
+    cmi_name : modname;
+    cmi_sign : signature;
     cmi_crcs : crcs;
-    cmi_flags : pers_flags list;
+    cmi_flags : flags;
 }
 
 let input_cmi ic =
-  let (name, sign) = input_value ic in
-  let crcs = input_value ic in
-  let flags = input_value ic in
+  let (name, sign) = (input_value ic : header) in
+  let crcs = (input_value ic : crcs) in
+  let flags = (input_value ic : flags) in
   {
       cmi_name = name;
       cmi_sign = sign;
@@ -78,12 +85,12 @@ let read_cmi filename =
 let output_cmi filename oc cmi =
 (* beware: the provided signature must have been substituted for saving *)
   output_string oc Config.cmi_magic_number;
-  output_value oc (cmi.cmi_name, cmi.cmi_sign);
+  output_value oc ((cmi.cmi_name, cmi.cmi_sign) : header);
   flush oc;
   let crc = Digest.file filename in
   let crcs = (cmi.cmi_name, Some crc) :: cmi.cmi_crcs in
-  output_value oc crcs;
-  output_value oc cmi.cmi_flags;
+  output_value oc (crcs : crcs);
+  output_value oc (cmi.cmi_flags : flags);
   crc
 
 (* Error report *)

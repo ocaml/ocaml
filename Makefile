@@ -1357,7 +1357,9 @@ distclean: clean
 
 include .depend
 
-Makefile.config Makefile.common:
+Makefile.config Makefile.common: config.status
+
+config.status:
 	@echo "Please refer to the installation instructions:"
 	@echo "- In file INSTALL for Unix systems."
 	@echo "- In file README.win32.adoc for Windows systems."

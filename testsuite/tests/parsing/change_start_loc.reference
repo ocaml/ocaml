@@ -1,0 +1,6 @@
+Incomplete version:
+File "file.ml", line 100, characters 10--999:
+Error: Syntax error
+Good version:
+File "file.ml", line 100, characters 10-11:
+Error: Syntax error

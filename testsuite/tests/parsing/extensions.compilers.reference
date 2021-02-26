@@ -59,7 +59,7 @@
             structure_item (extensions.ml[10,176+40]..[10,176+45])
               Pstr_eval
               expression (extensions.ml[10,176+40]..[10,176+45])
-                Pexp_constant PConst_string("foo",None)
+                Pexp_constant PConst_string("foo",(extensions.ml[10,176+41]..[10,176+44]),None)
           ]
     ]
   structure_item (extensions.ml[12,224+0]..[12,224+26])
