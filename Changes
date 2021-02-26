@@ -16,9 +16,11 @@ Working version
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8920: New API for statistical memory profiling in Memprof.Gc. The
-  new version does no longer use ephemerons and allows registering
-  callbacks for promotion and deallocation of memory blocks.
+- #8920, #9238, #9239: New API for statistical memory profiling in
+  Memprof.Gc. The new version does no longer use ephemerons and allows
+  registering callbacks for promotion and deallocation of memory
+  blocks.
+  The new API no longer gives the block tags to the allocation callback.
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez
    and Gabriel Scherer)
 
@@ -35,6 +37,9 @@ Working version
   (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
 
 ### Standard library:
+
+- #9235: Add Array.exists2 and Array.for_all2
+  (Bernhard Schommer, review by Armaël Guéneau)
 
 - #8771: Lexing: add set_position and set_filename to change (fake)
    the initial tracking position of the lexbuf.
