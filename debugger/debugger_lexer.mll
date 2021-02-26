@@ -16,7 +16,7 @@
 
 {
 
-open Parser
+open Debugger_parser
 
 exception Int_overflow
 

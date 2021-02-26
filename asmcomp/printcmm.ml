@@ -95,15 +95,19 @@ let phantom_defining_expr_opt ppf defining_expr =
   | None -> Format.pp_print_string ppf "()"
   | Some defining_expr -> phantom_defining_expr ppf defining_expr
 
+let location d =
+  if not !Clflags.locations then ""
+  else Debuginfo.to_string d
+
 let operation d = function
-  | Capply _ty -> "app" ^ Debuginfo.to_string d
+  | Capply _ty -> "app" ^ location d
   | Cextcall(lbl, _ty, _alloc, _) ->
-      Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
+      Printf.sprintf "extcall \"%s\"%s" lbl (location d)
   | Cload {memory_chunk; mutability} -> (
     match mutability with
     | Asttypes.Immutable -> Printf.sprintf "load %s" (chunk memory_chunk)
     | Asttypes.Mutable   -> Printf.sprintf "load_mut_imm %s" (chunk memory_chunk) )
-  | Calloc -> "alloc" ^ Debuginfo.to_string d
+  | Calloc -> "alloc" ^ location d
   | Cstore (c, init) ->
     let init =
       match init with
@@ -137,8 +141,8 @@ let operation d = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
-  | Craise k -> Lambda.raise_kind k ^ Debuginfo.to_string d
-  | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
+  | Craise k -> Lambda.raise_kind k ^ location d
+  | Ccheckbound -> "checkbound" ^ location d
   | Cpoll -> "poll"
   | Cnop -> "nop"
 
@@ -148,7 +152,7 @@ let rec expr ppf = function
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cblockheader(n, d) ->
     fprintf ppf "block-hdr(%s)%s"
-      (Nativeint.to_string n) (Debuginfo.to_string d)
+      (Nativeint.to_string n) (location d)
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
   | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
   | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
@@ -266,7 +270,7 @@ let fundecl ppf f =
        fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
   fprintf ppf "@[<1>(function%s %s@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
-         (Debuginfo.to_string f.fun_dbg) f.fun_name
+         (location f.fun_dbg) f.fun_name
          print_cases f.fun_args sequence f.fun_body
 
 let data_item ppf = function

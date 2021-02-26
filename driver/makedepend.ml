@@ -310,7 +310,12 @@ let read_parse_and_extract parse_function extract_function def ast_kind
       let bound_vars =
         List.fold_left
           (fun bv modname ->
-            Depend.open_module bv (Longident.parse modname))
+             let lid =
+               let lexbuf = Lexing.from_string modname in
+               Location.init lexbuf
+                 (Printf.sprintf "command line argument: -open %S" modname);
+               Parse.simple_module_path lexbuf in
+             Depend.open_module bv lid)
           !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in

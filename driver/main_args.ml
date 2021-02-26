@@ -706,6 +706,14 @@ let mk_dunique_ids f =
   "-dunique-ids", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dno_locations f =
+  "-dno-locations", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dlocations f =
+  "-dlocations", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dsource f =
   "-dsource", Arg.Unit f, " (undocumented)"
 ;;
@@ -922,6 +930,9 @@ module type Core_options = sig
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
+  val _dno_locations : unit -> unit
+  val _dlocations : unit -> unit
+
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
@@ -1214,6 +1225,8 @@ struct
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1279,6 +1292,8 @@ struct
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1406,6 +1421,8 @@ struct
     mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1678,12 +1695,14 @@ module Default = struct
     let _I dir = include_dirs := (dir :: (!include_dirs))
     let _color = Misc.set_or_ignore color_reader.parse color
     let _dlambda = set dump_lambda
-    let _dno_unique_ids = clear unique_ids
     let _dparsetree = set dump_parsetree
     let _drawlambda = set dump_rawlambda
     let _dsource = set dump_source
     let _dtypedtree = set dump_typedtree
     let _dunique_ids = set unique_ids
+    let _dno_unique_ids = clear unique_ids
+    let _dlocations = set locations
+    let _dno_locations = clear locations
     let _error_style =
       Misc.set_or_ignore error_style_reader.parse error_style
     let _nopervasives = set nopervasives
