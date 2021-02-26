@@ -1991,32 +1991,35 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
 
 let univar_pairs = ref []
 
-(* assumption: [ty] is fully generalized. *)
-let reify_univars ty =
-  let rec subst_univar scope vars ty =
-    let ty = repr ty in
-    if ty.level >= lowest_level then begin
-      ty.level <- pivot_level - ty.level;
-      match ty.desc with
-      | Tvar name ->
-          For_copy.save_desc scope ty ty.desc;
-          let t = newty2 ty.level (Tunivar name) in
-          vars := t :: !vars;
-          ty.desc <- Tsubst t
-      | _ ->
-          iter_type_expr (subst_univar scope vars) ty
-    end
-  in
-  let vars = ref [] in
-  let ty =
-    For_copy.with_scope (fun scope ->
-      subst_univar scope vars ty;
-      unmark_type ty;
-      copy scope ty
-    )
-  in
-  newty2 ty.level (Tpoly(repr ty, !vars))
+(**** Instantiate a generic type into a poly type ***)
 
+let polyfy env ty vars =
+  let subst_univar scope ty =
+    let ty = repr ty in
+    match ty.desc with
+    | Tvar name when ty.level = generic_level ->
+        For_copy.save_desc scope ty ty.desc;
+        let t = newty (Tunivar name) in
+        ty.desc <- Tsubst t;
+        Some t
+    | _ -> None
+  in
+  (* need to expand twice? cf. Ctype.unify2 *)
+  let vars = List.map (expand_head env) vars in
+  let vars = List.map (expand_head env) vars in
+  For_copy.with_scope (fun scope ->
+    let vars' = List.filter_map (subst_univar scope) vars in
+    let ty = copy scope ty in
+    let ty = newty2 ty.level (Tpoly(repr ty, vars')) in
+    let complete = List.length vars = List.length vars' in
+    ty, complete
+  )
+
+(* assumption: [ty] is fully generalized. *)
+let reify_univars env ty =
+  let vars = free_variables ty in
+  let ty, _ = polyfy env ty vars in
+  ty
 
                               (*****************)
                               (*  Unification  *)
@@ -2850,7 +2853,8 @@ and unify_row env row1 row2 =
   end;
   let fixed1 = fixed_explanation row1 and fixed2 = fixed_explanation row2 in
   let more = match fixed1, fixed2 with
-    | Some _, _ -> rm1
+    | Some _, Some _ -> if rm2.level < rm1.level then rm2 else rm1
+    | Some _, None -> rm1
     | None, Some _ -> rm2
     | None, None -> newty2 (min rm1.level rm2.level) (Tvar None)
   in

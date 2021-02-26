@@ -2180,28 +2180,24 @@ let rec list_labels_aux env visited ls ty_fun =
 let list_labels env ty =
   wrap_trace_gadt_instances env (list_labels_aux env [] []) ty
 
-(* Check that all univars are safe in a type *)
-let check_univars env expans kind exp ty_expected vars =
-  if expans && maybe_expansive exp then
-    lower_contravariant env exp.exp_type;
-  (* need to expand twice? cf. Ctype.unify2 *)
-  let vars = List.map (expand_head env) vars in
-  let vars = List.map (expand_head env) vars in
-  let vars' =
-    List.filter
-      (fun t ->
-        let t = repr t in
-        generalize t;
-        match t.desc with
-          Tvar name when t.level = generic_level ->
-            set_type_desc t (Tunivar name); true
-        | _ -> false)
-      vars in
-  if List.length vars = List.length vars' then () else
-  let ty = newgenty (Tpoly(repr exp.exp_type, vars'))
-  and ty_expected = repr ty_expected in
-  raise (Error (exp.exp_loc, env,
-                Less_general(kind, [Unification_trace.diff ty ty_expected])))
+(* Check that all univars are safe in a type. Both exp.exp_type and
+   ty_expected should already be generalized. *)
+let check_univars env kind exp ty_expected vars =
+  let ty, complete = polyfy env exp.exp_type vars in
+  let ty_expected = instance ty_expected in
+  if not complete then
+    raise (Error (exp.exp_loc, env,
+                  Less_general(kind, [Unification_trace.diff ty ty_expected])));
+  try
+    unify env ty ty_expected
+  with Unify trace ->
+    raise(Error(exp.exp_loc, env, Expr_type_clash(trace, None, None)))
+
+let generalize_and_check_univars env kind exp ty_expected vars =
+  generalize exp.exp_type;
+  generalize ty_expected;
+  List.iter generalize vars;
+  check_univars env kind exp ty_expected vars
 
 let check_partial_application statement exp =
   let rec f delay =
@@ -3429,7 +3425,7 @@ and type_expect_
             end;
             let exp = type_expect env sbody (mk_expected ty'') in
             end_def ();
-            check_univars env false "method" exp ty_expected vars;
+            generalize_and_check_univars env "method" exp ty_expected vars;
             { exp with exp_type = instance ty }
         | Tvar _ ->
             let exp = type_exp env sbody in
@@ -4024,8 +4020,13 @@ and type_label_exp create env loc ty_expected
     let arg = type_argument env sarg ty_arg (instance ty_arg) in
     end_def ();
     try
-      check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
-      arg
+      if (vars = []) then arg
+      else begin
+        if maybe_expansive arg then
+          lower_contravariant env arg.exp_type;
+        generalize_and_check_univars env "field value" arg label.lbl_arg vars;
+        {arg with exp_type = instance arg.exp_type}
+      end
     with exn when maybe_expansive arg -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
       Option.iter Btype.backtrack snap;
@@ -4033,13 +4034,16 @@ and type_label_exp create env loc ty_expected
       let arg = type_exp env sarg in
       end_def ();
       lower_contravariant env arg.exp_type;
-      unify_exp env arg ty_arg;
-      check_univars env false "field value" arg label.lbl_arg vars;
-      arg
+      begin_def ();
+      let arg = {arg with exp_type = instance arg.exp_type} in
+      unify_exp env arg (instance ty_arg);
+      end_def ();
+      generalize_and_check_univars env "field value" arg label.lbl_arg vars;
+      {arg with exp_type = instance arg.exp_type}
     with Error (_, _, Less_general _) as e -> raise e
     | _ -> raise exn    (* In case of failure return the first error *)
   in
-  (lid, label, {arg with exp_type = instance arg.exp_type})
+  (lid, label, arg)
 
 and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
@@ -4887,7 +4891,6 @@ and type_let
         if is_recursive then current_slot := slot;
         match pat.pat_type.desc with
         | Tpoly (ty, tl) ->
-            begin_def ();
             if !Clflags.principal then begin_def ();
             let vars, ty' = instance_poly ~keep_names:true true tl ty in
             if !Clflags.principal then begin
@@ -4898,12 +4901,13 @@ and type_let
               Builtin_attributes.warning_scope pvb_attributes
                   (fun () -> type_expect exp_env sexp (mk_expected ty'))
             in
-            end_def ();
-            check_univars env true "definition" exp pat.pat_type vars;
-            {exp with exp_type = instance exp.exp_type}
+            exp, Some vars
         | _ ->
-            Builtin_attributes.warning_scope pvb_attributes (fun () ->
-              type_expect exp_env sexp (mk_expected pat.pat_type)))
+            let exp =
+              Builtin_attributes.warning_scope pvb_attributes
+                (fun () -> type_expect exp_env sexp (mk_expected pat.pat_type))
+            in
+            exp, None)
       spat_sexp_list pat_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed then begin
@@ -4923,26 +4927,36 @@ and type_let
          )
     )
     pat_list
-    (List.map2 (fun (attrs, _) e -> attrs, e) spatl exp_list);
+    (List.map2 (fun (attrs, _) (e, _) -> attrs, e) spatl exp_list);
   let pvs = List.map (fun pv -> { pv with pv_type = instance pv.pv_type}) pvs in
   end_def();
   List.iter2
-    (fun pat exp ->
+    (fun pat (exp, _) ->
        if maybe_expansive exp then
          lower_contravariant env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
-  (* We also generalize expressions that are not bound to a variable.
-     This does not matter in general, but those types are shown by the
-     interactive toplevel, for example: {[
-       let _ = Array.get;;
-       - : 'a array -> int -> 'a = <fun>
-     ]} *)
-  List.iter (fun exp -> generalize exp.exp_type) exp_list;
+  List.iter2
+    (fun pat (exp, vars) ->
+       match vars with
+       | None ->
+         (* We generalize expressions even if they are not bound to a variable
+            and do not have an expliclit polymorphic type annotation.  This is
+            not needed in general, however those types may be shown by the
+            interactive toplevel, for example:
+            {[
+              let _ = Array.get;;
+              - : 'a array -> int -> 'a = <fun>
+            ]}
+            so we do it anyway. *)
+         generalize exp.exp_type
+       | Some vars ->
+         generalize_and_check_univars env "definition" exp pat.pat_type vars)
+    pat_list exp_list;
   let l = List.combine pat_list exp_list in
   let l =
     List.map2
-      (fun (p, e) pvb ->
+      (fun (p, (e, _)) pvb ->
         {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
          vb_loc=pvb.pvb_loc;
         })

@@ -16,7 +16,7 @@ typexpr:
       | polymorphic-variant-type
       | '<' ['..'] '>'
       | '<' method-type { ';' method-type } [';' || ';' '..'] '>'
-      | '#' class-path
+      | '#' classtype-path
       | typexpr '#' class-path
       | '(' typexpr { ',' typexpr } ')' '#' class-path
 ;
@@ -215,17 +215,17 @@ literature) that stands for any number of extra method types.
 
 \subsubsection*{sss:typexpr-sharp-types}{\#-types}
 
-The type @'#' class-path@ is a special kind of abbreviation. This
+The type @'#' classtype-path@ is a special kind of abbreviation. This
 abbreviation unifies with the type of any object belonging to a subclass
-of class @class-path@.
+of the class type @classtype-path@.
 %
 It is handled in a special way as it usually hides a type variable (an
 ellipsis, representing the methods that may be added in a subclass).
 In particular, it vanishes when the ellipsis gets instantiated.
 %
-Each type expression @'#' class-path@ defines a new type variable, so
-type @'#' class-path '->' '#' class-path@ is usually not the same as
-type @('#' class-path 'as' "'" ident) '->' "'" ident@.
+Each type expression @'#' classtype-path@ defines a new type variable, so
+type @'#' classtype-path '->' '#' classtype-path@ is usually not the same as
+type @('#' classtype-path 'as' "'" ident) '->' "'" ident@.
 %
 
 Use of \#-types to abbreviate polymorphic variant types is deprecated.

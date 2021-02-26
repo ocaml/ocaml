@@ -66,6 +66,21 @@ and ['a] d : unit -> object constraint 'a = int #c end
 |}];;
 (* class ['a] c : unit -> object constraint 'a = int end
    and ['a] d : unit -> object constraint 'a = int #c end *)
+(* Class type constraint *)
+module F(X:sig type t end) = struct
+  class type ['a] c = object
+    method m: 'a -> X.t
+  end
+end
+class ['a] c = object
+  constraint 'a = 'a #F(Int).c
+end
+[%%expect {|
+module F :
+  functor (X : sig type t end) ->
+    sig class type ['a] c = object method m : 'a -> X.t end end
+class ['a] c : object constraint 'a = < m : 'a -> Int.t; .. > end
+|}]
 
 (* Self as parameter *)
 class ['a] c (x : 'a) = object (self : 'b)

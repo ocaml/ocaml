@@ -3314,7 +3314,7 @@ atomic_type:
         { Ptyp_object ([], Closed) }
     | tys = actual_type_parameters
       HASH
-      cid = mkrhs(class_longident)
+      cid = mkrhs(clty_longident)
         { Ptyp_class(cid, tys) }
     | LBRACKET tag_field RBRACKET
         (* not row_field; see CONFLICTS *)

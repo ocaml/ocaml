@@ -488,6 +488,19 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    @since 4.08.0
 *)
 
+(**
+   [pp_update_geometry ppf (fun geo -> { geo with ... })] lets you
+   update a formatter's geometry in a way that is robust to extension
+   of the [geometry] record with new fields.
+
+   Raises an invalid argument exception if the returned geometry
+   does not satisfy {!check_geometry}.
+
+   @since 4.11.0
+*)
+val pp_update_geometry : formatter -> (geometry -> geometry) -> unit
+val update_geometry : (geometry -> geometry) -> unit
+
 val pp_get_geometry: formatter -> unit -> geometry
 val get_geometry: unit -> geometry
 (** Return the current geometry of the formatter
