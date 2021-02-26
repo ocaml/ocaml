@@ -693,8 +693,6 @@ module Color = struct
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
     pp_set_formatter_stag_functions ppf functions';
-    (* also setup margins *)
-    pp_set_margin ppf (pp_get_margin std_formatter());
     ()
 
   external isatty : out_channel -> bool = "caml_sys_isatty"

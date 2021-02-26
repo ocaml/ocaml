@@ -46,29 +46,27 @@ let escaped = function
       bytes_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
       unsafe_to_string s
 
-let lowercase c =
-  if (c >= 'A' && c <= 'Z')
-  || (c >= '\192' && c <= '\214')
-  || (c >= '\216' && c <= '\222')
-  then unsafe_chr(code c + 32)
-  else c
+let lowercase = function
+  | 'A' .. 'Z'
+  | '\192' .. '\214'
+  | '\216' .. '\222' as c ->
+    unsafe_chr(code c + 32)
+  | c -> c
 
-let uppercase c =
-  if (c >= 'a' && c <= 'z')
-  || (c >= '\224' && c <= '\246')
-  || (c >= '\248' && c <= '\254')
-  then unsafe_chr(code c - 32)
-  else c
+let uppercase = function
+  | 'a' .. 'z'
+  | '\224' .. '\246'
+  | '\248' .. '\254' as c ->
+    unsafe_chr(code c - 32)
+  | c -> c
 
-let lowercase_ascii c =
-  if (c >= 'A' && c <= 'Z')
-  then unsafe_chr(code c + 32)
-  else c
+let lowercase_ascii = function
+  | 'A' .. 'Z' as c -> unsafe_chr(code c + 32)
+  | c -> c
 
-let uppercase_ascii c =
-  if (c >= 'a' && c <= 'z')
-  then unsafe_chr(code c - 32)
-  else c
+let uppercase_ascii = function
+  | 'a' .. 'z' as c -> unsafe_chr(code c - 32)
+  | c -> c
 
 type t = char
 

@@ -113,7 +113,11 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
      sp[0] = accu; sp[1] = (value)(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
      domain_state->current_stack->sp = sp; }
-#define Restore_after_debugger { sp += 4; }
+#define Restore_after_debugger \
+   { CAMLassert(sp == domain_state->current_stack->sp); \
+     CAMLassert(sp[0] == accu); \
+     CAMLassert(sp[2] == env); \
+     sp += 4; }
 
 #ifdef THREADED_CODE
 #define Restart_curr_instr \

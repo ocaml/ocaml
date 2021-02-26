@@ -59,7 +59,6 @@ static value alloc_host_entry(struct hostent *entry)
   value res;
   value name = Val_unit, aliases = Val_unit;
   value addr_list = Val_unit, adr = Val_unit;
-  int addrtype;
 
   Begin_roots4 (name, aliases, addr_list, adr);
     name = caml_copy_string((char *)(entry->h_name));
@@ -72,13 +71,15 @@ static value alloc_host_entry(struct hostent *entry)
     entry_h_length = entry->h_length;
     addr_list =
       caml_alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
+    res = caml_alloc_small(4, 0);
+    Field(res, 0) = name;
+    Field(res, 1) = aliases;
     switch (entry->h_addrtype) {
-    case PF_UNIX:          addrtype = 0; break;
-    case PF_INET:          addrtype = 1; break;
-    default: /*PF_INET6 */ addrtype = 2; break;
+    case PF_UNIX:          Field(res, 2) = Val_int(0); break;
+    case PF_INET:          Field(res, 2) = Val_int(1); break;
+    default: /*PF_INET6 */ Field(res, 2) = Val_int(2); break;
     }
-    res = caml_alloc_4(0, name, aliases,
-                       Val_int(addrtype), addr_list);
+    Field(res, 3) = addr_list;
   End_roots();
   return res;
 }
