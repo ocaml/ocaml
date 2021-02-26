@@ -16,6 +16,12 @@ Working version
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+- #8920: New API for statistical memory profiling in Memprof.Gc. The
+  new version does no longer use ephemerons and allows registering
+  callbacks for promotion and deallocation of memory blocks.
+  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez
+   and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #8637, #8805: Record debug info for each allocation
