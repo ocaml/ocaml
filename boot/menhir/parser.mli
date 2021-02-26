@@ -137,11 +137,23 @@ val use_file: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.toplevel_p
 
 val toplevel_phrase: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.toplevel_phrase)
 
+val parse_val_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
+
 val parse_pattern: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.pattern)
+
+val parse_mty_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
+
+val parse_mod_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
+
+val parse_mod_ext_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
 
 val parse_expression: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.expression)
 
 val parse_core_type: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.core_type)
+
+val parse_constr_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
+
+val parse_any_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
 
 val interface: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.signature)
 
@@ -164,11 +176,23 @@ module Incremental : sig
   
   val toplevel_phrase: Lexing.position -> (Parsetree.toplevel_phrase) MenhirInterpreter.checkpoint
   
+  val parse_val_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
+  
   val parse_pattern: Lexing.position -> (Parsetree.pattern) MenhirInterpreter.checkpoint
+  
+  val parse_mty_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
+  
+  val parse_mod_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
+  
+  val parse_mod_ext_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
   
   val parse_expression: Lexing.position -> (Parsetree.expression) MenhirInterpreter.checkpoint
   
   val parse_core_type: Lexing.position -> (Parsetree.core_type) MenhirInterpreter.checkpoint
+  
+  val parse_constr_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
+  
+  val parse_any_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
   
   val interface: Lexing.position -> (Parsetree.signature) MenhirInterpreter.checkpoint
   

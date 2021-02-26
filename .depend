@@ -346,7 +346,8 @@ parsing/parse.cmx : \
     parsing/docstrings.cmx \
     parsing/parse.cmi
 parsing/parse.cmi : \
-    parsing/parsetree.cmi
+    parsing/parsetree.cmi \
+    parsing/longident.cmi
 parsing/parser.cmo : \
     parsing/syntaxerr.cmi \
     parsing/parsetree.cmi \
@@ -371,6 +372,7 @@ parsing/parser.cmx : \
     parsing/parser.cmi
 parsing/parser.cmi : \
     parsing/parsetree.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     parsing/docstrings.cmi \
     parsing/camlinternalMenhirLib.cmi
@@ -1407,6 +1409,7 @@ typing/typemod.cmo : \
     typing/printtyp.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
+    parsing/parse.cmi \
     typing/mtype.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -1439,6 +1442,7 @@ typing/typemod.cmx : \
     typing/printtyp.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
+    parsing/parse.cmx \
     typing/mtype.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
@@ -5805,7 +5809,6 @@ driver/makedepend.cmo : \
     parsing/parser.cmi \
     parsing/parse.cmi \
     utils/misc.cmi \
-    parsing/longident.cmi \
     parsing/location.cmi \
     parsing/lexer.cmi \
     parsing/depend.cmi \
@@ -5819,7 +5822,6 @@ driver/makedepend.cmx : \
     parsing/parser.cmx \
     parsing/parse.cmx \
     utils/misc.cmx \
-    parsing/longident.cmx \
     parsing/location.cmx \
     parsing/lexer.cmx \
     parsing/depend.cmx \
@@ -5952,9 +5954,11 @@ toplevel/expunge.cmx : \
     bytecomp/bytesections.cmx
 toplevel/genprintval.cmo : \
     typing/types.cmi \
+    parsing/syntaxerr.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
     typing/path.cmi \
+    parsing/parse.cmi \
     typing/outcometree.cmi \
     typing/oprint.cmi \
     utils/misc.cmi \
@@ -5967,9 +5971,11 @@ toplevel/genprintval.cmo : \
     toplevel/genprintval.cmi
 toplevel/genprintval.cmx : \
     typing/types.cmx \
+    parsing/syntaxerr.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
     typing/path.cmx \
+    parsing/parse.cmx \
     typing/outcometree.cmi \
     typing/oprint.cmx \
     utils/misc.cmx \

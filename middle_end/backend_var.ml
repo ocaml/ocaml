@@ -26,14 +26,16 @@ module Provenance = struct
   }
 
   let print ppf { module_path; location; original_ident; } =
-    Format.fprintf ppf "@[<hov 1>(\
-        @[<hov 1>(module_path@ %a)@]@ \
-        @[<hov 1>(location@ %a)@]@ \
-        @[<hov 1>(original_ident@ %a)@]\
-        )@]"
-      Path.print module_path
-      Debuginfo.print_compact location
-      Ident.print original_ident
+    let printf fmt = Format.fprintf ppf fmt in
+    printf "@[<hov 1>(";
+    printf "@[<hov 1>(module_path@ %a)@]@ "
+      Path.print module_path;
+    if !Clflags.locations then
+      printf "@[<hov 1>(location@ %a)@]@ "
+        Debuginfo.print_compact location;
+    printf "@[<hov 1>(original_ident@ %a)@]"
+      Ident.print original_ident;
+    printf ")@]"
 
   let create ~module_path ~location ~original_ident =
     { module_path;

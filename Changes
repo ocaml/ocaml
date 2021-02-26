@@ -101,6 +101,10 @@ Working version
 - #9107: improved error message for exceptions in module signature errors
   (Gabriel Scherer, review by Florian Angeletti)
 
+- #9208: -dno-locations option to hide source locations (and debug events)
+  from intermediate-representation dumps (-dfoo).
+  (Gabriel Scherer, review by Vincent Laviron)
+
 ### Internal/compiler-libs changes:
 
  - #463: a new Misc.Magic_number module for user-friendly parsing
@@ -113,6 +117,9 @@ Working version
 
 - #9060: ensure that Misc.protect_refs preserves backtraces
   (Gabriel Scherer, review by Guillaume Munch-Maccagnoni and David Allsopp)
+
+- #9061: expose compiler Longident.t parsers
+  (Florian Angeletti, review by Gabriel Scherer)
 
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)
@@ -375,13 +382,13 @@ OCaml 4.10.0
 - #8833: Hint for (type) redefinitions in toplevel session
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #2127: Refactor lookup functions
+- #2127, #9185: Refactor lookup functions
   Included observable changes:
     - makes the location of usage warnings and alerts for constructors more
       precise
     - don't warn about a constructor never being used to build values when it
       has been defined as private
-  (Leo White, review by Thomas Refis)
+  (Leo White, Hugo Heuzard review by Thomas Refis, Florian Angeletti)
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
   (Florian Angeletti, report by Leo White, review by Thomas Refis)
@@ -632,6 +639,9 @@ OCaml 4.10.0
   with caml_alloc_custom_mem in runtime/custom.c
   (Markus Mottl, review by Gabriel Scherer and Damien Doligez)
 
+- #9209, #9212: fix a development-version regression caused by #2288
+  (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
+   and Gabriel Scherer )
 
 OCaml 4.09 maintenance branch:
 ------------------------------

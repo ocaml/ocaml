@@ -658,13 +658,20 @@ let rec lam ppf = function
        | Lev_module_definition ident ->
          Format.asprintf "module-defn(%a)" Ident.print ident
       in
-      fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
+      (* -dno-locations also hides the placement of debug events;
+         this is good for the readability of the resulting output (usually
+         the end-user goal when using -dno-locations), as it strongly
+         reduces the nesting level of subterms. *)
+      if not !Clflags.locations then lam ppf expr
+      else begin
+        fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname
               ev.lev_loc.Location.loc_start.Lexing.pos_lnum
               (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "")
               ev.lev_loc.Location.loc_start.Lexing.pos_cnum
               ev.lev_loc.Location.loc_end.Lexing.pos_cnum
               lam expr
+      end
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 

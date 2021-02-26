@@ -788,6 +788,18 @@ The precedences must be listed from low to high.
 %type <Parsetree.expression> parse_expression
 %start parse_pattern
 %type <Parsetree.pattern> parse_pattern
+%start parse_constr_longident
+%type <Longident.t> parse_constr_longident
+%start parse_val_longident
+%type <Longident.t> parse_val_longident
+%start parse_mty_longident
+%type <Longident.t> parse_mty_longident
+%start parse_mod_ext_longident
+%type <Longident.t> parse_mod_ext_longident
+%start parse_mod_longident
+%type <Longident.t> parse_mod_longident
+%start parse_any_longident
+%type <Longident.t> parse_any_longident
 %%
 
 /* macros */
@@ -1129,6 +1141,35 @@ parse_pattern:
     { $1 }
 ;
 
+parse_mty_longident:
+  mty_longident EOF
+    { $1 }
+;
+
+parse_val_longident:
+  val_longident EOF
+    { $1 }
+;
+
+parse_constr_longident:
+  constr_longident EOF
+    { $1 }
+;
+
+parse_mod_ext_longident:
+  mod_ext_longident EOF
+    { $1 }
+;
+
+parse_mod_longident:
+  mod_longident EOF
+    { $1 }
+;
+
+parse_any_longident:
+  any_longident EOF
+    { $1 }
+;
 (* -------------------------------------------------------------------------- *)
 
 (* Functor arguments appear in module expressions and module types. *)
@@ -3415,12 +3456,15 @@ ident:
     UIDENT                    { $1 }
   | LIDENT                    { $1 }
 ;
-val_ident:
-    LIDENT                    { $1 }
+val_extra_ident:
   | LPAREN operator RPAREN    { $2 }
   | LPAREN operator error     { unclosed "(" $loc($1) ")" $loc($3) }
   | LPAREN error              { expecting $loc($2) "operator" }
   | LPAREN MODULE error       { expecting $loc($3) "module-expr" }
+;
+val_ident:
+    LIDENT                    { $1 }
+  | val_extra_ident           { $1 }
 ;
 operator:
     PREFIXOP                                    { $1 }
@@ -3462,59 +3506,68 @@ index_mod:
 | { "" }
 | SEMI DOTDOT { ";.." }
 ;
-constr_ident:
-    UIDENT                                      { $1 }
+
+%inline constr_extra_ident:
+  | LPAREN COLONCOLON RPAREN                    { "::" }
+;
+constr_extra_nonprefix_ident:
   | LBRACKET RBRACKET                           { "[]" }
   | LPAREN RPAREN                               { "()" }
-  | LPAREN COLONCOLON RPAREN                    { "::" }
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
 ;
-
-val_longident:
-    val_ident                                   { Lident $1 }
-  | mod_longident DOT val_ident                 { Ldot($1, $3) }
+constr_ident:
+    UIDENT                                      { $1 }
+  | constr_extra_ident                          { $1 }
+  | constr_extra_nonprefix_ident                { $1 }
 ;
 constr_longident:
-    mod_longident       %prec below_DOT         { $1 }
-  | mod_longident DOT LPAREN COLONCOLON RPAREN  { Ldot($1,"::") }
-  | LBRACKET RBRACKET                           { Lident "[]" }
-  | LPAREN RPAREN                               { Lident "()" }
-  | LPAREN COLONCOLON RPAREN                    { Lident "::" }
-  | FALSE                                       { Lident "false" }
-  | TRUE                                        { Lident "true" }
+    mod_longident       %prec below_DOT  { $1 } /* A.B.x vs (A).B.x */
+  | mod_longident DOT constr_extra_ident { Ldot($1,$3) }
+  | constr_extra_ident                   { Lident $1 }
+  | constr_extra_nonprefix_ident         { Lident $1 }
+;
+mk_longident(prefix,final):
+   | final            { Lident $1 }
+   | prefix DOT final { Ldot($1,$3) }
+;
+val_longident:
+    mk_longident(mod_longident, val_ident) { $1 }
 ;
 label_longident:
-    LIDENT                                      { Lident $1 }
-  | mod_longident DOT LIDENT                    { Ldot($1, $3) }
+    mk_longident(mod_longident, LIDENT) { $1 }
 ;
 type_longident:
-    LIDENT                                      { Lident $1 }
-  | mod_ext_longident DOT LIDENT                { Ldot($1, $3) }
+    mk_longident(mod_ext_longident, LIDENT)  { $1 }
 ;
 mod_longident:
-    UIDENT                                      { Lident $1 }
-  | mod_longident DOT UIDENT                    { Ldot($1, $3) }
+    mk_longident(mod_longident, UIDENT)  { $1 }
 ;
 mod_ext_longident:
-    UIDENT                                      { Lident $1 }
-  | mod_ext_longident DOT UIDENT                { Ldot($1, $3) }
+    mk_longident(mod_ext_longident, UIDENT) { $1 }
   | mod_ext_longident LPAREN mod_ext_longident RPAREN
       { lapply ~loc:$sloc $1 $3 }
   | mod_ext_longident LPAREN error
       { expecting $loc($3) "module path" }
 ;
 mty_longident:
-    ident                                       { Lident $1 }
-  | mod_ext_longident DOT ident                 { Ldot($1, $3) }
+    mk_longident(mod_ext_longident,ident) { $1 }
 ;
 clty_longident:
-    LIDENT                                      { Lident $1 }
-  | mod_ext_longident DOT LIDENT                { Ldot($1, $3) }
+    mk_longident(mod_ext_longident,LIDENT) { $1 }
 ;
 class_longident:
-    LIDENT                                      { Lident $1 }
-  | mod_longident DOT LIDENT                    { Ldot($1, $3) }
+   mk_longident(mod_longident,LIDENT) { $1 }
+;
+
+/* For compiler-libs: parse all valid longidents and a little more:
+   final identifiers which are value specific are accepted even when
+   the path prefix is only valid for types: (e.g. F(X).(::)) */
+any_longident:
+  | mk_longident (mod_ext_longident,
+     ident | constr_extra_ident | val_extra_ident { $1 }
+    ) { $1 }
+  | constr_extra_nonprefix_ident { Lident $1 }
 ;
 
 /* Toplevel directives */

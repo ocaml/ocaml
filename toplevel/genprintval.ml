@@ -547,10 +547,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         else O.field bucket 0
       in
       let name = (O.obj(O.field slot 0) : string) in
-      let lid = Longident.parse name in
       try
         (* Attempt to recover the constructor description for the exn
            from its name *)
+        let lid =
+          try Parse.longident (Lexing.from_string name) with
+          (* The syntactic class for extension constructor names
+             is an extended form of constructor "Longident.t"s
+             that also includes module application (e.g [F(X).A]) *)
+           | Syntaxerr.Error _ | Lexer.Error _ -> raise Not_found in
         let cstr = Env.find_constructor_by_name lid env in
         let path =
           match cstr.cstr_tag with
