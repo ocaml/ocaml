@@ -134,7 +134,7 @@ let rec extract_letop_patterns n pat =
 
 let constant = function
   | Const_char c -> Pconst_char c
-  | Const_string (s,d) -> Pconst_string (s,d)
+  | Const_string (s,loc,d) -> Pconst_string (s,loc,d)
   | Const_int i -> Pconst_integer (Int.to_string i, None)
   | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
   | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')

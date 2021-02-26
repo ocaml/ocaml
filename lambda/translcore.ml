@@ -61,7 +61,7 @@ let transl_extension_constructor env path ext =
   match ext.ext_kind with
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
-        [Lconst (Const_base (Const_string (name, None)));
+        [Lconst (Const_base (Const_string (name, loc, None)));
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
         loc)
   | Text_rebind(path, _lid) ->
@@ -174,16 +174,17 @@ let assert_failed exp =
     transl_extension_path Location.none
       Env.initial_safe_string Predef.path_assert_failure
   in
+  let loc = exp.exp_loc in
   let (fname, line, char) =
-    Location.get_pos_info exp.exp_loc.Location.loc_start
+    Location.get_pos_info loc.Location.loc_start
   in
   Lprim(Praise Raise_regular, [event_after exp
     (Lprim(Pmakeblock(0, Immutable, None),
           [slot;
            Lconst(Const_block(0,
-              [Const_base(Const_string (fname, None));
+              [Const_base(Const_string (fname, loc, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))], exp.exp_loc))], exp.exp_loc)
+               Const_base(Const_int char)]))], loc))], loc)
 ;;
 
 let rec cut n l =

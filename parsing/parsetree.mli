@@ -31,9 +31,11 @@ type constant =
   *)
   | Pconst_char of char
   (* 'c' *)
-  | Pconst_string of string * string option
+  | Pconst_string of string * Location.t * string option
   (* "constant"
      {delim|other constant|delim}
+
+     The location span the content of the string, without the delimiters.
   *)
   | Pconst_float of string * char option
   (* 3.4 2e5 1.4e-4

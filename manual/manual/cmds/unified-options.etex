@@ -375,6 +375,13 @@ each functor application generates new types in its result and
 applying the same functor twice to the same argument yields two
 incompatible structures.
 
+\nat{%
+\item["-no-float-const-prop"]
+Deactivates the constant propagation for floating-point operations.
+This option should be given if the program changes the float rounding
+mode during its execution.
+}%nat
+
 \item["-noassert"]
 Do not compile assertion checks.  Note that the special form
 "assert false" is always compiled because it is typed specially.

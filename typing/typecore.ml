@@ -219,7 +219,7 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
      end
   | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
-  | Pconst_string (s,d) -> Ok (Const_string (s,d))
+  | Pconst_string (s,loc,d) -> Ok (Const_string (s,loc,d))
   | Pconst_float (f,None)-> Ok (Const_float f)
   | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))
 
@@ -2500,7 +2500,7 @@ and type_expect_
         exp_type = instance desc.val_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constant(Pconst_string (str, _) as cst) -> (
+  | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
@@ -3753,7 +3753,7 @@ and type_format loc str env =
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
       let mk_int n = mk_cst (Pconst_integer (Int.to_string n, None))
-      and mk_string str = mk_cst (Pconst_string (str, None))
+      and mk_string str = mk_cst (Pconst_string (str, loc, None))
       and mk_char chr = mk_cst (Pconst_char chr) in
       let rec mk_formatting_lit fmting = match fmting with
         | Close_box ->

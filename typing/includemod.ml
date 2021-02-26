@@ -155,6 +155,7 @@ let rec normalize_module_path env cxt path =
 type field_desc =
     Field_value of string
   | Field_type of string
+  | Field_exception of string
   | Field_typext of string
   | Field_module of string
   | Field_modtype of string
@@ -164,6 +165,7 @@ type field_desc =
 let kind_of_field_desc = function
   | Field_value _ -> "value"
   | Field_type _ -> "type"
+  | Field_exception _ -> "exception"
   | Field_typext _ -> "extension constructor"
   | Field_module _ -> "module"
   | Field_modtype _ -> "module type"
@@ -181,7 +183,13 @@ module FieldMap = Map.Make(struct
 let item_ident_name = function
     Sig_value(id, d, _) -> (id, d.val_loc, Field_value(Ident.name id))
   | Sig_type(id, d, _, _) -> (id, d.type_loc, Field_type(Ident.name id))
-  | Sig_typext(id, d, _, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
+  | Sig_typext(id, d, _, _) ->
+     let kind =
+       if Path.same d.ext_type_path Predef.path_exn
+       then Field_exception(Ident.name id)
+       else Field_typext(Ident.name id)
+     in
+     (id, d.ext_loc, kind)
   | Sig_module(id, _, d, _, _) -> (id, d.md_loc, Field_module(Ident.name id))
   | Sig_modtype(id, d, _) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
   | Sig_class(id, d, _, _) -> (id, d.cty_loc, Field_class(Ident.name id))
