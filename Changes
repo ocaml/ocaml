@@ -22,6 +22,9 @@ Working version
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez
    and Gabriel Scherer)
 
+- #9233: Restore the bytecode stack after an allocation.
+  (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
+
 ### Code generation and optimizations:
 
 - #8637, #8805: Record debug info for each allocation
@@ -59,6 +62,23 @@ Working version
 - #9181: make objinfo work on Cygwin and look for the caml_plugin_header
   symbol in both the static and the dynamic symbol tables.
   (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
+
+* #9197: remove compatibility logic from #244 that was designed to
+  synchronize toplevel printing margins with Format.std_formatter,
+  but also resulted in unpredictable/fragile changes to formatter
+  margins.
+  Setting the margins on the desired formatters should now work.
+  typically on `Format.std_formatter`.
+  Note that there currently is no robust way to do this from the
+  toplevel, as applications may redirect toplevel printing. In
+  a compiler/toplevel driver, one should instead access
+  `Location.formatter_for_warnings`; it is not currently exposed
+  to the toplevel.
+  (Gabriel Scherer, review by Armaël Guéneau)
+
+- #9207, #9210: fix ocamlyacc to work correctly with up to 255 entry
+  points to the grammar.
+  (Andreas Abel, review by Xavier Leroy)
 
 ### Manual and documentation:
 
@@ -108,6 +128,9 @@ Working version
 - #9178: start refactoring the label-disambiguation logic (Typecore.NameChoice)
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
+- #9211, #9215: fix Makefile dependencies of compilerlibs archives and dynlink
+  (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
+
 ### Build system:
 
 ### Bug fixes:
@@ -121,6 +144,15 @@ Working version
 
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
+
+- #9225: Do not drop bytecode debug info after C calls.
+  (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
+
+- #9231: Make sure a debug event (and the corresponding debug
+  information) is inserted after every primitive that can appear in a
+  collected call stack, and make sure ocamlc preserves such events
+  even if they are at tail position.
+  (Jacques-Henri Jourdan, review by Gabriel Scherer)
 
 OCaml 4.10.0
 ------------
@@ -454,11 +486,6 @@ OCaml 4.10.0
   Makefile.config on Windows ports.
   (David Allsopp, review by Sébastien Hinderer)
 
-- #9180: pass -fno-common option to C compiler when available,
-  so as to detect problematic multiple definitions of global variables
-  in the C runtime
-  (Xavier Leroy, review by Mark Shinwell)
-
 ### Internal/compiler-libs changes:
 
 - #8828: Added abstractions for variants, records, constructors, fields and
@@ -538,7 +565,7 @@ OCaml 4.10.0
   (Florian Angeletti, review by Gabriel Scherer)
 
 - #9015: fix fatal error in pprint_ast (#8789)
-  (Damien Doligez, review by ...)
+  (Damien Doligez, review by Thomas Refis)
 
 ### Bug fixes:
 
@@ -566,11 +593,6 @@ OCaml 4.10.0
 - #8792, #9018: Possible (latent) bug in Ctype.normalize_type
   removed incrimined Btype.log_type, replaced by Btype.set_type
   (Jacques Garrigue, report by Alain Frisch, review by Thomas Refis)
-
-- #8855, #8858: Links for tools not created when installing with
-  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
-  ocamldep link not created)
-  (David Allsopp, report by Thomas Leonard)
 
 - #8856, #8860: avoid stackoverflow when printing cyclic type expressions
   in some error submessages.
@@ -610,13 +632,14 @@ OCaml 4.10.0
   with caml_alloc_custom_mem in runtime/custom.c
   (Markus Mottl, review by Gabriel Scherer and Damien Doligez)
 
-- #9144, #9180: multiple definitions of global variables in the C runtime,
-  causing problems with GCC 10.0 and possibly with other C compilers
-  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
-
 
 OCaml 4.09 maintenance branch:
 ------------------------------
+
+- #8855, #8858: Links for tools not created when installing with
+  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
+  ocamldep link not created)
+  (David Allsopp, report by Thomas Leonard)
 
 - #8953, #8954: Fix error submessages in the toplevel: do not display
   dummy locations
@@ -631,6 +654,22 @@ OCaml 4.09 maintenance branch:
 
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
+
+- #9144, #9180: multiple definitions of global variables in the C runtime,
+  causing problems with GCC 10.0 and possibly with other C compilers
+  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
+
+- #9180: pass -fno-common option to C compiler when available,
+  so as to detect problematic multiple definitions of global variables
+  in the C runtime
+  (Xavier Leroy, review by Mark Shinwell)
+
+- #9128: Fix a bug in bytecode mode which could lead to a segmentation
+  fault. The bug was caused by the fact that the atom table shared a
+  page with some bytecode. The fix makes sure both the atom table and
+  the minor heap have their own pages.
+  (Jacques-Henri Jourdan, review by Stephen Dolan, Xavier Leroy and
+   Gabriel Scherer)
 
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------

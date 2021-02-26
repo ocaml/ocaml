@@ -120,6 +120,7 @@ COMPILERLIBS_SOURCES=\
 # Rules to make a local copy of the .ml and .mli files required.  We also
 # provide .ml files for .mli-only modules---without this, such modules do
 # not seem to be located by the type checker inside bytecode packs.
+# Note: .ml-only modules are not supported by the (.mli.cmi) rule below.
 
 $(LOCAL_SRC)/Makefile: $(LOCAL_SRC)/Makefile.copy-sources Makefile
 	cp -f $< $@
@@ -171,15 +172,15 @@ COMPILERLIBS_COPIED_SOURCES_INTFS=\
 COMPILERLIBS_CMO=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmo)
 COMPILERLIBS_CMX=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmx)
 
-$(LOCAL_SRC)/%.cmi:
+$(LOCAL_SRC)/%.cmi: $(LOCAL_SRC)/%.mli
 	$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
           -I $(LOCAL_SRC) -o $@ $(LOCAL_SRC)/$*.mli
 
-$(LOCAL_SRC)/%.cmo:
+$(LOCAL_SRC)/%.cmo: $(LOCAL_SRC)/%.ml
 	$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
           -I $(LOCAL_SRC) -o $@ $(LOCAL_SRC)/$*.ml
 
-$(LOCAL_SRC)/%.cmx:
+$(LOCAL_SRC)/%.cmx: $(LOCAL_SRC)/%.ml
 	$(OCAMLOPT) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
           $(OPTCOMPFLAGS) -I $(LOCAL_SRC) -o $@ $(LOCAL_SRC)/$*.ml
 
