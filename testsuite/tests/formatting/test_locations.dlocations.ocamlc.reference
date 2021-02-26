@@ -85,7 +85,7 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
     [
       <def>
         pattern (test_locations.ml[42,1260+8]..test_locations.ml[42,1260+11])
-          Tpat_var "fib/80"
+          Tpat_var "fib/82"
         expression (test_locations.ml[42,1260+14]..test_locations.ml[44,1298+34])
           Texp_function
           Nolabel
@@ -101,7 +101,7 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
                 Texp_constant Const_int 1
             <case>
               pattern (test_locations.ml[44,1298+4]..test_locations.ml[44,1298+5])
-                Tpat_var "n/81"
+                Tpat_var "n/83"
               expression (test_locations.ml[44,1298+9]..test_locations.ml[44,1298+34])
                 Texp_apply
                 expression (test_locations.ml[44,1298+21]..test_locations.ml[44,1298+22])
@@ -112,7 +112,7 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
                     expression (test_locations.ml[44,1298+9]..test_locations.ml[44,1298+20])
                       Texp_apply
                       expression (test_locations.ml[44,1298+9]..test_locations.ml[44,1298+12])
-                        Texp_ident "fib/80"
+                        Texp_ident "fib/82"
                       [
                         <arg>
                           Nolabel
@@ -124,7 +124,7 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
                               <arg>
                                 Nolabel
                                 expression (test_locations.ml[44,1298+14]..test_locations.ml[44,1298+15])
-                                  Texp_ident "n/81"
+                                  Texp_ident "n/83"
                               <arg>
                                 Nolabel
                                 expression (test_locations.ml[44,1298+18]..test_locations.ml[44,1298+19])
@@ -136,7 +136,7 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
                     expression (test_locations.ml[44,1298+23]..test_locations.ml[44,1298+34])
                       Texp_apply
                       expression (test_locations.ml[44,1298+23]..test_locations.ml[44,1298+26])
-                        Texp_ident "fib/80"
+                        Texp_ident "fib/82"
                       [
                         <arg>
                           Nolabel
@@ -148,7 +148,7 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
                               <arg>
                                 Nolabel
                                 expression (test_locations.ml[44,1298+28]..test_locations.ml[44,1298+29])
-                                  Texp_ident "n/81"
+                                  Texp_ident "n/83"
                               <arg>
                                 Nolabel
                                 expression (test_locations.ml[44,1298+32]..test_locations.ml[44,1298+33])
@@ -162,15 +162,15 @@ let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
 
 (setglobal Test_locations!
   (letrec
-    (fib/80
-       (function n/81[int] : int
+    (fib/82
+       (function n/83[int] : int
          (funct-body test_locations.ml(42):1274-1332
-           (if (isout 1 n/81)
+           (if (isout 1 n/83)
              (before test_locations.ml(44):1307-1332
                (+
                  (after test_locations.ml(44):1307-1318
-                   (apply fib/80 (- n/81 1)))
+                   (apply fib/82 (- n/83 1)))
                  (after test_locations.ml(44):1321-1332
-                   (apply fib/80 (- n/81 2)))))
+                   (apply fib/82 (- n/83 2)))))
              (before test_locations.ml(43):1296-1297 1)))))
-    (pseudo _none_(0)<ghost>:-1--1 (makeblock 0 fib/80))))
+    (pseudo _none_(0)<ghost>:-1--1 (makeblock 0 fib/82))))
