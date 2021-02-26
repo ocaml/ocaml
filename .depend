@@ -637,6 +637,7 @@ typing/includemod.cmo : \
     typing/subst.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
+    typing/predef.cmi \
     typing/path.cmi \
     typing/oprint.cmi \
     typing/mtype.cmi \
@@ -658,6 +659,7 @@ typing/includemod.cmx : \
     typing/subst.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
+    typing/predef.cmx \
     typing/path.cmx \
     typing/oprint.cmx \
     typing/mtype.cmx \
@@ -2154,13 +2156,13 @@ asmcomp/branch_relaxation.cmi : \
     asmcomp/linear.cmi \
     asmcomp/branch_relaxation_intf.cmo
 asmcomp/branch_relaxation_intf.cmo : \
-    asmcomp/mach.cmi \
     asmcomp/linear.cmi \
+    lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     asmcomp/arch.cmo
 asmcomp/branch_relaxation_intf.cmx : \
-    asmcomp/mach.cmx \
     asmcomp/linear.cmx \
+    lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
     asmcomp/arch.cmx
 asmcomp/cmm.cmo : \
@@ -2312,12 +2314,14 @@ asmcomp/coloring.cmi :
 asmcomp/comballoc.cmo : \
     asmcomp/reg.cmi \
     asmcomp/mach.cmi \
+    lambda/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/arch.cmo \
     asmcomp/comballoc.cmi
 asmcomp/comballoc.cmx : \
     asmcomp/reg.cmx \
     asmcomp/mach.cmx \
+    lambda/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/arch.cmx \
     asmcomp/comballoc.cmi
@@ -2349,6 +2353,7 @@ asmcomp/emit.cmo : \
     asmcomp/x86_ast.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
+    utils/numbers.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
@@ -2370,6 +2375,7 @@ asmcomp/emit.cmx : \
     asmcomp/x86_ast.cmi \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
+    utils/numbers.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
@@ -2387,7 +2393,6 @@ asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : \
-    asmcomp/mach.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/cmm.cmi \
@@ -2395,7 +2400,6 @@ asmcomp/emitaux.cmo : \
     asmcomp/arch.cmo \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
-    asmcomp/mach.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/cmm.cmx \
@@ -2403,7 +2407,6 @@ asmcomp/emitaux.cmx : \
     asmcomp/arch.cmx \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmi : \
-    asmcomp/mach.cmi \
     lambda/debuginfo.cmi
 asmcomp/interf.cmo : \
     asmcomp/reg.cmi \

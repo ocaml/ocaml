@@ -12477,24 +12477,22 @@ fi
 
 case $ocaml_cv_cc_vendor in #(
   xlc-*) :
-    outputobj='-o $(EMPTY)'
-    warn_error_flag=''
-    cc_warnings='-qflag=i:i' ;; #(
+    outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i" ;; #(
   # all warnings enabled
   msvc-*) :
     outputobj='-Fo'
     warn_error_flag='-WX'
-    cc_warnings='' ;; #(
+    gcc_warnings='' ;; #(
   *) :
     outputobj='-o $(EMPTY)'
   # FIXME Should also be -Wdeclaration-after-statement here
   warn_error_flag='-Werror'
-  cc_warnings='-Wall' ;;
+  gcc_warnings='-Wall' ;;
 esac
 
 case $enable_warn_error,4.11.0+multicore+dev0-2019-10-18 in #(
   yes,*|,*+dev*|,*+multicore*) :
-    cc_warnings="$cc_warnings $warn_error_flag" ;; #(
+    gcc_warnings="$gcc_warnings $warn_error_flag" ;; #(
   *) :
      ;;
 esac
@@ -12516,7 +12514,7 @@ esac
 # in the macro itself, too
 case $host in #(
   *-*-mingw32) :
-    internal_cflags="-Wno-unused $cc_warnings"
+    internal_cflags="-Wno-unused $gcc_warnings"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O -mms-bitfields"
     internal_cppflags='-DUNICODE -D_UNICODE'
@@ -12526,7 +12524,7 @@ case $host in #(
     case $ocaml_cv_cc_vendor in #(
   clang-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common" ;; #(
+      internal_cflags="$gcc_warnings -fno-common" ;; #(
   gcc-012-*) :
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -12542,23 +12540,23 @@ $as_echo "$as_me: WARNING: This version of GCC is rather old.
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Consider using GCC version 4.2 or above." >&5
 $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       common_cflags="-std=gnu99 -O";
-      internal_cflags="$cc_warnings" ;; #(
+      internal_cflags="$gcc_warnings" ;; #(
   gcc-4-*) :
     common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-      internal_cflags="$cc_warnings" ;; #(
+      internal_cflags="$gcc_warnings" ;; #(
   gcc-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common" ;; #(
+      internal_cflags="$gcc_warnings -fno-common" ;; #(
   msvc-*) :
-    common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    common_cflags="-nologo -O2 -Gy- -MD $gcc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
-      internal_cflags="$cc_warnings" ;; #(
+      internal_cflags="$gcc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
 esac ;;
@@ -16136,7 +16134,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS $LIBS"
+LIBS="-lbfd -liberty $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16167,7 +16165,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS"
+  bfd_ldlibs="-lbfd -liberty"
 fi
 
 fi
@@ -16179,7 +16177,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS -liberty $LIBS"
+LIBS="-lbfd -liberty -lz $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16210,7 +16208,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS -liberty"
+  bfd_ldlibs="-lbfd -liberty -lz"
 fi
 
 fi
@@ -16222,7 +16220,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS -liberty -lz $LIBS"
+LIBS="-lbfd -liberty -lz -lintl $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16253,50 +16251,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"
-fi
-
-fi
-    if test -z "$bfd_ldlibs"; then :
-  unset ac_cv_lib_bfd_bfd_openr
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd $DLLIBS -liberty -lz -lintl $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"
+  bfd_ldlibs="-lbfd -liberty -lz -lintl"
 fi
 
 fi

@@ -765,7 +765,7 @@ let rec expression : Typedtree.expression -> term_judg =
       ]
     | Texp_override (pth, fields) ->
       (*
-         G |- pth : m   (Gi |- ei : m[Derefence])^i
+         G |- pth : m   (Gi |- ei : m[Dereference])^i
          ----------------------------------------------------
          G + sum(Gi)^i |- {< (xi = ei)^i >} (at path pth) : m
 

@@ -235,7 +235,7 @@ val system : string -> process_status
    its termination status. The string is interpreted by the shell
    [/bin/sh] (or the command interpreter [cmd.exe] on Windows) and
    therefore can contain redirections, quotes, variables, etc.
-   To properly quote whitespace and shell special characters occuring
+   To properly quote whitespace and shell special characters occurring
    in file names or command arguments, the use of
    {!Filename.quote_command} is recommended.
    The result [WEXITED 127] indicates that the shell couldn't be
