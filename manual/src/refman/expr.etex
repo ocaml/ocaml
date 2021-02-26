@@ -577,6 +577,7 @@ exception definition). For instance:
 
 \begin{caml_example}{toplevel}
 let gen () = let exception A in A
+
 let () = assert(gen () = gen ());;
 \end{caml_example}
 
