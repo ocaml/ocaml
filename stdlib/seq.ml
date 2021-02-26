@@ -71,3 +71,8 @@ let iter f seq =
         aux next
   in
   aux seq
+
+let rec unfold f u () =
+  match f u with
+  | None -> Nil
+  | Some (x, u') -> Cons (x, unfold f u')

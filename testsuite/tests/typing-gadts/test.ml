@@ -816,9 +816,11 @@ let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
-Error: This definition has type
-         ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
-       which is less general than 'a0 'b0. ('a0, 'b0) eq -> 'c -> 'c
+Error: This expression has type
+         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
+       but an expression was expected of type
+         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'e | `B ] as 'd) -> 'd
+       The universal variable 'a would escape its scope
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =

@@ -1346,11 +1346,13 @@ val f : 'a -> int = <fun>
 val g : 'a -> int = <fun>
 type 'a t = Leaf of 'a | Node of ('a * 'a) t
 val depth : 'a t -> int = <fun>
-Line 6, characters 2-42:
-6 |   function Leaf _ -> 1 | Node x -> 1 + d x
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'a t -> int which is less general than
-         'a0. 'a0 t -> int
+val depth : 'a t -> int = <fun>
+val d : ('a * 'a) t -> int = <fun>
+Line 9, characters 2-46:
+9 |   function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This definition has type int t -> int which is less general than
+         'a. 'a t -> int
 |}];;
 
 (* compare with records (should be the same) *)

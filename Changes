@@ -10,6 +10,13 @@ Working version
   (Gabriel Radanne, Leo White and Gabriel Scherer,
    request by Bikal Lem)
 
+- #6673, #1132: Relax the handling of explicit polymorphic types
+  (Leo White, review by Jacques Garrigue and Gabriel Scherer)
+
+- #9232: allow any class type paths in #-types,
+  For instance, "val f: #F(X).t -> unit" is now allowed.
+  (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
@@ -41,6 +48,10 @@ Working version
 - #9235: Add Array.exists2 and Array.for_all2
   (Bernhard Schommer, review by Armaël Guéneau)
 
+- #9226: Add Seq.unfold.
+   (Jeremy Yallop, review by Hezekiah M. Carty, Gabriel Scherer and
+   Gabriel Radanne)
+
 - #8771: Lexing: add set_position and set_filename to change (fake)
    the initial tracking position of the lexbuf.
    (Konstantin Romanov, Miguel Lumapat, review by Gabriel Scherer,
@@ -52,6 +63,10 @@ Working version
 
 - #8894: Added List.fold_left_map function combining map and fold.
   (Bernhard Schommer, review by Alain Frisch and github user @cfcs)
+
+- #9237: `Format.pp_update_geometry ppf (fun geo -> {geo with ...})`
+  for formatter geometry changes that are robust to new geometry fields.
+  (Gabriel Scherer, review by Josh Berdine and ???)
 
 ### Other libraries:
 
@@ -123,7 +138,7 @@ Working version
 - #9060: ensure that Misc.protect_refs preserves backtraces
   (Gabriel Scherer, review by Guillaume Munch-Maccagnoni and David Allsopp)
 
-- #9061: expose compiler Longident.t parsers
+- #9021: expose compiler Longident.t parsers
   (Florian Angeletti, review by Gabriel Scherer)
 
 - #9078: make all compilerlibs/ available to ocamltest.
@@ -205,15 +220,19 @@ OCaml 4.10.0
   (Damien Doligez, review by Stephen Dolan, Jacques-Henri Jourdan,
    Xavier Leroy, Leo White)
 
-* #8713: Introduce a state table in the runtime to contain the global variables.
+* #8713, #8940, #9115, #9143, #9202, #9251:
+  Introduce a state table in the runtime to contain the global variables.
   (The Multicore runtime will have one such state for each domain.)
 
-   This changes the name of some internal variables of the OCaml runtime;
-   in many cases <caml/compatibility.h> provides a compatibility macro with
-   the old name, but programs using runtime internals may need to be fixed.
+   This changes the status of some internal variables of the OCaml runtime;
+   in many cases the header file originally defining the internal variable
+   provides a compatibility macro with the old name, but programs
+   re-defining those variables by hand need to be fixed.
 
-   (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
-    David Allsopp, review by David Allsopp, Alain Frisch, Nicolás Ojeda Bär,
+   (KC Sivaramakrishnan and Stephen Dolan,
+    compatibility hacking by David Allsopp, Florian Angeletti, Kate Deplaix,
+    Jacques Garrigue, Guillaume Munch-Maccagnoni and Nicolás Ojeda Bär,
+    review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
     Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
 - #8993: New C functions caml_process_pending_actions{,_exn} in
