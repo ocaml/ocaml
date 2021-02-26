@@ -634,8 +634,6 @@ static struct {
   atomic_uintnat barrier;
   void (*enter_spin_callback)(struct domain*, void*);
   void* enter_spin_data;
-  void (*leave_spin_callback)(struct domain*, void*);
-  void* leave_spin_data;
 
   struct interrupt reqs[Max_domains];
   struct domain* participating[Max_domains];
@@ -646,8 +644,6 @@ static struct {
   NULL,
   0,
   ATOMIC_UINTNAT_INIT(0),
-  NULL,
-  NULL,
   NULL,
   NULL,
   { { 0 } },
@@ -783,8 +779,7 @@ static void caml_wait_interrupt_acknowledged(struct interruptor* self, struct in
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(struct domain*, void*, int, struct domain**), void* data,
   void (*leader_setup)(struct domain*),
-  void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data,
-  void (*leave_spin_callback)(struct domain*, void*), void* leave_spin_data)
+  void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data)
 {
 #ifdef DEBUG
   caml_domain_state* domain_state = Caml_state;
@@ -822,8 +817,6 @@ int caml_try_run_on_all_domains_with_spin_work(
   stw_request.enter_spin_data = enter_spin_data;
   stw_request.callback = handler;
   stw_request.data = data;
-  stw_request.leave_spin_callback = leave_spin_callback;
-  stw_request.leave_spin_data = leave_spin_data;
   atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
@@ -888,7 +881,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void* data, void (*leader_setup)(struct domain*))
 {
-  return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0, 0, 0);
+  return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0);
 }
 
 void caml_interrupt_self() {
