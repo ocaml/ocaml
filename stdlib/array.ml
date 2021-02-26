@@ -187,6 +187,26 @@ let for_all p a =
     else false in
   loop 0
 
+let for_all2 p l1 l2 =
+  let n1 = length l1
+  and n2 = length l2 in
+  if n1 <> n2 then invalid_arg "Array.for_all2"
+  else let rec loop i =
+    if i = n1 then true
+    else if p (unsafe_get l1 i) (unsafe_get l2 i) then loop (succ i)
+    else false in
+  loop 0
+
+let exists2 p l1 l2 =
+  let n1 = length l1
+  and n2 = length l2 in
+  if n1 <> n2 then invalid_arg "Array.exists2"
+  else let rec loop i =
+    if i = n1 then false
+    else if p (unsafe_get l1 i) (unsafe_get l2 i) then true
+    else loop (succ i) in
+  loop 0
+
 let mem x a =
   let n = length a in
   let rec loop i =

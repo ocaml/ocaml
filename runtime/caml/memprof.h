@@ -28,7 +28,7 @@ extern value caml_memprof_handle_postponed_exn(void);
 extern void caml_memprof_check_action_pending(void);
 
 extern void caml_memprof_track_alloc_shr(value block);
-extern void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml);
+extern void caml_memprof_track_young(uintnat wosize, int from_caml);
 extern void caml_memprof_track_interned(header_t* block, header_t* blockend);
 
 extern void caml_memprof_renew_minor_sample(void);
