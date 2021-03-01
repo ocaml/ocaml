@@ -90,6 +90,9 @@ request can be merged.
 ------------------------------------------------------------------------
 EOF
 
+  # Ensure that make distclean can be run from an empty tree
+  $MAKE distclean
+
   if [ "$MIN_BUILD" = "1" ] ; then
     configure_flags="\
       --prefix=$PREFIX \
@@ -161,8 +164,18 @@ EOF
   # we would need to redo (small parts of) world.opt afterwards to
   # use the compiler again
   $MAKE check_all_arches
+  # Ensure that .gitignore is up-to-date - this will fail if any untreacked or
+  # altered files exist.
+  test -z "$(git status --porcelain)"
   # check that the 'clean' target also works
   $MAKE clean
+  $MAKE -C manual clean
+  # check that the `distclean` target definitely cleans the tree
+  $MAKE distclean
+  # Check the working tree is clean
+  test -z "$(git status --porcelain)"
+  # Check that there are no ignored files
+  test -z "$(git ls-files --others -i --exclude-standard)"
 }
 
 CheckChangesModified () {

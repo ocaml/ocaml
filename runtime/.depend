@@ -266,9 +266,9 @@ shared_heap_b.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h \
   caml/roots.h caml/globroots.h caml/shared_heap.h caml/sizeclasses.h \
   caml/startup_aux.h
 addrmap_b.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
-  caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+  caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
 spacetime_byt_b.$(O): spacetime_byt.c caml/fail.h caml/misc.h caml/config.h \
   caml/m.h caml/s.h caml/camlatomic.h caml/mlvalues.h \
   caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl
@@ -575,9 +575,9 @@ shared_heap_bd.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h 
   caml/roots.h caml/globroots.h caml/shared_heap.h caml/sizeclasses.h \
   caml/startup_aux.h
 addrmap_bd.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
-  caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+  caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
 spacetime_byt_bd.$(O): spacetime_byt.c caml/fail.h caml/misc.h caml/config.h \
   caml/m.h caml/s.h caml/camlatomic.h caml/mlvalues.h \
   caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl
@@ -891,9 +891,9 @@ shared_heap_bi.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h 
   caml/roots.h caml/globroots.h caml/shared_heap.h caml/sizeclasses.h \
   caml/startup_aux.h
 addrmap_bi.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
-  caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+  caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
 spacetime_byt_bi.$(O): spacetime_byt.c caml/fail.h caml/misc.h caml/config.h \
   caml/m.h caml/s.h caml/camlatomic.h caml/mlvalues.h \
   caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl
@@ -1201,9 +1201,9 @@ shared_heap_bpic.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.
   caml/roots.h caml/globroots.h caml/shared_heap.h caml/sizeclasses.h \
   caml/startup_aux.h
 addrmap_bpic.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
-  caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+  caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
 spacetime_byt_bpic.$(O): spacetime_byt.c caml/fail.h caml/misc.h caml/config.h \
   caml/m.h caml/s.h caml/camlatomic.h caml/mlvalues.h \
   caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl
@@ -1493,8 +1493,9 @@ shared_heap_n.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h \
   caml/platform.h caml/alloc.h caml/roots.h caml/globroots.h \
   caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 addrmap_n.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/alloc.h \
+  caml/addrmap.h
 frame_descriptors_n.$(O): frame_descriptors.c frame_descriptors.h \
   caml/config.h caml/m.h caml/s.h caml/platform.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
@@ -1795,8 +1796,9 @@ shared_heap_nd.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h 
   caml/platform.h caml/alloc.h caml/roots.h caml/globroots.h \
   caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 addrmap_nd.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/alloc.h \
+  caml/addrmap.h
 frame_descriptors_nd.$(O): frame_descriptors.c frame_descriptors.h \
   caml/config.h caml/m.h caml/s.h caml/platform.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
@@ -2097,8 +2099,9 @@ shared_heap_ni.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h 
   caml/platform.h caml/alloc.h caml/roots.h caml/globroots.h \
   caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 addrmap_ni.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/alloc.h \
+  caml/addrmap.h
 frame_descriptors_ni.$(O): frame_descriptors.c frame_descriptors.h \
   caml/config.h caml/m.h caml/s.h caml/platform.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
@@ -2399,8 +2402,9 @@ shared_heap_npic.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.
   caml/platform.h caml/alloc.h caml/roots.h caml/globroots.h \
   caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 addrmap_npic.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
-  caml/domain.h caml/misc.h caml/camlatomic.h caml/mlvalues.h \
-  caml/domain_state.h caml/domain_state.tbl caml/alloc.h caml/addrmap.h
+  caml/compatibility.h caml/domain.h caml/misc.h caml/camlatomic.h \
+  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/alloc.h \
+  caml/addrmap.h
 frame_descriptors_npic.$(O): frame_descriptors.c frame_descriptors.h \
   caml/config.h caml/m.h caml/s.h caml/platform.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \

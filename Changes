@@ -1,5 +1,5 @@
-Working version
----------------
+OCaml 4.11
+----------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -91,6 +91,9 @@ Working version
 
 - #9193: Make tuple matching optimisation apply to Lswitch and Lstringswitch.
   (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
+
+- #9392: Visit registers at most once in Coloring.iter_preferred.
+  (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
 
 ### Standard library:
 
@@ -211,6 +214,11 @@ Working version
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
   building shared libraries like `-output-obj`.
   (Florian Angeletti, review by Nicolás Ojeda Bär)
+
+* #7678, #8631: ocamlc -c and ocamlopt -c pass same switches to the C
+  compiler when compiling .c files (in particular, this means ocamlopt
+  passes -fPIC on systems requiring it for shared library support).
+  (David Allsopp, report by Daniel Bünzli, review by Sébastien Hinderer)
 
 - #9074: reworded error message for non-regular structural types
   (Florian Angeletti, review by Jacques Garrigue and Leo White,
