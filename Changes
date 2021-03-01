@@ -139,6 +139,9 @@ Working version
   to the toplevel.
   (Gabriel Scherer, review by Armaël Guéneau)
 
+- #6969: Argument -nocwd added to ocamldep
+  (Muskan Garg, review by Florian Angeletti)
+
 - #9207, #9210: fix ocamlyacc to work correctly with up to 255 entry
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
@@ -273,6 +276,9 @@ Working version
 - #9355, #9356: ocamldebug, fix a fatal error when printing values
   whose type involves a functor application.
   (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
+
+- #9367: Make bytecode and native-code backtraces agree.
+  (Stephen Dolan, review by ??)
 
 OCaml 4.10.0
 ------------

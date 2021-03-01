@@ -3,11 +3,7 @@
    ocamlrunparam += ",b=1"
    ocamlopt_flags = "-inline 0"
    exit_status = "2"
-   * bytecode
-     reference = "${test_source_directory}/pr6920_why_at.byte.reference"
-   * native
-     reference = "${test_source_directory}/pr6920_why_at.opt.reference"
-     compare_programs = "false"
+   compare_programs = "false"
 *)
 
 let why : unit -> unit = fun () -> raise Exit [@@inline never]

@@ -152,9 +152,11 @@ let rec push_defaults loc bindings cases partial =
 
 (* Insertion of debugging events *)
 
-let event_before = Translprim.event_before
+let event_before exp lam =
+  Translprim.event_before exp.exp_loc exp lam
 
-let event_after = Translprim.event_after
+let event_after exp lam =
+  Translprim.event_after exp.exp_loc exp lam
 
 let event_function exp lam =
   if !Clflags.debug && not !Clflags.native_code then
@@ -659,9 +661,9 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
       ?(specialised = Default_specialise) lam sargs loc =
   let lapply funct args =
     match funct with
-      Lsend(k, lmet, lobj, largs, loc) ->
+      Lsend(k, lmet, lobj, largs, _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
-    | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
+    | Levent(Lsend(k, lmet, lobj, largs, _), _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
     | Lapply ap ->
         Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
