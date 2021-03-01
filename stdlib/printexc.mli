@@ -177,10 +177,17 @@ val get_continuation_callstack: ('a,'b) continuation -> int -> raw_backtrace
 
 (** {1 Uncaught exceptions} *)
 
+val default_uncaught_exception_handler: exn -> raw_backtrace -> unit
+(** [Printexc.default_uncaught_exception_handler] prints the exception and
+    backtrace on standard error output.
+
+    @since 4.11
+*)
+
 val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 (** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
-    for uncaught exceptions. The default handler prints the exception and
-    backtrace on standard error output.
+    for uncaught exceptions. The default handler is
+    {!Printexc.default_uncaught_exception_handler}.
 
     Note that when [fn] is called all the functions registered with
     {!Stdlib.at_exit} have already been called. Because of this you must
