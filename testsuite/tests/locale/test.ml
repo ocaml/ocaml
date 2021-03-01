@@ -1,5 +1,6 @@
 (* TEST
  modules = "stubs.c";
+ run_can_skip = "true";
 *)
 
 external setlocale : string -> string option = "ml_setlocale"
@@ -11,7 +12,10 @@ let show f =
 let pr fmt = Printf.ksprintf print_endline fmt
 
 let setlocale locale_aliases =
-  ignore @@ List.find (fun loc -> setlocale loc <> None) locale_aliases
+  match List.find_opt (fun loc -> setlocale loc <> None) locale_aliases with
+  | Some _ -> ()
+  | None ->
+      exit (int_of_string (Sys.getenv "TEST_SKIP"))
 
 let () =
   let s = "12345.6789" in
