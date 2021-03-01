@@ -888,7 +888,7 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   return v;
 }
 
-CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
+CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
 {
   wchar_t * ws;
   int retcode;

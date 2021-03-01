@@ -540,9 +540,8 @@ AS_CASE([$ocaml_cv_cc_vendor],
     warn_error_flag='-WX'
     gcc_warnings=''],
   [outputobj='-o $(EMPTY)'
-  # FIXME Should also be -Wdeclaration-after-statement here
   warn_error_flag='-Werror'
-  gcc_warnings='-Wall'])
+  gcc_warnings='-Wall -Wdeclaration-after-statement'])
 
 AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
   [yes,*|,*+dev*|,*+multicore*],
