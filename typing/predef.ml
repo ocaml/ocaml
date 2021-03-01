@@ -127,41 +127,6 @@ let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
-let decl_abstr =
-  {type_params = [];
-   type_arity = 0;
-   type_kind = Type_abstract;
-   type_loc = Location.none;
-   type_private = Asttypes.Public;
-   type_manifest = None;
-   type_variance = [];
-   type_separability = [];
-   type_is_newtype = false;
-   type_expansion_scope = lowest_level;
-   type_attributes = [];
-   type_immediate = Unknown;
-   type_unboxed = unboxed_false_default_false;
-  }
-
-let decl_abstr_with_one_param variance separability type_kind_fun =
-  let tvar = newgenvar() in
-  {type_params = [tvar];
-   type_arity = 1;
-   type_kind = type_kind_fun tvar;
-   type_loc = Location.none;
-   type_private = Asttypes.Public;
-   type_manifest = None;
-   type_variance = [variance];
-   type_separability = [separability];
-   type_is_newtype = false;
-   type_expansion_scope = lowest_level;
-   type_attributes = [];
-   type_immediate = Unknown;
-   type_unboxed = unboxed_false_default_false;
-  }
-
-let decl_abstr_imm = {decl_abstr with type_immediate = Always}
-
 let cstr id args =
   {
     cd_id = id;
@@ -169,6 +134,7 @@ let cstr id args =
     cd_res = None;
     cd_loc = Location.none;
     cd_attributes = [];
+    cd_uid = Uid.of_predef_id id;
   }
 
 let ident_false = ident_create "false"
@@ -178,50 +144,74 @@ and ident_nil = ident_create "[]"
 and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
+
+let mk_add_type add_type type_ident
+      ?manifest ?(immediate=Type_immediacy.Unknown) ?(kind=Type_abstract) env =
+  let decl =
+    {type_params = [];
+     type_arity = 0;
+     type_kind = kind;
+     type_loc = Location.none;
+     type_private = Asttypes.Public;
+     type_manifest = manifest;
+     type_variance = [];
+     type_separability = [];
+     type_is_newtype = false;
+     type_expansion_scope = lowest_level;
+     type_attributes = [];
+     type_immediate = immediate;
+     type_unboxed = unboxed_false_default_false;
+     type_uid = Uid.of_predef_id type_ident;
+    }
+  in
+  add_type type_ident decl env
+
 let common_initial_env add_type add_extension empty_env =
-  let decl_bool =
-    {decl_abstr_imm with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
-  and decl_unit =
-    {decl_abstr_imm with
-     type_kind = Type_variant([cstr ident_void []])}
-  and decl_exn =
-    {decl_abstr with
-     type_kind = Type_open}
-  and decl_eff =
-    let tvar = newgenvar() in
-    let arity = 1 in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = arity;
-     type_variance = [Variance.full];
-     type_separability = Types.Separability.default_signature ~arity;
-     type_kind = Type_open}
-  and decl_continuation =
+  let add_type = mk_add_type add_type
+  and add_type1 type_ident
+      ~variance ~separability ?(kind=fun _ -> Type_abstract) env =
+    let param = newgenvar () in
+    let decl =
+      {type_params = [param];
+       type_arity = 1;
+       type_kind = kind param;
+       type_loc = Location.none;
+       type_private = Asttypes.Public;
+       type_manifest = None;
+       type_variance = [variance];
+       type_separability = [separability];
+       type_is_newtype = false;
+       type_expansion_scope = lowest_level;
+       type_attributes = [];
+       type_immediate = Unknown;
+       type_unboxed = unboxed_false_default_false;
+       type_uid = Uid.of_predef_id type_ident;
+      }
+    in
+    add_type type_ident decl env
+  and add_continuation type_ident env =
     let tvar1 = newgenvar() in
     let tvar2 = newgenvar() in
     let arity = 2 in
-    {decl_abstr with
-     type_params = [tvar1; tvar2];
-     type_arity = arity;
-     type_variance = [Variance.contravariant; Variance.covariant];
-     type_separability = Types.Separability.default_signature ~arity}
-  and decl_array =
-    decl_abstr_with_one_param
-      Variance.full Separability.Ind (fun _ -> Type_abstract)
-  and decl_list =
-    decl_abstr_with_one_param
-      Variance.covariant Separability.Ind (fun tvar -> Type_variant(
-        [cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]))
-  and decl_option =
-    decl_abstr_with_one_param
-      Variance.covariant Separability.Ind (fun tvar -> Type_variant(
-        [cstr ident_none []; cstr ident_some [tvar]]))
-  and decl_lazy_t =
-    decl_abstr_with_one_param
-      Variance.covariant Separability.Ind (fun _ -> Type_abstract)
+    let decl =
+      {type_params = [tvar1; tvar2];
+       type_arity = arity;
+       type_kind = Type_abstract;
+       type_loc = Location.none;
+       type_private = Asttypes.Public;
+       type_manifest = None;
+       type_variance = [Variance.contravariant; Variance.covariant];
+       type_separability = Types.Separability.default_signature ~arity;
+       type_is_newtype = false;
+       type_expansion_scope = lowest_level;
+       type_attributes = [];
+       type_immediate = Unknown;
+       type_unboxed = unboxed_false_default_false;
+       type_uid = Uid.of_predef_id type_ident;
+      }
+    in
+    add_type type_ident decl env
   in
-
   let add_extension id l =
     add_extension id
       { ext_type_path = path_exn;
@@ -232,7 +222,9 @@ let common_initial_env add_type add_extension empty_env =
         ext_loc = Location.none;
         ext_attributes = [Ast_helper.Attr.mk
                             (Location.mknoloc "ocaml.warn_on_literal_pattern")
-                            (Parsetree.PStr [])] }
+                            (Parsetree.PStr [])];
+        ext_uid = Uid.of_predef_id id;
+      }
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
@@ -249,33 +241,42 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_extension ident_unhandled [] (
-  add_extension ident_continuation_already_taken [] (
-  add_type ident_int64 decl_abstr (
-  add_type ident_int32 decl_abstr (
-  add_type ident_nativeint decl_abstr (
-  add_type ident_lazy_t decl_lazy_t (
-  add_type ident_option decl_option (
-  add_type ident_list decl_list (
-  add_type ident_array decl_array (
-  add_type ident_exn decl_exn (
-  add_type ident_eff decl_eff (
-  add_type ident_continuation decl_continuation (
-  add_type ident_unit decl_unit (
-  add_type ident_bool decl_bool (
-  add_type ident_float decl_abstr (
-  add_type ident_string decl_abstr (
-  add_type ident_char decl_abstr_imm (
-  add_type ident_int decl_abstr_imm (
-  add_type ident_extension_constructor decl_abstr (
-  add_type ident_floatarray decl_abstr (
-    empty_env))))))))))))))))))))))))))))))))
+  add_type ident_int64 (
+  add_type ident_int32 (
+  add_type ident_nativeint (
+  add_type1 ident_lazy_t ~variance:Variance.covariant
+    ~separability:Separability.Ind (
+  add_type1 ident_option ~variance:Variance.covariant
+    ~separability:Separability.Ind
+    ~kind:(fun tvar ->
+      Type_variant([cstr ident_none []; cstr ident_some [tvar]])
+    ) (
+  add_type1 ident_list ~variance:Variance.covariant
+    ~separability:Separability.Ind
+    ~kind:(fun tvar ->
+      Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]])
+    ) (
+  add_type1 ident_array ~variance:Variance.full ~separability:Separability.Ind (
+  add_type ident_exn ~kind:Type_open (
+  add_type1 ident_eff ~variance:Variance.full ~separability:Separability.Ind ~kind:(fun _ -> Type_open) (
+  add_continuation ident_continuation (
+  add_type ident_unit ~immediate:Always
+    ~kind:(Type_variant([cstr ident_void []])) (
+  add_type ident_bool ~immediate:Always
+    ~kind:(Type_variant([cstr ident_false []; cstr ident_true []])) (
+  add_type ident_float (
+  add_type ident_string (
+  add_type ident_char ~immediate:Always (
+  add_type ident_int ~immediate:Always (
+  add_type ident_extension_constructor (
+  add_type ident_floatarray (
+    empty_env))))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
-  let safe_string = add_type ident_bytes decl_abstr common in
-  let decl_bytes_unsafe = {decl_abstr with type_manifest = Some type_string} in
-  let unsafe_string = add_type ident_bytes decl_bytes_unsafe common in
+  let add_type = mk_add_type add_type in
+  let safe_string = add_type ident_bytes common in
+  let unsafe_string = add_type ident_bytes ~manifest:type_string common in
   (safe_string, unsafe_string)
 
 let builtin_values =

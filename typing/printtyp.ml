@@ -1597,6 +1597,7 @@ let dummy =
     type_attributes = [];
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
+    type_uid = Uid.internal_not_actually_unique;
   }
 
 let hide ids env = List.fold_right

@@ -79,6 +79,58 @@ module TypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
+(* *)
+
+module Uid = struct
+  type t =
+    | Compilation_unit of string
+    | Item of { comp_unit: string; id: int }
+    | Internal
+    | Predef of string
+
+  include Identifiable.Make(struct
+    type nonrec t = t
+
+    let equal (x : t) y = x = y
+    let compare (x : t) y = compare x y
+    let hash (x : t) = Hashtbl.hash x
+
+    let print fmt = function
+      | Internal -> Format.pp_print_string fmt "<internal>"
+      | Predef name -> Format.fprintf fmt "<predef:%s>" name
+      | Compilation_unit s -> Format.pp_print_string fmt s
+      | Item { comp_unit; id } -> Format.fprintf fmt "%s.%d" comp_unit id
+
+    let output oc t =
+      let fmt = Format.formatter_of_out_channel oc in
+      print fmt t
+  end)
+
+  let id = ref (-1)
+
+  let reinit () = id := (-1)
+
+  let mk  ~current_unit =
+      incr id;
+      Item { comp_unit = current_unit; id = !id }
+
+  let of_compilation_unit_id id =
+    if not (Ident.persistent id) then
+      Misc.fatal_errorf "Types.Uid.of_compilation_unit_id %S" (Ident.name id);
+    Compilation_unit (Ident.name id)
+
+  let of_predef_id id =
+    if not (Ident.is_predef id) then
+      Misc.fatal_errorf "Types.Uid.of_predef_id %S" (Ident.name id);
+    Predef (Ident.name id)
+
+  let internal_not_actually_unique = Internal
+
+  let for_actual_declaration = function
+    | Item _ -> true
+    | _ -> false
+end
+
 (* Maps of methods and instance variables *)
 
 module Meths = Misc.Stdlib.String.Map
@@ -91,7 +143,8 @@ type value_description =
     val_kind: value_kind;
     val_loc: Location.t;
     val_attributes: Parsetree.attributes;
- }
+    val_uid: Uid.t;
+  }
 
 and value_kind =
     Val_reg                             (* Regular value *)
@@ -179,6 +232,7 @@ type type_declaration =
     type_attributes: Parsetree.attributes;
     type_immediate: Type_immediacy.t;
     type_unboxed: unboxed_status;
+    type_uid: Uid.t;
  }
 
 and type_kind =
@@ -201,6 +255,7 @@ and label_declaration =
     ld_type: type_expr;
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
+    ld_uid: Uid.t;
   }
 
 and constructor_declaration =
@@ -210,6 +265,7 @@ and constructor_declaration =
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
+    cd_uid: Uid.t;
   }
 
 and constructor_arguments =
@@ -228,13 +284,15 @@ let unboxed_true_default_false = {unboxed = true; default = false}
 let unboxed_true_default_true = {unboxed = true; default = true}
 
 type extension_constructor =
-    { ext_type_path: Path.t;
-      ext_type_params: type_expr list;
-      ext_args: constructor_arguments;
-      ext_ret_type: type_expr option;
-      ext_private: private_flag;
-      ext_loc: Location.t;
-      ext_attributes: Parsetree.attributes; }
+  { ext_type_path: Path.t;
+    ext_type_params: type_expr list;
+    ext_args: constructor_arguments;
+    ext_ret_type: type_expr option;
+    ext_private: private_flag;
+    ext_loc: Location.t;
+    ext_attributes: Parsetree.attributes;
+    ext_uid: Uid.t;
+  }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -265,6 +323,7 @@ type class_declaration =
     cty_variance: Variance.t list;
     cty_loc: Location.t;
     cty_attributes: Parsetree.attributes;
+    cty_uid: Uid.t;
  }
 
 type class_type_declaration =
@@ -274,6 +333,7 @@ type class_type_declaration =
     clty_variance: Variance.t list;
     clty_loc: Location.t;
     clty_attributes: Parsetree.attributes;
+    clty_uid: Uid.t;
   }
 
 (* Type expressions for the module language *)
@@ -313,6 +373,7 @@ and module_declaration =
     md_type: module_type;
     md_attributes: Parsetree.attributes;
     md_loc: Location.t;
+    md_uid: Uid.t;
   }
 
 and modtype_declaration =
@@ -320,6 +381,7 @@ and modtype_declaration =
     mtd_type: module_type option;  (* Note: abstract *)
     mtd_attributes: Parsetree.attributes;
     mtd_loc: Location.t;
+    mtd_uid: Uid.t;
   }
 
 and rec_status =
@@ -351,6 +413,7 @@ type constructor_description =
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
     cstr_inlined: type_declaration option;
+    cstr_uid: Uid.t;
    }
 
 and constructor_tag =
@@ -384,6 +447,7 @@ type label_description =
     lbl_private: private_flag;          (* Read-only field? *)
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
+    lbl_uid: Uid.t;
    }
 
 let rec bound_value_identifiers = function

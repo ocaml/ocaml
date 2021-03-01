@@ -590,8 +590,9 @@ let () =
              ext_args = Cstr_tuple desc.cstr_args;
              ext_ret_type = ret_type;
              ext_private = Asttypes.Public;
-             Types.ext_loc = desc.cstr_loc;
-             Types.ext_attributes = desc.cstr_attributes; }
+             ext_loc = desc.cstr_loc;
+             ext_attributes = desc.cstr_attributes;
+             ext_uid = desc.cstr_uid; }
            in
              [Sig_typext (id, ext, Text_first, Exported)]
        else
@@ -620,8 +621,10 @@ let () =
            ext_args = Cstr_tuple desc.cstr_args;
            ext_ret_type = ret_type;
            ext_private = Asttypes.Public;
-           Types.ext_loc = desc.cstr_loc;
-           Types.ext_attributes = desc.cstr_attributes; }
+           ext_loc = desc.cstr_loc;
+           ext_attributes = desc.cstr_attributes;
+           ext_uid = desc.cstr_uid;
+         }
        in
          [Sig_typext (id, ext, Text_exception, Exported)]
     )
