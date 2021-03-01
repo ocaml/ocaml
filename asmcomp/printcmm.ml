@@ -174,6 +174,10 @@ let rec expr ppf = function
      fprintf ppf
       "@[<2>(let@ @[<2>%a@ %a@]@ %a)@]"
       VP.print id expr def sequence body
+  | Clet_mut(id, kind, def, body) ->
+    fprintf ppf
+      "@[<2>(let_mut@ @[<2>%a: %a@ %a@]@ %a)@]"
+      VP.print id machtype kind expr def sequence body
   | Cphantom_let(var, def, (Cphantom_let(_, _, _) as body)) ->
       let print_binding var ppf def =
         fprintf ppf "@[<2>%a@ %a@]" VP.print var

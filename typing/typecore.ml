@@ -5131,7 +5131,8 @@ let spellcheck_idents ppf unbound valid_idents =
   spellcheck ppf (Ident.name unbound) (List.map Ident.name valid_idents)
 
 open Format
-open Printtyp
+
+let longident = Printtyp.longident
 
 (* Returns the first diff of the trace *)
 let type_clash_of_trace trace =
@@ -5279,10 +5280,10 @@ let report_error ~loc env = function
           Location.errorf ~loc
             "@[<v>@[<2>This function has type@ %a@]\
              @ @[It is applied to too many arguments;@ %s@]@]"
-            type_expr typ "maybe you forgot a `;'.";
+            Printtyp.type_expr typ "maybe you forgot a `;'.";
       | _ ->
           Location.errorf ~loc "@[<v>@[<2>This expression has type@ %a@]@ %s@]"
-            type_expr typ
+            Printtyp.type_expr typ
             "This is not a function; it cannot be applied."
       end
   | Apply_wrong_label (l, ty) ->
@@ -5293,7 +5294,7 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
          This argument cannot be applied %a@]"
-        type_expr ty print_label l
+        Printtyp.type_expr ty print_label l
   | Label_multiply_defined s ->
       Location.errorf ~loc "The record field label %s is defined several times"
         s
@@ -5306,29 +5307,30 @@ let report_error ~loc env = function
       Location.errorf ~loc "The record field %a is not mutable" longident lid
   | Wrong_name (eorp, ty_expected, { type_path; kind; name; valid_names; }) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        let { ty; explanation } = ty_expected in
-        if Path.is_constructor_typath type_path then begin
-          fprintf ppf
-            "@[The field %s is not part of the record \
-             argument for the %a constructor@]"
-            name.txt
-            path type_path;
-        end else begin
-          fprintf ppf
-            "@[@[<2>%s type@ %a%t@]@ \
-             The %s %s does not belong to type %a@]"
-            eorp type_expr ty
-            (report_type_expected_explanation_opt explanation)
-            (Datatype_kind.label_name kind)
-            name.txt (*kind*) path type_path;
-        end;
-        spellcheck ppf name.txt valid_names
-      ) ()
+        Printtyp.wrap_printing_env ~error:true env (fun () ->
+          let { ty; explanation } = ty_expected in
+          if Path.is_constructor_typath type_path then begin
+            fprintf ppf
+              "@[The field %s is not part of the record \
+               argument for the %a constructor@]"
+              name.txt
+              Printtyp.type_path type_path;
+          end else begin
+            fprintf ppf
+              "@[@[<2>%s type@ %a%t@]@ \
+               The %s %s does not belong to type %a@]"
+              eorp Printtyp.type_expr ty
+              (report_type_expected_explanation_opt explanation)
+              (Datatype_kind.label_name kind)
+              name.txt (*kind*) Printtyp.type_path type_path;
+          end;
+          spellcheck ppf name.txt valid_names
+      )) ()
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let type_name = Datatype_kind.type_name kind in
       let name = Datatype_kind.label_name kind in
       Location.error_of_printer ~loc (fun ppf () ->
-        report_ambiguous_type_error ppf env tp tpl
+        Printtyp.report_ambiguous_type_error ppf env tp tpl
           (function ppf ->
              fprintf ppf "The %s %a@ belongs to the %s type"
                name longident lid type_name)
@@ -5343,14 +5345,15 @@ let report_error ~loc env = function
       Location.errorf ~loc "%s" msg
   | Undefined_method (ty, me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        fprintf ppf
-          "@[<v>@[This expression has type@;<1 2>%a@]@,\
-           It has no method %s@]" type_expr ty me;
-        begin match valid_methods with
-          | None -> ()
-          | Some valid_methods -> spellcheck ppf me valid_methods
-        end
-      ) ()
+        Printtyp.wrap_printing_env ~error:true env (fun () ->
+          fprintf ppf
+            "@[<v>@[This expression has type@;<1 2>%a@]@,\
+             It has no method %s@]" Printtyp.type_expr ty me;
+          begin match valid_methods with
+            | None -> ()
+            | Some valid_methods -> spellcheck ppf me valid_methods
+          end
+      )) ()
   | Undefined_inherited_method (me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
         fprintf ppf "This expression has no method %s" me;
@@ -5368,7 +5371,7 @@ let report_error ~loc env = function
       Location.errorf ~loc "The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        report_subtyping_error ppf env tr1 "is not a subtype of" tr2
+        Printtyp.report_subtyping_error ppf env tr1 "is not a subtype of" tr2
       ) ()
   | Outside_class ->
       Location.errorf ~loc
@@ -5381,10 +5384,10 @@ let report_error ~loc env = function
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
-             let ty, ty' = prepare_expansion (ty, ty') in
+             let ty, ty' = Printtyp.prepare_expansion (ty, ty') in
              fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \
                           it has type"
-             (type_expansion ty) ty')
+             (Printtyp.type_expansion ty) ty')
           (function ppf ->
              fprintf ppf "but is here used with type");
         if b then
@@ -5398,13 +5401,13 @@ let report_error ~loc env = function
         Location.errorf ~loc
           "This function expects too many arguments,@ \
            it should have type@ %a%t"
-          type_expr ty
+          Printtyp.type_expr ty
           (report_type_expected_explanation_opt explanation)
       end else begin
         Location.errorf ~loc
           "This expression should not be a function,@ \
            the expected type is@ %a%t"
-          type_expr ty
+          Printtyp.type_expr ty
           (report_type_expected_explanation_opt explanation)
       end
   | Abstract_wrong_label (l, ty, explanation) ->
@@ -5414,24 +5417,24 @@ let report_error ~loc env = function
                        (prefixed_label_name l) in
       Location.errorf ~loc
         "@[<v>@[<2>This function should have type@ %a%t@]@,%s@]"
-        type_expr ty
+        Printtyp.type_expr ty
         (report_type_expected_explanation_opt explanation)
         (label_mark l)
   | Scoping_let_module(id, ty) ->
       Location.errorf ~loc
         "This `let module' expression has type@ %a@ \
          In this type, the locally bound module name %s escapes its scope"
-        type_expr ty id
+        Printtyp.type_expr ty id
   | Private_type ty ->
       Location.errorf ~loc "Cannot create values of the private type %a"
-        type_expr ty
+        Printtyp.type_expr ty
   | Private_label (lid, ty) ->
       Location.errorf ~loc "Cannot assign field %a of the private type %a"
-        longident lid type_expr ty
+        longident lid Printtyp.type_expr ty
   | Private_constructor (constr, ty) ->
       Location.errorf ~loc
         "Cannot use private constructor %s to create values of type %a"
-        constr.cstr_name type_expr ty
+        constr.cstr_name Printtyp.type_expr ty
   | Not_a_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->
@@ -5451,7 +5454,7 @@ let report_error ~loc env = function
   | Not_a_packed_module ty ->
       Location.errorf ~loc
         "This expression is packed module, but the expected type is@ %a"
-        type_expr ty
+        Printtyp.type_expr ty
   | Unexpected_existential (reason, name, types) ->
       let reason_str =
         match reason with
@@ -5557,7 +5560,8 @@ let report_error ~loc env = function
           fprintf ppf "but bindings were expected of type")
 
 let report_error ~loc env err =
-  wrap_printing_env ~error:true env (fun () -> report_error ~loc env err)
+  Printtyp.wrap_printing_env ~error:true env
+    (fun () -> report_error ~loc env err)
 
 let () =
   Location.register_error_of_exn

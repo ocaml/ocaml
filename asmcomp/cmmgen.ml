@@ -630,8 +630,8 @@ let rec transl env e =
       let raise_num = next_raise_count () in
       let id_prev = VP.create (V.create_local "*id_prev*") in
       return_unit dbg
-        (Clet
-           (id, transl env low,
+        (Clet_mut
+           (id, typ_int, transl env low,
             bind_nonvar "bound" (transl env high) (fun high ->
               ccatch
                 (raise_num, [],
@@ -1172,11 +1172,22 @@ and transl_let env str kind id exp body =
   | No_unboxing | Boxed (_, true) | No_result ->
       (* N.B. [body] must still be traversed even if [exp] will never return:
          there may be constant closures inside that need lifting out. *)
-      Clet(id, cexp, transl env body)
-  | Boxed (boxed_number, _false) ->
+      begin match str, kind with
+      | Immutable, _ -> Clet(id, cexp, transl env body)
+      | Mutable, Pintval -> Clet_mut(id, typ_int, cexp, transl env body)
+      | Mutable, _ -> Clet_mut(id, typ_val, cexp, transl env body)
+      end
+  | Boxed (boxed_number, false) ->
       let unboxed_id = V.create_local (VP.name id) in
-      Clet(VP.create unboxed_id, unbox_number dbg boxed_number cexp,
-           transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
+      let v = VP.create unboxed_id in
+      let cexp = unbox_number dbg boxed_number cexp in
+      let body =
+        transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body in
+      begin match str, boxed_number with
+      | Immutable, _ -> Clet (v, cexp, body)
+      | Mutable, Boxed_float _ -> Clet_mut (v, typ_float, cexp, body)
+      | Mutable, Boxed_integer _ -> Clet_mut (v, typ_int, cexp, body)
+      end
 
 and make_catch ncatch body handler dbg = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
