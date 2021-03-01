@@ -241,13 +241,22 @@ let run
       else (Test_result.fail_with_reason reason, env)
     end
 
-let run_program =
+let run_program
+    (log : out_channel)
+    (env : Environments.t)
+  =
+  let can_skip =
+    let run_can_skip =
+    Environments.lookup_as_bool Builtin_variables.run_can_skip env in
+    run_can_skip = Some true in
   run
     ~log_message:"Running program"
     ~redirect_output:true
-    ~can_skip:false
+    ~can_skip
     ~prog:Builtin_variables.program
     ~args:(Some Builtin_variables.arguments)
+    log
+    env
 
 let run_script log env =
   let response_file = Filename.temp_file "ocamltest-" ".response" in
