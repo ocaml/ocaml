@@ -5,9 +5,9 @@ Working version
 
 ### Language features
 
-- #8820: quoted extensions: {%foo|...|} is lighter syntax for
+- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
   [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
-  (Gabriel Radanne, Leo White and Gabriel Scherer,
+  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
    request by Bikal Lem)
 
 - #6673, #1132: Relax the handling of explicit polymorphic types
@@ -43,6 +43,9 @@ Working version
 
 - #9230: Memprof support for native allocations.
   (Jacques-Henri Jourdan and Stephen Dolan, review by Gabriel Scherer)
+
+- #9279: Memprof optimisation.
+  (Stephen Dolan, review by Jacques-Henri Jourdan)
 
 ### Code generation and optimizations:
 
@@ -87,6 +90,10 @@ Working version
   (Christopher Zimmermann, review by David Allsopp)
 
 ### Tools:
+
+- #9276: objinfo: cm[x]a print extra C options, objects and dlls in
+  the order given on the cli. Follow up to #4949.
+  (Daniel Bünzli, review by Gabriel Scherer)
 
 - #463: objinfo: better errors on object files coming
   from a different (older or newer), incompatible compiler version.
@@ -193,6 +200,9 @@ Working version
   collected call stack, and make sure ocamlc preserves such events
   even if they are at tail position.
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
+
+- #9274, avoid reading cmi file while printing types
+  (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 4.10.0
 ------------
@@ -306,8 +316,9 @@ OCaml 4.10.0
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
 
-- #9268: Fix bytecode backtrace generation when large integers are present.
-  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer)
+- #9268, #9271: Fix bytecode backtrace generation with large integers present.
+  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer and
+   Jacques-Henri Jourdan)
 
 ### Standard library:
 
@@ -404,6 +415,11 @@ OCaml 4.10.0
   make the name of those anchor explicits.
   (Florian Angeletti, review by Daniel Bünzli, Sébastien Hinderer,
    and Gabriel Scherer)
+
+- #9257, cautionary guidelines for using the internal runtime API
+  without too much updating pain.
+  (Florian Angeletti, review by Daniel Bünzli, Guillaume Munch-Maccagnoni
+   and KC Sivaramakrishnan)
 
 
 - #8950: move local opens in pattern out of the extension chapter
@@ -682,6 +698,10 @@ OCaml 4.10.0
 - #9209, #9212: fix a development-version regression caused by #2288
   (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
    and Gabriel Scherer )
+
+- #9218, #9269: avoid a rare wrong module name error with "-annot" and
+  inline records.
+  (Florian Angeletti, review by Gabriel Scherer, report by Kate Deplaix)
 
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)

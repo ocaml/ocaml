@@ -402,6 +402,7 @@ parsing/printast.cmo : \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     parsing/printast.cmi
 parsing/printast.cmx : \
@@ -409,6 +410,7 @@ parsing/printast.cmx : \
     parsing/parsetree.cmi \
     parsing/longident.cmx \
     parsing/location.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmi \
     parsing/printast.cmi
 parsing/printast.cmi : \
@@ -931,6 +933,7 @@ typing/printtyped.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     typing/printtyped.cmi
 typing/printtyped.cmx : \
@@ -942,6 +945,7 @@ typing/printtyped.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmi \
     typing/printtyped.cmi
 typing/printtyped.cmi : \
@@ -1211,6 +1215,7 @@ typing/typedecl.cmo : \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
+    parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/oprint.cmi \
@@ -1220,7 +1225,6 @@ typing/typedecl.cmo : \
     typing/includecore.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    typing/datarepr.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
@@ -1245,6 +1249,7 @@ typing/typedecl.cmx : \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
+    parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/oprint.cmx \
@@ -1254,7 +1259,6 @@ typing/typedecl.cmx : \
     typing/includecore.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    typing/datarepr.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
@@ -1659,6 +1663,7 @@ bytecomp/bytegen.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     utils/config.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     bytecomp/bytegen.cmi
 bytecomp/bytegen.cmx : \
@@ -1673,6 +1678,7 @@ bytecomp/bytegen.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     utils/config.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmi \
     bytecomp/bytegen.cmi
 bytecomp/bytegen.cmi : \
@@ -2593,6 +2599,7 @@ asmcomp/printcmm.cmo : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
+    utils/clflags.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/printcmm.cmi
@@ -2601,6 +2608,7 @@ asmcomp/printcmm.cmx : \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
+    utils/clflags.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/printcmm.cmi
@@ -2613,6 +2621,7 @@ asmcomp/printlinear.cmo : \
     asmcomp/linear.cmi \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
+    utils/clflags.cmi \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmx : \
     asmcomp/printmach.cmx \
@@ -2620,6 +2629,7 @@ asmcomp/printlinear.cmx : \
     asmcomp/linear.cmx \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
+    utils/clflags.cmx \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmi : \
     asmcomp/linear.cmi
@@ -2946,11 +2956,13 @@ middle_end/backend_var.cmo : \
     typing/path.cmi \
     typing/ident.cmi \
     lambda/debuginfo.cmi \
+    utils/clflags.cmi \
     middle_end/backend_var.cmi
 middle_end/backend_var.cmx : \
     typing/path.cmx \
     typing/ident.cmx \
     lambda/debuginfo.cmx \
+    utils/clflags.cmx \
     middle_end/backend_var.cmi
 middle_end/backend_var.cmi : \
     typing/path.cmi \
@@ -3284,6 +3296,7 @@ lambda/printlambda.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    utils/clflags.cmi \
     parsing/asttypes.cmi \
     lambda/printlambda.cmi
 lambda/printlambda.cmx : \
@@ -3293,6 +3306,7 @@ lambda/printlambda.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    utils/clflags.cmx \
     parsing/asttypes.cmi \
     lambda/printlambda.cmi
 lambda/printlambda.cmi : \
@@ -5994,6 +6008,7 @@ toplevel/genprintval.cmo : \
     typing/oprint.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
+    parsing/lexer.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     typing/datarepr.cmi \
@@ -6011,6 +6026,7 @@ toplevel/genprintval.cmx : \
     typing/oprint.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
+    parsing/lexer.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     typing/datarepr.cmx \

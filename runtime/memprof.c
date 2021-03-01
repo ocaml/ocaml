@@ -63,6 +63,10 @@ static int init = 0;
 /* Whether memprof is started. */
 static int started = 0;
 
+/* Buffer used to compute backtraces */
+static value* callstack_buffer = NULL;
+static intnat callstack_buffer_len = 0;
+
 /**** Statistical sampling ****/
 
 static double mt_generate_uniform(void)
@@ -147,10 +151,20 @@ static uintnat mt_generate_binom(uintnat len)
 static value capture_callstack_postponed()
 {
   value res;
-  uintnat wosize = caml_current_callstack_size(callstack_size);
-  if (wosize == 0) return Atom(0);
-  res = caml_alloc_shr_no_track_noexc(wosize, 0);
-  if (res != 0) caml_current_callstack_write(res, -1);
+  intnat callstack_len =
+    caml_collect_current_callstack(&callstack_buffer, &callstack_buffer_len,
+                                   callstack_size, -1);
+  if (callstack_len == 0)
+    return Atom(0);
+  res = caml_alloc_shr_no_track_noexc(callstack_len, 0);
+  if (res == 0)
+    return Atom(0);
+  memcpy(Op_val(res), callstack_buffer, sizeof(value) * callstack_len);
+  if (callstack_buffer_len > 256 && callstack_buffer_len > callstack_len * 8) {
+    caml_stat_free(callstack_buffer);
+    callstack_buffer = NULL;
+    callstack_buffer_len = 0;
+  }
   return res;
 }
 
@@ -161,10 +175,17 @@ static value capture_callstack_postponed()
 static value capture_callstack(int alloc_idx)
 {
   value res;
-  uintnat wosize = caml_current_callstack_size(callstack_size);
+  intnat callstack_len =
+    caml_collect_current_callstack(&callstack_buffer, &callstack_buffer_len,
+                                   callstack_size, alloc_idx);
   CAMLassert(caml_memprof_suspended);
-  res = caml_alloc(wosize, 0);
-  caml_current_callstack_write(res, alloc_idx);
+  res = caml_alloc(callstack_len, 0);
+  memcpy(Op_val(res), callstack_buffer, sizeof(value) * callstack_len);
+  if (callstack_buffer_len > 256 && callstack_buffer_len > callstack_len * 8) {
+    caml_stat_free(callstack_buffer);
+    callstack_buffer = NULL;
+    callstack_buffer_len = 0;
+  }
   return res;
 }
 
@@ -841,6 +862,9 @@ void caml_memprof_shutdown(void) {
   caml_stat_free(trackst.entries);
   trackst.entries = NULL;
   trackst.alloc_len = 0;
+  caml_stat_free(callstack_buffer);
+  callstack_buffer = NULL;
+  callstack_buffer_len = 0;
 }
 
 CAMLprim value caml_memprof_start(value lv, value szv,
@@ -925,6 +949,10 @@ CAMLprim value caml_memprof_stop(value unit)
   caml_remove_generational_global_root(&callback_promote);
   caml_remove_generational_global_root(&callback_dealloc_minor);
   caml_remove_generational_global_root(&callback_dealloc_major);
+
+  caml_stat_free(callstack_buffer);
+  callstack_buffer = NULL;
+  callstack_buffer_len = 0;
 
   return Val_unit;
 }

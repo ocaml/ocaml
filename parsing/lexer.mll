@@ -621,7 +621,7 @@ and comment = parse
         is_in_string := false;
         store_string_char '\"';
         comment lexbuf }
-  | "{" (lowercase* as delim) "|"
+  | "{" ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
       {
         string_start_loc := Location.curr lexbuf;
         store_lexeme lexbuf;
@@ -640,7 +640,6 @@ and comment = parse
         store_string delim;
         store_string_char '}';
         comment lexbuf }
-
   | "\'\'"
       { store_lexeme lexbuf; comment lexbuf }
   | "\'" newline "\'"
@@ -671,7 +670,7 @@ and comment = parse
         store_lexeme lexbuf;
         comment lexbuf
       }
-  | (lowercase | uppercase) identchar *
+  | ident
       { store_lexeme lexbuf; comment lexbuf }
   | _
       { store_lexeme lexbuf; comment lexbuf }

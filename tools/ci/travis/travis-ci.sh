@@ -136,6 +136,8 @@ EOF
     $MAKE world.opt
     $MAKE ocamlnat
   fi
+  echo Ensuring that all names are prefixed in the runtime
+  ./tools/check-symbol-names runtime/*.a
   cd testsuite
   echo Running the testsuite with the normal runtime
   $MAKE all
