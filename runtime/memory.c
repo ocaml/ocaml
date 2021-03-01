@@ -347,7 +347,7 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
   CAMLreturn0;
 }
 
-static inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
+Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
 {
   caml_domain_state *dom_st = Caml_state;
   value *v = caml_shared_try_alloc(dom_st->shared_heap, wosize, tag, 0);

@@ -49,7 +49,7 @@ Working version
 
 ### Code generation and optimizations:
 
-- #8637, #8805, #9247: Record debug info for each allocation.
+- #8637, #8805, #9247, #9296: Record debug info for each allocation.
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
    KC Sivaramakrishnan and Xavier Leroy)
 
@@ -89,6 +89,10 @@ Working version
 - #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann, review by David Allsopp)
 
+- #9183: Preserve exception backtrace of exceptions raised by top-level phrases
+  of dynlinked modules.
+  (Nicolás Ojeda Bär, review by Xavier Clerc and Gabriel Scherer)
+
 ### Tools:
 
 - #9276: objinfo: cm[x]a print extra C options, objects and dlls in
@@ -125,6 +129,9 @@ Working version
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
 
+- #9255, #9300: reference chapter, split the expression grammar
+  (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #9074: reworded error message for non-regular structural types
@@ -150,6 +157,13 @@ Working version
  - #463: a new Misc.Magic_number module for user-friendly parsing
    and validation of OCaml magic numbers.
    (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
+
+- #1176: encourage better compatibility with older Microsoft C compilers by
+  using GCC's -Wdeclaration-after-statement when available. Introduce
+  Caml_inline to stop abuse of the inline keyword on MSVC and to help ensure
+  that only static inline is used in the codebase (erroneous instance in
+  runtime/win32.c removed).
+  (David Allsopp, review by Oliver Andrieu and Xavier Leroy)
 
 - #8970: separate value patterns (matching on values) from computation patterns
   (matching on the effects of a copmutation) in the typedtree.
@@ -231,10 +245,10 @@ OCaml 4.10.0
 
 ### Runtime system:
 
-- #8809: Add a best-fit allocator for the major heap; still experimental,
-  it should be much better than current allocation policies (first-fit and
-  next-fit) for programs with large heaps, reducing both GC cost and
-  memory usage.
+- #8809, #9292: Add a best-fit allocator for the major heap; still
+  experimental, it should be much better than current allocation
+  policies (first-fit and next-fit) for programs with large heaps,
+  reducing both GC cost and memory usage.
   This new best-fit is not (yet) the default; set it explicitly with
   OCAMLRUNPARAM="a=2" (or Gc.set from the program). You may also want
   to increase the `space_overhead` parameter of the GC (a percentage,
