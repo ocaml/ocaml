@@ -66,8 +66,12 @@ Working version
 - #9280: Micro-optimise allocations on amd64 to save a register.
   (Stephen Dolan, review by Xavier Leroy)
 
-- #9316: Use typing information from Clambda for mutable Cmm variables.
-  (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
+- #9316, #9443: Use typing information from Clambda for mutable Cmm variables.
+  (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
+  and Gabriel Scherer)
+
+- #9426: build the Mingw ports with higher levels of GCC optimization
+  (Xavier Leroy, review by Sébastien Hinderer)
 
 ### Code generation and optimizations:
 
@@ -253,6 +257,9 @@ Working version
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 
+- #9321, #9322, #9359, #9361, #9417: refactor the pattern-matching compiler
+  (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
+
 - #9211, #9215, #9222: fix Makefile dependencies in
   compilerlibs, dynlink, ocamltest.
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
@@ -278,8 +285,18 @@ Working version
   may not match the one in bytecode.
   (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
 
+- #7696, #6608: Record expression deleted when all fields specified
+  (Jacques Garrigue, report by Jeremy Yallop)
+
+- #7917, #9426: Use GCC option -fexcess-precision=standard when available,
+  avoiding a problem with x87 excess precision in Float.round.
+  (Xavier Leroy, review by Sébastien Hinderer)
+
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
+
+- #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
+  (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
 
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
@@ -309,6 +326,14 @@ Working version
 
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
+
+- #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
+  (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
+
+- #9428: Fix truncated exception backtrace for C->OCaml callbacks
+  on Power and Z System
+  (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 
 OCaml 4.10 maintenance branch
 -----------------------------
@@ -1613,6 +1638,9 @@ OCaml 4.08.0 (13 June 2019)
 
 - #8508: refresh \moduleref macro
   (Florian Angeletti, review by Gabriel Scherer)
+
+- 9410: replaced fibonacci example with gcd of coreexamples manual
+  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
 
 ### Code generation and optimizations:
 

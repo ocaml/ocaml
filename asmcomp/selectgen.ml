@@ -692,11 +692,7 @@ method emit_expr (env:environment) exp =
   | Clet_mut(v, k, e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
-      | Some r1 ->
-        let rv = Reg.createv k in
-        name_regs v rv;
-        self#insert_moves env r1 rv;
-        self#emit_expr (env_add ~mut:Mutable v rv env) e2
+      | Some r1 -> self#emit_expr (self#bind_let_mut env v k r1) e2
       end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_expr env body
@@ -916,6 +912,12 @@ method private bind_let (env:environment) v r1 =
     env_add v rv env
   end
 
+method private bind_let_mut (env:environment) v k r1 =
+  let rv = Reg.createv k in
+  name_regs v rv;
+  self#insert_moves env r1 rv;
+  env_add ~mut:Mutable v rv env
+
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass
    (and to be consistent with the bytecode compiler). *)
@@ -1075,6 +1077,11 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
+  | Clet_mut (v, k, e1, e2) ->
+     begin match self#emit_expr env e1 with
+       None -> ()
+     | Some r1 -> self#emit_tail (self#bind_let_mut env v k r1) e2
+     end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_tail env body
   | Cop((Capply ty) as op, args, dbg) ->
@@ -1210,8 +1217,14 @@ method emit_tail (env:environment) exp =
           self#insert_moves env r1 loc;
           self#insert env Ireturn loc [||]
       end
-  | _ ->
-      self#emit_return env exp
+  | Cop _
+  | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
+  | Cvar _
+  | Cassign _
+  | Ctuple _
+  | Cexit _ ->
+    self#emit_return env exp
 
 method private emit_tail_sequence env exp =
   let s = {< instr_seq = dummy_instr >} in

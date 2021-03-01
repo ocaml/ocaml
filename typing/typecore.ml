@@ -2970,11 +2970,8 @@ and type_expect_
       let num_fields =
         match lbl_exp_list with [] -> assert false
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
-      let opt_exp =
-        if opt_sexp <> None && List.length lid_sexp_list = num_fields then
-          (Location.prerr_warning loc Warnings.Useless_record_with; None)
-        else opt_exp
-      in
+      if opt_sexp <> None && List.length lid_sexp_list = num_fields then
+        Location.prerr_warning loc Warnings.Useless_record_with;
       let label_descriptions, representation =
         let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
         lbl_all, lbl_repres

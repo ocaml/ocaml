@@ -569,35 +569,48 @@ AS_CASE([$enable_warn_error,AC_PACKAGE_VERSION],
 # in the macro itself, too
 AS_CASE([$host],
   [*-*-mingw32],
-    [internal_cflags="-Wno-unused $gcc_warnings"
-    # TODO: see whether the code can be fixed to avoid -Wno-unused
-    common_cflags="-O -mms-bitfields"
-    internal_cppflags='-DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    [AS_CASE([$ocaml_cv_cc_vendor],
+      [gcc-[[01234]]-*],
+        [AC_MSG_ERROR(m4_normalize([This version of Mingw GCC is too old.
+          Please use GCC version 5 or above.]))],
+      [gcc-*],
+        [internal_cflags="-Wno-unused $gcc_warnings"
+        # TODO: see whether the code can be fixed to avoid -Wno-unused
+        common_cflags="-O2 -fno-strict-aliasing -fwrapv \
+-fexcess-precision=standard -mms-bitfields"
+        internal_cppflags='-DUNICODE -D_UNICODE'
+        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+      [AC_MSG_ERROR([Unsupported C compiler for a Mingw build])])],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
       internal_cflags="$gcc_warnings -fno-common"],
-    [gcc-[012]-*],
+    [gcc-[[012]]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
-      [AC_MSG_ERROR([This version of GCC is too old.
-        Please use GCC version 4.2 or above.])],
-    [gcc-3-*|gcc-4-[01]],
+      [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
+        Please use GCC version 4.2 or above.]))],
+    [gcc-3-*|gcc-4-[[01]]],
       # No -fwrapv option before GCC 3.4.
       # Known problems with -fwrapv fixed in 4.2 only.
-      [AC_MSG_WARN([This version of GCC is rather old.
-        Reducing optimization level."]);
+      [AC_MSG_WARN(m4_normalize([This version of GCC is rather old.
+        Reducing optimization level."]));
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
       internal_cflags="$gcc_warnings"],
-    [gcc-4-*],
+    [gcc-4-[[234]]],
+      # No -fexcess-precision option before GCC 4.5
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
       internal_cflags="$gcc_warnings"],
+    [gcc-4-*],
+      [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp -fexcess-precision=standard";
+      internal_cflags="$gcc_warnings"],
     [gcc-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+      [common_cflags="-O2 -fno-strict-aliasing -fwrapv \
+-fexcess-precision=standard";
       internal_cflags="$gcc_warnings -fno-common"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD $gcc_warnings"
@@ -1033,20 +1046,18 @@ AS_CASE(["$arch,$system"],
   [s390x,elf],
     [default_as="${toolpref}as -m 64 -march=$model"
     default_aspp="${toolpref}gcc -c -Wa,-march=$model"],
-  [arm,freebsd|arm64,freebsd],
-    [default_as="${toolpref}cc -c"
-    default_aspp="${toolpref}cc -c"],
+  [*,freebsd],
+    [default_as="${toolpref}cc -c -Wno-trigraphs"
+    default_aspp="${toolpref}cc -c -Wno-trigraphs"],
   [*,dragonfly],
     [default_as="${toolpref}as"
     default_aspp="${toolpref}cc -c"],
-  [*,freebsd],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c"],
   [amd64,*|arm,*|arm64,*|i386,*],
-    [default_as="${toolpref}as"
-    AS_CASE([$ocaml_cv_cc_vendor],
-      [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
-      [default_aspp="${toolpref}gcc -c"])])
+    [AS_CASE([$ocaml_cv_cc_vendor],
+      [clang-*], [default_as="${toolpref}clang -c -Wno-trigraphs"
+                  default_aspp="${toolpref}clang -c -Wno-trigraphs"],
+      [default_as="${toolpref}as"
+      default_aspp="${toolpref}gcc -c"])])
 
 AS_IF([test "$with_pic"],
   [fpic=true
