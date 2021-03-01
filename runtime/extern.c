@@ -32,7 +32,6 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/reverse.h"
-#include "caml/addrmap.h"
 
 static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */
@@ -49,8 +48,6 @@ enum {
 
 static int extern_flags;        /* logical or of some of the flags above */
 
-static struct addrmap recorded_objs = ADDRMAP_INIT;
-
 /* Stack for pending values to marshal */
 
 struct extern_item { value * v; mlsize_t count; };
@@ -63,6 +60,43 @@ static struct extern_item extern_stack_init[EXTERN_STACK_INIT_SIZE];
 static struct extern_item * extern_stack = extern_stack_init;
 static struct extern_item * extern_stack_limit = extern_stack_init
                                                    + EXTERN_STACK_INIT_SIZE;
+
+/* Hash table to record already-marshaled objects and their positions */
+
+struct object_position { value obj; uintnat pos; };
+
+/* The hash table uses open addressing, linear probing, and a redundant
+   representation:
+   - a bitvector [present] records which entries of the table are occupied;
+   - an array [entries] records (object, position) pairs for the entries
+     that are occupied.
+   The bitvector is much smaller than the array (1/128th on 64-bit
+   platforms, 1/64th on 32-bit platforms), so it has better locality,
+   making it faster to determine that an object is not in the table.
+   Also, it makes it faster to empty or initialize a table: only the
+   [present] bitvector needs to be filled with zeros, the [entries]
+   array can be left uninitialized.
+*/
+
+struct position_table {
+  int shift;
+  mlsize_t size;                    /* size == 1 << (wordsize - shift) */
+  mlsize_t mask;                    /* mask == size - 1 */
+  mlsize_t threshold;               /* threshold == a fixed fraction of size */
+  uintnat * present;                /* [Bitvect_size(size)] */
+  struct object_position * entries; /* [size]  */
+};
+
+#define Bits_word (8 * sizeof(uintnat))
+#define Bitvect_size(n) (((n) + Bits_word - 1) / Bits_word)
+
+#define POS_TABLE_INIT_SIZE_LOG2 8
+#define POS_TABLE_INIT_SIZE (1 << POS_TABLE_INIT_SIZE_LOG2)
+
+static uintnat pos_table_present_init[Bitvect_size(POS_TABLE_INIT_SIZE)];
+static struct object_position pos_table_entries_init[POS_TABLE_INIT_SIZE];
+
+static struct position_table pos_table;
 
 /* Forward declarations */
 
@@ -117,10 +151,148 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   return newstack + sp_offset;
 }
 
-static void extern_record_location(value* loc) {
+/* Multiplicative Fibonacci hashing
+   (Knuth, TAOCP vol 3, section 6.4, page 518).
+   HASH_FACTOR is (sqrt(5) - 1) / 2 * 2^wordsize. */
+#ifdef ARCH_SIXTYFOUR
+#define HASH_FACTOR 11400714819323198486UL
+#else
+#define HASH_FACTOR 2654435769UL
+#endif
+#define Hash(v) (((uintnat)(v) * HASH_FACTOR) >> pos_table.shift)
+
+/* When the table becomes 2/3 full, its size is increased. */
+#define Threshold(sz) (((sz) * 2) / 3)
+
+/* Initialize the position table */
+
+static void extern_init_position_table(void)
+{
   if (extern_flags & NO_SHARING) return;
-  Assert(loc);
-  *loc = Val_long(obj_counter++);
+  pos_table.size = POS_TABLE_INIT_SIZE;
+  pos_table.shift = 8 * sizeof(value) - POS_TABLE_INIT_SIZE_LOG2;
+  pos_table.mask = POS_TABLE_INIT_SIZE - 1;
+  pos_table.threshold = Threshold(POS_TABLE_INIT_SIZE);
+  pos_table.present = pos_table_present_init;
+  pos_table.entries = pos_table_entries_init;
+  memset(pos_table_present_init, 0, sizeof(pos_table_present_init));
+}
+
+/* Free the position table */
+
+static void extern_free_position_table(void)
+{
+  if (pos_table.present != pos_table_present_init) {
+    caml_stat_free(pos_table.present);
+    caml_stat_free(pos_table.entries);
+    /* Protect against repeated calls to extern_free_position_table */
+    pos_table.present = pos_table_present_init;
+  }
+}
+
+/* Accessing bitvectors */
+
+Caml_inline uintnat bitvect_test(uintnat * bv, uintnat i)
+{
+  return bv[i / Bits_word] & ((uintnat) 1 << (i & (Bits_word - 1)));
+}
+
+Caml_inline void bitvect_set(uintnat * bv, uintnat i)
+{
+  bv[i / Bits_word] |= ((uintnat) 1 << (i & (Bits_word - 1)));
+}
+
+/* Grow the position table */
+
+static void extern_resize_position_table(void)
+{
+  mlsize_t new_size, new_byte_size;
+  int new_shift;
+  uintnat * new_present;
+  struct object_position * new_entries;
+  uintnat i, h;
+  struct position_table old = pos_table;
+
+  /* Grow the table quickly (x 8) up to 10^6 entries,
+     more slowly (x 2) afterwards. */
+  if (old.size < 1000000) {
+    new_size = 8 * old.size;
+    new_shift = old.shift - 3;
+  } else {
+    new_size = 2 * old.size;
+    new_shift = old.shift - 1;
+  }
+  if (new_size == 0
+      || caml_umul_overflow(new_size, sizeof(struct object_position),
+                            &new_byte_size))
+    extern_out_of_memory();
+  new_entries = caml_stat_alloc_noexc(new_byte_size);
+  if (new_entries == NULL) extern_out_of_memory();
+  new_present =
+    caml_stat_calloc_noexc(Bitvect_size(new_size), sizeof(uintnat));
+  if (new_present == NULL) {
+    caml_stat_free(new_entries);
+    extern_out_of_memory();
+  }
+  pos_table.size = new_size;
+  pos_table.shift = new_shift;
+  pos_table.mask = new_size - 1;
+  pos_table.threshold = Threshold(new_size);
+  pos_table.present = new_present;
+  pos_table.entries = new_entries;
+
+  /* Insert every entry of the old table in the new table */
+  for (i = 0; i < old.size; i++) {
+    if (! bitvect_test(old.present, i)) continue;
+    h = Hash(old.entries[i].obj);
+    while (bitvect_test(new_present, h)) {
+      h = (h + 1) & pos_table.mask;
+    }
+    bitvect_set(new_present, h);
+    new_entries[h] = old.entries[i];
+  }
+
+  /* Free the old tables if not statically allocated */
+  if (old.present != pos_table_present_init) {
+    caml_stat_free(old.present);
+    caml_stat_free(old.entries);
+  }
+}
+
+/* Determine whether the given object [obj] is in the hash table.
+   If so, set [*pos_out] to its position in the output and return 1.
+   If not, set [*h_out] to the hash value appropriate for
+   [extern_record_location] and return 0. */
+
+Caml_inline int extern_lookup_position(value obj,
+                                       uintnat * pos_out, uintnat * h_out)
+{
+  uintnat h = Hash(obj);
+  while (1) {
+    if (! bitvect_test(pos_table.present, h)) {
+      *h_out = h;
+      return 0;
+    }
+    if (pos_table.entries[h].obj == obj) {
+      *pos_out = pos_table.entries[h].pos;
+      return 1;
+    }
+    h = (h + 1) & pos_table.mask;
+  }
+}
+
+/* Record the output position for the given object [obj]. */
+/* The [h] parameter is the index in the hash table where the object
+   must be inserted.  It was determined during lookup. */
+
+static void extern_record_location(value obj, uintnat h)
+{
+  if (extern_flags & NO_SHARING) return;
+  bitvect_set(pos_table.present, h);
+  pos_table.entries[h].obj = obj;
+  pos_table.entries[h].pos = obj_counter;
+  obj_counter++;
+  if (obj_counter >= pos_table.threshold) extern_resize_position_table();
 }
 
 /* To buffer the output */
@@ -166,6 +338,7 @@ static void free_extern_output(void)
     extern_output_first = NULL;
   }
   extern_free_stack();
+  extern_free_position_table();
 }
 
 static void grow_extern_output(intnat required)
@@ -208,29 +381,25 @@ static intnat extern_output_length(void)
 
 static void extern_out_of_memory(void)
 {
-  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_raise_out_of_memory();
 }
 
 static void extern_invalid_argument(char *msg)
 {
-  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_invalid_argument(msg);
 }
 
 static void extern_failwith(char *msg)
 {
-  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_failwith(msg);
 }
 
 static void extern_stack_overflow(void)
 {
-  caml_gc_log ("Stack overflow in marshaling value");
-  caml_addrmap_clear(&recorded_objs);
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n");
   free_extern_output();
   caml_raise_out_of_memory();
 }
@@ -313,11 +482,15 @@ static void writecode64(int code, intnat val)
 
 /* Marshal the given value in the output buffer */
 
-int caml_extern_allow_out_of_heap = 0;
+int caml_extern_allow_out_of_heap = 0; /* TODO: not implemented in multicore */
 
 static void extern_rec(value v)
 {
   struct extern_item * sp;
+  uintnat h = 0;
+  uintnat pos = 0;
+
+  extern_init_position_table();
   sp = extern_stack;
 
   while(1) {
@@ -340,16 +513,18 @@ static void extern_rec(value v)
       writecode32(CODE_INT32, n);
     goto next_item;
   } else {
+    /* NB: in multicore we do not guard for extern_allow_out_of_heap */
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
-    value* output_location;
 
     if (tag == Forward_tag) {
       value f = Forward_val (v);
       if (Is_block (f)
-          && (Tag_val (f) == Forward_tag
-              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
+          && (   Tag_val (f) == Forward_tag
+              || Tag_val (f) == Lazy_tag
+              || Tag_val (f) == Double_tag
+              )){
         /* Do not short-circuit the pointer. */
       }else{
         v = f;
@@ -370,26 +545,23 @@ static void extern_rec(value v)
       }
       goto next_item;
     }
-    /* Check if already seen */
-    if (extern_flags & NO_SHARING) {
-      output_location = 0;
-    } else {
-      output_location = caml_addrmap_insert_pos(&recorded_objs, v);
-    }
-    if (output_location && *output_location != ADDRMAP_NOT_PRESENT) {
-      uintnat d = obj_counter - (uintnat)Long_val(*output_location);
-      if (d < 0x100) {
-        writecode8(CODE_SHARED8, d);
-      } else if (d < 0x10000) {
-        writecode16(CODE_SHARED16, d);
+    /* Check if object already seen */
+    if (! (extern_flags & NO_SHARING)) {
+      if (extern_lookup_position(v, &pos, &h)) {
+        uintnat d = obj_counter - pos;
+        if (d < 0x100) {
+          writecode8(CODE_SHARED8, d);
+        } else if (d < 0x10000) {
+          writecode16(CODE_SHARED16, d);
 #ifdef ARCH_SIXTYFOUR
-      } else if (d >= (uintnat)1 << 32) {
-        writecode64(CODE_SHARED64, d);
+        } else if (d >= (uintnat)1 << 32) {
+          writecode64(CODE_SHARED64, d);
 #endif
-      } else {
-        writecode32(CODE_SHARED32, d);
+        } else {
+          writecode32(CODE_SHARED32, d);
+        }
+        goto next_item;
       }
-      goto next_item;
     }
 
     /* Output the contents of the object */
@@ -416,7 +588,7 @@ static void extern_rec(value v)
       writeblock(String_val(v), len);
       size_32 += 1 + (len + 4) / 4;
       size_64 += 1 + (len + 8) / 8;
-      extern_record_location(output_location);
+      extern_record_location(v, h);
       break;
     }
     case Double_tag: {
@@ -426,7 +598,7 @@ static void extern_rec(value v)
       writeblock_float8((double *) v, 1);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
-      extern_record_location(output_location);
+      extern_record_location(v, h);
       break;
     }
     case Double_array_tag: {
@@ -452,24 +624,14 @@ static void extern_rec(value v)
       writeblock_float8((double *) v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
-      extern_record_location(output_location);
+      extern_record_location(v, h);
       break;
     }
     case Abstract_tag:
       extern_invalid_argument("output_value: abstract value (Abstract)");
       break;
     case Closure_tag:
-      caml_failwith("Serializing closures is broken");
-      /*
-      if ((cf = extern_find_code((char *) v)) != NULL) {
-        if ((extern_flags & CLOSURES) == 0)
-          extern_invalid_argument("output_value: functional value");
-        writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-        writeblock((char *) cf->digest, 16);
-      } else {
-        extern_invalid_argument("output_value: abstract value (outside heap)");
-      }
-      */
+      caml_failwith("Serializing closures is broken in multicore");
       break;
     case Infix_tag:
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
@@ -509,7 +671,7 @@ static void extern_rec(value v)
       }
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
-      extern_record_location(output_location);
+      extern_record_location(v, h);
       break;
     }
     default: {
@@ -537,12 +699,12 @@ static void extern_rec(value v)
       size_32 += 1 + sz;
       size_64 += 1 + sz;
       field0 = Field(v, 0);
-      extern_record_location(output_location);
+      extern_record_location(v, h);
       /* Remember that we still have to serialize fields 1 ... sz - 1 */
       if (sz > 1) {
         sp++;
         if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
-        sp->v = Op_val(v) + 1;
+        sp->v = &Field(v,1);
         sp->count = sz-1;
       }
       /* Continue serialization with the first field */
@@ -551,25 +713,12 @@ static void extern_rec(value v)
     }
     }
   }
-#if 0
-  else if (caml_find_code_fragment((char*) v, NULL, &cf)) {
-    if ((extern_flags & CLOSURES) == 0)
-      extern_invalid_argument("output_value: functional value");
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
-    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((const char *)cf->digest, 16);
-  } else {
-    extern_invalid_argument("output_value: abstract value (outside heap)");
-  }
-#endif
   next_item:
     /* Pop one more item to marshal, if any */
     if (sp == extern_stack) {
         /* We are done.   Cleanup the stack and leave the function */
         extern_free_stack();
+        extern_free_position_table();
         return;
     }
     v = *((sp->v)++);
@@ -588,7 +737,6 @@ static intnat extern_value(value v, value flags,
   /* Parse flag list */
   extern_flags = caml_convert_flag_list(flags, extern_flag_values);
   /* Initializations */
-  caml_addrmap_clear(&recorded_objs);
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
@@ -596,9 +744,7 @@ static intnat extern_value(value v, value flags,
   extern_rec(v);
   /* Record end of output */
   close_extern_output();
-  /* Delete the hashtable of recorded objects */
-  caml_addrmap_clear(&recorded_objs);
-  /* Write the sizes */
+  /* Write the header */
   res_len = extern_output_length();
 #ifdef ARCH_SIXTYFOUR
   if (res_len >= ((intnat)1 << 32) ||
@@ -657,7 +803,7 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
   CAMLparam3 (vchan, v, flags);
   struct channel * channel = Channel(vchan);
 
-  With_mutex(&channel->mutex, {
+  With_mutex(&channel-> mutex, {
     caml_output_val(channel, v, flags);
   } );
   CAMLreturn (Val_unit);
