@@ -110,20 +110,22 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | None -> ty_res
         in
         let (tag, descr_rem) =
-          match cd_args with
-          | _ when rep = Variant_unboxed ->
+          match cd_args, rep with
+          | _, Variant_unboxed ->
             assert (rem = []);
             (Cstr_unboxed, [])
-          | Cstr_tuple [] -> (Cstr_constant idx_const,
-                   describe_constructors (idx_const+1) idx_nonconst rem)
-          | _  -> (Cstr_block idx_nonconst,
-                   describe_constructors idx_const (idx_nonconst+1) rem) in
+          | Cstr_tuple [], Variant_regular ->
+             (Cstr_constant idx_const,
+              describe_constructors (idx_const+1) idx_nonconst rem)
+          | _, Variant_regular  ->
+             (Cstr_block idx_nonconst,
+              describe_constructors idx_const (idx_nonconst+1) rem) in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
-            if rep = Variant_unboxed
-            then Record_unboxed true
-            else Record_inlined idx_nonconst
+            match rep with
+            | Variant_unboxed -> Record_unboxed true
+            | Variant_regular -> Record_inlined idx_nonconst
           in
           constructor_args ~current_unit decl.type_private cd_args cd_res
             (Path.Pdot (ty_path, cstr_name)) representation
