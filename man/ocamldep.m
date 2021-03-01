@@ -95,6 +95,9 @@ the same
 .B \-I
 options that are passed to the compiler.
 .TP
+.B \-nocwd
+Do not add current working directory to the list of include directories.
+.TP
 .BI \-impl \ file
 Process
 .IR file

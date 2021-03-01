@@ -1,11 +1,7 @@
 (* TEST
    flags = "-g"
    ocamlrunparam += ",b=1"
-   * bytecode
-     reference="${test_source_directory}/backtrace_or_exception.byte.reference"
-   * native
-     reference = "${test_source_directory}/backtrace_or_exception.opt.reference"
-     compare_programs = "false"
+   compare_programs = "false"
 *)
 
 exception Exn
