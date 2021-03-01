@@ -18,6 +18,9 @@
   {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.
 
+  To print a longident, see {!Pprintast.longident}, using
+    {!Format.asprintf} to convert to a string.
+
 *)
 
 type t =
@@ -53,8 +56,3 @@ use \"Parse.longident\" or \"Longident.unflatten\""]
    input-location support.
 
 *)
-
-
-
-(** To print a longident, see {!Pprintast.longident}, using
-    {!Format.asprintf} to convert to a string. *)

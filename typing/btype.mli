@@ -100,6 +100,9 @@ val has_constr_row: type_expr -> bool
 val is_row_name: string -> bool
 val is_constr_row: allow_ident:bool -> type_expr -> bool
 
+(* Set the polymorphic variant row_name field *)
+val set_row_name : type_declaration -> Path.t -> unit
+
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
@@ -130,7 +133,7 @@ type type_iterators =
     it_path: Path.t -> unit; }
 val type_iterators: type_iterators
         (* Iteration on arbitrary type information.
-           [it_type_expr] calls [mark_type_node] to avoid loops. *)
+           [it_type_expr] calls [mark_node] to avoid loops. *)
 val unmark_iterators: type_iterators
         (* Unmark any structure containing types. See [unmark_type] below. *)
 
@@ -164,14 +167,33 @@ end
 
 val lowest_level: int
         (* Marked type: ty.level < lowest_level *)
-val pivot_level: int
-        (* Type marking: ty.level <- pivot_level - ty.level *)
+
+val not_marked_node: type_expr -> bool
+        (* Return true if a type node is not yet marked *)
+
+val logged_mark_node: type_expr -> unit
+        (* Mark a type node, logging the marking so it can be backtracked.
+           No [repr]'ing *)
+val try_logged_mark_node: type_expr -> bool
+        (* Mark a type node if it is not yet marked, logging the marking so it
+           can be backtracked.
+           Return false if it was already marked *)
+
+val flip_mark_node: type_expr -> unit
+        (* Mark a type node. No [repr]'ing.
+           The marking is not logged and will have to be manually undone using
+           one of the various [unmark]'ing functions below. *)
+val try_mark_node: type_expr -> bool
+        (* Mark a type node if it is not yet marked.
+           The marking is not logged and will have to be manually undone using
+           one of the various [unmark]'ing functions below.
+
+           Return false if it was already marked *)
 val mark_type: type_expr -> unit
-        (* Mark a type *)
-val mark_type_node: type_expr -> unit
-        (* Mark a type node (but not its sons) *)
+        (* Mark a type recursively *)
 val mark_type_params: type_expr -> unit
-        (* Mark the sons of a type node *)
+        (* Mark the sons of a type node recursively *)
+
 val unmark_type: type_expr -> unit
 val unmark_type_decl: type_declaration -> unit
 val unmark_extension_constructor: extension_constructor -> unit
@@ -241,7 +263,6 @@ val set_row_field: row_field option ref -> row_field -> unit
 val set_univar: type_expr option ref -> type_expr -> unit
 val set_kind: field_kind option ref -> field_kind -> unit
 val set_commu: commutable ref -> commutable -> unit
-val set_typeset: TypeSet.t ref -> TypeSet.t -> unit
         (* Set references, logging the old value *)
 
 (**** Forward declarations ****)

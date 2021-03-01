@@ -36,12 +36,12 @@ let word_addressed = false
     a0-a7        0-7       arguments/results
     s2-s9        8-15      arguments/results (preserved by C)
     t2-t6        16-20     temporary
-    t0           21        temporary
-    t1           22        temporary (used by code generator)
-    s0           23        domain pointer (preserved by C)
+    s0           21        general purpose (preserved by C)
+    t0           22        temporary
+    t1           23        temporary (used by code generator)
     s1           24        trap pointer (preserved by C)
     s10          25        allocation pointer (preserved by C)
-    s11          26        allocation limit (preserved by C)
+    s11          26        domain pointer (preserved by C)
 
   Floating-point register map
   ---------------------------
@@ -65,11 +65,12 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-  [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7";
-     "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9";
-     "t2"; "t3"; "t4"; "t5"; "t6";
-     "t0"; "t1";
-     "s0"; "s1"; "s10"; "s11" |]
+  [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7";  (* 0 - 7 *)
+     "s2"; "s3"; "s4"; "s5"; "s6"; "s7"; "s8"; "s9";  (* 8 - 15 *)
+     "t2"; "t3"; "t4"; "t5"; "t6";                    (* 16 - 20 *)
+     "s0";                                            (* 21 *)
+     "t0"; "t1";                                      (* 22 - 23 *)
+     "s1"; "s10"; "s11" |]                            (* 24 - 26 *)
 
 let float_reg_name =
   [| "ft0"; "ft1"; "ft2"; "ft3"; "ft4"; "ft5"; "ft6"; "ft7";
@@ -85,7 +86,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 22; 32 |]
+let num_available_registers = [| 23; 32 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -234,13 +235,13 @@ let regs_are_volatile _ = false
 let destroyed_at_c_call =
   (* s0-s11 and fs0-fs11 are callee-save *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 21;
+    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 22;
      100; 101; 102; 103; 104; 105; 106; 107; 110; 111; 112; 113; 114; 115; 116;
      117; 128; 129; 130; 131])
 
 let destroyed_at_alloc =
-  (* t0-t3 are used for PLT stubs *)
-  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20; 21|]
+  (* t0-t6 are used for PLT stubs *)
+  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20; 22|]
   else [| |]
 
 let destroyed_at_oper = function
@@ -248,7 +249,7 @@ let destroyed_at_oper = function
   | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
   | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
-  | Iswitch _ -> [| phys_reg 21 |]
+  | Iswitch _ -> [| phys_reg 22 |]  (* t0 *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -258,12 +259,12 @@ let destroyed_at_reloadretaddr = [| |]
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall _ -> 15
-  | _ -> 22
+  | Iextcall _ -> 9
+  | _ -> 23
 
 let max_register_pressure = function
-  | Iextcall _ -> [| 15; 18 |]
-  | _ -> [| 22; 30 |]
+  | Iextcall _ -> [| 9; 12 |]
+  | _ -> [| 23; 30 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
@@ -292,8 +293,9 @@ let int_dwarf_reg_numbers =
   [| 10; 11; 12; 13; 14; 15; 16; 17;
      18; 19; 20; 21; 22; 23; 24; 25;
      7; 28; 29; 30; 31;
+     8;
      5; 6;
-     8; 9; 26; 27;
+     9; 26; 27;
   |]
 
 let float_dwarf_reg_numbers =

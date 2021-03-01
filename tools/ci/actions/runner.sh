@@ -121,6 +121,21 @@ EOF
 
 }
 
+BasicCompiler () {
+  # The presence of this file can be detected by later steps which
+  # can choose to skip, rather than run (and presumably error).
+  touch compiler-failed-to-build
+  ./configure --disable-dependency-generation \
+              --disable-debug-runtime \
+              --disable-instrumented-runtime
+
+  # Need a runtime
+  make -j coldstart
+  # And generated files (ocamllex compiles ocamlyacc)
+  make -j ocamllex
+  rm -f compiler-failed-to-build
+}
+
 case $1 in
 configure) Configure;;
 build) Build;;
@@ -128,6 +143,7 @@ test) Test;;
 api-docs) API_Docs;;
 install) Install;;
 other-checks) Checks;;
+basic-compiler) BasicCompiler;;
 *) echo "Unknown CI instruction: $1"
    exit 1;;
 esac

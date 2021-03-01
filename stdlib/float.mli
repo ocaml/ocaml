@@ -22,7 +22,7 @@
    templates/float.template.mli instead.
  *)
 
-(** {1 Floating-point arithmetic}
+(** Floating-point arithmetic.
 
     OCaml's floating-point numbers follow the
     IEEE 754 standard, using double precision (64 bits) numbers.
@@ -123,23 +123,24 @@ val epsilon : float
     floating-point number greater than [1.0]. *)
 
 val is_finite : float -> bool
-(** [is_finite x] is [true] iff [x] is finite i.e., not infinite and
+(** [is_finite x] is [true] if and only if [x] is finite i.e., not infinite and
    not {!nan}.
 
    @since 4.08.0 *)
 
 val is_infinite : float -> bool
-(** [is_infinite x] is [true] iff [x] is {!infinity} or {!neg_infinity}.
+(** [is_infinite x] is [true] if and only if [x] is {!infinity} or
+    {!neg_infinity}.
 
    @since 4.08.0 *)
 
 val is_nan : float -> bool
-(** [is_nan x] is [true] iff [x] is not a number (see {!nan}).
+(** [is_nan x] is [true] if and only if [x] is not a number (see {!nan}).
 
    @since 4.08.0 *)
 
 val is_integer : float -> bool
-(** [is_integer x] is [true] iff [x] is an integer.
+(** [is_integer x] is [true] if and only if [x] is an integer.
 
    @since 4.08.0 *)
 
@@ -320,7 +321,7 @@ external copy_sign : float -> float -> float
 
 external sign_bit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
-(** [sign_bit x] is [true] iff the sign bit of [x] is set.
+(** [sign_bit x] is [true] if and only if the sign bit of [x] is set.
     For example [sign_bit 1.] and [signbit 0.] are [false] while
     [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
 
@@ -583,16 +584,16 @@ module Array : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
-      floatarray during iteration will be reflected in the iterator. *)
+      floatarray during iteration will be reflected in the sequence. *)
 
   val to_seqi : t -> (int * float) Seq.t
   (** Iterate on the floatarray, in increasing order, yielding indices along
       elements. Modifications of the floatarray during iteration will be
-      reflected in the iterator. *)
+      reflected in the sequence. *)
 
   val of_seq : float Seq.t -> t
   (** Create an array from the generator. *)
@@ -616,6 +617,7 @@ module Array : sig
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
 end
+(** Float arrays with packed representation. *)
 
 module ArrayLabels : sig
   type t = floatarray
@@ -804,16 +806,16 @@ module ArrayLabels : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
-  (** {2 Iterators} *)
+  (** {2 Float arrays and Sequences} *)
 
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
-      floatarray during iteration will be reflected in the iterator. *)
+      floatarray during iteration will be reflected in the sequence. *)
 
   val to_seqi : t -> (int * float) Seq.t
   (** Iterate on the floatarray, in increasing order, yielding indices along
       elements. Modifications of the floatarray during iteration will be
-      reflected in the iterator. *)
+      reflected in the sequence. *)
 
   val of_seq : float Seq.t -> t
   (** Create an array from the generator. *)
@@ -837,3 +839,4 @@ module ArrayLabels : sig
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
 end
+(** Float arrays with packed representation (labeled functions). *)

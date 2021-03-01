@@ -42,10 +42,6 @@
 *)
 
 (** {1 Introduction}
-   For a gentle introduction to the basics of pretty-printing using
-   [Format], read
-   {{:http://caml.inria.fr/resources/doc/guides/format.en.html}
-    http://caml.inria.fr/resources/doc/guides/format.en.html}.
 
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line splitting. The addition of
@@ -104,8 +100,11 @@
     Format.print_string "TEXT";
    ]
    leads to output [<>PRETTYTEXT].
-
 *)
+
+(* A tutorial to the Format module is provided at {!Format_tutorial}. *)
+
+(** {1 Formatters} *)
 
 type formatter
 (** Abstract data corresponding to a pretty-printer (also called a

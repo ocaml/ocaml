@@ -23,9 +23,8 @@
 #define C_CALL_FUN 25
 #define C_CALL_TOC 26
 #define C_CALL_RET_ADDR 27
-#define DOMAIN_STATE_PTR 28
 #define TRAP_PTR 29
-#define ALLOC_LIMIT 30
+#define DOMAIN_STATE_PTR 30
 #define ALLOC_PTR 31
 
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
@@ -149,7 +148,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) 8*domain_field_caml_##var(28)
+#define Caml_state(var) 8*domain_field_caml_##var(DOMAIN_STATE_PTR)
 
 #if defined(MODEL_ppc64)
         .section ".opd","aw"
@@ -241,9 +240,8 @@ FUNCTION(caml_call_gc)
 #if defined(MODEL_ppc64) || defined(MODEL_ppc64le)
         nop
 #endif
-    /* Reload new allocation pointer and allocation limit */
+    /* Reload new allocation pointer */
         lg      ALLOC_PTR, Caml_state(young_ptr)
-        lg      ALLOC_LIMIT, Caml_state(young_limit)
     /* Restore all regs used by the code generator */
         addi    11, 1, 8*32 + PARAM_SAVE_AREA + RESERVED_STACK - WORD
         lgu     3, WORD(11)
@@ -349,9 +347,8 @@ FUNCTION(caml_c_call)
 #endif
     /* Restore return address (in 27, preserved by the C function) */
         mtlr    C_CALL_RET_ADDR
-    /* Reload allocation pointer and allocation limit*/
+    /* Reload allocation pointer*/
         lg      ALLOC_PTR, Caml_state(young_ptr)
-        lg      ALLOC_LIMIT, Caml_state(young_limit)
     /* Return to caller */
         blr
         .cfi_endproc
@@ -401,7 +398,6 @@ FUNCTION(caml_raise_exception)
     /* Reload OCaml global registers */
         lg      1, Caml_state(exception_pointer)
         lg      ALLOC_PTR, Caml_state(young_ptr)
-        lg      ALLOC_LIMIT, Caml_state(young_limit)
     /* Pop trap frame */
         lg      0, TRAP_HANDLER_OFFSET(1)
         mtctr   0
@@ -505,9 +501,8 @@ FUNCTION(caml_start_program)
         lg      11, Caml_state(exception_pointer)
         stg     11, TRAP_PREVIOUS_OFFSET(1)
         mr      TRAP_PTR, 1
-    /* Reload allocation pointers */
+    /* Reload allocation pointer */
         lg      ALLOC_PTR, Caml_state(young_ptr)
-        lg      ALLOC_LIMIT, Caml_state(young_limit)
     /* Call the OCaml code (address in r12) */
 #if defined(MODEL_ppc)
         mtctr   12

@@ -13,9 +13,13 @@
 #*                                                                        *
 #**************************************************************************
 
+# Capitalize first letter of argument
+define up
+$(shell echo $(1) | cut -c1 | tr '[:lower:]' '[:upper:]')
+endef
+
 define capitalize_one
-$(shell echo $(1) | cut -c1 | tr '[:lower:]' '[:upper:]')$\
-$(shell echo $(1) | cut -c2-)
+$(call up,$(1))$(shell echo $(1) | cut -c2-)
 endef
 
 define capitalize
@@ -30,17 +34,14 @@ thread_MLIS := \
 	thread.mli condition.mli mutex.mli event.mli \
 	threadUnix.mli semaphore.mli
 
-STDLIB=$(filter-out stdlib__pervasives, $(STDLIB_MODULES))
-
-stdlib_UNPREFIXED=$(STDLIB:stdlib__%=%)
 libref= \
-	$(stdlib_UNPREFIXED) \
+	$(filter-out pervasives,$(STDLIB_MODULE_BASENAMES)) \
 	$(str_MLIS:%.mli=%) \
 	$(unix_MLIS:%.mli=%) \
 	$(dynlink_MLIS:%.mli=%) \
 	$(thread_MLIS:%.mli=%)
 libref_EXTRA=stdlib__pervasives
-libref_TEXT=Ocaml_operators
+libref_TEXT=Ocaml_operators Format_tutorial
 libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
 
 PARSING_MLIS := $(filter-out camlinternal%, \

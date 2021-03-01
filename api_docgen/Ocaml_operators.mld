@@ -7,7 +7,7 @@ are also listed as references.
 {%latex:
 %
 % Note: the tables below should be kept in sync with the one in
-% manual/manual/refman/expr.etex .
+% manual/src/refman/expr.etex .
 %
 \begin{tabular}{cc}
 \hline

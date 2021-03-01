@@ -37,11 +37,13 @@ programs_man_section=1
 libraries_man_section=3
 
 # Command to build executalbes
-# In general this command is supposed to use the CFLAGs-related variables
-# ($OC_CFLAGS and $CFLAGS), but at the moment they are not taken into
-# account on Windows, because flexlink, which is used to build
-# executables on this platform, can not handle them.
-mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS)"
+# In general this command is supposed to use the CFLAGs- and LDFLAGS-
+# related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
+# flags, CFLAGS and LDFLAGS for generic flags chosen by the user), but
+# at the moment they are not taken into account on Windows, because
+# flexlink, which is used to build executables on this platform, can
+# not handle them.
+mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS) \$(LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
 mkexedebugflag="-g"
@@ -62,7 +64,7 @@ profinfo=false
 profinfo_width=0
 extralibs=
 instrumented_runtime=false
-instrumented_runtime_ldlibs=""
+instrumented_runtime_libs=""
 
 # Information about the package
 
@@ -127,6 +129,7 @@ AC_SUBST([natdynlinkopts])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
+AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([has_monotonic_clock])
 AC_SUBST([otherlibraries])
 AC_SUBST([cc_has_debug_prefix_map])
@@ -135,9 +138,6 @@ AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
 AC_SUBST([ocamltest])
-AC_SUBST([pthread_link])
-AC_SUBST([x_includes])
-AC_SUBST([x_libraries])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
@@ -190,6 +190,10 @@ AS_CASE([$host],
     SO=dll
     outputexe=-Fe
     syslib='$(1).lib'],
+  [i386-*-solaris*],
+    [AC_MSG_ERROR([Building for 32 bits target is not supported. \
+If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
+(or "cc -m64" if you don't have GCC).])],
   [ccomptype=cc
   S=s
   SO=so
@@ -404,6 +408,8 @@ CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
 
 AS_CASE([$host],
+  [sparc-sun-solaris*],
+    [DEP_CC="false"],
   [*-pc-windows],
     [AC_CHECK_TOOLS(
       [DEP_CC],
@@ -469,6 +475,8 @@ OCAML_CC_VENDOR
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
     [CPP="$CC -E -qnoppline"], # suppress incompatible XLC line directives
+  [sunc-*],
+    [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
     [CPP="$CC -nologo -EP"])
 
@@ -541,6 +549,8 @@ AS_CASE([$ocaml_cv_cc_vendor],
     [outputobj='-o $(EMPTY)'
     warn_error_flag=''
     cc_warnings='-qflag=i:i'], # all warnings enabled
+  [sunc-*],
+    [outputobj='-o $(EMPTY)'; cc_warnings=""],
   [msvc-*],
     [outputobj='-Fo'
     warn_error_flag='-WX'
@@ -621,6 +631,10 @@ AS_CASE([$host],
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+      internal_cflags="$cc_warnings"],
+    [sunc-*], # Optimization should be >= O4 to inline functions
+              # and prevent unresolved externals
+      [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
@@ -817,8 +831,9 @@ natdynlinkopts=""
 AS_IF([test x"$enable_shared" != "xno"],
   [AS_CASE([$host],
     [*-apple-darwin*],
-      [mksharedlib="$CC -shared -flat_namespace -undefined suppress \
-                   -Wl,-no_compact_unwind"
+      [mksharedlib="$CC -shared \
+                   -flat_namespace -undefined suppress -Wl,-no_compact_unwind \
+                   \$(LDFLAGS)"
       shared_libraries_supported=true],
     [*-*-mingw32],
       [mksharedlib='$(FLEXLINK)'
@@ -836,16 +851,23 @@ AS_IF([test x"$enable_shared" != "xno"],
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true],
     [powerpc-ibm-aix*],
-      [AS_CASE([$CC],
+      [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
-               [mksharedlib="$CC -qmkshrobj -G"
+               [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
                 shared_libraries_supported=true])],
+    [*-*-solaris*],
+      [sharedlib_cflags="-fPIC"
+      mksharedlib="$CC -shared"
+      rpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      shared_libraries_supported=true],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
        AS_CASE([$CC,$host],
-           [gcc*,powerpc-*-linux*], [mksharedlib="$CC -shared -mbss-plt"],
-           [mksharedlib="$CC -shared"])
+           [gcc*,powerpc-*-linux*],
+           [mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)"],
+           [mksharedlib="$CC -shared \$(LDFLAGS)"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -871,6 +893,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [x86_64-*-darwin*], [natdynlink=true],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
+    [x86_64-*-solaris*], [natdynlink=true],
     [i686-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-dragonfly*], [natdynlink=true],
@@ -968,6 +991,8 @@ AS_CASE([$host],
     [arch=amd64; system=gnu],
   [x86_64-*-dragonfly*],
     [arch=amd64; system=dragonfly],
+  [x86_64-*-solaris*],
+    [arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
     [arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
@@ -1007,7 +1032,6 @@ AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
   [AS_CASE(["$arch,$CC,$system,$model"],
     [amd64,gcc*,macosx,*], [PACKLD_FLAGS=' -arch x86_64'],
-    [amd64,gcc*,solaris,*], [PACKLD_FLAGS=' -m elf_x86_64'],
     [power,gcc*,elf,ppc], [PACKLD_FLAGS=' -m elf32ppclinux'],
     [power,gcc*,elf,ppc64], [PACKLD_FLAGS=' -m elf64ppc'],
     [power,gcc*,elf,ppc64le], [PACKLD_FLAGS=' -m elf64lppc'],
@@ -1046,69 +1070,65 @@ AS_CASE([$arch],
 
 # Assembler
 
-AS_IF([test -n "$host_alias"], [toolpref="${host_alias}-"], [toolpref=""])
+AS_IF([test -n "$target_alias"],
+  [toolpref="${target_alias}-"
+  as_target="$target"
+  as_cpu="$target_cpu"],
+  [AS_IF([test -n "$host_alias"],
+    [toolpref="${host_alias}-"
+    as_target="$host"
+    as_cpu="$host_cpu"],
+    [toolpref=""
+    as_target="$build"
+    as_cpu="$build_cpu"])])
 
-# We first compute default values for as and aspp
-# If values have been given by the user then they take precedence over
-# those just computed
-# One may want to check whether the user provided values first
-# and only compute values if none has been provided
+# Finding the assembler
+# The OCaml build system distinguishes two different assemblers:
+# 1. AS, used to assemble the code generated by the ocamlopt native compiler
+# 2. ASPP, to assemble other assembly files that may require preprocessing
+# In general, "$CC -c" is used as a default value for both AS and ASPP.
+# On a few platforms (Windows) both values are overriden.
+# On other platforms, (Linux with GCC) the assembler AS is called directly
+# to avoiding forking a C compiler process for each compilation by ocamlopt.
+# Both AS and ASPP can be overriden by the user.
 
-AS_CASE(["$arch,$system"],
-  [i386,win32],
-    [default_as="ml -nologo -coff -Cp -c -Fo"],
-  [amd64,win64],
-    [default_as="ml64 -nologo -Cp -c -Fo"],
-  [amd64,macosx],
-    [AS_CASE([$ocaml_cv_cc_vendor],
-      [clang-*],
-        [default_as='clang -arch x86_64 -Wno-trigraphs -c'
-        default_aspp='clang -arch x86_64 -Wno-trigraphs -c'],
-      [default_as="${toolpref}as -arch x86_64"
-      default_aspp="${toolpref}gcc -arch x86_64 -c"])],
-  [amd64,solaris],
-    [default_as="${toolpref}as --64"
-    default_aspp="${toolpref}gcc -m64 -c"],
-  [i386,solaris],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c"],
-  [power,elf],
-    [AS_CASE([$model],
-      [ppc64le],
-        [default_as="${toolpref}as -a64 -mpower8"
-        default_aspp="${toolpref}gcc -m64 -mcpu=powerpc64le -c"],
-      [ppc64],
-        [default_as="${toolpref}as -a64 -mppc64"
-        default_aspp="${toolpref}gcc -m64 -c"],
-      [ppc],
-        [default_as="${toolpref}as -mppc"
-        default_aspp="${toolpref}gcc -m32 -c"])],
-  [s390x,elf],
-    [default_as="${toolpref}as -m 64 -march=$model"
-    default_aspp="${toolpref}gcc -c -Wa,-march=$model"],
-  [*,freebsd],
-    [default_as="${toolpref}cc -c -Wno-trigraphs"
-    default_aspp="${toolpref}cc -c -Wno-trigraphs"],
-  [*,dragonfly],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c"],
-  [amd64,*|arm,*|arm64,*|i386,*|riscv,*],
-    [AS_CASE([$ocaml_cv_cc_vendor],
-      [clang-*], [default_as="${toolpref}clang -c -Wno-trigraphs"
-                  default_aspp="${toolpref}clang -c -Wno-trigraphs"],
-      [default_as="${toolpref}as"
-      default_aspp="${toolpref}gcc -c"])])
+default_as="$CC -c"
+default_aspp="$CC -c"
+
+AS_CASE([$as_target,$ocaml_cv_cc_vendor],
+  [*-*-linux*,gcc-*],
+    [AS_CASE([$as_cpu],
+      [x86_64|arm*|aarch64*|i[[3-6]]86|riscv*],
+        [default_as="${toolpref}as"])],
+  [i686-pc-windows,*],
+    [default_as="ml -nologo -coff -Cp -c -Fo"
+    default_aspp="$default_as"],
+  [x86_64-pc-windows,*],
+    [default_as="ml64 -nologo -Cp -c -Fo"
+    default_aspp="$default_as"],
+  [*-*-darwin*,clang-*],
+    [default_as="$default_as -Wno-trigraphs"
+    default_aspp="$default_as"],
+  [])
 
 AS_IF([test "$with_pic"],
   [fpic=true
   AC_DEFINE([CAML_WITH_FPIC])
   internal_cflags="$internal_cflags $sharedlib_cflags"
+  default_as="$default_as $sharedlib_cflags"
   default_aspp="$default_aspp $sharedlib_cflags"],
   [fpic=false])
 
 AS_IF([test -z "$AS"], [AS="$default_as"])
 
 AS_IF([test -z "$ASPP"], [ASPP="$default_aspp"])
+
+# Utilities
+AC_CHECK_PROG([rlwrap],[rlwrap],[rlwrap])
+AS_CASE([$rlwrap,$system],
+  [rlwrap,win*|rlwrap,mingw*],
+    [AC_MSG_NOTICE([rlwrap doesn't work with native win32 - disabling])
+     rlwrap=''])
 
 # Checks for library functions
 
@@ -1202,6 +1222,8 @@ AS_CASE([$host],
 AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
   [
     AS_CASE([$host],
+    [sparc-sun-solaris*],
+      [instrumented_runtime=false],
     [*-*-windows],
       [instrumented_runtime=true],
     [*-apple-darwin*], [
@@ -1226,8 +1248,8 @@ but no proper monotonic clock source was found.])
           [
             instrumented_runtime=true
             AS_IF([test "x$ac_cv_search_clock_gettime" = "xnone required"],
-              [instrumented_runtime_ldlibs=""],
-              [instrumented_runtime_ldlibs=$ac_cv_search_clock_gettime]
+              [instrumented_runtime_libs=""],
+              [instrumented_runtime_libs=$ac_cv_search_clock_gettime]
             )
           ],
         [yes,false,*],
@@ -1248,34 +1270,37 @@ but no proper monotonic clock source was found.])
 
 ## TODO: check whether the different libraries are really useful
 
-sockets=false
+sockets=true
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [cclibs="$cclibs -lws2_32"
-    sockets=true],
+    AC_SEARCH_LIBS([socket], [ws2_32])],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
-    sockets=true],
+    AC_SEARCH_LIBS([socket], [network])],
+  [*-*-solaris*],
+    [cclibs="$cclibs -lsocket -lnsl"
+    AC_SEARCH_LIBS([socket], [socket])
+    AC_SEARCH_LIBS([inet_ntop], [nsl])],
   [
-    AC_CHECK_FUNC([socket])
-    AC_CHECK_FUNC([socketpair])
-    AC_CHECK_FUNC([bind])
-    AC_CHECK_FUNC([listen])
-    AC_CHECK_FUNC([accept])
-    AC_CHECK_FUNC([connect])
-    sockets=true
+    AC_CHECK_FUNCS(
+      [socket socketpair bind listen accept connect],
+      [],
+      [sockets=false])
   ]
 )
 
 AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS])])
 
-## socklen_t in sys/socket.h
+## socklen_t
 
-AC_CHECK_TYPE(
-  [socklen_t],
-  [AC_DEFINE([HAS_SOCKLEN_T])], [],
-  [#include <sys/socket.h>])
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
+      [#include <ws2tcpip.h>])],
+  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
+    [#include <sys/socket.h>])])
 
 AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
 
@@ -1283,13 +1308,18 @@ AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
 
 ipv6=true
 
-AC_CHECK_TYPE(
-  [struct sockaddr_in6], [], [ipv6=false],
+AS_CASE([$host],
+  [*-*-mingw32|*-pc-windows],
+    [AC_CHECK_TYPE(
+      [struct sockaddr_in6], [], [ipv6=false], [#include <ws2tcpip.h>])],
+  [AC_CHECK_TYPE(
+    [struct sockaddr_in6], [], [ipv6=false],
 [
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 ]
+  )]
 )
 
 AS_IF([$ipv6],
@@ -1480,10 +1510,11 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$CC,$host],
+AS_CASE([$ocaml_cv_cc_vendor,$host],
   [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
+  [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
   [OCAML_CC_HAS_DEBUG_PREFIX_MAP])
 
 ## Does stat support nanosecond precision
@@ -1627,17 +1658,12 @@ AS_IF([test x"$enable_systhreads" = "xno"],
     [AX_PTHREAD(
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
-      AS_CASE([$host],
-        [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
-        [*-*-haiku*], [pthread_link=""],
-        [*-*-android*], [pthread_link=""],
-        [pthread_link="-lpthread"])
-      common_cppflags="$common_cppflags -D_REENTRANT"
+      common_cflags="$common_cflags $PTHREAD_CFLAGS"
       AC_MSG_NOTICE([the POSIX threads library is supported])
       saved_CFLAGS="$CFLAGS"
       saved_LIBS="$LIBS"
       CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-      LIBS="$LIBS $pthread_link"
+      LIBS="$LIBS $PTHREAD_LIBS"
       AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
       LIBS="$saved_LIBS"
       CFLAGS="$saved_CFLAGS"],
@@ -1684,7 +1710,7 @@ AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
    AS_CASE(["$arch","$system"],
     [amd64,linux|amd64,macosx \
     |amd64,openbsd|amd64,win64 \
-    |amd64,freebsd],
+    |amd64,freebsd|amd64,solaris],
       [naked_pointers_checker=true
       AC_DEFINE([NAKED_POINTERS_CHECKER])],
     [*],
@@ -1786,7 +1812,7 @@ AS_CASE([$host],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
+  [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
   nativecclibs="$cclibs $DLLIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
@@ -1836,11 +1862,19 @@ AS_IF([test x"$prefix" = "xNONE"],
 # but whose value is not guessed properly by configure
 # (all this should be understood and fixed)
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32],
+    [AC_DEFINE([HAS_BROKEN_PRINTF])
+    AC_DEFINE([HAS_STRERROR])
+    AC_DEFINE([HAS_NICE])],
+  [*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
     AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])])
+    AC_DEFINE([HAS_NICE])],
+  [*-*-solaris*],
+    # This is required as otherwise floats are printed
+    # as "Infinity" and "Inf" instead of the expected "inf"
+    [AC_DEFINE([HAS_BROKEN_PRINTF])])
 
 AS_IF([test x"$enable_stdlib_manpages" != "xno"],
   [stdlib_manpages=true],[stdlib_manpages=false])

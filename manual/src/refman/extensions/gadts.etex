@@ -1,0 +1,324 @@
+(Introduced in OCaml 4.00)
+
+\begin{syntax}
+constr-decl:
+          ...
+        | constr-name ':' [ constr-args '->' ] typexpr
+;
+type-param:
+          ...
+        | [variance] '_'
+\end{syntax}
+
+Generalized algebraic datatypes, or GADTs, extend usual sum types in
+two ways: constraints on type parameters may change depending on the
+value constructor, and some type variables may be existentially
+quantified.
+Adding constraints is done by giving an explicit return type
+(the rightmost @typexpr@ in the above syntax), where type parameters
+are instantiated.
+This return type must use the same type constructor as the type being
+defined, and have the same number of parameters.
+Variables are made existential when they appear inside a constructor's
+argument, but not in its return type.
+
+Since the use of a return type often eliminates the need to name type
+parameters in the left-hand side of a type definition, one can replace
+them with anonymous types @"_"@ in that case.
+
+The constraints associated to each constructor can be recovered
+through pattern-matching.
+Namely, if the type of the scrutinee of a pattern-matching contains
+a locally abstract type, this type can be refined according to the
+constructor used.
+These extra constraints are only valid inside the corresponding branch
+of the pattern-matching.
+If a constructor has some existential variables, fresh locally
+abstract types are generated, and they must not escape the
+scope of this branch.
+
+\lparagraph{p:gadts-recfun}{Recursive functions}
+
+Here is a concrete example:
+\begin{caml_example*}{verbatim}
+type _ term =
+  | Int : int -> int term
+  | Add : (int -> int -> int) term
+  | App : ('b -> 'a) term * 'b term -> 'a term
+
+let rec eval : type a. a term -> a = function
+  | Int n    -> n                 (* a = int *)
+  | Add      -> (fun x y -> x+y)  (* a = int -> int -> int *)
+  | App(f,x) -> (eval f) (eval x)
+          (* eval called at types (b->a) and b for fresh b *)
+\end{caml_example*}
+\begin{caml_example}{verbatim}
+let two = eval (App (App (Add, Int 1), Int 1))
+\end{caml_example}
+It is important to remark that the function "eval" is using the
+polymorphic syntax for locally abstract types. When defining a recursive
+function that manipulates a GADT, explicit polymorphic recursion should
+generally be used. For instance, the following definition fails with a
+type error:
+\begin{caml_example}{verbatim}[error]
+let rec eval (type a) : a term -> a = function
+  | Int n    -> n
+  | Add      -> (fun x y -> x+y)
+  | App(f,x) -> (eval f) (eval x)
+\end{caml_example}
+In absence of an explicit polymorphic annotation, a monomorphic type
+is inferred for the recursive function. If a recursive call occurs
+inside the function definition at a type that involves an existential
+GADT type variable, this variable flows to the type of the recursive
+function, and thus escapes its scope. In the above example, this happens
+in the branch "App(f,x)" when "eval" is called with "f" as an argument.
+In this branch, the type of "f" is "($App_ 'b-> a)". The prefix "$" in
+"$App_ 'b" denotes an existential type named by the compiler
+(see~\ref{p:existential-names}). Since the type of "eval" is
+"'a term -> 'a", the call "eval f" makes the existential type "$App_'b"
+flow to the type variable "'a" and escape its scope. This triggers the
+above error.
+
+\lparagraph{p:gadts-type-inference}{Type inference}
+
+Type inference for GADTs is notoriously hard.
+This is due to the fact some types may become ambiguous when escaping
+from a branch.
+For instance, in the "Int" case above, "n" could have either type "int"
+or "a", and they are not equivalent outside of that branch.
+As a first approximation, type inference will always work if a
+pattern-matching is annotated with types containing no free type
+variables (both on the scrutinee and the return type).
+This is the case in the above example, thanks to the type annotation
+containing only locally abstract types.
+
+In practice, type inference is a bit more clever than that: type
+annotations do not need to be immediately on the pattern-matching, and
+the types do not have to be always closed.
+As a result, it is usually enough to only annotate functions, as in
+the example above. Type annotations are
+propagated in two ways: for the scrutinee, they follow the flow of
+type inference, in a way similar to polymorphic methods; for the
+return type, they follow the structure of the program, they are split
+on functions, propagated to all branches of a pattern matching,
+and go through tuples, records, and sum types.
+Moreover, the notion of ambiguity used is stronger: a type is only
+seen as ambiguous if it was mixed with incompatible types (equated by
+constraints), without type annotations between them.
+For instance, the following program types correctly.
+\begin{caml_example}{verbatim}
+let rec sum : type a. a term -> _ = fun x ->
+  let y =
+    match x with
+    | Int n -> n
+    | Add   -> 0
+    | App(f,x) -> sum f + sum x
+  in y + 1
+\end{caml_example}
+Here the return type "int" is never mixed with "a", so it is seen as
+non-ambiguous, and can be inferred.
+When using such partial type annotations we strongly suggest
+specifying the "-principal" mode, to check that inference is
+principal.
+
+The exhaustiveness check is aware of GADT constraints, and can
+automatically infer that some cases cannot happen.
+For instance, the following pattern matching is correctly seen as
+exhaustive (the "Add" case cannot happen).
+\begin{caml_example*}{verbatim}
+let get_int : int term -> int = function
+  | Int n    -> n
+  | App(_,_) -> 0
+\end{caml_example*}
+
+
+\lparagraph{p:gadt-refutation-cases}{Refutation cases} (Introduced in OCaml 4.03)
+
+Usually, the exhaustiveness check only tries to check whether the
+cases omitted from the pattern matching are typable or not.
+However, you can force it to try harder by adding {\em refutation cases}:
+\begin{syntax}
+matching-case:
+     pattern ['when' expr] '->' expr
+   | pattern '->' '.'
+\end{syntax}
+In presence of a refutation case, the exhaustiveness check will first
+compute the intersection of the pattern with the complement of the
+cases preceding it. It then checks whether the resulting patterns can
+really match any concrete values by trying to type-check them.
+Wild cards in the generated patterns are handled in a special way: if
+their type is a variant type with only GADT constructors, then the
+pattern is split into the different constructors, in order to check whether
+any of them is possible (this splitting is not done for arguments of these
+constructors, to avoid non-termination). We also split tuples and
+variant types with only one case, since they may contain GADTs inside.
+For instance, the following code is deemed exhaustive:
+
+\begin{caml_example*}{verbatim}
+type _ t =
+  | Int : int t
+  | Bool : bool t
+
+let deep : (char t * int) option -> char = function
+  | None -> 'c'
+  | _ -> .
+\end{caml_example*}
+
+Namely, the inferred remaining case is "Some _", which is split into
+"Some (Int, _)" and "Some (Bool, _)", which are both untypable because
+"deep" expects a non-existing "char t" as the first element of the tuple.
+Note that the refutation case could be omitted here, because it is
+automatically added when there is only one case in the pattern
+matching.
+
+Another addition is that the redundancy check is now aware of GADTs: a
+case will be detected as redundant if it could be replaced by a
+refutation case using the same pattern.
+
+\lparagraph{p:gadts-advexamples}{Advanced examples}
+The "term" type we have defined above is an {\em indexed} type, where
+a type parameter reflects a property of the value contents.
+Another use of GADTs is {\em singleton} types, where a GADT value
+represents exactly one type. This value can be used as runtime
+representation for this type, and a function receiving it can have a
+polytypic behavior.
+
+Here is an example of a polymorphic function that takes the
+runtime representation of some type "t" and a value of the same type,
+then pretty-prints the value as a string:
+\begin{caml_example*}{verbatim}
+type _ typ =
+  | Int : int typ
+  | String : string typ
+  | Pair : 'a typ * 'b typ -> ('a * 'b) typ
+
+let rec to_string: type t. t typ -> t -> string =
+  fun t x ->
+  match t with
+  | Int -> Int.to_string x
+  | String -> Printf.sprintf "%S" x
+  | Pair(t1,t2) ->
+      let (x1, x2) = x in
+      Printf.sprintf "(%s,%s)" (to_string t1 x1) (to_string t2 x2)
+\end{caml_example*}
+
+Another frequent application of GADTs is equality witnesses.
+\begin{caml_example*}{verbatim}
+type (_,_) eq = Eq : ('a,'a) eq
+
+let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x
+\end{caml_example*}
+Here type "eq" has only one constructor, and by matching on it one
+adds a local constraint allowing the conversion between "a" and "b".
+By building such equality witnesses, one can make equal types which
+are syntactically different.
+
+Here is an example using both singleton types and equality witnesses
+to implement dynamic types.
+\begin{caml_example*}{verbatim}
+let rec eq_type : type a b. a typ -> b typ -> (a,b) eq option =
+  fun a b ->
+  match a, b with
+  | Int, Int -> Some Eq
+  | String, String -> Some Eq
+  | Pair(a1,a2), Pair(b1,b2) ->
+      begin match eq_type a1 b1, eq_type a2 b2 with
+      | Some Eq, Some Eq -> Some Eq
+      | _ -> None
+      end
+  | _ -> None
+
+type dyn = Dyn : 'a typ * 'a -> dyn
+
+let get_dyn : type a. a typ -> dyn -> a option =
+  fun a (Dyn(b,x)) ->
+  match eq_type a b with
+  | None -> None
+  | Some Eq -> Some x
+\end{caml_example*}
+
+\lparagraph{p:existential-names}{Existential type names in error messages}%
+(Updated in OCaml 4.03.0)
+
+The typing of pattern matching in presence of GADT can generate many
+existential types. When necessary, error messages refer to these
+existential types using compiler-generated names. Currently, the
+compiler generates these names according to the following nomenclature:
+\begin{itemize}
+\item First, types whose name starts with a "$" are existentials.
+\item "$Constr_'a" denotes an existential type introduced for the type
+variable "'a" of the GADT constructor "Constr":
+\begin{caml_example}{verbatim}[error]
+type any = Any : 'name -> any
+let escape (Any x) = x
+\end{caml_example}
+\item "$Constr" denotes an existential type introduced for an anonymous %$
+type variable in the GADT constructor "Constr":
+\begin{caml_example}{verbatim}[error]
+type any = Any : _ -> any
+let escape (Any x) = x
+\end{caml_example}
+\item "$'a" if the existential variable was unified with the type %$
+variable "'a" during typing:
+\begin{caml_example}{verbatim}[error]
+type ('arg,'result,'aux) fn =
+  | Fun: ('a ->'b) -> ('a,'b,unit) fn
+  | Mem1: ('a ->'b) * 'a * 'b -> ('a, 'b, 'a * 'b) fn
+ let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
+  match f with
+  | Fun f -> f x
+  | Mem1 (f,y,fy) -> if x = y then fy else f x
+\end{caml_example}
+\item "$n" (n a number) is an internally generated existential %$
+which could not be named using one of the previous schemes.
+\end{itemize}
+
+As shown by the last item, the current behavior is imperfect
+and may be improved in future versions.
+
+\lparagraph{p:explicit-existential-name}{Explicit naming of
+  existentials} (Introduced in OCaml 4.13.0)
+
+As explained above, pattern-matching on a GADT constructor may
+introduce existential types. The following syntax allows to name them
+explicitly.
+
+\begin{syntax}
+pattern:
+     ...
+   | constr '(' "type" {{typeconstr-name}} ')' '(' pattern ')'
+;
+\end{syntax}
+
+For instance, the following code names the type of the argument of f
+and uses this name.
+
+\begin{caml_example*}{verbatim}
+type _ closure = Closure : ('a -> 'b) * 'a -> 'b closure
+let eval = fun (Closure (type a) (f, x : (a -> _) * _)) -> f (x : a)
+\end{caml_example*}
+All existential type variables of the constructor must by introduced by
+the ("type" ...) construct and bound by a type annotation on the
+outside of the constructor argument.
+
+\lparagraph{p:gadt-equation-nonlocal-abstract}{Equations on non-local abstract types} (Introduced in OCaml
+4.04)
+
+GADT pattern-matching may also add type equations to non-local
+abstract types. The behaviour is the same as with local abstract
+types. Reusing the above "eq" type, one can write:
+\begin{caml_example*}{verbatim}
+module M : sig type t val x : t val e : (t,int) eq end = struct
+  type t = int
+  let x = 33
+  let e = Eq
+end
+
+let x : int = let Eq = M.e in M.x
+\end{caml_example*}
+
+Of course, not all abstract types can be refined, as this would
+contradict the exhaustiveness check. Namely, builtin types (those
+defined by the compiler itself, such as "int" or "array"), and
+abstract types defined by the local module, are non-instantiable, and
+as such cause a type error rather than introduce an equation.

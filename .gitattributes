@@ -64,7 +64,6 @@ tools/mantis2gh_stripped.csv typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
-/tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
 /tools/ci/inria/bootstrap/remove-sinh-primitive.patch typo.prune
 /release-info/howto.md                    typo.missing-header typo.long-line
 /release-info/templates/*.md              typo.missing-header typo.very-long-line=may
@@ -111,6 +110,7 @@ testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
 testsuite/tests/win-unicode/*.ml                        typo.utf8
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
+testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
@@ -165,6 +165,7 @@ stdlib/sharpbang text eol=lf
 tools/autogen text eol=lf
 tools/ci/inria/remove-sinh-primitive.patch text eol=lf
 tools/check-typo text eol=lf
+tools/check-symbol-names text eol=lf
 tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
 tools/gdb-macros text eol=lf
@@ -172,7 +173,6 @@ tools/magic text eol=lf
 tools/make-opcodes text eol=lf
 tools/make-package-macosx text eol=lf
 tools/ocaml-objcopy-macosx text eol=lf
-tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
@@ -190,73 +190,23 @@ manual/tools/texexpand text eol=lf
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
+testsuite/tests/backtrace/names.ml text eol=lf
 testsuite/tests/basic-modules/anonymous.ml text eol=lf
-testsuite/tests/basic-more/morematch.ml text eol=lf
-testsuite/tests/basic-more/robustmatch.ml text eol=lf
-testsuite/tests/parsing/*.ml text eol=lf
-testsuite/tests/docstrings/empty.ml text eol=lf
+testsuite/tests/formatting/test_locations.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
+testsuite/tests/lib-dynlink-initializers/test10_main.ml text eol=lf
+testsuite/tests/parsing/attributes.ml text eol=lf
+testsuite/tests/parsing/extensions.ml text eol=lf
+testsuite/tests/parsing/hash_ambiguity.ml text eol=lf
+testsuite/tests/parsing/int_and_float_with_modifier.ml text eol=lf
+testsuite/tests/parsing/pr6865.ml text eol=lf
+testsuite/tests/parsing/quotedextensions.ml text eol=lf
+testsuite/tests/parsing/shortcut_ext_attr.ml text eol=lf
 testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_impl.ml text eol=lf
 testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_intf.mli text eol=lf
 testsuite/tests/tool-ocamlc-stop-after/stop_after_typing_impl.ml text eol=lf
-testsuite/tests/tool-toplevel/error_highlighting.ml text eol=lf
-testsuite/tests/tool-toplevel/error_highlighting_use4.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
-testsuite/tests/typing-objects-bugs/pr3968_bad.ml text eol=lf
-testsuite/tests/typing-ocamlc-i/pr7402.ml text eol=lf
-testsuite/tests/typing-ocamlc-i/pervasives_leitmotiv.ml text eol=lf
-testsuite/tests/typing-recmod/t12bad.ml text eol=lf
-testsuite/tests/typing-safe-linking/b_bad.ml text eol=lf
-testsuite/tests/warnings/w04.ml text eol=lf
-testsuite/tests/warnings/w04_failure.ml text eol=lf
-testsuite/tests/warnings/w32.ml text eol=lf
 
-# These are forced to \n to allow the Cygwin testsuite to pass on a
+# This is forced to \n to allow the Cygwin testsuite to pass on a
 # Windows-checkout
-testsuite/tests/formatting/margins.ml text eol=lf
-testsuite/tests/letrec-check/pr7706.ml text eol=lf
-testsuite/tests/letrec-disallowed/disallowed.ml text eol=lf
-testsuite/tests/letrec-disallowed/extension_constructor.ml text eol=lf
-testsuite/tests/letrec-disallowed/float_block_allowed.ml text eol=lf
-testsuite/tests/letrec-disallowed/float_block_disallowed.ml text eol=lf
-testsuite/tests/letrec-disallowed/generic_arrays.ml text eol=lf
-testsuite/tests/letrec-disallowed/lazy_.ml text eol=lf
-testsuite/tests/letrec-disallowed/module_constraints.ml text eol=lf
-testsuite/tests/letrec-disallowed/unboxed.ml text eol=lf
-testsuite/tests/letrec-disallowed/pr7215.ml text eol=lf
-testsuite/tests/letrec-disallowed/pr7231.ml text eol=lf
-testsuite/tests/letrec-disallowed/pr7706.ml text eol=lf
-testsuite/tests/lexing/uchar_esc.ml text eol=lf
-testsuite/tests/match-exception-warnings/exhaustiveness_warnings.ml text eol=lf
-testsuite/tests/tool-toplevel/pr7060.ml text eol=lf
-testsuite/tests/typing-extension-constructor/test.ml text eol=lf
-testsuite/tests/typing-extensions/extensions.ml text eol=lf
-testsuite/tests/typing-extensions/open_types.ml text eol=lf
-testsuite/tests/typing-objects/Exemples.ml text eol=lf
-testsuite/tests/typing-objects/pr5619_bad.ml text eol=lf
-testsuite/tests/typing-objects/pr6123_bad.ml text eol=lf
-testsuite/tests/typing-objects/pr6907_bad.ml text eol=lf
-testsuite/tests/typing-objects/Tests.ml text eol=lf
-testsuite/tests/typing-pattern_open/pattern_open.ml text eol=lf
-testsuite/tests/typing-private/private.ml text eol=lf
-testsuite/tests/typing-recordarg/recordarg.ml text eol=lf
-testsuite/tests/typing-short-paths/pr5918.ml text eol=lf
-testsuite/tests/typing-sigsubst/sigsubst.ml text eol=lf
-testsuite/tests/typing-typeparam/newtype.ml text eol=lf
-testsuite/tests/typing-unboxed/test.ml text eol=lf
-testsuite/tests/typing-unboxed-types/test.ml text eol=lf
-testsuite/tests/typing-unboxed-types/test_flat.ml text eol=lf
-testsuite/tests/typing-unboxed-types/test_no_flat.ml text eol=lf
-testsuite/tests/typing-warnings/ambiguous_guarded_disjunction.ml text eol=lf
-testsuite/tests/typing-warnings/application.ml text eol=lf
-testsuite/tests/typing-warnings/coercions.ml text eol=lf
-testsuite/tests/typing-warnings/exhaustiveness.ml text eol=lf
-testsuite/tests/typing-warnings/pr6587.ml text eol=lf
-testsuite/tests/typing-warnings/pr6872.ml text eol=lf
-testsuite/tests/typing-warnings/pr7085.ml text eol=lf
-testsuite/tests/typing-warnings/pr7115.ml text eol=lf
-testsuite/tests/typing-warnings/pr7261.ml text eol=lf
-testsuite/tests/typing-warnings/pr7297.ml text eol=lf
-testsuite/tests/typing-warnings/pr7553.ml text eol=lf
-testsuite/tests/typing-warnings/records.ml text eol=lf
-testsuite/tests/typing-warnings/unused_types.ml text eol=lf
+testsuite/tests/parsetree/locations_test.ml text eol=lf

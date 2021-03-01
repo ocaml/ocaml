@@ -42,7 +42,7 @@ make=make
 jobs=''
 
 case "${OCAML_ARCH}" in
-  bsd)
+  bsd|solaris)
     make=gmake
   ;;
   cygwin|cygwin64|mingw|mingw64|msvc|msvc64)

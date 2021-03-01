@@ -314,7 +314,7 @@ static int run_command_parent(const command_settings *settings, pid_t child_pid)
           if ((settings->timeout > 0) && (timeout_expired))
           {
             timeout_expired = 0;
-            fprintf(stderr, "Timeout expired, killing all child processes");
+            fprintf(stderr, "Timeout expired, killing all child processes\n");
             if (kill(-child_pid, SIGKILL) == -1) myperror("kill");
           };
           break;

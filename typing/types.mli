@@ -55,7 +55,7 @@ open Asttypes
 
     Note on mutability: TBD.
  *)
-type type_expr =
+type type_expr = private
   { mutable desc: type_desc;
     mutable level: int;
     mutable scope: int;
@@ -108,10 +108,13 @@ and type_desc =
   | Tlink of type_expr
   (** Indirection used by unification engine. *)
 
-  | Tsubst of type_expr         (* for copying *)
+  | Tsubst of type_expr * type_expr option
   (** [Tsubst] is used temporarily to store information in low-level
       functions manipulating representation of types, such as
       instantiation or copy.
+      The first argument contains a copy of the original node.
+      The second is available only when the first is the row variable of
+      a polymorphic variant.  It then contains a copy of the whole variant.
       This constructor should not appear outside of these cases. *)
 
   | Tvariant of row_desc
@@ -232,6 +235,13 @@ and commutable =
     Cok
   | Cunknown
   | Clink of commutable ref
+
+module Private_type_expr : sig
+  val create : type_desc -> level: int -> scope: int -> id: int -> type_expr
+  val set_desc : type_expr -> type_desc -> unit
+  val set_level : type_expr -> int -> unit
+  val set_scope : type_expr -> int -> unit
+end
 
 module TypeOps : sig
   type t = type_expr

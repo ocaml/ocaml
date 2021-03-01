@@ -34,7 +34,7 @@ and type_desc =
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
-  | Tsubst of type_expr         (* for copying *)
+  | Tsubst of type_expr * type_expr option
   | Tvariant of row_desc
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
@@ -79,6 +79,12 @@ module TypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
+module Private_type_expr = struct
+  let create desc ~level ~scope ~id = {desc; level; scope; id}
+  let set_desc ty d = ty.desc <- d
+  let set_level ty lv = ty.level <- lv
+  let set_scope ty sc = ty.scope <- sc
+end
 (* *)
 
 module Uid = struct

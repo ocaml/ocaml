@@ -31,9 +31,9 @@
 
     Literals for native integers are suffixed by n:
     {[
-      let zero: nativeint = 0n
-      let one: nativeint = 1n
-      let m_one: nativeint = -1n
+     let zero: nativeint = 0n
+     let one: nativeint = 1n
+     let m_one: nativeint = -1n
     ]}
 *)
 

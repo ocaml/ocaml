@@ -155,8 +155,6 @@ cmo_files := $(ml_files:.ml=.cmo)
 
 cmx_files := $(ml_files:.ml=.cmx)
 
-ocaml_objects := $(ml_files:.ml=.$(O))
-
 # List of .mli files for ocamldep
 mli_files := \
   $(filter %.mli,$(subst .mly,.mli,$(sources)))
@@ -206,10 +204,6 @@ ocamllex := $(BEST_OCAMLLEX)
 
 ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
-ocamlcdefaultflags :=
-
-ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
-
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
@@ -256,7 +250,7 @@ ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \
-	    $(call SUBST,RUNTIMEI) \
+	    $(call SUBST,INSTRUMENTED_RUNTIME) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,unix) \
@@ -264,8 +258,6 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	    $(call SUBST,str) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST_STRING,CPP) \
-	    $(call SUBST_STRING,ocamlcdefaultflags) \
-	    $(call SUBST_STRING,ocamloptdefaultflags) \
 	    $(call SUBST_STRING,ocamlsrcdir) \
 	    $(call SUBST,FLAMBDA) \
 	    $(call SUBST,FORCE_SAFE_STRING) \

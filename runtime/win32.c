@@ -241,7 +241,7 @@ void * caml_dlsym(void * handle, const char * name)
 
 void * caml_globalsym(const char * name)
 {
-  return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
+  return flexdll_dlsym(flexdll_wdlopen(NULL,0), name);
 }
 
 char * caml_dlerror(void)

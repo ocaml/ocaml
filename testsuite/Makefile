@@ -86,7 +86,10 @@ else
   OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG := -keep-test-dir-on-success
 endif
 
+TIMEOUT ?= 600 # 10 minutes
+
 OCAMLTESTFLAGS := \
+  -timeout $(TIMEOUT) \
   $(OCAMLTEST_PROMOTE_FLAG) \
   $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG)
 

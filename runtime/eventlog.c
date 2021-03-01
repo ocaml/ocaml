@@ -96,6 +96,7 @@ static int64_t time_counter(void)
 
 #elif defined(HAS_MACH_ABSOLUTE_TIME)
   static mach_timebase_info_data_t time_base = {0};
+  uint64_t now;
 
   if (time_base.denom == 0) {
     if (mach_timebase_info (&time_base) != KERN_SUCCESS)
@@ -105,7 +106,7 @@ static int64_t time_counter(void)
       return 0;
   }
 
-  uint64_t now = mach_absolute_time ();
+  now = mach_absolute_time ();
   return (int64_t)((now * time_base.numer) / time_base.denom);
 
 #elif defined(HAS_POSIX_MONOTONIC_CLOCK)

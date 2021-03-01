@@ -1,0 +1,14 @@
+(library
+ (name common)
+ (modules common)
+ (libraries lambdasoup))
+
+(executable
+ (name process_api)
+ (modules process_api)
+ (libraries unix re lambdasoup common))
+
+(executable
+ (name process_manual)
+ (modules process_manual)
+ (libraries re lambdasoup common))

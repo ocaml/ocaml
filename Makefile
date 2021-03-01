@@ -67,6 +67,10 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
+TOPLEVELINIT=toplevel/toploop.cmo
+
+# This list is passed to expunge, which accepts both uncapitalized and
+# capitalized module names.
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
@@ -207,8 +211,7 @@ opt: checknative
 .PHONY: opt.opt
 opt.opt: checknative
 	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
+	$(MAKE) coreall
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
@@ -401,8 +404,8 @@ endif
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   toplevel/byte/topdirs.cmt \
-	   toplevel/topdirs.cmti toplevel/byte/topdirs.mli \
+	   toplevel/topdirs.cmt \
+	   toplevel/topdirs.cmti toplevel/topdirs.mli \
 	   "$(INSTALL_LIBDIR)"
 endif
 	$(MAKE) -C tools install
@@ -545,7 +548,9 @@ installoptopt:
 	if test -f ocamlnat$(EXE) ; then \
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
 	  $(INSTALL_DATA) \
-	     $(TOPLEVELSTART:.cmo=.cmx) $(TOPLEVELSTART:.cmo=.$(O)) \
+	     toplevel/*.cmx \
+	     toplevel/native/*.cmx \
+	     $(TOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
 	cd "$(INSTALL_COMPLIBDIR)" && \
@@ -630,16 +635,14 @@ runtop:
 	$(MAKE) ocamlc
 	$(MAKE) otherlibraries
 	$(MAKE) ocaml
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) ||\
-	  $(EXTRAPATH) $(RUNTOP)
+	@$(EXTRAPATH) $(RLWRAP) $(RUNTOP)
 
 .PHONY: natruntop
 natruntop:
 	$(MAKE) core
 	$(MAKE) opt
 	$(MAKE) ocamlnat
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) ||\
-	  $(EXTRAPATH) $(NATRUNTOP)
+	@$(FLEXLINK_ENV) $(EXTRAPATH) $(RLWRAP) $(NATRUNTOP)
 
 # Native dynlink
 
@@ -1014,9 +1017,17 @@ endif
 ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     otherlibs/dynlink/dynlink.cmxa \
-    compilerlibs/ocamlopttoplevel.cmxa \
+    compilerlibs/ocamltoplevel.cmxa \
     $(TOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+
+
+toplevel/topdirs.cmx: toplevel/topdirs.ml
+	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
+
+$(TOPLEVELINIT:.cmo=.cmx): $(TOPLEVELINIT:.cmo=.ml) \
+     toplevel/native/topeval.cmx
+	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
 
 $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
      toplevel/native/topmain.cmx
@@ -1025,7 +1036,7 @@ $(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
 
-toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 

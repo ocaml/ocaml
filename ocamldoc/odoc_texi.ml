@@ -529,7 +529,7 @@ class texi =
                  [ ( match info.i_deprecated with
                  | None -> []
                  | Some t ->
-                     (Raw (Odoc_messages.deprecated ^ " ")) ::
+                     (Raw (Odoc_messages.deprecated ^ ". ")) ::
                      (self#fix_linebreaks t)
                      @ [ Newline ; Newline ] ) ;
                    self#text_of_desc info.i_desc ;

@@ -21,9 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#ifdef __sun
-#define _POSIX_PTHREAD_SEMANTICS
-#endif
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
@@ -104,6 +101,12 @@ Caml_inline void * st_tls_get(st_tlskey k)
 Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   pthread_setspecific(k, v);
+}
+
+/* Windows-specific hook. */
+Caml_inline void st_thread_set_id(intnat id)
+{
+  return;
 }
 
 /* The master lock.  This is a mutex that is held most of the time,

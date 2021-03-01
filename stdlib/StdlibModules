@@ -15,21 +15,23 @@
 #*                                                                        *
 #**************************************************************************
 
-# This file lists all standard library modules.
-# It is used by:
+# This file lists all standard library modules. It is used by:
 # 1. stdlib/Makefile when building stdlib.cma
 # 2. Makefile to expunge the toplevels
-# 3. ocamldoc/Makefile.docfiles to compute all documentation files
-#    which need to be generated for the stdlib
+# 3. api_docgen/Makefile.docfiles to compute all documentation files which need
+#    need to be generated for the stdlib
 
-# add stdlib__ as prefix to a module except for internal modules
-# and the stdlib module itself
-define add_stdlib_prefix
-  $(or $(filter stdlib camlinternal%,$1), stdlib__$1)
-endef
+# Three variables are exported:
+# $(STDLIB_MODULE_BASENAMES) - basenames, in dependency order, of the modules in
+#    the stdlib
+# $(STDLIB_PREFIXED_MODULES) - just the namespaced modules of
+#    $(STDLIB_MODULE_BASENAMES), i.e. without camlinternal* and stdlib. Used in
+#    stdlib/Makefile to munge the dependencies.
+# $(STDLIB_MODULES) - full list, in prefixed form as appropriate.
 
-# Modules should be listed in dependency order.
-STDLIB_MODS=\
+# Basenames of the source files for the standard library (i.e. unprefixed and
+# with lowercase first letters). These must be listed in dependency order.
+STDLIB_MODULE_BASENAMES=\
   camlinternalFormatBasics camlinternalAtomic \
   stdlib pervasives seq option either result bool char uchar \
   sys list bytes string unit marshal obj array float int int32 int64 nativeint \
@@ -40,5 +42,17 @@ STDLIB_MODS=\
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
   stdLabels bigarray
 
-STDLIB_MODULES=\
-  $(foreach module, $(STDLIB_MODS), $(call add_stdlib_prefix,$(module)))
+STDLIB_PREFIXED_MODULES=\
+  $(filter-out stdlib camlinternal%, $(STDLIB_MODULE_BASENAMES))
+
+# add stdlib__ as prefix to a module except for internal modules
+# and the stdlib module itself
+define add_stdlib_prefix
+  $(or $(filter-out $(STDLIB_PREFIXED_MODULES), $1), \
+    stdlib__$(shell echo $1 | cut -c1 | tr '[:lower:]' '[:upper:]')$\
+            $(shell echo $1 | cut -c2-))
+endef
+
+STDLIB_MODULES:=\
+  $(foreach module, $(STDLIB_MODULE_BASENAMES), \
+    $(call add_stdlib_prefix,$(module)))

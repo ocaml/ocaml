@@ -1746,12 +1746,12 @@ let divide_constant ctx m =
 (* Matching against a constructor *)
 
 let get_key_constr = function
-  | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr
+  | { pat_desc = Tpat_construct (_, cstr, _, _) } -> cstr
   | _ -> assert false
 
 let get_pat_args_constr p rem =
   match p with
-  | { pat_desc = Tpat_construct (_, _, args) } -> args @ rem
+  | { pat_desc = Tpat_construct (_, _, args, _) } -> args @ rem
   | _ -> assert false
 
 let get_expr_args_constr ~scopes head (arg, _mut) rem =
@@ -3549,6 +3549,7 @@ let simple_for_let ~scopes loc param pat body =
 
 let rec map_return f = function
   | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
+  | Lmutlet (k, id, l1, l2) -> Lmutlet (k, id, l1, map_return f l2)
   | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
   | Lifthenelse (lcond, lthen, lelse) ->
       Lifthenelse (lcond, map_return f lthen, map_return f lelse)
@@ -3576,8 +3577,8 @@ let rec map_return f = function
           Option.map (map_return f) def,
           loc )
   | (Lstaticraise _ | Lprim (Praise _, _, _)) as l -> l
-  | ( Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lsend _ | Lprim _ | Lwhile _
-    | Lfor _ | Lassign _ | Lifused _ ) as l ->
+  | ( Lvar _ | Lmutvar _ | Lconst _ | Lapply _ | Lfunction _ | Lsend _ | Lprim _
+    | Lwhile _ | Lfor _ | Lassign _ | Lifused _ ) as l ->
       f l
 
 (* The 'opt' reference indicates if the optimization is worthy.

@@ -90,14 +90,14 @@ _build
 /lex/ocamllex.opt
 /lex/parser.output
 
-/manual/manual/cmds/warnings-help.etex
-/manual/manual/warnings-help.etex
+/manual/src/cmds/warnings-help.etex
+/manual/src/warnings-help.etex
 
 /api_docgen/man
 /api_docgen/html
 /api_docgen/build
-/api_docgen/html
 /api_docgen/latex
+/api_docgen/texi
 /api_docgen/Compiler_libs.mld
 
 /ocamldoc/ocamldoc
@@ -178,6 +178,7 @@ _build
 /parsing/parser.output
 /parsing/parser.automaton
 /parsing/parser.conflicts
+/parsing/parser.auto.messages
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
 
@@ -262,13 +263,11 @@ _build
 /tools/caml-tex
 /tools/eventlog_metadata
 
-/toplevel/byte/toploop.mli
+/toplevel/byte/topeval.mli
 /toplevel/byte/trace.mli
-/toplevel/byte/topdirs.mli
 /toplevel/byte/topmain.mli
-/toplevel/native/toploop.mli
+/toplevel/native/topeval.mli
 /toplevel/native/trace.mli
-/toplevel/native/topdirs.mli
 /toplevel/native/topmain.mli
 
 /utils/config.ml

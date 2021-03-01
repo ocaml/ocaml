@@ -98,8 +98,8 @@ module Stdlib : sig
         There is no constraint on the relative lengths of the lists. *)
 
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    (** Returns [true] iff the given lists have the same length and content
-        with respect to the given equality function. *)
+    (** Returns [true] if and only if the given lists have the same length and
+        content with respect to the given equality function. *)
 
     val some_if_all_elements_are_some : 'a option t -> 'a t option
     (** If all elements of the given list are [Some _] then [Some xs]
@@ -121,8 +121,8 @@ module Stdlib : sig
       -> 'a list
       -> of_:'a list
       -> bool
-    (** Returns [true] iff the given list, with respect to the given equality
-        function on list members, is a prefix of the list [of_]. *)
+    (** Returns [true] if and only if the given list, with respect to the given
+        equality function on list members, is a prefix of the list [of_]. *)
 
     type 'a longest_common_prefix_result = private {
       longest_common_prefix : 'a list;
@@ -463,29 +463,6 @@ type modname = string
 type crcs = (modname * Digest.t option) list
 
 type alerts = string Stdlib.String.Map.t
-
-
-module EnvLazy: sig
-  type ('a,'b) t
-
-  type log
-
-  val force : ('a -> 'b) -> ('a,'b) t -> 'b
-  val create : 'a -> ('a,'b) t
-  val get_arg : ('a,'b) t -> 'a option
-  val create_forced : 'b -> ('a, 'b) t
-  val create_failed : exn -> ('a, 'b) t
-
-  (* [force_logged log f t] is equivalent to [force f t] but if [f]
-     returns [Error _] then [t] is recorded in [log]. [backtrack log]
-     will then reset all the recorded [t]s back to their original
-     state. *)
-  val log : unit -> log
-  val force_logged :
-    log -> ('a -> ('b, 'c) result) -> ('a,('b, 'c) result) t -> ('b, 'c) result
-  val backtrack : log -> unit
-
-end
 
 
 module Magic_number : sig

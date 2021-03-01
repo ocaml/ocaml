@@ -40,7 +40,7 @@ v}
     {ul
     {- An {e index} [i] of [s] is an integer in the range \[[0];[n-1]\].
        It represents the [i]th byte (character) of [s] which can be
-       acccessed using the constant time string indexing operator
+       accessed using the constant time string indexing operator
        [s.[i]].}
     {- A {e position} [i] of [s] is an integer in the range
        \[[0];[n]\]. It represents either the point at the beginning of
@@ -119,7 +119,8 @@ val concat : sep:string -> string list -> string
 (** {1:predicates Predicates and comparisons} *)
 
 val equal : t -> t -> bool
-(** [equal s0 s1] is [true] iff [s0] and [s1] are character-wise equal.
+(** [equal s0 s1] is [true] if and only if [s0] and [s1] are character-wise
+    equal.
     @since 4.03.0 (4.05.0 in StringLabels) *)
 
 val compare : t -> t -> int
@@ -128,25 +129,26 @@ val compare : t -> t -> int
 
 val starts_with :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [starts_with ][~][prefix s] is [true] iff [s] starts with [prefix].
+(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+    [prefix].
 
     @since 4.12.0 *)
 
 val ends_with :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [ends_with ~suffix s] is [true] iff [s] ends with [suffix].
+(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.12.0 *)
 
 val contains_from : string -> int -> char -> bool
-(** [contains_from s start c] is [true] iff [c] appears in [s] after position
-    [start].
+(** [contains_from s start c] is [true] if and only if [c] appears in [s]
+    after position [start].
 
     @raise Invalid_argument if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
-(** [rcontains_from s stop c] is [true] iff [c] appears in [s] before position
-    [stop+1].
+(** [rcontains_from s stop c] is [true] if and only if [c] appears in [s]
+    before position [stop+1].
 
     @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
     position in [s]. *)
@@ -295,12 +297,12 @@ val rindex_opt : string -> char -> int option
 
     @since 4.05 *)
 
-(** {1:converting Converting} *)
+(** {1 Strings and Sequences} *)
 
 val to_seq : t -> char Seq.t
 (** [to_seq s] is a sequence made of the string's characters in
     increasing order. In ["unsafe-string"] mode, modifications of the string
-    during iteration will be reflected in the iterator.
+    during iteration will be reflected in the sequence.
 
     @since 4.07 *)
 

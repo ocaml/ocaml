@@ -33,7 +33,7 @@ The `configure` script accepts options that can be discovered by running:
 
         ./configure --help
 +
-Some options or variables like (LDFLAGS) may not be taken into account
+Some options or variables like LDLIBS may not be taken into account
 by the OCaml build system at the moment. Please report an issue if you
 discover such a variable or option and this causes troubles to you.
 +
@@ -45,9 +45,7 @@ Examples:
 
 * On a Linux x86-64 host, to build a 32-bit version of OCaml:
 
-    ./configure --build=x86_64-pc-linux-gnu --host=i386-linux \
-                CC='gcc -m32' AS='as --32' ASPP='gcc -m32 -c' \
-                PARTIALLD='ld -r -melf_i386'
+    ./configure --build=x86_64-pc-linux-gnu --host=i686-linux-gnu
 
 * For AIX 7.x with the IBM compiler `xlc`:
 
@@ -56,6 +54,12 @@ Examples:
 By default, build is 32-bit. For 64-bit build, please set environment variable `OBJECT_MODE=64`
   for _both_ `configure` and `make world` phases. Note, if this variable is set for only one phase,
   your build will break (`ocamlrun` segfaults).
++
+* For Solaris/Illumos on SPARC machines with Sun PRO compiler only 64-bit
+  bytecode target is supported (32-bit fails due to alignment issues; the optimization
+  is preset to `-O4` for inlining):
+
+    ./configure CC="cc -m64"
 +
 If something goes wrong during the automatic configuration, or if the generated
 files cause errors later on, then look at the template files:

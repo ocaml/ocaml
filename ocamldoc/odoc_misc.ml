@@ -217,7 +217,7 @@ let string_of_info i =
   let module M = Odoc_types in
   (match i.M.i_deprecated with
     None -> ""
-  | Some d -> Odoc_messages.deprecated^"! "^(string_of_text d)^"\n")^
+  | Some d -> Odoc_messages.deprecated^". "^(string_of_text d)^"\n")^
   (match i.M.i_desc with
     None -> ""
   | Some d when d = [Odoc_types.Raw ""] -> ""
@@ -506,7 +506,8 @@ let remove_option typ =
     | Types.Tnil
     | Types.Tvariant _
     | Types.Tpackage _ -> t
-    | Types.Tlink t2
-    | Types.Tsubst t2 -> iter t2.Types.desc
+    | Types.Tlink t2 -> iter t2.Types.desc
+    | Types.Tsubst _ -> assert false
   in
-  { typ with Types.desc = iter typ.Types.desc }
+  Types.Private_type_expr.create (iter typ.Types.desc)
+    ~level:typ.Types.level ~scope:typ.Types.scope ~id:typ.Types.id
