@@ -130,6 +130,7 @@ AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
+AC_SUBST([ocamltest])
 AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
@@ -277,6 +278,10 @@ AC_ARG_ENABLE([ocamldoc],
     [do not build the ocamldoc documentation system])],
   [],
   [ocamldoc=auto])
+
+AC_ARG_ENABLE([ocamltest],
+  [AS_HELP_STRING([--disable-ocamltest],
+    [do not build the ocamltest driver])])
 
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
@@ -769,14 +774,19 @@ AC_C_BIGENDIAN(
 
 AC_CHECK_ALIGNOF([double])
 AC_CHECK_ALIGNOF([long])
+AC_CHECK_ALIGNOF([long long])
 
 AS_IF([! $arch64],
   [AS_CASE([$target_cpu],
     [i686], [],
     [AS_IF([test "$ac_cv_alignof_double" -gt 4],
       [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
-    AS_IF([test "$ac_cv_alignof_long" -gt 4],
-      [AC_DEFINE([ARCH_ALIGN_LONG], [1])])
+     AS_IF([test "x$ac_cv_sizeof_long" = "x8" &&
+            test "$ac_cv_alignof_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_INT64], [1])],
+      [AS_IF([test "x$ac_cv_sizeof_long_long" = "x8" &&
+              test "$ac_cv_alignof_long_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
 # Shared library support
@@ -1539,16 +1549,20 @@ AS_IF([test x"$with_bfd" != "xno"],
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -liberty"], [], [-liberty])])
+        [bfd_ldlibs="-lbfd -ldl"], [], [-ldl])])
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -liberty -lz"], [], [-liberty -lz])])
+        [bfd_ldlibs="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -liberty -lz -lintl"], [],
-        [-liberty -lz -lintl])])
+        [bfd_ldlibs="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
+    AS_IF([test -z "$bfd_ldlibs"],
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"], [],
+        [-ldl -liberty -lz -lintl])])
     AS_IF([test -n "$bfd_ldlibs"],
       [bfd_available=true
       AC_DEFINE([HAS_LIBBFD])])])
@@ -1704,6 +1718,10 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
 AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
+
+AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*],[ocamltest='ocamltest'],
+  [ocamltest=''])
 
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true

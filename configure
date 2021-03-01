@@ -784,6 +784,7 @@ bfd_cppflags
 x_libraries
 x_includes
 pthread_link
+ocamltest
 ocamldoc
 with_camltex
 with_debugger
@@ -895,6 +896,7 @@ enable_str_lib
 enable_unix_lib
 enable_bigarray_lib
 enable_ocamldoc
+enable_ocamltest
 enable_frame_pointers
 enable_naked_pointers
 enable_spacetime
@@ -1567,6 +1569,7 @@ Optional Features:
   --disable-unix-lib      do not build the unix library
   --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
+  --disable-ocamltest     do not build the ocamltest driver
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
                           do not allow naked pointers
@@ -2900,6 +2903,7 @@ VERSION=4.11.0+multicore+dev0-2019-10-18
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.common"
@@ -3141,6 +3145,12 @@ if test "${enable_ocamldoc+set}" = set; then :
   enableval=$enable_ocamldoc;
 else
   ocamldoc=auto
+fi
+
+
+# Check whether --enable-ocamltest was given.
+if test "${enable_ocamltest+set}" = set; then :
+  enableval=$enable_ocamltest;
 fi
 
 
@@ -13415,6 +13425,41 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+# The cast to long int works around a bug in the HP C Compiler,
+# see AC_CHECK_SIZEOF for more information.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking alignment of long long" >&5
+$as_echo_n "checking alignment of long long... " >&6; }
+if ${ac_cv_alignof_long_long+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) offsetof (ac__type_alignof_, y)" "ac_cv_alignof_long_long"        "$ac_includes_default
+#ifndef offsetof
+# define offsetof(type, member) ((char *) &((type *) 0)->member - (char *) 0)
+#endif
+typedef struct { char x; long long y; } ac__type_alignof_;"; then :
+
+else
+  if test "$ac_cv_type_long_long" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute alignment of long long
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_alignof_long_long=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_alignof_long_long" >&5
+$as_echo "$ac_cv_alignof_long_long" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define ALIGNOF_LONG_LONG $ac_cv_alignof_long_long
+_ACEOF
+
+
 
 if ! $arch64; then :
   case $target_cpu in #(
@@ -13425,9 +13470,16 @@ if ! $arch64; then :
   $as_echo "#define ARCH_ALIGN_DOUBLE 1" >>confdefs.h
 
 fi
-    if test "$ac_cv_alignof_long" -gt 4; then :
-  $as_echo "#define ARCH_ALIGN_LONG 1" >>confdefs.h
+     if test "x$ac_cv_sizeof_long" = "x8" &&
+            test "$ac_cv_alignof_long" -gt 4; then :
+  $as_echo "#define ARCH_ALIGN_INT64 1" >>confdefs.h
 
+else
+  if test "x$ac_cv_sizeof_long_long" = "x8" &&
+              test "$ac_cv_alignof_long_long" -gt 4; then :
+  $as_echo "#define ARCH_ALIGN_INT64 1" >>confdefs.h
+
+fi
 fi
      ;;
 esac
@@ -16133,7 +16185,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -liberty $LIBS"
+LIBS="-lbfd -ldl $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16164,7 +16216,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -liberty"
+  bfd_ldlibs="-lbfd -ldl"
 fi
 
 fi
@@ -16176,7 +16228,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -liberty -lz $LIBS"
+LIBS="-lbfd -ldl -liberty $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16207,7 +16259,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -liberty -lz"
+  bfd_ldlibs="-lbfd -ldl -liberty"
 fi
 
 fi
@@ -16219,7 +16271,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -liberty -lz -lintl $LIBS"
+LIBS="-lbfd -ldl -liberty -lz $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16250,7 +16302,50 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -liberty -lz -lintl"
+  bfd_ldlibs="-lbfd -ldl -liberty -lz"
+fi
+
+fi
+    if test -z "$bfd_ldlibs"; then :
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
+if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lbfd -ldl -liberty -lz -lintl $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char bfd_openr ();
+int
+main ()
+{
+return bfd_openr ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_bfd_bfd_openr=yes
+else
+  ac_cv_lib_bfd_bfd_openr=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
+$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
+if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
+  bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"
 fi
 
 fi
@@ -16710,6 +16805,13 @@ if test x"$enable_ocamldoc" = "xno"; then :
 else
   ocamldoc=ocamldoc
 fi
+
+case $enable_ocamltest,4.11.0+multicore+dev0-2019-10-18 in #(
+  yes,*|,*+dev*) :
+    ocamltest='ocamltest' ;; #(
+  *) :
+    ocamltest='' ;;
+esac
 
 if test x"$enable_flambda" = "xyes"; then :
   flambda=true
