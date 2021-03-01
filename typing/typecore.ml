@@ -2757,6 +2757,16 @@ and type_expect_
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
+      let rec lower_args seen ty_fun =
+        let ty = expand_head env ty_fun in
+        if List.memq ty seen then () else
+          match ty.desc with
+            Tarrow (_l, ty_arg, ty_fun, _com) ->
+              (try unify_var env (newvar()) ty_arg
+               with Unify _ -> assert false);
+              lower_args (ty::seen) ty_fun
+          | _ -> ()
+      in
       let type_sfunct sfunct =
         begin_def (); (* one more level for non-returning functions *)
         if !Clflags.principal then begin_def ();
@@ -2765,16 +2775,6 @@ and type_expect_
           end_def ();
           generalize_structure funct.exp_type
         end;
-        let rec lower_args seen ty_fun =
-          let ty = expand_head env ty_fun in
-          if List.memq ty seen then () else
-            match ty.desc with
-              Tarrow (_l, ty_arg, ty_fun, _com) ->
-                (try unify_var env (newvar()) ty_arg
-                 with Unify _ -> assert false);
-                lower_args (ty::seen) ty_fun
-            | _ -> ()
-        in
         let ty = instance funct.exp_type in
         end_def ();
         wrap_trace_gadt_instances env (lower_args []) ty;
@@ -2784,11 +2784,12 @@ and type_expect_
         let funct = type_sfunct sfunct in
         match funct.exp_desc, sargs with
         | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%revapply"}}),
-          [Nolabel, sarg; Nolabel, sfunct] when is_inferred sfunct ->
-            type_sfunct sfunct, [Nolabel, sarg]
+          [Nolabel, sarg; Nolabel, actual_sfunct]
+          when is_inferred actual_sfunct ->
+            type_sfunct actual_sfunct, [Nolabel, sarg]
         | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%apply"}}),
-          [Nolabel, sfunct; Nolabel, sarg] ->
-            type_sfunct sfunct, [Nolabel, sarg]
+          [Nolabel, actual_sfunct; Nolabel, sarg] ->
+            type_sfunct actual_sfunct, [Nolabel, sarg]
         | _ ->
             funct, sargs
       in
