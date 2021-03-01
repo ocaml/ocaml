@@ -76,6 +76,8 @@ module type S =
     val gtint : primitive
     (* type of actions *)
     type act
+    (* type of source locations *)
+    type loc
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
@@ -89,8 +91,7 @@ module type S =
    (* construct an actual switch :
       make_switch arg cases acts
       NB:  cases is in the value form *)
-    val make_switch :
-        Location.t -> act -> int array -> act array -> act
+    val make_switch : loc -> act -> int array -> act array -> act
    (* Build last minute sharing of action stuff *)
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
@@ -113,7 +114,7 @@ module Make :
     sig
 (* Standard entry point, sharing is tracked *)
       val zyva :
-          Location.t ->
+          Arg.loc ->
           (int * int) ->
            Arg.act ->
            (int * int * int) array ->

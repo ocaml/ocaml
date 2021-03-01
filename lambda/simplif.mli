@@ -36,7 +36,7 @@ val split_default_wrapper
   -> return:Lambda.value_kind
   -> body:lambda
   -> attr:function_attribute
-  -> loc:Location.t
+  -> loc:Lambda.scoped_location
   -> (Ident.t * lambda) list
 
 (* To be filled by asmcomp/selectgen.ml *)
