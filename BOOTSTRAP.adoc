@@ -6,10 +6,10 @@ update the binaries in the link:boot/[] directory.
 A bootstrap is required for example when something changes in the
 runtime system (the magic number of bytecode executables, the format of
 bytecode instructions, the set of available primitives) or when the
-format of .cmi files is modified. In particular, given that the .cmi
-files contain information related to types, modifying the way a type is
-represented will modify the format of .cmi files and thus require a
-bootstrap.
+format of OCaml compilation object files like .cmi files is modified. In
+particular, given that the .cmi files contain information related to
+types, modifying the way a type is represented will modify the format
+of .cmi files and thus require a bootstrap.
 
 Here is how to perform a change that requires a bootstrap:
 
@@ -56,3 +56,7 @@ This will rebuild runtime/ocamlrun, ocamlc, etc.
 If you notice that this procedure fails for a given change you are
 trying to implement, please report it so that the procedure can be
 updated to also cope with your change.
+
+If you want to upstream your changes, indicate in the message of the
+commit that the changes need a bootstrap. Perform the bootstrap and
+commit the result of the bootstrap separately, after that commit.

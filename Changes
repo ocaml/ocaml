@@ -142,7 +142,14 @@ Working version
 - #9255, #9300: reference chapter, split the expression grammar
   (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
 
+- #9325: documented base case for `List.for_all` and `List.exists`
+  (Glenn Slotte, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
+
+- GPR#1664: make -output-complete-obj link the runtime native c libraries when
+  building shared libraries like `-output-obj`.
+  (Florian Angeletti, review by Nicolás Ojeda Bär)
 
 - #9074: reworded error message for non-regular structural types
   (Florian Angeletti, review by Jacques Garrigue and Leo White,
@@ -196,11 +203,15 @@ Working version
 - #9081: typedtree, make the pat_env field of pattern data immutable
   (Gabriel Scherer, review by Jacques Garrigue, report by Alain Frisch)
 
-- #9178: start refactoring the label-disambiguation logic (Typecore.NameChoice)
-  (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
+- #9178, #9182: refactor the label-disambiguation logic (Typecore.NameChoice)
+  (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
+   reviewing each other without self-loops)
 
 - #9211, #9215: fix Makefile dependencies of compilerlibs archives and dynlink
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
+
+- #9305: Avoid polymorphic compare in Ident
+  (Leo White, review by Xavier Leroy and Gabriel Scherer)
 
 ### Build system:
 
@@ -231,6 +242,10 @@ Working version
 
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #9309, #9318: Fix exhaustivity checking with empty types
+  (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
+  and Thomas Refis)
 
 OCaml 4.10.0
 ------------
@@ -283,7 +298,7 @@ OCaml 4.10.0
    (KC Sivaramakrishnan and Stephen Dolan,
     compatibility hacking by David Allsopp, Florian Angeletti, Kate Deplaix,
     Jacques Garrigue, Guillaume Munch-Maccagnoni and Nicolás Ojeda Bär,
-    review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
+    review by David Allsopp, Alain Frisch, Nicolás Ojeda Bär,
     Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
 - #8993: New C functions caml_process_pending_actions{,_exn} in
@@ -434,6 +449,12 @@ OCaml 4.10.0
   (Stephen Dolan, with thanks to Andrew Hunter, Will Hasenplaugh,
    Spiros Eliopoulos and Brian Nigito. Review by Xavier Leroy)
 
+- #2165: better unboxing heuristics for let-bound identifiers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
+- #8735: unbox across static handlers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #8718, #9089: syntactic highlighting for code examples in the manual
@@ -561,7 +582,7 @@ OCaml 4.10.0
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
-- #8947, #9134, #9302: fix/improve support for the BFD library
+- #8947, #9134, #9302, #9311: fix/improve support for the BFD library
   (Sébastien Hinderer, review by Damien Doligez and David Allsopp)
 
 - #8951: let make's default target build the compiler
@@ -836,12 +857,6 @@ OCaml 4.09.0 (19 September 2019):
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
 
-- #2165: better unboxing heuristics for let-bound identifiers
-  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
-
-- #8735: unbox across static handlers
-  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
-
 ### Compiler user-interface and warnings:
 
 * #2276: Remove support for compiler plugins and hooks (also adds
@@ -988,6 +1003,9 @@ OCaml 4.09.0 (19 September 2019):
 - #8598: Replace "not is_nonexpansive" by "maybe_expansive".
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)
+
+- #9275: Short circuit simple inclusion checks
+  (Leo White, review by Thomas Refis)
 
 ### Compiler distribution build system:
 

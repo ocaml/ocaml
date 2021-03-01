@@ -254,7 +254,7 @@ prims.c : primitives
 	 echo '	 0 };') > prims.c
 
 caml/opnames.h : caml/instruct.h
-	cat $^ | tr -d '\r' | \
+	tr -d '\r' < $< | \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum /static char * names_of_/' \
@@ -263,7 +263,7 @@ caml/opnames.h : caml/instruct.h
 
 # caml/jumptbl.h is required only if you have GCC 2.0 or later
 caml/jumptbl.h : caml/instruct.h
-	cat $^ | tr -d '\r' | \
+	tr -d '\r' < $< | \
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' > $@
 
