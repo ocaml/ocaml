@@ -509,6 +509,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \nint main(int argc, char **argv)\
 \n#endif\
 \n{\
+\n  caml_byte_program_mode = COMPLETE_EXE;\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
