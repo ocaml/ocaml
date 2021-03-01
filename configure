@@ -16185,7 +16185,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl $LIBS"
+LIBS="-lbfd $DLLIBS $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16216,7 +16216,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl"
+  bfd_ldlibs="-lbfd $DLLIBS"
 fi
 
 fi
@@ -16228,7 +16228,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl -liberty $LIBS"
+LIBS="-lbfd $DLLIBS -liberty $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16259,7 +16259,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl -liberty"
+  bfd_ldlibs="-lbfd $DLLIBS -liberty"
 fi
 
 fi
@@ -16271,7 +16271,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl -liberty -lz $LIBS"
+LIBS="-lbfd $DLLIBS -liberty -lz $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16302,7 +16302,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl -liberty -lz"
+  bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"
 fi
 
 fi
@@ -16314,7 +16314,7 @@ if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl -liberty -lz -lintl $LIBS"
+LIBS="-lbfd $DLLIBS -liberty -lz -lintl $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16345,7 +16345,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"
+  bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"
 fi
 
 fi

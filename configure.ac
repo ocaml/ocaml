@@ -1549,20 +1549,20 @@ AS_IF([test x"$with_bfd" != "xno"],
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl"], [], [-ldl])])
+        [bfd_ldlibs="-lbfd $DLLIBS"], [], [$DLLIBS])])
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
+        [bfd_ldlibs="-lbfd $DLLIBS -liberty"], [], [$DLLIBS -liberty])])
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
+        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"], [], [$DLLIBS -liberty -lz])])
     AS_IF([test -z "$bfd_ldlibs"],
       [unset ac_cv_lib_bfd_bfd_openr
       AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"], [],
-        [-ldl -liberty -lz -lintl])])
+        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"], [],
+        [$DLLIBS -liberty -lz -lintl])])
     AS_IF([test -n "$bfd_ldlibs"],
       [bfd_available=true
       AC_DEFINE([HAS_LIBBFD])])])

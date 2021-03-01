@@ -109,7 +109,7 @@
 
 \newstyle{div.ocaml .pre}{
   white-space: pre;
-  font-family:mono;
+  font-family: monospace;
 }
 
 
