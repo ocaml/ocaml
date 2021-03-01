@@ -37,6 +37,7 @@ matrix:
 
 cache:
   - C:\cygwin64\var\cache\setup
+  - C:\projects\cache
 
 install:
 # This is a hangover from monitoring effects of MPR#7452

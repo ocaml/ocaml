@@ -102,8 +102,7 @@ module Sys = struct
 
   let mkdir dir =
     if not (Sys.file_exists dir) then
-      let quoted_dir = "\"" ^ dir ^ "\"" in
-      run_system_command ("mkdir " ^ quoted_dir)
+      run_system_command (Filename.quote_command "mkdir" [dir])
 
   let rec make_directory dir =
     if Sys.file_exists dir then ()

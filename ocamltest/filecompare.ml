@@ -166,13 +166,12 @@ let check_file ?(tool = default_comparison_tool) files =
 
 let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
-  let diff_commandline = String.concat " "
-  [
-    "diff -u";
-    files.reference_filename;
-    files.output_filename;
-    "> " ^ temporary_file
-  ] in
+  let diff_commandline =
+    Filename.quote_command "diff" ~stdout:temporary_file
+      [ "-u";
+        files.reference_filename;
+        files.output_filename ]
+  in
   let result =
     if (Sys.command diff_commandline) = 2 then Stdlib.Error "diff"
     else Ok (Sys.string_of_file temporary_file)
