@@ -3453,6 +3453,7 @@ and type_expect_
         type_private = Public;
         type_manifest = None;
         type_variance = [];
+        type_separability = [];
         type_is_newtype = true;
         type_expansion_scope = Btype.lowest_level;
         type_loc = loc;
@@ -4693,6 +4694,7 @@ and type_effect_cases
     type_private = Public;
     type_manifest = None;
     type_variance = [];
+    type_separability = [];
     type_is_newtype = true;
     type_expansion_scope = Btype.lowest_level;
     type_loc = loc;

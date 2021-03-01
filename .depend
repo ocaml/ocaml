@@ -1204,6 +1204,7 @@ typing/typedecl.cmo : \
     typing/typedtree.cmi \
     typing/typedecl_variance.cmi \
     typing/typedecl_unboxed.cmi \
+    typing/typedecl_separability.cmi \
     typing/typedecl_immediacy.cmi \
     typing/type_immediacy.cmi \
     typing/subst.cmi \
@@ -1237,6 +1238,7 @@ typing/typedecl.cmx : \
     typing/typedtree.cmx \
     typing/typedecl_variance.cmx \
     typing/typedecl_unboxed.cmx \
+    typing/typedecl_separability.cmx \
     typing/typedecl_immediacy.cmx \
     typing/type_immediacy.cmx \
     typing/subst.cmx \
@@ -1267,6 +1269,7 @@ typing/typedecl.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/typedecl_variance.cmi \
+    typing/typedecl_separability.cmi \
     typing/typedecl_immediacy.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1314,6 +1317,32 @@ typing/typedecl_properties.cmx : \
     typing/typedecl_properties.cmi
 typing/typedecl_properties.cmi : \
     typing/types.cmi \
+    typing/ident.cmi \
+    typing/env.cmi
+typing/typedecl_separability.cmo : \
+    typing/types.cmi \
+    typing/typedecl_properties.cmi \
+    parsing/location.cmi \
+    typing/env.cmi \
+    typing/ctype.cmi \
+    utils/config.cmi \
+    typing/btype.cmi \
+    parsing/asttypes.cmi \
+    typing/typedecl_separability.cmi
+typing/typedecl_separability.cmx : \
+    typing/types.cmx \
+    typing/typedecl_properties.cmx \
+    parsing/location.cmx \
+    typing/env.cmx \
+    typing/ctype.cmx \
+    utils/config.cmx \
+    typing/btype.cmx \
+    parsing/asttypes.cmi \
+    typing/typedecl_separability.cmi
+typing/typedecl_separability.cmi : \
+    typing/types.cmi \
+    typing/typedecl_properties.cmi \
+    parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi
 typing/typedecl_unboxed.cmo : \
@@ -1515,6 +1544,7 @@ typing/types.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    utils/config.cmi \
     parsing/asttypes.cmi \
     typing/types.cmi
 typing/types.cmx : \
@@ -1526,6 +1556,7 @@ typing/types.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
+    utils/config.cmx \
     parsing/asttypes.cmi \
     typing/types.cmi
 typing/types.cmi : \
