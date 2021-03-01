@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_NAME_SPACE
 #include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/bigarray.h>
@@ -24,14 +25,14 @@ extern float ftab_[];
 value fortran_filltab(value unit)
 {
   filltab_();
-  return alloc_bigarray_dims(BIGARRAY_FLOAT32 | BIGARRAY_FORTRAN_LAYOUT,
-                             2, ftab_, (intnat)8, (intnat)6);
+  return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
+                            2, ftab_, (intnat)8, (intnat)6);
 }
 
 value fortran_printtab(value ba)
 {
-  int dimx = Bigarray_val(ba)->dim[0];
-  int dimy = Bigarray_val(ba)->dim[1];
-  printtab_(Data_bigarray_val(ba), &dimx, &dimy);
+  int dimx = Caml_ba_array_val(ba)->dim[0];
+  int dimy = Caml_ba_array_val(ba)->dim[1];
+  printtab_(Caml_ba_data_val(ba), &dimx, &dimy);
   return Val_unit;
 }

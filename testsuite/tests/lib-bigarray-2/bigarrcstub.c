@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_NAME_SPACE
 #include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/bigarray.h>
@@ -44,12 +45,12 @@ void printtab(double tab[DIMX][DIMY])
 value c_filltab(value unit)
 {
   filltab();
-  return alloc_bigarray_dims(BIGARRAY_FLOAT64 | BIGARRAY_C_LAYOUT,
-                             2, ctab, (intnat)DIMX, (intnat)DIMY);
+  return caml_ba_alloc_dims(CAML_BA_FLOAT64 | CAML_BA_C_LAYOUT,
+                            2, ctab, (intnat)DIMX, (intnat)DIMY);
 }
 
 value c_printtab(value ba)
 {
-  printtab(Data_bigarray_val(ba));
+  printtab(Caml_ba_data_val(ba));
   return Val_unit;
 }
