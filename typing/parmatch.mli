@@ -51,6 +51,8 @@ module Pattern_head : sig
   val loc : t -> Location.t
   val typ : t -> Types.type_expr
 
+  val arity : t -> int
+
   (** [deconstruct p] returns the head of [p] and the list of sub patterns.
 
       @raises [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)

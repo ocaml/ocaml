@@ -16,6 +16,8 @@ program = "./test2"
 
 external puts: string -> unit = "caml_puts"
 
+let _ = at_exit (fun () -> print_endline "Program terminated")
+
 let () =
   Unix.putenv "FOO" "Hello OCaml!";
   puts (Unix.getenv "FOO")

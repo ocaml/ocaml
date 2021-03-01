@@ -27,7 +27,6 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
 
 #include "camlatomic.h"
@@ -35,10 +34,6 @@
 /* Basic types and constants */
 
 typedef size_t asize_t;
-
-#ifndef NULL
-#define NULL 0
-#endif
 
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */

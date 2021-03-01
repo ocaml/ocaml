@@ -71,6 +71,11 @@
 #define Context_needs_padding /* keep stack 16-byte aligned */
 #endif
 
+#ifdef TARGET_riscv
+#define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
+#endif
+
 /* Structure of OCaml callback contexts */
 
 struct caml_context {

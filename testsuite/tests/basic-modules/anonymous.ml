@@ -41,3 +41,15 @@ end
 module type S
 
 let f (module _ : S) = ()
+
+type re = { mutable cell : string; }
+
+let s = { cell = "" }
+
+module _ = struct
+ let () = s.cell <- "Hello World!"
+end
+
+let drop _ = ()
+
+let () = drop s.cell

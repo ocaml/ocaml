@@ -15,6 +15,10 @@
 
 #define CAML_INTERNALS
 
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+
 #include "caml/alloc.h"
 #include "caml/domain_state.h"
 #include "caml/platform.h"
@@ -30,9 +34,7 @@
 #include "caml/domain.h"
 #include "caml/printexc.h"
 #include "caml/backtrace.h"
-#include <pthread.h>
-#include <signal.h>
-#include <caml/signals.h>
+#include "caml/signals.h"
 
 #include "st_posix.h"
 

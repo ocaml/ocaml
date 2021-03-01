@@ -9,12 +9,19 @@ Working version
 
 ### Code generation and optimizations:
 
+- #9441: Add RISC-V RV64G native-code backend.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 ### Standard library:
 
 
 ### Other libraries:
 
+* #9206, #9419: update documentation of the threads library;
+  deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
+  and the whole ThreadUnix module.
+  (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
+   and Gabriel Scherer)
 
 ### Tools:
 
@@ -65,7 +72,6 @@ OCaml 4.11
   (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
   and Leo White)
 
-
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
@@ -110,6 +116,10 @@ OCaml 4.11
 - #9426: build the Mingw ports with higher levels of GCC optimization
   (Xavier Leroy, review by Sébastien Hinderer)
 
+* #9483: Remove accidental inclusion of <stdio.h> in <caml/misc.h>
+  The only release with the inclusion of stdio.h has been 4.10.0
+  (Christopher Zimmermann, review by Xavier Leroy and David Allsopp)
+
 - #9353: Reimplement `output_value` and the `Marshal.to_*` functions
   using a hash table to detect sharing, instead of temporary in-place
   modifications.  This is a prerequisite for Multicore OCaml.
@@ -118,6 +128,11 @@ OCaml 4.11
 
 - #9282: Make Cconst_symbol have typ_int to fix no-naked-pointers mode.
   (Stephen Dolan, review by Mark Shinwell, Xavier Leroy and Vincent Laviron)
+
+- #9497: Harmonise behaviour between bytecode and native code for
+  recursive module initialisation in one particular case (fixes #9494).
+  (Mark Shinwell, David Allsopp, Vincent Laviron, Xavier Leroy,
+  Geoff Reedy, original bug report by Arlen Cox)
 
 ### Code generation and optimizations:
 
@@ -230,6 +245,10 @@ OCaml 4.11
   Use KEEP_TEST_DIR_ON_SUCCESS=1 to keep all artifacts.
   (Gabriel Scherer, review by Sébastien Hinderer)
 
+- #9482, #9492: use diversions (@file) to work around OS limitations
+  on length of Sys.command argument.
+  (Xavier Leroy, report by Jérémie Dimino, review by David Allsopp)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
@@ -322,7 +341,7 @@ OCaml 4.11
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 
-- #9321, #9322, #9359, #9361, #9417, #9447: refactor the
+- #9321, #9322, #9359, #9361, #9417, #9447, #9464: refactor the
   pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
@@ -411,6 +430,9 @@ OCaml 4.11
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #9375, #9477: add forgotten substitution when compiling anonymous modules
+  (Thomas Refis, review by Frédéric Bour, report by Andreas Hauptmann)
+
 * #9388: Prohibit signature local types with constraints
   (Leo White, review by Jacques Garrigue)
 
@@ -418,6 +440,9 @@ OCaml 4.11
   cmis.
   (Florian Angeletti, report by Thomas Leonard, review by Gabriel Radanne
    and Gabriel Scherer)
+
+- #9415: Treat `open struct` as `include struct` in toplevel
+  (Leo White, review by Thomas Refis)
 
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
@@ -441,6 +466,11 @@ OCaml 4.10 maintenance branch
 
 - #9165: Add missing -function-sections and -O3 flags in Makefiles.
   (Greta Yorsh, review by David Allsopp)
+
+- #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`
+  would not execute `at_exit` hooks at program termination (in particular,
+  output channels would not be flushed).
+  (Nicolás Ojeda Bär, review by David Allsopp)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------

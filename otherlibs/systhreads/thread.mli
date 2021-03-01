@@ -34,7 +34,7 @@ val create : ('a -> 'b) -> 'a -> t
    directly accessible to the parent thread. *)
 
 val self : unit -> t
-(** Return the thread currently executing. *)
+(** Return the handle for the thread currently executing. *)
 
 val id : t -> int
 (** Return the identifier of the given thread. A thread identifier
@@ -45,7 +45,11 @@ val exit : unit -> unit
 (** Terminate prematurely the currently executing thread. *)
 
 val kill : t -> unit
-(** Terminate prematurely the thread whose handle is given. *)
+  [@@ocaml.deprecated "Not implemented, do not use"]
+(** This function was supposed to terminate prematurely the thread
+    whose handle is given.  It is not currently implemented due to
+    problems with cleanup handlers on many POSIX 1003.1c implementations.
+    It always raises the [Invalid_argument] exception. *)
 
 (** {1 Suspending threads} *)
 
@@ -58,49 +62,59 @@ val join : t -> unit
 (** [join th] suspends the execution of the calling thread
    until the thread [th] has terminated. *)
 
+val yield : unit -> unit
+(** Re-schedule the calling thread without suspending it.
+   This function can be used to give scheduling hints,
+   telling the scheduler that now is a good time to
+   switch to other threads. *)
+
+(** {1 Waiting for file descriptors or processes} *)
+
+(** The functions below are leftovers from an earlier, VM-based threading
+    system.  The {!Unix} module provides equivalent functionality, in
+    a more general and more standard-conformant manner.  It is recommended
+    to use {!Unix} functions directly. *)
+
 val wait_read : Unix.file_descr -> unit
-(** See {!Thread.wait_write}.*)
+  [@@ocaml.deprecated "This function no longer does anything"]
+(** This function does nothing in the current implementation of the threading
+    library and can be removed from all user programs. *)
 
 val wait_write : Unix.file_descr -> unit
-(** This function does nothing in this implementation. *)
+  [@@ocaml.deprecated "This function no longer does anything"]
+(** This function does nothing in the current implementation of the threading
+    library and can be removed from all user programs. *)
 
 val wait_timed_read : Unix.file_descr -> float -> bool
 (** See {!Thread.wait_timed_write}.*)
 
 val wait_timed_write : Unix.file_descr -> float -> bool
 (** Suspend the execution of the calling thread until at least
-   one character or EOF is available for reading ([wait_read]) or
-   one character can be written without blocking ([wait_write])
+   one character or EOF is available for reading ([wait_timed_read]) or
+   one character can be written without blocking ([wait_timed_write])
    on the given Unix file descriptor. Wait for at most
    the amount of time given as second argument (in seconds).
    Return [true] if the file descriptor is ready for input/output
    and [false] if the timeout expired.
-
-   These functions return immediately [true] in the Win32
-   implementation. *)
+   The same functionality can be achieved with {!Unix.select}.
+*)
 
 val select :
   Unix.file_descr list -> Unix.file_descr list ->
   Unix.file_descr list -> float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
-(** Suspend the execution of the calling thread until input/output
+(** Same function as {!Unix.select}.
+   Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
    The arguments and results have the same meaning as for
-   [Unix.select].
-   This function is not implemented yet under Win32. *)
+   {!Unix.select}. *)
 
 val wait_pid : int -> int * Unix.process_status
-(** [wait_pid p] suspends the execution of the calling thread
+(** Same function as {!Unix.waitpid}.
+   [wait_pid p] suspends the execution of the calling thread
    until the process specified by the process identifier [p]
    terminates. Returns the pid of the child caught and
-   its termination status, as per [Unix.wait].
-   This function is not implemented under MacOS. *)
-
-val yield : unit -> unit
-(** Re-schedule the calling thread without suspending it.
-   This function can be used to give scheduling hints,
-   telling the scheduler that now is a good time to
-   switch to other threads. *)
+   its termination status, as per {!Unix.wait}. *)
 
 (** {1 Management of signals} *)
 
