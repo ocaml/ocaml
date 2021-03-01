@@ -197,8 +197,8 @@ let run_cmd
 
 let run
     (log_message : string)
-    (redirect_output : bool)
-    (can_skip : bool)
+    ~(redirect_output : bool)
+    ~(can_skip : bool)
     (prog_variable : Variables.t)
     (args_variable : Variables.t option)
     (log : out_channel)
@@ -244,8 +244,8 @@ let run
 let run_program =
   run
     "Running program"
-    true
-    false
+    ~redirect_output:true
+    ~can_skip:false
     Builtin_variables.program
     (Some Builtin_variables.arguments)
 
@@ -257,8 +257,8 @@ let run_script log env =
     Builtin_variables.ocamltest_response response_file env in
   let (result, newenv) = run
     "Running script"
-    true
-    true
+    ~redirect_output:true
+    ~can_skip:true
     Builtin_variables.script
     None
     log scriptenv in
