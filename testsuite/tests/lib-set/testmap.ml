@@ -75,6 +75,11 @@ let test x v s1 s2 =
     (let p x y = x >= 3 && x <= 6 in
      M.bindings(M.filter p s1) = List.filter (uncurry p) (M.bindings s1));
 
+  checkbool "filter_map"
+    (let f x y = if x >= 3 && x <= 6 then Some (2 * x) else None in
+     let f_on_pair (x, y) = Option.map (fun v -> (x, v)) (f x y) in
+     M.bindings(M.filter_map f s1) = List.filter_map f_on_pair (M.bindings s1));
+
   checkbool "partition"
     (let p x y = x >= 3 && x <= 6 in
      let (st,sf) = M.partition p s1

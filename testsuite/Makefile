@@ -62,6 +62,22 @@ else
                                $(ocamltest_program)
 endif
 
+ifeq "$(PROMOTE)" ""
+  OCAMLTEST_PROMOTE_FLAG :=
+else
+  OCAMLTEST_PROMOTE_FLAG := -promote
+endif
+
+ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
+  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG :=
+else
+  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG := -keep-test-dir-on-success
+endif
+
+OCAMLTESTFLAGS := \
+  $(OCAMLTEST_PROMOTE_FLAG) \
+  $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG)
+
 .PHONY: default
 default:
 	@echo "Available targets:"
@@ -96,7 +112,7 @@ new-without-report: lib tools
 	$(ocamltest) -find-test-dirs tests | while read dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
-	    OCAMLTESTENV="" OCAMLTESTFLAGS=""; \
+	    OCAMLTESTENV=""; \
 	done || echo outer loop >> $(failstamp)) 2>&1 | tee -a $(TESTLOG)
 	@$(MAKE) check-failstamp
 
@@ -201,8 +217,7 @@ exec-one:
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
-	    OCAMLTESTFLAGS=""; \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)"; \
 	else \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \
@@ -247,7 +262,7 @@ promote:
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
-	    OCAMLTESTFLAGS="-promote"; \
+	    PROMOTE="true"; \
 	else \
 	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
 	fi

@@ -599,6 +599,11 @@ let compare_type_path env tpath1 tpath2 =
 (* Records *)
 exception Wrong_name_disambiguation of Env.t * wrong_name
 
+let get_constr_type_path ty =
+  match (repr ty).desc with
+  | Tconstr(p, _, _) -> p
+  | _ -> assert false
+
 module NameChoice(Name : sig
   type t
   type usage
@@ -615,10 +620,7 @@ module NameChoice(Name : sig
 end) = struct
   open Name
 
-  let get_type_path d =
-    match (repr (get_type d)).desc with
-    | Tconstr(p, _, _) -> p
-    | _ -> assert false
+  let get_type_path d = get_constr_type_path (get_type d)
 
   let lookup_from_type env type_path usage lid =
     let descrs = lookup_all_from_type lid.loc usage type_path env in
@@ -986,7 +988,21 @@ module Constructor = NameChoice (struct
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
   let lookup_all_from_type loc usage path env =
-    Env.lookup_all_constructors_from_type ~loc usage path env
+    match Env.lookup_all_constructors_from_type ~loc usage path env with
+    | _ :: _ as x -> x
+    | [] ->
+        match (Env.find_type path env).type_kind with
+        | Type_open ->
+            (* Extension constructors cannot be found by looking at the type
+               declaration.
+               We scan the whole environment to get an accurate spellchecking
+               hint in the subsequent error message *)
+            let filter lbl =
+              compare_type_path env
+                path (get_constr_type_path @@ get_type lbl) in
+            let add_valid x acc = if filter x then (x,ignore)::acc else acc in
+            Env.fold_constructors add_valid None env []
+        | _ -> []
   let in_env _ = true
 end)
 

@@ -89,6 +89,14 @@ let test x s1 s2 =
     (let p x = x >= 3 && x <= 6 in
      S.elements(S.filter p s1) = List.filter p (S.elements s1));
 
+  checkbool "filter_map"
+    (let f x = if x >= 3 && x <= 6 then Some (2 * x) else None in
+     S.elements(S.filter_map f s1) = List.filter_map f (S.elements s1));
+
+  checkbool "filter_map(==)"
+    (let f x = Some x in
+     S.filter_map f s1 == s1);
+
   checkbool "partition"
     (let p x = x >= 3 && x <= 6 in
      let (st,sf) = S.partition p s1
