@@ -22,7 +22,6 @@
 *)
 
 open Asttypes
-open Types
 
 (* Value expressions for the core language *)
 
@@ -49,7 +48,7 @@ and 'a pattern_data =
   { pat_desc: 'a;
     pat_loc: Location.t;
     pat_extra : (pat_extra * Location.t * attributes) list;
-    pat_type: type_expr;
+    pat_type: Types.type_expr;
     pat_env: Env.t;
     pat_attributes: attributes;
    }
@@ -89,14 +88,15 @@ and 'k pattern_desc =
             Invariant: n >= 2
          *)
   | Tpat_construct :
-      Longident.t loc * constructor_description * value general_pattern list ->
+      Longident.t loc * Types.constructor_description *
+        value general_pattern list ->
       value pattern_desc
         (** C                []
             C P              [P]
             C (P1, ..., Pn)  [P1; ...; Pn]
           *)
   | Tpat_variant :
-      label * value general_pattern option * row_desc ref ->
+      label * value general_pattern option * Types.row_desc ref ->
       value pattern_desc
         (** `A             (None)
             `A P           (Some P)
@@ -104,7 +104,7 @@ and 'k pattern_desc =
             See {!Types.row_desc} for an explanation of the last parameter.
          *)
   | Tpat_record :
-      (Longident.t loc * label_description * value general_pattern) list *
+      (Longident.t loc * Types.label_description * value general_pattern) list *
         closed_flag ->
       value pattern_desc
         (** { l1=P1; ...; ln=Pn }     (flag = Closed)
@@ -135,7 +135,7 @@ and 'k pattern_desc =
         (** exception P *)
   (* generic constructions *)
   | Tpat_or :
-      'k general_pattern * 'k general_pattern * row_desc option ->
+      'k general_pattern * 'k general_pattern * Types.row_desc option ->
       'k pattern_desc
         (** P1 | P2
 
@@ -149,7 +149,7 @@ and expression =
   { exp_desc: expression_desc;
     exp_loc: Location.t;
     exp_extra: (exp_extra * Location.t * attributes) list;
-    exp_type: type_expr;
+    exp_type: Types.type_expr;
     exp_env: Env.t;
     exp_attributes: attributes;
    }
@@ -225,7 +225,7 @@ and expression_desc =
   | Texp_tuple of expression list
         (** (E1, ..., EN) *)
   | Texp_construct of
-      Longident.t loc * constructor_description * expression list
+      Longident.t loc * Types.constructor_description * expression list
         (** C                []
             C E              [E]
             C (E1, ..., En)  [E1;...;En]
@@ -247,9 +247,9 @@ and expression_desc =
               { fields = [| l1, Kept t1; l2 Override P2 |]; representation;
                 extended_expression = Some E0 }
         *)
-  | Texp_field of expression * Longident.t loc * label_description
+  | Texp_field of expression * Longident.t loc * Types.label_description
   | Texp_setfield of
-      expression * Longident.t loc * label_description * expression
+      expression * Longident.t loc * Types.label_description * expression
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
@@ -331,7 +331,7 @@ and class_expr_desc =
   | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * expression) list * class_expr
   | Tcl_constraint of
-      class_expr * class_type option * string list * string list * Concr.t
+      class_expr * class_type option * string list * string list * Types.Concr.t
   (* Visible instance variables, methods and concrete methods *)
   | Tcl_open of open_description * class_expr
 
@@ -340,7 +340,7 @@ and class_structure =
    cstr_self: pattern;
    cstr_fields: class_field list;
    cstr_type: Types.class_signature;
-   cstr_meths: Ident.t Meths.t;
+   cstr_meths: Ident.t Types.Meths.t;
   }
 
 and class_field =
@@ -431,7 +431,7 @@ and module_binding =
     {
      mb_id: Ident.t option;
      mb_name: string option loc;
-     mb_presence: module_presence;
+     mb_presence: Types.module_presence;
      mb_expr: module_expr;
      mb_attributes: attributes;
      mb_loc: Location.t;
@@ -472,7 +472,7 @@ and module_type_desc =
 and primitive_coercion =
   {
     pc_desc: Primitive.description;
-    pc_type: type_expr;
+    pc_type: Types.type_expr;
     pc_env: Env.t;
     pc_loc : Location.t;
   }
@@ -509,7 +509,7 @@ and module_declaration =
     {
      md_id: Ident.t option;
      md_name: string option loc;
-     md_presence: module_presence;
+     md_presence: Types.module_presence;
      md_type: module_type;
      md_attributes: attributes;
      md_loc: Location.t;
@@ -570,7 +570,7 @@ and with_constraint =
 and core_type =
   { mutable ctyp_desc : core_type_desc;
       (** mutable because of [Typeclass.declare_method] *)
-    mutable ctyp_type : type_expr;
+    mutable ctyp_type : Types.type_expr;
       (** mutable because of [Typeclass.declare_method] *)
     ctyp_env : Env.t; (* BINANNOT ADDED *)
     ctyp_loc : Location.t;
@@ -796,7 +796,7 @@ val map_general_pattern:
 
 val let_bound_idents: value_binding list -> Ident.t list
 val let_bound_idents_full:
-    value_binding list -> (Ident.t * string loc * type_expr) list
+    value_binding list -> (Ident.t * string loc * Types.type_expr) list
 
 (** Alpha conversion of patterns *)
 val alpha_pat:
@@ -807,7 +807,7 @@ val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: 'k general_pattern -> Ident.t list
 val pat_bound_idents_full:
-  'k general_pattern -> (Ident.t * string loc * type_expr) list
+  'k general_pattern -> (Ident.t * string loc * Types.type_expr) list
 
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern:

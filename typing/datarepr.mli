@@ -19,13 +19,14 @@
 open Types
 
 val extension_descr:
-  Path.t -> extension_constructor -> constructor_description
+  current_unit:string -> Path.t -> extension_constructor ->
+  constructor_description
 
 val labels_of_type:
   Path.t -> type_declaration ->
   (Ident.t * label_description) list
 val constructors_of_type:
-  Path.t -> type_declaration ->
+  current_unit:string -> Path.t -> type_declaration ->
   (Ident.t * constructor_description) list
 
 

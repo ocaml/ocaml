@@ -75,7 +75,7 @@ let mark_positive = function
 let value_descriptions ~loc env ~mark cxt subst id vd1 vd2 =
   Cmt_format.record_value_dependency vd1 vd2;
   if mark_positive mark then
-    Env.mark_value_used (Ident.name id) vd1;
+    Env.mark_value_used vd1.val_uid;
   let vd2 = Subst.value_description subst vd2 in
   try
     Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2
@@ -87,7 +87,7 @@ let value_descriptions ~loc env ~mark cxt subst id vd1 vd2 =
 let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
   let mark = mark_positive mark in
   if mark then
-    Env.mark_type_used (Ident.name id) decl1;
+    Env.mark_type_used decl1.type_uid;
   let decl2 = Subst.type_declaration subst decl2 in
   match
     Includecore.type_declarations ~loc env ~mark
@@ -515,7 +515,7 @@ and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
     (Ident.name id1);
   let p1 = Path.Pident id1 in
   if mark_positive mark then
-    Env.mark_module_used (Ident.name id1) md1.md_loc;
+    Env.mark_module_used md1.md_uid;
   strengthened_modtypes ~loc ~aliasable:true env ~mark (Module id1::cxt) subst
     md1.md_type p1 md2.md_type
 
