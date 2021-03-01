@@ -247,7 +247,6 @@ let rec limited_generalize rv =
 (* Record a class type *)
 let rc node =
   Cmt_format.add_saved_type (Cmt_format.Partial_class_expr node);
-  Stypes.record (Stypes.Ti_class node); (* moved to genannot *)
   node
 
 

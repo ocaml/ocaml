@@ -167,17 +167,9 @@ excluding the filename.
 Show absolute filenames in error messages.
 .TP
 .B \-annot
-Dump detailed information about the compilation (types, bindings,
-tail-calls, etc).  The information for file
-.IR src .ml
-is put into file
-.IR src .annot.
-In case of a type error, dump all the information inferred by the
-type-checker before the error. The
-.IR src .annot
-file can be used with the emacs commands given in
-.B emacs/caml\-types.el
-to display types and other annotations interactively.
+Deprecated since OCaml 4.11. Please use
+.BR \-bin-annot
+instead.
 .TP
 .B \-bin\-annot
 Dump detailed information about the compilation (types, bindings,

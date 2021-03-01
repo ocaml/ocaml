@@ -101,7 +101,7 @@ Working version
 
 - #9237: `Format.pp_update_geometry ppf (fun geo -> {geo with ...})`
   for formatter geometry changes that are robust to new geometry fields.
-  (Gabriel Scherer, review by Josh Berdine and ???)
+  (Gabriel Scherer, review by Josh Berdine and Florian Angeletti)
 
 ### Other libraries:
 
@@ -177,6 +177,10 @@ Working version
 - #9208: -dno-locations option to hide source locations (and debug events)
   from intermediate-representation dumps (-dfoo).
   (Gabriel Scherer, review by Vincent Laviron)
+
+- #2141: generate .annot files from cmt data; deprecate -annot.
+  (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
+  Doligez)
 
 ### Internal/compiler-libs changes:
 
@@ -261,6 +265,10 @@ Working version
 
 - #9343: Re-enable `-short-paths` for some error messages
   (Leo White, review by Florian Angeletti)
+
+- #9355, #9356: ocamldebug, fix a fatal error when printing values
+  whose type involves a functor application.
+  (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
 
 OCaml 4.10.0
 ------------

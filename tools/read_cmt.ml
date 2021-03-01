@@ -97,6 +97,64 @@ let print_info cmt =
   end;
   ()
 
+let generate_ml target_filename filename cmt =
+  let (printer, ext) =
+    match cmt.Cmt_format.cmt_annots with
+      | Cmt_format.Implementation typedtree ->
+          (fun ppf -> Pprintast.structure ppf
+                                        (Untypeast.untype_structure typedtree)),
+          ".ml"
+      | Cmt_format.Interface typedtree ->
+          (fun ppf -> Pprintast.signature ppf
+                                        (Untypeast.untype_signature typedtree)),
+          ".mli"
+      | _ ->
+        Printf.fprintf stderr "File was generated with an error\n%!";
+          exit 2
+  in
+  let target_filename = match target_filename with
+      None -> Some (filename ^ ext)
+    | Some "-" -> None
+    | Some _ -> target_filename
+  in
+  let oc = match target_filename with
+      None -> None
+    | Some filename -> Some (open_out filename) in
+  let ppf = match oc with
+      None -> Format.std_formatter
+    | Some oc -> Format.formatter_of_out_channel oc in
+  printer ppf;
+  Format.pp_print_flush ppf ();
+  match oc with
+      None -> flush stdout
+    | Some oc -> close_out oc
+
+(* Save cmt information as faked annotations, attached to
+   Location.none, on top of the .annot file. Only when -save-cmt-info is
+   provided to ocaml_cmt.
+*)
+let record_cmt_info cmt =
+  let location_none = {
+    Location.none with Location.loc_ghost = false }
+  in
+  let location_file file = {
+    Location.none with
+      Location.loc_start = {
+        Location.none.Location.loc_start with
+          Lexing.pos_fname = file }}
+  in
+  let record_info name value =
+    let ident = Printf.sprintf ".%s" name in
+    Stypes.record (Stypes.An_ident (location_none, ident,
+                                    Annot.Idef (location_file value)))
+  in
+  let open Cmt_format in
+  (* record in reverse order to get them in correct order... *)
+  List.iter (fun dir -> record_info "include" dir) (List.rev cmt.cmt_loadpath);
+  record_info "chdir" cmt.cmt_builddir;
+  (match cmt.cmt_sourcefile with
+    None -> () | Some file -> record_info "source" file)
+
 let main () =
   Clflags.annotations := true;
 
@@ -105,12 +163,25 @@ let main () =
       Filename.check_suffix filename ".cmt" ||
         Filename.check_suffix filename ".cmti"
     then begin
+      let open Cmt_format in
       Compmisc.init_path ();
-      let cmt = Cmt_format.read_cmt filename in
-      if !gen_annot then
-        Cmt2annot.gen_annot ~save_cmt_info: !save_cmt_info
-          !target_filename filename cmt;
-      if !gen_ml then Cmt2annot.gen_ml !target_filename filename cmt;
+      let cmt = read_cmt filename in
+      if !gen_annot then begin
+        if !save_cmt_info then record_cmt_info cmt;
+        let target_filename =
+          match !target_filename with
+          | None -> Some (filename ^ ".annot")
+          | Some "-" -> None
+          | Some _ as x -> x
+        in
+        Envaux.reset_cache ();
+        List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
+        Cmt2annot.gen_annot target_filename
+          ~sourcefile:cmt.cmt_sourcefile
+          ~use_summaries:cmt.cmt_use_summaries
+          cmt.cmt_annots
+      end;
+      if !gen_ml then generate_ml !target_filename filename cmt;
       if !print_info_arg || not (!gen_ml || !gen_annot) then print_info cmt;
     end else begin
       Printf.fprintf stderr

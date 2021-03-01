@@ -228,7 +228,7 @@ READ_CMT= \
           $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
           $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
           \
-          cmt2annot.cmo read_cmt.cmo
+          read_cmt.cmo
 
 # Reading cmt files
 $(call byte_and_opt,read_cmt,$(READ_CMT),)

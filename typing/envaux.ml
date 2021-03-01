@@ -106,3 +106,10 @@ open Format
 let report_error ppf = function
   | Module_not_found p ->
       fprintf ppf "@[Cannot find module %a@].@." Printtyp.path p
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
