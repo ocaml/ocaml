@@ -153,6 +153,9 @@ val mk_if_then_else :
 (** Boolean negation *)
 val mk_not : Debuginfo.t -> expression -> expression
 
+(** Integer comparison that returns int not bool *)
+val mk_compare_ints : Debuginfo.t -> expression -> expression -> expression
+
 (** Loop construction (while true do expr done).
     Used to be represented as Cloop. *)
 val create_loop : expression -> Debuginfo.t -> expression

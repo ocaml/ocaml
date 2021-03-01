@@ -66,8 +66,6 @@
 
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{quote}}
-\def\macos{\versionspecific{MacOS}}
-\def\endmacos{\end{quote}}
 \def\windows{\versionspecific{Windows}}
 \def\endwindows{\end{quote}}
 

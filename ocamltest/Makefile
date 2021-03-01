@@ -202,19 +202,24 @@ all: ocamltest$(EXE)
 allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
-ocamltest$(EXE): $(bytecode_modules)
-	$(ocamlc_cmd) -custom ocamlcommon.cma ocamlbytecomp.cma -o $@ $^
+compdeps_names=ocamlcommon ocamlbytecomp
+compdeps_paths=$(addprefix $(ROOTDIR)/compilerlibs/,$(compdeps_names))
+compdeps_byte=$(addsuffix .cma,$(compdeps_paths))
+compdeps_opt=$(addsuffix .cmxa,$(compdeps_paths))
 
-%.cmo: %.ml
+ocamltest$(EXE): $(compdeps_byte) $(bytecode_modules)
+	$(ocamlc_cmd) -custom -o $@ $^
+
+%.cmo: %.ml $(compdeps_byte)
 	$(ocamlc) -c $<
 
-ocamltest.opt$(EXE): $(native_modules)
-	$(ocamlopt_cmd) ocamlcommon.cmxa ocamlbytecomp.cmxa -o $@ $^
+ocamltest.opt$(EXE): $(compdeps_opt) $(native_modules)
+	$(ocamlopt_cmd) -o $@ $^
 
-%.cmx: %.ml
+%.cmx: %.ml $(compdeps_opt)
 	$(ocamlopt) -c $<
 
-%.cmi: %.mli
+%.cmi: %.mli $(compdeps_byte)
 	$(ocamlc) -c $<
 
 %.ml %.mli: %.mly

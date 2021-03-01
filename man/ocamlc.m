@@ -790,7 +790,7 @@ function type and is ignored.
 \ \ \ Label omitted in function application.
 
 7
-\ \ \ Method overridden without using the "method!" keyword
+\ \ \ Method overridden without using the "method!" keyword.
 
 8
 \ \ \ Partial match: missing cases in pattern-matching.
@@ -943,16 +943,16 @@ mutually recursive types.
 \ \ Unannotated unboxable type in primitive declaration.
 
 62
-\ \ Type constraint on GADT type declaration
+\ \ Type constraint on GADT type declaration.
 
 63
-\ \ Erroneous printed signature
+\ \ Erroneous printed signature.
 
 64
-\ \ -unsafe used with a preprocessor returning a syntax tree
+\ \ -unsafe used with a preprocessor returning a syntax tree.
 
 65
-\ \ Type declaration defining a new '()' constructor
+\ \ Type declaration defining a new '()' constructor.
 
 66
 \ \ Unused open! statement.

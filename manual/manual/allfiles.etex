@@ -22,17 +22,16 @@
 \cleardoublepage
 \setcounter{page}{1}
 
-
 \begin{htmlonly}
 \begin{quote}
 \rule{}{}
 This manual is also available in
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF}.
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain text},
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF}.
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain text},
 as a
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman-html.tar.gz}{bundle of HTML files},
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman-html.tar.gz}{bundle of HTML files},
 and as a
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
 \rule{}{}
 \end{quote}
 \end{htmlonly}

@@ -274,6 +274,22 @@ let mk_not dbg cmm =
       Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
 
 
+let mk_compare_ints dbg a1 a2 =
+  match (a1,a2) with
+  | Cconst_int (c1, _), Cconst_int (c2, _) ->
+     int_const dbg (Int.compare c1 c2)
+  | Cconst_natint (c1, _), Cconst_natint (c2, _) ->
+     int_const dbg (Nativeint.compare c1 c2)
+  | Cconst_int (c1, _), Cconst_natint (c2, _) ->
+     int_const dbg Nativeint.(compare (of_int c1) c2)
+  | Cconst_natint (c1, _), Cconst_int (c2, _) ->
+     int_const dbg Nativeint.(compare c1 (of_int c2))
+  | a1, a2 -> begin
+      let op1 = Cop(Ccmpi(Cgt), [a1; a2], dbg) in
+      let op2 = Cop(Ccmpi(Clt), [a1; a2], dbg) in
+      tag_int(sub_int op1 op2 dbg) dbg
+    end
+
 let create_loop body dbg =
   let cont = Lambda.next_raise_count () in
   let call_cont = Cexit (cont, []) in
@@ -1365,6 +1381,7 @@ let simplif_primitive_32bits :
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
+  | Pcompare_bints Pint64 -> Pccall (default_prim "caml_int64_compare")
   | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->

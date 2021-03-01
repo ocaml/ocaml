@@ -1,16 +1,16 @@
 (setglobal Comparison_table!
   (let
     (gen_cmp = (function x y : int (caml_compare x y))
-     int_cmp = (function x[int] y[int] : int (caml_int_compare x y))
-     bool_cmp = (function x y : int (caml_int_compare x y))
-     intlike_cmp = (function x y : int (caml_int_compare x y))
-     float_cmp = (function x[float] y[float] : int (caml_float_compare x y))
+     int_cmp = (function x[int] y[int] : int (compare_ints x y))
+     bool_cmp = (function x y : int (compare_ints x y))
+     intlike_cmp = (function x y : int (compare_ints x y))
+     float_cmp = (function x[float] y[float] : int (compare_floats x y))
      string_cmp = (function x y : int (caml_string_compare x y))
-     int32_cmp = (function x[int32] y[int32] : int (caml_int32_compare x y))
-     int64_cmp = (function x[int64] y[int64] : int (caml_int64_compare x y))
+     int32_cmp = (function x[int32] y[int32] : int (compare_bints int32 x y))
+     int64_cmp = (function x[int64] y[int64] : int (compare_bints int64 x y))
      nativeint_cmp =
        (function x[nativeint] y[nativeint] : int
-         (caml_nativeint_compare x y))
+         (compare_bints nativeint x y))
      gen_eq = (function x y (caml_equal x y))
      int_eq = (function x[int] y[int] (== x y))
      bool_eq = (function x y (== x y))
@@ -66,16 +66,18 @@
      int64_ge = (function x[int64] y[int64] (Int64.>= x y))
      nativeint_ge = (function x[nativeint] y[nativeint] (Nativeint.>= x y))
      eta_gen_cmp = (function prim prim stub (caml_compare prim prim))
-     eta_int_cmp = (function prim prim stub (caml_int_compare prim prim))
-     eta_bool_cmp = (function prim prim stub (caml_int_compare prim prim))
-     eta_intlike_cmp = (function prim prim stub (caml_int_compare prim prim))
-     eta_float_cmp = (function prim prim stub (caml_float_compare prim prim))
+     eta_int_cmp = (function prim prim stub (compare_ints prim prim))
+     eta_bool_cmp = (function prim prim stub (compare_ints prim prim))
+     eta_intlike_cmp = (function prim prim stub (compare_ints prim prim))
+     eta_float_cmp = (function prim prim stub (compare_floats prim prim))
      eta_string_cmp =
        (function prim prim stub (caml_string_compare prim prim))
-     eta_int32_cmp = (function prim prim stub (caml_int32_compare prim prim))
-     eta_int64_cmp = (function prim prim stub (caml_int64_compare prim prim))
+     eta_int32_cmp =
+       (function prim prim stub (compare_bints int32 prim prim))
+     eta_int64_cmp =
+       (function prim prim stub (compare_bints int64 prim prim))
      eta_nativeint_cmp =
-       (function prim prim stub (caml_nativeint_compare prim prim))
+       (function prim prim stub (compare_bints nativeint prim prim))
      eta_gen_eq = (function prim prim stub (caml_equal prim prim))
      eta_int_eq = (function prim prim stub (== prim prim))
      eta_bool_eq = (function prim prim stub (== prim prim))
