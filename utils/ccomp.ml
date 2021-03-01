@@ -211,5 +211,5 @@ let call_linker mode output_name files extra =
           (quote_files files)
           extra
     in
-    command cmd = 0
+    command cmd
   )

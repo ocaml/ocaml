@@ -15,8 +15,8 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
-include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
@@ -185,14 +185,8 @@ LIBCMOFILES = $(CMOFILES)
 LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
-ifeq "$(STDLIB_MANPAGES)" "true"
-DOCS_TARGET = manpages
-else
-DOCS_TARGET =
-endif
-
 .PHONY: all
-all: lib exe generators $(DOCS_TARGET)
+all: lib exe generators
 
 .PHONY: exe
 exe: $(OCAMLDOC)
@@ -511,12 +505,13 @@ odoc:
 .PHONY: clean
 clean:
 	rm -f \#*\#
-	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.$(A) *.$(O)
+	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.a *.lib *.o *.obj
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -rf stdlib_man stdlib_html stdlib_texi stdlib_latex
-	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
+	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
+        generators/*.cmx[as]
 
 .PHONY: depend
 depend:

@@ -38,11 +38,5 @@ let update_trap_barrier () =
 (* Execute `funct' with a trap barrier. *)
 (* --- Used by `finish'. *)
 let exec_with_trap_barrier trap_barrier funct =
-  try
-    install_trap_barrier trap_barrier;
-    funct ();
-    remove_trap_barrier ()
-  with
-    x ->
-      remove_trap_barrier ();
-      raise x
+  install_trap_barrier trap_barrier;
+  Fun.protect ~finally:remove_trap_barrier funct

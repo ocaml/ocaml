@@ -122,6 +122,7 @@ let parse_inline_attribute attr =
         [
           "never", Never_inline;
           "always", Always_inline;
+          "hint", Hint_inline;
         ]
         payload
 
@@ -166,7 +167,7 @@ let get_local_attribute l =
 
 let check_local_inline loc attr =
   match attr.local, attr.inline with
-  | Always_local, (Always_inline | Unroll _) ->
+  | Always_local, (Always_inline | Hint_inline | Unroll _) ->
       Location.prerr_warning loc
         (Warnings.Duplicated_attribute "local/inline")
   | _ ->
@@ -178,14 +179,14 @@ let add_inline_attribute expr loc attributes =
   | Lfunction({ attr = { stub = false } as attr } as funct), inline ->
       begin match attr.inline with
       | Default_inline -> ()
-      | Always_inline | Never_inline | Unroll _ ->
+      | Always_inline | Hint_inline | Never_inline | Unroll _ ->
           Location.prerr_warning loc
             (Warnings.Duplicated_attribute "inline")
       end;
       let attr = { attr with inline } in
       check_local_inline loc attr;
       Lfunction { funct with attr = attr }
-  | expr, (Always_inline | Never_inline | Unroll _) ->
+  | expr, (Always_inline | Hint_inline | Never_inline | Unroll _) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "inline");
       expr
@@ -249,7 +250,7 @@ let get_and_remove_inlined_attribute_on_module e =
         let inner_attr, me = get_and_remove me in
         let attr =
           match attr with
-          | Always_inline | Never_inline | Unroll _ -> attr
+          | Always_inline | Hint_inline | Never_inline | Unroll _ -> attr
           | Default_inline -> inner_attr
         in
         attr, Tmod_constraint (me, mt, mtc, mc)

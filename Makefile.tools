@@ -47,7 +47,7 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   variable. Note that for Windows we add Unix-syntax directory names in
 #   PATH, and Cygwin will translate it to Windows syntax.
 
-include $(TOPDIR)/Makefile.config
+-include $(TOPDIR)/Makefile.config
 
 # Make sure USE_RUNTIME is defined
 USE_RUNTIME ?=

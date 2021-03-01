@@ -140,6 +140,10 @@ Working version
 
 ### Tools:
 
+- #9057: aid debugging the debugger by preserving backtraces of unhandled
+  exceptions.
+  (David Allsopp, review by Gabriel Scherer)
+
 - #9276: objinfo: cm[x]a print extra C options, objects and dlls in
   the order given on the cli. Follow up to #4949.
   (Daniel Bünzli, review by Gabriel Scherer)
@@ -222,6 +226,9 @@ Working version
   from intermediate-representation dumps (-dfoo).
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #9393: Improve recursive module usage warnings
+  (Leo White, review by Thomas Refis)
+
 - #2141: generate .annot files from cmt data; deprecate -annot.
   (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
   Doligez)
@@ -284,6 +291,12 @@ Working version
 - #2324: Replace caml_int_compare and caml_float_compare with primitives.
   (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
 
+* #9411: forbid optional arguments reordering with -nolabels
+  (Thomas Refis, review by Frédéric Bour and Jacques Garrigue)
+
+- #9452: Add locations to docstring attributes
+  (Leo White, review by Gabriel Scherer)
+
 ### Build system:
 
 - #9250: Add --disable-ocamltest to configure and disable building for
@@ -291,6 +304,11 @@ Working version
   (David Allsopp, review by Sébastien Hinderer)
 
 ### Bug fixes:
+
+- #7562, #9456: ocamlopt-generated code crashed on Alpine Linux on
+  ppc64le, arm, and i386.  Fixed by turning PIE off for musl-based Linux
+  systems except amd64 (x86_64) and s390x.
+  (Xavier Leroy, review by Gabriel Scherer)
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
   may not match the one in bytecode.
@@ -328,6 +346,10 @@ Working version
   (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
   and Thomas Refis)
 
+- #9335: actually have --disable-stdlib-manpages not build the manpages
+  (implementation conflicted with #8837 which wasn't picked up in review)
+  (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
+
 - #9343: Re-enable `-short-paths` for some error messages
   (Leo White, review by Florian Angeletti)
 
@@ -338,13 +360,20 @@ Working version
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
 
+* #9388: Prohibit signature local types with constraints
+  (Leo White, review by Jacques Garrigue)
+
+- #9406, #9409: fix an error with packed module types from missing
+  cmis.
+  (Florian Angeletti, report by Thomas Leonard, review by Gabriel Radanne
+   and Gabriel Scherer)
+
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
 
 - #9428: Fix truncated exception backtrace for C->OCaml callbacks
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
-
 
 OCaml 4.10 maintenance branch
 -----------------------------
@@ -864,6 +893,9 @@ OCaml 4.10.0 (21 February 2020)
 
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
+
+- #9389: returns exit_code for better user response on linking_error
+  (Anukriti Kumar, review by Gabriel Scherer and sliquister)
 
 OCaml 4.09 maintenance branch
 -----------------------------
@@ -2378,6 +2410,9 @@ OCaml 4.07.0 (10 July 2018)
   "-output-complete-obj". Previously, it was always linked in only on some
   platforms, making this option unusable on platforms where it wasn't.
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
+
+- #9349: Support [@inlined hint] attribute.
+  (Leo White, review by Stephen Dolan)
 
 ### Runtime system:
 

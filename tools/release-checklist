@@ -107,7 +107,7 @@ make tests
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
-./autogen
+make -B configure
 git commit -a -m "last commit before tagging $VERSION"
 
 # update VERSION with the new release; for example,
@@ -115,7 +115,7 @@ git commit -a -m "last commit before tagging $VERSION"
 # Update ocaml-variants.opam with new version.
 # Update \year in manual/manual/macros.hva
 rm -r autom4te.cache
-./autogen
+make -B configure
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
@@ -127,7 +127,7 @@ git tag -m "release $VERSION" $VERSION
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 # Revert ocaml-variants.opam to its "trunk" version.
 rm -r autom4te.cache
-./autogen
+make -B configure
 git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
 git push
 git push --tags
@@ -142,14 +142,14 @@ This needs to be more tested, tread with care.
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
 # Rename the "Working version" header in Changes
 # to "OCaml $VERSION"
-./autogen
+make -B configure
 git commit -a -m "last commit before branching $VERSION"
 git branch $VERSION
 
 # update VERSION with the new future branch,
 #   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
 # Update ocaml-variants.opam with new version.
-./autogen
+make -B configure
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
 git commit -m "first commit after branching $VERSION" -a
@@ -159,7 +159,7 @@ git push
 git checkout $VERSION
 # increment VERSION, for instance
 #   4.07.0+dev1-2018-06-26 => 4.07.0+dev2-2018-06-30
-./autogen
+make -B configure
 git commit -m "first commit on branch $VERSION" -a
 git push $VERSION
 ```
