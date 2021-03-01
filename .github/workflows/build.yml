@@ -103,7 +103,15 @@ jobs:
         include:
           - id: normal
             name: normal
-            dependencies: texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra hevea sass gdb lldb
+            dependencies: >-
+              texlive-latex-extra
+              texlive-fonts-recommended
+              texlive-fonts-extra
+              hevea
+              sass
+              gdb
+              lldb
+              language-pack-nl
           - id: opam
             name: opam installation
           - id: debug
