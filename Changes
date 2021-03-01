@@ -119,6 +119,10 @@ Working version
 - #9365: Set.filter_map and Map.filter_map
   (Gabriel Scherer, review by Stephen Dolan and Nicolás Ojeda Bär)
 
+- #9266: Install pretty-printer for the exception Fun.Finally_raised.
+  (Guillaume Munch-Maccagnoni, review by Daniel Bünzli, Gabriel Radanne,
+   and Gabriel Scherer)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.
@@ -257,7 +261,8 @@ Working version
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 
-- #9321, #9322, #9359, #9361, #9417: refactor the pattern-matching compiler
+- #9321, #9322, #9359, #9361, #9417, #9447: refactor the
+  pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 - #9211, #9215, #9222: fix Makefile dependencies in
