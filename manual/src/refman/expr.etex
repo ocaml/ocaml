@@ -1074,11 +1074,12 @@ evaluates to a new object containing the instance variables and
 methods of this class.
 
 \begin{caml_example}{toplevel}
-class of_list (l : int list) = object
-  val mutable l = l
+class of_list (lst : int list) = object
+  val mutable l = lst
   method next =
-    if l = [] then raise (Failure "empty list");
-    let r = List.hd l in l <- List.tl l; r
+    match l with
+    | [] -> raise (Failure "empty list");
+    | h::t -> l <- t; h
 end
 
 let a = new of_list [1; 1; 2; 3; 5; 8; 13]
@@ -1121,16 +1122,17 @@ The expression @expr '#' method-name@ invokes the method
 @method-name@ of the object denoted by @expr@.
 
 \begin{caml_example}{toplevel}
-class of_list (l : int list) = object
-  val mutable l = l
+class of_list (lst : int list) = object
+  val mutable l = lst
   method next =
-    if l = [] then raise (Failure "empty list");
-    let r = List.hd l in l <- List.tl l; r
+    match l with
+    | [] -> raise (Failure "empty list");
+    | h::t -> l <- t; h
 end
 
 let a = new of_list [1; 1; 2; 3; 5; 8; 13]
 
-let second = ignore a#next; a#next;;
+let third = ignore a#next; ignore a#next; a#next;;
 \end{caml_example}
 
 If @method-name@ is a polymorphic method, its type should be known at
@@ -1150,11 +1152,12 @@ variable @inst-var-name@, which must be mutable.  The whole expression
 @inst-var-name '<-' expr@ evaluates to @"()"@.
 
 \begin{caml_example}{toplevel}
-class of_list (l : int list) = object
-  val mutable l = l
+class of_list (lst : int list) = object
+  val mutable l = lst
   method next =
-    if l = [] then raise (Failure "empty list");
-    let r = List.hd l in l <- List.tl l; r  (* access and modify instance variable *)
+    match l with                            (* access instance variable *)
+    | [] -> raise (Failure "empty list");
+    | h::t -> l <- t; h                     (* modify instance variable *)
 end;;
 \end{caml_example}
 
