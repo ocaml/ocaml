@@ -179,6 +179,26 @@ module type S =
        @before 4.03 Physical equality was not ensured.
      *)
 
+    val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
+    (** [filter_map f m] applies the function [f] to every binding of
+        [m], and builds a map from the results. For each binding
+        [(k, v)] in the input map:
+        - if [f k v] is [None] then [k] is not in the result,
+        - if [f k v] is [Some v'] then the binding [(k, v')]
+          is in the output map.
+
+        For example, the following function on maps whose values are lists
+        {[
+        filter_map
+          (fun _k li -> match li with [] -> None | _::tl -> Some tl)
+          m
+        ]}
+        drops all bindings of [m] whose value is an empty list, and pops
+        the first element of each value that is non-empty.
+
+        @since 4.11.0
+     *)
+
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     (** [partition p m] returns a pair of maps [(m1, m2)], where
         [m1] contains all the bindings of [s] that satisfy the

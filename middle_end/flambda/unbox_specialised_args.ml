@@ -33,8 +33,8 @@ module Transform = struct
       what_to_specialise
     else
       let projections_by_function =
-        Variable.Map.filter_map set_of_closures.function_decls.funs
-          ~f:(fun _fun_var (function_decl : Flambda.function_declaration) ->
+        set_of_closures.function_decls.funs |> Variable.Map.filter_map
+          (fun _fun_var (function_decl : Flambda.function_declaration) ->
               if function_decl.stub then None
               else
                 Some (Extract_projections.from_function_decl ~env

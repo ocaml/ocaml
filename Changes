@@ -24,6 +24,12 @@ Working version
   (Gabriel Scherer and Rodolphe Lepigre,
    review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
 
+- #1154, #1706: spellchecker hints and type-directed disambiguation
+  for extensible sum type constructors
+  (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
+  and Leo White)
+
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
@@ -106,6 +112,9 @@ Working version
 - #7110: Added Printf.ikbprintf and Printf.ibprintf
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
+- #9365: Set.filter_map and Map.filter_map
+  (Gabriel Scherer, review by Stephen Dolan and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.
@@ -155,6 +164,10 @@ Working version
 
 - #9402: Remove `sudo:false` from .travis.yml
   (Hikaru Yoshimura)
+
+- #9414: testsuite, ocamltest: keep test artifacts only on failure.
+  Use KEEP_TEST_DIR_ON_SUCCESS=1 to keep all artifacts.
+  (Gabriel Scherer, review by Sébastien Hinderer)
 
 ### Manual and documentation:
 

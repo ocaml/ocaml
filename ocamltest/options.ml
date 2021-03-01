@@ -49,6 +49,8 @@ let log_to_stderr = ref false
 
 let promote = ref false
 
+let keep_test_dir_on_success = ref false
+
 let find_test_dirs = ref []
 
 let list_tests = ref []
@@ -68,6 +70,8 @@ let commandline_options =
    " Find directories that contain tests (recursive).");
   ("-list-tests", Arg.String (add_to_list list_tests),
    " List tests in given directory.");
+  ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
+   " Keep the test directory (with the generated test artefacts) on success.");
 ]
 
 let files_to_test = ref []

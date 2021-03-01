@@ -154,6 +154,22 @@ module type S =
        physically equal to [s]).
        @before 4.03 Physical equality was not ensured.*)
 
+    val filter_map: (elt -> elt option) -> t -> t
+    (** [filter_map f s] returns the set of all [v] such that
+        [f x = Some v] for some element [x] of [s].
+
+       For example,
+       {[filter_map (fun n -> if n mod 2 = 0 then Some (n / 2) else None) s]}
+       is the set of halves of the even elements of [s].
+
+       If no element of [s] is changed or dropped by [f] (if
+       [f x = Some x] for each element [x]), then
+       [s] is returned unchanged: the result of the function
+       is then physically equal to [s].
+
+       @since 4.11.0
+     *)
+
     val partition: (elt -> bool) -> t -> t * t
     (** [partition p s] returns a pair of sets [(s1, s2)], where
        [s1] is the set of all the elements of [s] that satisfy the

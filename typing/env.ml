@@ -2377,23 +2377,10 @@ let lookup_all_ident_labels ~errors ~use ~loc s env =
         lbls
     end
 
-(* Drop all extension constructors *)
-let drop_exts cstrs =
-  List.filter (fun (cda, _) -> not (is_ext cda)) cstrs
-
-(* Only keep the latest extension constructor *)
-let rec filter_shadowed_constructors cstrs =
-  match cstrs with
-  | (cda, _) as hd :: tl ->
-      if is_ext cda then hd :: drop_exts tl
-      else hd :: filter_shadowed_constructors tl
-  | [] -> []
-
 let lookup_all_ident_constructors ~errors ~use ~loc usage s env =
   match TycompTbl.find_all ~mark:use s env.constrs with
   | [] -> may_lookup_error errors loc env (Unbound_constructor (Lident s))
   | cstrs ->
-      let cstrs = filter_shadowed_constructors cstrs in
       List.map
         (fun (cda, use_fn) ->
            let use_fn () =
