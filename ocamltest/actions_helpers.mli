@@ -50,7 +50,7 @@ val run_cmd :
   ?timeout : int ->
   out_channel -> Environments.t -> string list -> int
 
-val run : string -> bool -> bool -> Variables.t
+val run : string -> redirect_output:bool -> can_skip:bool -> Variables.t
                  -> Variables.t option -> Actions.code
 
 val run_program : Actions.code
