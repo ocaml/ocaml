@@ -1,11 +1,11 @@
 (* In order to use the development compiler with opam 2.0, first create a new
    switch
 
-      opam switch create 4.10.0+multicore --empty
+      opam switch create 4.12.0+multicore --empty
 
    Initial build:
 
-      opam pin add -k path --inplace-build ocaml-variants.4.10.0+multicore .
+      opam pin add -k path --inplace-build ocaml-variants.4.12.0+multicore .
 
    This installs the compiler for the new opam switch. Subsequent builds can be
    done locally with:
@@ -19,10 +19,10 @@
 *)
 
 opam-version: "2.0"
-version: "4.11.0+multicore"
-synopsis: "OCaml multicore 4.11.0"
+version: "4.12.0+multicore"
+synopsis: "OCaml multicore 4.12.0"
 depends: [
-  "ocaml" {= "4.11.0" & post}
+  "ocaml" {= "4.12.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
