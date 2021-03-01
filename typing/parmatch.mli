@@ -28,6 +28,48 @@ val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
 (** [List.map (fun _ -> omega)] *)
 
+module Pattern_head : sig
+  type desc =
+    | Any
+    | Construct of constructor_description
+    | Constant of constant
+    | Tuple of int
+    | Record of label_description list
+    | Variant of
+        { tag: label; has_arg: bool;
+          cstr_row: row_desc ref;
+          type_row : unit -> row_desc; }
+          (* the row of the type may evolve if [close_variant] is called,
+             hence the (unit -> ...) delay *)
+    | Array of int
+    | Lazy
+
+  type t
+
+  val desc : t -> desc
+  val env : t -> Env.t
+  val loc : t -> Location.t
+  val typ : t -> Types.type_expr
+
+  (** [deconstruct p] returns the head of [p] and the list of sub patterns.
+
+      @raises [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)
+  val deconstruct : pattern -> t * pattern list
+
+  (** reconstructs a pattern, putting wildcards as sub-patterns. *)
+  val to_omega_pattern : t -> pattern
+
+  val make
+    :  loc:Location.t
+    -> typ:Types.type_expr
+    -> env:Env.t
+    -> desc
+    -> t
+
+  val omega : t
+
+end
+
 val normalize_pat : pattern -> pattern
 (** Keep only the "head" of a pattern: all arguments are replaced by [omega], so
     are variables. *)

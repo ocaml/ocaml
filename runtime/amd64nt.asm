@@ -46,14 +46,14 @@ caml_system__code_begin:
         ALIGN   16
 caml_call_gc:
     ; Record lowest stack address and return address
-        mov     rax, [rsp]
-        Store_last_return_address rax
-        lea     rax, [rsp+8]
-        Store_bottom_of_stack rax
+        mov     r11, [rsp]
+        Store_last_return_address r11
+        lea     r11, [rsp+8]
+        Store_bottom_of_stack r11
     ; Touch the stack to trigger a recoverable segfault
     ; if insufficient space remains
         sub     rsp, 01000h
-        mov     [rsp], rax
+        mov     [rsp], r11
         add     rsp, 01000h
     ; Save young_ptr
         Store_young_ptr r15
@@ -160,7 +160,6 @@ caml_alloc3:
         PUBLIC  caml_allocN
         ALIGN   16
 caml_allocN:
-        sub     r15, rax
         Cmp_young_limit r15
         jb      caml_call_gc
         ret
