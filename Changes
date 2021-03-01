@@ -30,7 +30,7 @@ Working version
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8920, #9238, #9239: New API for statistical memory profiling in
+- #8920, #9238, #9239, #9254: New API for statistical memory profiling in
   Memprof.Gc. The new version does no longer use ephemerons and allows
   registering callbacks for promotion and deallocation of memory
   blocks.
@@ -62,12 +62,6 @@ Working version
 
 - #9316: Use typing information from Clambda for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
-
-- #9344, #9368: Disable exception backtraces in bytecode programs
-  built with "-output-complete-exe". At the moment, such programs do
-  not embed debug information and exception backtraces where causing
-  them to crash.
-  (Jérémie Dimino, review by Nicolás Ojeda Bär)
 
 ### Code generation and optimizations:
 
@@ -108,6 +102,9 @@ Working version
 - #9237: `Format.pp_update_geometry ppf (fun geo -> {geo with ...})`
   for formatter geometry changes that are robust to new geometry fields.
   (Gabriel Scherer, review by Josh Berdine and Florian Angeletti)
+
+- #7110: Added Printf.ikbprintf and Printf.ibprintf
+  (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
 ### Other libraries:
 
@@ -156,6 +153,9 @@ Working version
   run a command and evaluate its output.
   (Jérémie Dimino, review by David Allsopp)
 
+- #9402: Remove `sudo:false` from .travis.yml
+  (Hikaru Yoshimura)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
@@ -166,6 +166,10 @@ Working version
 
 - #9325: documented base case for `List.for_all` and `List.exists`
   (Glenn Slotte, review by Florian Angeletti)
+
+- #9403: added a description for warning 67 and added a "." at the end of
+  warnings for consistency.
+  (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -236,20 +240,24 @@ Working version
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 
-- #9211, #9215: fix Makefile dependencies of compilerlibs archives and dynlink
+- #9211, #9215, #9222: fix Makefile dependencies in
+  compilerlibs, dynlink, ocamltest.
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
 
 - #9305: Avoid polymorphic compare in Ident
   (Leo White, review by Xavier Leroy and Gabriel Scherer)
+
+- #7927: refactor val_env met_env par_env to class_env
+  (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
+
+- #2324: Replace caml_int_compare and caml_float_compare with primitives.
+  (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
 
 ### Build system:
 
 - #9250: Add --disable-ocamltest to configure and disable building for
   non-development builds.
   (David Allsopp, review by Sébastien Hinderer)
-
-- #9383: Don't assume that AWKPATH includes .
-  (David Allsopp, report by Ian Zimmerman)
 
 ### Bug fixes:
 
@@ -287,10 +295,21 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
 
 - #9367: Make bytecode and native-code backtraces agree.
-  (Stephen Dolan, review by ??)
+  (Stephen Dolan, review by Gabriel Scherer)
 
-OCaml 4.10.0
-------------
+OCaml 4.10 maintenance branch
+-----------------------------
+
+### Runtime system:
+
+- #9344, #9368: Disable exception backtraces in bytecode programs
+  built with "-output-complete-exe". At the moment, such programs do
+  not embed debug information and exception backtraces where causing
+  them to crash.
+  (Jérémie Dimino, review by Nicolás Ojeda Bär)
+
+OCaml 4.10.0 (21 February 2020)
+-------------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -797,8 +816,16 @@ OCaml 4.10.0
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
 
-OCaml 4.09 maintenance branch:
-------------------------------
+OCaml 4.09 maintenance branch
+-----------------------------
+
+### Build system:
+
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
+
+OCaml 4.09.1 (16 Mars 2020)
+---------------------------
 
 - #8855, #8858: Links for tools not created when installing with
   --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
@@ -835,8 +862,8 @@ OCaml 4.09 maintenance branch:
   (Jacques-Henri Jourdan, review by Stephen Dolan, Xavier Leroy and
    Gabriel Scherer)
 
-OCaml 4.09.0 (19 September 2019):
----------------------------------
+OCaml 4.09.0 (19 September 2019)
+--------------------------------
 
 ### Runtime system:
 
@@ -974,6 +1001,9 @@ OCaml 4.09.0 (19 September 2019):
 
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #9327, #9401: manual, fix infix attribute examples
+  (Florian Angeletti, report by David Cadé, review by Gabriel Scherer)
 
 ### Tools:
 

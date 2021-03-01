@@ -8,7 +8,7 @@
           (function prim prim prim stub (array.set[int] prim prim prim))
           (function prim prim prim stub
             (array.unsafe_set[int] prim prim prim))
-          (function prim prim stub (caml_int_compare prim prim))
+          (function prim prim stub (compare_ints prim prim))
           (function prim prim stub (== prim prim))
           (function prim prim stub (!= prim prim))
           (function prim prim stub (< prim prim))
@@ -22,7 +22,7 @@
           (function prim prim prim stub (array.set[float] prim prim prim))
           (function prim prim prim stub
             (array.unsafe_set[float] prim prim prim))
-          (function prim prim stub (caml_float_compare prim prim))
+          (function prim prim stub (compare_floats prim prim))
           (function prim prim stub (==. prim prim))
           (function prim prim stub (!=. prim prim))
           (function prim prim stub (<. prim prim))
@@ -50,7 +50,7 @@
           (function prim prim prim stub (array.set[addr] prim prim prim))
           (function prim prim prim stub
             (array.unsafe_set[addr] prim prim prim))
-          (function prim prim stub (caml_int32_compare prim prim))
+          (function prim prim stub (compare_bints int32 prim prim))
           (function prim prim stub (Int32.== prim prim))
           (function prim prim stub (Int32.!= prim prim))
           (function prim prim stub (Int32.< prim prim))
@@ -64,7 +64,7 @@
           (function prim prim prim stub (array.set[addr] prim prim prim))
           (function prim prim prim stub
             (array.unsafe_set[addr] prim prim prim))
-          (function prim prim stub (caml_int64_compare prim prim))
+          (function prim prim stub (compare_bints int64 prim prim))
           (function prim prim stub (Int64.== prim prim))
           (function prim prim stub (Int64.!= prim prim))
           (function prim prim stub (Int64.< prim prim))
@@ -78,7 +78,7 @@
           (function prim prim prim stub (array.set[addr] prim prim prim))
           (function prim prim prim stub
             (array.unsafe_set[addr] prim prim prim))
-          (function prim prim stub (caml_nativeint_compare prim prim))
+          (function prim prim stub (compare_bints nativeint prim prim))
           (function prim prim stub (Nativeint.== prim prim))
           (function prim prim stub (Nativeint.!= prim prim))
           (function prim prim stub (Nativeint.< prim prim))
