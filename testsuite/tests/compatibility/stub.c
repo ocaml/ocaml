@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include <caml/minor_gc.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>

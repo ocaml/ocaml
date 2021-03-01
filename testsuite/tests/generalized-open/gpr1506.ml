@@ -87,6 +87,9 @@ open struct
   let current () = !counter
 end
 [%%expect{|
+val inc : unit -> unit = <fun>
+val dec : unit -> unit = <fun>
+val current : unit -> int = <fun>
 |}]
 
 let () =

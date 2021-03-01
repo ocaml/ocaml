@@ -30,7 +30,7 @@ COMPILER_LIBS_INTF = Asthelper.tex Astmapper.tex Asttypes.tex \
   $(COMPILER_LIBS_PLUGIN_HOOKS)
 
 OTHERLIB_INTF = Unix.tex UnixLabels.tex Str.tex \
-  Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
+  Thread.tex Mutex.tex Condition.tex Event.tex \
   Dynlink.tex Bigarray.tex
 
 INTF = $(CORE_INTF) $(STDLIB_INTF) $(COMPILER_LIBS_INTF) $(OTHERLIB_INTF)

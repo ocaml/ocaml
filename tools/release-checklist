@@ -156,12 +156,12 @@ git commit -m "first commit after branching $VERSION" -a
 git push
 
 # Switch to the new branch
-git checkout $VERSION
+git checkout $BRANCH
 # increment VERSION, for instance
 #   4.07.0+dev1-2018-06-26 => 4.07.0+dev2-2018-06-30
 make -B configure
-git commit -m "first commit on branch $VERSION" -a
-git push $VERSION
+git commit -m "first commit on branch $BRANCH" -a
+git push --set-upstream origin $BRANCH
 ```
 
 Adjust github branch settings:
@@ -453,7 +453,7 @@ Happy hacking,
 A list of common subsection for the "Changes" file:
 
 ```
-### Language features
+### Language features:
 
 ### Runtime system:
 
