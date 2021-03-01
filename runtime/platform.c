@@ -213,9 +213,10 @@ unsigned caml_plat_spin_wait(unsigned spins,
                              const char* file, int line,
                              const char* function)
 {
+  unsigned next_spins;
   if (spins < Min_sleep_ns) spins = Min_sleep_ns;
   if (spins > Max_sleep_ns) spins = Max_sleep_ns;
-  unsigned next_spins = spins + spins / 4;
+  next_spins = spins + spins / 4;
   if (spins < Slow_sleep_ns && Slow_sleep_ns <= next_spins) {
     caml_gc_log("Slow spin-wait loop in %s at %s:%d", function, file, line);
   }

@@ -76,6 +76,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLxparamN(args, narg);
   CAMLlocal1(cont);
   value res;
+  opcode_t code[7];
   int i;
   caml_domain_state* domain_state = Caml_state;
 
@@ -83,11 +84,13 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   domain_state->current_stack->sp -= narg + 4;
   for (i = 0; i < narg; i++) domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
-  opcode_t code[7] = {
-    callback_code[0], narg + 3,
-    callback_code[2], narg,
-    callback_code[4], callback_code[5], callback_code[6]
-  };
+  code[0] = callback_code[0];
+  code[1] = narg + 3;
+  code[2] = callback_code[2];
+  code[3] = narg;
+  code[4] = callback_code[4];
+  code[5] = callback_code[5];
+  code[6] = callback_code[6];
 
   domain_state->current_stack->sp[narg] = Val_pc (code + 4); /* return address */
   domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
@@ -141,9 +144,9 @@ callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
+  caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
-  caml_domain_state* domain_state = Caml_state;
   if (Stack_parent(domain_state->current_stack)) {
     CAMLparam2 (closure, arg);
     CAMLlocal1 (cont);
@@ -161,9 +164,9 @@ CAMLexport value caml_callback_exn(value closure, value arg)
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
   value args[] = {arg1, arg2};
+  caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
-  caml_domain_state* domain_state = Caml_state;
   if (Stack_parent(domain_state->current_stack)) {
     CAMLparam3 (closure, arg1, arg2);
     CAMLlocal1 (cont);
@@ -182,9 +185,9 @@ CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
   value args[] = {arg1, arg2, arg3};
+  caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
-  caml_domain_state* domain_state = Caml_state;
   if (Stack_parent(domain_state->current_stack))  {
     CAMLparam4 (closure, arg1, arg2, arg3);
     CAMLlocal1 (cont);

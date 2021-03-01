@@ -60,14 +60,16 @@ extern void caml_raise_exception (caml_domain_state* state, value bucket) Noretu
 CAMLno_asan
 void caml_raise(value v)
 {
+  char* exception_pointer;
   if (Caml_state->c_stack == 0)
     caml_fatal_uncaught_exception(v);
 
-  char* exception_pointer = (char*)Caml_state->c_stack;
+  exception_pointer = (char*)Caml_state->c_stack;
   while (CAML_LOCAL_ROOTS != NULL &&
          (char *) CAML_LOCAL_ROOTS < exception_pointer) {
+    struct caml__mutex_unwind* m;
     Assert(CAML_LOCAL_ROOTS != NULL);
-    struct caml__mutex_unwind* m = CAML_LOCAL_ROOTS->mutexes;
+    m = CAML_LOCAL_ROOTS->mutexes;
     while (m) {
       /* unlocked in reverse order of locking */
       caml_plat_unlock(m->mutex);

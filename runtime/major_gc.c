@@ -322,6 +322,7 @@ static void update_major_slice_work() {
   double p, heap_words;
   intnat computed_work, limit;
   caml_domain_state *dom_st = Caml_state;
+  uintnat heap_size, heap_sweep_words, saved_terminated_words;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = heap_words * caml_percent_free
@@ -355,11 +356,11 @@ static void update_major_slice_work() {
      for this slice is:
                  S = P * TW
   */
-  uintnat heap_size = caml_heap_size(dom_st->shared_heap);
+  heap_size = caml_heap_size(dom_st->shared_heap);
   heap_words = (double)Wsize_bsize(heap_size);
-  uintnat heap_sweep_words = heap_words;
+  heap_sweep_words = heap_words;
 
-  uintnat saved_terminated_words = terminated_domains_allocated_words;
+  saved_terminated_words = terminated_domains_allocated_words;
   if( saved_terminated_words > 0 ) {
     while(!atomic_compare_exchange_strong(&terminated_domains_allocated_words, &saved_terminated_words, 0));
   }
@@ -680,22 +681,24 @@ static intnat mark(intnat budget) {
 void caml_darken_cont(value cont)
 {
   CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
-  SPIN_WAIT {
-    header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
-    CAMLassert(!Has_status_hd(hd, global.GARBAGE));
-    if (Has_status_hd(hd, global.MARKED))
-      break;
-    if (Has_status_hd(hd, global.UNMARKED) &&
-        atomic_compare_exchange_strong(
-            Hp_atomic_val(cont), &hd,
-            With_status_hd(hd, NOT_MARKABLE))) {
-      value stk = Op_val(cont)[0];
-      if (Ptr_val(stk) != NULL)
-        caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
-      atomic_store_explicit(
-        Hp_atomic_val(cont),
-        With_status_hd(hd, global.MARKED),
-        memory_order_release);
+  {
+    SPIN_WAIT {
+      header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
+      CAMLassert(!Has_status_hd(hd, global.GARBAGE));
+      if (Has_status_hd(hd, global.MARKED))
+        break;
+      if (Has_status_hd(hd, global.UNMARKED) &&
+          atomic_compare_exchange_strong(
+              Hp_atomic_val(cont), &hd,
+              With_status_hd(hd, NOT_MARKABLE))) {
+        value stk = Op_val(cont)[0];
+        if (Ptr_val(stk) != NULL)
+          caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
+        atomic_store_explicit(
+          Hp_atomic_val(cont),
+          With_status_hd(hd, global.MARKED),
+          memory_order_release);
+      }
     }
   }
 }
@@ -807,9 +810,9 @@ intnat ephe_mark (intnat budget, uintnat for_cycle)
 
 intnat ephe_sweep (struct domain* d, intnat budget)
 {
-  CAMLassert (caml_gc_phase == Phase_sweep_ephe);
   value v;
   caml_domain_state* domain_state = d->state;
+  CAMLassert (caml_gc_phase == Phase_sweep_ephe);
 
   while (domain_state->ephe_info->todo != 0 && budget > 0) {
     v = domain_state->ephe_info->todo;
@@ -858,11 +861,11 @@ void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 
 void caml_sample_gc_stats(struct gc_stats* buf)
 {
-  memset(buf, 0, sizeof(*buf));
   int i;
   intnat pool_max = 0, large_max = 0;
   struct domain* domain_self = caml_domain_self ();
   int my_id = domain_self->state->id;
+  memset(buf, 0, sizeof(*buf));
 
   for (i=0; i<Max_domains; i++) {
     struct gc_stats* s = &sampled_gc_stats[i];
@@ -1027,11 +1030,13 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
 
   caml_ev_begin("major_gc/roots");
   caml_do_roots (&caml_darken, NULL, domain, 0);
-  uintnat work_unstarted = WORK_UNSTARTED;
-  if(atomic_compare_exchange_strong(&domain_global_roots_started, &work_unstarted, WORK_STARTED)){
-      caml_scan_global_roots(&caml_darken, NULL);
+  {
+    uintnat work_unstarted = WORK_UNSTARTED;
+    if(atomic_compare_exchange_strong(&domain_global_roots_started, &work_unstarted, WORK_STARTED)){
+        caml_scan_global_roots(&caml_darken, NULL);
+    }
   }
-  
+
   caml_ev_end("major_gc/roots");
 
   if (domain->state->mark_stack->count == 0) {
@@ -1101,8 +1106,8 @@ static int is_complete_phase_sweep_ephe (struct domain *d)
 static void try_complete_gc_phase (struct domain* domain, void* unused,
                                    int participating_count, struct domain** participating)
 {
-  caml_ev_begin("major_gc/phase_change");
   barrier_status b;
+  caml_ev_begin("major_gc/phase_change");
 
   b = caml_global_barrier_begin ();
   if (caml_global_barrier_is_final(b)) {

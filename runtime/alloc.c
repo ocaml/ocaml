@@ -56,12 +56,12 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 
 static inline void enter_gc_preserving_vals(mlsize_t wosize, value* vals)
 {
+  mlsize_t i;
   CAMLparam0();
   /* Copy the values to be preserved to a different array.
      The original vals array never escapes, generating better code in
      the fast path. */
   CAMLlocalN(vals_copy, wosize);
-  mlsize_t i;
   for (i = 0; i < wosize; i++) vals_copy[i] = vals[i];
   caml_handle_gc_interrupt();
   for (i = 0; i < wosize; i++) vals[i] = vals_copy[i];

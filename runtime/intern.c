@@ -239,6 +239,7 @@ static void stack_free(struct intern_stack* s) {
 static void stack_realloc(struct intern_stack* s, value save) {
   CAMLparam1(save);
   int i;
+  intern_stack_item* new_vals;
   int new_len = s->len * 2;
   /* reallocate stack */
   caml_gc_log("Reallocating intern stack to size %d", new_len);
@@ -248,7 +249,7 @@ static void stack_realloc(struct intern_stack* s, value save) {
     caml_raise_out_of_memory();
   }
 
-  intern_stack_item* new_vals = caml_stat_alloc(new_len * STACK_NFIELDS * sizeof(value));
+  new_vals = caml_stat_alloc(new_len * STACK_NFIELDS * sizeof(value));
 
   for (i = 0; i < s->sp; i++) {
     STACK_VAL(new_vals, i) = STACK_VAL(s->curr_vals, i);
@@ -309,8 +310,9 @@ static int stack_curr_field(struct intern_stack* s) {
 }
 
 static void stack_advance_field(struct intern_stack* s) {
+  int field;
   Assert(!stack_is_empty(s));
-  int field = Int_val(STACK_FIELD(s->curr_vals, s->sp - 1));
+  field = Int_val(STACK_FIELD(s->curr_vals, s->sp - 1));
   field++;
   STACK_FIELD(s->curr_vals, s->sp - 1) = Val_int(field);
   if (field == Int_val(STACK_ARG(s->curr_vals, s->sp - 1))) {
@@ -711,9 +713,9 @@ CAMLprim value caml_input_value(value vchan)
   struct channel * chan = Channel(vchan);
   CAMLlocal1 (res);
 
-  With_mutex(&chan->mutex) {
+  With_mutex(&chan->mutex, {
     res = caml_input_val(chan);
-  }
+  } );
   CAMLreturn (res);
 }
 

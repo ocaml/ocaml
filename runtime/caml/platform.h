@@ -49,7 +49,7 @@ unsigned caml_plat_spin_wait(unsigned spins,
 #define GENSYM_2(name, l) GENSYM_3(name, l)
 #define GENSYM(name) GENSYM_2(name, __LINE__)
 
- #define SPIN_WAIT                                                       \
+#define SPIN_WAIT                                                       \
   unsigned GENSYM(caml__spins) = 0;                                     \
   for (; 1; cpu_relax(),                                                \
          GENSYM(caml__spins) =                                          \
@@ -101,12 +101,13 @@ struct caml__mutex_unwind {
   struct caml__mutex_unwind* next;
 };
 
-#define With_mutex(mutex)                               \
-  Assert(CAML_LOCAL_ROOTS);                             \
-  caml_plat_mutex* caml__mutex = (mutex);               \
+#define With_mutex(mutex0, BODY) do {                   \
+  struct caml__mutex_unwind caml__locked_mutex;         \
+  caml_plat_mutex* caml__mutex = (mutex0);              \
   int caml__mutex_go = 1;                               \
-  struct caml__mutex_unwind caml__locked_mutex =        \
-    { caml__mutex, CAML_LOCAL_ROOTS->mutexes };         \
+  Assert(CAML_LOCAL_ROOTS);                             \
+  caml__locked_mutex.mutex = caml__mutex;               \
+  caml__locked_mutex.next = CAML_LOCAL_ROOTS->mutexes;  \
   CAML_LOCAL_ROOTS->mutexes = &caml__locked_mutex;      \
   for (caml_plat_try_lock(caml__mutex) ||               \
          ((caml_enter_blocking_section(),               \
@@ -116,7 +117,9 @@ struct caml__mutex_unwind {
        caml_plat_unlock(caml__mutex),                   \
          caml__mutex_go = 0,                            \
          CAML_LOCAL_ROOTS->mutexes =                    \
-         CAML_LOCAL_ROOTS->mutexes->next)
+         CAML_LOCAL_ROOTS->mutexes->next)               \
+    { BODY }                                            \
+  } while(0)
 
 /* Memory management primitives (mmap) */
 

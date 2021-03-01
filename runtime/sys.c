@@ -122,41 +122,43 @@ CAMLprim value caml_sys_exit(value retcode_v)
 
   if ((caml_params->verb_gc & 0x400) != 0) {
     caml_sample_gc_stats(&s);
-    /* cf caml_gc_counters */
-    double minwords = s.minor_words
-      + (double) (domain_state->young_end - domain_state->young_ptr);
-    double majwords = s.major_words + (double) domain_state->allocated_words;
-    double allocated_words = minwords + majwords - s.promoted_words;
-    intnat heap_words =
-      s.major_heap.pool_words + s.major_heap.large_words;
-    intnat top_heap_words =
-      s.major_heap.pool_max_words + s.major_heap.large_max_words;
+    {
+      /* cf caml_gc_counters */
+      double minwords = s.minor_words
+        + (double) (domain_state->young_end - domain_state->young_ptr);
+      double majwords = s.major_words + (double) domain_state->allocated_words;
+      double allocated_words = minwords + majwords - s.promoted_words;
+      intnat heap_words =
+        s.major_heap.pool_words + s.major_heap.large_words;
+      intnat top_heap_words =
+        s.major_heap.pool_max_words + s.major_heap.large_max_words;
 
-    if (heap_words == 0) {
-      heap_words = Wsize_bsize(caml_heap_size(Caml_state->shared_heap));
+      if (heap_words == 0) {
+        heap_words = Wsize_bsize(caml_heap_size(Caml_state->shared_heap));
+      }
+
+      if (top_heap_words == 0) {
+        top_heap_words = caml_top_heap_words(Caml_state->shared_heap);
+      }
+
+      caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat)allocated_words);
+      caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) minwords);
+      caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) s.promoted_words);
+      caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) majwords);
+      caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat) s.minor_collections);
+      caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      domain_state->stat_major_collections);
+      caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      heap_words);
+      caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      top_heap_words);
+      caml_gc_message(0x400, "mean_space_overhead: %lf\n", caml_mean_space_overhead());
     }
-
-    if (top_heap_words == 0) {
-      top_heap_words = caml_top_heap_words(Caml_state->shared_heap);
-    }
-
-    caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat)allocated_words);
-    caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat) minwords);
-    caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat) s.promoted_words);
-    caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat) majwords);
-    caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat) s.minor_collections);
-    caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    domain_state->stat_major_collections);
-    caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    heap_words);
-    caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    top_heap_words);
-    caml_gc_message(0x400, "mean_space_overhead: %lf\n", caml_mean_space_overhead());
   }
 
 #ifndef NATIVE_CODE

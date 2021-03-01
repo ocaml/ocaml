@@ -254,6 +254,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   intnat initial_trap_sp_off;
   volatile value raise_exn_bucket = Val_unit;
   struct longjmp_buffer raise_buf;
+  value resume_fn, resume_arg;
   caml_domain_state* domain_state = Caml_state;
   struct caml_exception_context exception_ctx =
     { &raise_buf, domain_state->local_roots, &raise_exn_bucket};
@@ -269,13 +270,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
   if (prog == NULL) {           /* Interpreter is initializing */
     static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
+    value raise_unhandled_closure;
 #ifdef THREADED_CODE
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
     caml_thread_code(raise_unhandled_code,
                      sizeof(raise_unhandled_code));
 #endif
-    value raise_unhandled_closure =
+    raise_unhandled_closure =
       caml_alloc_1(Closure_tag,
                    Val_bytecode(raise_unhandled_code));
     raise_unhandled = caml_create_root(raise_unhandled_closure);
@@ -1277,7 +1279,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Restart_curr_instr;
 
 /* Context switching */
-      value resume_fn, resume_arg;
 
     Instruct(RESUME):
       resume_fn = sp[0];

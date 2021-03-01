@@ -471,9 +471,9 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use_noexc (value cont)
 {
-  CAMLnoalloc;
   value v;
   value null_stk = Val_ptr(NULL);
+  CAMLnoalloc;
 
   fiber_debug_log("cont: is_block(%d) tag_val(%ul) is_young(%d)", Is_block(cont), Tag_val(cont), Is_young(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
