@@ -1,0 +1,49 @@
+2: 0.42 false
+Raised by primitive operation at file "comballoc.ml", line 16, characters 2-19
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+3: 0.42 false
+Raised by primitive operation at file "comballoc.ml", line 16, characters 6-18
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+4: 0.42 true
+Raised by primitive operation at file "comballoc.ml", line 13, characters 11-20
+Called from file "comballoc.ml", line 16, characters 13-17
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+2: 0.01 false
+Raised by primitive operation at file "comballoc.ml", line 16, characters 2-19
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+3: 0.01 false
+Raised by primitive operation at file "comballoc.ml", line 16, characters 6-18
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+4: 0.01 true
+Raised by primitive operation at file "comballoc.ml", line 13, characters 11-20
+Called from file "comballoc.ml", line 16, characters 13-17
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+2: 0.83 false
+Raised by primitive operation at file "comballoc.ml", line 16, characters 2-19
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+3: 0.83 false
+Raised by primitive operation at file "comballoc.ml", line 16, characters 6-18
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+4: 0.83 true
+Raised by primitive operation at file "comballoc.ml", line 13, characters 11-20
+Called from file "comballoc.ml", line 16, characters 13-17
+Called from file "comballoc.ml", line 40, characters 25-48
+Called from file "list.ml", line 110, characters 12-15
+Called from file "comballoc.ml", line 70, characters 2-35
+OK

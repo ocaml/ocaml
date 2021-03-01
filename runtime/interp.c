@@ -74,9 +74,10 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 // Do call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
-  { sp -= 2; sp[0] = accu; sp[1] = env; domain_state->current_stack->sp = sp; }
+  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = Val_pc(pc); \
+    domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
-  { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 2; }
+  { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
 #define Enter_gc \
   { Setup_for_gc; caml_handle_gc_interrupt(); Restore_after_gc; }
 
@@ -826,10 +827,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETMUTABLEFIELD):
       Accu_field(*pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
-      double d = Double_flat_field(accu, *pc);
+      double d = Double_flat_field(accu, *pc++);
       Alloc_small(accu, Double_wosize, Double_tag, Enter_gc);
       Store_double_val(accu, d);
-      pc++;
       Next;
     }
 

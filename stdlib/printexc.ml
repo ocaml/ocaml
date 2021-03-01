@@ -272,10 +272,14 @@ let exn_slot_name x =
   let slot = exn_slot x in
   (Obj.obj (Obj.field slot 0) : string)
 
+let default_uncaught_exception_handler exn raw_backtrace =
+  eprintf "Fatal error: exception %s\n" (to_string exn);
+  print_raw_backtrace stderr raw_backtrace;
+  flush stderr
 
-let uncaught_exception_handler = ref None
+let uncaught_exception_handler = ref default_uncaught_exception_handler
 
-let set_uncaught_exception_handler fn = uncaught_exception_handler := Some fn
+let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
 let empty_backtrace : raw_backtrace = Obj.obj (Obj.new_block Obj.abstract_tag 0)
 
@@ -296,22 +300,16 @@ let handle_uncaught_exception' exn debugger_in_use =
         try_get_raw_backtrace ()
     in
     (try Stdlib.do_at_exit () with _ -> ());
-    match !uncaught_exception_handler with
-    | None ->
-        eprintf "Fatal error: exception %s\n" (to_string exn);
-        print_raw_backtrace stderr raw_backtrace;
-        flush stderr
-    | Some handler ->
-        try
-          handler exn raw_backtrace
-        with exn' ->
-          let raw_backtrace' = try_get_raw_backtrace () in
-          eprintf "Fatal error: exception %s\n" (to_string exn);
-          print_raw_backtrace stderr raw_backtrace;
-          eprintf "Fatal error in uncaught exception handler: exception %s\n"
-            (to_string exn');
-          print_raw_backtrace stderr raw_backtrace';
-          flush stderr
+    try
+      !uncaught_exception_handler exn raw_backtrace
+    with exn' ->
+      let raw_backtrace' = try_get_raw_backtrace () in
+      eprintf "Fatal error: exception %s\n" (to_string exn);
+      print_raw_backtrace stderr raw_backtrace;
+      eprintf "Fatal error in uncaught exception handler: exception %s\n"
+        (to_string exn');
+      print_raw_backtrace stderr raw_backtrace';
+      flush stderr
   with
     | Out_of_memory ->
         prerr_endline
