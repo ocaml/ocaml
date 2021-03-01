@@ -286,6 +286,38 @@ module Variance : sig
   val get_lower : t -> bool * bool * bool * bool    (* pos, neg, inv, inj *)
 end
 
+module Separability : sig
+  (** see {!Typedecl_separability} for an explanation of separability
+      and separability modes.*)
+
+  type t = Ind | Sep | Deepsep
+  val eq : t -> t -> bool
+  val print : Format.formatter -> t -> unit
+
+  val rank : t -> int
+  (** Modes are ordered from the least to the most demanding:
+      Ind < Sep < Deepsep.
+      'rank' maps them to integers in an order-respecting way:
+      m1 < m2  <=>  rank m1 < rank m2 *)
+
+  val compare : t -> t -> int
+  (** Compare two mode according to their mode ordering. *)
+
+  val max : t -> t -> t
+  (** [max_mode m1 m2] returns the most demanding mode. It is used to
+      express the conjunction of two parameter mode constraints. *)
+
+  type signature = t list
+  (** The 'separability signature' of a type assigns a mode for
+      each of its parameters. [('a, 'b) t] has mode [(m1, m2)] if
+      [(t1, t2) t] is separable whenever [t1, t2] have mode [m1, m2]. *)
+
+  val print_signature : Format.formatter -> signature -> unit
+
+  val default_signature : arity:int -> signature
+  (** The most pessimistic separability for a completely unknown type. *)
+end
+
 (* Type definitions *)
 
 type type_declaration =
@@ -296,6 +328,7 @@ type type_declaration =
     type_manifest: type_expr option;
     type_variance: Variance.t list;
     (* covariant, contravariant, weakly contravariant, injective *)
+    type_separability: Separability.t list;
     type_is_newtype: bool;
     type_expansion_scope: int;
     type_loc: Location.t;

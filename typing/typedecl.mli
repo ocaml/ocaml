@@ -98,8 +98,8 @@ type error =
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
   | Immediacy of Typedecl_immediacy.error
+  | Separability of Typedecl_separability.error
   | Bad_unboxed_attribute of string
-  | Wrong_unboxed_type_float
   | Boxed_and_unboxed
   | Nonrec_gadt
 

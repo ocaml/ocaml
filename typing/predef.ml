@@ -135,6 +135,24 @@ let decl_abstr =
    type_private = Asttypes.Public;
    type_manifest = None;
    type_variance = [];
+   type_separability = [];
+   type_is_newtype = false;
+   type_expansion_scope = lowest_level;
+   type_attributes = [];
+   type_immediate = Unknown;
+   type_unboxed = unboxed_false_default_false;
+  }
+
+let decl_abstr_with_one_param variance separability type_kind_fun =
+  let tvar = newgenvar() in
+  {type_params = [tvar];
+   type_arity = 1;
+   type_kind = type_kind_fun tvar;
+   type_loc = Location.none;
+   type_private = Asttypes.Public;
+   type_manifest = None;
+   type_variance = [variance];
+   type_separability = [separability];
    type_is_newtype = false;
    type_expansion_scope = lowest_level;
    type_attributes = [];
@@ -162,13 +180,11 @@ and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
 let common_initial_env add_type add_extension empty_env =
   let decl_bool =
-    {decl_abstr with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
-     type_immediate = Always}
+    {decl_abstr_imm with
+     type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
   and decl_unit =
-    {decl_abstr with
-     type_kind = Type_variant([cstr ident_void []]);
-     type_immediate = Always}
+    {decl_abstr_imm with
+     type_kind = Type_variant([cstr ident_void []])}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}
@@ -187,32 +203,19 @@ let common_initial_env add_type add_extension empty_env =
      type_arity = 2;
      type_variance = [Variance.contravariant; Variance.covariant]}
   and decl_array =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_variance = [Variance.full]}
+    decl_abstr_with_one_param
+      Variance.full Separability.Ind (fun _ -> Type_abstract)
   and decl_list =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_kind =
-     Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]);
-     type_variance = [Variance.covariant]}
+    decl_abstr_with_one_param
+      Variance.covariant Separability.Ind (fun tvar -> Type_variant(
+        [cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]))
   and decl_option =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_kind = Type_variant([cstr ident_none []; cstr ident_some [tvar]]);
-     type_variance = [Variance.covariant]}
+    decl_abstr_with_one_param
+      Variance.covariant Separability.Ind (fun tvar -> Type_variant(
+        [cstr ident_none []; cstr ident_some [tvar]]))
   and decl_lazy_t =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_variance = [Variance.covariant]}
+    decl_abstr_with_one_param
+      Variance.covariant Separability.Ind (fun _ -> Type_abstract)
   in
 
   let add_extension id l =
