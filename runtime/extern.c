@@ -656,9 +656,9 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
   CAMLparam3 (vchan, v, flags);
   struct channel * channel = Channel(vchan);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_output_val(channel, v, flags);
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 

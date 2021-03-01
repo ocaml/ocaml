@@ -603,9 +603,9 @@ CAMLprim value caml_ml_flush_partial(value vchannel)
   int res;
 
   if (channel->fd == -1) CAMLreturn(Val_true);
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     res = caml_flush_partial(channel);
-  }
+  } );
   CAMLreturn (Val_bool(res));
 }
 
@@ -615,9 +615,9 @@ CAMLprim value caml_ml_flush(value vchannel)
   struct channel * channel = Channel(vchannel);
 
   if (channel->fd == -1) CAMLreturn(Val_unit);
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_flush(channel);
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -626,9 +626,9 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
   CAMLparam2 (vchannel, ch);
   struct channel * channel = Channel(vchannel);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_putch(channel, Long_val(ch));
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -637,9 +637,9 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
   CAMLparam2 (vchannel, w);
   struct channel * channel = Channel(vchannel);
 
-  With_mutex(&channel->mutex){
+  With_mutex(&channel->mutex, {
     caml_putword(channel, Long_val(w));
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -650,9 +650,9 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   struct channel * channel = Channel(vchannel);
   int res;
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     res = caml_putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-  }
+  } );
   CAMLreturn (Val_int(res));
 }
 
@@ -664,13 +664,13 @@ CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
   intnat pos = Long_val(start);
   intnat len = Long_val(length);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     while (len > 0) {
       int written = caml_putblock(channel, &Byte(buff, pos), len);
       pos += written;
       len -= written;
     }
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -685,9 +685,9 @@ CAMLprim value caml_ml_seek_out(value vchannel, value pos)
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_seek_out(channel, Long_val(pos));
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -696,9 +696,9 @@ CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_seek_out(channel, File_offset_val(pos));
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -720,9 +720,9 @@ CAMLprim value caml_ml_input_char(value vchannel)
   struct channel * channel = Channel(vchannel);
   unsigned char c;
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     c = caml_getch(channel);
-  }
+  } );
   CAMLreturn (Val_long(c));
 }
 
@@ -732,9 +732,9 @@ CAMLprim value caml_ml_input_int(value vchannel)
   struct channel * channel = Channel(vchannel);
   intnat i;
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     i = caml_getword(channel);
-  }
+  } );
 #ifdef ARCH_SIXTYFOUR
   i = (i << 32) >> 32;          /* Force sign extension */
 #endif
@@ -749,7 +749,7 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
   intnat start, len;
   int n, avail, nread;
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     /* We cannot call caml_getblock here because buff may move during
      caml_read_fd */
     start = Long_val(vstart);
@@ -772,7 +772,7 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
       memmove(&Byte(buff, start), channel->buff, n);
       channel->curr = channel->buff + n;
     }
-  }
+  } );
   CAMLreturn (Val_long(n));
 }
 
@@ -781,9 +781,9 @@ CAMLprim value caml_ml_seek_in(value vchannel, value pos)
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_seek_in(channel, Long_val(pos));
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -792,9 +792,9 @@ CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     caml_seek_in(channel, File_offset_val(pos));
-  }
+  } );
   CAMLreturn (Val_unit);
 }
 
@@ -816,9 +816,9 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   struct channel * channel = Channel(vchannel);
   intnat res;
 
-  With_mutex(&channel->mutex) {
+  With_mutex(&channel->mutex, {
     res = caml_input_scan_line(channel);
-  }
+  } );
   CAMLreturn (Val_long(res));
 }
 

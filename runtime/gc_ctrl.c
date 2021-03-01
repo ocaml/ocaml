@@ -58,9 +58,10 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
+  intnat majcoll;
   struct gc_stats s;
   caml_sample_gc_stats(&s);
-  intnat majcoll = Caml_state->stat_major_collections;
+  majcoll = Caml_state->stat_major_collections;
 
   res = caml_alloc_tuple (16);
   Store_field (res, 0, caml_copy_double ((double)s.minor_words));

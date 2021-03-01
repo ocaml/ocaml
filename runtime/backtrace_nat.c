@@ -112,11 +112,13 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
 static void get_callstack(struct stack_info* orig_stack, intnat max_frames,
                           frame_descr*** trace, intnat* trace_size)
 {
-  CAMLnoalloc;
   intnat trace_pos;
   char *sp;
   uintnat pc;
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs fds;
+  CAMLnoalloc;
+
+  fds = caml_get_frame_descrs();
 
   /* first compute the size of the trace */
   {

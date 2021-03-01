@@ -216,6 +216,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     if (!s->running) {
       d = &all_domains[i];
       if (!d->interrupt_word_address) {
+        caml_domain_state* domain_state;
+        atomic_uintnat* young_limit;
         /* never been started before, so set up minor heap */
         if (!caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
           /* give up now: if we couldn't get memory for this domain, we're
@@ -224,9 +226,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
           caml_plat_unlock(&s->lock);
           break;
         }
-        caml_domain_state* domain_state =
-          (caml_domain_state*)(d->tls_area);
-        atomic_uintnat* young_limit = (atomic_uintnat*)&domain_state->young_limit;
+        domain_state = (caml_domain_state*)(d->tls_area);
+        young_limit = (atomic_uintnat*)&domain_state->young_limit;
         d->interrupt_word_address = young_limit;
         atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
         s->interrupt_word = young_limit;
@@ -238,11 +239,11 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     caml_plat_unlock(&s->lock);
   }
   if (d) {
+    caml_domain_state* domain_state;
     d->state.internals = d;
     domain_self = d;
     SET_Caml_state((void*)(d->tls_area));
-    caml_domain_state* domain_state =
-      (caml_domain_state*)(d->tls_area);
+    domain_state = (caml_domain_state*)(d->tls_area);
     caml_plat_lock(&d->domain_lock);
 
     domain_state->id = d->id;
@@ -590,9 +591,9 @@ struct domain* caml_domain_self()
 }
 
 struct domain* caml_owner_of_young_block(value v) {
+  int heap_id;
   Assert(Is_young(v));
-  int heap_id = ((uintnat)v - caml_minor_heaps_base) /
-    Minor_heap_max;
+  heap_id = ((uintnat)v - caml_minor_heaps_base) / Minor_heap_max;
   return &all_domains[heap_id].state;
 }
 
@@ -715,13 +716,15 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   caml_ev_begin("stw/handler");
   caml_acknowledge_interrupt(done);
   caml_ev_begin("stw/api_barrier");
-  SPIN_WAIT {
-    if (atomic_load_acq(&stw_request.domains_still_running) == 0)
-      break;
-    caml_handle_incoming_interrupts();
+  {
+    SPIN_WAIT {
+      if (atomic_load_acq(&stw_request.domains_still_running) == 0)
+        break;
+      caml_handle_incoming_interrupts();
 
-    if (stw_request.enter_spin_callback)
-      stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
+      if (stw_request.enter_spin_callback)
+        stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
+    }
   }
   caml_ev_end("stw/api_barrier");
 
@@ -1371,10 +1374,12 @@ static void caml_wait_interrupt_acknowledged (struct interruptor* self,
     cpu_relax();
   }
 
-  SPIN_WAIT {
-    if (atomic_load_acq(&req->acknowledged))
-      return;
-    handle_incoming_otherwise_relax(self);
+  {
+    SPIN_WAIT {
+      if (atomic_load_acq(&req->acknowledged))
+        return;
+      handle_incoming_otherwise_relax(self);
+    }
   }
 
   return;

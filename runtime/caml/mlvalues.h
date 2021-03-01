@@ -413,10 +413,11 @@ CAMLextern value caml_set_oo_id(value obj);
 
 CAMLextern value caml_set_oo_id(value obj);
 
-static inline void caml_read_field(value x, intnat i, value* ret) {
+Caml_inline void caml_read_field(value x, intnat i, value* ret) {
+  value v;
   Assert (Hd_val(x));
   /* See Note [MM] in memory.c */
-  value v = atomic_load_explicit(&Op_atomic_val(x)[i], memory_order_relaxed);
+  v = atomic_load_explicit(&Op_atomic_val(x)[i], memory_order_relaxed);
   *ret = v;
 }
 

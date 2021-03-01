@@ -259,6 +259,8 @@ int caml_alloc_backtrace_buffer(void){
 
 void caml_stash_backtrace(value exn, value * sp, int reraise)
 {
+  value *trap_sp;
+
   if (exn != caml_read_root(Caml_state->backtrace_last_exn) || !reraise) {
     Caml_state->backtrace_pos = 0;
     caml_modify_root(Caml_state->backtrace_last_exn, exn);
@@ -270,7 +272,7 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
-  value *trap_sp = Stack_high(Caml_state->current_stack) + Caml_state->trap_sp_off;
+  trap_sp = Stack_high(Caml_state->current_stack) + Caml_state->trap_sp_off;
   for (/*nothing*/; sp < trap_sp; sp++) {
     if (Is_long(*sp)) {
       code_t p = Pc_val(*sp);
@@ -313,11 +315,12 @@ static void get_callstack(value* sp, intnat trap_spoff,
                           intnat max_frames,
                           code_t** trace, intnat* trace_size)
 {
-  CAMLnoalloc;
   struct stack_info* parent = Stack_parent(stack);
   value *stack_high = Stack_high(stack);
   value* saved_sp = sp;
   intnat saved_trap_spoff = trap_spoff;
+
+  CAMLnoalloc;
 
   /* first compute the size of the trace */
   {

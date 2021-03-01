@@ -105,11 +105,12 @@ CAMLprim value caml_weak_create (value len)
  */
 static void do_check_key_clean(value e, mlsize_t offset)
 {
+  value elt;
   CAMLassert (offset >= CAML_EPHE_FIRST_KEY);
 
   if (caml_gc_phase != Phase_sweep_ephe) return;
 
-  value elt = Op_val(e)[offset];
+  elt = Op_val(e)[offset];
   if (elt != caml_ephe_none && Is_block (elt) &&
       !Is_young (elt) && is_unmarked(elt)) {
     Op_val(e)[offset] = caml_ephe_none;
