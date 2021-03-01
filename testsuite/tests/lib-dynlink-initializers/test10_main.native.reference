@@ -1,9 +1,5 @@
 Error: Failure("Plugin error")
-Raised at file "stdlib.ml", line 29, characters 17-33
-Called from file "test10_plugin.ml", line 2, characters 15-38
-Called from file "test10_plugin.ml", line 10, characters 2-6
-Called from file "otherlibs/dynlink/native/dynlink.ml", line 85, characters 12-29
-Called from file "otherlibs/dynlink/native/dynlink.ml", line 85, characters 12-29
+Raised by primitive operation at file "otherlibs/dynlink/native/dynlink.ml", line 85, characters 12-29
 Re-raised at file "otherlibs/dynlink/native/dynlink.ml", line 87, characters 10-149
 Called from file "list.ml", line 110, characters 12-15
 Called from file "otherlibs/dynlink/dynlink_common.ml", line 344, characters 13-44
