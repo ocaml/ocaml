@@ -1,5 +1,5 @@
-File "t05bad.ml", line 10, characters 15-42:
+File "t05bad.ml", line 10, characters 0-75:
 10 | module rec A : sig type t = B.t -> int end = struct type t = B.t -> int end
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of A.t contains a cycle:
        B.t -> int

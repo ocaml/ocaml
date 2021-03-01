@@ -169,7 +169,7 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
            (* Check that there aren't any unused "always inline" attributes. *)
            Flambda_iterators.iter_apply_on_program flam ~f:(fun apply ->
              match apply.inline with
-             | Default_inline | Never_inline -> ()
+             | Default_inline | Never_inline | Hint_inline -> ()
              | Always_inline ->
                (* CR-someday mshinwell: consider a different error message if
                   this triggers as a result of the propagation of a user's
@@ -183,7 +183,7 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
              | Unroll _ ->
                Location.prerr_warning (Debuginfo.to_location apply.dbg)
                  (Warnings.Inlining_impossible
-                    "[@unroll] attribute was not used on this function \
+                    "[@unrolled] attribute was not used on this function \
                      application (the optimizer did not know what function \
                      was being applied)"));
            if !Clflags.dump_flambda

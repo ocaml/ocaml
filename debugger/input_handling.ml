@@ -46,14 +46,8 @@ let current_controller file =
 let execute_with_other_controller controller file funct =
   let old_controller = current_controller file in
     change_controller file controller;
-    try
-      let result = funct () in
-        change_controller file old_controller;
-        result
-    with
-      x ->
-        change_controller file old_controller;
-        raise x
+    let finally () = change_controller file old_controller in
+    Fun.protect ~finally funct
 
 (*** The "Main Loop" ***)
 
@@ -65,8 +59,11 @@ let exit_main_loop _ =
 
 (* Handle active files until `continue_main_loop' is false. *)
 let main_loop () =
-  let old_state = !continue_main_loop in
-    try
+  let finally =
+    let old_state = !continue_main_loop in
+    fun () -> continue_main_loop := old_state
+  in
+    Fun.protect ~finally @@ fun () ->
       continue_main_loop := true;
       while !continue_main_loop do
         try
@@ -80,12 +77,7 @@ let main_loop () =
               input
         with
           Unix_error (EINTR, _, _) -> ()
-      done;
-      continue_main_loop := old_state
-    with
-      x ->
-        continue_main_loop := old_state;
-        raise x
+      done
 
 (*** Managing user inputs ***)
 

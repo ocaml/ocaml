@@ -77,7 +77,7 @@ let open_connection address continue =
            connection := io_channel_of_descr sock;
            Input_handling.add_file !connection (accept_connection continue);
            connection_opened := true
-         with x -> close sock; raise x)
+         with x -> cleanup x @@ fun () -> close sock)
   with
     Failure _ -> raise Toplevel
   | (Unix_error _) as err -> report_error err; raise Toplevel
@@ -157,6 +157,5 @@ let ensure_loaded () =
       prerr_endline "done."
     with
       x ->
-        kill_program();
-        raise x
+        cleanup x kill_program
   end

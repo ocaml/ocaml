@@ -281,10 +281,10 @@ CheckTypoTree () {
     echo 'Verifying that configure.ac generates configure'
     git checkout "$1"
     mv configure configure.ref
-    ./autogen
+    make configure
     if ! diff -q configure configure.ref >/dev/null ; then
       echo "configure.ac no longer generates configure, \
-please run ./autogen and commit"
+please run rm configure ; make configure and commit"
       exit 1
     fi
   fi

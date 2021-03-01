@@ -17,8 +17,8 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
-include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 ifeq "$(filter str,$(OTHERLIBRARIES))" ""
@@ -277,8 +277,10 @@ ocamltest.html: ocamltest.org
 
 .PHONY: clean
 clean:
-	rm -rf ocamltest$(EXE) ocamltest.opt$(EXE)
-	rm -rf $(o_files) $(ocaml_objects)
+	rm -rf ocamltest ocamltest.exe ocamltest.opt ocamltest.opt.exe
+	rm -rf $(c_files:.c=.o) $(c_files:.c=.obj)
+	rm -rf run_unix.o run_win32.o run_win32.obj
+	rm -rf $(ml_files:.ml=.o) $(ml_files:.ml=.obj)
 	rm -rf $(cmi_files)
 	rm -rf $(cmo_files)
 	rm -rf $(cmx_files)
