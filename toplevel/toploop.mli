@@ -75,6 +75,7 @@ val preprocess_phrase :
         (* Preprocess the given toplevel phrase using regular and ppx
            preprocessors. Return the updated phrase. *)
 val use_file : formatter -> string -> bool
+val use_output : formatter -> string -> bool
 val use_silently : formatter -> string -> bool
 val mod_use_file : formatter -> string -> bool
         (* Read and execute commands from a file.

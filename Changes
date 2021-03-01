@@ -41,7 +41,7 @@ Working version
 - #9233: Restore the bytecode stack after an allocation.
   (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
 
-- #9230: Memprof support for native allocations.
+- #9230, #9362: Memprof support for native allocations.
   (Jacques-Henri Jourdan and Stephen Dolan, review by Gabriel Scherer)
 
 - #9249: restore definition of ARCH_ALIGN_INT64 in m.h if the architecture
@@ -142,6 +142,10 @@ Working version
 - #9207, #9210: fix ocamlyacc to work correctly with up to 255 entry
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
+
+- #9283: add a new toplevel directive `#use_output "<command>"` to
+  run a command and evaluate its output.
+  (Jérémie Dimino, review by David Allsopp)
 
 ### Manual and documentation:
 

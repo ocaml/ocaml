@@ -198,6 +198,10 @@ will result in an ``unbound value "quit"'' error.
     they were typed on standard input. The reading of the file stops at
     the first error encountered.
 
+  \item["#use_output \""\var{command}"\";;"]
+    Execute a command and evaluate its output as if it had been captured
+    to a file and passed to "#use".
+
   \item["#mod_use \""\var{file-name}"\";;"]
     Similar to "#use" but also wrap the code into a top-level module of the
     same name as capitalized file name without extensions, following
