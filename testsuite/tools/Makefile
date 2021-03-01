@@ -12,6 +12,8 @@
 #*                                                                        *
 #**************************************************************************
 
+.NOTPARALLEL:
+
 TOPDIR = ../..
 
 COMPILERLIBSDIR = $(TOPDIR)/compilerlibs

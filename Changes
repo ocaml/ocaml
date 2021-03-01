@@ -66,9 +66,10 @@ Working version
 - #9280: Micro-optimise allocations on amd64 to save a register.
   (Stephen Dolan, review by Xavier Leroy)
 
-- #9316, #9443: Use typing information from Clambda for mutable Cmm variables.
+- #9316, #9443, #9463: Use typing information from Clambda
+  for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
-  and Gabriel Scherer)
+  and Gabriel Scherer; temporary bug report by Richard Jones)
 
 - #9426: build the Mingw ports with higher levels of GCC optimization
   (Xavier Leroy, review by Sébastien Hinderer)
@@ -78,6 +79,9 @@ Working version
   modifications.  This is a prerequisite for Multicore OCaml.
   (Xavier Leroy and Basile Clément, review by Gabriel Scherer and
   Stephen Dolan)
+
+- #9282: Make Cconst_symbol have typ_int to fix no-naked-pointers mode.
+  (Stephen Dolan, review by Mark Shinwell, Xavier Leroy and Vincent Laviron)
 
 ### Code generation and optimizations:
 
@@ -176,7 +180,7 @@ Working version
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
 
-- #9283: add a new toplevel directive `#use_output "<command>"` to
+- #9283, #9455, #9457: add a new toplevel directive `#use_output "<command>"` to
   run a command and evaluate its output.
   (Jérémie Dimino, review by David Allsopp)
 
@@ -342,6 +346,9 @@ Working version
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #9307, #9345: reproducible env summaries for reproducible compilation
+  (Florian Angeletti, review by Leo White)
+
 - #9309, #9318: Fix exhaustivity checking with empty types
   (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
   and Thomas Refis)
@@ -385,6 +392,11 @@ OCaml 4.10 maintenance branch
   not embed debug information and exception backtraces where causing
   them to crash.
   (Jérémie Dimino, review by Nicolás Ojeda Bär)
+
+### Bug fixes:
+
+- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+  (Greta Yorsh, review by David Allsopp)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
