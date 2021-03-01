@@ -214,11 +214,6 @@ let type_open_descr ?used_slot ?toplevel env sod =
   in
   (od, newenv)
 
-(* Record a module type *)
-let rm node =
-  Stypes.record (Stypes.Ti_mod node);
-  node
-
 (* Forward declaration, to be filled in by type_module_type_of *)
 let type_module_type_of_fwd :
     (Env.t -> Parsetree.module_expr ->
@@ -1916,16 +1911,16 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               else mty
             in
             { md with mod_type = mty }
-      in rm md
+      in md
   | Pmod_structure sstr ->
       let (str, sg, names, _finalenv) =
         type_structure funct_body anchor env sstr smod.pmod_loc in
       let md =
-        rm { mod_desc = Tmod_structure str;
-             mod_type = Mty_signature sg;
-             mod_env = env;
-             mod_attributes = smod.pmod_attributes;
-             mod_loc = smod.pmod_loc }
+        { mod_desc = Tmod_structure str;
+          mod_type = Mty_signature sg;
+          mod_env = env;
+          mod_attributes = smod.pmod_attributes;
+          mod_loc = smod.pmod_loc }
       in
       let sg' = Signature_names.simplify _finalenv names sg in
       if List.length sg' = List.length sg then md else
@@ -1958,11 +1953,11 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           Named (id, param, mty), Types.Named (id, mty.mty_type), newenv, true
       in
       let body = type_module sttn funct_body None newenv sbody in
-      rm { mod_desc = Tmod_functor(t_arg, body);
-           mod_type = Mty_functor(ty_arg, body.mod_type);
-           mod_env = env;
-           mod_attributes = smod.pmod_attributes;
-           mod_loc = smod.pmod_loc }
+      { mod_desc = Tmod_functor(t_arg, body);
+        mod_type = Mty_functor(ty_arg, body.mod_type);
+        mod_env = env;
+        mod_attributes = smod.pmod_attributes;
+        mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
       let arg = type_module true funct_body None env sarg in
       let path = path_of_module arg in
@@ -1974,11 +1969,11 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
             raise (Error (sfunct.pmod_loc, env, Apply_generative));
           if funct_body && Mtype.contains_type env funct.mod_type then
             raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
-          rm { mod_desc = Tmod_apply(funct, arg, Tcoerce_none);
-               mod_type = mty_res;
-               mod_env = env;
-               mod_attributes = smod.pmod_attributes;
-               mod_loc = smod.pmod_loc }
+          { mod_desc = Tmod_apply(funct, arg, Tcoerce_none);
+            mod_type = mty_res;
+            mod_env = env;
+            mod_attributes = smod.pmod_attributes;
+            mod_loc = smod.pmod_loc }
       | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
           let coercion =
             try
@@ -2027,11 +2022,11 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           in
           check_well_formed_module env smod.pmod_loc
             "the signature of this functor application" mty_appl;
-          rm { mod_desc = Tmod_apply(funct, arg, coercion);
-               mod_type = mty_appl;
-               mod_env = env;
-               mod_attributes = smod.pmod_attributes;
-               mod_loc = smod.pmod_loc }
+          { mod_desc = Tmod_apply(funct, arg, coercion);
+            mod_type = mty_appl;
+            mod_env = env;
+            mod_attributes = smod.pmod_attributes;
+            mod_loc = smod.pmod_loc }
       | Mty_alias path ->
           raise(Error(sfunct.pmod_loc, env, Cannot_scrape_alias path))
       | _ ->
@@ -2043,10 +2038,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let md =
         wrap_constraint env true arg mty.mty_type (Tmodtype_explicit mty)
       in
-      rm { md with
-          mod_loc = smod.pmod_loc;
-          mod_attributes = smod.pmod_attributes;
-         }
+      { md with
+        mod_loc = smod.pmod_loc;
+        mod_attributes = smod.pmod_attributes;
+      }
 
   | Pmod_unpack sexp ->
       if !Clflags.principal then Ctype.begin_def ();
@@ -2075,11 +2070,11 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in
       if funct_body && Mtype.contains_type env mty then
         raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
-      rm { mod_desc = Tmod_unpack(exp, mty);
-           mod_type = mty;
-           mod_env = env;
-           mod_attributes = smod.pmod_attributes;
-           mod_loc = smod.pmod_loc }
+      { mod_desc = Tmod_unpack(exp, mty);
+        mod_type = mty;
+        mod_env = env;
+        mod_attributes = smod.pmod_attributes;
+        mod_loc = smod.pmod_loc }
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
@@ -2454,9 +2449,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (str :: str_rem, sg @ sig_rem, final_env)
   in
-  if !Clflags.annotations then
-    (* moved to genannot *)
-    List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
   let run () =
     let (items, sg, final_env) = type_struct env sstr in
@@ -2501,11 +2493,11 @@ let type_module_type_of env smod =
     match smod.pmod_desc with
     | Pmod_ident lid -> (* turn off strengthening in this case *)
         let path, md = Env.lookup_module ~loc:smod.pmod_loc lid.txt env in
-          rm { mod_desc = Tmod_ident (path, lid);
-               mod_type = md.md_type;
-               mod_env = env;
-               mod_attributes = smod.pmod_attributes;
-               mod_loc = smod.pmod_loc }
+          { mod_desc = Tmod_ident (path, lid);
+            mod_type = md.md_type;
+            mod_env = env;
+            mod_attributes = smod.pmod_attributes;
+            mod_loc = smod.pmod_loc }
     | _ -> type_module env smod
   in
   let mty = Mtype.scrape_for_type_of ~remove_aliases env tmty.mod_type in
@@ -2639,6 +2631,10 @@ let () =
 
 (* Typecheck an implementation file *)
 
+let gen_annot outputprefix sourcefile annots =
+  Cmt2annot.gen_annot (Some (outputprefix ^ ".annot"))
+    ~sourcefile:(Some sourcefile) ~use_summaries:false annots
+
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   Misc.try_finally (fun () ->
@@ -2655,6 +2651,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (fun () -> fprintf std_formatter "%a@."
               (Printtyp.printed_signature sourcefile) simple_sg
           );
+        gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
         (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
       end else begin
         let sourceintf =
@@ -2675,8 +2672,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (* It is important to run these checks after the inclusion test above,
              so that value declarations which are not used internally but
              exported are not reported as being unused. *)
+          let annots = Cmt_format.Implementation str in
           Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-            (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
+            annots (Some sourcefile) initial_env None;
+          gen_annot outputprefix sourcefile annots;
           (str, coercion)
         end else begin
           let coercion =
@@ -2696,19 +2695,24 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
               Env.save_signature ~alerts
                 simple_sg modulename (outputprefix ^ ".cmi")
             in
+            let annots = Cmt_format.Implementation str in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-              (Cmt_format.Implementation str)
-              (Some sourcefile) initial_env (Some cmi);
+              annots (Some sourcefile) initial_env (Some cmi);
+            gen_annot outputprefix sourcefile annots
           end;
           (str, coercion)
         end
       end
     )
     ~exceptionally:(fun () ->
+        let annots =
+          Cmt_format.Partial_implementation
+            (Array.of_list (Cmt_format.get_saved_types ()))
+        in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-          (Cmt_format.Partial_implementation
-             (Array.of_list (Cmt_format.get_saved_types ())))
-          (Some sourcefile) initial_env None)
+          annots (Some sourcefile) initial_env None;
+        gen_annot outputprefix sourcefile annots
+      )
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname

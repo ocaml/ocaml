@@ -76,11 +76,7 @@ let rec iterator ~scope rebuild_env =
         let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
         let env =
           if rebuild_env then
-            try
-              Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
-            with Envaux.Error err ->
-              Format.eprintf "%a@." Envaux.report_error err;
-              exit 2
+            Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
           else
             exp.exp_env
         in
@@ -172,89 +168,20 @@ let binary_part iter x =
   | Partial_signature_item x -> iter.signature_item iter x
   | Partial_module_type x -> iter.module_type iter x
 
-(* Save cmt information as faked annotations, attached to
-   Location.none, on top of the .annot file. Only when -save-cmt-info is
-   provided to ocaml_cmt.
-*)
-let record_cmt_info cmt =
-  let location_none = {
-    Location.none with Location.loc_ghost = false }
-  in
-  let location_file file = {
-    Location.none with
-      Location.loc_start = {
-        Location.none.Location.loc_start with
-          Lexing.pos_fname = file }}
-  in
-  let record_info name value =
-    let ident = Printf.sprintf ".%s" name in
-    Stypes.record (Stypes.An_ident (location_none, ident,
-                                    Annot.Idef (location_file value)))
-  in
+let gen_annot target_filename ~sourcefile ~use_summaries annots =
   let open Cmt_format in
-  (* record in reverse order to get them in correct order... *)
-  List.iter (fun dir -> record_info "include" dir) (List.rev cmt.cmt_loadpath);
-  record_info "chdir" cmt.cmt_builddir;
-  (match cmt.cmt_sourcefile with
-    None -> () | Some file -> record_info "source" file)
-
-let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
-  let open Cmt_format in
-  Envaux.reset_cache ();
-  List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
-  let target_filename =
-    match target_filename with
-    | None -> Some (filename ^ ".annot")
-    | Some "-" -> None
-    | Some _ -> target_filename
+  let scope =
+    match sourcefile with
+    | None -> Location.none
+    | Some s -> Location.in_file s
   in
-  if save_cmt_info then record_cmt_info cmt;
-  let iter = iterator ~scope:Location.none cmt.cmt_use_summaries in
-  match cmt.cmt_annots with
+  let iter = iterator ~scope use_summaries in
+  match annots with
   | Implementation typedtree ->
       iter.structure iter typedtree;
       Stypes.dump target_filename
-  | Interface _ ->
-      Printf.eprintf "Cannot generate annotations for interface file\n%!";
-      exit 2
   | Partial_implementation parts ->
       Array.iter (binary_part iter) parts;
       Stypes.dump target_filename
-  | Packed _ ->
-      Printf.fprintf stderr "Packed files not yet supported\n%!";
-      Stypes.dump target_filename
-  | Partial_interface _ ->
-      Printf.fprintf stderr "File was generated with an error\n%!";
-      exit 2
-
-let gen_ml target_filename filename cmt =
-  let (printer, ext) =
-    match cmt.Cmt_format.cmt_annots with
-      | Cmt_format.Implementation typedtree ->
-          (fun ppf -> Pprintast.structure ppf
-                                        (Untypeast.untype_structure typedtree)),
-          ".ml"
-      | Cmt_format.Interface typedtree ->
-          (fun ppf -> Pprintast.signature ppf
-                                        (Untypeast.untype_signature typedtree)),
-          ".mli"
-      | _ ->
-        Printf.fprintf stderr "File was generated with an error\n%!";
-          exit 2
-  in
-  let target_filename = match target_filename with
-      None -> Some (filename ^ ext)
-    | Some "-" -> None
-    | Some _ -> target_filename
-  in
-  let oc = match target_filename with
-      None -> None
-    | Some filename -> Some (open_out filename) in
-  let ppf = match oc with
-      None -> Format.std_formatter
-    | Some oc -> Format.formatter_of_out_channel oc in
-  printer ppf;
-  Format.pp_print_flush ppf ();
-  match oc with
-      None -> flush stdout
-    | Some oc -> close_out oc
+  | Interface _ | Packed _ | Partial_interface _ ->
+      ()

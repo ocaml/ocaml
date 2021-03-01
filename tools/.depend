@@ -28,40 +28,6 @@ cmpbyt.cmo : \
     ../bytecomp/bytesections.cmi
 cmpbyt.cmx : \
     ../bytecomp/bytesections.cmx
-cmt2annot.cmo : \
-    ../typing/untypeast.cmi \
-    ../typing/types.cmi \
-    ../typing/typedtree.cmi \
-    ../typing/tast_iterator.cmi \
-    ../typing/stypes.cmi \
-    ../parsing/pprintast.cmi \
-    ../typing/path.cmi \
-    ../typing/oprint.cmi \
-    ../parsing/location.cmi \
-    ../utils/load_path.cmi \
-    ../typing/ident.cmi \
-    ../typing/envaux.cmi \
-    ../typing/env.cmi \
-    ../file_formats/cmt_format.cmi \
-    ../parsing/asttypes.cmi \
-    ../typing/annot.cmi
-cmt2annot.cmx : \
-    ../typing/untypeast.cmx \
-    ../typing/types.cmx \
-    ../typing/typedtree.cmx \
-    ../typing/tast_iterator.cmx \
-    ../typing/stypes.cmx \
-    ../parsing/pprintast.cmx \
-    ../typing/path.cmx \
-    ../typing/oprint.cmx \
-    ../parsing/location.cmx \
-    ../utils/load_path.cmx \
-    ../typing/ident.cmx \
-    ../typing/envaux.cmx \
-    ../typing/env.cmx \
-    ../file_formats/cmt_format.cmx \
-    ../parsing/asttypes.cmi \
-    ../typing/annot.cmi
 cvt_emit.cmo :
 cvt_emit.cmx :
 dumpobj.cmo : \
@@ -202,17 +168,29 @@ profiling.cmx : \
     profiling.cmi
 profiling.cmi :
 read_cmt.cmo : \
+    ../typing/untypeast.cmi \
+    ../typing/stypes.cmi \
+    ../parsing/pprintast.cmi \
     ../parsing/location.cmi \
+    ../utils/load_path.cmi \
+    ../typing/envaux.cmi \
     ../driver/compmisc.cmi \
     ../file_formats/cmt_format.cmi \
-    cmt2annot.cmo \
-    ../utils/clflags.cmi
+    ../typing/cmt2annot.cmo \
+    ../utils/clflags.cmi \
+    ../typing/annot.cmi
 read_cmt.cmx : \
+    ../typing/untypeast.cmx \
+    ../typing/stypes.cmx \
+    ../parsing/pprintast.cmx \
     ../parsing/location.cmx \
+    ../utils/load_path.cmx \
+    ../typing/envaux.cmx \
     ../driver/compmisc.cmx \
     ../file_formats/cmt_format.cmx \
-    cmt2annot.cmx \
-    ../utils/clflags.cmx
+    ../typing/cmt2annot.cmx \
+    ../utils/clflags.cmx \
+    ../typing/annot.cmi
 stripdebug.cmo : \
     ../utils/misc.cmi \
     ../bytecomp/bytesections.cmi

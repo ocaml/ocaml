@@ -206,6 +206,10 @@ debuginfo caml_debuginfo_extract(backtrace_slot slot)
   uint32_t debuginfo_offset;
   frame_descr * d = (frame_descr *)slot;
 
+  /* The special frames marking the top of an ML stack chunk are never
+     returned by caml_next_frame_descriptor, so should never reach here. */
+  CAMLassert(d->frame_size != 0xffff);
+
   if ((d->frame_size & 1) == 0) {
     return NULL;
   }
