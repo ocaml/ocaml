@@ -965,6 +965,9 @@ mutually recursive types.
 66
 \ \ Unused open! statement.
 
+67
+\ \ Unused functor parameter.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

@@ -57,6 +57,9 @@ Working version
 - #9279: Memprof optimisation.
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
+- #9280: Micro-optimise allocations on amd64 to save a register.
+  (Stephen Dolan, review by Xavier Leroy)
+
 - #9316: Use typing information from Clambda for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
 
@@ -212,7 +215,7 @@ Working version
 - #9081: typedtree, make the pat_env field of pattern data immutable
   (Gabriel Scherer, review by Jacques Garrigue, report by Alain Frisch)
 
-- #9178, #9182: refactor the label-disambiguation logic (Typecore.NameChoice)
+- #9178, #9182, #9196: refactor label-disambiguation (Typecore.NameChoice)
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 

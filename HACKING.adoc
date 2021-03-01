@@ -221,11 +221,11 @@ git cherry-pick -x -m 1 <merge-commit-hash>
 To test a particular branch `branch` of a public git repository
 `$REPO` of the compiler in an `opam` v2 switch issue:
 
----
+----
 opam switch create ocaml-branch --empty
 # Replace $VERSION by the trunk version
 opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
----
+----
 
 === Useful Makefile targets
 

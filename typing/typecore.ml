@@ -714,50 +714,88 @@ end) = struct
         warn lid.loc
           (Warnings.Disambiguated_name (get_name lbl))
 
+  let force_error : ('a, _) result -> 'a = function
+    | Ok lbls -> lbls
+    | Error (loc', env', err) ->
+       Env.lookup_error loc' env' err
+
+  type candidate = t * (unit -> unit)
+  type nonempty_candidate_filter =
+    candidate list -> (candidate list, candidate list) result
+  (** This type is used for candidate filtering functions.
+      Filtering typically proceeds in several passes, filtering
+      candidates through increasingly precise conditions.
+
+      We assume that the input list is non-empty, and the output is one of
+      - [Ok result] for a non-empty list [result] of valid candidates
+      - [Error candidates] with there are no valid candidates,
+        and [candidates] is a non-empty subset of the input, typically
+        the result of the last non-empty filtering step.
+   *)
+
   (** [disambiguate] selects a concrete description for [lid] using
-     some contextual information: an optional [expected_type], and
-     a list of candidates [lbls]. If [expected_type] is [None], it
-     just returns the head of [lbls]. Otherwise, it extracts the
-     description directly from the corresponding type definition,
-     except for extension types, where it has to choose it inside
-     [lbls]. *)
-  (* Here [scope] contains the labels equal to [lid] in the current
-     environment, and [lbls] is a (potentially strict) subset of
-     [scope], see [disambiguate_label_by_ids] *)
-  let disambiguate ?(warn=Location.prerr_warning) ?scope
-                   usage lid env expected_type lbls =
-    let scope = match scope with None -> lbls | Some l -> l in
+     some contextual information:
+     - An optional [expected_type].
+     - A list of candidates labels in the current lexical scope,
+       [candidates_in_scope], that is actually at the type
+       [(label_descr list, lookup_error) result] so that the
+       lookup error is only raised when necessary.
+     - A filtering criterion on candidates in scope [filter_candidates],
+       representing extra contextual information that can help
+       candidate selection (see [disambiguate_label_by_ids]).
+   *)
+  let disambiguate
+        ?(warn=Location.prerr_warning)
+        ?(filter : nonempty_candidate_filter = Result.ok)
+        usage lid env
+        expected_type
+        candidates_in_scope =
     let lbl = match expected_type with
     | None ->
         (* no expected type => no disambiguation *)
-        begin match lbls with
-        | (Error(loc', env', err) : _ result) ->
-            Env.lookup_error loc' env' err
-        | Ok [] -> assert false
+        begin match filter (force_error candidates_in_scope) with
+        | Ok [] | Error [] -> assert false
+        | Error((lbl, _use) :: _rest) -> lbl (* will fail later *)
         | Ok((lbl, use) :: rest) ->
             use ();
             warn_if_ambiguous warn lid env lbl rest;
             lbl
         end
     | Some(tpath0, tpath, principal) ->
-        (* first look for a disambiguation solution
-           in the current lexical scope *)
-        begin match disambiguate_by_type env tpath scope with
+       (* If [expected_type] is available, the candidate selected
+          will correspond to the type-based resolution.
+          There are two reasons to still check the lexical scope:
+          - for warning purposes
+          - for extension types, the type environment does not contain
+            a list of constructors, so using only type-based selection
+            would fail.
+        *)
+        (* note that [disambiguate_by_type] does not
+           force [candidates_in_scope]: we just skip this case if there
+           are no candidates in scope *)
+        begin match disambiguate_by_type env tpath candidates_in_scope with
         | lbl, use ->
           use ();
           if not principal then begin
             (* Check if non-principal type is affecting result *)
-            match lbls with
-            | (Error _ : _ result) | Ok [] -> warn_non_principal warn lid
+            match (candidates_in_scope : _ result) with
+            | Error _ -> warn_non_principal warn lid
+            | Ok lbls ->
+            match filter lbls with
+            | Error _ -> warn_non_principal warn lid
+            | Ok [] -> assert false
             | Ok ((lbl', _use') :: rest) ->
-                let lbl_tpath = get_type_path lbl' in
-                if not (compare_type_path env tpath lbl_tpath)
-                then warn_non_principal warn lid
-                else warn_if_ambiguous warn lid env lbl rest;
+            let lbl_tpath = get_type_path lbl' in
+            (* no principality warning if the non-principal
+               type-based selection corresponds to the last
+               definition in scope *)
+            if not (compare_type_path env tpath lbl_tpath)
+            then warn_non_principal warn lid
+            else warn_if_ambiguous warn lid env lbl rest;
           end;
           lbl
         | exception Not_found ->
-        (* then look outside the lexical scope *)
+        (* look outside the lexical scope *)
         match lookup_from_type env tpath usage lid with
         | lbl ->
           (* warn only on nominal labels;
@@ -766,10 +804,8 @@ end) = struct
           if not principal then warn_non_principal warn lid;
           lbl
         | exception Not_found ->
-        match lbls with
-        | (Error(loc', env', err) : _ result) ->
-            Env.lookup_error loc' env' err
-        | Ok lbls ->
+        match filter (force_error candidates_in_scope) with
+        | Ok lbls | Error lbls ->
         let tp = (tpath0, expand_path env tpath) in
         let tpl =
           List.map
@@ -785,7 +821,7 @@ end) = struct
     in
     (* warn only on nominal labels *)
     if in_env lbl then
-      warn_if_disambiguated_name warn lid lbl scope;
+      warn_if_disambiguated_name warn lid lbl candidates_in_scope;
     lbl
 end
 
@@ -848,35 +884,10 @@ let disambiguate_lid_a_list loc closed env expected_type lid_a_list =
     | _ -> Location.prerr_warning loc msg
   in
   let process_label lid =
-    (* Strategy for each field:
-       * collect all the labels in scope for that name
-       * if the type is known and principal, just eventually warn
-         if the real label was not in scope
-       * fail if there is no known type and no label found
-       * otherwise use other fields to reduce the list of candidates
-       * if there is no known type reduce it incrementally, so that
-         there is still at least one candidate (for error message)
-       * if the reduced list is valid, call Label.disambiguate
-     *)
     let scope = Env.lookup_all_labels ~loc:lid.loc lid.txt env in
-    match expected_type, scope with
-    | None, Error(loc, env, err) ->
-        Env.lookup_error loc env err
-    | Some _, Error _ ->
-        Label.disambiguate () lid env expected_type scope ~warn ~scope
-    | _, Ok lbls ->
-       let disambiguate_labels lbls =
-         Label.disambiguate () lid env expected_type (Ok lbls) ~warn ~scope in
-       match disambiguate_label_by_ids closed ids lbls with
-         | Ok lbls -> disambiguate_labels lbls
-         | Error lbls ->
-            if (expected_type <> None)
-            (* both branches will fail later; if there an expected type,
-               it will be used for a nice error message; otherwise we return
-               an arbitrary candidate for use in best-effort error messages. *)
-            then disambiguate_labels []
-            else fst (List.hd lbls)
-  in
+    let filter : Label.nonempty_candidate_filter =
+      disambiguate_label_by_ids closed ids in
+    Label.disambiguate ~warn ~filter () lid env expected_type scope in
   let lbl_a_list =
     List.map (fun (lid,a) -> lid, process_label lid, a) lid_a_list in
   if !w_pr then
