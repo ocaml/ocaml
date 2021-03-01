@@ -1691,6 +1691,7 @@ bytecomp/bytegen.cmo : \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
@@ -1706,6 +1707,7 @@ bytecomp/bytegen.cmx : \
     bytecomp/instruct.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
@@ -2304,7 +2306,6 @@ asmcomp/cmm_helpers.cmx : \
 asmcomp/cmm_helpers.cmi : \
     utils/targetint.cmi \
     typing/primitive.cmi \
-    parsing/location.cmi \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     file_formats/cmx_format.cmi \
@@ -2907,7 +2908,6 @@ asmcomp/split.cmx : \
 asmcomp/split.cmi : \
     asmcomp/mach.cmi
 asmcomp/strmatch.cmo : \
-    parsing/location.cmi \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
@@ -2916,7 +2916,6 @@ asmcomp/strmatch.cmo : \
     asmcomp/arch.cmo \
     asmcomp/strmatch.cmi
 asmcomp/strmatch.cmx : \
-    parsing/location.cmx \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
@@ -2925,7 +2924,6 @@ asmcomp/strmatch.cmx : \
     asmcomp/arch.cmx \
     asmcomp/strmatch.cmi
 asmcomp/strmatch.cmi : \
-    parsing/location.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/x86_ast.cmi :
@@ -3129,14 +3127,15 @@ middle_end/internal_variable_names.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     utils/int_replace_polymorphic_compare.cmi \
+    lambda/debuginfo.cmi \
     middle_end/internal_variable_names.cmi
 middle_end/internal_variable_names.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     utils/int_replace_polymorphic_compare.cmx \
+    lambda/debuginfo.cmx \
     middle_end/internal_variable_names.cmi
 middle_end/internal_variable_names.cmi : \
-    parsing/location.cmi \
     lambda/lambda.cmi
 middle_end/linkage_name.cmo : \
     utils/int_replace_polymorphic_compare.cmi \
@@ -3237,22 +3236,28 @@ middle_end/variable.cmi : \
 lambda/debuginfo.cmo : \
     parsing/location.cmi \
     utils/int_replace_polymorphic_compare.cmi \
+    typing/ident.cmi \
+    parsing/asttypes.cmi \
     lambda/debuginfo.cmi
 lambda/debuginfo.cmx : \
     parsing/location.cmx \
     utils/int_replace_polymorphic_compare.cmx \
+    typing/ident.cmx \
+    parsing/asttypes.cmi \
     lambda/debuginfo.cmi
 lambda/debuginfo.cmi : \
-    parsing/location.cmi
+    parsing/location.cmi \
+    typing/ident.cmi \
+    parsing/asttypes.cmi
 lambda/lambda.cmo : \
     typing/types.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
-    parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     parsing/asttypes.cmi \
     lambda/lambda.cmi
 lambda/lambda.cmx : \
@@ -3261,18 +3266,18 @@ lambda/lambda.cmx : \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
-    parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     parsing/asttypes.cmi \
     lambda/lambda.cmi
 lambda/lambda.cmi : \
     typing/types.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
-    parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     parsing/asttypes.cmi
 lambda/matching.cmo : \
     typing/types.cmi \
@@ -3290,6 +3295,7 @@ lambda/matching.cmo : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -3310,6 +3316,7 @@ lambda/matching.cmx : \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
@@ -3318,7 +3325,8 @@ lambda/matching.cmi : \
     typing/typedtree.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
-    typing/ident.cmi
+    typing/ident.cmi \
+    lambda/debuginfo.cmi
 lambda/printlambda.cmo : \
     typing/types.cmi \
     typing/printtyp.cmi \
@@ -3326,6 +3334,7 @@ lambda/printlambda.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    lambda/debuginfo.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
     lambda/printlambda.cmi
@@ -3336,6 +3345,7 @@ lambda/printlambda.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    lambda/debuginfo.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
     lambda/printlambda.cmi
@@ -3353,6 +3363,7 @@ lambda/simplif.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    lambda/debuginfo.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
     lambda/simplif.cmi
@@ -3362,21 +3373,18 @@ lambda/simplif.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    lambda/debuginfo.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
     lambda/simplif.cmi
 lambda/simplif.cmi : \
-    parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi
 lambda/switch.cmo : \
-    parsing/location.cmi \
     lambda/switch.cmi
 lambda/switch.cmx : \
-    parsing/location.cmx \
     lambda/switch.cmi
-lambda/switch.cmi : \
-    parsing/location.cmi
+lambda/switch.cmi :
 lambda/translattribute.cmo : \
     utils/warnings.cmi \
     typing/typedtree.cmi \
@@ -3414,6 +3422,7 @@ lambda/translclass.cmo : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -3430,6 +3439,7 @@ lambda/translclass.cmx : \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
@@ -3439,6 +3449,7 @@ lambda/translclass.cmi : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    lambda/debuginfo.cmi \
     parsing/asttypes.cmi
 lambda/translcore.cmo : \
     typing/types.cmi \
@@ -3461,6 +3472,7 @@ lambda/translcore.cmo : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -3487,6 +3499,7 @@ lambda/translcore.cmx : \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
@@ -3499,6 +3512,7 @@ lambda/translcore.cmi : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     parsing/asttypes.cmi
 lambda/translmod.cmo : \
     typing/types.cmi \
@@ -3517,6 +3531,7 @@ lambda/translmod.cmo : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     typing/ctype.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
@@ -3538,6 +3553,7 @@ lambda/translmod.cmx : \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     typing/ctype.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
@@ -3551,7 +3567,6 @@ lambda/translmod.cmi : \
 lambda/translobj.cmo : \
     typing/primitive.cmi \
     utils/misc.cmi \
-    parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -3563,7 +3578,6 @@ lambda/translobj.cmo : \
 lambda/translobj.cmx : \
     typing/primitive.cmx \
     utils/misc.cmx \
-    parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -3589,6 +3603,7 @@ lambda/translprim.cmo : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    lambda/debuginfo.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
@@ -3606,6 +3621,7 @@ lambda/translprim.cmx : \
     lambda/lambda.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    lambda/debuginfo.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
@@ -3954,7 +3970,6 @@ middle_end/flambda/closure_conversion_aux.cmo : \
     utils/numbers.cmi \
     middle_end/flambda/base_types/mutable_variable.cmi \
     utils/misc.cmi \
-    parsing/location.cmi \
     lambda/lambda.cmi \
     utils/int_replace_polymorphic_compare.cmi \
     typing/ident.cmi \
@@ -3966,7 +3981,6 @@ middle_end/flambda/closure_conversion_aux.cmx : \
     utils/numbers.cmx \
     middle_end/flambda/base_types/mutable_variable.cmx \
     utils/misc.cmx \
-    parsing/location.cmx \
     lambda/lambda.cmx \
     utils/int_replace_polymorphic_compare.cmx \
     typing/ident.cmx \
@@ -3976,7 +3990,6 @@ middle_end/flambda/closure_conversion_aux.cmi : \
     middle_end/symbol.cmi \
     middle_end/flambda/base_types/static_exception.cmi \
     middle_end/flambda/base_types/mutable_variable.cmi \
-    parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi
 middle_end/flambda/closure_offsets.cmo : \

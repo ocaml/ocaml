@@ -19,13 +19,14 @@
       (ignore
         (let
           (*match* =
-             (setfield_ptr 0 (field 3 (global Anonymous!)) "Hello World!"))
+             (setfield_ptr 0 (field_imm 3 (global Anonymous!))
+               "Hello World!"))
           (makeblock 0)))
       (let (drop = (function param 0a))
         (setfield_ptr(root-init) 4 (global Anonymous!) drop))
       (let
         (*match* =
-           (apply (field 4 (global Anonymous!))
-             (field 0 (field 3 (global Anonymous!)))))
+           (apply (field_imm 4 (global Anonymous!))
+             (field_mut 0 (field_imm 3 (global Anonymous!)))))
         0a)
       0a)))

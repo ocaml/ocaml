@@ -83,8 +83,8 @@ let close_phrase lam =
     let glb, pos = toplevel_value id in
     let glob =
       Lprim (Pfield pos,
-             [Lprim (Pgetglobal glb, [], Location.none)],
-             Location.none)
+             [Lprim (Pgetglobal glb, [], Loc_unknown)],
+             Loc_unknown)
     in
     Llet(Strict, Pgenval, id, glob, l)
   ) (free_variables lam) lam

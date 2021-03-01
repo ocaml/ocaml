@@ -74,6 +74,9 @@ OCaml 4.11
 
 ### Runtime system:
 
+- #9096: Print function names in backtraces.
+  (Stephen Dolan, review by Leo White and Mark Shinwell)
+
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
@@ -299,6 +302,9 @@ OCaml 4.11
 - #2141: generate .annot files from cmt data; deprecate -annot.
   (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
   Doligez)
+
+- #9486: Fix configuration for the Haiku operating system
+  (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
 
 ### Internal/compiler-libs changes:
 
