@@ -2794,6 +2794,7 @@ asmcomp/selectgen.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
+    parsing/asttypes.cmi \
     asmcomp/arch.cmo
 asmcomp/selection.cmo : \
     asmcomp/spacetime_profiling.cmi \

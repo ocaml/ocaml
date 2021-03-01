@@ -57,6 +57,9 @@ Working version
 - #9279: Memprof optimisation.
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
+- #9316: Use typing information from Clambda for mutable Cmm variables.
+  (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
@@ -67,6 +70,9 @@ Working version
   (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
 
 ### Standard library:
+
+- #9077: Add Seq.cons and Seq.append
+  (Sébastien Briais, review by Yawar Amin and Florian Angeletti)
 
 - #9248: Add Printexc.default_uncaught_exception_handler
   (Raphael Sousa Santos, review by Daniel Bünzli)
@@ -246,6 +252,9 @@ Working version
 - #9309, #9318: Fix exhaustivity checking with empty types
   (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
   and Thomas Refis)
+
+- #9343: Re-enable `-short-paths` for some error messages
+  (Leo White, review by Florian Angeletti)
 
 OCaml 4.10.0
 ------------
