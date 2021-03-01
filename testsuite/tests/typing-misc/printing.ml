@@ -113,6 +113,6 @@ and bar () =
 Line 4, characters 7-29:
 4 |   x |> List.fold_left max 0 x
            ^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type int but an expression was expected of type
-         int list -> 'a
+Error: This expression has type int
+       This is not a function; it cannot be applied.
 |}]
