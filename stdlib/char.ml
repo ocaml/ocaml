@@ -72,3 +72,5 @@ type t = char
 
 let compare c1 c2 = code c1 - code c2
 let equal (c1: t) (c2: t) = compare c1 c2 = 0
+
+external hash : t -> int = "%identity"

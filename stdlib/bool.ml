@@ -31,3 +31,5 @@ let of_string = function
 *)
 
 let to_string = function false -> "false" | true -> "true"
+
+external hash : bool -> int = "%identity"

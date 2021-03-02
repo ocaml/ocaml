@@ -48,3 +48,5 @@ let of_string s = try Some (int_of_string s) with Failure _ -> None
 
 external format_int : string -> int -> string = "caml_format_int"
 let to_string x = format_int "%d" x
+
+external hash : int -> int = "%identity"

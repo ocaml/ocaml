@@ -66,3 +66,6 @@ val of_string : string -> bool option
 val to_string : bool -> string
 (** [to_string b] is ["true"] if [b] is [true] and ["false"] if [b] is
     [false]. *)
+
+external hash : bool -> int = "%identity"
+(** The hash function for boolean values. *)
