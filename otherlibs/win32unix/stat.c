@@ -15,6 +15,14 @@
 #define CAML_INTERNALS
 
 #include <errno.h>
+#ifdef _MSC_VER
+#include <float.h>
+#ifndef nextafter
+#define nextafter _nextafter
+#endif
+#else
+#include <math.h>
+#endif
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -55,6 +63,34 @@ static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
 
+/* Transform a timestamp expressed in units of 100ns
+   to a number of seconds in floating-point.
+   Make sure the integer part of the result is always equal to
+   the timestamp divided by 10^7 (issue #9490).
+   Use the same algorithm as for the Unix implementation
+   (in ../unix/stat.c) in the hope of getting the same result
+   when the same file is accessed either from Windows or from Linux.
+ */
+
+static double stat_timestamp(__time64_t tm)
+{
+  /* Split the timestamp into seconds and remaining 100ns units */
+  __int64 sec = tm / 10000000;  /* 10^7 */
+  int n100sec = tm % 10000000;
+  /* The conversion of sec to FP is exact for the foreseeable future.
+     (It starts rounding when sec > 2^53, i.e. in 285 million years.) */
+  double s = (double) sec;
+  /* The conversion of n100sec to fraction of seconds can round.
+     Still, we have 0 <= n100sec < 1.0. */
+  double n = (double) n100sec / 1e7;
+  /* The sum s + n can round up, hence s <= t + <= s + 1.0 */
+  double t = s + n;
+  /* Detect the "round up to s + 1" case and decrease t so that
+     its integer part is s. */
+  if (t == s + 1.0) t = nextafter(t, s);
+  return t;
+}
+
 static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
 {
   CAMLparam0 ();
@@ -72,9 +108,9 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   Store_field (v, 7, Val_int (buf->st_rdev));
   Store_field (v, 8,
                use_64 ? caml_copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, caml_copy_double((double) buf->st_atime / 10000000.0));
-  Store_field (v, 10, caml_copy_double((double) buf->st_mtime / 10000000.0));
-  Store_field (v, 11, caml_copy_double((double) buf->st_ctime / 10000000.0));
+  Store_field (v, 9, caml_copy_double(stat_timestamp(buf->st_atime)));
+  Store_field (v, 10, caml_copy_double(stat_timestamp(buf->st_mtime)));
+  Store_field (v, 11, caml_copy_double(stat_timestamp(buf->st_ctime)));
   CAMLreturn (v);
 }
 

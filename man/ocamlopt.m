@@ -728,6 +728,19 @@ Generate position-independent machine code.  This is the default.
 .B \-fno\-PIC
 Generate position-dependent machine code.
 
+.SH OPTIONS FOR THE POWER ARCHITECTURE
+
+The PowerPC code generator supports the following additional options:
+.TP
+.B \-flarge\-toc
+Enables the PowerPC large model allowing the TOC (table of contents) to be
+arbitrarily large.  This is the default since 4.11.
+.TP
+.B \-fsmall\-toc
+Enables the PowerPC small model allowing the TOC to be up to 64 kbytes per
+compilation unit.  Prior to 4.11 this was the default behaviour.
+\end{options}
+
 .SH OPTIONS FOR THE ARM ARCHITECTURE
 The ARM code generator supports the following additional options:
 .TP
