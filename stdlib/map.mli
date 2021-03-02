@@ -114,17 +114,17 @@ module type S =
 
     val merge:
          (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-    (** [merge f m1 m2] computes a map whose keys is a subset of keys of [m1]
-        and of [m2]. The presence of each such binding, and the corresponding
-        value, is determined with the function [f].
+    (** [merge f m1 m2] computes a map whose keys are a subset of the keys of
+        [m1] and of [m2]. The presence of each such binding, and the
+        corresponding value, is determined with the function [f].
         In terms of the [find_opt] operation, we have
-        [find_opt x (merge f m1 m2) = f (find_opt x m1) (find_opt x m2)]
-        for any key [x], provided that [f None None = None].
+        [find_opt x (merge f m1 m2) = f x (find_opt x m1) (find_opt x m2)]
+        for any key [x], provided that [f x None None = None].
         @since 3.12.0
      *)
 
     val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-    (** [union f m1 m2] computes a map whose keys is the union of keys
+    (** [union f m1 m2] computes a map whose keys are a subset of the keys
         of [m1] and of [m2].  When the same binding is defined in both
         arguments, the function [f] is used to combine them.
         This is a special case of [merge]: [union f m1 m2] is equivalent
@@ -172,7 +172,7 @@ module type S =
 
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
     (** [filter p m] returns the map with all the bindings in [m]
-        that satisfy predicate [p]. If [p] satisfies every binding in [m],
+        that satisfy predicate [p]. If every binding in [m] satisfies [p],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
         @since 3.12.0
@@ -201,9 +201,9 @@ module type S =
 
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     (** [partition p m] returns a pair of maps [(m1, m2)], where
-        [m1] contains all the bindings of [s] that satisfy the
+        [m1] contains all the bindings of [m] that satisfy the
         predicate [p], and [m2] is the map with all the bindings of
-        [s] that do not satisfy [p].
+        [m] that do not satisfy [p].
         @since 3.12.0
      *)
 
@@ -272,12 +272,12 @@ module type S =
      *)
 
     val find: key -> 'a t -> 'a
-    (** [find x m] returns the current binding of [x] in [m],
-       or raises [Not_found] if no such binding exists. *)
+    (** [find x m] returns the current value of [x] in [m],
+       or raises [Not_found] if no binding for [x] exists. *)
 
     val find_opt: key -> 'a t -> 'a option
-    (** [find_opt x m] returns [Some v] if the current binding of [x]
-        in [m] is [v], or [None] if no such binding exists.
+    (** [find_opt x m] returns [Some v] if the current value of [x]
+        in [m] is [v], or [None] if no binding for [x] exists.
         @since 4.05
     *)
 

@@ -43,4 +43,14 @@ BEST_OCAMLC := $(call choose_best,ocamlc)
 BEST_OCAMLOPT := $(call choose_best,ocamlopt)
 BEST_OCAMLLEX := $(call choose_best,lex/ocamllex)
 
-BEST_OCAMLDEP := $(BEST_OCAMLC) -depend
+# We want to be able to compute dependencies even if the bytecode compiler
+# is not built yet, using the bootstrap compiler.
+
+# Unlike other tools, there is no risk of mixing incompatible
+# bootrap-compiler and host-compiler object files, as ocamldep only
+# produces text output.
+BEST_OCAMLDEP := $(strip $(if \
+   $(and $(wildcard $(ROOTDIR)/ocamlc.opt),$(strip \
+      $(call check_not_stale,boot/ocamlc,ocamlc.opt))), \
+    $(ROOTDIR)/ocamlc.opt -depend, \
+    $(BOOT_OCAMLC) -depend))

@@ -99,7 +99,43 @@ CAMLprim value caml_obj_make_forward (value blk, value fwd)
 /* [size] is a value encoding a number of blocks */
 CAMLprim value caml_obj_block(value tag, value size)
 {
-  return caml_alloc(Long_val(size), Long_val(tag));
+  value res;
+  mlsize_t sz;
+  tag_t tg;
+
+  sz = Long_val(size);
+  tg = Long_val(tag);
+
+  /* It is difficult to correctly use custom objects allocated through
+   * [Obj.new_block]. The first field of a custom object must contain a valid
+   * pointer to a block of custom operations. Without initialisation, hashing,
+   * finalising or serialising this custom object will lead to crashes. See
+   * GPR#9513 for more details.
+   */
+  if (tg == Custom_tag)
+    caml_invalid_argument ("Obj.new_block");
+
+  /* When [tg < No_scan_tag], [caml_alloc] returns an object whose fields are
+   * initialised to [Val_unit]. Otherwise, the fields are uninitialised. We aim
+   * to avoid inconsistent states in other cases.
+   *
+   * For [Abstract_tag], [Double_tag] and [Double_array_tag], the initial
+   * content is irrelevant. [Custom_tag] objects are disallowed.
+   *
+   * For [String_tag], the initial contents do no matter. However, the length
+   * of the string is encoded using the last byte of the block. For this
+   * reason, the blocks with [String_tag] cannot be of size [0]. We initialise
+   * the last byte to [0] such that the length returned by [String.length] and
+   * [Bytes.length] is non-negative number.
+   */
+  res = caml_alloc(sz, tg);
+
+  if (tg == String_tag) {
+    if (sz == 0) caml_invalid_argument ("Obj.new_block");
+    Field (res, sz - 1) = 0;
+  }
+
+  return res;
 }
 
 /* Spacetime profiling assumes that this function is only called from OCaml. */

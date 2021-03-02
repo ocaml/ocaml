@@ -10,6 +10,11 @@ Working version
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
 
+* #9513: Selectively initialise blocks in `Obj.new_block`. Reject `Custom_tag`
+  objects and zero-length `String_tag` objects.
+  (KC Sivaramakrishnan, review by David Allsopp, Xavier Leroy, Mark Shinwell
+  and Leo White)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
@@ -37,12 +42,14 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9493: refactor the pattern-matching compiler
+  (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 ### Build system:
 
-- #9332: Cease storing C dependencies in the codebase. C dependencies are
-  generated on-the-fly in development mode. For incremental compilation, the
-  MSVC ports require GCC to be present.
+- #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
+  dependencies are generated on-the-fly in development mode. For incremental
+  compilation, the MSVC ports require GCC to be present.
   (David Allsopp, review by Sébastien Hinderer, YAML-fu by Stephen Dolan)
 
 ### Bug fixes:
@@ -279,6 +286,11 @@ OCaml 4.11
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
 
+- #9228: Various Map documentation improvements: add missing key argument in
+  the 'merge' example; clarify the relationship between input and output keys
+  in 'union'; note that find and find_opt return values, not bindings.
+  (Jeremy Yallop, review by Gabriel Scherer and Florian Angeletti)
+
 - #9255, #9300: reference chapter, split the expression grammar
   (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
 
@@ -422,9 +434,6 @@ OCaml 4.11
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 
-- #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
-  (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
-
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
 
@@ -493,7 +502,15 @@ OCaml 4.10 maintenance branch
   them to crash.
   (Jérémie Dimino, review by Nicolás Ojeda Bär)
 
+### Build system:
+
+- #9531: fix support for the BFD library on FreeBSD
+  (Hannes Mehnert, review by Gabriel Scherer and David Allsopp)
+
 ### Bug fixes:
+
+- #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
+  (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
 
 - #9165: Add missing -function-sections and -O3 flags in Makefiles.
   (Greta Yorsh, review by David Allsopp)
