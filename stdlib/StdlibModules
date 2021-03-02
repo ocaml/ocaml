@@ -31,13 +31,12 @@ endef
 # Modules should be listed in dependency order.
 STDLIB_MODS=\
   camlinternalFormatBasics stdlib pervasives seq option result bool char uchar \
-  atomic domain \
   sys list bytes string unit marshal obj array float int int32 int64 nativeint \
   lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
   camlinternalFormat printf arg printexc fun gc digest random hashtbl weak \
   format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
   filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
-  stdLabels spacetime bigarray
+  stdLabels spacetime bigarray atomic domain
 
 STDLIB_MODULES=\
   $(foreach module, $(STDLIB_MODS), $(call add_stdlib_prefix,$(module)))

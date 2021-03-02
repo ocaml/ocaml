@@ -3,14 +3,14 @@ compile_only="true"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
-flags="-g -dno-locations -dsource -dparsetree -dtypedtree -dlambda"
+flags="-g -dno-unique-ids -dno-locations -dsource -dparsetree -dtypedtree -dlambda"
 *** check-ocamlc.byte-output
 compiler_reference =
   "${test_source_directory}/test_locations.dno-locations.ocamlc.reference"
 
 * setup-ocamlopt.byte-build-env
 ** ocamlopt.byte
-flags="-g -dno-locations -dcmm"
+flags="-g -dno-unique-ids -dno-locations -dcmm"
 *** no-flambda
 **** check-ocamlopt.byte-output
 compiler_reference =
@@ -22,14 +22,14 @@ compiler_reference =
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
-flags="-g -dlocations -dsource -dparsetree -dtypedtree -dlambda"
+flags="-g -dno-unique-ids -dlocations -dsource -dparsetree -dtypedtree -dlambda"
 *** check-ocamlc.byte-output
 compiler_reference =
   "${test_source_directory}/test_locations.dlocations.ocamlc.reference"
 
 * setup-ocamlopt.byte-build-env
 ** ocamlopt.byte
-flags="-g -dlocations -dcmm"
+flags="-g -dno-unique-ids -dlocations -dcmm"
 *** no-flambda
 **** check-ocamlopt.byte-output
 compiler_reference =

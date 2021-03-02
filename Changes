@@ -3,6 +3,10 @@ Working version
 
 ### Language features:
 
+- #9570: Provide an Atomic module with a trivial purely-sequential
+  implementation, to help write code that is compatible with Multicore
+  OCaml.
+  (Gabriel Scherer, review by Xavier Leroy)
 
 ### Runtime system:
 
@@ -30,6 +34,9 @@ Working version
   or function, including any enclosing module or class.
   (Nicolás Ojeda Bär, Stephen Dolan, review by Stephen Dolan)
 
+- #9075: define to_rev_seq in Set and Map modules.
+  (Sébastien Briais, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
@@ -49,7 +56,7 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #9493: refactor the pattern-matching compiler
+- #9493, #9520: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 ### Build system:
@@ -247,6 +254,11 @@ OCaml 4.11
   of dynlinked modules.
   (Nicolás Ojeda Bär, review by Xavier Clerc and Gabriel Scherer)
 
+- #9320, #9550: under Windows, make sure that the Unix.exec* functions
+  properly quote their argument lists.
+  (Xavier Leroy, report by André Maroneze, review by Nicolás Ojeda Bär
+   and David Allsopp)
+
 - #9490, #9505: ensure proper rounding of file times returned by
   Unix.stat, Unix.lstat, Unix.fstat.
   (Xavier Leroy and Guillaume Melquiond, report by David Brown,
@@ -304,6 +316,9 @@ OCaml 4.11
 - #9482, #9492: use diversions (@file) to work around OS limitations
   on length of Sys.command argument.
   (Xavier Leroy, report by Jérémie Dimino, review by David Allsopp)
+
+- #9552: restore ocamloptp build and installation
+  (Florian Angeletti, review by David Allsopp and Xavier Leroy)
 
 ### Manual and documentation:
 

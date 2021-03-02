@@ -50,6 +50,9 @@ let run args =
   let _, exit = waitpid [] pid in
   assert (exit = WEXITED 0)
 
+let exec args =
+  execv ("./" ^ prog_name) (Array.of_list (prog_name :: args))
+
 let () =
   List.iter run
     [
@@ -60,4 +63,14 @@ let () =
       [" \\ \\ \\\\\\"];
       [" \"hola \""];
       ["a\tb"];
-    ]
+    ];
+  Printf.printf "-- execv\n%!";
+  exec [
+     "";
+     "a"; "b"; "c.txt@!";
+     "\"";
+     " "; " a "; "  \" \\\" ";
+     " \\ \\ \\\\\\";
+     " \"hola \"";
+     "a\tb"
+  ]
