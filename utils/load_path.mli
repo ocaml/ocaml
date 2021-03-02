@@ -35,8 +35,7 @@ val init : string list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 
 val get_paths : unit -> string list
-(** Return the list of directories passed to [add_dir] so far, in
-    reverse order. *)
+(** Return the list of directories passed to [add_dir] so far. *)
 
 val find : string -> string
 (** Locate a file in the load path. Raise [Not_found] if the file

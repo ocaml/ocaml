@@ -277,9 +277,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
     caml_thread_code(raise_unhandled_code,
                      sizeof(raise_unhandled_code));
 #endif
-    raise_unhandled_closure =
-      caml_alloc_1(Closure_tag,
-                   Val_bytecode(raise_unhandled_code));
+    raise_unhandled_closure = caml_alloc_small (1, Closure_tag);
+    Code_val(raise_unhandled_closure) = (code_t)raise_unhandled_code;
     raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
     caml_init_callbacks();
@@ -581,11 +580,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(RESTART): {
-      int num_args = Wosize_val(env) - 2;
+      int num_args = Wosize_val(env) - 3;
       int i;
       sp -= num_args;
-      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 2);
-      env = Field(env, 1);
+      for (i = 0; i < num_args; i++) sp[i] = Field(env, i + 3);
+      env = Field(env, 2);
       extra_args += num_args;
       Next;
     }
@@ -598,10 +597,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
-        Alloc_small(accu, num_args + 2, Closure_tag, Enter_gc);
-        Init_field(accu, 1, env);
-        for (i = 0; i < num_args; i++) Init_field(accu, i + 2, sp[i]);
-        Init_field(accu, 0, Val_bytecode(pc - 3)); /* Point to the preceding RESTART instr. */
+        Alloc_small(accu, num_args + 3, Closure_tag, Enter_gc);
+        Field(accu, 2) = env;
+        for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
+        Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
+        Closinfo_val(accu) = Make_closinfo(0, 2);
         sp += num_args;
         goto do_return;
       }
@@ -611,24 +611,21 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nvars = *pc++;
       int i;
       if (nvars > 0) *--sp = accu;
-      if (nvars < Max_young_wosize) {
-        /* nvars + 1 <= Max_young_wosize, can allocate in minor heap */
-        Alloc_small(accu, 1 + nvars, Closure_tag, Enter_gc);
-        Init_field(accu, 0, Val_bytecode(pc + *pc));
-        for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
+      if (nvars <= Max_young_wosize - 2) {
+        /* nvars + 2 <= Max_young_wosize, can allocate in minor heap */
+        Alloc_small(accu, 2 + nvars, Closure_tag, Enter_gc);
+        for (i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
       } else {
+        /* caml_alloc_shr and caml_initialize never trigger a GC,
+           so no need to Setup_for_gc */
         /* PR#6385: must allocate in major heap */
-        accu = caml_alloc_shr(1 + nvars, Closure_tag);
-        Setup_for_c_call;
-        caml_initialize_field(accu, 0, Val_bytecode(pc + *pc));
-        Restore_after_c_call;
-        for (i = 0; i < nvars; i++) {
-          value v = sp[i];
-          Setup_for_c_call;
-          caml_initialize_field(accu, i + 1, v);
-          Restore_after_c_call;
-        }
+        accu = caml_alloc_shr(2 + nvars, Closure_tag);
+        for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 2), sp[i]);
       }
+      /* The code pointer is not in the heap, so no need to go through
+         caml_initialize. */
+      Code_val(accu) = pc + *pc;
+      Closinfo_val(accu) = Make_closinfo(0, 2);
       pc++;
       sp += nvars;
       Next;
@@ -637,37 +634,36 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(CLOSUREREC): {
       int nfuncs = *pc++;
       int nvars = *pc++;
-      int i, field;
-      int var_offset = nfuncs * 2 - 1;
-      int blksize = var_offset + nvars;
+      mlsize_t envofs = nfuncs * 3 - 1;
+      mlsize_t blksize = envofs + nvars;
+      int i;
+      value *p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag, Enter_gc);
-        for (i = 0; i < nvars; i++) {
-          Init_field(accu, var_offset + i, sp[i]);
-        }
+        p = &Field(accu, envofs);
+        for (i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
         /* PR#6385: must allocate in major heap */
+        /* caml_alloc_shr and caml_initialize never trigger a GC,
+           so no need to Setup_for_gc */
         accu = caml_alloc_shr(blksize, Closure_tag);
-        for (i = 0; i < nvars; i++) {
-          value v = sp[i];
-          Setup_for_c_call;
-          caml_initialize_field(accu, var_offset + i, v);
-          Restore_after_c_call;
-        }
+        p = &Field(accu, envofs);
+        for (i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
       sp += nvars;
       /* The code pointers and infix headers are not in the heap,
          so no need to go through caml_initialize. */
-      Init_field(accu, 0, Val_bytecode(pc + pc[0]));
       *--sp = accu;
-      field = 1;
+      p = &Field(accu, 0);
+      *p++ = (value) (pc + pc[0]);
+      *p++ = Make_closinfo(0, envofs);
       for (i = 1; i < nfuncs; i++) {
-        Init_field(accu, field, Make_header(i * 2, Infix_tag, 0)); /* color irrelevant */
-        field++;
-        Init_field(accu, field, Val_bytecode (pc + pc[i]));
-        *--sp = (value) (Op_val(accu) + field);
-        field++;
+        *p++ = Make_header(i * 3, Infix_tag, 0); /* color irrelevant */
+        *--sp = (value) p;
+         *p++ = (value) (pc + pc[i]);
+        envofs -= 3;
+        *p++ = Make_closinfo(0, envofs);
       }
       pc += nfuncs;
       Next;

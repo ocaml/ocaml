@@ -119,6 +119,7 @@ void caml_parse_ocamlrunparam(void)
       case 'V': scanmult (opt, &params.verify_heap); break;
       //case 'w': scanmult (opt, &caml_init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
+      case ',': continue;
       }
       --opt; /* to handle patterns like ",b=1" */
       while (*opt != '\0'){

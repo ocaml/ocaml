@@ -261,9 +261,24 @@ static inline void* Ptr_val(value val)
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
-#define Bytecode_val(val) (Pc_val(val))
-#define Val_bytecode(code) (Val_pc(code))
-#define Code_val(val) Bytecode_val(Field((val), 0))
+#define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
+#define Closinfo_val(val) Field((val), 1)          /* Arity and start env */
+/* In the closure info field, the top 8 bits are the arity (signed).
+   The low bit is set to one, to look like an integer.
+   The remaining bits are the field number for the first word of the
+   environment, or, in other words, the offset (in words) from the closure
+   to the environment part. */
+#ifdef ARCH_SIXTYFOUR
+#define Arity_closinfo(info) ((intnat)(info) >> 56)
+#define Start_env_closinfo(info) (((uintnat)(info) << 8) >> 9)
+#define Make_closinfo(arity,delta) \
+  (((uintnat)(arity) << 56) + ((uintnat)(delta) << 1) + 1)
+#else
+#define Arity_closinfo(info) ((intnat)(info) >> 24)
+#define Start_env_closinfo(info) (((uintnat)(info) << 8) >> 9)
+#define Make_closinfo(arity,delta) \
+  (((uintnat)(arity) << 24) + ((uintnat)(delta) << 1) + 1)
+#endif
 
 /* This tag is used (with Forcing_tag & Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */
@@ -414,7 +429,7 @@ CAMLextern value caml_atom(tag_t);
 #define Val_none Val_int(0)
 #define Some_val(v) Field(v, 0)
 #define Tag_some 0
-#define Is_none(v) ((v) == Val_None)
+#define Is_none(v) ((v) == Val_none)
 #define Is_some(v) Is_block(v)
 
 CAMLextern value caml_set_oo_id(value obj);
