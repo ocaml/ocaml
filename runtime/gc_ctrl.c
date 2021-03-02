@@ -13,7 +13,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* TODO: incorporate timings for instrumented runtime */
 
 #define CAML_INTERNALS
 
@@ -168,6 +167,7 @@ CAMLprim value caml_gc_set(value v)
   uintnat newpf;
   uintnat newminwsz;
   uintnat new_custom_maj, new_custom_min, new_custom_sz;
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
 #ifndef NATIVE_CODE
   caml_change_max_stack_size (Long_field (v, 5));
@@ -213,36 +213,38 @@ CAMLprim value caml_gc_set(value v)
                        caml_custom_minor_max_bsz);
     }
   }
+  CAML_EV_END(EV_EXPLICIT_GC_SET);
 
   return Val_unit;
 }
 
 CAMLprim value caml_gc_minor(value v)
 {
-  CAML_INSTR_SETUP (tmr, "");
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_MINOR);
   CAMLassert (v == Val_unit);
   caml_minor_collection ();
-  CAML_INSTR_TIME (tmr, "explicit/gc_minor");
+  CAML_EV_END(EV_EXPLICIT_GC_MINOR);
   return Val_unit;
 }
 
 CAMLprim value caml_gc_major(value v)
 {
-  Assert (v == Val_unit);
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR);
+  CAMLassert (v == Val_unit);
   caml_gc_log ("Major GC cycle requested");
-  caml_ev_pause(EV_PAUSE_GC);
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle();
   caml_final_do_calls ();
-  caml_ev_resume();
+  CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
   return Val_unit;
 }
 
 CAMLprim value caml_gc_full_major(value v)
 {
   int i;
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
+  CAMLassert (v == Val_unit);
   caml_gc_log ("Full Major GC requested");
-  caml_ev_pause(EV_PAUSE_GC);
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
@@ -250,29 +252,37 @@ CAMLprim value caml_gc_full_major(value v)
     caml_finish_major_cycle();
     caml_final_do_calls ();
   }
-  caml_ev_resume();
+  CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
   return Val_unit;
 }
 
 CAMLprim value caml_gc_major_slice (value v)
 {
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR_SLICE);
   CAMLassert (Is_long (v));
-  caml_ev_pause(EV_PAUSE_GC);
   caml_major_collection_slice(Long_val(v));
-  caml_handle_gc_interrupt();
+  CAML_EV_END(EV_EXPLICIT_GC_MAJOR_SLICE);
   return Val_long (0);
 }
 
 CAMLprim value caml_gc_compaction(value v)
 {
-  return caml_gc_major(v);
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
+  CAMLassert (v == Val_unit);
+  caml_gc_major(v);
+  CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
+  return Val_unit;
 }
 
 
 CAMLprim value caml_gc_stat(value v)
 {
+  value result;
+  CAML_EV_BEGIN(EV_EXPLICIT_GC_STAT);
   caml_gc_full_major(Val_unit);
-  return caml_gc_quick_stat(Val_unit);
+  result = caml_gc_quick_stat(Val_unit);
+  CAML_EV_END(EV_EXPLICIT_GC_STAT);
+  return result;
 }
 
 CAMLprim value caml_get_minor_free (value v)
@@ -294,7 +304,6 @@ void caml_init_gc ()
       norm_custom_min (caml_params->init_custom_minor_ratio);
   caml_custom_minor_max_bsz = caml_params->init_custom_minor_max_bsz;
 
-  caml_setup_eventlog();
   caml_gc_phase = Phase_sweep_and_mark_main;
   #ifdef NATIVE_CODE
   caml_init_frame_descriptors();

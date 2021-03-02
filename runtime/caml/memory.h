@@ -49,7 +49,6 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
   caml_alloc_shr(size, tag)
 #endif /* WITH_PROFINFO */
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
-CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify_field (value, intnat, value);

@@ -1,8 +1,16 @@
 (* TEST
    flags = "-g -w -5"
-   * native
-     compare_programs = "false"
-   * bytecode
+   compare_programs = "false"
+
+   * flat-float-array
+     reference = "${test_source_directory}/callstacks.flat-float-array.reference"
+   ** native
+   ** bytecode
+
+   * no-flat-float-array
+     reference = "${test_source_directory}/callstacks.no-flat-float-array.reference"
+   ** native
+   ** bytecode
 *)
 
 open Gc.Memprof
@@ -85,7 +93,7 @@ let test alloc =
   alloc ();
   stop ();
   match !callstack with
-  | None -> assert false
+  | None -> Printf.printf "No callstack\n%!";
   | Some cs -> Printexc.print_raw_backtrace stdout cs
 
 let () =

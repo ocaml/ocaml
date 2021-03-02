@@ -115,9 +115,9 @@ int caml_final_update_first (struct domain* d)
 {
   struct caml_final_info *f = d->state->final_info;
   if (!f->updated_first) {
-    caml_ev_begin("major_gc/final_update_first");
+    CAML_EV_BEGIN(EV_FINALISE_UPDATE_FIRST);
     generic_final_update (d, &f->first, /* darken_value */ 1);
-    caml_ev_end("major_gc/final_update_first");
+    CAML_EV_END(EV_FINALISE_UPDATE_FIRST);
     f->updated_first = 1;
     return 1;
   }
@@ -128,9 +128,9 @@ int caml_final_update_last (struct domain* d)
 {
   struct caml_final_info *f = d->state->final_info;
   if (!f->updated_last) {
-    caml_ev_begin("major_gc/final_update_last");
+    CAML_EV_BEGIN(EV_FINALISE_UPDATE_LAST);
     generic_final_update (d, &f->last, /* darken_value */ 0);
-    caml_ev_end("major_gc/final_update_last");
+    CAML_EV_END(EV_FINALISE_UPDATE_LAST);
     f->updated_last = 1;
     return 1;
   }

@@ -142,6 +142,14 @@ DOMAIN_STATE(uintnat, call_imm)
 DOMAIN_STATE(uintnat, call_ind)
 DOMAIN_STATE(uintnat, stackoverflow_checks)
 
+DOMAIN_STATE(uintnat, eventlog_startup_timestamp)
+DOMAIN_STATE(uint32_t, eventlog_startup_pid)
+DOMAIN_STATE(uintnat, eventlog_paused)
+DOMAIN_STATE(uintnat, eventlog_enabled)
+DOMAIN_STATE(FILE*, eventlog_out)
+/* See eventlog.c */
+
+
 // whether or not a domain is inside of a stop-the-world handler
 // this is used for several debug assertions inside of methods that
 // can only be called from either in or outside this state.

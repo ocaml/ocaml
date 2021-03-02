@@ -296,6 +296,13 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->external_raise = NULL;
     domain_state->trap_sp_off = 1;
 #endif
+
+    domain_state->eventlog_enabled = 0;
+    domain_state->eventlog_paused = 0;
+    domain_state->eventlog_startup_pid = 0;
+    domain_state->eventlog_startup_timestamp = 0;
+    domain_state->eventlog_out = NULL;
+
     goto domain_init_complete;
 
   caml_free_stack(domain_state->current_stack);
@@ -315,9 +322,8 @@ alloc_minor_tables_failure:
 init_signal_stack_failure:
   domain_self = NULL;
 
-domain_init_complete:
-  caml_ev_resume();
   }
+domain_init_complete:
   caml_plat_unlock(&all_domains_lock);
 }
 
@@ -410,7 +416,9 @@ static void* backup_thread_func(void* v)
 
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
-  caml_ev_tag_self_as_backup_thread();
+
+  /* TODO: how does the backup thread interact with the eventlog infra?
+   * caml_ev_tag_self_as_backup_thread(); */
 
   msg = atomic_load_acq (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
@@ -546,7 +554,7 @@ CAMLprim value caml_domain_spawn(value callback)
   pthread_t th;
   int err;
 
-  caml_ev_begin("domain/spawn");
+  CAML_EV_BEGIN(EV_DOMAIN_SPAWN);
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
@@ -576,7 +584,7 @@ CAMLprim value caml_domain_spawn(value callback)
     caml_failwith("failed to allocate domain");
   }
   install_backup_thread(domain_self);
-  caml_ev_end("domain/spawn");
+  CAML_EV_END(EV_DOMAIN_SPAWN);
   CAMLreturn (Val_long(p.unique_id));
 }
 
@@ -713,9 +721,9 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   caml_domain_state* domain_state = Caml_state;
 #endif
 
-  caml_ev_begin("stw/handler");
+  CAML_EV_BEGIN(EV_STW_HANDLER);
   caml_acknowledge_interrupt(done);
-  caml_ev_begin("stw/api_barrier");
+  CAML_EV_BEGIN(EV_STW_API_BARRIER);
   {
     SPIN_WAIT {
       if (atomic_load_acq(&stw_request.domains_still_running) == 0)
@@ -726,7 +734,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
         stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
     }
   }
-  caml_ev_end("stw/api_barrier");
+  CAML_EV_END(EV_STW_API_BARRIER);
 
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
@@ -748,7 +756,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
     }
   }
 
-  caml_ev_end("stw/handler");
+  CAML_EV_END(EV_STW_HANDLER);
 
   /* poll the GC to check for deferred work
      we do this here because blocking or waiting threads only execute
@@ -820,7 +828,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   }
   caml_plat_unlock(&all_domains_lock);
 
-  caml_ev_begin("stw/leader");
+  CAML_EV_BEGIN(EV_STW_LEADER);
   caml_gc_log("causing STW");
 
   /* setup all fields for this stw_request, must have those needed
@@ -896,7 +904,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     }
   }
 
-  caml_ev_end("stw/leader");
+  CAML_EV_END(EV_STW_LEADER);
   /* other domains might not have finished stw_handler yet, but they
      will finish as soon as they notice num_domains_still_processing
      == 0, which will remain the case until they have responded to
@@ -937,10 +945,10 @@ static void caml_poll_gc_work()
        (uintnat)Caml_state->young_start) ||
       Caml_state->requested_minor_gc) {
     /* out of minor heap or collection forced */
-    caml_ev_begin("dispatch_minor_gc");
+    CAML_EV_BEGIN(EV_MINOR);
     Caml_state->requested_minor_gc = 0;
     caml_empty_minor_heaps_once();
-    caml_ev_end("dispatch_minor_gc");
+    CAML_EV_END(EV_MINOR);
 
     /* FIXME: a domain will only ever call finalizers if its minor
       heap triggers the minor collection
@@ -948,16 +956,16 @@ static void caml_poll_gc_work()
       is waiting in a critical_section or in a blocking section
       and serviced by the backup thread.
       */
-    caml_ev_begin("dispatch_final_do_calls");
+    CAML_EV_BEGIN(EV_MINOR_FINALIZED);
     caml_final_do_calls();
-    caml_ev_end("dispatch_final_do_calls");
+    CAML_EV_END(EV_MINOR_FINALIZED);
   }
 
   if (Caml_state->requested_major_slice) {
-    caml_ev_begin("dispatch_major_slice");
+    CAML_EV_BEGIN(EV_MAJOR);
     Caml_state->requested_major_slice = 0;
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
-    caml_ev_end("dispatch_major_slice");
+    CAML_EV_END(EV_MAJOR);
   }
 }
 
@@ -966,22 +974,20 @@ void caml_handle_gc_interrupt()
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   CAMLalloc_point_here;
 
-  caml_ev_begin("handle_gc_interrupt");
+  CAML_EV_BEGIN(EV_INTERRUPT_GC);
   if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
-    caml_ev_begin("handle_remote_interrupt");
+    CAML_EV_BEGIN(EV_INTERRUPT_REMOTE);
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
       atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
     }
-    caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
-    caml_ev_resume();
-    caml_ev_end("handle_remote_interrupt");
+    CAML_EV_END(EV_INTERRUPT_REMOTE);
   }
 
   caml_poll_gc_work();
-  caml_ev_end("handle_gc_interrupt");
+  CAML_EV_END(EV_INTERRUPT_GC);
 }
 
 CAMLexport inline int caml_bt_is_in_blocking_section(void)
@@ -1187,7 +1193,6 @@ static uintnat handle_incoming(struct interruptor* s)
        interrupts */
     caml_plat_unlock(&s->lock);
 
-    caml_ev_end_flow("interrupt", (uintnat)req);
     req->handler(caml_domain_self(), req->data, req);
 
     caml_plat_lock(&s->lock);
@@ -1256,7 +1261,6 @@ static void domain_terminate()
   int finished = 0;
 
   caml_gc_log("Domain terminating");
-  caml_ev_pause(EV_PAUSE_YIELD);
   caml_delete_root(domain_state->dls_root);
   s->terminating = 1;
 
@@ -1402,7 +1406,6 @@ int caml_send_partial_interrupt(
     return 0;
   }
 
-  caml_ev_begin_flow("interrupt", (uintnat)&req);
   /* add to wait queue */
   if (target->qhead) {
     /* queue was nonempty */
@@ -1459,14 +1462,12 @@ CAMLprim value caml_ml_domain_yield(value unused)
     caml_failwith("Domain.Sync.wait must be called from within a critical section");
   }
 
-  caml_ev_pause(EV_PAUSE_YIELD);
-
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0 && !found_work) {
-      caml_ev_begin("domain/idle_wait");
+      CAML_EV_BEGIN(EV_DOMAIN_IDLE_WAIT);
       caml_plat_wait(&s->cond);
-      caml_ev_end("domain/idle_wait");
+      CAML_EV_END(EV_DOMAIN_IDLE_WAIT);
     } else {
       caml_plat_unlock(&s->lock);
       left = caml_opportunistic_major_collection_slice(Chunk_size);
@@ -1477,7 +1478,6 @@ CAMLprim value caml_ml_domain_yield(value unused)
   }
   caml_plat_unlock(&s->lock);
 
-  caml_ev_resume();
   return Val_unit;
 }
 
@@ -1502,11 +1502,11 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
   struct interruptor* target =
     &all_domains[unique_id % Max_domains].interruptor;
 
-  caml_ev_begin("domain/send_interrupt");
+  CAML_EV_BEGIN(EV_DOMAIN_SEND_INTERRUPT);
   if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, &unique_id)) {
     /* the domain might have terminated, but that's fine */
   }
-  caml_ev_end("domain/send_interrupt");
+  CAML_EV_END(EV_DOMAIN_SEND_INTERRUPT);
 
   CAMLreturn (Val_unit);
 }
@@ -1534,7 +1534,6 @@ CAMLprim value caml_ml_domain_yield_until(value t)
     caml_failwith("Domain.Sync.wait_until must be called from within a critical section");
   }
 
-  caml_ev_pause(EV_PAUSE_YIELD);
   caml_plat_lock(&s->lock);
 
   while (!Caml_state->pending_interrupts) {
@@ -1542,9 +1541,9 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       ret = Val_int(0); /* Domain.Sync.Timeout */
       break;
     } else if (handle_incoming(s) == 0 && !found_work) {
-      caml_ev_begin("domain/idle_wait");
+      CAML_EV_BEGIN(EV_DOMAIN_IDLE_WAIT);
       res = caml_plat_timedwait(&s->cond, ts);
-      caml_ev_end("domain/idle_wait");
+      CAML_EV_END(EV_DOMAIN_IDLE_WAIT);
       if (res) {
         ret = Val_int(0); /* Domain.Sync.Timeout */
         break;
@@ -1559,7 +1558,6 @@ CAMLprim value caml_ml_domain_yield_until(value t)
   }
 
   caml_plat_unlock(&s->lock);
-  caml_ev_resume();
 
   return ret;
 }
