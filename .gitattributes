@@ -51,7 +51,9 @@ tools/mantis2gh_stripped.csv typo.missing-header
 
 *.adoc                   typo.long-line=may
 
-/.github/ISSUE_TEMPLATE/config.yml typo.missing-header
+# Github templates and scripts lack headers, have long lines
+/.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
+
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
