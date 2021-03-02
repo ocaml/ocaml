@@ -658,9 +658,10 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
 (** [check_def env def] returns the signature required
     for the type definition [def] in the typing environment [env].
 
-    The exception [Not_separable] is raised if we discover that
-    no such signature exists -- the definition will always be invalid. This
-    only happens when the definition is marked to be unboxed. *)
+    The exception [Error] is raised if we discover that
+    no such signature exists -- the definition will always be invalid.
+    This only happens when the definition is marked to be unboxed. *)
+
 let check_def
   : Env.t -> type_definition -> Sep.signature
   = fun env def ->
@@ -683,9 +684,29 @@ let check_def
            ~parameters:constructor.result_type_parameter_instances
 
 let compute_decl env decl =
-  if not Config.flat_float_array then best_msig decl
-  else check_def env decl
+  if Config.flat_float_array then check_def env decl
+  else
+    (* Hack: in -no-flat-float-array mode, instead of always returning
+       [best_msig], we first compute the separability signature --
+       falling back to [best_msig] if it fails.
 
+       This discipline is conservative: it never
+       rejects -no-flat-float-array programs. At the same time it
+       guarantees that, for any program that is also accepted
+       in -flat-float-array mode, the same separability will be
+       inferred in the two modes. In particular, the same .cmi files
+       and digests will be produced.
+
+       Before we introduced this hack, the production of different
+       .cmi files would break the build system of the compiler itself,
+       when trying to build a -no-flat-float-array system from
+       a bootstrap compiler itself using -flat-float-array. See #9291.
+       *)
+    try check_def env decl with
+    | Error _ ->
+       (* It could be nice to emit a warning here, so that users know
+          that their definition would be rejected in -flat-float-array mode *)
+       best_msig decl
 
 (** Separability as a generic property *)
 type prop = Types.Separability.signature

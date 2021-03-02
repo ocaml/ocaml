@@ -34,7 +34,6 @@ type ustructured_constant =
 and uconstant =
   | Uconst_ref of string * ustructured_constant option
   | Uconst_int of int
-  | Uconst_ptr of int
 
 and uphantom_defining_expr =
   | Uphantom_const of uconstant

@@ -29,10 +29,6 @@ type const =
   | Int of int
   | Char of char
   (** [Char] is kept separate from [Int] to improve printing *)
-  | Const_pointer of int
-  (** [Const_pointer] is an immediate value of a type whose values may be
-     boxed (typically a variant type with both constant and non-constant
-     constructors). *)
 
 (** The application of a function to a list of arguments. *)
 type apply = {

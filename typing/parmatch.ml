@@ -634,7 +634,13 @@ let build_specialized_submatrices ~extend_row discr rows =
     (discr, r :: rs)
   in
 
-  (* insert a row of head [p] and rest [r] into the right group *)
+  (* insert a row of head [p] and rest [r] into the right group
+
+     Note: with this implementation, the order of the groups
+     is the order of their first row in the source order.
+     This is a nice property to get exhaustivity counter-examples
+     in source order.
+  *)
   let rec insert_constr head args r = function
     | [] ->
       (* if no group matched this row, it has a head constructor that
@@ -679,12 +685,15 @@ let build_specialized_submatrices ~extend_row discr rows =
     in
     form_groups initial_constr_group [] rows
   in
-  {
-    default = omega_tails;
-    constrs =
-      (* insert omega rows in all groups *)
-      List.fold_right insert_omega omega_tails constr_groups;
-  }
+
+  (* groups are accumulated in reverse order;
+     we restore the order of rows in the source code *)
+  let default = List.rev omega_tails in
+  let constrs =
+    List.fold_right insert_omega omega_tails constr_groups
+    |> List.map (fun (discr, rs) -> (discr, List.rev rs))
+  in
+  { default; constrs; }
 
 (* Variant related functions *)
 
@@ -1250,22 +1259,6 @@ let rec do_match pss qs = match qs with
         (build_specialized_submatrix ~extend_row:(@) q0 pss)
         (qargs @ qs)
 
-
-type 'a exhaust_result =
-  | No_matching_value
-  | Witnesses of 'a list
-
-let rappend r1 r2 =
-  match r1, r2 with
-  | No_matching_value, _ -> r2
-  | _, No_matching_value -> r1
-  | Witnesses l1, Witnesses l2 -> Witnesses (l1 @ l2)
-
-let rec try_many  f = function
-  | [] -> No_matching_value
-  | (p,pss)::rest ->
-      rappend (f (p, pss)) (try_many f rest)
-
 (*
 let print_pat pat =
   let rec string_of_pat pat =
@@ -1296,14 +1289,14 @@ let print_pat pat =
   This function should be called for exhaustiveness check only.
 *)
 let rec exhaust (ext:Path.t option) pss n = match pss with
-| []    ->  Witnesses [omegas n]
-| []::_ ->  No_matching_value
+| []    ->  Seq.return (omegas n)
+| []::_ ->  Seq.empty
 | pss   ->
     let pss = simplify_first_col pss in
     if not (all_coherent (first_column pss)) then
       (* We're considering an ill-typed branch, we won't actually be able to
          produce a well typed value taking that branch. *)
-      No_matching_value
+      Seq.empty
     else begin
       (* Assuming the first column is ill-typed but considered coherent, we
          might end up producing an ill-typed witness of non-exhaustivity
@@ -1319,61 +1312,53 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
       match build_specialized_submatrices ~extend_row:(@) q0 pss with
       | { default; constrs = [] } ->
           (* first column of pss is made of variables only *)
-          begin match exhaust ext default (n-1) with
-          | Witnesses r ->
-              let q0 = Patterns.Head.to_omega_pattern q0 in
-              Witnesses (List.map (fun row -> q0::row) r)
-          | r -> r
-        end
+          let sub_witnesses = exhaust ext default (n-1) in
+          let q0 = Patterns.Head.to_omega_pattern q0 in
+          Seq.map (fun row -> q0::row) sub_witnesses
       | { default; constrs } ->
           let try_non_omega (p,pss) =
             if is_absent_pat p then
-              No_matching_value
+              Seq.empty
             else
-              match
+              let sub_witnesses =
                 exhaust
                   ext pss
                   (List.length (simple_match_args p Patterns.Head.omega [])
                    + n - 1)
-              with
-              | Witnesses r ->
-                  let p = Patterns.Head.to_omega_pattern p in
-                  Witnesses (List.map (set_args p) r)
-              | r       -> r in
-          let before = try_many try_non_omega constrs in
-          if
-            full_match false constrs && not (should_extend ext constrs)
-          then
-            before
-          else
-            let r =  exhaust ext default (n-1) in
-            match r with
-            | No_matching_value -> before
-            | Witnesses r ->
-                try
-                  let p = build_other ext constrs in
-                  let dug = List.map (fun tail -> p :: tail) r in
-                  match before with
-                  | No_matching_value -> Witnesses dug
-                  | Witnesses x -> Witnesses (x @ dug)
-                with
-        (* cannot occur, since constructors don't make a full signature *)
-                | Empty -> fatal_error "Parmatch.exhaust"
-  end
+              in
+              let p = Patterns.Head.to_omega_pattern p in
+              Seq.map (set_args p) sub_witnesses
+          in
+          let try_omega () =
+            if full_match false constrs && not (should_extend ext constrs) then
+              Seq.empty
+            else
+              let sub_witnesses = exhaust ext default (n-1) in
+              match build_other ext constrs with
+              | exception Empty ->
+                  (* cannot occur, since constructors don't make
+                     a full signature *)
+                  fatal_error "Parmatch.exhaust"
+              | p ->
+                  Seq.map (fun tail -> p :: tail) sub_witnesses
+          in
+          (* Lazily compute witnesses for all constructor submatrices
+             (Some constr_mat) then the default submatrix (None).
+             Note that the call to [try_omega ()] is delayed to after
+             all constructor matrices have been traversed. *)
+          List.map (fun constr_mat -> Some constr_mat) constrs @ [None]
+          |> List.to_seq
+          |> Seq.flat_map
+            (function
+              | Some constr_mat -> try_non_omega constr_mat
+              | None -> try_omega ())
+    end
 
 let exhaust ext pss n =
-  let ret = exhaust ext pss n in
-  match ret with
-    No_matching_value -> No_matching_value
-  | Witnesses lst ->
-      let singletons =
-        List.map
-          (function
-              [x] -> x
-            | _ -> assert false)
-          lst
-      in
-      Witnesses [orify_many singletons]
+  exhaust ext pss n
+  |> Seq.map (function
+     | [x] -> x
+     | _ -> assert false)
 
 (*
    Another exhaustiveness check, enforcing variant typing.
@@ -1931,6 +1916,10 @@ let ppat_of_type env ty =
       let (ppat, constrs, labels) = Conv.conv (orify_many pats) in
       PT_pattern (PE_gadt_cases, ppat, constrs, labels)
 
+let typecheck ~pred p =
+  let (pattern,constrs,labels) = Conv.conv p in
+  pred constrs labels pattern
+
 let do_check_partial ~pred loc casel pss = match pss with
 | [] ->
         (*
@@ -1949,48 +1938,34 @@ let do_check_partial ~pred loc casel pss = match pss with
     end ;
     Partial
 | ps::_  ->
-    begin match exhaust None pss (List.length ps) with
-    | No_matching_value -> Total
-    | Witnesses [u] ->
-        let v =
-          let (pattern,constrs,labels) = Conv.conv u in
-          let u' = pred constrs labels pattern in
-          (* pretty_pat u;
-          begin match u' with
-            None -> prerr_endline ": impossible"
-          | Some _ -> prerr_endline ": possible"
-          end; *)
-          u'
+    let counter_examples =
+      exhaust None pss (List.length ps)
+      |> Seq.filter_map (typecheck ~pred) in
+    match counter_examples () with
+    | Seq.Nil -> Total
+    | Seq.Cons (v, _rest) ->
+      if Warnings.is_active (Warnings.Partial_match "") then begin
+        let errmsg =
+          try
+            let buf = Buffer.create 16 in
+            let fmt = Format.formatter_of_buffer buf in
+            Printpat.top_pretty fmt v;
+            if do_match (initial_only_guarded casel) [v] then
+              Buffer.add_string buf
+                "\n(However, some guarded clause may match this value.)";
+            if contains_extension v then
+              Buffer.add_string buf
+                "\nMatching over values of extensible variant types \
+                   (the *extension* above)\n\
+              must include a wild card pattern in order to be exhaustive."
+            ;
+            Buffer.contents buf
+          with _ ->
+            ""
         in
-        begin match v with
-          None -> Total
-        | Some v ->
-            if Warnings.is_active (Warnings.Partial_match "") then begin
-              let errmsg =
-                try
-                  let buf = Buffer.create 16 in
-                  let fmt = Format.formatter_of_buffer buf in
-                  Printpat.top_pretty fmt v;
-                  if do_match (initial_only_guarded casel) [v] then
-                    Buffer.add_string buf
-                      "\n(However, some guarded clause may match this value.)";
-                  if contains_extension v then
-                    Buffer.add_string buf
-                      "\nMatching over values of extensible variant types \
-                         (the *extension* above)\n\
-                    must include a wild card pattern in order to be exhaustive."
-                  ;
-                  Buffer.contents buf
-                with _ ->
-                  ""
-              in
-                Location.prerr_warning loc (Warnings.Partial_match errmsg)
-            end;
-            Partial
-        end
-    | _ ->
-        fatal_error "Parmatch.check_partial"
-    end
+        Location.prerr_warning loc (Warnings.Partial_match errmsg)
+      end;
+      Partial
 
 (*****************)
 (* Fragile check *)
@@ -2054,12 +2029,13 @@ let do_check_fragile loc casel pss =
     | ps::_ ->
         List.iter
           (fun ext ->
-            match exhaust (Some ext) pss (List.length ps) with
-            | No_matching_value ->
+            let witnesses = exhaust (Some ext) pss (List.length ps) in
+            match witnesses () with
+            | Seq.Nil ->
                 Location.prerr_warning
                   loc
                   (Warnings.Fragile_match (Path.name ext))
-            | Witnesses _ -> ())
+            | Seq.Cons _ -> ())
           exts
 
 (********************************)
@@ -2075,7 +2051,11 @@ let check_unused pred casel =
           let qs = [q] in
             begin try
               let pss =
-                  get_mins le_pats (List.filter (compats qs) pref) in
+                (* prev was accumulated in reverse order;
+                   restore source order to get ordered counter-examples *)
+                List.rev pref
+                |> List.filter (compats qs)
+                |> get_mins le_pats in
               (* First look for redundant or partially redundant patterns *)
               let r = every_satisfiables (make_rows pss) (make_row qs) in
               let refute = (c_rhs.exp_desc = Texp_unreachable) in

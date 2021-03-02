@@ -115,7 +115,7 @@ Lines 24-26, characters 6-30:
 26 |         | Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(Bar _, Foo _)
+(Foo _, Bar _)
 module Nonexhaustive :
   sig
     type 'a u = C1 : int -> int u | C2 : bool -> bool u

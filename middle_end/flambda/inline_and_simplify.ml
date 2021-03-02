@@ -175,7 +175,6 @@ let simplify_const (const : Flambda.const) =
   match const with
   | Int i -> A.value_int i
   | Char c -> A.value_char c
-  | Const_pointer i -> A.value_constptr i
 
 let approx_for_allocated_const (const : Allocated_const.t) =
   match const with
@@ -1213,10 +1212,10 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
        if arg is not effectful we can also drop it. *)
     simplify_free_variable env arg ~f:(fun env arg arg_approx ->
       begin match arg_approx.descr with
-      | Value_constptr 0 | Value_int 0 ->  (* Constant [false]: keep [ifnot] *)
+      | Value_int 0 ->  (* Constant [false]: keep [ifnot] *)
         let ifnot, r = simplify env r ifnot in
         ifnot, R.map_benefit r B.remove_branch
-      | Value_constptr _ | Value_int _
+      | Value_int _
       | Value_block _ ->  (* Constant [true]: keep [ifso] *)
         let ifso, r = simplify env r ifso in
         ifso, R.map_benefit r B.remove_branch
