@@ -23,6 +23,10 @@ Working version
   (KC Sivaramakrishnan, review by David Allsopp, Xavier Leroy, Mark Shinwell
   and Leo White)
 
+- #9564: Add a macro to construct out-of-heap block header.
+  (KC Sivaramakrishnan, review by Stephen Dolan, Gabriel Scherer,
+   and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
@@ -37,6 +41,9 @@ Working version
 - #9075: define to_rev_seq in Set and Map modules.
   (Sébastien Briais, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #9571: Make at_exit and Printexc.register_printer thread-safe.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
@@ -44,6 +51,13 @@ Working version
   and the whole ThreadUnix module.
   (Xavier Leroy, review by Florian Angeletti, Guillaume Munch-Maccagnoni,
    and Gabriel Scherer)
+
+- #9573: reimplement Unix.create_process and related functions without
+  Unix.fork, for better efficiency and compatibility with threads.
+  (Xavier Leroy, review by Gabriel Scherer and Anil Madhavapeddy)
+
+- #9575: Add Unix.is_inet6_addr
+  (Nicolás Ojeda Bär, review by Xavier Leroy)
 
 ### Tools:
 

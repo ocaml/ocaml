@@ -18,6 +18,10 @@ case $1 in
   stdlib.cm[iox])
       echo ' -nopervasives -no-alias-deps -w -49' \
            ' -pp "$AWK -f ./expand_module_aliases.awk"';;
+  # stdlib dependencies
+  camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
+  stdlib__atomic*.cm[iox]) echo ' -nopervasives';;
+  # end stdlib dependencies
   camlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
   camlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)
@@ -25,7 +29,6 @@ case $1 in
                            # make sure add_char is inlined (PR#5872)
   stdlib__buffer.cm[io]) echo ' -w A';;
   camlinternalFormat.cm[io]) echo ' -w Ae';;
-  camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
   stdlib__printf.cm[io]|stdlib__format.cm[io]|stdlib__scanf.cm[io])
       echo ' -w Ae';;
   stdlib__scanf.cmx) echo ' -inline 9';;

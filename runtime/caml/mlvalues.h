@@ -426,7 +426,6 @@ Caml_inline void caml_read_field(value x, intnat i, value* ret) {
 #define Bool_field(x, i) Bool_val(Op_val(x)[i])
 
 
-
 #ifdef __cplusplus
 }
 #endif
