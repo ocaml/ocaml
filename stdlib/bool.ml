@@ -32,4 +32,7 @@ let of_string = function
 
 let to_string = function false -> "false" | true -> "true"
 
-external hash : bool -> int = "%identity"
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+
+let hash x = seeded_hash_param 10 100 0 (to_int x)
