@@ -454,26 +454,43 @@ module A1 = A
 - : bool = true
 |}];;
 
-(* PR#3476 *)
-(* Does not work yet *)
+(* PR#3476: *)
 module FF(X : sig end) = struct type t end
 module M = struct
   module X = struct end
-  module Y = FF (X) (* XXX *)
+  module Y = FF (X)
   type t = Y.t
 end
 module F (Y : sig type t end) (M : sig type t = Y.t end) = struct end;;
 
 module G = F (M.Y);;
-(*module N = G (M);;
-module N = F (M.Y) (M);;*)
+module N = G (M);;
+module N = F (M.Y) (M);;
 [%%expect{|
 module FF : functor (X : sig end) -> sig type t end
 module M :
   sig module X : sig end module Y : sig type t = FF(X).t end type t = Y.t end
 module F : functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig end
 module G : functor (M : sig type t = M.Y.t end) -> sig end
+module N : sig end
+module N : sig end
 |}];;
+
+(* PR#5058 *)
+module F (M : sig end) : sig type t end = struct type t = int end
+module T = struct
+module M = struct end
+include F(M)
+end
+include T
+let f (x : t) : T.t = x
+[%%expect {|
+module F : functor (M : sig end) -> sig type t end
+module T : sig module M : sig end type t = F(M).t end
+module M = T.M
+type t = F(M).t
+val f : t -> T.t = <fun>
+|}]
 
 (* PR#6307 *)
 

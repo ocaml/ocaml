@@ -33,6 +33,6 @@ cmm:
  "camlTest_locations":
  addr "camlTest_locations__fib_5_closure")
 (data)
-(function camlTest_locations__entry () 1a)
+(function camlTest_locations__entry () 1)
 
 (data)
