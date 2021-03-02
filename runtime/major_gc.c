@@ -322,7 +322,7 @@ void caml_shrink_mark_stack () {
 
   caml_gc_message (0x08, "Shrinking mark stack to %"
                   ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                  init_stack_bsize);
+                  init_stack_bsize / 1024);
 
   shrunk_stack = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
                                               init_stack_bsize);
