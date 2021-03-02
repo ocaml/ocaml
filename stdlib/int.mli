@@ -143,5 +143,5 @@ val of_string : string -> int option
 val to_string : int -> string
 (** [to_string x] is the written representation of [x] in decimal. *)
 
-external hash : int -> int = "%identity"
+val hash : int -> int
 (** The hash function for integer values. *)

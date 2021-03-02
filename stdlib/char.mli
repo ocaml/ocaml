@@ -65,7 +65,7 @@ val equal: t -> t -> bool
 (** The equal function for chars.
     @since 4.03.0 *)
 
-external hash : t -> int = "%identity"
+val hash : t -> int
 (** The hash function for characters. *)
 
 (**/**)
