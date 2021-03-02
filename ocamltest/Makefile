@@ -17,8 +17,8 @@
 
 ROOTDIR = ..
 
--include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 ifeq "$(filter str,$(OTHERLIBRARIES))" ""
@@ -287,14 +287,18 @@ clean:
 	rm -rf $(cmx_files)
 	rm -rf $(generated)
 	rm -f ocamltest.html
+	rm -rf $(DEPDIR)
 
-ifneq "$(TOOLCHAIN)" "msvc"
+ifeq "$(COMPUTE_DEPS)" "true"
+include $(addprefix $(DEPDIR)/, $(c_files:.c=.$(D)))
+endif
+
+$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
+	$(DEP_CC) $(OC_CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(CC) -MM $(OC_CPPFLAGS) $(c_files) \
-	  | sed -e 's/\.o/.$$(O)/' > .depend
 	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
-	  >> .depend
-endif
+	  > .depend
 
 -include .depend

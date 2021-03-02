@@ -13,7 +13,7 @@ ${program} > ${output} &
 pid=$!
 wait $pid
 
-ls "${program}".*.eventlog | grep "\.[0-9]\+\.eventlog$" | \
+ls "${program}".*.eventlog | grep '\.[0-9][0-9]*\.eventlog$' | \
 while IFS= read -r file; do
   touch ${program}.eventlogs
   if [ ! -e "${program}.eventlog" ] ; then
