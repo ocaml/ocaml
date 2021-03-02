@@ -53,7 +53,7 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-CAMLLEX=$(CAMLRUN) boot/ocamllex
+OCAMLLEX ?= $(BOOT_OCAMLLEX)
 CAMLDEP=$(CAMLRUN) boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
@@ -649,10 +649,7 @@ natruntop:
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/native/dynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
 
-# The lexer
-
-parsing/lexer.ml: parsing/lexer.mll
-	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
+# Cleanup the lexer
 
 partialclean::
 	rm -f parsing/lexer.ml
