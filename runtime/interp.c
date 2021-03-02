@@ -277,8 +277,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     caml_thread_code(raise_unhandled_code,
                      sizeof(raise_unhandled_code));
 #endif
-    raise_unhandled_closure = caml_alloc_small (1, Closure_tag);
+    raise_unhandled_closure = caml_alloc_small (2, Closure_tag);
     Code_val(raise_unhandled_closure) = (code_t)raise_unhandled_code;
+    Closinfo_val(raise_unhandled_closure) = Make_closinfo(0, 2);
     raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
     caml_init_callbacks();
