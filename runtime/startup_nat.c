@@ -135,7 +135,7 @@ value caml_startup_common(char_os **argv, int pooling)
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window,
                 caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz);
+                caml_init_custom_minor_max_bsz, caml_init_policy);
   init_static();
   caml_init_signals();
 #ifdef _WIN32

@@ -270,4 +270,7 @@ typedef uint64_t uintnat;
    Documented in gc.mli */
 #define Custom_minor_max_bsz_def 8192
 
+/* Default allocation policy. */
+#define Allocation_policy_def caml_policy_best_fit
+
 #endif /* CAML_CONFIG_H */
