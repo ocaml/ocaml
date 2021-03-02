@@ -159,10 +159,10 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc(sz, tg);
-    for (i = 0; i < sz; i++) {
-      caml_read_field(arg, i, &x);
-      caml_initialize_field(res, i, x);
-    }
+    /* It is safe to use [caml_initialize] even if [tag == Closure_tag]
+       and some of the "values" being copied are actually code pointers.
+       That's because the new "value" does not point to the minor heap. */
+    for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
   }
 
   CAMLreturn (res);
