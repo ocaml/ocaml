@@ -33,44 +33,6 @@ define byte2native
 $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
-# $1 = target, $2 = OCaml object dependencies, $3 = other dependencies
-# There is a lot of subtle code here.  The multiple layers of expansion
-# are due to `make`'s eval() function, which evaluates the string
-# passed to it as a makefile fragment.  So it is crucial that variables
-# not get expanded too many times.
-define byte_and_opt_
-# This check is defensive programming
-$(and $(filter-out 1,$(words $1)),$(error \
-   cannot build file with whitespace in name))
-$(call PROGRAM_SYNONYM, $1)
-
-$1$(EXE): $3 $2
-	$$(CAMLC) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ $2
-
-$(call PROGRAM_SYNONYM, $1.opt)
-
-$1.opt$(EXE): $3 $$(call byte2native,$2)
-	$$(CAMLOPT_CMD) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ \
-	                $$(call byte2native,$2)
-
-all: $1
-
-opt.opt: $1.opt
-
-ifeq '$(filter $(installed_tools),$1)' '$1'
-install_files += $1
-endif
-clean::
-	rm -f -- $1 $1.opt $1.exe $1.opt.exe
-
-endef
-
-# Escape any $ characters in the arguments and eval the result.
-define byte_and_opt
-$(eval $(call \
- byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
-endef
-
 CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) \
@@ -87,32 +49,56 @@ VPATH := $(filter-out -I,$(INCLUDES))
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 allopt: opt.opt
 
+programs_byte := \
+  ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib  \
+  ocamlmktop ocamlcmt dumpobj ocamlobjinfo \
+  primreq stripdebug cmpbyt
+install_files += $(filter $(installed_tools), $(programs_byte))
+programs_opt := $(programs_byte:%=%.opt)
+
+programs_byte_exe := $(programs_byte:%=%$(EXE))
+programs_opt_exe := $(programs_opt:%=%$(EXE))
+ifneq "$(EXE)" ""
+$(programs_byte) $(programs_opt): %: %$(EXE)
+endif
+
+$(programs_byte_exe):
+	$(CAMLC) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(filter-out %.cmi,$^)
+
+$(programs_opt_exe):
+	$(CAMLOPT_CMD) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(filter-out %.cmi,$^)
+
+all: $(programs_byte_exe)
+opt.opt: $(programs_opt_exe)
+clean::
+	rm -f $(programs_byte) $(programs_byte_exe)
+	rm -f $(programs_opt) $(programs_opt_exe)
+
 # The dependency generator
 
-CAMLDEP_OBJ=ocamldep.cmo
-CAMLDEP_IMPORTS= \
+CAMLDEP = \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
-  $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma
-ocamldep$(EXE): LINKFLAGS += -compat-32
-$(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
-ocamldep$(EXE): depend.cmi
-ocamldep.opt$(EXE): depend.cmi
+  $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+  ocamldep.cmo depend.cmi
 
-clean::
-	rm -f ocamldep ocamldep.exe ocamldep.opt ocamldep.opt.exe
+ocamldep$(EXE): LINKFLAGS += -compat-32
+ocamldep$(EXE): $(CAMLDEP)
+ocamldep.opt$(EXE): $(call byte2native, $(CAMLDEP))
 
 # The profiler
 
-CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
+CSLPROF=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo \
   camlinternalMenhirLib.cmo parser.cmo \
   pprintast.cmo \
-  lexer.cmo parse.cmo
+  lexer.cmo parse.cmo ocamlprof.cmo
 
-$(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
+ocamlprof$(EXE): $(CSLPROF)
+ocamlprof.opt$(EXE): $(call byte2native, $(CSLPROF))
+all: profiling.cmo
+allopt: profiling.cmx
 
 ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
@@ -120,8 +106,10 @@ ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
                main_args.cmo
 
-$(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
-$(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
+ocamlcp$(EXE): $(ocamlcp_cmos) ocamlcp.cmo
+ocamlcp.opt$(EXE): $(call byte2native, $(ocamlcp_cmos) ocamlcp.cmo)
+ocamloptp$(EXE): $(ocamlcp_cmos) ocamloptp.cmo
+ocamloptp.opt$(EXE): $(call byte2native, $(ocamlcp_cmos) ocamloptp.cmo)
 
 opt:: profiling.cmx
 
@@ -141,18 +129,19 @@ installopt::
 	  "$(INSTALL_LIBDIR)"
 
 # To help building mixed-mode libraries (OCaml + C)
+ocamlmklib_cmos = config.cmo build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo
 
-$(call byte_and_opt,ocamlmklib,config.cmo \
-                    build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
+ocamlmklib$(EXE): $(ocamlmklib_cmos)
+ocamlmklib.opt$(EXE): $(call byte2native, $(ocamlmklib_cmos))
 
 # To make custom toplevels
 
-OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
+OCAMLMKTOP=config.cmo build_path_prefix_map.cmo misc.cmo \
        identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-       local_store.cmo load_path.cmo profile.cmo ccomp.cmo
+       local_store.cmo load_path.cmo profile.cmo ccomp.cmo ocamlmktop.cmo
 
-$(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
+ocamlmktop$(EXE): $(OCAMLMKTOP)
+ocamlmktop.opt$(EXE): $(call byte2native, $(OCAMLMKTOP))
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
@@ -202,14 +191,13 @@ beforedepend:: cvt_emit.ml
 
 # Reading cmt files
 
-ocamlcmt_objects= \
+OCAMLCMT = \
           $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
           $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
-          \
           ocamlcmt.cmo
 
-# Reading cmt files
-$(call byte_and_opt,ocamlcmt,$(ocamlcmt_objects),)
+ocamlcmt$(EXE): $(OCAMLCMT)
+ocamlcmt.opt$(EXE): $(call byte2native, $(OCAMLCMT))
 
 install::
 	if test -f ocamlcmt.opt$(EXE); then \
@@ -224,10 +212,10 @@ install::
 DUMPOBJ= \
           $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
           $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
-          \
           opnames.cmo dumpobj.cmo
 
-$(call byte_and_opt,dumpobj,$(DUMPOBJ),)
+dumpobj$(EXE): $(DUMPOBJ)
+dumpobj.opt$(EXE): $(call byte2native, $(DUMPOBJ))
 
 make_opcodes := make_opcodes$(EXE)
 
@@ -261,14 +249,16 @@ OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
         objinfo.cmo
 
-$(call byte_and_opt,ocamlobjinfo,$(OBJINFO),)
+ocamlobjinfo$(EXE): $(OBJINFO)
+ocamlobjinfo.opt$(EXE): $(call byte2native, $(OBJINFO))
 
 primreq=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         primreq.cmo
 
 # Scan object files for required primitives
-$(call byte_and_opt,primreq,$(primreq),)
+primreq$(EXE): $(primreq)
+primreq.opt$(EXE): $(call byte2native, $(primreq))
 
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
@@ -296,7 +286,8 @@ stripdebug=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
            $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
            stripdebug.cmo
 
-$(call byte_and_opt,stripdebug,$(stripdebug),)
+stripdebug$(EXE): $(stripdebug)
+stripdebug.opt$(EXE): $(call byte2native, $(stripdebug))
 
 # Compare two bytecode executables
 
@@ -304,7 +295,8 @@ CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
        cmpbyt.cmo
 
-$(call byte_and_opt,cmpbyt,$(CMPBYT),)
+cmpbyt$(EXE): $(CMPBYT)
+cmpbyt.opt$(EXE): $(call byte2native, $(CMPBYT))
 
 caml_tex_files := \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
