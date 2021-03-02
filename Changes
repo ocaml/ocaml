@@ -6,6 +6,9 @@ Working version
 
 ### Runtime system:
 
+- #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
+  floating-point initialization to behave like IEEE standard
+  (Hannes Mehnert, review by David Allsopp)
 
 ### Code generation and optimizations:
 
@@ -136,6 +139,21 @@ OCaml 4.11
   recursive module initialisation in one particular case (fixes #9494).
   (Mark Shinwell, David Allsopp, Vincent Laviron, Xavier Leroy,
   Geoff Reedy, original bug report by Arlen Cox)
+
+- #8791: use a variable-length encoding when marshalling bigarray dimensions,
+  avoiding overflow.
+  (Jeremy Yallop, Stephen Dolan, review by Xavier Leroy)
+
+- #9082: The instrumented runtime now records logs in the CTF format.
+  A new API is available in the runtime to collect runtime statistics,
+  replacing the previous instrumented runtime macros.
+  Gc.eventlog_pause and Gc.eventlog_resume were added to allow user to control
+  instrumentation in a running program.
+  (Enguerrand Decorne and Stephen Dolan, with help and review from
+  David Allsopp, Sébastien Hinderer, review by Anil Madhavapeddy,
+  Nicolás Ojeda Bär, Shakthi Kannan, KC Sivaramakrishnan, Gabriel Scherer,
+  Guillaume Munch-Maccagnoni, Damien Doligez, Leo White, Daniel Bünzli
+  and Xavier Leroy)
 
 ### Code generation and optimizations:
 
@@ -363,6 +381,9 @@ OCaml 4.11
 
 - #2324: Replace caml_int_compare and caml_float_compare with primitives.
   (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
+
+- #9246: Avoid rechecking functor applications
+  (Leo White, review by Jacques Garrigue)
 
 * #9411: forbid optional arguments reordering with -nolabels
   (Thomas Refis, review by Frédéric Bour and Jacques Garrigue)

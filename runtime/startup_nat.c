@@ -19,10 +19,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "caml/callback.h"
 #include "caml/backtrace.h"
+#include "caml/callback.h"
 #include "caml/custom.h"
 #include "caml/debugger.h"
+#include "caml/eventlog.h"
+#include "caml/fiber.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/gc_ctrl.h"
@@ -35,7 +37,6 @@
 #include "caml/stack.h"
 #include "caml/sys.h"
 #include "caml/startup_aux.h"
-#include "caml/fiber.h"
 #ifdef WITH_SPACETIME
 #include "caml/spacetime.h"
 #endif
@@ -79,7 +80,6 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (caml_domain_state*);
-extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
@@ -97,6 +97,7 @@ value caml_startup_common(char_os **argv, int pooling)
 
   /* Determine options */
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -108,7 +109,6 @@ value caml_startup_common(char_os **argv, int pooling)
 #ifdef WITH_SPACETIME
   caml_spacetime_initialize();
 #endif
-  caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();

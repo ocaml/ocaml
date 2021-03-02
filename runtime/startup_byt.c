@@ -38,6 +38,7 @@
 #include "caml/eventlog.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/fix_code.h"
 #include "caml/gc_ctrl.h"
 #include "caml/instrtrace.h"
@@ -54,7 +55,6 @@
 #include "caml/printexc.h"
 #include "caml/reverse.h"
 #include "caml/signals.h"
-#include "caml/fiber.h"
 #include "caml/sys.h"
 #include "caml/startup.h"
 #include "caml/version.h"
@@ -243,8 +243,6 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
 
 #endif
 
-extern void caml_init_ieee_floats (void);
-
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
 #endif
@@ -276,15 +274,13 @@ CAMLexport void caml_main(char_os **argv)
 
   /* Determine options */
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
   if (!caml_startup_aux(/* pooling */ caml_params->cleanup_on_exit))
     return;
 
-  /* Machine-dependent initialization of the floating-point hardware
-     so that it behaves as much as possible as specified in IEEE */
-  caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
@@ -406,6 +402,7 @@ CAMLexport value caml_startup_code_exn(
 
   /* Determine options */
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -414,7 +411,6 @@ CAMLexport value caml_startup_code_exn(
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-  caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();

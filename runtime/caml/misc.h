@@ -445,19 +445,18 @@ int caml_runtime_warnings_active(void);
 /* snprintf emulation for Win32 */
 
 #ifdef _WIN32
+#ifndef _UCRT
 extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-#define CAML_INSTR_DECLARE(t) /**/
-#define CAML_INSTR_ALLOC(t) /**/
-#define CAML_INSTR_START(t, name) /**/
-#define CAML_INSTR_SETUP(t, name) /**/
-#define CAML_INSTR_TIME(t, msg) /**/
-#define CAML_INSTR_INT(msg, c) /**/
-#define caml_instr_init() /**/
-#define caml_instr_atexit() /**/
-
+extern int caml_snwprintf(wchar_t * buf,
+                          size_t size,
+                          const wchar_t * format, ...);
+#define snprintf_os caml_snwprintf
+#else
+#define snprintf_os snprintf
+#endif
 
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */

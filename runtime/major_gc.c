@@ -914,7 +914,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
 {
   uintnat num_domains_in_stw;
 
-  caml_ev_begin("major_gc/cycle_domains");
+  CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
   CAMLassert(domain == caml_domain_self());
   CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
@@ -926,7 +926,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
 
   caml_empty_minor_heap_no_major_slice_from_stw(domain, (void*)0, participating_count, participating);
 
-  caml_ev_begin("major_gc/stw");
+  CAML_EV_BEGIN(EV_MAJOR_GC_STW);
 
   {
     /* Cycle major heap */
@@ -936,7 +936,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
       caml_cycle_heap_stw();
       caml_gc_log("GC cycle %lu completed (heap cycled)",
                   (long unsigned int)caml_major_cycles_completed);
-      caml_ev_global_sync();
+
       caml_major_cycles_completed++;
       caml_gc_message(0x40, "Starting major GC cycle\n");
 
@@ -1028,7 +1028,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   domain->state->major_work_todo = 0;
   domain->state->major_gc_clock = 0.0;
 
-  caml_ev_begin("major_gc/roots");
+  CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
   caml_do_roots (&caml_darken, NULL, domain, 0);
   {
     uintnat work_unstarted = WORK_UNSTARTED;
@@ -1036,8 +1036,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
         caml_scan_global_roots(&caml_darken, NULL);
     }
   }
-
-  caml_ev_end("major_gc/roots");
+  CAML_EV_END(EV_MAJOR_MARK_ROOTS);
 
   if (domain->state->mark_stack->count == 0) {
     atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
@@ -1058,8 +1057,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   domain->state->final_info->updated_first = 0;
   domain->state->final_info->updated_last = 0;
 
-  caml_ev_end("major_gc/stw");
-  caml_ev_end("major_gc/cycle_domains");
+  CAML_EV_END(EV_MAJOR_GC_STW);
+  CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }
 
 static int is_complete_phase_sweep_and_mark_main (struct domain *d)
@@ -1107,7 +1106,7 @@ static void try_complete_gc_phase (struct domain* domain, void* unused,
                                    int participating_count, struct domain** participating)
 {
   barrier_status b;
-  caml_ev_begin("major_gc/phase_change");
+  CAML_EV_BEGIN(EV_MAJOR_GC_PHASE_CHANGE);
 
   b = caml_global_barrier_begin ();
   if (caml_global_barrier_is_final(b)) {
@@ -1118,7 +1117,7 @@ static void try_complete_gc_phase (struct domain* domain, void* unused,
     }
   }
   caml_global_barrier_end(b);
-  caml_ev_end("major_gc/phase_change");
+  CAML_EV_END(EV_MAJOR_GC_PHASE_CHANGE);
 }
 
 intnat caml_opportunistic_major_work_available ()
@@ -1177,10 +1176,10 @@ static intnat major_collection_slice(intnat howmuch,
     return budget;
   }
 
-  if (log_events) caml_ev_begin("major_gc/slice");
+  if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
 
   if (!domain_state->sweeping_done) {
-    if (log_events) caml_ev_begin("major_gc/sweep");
+    if (log_events) CAML_EV_BEGIN(EV_MAJOR_SWEEP);
 
     do {
       available = budget > Chunk_size ? Chunk_size : budget;
@@ -1200,14 +1199,14 @@ static intnat major_collection_slice(intnat howmuch,
       }
     } while (budget > 0 && available != left);
 
-    if (log_events) caml_ev_end("major_gc/sweep");
+    if (log_events) CAML_EV_END(EV_MAJOR_SWEEP);
   }
 
 mark_again:
   while (budget > 0) {
     if (!domain_state->marking_done) {
       if (!was_marking) {
-        if (log_events) caml_ev_begin("major_gc/mark");
+        if (log_events) CAML_EV_BEGIN(EV_MAJOR_MARK);
         was_marking = 1;
       }
       available = budget > Chunk_size ? Chunk_size : budget;
@@ -1224,7 +1223,7 @@ mark_again:
     }
   }
   if (was_marking) {
-    if (log_events) caml_ev_end("major_gc/mark");
+    if (log_events) CAML_EV_END(EV_MAJOR_MARK);
     was_marking = 0;
   }
 
@@ -1251,9 +1250,9 @@ mark_again:
     saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
     if (domain_state->ephe_info->todo != (value) NULL &&
         saved_ephe_cycle > domain_state->ephe_info->cycle) {
-      caml_ev_begin("major_gc/ephe_mark");
+      CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);
       budget = ephe_mark(budget, saved_ephe_cycle);
-      caml_ev_end("major_gc/ephe_mark");
+      CAML_EV_END(EV_MAJOR_EPHE_MARK);
       if (domain_state->ephe_info->todo == (value) NULL)
         caml_ephe_todo_list_emptied ();
       else if (budget > 0 && domain_state->marking_done)
@@ -1263,9 +1262,9 @@ mark_again:
 
     if (caml_gc_phase == Phase_sweep_ephe &&
         domain_state->ephe_info->todo != 0) {
-      caml_ev_begin("major_gc/ephe_sweep");
+      CAML_EV_BEGIN(EV_MAJOR_EPHE_SWEEP);
       budget = ephe_sweep (d, budget);
-      caml_ev_end("major_gc/ephe_sweep");
+      CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
       if (domain_state->ephe_info->todo == 0) {
         atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
       }
@@ -1283,7 +1282,7 @@ mark_again:
     }
   }
 
-  if (log_events) caml_ev_end("major_gc/slice");
+  if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
 
   caml_gc_log("Major slice [%c%c%c]: %ld work, %ld sweep, %ld mark (%lu blocks)",
               collection_slice_mode_char(mode),
@@ -1374,18 +1373,18 @@ void caml_empty_mark_stack () {
 
 void caml_finish_marking () {
   if (!Caml_state->marking_done) {
-    caml_ev_begin("major_gc/finish_marking");
+    CAML_EV_BEGIN(EV_MAJOR_FINISH_MARKING);
     caml_empty_mark_stack();
     caml_shrink_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
-    caml_ev_end("major_gc/finish_marking");
+    CAML_EV_END(EV_MAJOR_FINISH_MARKING);
   }
 }
 
 void caml_finish_sweeping () {
   if (Caml_state->sweeping_done) return;
-  caml_ev_begin("major_gc/finish_sweeping");
+  CAML_EV_BEGIN(EV_MAJOR_FINISH_SWEEPING);
   while (!Caml_state->sweeping_done) {
     if (caml_sweep(Caml_state->shared_heap, 10) > 0) {
       /* just finished sweeping */
@@ -1396,7 +1395,7 @@ void caml_finish_sweeping () {
     }
     caml_handle_incoming_interrupts();
   }
-  caml_ev_end("major_gc/finish_sweeping");
+  CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
 }
 
 static struct pool* find_pool_to_rescan()

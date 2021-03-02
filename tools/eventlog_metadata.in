@@ -1,0 +1,216 @@
+/* CTF 1.8 */
+
+typealias integer {size = 8;}  := uint8_t;
+typealias integer {size = 16;} := uint16_t;
+typealias integer {size = 32;} := uint32_t;
+typealias integer {size = 64;} := uint64_t;
+
+clock {
+    name = tracing_clock;
+    freq = 1000000000; /* tick = 1 ns */
+};
+
+typealias integer {
+    size = 64;
+    map = clock.tracing_clock.value;
+} := tracing_clock_int_t;
+
+
+/*
+
+Main trace description,
+major and minor refers to the CTF version being used.
+
+The packet header must contain at the very least
+a stream id and the CTF magic number.
+We only use one stream for now, and CTF magic number is 0xc1fc1fc1.
+
+We add an extra field ocaml_trace_version to enable simpler transition if we add
+or remove metrics in the future.
+
+*/
+trace {
+    major = 1;
+    minor = 8;
+    byte_order = @endianness@;
+    packet.header := struct {
+        uint32_t magic; /* required: must contain CTF magic number */
+        uint16_t ocaml_trace_version; /* our own trace format versioning */
+        uint16_t stream_id; /* required, although we have only one. */
+    };
+};
+
+/*
+
+We use only one stream at the moment.
+Each event payload must contain a header with a timestamp and a pid.
+The id field refers to the various event kinds defined further down this file.
+
+*/
+stream {
+    id = 0;
+    event.header := struct { /* for each event */
+        tracing_clock_int_t timestamp;
+        uint32_t pid;
+        uint32_t id;
+    };
+};
+
+/*
+
+These enumerations are mostly following the instrumented runtime datapoints.
+gc_phase aims to track the entry and exit time of each of the following events
+during collection.
+
+*/
+enum gc_phase : uint16_t {
+    "compact/main" = 0,
+    "compact/recompact",
+    "explicit/gc_set",
+    "explicit/gc_stat",
+    "explicit/gc_minor",
+    "explicit/gc_major",
+    "explicit/gc_full_major",
+    "explicit/gc_compact",
+    "major",
+    "major/roots",
+    "major/sweep",
+    "major/mark/roots",
+    "major/mark/main",
+    "major/mark/final",
+    "major/mark",
+    "major/mark/global_roots_slice",
+    "major_roots/global",
+    "major_roots/dynamic_global",
+    "major_roots/local",
+    "major_roots/C",
+    "major_roots/finalised",
+    "major_roots/memprof",
+    "major_roots/hook",
+    "major/check_and_compact",
+    "minor",
+    "minor/local_roots",
+    "minor/ref_tables",
+    "minor/copy",
+    "minor/update_weak",
+    "minor/finalized",
+    "explicit/gc_major_slice"
+};
+
+/*
+
+Miscellaneous GC counters
+
+*/
+enum gc_counter : uint16_t {
+    "alloc_jump",
+    "force_minor/alloc_small",
+    "force_minor/make_vect",
+    "force_minor/set_minor_heap_size",
+    "force_minor/weak",
+    "force_minor/memprof",
+    "major/mark/slice/remain",
+    "major/mark/slice/fields",
+    "major/mark/slice/pointers",
+    "major/work/extra",
+    "major/work/mark",
+    "major/work/sweep",
+    "minor/promoted",
+    "request_major/alloc_shr",
+    "request_major/adjust_gc_speed",
+    "request_minor/realloc_ref_table",
+    "request_minor/realloc_ephe_ref_table",
+    "request_minor/realloc_custom_table"
+};
+
+/*
+
+Block allocation counters, per size buckets.
+
+*/
+enum alloc_bucket : uint8_t {
+  "alloc 01" = 1,
+  "alloc 02",
+  "alloc 03",
+  "alloc 04",
+  "alloc 05",
+  "alloc 06",
+  "alloc 07",
+  "alloc 08",
+  "alloc 09",
+  "alloc 10-19",
+  "alloc 20-29",
+  "alloc 30-39",
+  "alloc 40-49",
+  "alloc 50-59",
+  "alloc 60-69",
+  "alloc 70-79",
+  "alloc 80-89",
+  "alloc 90-99",
+  "alloc large"
+};
+
+/*
+
+Each event is comprised of the previously defined event.header
+and the fields defined here.
+
+An entry event marks the start of a gc phase.
+
+*/
+event {
+    id = 0;
+    name = "entry";
+    stream_id = 0;
+    fields := struct {
+        enum gc_phase phase;
+    };
+};
+
+/*
+
+exit counterparts to entry events
+
+*/
+event {
+    id = 1;
+    name = "exit";
+    stream_id = 0;
+    fields := struct {
+        enum gc_phase phase;
+    };
+};
+
+event {
+    id = 2;
+    name = "counter";
+    stream_id = 0;
+    fields := struct {
+        uint64_t count;
+        enum gc_counter kind;
+    };
+};
+
+event {
+    id = 3;
+    name = "alloc";
+    stream_id = 0;
+    fields := struct {
+        uint64_t count;
+        enum alloc_bucket bucket;
+    };
+};
+
+/*
+ Flush events are used to track the time spent by the tracing runtime flushing
+ data to disk, useful to remove flushing overhead for other runtime mesurements
+ in the trace.
+*/
+event {
+     id = 4;
+     name = "flush";
+     stream_id = 0;
+     fields := struct {
+        tracing_clock_int_t duration;
+     };
+};

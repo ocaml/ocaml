@@ -844,6 +844,10 @@ let modtype_of_functor_appl fcomp p1 p2 =
         Hashtbl.add fcomp.fcomp_subst_cache p2 mty;
         mty
 
+let check_functor_appl ~errors ~loc env p1 f arg p2 md =
+  if not (Hashtbl.mem f.fcomp_cache p2) then
+    !check_functor_application ~errors ~loc env md.md_type p2 arg p1
+
 (* Lookup by identifier *)
 
 let find_ident_module id env =
@@ -2408,7 +2412,7 @@ let rec lookup_module_components ~errors ~use ~loc lid env =
   | Lapply(l1, l2) ->
       let p1, f, arg = lookup_functor_components ~errors ~use ~loc l1 env in
       let p2, md = lookup_module ~errors ~use ~loc l2 env in
-      !check_functor_application ~errors ~loc env md.md_type p2 arg p1;
+      check_functor_appl ~errors ~loc env p1 f arg p2 md;
       let comps = !components_of_functor_appl' ~loc f env p1 p2 in
       (Papply(p1, p2), comps)
 
@@ -2452,7 +2456,7 @@ and lookup_module ~errors ~use ~loc lid env =
   | Lapply(l1, l2) ->
       let p1, fc, arg = lookup_functor_components ~errors ~use ~loc l1 env in
       let p2, md2 = lookup_module ~errors ~use ~loc l2 env in
-      !check_functor_application ~errors ~loc env md2.md_type p2 arg p1;
+      check_functor_appl ~errors ~loc env p1 fc arg p2 md2;
       let md = md (modtype_of_functor_appl fc p1 p2) in
       Papply(p1, p2), md
 
@@ -2559,9 +2563,9 @@ let lookup_module_path ~errors ~use ~loc ~load lid env : Path.t =
         fst (lookup_ident_module Load ~errors ~use ~loc s env)
   | Ldot(l, s) -> fst (lookup_dot_module ~errors ~use ~loc l s env)
   | Lapply(l1, l2) ->
-      let (p1, _, arg) = lookup_functor_components ~errors ~use ~loc l1 env in
+      let (p1, f, arg) = lookup_functor_components ~errors ~use ~loc l1 env in
       let p2, md2 = lookup_module ~errors ~use ~loc l2 env in
-      !check_functor_application ~errors ~loc env md2.md_type p2 arg p1;
+      check_functor_appl ~errors ~loc env p1 f arg p2 md2;
       Papply(p1, p2)
 
 let lookup_value ~errors ~use ~loc lid env =

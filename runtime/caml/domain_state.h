@@ -17,10 +17,11 @@
 #ifndef CAML_STATE_H
 #define CAML_STATE_H
 
-#include <stddef.h>
 #ifdef __APPLE__
 #include <pthread.h>
 #endif
+#include <stddef.h>
+#include <stdio.h>
 
 #include "misc.h"
 
