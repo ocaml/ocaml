@@ -26,7 +26,7 @@ module Generational : GLOBREF = struct
   external remove: t -> unit = "gb_generational_remove"
 end
 
-module Test(G: GLOBREF) = struct
+module Test(G: GLOBREF) () = struct
 
   let size = 1024
 
@@ -69,8 +69,8 @@ module Test(G: GLOBREF) = struct
     done
 end
 
-module TestClassic = Test(Classic)
-module TestGenerational = Test(Generational)
+module TestClassic = Test(Classic) ()
+module TestGenerational = Test(Generational) ()
 
 external young2old : unit -> unit = "gb_young2old"
 
