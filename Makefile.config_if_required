@@ -4,7 +4,7 @@
 #*                                                                        *
 #*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
 #*                                                                        *
-#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*   Copyright 2020 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -13,25 +13,18 @@
 #*                                                                        *
 #**************************************************************************
 
-ROOTDIR=..
-include $(ROOTDIR)/Makefile.common
+ifeq "$(MAKECMDGOALS)" ""
+MAKECMDGOALS += defaultentry
+endif
 
-OTHERLIBRARIES ?= bigarray dynlink raw_spacetime_lib str systhreads \
-                  unix win32unix
+CLEAN_TARGET_NAMES=clean partialclean distclean
 
-# $1: target name to dispatch to all otherlibs/*/Makefile
-define dispatch_
-$1:
-	@for lib in $$(OTHERLIBRARIES); do \
-	  ($$(MAKE) -C $$$$lib $1) || exit $$$$?; \
-	done
-endef
-define dispatch
-$(eval $(call dispatch_,$1))
-endef
+# Some special targets ('*clean' and 'configure') do not require configuration.
+# REQUIRES_CONFIGURATION is empty if only those targets are requested,
+# and non-empty if configuration is required.
+REQUIRES_CONFIGURATION := $(strip \
+  $(filter-out $(CLEAN_TARGET_NAMES) configure, $(MAKECMDGOALS)))
 
-.PHONY: all allopt clean partialclean
-$(call dispatch,all)
-$(call dispatch,allopt)
-$(call dispatch,clean)
-$(call dispatch,partialclean)
+ifneq "$(REQUIRES_CONFIGURATION)" ""
+include $(ROOTDIR)/Makefile.build_config
+endif

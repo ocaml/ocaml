@@ -27,7 +27,7 @@
 (rule
  (targets libcamlrun.a)
  (mode    fallback)
- (deps    ../Makefile.config ../Makefile.build_config
+ (deps    ../Makefile.config ../Makefile.build_config ../Makefile.config_if_required
           ../Makefile.common Makefile
           (glob_files caml/*.h)
           interp.c misc.c stacks.c fix_code.c startup_aux.c startup_byt.c
