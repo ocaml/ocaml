@@ -1408,7 +1408,9 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
       match ty.desc with
         Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
           (ty,(t,bound)) :: visited
-      | _ -> visited in
+      | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ | Tlink _ | Tsubst _ ->
+          visited
+    in
     let copy_rec = copy_sep cleanup_scope fixed free bound visited in
     t.desc <-
       begin match ty.desc with
@@ -1418,7 +1420,7 @@ let rec copy_sep cleanup_scope fixed free bound visited ty =
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && more.level <> generic_level in
           let more' = copy_rec more in
-          let fixed' = fixed && is_Tvar (repr more') in
+          let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
           let row = copy_row copy_rec fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
@@ -1913,8 +1915,14 @@ let occur_univar env ty =
             let td = Env.find_type p env in
             List.iter2
               (fun t v ->
-                if Variance.(mem May_pos v || mem May_neg v)
-                then occur_rec bound t)
+                (* The null variance only occurs in type abbreviations and
+                   corresponds to type variables that do not occur in the
+                   definition (expansion would erase them completely).
+                   The type-checker consistently ignores type expressions
+                   in this position. Physical expansion, as done in `occur`,
+                   would be costly here, since we need to check inside
+                   object and variant types too. *)
+                if not Variance.(eq v null) then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
             List.iter (occur_rec bound) tl
@@ -1961,8 +1969,8 @@ let univars_escape env univar_pairs vl ty =
           begin try
             let td = Env.find_type p env in
             List.iter2
-              (fun t v ->
-                if Variance.(mem May_pos v || mem May_neg v) then occur t)
+              (* see occur_univar *)
+              (fun t v -> if not Variance.(eq v null) then occur t)
               tl td.type_variance
           with Not_found ->
             List.iter occur tl
@@ -2498,15 +2506,6 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
 (* force unification in Reither when one side has a non-conjunctive type *)
 let rigid_variants = ref false
 
-(* drop not force unification in Reither, even in fixed case
-   (not sound, only use it when checking exhaustiveness) *)
-let passive_variants = ref false
-let with_passive_variants f x =
-  if !passive_variants then f x else
-  match passive_variants := true; f x with
-  | r           -> passive_variants := false; r
-  | exception e -> passive_variants := false; raise e
-
 let unify_eq t1 t2 =
   t1 == t2 ||
   match !umode with
@@ -2966,7 +2965,6 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         List.iter2 (unify env) tl1 tl2
       end
       else let redo =
-        not !passive_variants &&
         (m1 || m2 || either_fixed ||
          !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
@@ -2992,7 +2990,6 @@ and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
         [], [] -> ()
       | (tu1::tlu1), _ :: _ ->
           (* Attempt to merge all the types containing univars *)
-          if not !passive_variants then
           List.iter (unify env tu1) (tlu1@tlu2)
       | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
       end;

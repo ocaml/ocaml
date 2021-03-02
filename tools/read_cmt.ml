@@ -149,8 +149,7 @@ let record_cmt_info cmt =
                                     Annot.Idef (location_file value)))
   in
   let open Cmt_format in
-  (* record in reverse order to get them in correct order... *)
-  List.iter (fun dir -> record_info "include" dir) (List.rev cmt.cmt_loadpath);
+  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath;
   record_info "chdir" cmt.cmt_builddir;
   (match cmt.cmt_sourcefile with
     None -> () | Some file -> record_info "source" file)
@@ -175,7 +174,7 @@ let main () =
           | Some _ as x -> x
         in
         Envaux.reset_cache ();
-        List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
+        List.iter Load_path.add_dir cmt.cmt_loadpath;
         Cmt2annot.gen_annot target_filename
           ~sourcefile:cmt.cmt_sourcefile
           ~use_summaries:cmt.cmt_use_summaries

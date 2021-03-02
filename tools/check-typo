@@ -170,9 +170,8 @@ IGNORE_DIRS="
 # is faster to optimistically run check-typo on them (and maybe get
 # out in the middle) than to first check then run.
 
-TEST_AWK='BEGIN {if ("a{1}" ~ /a{1}/) exit 0}'
-if $OCAML_CT_AWK "$TEST_AWK" ; then
-  TEST_AWK='BEGIN {if ("a" ~ /a{1}/) exit 0}'
+TEST_AWK='BEGIN {if ("a{1}" ~ /a{1}$/) exit 1}'
+if ! $OCAML_CT_AWK "$TEST_AWK" ; then
   if $OCAML_CT_AWK --re-interval "$TEST_AWK" 2>/dev/null ; then
     OCAML_CT_AWK="$OCAML_CT_AWK --re-interval"
   else

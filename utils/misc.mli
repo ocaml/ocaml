@@ -59,6 +59,10 @@ val try_finally :
     for easier debugging.
 *)
 
+val reraise_preserving_backtrace : exn -> (unit -> unit) -> 'a
+(** [reraise_preserving_backtrace e f] is (f (); raise e) except that the
+    current backtrace is preserved, even if [f] uses exceptions internally. *)
+
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)

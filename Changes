@@ -3,11 +3,6 @@ Working version
 
 ### Language features:
 
-- #9570: Provide an Atomic module with a trivial purely-sequential
-  implementation, to help write code that is compatible with Multicore
-  OCaml.
-  (Gabriel Scherer, review by Xavier Leroy)
-
 ### Runtime system:
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
@@ -35,6 +30,13 @@ Working version
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
 
+- #9619: Change representation of function closures so that code pointers
+  can be easily distinguished from environment variables
+  (Xavier Leroy, review by Mark Shinwell and Damien Doligez)
+
+- #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
@@ -51,6 +53,11 @@ Working version
 
 - #9561: Unbox Unix.gettimeofday and Unix.time
   (Stephen Dolan, review by David Allsopp)
+
+- #9570: Provide an Atomic module with a trivial purely-sequential
+  implementation, to help write code that is compatible with Multicore
+  OCaml.
+  (Gabriel Scherer, review by Xavier Leroy)
 
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
@@ -85,6 +92,10 @@ Working version
 
 
 ### Compiler user-interface and warnings:
+
+- #9560: Report partial application warnings on type errors in applications.
+  (Stephen Dolan, report and testcase by whitequark, review by Gabriel Scherer
+   and Thomas Refis)
 
 - #9583: when bytecode linking fails due to an unavailable module, the module
   that requires it is now included in the error message.
@@ -128,6 +139,10 @@ Working version
   (Gabriel Scherer and Jeremy Yallop and Xavier Leroy,
    report by Twitter user @st_toHKR through Jun Furuse)
 
+- #9611: maintain order of load path entries in various situations: when passing
+  them to system linker, ppx contexts, etc.
+  (Nicolás Ojeda Bär, review by Jérémie Dimino and Gabriel Scherer)
+
 OCaml 4.11
 ----------
 
@@ -140,7 +155,7 @@ OCaml 4.11
   (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
    request by Bikal Lem)
 
-- #6673, #1132: Relax the handling of explicit polymorphic types
+- #6673, #1132, #9617: Relax the handling of explicit polymorphic types
   (Leo White, review by Jacques Garrigue and Gabriel Scherer)
 
 - #9232: allow any class type paths in #-types,
@@ -398,6 +413,10 @@ OCaml 4.11
 - #7708, #9580: Ensure Stdlib documentation index refers to Stdlib.
   (Stephen Dolan, review by Florian Angeletti, report by Hannes Mehnert)
 
+- #9610: manual, C FFI: naked pointers are deprecated, detail the
+  forward-compatible options for handling out-of-heap pointers.
+  (Xavier Leroy, review by Mark Shinwell, David Allsopp and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
@@ -513,6 +532,9 @@ OCaml 4.11
 
 ### Bug fixes:
 
+- #7520, #9547: Odd behaviour of refutation cases with polymorphic variants
+  (Jacques Garrigue, report by Leo White, reviews by Gabriel Scherer and Leo)
+
 - #7562, #9456: ocamlopt-generated code crashed on Alpine Linux on
   ppc64le, arm, and i386.  Fixed by turning PIE off for musl-based Linux
   systems except amd64 (x86_64) and s390x.
@@ -524,6 +546,9 @@ OCaml 4.11
 
 - #7696, #6608: Record expression deleted when all fields specified
   (Jacques Garrigue, report by Jeremy Yallop)
+
+- #7741, #9645: Failure to report escaping type variable
+  (Jacques Garrigue, report by Gabriel Radanne, review by Gabriel Scherer)
 
 - #7817, #9546: Unsound inclusion check for polymorphic variant
   (Jacques Garrigue, report by Mikhail Mandrykin, review by Gabriel Scherer)
@@ -596,6 +621,10 @@ OCaml 4.11
 - #9428: Fix truncated exception backtrace for C->OCaml callbacks
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
+
+- #9623: fix typing environments in Typedecl.transl_with_constraint
+  (Gabriel Scherer, review by Jacques Garrigue and Leo White,
+   report by Hugo Heuzard)
 
 OCaml 4.10 maintenance branch
 -----------------------------

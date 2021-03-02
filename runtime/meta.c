@@ -122,7 +122,8 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   caml_debugger(CODE_LOADED, Val_long(caml_code_fragments_table.size - 1));
 #endif
 
-  clos = caml_alloc_1 (Closure_tag, Val_bytecode(prog));
+  clos = caml_alloc_small (1, Closure_tag);
+  Code_val(clos) =  (code_t) prog;
   bytecode = caml_alloc_small (2, Abstract_tag);
   Bc_val(bytecode)->prog = prog;
   Bc_val(bytecode)->len = len;

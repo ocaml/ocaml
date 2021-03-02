@@ -112,7 +112,7 @@ case $NODE_NAME in
   ocaml-ppc-64)
     CCOMP="CC='gcc -m64'"
     OCAML_CONFIGURE_OPTIONS=;;
-  ocaml-openbsd-64)
+  ocaml-freebsd-64|ocaml-openbsd-64)
     OCAML_CONFIGURE_OPTIONS='--with-bfd'
 esac
 

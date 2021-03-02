@@ -522,10 +522,17 @@ static void mark_stack_push(struct mark_stack* stk, value block,
   int i, block_wsz = Wosize_val(block), end;
   mark_entry* me;
 
+  if (offset == 0 && Tag_val(block) == Closure_tag) {
+    /* Skip the code pointers and integers at beginning of closure;
+       start scanning at the first word of the environment part. */
+    offset = Start_env_closinfo(Closinfo_val(block));
+  }
+
   CAMLassert(Is_block(block) && !Is_young(block));
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
   CAMLassert(Tag_val(block) != Cont_tag);
+  CAMLassert(offset <= block_wsz);
 
   /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
    * into the mark stack. */
@@ -603,7 +610,7 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
 
   if (Is_markable(child)){
     chd = Hd_val(child);
-    if(Tag_hd(chd) == Infix_tag){
+    if (Tag_hd(chd) == Infix_tag) {
       child -= Infix_offset_hd(chd);
       chd = Hd_val(child);
     }

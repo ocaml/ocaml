@@ -1869,11 +1869,7 @@ let partial_pred ~lev ~splitting_mode ?(explode=0)
       } in
   try
     reset_pattern None true;
-    let typed_p =
-      Ctype.with_passive_variants
-        (type_pat Value ~lev ~mode env p)
-        expected_ty
-    in
+    let typed_p = type_pat Value ~lev ~mode env p expected_ty in
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
@@ -2289,15 +2285,28 @@ let list_labels env ty =
 (* Check that all univars are safe in a type. Both exp.exp_type and
    ty_expected should already be generalized. *)
 let check_univars env kind exp ty_expected vars =
-  let ty, complete = polyfy env exp.exp_type vars in
-  let ty_expected = instance ty_expected in
+  let pty = instance ty_expected in
+  begin_def ();
+  let exp_ty, vars =
+    match pty.desc with
+      Tpoly (body, tl) ->
+        (* Enforce scoping for type_let:
+           since body is not generic,  instance_poly only makes
+           copies of nodes that have a Tvar as descendant *)
+        let _, ty' = instance_poly true tl body in
+        let vars, exp_ty = instance_parameterized_type vars exp.exp_type in
+        unify_exp_types exp.exp_loc env exp_ty ty';
+        exp_ty, vars
+    | _ -> assert false
+  in
+  end_def ();
+  generalize exp_ty;
+  List.iter generalize vars;
+  let ty, complete = polyfy env exp_ty vars in
   if not complete then
+    let ty_expected = instance ty_expected in
     raise (Error (exp.exp_loc, env,
-                  Less_general(kind, [Unification_trace.diff ty ty_expected])));
-  try
-    unify env ty ty_expected
-  with Unify trace ->
-    raise(Error(exp.exp_loc, env, Expr_type_clash(trace, None, None)))
+                  Less_general(kind, [Unification_trace.diff ty ty_expected])))
 
 let generalize_and_check_univars env kind exp ty_expected vars =
   generalize exp.exp_type;
@@ -2739,12 +2748,18 @@ and type_expect_
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
       unify_var env (newvar()) funct.exp_type;
-      rue {
-        exp_desc = Texp_apply(funct, args);
-        exp_loc = loc; exp_extra = [];
-        exp_type = ty_res;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
+      let exp =
+        { exp_desc = Texp_apply(funct, args);
+          exp_loc = loc; exp_extra = [];
+          exp_type = ty_res;
+          exp_attributes = sexp.pexp_attributes;
+          exp_env = env } in
+      begin
+        try rue exp
+        with Error (_, _, Expr_type_clash _) as err ->
+          Misc.reraise_preserving_backtrace err (fun () ->
+            check_partial_application false exp)
+      end
   | Pexp_match(sarg, caselist) ->
       begin_def ();
       let arg = type_exp env sarg in
