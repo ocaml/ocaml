@@ -18,7 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 OCAMLYACCFLAGS = --strict -v
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
@@ -221,12 +220,6 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 
 .ml.cmxs:
 	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
-
-%.ml: %.mll
-	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
-
-%.ml %.mli: %.mly
-	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
 
 # Installation targets
 ######################

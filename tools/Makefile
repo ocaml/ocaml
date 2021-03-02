@@ -71,7 +71,6 @@ endef
 CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -g -nostdlib -I $(ROOTDIR)/stdlib
-BOOT_OCAMLLEX ?= $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
                        middle_end middle_end/closure middle_end/flambda \
@@ -331,9 +330,6 @@ clean::
 	rm -f -- caml-tex caml-tex.exe caml_tex.cm?
 
 # Common stuff
-
-%.ml: %.mll
-	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
 
 %.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) - $<

@@ -20,8 +20,6 @@ include $(ROOTDIR)/Makefile.best_binaries
 
 DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
 UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
-OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
-OCAMLYACCFLAGS =
 
 CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
@@ -78,14 +76,10 @@ depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
-%.ml: %.mll
-	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
 clean::
 	rm -f debugger_lexer.ml
 beforedepend:: debugger_lexer.ml
 
-%.ml %.mli: %.mly
-	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
 clean::
 	rm -f debugger_parser.ml debugger_parser.mli
 beforedepend:: debugger_parser.ml debugger_parser.mli
