@@ -6,6 +6,10 @@ Working version
 
 ### Runtime system:
 
+- #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
+  adding support for Musl ppc64le along the way.
+  (Xavier Leroy and Anil Madhavapeddy, review by Stephen Dolan)
+
 - #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
