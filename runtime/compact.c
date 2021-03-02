@@ -122,8 +122,9 @@ static char *compact_allocate (mlsize_t size)
 {
   char *chunk, *adr;
 
-  while (Chunk_size(compact_fl) - Chunk_alloc(compact_fl) <= Bhsize_wosize(0)){
+  while (Chunk_size(compact_fl) - Chunk_alloc(compact_fl) < Bhsize_wosize(1)){
     compact_fl = Chunk_next (compact_fl);
+    CAMLassert (compact_fl != NULL);
   }
   chunk = compact_fl;
   while (Chunk_size (chunk) - Chunk_alloc (chunk) < size){
