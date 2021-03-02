@@ -45,3 +45,13 @@ end[@foo]
 [@@foo]
 
 [@@@foo]
+
+module type T = sig type t end
+
+module _ = (Int : T [@foo])
+
+module _ = (Int : T with type t = int [@foo])
+
+let _ = (module Int : T [@foo])
+
+let _ = (module Int : T with type t = int [@foo])

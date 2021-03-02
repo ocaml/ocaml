@@ -110,14 +110,6 @@ module Stdlib = struct
       | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
       | (_, _) -> false
 
-    let rec find_map f = function
-      | x :: xs ->
-          begin match f x with
-          | None -> find_map f xs
-          | Some _ as y -> y
-          end
-      | [] -> None
-
     let map2_prefix f l1 l2 =
       let rec aux acc l1 l2 =
         match l1, l2 with

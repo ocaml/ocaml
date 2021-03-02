@@ -63,13 +63,12 @@ let files env = words_of_variable env Builtin_variables.files
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
     let src = Filename.concat test_source_directory filename in
-    let cmd = "ln -sf " ^ src ^" " ^ build_directory in
-    Sys.run_system_command cmd in
+    Sys.run_system_command "ln" ["-sf"; src; build_directory] in
   let copy filename =
     let src = Filename.concat test_source_directory filename in
     let dst = Filename.concat build_directory filename in
     Sys.copy_file src dst in
-  let f = if Sys.os_type="Win32" then copy else symlink in
+  let f = if Sys.win32 then copy else symlink in
   Sys.make_directory build_directory;
   List.iter f files
 
@@ -122,7 +121,7 @@ let run_cmd
   in
   let lst = List.concat (List.map String.words cmd) in
   let quoted_lst =
-    if Sys.os_type="Win32"
+    if Sys.win32
     then List.map Filename.maybe_quote lst
     else lst in
   let cmd' = String.concat " " quoted_lst in

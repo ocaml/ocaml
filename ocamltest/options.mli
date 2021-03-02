@@ -15,16 +15,16 @@
 
 (* Description of ocamltest's command-line options *)
 
-val log_to_stderr : bool ref
+val log_to_stderr : bool
 
-val files_to_test : string list ref
+val files_to_test : string list
 
-val promote : bool ref
+val promote : bool
 
 val usage : string
 
-val find_test_dirs : string list ref
+val find_test_dirs : string list
 
-val list_tests : string list ref
+val list_tests : string list
 
-val keep_test_dir_on_success : bool ref
+val keep_test_dir_on_success : bool

@@ -294,19 +294,19 @@ struct
     List.exists (fun ((_, s), (_, e)) -> s <= pos && pos <= e) iset
 
   let find_bound_in iset ~range:(start, end_)  =
-    Misc.Stdlib.List.find_map (fun ((a, x), (b, y)) ->
+    List.find_map (fun ((a, x), (b, y)) ->
       if start <= x && x <= end_ then Some (a, x)
       else if start <= y && y <= end_ then Some (b, y)
       else None
     ) iset
 
   let is_start iset ~pos =
-    Misc.Stdlib.List.find_map (fun ((a, x), _) ->
+    List.find_map (fun ((a, x), _) ->
       if pos = x then Some a else None
     ) iset
 
   let is_end iset ~pos =
-    Misc.Stdlib.List.find_map (fun (_, (b, y)) ->
+    List.find_map (fun (_, (b, y)) ->
       if pos = y then Some b else None
     ) iset
 
