@@ -78,5 +78,12 @@ let files_to_test = ref []
 
 let usage = "Usage: " ^ Sys.argv.(0) ^ " options files to test"
 
-let _ =
+let () =
   Arg.parse (Arg.align commandline_options) (add_to_list files_to_test) usage
+
+let log_to_stderr = !log_to_stderr
+let files_to_test = !files_to_test
+let promote = !promote
+let find_test_dirs = !find_test_dirs
+let list_tests = !list_tests
+let keep_test_dir_on_success = !keep_test_dir_on_success

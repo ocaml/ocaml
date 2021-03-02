@@ -12851,6 +12851,8 @@ fi ;; #(
      oc_ldflags="-brtl -bexpfull"
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
+  gcc*,powerpc-*-linux*) :
+    oc_ldflags="-mbss-plt" ;; #(
   *) :
      ;;
 esac
@@ -13681,7 +13683,12 @@ esac ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
-      mksharedlib="$CC -shared"
+       case $CC,$host in #(
+  gcc*,powerpc-*-linux*) :
+    mksharedlib="$CC -shared -mbss-plt" ;; #(
+  *) :
+    mksharedlib="$CC -shared" ;;
+esac
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -13807,6 +13814,32 @@ else
 $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+## Check whether __attribute__((optimize("tree-vectorize")))) is supported
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports __attribute__((optimize(\"tree-vectorize\")))" >&5
+$as_echo_n "checking whether the C compiler supports __attribute__((optimize(\"tree-vectorize\")))... " >&6; }
+  saved_CFLAGS="$CFLAGS"
+  CFLAGS="-Werror $CFLAGS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+       __attribute__((optimize("tree-vectorize"))) void f(void){}
+       int main() { f(); return 0; }
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  $as_echo "#define SUPPORTS_TREE_VECTORIZE 1" >>confdefs.h
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS="$saved_CFLAGS"
+
 
 # Configure the native-code compiler
 

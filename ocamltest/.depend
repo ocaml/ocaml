@@ -221,10 +221,12 @@ ocaml_directories.cmi :
 ocaml_files.cmo : \
     ocamltest_stdlib.cmi \
     ocamltest_config.cmi \
+    ocaml_directories.cmi \
     ocaml_files.cmi
 ocaml_files.cmx : \
     ocamltest_stdlib.cmx \
     ocamltest_config.cmx \
+    ocaml_directories.cmx \
     ocaml_files.cmi
 ocaml_files.cmi :
 ocaml_filetypes.cmo : \

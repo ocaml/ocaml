@@ -15,31 +15,31 @@
 
 (* Helper functions to build OCaml-related commands *)
 
-let ocamlrun ocamlsrcdir program =
-  (Ocaml_files.ocamlrun ocamlsrcdir) ^ " " ^ (program ocamlsrcdir)
+let ocamlrun program =
+  Ocaml_files.ocamlrun ^ " " ^ program
 
-let ocamlrun_ocamlc ocamlsrcdir = ocamlrun ocamlsrcdir Ocaml_files.ocamlc
+let ocamlrun_ocamlc = ocamlrun Ocaml_files.ocamlc
 
-let ocamlrun_ocamlopt ocamlsrcdir = ocamlrun ocamlsrcdir Ocaml_files.ocamlopt
+let ocamlrun_ocamlopt = ocamlrun Ocaml_files.ocamlopt
 
-let ocamlrun_ocaml ocamlsrcdir = ocamlrun ocamlsrcdir Ocaml_files.ocaml
+let ocamlrun_ocaml = ocamlrun Ocaml_files.ocaml
 
-let ocamlrun_expect_test ocamlsrcdir =
-  ocamlrun ocamlsrcdir Ocaml_files.expect_test
+let ocamlrun_expect_test =
+  ocamlrun Ocaml_files.expect_test
 
-let ocamlrun_ocamllex ocamlsrcdir = ocamlrun ocamlsrcdir Ocaml_files.ocamllex
+let ocamlrun_ocamllex = ocamlrun Ocaml_files.ocamllex
 
-let ocamlrun_ocamldoc ocamlsrcdir =
-  ocamlrun ocamlsrcdir Ocaml_files.ocamldoc
+let ocamlrun_ocamldoc =
+  ocamlrun Ocaml_files.ocamldoc
 
-let ocamlrun_ocamldebug ocamlsrcdir =
-  ocamlrun ocamlsrcdir Ocaml_files.ocamldebug
+let ocamlrun_ocamldebug =
+  ocamlrun Ocaml_files.ocamldebug
 
-let ocamlrun_ocamlobjinfo ocamlsrcdir =
-  ocamlrun ocamlsrcdir Ocaml_files.ocamlobjinfo
+let ocamlrun_ocamlobjinfo =
+  ocamlrun Ocaml_files.ocamlobjinfo
 
-let ocamlrun_ocamlmklib ocamlsrcdir =
-  ocamlrun ocamlsrcdir Ocaml_files.ocamlmklib
+let ocamlrun_ocamlmklib =
+  ocamlrun Ocaml_files.ocamlmklib
 
-let ocamlrun_codegen ocamlsrcdir =
-  ocamlrun ocamlsrcdir Ocaml_files.codegen
+let ocamlrun_codegen =
+  ocamlrun Ocaml_files.codegen
