@@ -1927,7 +1927,7 @@ AS_CASE([$host],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
   [bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_ldlibs"
-  nativecclibs="$cclibs $DLLIBS"])
+  nativecclibs="$cclibs $DLLIBS $pthread_link"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])
