@@ -12,7 +12,11 @@ let n = 10
 
 let _ =
   for _ = 1 to 20 do
-    let burn = fun () -> TestClassic.test n; TestGenerational.test n in
+    let burn = fun () ->
+      let module TestClassic = Test(Classic) () in
+      let module TestGenerational = Test(Generational) () in
+      TestClassic.test n;
+      TestGenerational.test n in
     let d = Array.init 4 (fun _ -> Domain.spawn burn) in
     Array.iter Domain.join d
   done;
