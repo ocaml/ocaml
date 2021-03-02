@@ -21,8 +21,8 @@
 
 ROOTDIR = ../..
 
--include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
@@ -265,10 +265,6 @@ clean: partialclean
 beforedepend: dynlink_platform_intf.mli
 
 .PHONY: depend
-ifeq "$(TOOLCHAIN)" "msvc"
-depend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
 DEPEND_DUMMY_FILES=\
   native/dynlink_compilerlibs.ml \
   byte/dynlink_compilerlibs.mli \
@@ -282,11 +278,10 @@ depend: beforedepend
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
-endif
 
 include .depend
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
 
 .mli.cmi:
 	$(OCAMLC) -c $(COMPFLAGS) $<

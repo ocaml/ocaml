@@ -14,8 +14,8 @@
 #**************************************************************************
 
 ROOTDIR=..
--include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 
 OTHERLIBRARIES ?= bigarray dynlink raw_spacetime_lib str systhreads \
                   unix win32unix

@@ -26,12 +26,11 @@ CAN_BE_UNCONFIGURED := $(strip \
 	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
 
 ifeq "$(CAN_BE_UNCONFIGURED)" ""
--include Makefile.config
--include Makefile.common
+-include Makefile.build_config
 else
-include Makefile.config
-include Makefile.common
+include Makefile.build_config
 endif
+include Makefile.common
 
 .PHONY: defaultentry
 ifeq "$(NATIVE_COMPILER)" "true"
@@ -40,7 +39,6 @@ else
 defaultentry: world
 endif
 
-MKDIR=mkdir -p
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
 else
@@ -248,25 +246,6 @@ coreboot:
 	$(MAKE) CAMLRUN=runtime/ocamlrun promote
 # Rebuild the core system
 	$(MAKE) partialclean
-	$(MAKE) core
-# Check if fixpoint reached
-	$(MAKE) compare
-
-OLD_STDLIB_CMI=arg.cmi array.cmi arrayLabels.cmi buffer.cmi bytes.cmi bytesLabels.cmi callback.cmi char.cmi complex.cmi digest.cmi ephemeron.cmi filename.cmi format.cmi gc.cmi genlex.cmi hashtbl.cmi int32.cmi int64.cmi lazy.cmi lexing.cmi list.cmi listLabels.cmi map.cmi marshal.cmi moreLabels.cmi nativeint.cmi obj.cmi oo.cmi parsing.cmi printexc.cmi printf.cmi queue.cmi random.cmi scanf.cmi set.cmi sort.cmi spacetime.cmi stack.cmi stdLabels.cmi stream.cmi string.cmi stringLabels.cmi sys.cmi uchar.cmi weak.cmi pervasives.cmi atomic.cmi domain.cmi
-
-.PHONY: clean_old_stdlib_cmi
-clean_old_stdlib_cmi:
-	cd boot && rm -f $(OLD_STDLIB_CMI)
-
-.PHONY: coreboot_pervasives_stdlib_change
-coreboot_pervasives_stdlib_change:
-# Save the original bootstrap compiler
-	$(MAKE) backup
-# Promote the new compiler and the new runtime
-	$(MAKE) CAMLRUN=runtime/ocamlrun promote
-# Rebuild the core system
-	$(MAKE) partialclean
-	$(MAKE) clean_old_stdlib_cmi
 	$(MAKE) core
 # Check if fixpoint reached
 	$(MAKE) compare
@@ -772,19 +751,14 @@ clean::
 
 otherlibs_all := bigarray dynlink raw_spacetime_lib \
   str systhreads unix win32unix
-subdirs := debugger lex ocamldoc ocamltest runtime stdlib tools \
+subdirs := debugger lex ocamldoc ocamltest stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
 
 .PHONY: alldepend
-ifeq "$(TOOLCHAIN)" "msvc"
-alldepend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
 alldepend: depend
 	for dir in $(subdirs); do \
 	  $(MAKE) -C $$dir depend || exit; \
 	done
-endif
 
 # The runtime system for the native-code compiler
 
@@ -1097,7 +1071,8 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
-	rm -f Makefile.config Makefile.common runtime/caml/m.h runtime/caml/s.h
+	rm -f Makefile.config Makefile.build_config
+	rm -f runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache
 	rm -f config.log config.status libtool
 	rm -f tools/eventlog_metadata
@@ -1109,7 +1084,7 @@ include .depend
 
 
 ifneq "$(strip $(CAN_BE_UNCONFIGURED))" ""
-Makefile.config Makefile.common: config.status
+Makefile.config Makefile.build_config: config.status
 
 config.status:
 	@echo "Please refer to the installation instructions:"

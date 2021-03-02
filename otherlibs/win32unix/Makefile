@@ -65,15 +65,8 @@ $(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
 	cp ../unix/$* $*
 
 .PHONY: depend
-ifeq "$(TOOLCHAIN)" "msvc"
-depend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(CC) -MM $(OC_CPPFLAGS) -I../unix $(ALL_FILES) \
-	  | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
-	  unix.ml >> .depend
-endif
+	  unix.ml > .depend
 
 include .depend
