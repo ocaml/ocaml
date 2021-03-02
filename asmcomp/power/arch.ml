@@ -34,11 +34,13 @@ let abi =
 
 (* Machine-specific command-line options *)
 
-let big_toc = ref false
+let big_toc = ref true
 
 let command_line_options = [
   "-flarge-toc", Arg.Set big_toc,
-     " Support TOC (table of contents) greater than 64 kbytes"
+     " Support TOC (table of contents) greater than 64 kbytes (default)";
+  "-fsmall-toc", Arg.Clear big_toc,
+     " TOC (table of contents) is limited to 64 kbytes"
 ]
 
 (* Specific operations *)
