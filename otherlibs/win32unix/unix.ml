@@ -566,8 +566,10 @@ type tm =
     tm_yday : int;
     tm_isdst : bool }
 
-external time : unit -> float = "unix_time"
-external gettimeofday : unit -> float = "unix_gettimeofday"
+external time : unit -> (float [@unboxed]) =
+  "unix_time" "unix_time_unboxed" [@@noalloc]
+external gettimeofday : unit -> (float [@unboxed]) =
+  "unix_gettimeofday" "unix_gettimeofday_unboxed" [@@noalloc]
 external gmtime : float -> tm = "unix_gmtime"
 external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"

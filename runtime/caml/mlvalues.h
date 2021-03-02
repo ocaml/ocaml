@@ -409,7 +409,13 @@ CAMLextern value caml_atom(tag_t);
 #define Val_emptylist Val_int(0)
 #define Tag_cons 0
 
-CAMLextern value caml_set_oo_id(value obj);
+/* Option constructors */
+
+#define Val_none Val_int(0)
+#define Some_val(v) Field(v, 0)
+#define Tag_some 0
+#define Is_none(v) ((v) == Val_None)
+#define Is_some(v) Is_block(v)
 
 CAMLextern value caml_set_oo_id(value obj);
 
