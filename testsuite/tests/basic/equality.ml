@@ -12,6 +12,11 @@ let eqtrue (b:bool) = b
 let eqftffff =
   function (false,true,false,false,false,false) -> true | _ -> false
 
+let eqfun delayed_check =
+  match delayed_check () with
+  | exception Invalid_argument _ -> true
+  | _ -> false
+
 let x = [1;2;3]
 
 let f x = 1 :: 2 :: 3 :: x
@@ -32,6 +37,9 @@ let mkleftlist len =
   let l = ref Nil in
   for i = 1 to len do l := Cons(!l, i) done;
   !l
+
+(* use an existential to check equality with different tags *)
+type any = Any : 'a -> any
 
 let _ =
   test 1 eq0 (compare 0 0);
@@ -103,4 +111,25 @@ let _ =
   test 52 eqtrue (testcmpfloat 0.0 nan);
   test 53 eqtrue (testcmpfloat 0.0 0.0);
   test 54 eqtrue (testcmpfloat 1.0 0.0);
-  test 55 eqtrue (testcmpfloat 0.0 1.0)
+  test 55 eqtrue (testcmpfloat 0.0 1.0);
+  test 56 eqfun (fun () -> compare (fun x -> x) (fun x -> x));
+  test 57 eqfun (fun () ->
+    (* #9521 *)
+    let rec f x = g x and g x = f x in compare f g);
+
+  (* this is the current behavior of comparison
+     with values of incoherent types (packed below
+     an existential), but it may not be the only specification. *)
+  test 58 eqm1
+    (compare (Any 0) (Any 2));
+  begin
+    (* comparing two function fails *)
+    test 59 eqfun (fun () ->
+      compare (Any (fun x -> x)) (Any (fun x -> x + 1)));
+    (* comparing a function and a non-function succeeds *)
+    test 60 (Fun.negate eq0)
+      (compare (Any (fun x -> x)) (Any 0));
+    test 61 (Fun.negate eq0)
+      (compare (Any 0) (Any (fun x -> x)));
+  end;
+  ()

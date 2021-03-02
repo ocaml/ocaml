@@ -15,7 +15,6 @@
 
 ROOTDIR = ..
 
--include $(ROOTDIR)/Makefile.build_config
 include $(ROOTDIR)/Makefile.common
 
 TARGET_BINDIR ?= $(BINDIR)
@@ -31,9 +30,6 @@ CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
-
-# Object file prefix
-P=stdlib__
 
 include StdlibModules
 
@@ -239,7 +235,6 @@ $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
-	rm -f camlheader*
 
 include .depend
 
