@@ -63,8 +63,8 @@ let unsigned_to_int =
           None
   | 64 ->
       (* So that it compiles in 32-bit *)
-      let move = int_of_string "0x1_0000_0000" in
-      fun n -> let i = to_int n in Some (if i < 0 then i + move else i)
+      let mask = 0xFFFF lsl 16 lor 0xFFFF in
+      fun n -> Some (to_int n land mask)
   | _ ->
       assert false
 
