@@ -73,19 +73,20 @@ jobs:
         run: tools/ci/actions/check-labelled-interfaces.sh
         if: always()
 
-        # If this step fails, it leaves behind the file compiler-failed-to-build
-        # the presence of which can be felt by the last two steps, allowing them
-        # to skip, rather than go beserk with a faulty compiler.
+        # This step records the build success in the variable build-status,
+        # allowing the last two steps to skip, rather than go beserk with a
+        # faulty compiler.
       - name: Build a minimal compiler for alldepend
+        id: compiler
         run: tools/ci/actions/runner.sh basic-compiler
         if: always()
 
       - name: Check that dependency info is up-to-date
         run: tools/ci/actions/check-alldepend.sh
-        if: hashFiles('compiler-failed-to-build') == '' && always()
+        if: steps.compiler.outputs.build-status == 'success' && always()
 
       - name: Check global structure of the reference manual
         run: |
           # Required configuration info is left-over from the previous step
           make -C manual/tests check-stdlib check-case-collision
-        if: hashFiles('compiler-failed-to-build') == '' && always()
+        if: steps.compiler.outputs.build-status == 'success' && always()
