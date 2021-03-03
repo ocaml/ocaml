@@ -1,32 +1,10 @@
-(* 
-   modules = "globrootsprim.c"
+(* TEST
+   flags += " -w a "
+   modules = "globrootsprim.c globroots.ml"
 *)
+open Globroots
 
-module type GLOBREF = sig
-  type t
-  val register: string -> t
-  val get: t -> string
-  val set: t -> string -> unit
-  val remove: t -> unit
-end
-
-module Classic : GLOBREF = struct
-  type t
-  external register: string -> t = "gb_classic_register"
-  external get: t -> string = "gb_get"
-  external set: t -> string -> unit = "gb_classic_set"
-  external remove: t -> unit = "gb_classic_remove"
-end
-
-module Generational : GLOBREF = struct
-  type t
-  external register: string -> t = "gb_generational_register"
-  external get: t -> string = "gb_get"
-  external set: t -> string -> unit = "gb_generational_set"
-  external remove: t -> unit = "gb_generational_remove"
-end
-
-module Test(G: GLOBREF) () = struct
+module Test(G: GLOBREF) = struct
 
   let size = 1024
 
@@ -65,13 +43,25 @@ module Test(G: GLOBREF) () = struct
 
   let test n =
     for i = 1 to n do
-      change(); check();
+      change(); check ();
+      print_string "."; flush stdout
     done
 end
 
-module TestClassic = Test(Classic) ()
-module TestGenerational = Test(Generational) ()
+module TestClassic = Test(Classic)
+module TestGenerational = Test(Generational)
 
-external young2old : unit -> unit = "gb_young2old"
+let _ = young2old (); Gc.full_major ()
 
-external static2young : int * int -> (unit -> unit) -> int = "gb_static2young"
+let _ =
+  assert (static2young (1, 1) Gc.full_major == 0x42)
+
+let _ =
+  let n =
+    if Array.length Sys.argv < 2 then 10000 else int_of_string Sys.argv.(1) in
+  print_string "Non-generational API\n";
+  TestClassic.test n;
+  print_newline();
+  print_string "Generational API\n";
+  TestGenerational.test n;
+  print_newline()

@@ -1,9 +1,9 @@
 (* TEST
    flags += " -w a "
-   modules = "globrootsprim.c globroot.ml"
+   modules = "globrootsprim.c globroots.ml"
 *)
 
-open Globroot
+open Globroots
 
 let num_domains = 8
 let n = 125
