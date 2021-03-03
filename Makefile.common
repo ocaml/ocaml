@@ -23,6 +23,13 @@ DEPDIR=.dep
 D=d
 MKDIR=mkdir -p
 
+# $(EMPTY) is defined in Makefile.config, but may not have been loaded
+EMPTY :=
+# $(SPACE) contains a single space
+SPACE := $(EMPTY) $(EMPTY)
+# $( ) allows line breaking with $\ at the end of the line
+$(SPACE) :=
+
 DESTDIR ?=
 INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
