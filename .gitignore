@@ -224,7 +224,6 @@ _build
 
 /tools/ocamldep
 /tools/ocamldep.opt
-/tools/ocamldep.bak
 /tools/ocamlprof
 /tools/ocamlprof.opt
 /tools/opnames.ml
@@ -235,7 +234,6 @@ _build
 /tools/ocamlobjinfo.opt
 /tools/cvt_emit
 /tools/cvt_emit.opt
-/tools/cvt_emit.bak
 /tools/cvt_emit.ml
 /tools/ocamlcp
 /tools/ocamlcp.opt
@@ -251,8 +249,8 @@ _build
 /tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
 /tools/objinfo_helper
-/tools/read_cmt
-/tools/read_cmt.opt
+/tools/ocamlcmt
+/tools/ocamlcmt.opt
 /tools/cmpbyt
 /tools/cmpbyt.opt
 /tools/stripdebug

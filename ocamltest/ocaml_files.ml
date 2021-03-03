@@ -37,25 +37,26 @@ let ocamlrun =
   Filename.make_path [Ocaml_directories.srcdir; "runtime"; ocamlrunfile]
 
 let ocamlc =
-  Filename.make_path [Ocaml_directories.srcdir; "ocamlc"]
+  Filename.make_path [Ocaml_directories.srcdir; Filename.mkexe "ocamlc"]
 
 let ocaml =
-  Filename.make_path [Ocaml_directories.srcdir; "ocaml"]
+  Filename.make_path [Ocaml_directories.srcdir; Filename.mkexe "ocaml"]
 
 let ocamlc_dot_opt =
-  Filename.make_path [Ocaml_directories.srcdir; "ocamlc.opt"]
+  Filename.make_path [Ocaml_directories.srcdir; Filename.mkexe "ocamlc.opt"]
 
 let ocamlopt =
-  Filename.make_path [Ocaml_directories.srcdir; "ocamlopt"]
+  Filename.make_path [Ocaml_directories.srcdir; Filename.mkexe "ocamlopt"]
 
 let ocamlopt_dot_opt =
-  Filename.make_path [Ocaml_directories.srcdir; "ocamlopt.opt"]
+  Filename.make_path [Ocaml_directories.srcdir; Filename.mkexe "ocamlopt.opt"]
 
 let ocamlnat =
   Filename.make_path [Ocaml_directories.srcdir; Filename.mkexe "ocamlnat"]
 
 let cmpbyt =
-  Filename.make_path [Ocaml_directories.srcdir; "tools"; "cmpbyt"]
+  Filename.make_path
+    [Ocaml_directories.srcdir; "tools"; Filename.mkexe "cmpbyt"]
 
 let expect_test =
   Filename.make_path
@@ -63,27 +64,32 @@ let expect_test =
      Filename.mkexe "expect_test"]
 
 let ocamllex =
-  Filename.make_path [Ocaml_directories.srcdir; "lex"; "ocamllex"]
+  Filename.make_path
+    [Ocaml_directories.srcdir; "lex"; Filename.mkexe "ocamllex"]
 
 let ocamlyacc =
   Filename.make_path
     [Ocaml_directories.srcdir; "yacc"; Filename.mkexe "ocamlyacc"]
 
 let ocamldoc =
-  Filename.make_path [Ocaml_directories.srcdir; "ocamldoc"; "ocamldoc"]
+  Filename.make_path
+    [Ocaml_directories.srcdir; "ocamldoc"; Filename.mkexe "ocamldoc"]
 
 let ocamldebug =
   Filename.make_path
     [Ocaml_directories.srcdir; "debugger"; Filename.mkexe "ocamldebug"]
 
 let ocamlobjinfo =
-  Filename.make_path [Ocaml_directories.srcdir; "tools"; "ocamlobjinfo"]
+  Filename.make_path
+    [Ocaml_directories.srcdir; "tools"; Filename.mkexe "ocamlobjinfo"]
 
 let ocamlmklib =
-  Filename.make_path [Ocaml_directories.srcdir; "tools"; "ocamlmklib"]
+  Filename.make_path
+    [Ocaml_directories.srcdir; "tools"; Filename.mkexe "ocamlmklib"]
 
 let codegen =
-  Filename.make_path [Ocaml_directories.srcdir; "testsuite"; "tools"; "codegen"]
+  Filename.make_path
+    [Ocaml_directories.srcdir; "testsuite"; "tools"; Filename.mkexe "codegen"]
 
 let asmgen_archmod =
   let objname =

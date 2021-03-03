@@ -41,7 +41,7 @@ let arg_list = Arg.align [
   ]
 
 let arg_usage =
-  "read_cmt [OPTIONS] FILE.cmt : read FILE.cmt and print related information"
+  "ocamlcmt [OPTIONS] FILE.cmt : read FILE.cmt and print related information"
 
 let dummy_crc = String.make 32 '-'
 

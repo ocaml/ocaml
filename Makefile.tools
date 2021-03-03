@@ -77,7 +77,7 @@ else
   CUSTOM =
 endif
 
-OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) -noinit
+OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml$(EXE) $(OCFLAGS) -noinit
 ifeq "$(FLEXLINK)" ""
   FLEXLINK_PREFIX=
 else
@@ -85,24 +85,24 @@ else
     FLEXLINK_PREFIX=
   else
     EMPTY=
-    FLEXLINK_PREFIX=OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun \
+    FLEXLINK_PREFIX=OCAML_FLEXLINK="$(WINTOPDIR)/boot/ocamlrun$(EXE) \
 	                            $(WINTOPDIR)/flexdll/flexlink.exe" $(EMPTY)
   endif
 endif
-OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS) \
-       $(RUNTIME_VARIANT)
-OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) \
+OCAMLC=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlc$(EXE) \
+       $(CUSTOM) $(OCFLAGS) $(RUNTIME_VARIANT)
+OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt$(EXE) $(OCFLAGS) \
          $(RUNTIME_VARIANT)
-OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
-OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
+OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc$(EXE)
+OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex$(EXE)
+OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib$(EXE) \
            -ocamlc "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
-                    $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
+                    $(OTOPDIR)/ocamlc$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)" \
            -ocamlopt "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
-                      $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
+                      $(OTOPDIR)/ocamlopt$(EXE) $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
-DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj
-OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo
+DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj$(EXE)
+OBJINFO=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlobjinfo$(EXE)
 
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=

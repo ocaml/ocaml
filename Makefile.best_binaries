@@ -34,10 +34,10 @@ or rebuilding it (or `touch`-ing it) if you want it used.), \
     ok)
 
 choose_best = $(strip $(if \
-   $(and $(wildcard $(ROOTDIR)/$1.opt),$(strip \
-      $(call check_not_stale,$1,$1.opt))), \
-    $(ROOTDIR)/$1.opt, \
-    $(CAMLRUN) $(ROOTDIR)/$1))
+   $(and $(wildcard $(ROOTDIR)/$1.opt$(EXE)),$(strip \
+      $(call check_not_stale,$1$(EXE),$1.opt$(EXE)))), \
+    $(ROOTDIR)/$1.opt$(EXE), \
+    $(CAMLRUN) $(ROOTDIR)/$1$(EXE)))
 
 BEST_OCAMLC := $(call choose_best,ocamlc)
 BEST_OCAMLOPT := $(call choose_best,ocamlopt)
@@ -50,7 +50,7 @@ BEST_OCAMLLEX := $(call choose_best,lex/ocamllex)
 # bootrap-compiler and host-compiler object files, as ocamldep only
 # produces text output.
 BEST_OCAMLDEP := $(strip $(if \
-   $(and $(wildcard $(ROOTDIR)/ocamlc.opt),$(strip \
-      $(call check_not_stale,boot/ocamlc,ocamlc.opt))), \
-    $(ROOTDIR)/ocamlc.opt -depend, \
+   $(and $(wildcard $(ROOTDIR)/ocamlc.opt$(EXE)),$(strip \
+      $(call check_not_stale,boot/ocamlc,ocamlc.opt$(EXE)))), \
+    $(ROOTDIR)/ocamlc.opt$(EXE) -depend, \
     $(BOOT_OCAMLC) -depend))

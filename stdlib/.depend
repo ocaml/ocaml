@@ -146,6 +146,7 @@ camlinternalLazy.cmi :
 camlinternalMod.cmo : \
     stdlib__sys.cmi \
     stdlib__obj.cmi \
+    stdlib__nativeint.cmi \
     camlinternalOO.cmi \
     camlinternalLazy.cmi \
     stdlib__array.cmi \
@@ -153,6 +154,7 @@ camlinternalMod.cmo : \
 camlinternalMod.cmx : \
     stdlib__sys.cmx \
     stdlib__obj.cmx \
+    stdlib__nativeint.cmx \
     camlinternalOO.cmx \
     camlinternalLazy.cmx \
     stdlib__array.cmx \
@@ -451,11 +453,13 @@ stdlib__nativeint.cmx : \
 stdlib__nativeint.cmi :
 stdlib__obj.cmo : \
     stdlib__sys.cmi \
+    stdlib__nativeint.cmi \
     stdlib__marshal.cmi \
     stdlib__int32.cmi \
     stdlib__obj.cmi
 stdlib__obj.cmx : \
     stdlib__sys.cmx \
+    stdlib__nativeint.cmx \
     stdlib__marshal.cmx \
     stdlib__int32.cmx \
     stdlib__obj.cmi

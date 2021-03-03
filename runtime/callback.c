@@ -20,10 +20,10 @@
 #include <string.h>
 #include "caml/callback.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
-#include "caml/fiber.h"
 
 static __thread int callback_depth = 0;
 
@@ -63,11 +63,17 @@ static inline void restore_stack_parent(caml_domain_state* domain_state, value c
 
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 
+static int callback_code_inited = 0;
+
 static void init_callback_code(void)
 {
+  caml_register_code_fragment((char *) callback_code,
+                              (char *) callback_code + sizeof(callback_code),
+                              DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
   caml_thread_code(callback_code, sizeof(callback_code));
 #endif
+  callback_code_inited = 1;
 }
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
@@ -83,6 +89,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLassert(narg + 4 <= 256);
   domain_state->current_stack->sp -= narg + 4;
   for (i = 0; i < narg; i++) domain_state->current_stack->sp[i] = args[i]; /* arguments */
+
+  if (!callback_code_inited) init_callback_code();
 
   code[0] = callback_code[0];
   code[1] = narg + 3;
