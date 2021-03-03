@@ -1291,68 +1291,108 @@ let print_pat pat =
 let rec exhaust (ext:Path.t option) pss n = match pss with
 | []    ->  Seq.return (omegas n)
 | []::_ ->  Seq.empty
-| pss   ->
-    let pss = simplify_first_col pss in
-    if not (all_coherent (first_column pss)) then
-      (* We're considering an ill-typed branch, we won't actually be able to
-         produce a well typed value taking that branch. *)
-      Seq.empty
-    else begin
-      (* Assuming the first column is ill-typed but considered coherent, we
-         might end up producing an ill-typed witness of non-exhaustivity
-         corresponding to the current branch.
+| [(p :: ps)] -> exhaust_single_row ext p ps n
+| pss   -> specialize_and_exhaust ext pss n
 
-         If [exhaust] has been called by [do_check_partial], then the witnesses
-         produced get typechecked and the ill-typed ones are discarded.
+and exhaust_single_row ext p ps n =
+  (* Shortcut: in the single-row case p :: ps we know that all
+     counter-examples are either of the form
+       counter-example(p) :: omegas
+     or
+       p :: counter-examples(ps)
 
-         If [exhaust] has been called by [do_check_fragile], then it is possible
-         we might fail to warn the user that the matching is fragile. See for
-         example testsuite/tests/warnings/w04_failure.ml. *)
-      let q0 = discr_pat Patterns.Simple.omega pss in
-      match build_specialized_submatrices ~extend_row:(@) q0 pss with
-      | { default; constrs = [] } ->
-          (* first column of pss is made of variables only *)
-          let sub_witnesses = exhaust ext default (n-1) in
-          let q0 = Patterns.Head.to_omega_pattern q0 in
-          Seq.map (fun row -> q0::row) sub_witnesses
-      | { default; constrs } ->
-          let try_non_omega (p,pss) =
-            if is_absent_pat p then
-              Seq.empty
-            else
-              let sub_witnesses =
-                exhaust
-                  ext pss
-                  (List.length (simple_match_args p Patterns.Head.omega [])
-                   + n - 1)
-              in
-              let p = Patterns.Head.to_omega_pattern p in
-              Seq.map (set_args p) sub_witnesses
-          in
-          let try_omega () =
-            if full_match false constrs && not (should_extend ext constrs) then
-              Seq.empty
-            else
-              let sub_witnesses = exhaust ext default (n-1) in
-              match build_other ext constrs with
-              | exception Empty ->
-                  (* cannot occur, since constructors don't make
-                     a full signature *)
-                  fatal_error "Parmatch.exhaust"
-              | p ->
-                  Seq.map (fun tail -> p :: tail) sub_witnesses
-          in
-          (* Lazily compute witnesses for all constructor submatrices
-             (Some constr_mat) then the default submatrix (None).
-             Note that the call to [try_omega ()] is delayed to after
-             all constructor matrices have been traversed. *)
-          List.map (fun constr_mat -> Some constr_mat) constrs @ [None]
-          |> List.to_seq
-          |> Seq.flat_map
-            (function
-              | Some constr_mat -> try_non_omega constr_mat
-              | None -> try_omega ())
-    end
+     This is very interesting in the case where p contains
+     or-patterns, as the non-shortcut path below would do a separate
+     search for each constructor of the or-pattern, which can lead to
+     an exponential blowup on examples such as
+
+       | (A|B), (A|B), (A|B), (A|B) -> foo
+
+     Note that this shortcut also applies to examples such as
+
+       | A, A, A, A -> foo | (A|B), (A|B), (A|B), (A|B) -> bar
+
+     thanks to the [get_mins] preprocessing step which will drop the
+     first row (subsumed by the second). Code with this shape does
+     occur naturally when people want to avoid fragile pattern
+     matches: if A and B are the only two constructors, this is the
+     best way to make a non-fragile distinction between "all As" and
+     "at least one B".
+  *)
+  List.to_seq [Some p; None] |> Seq.flat_map
+    (function
+      | Some p ->
+          let sub_witnesses = exhaust ext [ps] (n - 1) in
+          Seq.map (fun row -> p :: row) sub_witnesses
+      | None ->
+          (* note: calling [exhaust] recursively of p would
+             result in an infinite loop in the case n=1 *)
+          let p_witnesses = specialize_and_exhaust ext [[p]] 1 in
+          Seq.map (fun p_row -> p_row @ omegas (n - 1)) p_witnesses
+    )
+
+and specialize_and_exhaust ext pss n =
+  let pss = simplify_first_col pss in
+  if not (all_coherent (first_column pss)) then
+    (* We're considering an ill-typed branch, we won't actually be able to
+       produce a well typed value taking that branch. *)
+    Seq.empty
+  else begin
+    (* Assuming the first column is ill-typed but considered coherent, we
+       might end up producing an ill-typed witness of non-exhaustivity
+       corresponding to the current branch.
+
+       If [exhaust] has been called by [do_check_partial], then the witnesses
+       produced get typechecked and the ill-typed ones are discarded.
+
+       If [exhaust] has been called by [do_check_fragile], then it is possible
+       we might fail to warn the user that the matching is fragile. See for
+       example testsuite/tests/warnings/w04_failure.ml. *)
+    let q0 = discr_pat Patterns.Simple.omega pss in
+    match build_specialized_submatrices ~extend_row:(@) q0 pss with
+    | { default; constrs = [] } ->
+        (* first column of pss is made of variables only *)
+        let sub_witnesses = exhaust ext default (n-1) in
+        let q0 = Patterns.Head.to_omega_pattern q0 in
+        Seq.map (fun row -> q0::row) sub_witnesses
+    | { default; constrs } ->
+        let try_non_omega (p,pss) =
+          if is_absent_pat p then
+            Seq.empty
+          else
+            let sub_witnesses =
+              exhaust
+                ext pss
+                (List.length (simple_match_args p Patterns.Head.omega [])
+                 + n - 1)
+            in
+            let p = Patterns.Head.to_omega_pattern p in
+            Seq.map (set_args p) sub_witnesses
+        in
+        let try_omega () =
+          if full_match false constrs && not (should_extend ext constrs) then
+            Seq.empty
+          else
+            let sub_witnesses = exhaust ext default (n-1) in
+            match build_other ext constrs with
+            | exception Empty ->
+                (* cannot occur, since constructors don't make
+                   a full signature *)
+                fatal_error "Parmatch.exhaust"
+            | p ->
+                Seq.map (fun tail -> p :: tail) sub_witnesses
+        in
+        (* Lazily compute witnesses for all constructor submatrices
+           (Some constr_mat) then the wildcard/default submatrix (None).
+           Note that the call to [try_omega ()] is delayed to after
+           all constructor matrices have been traversed. *)
+        List.map (fun constr_mat -> Some constr_mat) constrs @ [None]
+        |> List.to_seq
+        |> Seq.flat_map
+          (function
+            | Some constr_mat -> try_non_omega constr_mat
+            | None -> try_omega ())
+  end
 
 let exhaust ext pss n =
   exhaust ext pss n

@@ -36,6 +36,9 @@ type spec =
                                   call the function with the symbol. *)
   | Rest of (string -> unit)   (* Stop interpreting keywords and call the
                                   function with each remaining argument *)
+  | Rest_all of (string list -> unit)
+                               (* Stop interpreting keywords and call the
+                                  function with all remaining arguments. *)
   | Expand of (string -> string array) (* If the remaining arguments to process
                                           are of the form
                                           [["-foo"; "arg"] @ rest] where "foo"
@@ -251,6 +254,14 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
               f !argv.(!current + 1);
               consume_arg ();
             done;
+        | Rest_all f ->
+            no_arg ();
+            let acc = ref [] in
+            while !current < Array.length !argv - 1 do
+              acc := !argv.(!current + 1) :: !acc;
+              consume_arg ();
+            done;
+            f (List.rev !acc)
         | Expand f ->
             if not allow_expand then
               raise (Invalid_argument "Arg.Expand is is only allowed with \
