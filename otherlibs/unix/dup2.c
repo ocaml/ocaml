@@ -23,8 +23,8 @@ CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
   if (Int_val(fd2) == Int_val(fd1)) {
     /* In this case, dup3 fails and dup2 does nothing. */
     /* Just apply the cloexec flag to fd2, if it is given. */
-    if (Is_block(cloexec)) {
-      if (Bool_val(Field(cloexec, 0)))
+    if (Is_some(cloexec)) {
+      if (Bool_val(Some_val(cloexec)))
         unix_set_cloexec(Int_val(fd2), "dup2", Nothing);
       else
         unix_clear_cloexec(Int_val(fd2), "dup2", Nothing);

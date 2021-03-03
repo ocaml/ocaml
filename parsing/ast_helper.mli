@@ -288,6 +288,7 @@ module Sig:
     val mod_subst: ?loc:loc -> module_substitution -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
+    val modtype_subst: ?loc:loc -> module_type_declaration -> signature_item
     val open_: ?loc:loc -> open_description -> signature_item
     val include_: ?loc:loc -> include_description -> signature_item
     val class_: ?loc:loc -> class_description list -> signature_item

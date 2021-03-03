@@ -26,6 +26,11 @@ Working version
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer and
    Florian Angeletti)
 
+- #10133: module type substitutions
+  Allow 'SIG with module type T = F(X).S', 'SIG with module type T := sig end'
+  and their local equivalent `module type T := sig type u end`
+  (Florian Angeletti, review by Gabriel Radanne and Leo White)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
@@ -56,8 +61,8 @@ Working version
 - #10136: Minor clean-ups in runtime/io.c and runtime/caml/io.h
   (Xavier Leroy, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
-- #10188: Switch the default allocation policy to best-fit and adjust the
-  default overhead parameter accordingly.
+- #10188, #10213: Switch the default allocation policy to best-fit and adjust
+  the default overhead parameter accordingly.
   (Damien Doligez, review by Josh Berdine and Xavier Leroy)
 
 - #10212: Simplify and improve the Windows-specific code that connects
@@ -76,6 +81,9 @@ Working version
 
 - #10228: Better code-generation for inlined comparisons
   (Stephen Dolan, review by Alain Frisch and Xavier Leroy)
+
+- #10244: Optimise Int32.unsigned_to_int
+  (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
 
 ### Type system:
 
@@ -215,6 +223,10 @@ Working version
   (Antonin Décimo, review by David Allsopp and Sébastien Hinderer)
 
 ### Bug fixes:
+
+* #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
+  when the systhreads library is loaded.
+  (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)

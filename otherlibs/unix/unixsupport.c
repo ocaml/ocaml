@@ -276,7 +276,7 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
-extern int code_of_unix_error (value error)
+int code_of_unix_error (value error)
 {
   if (Is_block(error)) {
     return Int_val(Field(error, 0));
@@ -323,9 +323,8 @@ int unix_cloexec_default = 0;
 
 int unix_cloexec_p(value cloexec)
 {
-  /* [cloexec] is a [bool option].  */
-  if (Is_block(cloexec))
-    return Bool_val(Field(cloexec, 0));
+  if (Is_some(cloexec))
+    return Bool_val(Some_val(cloexec));
   else
     return unix_cloexec_default;
 }

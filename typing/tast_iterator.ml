@@ -284,6 +284,7 @@ let signature_item sub {sig_desc; sig_env; _} =
   | Tsig_modsubst x -> sub.module_substitution sub x
   | Tsig_recmodule list -> List.iter (sub.module_declaration sub) list
   | Tsig_modtype x -> sub.module_type_declaration sub x
+  | Tsig_modtypesubst x -> sub.module_type_declaration sub x
   | Tsig_include incl -> include_infos (sub.module_type sub) incl
   | Tsig_class list -> List.iter (sub.class_description sub) list
   | Tsig_class_type list -> List.iter (sub.class_type_declaration sub) list
@@ -316,6 +317,9 @@ let with_constraint sub = function
   | Twith_typesubst decl -> sub.type_declaration sub decl
   | Twith_module    _    -> ()
   | Twith_modsubst  _    -> ()
+  | Twith_modtype   _    -> ()
+  | Twith_modtypesubst _ -> ()
+
 
 let open_description sub {open_env; _} = sub.env sub open_env
 

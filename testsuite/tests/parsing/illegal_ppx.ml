@@ -6,6 +6,11 @@ let empty_record loc = H.Exp.record ~loc [] None
 let empty_apply loc f =
   H.Exp.apply ~loc f []
 
+let missing_rhs loc =
+  let name = Location.mkloc "T" loc in
+  let mtd = H.Mtd.mk ~loc name in
+  H.Sig.modtype_subst ~loc mtd
+
 let empty_let loc = H.Str.value ~loc Asttypes.Nonrecursive []
 let empty_type loc = H.Str.type_ ~loc Asttypes.Nonrecursive []
 let functor_id loc = Location.mkloc
@@ -33,6 +38,11 @@ let structure_item mapper stri = match stri.pstr_desc with
   | Pstr_extension (({Location.txt="empty_type";loc},_),_) -> empty_type loc
   | _ -> super.structure_item mapper stri
 
+let signature_item mapper stri = match stri.psig_desc with
+  | Psig_extension (({Location.txt="missing_rhs";loc},_),_) -> missing_rhs loc
+  | _ -> super.signature_item mapper stri
+
+
 let () = M.register "illegal ppx" (fun _ ->
-    { super with expr; pat; structure_item }
+    { super with expr; pat; structure_item; signature_item }
   )

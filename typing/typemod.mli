@@ -131,6 +131,8 @@ type error =
   | Badly_formed_signature of string * Typedecl.error
   | Cannot_hide_id of hiding_error
   | Invalid_type_subst_rhs
+  | Unpackable_local_modtype_subst of Path.t
+  | With_cannot_remove_packed_modtype of Path.t * module_type
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
