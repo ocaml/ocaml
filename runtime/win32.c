@@ -38,7 +38,7 @@
 #include <string.h>
 #include <signal.h>
 #include "caml/alloc.h"
-#include "caml/address_class.h"
+#include "caml/codefrag.h"
 #include "caml/fail.h"
 #include "caml/io.h"
 #include "caml/memory.h"
@@ -539,7 +539,8 @@ static LONG CALLBACK
   DWORD *ctx_ip = &(ctx->Eip);
   DWORD *ctx_sp = &(ctx->Esp);
 
-  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (*ctx_ip))
+  if (code == EXCEPTION_STACK_OVERFLOW &&
+      caml_find_code_fragment_by_pc((char *) (*ctx_ip)) != NULL)
     {
       uintnat faulting_address;
       uintnat * alt_esp;
@@ -561,24 +562,14 @@ static LONG CALLBACK
 
 #else
 
-/* Do not use the macro from address_class.h here. */
-#undef Is_in_code_area
-#define Is_in_code_area(pc) \
- ( ((char *)(pc) >= caml_code_area_start && \
-    (char *)(pc) <= caml_code_area_end)     \
-|| ((char *)(pc) >= &caml_system__code_begin && \
-    (char *)(pc) <= &caml_system__code_end)     \
-|| (Classify_addr(pc) & In_code_area) )
-extern char caml_system__code_begin, caml_system__code_end;
-
-
 static LONG CALLBACK
     caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
 
-  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (ctx->Rip))
+  if (code == EXCEPTION_STACK_OVERFLOW &&
+      caml_find_code_fragment_by_pc((char *) (ctx->Rip)) != NULL)
     {
       uintnat faulting_address;
       uintnat * alt_rsp;
