@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/memory.h"
