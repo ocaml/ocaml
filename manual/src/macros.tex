@@ -220,7 +220,13 @@
   \@input{#1.ind}}
 
 %%% Linking to modules
+\ifocamldoc
 \newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
+\newcommand{\stdpageref}[1]{\pageref{#1}}
+\else
+\newcommand{\stdmoduleref}[1]{\hyperref[container-page-libref-module-Stdlib-module-#1]{\texttt{#1}}[\ref{container-page-libref-module-Stdlib-module-#1}]}
+\newcommand{\stdpageref}[1]{\pageref{container-page-libref-module-Stdlib-module-#1}}
+\fi
 \newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
 
 \newcommand{\compilerdocitem}[2]{\input{#1.tex}}
