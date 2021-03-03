@@ -1,9 +1,9 @@
 (* TEST
    flags += " -w a "
-   modules = "globrootsprim.c globroot.ml"
+   modules = "globrootsprim.c globroots.ml"
 *)
 
-open Globroot
+open Globroots
 
 module TestClassic = Test(Classic)
 module TestGenerational = Test(Generational)
