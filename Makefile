@@ -147,6 +147,9 @@ coldstart:
 	cd stdlib; cp $(LIBFILES) ../boot
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
 
+partialclean::
+	cd boot; rm -f $(LIBFILES) libcamlrun.*
+
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
 coreall: runtime
