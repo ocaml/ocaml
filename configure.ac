@@ -169,6 +169,7 @@ AC_SUBST([flexlink_flags])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
+AC_SUBST([naked_pointers])
 
 ## Generated files
 
@@ -1753,7 +1754,9 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
 ## No naked pointers
 
 AS_IF([test x"$enable_naked_pointers" = "xno" ],
-  [AC_DEFINE([NO_NAKED_POINTERS])])
+  [naked_pointers=false
+   AC_DEFINE([NO_NAKED_POINTERS])],
+  [naked_pointers=true])
 
 ## Collect multicore stats
 

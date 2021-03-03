@@ -18,13 +18,6 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.common
 
-ifeq ($(SYSTEM),unix)
-override define shellquote
-$i := $$(subst ",\",$$(subst $$$$,\$$$$,$$(subst `,\`,$i)))#")#
-endef
-$(foreach i,BINDIR LIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
-endif
-
 DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
