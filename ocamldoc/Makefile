@@ -18,8 +18,8 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
-OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
+OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
+OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
@@ -32,8 +32,10 @@ OCAMLLEX = $(BEST_OCAMLLEX)
 ##############
 
 CP=cp
-OCAMLDOC=ocamldoc
-OCAMLDOC_OPT=$(OCAMLDOC).opt
+OCAMLDOC=ocamldoc$(EXE)
+OCAMLDOC_OPT=ocamldoc.opt$(EXE)
+
+programs := ocamldoc ocamldoc.opt
 
 # TODO: clarify whether the following really needs to be that complicated
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -202,8 +204,12 @@ OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 OCAMLDOC_BCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cma)
 OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)
 
+$(eval $(call PROGRAM_SYNONYM,ocamldoc))
+
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
+
+$(eval $(call PROGRAM_SYNONYM,ocamldoc.opt))
 
 $(OCAMLDOC_OPT): $(EXECMXFILES)
 	$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
@@ -288,7 +294,7 @@ install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(MKDIR) "$(INSTALL_MANODIR)"
-	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
@@ -315,8 +321,7 @@ installopt:
 installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
-	$(INSTALL_PROG) \
-	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
+	$(INSTALL_PROG) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
@@ -487,7 +492,8 @@ odoc:
 .PHONY: clean
 clean:
 	rm -f \#*\#
-	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.a *.lib *.o *.obj
+	rm -f $(programs) $(programs:=.exe)
+	rm -f *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.a *.lib *.o *.obj
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli

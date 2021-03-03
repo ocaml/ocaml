@@ -346,8 +346,10 @@ ocamltest_config.cmx : \
     ocamltest_config.cmi
 ocamltest_config.cmi :
 ocamltest_stdlib.cmo : \
+    ocamltest_config.cmi \
     ocamltest_stdlib.cmi
 ocamltest_stdlib.cmx : \
+    ocamltest_config.cmx \
     ocamltest_stdlib.cmi
 ocamltest_stdlib.cmi :
 options.cmo : \
