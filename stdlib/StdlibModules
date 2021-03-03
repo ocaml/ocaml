@@ -49,8 +49,7 @@ STDLIB_PREFIXED_MODULES=\
 # and the stdlib module itself
 define add_stdlib_prefix
   $(or $(filter-out $(STDLIB_PREFIXED_MODULES), $1), \
-    stdlib__$(shell echo $1 | cut -c1 | tr '[:lower:]' '[:upper:]')\
-            $(shell echo $1 | cut -c2-))
+    stdlib__$(shell echo $1 | cut -c1 | tr '[:lower:]' '[:upper:]')$(shell echo $1 | cut -c2-))
 endef
 
 STDLIB_MODULES:=\
