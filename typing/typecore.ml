@@ -2385,7 +2385,7 @@ let rec list_labels_aux env visited ls ty_fun =
       List.rev ls, is_Tvar ty
 
 let list_labels env ty =
-  wrap_trace_gadt_instances env (list_labels_aux env [] []) ty
+  list_labels_aux env [] [] ty
 
 (* Check that all univars are safe in a type. Both exp.exp_type and
    ty_expected should already be generalized. *)
@@ -2854,7 +2854,7 @@ and type_expect_
         end;
         let ty = instance funct.exp_type in
         end_def ();
-        wrap_trace_gadt_instances env (lower_args []) ty;
+        lower_args [] ty;
         funct
       in
       let funct, sargs =
@@ -4238,9 +4238,9 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) Nolabel) ls
   in
-  match expand_head env ty_expected' with
-    {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv}
-    when is_inferred sarg ->
+  let lv = (repr ty_expected').level in
+  match expand_head env (correct_levels ty_expected') with
+    {desc = Tarrow(Nolabel,_,ty_res0,_)} when is_inferred sarg ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       if !Clflags.principal then begin_def ();
@@ -4264,10 +4264,15 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         (lv <> generic_level || (repr ty_fun').level <> generic_level)
       and texp = {texp with exp_type = instance texp.exp_type}
       and ty_fun = instance ty_fun' in
-      if not (simple_res || no_labels ty_res) then begin
+      if not (simple_res || no_labels ty_res0) then begin
         unify_exp env texp ty_expected;
         texp
       end else begin
+      let ty_arg, ty_res =
+        match expand_head env ty_expected' with
+          {desc = Tarrow(Nolabel,ty_arg,ty_res,_)} -> ty_arg, ty_res
+        | _ -> assert false
+      in
       unify_exp env {texp with exp_type = ty_fun} ty_expected;
       if args = [] then texp else
       (* eta-expand to avoid side effects *)

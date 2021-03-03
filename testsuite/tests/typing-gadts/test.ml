@@ -585,8 +585,16 @@ Error: This expression has type a = int
 
 (* Effect of external consraints *)
 let f (type a) (x : a t) y =
+  let r = match x with Int -> (y : a) in (* should be ok *)
+  r
+;;
+[%%expect{|
+val f : 'a t -> 'a -> 'a = <fun>
+|}];;
+
+let f (type a) (x : a t) y =
   ignore (y : a);
-  let r = match x with Int -> (y : a) in (* ok *)
+  let r = match x with Int -> (y : a) in (* should be ok *)
   r
 ;;
 [%%expect{|
@@ -595,7 +603,7 @@ val f : 'a t -> 'a -> 'a = <fun>
 
 let f (type a) (x : a t) y =
   let r = match x with Int -> (y : a) in
-  ignore (y : a); (* ok *)
+  ignore (y : a); (* should be ok *)
   r
 ;;
 [%%expect{|
@@ -638,8 +646,8 @@ let f (type a) (x : a t) y =
 Line 3, characters 46-47:
 3 |     let module M = struct type b = a let z = (y : b) end
                                                   ^
-Error: This expression has type a = int
-       but an expression was expected of type b = int
+Error: This expression has type 'a but an expression was expected of type
+         a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -1095,7 +1103,8 @@ Line 3, characters 2-26:
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor $1 would escape its scope
+       This instance of $1 is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
@@ -1108,11 +1117,27 @@ val g : 't -> 't int_foo -> 't int_bar -> 't = <fun>
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   let IF_constr, IB_constr = e, e' in
-  x, x#foo, x#bar
+  let x' : <foo:int;bar:int;..> = x in
+  x, x'#foo, x'#bar
+;;
+[%%expect{|
+Line 4, characters 5-11:
+4 |   x, x'#foo, x'#bar
+         ^^^^^^
+Error: This expression has type int but an expression was expected of type 'a
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
+|}];;
+
+let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
+  let IF_constr, IB_constr = e, e' in
+  x, (x#foo : int), (x#bar : int)
 ;;
 [%%expect{|
 val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
-|}];;
+|}]
 
 (* PR#5554 *)
 
@@ -1212,9 +1237,9 @@ Line 4, characters 19-20:
 4 |   if b then x else y
                        ^
 Error: This expression has type b = int
-       but an expression was expected of type a = int
-       Type a = int is not compatible with type a = int
-       This instance of int is ambiguous:
+       but an expression was expected of type a
+       Type a = int is not compatible with type a
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1227,7 +1252,7 @@ Line 4, characters 19-20:
 4 |   if b then y else x
                        ^
 Error: This expression has type a = int
-       but an expression was expected of type b = int
-       This instance of int is ambiguous:
+       but an expression was expected of type b = a
+       This instance of b is ambiguous:
        it would escape the scope of its equation
 |}];;
