@@ -21,6 +21,8 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
+MAKE_WARN="$MAKE --warn-undefined-variables"
+
 export PATH=$PREFIX/bin:$PATH
 
 Configure () {
@@ -61,10 +63,15 @@ EOF
 }
 
 Build () {
-  $MAKE world.opt
-  $MAKE ocamlnat
+  script --return --command "$MAKE_WARN world.opt" build.log
+  script --return --append --command "$MAKE_WARN ocamlnat" build.log
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
+  if grep -Fq ' warning: undefined variable ' build.log; then
+    echo Undefined Makefile variables detected
+    exit 1
+  fi
+  rm build.log
 }
 
 Test () {
