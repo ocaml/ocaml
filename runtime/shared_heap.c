@@ -685,8 +685,11 @@ static void verify_object(struct heap_verify_state* st, value v) {
     if (stk != NULL)
       caml_scan_stack(verify_push, st, stk, 0);
   } else if (Tag_val(v) < No_scan_tag) {
-    int i;
-    for (i = 0; i < Wosize_val(v); i++) {
+    int i = 0;
+    if (Tag_val(v) == Closure_tag) {
+      i = Start_env_closinfo(Closinfo_val(v));
+    }
+    for (; i < Wosize_val(v); i++) {
       value f = Op_val(v)[i];
       if (Is_young(v) && Is_young(f)) {
         Assert(caml_owner_of_young_block(v) ==
