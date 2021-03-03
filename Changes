@@ -85,6 +85,11 @@ Working version
 - #10244: Optimise Int32.unsigned_to_int
   (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
 
+### Type system:
+
+* #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
+  (Alain Frisch, review by Jacques Garrigue, Josh Berdine and Thomas Refis)
+
 ### Standard library:
 
 - #9533: Added String.starts_with and String.ends_with.

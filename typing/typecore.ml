@@ -2646,6 +2646,17 @@ let unify_exp env exp expected_ty =
   with Error(loc, env, Expr_type_clash(trace, tfc, None)) ->
     raise (Error(loc, env, Expr_type_clash(trace, tfc, Some exp.exp_desc)))
 
+(* If [is_inferred e] is true, [e] will be typechecked without using
+   the "expected type" provided by the context. *)
+
+let rec is_inferred sexp =
+  match sexp.pexp_desc with
+  | Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
+  | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
+  | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
+  | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
+  | _ -> false
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -2823,25 +2834,42 @@ and type_expect_
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
-      begin_def (); (* one more level for non-returning functions *)
-      if !Clflags.principal then begin_def ();
-      let funct = type_exp env sfunct in
-      if !Clflags.principal then begin
-          end_def ();
-          generalize_structure funct.exp_type
-        end;
       let rec lower_args seen ty_fun =
         let ty = expand_head env ty_fun in
         if List.memq ty seen then () else
-        match ty.desc with
-          Tarrow (_l, ty_arg, ty_fun, _com) ->
-            (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
-            lower_args (ty::seen) ty_fun
-        | _ -> ()
+          match ty.desc with
+            Tarrow (_l, ty_arg, ty_fun, _com) ->
+              (try unify_var env (newvar()) ty_arg
+               with Unify _ -> assert false);
+              lower_args (ty::seen) ty_fun
+          | _ -> ()
       in
-      let ty = instance funct.exp_type in
-      end_def ();
-      wrap_trace_gadt_instances env (lower_args []) ty;
+      let type_sfunct sfunct =
+        begin_def (); (* one more level for non-returning functions *)
+        if !Clflags.principal then begin_def ();
+        let funct = type_exp env sfunct in
+        if !Clflags.principal then begin
+          end_def ();
+          generalize_structure funct.exp_type
+        end;
+        let ty = instance funct.exp_type in
+        end_def ();
+        wrap_trace_gadt_instances env (lower_args []) ty;
+        funct
+      in
+      let funct, sargs =
+        let funct = type_sfunct sfunct in
+        match funct.exp_desc, sargs with
+        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%revapply"}}),
+          [Nolabel, sarg; Nolabel, actual_sfunct]
+          when is_inferred actual_sfunct ->
+            type_sfunct actual_sfunct, [Nolabel, sarg]
+        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%apply"}}),
+          [Nolabel, actual_sfunct; Nolabel, sarg] ->
+            type_sfunct actual_sfunct, [Nolabel, sarg]
+        | _ ->
+            funct, sargs
+      in
       begin_def ();
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
@@ -4209,14 +4237,6 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   let no_labels ty =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) Nolabel) ls
-  in
-  let rec is_inferred sexp =
-    match sexp.pexp_desc with
-      Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
-    | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
-    | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
-    | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
-    | _ -> false
   in
   match expand_head env ty_expected' with
     {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv}
