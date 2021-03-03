@@ -42,6 +42,11 @@ Working version
 - #9441: Add RISC-V RV64G native-code backend.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
+- #9620: Limit the number of parameters for an uncurried or untupled
+   function.  Functions with more parameters than that are left
+   partially curried or tupled.
+   (Xavier Leroy, review by Mark Shinwell)
+
 ### Standard library:
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
@@ -61,6 +66,11 @@ Working version
 
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
+
+- #9587: Arg: new Rest_all spec to get all rest arguments in a list
+  (this is similar to Rest, but makes it possible to detect when there
+   are no arguments (an empty list) after the rest marker)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär and David Allsopp)
 
 ### Other libraries:
 
@@ -109,7 +119,7 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #9493, #9520, #9563, #9599: refactor the pattern-matching compiler
+- #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 - #9604: refactoring of the ocamltest codebase.
@@ -120,6 +130,9 @@ Working version
   exhaustivity
   (Gabriel Scherer, review by Luc Maranget, Thomas Refis and Florian Angeletti,
    report by Alex Fedoseev through Hongbo Zhang)
+
+- #9514: optimize pattern-matching exhaustivity analysis in the single-row case
+  (Gabriel Scherer, review by Stephen DOlan)
 
 ### Build system:
 
@@ -622,7 +635,7 @@ OCaml 4.11
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
-- #9623: fix typing environments in Typedecl.transl_with_constraint
+- #9623, #9642: fix typing environments in Typedecl.transl_with_constraint
   (Gabriel Scherer, review by Jacques Garrigue and Leo White,
    report by Hugo Heuzard)
 
