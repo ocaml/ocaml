@@ -27,8 +27,6 @@ MKDIR=mkdir -p
 EMPTY :=
 # $(SPACE) contains a single space
 SPACE := $(EMPTY) $(EMPTY)
-# $( ) allows line breaking with $\ at the end of the line
-$(SPACE) :=
 
 DESTDIR ?=
 INSTALL_BINDIR := $(DESTDIR)$(BINDIR)

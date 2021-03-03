@@ -14,8 +14,8 @@
 #**************************************************************************
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/stdlib/StdlibModules
+include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 include $(ROOTDIR)/ocamldoc/Makefile.best_ocamldoc
 include Makefile.docfiles
