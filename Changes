@@ -50,6 +50,10 @@ Working version
 - #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #9648, #9689: Update the generic hash function to take advantage
+  of the new representation for function closures
+  (Xavier Leroy, review by Stephen Dolan)
+
 - #9649: Update the marshaler (output_value) to take advantage
   of the new representation for function closures
   (Xavier Leroy, review by Damien Doligez)
@@ -62,9 +66,6 @@ Working version
   (Xavier Leroy, review by Gabriel Scherer)
 
 ### Code generation and optimizations:
-
-- #9441: Add RISC-V RV64G native-code backend.
-  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 - #9620: Limit the number of parameters for an uncurried or untupled
    function.  Functions with more parameters than that are left
@@ -170,6 +171,10 @@ Working version
 - #9442: refactor the implementation of the [@tailcall] attribute
   to allow for a structured attribute payload
   (Gabriel Scherer, review by Vladimir Keleshev and Nicolás Ojeda Bär)
+
+- #9684: document in address_class.h the runtime value model in
+  naked-pointers and no-naked-pointers mode
+  (Xavier Leroy and Gabriel Scherer)
 
 ### Build system:
 
@@ -322,6 +327,9 @@ OCaml 4.11
 
 - #9392: Visit registers at most once in Coloring.iter_preferred.
   (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
+
+- #9441: Add RISC-V RV64G native-code backend.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 ### Standard library:
 

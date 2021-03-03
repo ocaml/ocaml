@@ -47,6 +47,7 @@
 
 extern int caml_parser_trace;
 char * caml_code_area_start, * caml_code_area_end;
+extern char caml_system__code_begin, caml_system__code_end;
 
 /* Initialize the static data and code area limits. */
 
@@ -69,6 +70,10 @@ static void init_segments(void)
   caml_register_code_fragment(caml_code_area_start,
                               caml_code_area_end,
                               DIGEST_LATER, NULL);
+  /* Also register the glue code written in assembly */
+  caml_register_code_fragment(&caml_system__code_begin,
+                              &caml_system__code_end,
+                              DIGEST_IGNORE, NULL);
 }
 
 /* These are termination hooks used by the systhreads library */

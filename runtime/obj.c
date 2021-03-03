@@ -170,7 +170,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
     res = caml_alloc_small_with_my_or_given_profinfo(sz, tg, profinfo);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
-    res = caml_alloc(sz, tg);
+    res = caml_alloc_shr(sz, tg);
     /* It is safe to use [caml_initialize] even if [tag == Closure_tag]
        and some of the "values" being copied are actually code pointers.
        That's because the new "value" does not point to the minor heap. */
