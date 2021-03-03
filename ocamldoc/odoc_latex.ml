@@ -15,8 +15,6 @@
 
 (** Generation of LaTeX documentation. *)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 open Odoc_info
 open Value
 open Type
