@@ -54,7 +54,7 @@ struct bytecode {
   code_t prog;
   asize_t len;
 };
-#define Bytecode_val(p) ((struct bytecode*)Data_abstract_val(p))
+#define Bc_val(p) ((struct bytecode*)Data_abstract_val(p))
 
 /* Convert a bytes array (= LongString.t) to a contiguous buffer.
    The result is allocated with caml_stat_alloc */
@@ -126,11 +126,11 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   (void)fragnum; /* clobber warning */
 
   clos = caml_alloc_small (2, Closure_tag);
-  Code_val(clos) = (code_t) prog;
+  Field(clos, 0) = Val_bytecode(prog);
   Closinfo_val(clos) = Make_closinfo(0, 2);
   bytecode = caml_alloc_small (2, Abstract_tag);
-  Bytecode_val(bytecode)->prog = prog;
-  Bytecode_val(bytecode)->len = len;
+  Bc_val(bytecode)->prog = prog;
+  Bc_val(bytecode)->len = len;
   retval = caml_alloc_small (2, 0);
   Field(retval, 0) = bytecode;
   Field(retval, 1) = clos;
@@ -146,7 +146,7 @@ CAMLprim value caml_static_release_bytecode(value bc)
   code_t prog;
   struct code_fragment *cf;
 
-  prog = Bytecode_val(bc)->prog;
+  prog = Bc_val(bc)->prog;
 
   caml_remove_debug_info(prog);
 
