@@ -187,10 +187,12 @@ let test_file test_filename =
                test_build_directory_prefix;
              Builtin_variables.promote, promote;
            ] in
-       let root_environment =
+       let rootenv =
+         Environments.initialize Environments.Pre log initial_environment in
+       let rootenv =
          interprete_environment_statements
-           initial_environment rootenv_statements in
-       let rootenv = Environments.initialize log root_environment in
+           rootenv rootenv_statements in
+       let rootenv = Environments.initialize Environments.Post log rootenv in
        let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
        let initial_status =
          if skip_test then Skip_all_tests else Run rootenv

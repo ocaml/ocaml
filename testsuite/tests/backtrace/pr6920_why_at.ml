@@ -13,5 +13,4 @@ let f () =
   () [@@inline never]
 
 let () =
-  Printexc.record_backtrace true;
   f ()

@@ -17,7 +17,7 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
@@ -31,31 +31,9 @@ endif
 
 FLEXLINK_FLAGS ?=
 
-# Escape special characters in the argument string.
-# There are four characters that need escaping:
-# - backslash and ampersand, which are special in the replacement text
-#   of sed's "s" command
-# - exclamation mark, which is the delimiter we use for sed's "s" command
-# - single quote, which interferes with shell quoting.  We are inside
-#   single quotes already, so the proper escape is '\''
-#   (close single quotation, insert single quote character,
-#    reopen single quotation).
-SED_ESCAPE=$(subst ','\'',$(subst !,\!,$(subst &,\&,$(subst \,\\,$1))))
-
-# Escape special characters in an OCaml string literal "..."
-# There are two: backslash and double quote.
-OCAML_ESCAPE=$(subst ",\",$(subst \,\\,$1))
-
-# SUBST generates the sed substitution for the variable *named* in $1
-SUBST=-e 's!%%$1%%!$(call SED_ESCAPE,$($1))!'
-
-# SUBST_STRING does the same, for a variable that occurs between "..."
-# in config.mlp.  Thus, backslashes and double quotes must be escaped.
-SUBST_STRING=-e 's!%%$1%%!$(call SED_ESCAPE,$(call OCAML_ESCAPE,$($1)))!'
-
-# SUBST_QUOTE does the same, adding OCaml quotes around non-empty strings
-#   (see FLEXDLL_DIR which must empty if FLEXDLL_DIR is empty but an OCaml
-#    string otherwise)
+# SUBST_QUOTE does the same as SUBST_STRING, adding OCaml quotes around
+#   non-empty strings (see FLEXDLL_DIR which must empty if FLEXDLL_DIR is empty
+#   but an OCaml string otherwise)
 SUBST_QUOTE2=\
   -e 's!%%$1%%!$(if $2,$(call SED_ESCAPE,"$(call OCAML_ESCAPE,$2)"))!'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$($1))

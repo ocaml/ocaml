@@ -53,7 +53,6 @@ let run args =
     Printexc.print_backtrace stdout
 
 let _ =
-  Printexc.record_backtrace true;
   run [| "a" |];
   run [| "b" |];
   run [| "c" |];

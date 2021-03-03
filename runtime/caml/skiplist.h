@@ -30,6 +30,8 @@
 /* The head of a skip list */
 
 struct skiplist {
+  uintnat reserved1, reserved2; /* dummy values for layout compatibility
+                                   with struct skipcell below */
   struct skipcell * forward[NUM_LEVELS]; /* forward chaining */
   int level;                    /* max level used */
 };
@@ -47,7 +49,7 @@ struct skipcell {
 };
 
 /* Initialize a skip list, statically */
-#define SKIPLIST_STATIC_INITIALIZER { {0, }, 0 }
+#define SKIPLIST_STATIC_INITIALIZER { 0, 0, {0, }, 0 }
 
 /* Initialize a skip list, dynamically */
 extern void caml_skiplist_init(struct skiplist * sk);

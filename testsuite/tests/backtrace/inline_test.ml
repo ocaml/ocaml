@@ -25,5 +25,4 @@ let i x =
   if h x = () then ()
 
 let () =
-  Printexc.record_backtrace true;
   i ()
