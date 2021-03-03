@@ -15,8 +15,6 @@
 
 (** Generation of html documentation.*)
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 open Odoc_info
 open Value
 open Type
@@ -319,7 +317,6 @@ class virtual text =
 
     (** Print the html code for the [text_element] in parameter. *)
     method html_of_text_element b txt =
-      print_DEBUG "text::html_of_text_element";
       match txt with
       | Odoc_info.Raw s -> self#html_of_Raw b s
       | Odoc_info.Code s -> self#html_of_Code b s
@@ -1314,18 +1311,14 @@ class html =
 
     (** Print html code to display a [Types.type_expr list]. *)
     method html_of_cstr_args ?par b m_name c_name sep l =
-      print_DEBUG "html#html_of_cstr_args";
       match l with
       | Cstr_tuple l ->
-          print_DEBUG "html#html_of_cstr_args: 1";
           let s = Odoc_info.string_of_type_list ?par sep l in
           let s2 = newline_to_indented_br s in
-          print_DEBUG "html#html_of_cstr_args: 2";
           bs b "<code class=\"type\">";
           bs b (self#create_fully_qualified_idents_links m_name s2);
           bs b "</code>"
       | Cstr_record l ->
-          print_DEBUG "html#html_of_cstr_args: 1 bis";
           bs b "<code>";
           self#html_of_record ~father:m_name ~close_env: "</code>"
             (Naming.inline_recfield_target m_name c_name)
@@ -2227,7 +2220,6 @@ class html =
            }
         );
       bs b ((self#keyword "class")^" ");
-      print_DEBUG "html#html_of_class : virtual or not" ;
       if c.cl_virtual then bs b ((self#keyword "virtual")^" ");
       (
        match c.cl_type_parameters with
@@ -2236,7 +2228,6 @@ class html =
            self#html_of_class_type_param_expr_list b father l;
            bs b " "
       );
-      print_DEBUG "html#html_of_class : with link or not" ;
       (
        if with_link then
          bp b "<a href=\"%s\">%s</a>" html_file (Name.simple c.cl_name)
@@ -2248,7 +2239,6 @@ class html =
       self#html_of_class_parameter_list b father c ;
       self#html_of_class_kind b father ~cl: c c.cl_kind;
       bs b "</pre>" ;
-      print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
          self#html_of_info ~cls: "class top" ~indent: true

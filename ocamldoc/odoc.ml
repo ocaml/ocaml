@@ -18,8 +18,6 @@
 
 module M = Odoc_messages
 
-let print_DEBUG s = print_string s ; print_newline ()
-
 (* we check if we must load a module given on the command line *)
 let arg_list = Array.to_list Sys.argv
 let (plugins, paths) =
@@ -36,8 +34,6 @@ let (plugins, paths) =
         iter (files, incs) q
   in
   iter ([], []) arg_list
-
-let _ = print_DEBUG "Fin analyse des arguments pour le dynamic load"
 
 (** Return the real name of the file to load,
    searching it in the paths if it is
@@ -78,8 +74,6 @@ let load_plugin file =
       exit 1
 ;;
 List.iter load_plugin plugins;;
-
-let () = print_DEBUG "Fin du chargement dynamique eventuel"
 
 let () = Odoc_args.parse ()
 
