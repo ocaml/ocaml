@@ -19,8 +19,12 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/backtrace_prim.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
+#include "caml/debugger.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/fix_code.h"
 #include "caml/interp.h"
 #include "caml/intext.h"
@@ -30,10 +34,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
-#include "caml/fiber.h"
 #include "caml/startup_aux.h"
-#include "caml/debugger.h"
-#include "caml/backtrace_prim.h"
 
 #ifndef NATIVE_CODE
 
@@ -53,7 +54,7 @@ struct bytecode {
   code_t prog;
   asize_t len;
 };
-#define Bc_val(p) ((struct bytecode*)Data_abstract_val(p))
+#define Bytecode_val(p) ((struct bytecode*)Data_abstract_val(p))
 
 /* Convert a bytes array (= LongString.t) to a contiguous buffer.
    The result is allocated with caml_stat_alloc */
@@ -90,25 +91,26 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
 {
   CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal3(clos, bytecode, retval);
-  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
   code_t prog;
   asize_t len;
+  enum digest_status digest_kind;
+  unsigned char * digest;
+  int fragnum;
 
   prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
   caml_add_debug_info(prog, Val_long(len), debuginfo);
-  cf->code_start = (char *) prog;
-  cf->code_end = (char *) prog + len;
   /* match (digest_opt : string option) with */
   if (Is_block(digest_opt)) {
     /* | Some digest -> */
-    memcpy(cf->digest, String_val(Field(digest_opt, 0)), 16);
-    cf->digest_computed = 1;
+    digest_kind = DIGEST_PROVIDED;
+    digest = (unsigned char *) String_val(Field(digest_opt, 0));
   } else {
     /* | None -> */
-    cf->digest_computed = 0;
+    digest_kind = DIGEST_LATER;
+    digest = NULL;
   }
-  caml_ext_table_add(&caml_code_fragments_table, cf);
-
+  fragnum = caml_register_code_fragment((char *) prog, (char *) prog + len,
+                                        digest_kind, digest);
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, len);
 #endif
@@ -119,16 +121,18 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
 #if 0
   /* TODO: support dynlink debugger: PR8654 */
   /* Notify debugger after fragment gets added and reified. */
-  caml_debugger(CODE_LOADED, Val_long(caml_code_fragments_table.size - 1));
+  caml_debugger(CODE_LOADED, Val_long(fragnum));
 #endif
 
   clos = caml_alloc_small (2, Closure_tag);
   Code_val(clos) =  (code_t) prog;
   Closinfo_val(clos) = Make_closinfo(0, 2);
   bytecode = caml_alloc_small (2, Abstract_tag);
-  Bc_val(bytecode)->prog = prog;
-  Bc_val(bytecode)->len = len;
-  retval = caml_alloc_2 (0, bytecode, clos);
+  Bytecode_val(bytecode)->prog = prog;
+  Bytecode_val(bytecode)->len = len;
+  retval = caml_alloc_small (2, 0);
+  Field(retval, 0) = bytecode;
+  Field(retval, 1) = clos;
   CAMLreturn (retval);
 }
 
@@ -139,21 +143,19 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
 CAMLprim value caml_static_release_bytecode(value bc)
 {
   code_t prog;
-  int found, index;
   struct code_fragment *cf;
 
-  prog = Bc_val(bc)->prog;
+  prog = Bytecode_val(bc)->prog;
 
   caml_remove_debug_info(prog);
 
-  found = caml_find_code_fragment((char*) prog, &index, &cf);
-  /* Not matched with a caml_reify_bytecode call; impossible. */
-  CAMLassert(found); (void) found; /* Silence unused variable warning. */
+  cf = caml_find_code_fragment_by_pc((char *) prog);
+  CAMLassert(cf != NULL);
 
   /* Notify debugger before the fragment gets destroyed. */
-  caml_debugger(CODE_UNLOADED, Val_long(index));
+  caml_debugger(CODE_UNLOADED, Val_long(cf->fragnum));
 
-  caml_ext_table_remove(&caml_code_fragments_table, cf);
+  caml_remove_code_fragment(cf);
 
 #ifndef NATIVE_CODE
 #else
@@ -175,13 +177,13 @@ CAMLprim value caml_realloc_global(value size)
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
     caml_gc_message (0x08, "Growing global data to %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u entries",
+                     ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
                      requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
-      caml_initialize_field(new_global_data, i, Field(old_global_data, i));
+      caml_initialize(&Field(new_global_data, i), Field(old_global_data, i));
     for (i = actual_size; i < requested_size; i++){
-      caml_initialize_field(new_global_data, i, Val_long(0));
+      Field (new_global_data, i) = Val_long (0);
     }
     caml_modify_root(caml_global_data, new_global_data);
   }

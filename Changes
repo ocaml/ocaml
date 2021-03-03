@@ -12,6 +12,9 @@ Working version
 - #9466: Memprof: optimize random samples generation.
   (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
 
+- #9628: Memprof: disable sampling when memprof is suspended.
+  (Jacques-Henri Jourdan review by Gabriel Scherer and Stephen Dolan)
+
 - #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
@@ -36,6 +39,15 @@ Working version
 
 - #9634: Allow initial and repeated commas in `OCAMLRUNPARAM`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- #9649: Update the marshaler (output_value) to take advantage
+  of the new representation for function closures
+  (Xavier Leroy, review by Damien Doligez)
+
+- #9654: More efficient management of code fragments.
+  (Xavier Leroy, review by Jacques-Henri Jourdan, Damien Doligez, and
+  Stephen Dolan)
+
 
 ### Code generation and optimizations:
 
