@@ -66,7 +66,6 @@ let run g args =
     Printexc.print_backtrace stdout
 
 let _ =
-  Printexc.record_backtrace true;
   run test_Error [| "a" |];
   run test_Error [| "b" |];
   run test_Error [| "c" |];

@@ -19,5 +19,4 @@ let g msg =
      | Error "c" -> raise (Error "c")
 
 let _ =
-  Printexc.record_backtrace true;
   ignore (g Sys.argv.(1))

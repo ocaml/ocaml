@@ -71,42 +71,43 @@ void caml_skiplist_init(struct skiplist * sk)
 int caml_skiplist_find(struct skiplist * sk, uintnat key, uintnat * data)
 {
   int i;
-  struct skipcell ** e, * f;
+  struct skipcell * e, * f;
 
-  e = sk->forward;
+  e = (struct skipcell *) sk;
   for (i = sk->level; i >= 0; i--) {
     while (1) {
-      f = e[i];
-      if (f == NULL || f->key > key) break;
-      if (f->key == key) {
-        *data = f->data;
-        return 1;
-      }
-      e = f->forward;
+      f = e->forward[i];
+      if (f == NULL || f->key >= key) break;
+      e = f;
     }
   }
-  return 0;
+  e = e->forward[0];
+  if (e != NULL && e->key == key) {
+    *data = e->data;
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 int caml_skiplist_find_below(struct skiplist * sk, uintnat k,
                              uintnat * key, uintnat * data)
 {
   int i;
-  struct skipcell ** e, * f, * last = NULL;
+  struct skipcell * e, * f;
 
-  e = sk->forward;
+  e = (struct skipcell *) sk;
   for (i = sk->level; i >= 0; i--) {
     while (1) {
-      f = e[i];
+      f = e->forward[i];
       if (f == NULL || f->key > k) break;
-      last = f;
-      e = f->forward;
+      e = f;
     }
   }
-  if (!last) {
+  if (e == (struct skipcell *) sk) {
     return 0;
   } else {
-    *key = last-> key; *data = last->data; return 1;
+    *key = e-> key; *data = e->data; return 1;
   }
 }
 
@@ -115,41 +116,41 @@ int caml_skiplist_find_below(struct skiplist * sk, uintnat k,
 int caml_skiplist_insert(struct skiplist * sk,
                          uintnat key, uintnat data)
 {
-  struct skipcell ** update[NUM_LEVELS];
-  struct skipcell ** e, * f;
+  struct skipcell * update[NUM_LEVELS];
+  struct skipcell * e, * f;
   int i, new_level;
 
   /* Init "cursor" to list head */
-  e = sk->forward;
+  e = (struct skipcell *) sk;
   /* Find place to insert new node */
   for (i = sk->level; i >= 0; i--) {
     while (1) {
-      f = e[i];
+      f = e->forward[i];
       if (f == NULL || f->key >= key) break;
-      e = f->forward;
+      e = f;
     }
-    update[i] = &e[i];
+    update[i] = e;
   }
-  f = e[0];
+  e = e->forward[0];
   /* If already present, update data */
-  if (f != NULL && f->key == key) {
-    f->data = data;
+  if (e != NULL && e->key == key) {
+    e->data = data;
     return 1;
   }
   /* Insert additional element, updating list level if necessary */
   new_level = random_level();
   if (new_level > sk->level) {
     for (i = sk->level + 1; i <= new_level; i++)
-      update[i] = &sk->forward[i];
+      update[i] = (struct skipcell *) sk;
     sk->level = new_level;
   }
-  f = caml_stat_alloc(SIZEOF_SKIPCELL +
+  e = caml_stat_alloc(SIZEOF_SKIPCELL +
                       (new_level + 1) * sizeof(struct skipcell *));
-  f->key = key;
-  f->data = data;
+  e->key = key;
+  e->data = data;
   for (i = 0; i <= new_level; i++) {
-    f->forward[i] = *update[i];
-    *update[i] = f;
+    e->forward[i] = update[i]->forward[i];
+    update[i]->forward[i] = e;
   }
   return 0;
 }
@@ -158,31 +159,31 @@ int caml_skiplist_insert(struct skiplist * sk,
 
 int caml_skiplist_remove(struct skiplist * sk, uintnat key)
 {
-  struct skipcell ** update[NUM_LEVELS];
-  struct skipcell ** e, * f;
+  struct skipcell * update[NUM_LEVELS];
+  struct skipcell * e, * f;
   int i;
 
   /* Init "cursor" to list head */
-  e = sk->forward;
+  e = (struct skipcell *) sk;
   /* Find element in list */
   for (i = sk->level; i >= 0; i--) {
     while (1) {
-      f = e[i];
+      f = e->forward[i];
       if (f == NULL || f->key >= key) break;
-      e = f->forward;
+      e = f;
     }
-    update[i] = &e[i];
+    update[i] = e;
   }
-  f = e[0];
+  e = e->forward[0];
   /* If not found, nothing to do */
-  if (f == NULL || f->key != key) return 0;
+  if (e == NULL || e->key != key) return 0;
   /* Rebuild list without node */
   for (i = 0; i <= sk->level; i++) {
-    if (*update[i] == f)
-      *update[i] = f->forward[i];
+    if (update[i]->forward[i] == e)
+      update[i]->forward[i] = e->forward[i];
   }
   /* Reclaim list element */
-  caml_stat_free(f);
+  caml_stat_free(e);
   /* Down-correct list level */
   while (sk->level > 0 &&
          sk->forward[sk->level] == NULL)

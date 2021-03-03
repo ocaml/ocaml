@@ -58,7 +58,6 @@ let run args =
           | Some line -> print_endline line)
 
 let _ =
-  Printexc.record_backtrace true;
   run [| "a" |];
   run [| "b" |];
   run [| "c" |];
