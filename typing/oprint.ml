@@ -400,9 +400,11 @@ let out_type = ref print_out_type
 let print_type_parameter ppf s =
   if s = "_" then fprintf ppf "_" else pr_var ppf s
 
-let type_parameter ppf (ty, (co, cn)) =
-  fprintf ppf "%s%a"
-    (if not cn then "+" else if not co then "-" else "")
+let type_parameter ppf (ty, (var, inj)) =
+  let open Asttypes in
+  fprintf ppf "%s%s%a"
+    (match var with Covariant -> "+" | Contravariant -> "-" | NoVariance ->  "")
+    (match inj with Injective -> "!" | NoInjectivity -> "")
     print_type_parameter ty
 
 let print_out_class_params ppf =
