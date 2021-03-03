@@ -1836,7 +1836,7 @@ let inline_lazy_force_cond arg loc =
                   Lprim (Psequor,
                        [test_tag Obj.lazy_tag; test_tag Obj.forcing_tag], loc),
                   Lapply
-                    { ap_should_be_tailcall = false;
+                    { ap_tailcall = Default_tailcall;
                       ap_loc = loc;
                       ap_func = force_fun;
                       ap_args = [ varg ];
@@ -1870,17 +1870,17 @@ let inline_lazy_force_switch arg loc =
 
                     (Obj.lazy_tag,
                       Lapply
-                        { ap_should_be_tailcall=false;
-                          ap_loc=loc;
-                          ap_func=force_fun;
-                          ap_args=[varg];
-                          ap_inlined=Default_inline;
-                          ap_specialised=Default_specialise
+                        { ap_tailcall = Default_tailcall;
+                          ap_loc = loc;
+                          ap_func = force_fun;
+                          ap_args = [varg];
+                          ap_inlined = Default_inline;
+                          ap_specialised = Default_specialise
                         } );
 
                     (Obj.forcing_tag,
                       Lapply
-                        { ap_should_be_tailcall = false;
+                        { ap_tailcall = Default_tailcall;
                           ap_loc = loc;
                           ap_func = force_fun;
                           ap_args = [ varg ];
@@ -1899,7 +1899,7 @@ let inline_lazy_force arg loc =
        instrumentation output.
        (see https://github.com/stedolan/crowbar/issues/14) *)
     Lapply
-      { ap_should_be_tailcall = false;
+      { ap_tailcall = Default_tailcall;
         ap_loc = loc;
         ap_func = Lazy.force code_force_lazy;
         ap_args = [ arg ];

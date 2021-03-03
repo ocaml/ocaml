@@ -274,18 +274,29 @@ let get_tailcall_attribute e =
     | {Parsetree.attr_name = {txt=("tailcall"|"ocaml.tailcall")}; _} -> true
     | _ -> false
   in
-  let tailcalls, exp_attributes =
+  let tailcalls, other_attributes =
     List.partition is_tailcall_attribute e.exp_attributes
   in
-  match tailcalls with
-  | [] -> false, e
-  | _ :: r ->
-      begin match r with
-      | [] -> ()
-      | {Parsetree.attr_name = {txt;loc}; _} :: _ ->
-          Location.prerr_warning loc (Warnings.Duplicated_attribute txt)
-      end;
-      true, { e with exp_attributes }
+  let tailcall_attribute = match tailcalls with
+    | [] -> Default_tailcall
+    | {Parsetree.attr_name = {txt; loc}; attr_payload = payload} :: r ->
+        begin match r with
+        | [] -> ()
+        | {Parsetree.attr_name = {txt;loc}; _} :: _ ->
+            Location.prerr_warning loc (Warnings.Duplicated_attribute txt)
+        end;
+        let payload_result : (_, _) result = match payload with
+          | PStr [] -> Ok Should_be_tailcall
+          | _ -> Error ()
+        in
+        match payload_result with
+        | Ok tailcall_attribute -> tailcall_attribute
+        | Error () ->
+            let msg = "No payload is currently supported." in
+            Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg));
+            Default_tailcall
+      in
+      tailcall_attribute, { e with exp_attributes = other_attributes }
 
 let check_attribute e {Parsetree.attr_name = { txt; loc }; _} =
   match txt with
