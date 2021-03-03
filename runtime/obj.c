@@ -83,6 +83,18 @@ CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
   return Val_false;
 }
 
+CAMLprim value caml_obj_raw_field(value arg, value pos)
+{
+  /* Represent field contents as a native integer */
+  return caml_copy_nativeint((intnat) Field(arg, Long_val(pos)));
+}
+
+CAMLprim value caml_obj_set_raw_field(value arg, value pos, value bits)
+{
+  Field(arg, Long_val(pos)) = (value) Nativeint_val(bits);
+  return Val_unit;
+}
+
 CAMLprim value caml_obj_make_forward (value blk, value fwd)
 {
   /* Modify field before setting tag */
