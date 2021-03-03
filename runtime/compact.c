@@ -39,7 +39,8 @@ extern void caml_shrink_heap (char *);              /* memory.c */
 
    We use the GC's color bits in the following way:
 
-   - White words are headers of live blocks.
+   - White words are headers of live blocks except for 0, which is a
+     fragment.
    - Blue words are headers of free blocks.
    - Black words are headers of out-of-heap "blocks".
    - Gray words are the encoding of pointers in inverted lists.
@@ -240,7 +241,7 @@ static void do_compaction (intnat new_allocation_policy)
 
         CAMLassert (!Is_black_hd (h));
         CAMLassert (!Is_gray_hd (h));
-        if (Is_white_hd (h)){
+        if (h != 0 && Is_white_hd (h)){
           word q;
           tag_t t;
           char *newadr;
@@ -302,13 +303,14 @@ static void do_compaction (intnat new_allocation_policy)
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
         word q = *p;
-        if (Color_hd (q) == Caml_white){
+        if (q != 0 && Is_white_hd (q)){
           size_t sz = Bhsize_hd (q);
           char *newadr = compact_allocate (sz);
+          CAMLassert (newadr <= (char *) p);
           memmove (newadr, p, sz);
           p += Wsize_bsize (sz);
         }else{
-          CAMLassert (Color_hd (q) == Caml_blue);
+          CAMLassert (q == 0 || Is_blue_hd (q));
           p += Whsize_hd (q);
         }
       }
