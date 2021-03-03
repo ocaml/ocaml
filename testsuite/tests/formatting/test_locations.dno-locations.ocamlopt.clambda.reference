@@ -4,13 +4,8 @@ cmm:
 (data
  int 3063
  "camlTest_locations__1":
-<<<<<<< HEAD
  addr "camlTest_locations__fib_82"
- int 3)
-=======
- addr "camlTest_locations__fib_81"
  int 72057594037927941)
->>>>>>> 9d4679f338ae0c66de2dc16ea7d9e87c05fe6b9b
 (data int 1792 global "camlTest_locations" "camlTest_locations": int 1)
 (data
  global "camlTest_locations__gc_roots"
