@@ -562,10 +562,10 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 external sys_exit : int -> 'a = "caml_sys_exit"
 external maybe_print_stats : unit -> unit = "caml_maybe_print_stats"
 
-let exit_function = Stdlib__atomic.make flush_all
+let exit_function = CamlinternalAtomic.make flush_all
 
 let rec at_exit f =
-  let module Atomic = Stdlib__atomic in
+  let module Atomic = CamlinternalAtomic in
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
   let f_yet_to_run = Atomic.make true in
   let old_exit = Atomic.get exit_function in
@@ -576,7 +576,7 @@ let rec at_exit f =
   let success = Atomic.compare_and_set exit_function old_exit new_exit in
   if not success then at_exit f
 
-let do_at_exit () = (Stdlib__atomic.get exit_function) ()
+let do_at_exit () = (CamlinternalAtomic.get exit_function) ()
 
 external nop : unit -> unit = "%nop"
 

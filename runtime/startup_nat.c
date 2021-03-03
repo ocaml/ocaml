@@ -22,6 +22,7 @@
 #include "caml/backtrace.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
+#include "caml/codefrag.h"
 #include "caml/debugger.h"
 #include "caml/eventlog.h"
 #include "caml/fiber.h"
@@ -46,7 +47,6 @@
 
 extern int caml_parser_trace;
 char * caml_code_area_start, * caml_code_area_end;
-struct ext_table caml_code_fragments_table;
 
 /* Initialize the static data and code area limits. */
 
@@ -56,7 +56,6 @@ static void init_segments(void)
 {
   extern struct segment caml_code_segments[];
   int i;
-  struct code_fragment * cf;
 
   caml_code_area_start = caml_code_segments[0].begin;
   caml_code_area_end = caml_code_segments[0].end;
@@ -67,12 +66,9 @@ static void init_segments(void)
       caml_code_area_end = caml_code_segments[i].end;
   }
   /* Register the code in the table of code fragments */
-  cf = caml_stat_alloc(sizeof(struct code_fragment));
-  cf->code_start = caml_code_area_start;
-  cf->code_end = caml_code_area_end;
-  cf->digest_computed = 0;
-  caml_ext_table_init(&caml_code_fragments_table, 8);
-  caml_ext_table_add(&caml_code_fragments_table, cf);
+  caml_register_code_fragment(caml_code_area_start,
+                              caml_code_area_end,
+                              DIGEST_LATER, NULL);
 }
 
 /* These are termination hooks used by the systhreads library */

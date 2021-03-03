@@ -398,10 +398,6 @@ endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
-# Transitional: findlib 1.7.3 is confused if leftover num.cm? files remain
-# from an previous installation of OCaml before otherlibs/num was removed.
-	rm -f "$(INSTALL_LIBDIR)"/num.cm?
-# End transitional
 ifneq "$(WITH_OCAMLDOC)" ""
 	$(MAKE) -C ocamldoc install
 endif

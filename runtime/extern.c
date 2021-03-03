@@ -21,13 +21,13 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"
 #include "caml/io.h"
-#include "caml/md5.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
