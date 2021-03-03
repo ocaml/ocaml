@@ -281,7 +281,7 @@ void caml_init_signals(void)
    especially SIGSEGV signals.
    Each thread needs its own alternate stack.
    The alternate stack used to be statically-allocated for the main thread,
-   but this is incompatible with Glibc 2.34 and never, where SIGSTKSZ
+   but this is incompatible with Glibc 2.34 and newer, where SIGSTKSZ
    may not be a compile-time constant (issue #10250). */
 
 CAMLexport int caml_setup_stack_overflow_detection(void)
