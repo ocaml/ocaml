@@ -477,14 +477,14 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             type_manifest = None;
             type_variance =
               List.map
-                (fun (_, v) ->
+                (fun (_, (v, i)) ->
                    let (c, n) =
                      match v with
                      | Covariant -> true, false
                      | Contravariant -> false, true
-                     | Invariant -> false, false
+                     | NoVariance -> false, false
                    in
-                   make_variance (not n) (not c) false
+                   make_variance (not n) (not c) (i = Injective)
                 )
                 sdecl.ptype_params;
             type_separability =

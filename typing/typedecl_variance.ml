@@ -131,10 +131,16 @@ let make p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
 
+let injective = Variance.(set Inj true null)
+
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
+  let check_injectivity = decl.type_kind = Type_abstract in
   let required =
-    List.map (fun (c,n,i) -> if c || n then (c,n,i) else (true,true,i))
+    List.map
+      (fun (c,n,i) ->
+        let i = if check_injectivity then i else false in
+        if c || n then (c,n,i) else (true,true,i))
       required
   in
   (* Prepare *)
@@ -146,6 +152,32 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     (fun (cn,ty) ->
       compute_variance env tvl (if cn then full else covariant) ty)
     tyl;
+  (* Infer injectivity of constrained parameters *)
+  if check_injectivity then
+    List.iter
+      (fun ty ->
+        if Btype.is_Tvar ty || mem Inj (get_variance ty tvl) then () else
+        let visited = ref TypeSet.empty in
+        let rec check ty =
+          let ty = Ctype.repr ty in
+          if TypeSet.mem ty !visited then () else begin
+            visited := TypeSet.add ty !visited;
+            if mem Inj (get_variance ty tvl) then () else
+            match ty.desc with
+            | Tvar _ -> raise Exit
+            | Tconstr _ ->
+                begin try
+                  Btype.iter_type_expr check ty
+                with Exit ->
+                  let ty' = Ctype.expand_head_opt env ty in
+                  if ty == ty' then raise Exit else check ty'
+                end
+            | _ -> Btype.iter_type_expr check ty
+          end
+        in
+        try check ty; compute_variance env tvl injective ty
+        with Exit -> ())
+      params;
   if check then begin
     (* Check variance of parameters *)
     let pos = ref 0 in
@@ -154,7 +186,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         incr pos;
         let var = get_variance ty tvl in
         let (co,cn) = get_upper var and ij = mem Inj var in
-        if Btype.is_Tvar ty && (co && not c || cn && not n || not ij && i)
+        if Btype.is_Tvar ty && (co && not c || cn && not n) || not ij && i
         then raise (Error(loc, Bad_variance
                                 (Variance_not_satisfied !pos,
                                                         (co,cn,ij),
@@ -350,10 +382,14 @@ let property : (prop, req) Typedecl_properties.property =
     check;
   }
 
-let transl_variance : Asttypes.variance -> _ = function
-  | Covariant -> (true, false, false)
-  | Contravariant -> (false, true, false)
-  | Invariant -> (false, false, false)
+let transl_variance (v, i) =
+  let co, cn =
+    match v with
+    | Covariant -> (true, false)
+    | Contravariant -> (false, true)
+    | NoVariance -> (false, false)
+  in
+  (co, cn, match i with Injective -> true | NoInjectivity -> false)
 
 let variance_of_params ptype_params =
   List.map transl_variance (List.map snd ptype_params)
