@@ -39,6 +39,7 @@ typedef struct {
   #undef BYTE_DOMAIN_STATE
 #endif
 #undef DOMAIN_STATE
+  CAMLalign(8) char end_of_domain_state;
 } caml_domain_state;
 
 enum {
@@ -60,13 +61,12 @@ enum {
    since the runtime assumes this in computing offsets */
 #ifdef NATIVE_CODE
 CAML_STATIC_ASSERT(
-  sizeof(caml_domain_state) == Domain_state_num_fields * 8);
+    offsetof(caml_domain_state, end_of_domain_state) ==
+    Domain_state_num_fields * 8);
 #else
 CAML_STATIC_ASSERT(
-  sizeof(caml_domain_state) ==
-   (Domain_state_num_fields
-     + Byte_domain_state_num_fields
-   ) * 8);
+    offsetof(caml_domain_state, end_of_domain_state) ==
+    (Domain_state_num_fields + Byte_domain_state_num_fields) * 8);
 #endif
 
 #ifdef __APPLE__

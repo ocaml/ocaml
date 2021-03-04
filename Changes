@@ -77,6 +77,10 @@ Working version
   areas in the page table, subsumed by the new code fragment management API
   (Xavier Leroy, review by Jacques-Henri Jourdan)
 
+- #9710: Drop "support" for an hypothetical JIT for OCaml bytecode
+   which has never existed.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9620: Limit the number of parameters for an uncurried or untupled
@@ -183,6 +187,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9216: add Lambda.duplicate which refreshes bound identifiers
+  (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
+
 - #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
@@ -256,6 +263,12 @@ Working version
   for the new closure representation (#9619)
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
+
+- #9714, #9724: Use the C++ alignas keyword when compiling in C++.
+  Fixes a bug with MSVC C++ 2015/2017. Add a terminator to the
+  `caml_domain_state` structure to better ensure that members are
+  correctly spaced.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
 OCaml 4.11
 ----------
@@ -579,6 +592,13 @@ OCaml 4.11
 
 - #9486: Fix configuration for the Haiku operating system
   (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
+
+- #9712: Update the version format to allow "~".
+  The new format is "major.minor[.patchlevel][(+|~)additional-info]",
+  for instance "4.12.0~beta1+flambda".
+  This is a documentation-only change for the 4.11 branch, the new format
+  will be used starting with the 4.12 branch.
+  (Florian Angeletti, review by Damien Doligez and Xavier Leroy)
 
 ### Internal/compiler-libs changes:
 
