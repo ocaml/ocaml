@@ -7372,3 +7372,11 @@ let f = function
 
 let () =
   f (fun (type t) -> x)
+
+(* #9778 *)
+
+type t = unit
+
+let rec equal : 'a. ('a -> 'a -> bool) -> 'a t -> 'a t -> bool =
+ (fun poly_a (_ : unit) (_ : unit) -> true) [@ocaml.warning "-A"]
+ [@@ocaml.warning "-39"]
