@@ -1,6 +1,4 @@
-(* TEST
-   compare_programs = "false" (* See https://github.com/ocaml/ocaml/pull/8853 *)
-*)
+(* TEST *)
 
 (** Test the various change_layout for Genarray and the various Array[n] *)
 

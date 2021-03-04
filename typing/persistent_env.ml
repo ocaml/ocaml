@@ -104,7 +104,7 @@ let clear_missing {persistent_structures; _} =
 let add_import {imported_units; _} s =
   imported_units := String.Set.add s !imported_units
 
-let add_imported_opaque {imported_opaque_units; _} s =
+let register_import_as_opaque {imported_opaque_units; _} s =
   imported_opaque_units := String.Set.add s !imported_opaque_units
 
 let find_in_cache {persistent_structures; _} s =
@@ -164,7 +164,7 @@ let save_pers_struct penv crc ps pm =
         | Rectypes -> ()
         | Alerts _ -> ()
         | Unsafe_string -> ()
-        | Opaque -> add_imported_opaque penv modname)
+        | Opaque -> register_import_as_opaque penv modname)
     ps.ps_flags;
   Consistbl.set crc_units modname crc ps.ps_filename;
   add_import penv modname
@@ -190,7 +190,7 @@ let acknowledge_pers_struct penv check modname pers_sig pm =
             if Config.safe_string then
               error (Depend_on_unsafe_string_unit(ps.ps_name));
         | Alerts _ -> ()
-        | Opaque -> add_imported_opaque penv modname)
+        | Opaque -> register_import_as_opaque penv modname)
     ps.ps_flags;
   if check then check_consistency penv ps;
   let {persistent_structures; _} = penv in

@@ -51,7 +51,6 @@ let native =
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
-    compare_native_programs;
   ] in
   {
     test_name = "native";

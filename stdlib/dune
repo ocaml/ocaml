@@ -24,8 +24,11 @@
  (preprocess
    (per_module
      ((action
-        (run awk -v dune_wrapped=true
-               -f %{dep:expand_module_aliases.awk} %{input-file}))
+        (progn
+          ; FIXME: remove after 4.12
+          (run sed -i s/loc_FUNCTION/loc_POS/ %{input-file})
+          (run awk -v dune_wrapped=true
+                 -f %{dep:expand_module_aliases.awk} %{input-file})))
       stdlib))))
 
 (rule

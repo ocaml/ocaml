@@ -111,6 +111,10 @@ Working version
    and more generally all other data that is not a well-formed OCaml value
    (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
 
+- #9533: Added String.starts_with and String.ends_with.
+  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
+  Alain Frisch)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
@@ -143,8 +147,16 @@ Working version
 
 ### Manual and documentation:
 
+- #9468: HACKING.adoc: using dune to get merlin's support
+  (Thomas Refis, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
+
+* #9011: Do not create .a/.lib files when creating a .cmxa with no modules.
+  macOS ar doesn't support creating empty .a files (#1094) and MSVC doesn't
+  permit .lib files to contain no objects. When linking with a .cmxa containing
+  no modules, it is now not an error for there to be no .a/.lib file.
+  (David Allsopp, review by Xavier Leroy)
 
 - #9560: Report partial application warnings on type errors in applications.
   (Stephen Dolan, report and testcase by whitequark, review by Gabriel Scherer
@@ -159,6 +171,12 @@ Working version
   module type were parsed but ignored. Now they are attached to the
   corresponding core_type.
   (Etienne Millon, review by Thomas Refis)
+
+- #6633, #9673: Add hint when a module is used instead of a module type or
+  when a module type is used instead of a module or when a class type is used
+  instead of a class.
+  (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
+  and Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -185,7 +203,17 @@ Working version
   naked-pointers and no-naked-pointers mode
   (Xavier Leroy and Gabriel Scherer)
 
+- #9696: ocamltest now shows its log when a test fails. In addition, the log
+  contains the output of executed programs.
+  (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
+  Scherer)
+
 ### Build system:
+
+- #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
+  cross-compilation, this means the triplet-prefixed version will always be
+  used.
+  (David Allsopp, report by Adrian Nader, review by Sébastien Hinderer)
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
   dependencies are generated on-the-fly in development mode. For incremental
@@ -197,6 +225,9 @@ Working version
   (Gabriel Scherer, review by David Allsopp)
 
 ### Bug fixes:
+
+- #9163: Treat loops properly in un_anf
+  (Leo White, review by Mark Shinwell, Pierre Chambart and Vincent Laviron)
 
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
@@ -643,6 +674,10 @@ OCaml 4.11
   avoiding a problem with x87 excess precision in Float.round.
   (Xavier Leroy, review by Sébastien Hinderer)
 
+- #9011: Allow linking .cmxa files with no units on MSVC by not requiring the
+  .lib file to be present.
+  (David Allsopp, report by Dimitry Bely, review by Xavier Leroy)
+
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 
@@ -662,6 +697,9 @@ OCaml 4.11
   collected call stack, and make sure ocamlc preserves such events
   even if they are at tail position.
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
+
+- #9244: Fix some missing usage warnings
+  (Leo White, review by Florian Angeletti)
 
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
@@ -690,6 +728,9 @@ OCaml 4.11
 - #9375, #9477: add forgotten substitution when compiling anonymous modules
   (Thomas Refis, review by Frédéric Bour, report by Andreas Hauptmann)
 
+- #9384, #9385: Fix copy scope bugs in substitutions
+  (Leo White, review by Thomas Refis, report by Nick Roberts)
+
 * #9388: Prohibit signature local types with constraints
   (Leo White, review by Jacques Garrigue)
 
@@ -701,6 +742,9 @@ OCaml 4.11
 - #9415: Treat `open struct` as `include struct` in toplevel
   (Leo White, review by Thomas Refis)
 
+- #9416: Avoid warning 58 in flambda ocamlnat
+  (Leo White, review by Florian Angeletti)
+
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
 
@@ -711,6 +755,9 @@ OCaml 4.11
 - #9623, #9642: fix typing environments in Typedecl.transl_with_constraint
   (Gabriel Scherer, review by Jacques Garrigue and Leo White,
    report by Hugo Heuzard)
+
+- #9695, #9702: no error when opening an alias to a missing module
+  (Jacques Garrigue, report and review by Gabriel Scherer)
 
 OCaml 4.10 maintenance branch
 -----------------------------
