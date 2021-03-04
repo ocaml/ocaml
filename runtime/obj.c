@@ -264,19 +264,10 @@ CAMLprim value caml_obj_is_shared (value obj)
   return Val_int(Is_long(obj) || !Is_young(obj));
 }
 
-/* The following functions are used in stdlib/lazy.ml.
-   They are not written in OCaml because they must be atomic with respect
+/* The following function is used in stdlib/lazy.ml.
+   It is not written in OCaml because it must be atomic with respect
    to the GC.
  */
-
-CAMLprim value caml_lazy_follow_forward (value v)
-{
-  if (Is_block (v) && Tag_val (v) == Forward_tag){
-    return Forward_val (v);
-  }else{
-    return v;
-  }
-}
 
 CAMLprim value caml_lazy_make_forward (value v)
 {

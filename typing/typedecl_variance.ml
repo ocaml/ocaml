@@ -87,7 +87,7 @@ let compute_variance env visited vari ty =
                 compute_variance_rec v2 ty)
               tl decl.type_variance
           with Not_found ->
-            List.iter (compute_variance_rec may_inv) tl
+            List.iter (compute_variance_rec unknown) tl
         end
     | Tobject (ty, _) ->
         compute_same ty
@@ -121,7 +121,7 @@ let compute_variance env visited vari ty =
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
     | Tpackage (_, _, tyl) ->
         let v =
-          Variance.(if mem Pos vari || mem Neg vari then full else may_inv)
+          Variance.(if mem Pos vari || mem Neg vari then full else unknown)
         in
         List.iter (compute_variance_rec v) tyl
   in

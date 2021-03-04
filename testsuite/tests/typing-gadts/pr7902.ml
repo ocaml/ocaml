@@ -30,12 +30,4 @@ Error: This pattern matches values of type ('a * 'a, 'a * 'a) segment
        but a pattern was expected which matches values of type
          ('a * 'a, 'a) segment
        The type variable 'a occurs inside 'a * 'a
-|}, Principal{|
-Line 3, characters 4-18:
-3 |   | SegCons SegNil -> 0
-        ^^^^^^^^^^^^^^
-Error: This pattern matches values of type ('a, 'a * 'a) segment
-       but a pattern was expected which matches values of type
-         ('a, 'a) segment
-       The type variable 'a occurs inside 'a * 'a
 |}]

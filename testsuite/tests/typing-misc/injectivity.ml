@@ -373,3 +373,53 @@ Line 2, characters 0-27:
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 |}]
+
+
+(* #9721 by Jeremy Yallop *)
+
+(* First, some standard bits and pieces for equality & injectivity: *)
+
+type (_,_) eql = Refl : ('a, 'a) eql
+
+module Uninj(X: sig type !'a t end) :
+sig val uninj : ('a X.t, 'b X.t) eql -> ('a, 'b) eql end =
+struct let uninj : type a b. (a X.t, b X.t) eql -> (a, b) eql = fun Refl -> Refl end
+
+let coerce : type a b. (a, b) eql -> a -> b = fun Refl x -> x;;
+[%%expect{|
+type (_, _) eql = Refl : ('a, 'a) eql
+module Uninj :
+  functor (X : sig type !'a t end) ->
+    sig val uninj : ('a X.t, 'b X.t) eql -> ('a, 'b) eql end
+val coerce : ('a, 'b) eql -> 'a -> 'b = <fun>
+|}]
+
+(* Now the questionable part, defining two "injective" type definitions in
+   a pair of mutually-recursive modules. These definitions are correctly
+   rejected if given as a pair of mutually-recursive types, but wrongly
+   accepted when defined as follows:
+*)
+
+module rec R : sig type !'a t = [ `A of 'a S.t] end = R
+       and S : sig type !'a t = 'a R.t end = S ;;
+[%%expect{|
+Line 1, characters 19-47:
+1 | module rec R : sig type !'a t = [ `A of 'a S.t] end = R
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is invariant.
+|}]
+
+(* The parameter of R.t is never used, so we can build an equality witness
+   for any instantiation: *)
+
+let x_eq_y : (int R.t, string R.t) eql = Refl
+let boom = let module U = Uninj(R) in print_endline (coerce (U.uninj x_eq_y) 0)
+;;
+[%%expect{|
+Line 1, characters 18-21:
+1 | let x_eq_y : (int R.t, string R.t) eql = Refl
+                      ^^^
+Error: Unbound module R
+|}]

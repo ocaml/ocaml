@@ -3,7 +3,7 @@ Working version
 
 ### Language features:
 
-* #9500: Injectivity annotations
+* #9500, #9727: Injectivity annotations
   One can now mark type parameters as injective, which is useful for
   abstract types:
     module Vec : sig type !'a t end = struct type 'a t = 'a array end
@@ -159,6 +159,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #1931: rely on levels to enforce principality in patterns
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 * #9011: Do not create .a/.lib files when creating a .cmxa with no modules.
   macOS ar doesn't support creating empty .a files (#1094) and MSVC doesn't
   permit .lib files to contain no objects. When linking with a .cmxa containing
@@ -217,6 +220,9 @@ Working version
   contains the output of executed programs.
   (Nicolás Ojeda Bär, review by David Allsopp, Sébastien Hinderer and Gabriel
   Scherer)
+
+- #9688: Expose the main entrypoint in compilerlibs
+  (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
 
 ### Build system:
 
@@ -545,6 +551,12 @@ OCaml 4.11
 
 - #7708, #9580: Ensure Stdlib documentation index refers to Stdlib.
   (Stephen Dolan, review by Florian Angeletti, report by Hannes Mehnert)
+
+- #9541: Add a documentation page for the instrumented runtime;
+  additional changes to option names in the instrumented runtime.
+  (Enguerrand Decorne, review by Anil Madhavapeddy, Gabriel Scherer,
+   Daniel Bünzli, David Allsopp, Florian Angeletti,
+   and Sébastien Hinderer)
 
 - #9610: manual, C FFI: naked pointers are deprecated, detail the
   forward-compatible options for handling out-of-heap pointers.

@@ -15,6 +15,8 @@
 
 open Clflags
 
+exception Exit_compiler of int
+
 let output_prefix name =
   let oname =
     match !output_name with
@@ -27,17 +29,19 @@ let print_version_and_library compiler =
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
-  exit 0
+  raise (Exit_compiler 0)
 
 let print_version_string () =
-  print_string Config.version; print_newline(); exit 0
+  print_string Config.version; print_newline();
+  raise (Exit_compiler 0)
 
 let print_standard_library () =
-  print_string Config.standard_library; print_newline(); exit 0
+  print_string Config.standard_library; print_newline();
+  raise (Exit_compiler 0)
 
 let fatal err =
   prerr_endline err;
-  exit 2
+  raise (Exit_compiler 2)
 
 let extract_output = function
   | Some s -> s
@@ -603,7 +607,7 @@ let process_action
   | ProcessCFile name ->
       readenv ppf (Before_compile name);
       Location.input_name := name;
-      if Ccomp.compile_file name <> 0 then exit 2;
+      if Ccomp.compile_file name <> 0 then raise (Exit_compiler 2);
       ccobjs := c_object_of_filename name :: !ccobjs
   | ProcessObjects names ->
       ccobjs := names @ !ccobjs

@@ -62,13 +62,13 @@ it will not compile with OCaml 4.00 or earlier.
 Line 1, characters 26-27:
 1 | function Not_found -> 1 | A -> 2 | _ -> 3
                               ^
-Warning 41: A belongs to several types: a exn
-The first one was selected. Please disambiguate if this is wrong.
+Warning 18: this type-based constructor disambiguation is not principal.
 Line 1, characters 26-27:
 1 | function Not_found -> 1 | A -> 2 | _ -> 3
                               ^
-Error: This pattern matches values of type a
-       but a pattern was expected which matches values of type exn
+Warning 42: this use of A relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+- : exn -> int = <fun>
 |}]
 ;;
 

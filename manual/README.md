@@ -87,6 +87,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Optimisation with Flambda: `flambda.etex`
     - Memory profiling with Spacetime: `spacetime-chapter.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
+    - Runtime tracing with the instrumented runtime: `instrumented-runtime.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
 Consequently, these options are described together in the file
