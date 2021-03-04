@@ -25,6 +25,11 @@ tests/weak-ephe-final/'weaktest.ml' with 2 (bytecode)
 #  https://github.com/ocaml/ocaml/pull/676
 ephe-c-api
 
+# TODO: port https://github.com/ocaml/ocaml/pull/9742
+# Make Ephemeron compatible with infix pointers
+testing 'ephe_infix.ml' with 1 (native)
+testing 'ephe_infix.ml' with 2 (bytecode)
+
 # TODO: port stat-mem-prof
 #  https://github.com/ocaml/ocaml/pull/8634
 statmemprof

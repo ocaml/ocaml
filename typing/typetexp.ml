@@ -423,14 +423,7 @@ and transl_type_aux env policy styp =
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
               | _                        -> None
             in
-            begin try
-              (* Set name if there are no fields yet *)
-              Hashtbl.iter (fun _ _ -> raise Exit) hfields;
-              name := nm
-            with Exit ->
-              (* Unset it otherwise *)
-              name := None
-            end;
+            name := if Hashtbl.length hfields <> 0 then None else nm;
             let fl = match expand_head env cty.ctyp_type, nm with
               {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Btype.row_repr row in
@@ -692,7 +685,7 @@ let transl_simple_type_delayed env styp =
   end_def ();
   make_fixed_univars typ.ctyp_type;
   (* This brings the used variables to the global level, but doesn't link them
-     to their other occurences just yet. This will be done when [force] is
+     to their other occurrences just yet. This will be done when [force] is
      called. *)
   let force = globalize_used_variables env false in
   (* Generalizes everything except the variables that were just globalized. *)

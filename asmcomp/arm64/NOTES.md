@@ -10,3 +10,4 @@ Debian architecture name: `arm64`.
   _ARM Architecture Reference Manual, ARMv8_, restricted to the AArch64 subset.
 * Application binary interface:
   _Procedure Call Standard for the ARM 64-bit Architecture (AArch64)_
+  _Apple ARM64 Function Calling Conventions_
