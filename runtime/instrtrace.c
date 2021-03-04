@@ -23,14 +23,14 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "caml/fiber.h"
+#include "caml/domain.h"
 #include "caml/instrtrace.h"
 #include "caml/instruct.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/opnames.h"
 #include "caml/prims.h"
-#include "caml/fiber.h"
-#include "caml/domain.h"
 #include "caml/startup.h"
 
 extern code_t caml_start_code;
@@ -82,7 +82,7 @@ void caml_disasm_instr(code_t pc)
       snprintf(buf, sizeof(buf), "%s %s\n", opbuf, (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   case SWITCH:
-    snprintf(buf, sizeof(buf), "%s ntag=%ld nint=%ld\n",
+    snprintf(buf, sizeof(buf), "%s ntag=%lu nint=%lu\n",
                  opbuf,
                  (unsigned long) pc[0] >> 16,
                  (unsigned long) pc[0] & 0xffff);

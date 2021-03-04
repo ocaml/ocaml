@@ -360,8 +360,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     a case (PR#6669).
 
                     Unfortunately, there is a corner-case that *is*
-                    a real cycle: using -rectypes one can define
-                      let rec x = lazy x
+                    a real cycle: using unboxed types one can define
+
+                       type t = T : t Lazy.t -> t [@@unboxed]
+                       let rec x = lazy (T x)
+
                     which creates a Forward_tagged block that points to
                     itself. For this reason, we still "nest"
                     (detect head cycles) on forward tags.

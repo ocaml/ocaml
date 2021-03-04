@@ -139,12 +139,12 @@ static void setup_eventlog_file()
   eventlog_filename = caml_secure_getenv(T("OCAML_EVENTLOG_PREFIX"));
 
   if (eventlog_filename) {
-    int ret = snprintf_os(output_file, OUTPUT_FILE_LEN, T("%s.%d.eventlog"),
+    int ret = snprintf_os(output_file, OUTPUT_FILE_LEN, T("%s.%ld.eventlog"),
                          eventlog_filename, Caml_state->eventlog_startup_pid);
     if (ret > OUTPUT_FILE_LEN)
       caml_fatal_error("eventlog: specified OCAML_EVENTLOG_PREFIX is too long");
   } else {
-    snprintf_os(output_file, OUTPUT_FILE_LEN, T("caml-%d.eventlog"),
+    snprintf_os(output_file, OUTPUT_FILE_LEN, T("caml-%ld.eventlog"),
                Caml_state->eventlog_startup_pid);
   }
 
