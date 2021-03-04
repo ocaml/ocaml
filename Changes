@@ -103,7 +103,15 @@ Working version
    partially curried or tupled.
    (Xavier Leroy, review by Mark Shinwell)
 
+- #9752: Revised handling of calling conventions for external C functions.
+   Provide a more precise description of the types of unboxed arguments,
+   so that the ARM64 iOS/macOS calling conventions can be honored.
+   (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
+
 ### Standard library:
+
+- #9781: add injectivity annotations to parameterized abstract types
+  (Jeremy Yallop, review by Nicolás Ojeda Bär)
 
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
   or function, including any enclosing module or class.
@@ -216,6 +224,12 @@ Working version
   instead of a class.
   (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
   and Gabriel Scherer)
+
+- #9657: Warnings can now be referred to by their mnemonic name. The names are
+  displayed using `-warn-help` and can be utilized anywhere where a warning list
+  specification is expected, e.g. `[@@@ocaml.warning ...]`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, Florian Angeletti and Leo
+  White)
 
 ### Internal/compiler-libs changes:
 
@@ -380,7 +394,7 @@ OCaml 4.11
 - #9280: Micro-optimise allocations on amd64 to save a register.
   (Stephen Dolan, review by Xavier Leroy)
 
-- #9316, #9443, #9463: Use typing information from Clambda
+- #9316, #9443, #9463, #9782: Use typing information from Clambda
   for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
   and Gabriel Scherer; temporary bug report by Richard Jones)
@@ -483,6 +497,10 @@ OCaml 4.11
 
 ### Other libraries:
 
+- #9338: Dynlink: make sure *_units () functions report accurate information
+  before the first load.
+  (Daniel Bünzli, review by Xavier Leroy and Nicolás Ojeda Bär)
+
 - #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann, review by David Allsopp)
 
@@ -501,6 +519,10 @@ OCaml 4.11
    review by Gabriel Scherer and David Allsopp)
 
 ### Tools:
+
+* #9299: ocamldep: do not process files during cli parsing. Fixes
+  various broken cli behaviours.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär)
 
 - #6969: Argument -nocwd added to ocamldep
   (Muskan Garg, review by Florian Angeletti)

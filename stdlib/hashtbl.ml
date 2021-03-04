@@ -287,7 +287,7 @@ module type SeededHashedType =
 module type S =
   sig
     type key
-    type 'a t
+    type !'a t
     val create: int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
@@ -315,7 +315,7 @@ module type S =
 module type SeededS =
   sig
     type key
-    type 'a t
+    type !'a t
     val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit

@@ -14,7 +14,7 @@ type (_, _) t =
 Line 5, characters 9-43:
 5 | let get1 (Cons (x, _) : (_ * 'a, 'a) t) = x ;; (* warn, cf PR#6993 *)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Nil
 val get1 : ('b * 'a, 'a) t -> 'b = <fun>

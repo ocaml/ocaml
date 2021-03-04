@@ -1,5 +1,5 @@
 File "pervasives_leitmotiv.ml", line 1:
-Warning 63: The printed interface differs from the inferred interface.
+Warning 63 [erroneous-printed-signature]: The printed interface differs from the inferred interface.
 The inferred interface contained items which could not be printed
 properly due to name collisions between identifiers.
 File "pervasives_leitmotiv.ml", lines 10-12, characters 0-3:

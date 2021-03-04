@@ -306,7 +306,7 @@ type foo += Foo
 Line 3, characters 8-26:
 3 | let f = function Foo -> ()
             ^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)
@@ -327,7 +327,7 @@ Lines 1-4, characters 8-11:
 2 |   | [Foo] -> 1
 3 |   | _::_::_ -> 3
 4 |   | [] -> 2
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*::[]
 Matching over values of extensible variant types (the *extension* above)
@@ -350,7 +350,7 @@ let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;;
 Line 1, characters 8-62:
 1 | let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)

@@ -85,6 +85,11 @@ let inline_ops =
 let use_direct_addressing _symb =
   not !Clflags.dlcode
 
+let is_stack_slot rv =
+  Reg.(match rv with
+        | [| { loc = Stack _ } |] -> true
+        | _ -> false)
+
 (* Instruction selection *)
 
 class selector = object(self)
@@ -98,13 +103,13 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _, _), args, _) when List.mem fn inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
 method! effects_of e =
   match e with
-  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _, _), args, _) when List.mem fn inline_ops ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | e -> super#effects_of e
 
@@ -228,15 +233,15 @@ method! select_operation op args dbg =
           super#select_operation op args dbg
       end
   (* Recognize floating-point square root *)
-  | Cextcall("sqrt", _, _, _) ->
+  | Cextcall("sqrt", _, _, _, _) ->
       (Ispecific Isqrtf, args)
   (* Recognize bswap instructions *)
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
       (Ispecific(Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
       (Ispecific(Ibswap 32), args)
   | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
-              _, _, _) ->
+              _, _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* Other operations are regular *)
   | _ ->
@@ -250,6 +255,10 @@ method select_logical op = function
   | args ->
       (Iintop op, args)
 
+method! insert_move_extcall_arg env ty_arg src dst =
+  if macosx && ty_arg = XInt32 && is_stack_slot dst
+  then self#insert env (Iop (Ispecific Imove32)) src dst
+  else self#insert_moves env src dst
 end
 
 let fundecl f = (new selector)#emit_fundecl f

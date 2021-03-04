@@ -309,7 +309,7 @@ val d : dyn = Dyn (Vec (Vec Int), <poly>)
 Line 47, characters 4-11:
 47 | let Some v' = undyn int_vec_vec d
          ^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 None
 val v' : int Vec.t Vec.t = <abstr>
@@ -340,7 +340,7 @@ val coe : ('a, 'b) eq -> 'a ty -> 'b ty = <fun>
 Line 17, characters 2-30:
 17 |   let Vec Int = vec_ty in Refl
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Vec (Vec Int)
 val eq_int_any : (int, 'a) eq = Refl
