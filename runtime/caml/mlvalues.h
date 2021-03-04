@@ -227,7 +227,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
-/* Infix_tag must be 1 modulo 4 and infix headers can only occur in blocks
+/* Infix_tag must be 1 modulo 2 and infix headers can only occur in blocks
    with tag Closure_tag (see compact.c). */
 
 #define Infix_tag 249

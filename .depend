@@ -3,6 +3,11 @@ utils/arg_helper.cmo : \
 utils/arg_helper.cmx : \
     utils/arg_helper.cmi
 utils/arg_helper.cmi :
+utils/binutils.cmo : \
+    utils/binutils.cmi
+utils/binutils.cmx : \
+    utils/binutils.cmi
+utils/binutils.cmi :
 utils/build_path_prefix_map.cmo : \
     utils/build_path_prefix_map.cmi
 utils/build_path_prefix_map.cmx : \
@@ -1857,10 +1862,12 @@ bytecomp/bytesections.cmi :
 bytecomp/dll.cmo : \
     utils/misc.cmi \
     utils/config.cmi \
+    utils/binutils.cmi \
     bytecomp/dll.cmi
 bytecomp/dll.cmx : \
     utils/misc.cmx \
     utils/config.cmx \
+    utils/binutils.cmx \
     bytecomp/dll.cmi
 bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : \
