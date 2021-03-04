@@ -1,7 +1,6 @@
 (* TEST
    flags = "-g"
    ocamlrunparam += ",b=1"
-   compare_programs = "false"
 *)
 
 exception Exn

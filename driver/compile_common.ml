@@ -68,7 +68,7 @@ let typecheck_intf info ast =
         Format.(fprintf std_formatter) "%a@."
           (Printtyp.printed_signature info.source_file)
           sg);
-  ignore (Includemod.signatures info.env sg sg);
+  ignore (Includemod.signatures info.env ~mark:Mark_both sg sg);
   Typecore.force_delayed_checks ();
   Warnings.check_fatal ();
   tsg

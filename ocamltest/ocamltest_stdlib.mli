@@ -49,6 +49,8 @@ module Sys : sig
   val run_system_command : string -> string list -> unit
   val make_directory : string -> unit
   val string_of_file : string -> string
+  val iter_lines_of_file : (string -> unit) -> string -> unit
+  val dump_file : out_channel -> ?prefix:string -> string -> unit
   val copy_chan : in_channel -> out_channel -> unit
   val copy_file : string -> string -> unit
   val force_remove : string -> unit

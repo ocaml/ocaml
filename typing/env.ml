@@ -790,6 +790,9 @@ let crc_of_unit name =
 let is_imported_opaque modname =
   Persistent_env.is_imported_opaque persistent_env modname
 
+let register_import_as_opaque modname =
+  Persistent_env.register_import_as_opaque persistent_env modname
+
 let reset_declaration_caches () =
   Types.Uid.Tbl.clear value_declarations;
   Types.Uid.Tbl.clear type_declarations;
@@ -2001,19 +2004,22 @@ let add_components slot root env0 comps =
     modules;
   }
 
-let open_signature slot root env0 =
-  match get_components (find_module_components root env0) with
-  | Functor_comps _ -> None
-  | Structure_comps comps ->
-    Some (add_components slot root env0 comps)
+let open_signature slot root env0 : (_,_) result =
+  match get_components_res (find_module_components root env0) with
+  | Error _ -> Error `Not_found
+  | exception Not_found -> Error `Not_found
+  | Ok (Functor_comps _) -> Error `Functor
+  | Ok (Structure_comps comps) ->
+    Ok (add_components slot root env0 comps)
 
 
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
   match open_signature None (Pident(Ident.create_persistent name)) env with
-  | Some env -> env
-  | None -> assert false (* a compilation unit cannot refer to a functor *)
+  | (Ok _ | Error `Not_found as res) -> res
+  | Error `Functor -> assert false
+        (* a compilation unit cannot refer to a functor *)
 
 let open_signature
     ?(used_slot = ref false)
@@ -3063,21 +3069,45 @@ let report_lookup_error _loc env ppf = function
   | Unbound_type lid ->
       fprintf ppf "Unbound type constructor %a" !print_longident lid;
       spellcheck ppf extract_types env lid;
-  | Unbound_module lid ->
+  | Unbound_module lid -> begin
       fprintf ppf "Unbound module %a" !print_longident lid;
-      spellcheck ppf extract_modules env lid;
+       match find_modtype_by_name lid env with
+      | exception Not_found -> spellcheck ppf extract_modules env lid;
+      | _ ->
+         fprintf ppf
+           "@.@[%s %a, %s@]"
+           "Hint: There is a module type named"
+           !print_longident lid
+           "but module types are not modules"
+    end
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" !print_longident lid;
       spellcheck ppf extract_constructors env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" !print_longident lid;
       spellcheck ppf extract_labels env lid;
-  | Unbound_class lid ->
+  | Unbound_class lid -> begin
       fprintf ppf "Unbound class %a" !print_longident lid;
-      spellcheck ppf extract_classes env lid;
-  | Unbound_modtype lid ->
+      match find_cltype_by_name lid env with
+      | exception Not_found -> spellcheck ppf extract_classes env lid;
+      | _ ->
+         fprintf ppf
+           "@.@[%s %a, %s@]"
+           "Hint: There is a class type named"
+           !print_longident lid
+           "but classes are not class types"
+    end
+  | Unbound_modtype lid -> begin
       fprintf ppf "Unbound module type %a" !print_longident lid;
-      spellcheck ppf extract_modtypes env lid;
+      match find_module_by_name lid env with
+      | exception Not_found -> spellcheck ppf extract_modtypes env lid;
+      | _ ->
+         fprintf ppf
+           "@.@[%s %a, %s@]"
+           "Hint: There is a module named"
+           !print_longident lid
+           "but modules are not module types"
+    end
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" !print_longident lid;
       spellcheck ppf extract_cltypes env lid;

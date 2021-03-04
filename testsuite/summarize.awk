@@ -91,6 +91,10 @@ function record_unexp() {
     clear();
 }
 
+/^> / {
+    next;
+}
+
 /Running tests from '[^']*'/ {
     if (in_test) record_unexp();
     match($0, /Running tests from '[^']*'/);
