@@ -153,6 +153,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
                       (intnat) s.minor_collections);
       caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       domain_state->stat_major_collections);
+      caml_gc_message(0x400,
+                      "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                      (intnat)s.forced_major_collections);
       caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       heap_words);
       caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",

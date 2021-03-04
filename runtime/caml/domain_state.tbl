@@ -123,6 +123,7 @@ DOMAIN_STATE(uintnat, stat_promoted_words)
 DOMAIN_STATE(uintnat, stat_major_words)
 DOMAIN_STATE(intnat, stat_minor_collections)
 DOMAIN_STATE(intnat, stat_major_collections)
+DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(uintnat, stat_blocks_marked)
 
 /*****************************************************************************/

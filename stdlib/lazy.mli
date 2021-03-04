@@ -63,11 +63,11 @@ exception Undefined
 (* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
-    If [x] has already been forced, [Lazy.force x] returns the
-    same value again without recomputing it.  If it raised an exception,
-    the same exception is raised again.
-    Raise {!Undefined} if the forcing of [x] tries to force [x] itself
-    recursively, or if [x] is concurrently forced by another domain.
+   If [x] has already been forced, [Lazy.force x] returns the
+   same value again without recomputing it.  If it raised an exception,
+   the same exception is raised again.
+   @raise Undefined if the forcing of [x] tries to force [x] itself
+   recursively, or if [x] is concurrently forced by another domain.
 *)
 
 val try_force : 'a t -> 'a option
@@ -79,7 +79,7 @@ val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
     result.  If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
-    Raise {!Undefined} if the forcing of [x] tries to force [x] itself
+    @raise Undefined if the forcing of [x] tries to force [x] itself
     recursively, or if [x] is concurrently forced by another domain.
     If the computation of [x] raises an exception, it is unspecified
     whether [force_val x] raises the same exception or {!Undefined}. *)

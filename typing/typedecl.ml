@@ -1149,6 +1149,11 @@ let transl_extension_constructor env type_path type_params
     (fun () -> transl_extension_constructor env type_path type_params
         typext_params priv sext)
 
+let is_rebind ext =
+  match ext.ext_kind with
+  | Text_rebind _ -> true
+  | Text_decl _ -> false
+
 let transl_type_extension extend env loc styext =
   reset_type_variables();
   Ctype.begin_def();
@@ -1238,7 +1243,8 @@ let transl_type_extension extend env loc styext =
   let newenv =
     List.fold_left
       (fun env ext ->
-         Env.add_extension ~check:true ext.ext_id ext.ext_type env)
+         let rebind = is_rebind ext in
+         Env.add_extension ~check:true ~rebind ext.ext_id ext.ext_type env)
       env constructors
   in
   let tyext =
@@ -1274,7 +1280,10 @@ let transl_exception env sext =
       raise (Error(ext.ext_loc, Unbound_type_var_ext(ty, ext.ext_type)))
   | None -> ()
   end;
-  let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
+  let rebind = is_rebind ext in
+  let newenv =
+    Env.add_extension ~check:true ~rebind ext.ext_id ext.ext_type env
+  in
   ext, newenv
 
 let transl_type_exception env t =
@@ -1341,8 +1350,11 @@ let transl_effect env seff =
       raise (Error(ext.ext_loc, Unbound_type_var_ext(ty, ext)))
   | None -> ()
   end;
-  let newenv = Env.add_extension ~check:true text.ext_id ext env in
-    text, newenv
+  let rebind = is_rebind text in
+  let newenv =
+    Env.add_extension ~check:true ~rebind text.ext_id text.ext_type env
+  in
+  text, newenv
 
 type native_repr_attribute =
   | Native_repr_attr_absent

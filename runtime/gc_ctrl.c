@@ -62,7 +62,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   caml_sample_gc_stats(&s);
   majcoll = Caml_state->stat_major_collections;
 
-  res = caml_alloc_tuple (16);
+  res = caml_alloc_tuple (17);
   Store_field (res, 0, caml_copy_double ((double)s.minor_words));
   Store_field (res, 1, caml_copy_double ((double)s.promoted_words));
   Store_field (res, 2, caml_copy_double ((double)s.major_words));
@@ -84,6 +84,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 14, Val_long (
     s.major_heap.pool_max_words + s.major_heap.large_max_words));
   Store_field (res, 15, Val_long (0));
+  Store_field (res, 16, Val_long (s.forced_major_collections));
   CAMLreturn (res);
 }
 
@@ -252,6 +253,7 @@ CAMLprim value caml_gc_full_major(value v)
     caml_finish_major_cycle();
     caml_final_do_calls ();
   }
+  ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
   return Val_unit;
 }
@@ -270,6 +272,7 @@ CAMLprim value caml_gc_compaction(value v)
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
   caml_gc_major(v);
+  ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
   return Val_unit;
 }
