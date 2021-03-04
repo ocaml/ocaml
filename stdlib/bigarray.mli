@@ -310,7 +310,7 @@ module Genarray :
      Bigarray [a].  The first dimension corresponds to [n = 0];
      the second dimension corresponds to [n = 1]; the last dimension,
      to [n = Genarray.num_dims a - 1].
-     Raise [Invalid_argument] if [n] is less than 0 or greater or equal than
+     @raise Invalid_argument if [n] is less than 0 or greater or equal than
      [Genarray.num_dims a]. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
@@ -347,14 +347,16 @@ module Genarray :
      and strictly less than the corresponding dimensions of [a].
      If [a] has Fortran layout, the coordinates must be greater or equal
      than 1 and less or equal than the corresponding dimensions of [a].
-     Raise [Invalid_argument] if the array [a] does not have exactly [N]
-     dimensions, or if the coordinates are outside the array bounds.
 
      If [N > 3], alternate syntax is provided: you can write
      [a.{i1, i2, ..., iN}] instead of [Genarray.get a [|i1; ...; iN|]].
      (The syntax [a.{...}] with one, two or three coordinates is
      reserved for accessing one-, two- and three-dimensional arrays
-     as described below.) *)
+     as described below.)
+
+     @raise Invalid_argument if the array [a] does not have exactly [N]
+     dimensions, or if the coordinates are outside the array bounds.
+  *)
 
   external set: ('a, 'b, 'c) t -> int array -> 'a -> unit
     = "caml_ba_set_generic"
@@ -389,7 +391,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_left] applies only to Bigarrays in C layout.
-     Raise [Invalid_argument] if [ofs] and [len] do not designate
+     @raise Invalid_argument if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 0], or [len < 0],
      or [ofs + len > Genarray.nth_dim a 0]. *)
 
@@ -409,7 +411,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_right] applies only to Bigarrays in Fortran layout.
-     Raise [Invalid_argument] if [ofs] and [len] do not designate
+     @raise Invalid_argument if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 1], or [len < 0],
      or [ofs + len > Genarray.nth_dim a (Genarray.num_dims a - 1)]. *)
 
@@ -428,7 +430,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_left] applies only to Bigarrays in C layout.
-     Raise [Invalid_argument] if [M >= N], or if [[|i1; ... ; iM|]]
+     @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external slice_right:
@@ -446,7 +448,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_right] applies only to Bigarrays in Fortran layout.
-     Raise [Invalid_argument] if [M >= N], or if [[|i1; ... ; iM|]]
+     @raise Invalid_argument if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
@@ -904,23 +906,27 @@ external genarray_of_array3 :
 
 val array0_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
 (** Return the zero-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly zero dimension.
    @since 4.05.0 *)
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly one dimension. *)
 
 val array2_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array2.t
 (** Return the two-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly two dimensions. *)
 
 val array3_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
 (** Return the three-dimensional Bigarray corresponding to the given
-   generic Bigarray.  Raise [Invalid_argument] if the generic Bigarray
+   generic Bigarray.
+   @raise Invalid_argument if the generic Bigarray
    does not have exactly three dimensions. *)
 
 

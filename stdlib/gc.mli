@@ -72,6 +72,10 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words. @since 3.12.0 *)
+
+    forced_major_collections: int;
+    (** Number of forced full major collections completed since the program
+        was started. @since 4.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record.
 
@@ -307,7 +311,7 @@ val allocated_bytes : unit -> float
 (* external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc] *)
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
-    Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
+    @raise Invalid_argument if [n] is negative, return 0 if n is larger
     than the smoothing window.
 
     @since 4.03.0 *)

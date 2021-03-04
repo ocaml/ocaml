@@ -82,6 +82,7 @@ struct gc_stats {
   uint64_t promoted_words;
   uint64_t major_words;
   uint64_t minor_collections;
+  uint64_t forced_major_collections;
   struct heap_stats major_heap;
 };
 void caml_sample_gc_stats(struct gc_stats* buf);

@@ -59,9 +59,11 @@ external mul : nativeint -> nativeint -> nativeint = "%nativeint_mul"
 (** Multiplication. *)
 
 external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
-(** Integer division.  Raise [Division_by_zero] if the second
-   argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+(** Integer division. This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Stdlib.(/)}.
+
+   @raise Division_by_zero if the second
+   argument is zero. *)
 
 val unsigned_div : nativeint -> nativeint -> nativeint
 (** Same as {!div}, except that arguments and result are interpreted as {e
@@ -193,7 +195,7 @@ external of_string : string -> nativeint = "caml_nativeint_of_string"
    it is converted to the signed integer
    [Int64.min_int + input - Nativeint.max_int - 1].
 
-   Raise [Failure "Nativeint.of_string"] if the given string is not
+   @raise Failure if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
 
