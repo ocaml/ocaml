@@ -138,8 +138,7 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
 }
 
 /* signal to the interpreter machinery that a bytecode is no more
-   needed (before freeing it) - this might be useful for a JIT
-   implementation */
+   needed (before freeing it) */
 
 CAMLprim value caml_static_release_bytecode(value bc)
 {
@@ -147,7 +146,6 @@ CAMLprim value caml_static_release_bytecode(value bc)
   struct code_fragment *cf;
 
   prog = Bc_val(bc)->prog;
-
   caml_remove_debug_info(prog);
 
   cf = caml_find_code_fragment_by_pc((char *) prog);
@@ -158,10 +156,6 @@ CAMLprim value caml_static_release_bytecode(value bc)
 
   caml_remove_code_fragment(cf);
 
-#ifndef NATIVE_CODE
-#else
-  caml_failwith("Meta.static_release_bytecode impossible with native code");
-#endif
   caml_stat_free(prog);
   return Val_unit;
 }
