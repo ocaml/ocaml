@@ -24,10 +24,9 @@
 #include "caml/custom.h"
 #include "caml/memory.h"
 #include "caml/hash.h"
-#include "caml/fail.h"
 
-/* The new implementation, based on MurmurHash 3,
-     http://code.google.com/p/smhasher/  */
+/* The implementation based on MurmurHash 3,
+   https://github.com/aappleby/smhasher/ */
 
 #define ROTL32(x,n) ((x) << n | (x) >> (32-n))
 
@@ -289,7 +288,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 
 CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
 {
-  caml_failwith("old hash function finally dead");
+  return Val_unit;
 }
 
 /* Hashing variant tags */
