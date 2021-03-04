@@ -23,10 +23,13 @@ val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_univars:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
-val transl_simple_type_delayed:
-        Env.t -> Parsetree.core_type -> Typedtree.core_type * (unit -> unit)
+val transl_simple_type_delayed
+  :  Env.t
+  -> Parsetree.core_type
+  -> Typedtree.core_type * type_expr * (unit -> unit)
         (* Translate a type, but leave type variables unbound. Returns
-           the type and a function that binds the type variable. *)
+           the type, an instance of the corresponding type_expr, and a
+           function that binds the type variable. *)
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val reset_type_variables: unit -> unit

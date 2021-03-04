@@ -687,9 +687,17 @@ let transl_simple_type_univars env styp =
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := TyVarMap.empty;
+  begin_def ();
   let typ = transl_type env Extensible styp in
+  end_def ();
   make_fixed_univars typ.ctyp_type;
-  (typ, globalize_used_variables env false)
+  (* This brings the used variables to the global level, but doesn't link them
+     to their other occurences just yet. This will be done when [force] is
+     called. *)
+  let force = globalize_used_variables env false in
+  (* Generalizes everything except the variables that were just globalized. *)
+  generalize typ.ctyp_type;
+  (typ, instance typ.ctyp_type, force)
 
 let transl_type_scheme env styp =
   reset_type_variables();

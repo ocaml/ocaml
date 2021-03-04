@@ -312,7 +312,7 @@ and transl_exp0 ~scopes e =
   | Texp_try(body, pat_expr_list, []) ->
       let id = Typecore.name_cases "exn" pat_expr_list in
       Ltrywith(transl_exp ~scopes body, id,
-               Matching.for_trywith ~scopes (Lvar id)
+               Matching.for_trywith ~scopes e.exp_loc (Lvar id)
                  (transl_cases_try ~scopes pat_expr_list))
   | Texp_try(body, exn_pat_expr_list, eff_pat_expr_list) ->
       transl_handler ~scopes e body None exn_pat_expr_list eff_pat_expr_list
@@ -1067,7 +1067,7 @@ and transl_match ~scopes e arg pat_expr_list partial =
     let static_exception_id = next_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
-                 Matching.for_trywith ~scopes (Lvar id) exn_cases),
+                 Matching.for_trywith ~scopes e.exp_loc (Lvar id) exn_cases),
        (static_exception_id, val_ids),
        handler)
   in
@@ -1132,7 +1132,7 @@ and transl_handler ~scopes e body val_caselist exn_caselist eff_caselist =
     Lfunction { kind = Curried; params = [param, Pgenval];
                 return = Pgenval;
                 attr = default_function_attribute; loc = Loc_unknown;
-                body = Matching.for_trywith ~scopes (Lvar param) exn_cases }
+                body = Matching.for_trywith ~scopes e.exp_loc (Lvar param) exn_cases }
   in
   let eff_fun =
     let param = Typecore.name_cases "eff" eff_caselist in
@@ -1143,7 +1143,7 @@ and transl_handler ~scopes e body val_caselist exn_caselist eff_caselist =
                 params = [(param, Pgenval); (cont, Pgenval); (cont_tail, Pgenval)];
                 return = Pgenval;
                 attr = default_function_attribute; loc = Loc_unknown;
-                body = Matching.for_handler ~scopes (Lvar param)
+                body = Matching.for_handler ~scopes e.exp_loc (Lvar param)
                   (Lvar cont) (Lvar cont_tail) eff_cases }
   in
   let is_pure = function
