@@ -75,7 +75,7 @@ endif
 
 # KEEP_TEST_DIR_ON_SUCCESS should be set by the user (to a non-empty value)
 # if they want to pass the -keep-test-dir-on-success option to ocamltest,
-# to preserve test data of succesful tests.
+# to preserve test data of successful tests.
 KEEP_TEST_DIR_ON_SUCCESS ?=
 ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
   OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG :=

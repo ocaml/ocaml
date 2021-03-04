@@ -23,11 +23,17 @@ OCamlLabs folks (for OPAM testing).
 ```
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
-
+# Update the data below
 export MAJOR=4
 export MINOR=08
 export BUGFIX=0
 export PLUSEXT=
+
+# names for the release announce
+export HUMAN=
+
+# do we need to use tar or gtar?
+export TAR=tar
 
 export WORKTREE=~/o/\$MAJOR.\$MINOR
   # must be the git worktree for the branch you are releasing
@@ -35,7 +41,7 @@ export WORKTREE=~/o/\$MAJOR.\$MINOR
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
 
-export REPO=http://github.com/ocaml/ocaml
+export REPO=https://github.com/ocaml/ocaml
 
 # these values are specific to caml.inria's host setup
 # they are defined in the release manager's .bashrc file
@@ -45,6 +51,9 @@ export WEB_HOST="$OCAML_RELEASE_WEB_HOST"
 export WEB_PATH="$OCAML_RELEASE_WEB_PATH"
 
 export DIST="\$ARCHIVE_PATH/ocaml/ocaml-\$MAJOR.\$MINOR"
+export INSTDIR="/tmp/ocaml-\$VERSION"
+
+
 EOF
 source /tmp/env-$USER.sh
 echo $VERSION
@@ -55,6 +64,7 @@ echo $VERSION
 
 ```
 cd $WORKTREE
+git checkout $MAJOR.$MINOR
 git status  # check that the local repo is in a clean state
 git pull
 ```
@@ -66,7 +76,7 @@ magic numbers have been updated since the last major release. It is
 preferable to do this just before the first testing release for this
 major version, typically the first beta.
 
-See the HACKING file of `utils/` for documentation on how to bump the
+See the `utils/HACKING.adoc` file for documentation on how to bump the
 magic numbers.
 
 ## 3: build, refresh dependencies, sanity checks
@@ -75,16 +85,24 @@ magic numbers.
 make distclean
 git clean -n -d -f -x  # Check that "make distclean" removed everything
 
-INSTDIR=/tmp/ocaml-${VERSION}
 rm -rf ${INSTDIR}
-./configure -prefix ${INSTDIR}
+./configure --prefix=${INSTDIR}
 
 make -j5
+
+# Check that dependencies are up-to-date
 make alldepend
+
+git diff
+# should have empty output
 
 # check that .depend files have no absolute path in them
 find . -name .depend | xargs grep ' /'
   # must have empty output
+
+# Run the check-typo script
+./tools/check-typo
+
 
 make install
 ./tools/check-symbol-names runtime/*.a
@@ -114,8 +132,8 @@ git commit -a -m "last commit before tagging $VERSION"
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
 # Update \year in manual/manual/macros.hva
-rm -r autom4te.cache
 make -B configure
+# For a production release
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
@@ -126,7 +144,6 @@ git tag -m "release $VERSION" $VERSION
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 # Revert ocaml-variants.opam to its "trunk" version.
-rm -r autom4te.cache
 make -B configure
 git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
 git push
@@ -191,12 +208,31 @@ Remove any badge that tracks a version older than Debian stable.
 
 ## 6: create OPAM packages
 
+Clone the opam-repository
+```
+git clone https://github.com/ocaml/opam-repository
+```
+
+Create a branch for the new release
+```
+git checkout -b OCaml_$VERSION
+```
+
 Create ocaml-variants packages for the new version, copying the particular
 switch configuration choices from the previous version.
 
 Do not forget to add/update the checksum field for the tarballs in the
 "url" section of the opam files. Use opam-lint before sending the pull
 request.
+
+You can test the new opam package before sending a PR to the
+main opam-repository by using the local repository:
+
+```
+opam repo add local /path/to/your/opam-repository
+opam switch create --repo=local,beta=git+https://github.com/ocaml/ocaml-beta-repository.git ocaml-variants.$VERSION
+```
+The switch should build.
 
 ## 6.1 Update OPAM dev packages after branching
 
@@ -210,6 +246,7 @@ The "src" field should point to
  src: "https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz"
 The synopsis should be "latest $VERSION development(,...)".
 
+
 ## 7: build the release archives
 
 ```
@@ -218,11 +255,10 @@ TMPDIR=/tmp/ocaml-release
 git checkout $VERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
 cd $TMPDIR
-gtar -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION
+$TAR -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION
 gzip -9 <ocaml-$VERSION.tar >ocaml-$VERSION.tar.gz
 xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
 ```
-
 
 ## 8: upload the archives and compute checksums
 
@@ -341,112 +377,22 @@ organize the webpage for the new release. See
   <https://github.com/ocaml/ocaml.org/issues/819>
 
 
-## 13: announce the release on caml-list and caml-announce
+## 13: announce the release on caml-list, caml-announce, and discuss.ocaml.org
 
-See the email announce templates at the end of this file.
+See the email announce templates in the `templates/` directory.
 
 
 
 # Appendix
 
-## Announcing a production release:
+## Announce templates
 
-```
-Dear OCaml users,
+See
 
-We have the pleasure of celebrating <event> by announcing the release of
-OCaml version $VERSION.
-This is mainly a bug-fix release, see the list of changes below.
+- templates/beta.md for alpha and beta releases
+- templates/rc.md for release candidate
+- templates/production.md for the production release
 
-It is (or soon will be) available as a set of OPAM switches,
-and as a source download here:
-  https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/
-
-Happy hacking,
-
--- Damien Doligez for the OCaml team.
-
-<< insert the relevant Changes section >>
-```
-
-## Announcing a release candidate:
-
-```
-Dear OCaml users,
-
-The release of OCaml version $MAJOR.$MINOR.$BUGFIX is imminent.  We have
-created a release candidate that you can test.
-
-The source code is available at these addresses:
-
- https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
- https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$VERSION.tar.gz
-
-The compiler can also be installed as an OPAM switch with one of the
-following commands.
-
-opam switch create ocaml-variants.$VERSION --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
-
-or
-
-opam switch create ocaml-variants.$VERSION+<VARIANT> --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
-
- where you replace <VARIANT> with one of these:
-   afl
-   default-unsafe-string
-   force-safe-string
-   flambda
-   fp
-   fp+flambda
-
-We want to know about all bugs. Please report them here:
- https://github.com/ocaml/ocaml/issues
-
-Happy hacking,
-
--- Damien Doligez for the OCaml team.
-
-<< insert the relevant Changes section >>
-```
-
-## Announcing a beta version:
-
-```
-Dear OCaml users,
-
-The release of OCaml $MAJOR.$MINOR.$BUGFIX is approaching. We have created
-a beta version to help you adapt your software to the new features
-ahead of the release.
-
-The source code is available at these addresses:
-
- https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
- https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/$VERSION.tar.gz
-
-The compiler can also be installed as an OPAM switch with one of the
-following commands.
-
-opam switch create ocaml-variants.$VERSION --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
-
-or
-
-opam switch create ocaml-variants.$VERSION+<VARIANT> --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
-
- where you replace <VARIANT> with one of these:
-   afl
-   default-unsafe-string
-   force-safe-string
-   flambda
-   fp
-   fp+flambda
-
-We want to know about all bugs. Please report them here:
- https://github.com/ocaml/ocaml/issues
-
-Happy hacking,
-
--- Damien Doligez for the OCaml team.
-```
 
 ## Changelog template for a new version
 
@@ -508,7 +454,7 @@ Here are typical forms of divergence and their usual solutions:
 
   Fix: ensure that the entry is in the same section on all branches,
   by putting it in the "smallest" version -- assuming that all bigger
-  versions also contain this cange.
+  versions also contain this change.
 
 - A change entry is present in a given section, but the change is not
   present in the corresponding release branch.
@@ -592,3 +538,8 @@ release don't. Usually "Language features" is among the first, and
 
 If some entries feel very anecdotal, consider moving them to the Bug
 Fixes section.
+
+### Extract release highlights to News
+
+From time to time, synchronize the `News` file with the release highlights
+of each version.
