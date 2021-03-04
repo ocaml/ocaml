@@ -729,7 +729,7 @@ and transl_catch env nfail ids body handler dbg =
 and transl_make_array dbg env kind args =
   match kind with
   | Pgenarray ->
-      Cop(Cextcall("caml_make_array", typ_val, true, None),
+      Cop(Cextcall("caml_make_array", typ_val, [], true, None),
           [make_alloc dbg 0 (List.map (transl env) args)], dbg)
   | Paddrarray | Pintarray ->
       make_alloc dbg 0 (List.map (transl env) args)
@@ -740,20 +740,32 @@ and transl_make_array dbg env kind args =
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
     match native_repr with
-    | Same_as_ocaml_repr -> transl env arg
-    | Unboxed_float -> transl_unbox_float dbg env arg
-    | Unboxed_integer bi -> transl_unbox_int dbg env bi arg
-    | Untagged_int -> untag_int (transl env arg) dbg
+    | Same_as_ocaml_repr ->
+        (XInt, transl env arg)
+    | Unboxed_float ->
+        (XFloat, transl_unbox_float dbg env arg)
+    | Unboxed_integer bi ->
+        let xty =
+          match bi with
+          | Pnativeint -> XInt
+          | Pint32 -> XInt32
+          | Pint64 -> XInt64 in
+        (xty, transl_unbox_int dbg env bi arg)
+    | Untagged_int ->
+        (XInt, untag_int (transl env arg) dbg)
   in
   let rec transl_args native_repr_args args =
     match native_repr_args, args with
     | [], args ->
         (* We don't require the two lists to be of the same length as
            [default_prim] always sets the arity to [0]. *)
-        List.map (transl env) args
-    | _, [] -> assert false
+        (List.map (fun _ -> XInt) args, List.map (transl env) args)
+    | _, [] ->
+        assert false
     | native_repr :: native_repr_args, arg :: args ->
-        transl_arg native_repr arg :: transl_args native_repr_args args
+        let (ty1, arg') = transl_arg native_repr arg in
+        let (tys, args') = transl_args native_repr_args args in
+        (ty1 :: tys, arg' :: args')
   in
   let typ_res, wrap_result =
     match prim.prim_native_repr_res with
@@ -764,10 +776,10 @@ and transl_ccall env prim args dbg =
     | Unboxed_integer bi -> (typ_int, box_int dbg bi)
     | Untagged_int -> (typ_int, (fun i -> tag_int i dbg))
   in
-  let args = transl_args prim.prim_native_repr_args args in
+  let typ_args, args = transl_args prim.prim_native_repr_args args in
   wrap_result
     (Cop(Cextcall(Primitive.native_name prim,
-                  typ_res, prim.prim_alloc, None), args, dbg))
+                  typ_res, typ_args, prim.prim_alloc, None), args, dbg))
 
 and transl_prim_1 env p arg dbg =
   match p with
@@ -1031,10 +1043,10 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
   | Patomic_exchange ->
-     Cop (Cextcall ("caml_atomic_exchange", typ_val, false, None),
+     Cop (Cextcall ("caml_atomic_exchange", typ_val, [], false, None),
           [transl env arg1; transl env arg2], dbg)
   | Patomic_fetch_add ->
-     Cop (Cextcall ("caml_atomic_fetch_add", typ_int, false, None),
+     Cop (Cextcall ("caml_atomic_fetch_add", typ_int, [], false, None),
           [transl env arg1; transl env arg2], dbg)
   | Prunstack | Pperform | Presume | Preperform | Ppoll | Pnop
   | Patomic_cas | Patomic_load _
@@ -1090,7 +1102,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
         (transl_unbox_sized size dbg env arg3) dbg
 
   | Patomic_cas ->
-     Cop (Cextcall ("caml_atomic_cas", typ_int, false, None),
+     Cop (Cextcall ("caml_atomic_cas", typ_int, [], false, None),
           [transl env arg1; transl env arg2; transl env arg3], dbg)
 
   (* Effects *)
@@ -1351,7 +1363,7 @@ and transl_letrec env bindings cont =
       bindings
   in
   let op_alloc prim args =
-    Cop(Cextcall(prim, typ_val, true, None), args, dbg) in
+    Cop(Cextcall(prim, typ_val, [], true, None), args, dbg) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, _exp, RHS_block sz) :: rem ->
@@ -1377,7 +1389,7 @@ and transl_letrec env bindings cont =
     | [] -> cont
     | (id, exp, (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
         let op =
-          Cop(Cextcall("caml_update_dummy", typ_void, false, None),
+          Cop(Cextcall("caml_update_dummy", typ_void, [], false, None),
               [Cvar (VP.var id); transl env exp], dbg) in
         Csequence(op, fill_blocks rem)
     | (_id, _exp, RHS_nonrec) :: rem ->

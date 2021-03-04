@@ -134,7 +134,7 @@ module PR6505b :
 Line 6, characters 23-57:
 6 | let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `Foo _
 Exception: Match_failure ("", 6, 23).

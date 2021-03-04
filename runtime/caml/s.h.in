@@ -249,6 +249,8 @@
 
 #undef HAS_SYS_SHM_H
 
+#undef HAS_SHMAT
+
 #undef HAS_EXECVPE
 
 #undef HAS_POSIX_SPAWN

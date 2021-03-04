@@ -50,7 +50,10 @@ type operation =
   | Icall_imm of { func : string; label_after : label; }
   | Itailcall_ind of { label_after : label; }
   | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; stack_ofs : int; }
+  | Iextcall of { func : string;
+                  ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
+                  alloc : bool; label_after : label;
+                  stack_ofs : int; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool

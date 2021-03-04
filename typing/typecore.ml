@@ -991,7 +991,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
         else defined.(label.lbl_pos) <- true in
       List.iter check_defined lbl_pat_list;
       if closed = Closed
-      && Warnings.is_active (Warnings.Non_closed_record_pattern "")
+      && Warnings.is_active (Warnings.Missing_record_field_pattern "")
       then begin
         let undefined = ref [] in
         for i = 0 to Array.length all - 1 do
@@ -999,7 +999,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
         done;
         if !undefined <> [] then begin
           let u = String.concat ", " (List.rev !undefined) in
-          Location.prerr_warning loc (Warnings.Non_closed_record_pattern u)
+          Location.prerr_warning loc (Warnings.Missing_record_field_pattern u)
         end
       end
 
@@ -2394,7 +2394,7 @@ let check_partial_application statement exp =
                     | Some (_, loc, _) -> loc
                     | None -> exp_loc
                   in
-                  Location.prerr_warning loc Warnings.Statement_type
+                  Location.prerr_warning loc Warnings.Non_unit_statement
             in
             loop exp
     in
@@ -2428,7 +2428,8 @@ let check_partial_application statement exp =
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
-                Location.prerr_warning exp_loc Warnings.Partial_application
+                Location.prerr_warning exp_loc
+                  Warnings.Ignored_partial_application
           end
         in
         check exp
@@ -4287,7 +4288,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         (Warnings.Eliminated_optional_arguments
            (List.map (fun (l, _) -> Printtyp.string_of_label l) args));
       if warn then Location.prerr_warning texp.exp_loc
-          (Warnings.Without_principality "eliminated optional argument");
+          (Warnings.Non_principal_labels "eliminated optional argument");
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
@@ -4325,7 +4326,8 @@ and type_application env funct sargs =
           if ty_fun.level >= t1.level &&
              not (is_prim ~name:"%identity" funct)
           then
-            Location.prerr_warning sarg.pexp_loc Warnings.Unused_argument;
+            Location.prerr_warning sarg.pexp_loc
+              Warnings.Ignored_extra_argument;
           unify env ty_fun (newty (Tarrow(lbl,t1,t2,Clink(ref Cunknown))));
           (t1, t2)
       | Tarrow (l,t1,t2,_) when l = lbl
@@ -4403,7 +4405,7 @@ and type_application env funct sargs =
         in
         let eliminate_optional_arg () =
           may_warn funct.exp_loc
-            (Warnings.Without_principality "eliminated optional argument");
+            (Warnings.Non_principal_labels "eliminated optional argument");
           eliminated_optional_arguments :=
             (l,ty,lv) :: !eliminated_optional_arguments;
           Some (fun () -> option_none env (instance ty) Location.none)
@@ -4448,7 +4450,7 @@ and type_application env funct sargs =
                   (* No argument was given for this parameter, we abstract over
                      it. *)
                   may_warn funct.exp_loc
-                    (Warnings.Without_principality "commuted an argument");
+                    (Warnings.Non_principal_labels "commuted an argument");
                   omitted_parameters := (l,ty,lv) :: !omitted_parameters;
                   None
                 end

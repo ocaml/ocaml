@@ -28,16 +28,14 @@ val phys_reg: int -> Reg.t
 val rotate_registers: bool
 
 (* Calling conventions *)
-val loc_arguments: Reg.t array -> Reg.t array * int
-val loc_results: Reg.t array -> Reg.t array
-val loc_parameters: Reg.t array -> Reg.t array
+val loc_arguments: Cmm.machtype -> Reg.t array * int
+val loc_results: Cmm.machtype -> Reg.t array
+val loc_parameters: Cmm.machtype -> Reg.t array
 (* For argument number [n] split across multiple registers, the target-specific
    implementation of [loc_external_arguments] must return [regs] such that
-   [regs.(n).(0)] is to hold the part of the value at the lowest address.
-   (All that matters for the input to [loc_external_arguments] is the pattern
-   of lengths and register types of the various supplied arrays.) *)
-val loc_external_arguments: Reg.t array array -> Reg.t array array * int
-val loc_external_results: Reg.t array -> Reg.t array
+   [regs.(n).(0)] is to hold the part of the value at the lowest address. *)
+val loc_external_arguments: Cmm.exttype list -> Reg.t array array * int
+val loc_external_results: Cmm.machtype -> Reg.t array
 val loc_exn_bucket: Reg.t
 val loc_spacetime_node_hole: Reg.t
 

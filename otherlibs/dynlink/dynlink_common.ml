@@ -316,12 +316,15 @@ module Make (P : Dynlink_platform_intf.S) = struct
     global_state := state
 
   let main_program_units () =
+    init ();
     String.Set.elements (!global_state).main_program_units
 
   let public_dynamically_loaded_units () =
+    init ();
     String.Set.elements (!global_state).public_dynamically_loaded_units
 
   let all_units () =
+    init ();
     String.Set.elements (String.Set.union
       (!global_state).main_program_units
       (!global_state).public_dynamically_loaded_units)
