@@ -596,19 +596,6 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
    file descriptors that may be closed.
 */
 
-CAMLprim value caml_ml_flush_partial(value vchannel)
-{
-  CAMLparam1 (vchannel);
-  struct channel * channel = Channel(vchannel);
-  int res;
-
-  if (channel->fd == -1) CAMLreturn(Val_true);
-  With_mutex(&channel->mutex, {
-    res = caml_flush_partial(channel);
-  } );
-  CAMLreturn (Val_bool(res));
-}
-
 CAMLprim value caml_ml_flush(value vchannel)
 {
   CAMLparam1 (vchannel);
@@ -641,19 +628,6 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
     caml_putword(channel, Long_val(w));
   } );
   CAMLreturn (Val_unit);
-}
-
-CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
-                                      value length)
-{
-  CAMLparam4 (vchannel, buff, start, length);
-  struct channel * channel = Channel(vchannel);
-  int res;
-
-  With_mutex(&channel->mutex, {
-    res = caml_putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-  } );
-  CAMLreturn (Val_int(res));
 }
 
 CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
