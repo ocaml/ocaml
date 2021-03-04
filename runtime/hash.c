@@ -286,11 +286,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   return Val_int(h & 0x3FFFFFFFU);
 }
 
-CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
-{
-  return Val_unit;
-}
-
 /* Hashing variant tags */
 
 CAMLexport value caml_hash_variant(char const * tag)
