@@ -75,12 +75,6 @@ Line 2, characters 4-5:
 Error: This pattern matches values of type int
        but a pattern was expected which matches values of type int32
   Hint: Did you mean `0l'?
-|}, Principal{|
-Line 2, characters 4-5:
-2 |   | 0 -> 0l
-        ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type int32
 |}]
 
 let _ : int64 -> int64 = function

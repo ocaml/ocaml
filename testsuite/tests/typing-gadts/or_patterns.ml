@@ -124,13 +124,6 @@ Line 4, characters 4-11:
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
-|}, Principal{|
-Line 4, characters 4-17:
-4 |   | BoolLit, true -> ()
-        ^^^^^^^^^^^^^
-Error: This pattern matches values of type bool t * bool
-       but a pattern was expected which matches values of type int t * int
-       Type bool is not compatible with type int
 |}]
 
 let simple_annotated (type a) (t : a t) (a : a) =
@@ -391,13 +384,6 @@ Line 4, characters 4-11:
         ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
-|}, Principal{|
-Line 4, characters 4-14:
-4 |   | BoolLit, x -> x
-        ^^^^^^^^^^
-Error: This pattern matches values of type bool t * 'a
-       but a pattern was expected which matches values of type int t * 'b
        Type bool is not compatible with type int
 |}]
 

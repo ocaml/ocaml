@@ -1875,12 +1875,12 @@ module Default = struct
 
     let print_version () =
       Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
-      exit 0;
+      raise (Compenv.Exit_compiler 0);
     ;;
 
     let print_version_num () =
       Printf.printf "%s\n" Sys.ocaml_version;
-      exit 0;
+      raise (Compenv.Exit_compiler 0);
     ;;
 
     let _args (_:string) = (* placeholder: wrap_expand Arg.read_arg *) [||]
