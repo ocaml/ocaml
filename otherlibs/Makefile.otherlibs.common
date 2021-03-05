@@ -24,6 +24,10 @@ CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLC := $(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT := $(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
 
+ifneq "$(CCOMPTYPE)" "msvc"
+OC_CFLAGS += -g
+endif
+
 OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(EXTRACPPFLAGS)
 
