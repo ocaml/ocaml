@@ -22,7 +22,7 @@ cmm:
 
 (function camlTest_locations__entry ()
  (let clos "camlTest_locations__1"
-   (extcall "caml_initialize_field" "camlTest_locations" 0 clos unit))
+   (extcall "caml_initialize_field" "camlTest_locations" 0 clos ->unit))
  1)
 
 (data)
