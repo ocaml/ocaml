@@ -2029,10 +2029,17 @@ let wrap_constraint env mark arg mty explicit =
 
 (* Type a module value expression *)
 
-let rec extract_application sargs smod = match smod.pmod_desc with
-  | Pmod_apply(f, arg) ->
-      extract_application ((smod, f, arg)::sargs) f
-  | _ -> smod, sargs
+
+(* Summary for F(X) *)
+type application_summary = {
+  loc: Location.t;
+  attributes: attributes;
+  f_loc: Location.t; (* loc for F *)
+  sarg: Parsetree.module_expr;
+  arg: Typedtree.module_expr;
+  arg_path:Path.t option
+}
+
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
@@ -2117,11 +2124,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         mod_env = env;
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc }
-  | Pmod_apply(sfunct, sarg) ->
-      let funct, args =
-        let args = [smod, sfunct, sarg] in
-        extract_application args sfunct in
-      type_application smod.pmod_loc sttn funct_body env funct args
+  | Pmod_apply _ ->
+      type_application smod.pmod_loc sttn funct_body env smod
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
@@ -2167,46 +2171,62 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   | Pmod_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and type_application loc strengthen funct_body env sfunct sargs =
-  let type_arg (floc, attrs, sarg) =
-    let arg = type_module true funct_body None env sarg in
-    floc, attrs, sarg, arg, path_of_module arg in
-  let args = List.map type_arg sargs in
+and type_application loc strengthen funct_body env smod =
+  let rec extract_application funct_body env sargs smod =
+    match smod.pmod_desc with
+    | Pmod_apply(f, sarg) ->
+        let arg = type_module true funct_body None env sarg in
+        let summary =
+          { loc=smod.pmod_loc;
+            attributes=smod.pmod_attributes;
+            f_loc = f.pmod_loc;
+            sarg; arg;
+            arg_path = path_of_module arg
+          }
+        in
+        extract_application funct_body env (summary::sargs) f
+    | _ -> smod, sargs
+  in
+  let sfunct, args = extract_application funct_body env [] smod in
   let funct =
     let strengthen =
-      strengthen
-      && List.for_all (fun (_,_,_, _, path) -> path <> None) args in
-    type_module strengthen funct_body None env sfunct in
+      strengthen && List.for_all (fun {arg_path;_} -> arg_path <> None) args
+    in
+    type_module strengthen funct_body None env sfunct
+  in
   List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
     funct args
 
 and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
-    (app, sf, sarg, arg, parg) =
+    app_view =
   match Env.scrape_alias env funct.mod_type with
   | Mty_functor (Unit, mty_res) ->
-      if sarg.pmod_desc <> Pmod_structure [] then
-        raise (Error (sf.pmod_loc, env, Apply_generative));
+      if app_view.sarg.pmod_desc <> Pmod_structure [] then
+        raise (Error (app_view.f_loc, env, Apply_generative));
       if funct_body && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body));
-      { mod_desc = Tmod_apply(funct, arg, Tcoerce_none);
+      { mod_desc = Tmod_apply(funct, app_view.arg, Tcoerce_none);
         mod_type = mty_res;
         mod_env = env;
-        mod_attributes = app.pmod_attributes;
+        mod_attributes = app_view.attributes;
         mod_loc = funct.mod_loc }
   | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
       let coercion =
         try
           Includemod.modtypes
-            ~loc:sarg.pmod_loc ~mark:Mark_both env arg.mod_type mty_param
+            ~loc:app_view.sarg.pmod_loc ~mark:Mark_both env
+            app_view.arg.mod_type mty_param
         with Includemod.Error _ ->
-          let mk_arg_info (_,_,s,arg,path) = (path, Some s, arg.mod_type) in
+          let mk_arg_info app_view =
+            (app_view.arg_path, Some app_view.sarg, app_view.arg.mod_type)
+          in
           let args = List.map mk_arg_info args in
           let mty_f = md_f.mod_type in
           let lid_app = None in
           raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
       in
       let mty_appl =
-        match parg with
+        match app_view.arg_path with
         | Some path ->
             let scope = Ctype.create_scope () in
             let subst =
@@ -2221,19 +2241,19 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
               | None -> env, mty_res
               | Some param ->
                   let env =
-                    Env.add_module ~arg:true param Mp_present arg.mod_type
-                      env
+                    Env.add_module ~arg:true param Mp_present
+                      app_view.arg.mod_type env
                   in
-                  check_well_formed_module env app.pmod_loc
+                  check_well_formed_module env app_view.loc
                     "the signature of this functor application" mty_res;
                   try env, Mtype.nondep_supertype env [param] mty_res
                   with Ctype.Nondep_cannot_erase _ ->
                     let error = Cannot_eliminate_dependency mty_functor in
-                    raise (Error(app.pmod_loc, env, error))
+                    raise (Error(app_view.loc, env, error))
             in
             begin match
               Includemod.modtypes
-                ~loc:app.pmod_loc ~mark:Mark_neither env mty_res nondep_mty
+                ~loc:app_view.loc ~mark:Mark_neither env mty_res nondep_mty
             with
             | Tcoerce_none -> ()
             | _ ->
@@ -2248,15 +2268,17 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
       in
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
-      { mod_desc = Tmod_apply(funct, arg, coercion);
+      { mod_desc = Tmod_apply(funct, app_view.arg, coercion);
         mod_type = mty_appl;
         mod_env = env;
-        mod_attributes = app.pmod_attributes;
-        mod_loc = app.pmod_loc }
+        mod_attributes = app_view.attributes;
+        mod_loc = app_view.loc }
   | Mty_alias path ->
-      raise(Error(sf.pmod_loc, env, Cannot_scrape_alias path))
+      raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))
   | _ ->
-      let mk_arg_info (_,_,s,arg,path) = (path, Some s, arg.mod_type) in
+      let mk_arg_info app_view =
+        (app_view.arg_path, Some app_view.sarg, app_view.arg.mod_type)
+      in
       let args = List.map mk_arg_info args in
       let mty_f = md_f.mod_type in
       let lid_app = None in
