@@ -43,10 +43,10 @@ extern void caml_memprof_invert_tracked(void);
 struct caml_memprof_th_ctx {
   int suspended, callback_running;
 };
-extern void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx);
-extern void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx);
-extern void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx* ctx);
-extern void caml_memprof_restore_th_ctx(const struct caml_memprof_th_ctx* ctx);
+CAMLextern void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx*);
+CAMLextern void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx*);
+CAMLextern void caml_memprof_save_th_ctx(struct caml_memprof_th_ctx*);
+CAMLextern void caml_memprof_restore_th_ctx(const struct caml_memprof_th_ctx*);
 
 #endif
 

@@ -27,15 +27,15 @@ Error: The function applied to this argument has type x:'a -> unit
 This argument cannot be applied with label ~y
 |}]
 
-let f ?x ~a ?y ~z = ()
+let f ?x ~a ?y ~z () = ()
 let g = f ?y:None ?x:None ~a:()
 [%%expect {|
-val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit = <fun>
+val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit -> unit = <fun>
 Line 2, characters 13-17:
 2 | let g = f ?y:None ?x:None ~a:()
                  ^^^^
 Error: The function applied to this argument has type
-         ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit
+         ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit -> unit
 This argument cannot be applied with label ?y
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]

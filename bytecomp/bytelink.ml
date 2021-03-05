@@ -466,7 +466,8 @@ let link_bytecode_as_c tolink outfile with_main =
     (fun () ->
        (* The bytecode *)
        output_string outchan "\
-#define CAML_INTERNALS\
+#define CAML_INTERNALS\n\
+#define CAMLDLLIMPORT\
 \n\
 \n#ifdef __cplusplus\
 \nextern \"C\" {\
@@ -573,7 +574,13 @@ let build_custom_runtime prim_name exec_name =
     else "-lcamlrun" ^ !Clflags.runtime_variant in
   let debug_prefix_map =
     if Config.c_has_debug_prefix_map && not !Clflags.keep_camlprimc_file then
-      [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
+      let flag =
+        [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
+      in
+        if Ccomp.linker_is_flexlink then
+          "-link" :: flag
+        else
+          flag
     else
       [] in
   let exitcode =

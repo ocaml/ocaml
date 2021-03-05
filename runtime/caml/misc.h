@@ -76,13 +76,20 @@ CAMLdeprecated_typedef(addr, char *);
   #define Noreturn
 #endif
 
-
-
 /* Export control (to mark primitives and to handle Windows DLL) */
+
+#ifndef CAMLDLLIMPORT
+  #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
+      && defined(__CYGWIN__)
+    #define CAMLDLLIMPORT __declspec(dllimport)
+  #else
+    #define CAMLDLLIMPORT
+  #endif
+#endif
 
 #define CAMLexport
 #define CAMLprim
-#define CAMLextern extern
+#define CAMLextern CAMLDLLIMPORT extern
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
@@ -374,6 +381,9 @@ extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
 CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 

@@ -186,7 +186,7 @@ void caml_raise_continuation_already_taken(void)
   caml_raise_constant((value) caml_exn_Continuation_already_taken);
 }
 
-value caml_raise_if_exception(value res)
+CAMLexport value caml_raise_if_exception(value res)
 {
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;
