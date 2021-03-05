@@ -195,7 +195,7 @@ let naked_pointers = make
 
 let has_symlink = make
   "has_symlink"
-  (Actions_helpers.pass_or_skip (Sys.has_symlink () )
+  (Actions_helpers.pass_or_skip (Unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
 

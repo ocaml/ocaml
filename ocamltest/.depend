@@ -346,12 +346,20 @@ ocamltest_config.cmx : \
     ocamltest_config.cmi
 ocamltest_config.cmi :
 ocamltest_stdlib.cmo : \
+    ocamltest_unix.cmi \
     ocamltest_config.cmi \
     ocamltest_stdlib.cmi
 ocamltest_stdlib.cmx : \
+    ocamltest_unix.cmx \
     ocamltest_config.cmx \
     ocamltest_stdlib.cmi
-ocamltest_stdlib.cmi :
+ocamltest_stdlib.cmi : \
+    ocamltest_unix.cmi
+ocamltest_unix.cmo : \
+    ocamltest_unix.cmi
+ocamltest_unix.cmx : \
+    ocamltest_unix.cmi
+ocamltest_unix.cmi :
 options.cmo : \
     variables.cmi \
     tests.cmi \

@@ -74,7 +74,7 @@ change_exe_magic_number() {
 remove_primitive()
 {
   echo Removing the \'sinh\' primitive
-  patch -p1 < tools/ci/inria/remove-sinh-primitive.patch
+  patch -p1 < tools/ci/inria/bootstrap/remove-sinh-primitive.patch
 }
 
 #########################################################################

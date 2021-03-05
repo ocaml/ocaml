@@ -37,7 +37,11 @@ programs_man_section=1
 libraries_man_section=3
 
 # Command to build executalbes
-mkexe="\$(CC) \$(OC_LDFLAGS)"
+# In general this command is supposed to use the CFLAGs-related variables
+# ($OC_CFLAGS and $CFLAGS), but at the moment they are not taken into
+# account on Windows, because flexlink, which is used to build
+# executables on this platform, can not handle them.
+mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
 mkexedebugflag="-g"
