@@ -16,6 +16,12 @@ Working version
     type !'a t = 'a list
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
+### Supported platforms:
+
+- #9699: add support for iOS and macOS on ARM 64 bits
+  (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
+   and Anil Madhavapeddy, additional testing by Michael Schmidt)
+
 ### Runtime system:
 
 - #1795, #9543: modernize signal handling on Linux i386, PowerPC, and s390x,
@@ -93,6 +99,16 @@ Working version
 - #9742: Ephemerons are now compatible with infix pointers occurring
    when using mutually recursive functions.
    (Jacques-Henri Jourdan, review François Bobot)
+
+* #1128, #7503, #9036, #9722: EINTR-based signal handling.
+  When a signal arrives, avoid running its OCaml handler in the middle
+  of a blocking section. Instead, allow control to return quickly to
+  a polling point where the signal handler can safely run, ensuring that
+  I/O locks are not held while it runs. A polling point was removed from
+  caml_leave_blocking_section, and one added to caml_raise.
+  (Stephen Dolan, review by Goswin von Brederlow, Xavier Leroy, Damien
+   Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
+   Henri Jourdan)
 
 ### Code generation and optimizations:
 
