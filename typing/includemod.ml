@@ -179,14 +179,14 @@ let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations ~loc ~old_env:_ env  subst _id decl1 decl2 =
+let class_type_declarations ~loc ~old_env:_ env  subst decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> Ok Tcoerce_none
   | reason ->
       Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
-let class_declarations ~old_env:_ env  subst _id decl1 decl2 =
+let class_declarations ~old_env:_ env  subst decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> Ok Tcoerce_none
@@ -639,12 +639,12 @@ and signature_components ~loc old_env ~mark env subst paired =
             id1, item, false
         | Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _) ->
             let item =
-              class_declarations ~old_env env subst id1 decl1 decl2
+              class_declarations ~old_env env subst decl1 decl2
             in
             id1, item, true
         | Sig_class_type(id1, info1, _, _), Sig_class_type(_id2, info2, _, _) ->
             let item =
-              class_type_declarations ~loc ~old_env env subst id1 info1 info2
+              class_type_declarations ~loc ~old_env env subst info1 info2
             in
             id1, item, false
         | _ ->
