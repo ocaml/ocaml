@@ -206,3 +206,9 @@ let call_linker mode output_name files extra =
     in
     command cmd
   )
+
+let linker_is_flexlink =
+  (* Config.mkexe, Config.mkdll and Config.mkmaindll are all flexlink
+     invocations for the native Windows ports and for Cygwin, if shared library
+     support is enabled. *)
+  Sys.win32 || Config.supports_shared_libraries && Sys.cygwin

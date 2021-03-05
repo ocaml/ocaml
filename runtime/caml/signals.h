@@ -40,8 +40,8 @@ CAMLextern void caml_leave_blocking_section (void);
 
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
-void caml_record_signal(int signal_number);
-void caml_process_pending_signals(void);
+CAMLextern void caml_record_signal(int signal_number);
+CAMLextern void caml_process_pending_signals(void);
 int caml_set_signal_action(int signo, int action);
 
 

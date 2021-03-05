@@ -41,3 +41,9 @@ module G = (A [@inline])(struct end) (* rejected *)
 module G' = (A [@ocaml.inline])(struct end) (* rejected *)
 
 module H = Set.Make [@inlined] (Int32) (* GPR#1808 *)
+
+module I = Set.Make [@inlined]
+module I' = Set.Make [@ocaml.inlined]
+
+module J = Set.Make [@@inlined]
+module J' = Set.Make [@@ocaml.inlined]

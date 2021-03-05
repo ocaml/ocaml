@@ -323,6 +323,9 @@ Working version
   prevents the remaining arguments from being uncurried.
   (Hugo Heuzard, review by Leo White)
 
+- #9783: Widen warning 16 to more cases.
+  (Leo White, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #9216: add Lambda.duplicate which refreshes bound identifiers
@@ -362,6 +365,9 @@ Working version
 
 - #9688: Expose the main entrypoint in compilerlibs
   (Stephen Dolan, review by Nicolás Ojeda Bär, Greta Yorsh and David Allsopp)
+
+- #9715: recheck scope escapes after normalising paths
+  (Matthew Ryan, review by Gabriel Scherer and Thomas Refis)
 
 - #9778: Fix printing for bindings where polymorphic type annotations and
   attributes are present.
@@ -409,6 +415,9 @@ Working version
   (Sébastien Hinderer, review by David Allsopp)
 
 ### Bug fixes:
+
+- #7538, #9669: Check for misplaced attributes on module aliases
+  (Leo White, report by Thomas Leonard, review by Florian Angeletti)
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
   off.
@@ -471,6 +480,13 @@ Working version
   for files opened in text mode under Windows
   (Xavier Leroy, report by Alain Frisch, review by Nicolás Ojeda Bär
   and Alain Frisch)
+
+- #9925: Correct passing -fdebug-prefix-map to flexlink on Cygwin by prefixing
+  it with -link.
+  (David Allsopp, review by Xavier Leroy)
+
+- #9927: Restore Cygwin64 support.
+  (David Allsopp, review by Xavier Leroy)
 
 
 OCaml 4.11.1

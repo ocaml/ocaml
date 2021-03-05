@@ -215,7 +215,7 @@ CAMLexport void caml_raise_continuation_already_taken(void)
                                 CONTINUATION_ALREADY_TAKEN_EXN));
 }
 
-value caml_raise_if_exception(value res)
+CAMLexport value caml_raise_if_exception(value res)
 {
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   return res;
