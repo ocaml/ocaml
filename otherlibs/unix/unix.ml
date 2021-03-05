@@ -211,6 +211,7 @@ external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
    = "unix_waitpid"
+external _exit : int -> 'a = "unix_exit"
 external getpid : unit -> int = "unix_getpid"
 external getppid : unit -> int = "unix_getppid"
 external nice : int -> int = "unix_nice"
@@ -881,8 +882,6 @@ let rec waitpid_non_intr pid =
   try waitpid [] pid
   with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
-external sys_exit : int -> 'a = "caml_sys_exit"
-
 external spawn : string -> string array -> string array option ->
                  bool -> int array -> int
                = "unix_spawn"
@@ -1106,8 +1105,8 @@ let establish_server server_fun sockaddr =
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
-       0 -> if fork() <> 0 then sys_exit 0;
-                                (* The son exits, the grandson works *)
+       0 -> if fork() <> 0 then _exit 0;
+                                (* The child exits, the grandchild works *)
             close sock;
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
@@ -1116,5 +1115,5 @@ let establish_server server_fun sockaddr =
                have done it already, and we are about to exit anyway
                (PR#3794) *)
             exit 0
-    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
+    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the child *)
   done

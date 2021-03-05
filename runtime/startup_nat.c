@@ -36,8 +36,8 @@
 #include "caml/osdeps.h"
 #include "caml/printexc.h"
 #include "caml/stack.h"
-#include "caml/sys.h"
 #include "caml/startup_aux.h"
+#include "caml/sys.h"
 #ifdef WITH_SPACETIME
 #include "caml/spacetime.h"
 #endif
@@ -46,7 +46,6 @@
 #endif
 
 extern int caml_parser_trace;
-char * caml_code_area_start, * caml_code_area_end;
 extern char caml_system__code_begin, caml_system__code_end;
 
 /* Initialize the static data and code area limits. */
@@ -56,6 +55,7 @@ struct segment { char * begin; char * end; };
 static void init_segments(void)
 {
   extern struct segment caml_code_segments[];
+  char * caml_code_area_start, * caml_code_area_end;
   int i;
 
   caml_code_area_start = caml_code_segments[0].begin;

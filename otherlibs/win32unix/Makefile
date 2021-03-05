@@ -47,7 +47,7 @@ WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
 LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
 EXTRACAMLFLAGS=-nolabels
 EXTRACPPFLAGS=-I../unix
-HEADERS=unixsupport.h socketaddr.h
+HEADERS=unixsupport.h ../unix/socketaddr.h
 
 
 include ../Makefile.otherlibs.common

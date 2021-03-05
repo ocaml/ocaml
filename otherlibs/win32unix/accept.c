@@ -29,7 +29,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
   socklen_param_type addr_len;
   DWORD err = 0;
 
-  addr_len = sizeof(sock_addr);
+  addr_len = sizeof(addr);
   caml_enter_blocking_section();
   snew = accept(sconn, &addr.s_gen, &addr_len);
   if (snew == INVALID_SOCKET) err = WSAGetLastError ();
