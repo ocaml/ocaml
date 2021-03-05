@@ -207,15 +207,15 @@ let load_lambda ppf lam =
   Symtable.update_global_table();
   let initial_bindings = !toplevel_value_bindings in
   let bytecode, closure = Meta.reify_bytecode code [| events |] None in
-  try
+  match
     may_trace := true;
-    let retval = closure () in
-    may_trace := false;
-    if can_free then Meta.release_bytecode bytecode;
-    Result retval
-  with x ->
-    may_trace := false;
-    if can_free then Meta.release_bytecode bytecode;
+    Fun.protect
+      ~finally:(fun () -> may_trace := false;
+                          if can_free then Meta.release_bytecode bytecode)
+      closure
+  with
+  | retval -> Result retval
+  | exception x ->
     record_backtrace ();
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;

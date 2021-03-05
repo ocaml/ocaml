@@ -2895,6 +2895,7 @@ asmcomp/spacetime_profiling.cmo : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
+    asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
@@ -2908,6 +2909,7 @@ asmcomp/spacetime_profiling.cmx : \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
+    asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \

@@ -33,7 +33,7 @@ let reverse_shape = ref ([] : Mach.spacetime_shape)
 (* CR-someday mshinwell: This code could be updated to use [placeholder_dbg] as
    in [Cmmgen]. *)
 let cconst_int i = Cmm.Cconst_int (i, Debuginfo.none)
-let cconst_natint i = Cmm.Cconst_natint (i, Debuginfo.none)
+let cconst_natint i = Cmm_helpers.natint_const_untagged Debuginfo.none i
 let cconst_symbol s = Cmm.Cconst_symbol (s, Debuginfo.none)
 
 let something_was_instrumented () =
