@@ -146,6 +146,7 @@ void (*caml_termination_hook)(void *) = NULL;
 extern value caml_start_program (void);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
+extern void caml_terminate_signals(void);
 
 #ifdef _MSC_VER
 
@@ -185,10 +186,12 @@ void caml_main(char **argv)
     exe_name = caml_search_exe_in_path(exe_name);
   caml_sys_init(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
+    caml_terminate_signals();
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return;
   }
   res = caml_start_program();
+  caml_terminate_signals();
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
