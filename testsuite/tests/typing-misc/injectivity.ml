@@ -330,7 +330,7 @@ type _ ty =
 
 let coe : type a b. (a,b) eq -> a ty -> b ty =
   fun Refl x -> x
-let eq_int_any : type a. (int, a) eq =
+let eq_int_any : type a.  unit -> (int, a) eq = fun () ->
   let vec_ty : a Vec.t ty = coe Vec.eqt (Vec Int) in
   let Vec Int = vec_ty in Refl
 [%%expect{|
@@ -343,7 +343,7 @@ Line 17, characters 2-30:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Vec (Vec Int)
-val eq_int_any : (int, 'a) eq = Refl
+val eq_int_any : unit -> (int, 'a) eq = <fun>
 |}]
 
 (* Not directly related: injectivity and constraints *)
