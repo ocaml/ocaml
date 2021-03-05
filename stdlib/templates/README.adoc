@@ -1,0 +1,4 @@
+These templates are fragments of OCaml source files, which
+tools/sync_stdlib_docs uses to build the full labeled and unlabeled stdlib
+modules. At present, tools/sync_stdlib_docs must be run manually -- it is not a
+build task.

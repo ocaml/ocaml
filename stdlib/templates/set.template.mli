@@ -121,13 +121,13 @@ module type S =
     (** [subset s1 s2] tests whether the set [s1] is a subset of
        the set [s2]. *)
 
-    val iter: (elt -> unit) -> t -> unit
-    (** [iter f s] applies [f] in turn to all elements of [s].
+    val iter: f:(elt -> unit) -> t -> unit
+    (** [iter ~f s] applies [f] in turn to all elements of [s].
        The elements of [s] are presented to [f] in increasing order
        with respect to the ordering over the type of the elements. *)
 
-    val map: (elt -> elt) -> t -> t
-    (** [map f s] is the set whose elements are [f a0],[f a1]... [f
+    val map: f:(elt -> elt) -> t -> t
+    (** [map ~f s] is the set whose elements are [f a0],[f a1]... [f
         aN], where [a0],[a1]...[aN] are the elements of [s].
 
        The elements are passed to [f] in increasing order
@@ -138,27 +138,27 @@ module type S =
        input, the returned set is physically equal to [s].)
        @since 4.04.0 *)
 
-    val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    (** [fold f s init] computes [(f xN ... (f x2 (f x1 init))...)],
+    val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+    (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
        where [x1 ... xN] are the elements of [s], in increasing order. *)
 
-    val for_all: (elt -> bool) -> t -> bool
-    (** [for_all f s] checks if all elements of the set
+    val for_all: f:(elt -> bool) -> t -> bool
+    (** [for_all ~f s] checks if all elements of the set
        satisfy the predicate [f]. *)
 
-    val exists: (elt -> bool) -> t -> bool
-    (** [exists f s] checks if at least one element of
+    val exists: f:(elt -> bool) -> t -> bool
+    (** [exists ~f s] checks if at least one element of
        the set satisfies the predicate [f]. *)
 
-    val filter: (elt -> bool) -> t -> t
-    (** [filter f s] returns the set of all elements in [s]
+    val filter: f:(elt -> bool) -> t -> t
+    (** [filter ~f s] returns the set of all elements in [s]
        that satisfy predicate [f]. If [f] satisfies every element in [s],
        [s] is returned unchanged (the result of the function is then
        physically equal to [s]).
        @before 4.03 Physical equality was not ensured.*)
 
-    val filter_map: (elt -> elt option) -> t -> t
-    (** [filter_map f s] returns the set of all [v] such that
+    val filter_map: f:(elt -> elt option) -> t -> t
+    (** [filter_map ~f s] returns the set of all [v] such that
         [f x = Some v] for some element [x] of [s].
 
        For example,
@@ -173,8 +173,8 @@ module type S =
        @since 4.11.0
      *)
 
-    val partition: (elt -> bool) -> t -> t * t
-    (** [partition f s] returns a pair of sets [(s1, s2)], where
+    val partition: f:(elt -> bool) -> t -> t * t
+    (** [partition ~f s] returns a pair of sets [(s1, s2)], where
        [s1] is the set of all the elements of [s] that satisfy the
        predicate [f], and [s2] is the set of all the elements of
        [s] that do not satisfy [f]. *)
@@ -243,8 +243,8 @@ module type S =
         exists.
         @since 4.05 *)
 
-    val find_first: (elt -> bool) -> t -> elt
-    (** [find_first f s], where [f] is a monotonically increasing function,
+    val find_first: f:(elt -> bool) -> t -> elt
+    (** [find_first ~f s], where [f] is a monotonically increasing function,
        returns the lowest element [e] of [s] such that [f e],
        or raises [Not_found] if no such element exists.
 
@@ -256,22 +256,22 @@ module type S =
         @since 4.05
        *)
 
-    val find_first_opt: (elt -> bool) -> t -> elt option
-    (** [find_first_opt f s], where [f] is a monotonically increasing
+    val find_first_opt: f:(elt -> bool) -> t -> elt option
+    (** [find_first_opt ~f s], where [f] is a monotonically increasing
        function, returns an option containing the lowest element [e] of [s]
        such that [f e], or [None] if no such element exists.
         @since 4.05
        *)
 
-    val find_last: (elt -> bool) -> t -> elt
-    (** [find_last f s], where [f] is a monotonically decreasing function,
+    val find_last: f:(elt -> bool) -> t -> elt
+    (** [find_last ~f s], where [f] is a monotonically decreasing function,
        returns the highest element [e] of [s] such that [f e],
        or raises [Not_found] if no such element exists.
         @since 4.05
        *)
 
-    val find_last_opt: (elt -> bool) -> t -> elt option
-    (** [find_last_opt f s], where [f] is a monotonically decreasing
+    val find_last_opt: f:(elt -> bool) -> t -> elt option
+    (** [find_last_opt ~f s], where [f] is a monotonically decreasing
        function, returns an option containing the highest element [e] of [s]
        such that [f e], or [None] if no such element exists.
         @since 4.05
