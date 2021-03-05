@@ -1824,18 +1824,16 @@ and type_pat_aux
         let typ pat = type_pat category pat expected_ty k in
         find_valid_alternative (fun pat -> set_state state env; typ pat) sp in
       if must_split then split_or sp else begin
-        let inside_or = enter_nonsplit_or mode in
         let type_pat_result env sp : (_, abort_reason) result =
-          match
-            type_pat category ~mode:inside_or sp expected_ty ~env (fun x -> x)
-          with
+          let mode = enter_nonsplit_or mode in
+          match type_pat category ~mode sp expected_ty ~env (fun x -> x) with
           | res -> Ok res
           | exception Need_backtrack -> Error Adds_constraints
           | exception Empty_branch -> Error Empty
         in
         let p1 = type_pat_result (ref !env) sp1 in
         let p2 = type_pat_result (ref !env) sp2 in
-        begin match p1, p2 with
+        match p1, p2 with
         | Error Empty, Error Empty ->
             raise Empty_branch
         | Error Adds_constraints, Error _
@@ -1856,7 +1854,6 @@ and type_pat_aux
                    pat_type = instance expected_ty;
                    pat_attributes = sp.ppat_attributes;
                    pat_env = !env }
-        end
       end
   | Ppat_or(sp1, sp2) ->
       assert construction_not_used_in_counterexamples;
