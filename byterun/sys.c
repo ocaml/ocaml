@@ -97,10 +97,14 @@ CAMLexport void caml_sys_io_error(value arg)
   }
 }
 
+extern void caml_terminate_signals(void);
+
 CAMLprim value caml_sys_exit(value retcode)
 {
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT);
+#else
+  caml_terminate_signals();
 #endif
   exit(Int_val(retcode));
   return Val_unit;
