@@ -960,6 +960,10 @@ mutually recursive types.
 67
 \ \ Unused functor parameter.
 
+68
+\ \ Pattern-matching depending on mutable state prevents the remaining
+arguments from being uncurried.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -1013,7 +1017,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66\-67\-68 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
