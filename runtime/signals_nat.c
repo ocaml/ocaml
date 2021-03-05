@@ -182,7 +182,6 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 
 static char * system_stack_top;
-static char sig_alt_stack[SIGSTKSZ];
 
 #if defined(SYS_linux)
 /* PR#4746: recent Linux kernels with support for stack randomization
@@ -275,14 +274,61 @@ void caml_init_signals(void)
   {
     stack_t stk;
     struct sigaction act;
-    stk.ss_sp = sig_alt_stack;
-    stk.ss_size = SIGSTKSZ;
-    stk.ss_flags = 0;
-    SET_SIGACT(act, segv_handler);
-    act.sa_flags |= SA_ONSTACK | SA_NODEFER;
-    sigemptyset(&act.sa_mask);
-    system_stack_top = (char *) &act;
-    if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
+    /* Allocate and select an alternate stack for handling signals,
+       especially SIGSEGV signals.
+       The alternate stack used to be statically-allocated for the main thread,
+       but this is incompatible with Glibc 2.34 and newer, where SIGSTKSZ
+       may not be a compile-time constant. */
+    stk.ss_sp = malloc(SIGSTKSZ);
+    if (stk.ss_sp != NULL) {
+      stk.ss_size = SIGSTKSZ;
+      stk.ss_flags = 0;
+      SET_SIGACT(act, segv_handler);
+      act.sa_flags |= SA_ONSTACK | SA_NODEFER;
+      sigemptyset(&act.sa_mask);
+      system_stack_top = (char *) &act;
+      if (sigaltstack(&stk, NULL) == 0)
+        sigaction(SIGSEGV, &act, NULL);
+      else
+        free(stk.ss_sp);
+    }
+  }
+#endif
+}
+
+/* Termination of signal stuff */
+
+#if defined(TARGET_power) || defined(TARGET_s390x) \
+    || defined(HAS_STACK_OVERFLOW_DETECTION)
+static void set_signal_default(int signum)
+{
+  struct sigaction act;
+  sigemptyset(&act.sa_mask);
+  act.sa_handler = SIG_DFL;
+  act.sa_flags = 0;
+  sigaction(signum, &act, NULL);
+}
+#endif
+
+void caml_terminate_signals(void)
+{
+#if defined(TARGET_power)
+  set_signal_default(SIGTRAP);
+#endif
+
+#if defined(TARGET_s390x)
+  set_signal_default(SIGFPE);
+#endif
+
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+  set_signal_default(SIGSEGV);
+  stack_t oldstk, stk;
+  stk.ss_flags = SS_DISABLE;
+  if (sigaltstack(&stk, &oldstk) == 0) {
+    /* If caml_init_signals failed, we are not using an alternate signal stack.
+       SS_DISABLE will be set in oldstk, and there is nothing to free in this
+       case. */
+    if (! (oldstk.ss_flags & SS_DISABLE)) free(oldstk.ss_sp);
   }
 #endif
 }
