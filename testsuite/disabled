@@ -54,6 +54,10 @@ compatibility
 # TODO: signal handling and tick thread missing from systhreads
 lib-systhreads-todo
 
+# TODO: signals and kill (#9802)
+tests/lib-unix/kill/'unix_kill.ml' with 1.1 (bytecode)
+tests/lib-unix/kill/'unix_kill.ml' with 1.2 (native)
+
 # TODO: finaliser issue (#385)
 tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
 tests/backtrace/'callstack.ml' with 1.1.1 (native)
