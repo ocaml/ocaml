@@ -69,6 +69,11 @@ Working version
   to the debugger via a socket.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #10250, #10266: Dynamically allocate alternate signal stacks to
+   accommodate changes in Glibc 2.34.
+  (Xavier Leroy, reports by Tomasz Kłoczko and R.W.M. Jones, review by Anil
+   Madhavapeddy, Stephen Dolan, and Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
