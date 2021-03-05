@@ -10,6 +10,17 @@ OCaml 4.07 maintenance branch
   prevent their C99-compliant snprintf conflicting with ours.
   (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
 
+### Bug fixes:
+
+- #10250, #10266: Dynamically allocate alternate signal stacks to
+  accommodate changes in Glibc 2.34.
+  (Xavier Leroy, reports by Tomasz Kłoczko and R.W.M. Jones, review by Anil
+   Madhavapeddy, Stephen Dolan, and Florian Angeletti)
+
+- #10698, #10726, #10891: Free the alternate signal stack when the main OCaml
+  code or an OCaml thread stops.
+  (Xavier Leroy, review by David Allsopp, Florian Angeletti and Damien Doligez)
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
