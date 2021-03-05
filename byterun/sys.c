@@ -108,6 +108,8 @@ static void caml_sys_check_path(value name)
   }
 }
 
+extern void caml_terminate_signals(void);
+
 CAMLprim value caml_sys_exit(value retcode)
 {
   if ((caml_verb_gc & 0x400) != 0) {
@@ -139,6 +141,9 @@ CAMLprim value caml_sys_exit(value retcode)
   caml_debugger(PROGRAM_EXIT);
 #endif
   CAML_INSTR_ATEXIT ();
+#ifdef NATIVE_CODE
+  caml_terminate_signals();
+#endif
   exit(Int_val(retcode));
   return Val_unit;
 }
