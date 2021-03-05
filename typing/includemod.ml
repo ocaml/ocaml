@@ -72,20 +72,20 @@ module Error = struct
   type module_type_symptom =
     | Mt_core of core_module_type_symptom
     | Signature of signature_symptom
-    | Functor of functor_syndrom
+    | Functor of functor_symptom
 
   and module_type_diff = (module_type, module_type_symptom) diff
 
-  and functor_syndrom =
+  and functor_symptom =
     | Params of functor_params_diff
     | Result of module_type_diff
 
-  and ('arg,'path) functor_param_syndrom =
+  and ('arg,'path) functor_param_symptom =
     | Incompatible_params of 'arg * functor_parameter
     | Mismatch of module_type_diff
 
-  and arg_functor_param_syndrom =
-    (functor_parameter, Ident.t) functor_param_syndrom
+  and arg_functor_param_symptom =
+    (functor_parameter, Ident.t) functor_param_symptom
 
   and functor_params_diff = (functor_parameter list * module_type) core_diff
 
@@ -1496,7 +1496,7 @@ module Linearize = struct
 
   type ('a,'b) patch =
     ( 'a Short_name.item, 'b Short_name.item,
-      Typedtree.module_coercion, Error.arg_functor_param_syndrom
+      Typedtree.module_coercion, Error.arg_functor_param_symptom
     ) Diffing.change
   type ('a,'b) t = {
     msgs: Location.msg list;
@@ -1726,7 +1726,7 @@ module Linearize = struct
 
   let rec diff_suberror:
     'a 'b 'c 'd. ('c -> _) -> ('a -> 'b -> _) -> expansion_token:_ -> _ ->
-    'a -> 'b -> ('c,'d) Error.functor_param_syndrom -> _
+    'a -> 'b -> ('c,'d) Error.functor_param_symptom -> _
     = fun incompatible msg ~expansion_token env g e diff -> match diff with
     | Error.Incompatible_params (i,_) -> incompatible i
     | Error.Mismatch mty_diff ->
