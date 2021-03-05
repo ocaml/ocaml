@@ -66,7 +66,7 @@ CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
 
 /* Operation table for bigarrays */
 
-CAMLexport struct custom_operations caml_ba_ops = {
+CAMLexport const struct custom_operations caml_ba_ops = {
   "_bigarr02",
   caml_ba_finalize,
   caml_ba_compare,

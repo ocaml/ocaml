@@ -27,7 +27,7 @@ external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 val [@inline always] is_block : t -> bool
 external is_int : t -> bool = "%obj_is_int"
-external tag : t -> int = "caml_obj_tag"
+external tag : t -> int = "caml_obj_tag" [@@noalloc]
 external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
   (**
