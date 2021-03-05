@@ -58,9 +58,11 @@ CAMLextern void caml_initialize_field (value, intnat, value);
 #define caml_initialize_field caml_initialize_field
 CAMLextern void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n);
 CAMLextern value caml_check_urgent_gc (value);
+#ifdef CAML_INTERNALS
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
+#endif /* CAML_INTERNALS */
 
 CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 

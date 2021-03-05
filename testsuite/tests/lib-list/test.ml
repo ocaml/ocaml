@@ -35,6 +35,24 @@ let () =
   assert (not (List.exists (fun a -> a > 9) l));
   assert (List.exists (fun _ -> true) l);
 
+  assert (List.equal (=) [1; 2; 3] [1; 2; 3]);
+  assert (not (List.equal (=) [1; 2; 3] [1; 2]));
+  assert (not (List.equal (=) [1; 2; 3] [1; 3; 2]));
+
+  (* The current implementation of List.equal calls the comparison
+     function even for different-size lists. This is not part of the
+     specification, so it would be valid to change this behavior, but
+     we don't want to change it without noticing so here is a test for
+     it. *)
+  assert (let c = ref 0 in
+          not (List.equal (fun _ _ -> incr c; true) [1; 2] [1; 2; 3])
+          && !c = 2);
+
+  assert (List.compare compare [1; 2; 3] [1; 2; 3] = 0);
+  assert (List.compare compare [1; 2; 3] [1; 2] > 0);
+  assert (List.compare compare [1; 2; 3] [1; 3; 2] < 0);
+  assert (List.compare compare [3] [2; 1] > 0);
+
   begin
     let f ~limit a = if a >= limit then Some (a, limit) else None in
     assert (List.find_map (f ~limit:3) [] = None);

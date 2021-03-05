@@ -113,6 +113,11 @@ Working version
    Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
    Henri Jourdan)
 
+- #9888, #9890: Fixes a bug in the `riscv` backend where register t0 was not
+  saved/restored when performing a GC. This could potentially lead to a
+  segfault.
+  (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
@@ -186,6 +191,11 @@ Working version
 
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+* #9668: List.equal, List.compare
+  (This could break code using "open List" by shadowing
+   Stdlib.{equal,compare}.)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, Daniel Bünzli and Alain Frisch)
 
 - #9763: Add function Hashtbl.rebuild to convert from old hash table
   formats (that may have been saved to persistent storage) to the
@@ -346,6 +356,12 @@ Working version
   (David Allsopp, review by Damien Doligez, much input and thought from
    Daniel Bünzli, Damien Doligez, Sébastien Hinderer, and Xavier Leroy)
 
+- #9889: more caching when printing types with -short-path.
+  (Florian Angeletti, review by Gabriel Scherer)
+
+-  #9591: fix pprint of polyvariants that start with a core_type, closed,
+   not low (Chet Murthy, review by Florian Angeletti)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
@@ -376,6 +392,13 @@ Working version
 
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
+
+- #9421, #9427: fix printing of (::) in ocamldoc
+  (Florian Angeletti, report by Yawar Amin, review by Damien Doligez)
+
+- #9440: for a type extension constructor with parameterised arguments,
+  REPL displayed <poly> for each as opposed to the concrete values used.
+  (Christian Quinn, review by Gabriel Scherer)
 
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
@@ -417,7 +440,7 @@ Working version
 - #9860: wrong range constraint for subtract immediate on zSystems / s390x
   (Xavier Leroy, review by Stephen Dolan)
 
-- #9868, #9872: bugs in {in,out}_channel_length and seek_in
+- #9868, #9872, #9892: bugs in {in,out}_channel_length and seek_in
   for files opened in text mode under Windows
   (Xavier Leroy, report by Alain Frisch, review by Nicolás Ojeda Bär
   and Alain Frisch)

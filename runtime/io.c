@@ -65,7 +65,7 @@ Caml_inline int descriptor_is_in_binary_mode(int fd)
 {
 #if defined(_WIN32) || defined(__CYGWIN__)
   int oldmode = setmode(fd, O_TEXT);
-  if (oldmode == O_BINARY) setmode(fd, O_BINARY);
+  if (oldmode != -1 && oldmode != O_TEXT) setmode(fd, oldmode);
   return oldmode == O_BINARY;
 #else
   return 1;
@@ -257,8 +257,7 @@ CAMLexport file_offset caml_pos_out(struct channel *channel)
 
 /* Input */
 
-/* caml_do_read is exported for Cash */
-CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
+int caml_do_read(int fd, char *p, unsigned int n)
 {
   return caml_read_fd(fd, 0, p, n);
 }
@@ -353,7 +352,7 @@ CAMLexport file_offset caml_pos_in(struct channel *channel)
   return channel->offset - (file_offset)(channel->max - channel->curr);
 }
 
-CAMLexport intnat caml_input_scan_line(struct channel *channel)
+intnat caml_input_scan_line(struct channel *channel)
 {
   char * p;
   int n;
@@ -398,8 +397,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 
-/* FIXME CAMLexport, but not in io.h  exported for Cash ? */
-CAMLexport void caml_finalize_channel(value vchan)
+void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;

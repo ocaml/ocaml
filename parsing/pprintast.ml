@@ -330,6 +330,9 @@ and core_type1 ctxt f x =
              | _ -> list ~first:"(" ~last:")@;" (core_type ctxt) ~sep:",@;" f l)
           l longident_loc li
     | Ptyp_variant (l, closed, low) ->
+        let first_is_inherit = match l with
+          | {Parsetree.prf_desc = Rinherit _}::_ -> true
+          | _ -> false in
         let type_variant_helper f x =
           match x.prf_desc with
           | Rtag (l, _, ctl) ->
@@ -348,7 +351,7 @@ and core_type1 ctxt f x =
              | _ ->
                  pp f "%s@;%a"
                    (match (closed,low) with
-                    | (Closed,None) -> ""
+                    | (Closed,None) -> if first_is_inherit then " |" else ""
                     | (Closed,Some _) -> "<" (* FIXME desugar the syntax sugar*)
                     | (Open,_) -> ">")
                    (list type_variant_helper ~sep:"@;<1 -2>| ") l) l

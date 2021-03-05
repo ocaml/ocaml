@@ -384,8 +384,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
                     tree_of_val depth obj
-                      (try Ctype.apply env decl.type_params body ty_list with
-                         Ctype.Cannot_apply -> abstract_type)
+                      (instantiate_type env decl.type_params ty_list body)
                 | {type_kind = Type_variant constr_list; type_unboxed} ->
                     let unbx = type_unboxed.unboxed in
                     let tag =
@@ -408,12 +407,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       match cd_args with
                       | Cstr_tuple l ->
                           let ty_args =
-                            List.map
-                              (function ty ->
-                                try Ctype.apply env type_params ty ty_list with
-                                  Ctype.Cannot_apply -> abstract_type)
-                              l
-                          in
+                            instantiate_types env type_params ty_list l in
                           tree_of_constr_with_args (tree_of_constr env path)
                             (Ident.name cd_id) false 0 depth obj
                             ty_args unbx
@@ -444,7 +438,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           lbl_list pos obj unbx
                     end
                 | {type_kind = Type_open} ->
-                    tree_of_extension path depth obj
+                    tree_of_extension path ty_list depth obj
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"
@@ -494,12 +488,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let rec tree_of_fields pos = function
           | [] -> []
           | {ld_id; ld_type} :: remainder ->
-              let ty_arg =
-                try
-                  Ctype.apply env type_params ld_type
-                    ty_list
-                with
-                  Ctype.Cannot_apply -> abstract_type in
+              let ty_arg = instantiate_type env type_params ty_list ld_type in
               let name = Ident.name ld_id in
               (* PR#5722: print full module path only
                  for first record field *)
@@ -544,7 +533,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         in
         Oval_constr (lid, args)
 
-    and tree_of_extension type_path depth bucket =
+    and tree_of_extension type_path ty_list depth bucket =
       let slot =
         if O.tag bucket <> 0 then bucket
         else O.field bucket 0
@@ -571,10 +560,17 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
            identifier contained in the exception bucket *)
         if not (EVP.same_value slot (EVP.eval_address addr))
         then raise Not_found;
+        let type_params =
+          match (Ctype.repr cstr.cstr_res).desc with
+            Tconstr (_,params,_) ->
+             params
+          | _ -> assert false
+        in
+        let args = instantiate_types env type_params ty_list cstr.cstr_args in
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
            1 depth bucket
-           cstr.cstr_args false
+           args false
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x
@@ -582,6 +578,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             outval_of_untyped_exception bucket
         | None ->
             Oval_stuff "<extension>"
+
+    and instantiate_type env type_params ty_list ty =
+      try Ctype.apply env type_params ty ty_list
+      with Ctype.Cannot_apply -> abstract_type
+
+    and instantiate_types env type_params ty_list args =
+      List.map (instantiate_type env type_params ty_list) args
 
     and find_printer depth env ty =
       let rec find = function

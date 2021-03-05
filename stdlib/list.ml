@@ -549,6 +549,29 @@ let rec compare_length_with l n =
       compare_length_with l (n-1)
 ;;
 
+(** {1 Comparison} *)
+
+(* Note: we are *not* shortcutting the list by using
+   [List.compare_lengths] first; this may be slower on long lists
+   immediately start with distinct elements. It is also incorrect for
+   [compare] below, and it is better (principle of least surprise) to
+   use the same approach for both functions. *)
+let rec equal eq l1 l2 =
+  match l1, l2 with
+  | [], [] -> true
+  | [], _::_ | _::_, [] -> false
+  | a1::l1, a2::l2 -> eq a1 a2 && equal eq l1 l2
+
+let rec compare cmp l1 l2 =
+  match l1, l2 with
+  | [], [] -> 0
+  | [], _::_ -> -1
+  | _::_, [] -> 1
+  | a1::l1, a2::l2 ->
+    let c = cmp a1 a2 in
+    if c <> 0 then c
+    else compare cmp l1 l2
+
 (** {1 Iterators} *)
 
 let to_seq l =
