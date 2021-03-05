@@ -1812,13 +1812,14 @@ and type_pat_aux
         pat_type = instance expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
-  | Ppat_or(sp1, sp2) when mode <> Normal ->
+  | Ppat_or(sp1, sp2) ->
+    begin match mode with
+    | Counter_example {splitting_mode; _} ->
       (* We are in counter-example mode, but try to avoid backtracking *)
       let must_split =
-        match get_splitting_mode mode with
-        | None -> assert false
-        | Some Backtrack_or -> true
-        | Some (Refine_or _) -> false in
+        match splitting_mode with
+        | Backtrack_or -> true
+        | Refine_or _ -> false in
       let state = save_state env in
       let split_or sp =
         let typ pat = type_pat category pat expected_ty k in
@@ -1855,7 +1856,7 @@ and type_pat_aux
                    pat_attributes = sp.ppat_attributes;
                    pat_env = !env }
       end
-  | Ppat_or(sp1, sp2) ->
+    | Normal ->
       assert construction_not_used_in_counterexamples;
       let initial_pattern_variables = !pattern_variables in
       let initial_module_variables = !module_variables in
@@ -1896,6 +1897,7 @@ and type_pat_aux
              pat_type = instance expected_ty;
              pat_attributes = sp.ppat_attributes;
              pat_env = !env }
+    end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
       unify_pat_types ~refine loc env (Predef.type_lazy_t nv)
