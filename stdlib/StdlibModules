@@ -31,7 +31,7 @@ endef
 # Modules should be listed in dependency order.
 STDLIB_MODS=\
   camlinternalFormatBasics camlinternalAtomic \
-  stdlib pervasives seq option result bool char uchar \
+  stdlib pervasives seq option either result bool char uchar \
   sys list bytes string unit marshal obj array float int int32 int64 nativeint \
   lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
   camlinternalFormat printf arg atomic \

@@ -274,6 +274,21 @@ val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
    elements of [l] that do not satisfy [p].
    The order of the elements in the input list is preserved. *)
 
+val partition_map : ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
+(** [partition_map f l] returns a pair of lists [(l1, l2)] such that,
+    for each element [x] of the input list [l]:
+    - if [f x] is [Left y1], then [y1] is in [l1], and
+    - if [f x] is [Right y2], then [y2] is in [l2].
+
+    The output elements are included in [l1] and [l2] in the same
+    relative order as the corresponding input elements in [l].
+
+    In particular, [partition_map (fun x -> if p x then Left x else Right x) l]
+    is equivalent to [partition p l].
+
+    @since 4.12.0
+*)
+
 
 (** {1 Association lists} *)
 
