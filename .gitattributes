@@ -29,9 +29,9 @@
 
 /boot/menhir/parser.ml* -diff
 
-# configure is declared as binary so that it doesn't get included in diffs.
-# This also means it will have the correct Unix line-endings, even on Windows.
-/configure binary
+# configure is a shell-script; the linguist-generated attribute suppresses
+# changes being displayed by default in pull requests.
+/configure text eol=lf -diff linguist-generated
 
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/

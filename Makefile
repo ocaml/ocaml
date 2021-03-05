@@ -77,10 +77,10 @@ COMPLIBDIR=$(LIBDIR)/compiler-libs
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 RUNTOP=./runtime/ocamlrun$(EXE) ./ocaml$(EXE) \
-  -nostdlib -I stdlib \
+  -nostdlib -I stdlib -I toplevel \
   -noinit $(TOPFLAGS) $(TOPINCLUDES)
 NATRUNTOP=./ocamlnat$(EXE) \
-  -nostdlib -I stdlib \
+  -nostdlib -I stdlib -I toplevel \
   -noinit $(TOPFLAGS) $(TOPINCLUDES)
 ifeq "$(UNIX_OR_WIN32)" "unix"
 EXTRAPATH=

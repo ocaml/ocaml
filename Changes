@@ -128,6 +128,10 @@ Working version
    so that the ARM64 iOS/macOS calling conventions can be honored.
    (Xavier Leroy, review by Mark Shinwell and Github user @EduardoRFS)
 
+- #9838: Ensure that Cmm immediates are generated as Cconst_int where
+  possible, improving instruction selection.
+  (Stephen Dolan, review by Leo White and Xavier Leroy)
+
 ### Standard library:
 
 - #9781: add injectivity annotations to parameterized abstract types
@@ -279,6 +283,9 @@ Working version
 - #9216: add Lambda.duplicate which refreshes bound identifiers
   (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
 
+- #9376: Remove spurious Ptop_defs from #use
+  (Leo White, review by Damien Doligez)
+
 - #9464, #9493, #9520, #9563, #9599, #9608, #9647: refactor
   the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
@@ -315,9 +322,9 @@ Working version
   attributes are present.
   (Matthew Ryan, review by Nicolás Ojeda Bär)
 
-- #9797: Eliminate the routine use of external commands in ocamltest. ocamltest
-  no longer calls the mkdir, rm and ln external commands (at present, the only
-  external command ocamltest uses is diff).
+- #9797, #9849: Eliminate the routine use of external commands in ocamltest.
+  ocamltest no longer calls the mkdir, rm and ln external commands (at present,
+  the only external command ocamltest uses is diff).
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
 
@@ -382,6 +389,13 @@ Working version
   defined with different types.  This is undefined behavior and
   cancause link-time errors with link-time optimization (LTO).
   (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
+
+
+- #9753: fix build for Android
+  (Github user @EduardoRFS, review by Xavier Leroy)
+
+- #9848, #9855: Fix double free of bytecode in toplevel
+  (Stephen Dolan, report by Sampsa Kiiskinen, review by Gabriel Scherer)
 
 
 OCaml 4.11
