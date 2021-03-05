@@ -360,7 +360,9 @@ CAMLexport void caml_main(char_os **argv)
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
+  /* TODO: do we need multicore Lock here */
   caml_modify_root(caml_global_data, caml_input_val(chan));
+  /* TODO: do we need multicore Unlock here */
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
   /* Initialize system libraries */
