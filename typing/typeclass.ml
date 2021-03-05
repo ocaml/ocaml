@@ -63,8 +63,6 @@ type 'a full_class = {
   req: 'a Typedtree.class_infos;
 }
 
-type class_env = { val_env : Env.t; met_env : Env.t; par_env : Env.t }
-
 type error =
   | Unconsistent_constraint of Errortrace.unification_error
   | Field_type_mismatch of string * string * Errortrace.unification_error
@@ -237,47 +235,6 @@ let rc node =
                 (*  Primitives for typing classes  *)
                 (***********************************)
 
-
-(* Enter a value in the method environment only *)
-let enter_met_env ?check loc lab kind unbound_kind ty class_env =
-  let {val_env; met_env; par_env} = class_env in
-  let val_env = Env.enter_unbound_value lab unbound_kind val_env in
-  let par_env = Env.enter_unbound_value lab unbound_kind par_env in
-  let (id, met_env) =
-    Env.enter_value ?check lab
-      {val_type = ty; val_kind = kind;
-       val_attributes = []; Types.val_loc = loc;
-       val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()); } met_env
-  in
-  let class_env = {val_env; met_env; par_env} in
-  (id, class_env)
-
-(* Enter an instance variable in the environment *)
-let enter_val cl_num vars inh lab mut virt ty class_env loc =
-  let val_env = class_env.val_env in
-  let (id, virt) =
-    match Vars.find lab !vars with
-    | exception Not_found -> None, virt
-    | (id, mut', virt', ty') ->
-        if mut' <> mut then
-          raise (Error(loc, val_env, Mutability_mismatch(lab, mut)));
-        match Ctype.unify val_env (Ctype.instance ty) (Ctype.instance ty') with
-        | () ->
-            (if not inh then Some id else None),
-            (if virt' = Concrete then virt' else virt)
-        | exception Ctype.Unify err ->
-            raise (Error(loc, val_env,
-                         Field_type_mismatch("instance variable", lab, err)))
-  in
-  let (id, _) as result =
-    match id with Some id -> (id, class_env)
-    | None ->
-        enter_met_env Location.none lab (Val_ivar (mut, cl_num))
-          Val_unbound_instance_variable ty class_env
-  in
-  vars := Vars.add lab (id, mut, virt, ty) !vars;
-  result
-
 let concr_vals vars =
   Vars.fold
     (fun id (_, vf, _) s -> if vf = Virtual then s else Concr.add id s)
@@ -333,19 +290,6 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
 
   | _ ->
       raise(Error(loc, env, Structure_expected parent))
-
-let virtual_method val_env meths self_type lab priv sty loc =
-  let (_, ty') =
-     Ctype.filter_self_method val_env lab priv meths self_type
-  in
-  let sty = Ast_helper.Typ.force_poly sty in
-  let cty = transl_simple_type val_env false sty in
-  let ty = cty.ctyp_type in
-  begin
-    try Ctype.unify val_env ty ty' with Ctype.Unify err ->
-        raise(Error(loc, val_env, Field_type_mismatch ("method", lab, err)));
-  end;
-  cty
 
 let delayed_meth_specs = ref []
 
@@ -576,12 +520,91 @@ let class_type env scty =
 
 (*******************************)
 
+let enter_ancestor_val name val_env =
+  Env.enter_unbound_value name Val_unbound_ancestor val_env
+
+let enter_instance_var_val name val_env =
+  Env.enter_unbound_value name Val_unbound_instance_variable val_env
+
+let enter_ancestor_met ~loc name ~meths ~cl_num ~ty met_env =
+  let check s = Warnings.Unused_ancestor s in
+  let kind = Val_anc (meths, cl_num) in
+  let desc =
+    { val_type = ty; val_kind = kind;
+      val_attributes = [];
+      Types.val_loc = loc;
+      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+  in
+  Env.enter_value ~check name desc met_env
+
+let add_instance_var_met loc id mut cl_num ty met_env =
+  let kind = Val_ivar (mut, cl_num) in
+  let desc =
+    { val_type = ty; val_kind = kind;
+      val_attributes = [];
+      Types.val_loc = loc;
+      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+  in
+  Env.add_value id desc met_env
+
+let check_previous_var loc env vars label mut virt ty =
+  match Vars.find label !vars with
+  | (id, mut', virt', ty') ->
+      if mut' <> mut then begin
+        raise (Error(loc, env, Mutability_mismatch(label, mut)))
+      end;
+      begin try
+        Ctype.unify env (Ctype.instance ty) (Ctype.instance ty')
+      with Ctype.Unify tr ->
+        raise (Error(loc, env,
+                     Field_type_mismatch("instance variable", label, tr)))
+      end;
+      let virt =
+        match virt' with
+        | Concrete -> Concrete
+        | Virtual -> virt
+      in
+      Some id, virt
+  | exception Not_found -> None, virt
+
+(* Enter an instance variable in the environment *)
+let enter_instance_var loc inherited label mut virt ty val_env par_env vars =
+  let id_opt, virt =
+    check_previous_var loc val_env vars label mut virt ty
+  in
+  let already_declared, id, val_env, par_env =
+    match id_opt, inherited with
+    | None, _ | _, true ->
+        let val_env = enter_instance_var_val label val_env in
+        let par_env = enter_instance_var_val label par_env in
+        let id = Ident.create_local label in
+        false, id, val_env, par_env
+    | Some id, false ->
+        true, id, val_env, par_env
+  in
+  vars := Vars.add label (id, mut, virt, ty) !vars;
+  already_declared, id, val_env, par_env
+
+let virtual_method val_env meths self_type lab priv sty loc =
+  let (_, ty') =
+     Ctype.filter_self_method val_env lab priv meths self_type
+  in
+  let sty = Ast_helper.Typ.force_poly sty in
+  let cty = transl_simple_type val_env false sty in
+  let ty = cty.ctyp_type in
+  begin
+    try Ctype.unify val_env ty ty' with Ctype.Unify err ->
+        raise(Error(loc, val_env, Field_type_mismatch ("method", lab, err)));
+  end;
+  cty
+
 type intermediate_class_field =
   | Inherit of
       { override : override_flag;
         parent : class_expr;
         super : string option;
-        inherited_vars : (string * Ident.t) list;
+        inherited_vars :
+          (string * Ident.t * mutable_flag * type_expr) list;
         inherited_meths : (string * Ident.t) list;
         loc : Location.t;
         attributes : attribute list; }
@@ -612,7 +635,6 @@ type intermediate_class_field =
       { label : string loc;
         priv : private_flag;
         override : override_flag;
-        met_env : Env.t;
         sdefinition : Parsetree.expression;
         warning_state : Warnings.state;
         loc : Location.t;
@@ -623,8 +645,7 @@ type intermediate_class_field =
         loc : Location.t;
         attributes : attribute list; }
   | Initializer of
-      { met_env : Env.t;
-        sexpr : Parsetree.expression;
+      { sexpr : Parsetree.expression;
         warning_state : Warnings.state;
         loc : Location.t;
         attributes : attribute list; }
@@ -635,7 +656,8 @@ type intermediate_class_field =
 
 type first_pass_accummulater =
   { rev_fields : intermediate_class_field list;
-    class_env : class_env;
+    val_env : Env.t;
+    par_env : Env.t;
     concr_meths : Concr.t;
     warn_vals : Concr.t;
     inher : (Path.t * Types.type_expr list) list;
@@ -643,10 +665,9 @@ type first_pass_accummulater =
     local_vals : Concr.t; }
 
 let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
-  let { rev_fields; class_env; concr_meths; warn_vals;
+  let { rev_fields; val_env; par_env; concr_meths; warn_vals;
         inher; local_meths; local_vals; } = acc
   in
-  let { val_env; met_env; par_env } = class_env in
   let loc = cf.pcf_loc in
   let attributes = cf.pcf_attributes in
   match cf.pcf_desc with
@@ -664,16 +685,16 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
                concr_meths warn_vals sparent.pcl_loc parent.cl_type
            in
            (* Variables *)
-           let (class_env, inherited_vars) =
+           let (val_env, par_env, inherited_vars) =
              Vars.fold
-               (fun lab info (class_env, inh_vars) ->
+               (fun label info (val_env, par_env, inh_vars) ->
                   let mut, vr, ty = info in
-                  let (id, class_env) =
-                    enter_val cl_num vars true lab mut vr ty
-                      class_env sparent.pcl_loc
+                  let (_, id, val_env, par_env) =
+                    enter_instance_var sparent.pcl_loc true
+                      label mut vr ty val_env par_env vars
                   in
-                  (class_env, (lab, id) :: inh_vars))
-               cl_sig.csig_vars (class_env, [])
+                  (val_env, par_env, (label, id, mut, ty) :: inh_vars))
+               cl_sig.csig_vars (val_env, par_env, [])
            in
            (* Inherited concrete methods *)
            let inherited_meths =
@@ -681,17 +702,13 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
                cl_sig.csig_concr []
            in
            (* Super *)
-           let (class_env,super) =
+           let (val_env, par_env, super) =
              match super with
-               None ->
-                 (class_env,None)
+             | None -> (val_env, par_env, None)
              | Some {txt=name} ->
-                 let (_id, class_env) =
-                   enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
-                     sparent.pcl_loc name (Val_anc (inherited_meths, cl_num))
-                     Val_unbound_ancestor self_type class_env
-                 in
-                 (class_env, Some name)
+                 let val_env = enter_ancestor_val name val_env in
+                 let par_env = enter_ancestor_val name par_env in
+                 (val_env, par_env, Some name)
            in
            let field =
              Inherit
@@ -699,7 +716,7 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
                  inherited_meths; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
-           { acc with rev_fields; class_env;
+           { acc with rev_fields; val_env; par_env;
                       concr_meths; warn_vals; inher })
   | Pcf_val (label, mut, Cfk_virtual styp) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
@@ -711,18 +728,16 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
              Ctype.end_def ();
              Ctype.generalize_structure ty
            end;
-           let met_env_old = met_env in
-           let (id, class_env) =
-             enter_val cl_num vars false label.txt mut Virtual ty
-               class_env loc
+           let (already_declared, id, val_env, par_env) =
+             enter_instance_var loc false
+               label.txt mut Virtual ty val_env par_env vars
            in
-           let already_declared = met_env_old == class_env.met_env in
            let field =
              Virtual_val
                { label; mut; id; cty; already_declared; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
-           { acc with rev_fields; class_env; })
+           { acc with rev_fields; val_env; par_env; })
   | Pcf_val (label, mut, Cfk_concrete (override, sdefinition)) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
@@ -744,12 +759,10 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
              Ctype.end_def ();
              Ctype.generalize_structure definition.exp_type
             end;
-           let met_env_old = met_env in
-           let (id, class_env) =
-             enter_val cl_num vars false label.txt mut Concrete
-               definition.exp_type class_env loc
+           let (already_declared, id, val_env, par_env) =
+             enter_instance_var loc false label.txt
+               mut Concrete definition.exp_type val_env par_env vars
            in
-           let already_declared = met_env_old == class_env.met_env in
            let field =
              Concrete_val
                { label; mut; id; override; definition;
@@ -758,7 +771,7 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
            let rev_fields = field :: rev_fields in
            let warn_vals = Concr.add label.txt warn_vals in
            let local_vals = Concr.add label.txt local_vals in
-           { acc with rev_fields; class_env;
+           { acc with rev_fields; val_env; par_env;
                       warn_vals; local_vals })
 
   | Pcf_method (label, priv, Cfk_virtual sty) ->
@@ -827,8 +840,8 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
            let warning_state = Warnings.backup () in
            let field =
              Concrete_method
-               { label; priv; override; met_env;
-                 sdefinition; warning_state; loc; attributes }
+               { label; priv; override; sdefinition;
+                 warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
            let concr_meths = Concr.add label.txt concr_meths in
@@ -851,7 +864,7 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
            let sexpr = make_method self_loc cl_num sexpr in
            let warning_state = Warnings.backup () in
            let field =
-             Initializer { met_env; sexpr; warning_state; loc; attributes }
+             Initializer { sexpr; warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
            { acc with rev_fields })
@@ -864,8 +877,7 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and class_fields_first_pass self_loc cl_num self_type meths vars
-      val_env met_env par_env cfs =
-  let class_env = {val_env; met_env; par_env} in
+      val_env par_env cfs =
   let rev_fields = [] in
   let concr_meths = Concr.empty in
   let warn_vals = Concr.empty in
@@ -873,7 +885,7 @@ and class_fields_first_pass self_loc cl_num self_type meths vars
   let local_meths = Concr.empty in
   let local_vals = Concr.empty in
   let init_acc =
-    { rev_fields; class_env; concr_meths;
+    { rev_fields; val_env; par_env; concr_meths;
       warn_vals; inher; local_meths; local_vals }
   in
   let acc =
@@ -885,31 +897,63 @@ and class_fields_first_pass self_loc cl_num self_type meths vars
   in
   List.rev acc.rev_fields, acc.concr_meths, acc.inher
 
-and class_field_second_pass self_type meths field =
+and class_field_second_pass cl_num self_type meths met_env field =
   let mkcf desc loc attrs =
     { cf_desc = desc; cf_loc = loc; cf_attributes = attrs }
   in
   match field with
   | Inherit { override; parent; super;
               inherited_vars; inherited_meths; loc; attributes } ->
+      let met_env =
+        List.fold_left
+          (fun met_env (_, id, mut, ty) ->
+             add_instance_var_met loc id mut cl_num ty met_env)
+          met_env inherited_vars
+      in
+      let met_env =
+        match super with
+        | None -> met_env
+        | Some name ->
+            let meths = inherited_meths in
+            let ty = self_type in
+            let _id, met_env =
+              enter_ancestor_met ~loc name ~meths ~cl_num ~ty met_env
+            in
+            met_env
+      in
+      let inherited_vars =
+        List.map (fun (label, id, _, _) -> (label, id)) inherited_vars
+      in
       let desc =
         Tcf_inherit(override, parent, super, inherited_vars, inherited_meths)
       in
-      mkcf desc loc attributes
+      met_env, mkcf desc loc attributes
   | Virtual_val { label; mut; id; cty; already_declared; loc; attributes } ->
+      let met_env =
+        if already_declared then met_env
+        else begin
+          add_instance_var_met loc id mut cl_num cty.ctyp_type met_env
+        end
+      in
       let kind = Tcfk_virtual cty in
       let desc = Tcf_val(label, mut, id, kind, already_declared) in
-      mkcf desc loc attributes
+      met_env, mkcf desc loc attributes
   | Concrete_val { label; mut; id; override;
                    definition; already_declared; loc; attributes } ->
+      let met_env =
+        if already_declared then met_env
+        else begin
+          add_instance_var_met loc id mut cl_num definition.exp_type met_env
+        end
+      in
       let kind = Tcfk_concrete(override, definition) in
       let desc = Tcf_val(label, mut, id, kind, already_declared) in
-      mkcf desc loc attributes
+      met_env, mkcf desc loc attributes
   | Virtual_method { label; priv; cty; loc; attributes } ->
       let kind = Tcfk_virtual cty in
       let desc = Tcf_method(label, priv, kind) in
-      mkcf desc loc attributes
-  | Concrete_method { label; priv; override; met_env;
+      met_env, mkcf desc loc attributes
+  | Concrete_method { label; priv; override;
                       sdefinition; warning_state; loc; attributes } ->
       Warnings.with_state warning_state
         (fun () ->
@@ -924,11 +968,11 @@ and class_field_second_pass self_type meths field =
            Ctype.end_def ();
            let kind = Tcfk_concrete (override, texp) in
            let desc = Tcf_method(label, priv, kind) in
-           mkcf desc loc attributes)
+           met_env, mkcf desc loc attributes)
   | Constraint { cty1; cty2; loc; attributes } ->
       let desc = Tcf_constraint(cty1, cty2) in
-      mkcf desc loc attributes
-  | Initializer { met_env; sexpr; warning_state; loc; attributes } ->
+      met_env, mkcf desc loc attributes
+  | Initializer { sexpr; warning_state; loc; attributes } ->
       Warnings.with_state warning_state
         (fun () ->
            Ctype.raise_nongen_level ();
@@ -940,18 +984,20 @@ and class_field_second_pass self_type meths field =
            let texp = type_expect met_env sexpr meth_type in
            Ctype.end_def ();
            let desc = Tcf_initializer texp in
-           mkcf desc loc attributes)
+           met_env, mkcf desc loc attributes)
   | Attribute { attribute; loc; attributes; } ->
       let desc = Tcf_attribute attribute in
-      mkcf desc loc attributes
+      met_env, mkcf desc loc attributes
 
-and class_fields_second_pass self_type meths fields =
-  let rev_cfs =
+and class_fields_second_pass cl_num self_type meths met_env fields =
+  let _, rev_cfs =
     List.fold_left
-      (fun cfs field ->
-         let cf = class_field_second_pass self_type meths field in
-         cf :: cfs)
-      [] fields
+      (fun (met_env, cfs) field ->
+         let met_env, cf =
+           class_field_second_pass cl_num self_type meths met_env field
+         in
+         met_env, cf :: cfs)
+      (met_env, []) fields
   in
   List.rev rev_cfs
 
@@ -1016,7 +1062,7 @@ and class_structure cl_num final val_env met_env loc
   (* Typing of class fields *)
   let (fields, concr_meths, inher) =
     class_fields_first_pass self_loc cl_num self_type meths vars
-           val_env met_env par_env str
+           val_env par_env str
   in
   Ctype.unify val_env self_type (Ctype.newvar ()); (* useless ? *)
   let sign =
@@ -1068,7 +1114,7 @@ and class_structure cl_num final val_env met_env loc
     (* But keep levels correct on the type of self *)
     Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
   end;
-  let fields = class_fields_second_pass self_type meths fields in
+  let fields = class_fields_second_pass cl_num self_type meths met_env fields in
   let meths = Meths.map (function (id, _ty) -> id) !meths in
 
   (* Check for private methods made public *)

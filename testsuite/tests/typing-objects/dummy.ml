@@ -192,7 +192,7 @@ class closes_via_inheritance param =
     inherit parameter_contains_self param
   end;;
 [%%expect{|
-Uncaught exception: File "typing/typeclass.ml", line 302, characters 15-21: Assertion failed
+Uncaught exception: File "typing/typeclass.ml", line 259, characters 15-21: Assertion failed
 
 |}]
 
@@ -212,7 +212,7 @@ let escapes_via_inheritance param =
   end in
   ();;
 [%%expect{|
-Uncaught exception: File "typing/typeclass.ml", line 302, characters 15-21: Assertion failed
+Uncaught exception: File "typing/typeclass.ml", line 259, characters 15-21: Assertion failed
 
 |}]
 
