@@ -436,9 +436,34 @@ val print_path: (Format.formatter -> Path.t -> unit) ref
 
 (** Folds *)
 
+val fold_values:
+  (string -> Path.t -> value_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_types:
+  (string -> Path.t -> type_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
 val fold_constructors:
   (constructor_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
+val fold_labels:
+  (label_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
+(** Persistent structures are only traversed if they are already loaded. *)
+val fold_modules:
+  (string -> Path.t -> module_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
+val fold_modtypes:
+  (string -> Path.t -> modtype_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_classes:
+  (string -> Path.t -> class_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+val fold_cltypes:
+  (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
