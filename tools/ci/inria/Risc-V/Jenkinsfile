@@ -17,6 +17,9 @@
 
 pipeline {
   agent { label 'olive' }
+  options {
+    timeout(time: 3, unit: 'HOURS')
+  }
   stages {
     stage('Verifying that OCaml commpiles on a Risc-V virtual machine') {
       steps {

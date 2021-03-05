@@ -17,6 +17,9 @@
 
 pipeline {
   agent { label 'ocaml-linux-64' }
+  options {
+    timeout(time: 1, unit: 'HOURS')
+  }
   stages {
     stage('Compiling and testing OCaml with sanitizers') {
       steps {

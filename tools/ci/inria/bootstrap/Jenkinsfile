@@ -19,6 +19,9 @@
 
 pipeline {
   agent { label 'ocaml-linux-64' }
+  options {
+    timeout(time: 1, unit: 'HOURS')
+  }
   stages {
     stage('Verifying that the OCaml compiler can be bootstrapped') {
       steps {

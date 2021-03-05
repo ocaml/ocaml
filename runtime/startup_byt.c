@@ -254,8 +254,6 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-extern int caml_ensure_spacetime_dot_o_is_included;
-
 /* Main entry point when loading code from a file */
 
 CAMLexport void caml_main(char_os **argv)
@@ -269,8 +267,6 @@ CAMLexport void caml_main(char_os **argv)
   char_os * exe_name, * proc_self_exe;
 
   CAML_INIT_DOMAIN_STATE;
-
-  caml_ensure_spacetime_dot_o_is_included++;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
