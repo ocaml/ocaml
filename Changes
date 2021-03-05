@@ -337,6 +337,10 @@ Working version
 - #8936: Per-function environment for Emit
   (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
 
+- #10307: Refactor type_description in the typing env
+  (Nicolas Chataing, review by Takafumi Saikawa, Florian Angeletti and Thomas
+   Refis)
+
 - #10170: Maintain more structural information in type-checking errors
   A mostly-internal change that preserves more information in errors
   during type checking; most significantly, it split the errors from
