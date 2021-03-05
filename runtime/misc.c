@@ -28,8 +28,10 @@ __declspec(noreturn) void __cdecl abort(void);
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <execinfo.h>
 #include <stdlib.h>
+#if defined(DEBUG) || defined(NATIVE_CODE)
+#include <execinfo.h>
+#endif
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
