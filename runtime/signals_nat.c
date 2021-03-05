@@ -174,8 +174,6 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 #error "CONTEXT_SP is required if HAS_STACK_OVERFLOW_DETECTION is defined"
 #endif
 
-static char sig_alt_stack[SIGSTKSZ];
-
 /* Code compiled with ocamlopt never accesses more than
    EXTRA_STACK bytes below the stack pointer. */
 #define EXTRA_STACK 256
@@ -269,28 +267,33 @@ void caml_init_signals(void)
 #endif
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
-  {
-    stack_t stk;
+  if (caml_setup_stack_overflow_detection() != -1) {
     struct sigaction act;
-    stk.ss_sp = sig_alt_stack;
-    stk.ss_size = SIGSTKSZ;
-    stk.ss_flags = 0;
     SET_SIGACT(act, segv_handler);
     act.sa_flags |= SA_ONSTACK | SA_NODEFER;
     sigemptyset(&act.sa_mask);
-    if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
+    sigaction(SIGSEGV, &act, NULL);
   }
 #endif
 }
 
-CAMLexport void caml_setup_stack_overflow_detection(void)
+/* Allocate and select an alternate stack for handling signals,
+   especially SIGSEGV signals.
+   Each thread needs its own alternate stack.
+   The alternate stack used to be statically-allocated for the main thread,
+   but this is incompatible with Glibc 2.34 and newer, where SIGSTKSZ
+   may not be a compile-time constant (issue #10250). */
+
+CAMLexport int caml_setup_stack_overflow_detection(void)
 {
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   stack_t stk;
   stk.ss_sp = malloc(SIGSTKSZ);
+  if (stk.ss_sp == NULL) return -1;
   stk.ss_size = SIGSTKSZ;
   stk.ss_flags = 0;
-  if (stk.ss_sp)
-    sigaltstack(&stk, NULL);
+  return sigaltstack(&stk, NULL);
+#else
+  return 0;
 #endif
 }
