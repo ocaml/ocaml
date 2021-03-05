@@ -54,11 +54,13 @@ struct caml_minor_tables {
 
 struct domain;
 
+CAMLextern void caml_minor_collection (void);
+
+#ifdef CAML_INTERNALS
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap_no_major_slice_from_stw (struct domain* domain, void* unused, int participating_count, struct domain** participating); /* in STW */
 extern int caml_try_stw_empty_minor_heap_on_all_domains(); /* out STW */
 extern void caml_empty_minor_heaps_once(); /* out STW */
-CAMLextern void caml_minor_collection (void);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
 header_t caml_get_header_val(value v);
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
@@ -110,5 +112,7 @@ static inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
   elt->mem = mem;
   elt->max = max;
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_MINOR_GC_H */

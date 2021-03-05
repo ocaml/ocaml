@@ -174,7 +174,7 @@ and row_field_desc =
             (see 4.2 in the manual)
         *)
   | Rinherit of core_type
-        (* [ T ] *)
+        (* [ | t ] *)
 
 and object_field = {
   pof_desc : object_field_desc;
