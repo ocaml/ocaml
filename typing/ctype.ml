@@ -1314,8 +1314,7 @@ let instance_constructor ?in_pattern cstr =
           let name = existential_name cstr existential in
           let id = Ident.create_scoped name ~scope:fresh_constr_scope in
           let path = Path.Pident id in
-          let new_env = Env.add_local_type path (new_local_type ()) !env in
-          env := new_env;
+          env := Env.add_local_type path (new_local_type ()) !env;
           let to_unify = newconstr path [] in
           let tv = copy scope existential in
           assert (is_Tvar tv);
@@ -2137,10 +2136,8 @@ let reify env t =
     let name = get_new_abstract_name name in
     let id = Ident.create_scoped name ~scope:fresh_constr_scope in
     let path = Path.Pident id in
-    let new_env = Env.add_local_type path (new_local_type ()) !env in
-    let t = newty2 lev (Tconstr (path, [], ref Mnil))  in
-    env := new_env;
-    path, t
+    env := Env.add_local_type path (new_local_type ()) !env;
+    path, newty2 lev (Tconstr (path, [], ref Mnil))
   in
   let visited = ref TypeSet.empty in
   let rec iterator ty =
