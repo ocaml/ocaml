@@ -213,6 +213,11 @@ stdlib__domain.cmx : \
     stdlib__atomic.cmx \
     stdlib__domain.cmi
 stdlib__domain.cmi :
+stdlib__either.cmo : \
+    stdlib__either.cmi
+stdlib__either.cmx : \
+    stdlib__either.cmi
+stdlib__either.cmi :
 stdlib__ephemeron.cmo : \
     stdlib__sys.cmi \
     stdlib__seq.cmi \
@@ -397,13 +402,16 @@ stdlib__lexing.cmi :
 stdlib__list.cmo : \
     stdlib__sys.cmi \
     stdlib__seq.cmi \
+    stdlib__either.cmi \
     stdlib__list.cmi
 stdlib__list.cmx : \
     stdlib__sys.cmx \
     stdlib__seq.cmx \
+    stdlib__either.cmx \
     stdlib__list.cmi
 stdlib__list.cmi : \
-    stdlib__seq.cmi
+    stdlib__seq.cmi \
+    stdlib__either.cmi
 stdlib__listLabels.cmo : \
     stdlib__list.cmi \
     stdlib__listLabels.cmi
@@ -411,7 +419,8 @@ stdlib__listLabels.cmx : \
     stdlib__list.cmx \
     stdlib__listLabels.cmi
 stdlib__listLabels.cmi : \
-    stdlib__seq.cmi
+    stdlib__seq.cmi \
+    stdlib__either.cmi
 stdlib__map.cmo : \
     stdlib__seq.cmi \
     stdlib__map.cmi

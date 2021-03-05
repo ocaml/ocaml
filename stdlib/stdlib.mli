@@ -1383,6 +1383,7 @@ module Char         = Char
 module Complex      = Complex
 module Digest       = Digest
 module Domain       = Domain
+module Either       = Either
 module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float

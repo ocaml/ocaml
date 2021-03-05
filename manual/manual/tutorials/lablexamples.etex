@@ -42,7 +42,7 @@ Labels obey the same rules as other identifiers in OCaml, that is you
 cannot use a reserved keyword (like "in" or "to") as label.
 
 Formal parameters and arguments are matched according to their
-respective labels\footnote{This correspond to the commuting label mode
+respective labels\footnote{This corresponds to the commuting label mode
 of Objective Caml 3.00 through 3.02, with some additional flexibility
 on total applications. The so-called classic mode ("-nolabels"
 options) is now deprecated for normal use.}, the absence of label
