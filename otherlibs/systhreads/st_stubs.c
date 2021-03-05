@@ -140,6 +140,7 @@ static st_retcode caml_threadstatus_wait (value);
 #ifdef NATIVE_CODE
 extern struct longjmp_buffer caml_termination_jmpbuf;
 extern void (*caml_termination_hook)(void);
+extern int caml_stop_stack_overflow_detection(void);
 #endif
 
 /* Hook for scanning the stacks of the other threads */
@@ -576,6 +577,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
     caml_thread_stop();
 #ifdef NATIVE_CODE
   }
+  caml_stop_stack_overflow_detection();
 #endif
   /* The thread now stops running */
   return 0;
