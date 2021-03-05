@@ -91,12 +91,16 @@ type pos =
   | Body of functor_parameter
 
 exception Error of explanation
+type functor_arg_descr =
+  | Anonymous of Parsetree.module_expr
+  | Named_arg of Path.t
+  | Unit_arg
 exception Apply_error of {
     loc : Location.t ;
     env : Env.t ;
     lid_app : Longident.t option ;
     mty_f : module_type ;
-    args : (Path.t option * Parsetree.module_expr option * module_type) list ;
+    args : (functor_arg_descr * Types.module_type)  list ;
   }
 
 val err_msgs: explanation ->

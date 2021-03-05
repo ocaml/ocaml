@@ -82,7 +82,7 @@ module Error = struct
 
   and ('arg,'path) functor_param_syndrom =
     | Incompatible_params of 'arg * functor_parameter
-    | Mismatch of 'path option * Ident.t option * module_type_diff
+    | Mismatch of module_type_diff
 
   and arg_functor_param_syndrom =
     (functor_parameter, Ident.t) functor_param_syndrom
@@ -454,7 +454,7 @@ and functor_param ~loc env ~mark subst param1 param2 = match param1, param2 with
       let cc_arg =
         match modtypes ~loc env ~mark Subst.identity arg2' arg1 with
         | Ok cc -> Ok cc
-        | Error err -> Error (Error.Mismatch (name1, name2, err))
+        | Error err -> Error (Error.Mismatch err)
       in
       let env, subst =
         match name1, name2 with
@@ -723,12 +723,18 @@ let can_alias env path =
 
 type explanation = Env.t * Error.all
 exception Error of explanation
+
+type functor_arg_descr =
+  | Anonymous of Parsetree.module_expr
+  | Named_arg of Path.t
+  | Unit_arg
+
 exception Apply_error of {
     loc : Location.t ;
     env : Env.t ;
     lid_app : Longident.t option ;
     mty_f : module_type ;
-    args : (Path.t option * Parsetree.module_expr option * module_type) list ;
+    args : (functor_arg_descr * module_type) list ;
   }
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
@@ -751,7 +757,7 @@ let check_functor_application_in_path
         let prepare_arg (arg_path, arg_mty) =
           let aliasable = can_alias env arg_path in
           let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
-          (Some arg_path, None, smd)
+          (Named_arg arg_path, smd)
         in
         let mty_f = (Env.find_module f0_path env).md_type in
         let args = List.map prepare_arg args in
@@ -815,16 +821,6 @@ module Short_name = struct
     | _
       -> Synthetic (r.name, r.item)
 
-  let argument ua =
-    let (path, md, mty, param) = ua.item in
-    let md = match md with
-      | None -> None
-      | Some md -> Some (modexpr {ua with item = md})
-    in
-    let mty = modtype { ua with item = mty } in
-    let param = functor_param { ua with item = param } in
-    (path, md, mty, param)
-
   let pp ppx = function
     | Original x -> ppx x
     | Synthetic (s,_) -> Format.dprintf "%s" s
@@ -837,21 +833,16 @@ end
 module FunctorDiff = struct
   open Diffing
 
-  type ('a,'b) data = { data:'a; metadata:'b}
-  type functor_arg = {path: Path.t option; mty: Types.module_type }
+  let param_name = function
+      | Named(x,_) -> x
+      | Unit -> None
 
-  let data = function
-    | Insert x -> Insert x.data
-    | Delete x -> Delete x.data
-    | Keep (x,y,d) -> Keep(x.data,y.data,d)
-    | Change(x,y,d) -> Change(x.data,y.data,d)
-
-  let weight = function
+  let arg_weight = function
     | Insert _ -> 10
     | Delete _ -> 10
     | Change _ -> 10
     | Keep (param1, param2, _) -> begin
-        match param1.metadata, param2.metadata with
+        match param_name param1, param_name param2 with
         | None, None
           -> 0
         | Some n1, Some n2
@@ -860,6 +851,22 @@ module FunctorDiff = struct
         | Some _, Some _ -> 1
         | Some _,  None | None, Some _ -> 1
       end
+
+  let app_weight = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Change _ -> 10
+    | Keep (param1, param2, _) -> begin
+        match fst param1, param_name param2 with
+        | (Unit_arg | Anonymous _) , None
+          -> 0
+        | Named_arg (Path.Pident n1), Some n2
+          when String.equal (Ident.name n1) (Ident.name n2)
+          -> 0
+        | Named_arg _, Some _ -> 1
+        | Named_arg _,  None | (Unit_arg | Anonymous _), Some _ -> 1
+      end
+
 
   type state = {
     res: module_type option;
@@ -871,20 +878,13 @@ module FunctorDiff = struct
     | Mty_ident _ | Mty_alias _ as mty -> Some mty
     | Mty_signature _ | Mty_functor _ -> None
 
-  let param_preprocess data =
-    let metadata =
-      match data with
-      | Named(x,_) -> x
-      | Unit -> None in
-    { data; metadata }
-
   let need_expansion { env ; res ; _ } = match res with
     | None -> None
     | Some res ->
         match retrieve_functor_params env res with
         | [], _ -> None
         | params, res ->
-            let more = Array.of_list @@ List.map param_preprocess @@ params  in
+            let more = Array.of_list params  in
             Some (keep_expansible_param res, more)
 
   let expand_arg_params state  =
@@ -892,7 +892,7 @@ module FunctorDiff = struct
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let arg_update d st = match data d with
+  let arg_update d st = match d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
@@ -929,31 +929,17 @@ module FunctorDiff = struct
       let loc = Location.none in
       let snap = Btype.snapshot () in
       let res, _, _ =
-        functor_param ~loc st.env ~mark:Mark_neither st.subst mty1.data
-          mty2.data
+        functor_param ~loc st.env ~mark:Mark_neither st.subst mty1 mty2
       in
       Btype.backtrack snap;
       res
     in
-    let param1 = Array.map param_preprocess @@ Array.of_list l1 in
-    let param2 = Array.map param_preprocess @@ Array.of_list l2 in
+    let param1 = Array.of_list l1 in
+    let param2 = Array.of_list l2 in
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res1}
     in
-    Diffing.variadic_diff ~weight ~test ~update state param1 param2
-
-  let data_preprocess (parg,_,_,fn) =
-    match fn with
-    | Unit -> None
-    | Named(_,mty) -> Some {path=parg; mty}
-
-  let arg_preprocess (_,_,_,fn as data) =
-    let metadata =
-      match fn with
-      | Unit -> None
-      | Named(x,_) -> x
-    in
-    { data; metadata }
+    Diffing.variadic_diff ~weight:arg_weight ~test ~update state param1 param2
 
   let expand_app_params state =
     match need_expansion state with
@@ -961,64 +947,70 @@ module FunctorDiff = struct
     | Some (res, expansion) -> { state with res }, expansion
 
   let app_update d st =
-    match Diffing.map data_preprocess Fun.id (data d) with
+    match d with
     | Insert _
     | Delete _
-    | Keep (None,_,_)
+    | Keep ((Unit_arg,_),_,_)
     | Keep (_,Unit,_)
     | Change (_,(Unit | Named (None,_)), _ )
-    | Change (None, Named (Some _, _), _) ->
+    | Change ((Unit_arg,_), Named (Some _, _), _) ->
         st, [||]
-    | Keep (Some arg, Named (param_name, _param), _)
-    | Change (Some arg, Named (param_name, _param), _) -> begin
-        let arg' = Subst.modtype Keep st.subst arg.mty in
-        match arg.path, param_name with
-        | Some arg, Some param ->
+    | Keep ((Named_arg arg,  _mty) , Named (param_name, _param), _)
+    | Change ((Named_arg arg, _mty), Named (param_name, _param), _) ->
+        begin match param_name with
+        | Some param ->
             let res = Option.map (fun res ->
-              let scope = Ctype.create_scope () in
-              let subst = Subst.add_module param arg Subst.identity in
-              Subst.modtype (Rescope scope) subst res) st.res in
+                let scope = Ctype.create_scope () in
+                let subst = Subst.add_module param arg Subst.identity in
+                Subst.modtype (Rescope scope) subst res) st.res in
             let subst = Subst.add_module param arg st.subst in
             expand_app_params { st with subst; res }
-        | None, Some param ->
+        | None ->
+            st, [||]
+        end
+    | Keep ((Anonymous _, mty) , Named (param_name, _param), _)
+    | Change ((Anonymous _, mty), Named (param_name, _param), _) -> begin
+        let arg' = Subst.modtype Keep st.subst mty in
+        begin match param_name with
+        | Some param ->
             let env =
               Env.add_module ~arg:true param Mp_present arg' st.env in
             let res =
               Option.map (Mtype.nondep_supertype env [param]) st.res in
             expand_app_params { st with env; res}
-        | _, None ->
+        | None ->
             st, [||]
+        end
       end
 
   let app_diff env ~f ~args =
     let params, res = retrieve_functor_params env f in
     let update = Diffing.With_right_extensions app_update in
-    let test state x y =
-      let arg = data_preprocess x.data and param = y.data in
+    let test state (arg,arg_mty) param =
       let loc = Location.none in
       let snap = Btype.snapshot () in
       let res = match arg, param with
-        | None, Unit -> Ok Tcoerce_none
-        | None, Named _ | Some _, Unit ->
+        | Unit_arg, Unit -> Ok Tcoerce_none
+        | Unit_arg, Named _ | (Anonymous _ | Named_arg _), Unit ->
             Result.Error (Error.Incompatible_params(arg,param))
-        | Some arg, Named (name, param) ->
+        | ( Anonymous _ | Named_arg _ ) , Named (_, param) ->
             match
               modtypes ~loc state.env ~mark:Mark_neither state.subst
-                arg.mty param
+                arg_mty param
             with
-            | Error mty -> Result.Error (Error.Mismatch(arg.path, name, mty))
+            | Error mty -> Result.Error (Error.Mismatch mty)
             | Ok _ as x -> x
       in
       Btype.backtrack snap;
       res
     in
-    let args = Array.map arg_preprocess @@ Array.of_list args in
-    let params = Array.map param_preprocess @@ Array.of_list params in
+    let args = Array.of_list args in
+    let params = Array.of_list params in
 
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res }
     in
-    Diffing.variadic_diff ~weight ~test ~update state args params
+    Diffing.variadic_diff ~weight:app_weight ~test ~update state args params
 
   (* Simplication for printing *)
 
@@ -1063,7 +1055,7 @@ module FunctorDiff = struct
 
   let prepare_patch ~drop ~ctx patch =
     let drop_suffix x = if drop then drop_inserted_suffix x else x in
-    patch |> List.map data |> drop_suffix |> to_shortnames ctx
+    patch |> drop_suffix |> to_shortnames ctx
 
 end
 
@@ -1411,30 +1403,33 @@ module Pp = struct
         Format.dprintf "(%s : %t)"
           (Ident.name p) (Short_name.pp dmodtype short_mty)
 
-  let definition_of_argument arg =
-    match Short_name.argument arg with
-    | _, _, _, Short_name.Unit -> Format.dprintf "()"
-    | Some p, _, mty, _ ->
+  let definition_of_argument ua =
+    let arg, mty = ua.Short_name.item in
+    match arg with
+    | Unit_arg -> Format.dprintf "()"
+    | Named_arg p ->
+        let mty = Short_name.modtype { ua with item = mty } in
         Format.dprintf
           "%a@ :@ %t"
           Printtyp.path p
           (Short_name.pp_orig dmodtype mty)
-    | _, Some short_md, _, _ ->
+    | Anonymous md ->
+        let short_md = Short_name.modexpr { ua with item = md } in
         begin match short_md with
         | Original md -> fun ppf -> Pprintast.module_expr ppf md
         | Synthetic (name, md) -> fun ppf ->
             Format.fprintf ppf
               "%s@ =@ %a" name Pprintast.module_expr md
         end
-    | None, None, _, _ -> assert false
 
-  let short_argument arg =
-    match Short_name.argument arg with
-    | _, _, _, Short_name.Unit -> Format.dprintf "()"
-    | Some p, _, _, _ -> fun ppf -> Printtyp.path ppf p
-    | _, Some short_md, _, _ ->
+  let short_argument ua =
+    let arg, _mty = ua.Short_name.item in
+    match arg with
+    | Unit_arg -> Format.dprintf "()"
+    | Named_arg p -> fun ppf -> Printtyp.path ppf p
+    | Anonymous md ->
+        let short_md = Short_name.modexpr { ua with item=md } in
         Short_name.pp (fun x ppf -> Pprintast.module_expr ppf x) short_md
-    | None, None, _, _ -> assert false
 
   let style = function
     | Diffing.Keep _ -> Misc.Color.[ FG Green ]
@@ -1721,10 +1716,10 @@ module Linearize = struct
           "The functor was expected to be generative at this position"
 
   let app_incompatible = function
-    | None ->
+    | Unit_arg ->
         Format.dprintf
           "The functor was expected to be applicative at this position"
-    | Some _ ->
+    | Named_arg _ | Anonymous _ ->
         Format.dprintf
           "The functor was expected to be generative at this position"
 
@@ -1734,7 +1729,7 @@ module Linearize = struct
     'a -> 'b -> ('c,'d) Error.functor_param_syndrom -> _
     = fun incompatible msg ~expansion_token env g e diff -> match diff with
     | Error.Incompatible_params (i,_) -> incompatible i
-    | Error.Mismatch(_,_,mty_diff) ->
+    | Error.Mismatch mty_diff ->
         let more () =
           let r =
             module_type_symptom ~expansion_token ~env ~before:[] ~ctx:[]
@@ -1847,15 +1842,6 @@ let () =
     (function
       | Error err -> Some (report_error err)
       | Apply_error {loc; env; lid_app; mty_f; args} ->
-          let prepare_arg (path_arg, md_arg, mty_arg) =
-            let param = match path_arg, md_arg with
-              | _, Some {Parsetree.pmod_desc = Pmod_structure []} -> Types.Unit
-              | Some(Path.Pident p), _ -> Types.Named(Some p,mty_arg)
-              | _, _ -> Types.Named(None,mty_arg)
-            in
-            (path_arg, md_arg, mty_arg, param)
-          in
-          let args = List.map prepare_arg args in
           Some (Printtyp.wrap_printing_env env ~error:true (fun () ->
               report_apply_error ~loc env (lid_app, mty_f, args))
             )

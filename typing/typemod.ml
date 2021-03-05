@@ -2040,6 +2040,12 @@ type application_summary = {
   arg_path:Path.t option
 }
 
+let simplify_app_summary app_view =
+  let mty = app_view.arg.mod_type in
+  match app_view.sarg.pmod_desc , app_view.arg_path with
+  | Pmod_structure [], _ -> Includemod.Unit_arg, mty
+  | _, Some p -> Includemod.Named_arg p, mty
+  | _, None -> Includemod.Anonymous app_view.sarg, mty
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
@@ -2217,10 +2223,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
             ~loc:app_view.sarg.pmod_loc ~mark:Mark_both env
             app_view.arg.mod_type mty_param
         with Includemod.Error _ ->
-          let mk_arg_info app_view =
-            (app_view.arg_path, Some app_view.sarg, app_view.arg.mod_type)
-          in
-          let args = List.map mk_arg_info args in
+          let args = List.map simplify_app_summary args in
           let mty_f = md_f.mod_type in
           let lid_app = None in
           raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
@@ -2276,10 +2279,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
   | Mty_alias path ->
       raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))
   | _ ->
-      let mk_arg_info app_view =
-        (app_view.arg_path, Some app_view.sarg, app_view.arg.mod_type)
-      in
-      let args = List.map mk_arg_info args in
+      let args = List.map simplify_app_summary args in
       let mty_f = md_f.mod_type in
       let lid_app = None in
       raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
