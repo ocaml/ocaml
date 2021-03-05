@@ -1311,13 +1311,12 @@ let instance_constructor ?in_pattern cstr =
     | None -> ()
     | Some (env, fresh_constr_scope) ->
         let process existential =
-          let decl = new_local_type () in
           let name = existential_name cstr existential in
-          let (id, new_env) =
-            Env.enter_type (get_new_abstract_name name) decl !env
-              ~scope:fresh_constr_scope in
+          let id = Ident.create_scoped name ~scope:fresh_constr_scope in
+          let path = Path.Pident id in
+          let new_env = Env.add_local_type path (new_local_type ()) !env in
           env := new_env;
-          let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
+          let to_unify = newconstr path [] in
           let tv = copy scope existential in
           assert (is_Tvar tv);
           link_type tv to_unify
@@ -2135,12 +2134,11 @@ let reify env t =
   let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let decl = new_local_type () in
-    let (id, new_env) =
-      Env.enter_type (get_new_abstract_name name) decl !env
-        ~scope:fresh_constr_scope in
+    let name = get_new_abstract_name name in
+    let id = Ident.create_scoped name ~scope:fresh_constr_scope in
     let path = Path.Pident id in
-    let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
+    let new_env = Env.add_local_type path (new_local_type ()) !env in
+    let t = newty2 lev (Tconstr (path, [], ref Mnil))  in
     env := new_env;
     path, t
   in
