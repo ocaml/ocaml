@@ -241,6 +241,7 @@ let execvpe prog args env =
 
 external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
+external _exit : int -> 'a = "unix_exit"
 external getpid : unit -> int = "unix_getpid"
 
 let fork () = invalid_arg "Unix.fork not implemented"

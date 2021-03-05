@@ -171,11 +171,14 @@ and[@foo] y = x
 type%foo[@foo] t = int
 and[@foo] t = int
 type%foo[@foo] t += T
+type t += A = M.A[@a]
+type t += B = M.A[@b] | C = M.A[@c][@@t]
 
 class%foo[@foo] x = x
 class type%foo[@foo] x = x
 external%foo[@foo] x : _  = ""
 exception%foo[@foo] X
+exception A = M.A[@a]
 
 module%foo[@foo] M = M
 module%foo[@foo] rec M : S = M

@@ -118,6 +118,10 @@ Working version
   segfault.
   (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
 
+- #9909: Remove caml_code_area_start and caml_code_area_end globals (no longer
+  needed as the pagetable heads towards retirement).
+  (David Allsopp, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
@@ -141,6 +145,9 @@ Working version
   (Stephen Dolan, review by Leo White and Xavier Leroy)
 
 ### Standard library:
+
+- #9865: add Format.pp_print_seq
+  (Raphaël Proust, review by Nicolás Ojeda Bär)
 
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
@@ -239,6 +246,11 @@ Working version
 
 - #9869: Add Unix.SO_REUSEPORT
   (Yishuai Li, review by Xavier Leroy)
+
+- #9906, #9914: Add Unix._exit as a way to exit the process immediately,
+  skipping any finalization action
+  (Ivan Gotovchits and Xavier Leroy, review by Sébastien Hinderer and
+   David Allsopp)
 
 ### Tools:
 
@@ -362,6 +374,9 @@ Working version
 -  #9591: fix pprint of polyvariants that start with a core_type, closed,
    not low (Chet Murthy, review by Florian Angeletti)
 
+-  #9590: fix pprint of extension constructors (and exceptions) that rebind
+   (Chet Murthy, review by octachron@)
+
 ### Build system:
 
 - #7121, #9558: Always the autoconf-discovered ld in PACKLD. For
@@ -399,6 +414,9 @@ Working version
 - #9440: for a type extension constructor with parameterised arguments,
   REPL displayed <poly> for each as opposed to the concrete values used.
   (Christian Quinn, review by Gabriel Scherer)
+
+- #9433: Fix package constraints for module aliases
+  (Leo White, review by Jacques Garrigue)
 
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
