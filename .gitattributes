@@ -119,6 +119,10 @@ testsuite/tests/**/*.reference               typo.prune
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line
 
+# The normalisation tests have very specific line endings which mustn't be
+# corrupted by git.
+testsuite/tests/tool-ocamltest/norm*.reference binary
+
 tools/magic                       typo.missing-header
 tools/eventlog_metadata.in        typo.missing-header
 
