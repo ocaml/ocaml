@@ -111,6 +111,8 @@ static void caml_sys_check_path(value name)
   }
 }
 
+extern void caml_terminate_signals(void);
+
 CAMLprim value caml_sys_exit(value retcode_v)
 {
   int retcode = Int_val(retcode_v);
@@ -144,6 +146,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
   caml_debugger(PROGRAM_EXIT);
 #endif
   CAML_INSTR_ATEXIT ();
+#ifdef NATIVE_CODE
+  caml_terminate_signals();
+#endif
   CAML_SYS_EXIT(retcode);
   return Val_unit;
 }
