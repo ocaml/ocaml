@@ -10,19 +10,19 @@ type t = T of t;;
 type t = T of t
 |}]
 #show t;;
-(* this output is CORRECT, it does not use nonrec *)
+(* this output is INCORRECT, it should not use nonrec *)
 [%%expect{|
-type t = T of t
+type nonrec t = T of t
 |}];;
 
-type nonrec t = Foo of t;;
+type nonrec s = Foo of t;;
 [%%expect{|
-type nonrec t = Foo of t
+type nonrec s = Foo of t
 |}];;
-#show t;;
-(* this output in INCORRECT, it should use nonrec *)
+#show s;;
+(* this output is CORRECT, it uses nonrec *)
 [%%expect{|
-type t = Foo of t
+type nonrec s = Foo of t
 |}];;
 
 

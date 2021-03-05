@@ -28,6 +28,12 @@ let test test_number answer correct_answer =
    printf " %d..." test_number
  end
 
+let with_trace f =
+  let events = ref [] in
+  let trace e = events := e :: !events in
+  let v = f trace in
+  (v, List.rev !events)
+
 (* One-dimensional arrays *)
 
 (* flambda can cause some of these values not to be reclaimed by the Gc, which
@@ -489,6 +495,26 @@ let tests () =
   test 7 (Array1.slice a 2) (Array0.of_value int fortran_layout 4);
   test 8 (Array1.slice a 3) (Array0.of_value int fortran_layout 3);
 
+  testing_function "init";
+  let check1 arr graph = List.for_all (fun (i, fi) -> arr.{i} = fi) graph in
+
+  let ba, log = with_trace @@ fun trace ->
+     Array1.init int c_layout 5 (fun x -> trace (x,x); x) in
+  test 1 log [0,0;
+              1,1;
+              2,2;
+              3,3;
+              4,4];
+  test 2 true (check1 ba log);
+
+  let ba, log = with_trace @@ fun trace ->
+     Array1.init int fortran_layout 5 (fun x -> trace (x,x); x) in
+  test 3 log [1,1;
+              2,2;
+              3,3;
+              4,4;
+              5,5];
+  test 4 true (check1 ba log);
 
 (* Bi-dimensional arrays *)
 
@@ -651,6 +677,25 @@ let tests () =
   test 8 (Array2.slice_right a 3)
        (from_list_fortran int [1003;2003;3003;4003;5003]);
 
+  testing_function "init";
+  let check2 arr graph = List.for_all (fun ((i,j), fij) -> arr.{i,j} = fij) graph in
+
+  let ba, log = with_trace @@ fun trace ->
+     Array2.init int c_layout 4 2
+       (fun x y -> let v = 10*x + y in trace ((x,y),v); v) in
+  test 1 log [(0,0), 00; (0,1), 01;
+              (1,0), 10; (1,1), 11;
+              (2,0), 20; (2,1), 21;
+              (3,0), 30; (3,1), 31];
+  test 2 true (check2 ba log);
+
+  let ba, log = with_trace @@ fun trace ->
+     Array2.init int fortran_layout 4 2
+       (fun x y -> let v = 10*x + y in trace ((x,y),v); v) in
+  test 3 log [(1,1), 11; (2,1), 21; (3,1), 31; (4,1), 41;
+              (1,2), 12; (2,2), 22; (3,2), 32; (4,2), 42];
+  test 4 true (check2 ba log);
+
 (* Tri-dimensional arrays *)
 
   print_newline();
@@ -778,9 +823,124 @@ let tests () =
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
 
+  testing_function "init";
+  let check3 arr graph =
+    List.for_all (fun ((i,j,k), fijk) -> arr.{i,j,k} = fijk) graph in
+
+  let ba, log = with_trace @@ fun trace ->
+     Array3.init int c_layout 4 2 3
+       (fun x y z -> let v = 100*x + 10*y + z in trace ((x,y,z),v); v) in
+  test 1 log [(0,0,0), 000; (0,0,1), 001; (0,0,2), 002;
+              (0,1,0), 010; (0,1,1), 011; (0,1,2), 012;
+
+              (1,0,0), 100; (1,0,1), 101; (1,0,2), 102;
+              (1,1,0), 110; (1,1,1), 111; (1,1,2), 112;
+
+              (2,0,0), 200; (2,0,1), 201; (2,0,2), 202;
+              (2,1,0), 210; (2,1,1), 211; (2,1,2), 212;
+
+              (3,0,0), 300; (3,0,1), 301; (3,0,2), 302;
+              (3,1,0), 310; (3,1,1), 311; (3,1,2), 312];
+  test 2 true (check3 ba log);
+
+  let ba, log = with_trace @@ fun trace ->
+     Array3.init int fortran_layout 4 2 3
+       (fun x y z -> let v = 100*x + 10*y + z in trace ((x,y,z), v); v) in
+  test 3 log [(1,1,1), 111; (2,1,1), 211; (3,1,1), 311; (4,1,1), 411;
+              (1,2,1), 121; (2,2,1), 221; (3,2,1), 321; (4,2,1), 421;
+
+              (1,1,2), 112; (2,1,2), 212; (3,1,2), 312; (4,1,2), 412;
+              (1,2,2), 122; (2,2,2), 222; (3,2,2), 322; (4,2,2), 422;
+
+              (1,1,3), 113; (2,1,3), 213; (3,1,3), 313; (4,1,3), 413;
+              (1,2,3), 123; (2,2,3), 223; (3,2,3), 323; (4,2,3), 423];
+  test 4 true (check3 ba log);
+
   testing_function "size_in_bytes_general";
   let a = Genarray.create int c_layout [|2;2;2;2;2|] in
   test 1 (Genarray.size_in_bytes a) (32 * (kind_size_in_bytes int));
+
+  testing_function "init";
+  let checkgen arr graph =
+    List.for_all (fun (i, fi) -> Genarray.get arr i = fi) graph in
+
+  let ba, log = with_trace @@ fun trace ->
+     Genarray.init int c_layout [|4; 2; 3; 2|]
+       (fun i -> let v = 1000*i.(0) + 100*i.(1) + 10*i.(2) + i.(3) in
+                 trace (Array.copy i, v); v) in
+  test 1 log [[|0;0;0;0|], 0000; [|0;0;0;1|], 0001;
+              [|0;0;1;0|], 0010; [|0;0;1;1|], 0011;
+              [|0;0;2;0|], 0020; [|0;0;2;1|], 0021;
+
+              [|0;1;0;0|], 0100; [|0;1;0;1|], 0101;
+              [|0;1;1;0|], 0110; [|0;1;1;1|], 0111;
+              [|0;1;2;0|], 0120; [|0;1;2;1|], 0121;
+
+              [|1;0;0;0|], 1000; [|1;0;0;1|], 1001;
+              [|1;0;1;0|], 1010; [|1;0;1;1|], 1011;
+              [|1;0;2;0|], 1020; [|1;0;2;1|], 1021;
+
+              [|1;1;0;0|], 1100; [|1;1;0;1|], 1101;
+              [|1;1;1;0|], 1110; [|1;1;1;1|], 1111;
+              [|1;1;2;0|], 1120; [|1;1;2;1|], 1121;
+
+              [|2;0;0;0|], 2000; [|2;0;0;1|], 2001;
+              [|2;0;1;0|], 2010; [|2;0;1;1|], 2011;
+              [|2;0;2;0|], 2020; [|2;0;2;1|], 2021;
+
+              [|2;1;0;0|], 2100; [|2;1;0;1|], 2101;
+              [|2;1;1;0|], 2110; [|2;1;1;1|], 2111;
+              [|2;1;2;0|], 2120; [|2;1;2;1|], 2121;
+
+              [|3;0;0;0|], 3000; [|3;0;0;1|], 3001;
+              [|3;0;1;0|], 3010; [|3;0;1;1|], 3011;
+              [|3;0;2;0|], 3020; [|3;0;2;1|], 3021;
+
+              [|3;1;0;0|], 3100; [|3;1;0;1|], 3101;
+              [|3;1;1;0|], 3110; [|3;1;1;1|], 3111;
+              [|3;1;2;0|], 3120; [|3;1;2;1|], 3121;];
+  test 2 true (checkgen ba log);
+
+  let ba, log = with_trace @@ fun trace ->
+     Genarray.init int fortran_layout [|4; 2; 3; 2|]
+       (fun i -> let v = 1000*i.(0) + 100*i.(1) + 10*i.(2) + i.(3) in
+                 trace (Array.copy i, v); v) in
+  test 3 log [[|1;1;1;1|], 1111; [|2;1;1;1|], 2111;
+              [|3;1;1;1|], 3111; [|4;1;1;1|], 4111;
+
+              [|1;2;1;1|], 1211; [|2;2;1;1|], 2211;
+              [|3;2;1;1|], 3211; [|4;2;1;1|], 4211;
+
+              [|1;1;2;1|], 1121; [|2;1;2;1|], 2121;
+              [|3;1;2;1|], 3121; [|4;1;2;1|], 4121;
+
+              [|1;2;2;1|], 1221; [|2;2;2;1|], 2221;
+              [|3;2;2;1|], 3221; [|4;2;2;1|], 4221;
+
+              [|1;1;3;1|], 1131; [|2;1;3;1|], 2131;
+              [|3;1;3;1|], 3131; [|4;1;3;1|], 4131;
+
+              [|1;2;3;1|], 1231; [|2;2;3;1|], 2231;
+              [|3;2;3;1|], 3231; [|4;2;3;1|], 4231;
+
+              [|1;1;1;2|], 1112; [|2;1;1;2|], 2112;
+              [|3;1;1;2|], 3112; [|4;1;1;2|], 4112;
+
+              [|1;2;1;2|], 1212; [|2;2;1;2|], 2212;
+              [|3;2;1;2|], 3212; [|4;2;1;2|], 4212;
+
+              [|1;1;2;2|], 1122; [|2;1;2;2|], 2122;
+              [|3;1;2;2|], 3122; [|4;1;2;2|], 4122;
+
+              [|1;2;2;2|], 1222; [|2;2;2;2|], 2222;
+              [|3;2;2;2|], 3222; [|4;2;2;2|], 4222;
+
+              [|1;1;3;2|], 1132; [|2;1;3;2|], 2132;
+              [|3;1;3;2|], 3132; [|4;1;3;2|], 4132;
+
+              [|1;2;3;2|], 1232; [|2;2;3;2|], 2232;
+              [|3;2;3;2|], 3232; [|4;2;3;2|], 4232];
+  test 4 true (checkgen ba log);
 
 (* Zero-dimensional arrays *)
   testing_function "------ Array0 --------";
@@ -886,6 +1046,12 @@ let tests () =
                   {im=0.5;re= -2.0}, {im=0.5;re= -2.0};
                   {im=3.1415;re=1.2345678}, {im=3.1415;re=1.2345678}]);
 
+  testing_function "init";
+  let ba = Array0.init int c_layout 10 in
+  test 1 ba (Array0.of_value int c_layout 10);
+
+  let ba = Array0.init int fortran_layout 10 in
+  test 2 ba (Array0.of_value int fortran_layout 10);
 
 (* Kind size *)
   testing_function "kind_size_in_bytes";
@@ -945,7 +1111,7 @@ let tests () =
   test 9 (Genarray.get c [|0|]) 3;
   test 10 (Genarray.get (Genarray.slice_left c [|0|]) [||]) 3;
 
-(* I/O *)
+ (* I/O *)
 
   print_newline();
   testing_function "------ I/O --------";

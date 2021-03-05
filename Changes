@@ -133,6 +133,10 @@ Working version
 - #9781: add injectivity annotations to parameterized abstract types
   (Jeremy Yallop, review by Nicolás Ojeda Bär)
 
+* #9765: add init functions to Bigarray.
+  (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär, and
+   Xavier Leroy)
+
 * #9554: add primitive __FUNCTION__ that returns the name of the current method
   or function, including any enclosing module or class.
   (Nicolás Ojeda Bär, Stephen Dolan, review by Stephen Dolan)
@@ -314,6 +318,9 @@ Working version
 - #9804: Build C stubs of libraries in otherlibs/ with debug info.
   (Stephen Dolan, review by Sébastien Hinderer and David Allsopp)
 
+- #9824: Honour the CFLAGS and CPPFLAGS variables.
+  (Sébastien Hinderer, review by David Allsopp)
+
 ### Bug fixes:
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
@@ -353,6 +360,13 @@ Working version
 - #9759, #9767: Spurious GADT ambiguity without -principal
   (Jacques Garrigue, report by Thomas Refis,
    review by Thomas Refis and Gabriel Scherer)
+
+- #9825, #9830: the C global variable caml_fl_merge and the C function
+  caml_spacetime_my_profinfo (bytecode version) were declared and
+  defined with different types.  This is undefined behavior and
+  cancause link-time errors with link-time optimization (LTO).
+  (Xavier Leroy, report by Richard Jones, review by Nicolás Ojeda Bär)
+
 
 OCaml 4.11
 ----------

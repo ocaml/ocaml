@@ -100,7 +100,8 @@ st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
 
 partialclean:
 	rm -f *.cm*
@@ -162,7 +163,7 @@ endif
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
-	$$(DEP_CC) $$(OC_CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
+	$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
 endef
 
 $(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
