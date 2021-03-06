@@ -98,6 +98,10 @@ void caml_set_major_window (int);
 */
 void caml_finalise_heap (void);
 
+#ifdef NAKED_POINTERS_CHECKER
+extern int caml_naked_pointers_detected;
+#endif
+
 #endif /* CAML_INTERNALiS */
 
 #endif /* CAML_MAJOR_GC_H */
