@@ -178,7 +178,10 @@ let rec expr_size env = function
 let transl_constant dbg = function
   | Uconst_int n ->
       int_const dbg n
-  | Uconst_ref (label, _) ->
+  | Uconst_ref (label, def_opt) ->
+      Option.iter
+        (fun def -> Cmmgen_state.add_structured_constant label def)
+        def_opt;
       Cconst_symbol (label, dbg)
 
 let emit_constant cst cont =
@@ -992,17 +995,17 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* Boxed integers *)
   | Paddbint bi ->
-      box_int dbg bi (Cop(Caddi,
-                      [transl_unbox_int_low dbg env bi arg1;
-                       transl_unbox_int_low dbg env bi arg2], dbg))
+      box_int dbg bi (add_int
+                        (transl_unbox_int_low dbg env bi arg1)
+                        (transl_unbox_int_low dbg env bi arg2) dbg)
   | Psubbint bi ->
-      box_int dbg bi (Cop(Csubi,
-                      [transl_unbox_int_low dbg env bi arg1;
-                       transl_unbox_int_low dbg env bi arg2], dbg))
+      box_int dbg bi (sub_int
+                        (transl_unbox_int_low dbg env bi arg1)
+                        (transl_unbox_int_low dbg env bi arg2) dbg)
   | Pmulbint bi ->
-      box_int dbg bi (Cop(Cmuli,
-                      [transl_unbox_int_low dbg env bi arg1;
-                       transl_unbox_int_low dbg env bi arg2], dbg))
+      box_int dbg bi (mul_int
+                        (transl_unbox_int_low dbg env bi arg1)
+                        (transl_unbox_int_low dbg env bi arg2) dbg)
   | Pdivbint { size = bi; is_safe } ->
       box_int dbg bi (safe_div_bi is_safe
                       (transl_unbox_int dbg env bi arg1)
@@ -1026,18 +1029,18 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int_low dbg env bi arg1;
                       transl_unbox_int_low dbg env bi arg2], dbg))
   | Plslbint bi ->
-      box_int dbg bi (Cop(Clsl,
-                     [transl_unbox_int_low dbg env bi arg1;
-                      untag_int(transl env arg2) dbg], dbg))
+      box_int dbg bi (lsl_int
+                        (transl_unbox_int_low dbg env bi arg1)
+                        (untag_int(transl env arg2) dbg) dbg)
   | Plsrbint bi ->
-      box_int dbg bi (Cop(Clsr,
-                     [make_unsigned_int bi (transl_unbox_int dbg env bi arg1)
-                                        dbg;
-                      untag_int(transl env arg2) dbg], dbg))
+      box_int dbg bi (lsr_int
+                        (make_unsigned_int bi (transl_unbox_int dbg env bi arg1)
+                                        dbg)
+                        (untag_int(transl env arg2) dbg) dbg)
   | Pasrbint bi ->
-      box_int dbg bi (Cop(Casr,
-                     [transl_unbox_int dbg env bi arg1;
-                      untag_int(transl env arg2) dbg], dbg))
+      box_int dbg bi (asr_int
+                        (transl_unbox_int dbg env bi arg1)
+                        (untag_int(transl env arg2) dbg) dbg)
   | Pbintcomp(bi, cmp) ->
       tag_int (Cop(Ccmpi cmp,
                      [transl_unbox_int dbg env bi arg1;

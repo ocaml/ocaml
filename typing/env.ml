@@ -1479,6 +1479,16 @@ let module_declaration_address env id presence md =
   | Mp_present ->
       EnvLazy.create_forced (Aident id)
 
+let is_identchar c =
+  (* This should be kept in sync with the [identchar_latin1] character class
+     in [lexer.mll] *)
+  match c with
+  | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214'
+  | '\216'..'\246' | '\248'..'\255' | '\'' | '0'..'9' ->
+    true
+  | _ ->
+    false
+
 let rec components_of_module_maker
           {cm_env; cm_freshening_subst; cm_prefixing_subst;
            cm_path; cm_addr; cm_mty} : _ result =
@@ -1655,7 +1665,7 @@ and check_value_name name loc =
   (* Note: we could also check here general validity of the
      identifier, to protect against bad identifiers forged by -pp or
      -ppx preprocessors. *)
-  if String.length name > 0 && (name.[0] = '#') then
+  if String.length name > 0 && not (is_identchar name.[0]) then
     for i = 1 to String.length name - 1 do
       if name.[i] = '#' then
         error (Illegal_value_name(loc, name))
