@@ -1813,82 +1813,89 @@ and type_pat_aux
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
-      let may_split, must_split =
-        match get_splitting_mode mode with
-        | None -> false, false
-        | Some Backtrack_or -> true, true
-        | Some (Refine_or _) -> true, false in
-      let state = save_state env in
-      let split_or sp =
-        assert may_split;
-        let typ pat = type_pat category pat expected_ty k in
-        find_valid_alternative (fun pat -> set_state state env; typ pat) sp in
-      if must_split then split_or sp else begin
-        let initial_pattern_variables = !pattern_variables in
-        let initial_module_variables = !module_variables in
-        let equation_level = !gadt_equations_level in
-        let outter_lev = get_current_level () in
-        (* introduce a new scope *)
-        begin_def ();
-        let lev = get_current_level () in
-        gadt_equations_level := Some lev;
-        let env1 = ref !env in
-        let inside_or = enter_nonsplit_or mode in
-        let type_pat_result env sp : (_, abort_reason) result =
-          match
-            type_pat category ~mode:inside_or sp expected_ty ~env (fun x -> x)
-          with
-          | res -> Ok res
-          | exception Need_backtrack -> Error Adds_constraints
-          | exception Empty_branch -> Error Empty
-        in
-        let p1 = type_pat_result env1 sp1 in
-        let p1_variables = !pattern_variables in
-        let p1_module_variables = !module_variables in
-        pattern_variables := initial_pattern_variables;
-        module_variables := initial_module_variables;
-        let env2 = ref !env in
-        let p2 = type_pat_result env2 sp2 in
-        end_def ();
-        gadt_equations_level := equation_level;
-        let p2_variables = !pattern_variables in
-        (* Make sure no variable with an ambiguous type gets added to the
-           environment. *)
-        List.iter (fun { pv_type; pv_loc; _ } ->
-          check_scope_escape pv_loc !env1 outter_lev pv_type
-        ) p1_variables;
-        List.iter (fun { pv_type; pv_loc; _ } ->
-          check_scope_escape pv_loc !env2 outter_lev pv_type
-        ) p2_variables;
-        begin match p1, p2 with
-        | Error Empty, Error Empty ->
-            raise Empty_branch
-        | Error Adds_constraints, Error _
-        | Error _, Error Adds_constraints ->
-            let inside_nonsplit_or =
-              match get_splitting_mode mode with
-              | None | Some Backtrack_or -> false
-              | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or in
-            if inside_nonsplit_or
-            then raise Need_backtrack
-            else split_or sp
-        | Ok p, Error _
-        | Error _, Ok p ->
-            rp k p
-        | Ok p1, Ok p2 ->
-            let alpha_env =
-              enter_orpat_variables loc !env p1_variables p2_variables in
-            let p2 = alpha_pat alpha_env p2 in
-            pattern_variables := p1_variables;
-            module_variables := p1_module_variables;
-            let make_pat desc =
-              { pat_desc = desc;
-                pat_loc = loc; pat_extra=[];
-                pat_type = instance expected_ty;
-                pat_attributes = sp.ppat_attributes;
-                pat_env = !env } in
-            rp k (make_pat (Tpat_or(p1, p2, None)))
-        end
+      begin match mode with
+      | Normal ->
+          let initial_pattern_variables = !pattern_variables in
+          let initial_module_variables = !module_variables in
+          let equation_level = !gadt_equations_level in
+          let outter_lev = get_current_level () in
+          (* introduce a new scope *)
+          begin_def ();
+          let lev = get_current_level () in
+          gadt_equations_level := Some lev;
+          let type_pat_rec env sp =
+            type_pat category sp expected_ty ~env (fun x -> x) in
+          let env1 = ref !env in
+          let p1 = type_pat_rec env1 sp1 in
+          let p1_variables = !pattern_variables in
+          let p1_module_variables = !module_variables in
+          pattern_variables := initial_pattern_variables;
+          module_variables := initial_module_variables;
+          let env2 = ref !env in
+          let p2 = type_pat_rec env2 sp2 in
+          end_def ();
+          gadt_equations_level := equation_level;
+          let p2_variables = !pattern_variables in
+          (* Make sure no variable with an ambiguous type gets added to the
+             environment. *)
+          List.iter (fun { pv_type; pv_loc; _ } ->
+            check_scope_escape pv_loc !env1 outter_lev pv_type
+          ) p1_variables;
+          List.iter (fun { pv_type; pv_loc; _ } ->
+            check_scope_escape pv_loc !env2 outter_lev pv_type
+          ) p2_variables;
+          let alpha_env =
+            enter_orpat_variables loc !env p1_variables p2_variables in
+          let p2 = alpha_pat alpha_env p2 in
+          pattern_variables := p1_variables;
+          module_variables := p1_module_variables;
+          rp k { pat_desc = Tpat_or (p1, p2, None);
+                 pat_loc = loc; pat_extra = [];
+                 pat_type = instance expected_ty;
+                 pat_attributes = sp.ppat_attributes;
+                 pat_env = !env }
+      | Counter_example {splitting_mode; _} ->
+          (* We are in counter-example mode, but try to avoid backtracking *)
+          let must_split =
+            match splitting_mode with
+            | Backtrack_or -> true
+            | Refine_or _ -> false in
+          let state = save_state env in
+          let split_or sp =
+            let typ pat = type_pat category pat expected_ty k in
+            find_valid_alternative (fun pat -> set_state state env; typ pat) sp
+          in
+          if must_split then split_or sp else
+          let type_pat_result env sp : (_, abort_reason) result =
+            let mode = enter_nonsplit_or mode in
+            match type_pat category ~mode sp expected_ty ~env (fun x -> x) with
+            | res -> Ok res
+            | exception Need_backtrack -> Error Adds_constraints
+            | exception Empty_branch -> Error Empty
+          in
+          let p1 = type_pat_result (ref !env) sp1 in
+          let p2 = type_pat_result (ref !env) sp2 in
+          match p1, p2 with
+          | Error Empty, Error Empty ->
+              raise Empty_branch
+          | Error Adds_constraints, Error _
+          | Error _, Error Adds_constraints ->
+              let inside_nonsplit_or =
+                match splitting_mode with
+                | Backtrack_or -> false
+                | Refine_or {inside_nonsplit_or} -> inside_nonsplit_or in
+              if inside_nonsplit_or
+              then raise Need_backtrack
+              else split_or sp
+          | Ok p, Error _
+          | Error _, Ok p ->
+              rp k p
+          | Ok p1, Ok p2 ->
+              rp k { pat_desc = Tpat_or (p1, p2, None);
+                     pat_loc = loc; pat_extra = [];
+                     pat_type = instance expected_ty;
+                     pat_attributes = sp.ppat_attributes;
+                     pat_env = !env }
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
@@ -1903,6 +1910,7 @@ and type_pat_aux
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_constraint(sp, sty) ->
+      assert construction_not_used_in_counterexamples;
       (* Pretend separate = true *)
       begin_def();
       let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
@@ -1930,12 +1938,14 @@ and type_pat_aux
              { p with pat_type = ty; pat_extra = extra::p.pat_extra }
         in k p)
   | Ppat_type lid ->
+      assert construction_not_used_in_counterexamples;
       let (path, p,ty) = build_or_pat !env loc lid in
       unify_pat_types ~refine loc env ty (instance expected_ty);
       k @@ pure category @@ { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes)
         :: p.pat_extra }
   | Ppat_open (lid,p) ->
+      assert construction_not_used_in_counterexamples;
       let path, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc lid in
       let new_env = ref new_env in
@@ -2646,6 +2656,17 @@ let unify_exp env exp expected_ty =
   with Error(loc, env, Expr_type_clash(trace, tfc, None)) ->
     raise (Error(loc, env, Expr_type_clash(trace, tfc, Some exp.exp_desc)))
 
+(* If [is_inferred e] is true, [e] will be typechecked without using
+   the "expected type" provided by the context. *)
+
+let rec is_inferred sexp =
+  match sexp.pexp_desc with
+  | Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
+  | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
+  | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
+  | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
+  | _ -> false
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -2823,25 +2844,42 @@ and type_expect_
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
-      begin_def (); (* one more level for non-returning functions *)
-      if !Clflags.principal then begin_def ();
-      let funct = type_exp env sfunct in
-      if !Clflags.principal then begin
-          end_def ();
-          generalize_structure funct.exp_type
-        end;
       let rec lower_args seen ty_fun =
         let ty = expand_head env ty_fun in
         if List.memq ty seen then () else
-        match ty.desc with
-          Tarrow (_l, ty_arg, ty_fun, _com) ->
-            (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
-            lower_args (ty::seen) ty_fun
-        | _ -> ()
+          match ty.desc with
+            Tarrow (_l, ty_arg, ty_fun, _com) ->
+              (try unify_var env (newvar()) ty_arg
+               with Unify _ -> assert false);
+              lower_args (ty::seen) ty_fun
+          | _ -> ()
       in
-      let ty = instance funct.exp_type in
-      end_def ();
-      wrap_trace_gadt_instances env (lower_args []) ty;
+      let type_sfunct sfunct =
+        begin_def (); (* one more level for non-returning functions *)
+        if !Clflags.principal then begin_def ();
+        let funct = type_exp env sfunct in
+        if !Clflags.principal then begin
+          end_def ();
+          generalize_structure funct.exp_type
+        end;
+        let ty = instance funct.exp_type in
+        end_def ();
+        wrap_trace_gadt_instances env (lower_args []) ty;
+        funct
+      in
+      let funct, sargs =
+        let funct = type_sfunct sfunct in
+        match funct.exp_desc, sargs with
+        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%revapply"}}),
+          [Nolabel, sarg; Nolabel, actual_sfunct]
+          when is_inferred actual_sfunct ->
+            type_sfunct actual_sfunct, [Nolabel, sarg]
+        | Texp_ident (_, _, {val_kind = Val_prim {prim_name = "%apply"}}),
+          [Nolabel, actual_sfunct; Nolabel, sarg] ->
+            type_sfunct actual_sfunct, [Nolabel, sarg]
+        | _ ->
+            funct, sargs
+      in
       begin_def ();
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
@@ -4209,14 +4247,6 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   let no_labels ty =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) Nolabel) ls
-  in
-  let rec is_inferred sexp =
-    match sexp.pexp_desc with
-      Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
-    | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
-    | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
-    | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
-    | _ -> false
   in
   match expand_head env ty_expected' with
     {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv}

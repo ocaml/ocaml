@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 open Printf
-open Ocamlmklibconfig
 
 let syslib x =
   if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
@@ -34,7 +33,7 @@ let mklib out files opts =
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
 let compiler_path name =
-  if Sys.os_type = "Win32" then name else Filename.concat bindir name
+  if Sys.os_type = "Win32" then name else Filename.concat Config.bindir name
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)
@@ -42,7 +41,7 @@ and c_objs = ref []         (* .o, .a, .obj, .lib, .dll, .dylib, .so files to
                                pass to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
-and dynlink = ref supports_shared_libraries
+and dynlink = ref Config.supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
 and c_Lopts = ref []      (* options to pass to mksharedlib and ocamlc -cclib *)
@@ -304,7 +303,7 @@ let build_libs () =
              (String.concat " " !c_objs)
              (String.concat " " !c_opts)
              (String.concat " " !ld_opts)
-             (make_rpath mksharedlibrpath)
+             (make_rpath Config.mksharedlibrpath)
              (String.concat " " !c_libs)
              (String.concat " " flexdll_dirs)
           )
@@ -330,7 +329,7 @@ let build_libs () =
                   (Filename.basename !output_c)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt default_rpath)
+                  (make_rpath_ccopt Config.default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs));
   if !native_objs <> [] then
@@ -344,7 +343,7 @@ let build_libs () =
                   (String.concat " " !native_objs)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt default_rpath)
+                  (make_rpath_ccopt Config.default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 

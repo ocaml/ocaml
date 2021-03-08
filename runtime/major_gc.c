@@ -127,6 +127,10 @@ double caml_gc_clock = 0.0;
 static unsigned long major_gc_counter = 0;
 #endif
 
+#ifdef NAKED_POINTERS_CHECKER
+int caml_naked_pointers_detected = 0;
+#endif
+
 void (*caml_major_gc_hook)(void) = NULL;
 
 /* This function prunes the mark stack if it's about to overflow. It does so
@@ -322,7 +326,7 @@ void caml_shrink_mark_stack () {
 
   caml_gc_message (0x08, "Shrinking mark stack to %"
                   ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                  init_stack_bsize);
+                  init_stack_bsize / 1024);
 
   shrunk_stack = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
                                               init_stack_bsize);
@@ -1163,6 +1167,7 @@ static void is_naked_pointer_safe (value v, value *p)
   if (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40))
     return;
 
+  caml_naked_pointers_detected = 1;
   if (!Is_black_hd(h)) {
     fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
                      "non-black head (tag=%d)\n", p, (void*)v, t);
@@ -1175,6 +1180,7 @@ static void is_naked_pointer_safe (value v, value *p)
   return;
 
  on_segfault:
+  caml_naked_pointers_detected = 1;
   fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
            "Cannot read head.\n", p, (void*)v);
 }

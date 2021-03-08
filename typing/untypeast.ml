@@ -559,6 +559,8 @@ let signature_item sub item =
         Psig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype mtd ->
         Psig_modtype (sub.module_type_declaration sub mtd)
+    | Tsig_modtypesubst mtd ->
+        Psig_modtypesubst (sub.module_type_declaration sub mtd)
     | Tsig_open od ->
         Psig_open (sub.open_description sub od)
     | Tsig_include incl ->
@@ -636,10 +638,16 @@ let with_constraint sub (_path, lid, cstr) =
       Pwith_type (map_loc sub lid, sub.type_declaration sub decl)
   | Twith_module (_path, lid2) ->
       Pwith_module (map_loc sub lid, map_loc sub lid2)
+  | Twith_modtype mty ->
+      let mty = sub.module_type sub mty in
+      Pwith_modtype (map_loc sub lid,mty)
   | Twith_typesubst decl ->
      Pwith_typesubst (map_loc sub lid, sub.type_declaration sub decl)
   | Twith_modsubst (_path, lid2) ->
       Pwith_modsubst (map_loc sub lid, map_loc sub lid2)
+  | Twith_modtypesubst mty ->
+      let mty = sub.module_type sub mty in
+      Pwith_modtypesubst (map_loc sub lid, mty)
 
 let module_expr (sub : mapper) mexpr =
   let loc = sub.location sub mexpr.mod_loc in

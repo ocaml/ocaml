@@ -311,8 +311,10 @@ and add_modtype bv mty =
         (function
           | Pwith_type (_, td) -> add_type_declaration bv td
           | Pwith_module (_, lid) -> add_module_path bv lid
+          | Pwith_modtype (_, mty) -> add_modtype bv mty
           | Pwith_typesubst (_, td) -> add_type_declaration bv td
           | Pwith_modsubst (_, lid) -> add_module_path bv lid
+          | Pwith_modtypesubst (_, mty) -> add_modtype bv mty
         )
         cstrl
   | Pmty_typeof m -> add_module_expr bv m
@@ -380,7 +382,7 @@ and add_sig_item (bv, m) item =
       let bv' = add bv and m' = add m in
       List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
       (bv', m')
-  | Psig_modtype x ->
+  | Psig_modtype x | Psig_modtypesubst x->
       begin match x.pmtd_type with
         None -> ()
       | Some mty -> add_modtype bv mty

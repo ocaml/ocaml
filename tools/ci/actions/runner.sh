@@ -21,6 +21,8 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
+MAKE_WARN="$MAKE --warn-undefined-variables"
+
 export PATH=$PREFIX/bin:$PATH
 
 Configure () {
@@ -61,8 +63,8 @@ EOF
 }
 
 Build () {
-  $MAKE world.opt
-  $MAKE ocamlnat
+  script --return --command "$MAKE_WARN world.opt" build.log
+  script --return --append --command "$MAKE_WARN ocamlnat" build.log
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
 }
@@ -86,6 +88,15 @@ Install () {
 }
 
 Checks () {
+  set +x
+  STATUS=0
+  if grep -Fq ' warning: undefined variable ' build.log; then
+    echo -e '\e[31mERROR\e[0m Undefined Makefile variables detected!'
+    grep -F ' warning: undefined variable ' build.log | sort | uniq
+    STATUS=1
+  fi
+  rm build.log
+  set -x
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
@@ -106,6 +117,7 @@ Checks () {
   test -z "$(git status --porcelain)"
   # Check that there are no ignored files
   test -z "$(git ls-files --others -i --exclude-standard)"
+  exit $STATUS
 }
 
 CheckManual () {
@@ -121,10 +133,23 @@ EOF
 
 }
 
+# ReportBuildStatus accepts an exit code as a parameter (defaults to 1) and also
+# instructs GitHub Actions to set build-status to 'failed' on non-zero exit or
+# 'success' otherwise.
+ReportBuildStatus () {
+  CODE=${1:-1}
+  if ((CODE)); then
+    STATUS='failed'
+  else
+    STATUS='success'
+  fi
+  echo "::set-output name=build-status::$STATUS"
+  exit $CODE
+}
+
 BasicCompiler () {
-  # The presence of this file can be detected by later steps which
-  # can choose to skip, rather than run (and presumably error).
-  touch compiler-failed-to-build
+  trap ReportBuildStatus ERR
+
   ./configure --disable-dependency-generation \
               --disable-debug-runtime \
               --disable-instrumented-runtime
@@ -133,7 +158,8 @@ BasicCompiler () {
   make -j coldstart
   # And generated files (ocamllex compiles ocamlyacc)
   make -j ocamllex
-  rm -f compiler-failed-to-build
+
+  ReportBuildStatus 0
 }
 
 case $1 in

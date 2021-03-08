@@ -200,9 +200,7 @@ ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
 depincludes :=
 
-ocamllex := $(BEST_OCAMLLEX)
-
-ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -237,12 +235,6 @@ ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
 
 %.cmi: %.mli $(deps_byte)
 	$(ocamlc) -c $<
-
-%.ml %.mli: %.mly
-	$(ocamlyacc) $<
-
-%.ml: %.mll
-	$(ocamllex) $(OCAMLLEX_FLAGS) $<
 
 ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
 	echo '# 1 "$^"' > $@

@@ -568,6 +568,9 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
     (strengthened_modtypes ~loc ~aliasable env ~mark:Mark_both []
        Subst.identity mty1 path1 mty2)
 
+let check_modtype_equiv ~loc env mty1 mty2 =
+  check_modtype_equiv ~loc env ~mark:Mark_both [] mty1 mty2
+
 let () =
   Env.check_functor_application :=
     (fun ~errors ~loc env mty1 path1 mty2 path2 ->

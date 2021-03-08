@@ -71,7 +71,7 @@ endef
 CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -g -nostdlib -I $(ROOTDIR)/stdlib
-CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLLEX ?= $(BOOT_OCAMLLEX)
 INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
                        middle_end middle_end/closure middle_end/flambda \
                        middle_end/flambda/base_types driver toplevel \
@@ -139,22 +139,8 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+$(call byte_and_opt,ocamlmklib,config.cmo \
 	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
-
-
-ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
-	(echo 'let bindir = "$(BINDIR)"'; \
-         echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let default_rpath = "$(RPATH)"'; \
-         echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
-         echo 'let toolpref = "$(TOOLPREF)"';) \
-        > ocamlmklibconfig.ml
-
-beforedepend:: ocamlmklibconfig.ml
-
-clean::
-	rm -f ocamlmklibconfig.ml
 
 # To make custom toplevels
 
@@ -344,9 +330,6 @@ clean::
 	rm -f -- caml-tex caml-tex.exe caml_tex.cm?
 
 # Common stuff
-
-%.ml: %.mll
-	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 %.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) - $<
