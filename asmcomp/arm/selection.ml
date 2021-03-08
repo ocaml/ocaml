@@ -103,8 +103,15 @@ method! regs_for tyv =
                  tyv
                end)
 
-method is_immediate n =
-  is_immediate (Int32.of_int n)
+method! is_immediate op n =
+  match op with
+  | Iadd | Isub | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+      Arch.is_immediate (Int32.of_int n)
+  | _ ->
+      super#is_immediate op n
+
+method is_immediate_test _op n =
+  Arch.is_immediate (Int32.of_int n)
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
@@ -186,18 +193,19 @@ method private iextcall func ty_res ty_args =
 
 method! select_operation op args dbg =
   match (op, args) with
-  (* Recognize special shift arithmetic *)
-    ((Caddv | Cadda | Caddi), [arg; Cconst_int (n, _)])
-    when n < 0 && self#is_immediate (-n) ->
+  (* Recognize special forms of add immediate / sub immediate *)
+  | ((Caddv | Cadda | Caddi), [arg; Cconst_int (n, _)])
+    when n < 0 && Arch.is_immediate (Int32.of_int (-n)) ->
       (Iintop_imm(Isub, -n), [arg])
-  | ((Caddv | Cadda | Caddi as op), args) ->
-      self#select_shift_arith op dbg Ishiftadd Ishiftadd args
   | (Csubi, [arg; Cconst_int (n, _)])
-    when n < 0 && self#is_immediate (-n) ->
+    when n < 0 && Arch.is_immediate (Int32.of_int (-n)) ->
       (Iintop_imm(Iadd, -n), [arg])
   | (Csubi, [Cconst_int (n, _); arg])
-    when self#is_immediate n ->
+    when Arch.is_immediate (Int32.of_int n) ->
       (Ispecific(Irevsubimm n), [arg])
+  (* Recognize special shift arithmetic *)
+  | ((Caddv | Cadda | Caddi as op), args) ->
+      self#select_shift_arith op dbg Ishiftadd Ishiftadd args
   | (Csubi as op, args) ->
       self#select_shift_arith op dbg Ishiftsub Ishiftsubrev args
   | (Cand as op, args) ->
@@ -210,11 +218,6 @@ method! select_operation op args dbg =
       [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int (n, _)], _); arg2])
     when n > 0 && n < 32 ->
       (Ispecific(Ishiftcheckbound(select_shiftop op, n)), [arg1; arg2])
-  (* ARM does not support immediate operands for multiplication *)
-  | (Cmuli, args) ->
-      (Iintop Imul, args)
-  | (Cmulhi, args) ->
-      (Iintop Imulh, args)
   (* Turn integer division/modulus into runtime ABI calls *)
   | (Cdivi, args) ->
       (self#iextcall "__aeabi_idiv" typ_int [], args)
