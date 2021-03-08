@@ -62,7 +62,7 @@ let main argv ppf =
           "Options -i and -stop-after (%s) \
            are  incompatible with -pack, -a, -output-obj"
           (String.concat "|"
-             (Clflags.Compiler_pass.available_pass_names ~native:false))
+             (P.available_pass_names ~filter:(fun _ -> true) ~native:false))
       | Some P.Scheduling -> assert false (* native only *)
     end;
     if !make_archive then begin

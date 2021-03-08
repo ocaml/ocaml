@@ -211,7 +211,7 @@ What GC messages to print to stderr.  This is a sum of values selected
 from the following:
 
 .B 0x001
-Start of major GC cycle.
+Start and end of major GC cycle.
 
 .B 0x002
 Minor collection and major GC slice.

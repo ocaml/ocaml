@@ -314,8 +314,9 @@ let link_shared ~ppf_dump objfiles output_name =
       then output_name ^ ".startup" ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
     let startup_obj = output_name ^ ".startup" ^ ext_obj in
-    Asmgen.compile_unit
-      startup !Clflags.keep_startup_file startup_obj
+    Asmgen.compile_unit ~output_prefix:output_name
+      ~asm_filename:startup ~keep_asm:!Clflags.keep_startup_file
+      ~obj_filename:startup_obj
       (fun () ->
          make_shared_startup_file ~ppf_dump
            (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
@@ -382,8 +383,9 @@ let link ~ppf_dump objfiles output_name =
       then output_name ^ ".startup" ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
     let startup_obj = Filename.temp_file "camlstartup" ext_obj in
-    Asmgen.compile_unit
-      startup !Clflags.keep_startup_file startup_obj
+    Asmgen.compile_unit ~output_prefix:output_name
+      ~asm_filename:startup ~keep_asm:!Clflags.keep_startup_file
+      ~obj_filename:startup_obj
       (fun () -> make_startup_file ~ppf_dump units_tolink ~crc_interfaces);
     Misc.try_finally
       (fun () ->

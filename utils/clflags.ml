@@ -414,6 +414,26 @@ let error_style_reader = {
 
 let unboxed_types = ref false
 
+(* This is used by the -save-ir-after option. *)
+module Compiler_ir = struct
+  type t = Linear
+  let extension t =
+    let ext =
+    match t with
+    | Linear -> "linear"
+    in
+    ".cmir-" ^ ext
+
+  let magic t =
+    let open Config in
+    match t with
+    | Linear -> linear_magic_number
+
+  let all = [
+    Linear;
+  ]
+end
+
 (* This is used by the -stop-after option. *)
 module Compiler_pass = struct
   (* If you add a new pass, the following must be updated:
@@ -450,10 +470,14 @@ module Compiler_pass = struct
     | _ -> false
 
   let enabled is_native t = not (is_native_only t) || is_native
+  let can_save_ir_after = function
+    | Scheduling -> true
+    | _ -> false
 
-  let available_pass_names ~native =
+  let available_pass_names ~filter ~native =
     passes
     |> List.filter (enabled native)
+    |> List.filter filter
     |> List.map to_string
 end
 
@@ -465,6 +489,21 @@ let should_stop_after pass =
     match !stop_after with
     | None -> false
     | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
+
+let save_ir_after = ref []
+
+let should_save_ir_after pass =
+  List.mem pass !save_ir_after
+
+let set_save_ir_after pass enabled =
+  let other_passes = List.filter ((<>) pass) !save_ir_after in
+  let new_passes =
+    if enabled then
+      pass :: other_passes
+    else
+      other_passes
+  in
+  save_ir_after := new_passes
 
 module String = Misc.Stdlib.String
 

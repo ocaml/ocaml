@@ -983,7 +983,7 @@ variables.
 
 Example:
 \begin{verbatim}
-value bar (value v1, value v2, value v3)
+CAMLprim value bar (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   CAMLlocal1 (result);
@@ -1006,7 +1006,7 @@ block (i.e. "Is_block("\var{b}")" must be true).
 
 Example:
 \begin{verbatim}
-value bar (value v1, value v2, value v3)
+CAMLprim value bar (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   CAMLlocal1 (result);
@@ -1328,62 +1328,62 @@ static value alloc_window(WINDOW * w)
   return v;
 }
 
-value caml_curses_initscr(value unit)
+CAMLprim value caml_curses_initscr(value unit)
 {
   CAMLparam1 (unit);
   CAMLreturn (alloc_window(initscr()));
 }
 
-value caml_curses_endwin(value unit)
+CAMLprim value caml_curses_endwin(value unit)
 {
   CAMLparam1 (unit);
   endwin();
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_refresh(value unit)
+CAMLprim value caml_curses_refresh(value unit)
 {
   CAMLparam1 (unit);
   refresh();
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_wrefresh(value win)
+CAMLprim value caml_curses_wrefresh(value win)
 {
   CAMLparam1 (win);
   wrefresh(Window_val(win));
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_newwin(value nlines, value ncols, value x0, value y0)
+CAMLprim value caml_curses_newwin(value nlines, value ncols, value x0, value y0)
 {
   CAMLparam4 (nlines, ncols, x0, y0);
   CAMLreturn (alloc_window(newwin(Int_val(nlines), Int_val(ncols),
                                   Int_val(x0), Int_val(y0))));
 }
 
-value caml_curses_addch(value c)
+CAMLprim value caml_curses_addch(value c)
 {
   CAMLparam1 (c);
   addch(Int_val(c));            /* Characters are encoded like integers */
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_mvwaddch(value win, value x, value y, value c)
+CAMLprim value caml_curses_mvwaddch(value win, value x, value y, value c)
 {
   CAMLparam4 (win, x, y, c);
   mvwaddch(Window_val(win), Int_val(x), Int_val(y), Int_val(c));
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_addstr(value s)
+CAMLprim value caml_curses_addstr(value s)
 {
   CAMLparam1 (s);
   addstr(String_val(s));
   CAMLreturn (Val_unit);
 }
 
-value caml_curses_mvwaddstr(value win, value x, value y, value s)
+CAMLprim value caml_curses_mvwaddstr(value win, value x, value y, value s)
 {
   CAMLparam4 (win, x, y, s);
   mvwaddstr(Window_val(win), Int_val(x), Int_val(y), String_val(s));
@@ -1478,7 +1478,7 @@ can crash since \var{v} does not contain a valid value.
 
 Example:
 \begin{verbatim}
-    value call_caml_f_ex(value closure, value arg)
+    CAMLprim value call_caml_f_ex(value closure, value arg)
     {
       CAMLparam2(closure, arg);
       CAMLlocal2(res, tmp);
@@ -2169,7 +2169,7 @@ to a C function and a Fortran function.
     extern void my_c_function(double * data, int dimx, int dimy);
     extern void my_fortran_function_(double * data, int * dimx, int * dimy);
 
-    value caml_stub(value bigarray)
+    CAMLprim value caml_stub(value bigarray)
     {
       int dimx = Caml_ba_array_val(bigarray)->dim[0];
       int dimy = Caml_ba_array_val(bigarray)->dim[1];
@@ -2213,7 +2213,7 @@ Fortran arrays can be made available to OCaml.
     extern long my_c_array[100][200];
     extern float my_fortran_array_[300][400];
 
-    value caml_get_c_array(value unit)
+    CAMLprim value caml_get_c_array(value unit)
     {
       long dims[2];
       dims[0] = 100; dims[1] = 200;
@@ -2221,7 +2221,7 @@ Fortran arrays can be made available to OCaml.
                            2, my_c_array, dims);
     }
 
-    value caml_get_fortran_array(value unit)
+    CAMLprim value caml_get_fortran_array(value unit)
     {
       return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
                                 2, my_fortran_array_, 300L, 400L);

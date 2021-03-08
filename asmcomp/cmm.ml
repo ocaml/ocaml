@@ -109,7 +109,18 @@ let negate_float_comparison = Lambda.negate_float_comparison
 let swap_float_comparison = Lambda.swap_float_comparison
 type label = int
 
-let label_counter = ref 99
+let init_label = 99
+
+let label_counter = ref init_label
+
+let set_label l =
+  if (l < !label_counter) then begin
+    Misc.fatal_errorf "Cannot set label counter to %d, it must be >= %d"
+      l !label_counter ()
+  end;
+  label_counter := l
+
+let cur_label () = !label_counter
 
 let new_label() = incr label_counter; !label_counter
 
@@ -225,7 +236,7 @@ let ccatch (i, ids, e1, e2, dbg) =
   Ccatch(Nonrecursive, [i, ids, e2, dbg], e1)
 
 let reset () =
-  label_counter := 99
+  label_counter := init_label
 
 let iter_shallow_tail f = function
   | Clet(_, _, body) | Cphantom_let (_, _, body) | Clet_mut(_, _, _, body) ->

@@ -140,6 +140,10 @@ Working version
   needed as the pagetable heads towards retirement).
   (David Allsopp, review by Xavier Leroy)
 
+- #9949: Clarify documentation of GC message 0x1 and make sure it is
+  displayed every time a major cycle is forcibly finished.
+  (Damien Doligez, review by Xavier Leroy)
+
 - #9951: Ensure that the mark stack push optimisation handles naked pointers
   (KC Sivaramakrishnan, reported by Enguerrand Decorne, review by Gabriel
    Scherer, and Xavier Leroy)
@@ -433,6 +437,9 @@ Working version
 
 -  #9590: fix pprint of extension constructors (and exceptions) that rebind
    (Chet Murthy, review by octachron@)
+
+- #8939: Command-line option to save Linear IR before emit.
+  (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
 
 ### Build system:
 
