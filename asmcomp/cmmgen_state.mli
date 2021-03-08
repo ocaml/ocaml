@@ -41,5 +41,7 @@ val no_more_functions : unit -> bool
 
 val set_structured_constants : Clambda.preallocated_constant list -> unit
 
+val add_structured_constant : string -> Clambda.ustructured_constant -> unit
+
 (* Also looks up using Compilenv.structured_constant_of_symbol *)
 val structured_constant_of_sym : string -> Clambda.ustructured_constant option

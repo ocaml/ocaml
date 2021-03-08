@@ -69,6 +69,10 @@ tests/backtrace/'callstack.ml' with 1.1.1 (native)
 tests/lib-threads/'beat.ml' with 1.2 (native)
 tests/lib-threads/'beat.ml' with 1.1 (bytecode)
 
+# TODO: need to implement this error behaviour https://github.com/ocaml/ocaml/pull/9846
+tests/lib-threads/'mutex_errors.ml' with 1.1 (bytecode)
+tests/lib-threads/'mutex_errors.ml' with 1.2 (native)
+
 # ocamldebug is broken (#34)
 tool-debugger
 

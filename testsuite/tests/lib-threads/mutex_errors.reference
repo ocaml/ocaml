@@ -1,0 +1,20 @@
+---- Self deadlock
+Acquiring mutex
+Acquiring mutex again
+Error reported
+Releasing mutex
+Acquiring mutex from another thread
+Success
+---- Unlock twice
+Acquiring mutex
+Releasing mutex
+Releasing mutex again
+Error reported
+Releasing mutex one more time
+Error reported
+---- Unlock in other thread
+Acquiring mutex
+Releasing mutex from another thread
+Error reported
+Releasing mutex from another thread (again)
+Error reported
