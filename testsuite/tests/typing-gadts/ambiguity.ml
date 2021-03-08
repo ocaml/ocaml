@@ -48,6 +48,13 @@ let ret_ei1 (type a) (b : bool) (wit : (a, int) eq) (x : a) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else 0
                                  ^
+Error: This expression has type int but an expression was expected of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 29-30:
+3 |   | Refl -> if b then x else 0
+                                 ^
 Error: This expression has type int but an expression was expected of type
          a = int
        This instance of int is ambiguous:
@@ -60,6 +67,13 @@ let ret_ei2 (type a) (b : bool) (wit : (a, int) eq) (x : a) =
   | _ -> x
 ;;
 [%%expect{|
+Line 3, characters 29-30:
+3 |   | Refl -> if b then x else 0
+                                 ^
+Error: This expression has type int but an expression was expected of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else 0
                                  ^

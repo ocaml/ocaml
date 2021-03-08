@@ -638,8 +638,8 @@ let f (type a) (x : a t) y =
 Line 3, characters 46-47:
 3 |     let module M = struct type b = a let z = (y : b) end
                                                   ^
-Error: This expression has type a = int
-       but an expression was expected of type b = int
+Error: This expression has type 'a but an expression was expected of type
+         a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -704,6 +704,14 @@ Line 2, characters 14-15:
                   ^
 Error: This expression has type < m : a; .. >
        but an expression was expected of type < m : b; .. >
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 2, characters 14-15:
+2 |   fun Eq o -> o
+                  ^
+Error: This expression has type < m : a; .. >
+       but an expression was expected of type < m : b; .. >
        Type a is not compatible with type b = a
        This instance of a is ambiguous:
        it would escape the scope of its equation
@@ -712,6 +720,14 @@ Error: This expression has type < m : a; .. >
 let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
   match eq with Eq -> o ;; (* should fail *)
 [%%expect{|
+Line 2, characters 22-23:
+2 |   match eq with Eq -> o ;; (* should fail *)
+                          ^
+Error: This expression has type < m : a; .. >
+       but an expression was expected of type < m : b; .. >
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
 Line 2, characters 22-23:
 2 |   match eq with Eq -> o ;; (* should fail *)
                           ^
@@ -773,6 +789,14 @@ Line 3, characters 44-45:
                                                 ^
 Error: This expression has type < m : a; .. >
        but an expression was expected of type < m : b >
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 44-45:
+3 |     let r : < m : b > = match eq with Eq -> o in (* fail *)
+                                                ^
+Error: This expression has type < m : a; .. >
+       but an expression was expected of type < m : b >
        Type a is not compatible with type b = a
        This instance of a is ambiguous:
        it would escape the scope of its equation
@@ -786,8 +810,7 @@ Line 2, characters 14-15:
                   ^
 Error: This expression has type [> `A of a ]
        but an expression was expected of type [> `A of b ]
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+       This instance of b is ambiguous:
        it would escape the scope of its equation
 |}, Principal{|
 Line 2, characters 9-15:
@@ -801,6 +824,14 @@ Error: This expression has type ([> `A of b ] as 'a) -> 'a
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
   match eq with Eq -> v ;; (* should fail *)
 [%%expect{|
+Line 2, characters 22-23:
+2 |   match eq with Eq -> v ;; (* should fail *)
+                          ^
+Error: This expression has type [> `A of a ]
+       but an expression was expected of type [> `A of b ]
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
 Line 2, characters 22-23:
 2 |   match eq with Eq -> v ;; (* should fail *)
                           ^
@@ -1095,7 +1126,8 @@ Line 3, characters 2-26:
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor $1 would escape its scope
+       This instance of $1 is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
@@ -1111,7 +1143,12 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   x, x#foo, x#bar
 ;;
 [%%expect{|
-val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
+Line 3, characters 5-10:
+3 |   x, x#foo, x#bar
+         ^^^^^
+Error: This expression has type int but an expression was expected of type 'a
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 (* PR#5554 *)
@@ -1196,6 +1233,14 @@ Line 5, characters 24-25:
 5 |     if true then a else b
                             ^
 Error: This expression has type b = int
+       but an expression was expected of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 5, characters 24-25:
+5 |     if true then a else b
+                            ^
+Error: This expression has type b = int
        but an expression was expected of type a = int
        Type int is not compatible with type a = int
        This instance of int is ambiguous:
@@ -1212,9 +1257,9 @@ Line 4, characters 19-20:
 4 |   if b then x else y
                        ^
 Error: This expression has type b = int
-       but an expression was expected of type a = int
-       Type a = int is not compatible with type a = int
-       This instance of int is ambiguous:
+       but an expression was expected of type a
+       Type a = int is not compatible with type a
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1227,7 +1272,7 @@ Line 4, characters 19-20:
 4 |   if b then y else x
                        ^
 Error: This expression has type a = int
-       but an expression was expected of type b = int
-       This instance of int is ambiguous:
+       but an expression was expected of type b
+       This instance of b is ambiguous:
        it would escape the scope of its equation
 |}];;

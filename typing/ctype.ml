@@ -843,11 +843,13 @@ let check_scope_escape env level ty =
     backtrack snap;
     raise Trace.(Unify[Escape { x with context = Some ty }])
 
-let update_scope scope ty =
+let rec update_scope scope ty =
   let ty = repr ty in
-  let scope = max scope ty.scope in
-  if ty.level < scope then raise (Trace.scope_escape ty);
-  set_scope ty scope
+  if ty.scope < scope then begin
+   if ty.level < scope then raise (Trace.scope_escape ty);
+   set_scope ty scope;
+   iter_type_expr (update_scope scope) ty
+  end
 
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
@@ -1630,12 +1632,10 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             let ty' = subst env level kind abbrev (Some ty) params args body in
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
-            if !trace_gadt_instances then begin
-              let scope = max lv ty.scope in
-              if level < scope then raise (Trace.scope_escape ty);
-              set_scope ty scope;
-              set_scope ty' scope
-            end;
+            (* if !trace_gadt_instances then begin *)
+            let scope = max lv ty.scope in
+            update_scope scope ty;
+            update_scope scope ty';
             ty'
       end
   | _ ->
@@ -1652,10 +1652,14 @@ let expand_head_once env ty =
 (* Check whether a type can be expanded *)
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
-  try ignore (expand_abbrev env ty); true
-  with Cannot_expand | Unify _ ->
-    Btype.backtrack snap;
-    false
+  try ignore (expand_abbrev env ty); true with
+    Cannot_expand ->
+      Btype.backtrack snap;
+      false
+  | Unify _ ->
+      Btype.backtrack snap;
+      cleanup_abbrev ();
+      false
 
 (* Expand the head of a type once.
    Raise Cannot_expand if the type cannot be expanded.
@@ -1671,7 +1675,7 @@ let try_expand_safe env ty =
   let snap = Btype.snapshot () in
   try try_expand_once env ty
   with Unify _ ->
-    Btype.backtrack snap; raise Cannot_expand
+    Btype.backtrack snap; cleanup_abbrev (); raise Cannot_expand
 
 (* Fully expand the head of a type. *)
 let rec try_expand_head try_once env ty =
