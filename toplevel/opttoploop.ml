@@ -653,7 +653,7 @@ let loop ppf =
       if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       ignore(execute_phrase true ppf phr)
     with
-    | End_of_file -> exit 0
+    | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack snap

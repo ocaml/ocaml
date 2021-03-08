@@ -26,7 +26,7 @@ let std_out = std_formatter
 
 (* To quit *)
 
-let dir_quit () = exit 0
+let dir_quit () = raise (Compenv.Exit_with_status 0)
 
 let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 

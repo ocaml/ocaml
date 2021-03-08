@@ -48,6 +48,9 @@ tests/c-api/'alloc_async.ml' with 1 (native)
 tests/callback/'signals_alloc.ml' with 1.1 (bytecode)
 tests/callback/'signals_alloc.ml' with 1.2 (native)
 
+# TODO: do we want to support the runtime naked pointer checker? (#9956)
+runtime-naked-pointers
+
 # TODO: not clear compatibility is sensible for multicore
 compatibility
 

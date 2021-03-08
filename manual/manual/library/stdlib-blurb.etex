@@ -122,6 +122,7 @@ be called from C \\
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}
+\item \ahref{libref/Either.html}{Module \texttt{Either}: either values}
 \item \ahref{libref/Ephemeron.html}{Module \texttt{Ephemeron}: Ephemerons and weak hash table}
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
 \item \ahref{libref/Float.html}{Module \texttt{Float}: Floating-point numbers}
@@ -178,6 +179,7 @@ be called from C \\
 \input{Char.tex}
 \input{Complex.tex}
 \input{Digest.tex}
+\input{Either.tex}
 \input{Ephemeron.tex}
 \input{Filename.tex}
 \input{Float.tex}
