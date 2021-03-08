@@ -149,6 +149,11 @@ Working version
   possible, improving instruction selection.
   (Stephen Dolan, review by Leo White and Xavier Leroy)
 
+- #9864: Revised recognition of immediate arguments to integer operations.
+  Fixes several issues that could have led to producing assembly code
+  that is rejected by the assembler.
+  (Xavier Leroy, review by Stephen Dolan)
+
 ### Standard library:
 
 - #9865: add Format.pp_print_seq

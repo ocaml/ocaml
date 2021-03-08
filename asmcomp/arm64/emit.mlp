@@ -333,6 +333,37 @@ let output_epilogue f =
   (* reset CFA back because function body may continue *)
   if n > 0 then cfi_adjust_cfa_offset n
 
+(* Output add-immediate / sub-immediate / cmp-immediate instructions *)
+
+let rec emit_addimm rd rs n =
+  if n < 0 then emit_subimm rd rs (-n)
+  else if n <= 0xFFF then
+    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
+  else begin
+    assert (n <= 0xFFF_FFF);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
+    if nl <> 0 then
+      `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+  end
+
+and emit_subimm rd rs n =
+  if n < 0 then emit_addimm rd rs (-n)
+  else if n <= 0xFFF then
+    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int n}\n`
+  else begin
+    assert (n <= 0xFFF_FFF);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    `	sub	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
+    if nl <> 0 then
+      `	sub	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+  end
+
+let emit_cmpimm rs n =
+  if n >= 0
+  then `	cmp	{emit_reg rs}, #{emit_int n}\n`
+  else `	cmn	{emit_reg rs}, #{emit_int (-n)}\n`
+
 (* Name of current function *)
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
@@ -765,15 +796,19 @@ let emit_instr i =
         | Word_int | Word_val | Double | Double_u ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
-    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
-        assembly_code_for_allocation i ~n ~far:false ?label_after_call_gc
-    | Lop(Ispecific (Ifar_alloc { bytes = n; label_after_call_gc; })) ->
-        assembly_code_for_allocation i ~n ~far:true ?label_after_call_gc
+    | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
+        assembly_code_for_allocation i ~n ~far:false ?label_after_call_gc ~dbginfo
+    | Lop(Ispecific (Ifar_alloc { bytes = n; label_after_call_gc; dbginfo })) ->
+        assembly_code_for_allocation i ~n ~far:true ?label_after_call_gc ~dbginfo
+    | Lop(Iintop_imm(Iadd, n)) ->
+        emit_addimm i.res.(0) i.arg.(0) n
+    | Lop(Iintop_imm(Isub, n)) ->
+        emit_subimm i.res.(0) i.arg.(0) n
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+        emit_cmpimm i.arg.(0) n;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
     | Lop(Iintop (Icheckbound { label_after_error; })) ->
         let lbl = bound_error_label i.dbg ?label:label_after_error in
@@ -788,7 +823,7 @@ let emit_instr i =
         `{emit_label lbl2}:\n`;
     | Lop(Iintop_imm(Icheckbound { label_after_error; }, n)) ->
         let lbl = bound_error_label i.dbg ?label:label_after_error in
-        `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+        emit_cmpimm i.arg.(0) n;
         `	b.ls	{emit_label lbl}\n`
     | Lop(Ispecific(
           Ifar_intop_imm_checkbound { bound; label_after_error; })) ->
@@ -892,7 +927,7 @@ let emit_instr i =
             let comp = name_for_comparison cmp in
             `	b.{emit_string comp}	{emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
-            `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+            emit_cmpimm i.arg.(0) n;
             let comp = name_for_comparison cmp in
             `	b.{emit_string comp}	{emit_label lbl}\n`
         | Ifloattest cmp ->

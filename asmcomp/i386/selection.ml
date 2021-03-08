@@ -158,7 +158,14 @@ class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate (_n : int) = true
+method! is_immediate op n =
+  match op with
+  | Iadd | Isub | Imul | Iand | Ior | Ixor | Icomp _ | Icheckbound _ ->
+      true
+  | _ ->
+      super#is_immediate op n
+
+method is_immediate_test _cmp _n = true
 
 method! is_simple_expr e =
   match e with
@@ -236,9 +243,6 @@ method! select_operation op args dbg =
   | Cextcall(fn, _ty_res, _ty_args, false, _label)
     when !fast_math && List.mem fn inline_float_ops ->
       (Ispecific(Ifloatspecial fn), args)
-  (* i386 does not support immediate operands for multiply high signed *)
-  | Cmulhi ->
-      (Iintop Imulh, args)
   (* Default *)
   | _ -> super#select_operation op args dbg
 
