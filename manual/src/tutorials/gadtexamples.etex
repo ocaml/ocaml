@@ -1,6 +1,13 @@
 \chapter{Generalized algebraic datatypes} \label{c:gadts-tutorial}
 %HEVEA\cutname{gadts-tutorial.html}
 
+Generalized algebraic datatypes, or GADTs, extend usual sum types in
+two ways: constraints on type parameters may change depending on the
+value constructor, and some type variables may be existentially
+quantified.
+Adding constraints is done by giving an explicit return type, where type
+parameters are instantiated:
+
 \begin{caml_example*}{verbatim}
 type _ term =
   | Int : int -> int term
@@ -8,18 +15,10 @@ type _ term =
   | App : ('b -> 'a) term * 'b term -> 'a term
 \end{caml_example*}
 
-Generalized algebraic datatypes, or GADTs, extend usual sum types in
-two ways: constraints on type parameters may change depending on the
-value constructor, and some type variables may be existentially
-quantified.
-Adding constraints is done by giving an explicit return type
-(the final part in each constuctor of the above example), where type parameters
-are instantiated.
 This return type must use the same type constructor as the type being
 defined, and have the same number of parameters.
 Variables are made existential when they appear inside a constructor's
 argument, but not in its return type.
-
 Since the use of a return type often eliminates the need to name type
 parameters in the left-hand side of a type definition, one can replace
 them with anonymous types "_" in that case.
