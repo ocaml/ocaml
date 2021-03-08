@@ -86,6 +86,7 @@ odoc_args.cmo : \
     odoc_config.cmi \
     ../driver/main_args.cmi \
     ../utils/config.cmi \
+    ../driver/compenv.cmi \
     odoc_args.cmi
 odoc_args.cmx : \
     odoc_types.cmx \
@@ -100,6 +101,7 @@ odoc_args.cmx : \
     odoc_config.cmx \
     ../driver/main_args.cmx \
     ../utils/config.cmx \
+    ../driver/compenv.cmx \
     odoc_args.cmi
 odoc_args.cmi : \
     odoc_gen.cmi

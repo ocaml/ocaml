@@ -620,29 +620,33 @@ static void mark_slice_darken(struct mark_stack* stk, value v, mlsize_t i,
       if (Tag_hd(chd) == Cont_tag){
         caml_darken_cont(child);
         *work -= Wosize_hd(chd);
-      } else{
-    again:
-      if (Tag_hd(chd) == Lazy_tag || Tag_hd(chd) == Forcing_tag){
-        if(!atomic_compare_exchange_strong(Hp_atomic_val(child), &chd,
-              With_status_hd(chd, global.MARKED))){
-                chd = Hd_val(child);
-                goto again;
-              }
       } else {
-        atomic_store_explicit(
-          Hp_atomic_val(child),
-          With_status_hd(chd, global.MARKED),
-          memory_order_relaxed);
-      }
-      if(Tag_hd(chd) < No_scan_tag){
-        mark_stack_push(stk, child, 0, work);
-      }
-      else{
-        *work -= Wosize_hd(chd); /* account for header */
+    again:
+        if (Tag_hd(chd) == Lazy_tag || Tag_hd(chd) == Forcing_tag){
+          if(!atomic_compare_exchange_strong(Hp_atomic_val(child), &chd,
+                With_status_hd(chd, global.MARKED))){
+                  chd = Hd_val(child);
+                  goto again;
+          }
+        } else {
+          atomic_store_explicit(
+            Hp_atomic_val(child),
+            With_status_hd(chd, global.MARKED),
+            memory_order_relaxed);
+        }
+        if(Tag_hd(chd) < No_scan_tag){
+          mark_stack_push(stk, child, 0, work);
+        } else {
+          *work -= Wosize_hd(chd); /* account for header */
+        }
       }
     }
   }
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+  else if (Is_block(child) && ! Is_young(child)) {
+    is_naked_pointer_safe(child, &Field (v, i));
   }
+#endif
 }
 
 static intnat do_some_marking(intnat budget) {
@@ -1514,3 +1518,92 @@ void caml_finalise_heap (void)
 {
   return;
 }
+
+
+#if defined(NAKED_POINTERS_CHECKER) && defined(NATIVE_CODE)
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+Caml_inline int safe_load(volatile header_t * p, header_t * result)
+{
+  header_t v;
+  __try {
+    v = *p;
+  }
+  __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+        EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
+    *result = 0xdeadbeef;
+    return 0;
+  }
+  *result = v;
+  return 1;
+}
+
+#else
+
+Caml_inline int safe_load (header_t * addr, /*out*/ header_t * contents)
+{
+  int ok;
+  header_t h;
+  intnat tmp;
+
+  asm volatile(
+      "leaq 1f(%%rip), %[tmp] \n\t"
+      "movq %[tmp], 0(%[handler]) \n\t"
+      "xorl %[ok], %[ok] \n\t"
+      "movq 0(%[addr]), %[h] \n\t"
+      "movl $1, %[ok] \n\t"
+  "1: \n\t"
+      "xorq %[tmp], %[tmp] \n\t"
+      "movq %[tmp], 0(%[handler])"
+      : [tmp] "=&r" (tmp), [ok] "=&r" (ok), [h] "=&r" (h)
+      : [addr] "r" (addr),
+        [handler] "r" (&(Caml_state->checking_pointer_pc)));
+  *contents = h;
+  return ok;
+}
+
+#endif
+
+static void is_naked_pointer_safe (value v, value *p)
+{
+  header_t h;
+  tag_t t;
+
+  /* The following conditions were checked by the caller */
+  CAMLassert(Is_block(v) && !Is_young(v) && !Is_in_heap(v));
+
+  if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
+
+  t = Tag_hd(h);
+  if (t == Infix_tag) {
+    v -= Infix_offset_hd(h);
+    if (! safe_load(&Hd_val(v), &h)) goto on_segfault;
+    t = Tag_hd(h);
+  }
+
+  /* For the out-of-heap pointer to be considered safe,
+   * it should have a black header and its size should be < 2 ** 40
+   * words (128 GB). If not, we report a warning. */
+  if (Is_black_hd(h) && Wosize_hd(h) < (INT64_LITERAL(1) << 40))
+    return;
+
+  if (!Is_black_hd(h)) {
+    fprintf (stderr, "Out-of-heap pointer at %p of value %p has "
+                     "non-black head (tag=%d)\n", p, (void*)v, t);
+  } else {
+    fprintf (stderr,
+             "Out-of-heap pointer at %p of value %p has "
+             "suspiciously large size: %" ARCH_INT64_PRINTF_FORMAT "u words\n",
+              p, (void*)v, Wosize_hd(h));
+  }
+  return;
+
+ on_segfault:
+  fprintf (stderr, "Out-of-heap pointer at %p of value %p. "
+           "Cannot read head.\n", p, (void*)v);
+}
+
+#endif

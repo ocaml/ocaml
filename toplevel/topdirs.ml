@@ -58,7 +58,7 @@ let order_of_sections =
 
 (* To quit *)
 
-let dir_quit () = exit 0
+let dir_quit () = raise (Compenv.Exit_with_status 0)
 
 let _ = add_directive "quit" (Directive_none dir_quit)
     {

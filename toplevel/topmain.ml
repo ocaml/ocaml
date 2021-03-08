@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Compenv
-
 let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
              options are:"
 
@@ -43,7 +41,7 @@ let prepare ppf =
   try
     let res =
       let objects =
-        List.rev (!preload_objects @ !first_objfiles)
+        List.rev (!preload_objects @ !Compenv.first_objfiles)
       in
       List.for_all (Topdirs.load_file ppf) objects
     in
@@ -68,7 +66,7 @@ let file_argument name =
     Printf.eprintf "For implementation reasons, the toplevel does not support\
    \ having script files (here %S) inside expanded arguments passed through the\
    \ -args{,0} command-line option.\n" name;
-    exit 2
+    raise (Compenv.Exit_with_status 2)
   end else begin
       let newargs = Array.sub !argv !current
                               (Array.length !argv - !current)
@@ -76,8 +74,8 @@ let file_argument name =
       Compenv.readenv ppf Before_link;
       Compmisc.read_clflags_from_env ();
       if prepare ppf && Toploop.run_script ppf name newargs
-      then exit 0
-      else exit 2
+      then raise (Compenv.Exit_with_status 0)
+      else raise (Compenv.Exit_with_status 2)
     end
 
 
@@ -111,11 +109,16 @@ let main () =
     try
       Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
     with
-    | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
-    | Arg.Help msg -> Printf.printf "%s" msg; exit 0
+    | Arg.Bad msg -> Printf.eprintf "%s" msg; raise (Compenv.Exit_with_status 2)
+    | Arg.Help msg -> Printf.printf "%s" msg; raise (Compenv.Exit_with_status 0)
   end;
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
-  if not (prepare ppf) then exit 2;
+  if not (prepare ppf) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
   Toploop.loop Format.std_formatter
+
+let main () =
+  match main () with
+  | exception Compenv.Exit_with_status n -> n
+  | () -> 0

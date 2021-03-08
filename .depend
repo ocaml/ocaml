@@ -6141,6 +6141,7 @@ toplevel/opttopdirs.cmo : \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
+    driver/compenv.cmi \
     utils/clflags.cmi \
     asmcomp/asmlink.cmi \
     toplevel/opttopdirs.cmi
@@ -6156,6 +6157,7 @@ toplevel/opttopdirs.cmx : \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
+    driver/compenv.cmx \
     utils/clflags.cmx \
     asmcomp/asmlink.cmx \
     toplevel/opttopdirs.cmi
@@ -6271,6 +6273,7 @@ toplevel/opttopmain.cmo : \
     driver/main_args.cmi \
     parsing/location.cmi \
     driver/compmisc.cmi \
+    driver/compenv.cmi \
     utils/clflags.cmi \
     toplevel/opttopmain.cmi
 toplevel/opttopmain.cmx : \
@@ -6280,6 +6283,7 @@ toplevel/opttopmain.cmx : \
     driver/main_args.cmx \
     parsing/location.cmx \
     driver/compmisc.cmx \
+    driver/compenv.cmx \
     utils/clflags.cmx \
     toplevel/opttopmain.cmi
 toplevel/opttopmain.cmi :
@@ -6309,6 +6313,7 @@ toplevel/topdirs.cmo : \
     bytecomp/dll.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
+    driver/compenv.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -6337,6 +6342,7 @@ toplevel/topdirs.cmx : \
     bytecomp/dll.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
+    driver/compenv.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     typing/btype.cmx \

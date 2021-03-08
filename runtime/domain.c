@@ -303,6 +303,10 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->eventlog_startup_timestamp = 0;
     domain_state->eventlog_out = NULL;
 
+#if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
+    domain_state->checking_pointer_pc = NULL;
+#endif
+
     goto domain_init_complete;
 
   caml_free_stack(domain_state->current_stack);

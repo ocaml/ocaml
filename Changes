@@ -22,6 +22,15 @@ Working version
   (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
    and Anil Madhavapeddy, additional testing by Michael Schmidt)
 
+### Type system:
+
+* #9811: remove propagation from previous branches
+  Type information inferred from previous branches was propagated in
+  non-principal mode. Revert this for better compatibility with
+  -principal mode.
+  For the time being, infringing code should result in a principality warning.
+  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
+
 ### Runtime system:
 
 - #9756: garbage collector colors change
@@ -126,6 +135,17 @@ Working version
 - #9909: Remove caml_code_area_start and caml_code_area_end globals (no longer
   needed as the pagetable heads towards retirement).
   (David Allsopp, review by Xavier Leroy)
+
+- #9951: Ensure that the mark stack push optimisation handles naked pointers
+  (KC Sivaramakrishnan, reported by Enguerrand Decorne, review by Gabriel
+   Scherer, and Xavier Leroy)
+
+- #9534, #9947: Introduce a naked pointers checker mode to the runtime
+  (configure option --enable-naked-pointers-checker).  Alarms are printed
+  when the garbage collector finds out-of-heap pointers that could
+  cause a crash in no-naked-pointers mode.
+  (Enguerrand Decorne, KC Sivaramakrishnan, Xavier Leroy, Stephen Dolan,
+  David Allsopp, Nicolás Ojeda Bär review by Xavier Leroy, Nicolás Ojeda Bär)
 
 ### Code generation and optimizations:
 
@@ -418,6 +438,10 @@ Working version
 
 - #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
   (Sébastien Hinderer, review by David Allsopp)
+
+- #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
+  Standard Library directory.
+  (Bernhard Schommer, review by David Allsopp)
 
 ### Bug fixes:
 

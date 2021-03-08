@@ -1657,7 +1657,6 @@ let options_with_command_line_syntax options r =
 
 module Default = struct
   open Clflags
-  open Compenv
   let set r () = r := true
   let clear r () = r := false
 
@@ -1688,7 +1687,7 @@ module Default = struct
     let _unsafe_string = set unsafe_string
     let _w s = Warnings.parse_options false s
 
-    let anonymous = anonymous
+    let anonymous = Compenv.anonymous
 
   end
 
@@ -1708,7 +1707,7 @@ module Default = struct
     let _error_style =
       Misc.set_or_ignore error_style_reader.parse error_style
     let _nopervasives = set nopervasives
-    let _ppx s = first_ppx := (s :: (!first_ppx))
+    let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _unsafe = set unsafe
     let _warn_error s = Warnings.parse_options true s
     let _warn_help = Warnings.help_warnings
@@ -1826,8 +1825,8 @@ module Default = struct
     let _binannot = set binary_annotations
     let _c = set compile_only
     let _cc s = c_compiler := (Some s)
-    let _cclib s = defer (ProcessObjects (Misc.rev_split_words s))
-    let _ccopt s = first_ccopts := (s :: (!first_ccopts))
+    let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
+    let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
     let _config = Misc.show_config_and_exit
     let _config_var = Misc.show_config_variable_and_exit
     let _dprofile () = profile_columns := Profile.all_columns
@@ -1836,8 +1835,8 @@ module Default = struct
     let _for_pack s = for_package := (Some s)
     let _g = set debug
     let _i = set print_types
-    let _impl = impl
-    let _intf = intf
+    let _impl = Compenv.impl
+    let _intf = Compenv.intf
     let _intf_suffix s = Config.interface_suffix := s
     let _keep_docs = set keep_docs
     let _keep_locs = set keep_locs
@@ -1861,12 +1860,12 @@ module Default = struct
           | None -> stop_after := (Some pass)
           | Some p ->
             if not (p = pass) then
-              fatal "Please specify at most one -stop-after <pass>."
+              Compenv.fatal "Please specify at most one -stop-after <pass>."
     let _thread = set use_threads
     let _verbose = set verbose
-    let _version () = print_version_string ()
-    let _vnum () = print_version_string ()
-    let _where () = print_standard_library ()
+    let _version () = Compenv.print_version_string ()
+    let _vnum () = Compenv.print_version_string ()
+    let _where () = Compenv.print_standard_library ()
     let _with_runtime = set with_runtime
     let _without_runtime = clear with_runtime
   end
@@ -1875,12 +1874,12 @@ module Default = struct
 
     let print_version () =
       Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
-      raise (Compenv.Exit_compiler 0);
+      raise (Compenv.Exit_with_status 0);
     ;;
 
     let print_version_num () =
       Printf.printf "%s\n" Sys.ocaml_version;
-      raise (Compenv.Exit_compiler 0);
+      raise (Compenv.Exit_with_status 0);
     ;;
 
     let _args (_:string) = (* placeholder: wrap_expand Arg.read_arg *) [||]
@@ -1915,18 +1914,18 @@ module Default = struct
     let _afl_instrument = set afl_instrument
     let _function_sections () =
       assert Config.function_sections;
-      first_ccopts := ("-ffunction-sections" :: (!first_ccopts));
+      Compenv.first_ccopts := ("-ffunction-sections" ::(!Compenv.first_ccopts));
       function_sections := true
     let _nodynlink = clear dlcode
     let _output_complete_obj () =
       set output_c_object (); set output_complete_object ()
     let _output_obj = set output_c_object
     let _p () =
-      fatal
+      Compenv.fatal
         "Profiling with \"gprof\" (option `-p') is only supported up to \
          OCaml 4.08.0"
     let _shared () = shared := true; dlcode := true
-    let _v () = print_version_and_library "native-code compiler"
+    let _v () = Compenv.print_version_and_library "native-code compiler"
   end
 
   module Odoc_args = struct
@@ -1967,7 +1966,7 @@ third-party libraries such as Lwt, but with a different API."
     let _custom = set custom_runtime
     let _dcamlprimc = set keep_camlprimc_file
     let _dinstr = set dump_instr
-    let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
+    let _dllib s = Compenv.defer (ProcessDLLs (Misc.rev_split_words s))
     let _dllpath s = dllpaths := ((!dllpaths) @ [s])
     let _make_runtime () =
       custom_runtime := true; make_runtime := true; link_everything := true
@@ -1981,8 +1980,8 @@ third-party libraries such as Lwt, but with a different API."
     let _output_obj () = output_c_object := true; custom_runtime := true
     let _use_prims s = use_prims := s
     let _use_runtime s = use_runtime := s
-    let _v () = print_version_and_library "compiler"
-    let _vmthread () = fatal vmthread_removed_message
+    let _v () = Compenv.print_version_and_library "compiler"
+    let _vmthread () = Compenv.fatal vmthread_removed_message
   end
 
 end
