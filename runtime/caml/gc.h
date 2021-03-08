@@ -28,7 +28,7 @@
       )
 
 #define Make_header_with_profinfo(wosize, tag, color, profinfo) \
-  Make_header(wosize,tag,color)
+  Make_header(wosize, tag, color)
 
 #define Whitehd_hd(hd) (((hd)  & ~(3 << 8)))
 

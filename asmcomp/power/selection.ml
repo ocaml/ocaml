@@ -63,7 +63,7 @@ method! is_immediate op n =
   | Isub -> is_immediate (-n)  (* turned into add opposite *)
   | Iand | Ior | Ixor -> is_immediate_logical n
   | Icomp c -> self#is_immediate_test c n
-  | Icheckbound _ -> 0 <= n && n <= 0x7FFF
+  | Icheckbound -> 0 <= n && n <= 0x7FFF
     (* twlle takes a 16-bit signed immediate but performs an unsigned compare *)
   | _ -> super#is_immediate op n
 

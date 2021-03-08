@@ -31,10 +31,6 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "caml/spacetime.h"
-#endif
-
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -139,9 +135,6 @@ static void caml_execute_signal(int signal_number)
 {
   CAMLparam0 ();
   CAMLlocal2 (res, handler);
-#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  void* saved_spacetime_trie_node_ptr;
-#endif
 #ifdef POSIX_SIGNALS
   sigset_t nsigs, sigs;
   /* Block the signal before executing the handler, and record in sigs
@@ -150,36 +143,10 @@ static void caml_execute_signal(int signal_number)
   sigaddset(&nsigs, signal_number);
   sigprocmask(SIG_BLOCK, &nsigs, &sigs);
 #endif
-#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  /* We record the signal handler's execution separately, in the same
-     trie used for finalisers. */
-  saved_spacetime_trie_node_ptr
-    = caml_spacetime_trie_node_ptr;
-  caml_spacetime_trie_node_ptr
-    = caml_spacetime_finaliser_trie_root;
-#endif
-#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  /* Handled action may have no associated handler, which we interpret
-     as meaning the signal should be handled by a call to exit.  This is
-     used to allow spacetime profiles to be completed on interrupt */
-  if (caml_signal_handlers == 0) {
-    res = caml_sys_exit(Val_int(2));
-  } else {
-    caml_read_field(caml_read_root(caml_signal_handlers), signal_number, &handler);
-    if (!Is_block(handler)) {
-      res = caml_sys_exit(Val_int(2));
-    } else {
-#else
   caml_read_field(caml_read_root(caml_signal_handlers), signal_number, &handler);
-#endif
   res = caml_callback_exn(
            handler,
            Val_int(caml_rev_convert_signal_number(signal_number)));
-#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-    }
-  }
-  caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
-#endif
 #ifdef POSIX_SIGNALS
   /* Restore the original signal mask */
   sigprocmask(SIG_SETMASK, &sigs, NULL);

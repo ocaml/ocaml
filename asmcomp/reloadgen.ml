@@ -83,13 +83,13 @@ method private reload i =
        However, something needs to be done for the function pointer in
        indirect calls. *)
     Iend | Ireturn | Iop(Itailcall_imm _) | Iraise _ -> i
-  | Iop(Itailcall_ind _) ->
+  | Iop(Itailcall_ind) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
         {i with arg = newarg}
   | Iop(Icall_imm _ | Iextcall _) ->
       {i with next = self#reload i.next}
-  | Iop(Icall_ind _) ->
+  | Iop(Icall_ind) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
         {i with arg = newarg; next = self#reload i.next}
@@ -128,7 +128,7 @@ method fundecl f num_stack_slots =
   let new_body = self#reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_codegen_options = f.fun_codegen_options;
-    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape;
+    fun_dbg  = f.fun_dbg;
     fun_contains_calls = f.fun_contains_calls;
     fun_num_stack_slots = Array.copy num_stack_slots;
    },

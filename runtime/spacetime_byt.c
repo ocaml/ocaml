@@ -17,17 +17,10 @@
 #include "caml/fail.h"
 #include "caml/mlvalues.h"
 #include "caml/io.h"
-#include "caml/spacetime.h"
 
 CAMLprim value caml_spacetime_only_works_for_native_code(value foo, ...)
 {
   caml_failwith("Spacetime profiling only works for native code");
-}
-
-uintnat caml_spacetime_my_profinfo (spacetime_unwind_info_cache * cached,
-                                    uintnat wosize)
-{
-  return 0;
 }
 
 CAMLprim value caml_spacetime_enabled (value v_unit)

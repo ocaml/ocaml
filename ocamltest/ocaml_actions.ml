@@ -1144,18 +1144,6 @@ let no_flambda = make
     "support for flambda disabled"
     "support for flambda enabled")
 
-let spacetime = Actions.make
-  "spacetime"
-  (Actions_helpers.pass_or_skip Ocamltest_config.spacetime
-    "support for spacetime enabled"
-    "support for spacetime disabled")
-
-let no_spacetime = make
-  "no-spacetime"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.spacetime)
-    "support for spacetime disabled"
-    "support for spacetime enabled")
-
 let shared_libraries = Actions.make
   "shared-libraries"
   (Actions_helpers.pass_or_skip Ocamltest_config.shared_libraries
@@ -1395,8 +1383,6 @@ let _ =
     no_flat_float_array;
     flambda;
     no_flambda;
-    spacetime;
-    no_spacetime;
     shared_libraries;
     no_shared_libraries;
     native_compiler;

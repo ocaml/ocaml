@@ -33,7 +33,6 @@
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/stack.h"
-#include "caml/spacetime.h"
 
 #ifndef NSIG
 #define NSIG 64

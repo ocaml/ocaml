@@ -38,9 +38,6 @@
 #include "caml/stack.h"
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
-#ifdef WITH_SPACETIME
-#include "caml/spacetime.h"
-#endif
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
@@ -107,9 +104,6 @@ value caml_startup_common(char_os **argv, int pooling)
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-#ifdef WITH_SPACETIME
-  caml_spacetime_initialize();
-#endif
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();

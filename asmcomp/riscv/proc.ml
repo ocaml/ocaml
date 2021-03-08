@@ -154,8 +154,6 @@ let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
 let max_arguments_for_tailcalls = 16
 
-let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
-
 (* OCaml calling convention:
      first integer args in a0 .. a7, s2 .. s9
      first float args in fa0 .. fa7, fs2 .. fs9
@@ -246,7 +244,7 @@ let destroyed_at_alloc =
   else [| |]
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind _ | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
+  | Iop(Icall_ind | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
   | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
   | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
@@ -271,9 +269,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
   | Ispecific(Imultaddf _ | Imultsubf _) -> true
   | _ -> true
 

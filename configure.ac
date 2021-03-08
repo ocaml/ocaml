@@ -151,11 +151,6 @@ AC_SUBST([install_source_artifacts])
 AC_SUBST([profinfo])
 AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
-AC_SUBST([spacetime])
-AC_SUBST([call_counts])
-AC_SUBST([libunwind_available])
-AC_SUBST([libunwind_include_flags])
-AC_SUBST([libunwind_link_flags])
 AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
 AC_SUBST([max_testsuite_dir_retries])
@@ -244,16 +239,6 @@ AC_ARG_ENABLE([systhreads],
   [AS_HELP_STRING([--disable-systhreads],
     [disable the Win32/POSIX threads library])])
 
-AC_ARG_WITH([libunwind],
-  [AS_HELP_STRING([--without-libunwind],
-    [disable libunwind support for Spacetime profiling])])
-
-AC_ARG_VAR([LIBUNWIND_INCLUDE_DIR],
-  [location of header files for libunwind])
-
-AC_ARG_VAR([LIBUNWIND_LIB_DIR],
-  [location of library files for libunwind])
-
 AC_ARG_ENABLE([graph-lib], [],
   [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
 since version 4.09. It is now distributed as a separate "graphics" package: \
@@ -293,14 +278,6 @@ AC_ARG_ENABLE([naked-pointers],
 AC_ARG_ENABLE([naked-pointers-checker],
   [AS_HELP_STRING([--enable-naked-pointers-checker],
     [enable the naked pointers checker])])
-
-AC_ARG_ENABLE([spacetime],
-  [AS_HELP_STRING([--enable-spacetime],
-    [build the spacetime profiler])])
-
-AC_ARG_ENABLE([call-counts],
-  [AS_HELP_STRING([--disable-call-counts],
-    [disable the call counts in spacetime])])
 
 AC_ARG_ENABLE([cfi],
   [AS_HELP_STRING([--disable-cfi],
@@ -1052,9 +1029,6 @@ AS_IF([test -z "$PARTIALLD"],
     [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o \$(EMPTY)"])],
   [PACKLD="$PARTIALLD -o \$(EMPTY)"])
 
-AS_IF([test $arch != "none" && $arch64 ],
-  [otherlibraries="$otherlibraries raw_spacetime_lib"])
-
 # Disable PIE at link time when ocamlopt does not produce position-independent
 # code and the system produces PIE executables by default and demands PIC
 # object files to do so.
@@ -1733,90 +1707,6 @@ AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
 
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES
-
-# Spacetime profiling, including libunwind detection
-
-# The number of bits used for profiling information is configurable here.
-# The more bits used for profiling, the smaller will be Max_wosize.
-# Note that PROFINFO_WIDTH must still be defined even if not configuring
-# for Spacetime (see comment in runtime/caml/mlvalues.h on [Profinfo_hd]).
-AC_MSG_CHECKING([whether to build spacetime])
-AS_IF([test x"$enable_spacetime" != "xyes" ],
-  [spacetime=false
-  call_counts=true # as in original script but should probably be false
-  libunwind_available=false
-  libunwind_include_flags=
-  libunwind_link_flags=
-  AC_MSG_RESULT([no])],
-  [AS_CASE([$arch],
-    [amd64], [spacetime_supported=true],
-    [spacetime_supported=false])
-  AS_IF([$spacetime_supported],
-    [AC_MSG_RESULT([yes])
-    spacetime=true
-    profinfo=true
-    profinfo_width=26
-    AC_DEFINE([WITH_SPACETIME])
-    AS_IF([test x"$enable_call_counts" != "xno"],
-      [call_counts=true
-      AC_DEFINE([ENABLE_CALL_COUNTS])],
-      [call_counts=false])
-    AC_MSG_CHECKING([whether to use libunwind])
-    AS_IF([test x"$with_libunwind" = "xno"],
-      [AC_MSG_RESULT([disabled])],
-      [AS_IF([test x"$with_libunwind" = "x"],
-        [libunwind_requested=false
-        AC_MSG_RESULT([if available])],
-        [libunwind_requested=true
-        AC_MSG_RESULT([requested])
-        AS_IF([test x"$with_libunwind" != "xyes"],
-          [AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" = "x"],
-            [LIBUNWIND_INCLUDE_DIR="$with_libunwind/include"])
-          AS_IF([test x"$LIBUNWIND_LIB_DIR" = "x"],
-            [LIBUNWIND_LIB_DIR="$with_libunwind/lib"])
-          ])
-        ])
-      AS_IF([test "$system" = "macosx"],
-        [AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" != x -o \
-                     x"$LIBUNWIND_LIB_DIR" != x],
-          [AC_MSG_WARN(m4_normalize([
-            On MacOSX, specifying paths for libunwind headers or libraries
-            is strongly discouraged.  It is recommended to rely on the
-            defaults provided by the configure script
-          ]))])])
-
-      AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" != x],
-        [libunwind_include_flags="-I$LIBUNWIND_INCLUDE_DIR"],
-        [libunwind_include_flags=""])
-
-      AS_CASE(["$system"],
-        ["macosx"], [libunwind_link_flags="-framework System"],
-        [libunwind_link_flags="-lunwind -lunwind-x86_64"])
-
-      AS_IF([test x"$LIBUNWIND_LIB_DIR" != x],
-        [libunwind_link_flags="-L$LIBUNWIND_LIB_DIR $libunwind_link_flags"])
-
-      OCAML_CHECK_LIBUNWIND
-
-      AS_IF([$libunwind_requested && ! $libunwind_available],
-        [AC_MSG_ERROR([libunwind was requested but can not be found])])
-
-        # We need unwinding information at runtime, but since we use
-        # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
-        # the OS X linker will chuck away the DWARF-like (.eh_frame)
-        # information.  (Older versions of OS X don't provide this.)
-
-        AS_IF([$libunwind_available && test x"$system" = "xmacosx"],
-          [extra_flags="-Wl,-keep_dwarf_unwind"
-          mkexe="$mkexe $extra_flags"
-          mksharedlib="$mksharedlib $extra_flags"])])
-    ],
-    [AS_IF([test x"$enable_spacetime" = "xyes"],
-      [AC_MSG_RESULT([requested but not supported])
-      AC_MSG_ERROR([exiting])],
-      [AC_MSG_RESULT([no])])
-    ])
-  ])
 
 AC_DEFINE_UNQUOTED([PROFINFO_WIDTH], [$profinfo_width])
 AS_IF([$profinfo], [AC_DEFINE([WITH_PROFINFO])])

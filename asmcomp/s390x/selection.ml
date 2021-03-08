@@ -77,7 +77,7 @@ method! is_immediate op n =
   | Iand -> n <= -1 && n >= -0x1_0000_0000
   | Ior | Ixor -> is_immediate_logical n
   | Icomp c -> self#is_immediate_test c n
-  | Icheckbound _ -> is_immediate_logical n (* unsigned comparison *)
+  | Icheckbound -> is_immediate_logical n (* unsigned comparison *)
   | _ -> super#is_immediate op n
 
 method select_addressing _chunk exp =
