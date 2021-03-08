@@ -437,7 +437,9 @@ let read_one_param ppf position name v =
 
   | "stop-after" ->
     let module P = Clflags.Compiler_pass in
-    let passes = P.available_pass_names ~native:!native_code in
+    let passes = P.available_pass_names
+                   ~filter:(fun _ -> true)
+                   ~native:!native_code in
     begin match List.find_opt (String.equal v) passes with
     | None ->
         Printf.ksprintf (print_error ppf)
@@ -447,6 +449,24 @@ let read_one_param ppf position name v =
         let pass = Option.get (P.of_string v)  in
         Clflags.stop_after := Some pass
     end
+
+  | "save-ir-after" ->
+    if !native_code then begin
+      let module P = Clflags.Compiler_pass in
+      let passes = P.available_pass_names
+                     ~filter:P.can_save_ir_after
+                     ~native:!native_code in
+      begin match List.find_opt (String.equal v) passes with
+      | None ->
+          Printf.ksprintf (print_error ppf)
+            "bad value %s for option \"save-ir-after\" (expected one of: %s)"
+            v (String.concat ", " passes)
+      | Some v ->
+          let pass = Option.get (P.of_string v)  in
+          set_save_ir_after pass true
+      end
+    end
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;

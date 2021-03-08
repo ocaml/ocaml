@@ -235,15 +235,25 @@ val unboxed_types : bool ref
 val insn_sched : bool ref
 val insn_sched_default : bool
 
+module Compiler_ir : sig
+  type t = Linear
+  val extension : t -> string
+  val magic : t -> string
+  val all : t list
+end
+
 module Compiler_pass : sig
   type t = Parsing | Typing | Scheduling
   val of_string : string -> t option
   val to_string : t -> string
   val is_compilation_pass : t -> bool
-  val available_pass_names : native:bool -> string list
+  val available_pass_names : filter:(t -> bool) -> native:bool -> string list
+  val can_save_ir_after : t -> bool
 end
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool
+val set_save_ir_after : Compiler_pass.t -> bool -> unit
+val should_save_ir_after : Compiler_pass.t -> bool
 
 val arg_spec : (string * Arg.spec * string) list ref
 
