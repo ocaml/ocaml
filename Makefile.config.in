@@ -165,7 +165,6 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 #       dynlink           Dynamic linking (bytecode and native)
 #       (win32)unix       Unix system calls
 #       str               Regular expressions and high-level string processing
-#       raw_spacetime_lib Parsing of spacetime traces
 #       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
@@ -225,8 +224,6 @@ WITH_OCAMLDOC=@ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
-WITH_SPACETIME=@spacetime@
-ENABLE_CALL_COUNTS=@call_counts@
 WITH_PROFINFO=@profinfo@
 PROFINFO_WIDTH=@profinfo_width@
 COLLECT_STATS=@collect_stats@

@@ -51,8 +51,8 @@ module Make (T : Branch_relaxation_intf.S) = struct
       in
       match instr.desc with
       | Lop (Ialloc _)
-      | Lop (Iintop (Icheckbound _))
-      | Lop (Iintop_imm (Icheckbound _, _))
+      | Lop (Iintop (Icheckbound))
+      | Lop (Iintop_imm (Icheckbound, _))
       | Lop (Ispecific _) ->
         (* We assume that any branches eligible for relaxation generated
            by these instructions only branch forward.  We further assume
@@ -86,16 +86,15 @@ module Make (T : Branch_relaxation_intf.S) = struct
           fixup did_fix (pc + T.instr_size instr.desc) instr.next
         else
           match instr.desc with
-          | Lop (Ialloc { bytes = num_bytes; label_after_call_gc; dbginfo }) ->
-            instr.desc <- T.relax_allocation ~num_bytes
-                            ~dbginfo ~label_after_call_gc;
+          | Lop (Ialloc { bytes = num_bytes; dbginfo }) ->
+            instr.desc <- T.relax_allocation ~num_bytes ~dbginfo;
             fixup true (pc + T.instr_size instr.desc) instr.next
-          | Lop (Iintop (Icheckbound { label_after_error; })) ->
-            instr.desc <- T.relax_intop_checkbound ~label_after_error;
+          | Lop (Iintop (Icheckbound)) ->
+            instr.desc <- T.relax_intop_checkbound ();
             fixup true (pc + T.instr_size instr.desc) instr.next
-          | Lop (Iintop_imm (Icheckbound { label_after_error; }, bound)) ->
+          | Lop (Iintop_imm (Icheckbound, bound)) ->
             instr.desc
-              <- T.relax_intop_imm_checkbound ~bound ~label_after_error;
+              <- T.relax_intop_imm_checkbound ~bound;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lop (Ispecific specific) ->
             instr.desc <- T.relax_specific_op specific;

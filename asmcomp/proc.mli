@@ -37,7 +37,6 @@ val loc_parameters: Cmm.machtype -> Reg.t array
 val loc_external_arguments: Cmm.exttype list -> Reg.t array array * int
 val loc_external_results: Cmm.machtype -> Reg.t array
 val loc_exn_bucket: Reg.t
-val loc_spacetime_node_hole: Reg.t
 
 (* The maximum number of arguments of an OCaml to OCaml function call for
    which it is guaranteed there will be no arguments passed on the stack.

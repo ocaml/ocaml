@@ -26,8 +26,8 @@ BYTECODE_C_SOURCES := $(addsuffix .c, \
   floats str array io extern intern hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak finalise custom dynlink \
   platform eventlog fiber shared_heap addrmap \
-  spacetime_byt afl $(UNIX_OR_WIN32) bigarray main domain \
-  skiplist codefrag)
+  afl $(UNIX_OR_WIN32) bigarray main domain \
+  skiplist codefrag spacetime_byt)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
   startup_aux startup_nat main fail_nat roots signals \
@@ -36,8 +36,8 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   lexing $(UNIX_OR_WIN32) printexc callback weak finalise custom \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
   platform eventlog fiber shared_heap addrmap frame_descriptors \
-  dynlink clambda_checks spacetime_nat spacetime_snapshot afl bigarray \
-  domain skiplist codefrag)
+  dynlink clambda_checks afl bigarray \
+  domain skiplist codefrag spacetime_nat)
 
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
 CONFIG_HEADERS := caml/m.h caml/s.h
@@ -140,16 +140,13 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
 OC_NATIVE_CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
-OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
+OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR)
 
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
 
 ifeq "$(TOOLCHAIN)" "msvc"
 ASMFLAGS=
-ifeq ($(WITH_SPACETIME),true)
-ASMFLAGS=/DWITH_SPACETIME
-endif
 endif
 
 ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime

@@ -482,8 +482,6 @@ static void writecode64(int code, intnat val)
 
 /* Marshal the given value in the output buffer */
 
-int caml_extern_allow_out_of_heap = 0; /* TODO: not implemented in multicore */
-
 static void extern_rec(value v)
 {
   struct extern_item * sp;

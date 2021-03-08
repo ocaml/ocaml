@@ -25,7 +25,7 @@ export LC_ALL=C
       alloc array compare extern floats gc_ctrl hash intern interp ints io \
   	  lexing md5 meta obj parsing signals str sys callback weak finalise \
       domain platform eventlog fiber memory startup_aux \
-      dynlink backtrace_byt backtrace spacetime_byt afl bigarray
+      dynlink backtrace_byt backtrace afl bigarray spacetime_byt
   do
       sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' "$prim.c"
   done

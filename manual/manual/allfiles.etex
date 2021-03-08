@@ -71,7 +71,6 @@ and as a
 % \input emacs.tex
 \input{intf-c.tex}
 \input{flambda.tex}
-\input{spacetime-chapter.tex}
 \input{afl-fuzz.tex}
 \input{instrumented-runtime.tex}
 

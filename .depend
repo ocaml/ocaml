@@ -2267,12 +2267,10 @@ asmcomp/branch_relaxation.cmi : \
 asmcomp/branch_relaxation_intf.cmo : \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
-    asmcomp/cmm.cmi \
     asmcomp/arch.cmo
 asmcomp/branch_relaxation_intf.cmx : \
     asmcomp/linear.cmx \
     lambda/debuginfo.cmx \
-    asmcomp/cmm.cmx \
     asmcomp/arch.cmx
 asmcomp/cmm.cmo : \
     utils/targetint.cmi \
@@ -2444,7 +2442,6 @@ asmcomp/deadcode.cmo : \
     asmcomp/proc.cmi \
     utils/numbers.cmi \
     asmcomp/mach.cmi \
-    utils/config.cmi \
     asmcomp/cmm.cmi \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : \
@@ -2452,7 +2449,6 @@ asmcomp/deadcode.cmx : \
     asmcomp/proc.cmx \
     utils/numbers.cmx \
     asmcomp/mach.cmx \
-    utils/config.cmx \
     asmcomp/cmm.cmx \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmi : \
@@ -2576,7 +2572,6 @@ asmcomp/linearize.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
     lambda/debuginfo.cmi \
-    utils/config.cmi \
     asmcomp/cmm.cmi \
     asmcomp/linearize.cmi
 asmcomp/linearize.cmx : \
@@ -2586,7 +2581,6 @@ asmcomp/linearize.cmx : \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
     lambda/debuginfo.cmx \
-    utils/config.cmx \
     asmcomp/cmm.cmx \
     asmcomp/linearize.cmi
 asmcomp/linearize.cmi : \
@@ -2609,7 +2603,6 @@ asmcomp/liveness.cmo : \
     asmcomp/printmach.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
-    utils/config.cmi \
     asmcomp/cmm.cmi \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmx : \
@@ -2618,7 +2611,6 @@ asmcomp/liveness.cmx : \
     asmcomp/printmach.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
-    utils/config.cmx \
     asmcomp/cmm.cmx \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmi : \
@@ -2713,7 +2705,6 @@ asmcomp/printmach.cmo : \
     lambda/lambda.cmi \
     asmcomp/interval.cmi \
     lambda/debuginfo.cmi \
-    utils/config.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     middle_end/backend_var.cmi \
@@ -2728,7 +2719,6 @@ asmcomp/printmach.cmx : \
     lambda/lambda.cmx \
     asmcomp/interval.cmx \
     lambda/debuginfo.cmx \
-    utils/config.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     middle_end/backend_var.cmx \
@@ -2839,7 +2829,6 @@ asmcomp/selectgen.cmo : \
     asmcomp/mach.cmi \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
-    utils/config.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
@@ -2854,7 +2843,6 @@ asmcomp/selectgen.cmx : \
     asmcomp/mach.cmx \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
-    utils/config.cmx \
     asmcomp/cmm.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
@@ -2869,21 +2857,17 @@ asmcomp/selectgen.cmi : \
     parsing/asttypes.cmi \
     asmcomp/arch.cmo
 asmcomp/selection.cmo : \
-    asmcomp/spacetime_profiling.cmi \
     asmcomp/selectgen.cmi \
     asmcomp/proc.cmi \
     asmcomp/mach.cmi \
-    utils/config.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/arch.cmo \
     asmcomp/selection.cmi
 asmcomp/selection.cmx : \
-    asmcomp/spacetime_profiling.cmx \
     asmcomp/selectgen.cmx \
     asmcomp/proc.cmx \
     asmcomp/mach.cmx \
-    utils/config.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/arch.cmx \
@@ -2891,36 +2875,6 @@ asmcomp/selection.cmx : \
 asmcomp/selection.cmi : \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi
-asmcomp/spacetime_profiling.cmo : \
-    asmcomp/selectgen.cmi \
-    asmcomp/proc.cmi \
-    utils/misc.cmi \
-    asmcomp/mach.cmi \
-    lambda/lambda.cmi \
-    lambda/debuginfo.cmi \
-    utils/config.cmi \
-    asmcomp/cmm_helpers.cmi \
-    asmcomp/cmm.cmi \
-    middle_end/backend_var.cmi \
-    parsing/asttypes.cmi \
-    asmcomp/arch.cmo \
-    asmcomp/spacetime_profiling.cmi
-asmcomp/spacetime_profiling.cmx : \
-    asmcomp/selectgen.cmx \
-    asmcomp/proc.cmx \
-    utils/misc.cmx \
-    asmcomp/mach.cmx \
-    lambda/lambda.cmx \
-    lambda/debuginfo.cmx \
-    utils/config.cmx \
-    asmcomp/cmm_helpers.cmx \
-    asmcomp/cmm.cmx \
-    middle_end/backend_var.cmx \
-    parsing/asttypes.cmi \
-    asmcomp/arch.cmx \
-    asmcomp/spacetime_profiling.cmi
-asmcomp/spacetime_profiling.cmi : \
-    asmcomp/selectgen.cmi
 asmcomp/spill.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \

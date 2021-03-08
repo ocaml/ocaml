@@ -22,7 +22,7 @@
    lexing.c md5.c meta.c memprof.c obj.c parsing.c signals.c str.c sys.c
      callback.c weak.c
    finalise.c stacks.c dynlink.c backtrace_byt.c backtrace.c
-     spacetime_byt.c afl.c
+     afl.c
    bigarray.c eventlog.c)
  (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
 
@@ -44,7 +44,7 @@
    floats.c str.c array.c io.c extern.c intern.c hash.c sys.c meta.c parsing.c
      gc_ctrl.c  md5.c obj.c
    lexing.c callback.c debugger.c weak.c compact.c finalise.c custom.c dynlink.c
-   spacetime_byt.c afl.c unix.c win32.c bigarray.c main.c memprof.c domain.c
+   afl.c unix.c win32.c bigarray.c main.c memprof.c domain.c
    skiplist.c codefrag.c
  )
  (action

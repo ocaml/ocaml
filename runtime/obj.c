@@ -28,9 +28,8 @@
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
-#include "caml/prims.h"
 #include "caml/platform.h"
-#include "caml/spacetime.h"
+#include "caml/prims.h"
 
 CAMLprim value caml_obj_tag(value arg)
 {
@@ -166,7 +165,6 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
-/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 {
   CAMLparam2 (new_tag_v, arg);
@@ -181,9 +179,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
-    uintnat profinfo;
-    Get_my_profinfo_with_cached_backtrace(profinfo, sz);
-    res = caml_alloc_small_with_my_or_given_profinfo(sz, tg, profinfo);
+    res = caml_alloc_small(sz, tg);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc_shr(sz, tg);
@@ -196,7 +192,6 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
   CAMLreturn (res);
 }
 
-/* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_obj_dup(value arg)
 {
   return caml_obj_with_tag(Val_long(Tag_val(arg)), arg);
