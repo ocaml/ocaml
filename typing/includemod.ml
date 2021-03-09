@@ -965,10 +965,14 @@ module FunctorDiff = struct
     | Change ((Named_arg arg, _mty), Named (param_name, _param), _) ->
         begin match param_name with
         | Some param ->
-            let res = Option.map (fun res ->
-                let scope = Ctype.create_scope () in
-                let subst = Subst.add_module param arg Subst.identity in
-                Subst.modtype (Rescope scope) subst res) st.res in
+            let res =
+              Option.map (fun res ->
+                  let scope = Ctype.create_scope () in
+                  let subst = Subst.add_module param arg Subst.identity in
+                  Subst.modtype (Rescope scope) subst res
+                )
+                st.res
+            in
             let subst = Subst.add_module param arg st.subst in
             expand_app_params { st with subst; res }
         | None ->
@@ -1012,7 +1016,6 @@ module FunctorDiff = struct
     in
     let args = Array.of_list args in
     let params = Array.of_list params in
-
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res }
     in
