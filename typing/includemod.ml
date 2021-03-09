@@ -884,7 +884,7 @@ module FunctorDiff = struct
     | Mty_ident _ | Mty_alias _ as mty -> Some mty
     | Mty_signature _ | Mty_functor _ -> None
 
-  let need_expansion { env ; res ; _ } = match res with
+  let lookup_expansion { env ; res ; _ } = match res with
     | None -> None
     | Some res ->
         match retrieve_functor_params env res with
@@ -894,7 +894,7 @@ module FunctorDiff = struct
             Some (keep_expansible_param res, more)
 
   let expand_arg_params state  =
-    match need_expansion state with
+    match lookup_expansion state with
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
@@ -948,7 +948,7 @@ module FunctorDiff = struct
     Diffing.variadic_diff ~weight:arg_weight ~test ~update state param1 param2
 
   let expand_app_params state =
-    match need_expansion state with
+    match lookup_expansion state with
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
