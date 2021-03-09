@@ -16764,7 +16764,7 @@ case $enable_ocamltest,4.12.0+multicore~alpha1 in #(
   yes,*|,*+dev*) :
     ocamltest='ocamltest' ;; #(
   *) :
-    ocamltest='' ;;
+    ocamltest='ocamltest' ;;
 esac
 
 if test x"$enable_flambda" = "xyes"; then :
