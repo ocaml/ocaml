@@ -599,7 +599,8 @@ and signature_components ~loc old_env ~mark env subst paired =
   match paired with
   | [] -> [], []
   | (sigi1, sigi2, pos) :: rem ->
-      let id, item, present_at_runtime = match sigi1, sigi2 with
+      let id, item, present_at_runtime =
+        match sigi1, sigi2 with
         | Sig_value(id1, valdecl1, _) ,Sig_value(_id2, valdecl2, _) ->
             let item =
               value_descriptions ~loc env ~mark subst id1 valdecl1 valdecl2
