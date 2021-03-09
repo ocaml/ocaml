@@ -38,7 +38,3 @@ val split_default_wrapper
   -> attr:function_attribute
   -> loc:Lambda.scoped_location
   -> (Ident.t * lambda) list
-
-(* To be filled by asmcomp/selectgen.ml *)
-val is_tail_native_heuristic: (int -> bool) ref
-                          (* # arguments -> can tailcall *)

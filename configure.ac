@@ -317,7 +317,7 @@ AC_ARG_ENABLE([reserved-header-bits],
     [0],
       [with_profinfo=false
       profinfo_width=0],
-    [[[1-9]]|1[[0-9]]|2[[0-1]]],
+    [[[1-9]]|[[1-2]][[0-9]]|3[[0-1]]],
       [with_profinfo=true
       profinfo_width="$enable_reserved_header_bits"],
     [AC_MSG_ERROR([invalid argument to --enable-reserved-header-bits])])])

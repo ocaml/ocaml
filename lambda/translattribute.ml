@@ -57,16 +57,48 @@ let is_unrolled = function
   | {txt="inline"|"ocaml.inline"|"inlined"|"ocaml.inlined"} -> false
   | _ -> assert false
 
-let get_id_payload =
+let get_payload get_from_exp =
   let open Parsetree in
   function
-  | PStr [] -> Some ""
-  | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] ->
-      begin match pexp_desc with
-      | Pexp_ident { txt = Longident.Lident id } -> Some id
-      | _ -> None
-      end
-  | _ -> None
+  | PStr [{pstr_desc = Pstr_eval (exp, [])}] -> get_from_exp exp
+  | _ -> Result.Error ()
+
+let get_optional_payload get_from_exp =
+  let open Parsetree in
+  function
+  | PStr [] -> Result.Ok None
+  | other -> Result.map Option.some (get_payload get_from_exp other)
+
+let get_id_from_exp =
+  let open Parsetree in
+  function
+  | { pexp_desc = Pexp_ident { txt = Longident.Lident id } } -> Result.Ok id
+  | _ -> Result.Error ()
+
+let get_int_from_exp =
+  let open Parsetree in
+  function
+    | { pexp_desc = Pexp_constant (Pconst_integer(s, None)) } ->
+        begin match Misc.Int_literal_converter.int s with
+        | n -> Result.Ok n
+        | exception (Failure _) -> Result.Error ()
+        end
+    | _ -> Result.Error ()
+
+let get_construct_from_exp =
+  let open Parsetree in
+  function
+    | { pexp_desc =
+          Pexp_construct ({ txt = Longident.Lident constr }, None) } ->
+        Result.Ok constr
+    | _ -> Result.Error ()
+
+let get_bool_from_exp exp =
+  Result.bind (get_construct_from_exp exp)
+    (function
+      | "true" -> Result.Ok true
+      | "false" -> Result.Ok false
+      | _ -> Result.Error ())
 
 let parse_id_payload txt loc ~default ~empty cases payload =
   let[@local] warn () =
@@ -80,10 +112,10 @@ let parse_id_payload txt loc ~default ~empty cases payload =
     Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg));
     default
   in
-  match get_id_payload payload with
-  | Some "" -> empty
-  | None -> warn ()
-  | Some id ->
+  match get_optional_payload get_id_from_exp payload with
+  | Error () -> warn ()
+  | Ok None -> empty
+  | Ok (Some id) ->
       match List.assoc_opt id cases with
       | Some r -> r
       | None -> warn ()
@@ -92,27 +124,14 @@ let parse_inline_attribute attr =
   match attr with
   | None -> Default_inline
   | Some {Parsetree.attr_name = {txt;loc} as id; attr_payload = payload} ->
-    let open Parsetree in
     if is_unrolled id then begin
       (* the 'unrolled' attributes must be used as [@unrolled n]. *)
       let warning txt = Warnings.Attribute_payload
           (txt, "It must be an integer literal")
       in
-      match payload with
-      | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
-          match pexp_desc with
-          | Pexp_constant (Pconst_integer(s, None)) -> begin
-              try
-                Unroll (Misc.Int_literal_converter.int s)
-              with Failure _ ->
-                Location.prerr_warning loc (warning txt);
-                Default_inline
-            end
-          | _ ->
-            Location.prerr_warning loc (warning txt);
-            Default_inline
-        end
-      | _ ->
+      match get_payload get_int_from_exp payload with
+      | Ok n -> Unroll n
+      | Error () ->
         Location.prerr_warning loc (warning txt);
         Default_inline
     end else
@@ -285,14 +304,11 @@ let get_tailcall_attribute e =
         | {Parsetree.attr_name = {txt;loc}; _} :: _ ->
             Location.prerr_warning loc (Warnings.Duplicated_attribute txt)
         end;
-        let payload_result : (_, _) result = match payload with
-          | PStr [] -> Ok Should_be_tailcall
-          | _ -> Error ()
-        in
-        match payload_result with
-        | Ok tailcall_attribute -> tailcall_attribute
+        match get_optional_payload get_bool_from_exp payload with
+        | Ok (None | Some true) -> Tailcall_expectation true
+        | Ok (Some false) -> Tailcall_expectation false
         | Error () ->
-            let msg = "No payload is currently supported." in
+            let msg = "Only an optional boolean literal is supported." in
             Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg));
             Default_tailcall
       in

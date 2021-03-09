@@ -75,7 +75,7 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string * string option   (* 49 *)
   | Unexpected_docstring of bool            (* 50 *)
-  | Tailcall_expected                       (* 51 *)
+  | Wrong_tailcall_expectation of bool      (* 51 *)
   | Fragile_literal_pattern                 (* 52 *)
   | Misplaced_attribute of string           (* 53 *)
   | Duplicated_attribute of string          (* 54 *)
@@ -153,7 +153,7 @@ let number = function
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
   | Unexpected_docstring _ -> 50
-  | Tailcall_expected -> 51
+  | Wrong_tailcall_expectation _ -> 51
   | Fragile_literal_pattern -> 52
   | Misplaced_attribute _ -> 53
   | Duplicated_attribute _ -> 54
@@ -295,8 +295,8 @@ let descriptions =
     ["no-cmi-file"];
     50, "Unexpected documentation comment.",
     ["unexpected-docstring"];
-    51, "Warning on non-tail calls if @tailcall present.",
-    ["tailcall-expected"];
+    51, "Function call annotated with an incorrect @tailcall attribute",
+    ["wrong-tailcall-expectation"];
     52, "Fragile constant pattern.",
     ["fragile-literal-pattern"];
     53, "Attribute cannot appear in this context.",
@@ -744,8 +744,9 @@ let message = function
   | Unexpected_docstring unattached ->
       if unattached then "unattached documentation comment (ignored)"
       else "ambiguous documentation comment"
-  | Tailcall_expected ->
-      Printf.sprintf "expected tailcall"
+  | Wrong_tailcall_expectation b ->
+      Printf.sprintf "expected %s"
+        (if b then "tailcall" else "non-tailcall")
   | Fragile_literal_pattern ->
       Printf.sprintf
         "Code should not depend on the actual values of\n\

@@ -1182,18 +1182,5 @@ method emit_fundecl f =
 
 end
 
-(* Tail call criterion (estimated).  Assumes:
-- all arguments are of type "int" (always the case for OCaml function calls)
-- one extra argument representing the closure environment (conservative).
-*)
-
-let is_tail_call nargs =
-  let ty = Array.make (nargs + 1) Int in
-  let (_loc_arg, stack_ofs) = Proc.loc_arguments ty in
-  stack_ofs = 0
-
-let _ =
-  Simplif.is_tail_native_heuristic := is_tail_call
-
 let reset () =
   current_function_name := ""
