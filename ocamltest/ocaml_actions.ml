@@ -1104,6 +1104,7 @@ let config_variables _log env =
       Sys.getenv_with_default_value "MKDLL" Ocamltest_config.mkdll;
     Ocaml_variables.mkexe, Ocamltest_config.mkexe;
     Ocaml_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
+    Ocaml_variables.cc, Ocamltest_config.cc;
     Ocaml_variables.csc, Ocamltest_config.csc;
     Ocaml_variables.csc_flags, Ocamltest_config.csc_flags;
     Ocaml_variables.shared_library_cflags,

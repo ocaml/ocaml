@@ -2105,7 +2105,7 @@ let expand_trace env trace =
 let deep_occur t0 ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if ty.level >= lowest_level then begin
+    if ty.level >= t0.level then begin
       if ty == t0 then raise Occur;
       ty.level <- pivot_level - ty.level;
       iter_type_expr occur_rec ty
