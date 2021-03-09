@@ -71,6 +71,7 @@ module Error = struct
 
   type module_type_symptom =
     | Mt_core of core_module_type_symptom
+    | Alias of module_type_diff
     | Signature of signature_symptom
     | Functor of functor_symptom
 
@@ -349,32 +350,36 @@ let retrieve_functor_params env mty =
    into a value of the bigger type. *)
 
 let rec modtypes ~loc env ~mark subst mty1 mty2 =
-  let dont_match reason =
+  match try_modtypes ~loc env ~mark subst mty1 mty2 with
+  | Ok _ as ok -> ok
+  | Error (Error.Alias x) -> Error x
+  | Error reason ->
     let mty2 = Subst.modtype Make_local subst mty2 in
-    Error Error.(diff mty1 mty2 reason) in
-  try_modtypes ~loc env ~mark dont_match subst mty1 mty2
+    Error Error.(diff mty1 mty2 reason)
 
-
-and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
+and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
-        Error Error.(diff mty1 mty2 @@ Mt_core(Invalid_module_alias p2))
+        Error Error.(Alias (diff mty1 mty2 @@ Mt_core(Invalid_module_alias p2)))
       else if not (equal_module_paths env p1 subst p2) then
-          dont_match Error.(Mt_core Incompatible_aliases)
+          Error Error.(Mt_core Incompatible_aliases)
       else Ok Tcoerce_none
   | (Mty_alias p1, _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
       with
       | exception Env.Error (Env.Missing_module (_, _, path)) ->
-          dont_match Error.(Mt_core(Unbound_module_path path))
+          Error Error.(Mt_core(Unbound_module_path path))
       | p1 ->
           begin match expand_module_alias env  p1 with
+          | Error e -> Error (Error.Mt_core e)
           | Ok mty1 ->
-              strengthened_modtypes ~loc ~aliasable:true env ~mark
-                subst mty1 p1 mty2
-          | Error e -> dont_match (Error.Mt_core e)
+              match strengthened_modtypes ~loc ~aliasable:true env ~mark
+                      subst mty1 p1 mty2
+              with
+              | Ok _ as x -> x
+              | Error reason -> Error (Error.Alias reason)
           end
     end
   | (Mty_ident p1, Mty_ident p2) ->
@@ -384,33 +389,33 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
       else
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
         | Some p1, Some p2 ->
-            try_modtypes ~loc env ~mark dont_match subst p1 p2
-        | None, _  | _, None -> dont_match (Error.Mt_core Abstract_module_type)
+            try_modtypes ~loc env ~mark subst p1 p2
+        | None, _  | _, None -> Error (Error.Mt_core Abstract_module_type)
         end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
       begin match expand_modtype_path env p1 with
       | Some p1 ->
-          try_modtypes ~loc env ~mark dont_match subst p1 mty2
-      | None -> dont_match (Error.Mt_core Abstract_module_type)
+          try_modtypes ~loc env ~mark subst p1 mty2
+      | None -> Error (Error.Mt_core Abstract_module_type)
       end
   | (_, Mty_ident p2) ->
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
       begin match expand_modtype_path env p2 with
-      | Some p2 -> try_modtypes ~loc env ~mark dont_match subst mty1 p2
+      | Some p2 -> try_modtypes ~loc env ~mark subst mty1 p2
       | None ->
           begin match mty1 with
           | Mty_functor _ ->
               let params1 = retrieve_functor_params env mty1 in
               let d = Error.sdiff params1 ([],mty2) in
-              dont_match Error.(Functor (Params d))
-          | _ -> dont_match Error.(Mt_core Not_an_identifier)
+              Error Error.(Functor (Params d))
+          | _ -> Error Error.(Mt_core Not_an_identifier)
           end
       end
   | (Mty_signature sig1, Mty_signature sig2) ->
       begin match signatures ~loc env ~mark subst sig1 sig2 with
       | Ok _ as ok -> ok
-      | Error e -> dont_match (Error.Signature e)
+      | Error e -> Error (Error.Signature e)
       end
   | Mty_functor (param1, res1), Mty_functor (param2, res2) ->
       let cc_arg, env, subst =
@@ -426,23 +431,23 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
           let d = Error.sdiff
               (param1::got_params, got_res)
               (param2::expected_params, expected_res) in
-          dont_match Error.(Functor (Params d))
+          Error Error.(Functor (Params d))
       | Error _, _ ->
           let params1, res1 = retrieve_functor_params env res1 in
           let params2, res2 = retrieve_functor_params env res2 in
           let d = Error.sdiff (param1::params1, res1) (param2::params2, res2) in
-          dont_match Error.(Functor (Params d))
+          Error Error.(Functor (Params d))
       | Ok _, Error res ->
-          dont_match Error.(Functor (Result res))
+          Error Error.(Functor (Result res))
       end
   | Mty_functor _, _
   | _, Mty_functor _ ->
       let params1 = retrieve_functor_params env mty1 in
       let params2 = retrieve_functor_params env mty2 in
       let d = Error.sdiff params1 params2 in
-      dont_match Error.(Functor (Params d))
+      Error Error.(Functor (Params d))
   | _, Mty_alias _ ->
-      dont_match (Error.Mt_core Error.Not_an_alias)
+      Error (Error.Mt_core Error.Not_an_alias)
 
 (* Functor parameters *)
 
@@ -1529,6 +1534,8 @@ module Linearize = struct
         | Some msg ->
             { msgs = Location.msg "%t" msg :: before; post = None }
         end
+    | Alias diff ->
+        module_type_symptom ~expansion_token ~env ~before ~ctx diff.symptom
     | Signature s -> signature ~expansion_token ~env ~before ~ctx s
     | Functor f -> functor_symptom ~expansion_token ~env ~before ~ctx f
 
