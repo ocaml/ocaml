@@ -67,13 +67,14 @@ module Error = struct
     | Incompatible_aliases
     | Abstract_module_type
     | Unbound_module_path of Path.t
-    | Invalid_module_alias of Path.t
 
   type module_type_symptom =
     | Mt_core of core_module_type_symptom
-    | Alias of module_type_diff
     | Signature of signature_symptom
     | Functor of functor_symptom
+    | Invalid_module_alias of Path.t
+    | After_alias_expansion of module_type_diff
+
 
   and module_type_diff = (module_type, module_type_symptom) diff
 
@@ -352,7 +353,6 @@ let retrieve_functor_params env mty =
 let rec modtypes ~loc env ~mark subst mty1 mty2 =
   match try_modtypes ~loc env ~mark subst mty1 mty2 with
   | Ok _ as ok -> ok
-  | Error (Error.Alias x) -> Error x
   | Error reason ->
     let mty2 = Subst.modtype Make_local subst mty2 in
     Error Error.(diff mty1 mty2 reason)
@@ -361,7 +361,7 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
-        Error Error.(Alias (diff mty1 mty2 @@ Mt_core(Invalid_module_alias p2)))
+        Error (Error.Invalid_module_alias p2)
       else if not (equal_module_paths env p1 subst p2) then
           Error Error.(Mt_core Incompatible_aliases)
       else Ok Tcoerce_none
@@ -379,7 +379,7 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
                       subst mty1 p1 mty2
               with
               | Ok _ as x -> x
-              | Error reason -> Error (Error.Alias reason)
+              | Error reason -> Error (Error.After_alias_expansion reason)
           end
     end
   | (Mty_ident p1, Mty_ident p2) ->
@@ -1377,8 +1377,6 @@ module Pp = struct
         else None
     | Unbound_module_path path ->
         Some(Format.dprintf "Unbound module %a" Printtyp.path path)
-    | Invalid_module_alias path ->
-        Some(Format.dprintf "Module %a cannot be aliased" Printtyp.path path)
 
   let dmodtype mty =
     let tmty = Printtyp.tree_of_modtype mty in
@@ -1511,13 +1509,10 @@ module Linearize = struct
 
   let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
     match diff.symptom with
-    | Mt_core (Invalid_module_alias _ as s) ->
-        begin match Pp.core_module_type_symptom s with
-        | None -> { msgs = before; post = None }
-        | Some main ->
-            let more = with_context ctx (fun ppf () -> main ppf) () in
-            { msgs = more :: before; post = None }
-        end
+    | Invalid_module_alias _ (* the difference is non-informative here *)
+    | After_alias_expansion _ (* we print only the expanded module types *) ->
+        module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
+          diff.symptom
     | _ ->
         let inner = if eqmode then Pp.eq_module_types else Pp.module_types in
         let before = match diff.symptom with
@@ -1525,19 +1520,27 @@ module Linearize = struct
           | _ ->
               let next = dwith_context_and_elision ctx inner diff in
               next :: before in
-        module_type_symptom ~expansion_token ~env ~before ~ctx diff.symptom
+        module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
+          diff.symptom
 
-  and module_type_symptom ~expansion_token ~env ~before ~ctx = function
+  and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
     | Mt_core core ->
         begin match Pp.core_module_type_symptom core with
         | None -> { msgs = before; post = None }
         | Some msg ->
             { msgs = Location.msg "%t" msg :: before; post = None }
         end
-    | Alias diff ->
-        module_type_symptom ~expansion_token ~env ~before ~ctx diff.symptom
     | Signature s -> signature ~expansion_token ~env ~before ~ctx s
     | Functor f -> functor_symptom ~expansion_token ~env ~before ~ctx f
+    | After_alias_expansion diff ->
+        module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
+    | Invalid_module_alias path ->
+        let printer =
+          Format.dprintf "Module %a cannot be aliased" Printtyp.path path
+        in
+        let msgs = dwith_context ctx printer :: before in
+        { msgs; post = None }
+
 
   and functor_symptom ~expansion_token ~env ~before ~ctx = function
     | Result res ->
@@ -1739,8 +1742,9 @@ module Linearize = struct
     | Error.Mismatch mty_diff ->
         let more () =
           let r =
-            module_type_symptom ~expansion_token ~env ~before:[] ~ctx:[]
-              mty_diff.symptom in
+            module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
+              ~ctx:[] mty_diff.symptom
+          in
           let list l ppf = match l with
             | [] -> ()
             | _ :: _ ->
