@@ -15,6 +15,13 @@ official distribution, please see link:CONTRIBUTING.md[].
 ----
 git checkout -b my-modification
 ----
+Usually, this branch wants to be based on `trunk`. If your changes must be on a
+specific release, use its release branch (*not* the release tag) instead. For
+example, to make a fix for 4.11.1, base your branch on *4.11* (not on *4.11.1*).
+The `configure` step for the compiler recognises a development build from the
+`+dev` in the version number (see file `VERSION`), and release tarballs and the tagged Git commits do
+not have this which causes some important development things to be disabled
+(ocamltest and converting C compiler warnings to errors).
 
 2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
@@ -22,6 +29,9 @@ git checkout -b my-modification
 ./configure
 make
 ----
+If you are on a release build and need development options, you can add
+`--enable-ocamltest` (to allow running the testsuite) and `--enable-warn-error`
+(so you don't get caught by CI later!).
 
 3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their
 `.opt` version. To try the toplevel, use:
@@ -160,7 +170,7 @@ has excellent documentation.
   Makefile.tools::        used by manual/ and testsuite/ Makefiles
   README.adoc::           general information on the compiler distribution
   README.win32.adoc::     general information on the Windows ports of OCaml
-  VERSION::               version string
+  VERSION::               version string. Run `make configure` after changing.
   asmcomp/::              native-code compiler and linker
   boot/::                 bootstrap compiler
   build-aux/:             autotools support scripts

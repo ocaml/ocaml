@@ -20,6 +20,8 @@ open Path
 open Types
 open Btype
 
+open Local_store
+
 type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
@@ -124,7 +126,7 @@ let to_subst_by_type_function s p =
 
 (* Special type ids for saved signatures *)
 
-let new_id = ref (-1)
+let new_id = s_ref (-1)
 let reset_for_saving () = new_id := -1
 
 let newpersty desc =

@@ -393,8 +393,13 @@ libraries and options on the command line.
 
 \nat{%
 \item["-nodynlink"]
-Allow the compiler to use some optimizations that are valid only for code
-that is never dynlinked.
+Allow the compiler to use some optimizations that are valid only for
+code that is statically linked to produce a non-relocatable
+executable.  The generated code cannot be linked to produce a shared
+library nor a position-independent executable (PIE).  Many operating
+systems produce PIEs by default, causing errors when linking code
+compiled with "-nodynlink".  Either do not use "-nodynlink" or pass
+the option "-ccopt -no-pie" at link-time.
 }%nat
 
 \item["-nolabels"]

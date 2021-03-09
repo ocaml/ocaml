@@ -25,6 +25,9 @@
 # native binary, if available. Note that they never use the boot/
 # versions: we assume that ocamlc, ocamlopt, etc. have been run first.
 
+# Set this to empty to force use of the bytecode compilers at all times
+USE_BEST_BINARIES ?= true
+
 check_not_stale = \
   $(if $(shell test $(ROOTDIR)/$1 -nt $(ROOTDIR)/$2 && echo stale), \
     $(info Warning: we are not using the native binary $2 \
@@ -34,7 +37,7 @@ or rebuilding it (or `touch`-ing it) if you want it used.), \
     ok)
 
 choose_best = $(strip $(if \
-   $(and $(wildcard $(ROOTDIR)/$1.opt$(EXE)),$(strip \
+   $(and $(USE_BEST_BINARIES),$(wildcard $(ROOTDIR)/$1.opt$(EXE)),$(strip \
       $(call check_not_stale,$1$(EXE),$1.opt$(EXE)))), \
     $(ROOTDIR)/$1.opt$(EXE), \
     $(CAMLRUN) $(ROOTDIR)/$1$(EXE)))
@@ -50,7 +53,7 @@ BEST_OCAMLLEX := $(call choose_best,lex/ocamllex)
 # bootrap-compiler and host-compiler object files, as ocamldep only
 # produces text output.
 BEST_OCAMLDEP := $(strip $(if \
-   $(and $(wildcard $(ROOTDIR)/ocamlc.opt$(EXE)),$(strip \
+   $(and $(USE_BEST_BINARIES),$(wildcard $(ROOTDIR)/ocamlc.opt$(EXE)),$(strip \
       $(call check_not_stale,boot/ocamlc,ocamlc.opt$(EXE)))), \
     $(ROOTDIR)/ocamlc.opt$(EXE) -depend, \
     $(BOOT_OCAMLC) -depend))
