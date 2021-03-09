@@ -212,6 +212,8 @@ static caml_thread_t caml_thread_new_info(void)
   if (th == NULL) return NULL;
 
   th->descr = Val_unit;
+  th->next = NULL;
+  th->prev = NULL;
   th->domain_id = d->state->id;
   th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));;
   th->c_stack = NULL;
