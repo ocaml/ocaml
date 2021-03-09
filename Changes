@@ -262,6 +262,10 @@ OCaml 4.12.0
 
 ### Other libraries:
 
+- #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
+  to allow it to work with directories.
+  (Daniil Baturin, review by Damien Doligez)
+
 * #9206, #9419: update documentation of the threads library;
   deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
   and the whole ThreadUnix module.
@@ -398,6 +402,9 @@ OCaml 4.12.0
 
 - #9783: Widen warning 16 to more cases.
   (Leo White, review by Florian Angeletti)
+
+- #10008: Improve error message for aliases to the current compilation unit.
+  (Leo White, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -593,6 +600,8 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
+  (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
 
 OCaml 4.11.1
 ------------
