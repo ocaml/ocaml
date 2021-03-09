@@ -16,6 +16,11 @@ let alloc_tracker on_alloc =
    its uncaught exception handler. *)
 let _ = Printexc.record_backtrace false
 
+let () =
+  start ~callstack_size:10 ~sampling_rate:1.
+    (alloc_tracker (fun _ -> stop ()));
+  ignore (Sys.opaque_identity (Array.make 200 0))
+
 let _ =
   start ~callstack_size:10 ~sampling_rate:1.
     (alloc_tracker (fun _ -> failwith "callback failed"));
