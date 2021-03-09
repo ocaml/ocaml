@@ -212,18 +212,18 @@ static caml_thread_t caml_thread_new_info(void)
   if (th == NULL) return NULL;
 
   th->descr = Val_unit;
+  th->domain_id = d->state->id;
   th->current_stack = caml_alloc_main_stack(Stack_size / sizeof(value));;
   th->c_stack = NULL;
-  th->exn_handler = NULL;
   th->local_roots = NULL;
   th->exit_buf = NULL;
-  th->gc_regs_buckets = NULL;
-  th->gc_regs = NULL;
-  th->gc_regs_slot = NULL;
   th->backtrace_pos = 0;
   th->backtrace_buffer = NULL;
   th->backtrace_last_exn = caml_create_root(Val_unit);
-  th->domain_id = d->state->id;
+  th->gc_regs = NULL;
+  th->gc_regs_buckets = NULL;
+  th->gc_regs_slot = NULL;
+  th->exn_handler = NULL;
 
   #ifndef NATIVE_CODE
   th->trap_sp_off = 1;
