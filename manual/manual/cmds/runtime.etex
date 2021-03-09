@@ -112,8 +112,13 @@ The following environment variables are also consulted:
 \fi
   \begin{options}
   \item[b] (backtrace) Trigger the printing of a stack backtrace
-        when an uncaught exception aborts the program.
-        This option takes no argument.
+        when an uncaught exception aborts the program. An optional argument can
+        be provided: "b=0" turns backtrace printing off; "b=1" is equivalent to
+        "b" and turns backtrace printing on; "b=2" turns backtrace printing on
+        and forces the runtime system to load debugging information at program
+        startup time instead of at backtrace printing time. "b=2" can be used if
+        the runtime is unable to load debugging information at backtrace
+        printing time, for example if there are no file descriptors available.
   \item[p] (parser trace) Turn on debugging support for
         "ocamlyacc"-generated parsers.  When this option is on,
         the pushdown automaton that executes the parsers prints a

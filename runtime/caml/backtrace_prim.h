@@ -52,6 +52,12 @@ typedef void * debuginfo;
  * Relevant for bytecode, always true for native code. */
 int caml_debug_info_available(void);
 
+/* Check load status of debug information for the main program. This is always 1
+ * for native code. For bytecode, it is 1 if the debug information has been
+ * loaded, 0 if it has not been loaded or one of the error constants in
+ * startup.h if something went wrong loading the debug information. */
+int caml_debug_info_status(void);
+
 /* Return debuginfo associated to a slot or NULL. */
 debuginfo caml_debuginfo_extract(backtrace_slot slot);
 

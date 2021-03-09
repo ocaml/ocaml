@@ -97,7 +97,7 @@ void caml_parse_ocamlrunparam(void)
     while (*opt != '\0'){
       switch (*opt++){
       //case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
-      case 'b': scanmult (opt, &params.backtrace_enabled_init); break;
+      case 'b': scanmult (opt, &params.backtrace_enabled); break;
       case 'c': scanmult (opt, &params.cleanup_on_exit); break;
       case 'e': scanmult (opt, &params.eventlog_enabled); break;
       case 'f': scanmult (opt, &params.init_fiber_wsz); break;
@@ -236,7 +236,7 @@ int caml_parse_command_line(char_os **argv)
       exit(0);
       break;
     case 'b':
-      params.backtrace_enabled_init = 1;
+      params.backtrace_enabled = 1;
       break;
     case 'I':
       if (argv[i + 1] != NULL) {

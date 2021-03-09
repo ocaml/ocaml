@@ -122,6 +122,16 @@ git clean -q -f -d -x
 # Build the system
 make $jobs
 
+# ThreadSanitizer has problems with processes that exit via
+# pthread_exit in the last thread.
+# It also reports errors for the error case of unlocking an
+# error-checking mutex.
+# Exclude the corresponding test
+export OCAMLTEST_SKIP_TESTS="$OCAMLTEST_SKIP_TESTS \
+tests/lib-threads/pr9971.ml \
+tests/statmemprof/thread_exit_in_callback.ml \
+tests/lib-threads/mutex_errors.ml"
+
 # Run the testsuite.
 # ThreadSanitizer complains about fork() in threaded programs,
 # we ask it to just continue in this case.
