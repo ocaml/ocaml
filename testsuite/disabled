@@ -73,6 +73,10 @@ tests/lib-threads/'beat.ml' with 1.1 (bytecode)
 tests/lib-threads/'mutex_errors.ml' with 1.1 (bytecode)
 tests/lib-threads/'mutex_errors.ml' with 1.2 (native)
 
+# TODO: pr9971 broken in our systhread implmentation with debug build (#9971/#9973)
+tests/lib-threads/'pr9971.ml' with 1.1 (bytecode)
+tests/lib-threads/'pr9971.ml' with 1.2 (native)
+
 # ocamldebug is broken (#34)
 tool-debugger
 
