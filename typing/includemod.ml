@@ -1454,18 +1454,25 @@ module Pp = struct
     | Named (Some _ as x,_) -> x
     | Unit | Named(None,_) -> None
 
-  let got proj = function
+  let got_arg = function
     | Diffing.Delete mty
     | Diffing.Keep (mty,_,_)
     | Diffing.Change (mty,_,_) as x ->
-        Some (proj mty,(x,mty))
+        Some (None,(x,mty))
     | Diffing.Insert _ -> None
 
-  let expected proj = function
+ let got_app = function
+    | Diffing.Delete mty
+    | Diffing.Keep (mty,_,_)
+    | Diffing.Change (mty,_,_) as x ->
+        Some (param_id mty,(x,mty))
+    | Diffing.Insert _ -> None
+
+  let expected = function
     | Diffing.Insert mty
     | Diffing.Keep(_,mty,_)
     | Diffing.Change (_,mty,_) as x ->
-        Some (proj mty,(x, mty))
+        Some (param_id mty,(x, mty))
     | Diffing.Delete _ -> None
 
   let space ppf () = Format.fprintf ppf "@ "
@@ -1554,16 +1561,16 @@ module Linearize = struct
           FunctorDiff.arg_diff env ctx got expected
           |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
         in
-        let got = Pp.(params_diff space (got param_id) functor_param d) in
+        let actual = Pp.(params_diff space got_app functor_param d) in
         let expected =
-          Pp.(params_diff space (expected param_id) functor_param d)
+          Pp.(params_diff space expected functor_param d)
         in
         let main =
           Format.dprintf
             "@[<hv 2>Modules do not match:@ \
              @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
              @[functor@ %t@ -> ...@]@]"
-            got expected
+            actual expected
         in
         let post = if expansion_token then Some (env,d) else None in
         { msgs = dwith_context ctx main :: before; post }
@@ -1839,15 +1846,14 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
   | [ _, (Diffing.Change _ as c) ] ->
       Location.errorf ~loc "%t" (Linearize.app env ~expansion_token:true c)
   | _ ->
-      let none _ = None in
       Location.errorf ~loc
         ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
         "@[<hv>The functor application %tis ill-typed.@ \
          These arguments:@;<1 2>\
          @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
         may_print_app
-        Pp.(params_diff space (got none) short_argument d)
-        Pp.(params_diff space (expected param_id) functor_param d)
+        Pp.(params_diff space got_arg short_argument d)
+        Pp.(params_diff space expected functor_param d)
 
 
 (* We could do a better job to split the individual error items
