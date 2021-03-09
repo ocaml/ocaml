@@ -159,6 +159,9 @@ OCaml 4.12.0
   representation for closures
   (Nathanaël Courant, review by Xavier Leroy)
 
+- #10062: set ARCH_INT64_PRINTF_FORMAT correctly for both modes of mingw-w64
+  (David Allsopp, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
@@ -537,6 +540,9 @@ OCaml 4.12.0
 
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
+
+* #8907, #9878: `Typemod.normalize_signature` uses wrong environment
+  (Jacques Garrigue, report and review by Leo White)
 
 - #9421, #9427: fix printing of (::) in ocamldoc
   (Florian Angeletti, report by Yawar Amin, review by Damien Doligez)
