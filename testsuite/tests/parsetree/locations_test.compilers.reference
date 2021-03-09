@@ -1,0 +1,1103 @@
+Ptop_def
+  [
+    structure_item (//toplevel//[10,215+0]..[10,215+39])
+      Pstr_modtype "S" (//toplevel//[10,215+12]..[10,215+13])
+        module_type (//toplevel//[10,215+16]..[10,215+23])
+          attribute "attr"
+            [
+              structure_item (//toplevel//[10,215+31]..[10,215+38])
+                Pstr_eval
+                expression (//toplevel//[10,215+31]..[10,215+38])
+                  Pexp_ident "payload" (//toplevel//[10,215+31]..[10,215+38])
+            ]
+          Pmty_signature
+          []
+  ]
+
+module type S = sig end
+Ptop_def
+  [
+    structure_item (//toplevel//[3,2+0]..[3,2+37])
+      Pstr_module
+      "M" (//toplevel//[3,2+7]..[3,2+8])
+        module_expr (//toplevel//[3,2+11]..[3,2+21])
+          attribute "attr"
+            [
+              structure_item (//toplevel//[3,2+29]..[3,2+36])
+                Pstr_eval
+                expression (//toplevel//[3,2+29]..[3,2+36])
+                  Pexp_ident "payload" (//toplevel//[3,2+29]..[3,2+36])
+            ]
+          Pmod_structure
+          []
+  ]
+
+module M : sig end
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+28])
+      Pstr_type Rec
+      [
+        type_declaration "t" (//toplevel//[2,1+5]..[2,1+6]) (//toplevel//[2,1+0]..[2,1+28])
+          ptype_params =
+            []
+          ptype_cstrs =
+            []
+          ptype_kind =
+            Ptype_abstract
+          ptype_private = Public
+          ptype_manifest =
+            Some
+              core_type (//toplevel//[2,1+9]..[2,1+12])
+                attribute "attr"
+                  [
+                    structure_item (//toplevel//[2,1+20]..[2,1+27])
+                      Pstr_eval
+                      expression (//toplevel//[2,1+20]..[2,1+27])
+                        Pexp_ident "payload" (//toplevel//[2,1+20]..[2,1+27])
+                  ]
+                Ptyp_constr "int" (//toplevel//[2,1+9]..[2,1+12])
+                []
+      ]
+  ]
+
+type t = int
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+1])
+      Pstr_eval
+      expression (//toplevel//[2,1+0]..[2,1+1])
+        attribute "attr"
+          [
+            structure_item (//toplevel//[2,1+9]..[2,1+16])
+              Pstr_eval
+              expression (//toplevel//[2,1+9]..[2,1+16])
+                Pexp_ident "payload" (//toplevel//[2,1+9]..[2,1+16])
+          ]
+        Pexp_constant PConst_int (3,None)
+  ]
+
+- : int = 3
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+30])
+      Pstr_exception
+      type_exception
+        attribute "attr"
+          [
+            structure_item (//toplevel//[2,1+22]..[2,1+29])
+              Pstr_eval
+              expression (//toplevel//[2,1+22]..[2,1+29])
+                Pexp_ident "payload" (//toplevel//[2,1+22]..[2,1+29])
+          ]
+        ptyext_constructor =
+          extension_constructor (//toplevel//[2,1+0]..[2,1+13])
+            pext_name = "Exn"
+            pext_kind =
+              Pext_decl
+                []
+                None
+  ]
+
+exception Exn
+Ptop_def
+  [
+    structure_item (//toplevel//[4,17+0]..[4,17+50])
+      Pstr_modtype "F" (//toplevel//[4,17+12]..[4,17+13])
+        module_type (//toplevel//[4,17+24]..[4,17+50])
+          Pmty_functor "A" (//toplevel//[4,17+25]..[4,17+26])
+          module_type (//toplevel//[4,17+29]..[4,17+30])
+            Pmty_ident "S" (//toplevel//[4,17+29]..[4,17+30])
+          module_type (//toplevel//[4,17+32]..[4,17+50])
+            Pmty_functor "B" (//toplevel//[4,17+33]..[4,17+34])
+            module_type (//toplevel//[4,17+37]..[4,17+38])
+              Pmty_ident "S" (//toplevel//[4,17+37]..[4,17+38])
+            module_type (//toplevel//[4,17+43]..[4,17+50])
+              Pmty_signature
+              []
+  ]
+
+module type F = functor (A : S) (B : S) -> sig end
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+48])
+      Pstr_module
+      "F" (//toplevel//[2,1+7]..[2,1+8])
+        module_expr (//toplevel//[2,1+19]..[2,1+48])
+          Pmod_functor "A" (//toplevel//[2,1+20]..[2,1+21])
+          module_type (//toplevel//[2,1+24]..[2,1+25])
+            Pmty_ident "S" (//toplevel//[2,1+24]..[2,1+25])
+          module_expr (//toplevel//[2,1+27]..[2,1+48])
+            Pmod_functor "B" (//toplevel//[2,1+28]..[2,1+29])
+            module_type (//toplevel//[2,1+32]..[2,1+33])
+              Pmty_ident "S" (//toplevel//[2,1+32]..[2,1+33])
+            module_expr (//toplevel//[2,1+38]..[2,1+48])
+              Pmod_structure
+              []
+  ]
+
+module F : functor (A : S) (B : S) -> sig end
+Ptop_def
+  [
+    structure_item (//toplevel//[4,18+0]..[4,18+31])
+      Pstr_modtype "S1" (//toplevel//[4,18+12]..[4,18+14])
+        module_type (//toplevel//[4,18+17]..[4,18+31])
+          Pmty_signature
+          [
+            signature_item (//toplevel//[4,18+21]..[4,18+27])
+              Psig_type Rec
+              [
+                type_declaration "t" (//toplevel//[4,18+26]..[4,18+27]) (//toplevel//[4,18+21]..[4,18+27])
+                  ptype_params =
+                    []
+                  ptype_cstrs =
+                    []
+                  ptype_kind =
+                    Ptype_abstract
+                  ptype_private = Public
+                  ptype_manifest =
+                    None
+              ]
+          ]
+  ]
+
+module type S1 = sig type t end
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+37])
+      Pstr_modtype "T1" (//toplevel//[2,1+12]..[2,1+14])
+        module_type (//toplevel//[2,1+17]..[2,1+37])
+          Pmty_with
+          module_type (//toplevel//[2,1+17]..[2,1+19])
+            Pmty_ident "S1" (//toplevel//[2,1+17]..[2,1+19])
+          [
+            Pwith_type "t" (//toplevel//[2,1+30]..[2,1+31])
+              type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+37])
+                ptype_params =
+                  []
+                ptype_cstrs =
+                  []
+                ptype_kind =
+                  Ptype_abstract
+                ptype_private = Public
+                ptype_manifest =
+                  Some
+                    core_type (//toplevel//[2,1+34]..[2,1+37])
+                      Ptyp_constr "int" (//toplevel//[2,1+34]..[2,1+37])
+                      []
+          ]
+  ]
+
+module type T1 = sig type t = int end
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+38])
+      Pstr_modtype "T1" (//toplevel//[2,1+12]..[2,1+14])
+        module_type (//toplevel//[2,1+17]..[2,1+38])
+          Pmty_with
+          module_type (//toplevel//[2,1+17]..[2,1+19])
+            Pmty_ident "S1" (//toplevel//[2,1+17]..[2,1+19])
+          [
+            Pwith_typesubst "t" (//toplevel//[2,1+30]..[2,1+31])
+              type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+38])
+                ptype_params =
+                  []
+                ptype_cstrs =
+                  []
+                ptype_kind =
+                  Ptype_abstract
+                ptype_private = Public
+                ptype_manifest =
+                  Some
+                    core_type (//toplevel//[2,1+35]..[2,1+38])
+                      Ptyp_constr "int" (//toplevel//[2,1+35]..[2,1+38])
+                      []
+          ]
+  ]
+
+module type T1 = sig end
+Ptop_def
+  [
+    structure_item (//toplevel//[4,29+0]..[4,29+15])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[4,29+4]..[4,29+11]) ghost
+            Ppat_constraint
+            pattern (//toplevel//[4,29+4]..[4,29+5])
+              Ppat_var "x" (//toplevel//[4,29+4]..[4,29+5])
+            core_type (//toplevel//[4,29+8]..[4,29+11]) ghost
+              Ptyp_poly
+              core_type (//toplevel//[4,29+8]..[4,29+11])
+                Ptyp_constr "int" (//toplevel//[4,29+8]..[4,29+11])
+                []
+          expression (//toplevel//[4,29+4]..[4,29+15]) ghost
+            Pexp_constraint
+            expression (//toplevel//[4,29+14]..[4,29+15])
+              Pexp_constant PConst_int (3,None)
+            core_type (//toplevel//[4,29+8]..[4,29+11])
+              Ptyp_constr "int" (//toplevel//[4,29+8]..[4,29+11])
+              []
+      ]
+  ]
+
+val x : int = 3
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+35])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+22]) ghost
+            Ppat_constraint
+            pattern (//toplevel//[2,1+4]..[2,1+5])
+              Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+            core_type (//toplevel//[2,1+4]..[2,1+35]) ghost
+              Ptyp_poly 'a
+              core_type (//toplevel//[2,1+16]..[2,1+22])
+                Ptyp_arrow
+                Nolabel
+                core_type (//toplevel//[2,1+16]..[2,1+17])
+                  Ptyp_var a
+                core_type (//toplevel//[2,1+21]..[2,1+22])
+                  Ptyp_var a
+          expression (//toplevel//[2,1+4]..[2,1+35])
+            Pexp_newtype "a"
+            expression (//toplevel//[2,1+4]..[2,1+35])
+              Pexp_constraint
+              expression (//toplevel//[2,1+25]..[2,1+35])
+                Pexp_fun
+                Nolabel
+                None
+                pattern (//toplevel//[2,1+29]..[2,1+30])
+                  Ppat_var "x" (//toplevel//[2,1+29]..[2,1+30])
+                expression (//toplevel//[2,1+34]..[2,1+35])
+                  Pexp_ident "x" (//toplevel//[2,1+34]..[2,1+35])
+              core_type (//toplevel//[2,1+16]..[2,1+22])
+                Ptyp_arrow
+                Nolabel
+                core_type (//toplevel//[2,1+16]..[2,1+17])
+                  Ptyp_constr "a" (//toplevel//[2,1+16]..[2,1+17])
+                  []
+                core_type (//toplevel//[2,1+21]..[2,1+22])
+                  Ptyp_constr "a" (//toplevel//[2,1+21]..[2,1+22])
+                  []
+      ]
+  ]
+
+val x : 'a -> 'a = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[5,61+3])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_any
+          expression (//toplevel//[2,1+8]..[5,61+3])
+            Pexp_object
+            class_structure
+              pattern (//toplevel//[2,1+14]..[2,1+14]) ghost
+                Ppat_any
+              [
+                class_field (//toplevel//[3,16+2]..[4,46+14])
+                  Pcf_method Public
+                    "x" (//toplevel//[3,16+9]..[3,16+10])
+                    Concrete Fresh
+                    expression (//toplevel//[3,16+18]..[4,46+14]) ghost
+                      Pexp_poly
+                      expression (//toplevel//[3,16+9]..[4,46+14])
+                        Pexp_newtype "a"
+                        expression (//toplevel//[3,16+9]..[4,46+14])
+                          Pexp_constraint
+                          expression (//toplevel//[4,46+4]..[4,46+14])
+                            Pexp_fun
+                            Nolabel
+                            None
+                            pattern (//toplevel//[4,46+8]..[4,46+9])
+                              Ppat_var "x" (//toplevel//[4,46+8]..[4,46+9])
+                            expression (//toplevel//[4,46+13]..[4,46+14])
+                              Pexp_ident "x" (//toplevel//[4,46+13]..[4,46+14])
+                          core_type (//toplevel//[3,16+21]..[3,16+27])
+                            Ptyp_arrow
+                            Nolabel
+                            core_type (//toplevel//[3,16+21]..[3,16+22])
+                              Ptyp_constr "a" (//toplevel//[3,16+21]..[3,16+22])
+                              []
+                            core_type (//toplevel//[3,16+26]..[3,16+27])
+                              Ptyp_constr "a" (//toplevel//[3,16+26]..[3,16+27])
+                              []
+                      Some
+                        core_type (//toplevel//[3,16+9]..[4,46+14]) ghost
+                          Ptyp_poly 'a
+                          core_type (//toplevel//[3,16+21]..[3,16+27])
+                            Ptyp_arrow
+                            Nolabel
+                            core_type (//toplevel//[3,16+21]..[3,16+22])
+                              Ptyp_var a
+                            core_type (//toplevel//[3,16+26]..[3,16+27])
+                              Ptyp_var a
+              ]
+      ]
+  ]
+
+- : < x : 'a. 'a -> 'a > = <obj>
+Ptop_def
+  [
+    structure_item (//toplevel//[4,17+0]..[4,17+29])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[4,17+4]..[4,17+5])
+            Ppat_var "x" (//toplevel//[4,17+4]..[4,17+5])
+          expression (//toplevel//[4,17+6]..[4,17+29]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[4,17+6]..[4,17+14])
+              Ppat_var "contents" (//toplevel//[4,17+6]..[4,17+14])
+            expression (//toplevel//[4,17+17]..[4,17+29])
+              Pexp_record
+              [
+                "contents" (//toplevel//[4,17+19]..[4,17+27])
+                  expression (//toplevel//[4,17+19]..[4,17+27]) ghost
+                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27]) ghost
+              ]
+              None
+      ]
+  ]
+
+val x : 'a -> 'a ref = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+30])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+30])
+            Pexp_record
+            [
+              "contents" (//toplevel//[2,1+10]..[2,1+18])
+                expression (//toplevel//[2,1+10]..[2,1+28]) ghost
+                  Pexp_constraint
+                  expression (//toplevel//[2,1+27]..[2,1+28])
+                    Pexp_constant PConst_int (3,None)
+                  core_type (//toplevel//[2,1+21]..[2,1+24])
+                    Ptyp_constr "int" (//toplevel//[2,1+21]..[2,1+24])
+                    []
+            ]
+            None
+      ]
+  ]
+
+val x : int ref = {contents = 3}
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+35])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+6]..[2,1+35]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[2,1+6]..[2,1+14])
+              Ppat_var "contents" (//toplevel//[2,1+6]..[2,1+14])
+            expression (//toplevel//[2,1+17]..[2,1+35])
+              Pexp_record
+              [
+                "contents" (//toplevel//[2,1+19]..[2,1+27])
+                  expression (//toplevel//[2,1+19]..[2,1+33]) ghost
+                    Pexp_constraint
+                    expression (//toplevel//[2,1+19]..[2,1+33]) ghost
+                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                    core_type (//toplevel//[2,1+30]..[2,1+33])
+                      Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
+                      []
+              ]
+              None
+      ]
+  ]
+
+val x : int -> int ref = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+41])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+41])
+            Pexp_function
+            [
+              <case>
+                pattern (//toplevel//[2,1+17]..[2,1+29])
+                  Ppat_record Closed
+                  [
+                    "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                      pattern (//toplevel//[2,1+19]..[2,1+27])
+                        Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
+                  ]
+                expression (//toplevel//[2,1+33]..[2,1+41])
+                  Pexp_ident "contents" (//toplevel//[2,1+33]..[2,1+41])
+            ]
+      ]
+  ]
+
+val x : 'a ref -> 'a = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+47])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+47])
+            Pexp_function
+            [
+              <case>
+                pattern (//toplevel//[2,1+17]..[2,1+35])
+                  Ppat_record Closed
+                  [
+                    "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
+                      pattern (//toplevel//[2,1+19]..[2,1+33]) ghost
+                        Ppat_constraint
+                        pattern (//toplevel//[2,1+19]..[2,1+27])
+                          Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
+                        core_type (//toplevel//[2,1+30]..[2,1+33])
+                          Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
+                          []
+                  ]
+                expression (//toplevel//[2,1+39]..[2,1+47])
+                  Pexp_ident "contents" (//toplevel//[2,1+39]..[2,1+47])
+            ]
+      ]
+  ]
+
+val x : int ref -> int = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+44])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+44])
+            Pexp_function
+            [
+              <case>
+                pattern (//toplevel//[2,1+17]..[2,1+39])
+                  Ppat_record Closed
+                  [
+                    "contents" (//toplevel//[2,1+19]..[2,1+27])
+                      pattern (//toplevel//[2,1+19]..[2,1+37]) ghost
+                        Ppat_constraint
+                        pattern (//toplevel//[2,1+36]..[2,1+37])
+                          Ppat_var "i" (//toplevel//[2,1+36]..[2,1+37])
+                        core_type (//toplevel//[2,1+30]..[2,1+33])
+                          Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
+                          []
+                  ]
+                expression (//toplevel//[2,1+43]..[2,1+44])
+                  Pexp_ident "i" (//toplevel//[2,1+43]..[2,1+44])
+            ]
+      ]
+  ]
+
+val x : int ref -> int = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[4,19+0]..[4,19+26])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[4,19+4]..[4,19+5])
+            Ppat_var "x" (//toplevel//[4,19+4]..[4,19+5])
+          expression (//toplevel//[4,19+8]..[4,19+26])
+            Pexp_open Fresh
+            module_expr (//toplevel//[4,19+8]..[4,19+9])
+              Pmod_ident "M" (//toplevel//[4,19+8]..[4,19+9])
+            expression (//toplevel//[4,19+10]..[4,19+26])
+              Pexp_record
+              [
+                "contents" (//toplevel//[4,19+12]..[4,19+20])
+                  expression (//toplevel//[4,19+23]..[4,19+24])
+                    Pexp_constant PConst_int (3,None)
+              ]
+              None
+      ]
+  ]
+
+val x : int ref = {contents = 3}
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+18])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+18])
+            Pexp_open Fresh
+            module_expr (//toplevel//[2,1+8]..[2,1+9])
+              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
+            expression (//toplevel//[2,1+10]..[2,1+18])
+              Pexp_construct "::" (//toplevel//[2,1+12]..[2,1+18]) ghost
+              Some
+                expression (//toplevel//[2,1+12]..[2,1+18]) ghost
+                  Pexp_tuple
+                  [
+                    expression (//toplevel//[2,1+12]..[2,1+13])
+                      Pexp_constant PConst_int (3,None)
+                    expression (//toplevel//[2,1+15]..[2,1+18]) ghost
+                      Pexp_construct "::" (//toplevel//[2,1+15]..[2,1+18]) ghost
+                      Some
+                        expression (//toplevel//[2,1+15]..[2,1+18]) ghost
+                          Pexp_tuple
+                          [
+                            expression (//toplevel//[2,1+15]..[2,1+16])
+                              Pexp_constant PConst_int (4,None)
+                            expression (//toplevel//[2,1+17]..[2,1+18]) ghost
+                              Pexp_construct "[]" (//toplevel//[2,1+17]..[2,1+18]) ghost
+                              None
+                          ]
+                  ]
+      ]
+  ]
+
+val x : int list = [3; 4]
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+18])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[2,1+4]..[2,1+5])
+            Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
+          expression (//toplevel//[2,1+8]..[2,1+18])
+            Pexp_open Fresh
+            module_expr (//toplevel//[2,1+8]..[2,1+9])
+              Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
+            expression (//toplevel//[2,1+12]..[2,1+16])
+              Pexp_sequence
+              expression (//toplevel//[2,1+12]..[2,1+13])
+                Pexp_constant PConst_int (3,None)
+              expression (//toplevel//[2,1+15]..[2,1+16])
+                Pexp_constant PConst_int (4,None)
+      ]
+  ]
+
+Line 2, characters 12-13:
+2 | let x = M.( 3; 4 );;
+                ^
+Warning 10 [non-unit-statement]: this expression should have type unit.
+val x : int = 4
+Ptop_def
+  [
+    structure_item (//toplevel//[6,56+0]..[6,56+24])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[6,56+4]..[6,56+12])
+            Ppat_var ".@()" (//toplevel//[6,56+4]..[6,56+12])
+          expression (//toplevel//[6,56+13]..[6,56+24]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[6,56+13]..[6,56+14])
+              Ppat_var "x" (//toplevel//[6,56+13]..[6,56+14])
+            expression (//toplevel//[6,56+15]..[6,56+24]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[6,56+15]..[6,56+16])
+                Ppat_var "y" (//toplevel//[6,56+15]..[6,56+16])
+              expression (//toplevel//[6,56+19]..[6,56+24])
+                Pexp_apply
+                expression (//toplevel//[6,56+21]..[6,56+22])
+                  Pexp_ident "+" (//toplevel//[6,56+21]..[6,56+22])
+                [
+                  <arg>
+                  Nolabel
+                    expression (//toplevel//[6,56+19]..[6,56+20])
+                      Pexp_ident "x" (//toplevel//[6,56+19]..[6,56+20])
+                  <arg>
+                  Nolabel
+                    expression (//toplevel//[6,56+23]..[6,56+24])
+                      Pexp_ident "y" (//toplevel//[6,56+23]..[6,56+24])
+                ]
+      ]
+    structure_item (//toplevel//[7,81+0]..[7,81+32])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[7,81+4]..[7,81+14])
+            Ppat_var ".@()<-" (//toplevel//[7,81+4]..[7,81+14])
+          expression (//toplevel//[7,81+15]..[7,81+32]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[7,81+15]..[7,81+16])
+              Ppat_var "x" (//toplevel//[7,81+15]..[7,81+16])
+            expression (//toplevel//[7,81+17]..[7,81+32]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[7,81+17]..[7,81+18])
+                Ppat_var "y" (//toplevel//[7,81+17]..[7,81+18])
+              expression (//toplevel//[7,81+19]..[7,81+32]) ghost
+                Pexp_fun
+                Nolabel
+                None
+                pattern (//toplevel//[7,81+19]..[7,81+20])
+                  Ppat_var "z" (//toplevel//[7,81+19]..[7,81+20])
+                expression (//toplevel//[7,81+23]..[7,81+32])
+                  Pexp_apply
+                  expression (//toplevel//[7,81+29]..[7,81+30])
+                    Pexp_ident "+" (//toplevel//[7,81+29]..[7,81+30])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (//toplevel//[7,81+23]..[7,81+28])
+                        Pexp_apply
+                        expression (//toplevel//[7,81+25]..[7,81+26])
+                          Pexp_ident "+" (//toplevel//[7,81+25]..[7,81+26])
+                        [
+                          <arg>
+                          Nolabel
+                            expression (//toplevel//[7,81+23]..[7,81+24])
+                              Pexp_ident "x" (//toplevel//[7,81+23]..[7,81+24])
+                          <arg>
+                          Nolabel
+                            expression (//toplevel//[7,81+27]..[7,81+28])
+                              Pexp_ident "y" (//toplevel//[7,81+27]..[7,81+28])
+                        ]
+                    <arg>
+                    Nolabel
+                      expression (//toplevel//[7,81+31]..[7,81+32])
+                        Pexp_ident "z" (//toplevel//[7,81+31]..[7,81+32])
+                  ]
+      ]
+    structure_item (//toplevel//[8,114+0]..[8,114+25])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[8,114+4]..[8,114+13])
+            Ppat_var ".%.{}" (//toplevel//[8,114+4]..[8,114+13])
+          expression (//toplevel//[8,114+14]..[8,114+25]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[8,114+14]..[8,114+15])
+              Ppat_var "x" (//toplevel//[8,114+14]..[8,114+15])
+            expression (//toplevel//[8,114+16]..[8,114+25]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[8,114+16]..[8,114+17])
+                Ppat_var "y" (//toplevel//[8,114+16]..[8,114+17])
+              expression (//toplevel//[8,114+20]..[8,114+25])
+                Pexp_apply
+                expression (//toplevel//[8,114+22]..[8,114+23])
+                  Pexp_ident "+" (//toplevel//[8,114+22]..[8,114+23])
+                [
+                  <arg>
+                  Nolabel
+                    expression (//toplevel//[8,114+20]..[8,114+21])
+                      Pexp_ident "x" (//toplevel//[8,114+20]..[8,114+21])
+                  <arg>
+                  Nolabel
+                    expression (//toplevel//[8,114+24]..[8,114+25])
+                      Pexp_ident "y" (//toplevel//[8,114+24]..[8,114+25])
+                ]
+      ]
+    structure_item (//toplevel//[9,140+0]..[9,140+33])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[9,140+4]..[9,140+15])
+            Ppat_var ".%.{}<-" (//toplevel//[9,140+4]..[9,140+15])
+          expression (//toplevel//[9,140+16]..[9,140+33]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[9,140+16]..[9,140+17])
+              Ppat_var "x" (//toplevel//[9,140+16]..[9,140+17])
+            expression (//toplevel//[9,140+18]..[9,140+33]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[9,140+18]..[9,140+19])
+                Ppat_var "y" (//toplevel//[9,140+18]..[9,140+19])
+              expression (//toplevel//[9,140+20]..[9,140+33]) ghost
+                Pexp_fun
+                Nolabel
+                None
+                pattern (//toplevel//[9,140+20]..[9,140+21])
+                  Ppat_var "z" (//toplevel//[9,140+20]..[9,140+21])
+                expression (//toplevel//[9,140+24]..[9,140+33])
+                  Pexp_apply
+                  expression (//toplevel//[9,140+30]..[9,140+31])
+                    Pexp_ident "+" (//toplevel//[9,140+30]..[9,140+31])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (//toplevel//[9,140+24]..[9,140+29])
+                        Pexp_apply
+                        expression (//toplevel//[9,140+26]..[9,140+27])
+                          Pexp_ident "+" (//toplevel//[9,140+26]..[9,140+27])
+                        [
+                          <arg>
+                          Nolabel
+                            expression (//toplevel//[9,140+24]..[9,140+25])
+                              Pexp_ident "x" (//toplevel//[9,140+24]..[9,140+25])
+                          <arg>
+                          Nolabel
+                            expression (//toplevel//[9,140+28]..[9,140+29])
+                              Pexp_ident "y" (//toplevel//[9,140+28]..[9,140+29])
+                        ]
+                    <arg>
+                    Nolabel
+                      expression (//toplevel//[9,140+32]..[9,140+33])
+                        Pexp_ident "z" (//toplevel//[9,140+32]..[9,140+33])
+                  ]
+      ]
+    structure_item (//toplevel//[10,174+0]..[10,174+25])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[10,174+4]..[10,174+13])
+            Ppat_var ".%.[]" (//toplevel//[10,174+4]..[10,174+13])
+          expression (//toplevel//[10,174+14]..[10,174+25]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[10,174+14]..[10,174+15])
+              Ppat_var "x" (//toplevel//[10,174+14]..[10,174+15])
+            expression (//toplevel//[10,174+16]..[10,174+25]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[10,174+16]..[10,174+17])
+                Ppat_var "y" (//toplevel//[10,174+16]..[10,174+17])
+              expression (//toplevel//[10,174+20]..[10,174+25])
+                Pexp_apply
+                expression (//toplevel//[10,174+22]..[10,174+23])
+                  Pexp_ident "+" (//toplevel//[10,174+22]..[10,174+23])
+                [
+                  <arg>
+                  Nolabel
+                    expression (//toplevel//[10,174+20]..[10,174+21])
+                      Pexp_ident "x" (//toplevel//[10,174+20]..[10,174+21])
+                  <arg>
+                  Nolabel
+                    expression (//toplevel//[10,174+24]..[10,174+25])
+                      Pexp_ident "y" (//toplevel//[10,174+24]..[10,174+25])
+                ]
+      ]
+    structure_item (//toplevel//[11,200+0]..[11,200+33])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[11,200+4]..[11,200+15])
+            Ppat_var ".%.[]<-" (//toplevel//[11,200+4]..[11,200+15])
+          expression (//toplevel//[11,200+16]..[11,200+33]) ghost
+            Pexp_fun
+            Nolabel
+            None
+            pattern (//toplevel//[11,200+16]..[11,200+17])
+              Ppat_var "x" (//toplevel//[11,200+16]..[11,200+17])
+            expression (//toplevel//[11,200+18]..[11,200+33]) ghost
+              Pexp_fun
+              Nolabel
+              None
+              pattern (//toplevel//[11,200+18]..[11,200+19])
+                Ppat_var "y" (//toplevel//[11,200+18]..[11,200+19])
+              expression (//toplevel//[11,200+20]..[11,200+33]) ghost
+                Pexp_fun
+                Nolabel
+                None
+                pattern (//toplevel//[11,200+20]..[11,200+21])
+                  Ppat_var "z" (//toplevel//[11,200+20]..[11,200+21])
+                expression (//toplevel//[11,200+24]..[11,200+33])
+                  Pexp_apply
+                  expression (//toplevel//[11,200+30]..[11,200+31])
+                    Pexp_ident "+" (//toplevel//[11,200+30]..[11,200+31])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (//toplevel//[11,200+24]..[11,200+29])
+                        Pexp_apply
+                        expression (//toplevel//[11,200+26]..[11,200+27])
+                          Pexp_ident "+" (//toplevel//[11,200+26]..[11,200+27])
+                        [
+                          <arg>
+                          Nolabel
+                            expression (//toplevel//[11,200+24]..[11,200+25])
+                              Pexp_ident "x" (//toplevel//[11,200+24]..[11,200+25])
+                          <arg>
+                          Nolabel
+                            expression (//toplevel//[11,200+28]..[11,200+29])
+                              Pexp_ident "y" (//toplevel//[11,200+28]..[11,200+29])
+                        ]
+                    <arg>
+                    Nolabel
+                      expression (//toplevel//[11,200+32]..[11,200+33])
+                        Pexp_ident "z" (//toplevel//[11,200+32]..[11,200+33])
+                  ]
+      ]
+  ]
+
+val ( .@() ) : int -> int -> int = <fun>
+val ( .@()<- ) : int -> int -> int -> int = <fun>
+val ( .%.{} ) : int -> int -> int = <fun>
+val ( .%.{}<- ) : int -> int -> int -> int = <fun>
+val ( .%.[] ) : int -> int -> int = <fun>
+val ( .%.[]<- ) : int -> int -> int -> int = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[4,27+0]..[4,27+6])
+      Pstr_eval
+      expression (//toplevel//[4,27+0]..[4,27+6])
+        Pexp_apply
+        expression (//toplevel//[4,27+0]..[4,27+6]) ghost
+          Pexp_ident ".@()" (//toplevel//[4,27+0]..[4,27+6]) ghost
+        [
+          <arg>
+          Nolabel
+            expression (//toplevel//[4,27+0]..[4,27+1])
+              Pexp_ident "x" (//toplevel//[4,27+0]..[4,27+1])
+          <arg>
+          Nolabel
+            expression (//toplevel//[4,27+4]..[4,27+5])
+              Pexp_constant PConst_int (4,None)
+        ]
+  ]
+
+- : int = 8
+Ptop_def
+  [
+    structure_item (//toplevel//[1,0+0]..[1,0+11])
+      Pstr_eval
+      expression (//toplevel//[1,0+0]..[1,0+11])
+        Pexp_apply
+        expression (//toplevel//[1,0+0]..[1,0+11]) ghost
+          Pexp_ident ".@()<-" (//toplevel//[1,0+0]..[1,0+11]) ghost
+        [
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+0]..[1,0+1])
+              Pexp_ident "x" (//toplevel//[1,0+0]..[1,0+1])
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+4]..[1,0+5])
+              Pexp_constant PConst_int (4,None)
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+10]..[1,0+11])
+              Pexp_constant PConst_int (4,None)
+        ]
+  ]
+
+- : int = 12
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+7])
+      Pstr_eval
+      expression (//toplevel//[2,1+0]..[2,1+7])
+        Pexp_apply
+        expression (//toplevel//[2,1+0]..[2,1+7]) ghost
+          Pexp_ident ".%.{}" (//toplevel//[2,1+0]..[2,1+7]) ghost
+        [
+          <arg>
+          Nolabel
+            expression (//toplevel//[2,1+0]..[2,1+1])
+              Pexp_ident "x" (//toplevel//[2,1+0]..[2,1+1])
+          <arg>
+          Nolabel
+            expression (//toplevel//[2,1+5]..[2,1+6])
+              Pexp_constant PConst_int (4,None)
+        ]
+  ]
+
+- : int = 8
+Ptop_def
+  [
+    structure_item (//toplevel//[1,0+0]..[1,0+12])
+      Pstr_eval
+      expression (//toplevel//[1,0+0]..[1,0+12])
+        Pexp_apply
+        expression (//toplevel//[1,0+0]..[1,0+12]) ghost
+          Pexp_ident ".%.{}<-" (//toplevel//[1,0+0]..[1,0+12]) ghost
+        [
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+0]..[1,0+1])
+              Pexp_ident "x" (//toplevel//[1,0+0]..[1,0+1])
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+5]..[1,0+6])
+              Pexp_constant PConst_int (4,None)
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+11]..[1,0+12])
+              Pexp_constant PConst_int (4,None)
+        ]
+  ]
+
+- : int = 12
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[2,1+7])
+      Pstr_eval
+      expression (//toplevel//[2,1+0]..[2,1+7])
+        Pexp_apply
+        expression (//toplevel//[2,1+0]..[2,1+7]) ghost
+          Pexp_ident ".%.[]" (//toplevel//[2,1+0]..[2,1+7]) ghost
+        [
+          <arg>
+          Nolabel
+            expression (//toplevel//[2,1+0]..[2,1+1])
+              Pexp_ident "x" (//toplevel//[2,1+0]..[2,1+1])
+          <arg>
+          Nolabel
+            expression (//toplevel//[2,1+5]..[2,1+6])
+              Pexp_constant PConst_int (4,None)
+        ]
+  ]
+
+- : int = 8
+Ptop_def
+  [
+    structure_item (//toplevel//[1,0+0]..[1,0+12])
+      Pstr_eval
+      expression (//toplevel//[1,0+0]..[1,0+12])
+        Pexp_apply
+        expression (//toplevel//[1,0+0]..[1,0+12]) ghost
+          Pexp_ident ".%.[]<-" (//toplevel//[1,0+0]..[1,0+12]) ghost
+        [
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+0]..[1,0+1])
+              Pexp_ident "x" (//toplevel//[1,0+0]..[1,0+1])
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+5]..[1,0+6])
+              Pexp_constant PConst_int (4,None)
+          <arg>
+          Nolabel
+            expression (//toplevel//[1,0+11]..[1,0+12])
+              Pexp_constant PConst_int (4,None)
+        ]
+  ]
+
+- : int = 12
+Ptop_def
+  [
+    structure_item (//toplevel//[4,28+0]..[4,28+37])
+      Pstr_value Nonrec
+      [
+        <def>
+          pattern (//toplevel//[4,28+4]..[4,28+5])
+            Ppat_var "f" (//toplevel//[4,28+4]..[4,28+5])
+          expression (//toplevel//[4,28+8]..[4,28+37])
+            Pexp_function
+            [
+              <case>
+                pattern (//toplevel//[4,28+17]..[4,28+31])
+                  Ppat_constraint
+                  pattern (//toplevel//[4,28+25]..[4,28+26])
+                    Ppat_unpack "M" (//toplevel//[4,28+25]..[4,28+26])
+                  core_type (//toplevel//[4,28+29]..[4,28+30])
+                    Ptyp_package "S" (//toplevel//[4,28+29]..[4,28+30])
+                    []
+                expression (//toplevel//[4,28+35]..[4,28+37])
+                  Pexp_construct "()" (//toplevel//[4,28+35]..[4,28+37])
+                  None
+            ]
+      ]
+  ]
+
+val f : (module S) -> unit = <fun>
+Ptop_def
+  [
+    structure_item (//toplevel//[4,45+0]..[6,71+12])
+      Pstr_class
+      [
+        class_declaration (//toplevel//[4,45+0]..[6,71+12])
+          pci_virt = Concrete
+          pci_params =
+            []
+          pci_name = "c" (//toplevel//[4,45+6]..[4,45+7])
+          pci_expr =
+            class_expr (//toplevel//[5,55+2]..[6,71+12])
+              Pcl_open Fresh "M" (//toplevel//[5,55+11]..[5,55+12])
+              class_expr (//toplevel//[6,71+2]..[6,71+12])
+                Pcl_structure
+                class_structure
+                  pattern (//toplevel//[6,71+8]..[6,71+8]) ghost
+                    Ppat_any
+                  []
+      ]
+  ]
+
+class c : object  end
+Ptop_def
+  [
+    structure_item (//toplevel//[2,1+0]..[4,33+12])
+      Pstr_class_type
+      [
+        class_type_declaration (//toplevel//[2,1+0]..[4,33+12])
+          pci_virt = Concrete
+          pci_params =
+            []
+          pci_name = "ct" (//toplevel//[2,1+11]..[2,1+13])
+          pci_expr =
+            class_type (//toplevel//[3,17+2]..[4,33+12])
+              Pcty_open Fresh "M" (//toplevel//[3,17+11]..[3,17+12])
+              class_type (//toplevel//[4,33+2]..[4,33+12])
+                Pcty_signature
+                class_signature
+                  core_type (//toplevel//[4,33+8]..[4,33+8])
+                    Ptyp_any
+                  []
+      ]
+  ]
+
+class type ct = object  end
+Ptop_def
+  [
+    structure_item (//toplevel//[5,56+0]..[6,64+4])
+      Pstr_value Nonrec
+      [
+        <def>
+            attribute "ocaml.doc"
+              [
+                structure_item (//toplevel//[4,19+0]..[4,19+36])
+                  Pstr_eval
+                  expression (//toplevel//[4,19+0]..[4,19+36])
+                    Pexp_constant PConst_string(" Some docstring attached to x. ",(//toplevel//[4,19+0]..[4,19+36]),None)
+              ]
+            attribute "ocaml.doc"
+              [
+                structure_item (//toplevel//[7,69+0]..[7,69+39])
+                  Pstr_eval
+                  expression (//toplevel//[7,69+0]..[7,69+39])
+                    Pexp_constant PConst_string(" Another docstring attached to x. ",(//toplevel//[7,69+0]..[7,69+39]),None)
+              ]
+          pattern (//toplevel//[5,56+4]..[5,56+5])
+            Ppat_var "x" (//toplevel//[5,56+4]..[5,56+5])
+          expression (//toplevel//[6,64+2]..[6,64+4])
+            Pexp_constant PConst_int (42,None)
+      ]
+  ]
+
+val x : int = 42
+

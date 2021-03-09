@@ -393,6 +393,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #8987: Make some locations more accurate
+  (Thomas Refis, review by Gabriel Scherer)
+
 - #9216: add Lambda.duplicate which refreshes bound identifiers
   (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
 
@@ -459,6 +462,9 @@ Working version
 
 - #8939: Command-line option to save Linear IR before emit.
   (Greta Yorsh, review by Mark Shinwell, Sébastien Hinderer and Frédéric Bour)
+
+- #9003: Start compilation from Emit when the input file is in Linear IR format.
+  (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
 
 ### Build system:
 
@@ -550,6 +556,9 @@ Working version
 
 - #9848, #9855: Fix double free of bytecode in toplevel
   (Stephen Dolan, report by Sampsa Kiiskinen, review by Gabriel Scherer)
+
+- #9858, #9861: Compiler fails with Ctype.Nondep_cannot_erase exception
+  (Thomas Refis, report by @pveber, review by Florian Angeletti)
 
 - #9860: wrong range constraint for subtract immediate on zSystems / s390x
   (Xavier Leroy, review by Stephen Dolan)
