@@ -2821,7 +2821,6 @@ asmcomp/scheduling.cmx : \
 asmcomp/scheduling.cmi : \
     asmcomp/linear.cmi
 asmcomp/selectgen.cmo : \
-    lambda/simplif.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     utils/numbers.cmi \
@@ -2835,7 +2834,6 @@ asmcomp/selectgen.cmo : \
     asmcomp/arch.cmo \
     asmcomp/selectgen.cmi
 asmcomp/selectgen.cmx : \
-    lambda/simplif.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     utils/numbers.cmx \

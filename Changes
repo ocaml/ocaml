@@ -300,8 +300,18 @@ Working version
   (Ivan Gotovchits and Xavier Leroy, review by Sébastien Hinderer and
    David Allsopp)
 
+- #9930: new module Semaphore in the thread library, implementing
+  counting semaphores and binary semaphores
+  (Xavier Leroy, review by Daniel Bünzli and Damien Doligez,
+   additional suggestions by Stephen Dolan and Craig Ferguson)
+
 - #9958: Raise exception in case of error in Unix.setsid.
   (Nicolás Ojeda Bär, review by Stephen Dolan)
+
+- #9971, #9973: Make sure the process can terminate when the last thread
+  calls Thread.exit.
+  (Xavier Leroy, report by Jacques-Henri Jourdan, review by David Allsopp
+  and Jacques-Henri Jourdan).
 
 ### Tools:
 
@@ -363,6 +373,10 @@ Working version
   instead of a class.
   (Xavier Van de Woestyne, report by whitequark, review by Florian Angeletti
   and Gabriel Scherer)
+
+- #9754: allow [@tailcall true] (equivalent to [@tailcall]) and
+  [@tailcall false] (warns if on a tailcall)
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 - #9657: Warnings can now be referred to by their mnemonic name. The names are
   displayed using `-warn-help` and can be utilized anywhere where a warning list
@@ -481,6 +495,9 @@ Working version
   off.
   (Jacques Garrigue, report by Francois Pottier, review by Leo White)
 
+- #8746: Hashtbl: Restore ongoing traversal status after filter_map_inplace
+  (Mehdi Bouaziz, review by Alain Frisch)
+
 - #8747, #9709: incorrect principality warning on functional updates of records
   (Jacques Garrigue, report and review by Thomas Refis)
 
@@ -518,6 +535,9 @@ Working version
 - #9759, #9767: Spurious GADT ambiguity without -principal
   (Jacques Garrigue, report by Thomas Refis,
    review by Thomas Refis and Gabriel Scherer)
+
+- #9799, #9803: pat_env points to the correct environment
+  (Thomas Refis, report by Alex Fedoseev, review by Gabriel Scherer)
 
 - #9825, #9830: the C global variable caml_fl_merge and the C function
   caml_spacetime_my_profinfo (bytecode version) were declared and

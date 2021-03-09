@@ -380,6 +380,11 @@ static void caml_thread_stop(void)
 
   caml_threadstatus_terminate(Terminated(Current_thread->descr));
   caml_thread_remove_info(Current_thread);
+  /* If no other OCaml thread remains, ask the tick thread to stop
+     so that it does not prevent the whole process from exiting (#9971) */
+  // TODO: when we have the tick thread, caution with #9971
+  // if (all_threads == NULL) caml_thread_cleanup(Val_unit);
+
   // FIXME: tricky bit with backup thread
   // Normally we expect the next thread to kick in and resume operation
   // by first setting Current_thread to the right TLS dec data.
@@ -504,6 +509,10 @@ CAMLexport int caml_c_thread_unregister(void)
   st_tls_set(Thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_info(th);
+  /* If no other OCaml thread remains, ask the tick thread to stop
+     so that it does not prevent the whole process from exiting (#9971) */
+  // TODO: when we have the tick thread, careful with 9971
+  //if (all_threads == NULL) caml_thread_cleanup(Val_unit);
   Current_thread = All_threads;
   caml_thread_restore_runtime_state();
   /* Release the runtime */

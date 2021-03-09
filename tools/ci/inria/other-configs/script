@@ -26,4 +26,5 @@ ${main} -conf --disable-native-compiler -no-native
 ${main} -conf --disable-naked-pointers
 ${main} -with-bootstrap -conf --disable-flat-float-array
 ${main} -conf --enable-flambda -conf --disable-naked-pointers
+${main} -conf --enable-reserved-header-bits=27
 OCAMLRUNPARAM="c=1" ${main}
