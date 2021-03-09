@@ -1028,9 +1028,8 @@ let transl_extension_rebind env type_path type_params typext_params priv lid =
   in
     args, ret_type, Text_rebind(path, lid)
 
-let transl_extension_constructor env type_path type_params
+let transl_extension_constructor ~scope env type_path type_params
                                  typext_params priv sext =
-  let scope = Ctype.create_scope () in
   let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
@@ -1143,10 +1142,10 @@ let transl_extension_constructor env type_path type_params
       Typedtree.ext_loc = sext.pext_loc;
       Typedtree.ext_attributes = sext.pext_attributes; }
 
-let transl_extension_constructor env type_path type_params
+let transl_extension_constructor ~scope env type_path type_params
     typext_params priv sext =
   Builtin_attributes.warning_scope sext.pext_attributes
-    (fun () -> transl_extension_constructor env type_path type_params
+    (fun () -> transl_extension_constructor ~scope env type_path type_params
         typext_params priv sext)
 
 let is_rebind ext =
@@ -1155,6 +1154,9 @@ let is_rebind ext =
   | Text_decl _ -> false
 
 let transl_type_extension extend env loc styext =
+  (* Note: it would be incorrect to call [create_scope] *after*
+     [reset_type_variables] or after [begin_def] (see #10010). *)
+  let scope = Ctype.create_scope () in
   reset_type_variables();
   Ctype.begin_def();
   let type_path, type_decl =
@@ -1207,7 +1209,7 @@ let transl_type_extension extend env loc styext =
     (Ctype.instance_list type_decl.type_params)
     type_params;
   let constructors =
-    List.map (transl_extension_constructor env type_path
+    List.map (transl_extension_constructor ~scope env type_path
                type_decl.type_params type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
@@ -1264,10 +1266,11 @@ let transl_type_extension extend env loc styext =
 
 (* Translate an exception declaration *)
 let transl_exception env sext =
+  let scope = Ctype.create_scope () in
   reset_type_variables();
   Ctype.begin_def();
   let ext =
-    transl_extension_constructor env
+    transl_extension_constructor ~scope env
       Predef.path_exn [] [] Asttypes.Public sext
   in
   Ctype.end_def();

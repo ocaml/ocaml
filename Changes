@@ -217,6 +217,9 @@ OCaml 4.12.0
   OCaml.
   (Gabriel Scherer, review by Xavier Leroy)
 
+- #10035: Make sure that flambda respects atomicity in the Atomic module.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
 
@@ -602,6 +605,13 @@ OCaml 4.12.0
 
 - #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
   (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
+
+- #9970, #10010: fix the declaration scope of extensible-datatype constructors.
+  A regression that dates back to 4.08 makes extensible-datatype constructors
+  with inline records very fragile, for example:
+    type 'a t += X of {x : 'a}
+  (Gabriel Scherer, review by Thomas Refis and Leo White,
+   report by Nicolás Ojeda Bär)
 
 OCaml 4.11.1
 ------------
