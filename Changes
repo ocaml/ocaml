@@ -6,7 +6,7 @@ OCaml 4.12.0
 - #1655: pattern aliases do not ignore type constraints
   (Thomas Refis, review by Jacques Garrigue and Gabriel Scherer)
 
-* #9500, #9727: Injectivity annotations
+* #9500, #9727, #9866, #9870, #9873: Injectivity annotations
   One can now mark type parameters as injective, which is useful for
   abstract types:
     module Vec : sig type !'a t end = struct type 'a t = 'a array end
@@ -14,6 +14,7 @@ OCaml 4.12.0
   parameters. Since all parameters of record and sum types are by definition
   injective, this only makes sense for type abbreviations:
     type !'a t = 'a list
+  Note that this change required making the regularity check stricter.
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
 - #9429: Add unary operators containing `#` to the parser for use in ppx
@@ -25,15 +26,6 @@ OCaml 4.12.0
 - #9699: add support for iOS and macOS on ARM 64 bits
   (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
    and Anil Madhavapeddy, additional testing by Michael Schmidt)
-
-### Type system:
-
-* #9811: remove propagation from previous branches
-  Type information inferred from previous branches was propagated in
-  non-principal mode. Revert this for better compatibility with
-  -principal mode.
-  For the time being, infringing code should result in a principality warning.
-  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
 
 ### Runtime system:
 
@@ -519,6 +511,10 @@ OCaml 4.12.0
 
 - #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
   (Sébastien Hinderer, review by David Allsopp)
+
+- #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
+  prevent their C99-compliant snprintf conflicting with ours.
+  (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
 
 - #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
   Standard Library directory.
