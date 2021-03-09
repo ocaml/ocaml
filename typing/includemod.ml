@@ -388,8 +388,8 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
       if Path.same p1 p2 then Ok Tcoerce_none
       else
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
-        | Some p1, Some p2 ->
-            try_modtypes ~loc env ~mark subst p1 p2
+        | Some mty1, Some mty2 ->
+            try_modtypes ~loc env ~mark subst mty1 mty2
         | None, _  | _, None -> Error (Error.Mt_core Abstract_module_type)
         end
   | (Mty_ident p1, _) ->
