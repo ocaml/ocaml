@@ -117,9 +117,9 @@ OCaml 4.12.0
   compaction algorithm and remove its dependence on the page table
   (Damien Doligez, review by Jacques-Henri Jourdan and Xavier Leroy)
 
-- #9742: Ephemerons are now compatible with infix pointers occurring
+- #9742, #9989: Ephemerons are now compatible with infix pointers occurring
    when using mutually recursive functions.
-   (Jacques-Henri Jourdan, review François Bobot)
+   (Jacques-Henri Jourdan, review by François Bobot)
 
 * #1128, #7503, #9036, #9722: EINTR-based signal handling.
   When a signal arrives, avoid running its OCaml handler in the middle
@@ -154,6 +154,10 @@ OCaml 4.12.0
   cause a crash in no-naked-pointers mode.
   (Enguerrand Decorne, KC Sivaramakrishnan, Xavier Leroy, Stephen Dolan,
   David Allsopp, Nicolás Ojeda Bär review by Xavier Leroy, Nicolás Ojeda Bär)
+
+* #9674: Memprof: guarantee that an allocation callback is always run
+  in the same thread the allocation takes place
+  (Jacques-Henri Jourdan, review by Stephen Dolan)
 
 ### Code generation and optimizations:
 
@@ -472,6 +476,9 @@ OCaml 4.12.0
 
 - #9963: Centralized tracking of frontend's global state
   (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
+
+- #9631: Named text sections for caml_system__code_begin/end symbols
+  (Greta Yorsh, review by Frédéric Bour)
 
 ### Build system:
 
@@ -1178,7 +1185,7 @@ OCaml 4.10 maintenance branch
 - #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
   (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
 
-- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+- #9165, #9840: Add missing -function-sections flag in Makefiles.
   (Greta Yorsh, review by David Allsopp)
 
 - #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`

@@ -32,5 +32,6 @@ let () =
   ignore (Sys.opaque_identity (alloc_stub ()));
   assert(not !callback_done);
   callback_ok := true;
-  stop ();
-  assert(!callback_done)
+  ignore (Sys.opaque_identity (ref ()));
+  assert(!callback_done);
+  stop ()

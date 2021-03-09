@@ -27,19 +27,26 @@ external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self" [@@noalloc]
 external id : t -> int = "caml_thread_id" [@@noalloc]
 external join : t -> unit = "caml_thread_join"
-external exit : unit -> unit = "caml_thread_exit"
+external exit_stub : unit -> unit = "caml_thread_exit"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
+
+let[@inline never] check_memprof_cb () = ref ()
 
 let create fn arg =
   thread_new
     (fun () ->
       try
-        fn arg; ()
+        fn arg;
+        ignore (Sys.opaque_identity (check_memprof_cb ()))
       with exn ->
              flush stdout; flush stderr;
              thread_uncaught_exception exn)
+
+let exit () =
+  ignore (Sys.opaque_identity (check_memprof_cb ()));
+  exit_stub ()
 
 (* Thread.kill is currently not implemented due to problems with
    cleanup handlers on several platforms *)
