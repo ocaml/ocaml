@@ -2484,6 +2484,8 @@ let eq_package_path env p1 p2 =
 let nondep_type' = ref (fun _ _ _ -> assert false)
 let package_subtype = ref (fun _ _ _ _ _ _ _ -> assert false)
 
+exception Nondep_cannot_erase of Ident.t
+
 let rec concat_longident lid1 =
   let open Longident in
   function
@@ -2525,7 +2527,14 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
         match Env.find_type_by_name lid env' with
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = Some t2}) ->
-            (n, nondep_instance env' lv2 id2 t2) :: complete nl ntl2
+            begin match nondep_instance env' lv2 id2 t2 with
+            | t -> (n, t) :: complete nl ntl2
+            | exception Nondep_cannot_erase _ ->
+                if allow_absent then
+                  complete nl ntl2
+                else
+                  raise Exit
+            end
         | (_, {type_arity = 0; type_kind = Type_abstract;
                type_private = Public; type_manifest = None})
           when allow_absent ->
@@ -4617,8 +4626,6 @@ let nondep_hash     = TypeHash.create 47
 let nondep_variants = TypeHash.create 17
 let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
-
-exception Nondep_cannot_erase of Ident.t
 
 let rec nondep_type_rec ?(expand_private=false) env ids ty =
   let expand_abbrev env t =

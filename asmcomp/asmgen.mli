@@ -35,10 +35,16 @@ val compile_implementation
   -> Lambda.program
   -> unit
 
+val compile_implementation_linear :
+    string -> progname:string -> unit
+
 val compile_phrase :
     ppf_dump:Format.formatter -> Cmm.phrase -> unit
 
-type error = Assembler_error of string
+type error =
+  | Assembler_error of string
+  | Mismatched_for_pack of string option
+
 exception Error of error
 val report_error: Format.formatter -> error -> unit
 

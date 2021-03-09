@@ -510,7 +510,7 @@
   structure_item (shortcut_ext_attr.ml[64,1353+0]..[67,1409+22])
     Pstr_module
     "M" (shortcut_ext_attr.ml[64,1353+7]..[64,1353+8])
-      module_expr (shortcut_ext_attr.ml[65,1364+2]..[67,1409+22])
+      module_expr (shortcut_ext_attr.ml[65,1364+16]..[67,1409+22])
         attribute "foo"
           []
         Pmod_functor "M" (shortcut_ext_attr.ml[65,1364+17]..[65,1364+18])
@@ -531,7 +531,7 @@
             []
   structure_item (shortcut_ext_attr.ml[70,1462+0]..[73,1535+19])
     Pstr_modtype "S" (shortcut_ext_attr.ml[70,1462+12]..[70,1462+13])
-      module_type (shortcut_ext_attr.ml[71,1478+2]..[73,1535+19])
+      module_type (shortcut_ext_attr.ml[71,1478+16]..[73,1535+19])
         attribute "foo"
           []
         Pmty_functor "M" (shortcut_ext_attr.ml[71,1478+17]..[71,1478+18])

@@ -234,7 +234,7 @@
           pattern (extensions.ml[20,445+54]..[20,445+59])
             Ppat_record Closed
             [
-              "x" (extensions.ml[20,445+56]..[20,445+57])
+              "x" (extensions.ml[20,445+56]..[20,445+57]) ghost
                 pattern (extensions.ml[20,445+56]..[20,445+57])
                   Ppat_var "x" (extensions.ml[20,445+56]..[20,445+57])
             ]

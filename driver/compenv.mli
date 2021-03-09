@@ -71,7 +71,8 @@ val intf : string -> unit
 
 val process_deferred_actions :
   Format.formatter *
-  (source_file:string -> output_prefix:string -> unit) *
+  (start_from:Clflags.Compiler_pass.t ->
+   source_file:string -> output_prefix:string -> unit) *
   (* compile implementation *)
   (source_file:string -> output_prefix:string -> unit) *
   (* compile interface *)

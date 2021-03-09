@@ -80,12 +80,10 @@ type existential_restriction =
 val type_binding:
         Env.t -> rec_flag ->
           Parsetree.value_binding list ->
-          Annot.ident option ->
           Typedtree.value_binding list * Env.t
 val type_let:
         existential_restriction -> Env.t -> rec_flag ->
           Parsetree.value_binding list ->
-          Annot.ident option ->
           Typedtree.value_binding list * Env.t
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
