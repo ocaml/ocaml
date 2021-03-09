@@ -37,6 +37,10 @@ OCaml 4.12.0
 
 ### Runtime system:
 
+- #2195: Improve error message in bytecode stack trace printing and load
+  debug information during bytecode startup if OCAMLRUNPARAM=b=2.
+  (David Allsopp, review by Gabriel Scherer and Xavier Leroy)
+
 - #9756: garbage collector colors change
   removes the gray color from the major gc
   (Sadiq Jaffer and Stephen Dolan reviewed by Xavier Leroy,

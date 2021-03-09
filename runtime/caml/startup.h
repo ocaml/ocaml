@@ -36,7 +36,8 @@ CAMLextern value caml_startup_code_exn(
   int pooling,
   char_os **argv);
 
-enum { FILE_NOT_FOUND = -1, BAD_BYTECODE = -2, WRONG_MAGIC = -3 };
+/* These enum members should all be negative */
+enum { FILE_NOT_FOUND = -1, BAD_BYTECODE = -2, WRONG_MAGIC = -3, NO_FDS = -4 };
 
 extern int caml_attempt_open(char_os **name, struct exec_trailer *trail,
                              int do_open_script);

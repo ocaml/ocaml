@@ -287,9 +287,31 @@ let exn_slot_name x =
   let slot = exn_slot x in
   (Obj.obj (Obj.field slot 0) : string)
 
+external get_debug_info_status : unit -> int = "caml_ml_debug_info_status"
+
+(* Descriptions for errors in startup.h. See also backtrace.c *)
+let errors = [| "";
+  (* FILE_NOT_FOUND *)
+  "(Cannot print locations:\n \
+      bytecode executable program file not found)";
+  (* BAD_BYTECODE *)
+  "(Cannot print locations:\n \
+      bytecode executable program file appears to be corrupt)";
+  (* WRONG_MAGIC *)
+  "(Cannot print locations:\n \
+      bytecode executable program file has wrong magic number)";
+  (* NO_FDS *)
+  "(Cannot print locations:\n \
+      bytecode executable program file cannot be opened;\n \
+      -- too many open files. Try running with OCAMLRUNPARAM=b=2)"
+|]
+
 let default_uncaught_exception_handler exn raw_backtrace =
   eprintf "Fatal error: exception %s\n" (to_string exn);
   print_raw_backtrace stderr raw_backtrace;
+  let status = get_debug_info_status () in
+  if status < 0 then
+    prerr_endline errors.(abs status);
   flush stderr
 
 let uncaught_exception_handler = ref default_uncaught_exception_handler

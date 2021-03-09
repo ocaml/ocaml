@@ -314,3 +314,8 @@ int caml_debug_info_available(void)
 {
   return 1;
 }
+
+int caml_debug_info_status(void)
+{
+  return 1;
+}

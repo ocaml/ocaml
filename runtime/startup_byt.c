@@ -17,6 +17,7 @@
 
 /* Start-up code */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,7 +128,10 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
   if (fd == -1) {
     caml_stat_free(truename);
     caml_gc_message(0x100, "Cannot open file\n");
-    return FILE_NOT_FOUND;
+    if (errno == EMFILE)
+      return NO_FDS;
+    else
+      return FILE_NOT_FOUND;
   }
   if (!do_open_script) {
     err = read (fd, buf, 2);
@@ -335,7 +339,7 @@ CAMLexport void caml_main(char_os **argv)
   /* Initialize the abstract machine */
   caml_init_gc ();
   Caml_state->external_raise = NULL;
-  if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  if (caml_params->backtrace_enabled) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -363,6 +367,8 @@ CAMLexport void caml_main(char_os **argv)
   caml_stat_free(trail.section);
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv + pos);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
   /* ensure all globals are in major heap */
   caml_minor_collection();
 #ifdef _WIN32
@@ -421,7 +427,8 @@ CAMLexport value caml_startup_code_exn(
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   Caml_state->external_raise = NULL;
   caml_sys_init(exe_name, argv);
-  if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
