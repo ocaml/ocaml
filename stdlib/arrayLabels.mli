@@ -23,16 +23,9 @@
 
 (** Array operations.
 
-   The labeled version of this module, {!ArrayLabels}, is intended to be used
-   via {!StdLabels} which replaces {!Array}, {!Bytes}, {!List} and {!String}
-   with their labeled counterparts
-
-   For example:
-   {[
-      open StdLabels
-
-      let everything = Array.create_matrix ~dimx:42 ~dimy:42 42
-   ]} *)
+    The labeled version of this module can be used as described in the
+    {!StdLabels} module.
+*)
 
 type 'a t = 'a array
 (** An alias for the type of arrays. *)

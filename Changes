@@ -182,6 +182,10 @@ Working version
   that is rejected by the assembler.
   (Xavier Leroy, review by Stephen Dolan)
 
+- #9969, #9981: Added mergeable flag to ELF sections containing mergeable
+  constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
+  (Jacob Young, review by Nicolás Ojeda Bär)
+
 ### Standard library:
 
 - #9865: add Format.pp_print_seq
@@ -465,6 +469,9 @@ Working version
 
 - #9003: Start compilation from Emit when the input file is in Linear IR format.
   (Greta Yorsh, review by Jérémie Dimino, Gabriel Scherer and Frédéric Bour)
+
+- #9963: Centralized tracking of frontend's global state
+  (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
 
 ### Build system:
 
