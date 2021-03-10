@@ -71,7 +71,7 @@ echo jenkinsdir=${jenkinsdir}
 # Unix environment variables (e.g. PATH).
 
 case "${OCAML_ARCH}" in
-  bsd|macos|linux) ;;
+  bsd|macos|linux|solaris) ;;
   cygwin|cygwin64|mingw|mingw64)
     . /etc/profile
     . "$HOME/.profile"
@@ -133,7 +133,7 @@ jobs=''
 bootstrap=false
 
 case "${OCAML_ARCH}" in
-  bsd)
+  bsd|solaris)
     make=gmake
   ;;
   macos)
