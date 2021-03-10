@@ -52,7 +52,6 @@ type field_kind =
   | Field_classtype
 
 
-
 type field_desc = { name: string; kind: field_kind }
 
 let kind_of_field_desc fd = match fd.kind with

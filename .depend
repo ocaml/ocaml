@@ -505,7 +505,8 @@ typing/commonmod.cmo : \
     parsing/location.cmi \
     typing/includecore.cmi \
     typing/ident.cmi \
-    typing/ctype.cmi
+    typing/ctype.cmi \
+    typing/commonmod.cmi
 typing/commonmod.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -516,7 +517,16 @@ typing/commonmod.cmx : \
     parsing/location.cmx \
     typing/includecore.cmx \
     typing/ident.cmx \
-    typing/ctype.cmx
+    typing/ctype.cmx \
+    typing/commonmod.cmi
+typing/commonmod.cmi : \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    typing/path.cmi \
+    parsing/location.cmi \
+    typing/includecore.cmi \
+    typing/ident.cmi \
+    typing/ctype.cmi
 typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
@@ -658,38 +668,35 @@ typing/errormod.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
-    parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
-    typing/oprint.cmi \
-    utils/misc.cmi \
-    parsing/location.cmi \
     typing/includecore.cmi \
-    typing/includeclass.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    utils/diffing.cmi \
     typing/ctype.cmi \
-    typing/commonmod.cmo \
-    utils/clflags.cmi
+    typing/commonmod.cmi \
+    typing/errormod.cmi
 typing/errormod.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/printtyp.cmx \
-    parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
-    typing/oprint.cmx \
-    utils/misc.cmx \
-    parsing/location.cmx \
     typing/includecore.cmx \
-    typing/includeclass.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    utils/diffing.cmx \
     typing/ctype.cmx \
     typing/commonmod.cmx \
-    utils/clflags.cmx
+    typing/errormod.cmi
+typing/errormod.cmi : \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    typing/includecore.cmi \
+    typing/ident.cmi \
+    typing/env.cmi \
+    typing/ctype.cmi
 typing/ident.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
@@ -769,11 +776,11 @@ typing/includemod.cmo : \
     typing/includecore.cmi \
     typing/includeclass.cmi \
     typing/ident.cmi \
-    typing/errormod.cmo \
+    typing/errormod.cmi \
     typing/env.cmi \
     utils/diffing.cmi \
     typing/ctype.cmi \
-    typing/commonmod.cmo \
+    typing/commonmod.cmi \
     file_formats/cmt_format.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
@@ -805,27 +812,50 @@ typing/includemod.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    typing/errormod.cmo \
+    typing/errormod.cmi \
     typing/env.cmi \
     utils/diffing.cmi
 typing/includemod_errorprinter.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
+    parsing/pprintast.cmi \
+    parsing/parsetree.cmi \
+    typing/oprint.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/includemod.cmi \
-    typing/errormod.cmo \
+    typing/includecore.cmi \
+    typing/includeclass.cmi \
+    typing/ident.cmi \
+    typing/errormod.cmi \
     typing/env.cmi \
-    utils/diffing.cmi
+    utils/diffing.cmi \
+    typing/commonmod.cmi \
+    utils/clflags.cmi \
+    typing/includemod_errorprinter.cmi
 typing/includemod_errorprinter.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/printtyp.cmx \
+    parsing/pprintast.cmx \
+    parsing/parsetree.cmi \
+    typing/oprint.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/includemod.cmx \
+    typing/includecore.cmx \
+    typing/includeclass.cmx \
+    typing/ident.cmx \
     typing/errormod.cmx \
     typing/env.cmx \
-    utils/diffing.cmx
+    utils/diffing.cmx \
+    typing/commonmod.cmx \
+    utils/clflags.cmx \
+    typing/includemod_errorprinter.cmi
+typing/includemod_errorprinter.cmi : \
+    parsing/location.cmi \
+    typing/includemod.cmi
 typing/mtype.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
@@ -1609,10 +1639,10 @@ typing/typemod.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
-    typing/includemod_errorprinter.cmo \
+    typing/includemod_errorprinter.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
-    typing/errormod.cmo \
+    typing/errormod.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
