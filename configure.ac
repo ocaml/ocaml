@@ -52,6 +52,7 @@ internal_cppflags=""
 ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
+oc_dll_ldflags=""
 with_sharedlibs=true
 ostype="Unix"
 iflexdir=""
@@ -109,6 +110,7 @@ AC_SUBST([toolchain])
 AC_SUBST([oc_cflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
+AC_SUBST([oc_dll_ldflags])
 AC_SUBST([bytecclibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
@@ -686,7 +688,7 @@ AS_CASE([$CC,$host],
   [*,*-*-mingw32],
     [AS_IF([$with_sharedlibs],
       [AS_CASE([$host],
-        [i686-*-*], [flexdll_chain="mingw"],
+        [i686-*-*], [flexdll_chain="mingw"; oc_dll_ldflags="-static-libgcc"],
         [x86_64-*-*], [flexdll_chain="mingw64"])
       flexlink="flexlink -chain $flexdll_chain -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
@@ -831,6 +833,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     [*-*-mingw32],
       [mksharedlib='$(FLEXLINK)'
       mkmaindll='$(FLEXLINK) -maindll'
+      AS_IF([test -n "$oc_dll_ldflags"],[
+        mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
+        mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""])
       shared_libraries_supported=$with_sharedlibs],
     [*-pc-windows],
       [mksharedlib='$(FLEXLINK)'
@@ -1114,6 +1119,13 @@ AS_IF([test "$with_pic"],
 AS_IF([test -z "$AS"], [AS="$default_as"])
 
 AS_IF([test -z "$ASPP"], [ASPP="$default_aspp"])
+
+# Utilities
+AC_CHECK_PROG([rlwrap],[rlwrap],[rlwrap])
+AS_CASE([$rlwrap,$system],
+  [rlwrap,win*|rlwrap,mingw*],
+    [AC_MSG_NOTICE([rlwrap doesn't work with native win32 - disabling])
+     rlwrap=''])
 
 # Checks for library functions
 

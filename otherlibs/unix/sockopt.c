@@ -112,13 +112,13 @@ static struct socket_option sockopt_bool[] = {
   { SOL_SOCKET, SO_DEBUG },
   { SOL_SOCKET, SO_BROADCAST },
   { SOL_SOCKET, SO_REUSEADDR },
-  { SOL_SOCKET, SO_REUSEPORT },
   { SOL_SOCKET, SO_KEEPALIVE },
   { SOL_SOCKET, SO_DONTROUTE },
   { SOL_SOCKET, SO_OOBINLINE },
   { SOL_SOCKET, SO_ACCEPTCONN },
   { IPPROTO_TCP, TCP_NODELAY },
-  { IPPROTO_IPV6, IPV6_V6ONLY}
+  { IPPROTO_IPV6, IPV6_V6ONLY},
+  { SOL_SOCKET, SO_REUSEPORT }
 };
 
 static struct socket_option sockopt_int[] = {
