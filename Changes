@@ -159,6 +159,11 @@ OCaml 4.12.0
   representation for closures
   (Nathanaël Courant, review by Xavier Leroy)
 
+- #10056: Memprof: ensure young_trigger is within the bounds of the minor
+  heap in caml_memprof_renew_minor_sample (regression from #8684)
+  (David Allsopp, review by Guillaume Munch-Maccagnoni and
+  Jacques-Henri Jourdan)
+
 - #10062: set ARCH_INT64_PRINTF_FORMAT correctly for both modes of mingw-w64
   (David Allsopp, review by Xavier Leroy)
 
@@ -361,6 +366,11 @@ OCaml 4.12.0
   (John Whitington, review by Nicolás Ojeda Bär, David Allsopp,
    Thomas Refis, and Florian Angeletti)
 
+- #9877: manual, warn that multi-index indexing operators should be defined in
+  conjunction of single-index ones.
+  (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
+   and Marcello Seri)
+
 ### Compiler user-interface and warnings:
 
 - #1931: rely on levels to enforce principality in patterns
@@ -523,6 +533,11 @@ OCaml 4.12.0
   Standard Library directory.
   (Bernhard Schommer, review by David Allsopp)
 
+- #10044: Always report the detected ARCH, MODEL and SYSTEM, even for bytecode-
+  only builds (fixes a "configuration regression" from 4.08 for the Windows
+  builds)
+  (David Allsopp, review by Xavier Leroy)
+
 ### Bug fixes:
 
 - #7538, #9669: Check for misplaced attributes on module aliases
@@ -634,6 +649,9 @@ OCaml 4.12.0
     type 'a t += X of {x : 'a}
   (Gabriel Scherer, review by Thomas Refis and Leo White,
    report by Nicolás Ojeda Bär)
+
+- #10048: Fix bug with generalized local opens.
+  (Leo White, review by Thomas Refis)
 
 OCaml 4.11.1
 ------------

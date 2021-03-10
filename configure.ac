@@ -153,7 +153,6 @@ AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
 AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
-AC_SUBST([max_testsuite_dir_retries])
 AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
@@ -999,7 +998,7 @@ AS_CASE([$host],
 )
 
 AS_IF([test x"$enable_native_compiler" = "xno"],
-  [arch=none; model=default; system=unknown; native_compiler=false
+  [native_compiler=false
   AC_MSG_NOTICE([the native compiler is disabled])],
   [native_compiler=true])
 
@@ -1811,15 +1810,13 @@ AS_IF([test x"$mandir" = x'${datarootdir}/man'],
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
-    [max_testsuite_dir_retries=1
-    AS_CASE([$WINDOWS_UNICODE_MODE],
+    [AS_CASE([$WINDOWS_UNICODE_MODE],
       [ansi],
         [windows_unicode=0],
       [compatible|""],
         [windows_unicode=1],
       [AC_MSG_ERROR([unexpected windows unicode mode])])],
-  [max_testsuite_dir_retries=0
-  windows_unicode=0])
+  [windows_unicode=0])
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],

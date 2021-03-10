@@ -758,7 +758,6 @@ afl
 function_sections
 flat_float_array
 windows_unicode
-max_testsuite_dir_retries
 flambda_invariants
 flambda
 frame_pointers
@@ -2891,7 +2890,6 @@ VERSION=4.12.0+multicore~alpha2
 
 
  # TODO: rename this variable
-
 
 
 
@@ -13931,7 +13929,7 @@ fi; system=elf ;; #(
 esac
 
 if test x"$enable_native_compiler" = "xno"; then :
-  arch=none; model=default; system=unknown; native_compiler=false
+  native_compiler=false
   { $as_echo "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
 $as_echo "$as_me: the native compiler is disabled" >&6;}
 else
@@ -16891,7 +16889,6 @@ fi
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
-    max_testsuite_dir_retries=1
     case $WINDOWS_UNICODE_MODE in #(
   ansi) :
     windows_unicode=0 ;; #(
@@ -16901,8 +16898,7 @@ case $host in #(
     as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
 esac ;; #(
   *) :
-    max_testsuite_dir_retries=0
-  windows_unicode=0 ;;
+    windows_unicode=0 ;;
 esac
 
 # Define flexlink chain and flags correctly for the different Windows ports
