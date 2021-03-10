@@ -15,112 +15,10 @@
 
 (* Inclusion checks for the module language *)
 
-open Misc
 open Typedtree
 open Types
 
-type symptom =
-    Missing_field of Ident.t * Location.t * string (* kind *)
-  | Value_descriptions of Ident.t * value_description * value_description
-  | Type_declarations of Ident.t * type_declaration
-        * type_declaration * Includecore.type_mismatch
-  | Extension_constructors of Ident.t * extension_constructor
-        * extension_constructor * Includecore.extension_constructor_mismatch
-  | Module_types of module_type * module_type
-  | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
-  | Modtype_permutation of Types.module_type * Typedtree.module_coercion
-  | Interface_mismatch of string * string
-  | Class_type_declarations of
-      Ident.t * class_type_declaration * class_type_declaration *
-      Ctype.class_match_failure list
-  | Class_declarations of
-      Ident.t * class_declaration * class_declaration *
-      Ctype.class_match_failure list
-  | Unbound_module_path of Path.t
-  | Invalid_module_alias of Path.t
-
-type pos =
-  | Module of Ident.t
-  | Modtype of Ident.t
-  | Arg of functor_parameter
-  | Body of functor_parameter
-
-module Error = struct
-  type ('a,'b) diff = {got:'a; expected:'a; symptom:'b}
-  type 'a core_diff =('a,unit) diff
-  let diff x y s = {got=x;expected=y; symptom=s}
-  let sdiff x y = {got=x; expected=y; symptom=()}
-
-  type core_sigitem_symptom =
-    | Value_descriptions of value_description core_diff
-    | Type_declarations of (type_declaration, Includecore.type_mismatch) diff
-    | Extension_constructors of
-        (extension_constructor, Includecore.extension_constructor_mismatch) diff
-    | Class_type_declarations of
-        (class_type_declaration, Ctype.class_match_failure list) diff
-    | Class_declarations of
-        (class_declaration, Ctype.class_match_failure list) diff
-
-  type core_module_type_symptom =
-    | Not_an_alias
-    | Not_an_identifier
-    | Incompatible_aliases
-    | Abstract_module_type
-    | Unbound_module_path of Path.t
-
-  type module_type_symptom =
-    | Mt_core of core_module_type_symptom
-    | Signature of signature_symptom
-    | Functor of functor_symptom
-    | Invalid_module_alias of Path.t
-    | After_alias_expansion of module_type_diff
-
-
-  and module_type_diff = (module_type, module_type_symptom) diff
-
-  and functor_symptom =
-    | Params of functor_params_diff
-    | Result of module_type_diff
-
-  and ('arg,'path) functor_param_symptom =
-    | Incompatible_params of 'arg * functor_parameter
-    | Mismatch of module_type_diff
-
-  and arg_functor_param_symptom =
-    (functor_parameter, Ident.t) functor_param_symptom
-
-  and functor_params_diff = (functor_parameter list * module_type) core_diff
-
-  and signature_symptom = {
-    env: Env.t;
-    missings: signature_item list;
-    incompatibles: (Ident.t * sigitem_symptom) list;
-    oks: (int * module_coercion) list;
-  }
-  and sigitem_symptom =
-    | Core of core_sigitem_symptom
-    | Module_type_declaration of
-        (modtype_declaration, module_type_declaration_symptom) diff
-    | Module_type of module_type_diff
-
-  and module_type_declaration_symptom =
-    | Illegal_permutation of Typedtree.module_coercion
-    | Not_greater_than of module_type_diff
-    | Not_less_than of module_type_diff
-    | Incomparable of
-        {less_than:module_type_diff; greater_than: module_type_diff}
-
-
-  type all =
-    | In_Compilation_unit of (string, signature_symptom) diff
-    | In_Signature of signature_symptom
-    | In_Module_type of module_type_diff
-    | In_Module_type_substitution of
-        Ident.t * (module_type,module_type_declaration_symptom) diff
-    | In_Type_declaration of Ident.t * core_sigitem_symptom
-    | In_Expansion of core_module_type_symptom
-
-end
+module Err = Errormod
 
 type mark =
   | Mark_both
@@ -152,7 +50,7 @@ let value_descriptions ~loc env ~mark subst id vd1 vd2 =
   try
     Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
   with Includecore.Dont_match ->
-    Error Error.(Core (Value_descriptions (sdiff vd1 vd2)))
+    Error Err.(Core (Value_descriptions (sdiff vd1 vd2)))
 
 (* Inclusion between type declarations *)
 
@@ -167,7 +65,7 @@ let type_declarations ~loc env ~mark ?old_env:_ subst id decl1 decl2 =
   with
   | None -> Ok Tcoerce_none
   | Some err ->
-      Error Error.(Core(Type_declarations (diff decl1 decl2 err)))
+      Error Err.(Core(Type_declarations (diff decl1 decl2 err)))
 
 (* Inclusion between extension constructors *)
 
@@ -177,7 +75,7 @@ let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
   match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
   | None -> Ok Tcoerce_none
   | Some err ->
-      Error Error.(Core(Extension_constructors(diff ext1 ext2 err)))
+      Error Err.(Core(Extension_constructors(diff ext1 ext2 err)))
 
 (* Inclusion between class declarations *)
 
@@ -186,123 +84,14 @@ let class_type_declarations ~loc ~old_env:_ env  subst decl1 decl2 =
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> Ok Tcoerce_none
   | reason ->
-      Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
+      Error Err.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
 let class_declarations ~old_env:_ env  subst decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> Ok Tcoerce_none
   | reason ->
-     Error Error.(Core(Class_declarations(diff decl1 decl2 reason)))
-
-(* Expand a module type identifier when possible *)
-
-let expand_modtype_path env path =
-   match Env.(find_modtype path env).mtd_type with
-     | None | exception Not_found -> None
-     | Some x -> Some x
-
-let expand_module_alias env path =
-  match (Env.find_module path env).md_type with
-  | x -> Ok x
-  | exception Not_found -> Error (Error.Unbound_module_path path)
-
-(* Extract name, kind and ident from a signature item *)
-
-type field_kind =
-  | Field_value
-  | Field_type
-  | Field_exception
-  | Field_typext
-  | Field_module
-  | Field_modtype
-  | Field_class
-  | Field_classtype
-
-
-
-type field_desc = { name: string; kind: field_kind }
-
-let kind_of_field_desc fd = match fd.kind with
-  | Field_value -> "value"
-  | Field_type -> "type"
-  | Field_exception -> "exception"
-  | Field_typext -> "extension constructor"
-  | Field_module -> "module"
-  | Field_modtype -> "module type"
-  | Field_class -> "class"
-  | Field_classtype -> "class type"
-
-let field_desc kind id = { kind; name = Ident.name id }
-
-(** Map indexed by both field types and names.
-    This avoids name clashes between different sorts of fields
-    such as values and types. *)
-module FieldMap = Map.Make(struct
-    type t = field_desc
-    let compare = Stdlib.compare
-  end)
-
-let item_ident_name = function
-    Sig_value(id, d, _) -> (id, d.val_loc, field_desc Field_value id)
-  | Sig_type(id, d, _, _) -> (id, d.type_loc, field_desc Field_type  id )
-  | Sig_typext(id, d, _, _) ->
-      let kind =
-        if Path.same d.ext_type_path Predef.path_exn
-        then Field_exception
-        else Field_typext
-      in
-      (id, d.ext_loc, field_desc kind id)
-  | Sig_module(id, _, d, _, _) -> (id, d.md_loc, field_desc Field_module id)
-  | Sig_modtype(id, d, _) -> (id, d.mtd_loc, field_desc Field_modtype id)
-  | Sig_class(id, d, _, _) -> (id, d.cty_loc, field_desc Field_class id)
-  | Sig_class_type(id, d, _, _) ->
-      (id, d.clty_loc, field_desc Field_classtype id)
-
-let is_runtime_component = function
-  | Sig_value(_,{val_kind = Val_prim _}, _)
-  | Sig_type(_,_,_,_)
-  | Sig_module(_,Mp_absent,_,_,_)
-  | Sig_modtype(_,_,_)
-  | Sig_class_type(_,_,_,_) -> false
-  | Sig_value(_,_,_)
-  | Sig_typext(_,_,_,_)
-  | Sig_module(_,Mp_present,_,_,_)
-  | Sig_class(_,_,_,_) -> true
-
-(* Print a coercion *)
-
-let rec print_list pr ppf = function
-    [] -> ()
-  | [a] -> pr ppf a
-  | a :: l -> pr ppf a; Format.fprintf ppf ";@ "; print_list pr ppf l
-let print_list pr ppf l =
-  Format.fprintf ppf "[@[%a@]]" (print_list pr) l
-
-let rec print_coercion ppf c =
-  let pr fmt = Format.fprintf ppf fmt in
-  match c with
-    Tcoerce_none -> pr "id"
-  | Tcoerce_structure (fl, nl) ->
-      pr "@[<2>struct@ %a@ %a@]"
-        (print_list print_coercion2) fl
-        (print_list print_coercion3) nl
-  | Tcoerce_functor (inp, out) ->
-      pr "@[<2>functor@ (%a)@ (%a)@]"
-        print_coercion inp
-        print_coercion out
-  | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
-      pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
-        Printtyp.raw_type_expr pc_type
-  | Tcoerce_alias (_, p, c) ->
-      pr "@[<2>alias %a@ (%a)@]"
-        Printtyp.path p
-        print_coercion c
-and print_coercion2 ppf (n, c) =
-  Format.fprintf ppf "@[%d,@ %a@]" n print_coercion c
-and print_coercion3 ppf (i, n, c) =
-  Format.fprintf ppf "@[%s, %d,@ %a@]"
-    (Ident.unique_name i) n print_coercion c
+     Error Err.(Core(Class_declarations(diff decl1 decl2 reason)))
 
 (* Simplify a structure coercion *)
 
@@ -328,21 +117,37 @@ let simplify_structure_coercion cc id_pos_list =
   then Tcoerce_none
   else Tcoerce_structure (cc, id_pos_list)
 
+
+
+let expand_modtype_path env path =
+   match Env.(find_modtype path env).mtd_type with
+     | None | exception Not_found -> None
+     | Some x -> Some x
+
+(* Expand a module type identifier when possible *)
+
+let expand_module_alias env path =
+  match (Env.find_module path env).md_type with
+  | x -> Ok x
+  | exception Not_found -> Error (Err.Unbound_module_path path)
+
+
 let retrieve_functor_params env mty =
   let rec retrieve_functor_params before env =
     function
-    | Mty_ident p as res ->
+    | Types.Mty_ident p as res ->
         begin match expand_modtype_path env p with
         | Some mty -> retrieve_functor_params before env mty
         | None -> List.rev before, res
         end
-    | Mty_alias p as res ->
+    | Types.Mty_alias p as res ->
         begin match expand_module_alias env p with
         | Ok mty ->  retrieve_functor_params before env mty
         | Error _ -> List.rev before, res
         end
-    | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
-    | Mty_signature _ as res -> List.rev before, res
+    | Types.Mty_functor (p, res) ->
+        retrieve_functor_params (p :: before) env res
+    | Types.Mty_signature _ as res -> List.rev before, res
   in
   retrieve_functor_params [] env mty
 
@@ -355,31 +160,31 @@ let rec modtypes ~loc env ~mark subst mty1 mty2 =
   | Ok _ as ok -> ok
   | Error reason ->
     let mty2 = Subst.modtype Make_local subst mty2 in
-    Error Error.(diff mty1 mty2 reason)
+    Error Err.(diff mty1 mty2 reason)
 
 and try_modtypes ~loc env ~mark subst mty1 mty2 =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
       if Env.is_functor_arg p2 env then
-        Error (Error.Invalid_module_alias p2)
+        Error (Err.Invalid_module_alias p2)
       else if not (equal_module_paths env p1 subst p2) then
-          Error Error.(Mt_core Incompatible_aliases)
+          Error Err.(Mt_core Incompatible_aliases)
       else Ok Tcoerce_none
   | (Mty_alias p1, _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
       with
       | exception Env.Error (Env.Missing_module (_, _, path)) ->
-          Error Error.(Mt_core(Unbound_module_path path))
+          Error Err.(Mt_core(Unbound_module_path path))
       | p1 ->
           begin match expand_module_alias env  p1 with
-          | Error e -> Error (Error.Mt_core e)
+          | Error e -> Error (Err.Mt_core e)
           | Ok mty1 ->
               match strengthened_modtypes ~loc ~aliasable:true env ~mark
                       subst mty1 p1 mty2
               with
               | Ok _ as x -> x
-              | Error reason -> Error (Error.After_alias_expansion reason)
+              | Error reason -> Error (Err.After_alias_expansion reason)
           end
     end
   | (Mty_ident p1, Mty_ident p2) ->
@@ -390,14 +195,14 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
         | Some mty1, Some mty2 ->
             try_modtypes ~loc env ~mark subst mty1 mty2
-        | None, _  | _, None -> Error (Error.Mt_core Abstract_module_type)
+        | None, _  | _, None -> Error (Err.Mt_core Abstract_module_type)
         end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
       begin match expand_modtype_path env p1 with
       | Some p1 ->
           try_modtypes ~loc env ~mark subst p1 mty2
-      | None -> Error (Error.Mt_core Abstract_module_type)
+      | None -> Error (Err.Mt_core Abstract_module_type)
       end
   | (_, Mty_ident p2) ->
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
@@ -407,15 +212,15 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
           begin match mty1 with
           | Mty_functor _ ->
               let params1 = retrieve_functor_params env mty1 in
-              let d = Error.sdiff params1 ([],mty2) in
-              Error Error.(Functor (Params d))
-          | _ -> Error Error.(Mt_core Not_an_identifier)
+              let d = Err.sdiff params1 ([],mty2) in
+              Error Err.(Functor (Params d))
+          | _ -> Error Err.(Mt_core Not_an_identifier)
           end
       end
   | (Mty_signature sig1, Mty_signature sig2) ->
       begin match signatures ~loc env ~mark subst sig1 sig2 with
       | Ok _ as ok -> ok
-      | Error e -> Error (Error.Signature e)
+      | Error e -> Error (Err.Signature e)
       end
   | Mty_functor (param1, res1), Mty_functor (param2, res2) ->
       let cc_arg, env, subst =
@@ -425,29 +230,29 @@ and try_modtypes ~loc env ~mark subst mty1 mty2 =
       begin match cc_arg, cc_res with
       | Ok Tcoerce_none, Ok Tcoerce_none -> Ok Tcoerce_none
       | Ok cc_arg, Ok cc_res -> Ok (Tcoerce_functor(cc_arg, cc_res))
-      | _, Error {Error.symptom = Error.Functor Error.Params res; _} ->
+      | _, Error {Err.symptom = Err.Functor Err.Params res; _} ->
           let got_params, got_res = res.got in
           let expected_params, expected_res = res.expected in
-          let d = Error.sdiff
+          let d = Err.sdiff
               (param1::got_params, got_res)
               (param2::expected_params, expected_res) in
-          Error Error.(Functor (Params d))
+          Error Err.(Functor (Params d))
       | Error _, _ ->
           let params1, res1 = retrieve_functor_params env res1 in
           let params2, res2 = retrieve_functor_params env res2 in
-          let d = Error.sdiff (param1::params1, res1) (param2::params2, res2) in
-          Error Error.(Functor (Params d))
+          let d = Err.sdiff (param1::params1, res1) (param2::params2, res2) in
+          Error Err.(Functor (Params d))
       | Ok _, Error res ->
-          Error Error.(Functor (Result res))
+          Error Err.(Functor (Result res))
       end
   | Mty_functor _, _
   | _, Mty_functor _ ->
       let params1 = retrieve_functor_params env mty1 in
       let params2 = retrieve_functor_params env mty2 in
-      let d = Error.sdiff params1 params2 in
-      Error Error.(Functor (Params d))
+      let d = Err.sdiff params1 params2 in
+      Error Err.(Functor (Params d))
   | _, Mty_alias _ ->
-      Error (Error.Mt_core Error.Not_an_alias)
+      Error (Err.Mt_core Err.Not_an_alias)
 
 (* Functor parameters *)
 
@@ -459,7 +264,7 @@ and functor_param ~loc env ~mark subst param1 param2 = match param1, param2 with
       let cc_arg =
         match modtypes ~loc env ~mark Subst.identity arg2' arg1 with
         | Ok cc -> Ok cc
-        | Error err -> Error (Error.Mismatch err)
+        | Error err -> Error (Err.Mismatch err)
       in
       let env, subst =
         match name1, name2 with
@@ -475,7 +280,7 @@ and functor_param ~loc env ~mark subst param1 param2 = match param1, param2 with
       in
       cc_arg, env, subst
   | _, _ ->
-      Error (Error.Incompatible_params (param1, param2)), env, subst
+      Error (Err.Incompatible_params (param1, param2)), env, subst
 
 and strengthened_modtypes ~loc ~aliasable env ~mark subst mty1 path1 mty2 =
   match mty1, mty2 with
@@ -505,7 +310,8 @@ and signatures ~loc env ~mark subst sig1 sig2 =
       (fun (l,pos) -> function
           Sig_module (id, Mp_present, _, _, _) ->
             ((id,pos,Tcoerce_none)::l , pos+1)
-        | item -> (l, if is_runtime_component item then pos+1 else pos))
+        | item ->
+            (l, if Commonmod.is_runtime_component item then pos+1 else pos))
       ([], 0) sig1 in
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
@@ -519,21 +325,23 @@ and signatures ~loc env ~mark subst sig1 sig2 =
       |Sig_class (_, _, _, Hidden)
       |Sig_class_type (_, _, _, Hidden)
       ) as item :: rem ->
-        let pos = if is_runtime_component item then pos + 1 else pos in
+        let pos =
+          if Commonmod.is_runtime_component item then pos + 1 else pos
+        in
         build_component_table pos tbl rem (* do not pair private items. *)
     | item :: rem ->
-        let (id, _loc, name) = item_ident_name item in
+        let (id, _loc, name) = Commonmod.item_ident_name item in
         let pos, nextpos =
-          if is_runtime_component item then pos, pos + 1
+          if Commonmod.is_runtime_component item then pos, pos + 1
           else -1, pos
         in
         build_component_table nextpos
-                              (FieldMap.add name (id, item, pos) tbl) rem in
+          (Commonmod.FieldMap.add name (id, item, pos) tbl) rem in
   let len1, comps1 =
-    build_component_table 0 FieldMap.empty sig1 in
+    build_component_table 0 Commonmod.FieldMap.empty sig1 in
   let len2 =
     List.fold_left
-      (fun n i -> if is_runtime_component i then n + 1 else n)
+      (fun n i -> if Commonmod.is_runtime_component i then n + 1 else n)
       0
       sig2
   in
@@ -553,22 +361,23 @@ and signatures ~loc env ~mark subst sig1 sig2 =
                 else
                   Ok (Tcoerce_structure (cc, id_pos_list))
             | missings, incompatibles, cc ->
-                Error { env=new_env; Error.missings; incompatibles; oks=cc }
+                Error { env=new_env; Err.missings; incompatibles; oks=cc }
         end
     | item2 :: rem ->
-        let (id2, _loc, name2) = item_ident_name item2 in
+        let (id2, _loc, name2) = Commonmod.item_ident_name item2 in
         let name2, report =
           match item2, name2 with
             Sig_type (_, {type_manifest=None}, _, _), {name=s; kind=Field_type}
             when Btype.is_row_name s ->
               (* Do not report in case of failure,
                  as the main type will generate an error *)
-              { kind=Field_type; name=String.sub s 0 (String.length s - 4) },
+              { Commonmod.kind=Field_type;
+                name=String.sub s 0 (String.length s - 4) },
               false
           | _ -> name2, true
         in
         begin try
-          let (id1, item1, pos1) = FieldMap.find name2 comps1 in
+          let (id1, item1, pos1) = Commonmod.FieldMap.find name2 comps1 in
           let new_subst =
             match item2 with
               Sig_type _ ->
@@ -626,7 +435,7 @@ and signature_components ~loc old_env ~mark env subst paired =
                 module_declarations ~loc env ~mark subst id1 mty1 mty2
               in
               let item =
-                Result.map_error (fun diff -> Error.Module_type diff) item
+                Result.map_error (fun diff -> Err.Module_type diff) item
               in
               let present_at_runtime, item =
                 match pres1, pres2, mty1.md_type with
@@ -697,7 +506,7 @@ and modtype_infos ~loc env ~mark subst id info1 info2 =
         check_modtype_equiv ~loc env ~mark (Mty_ident(Path.Pident id)) mty2 in
   match r with
   | Ok _ as ok -> ok
-  | Error e -> Error Error.(Module_type_declaration (diff info1 info2 e))
+  | Error e -> Error Err.(Module_type_declaration (diff info1 info2 e))
 
 and check_modtype_equiv ~loc env ~mark mty1 mty2 =
   match
@@ -708,11 +517,11 @@ and check_modtype_equiv ~loc env ~mark mty1 mty2 =
   | (Ok c1, Ok _c2) ->
       (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
         print_coercion _c1 print_coercion _c2; *)
-      Error Error.(Illegal_permutation c1)
-  | Ok _, Error e -> Error Error.(Not_greater_than e)
-  | Error e, Ok _ -> Error Error.(Not_less_than e)
+      Error Err.(Illegal_permutation c1)
+  | Ok _, Error e -> Error Err.(Not_greater_than e)
+  | Error e, Ok _ -> Error Err.(Not_less_than e)
   | Error less_than, Error greater_than ->
-      Error Error.(Incomparable {less_than; greater_than})
+      Error Err.(Incomparable {less_than; greater_than})
 
 
 (* Simplified inclusion check between module types (for Env) *)
@@ -727,20 +536,15 @@ let can_alias env path =
 
 
 
-type explanation = Env.t * Error.all
+type explanation = Env.t * Err.all
 exception Error of explanation
-
-type functor_arg_descr =
-  | Anonymous of Parsetree.module_expr
-  | Named_arg of Path.t
-  | Unit_arg
 
 exception Apply_error of {
     loc : Location.t ;
     env : Env.t ;
     lid_app : Longident.t option ;
     mty_f : module_type ;
-    args : (functor_arg_descr * module_type) list ;
+    args : (Err.functor_arg_descr * module_type) list ;
   }
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
@@ -751,7 +555,7 @@ let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
 let check_modtype_inclusion ~loc env mty1 path1 mty2 =
   match check_modtype_inclusion_raw ~loc env mty1 path1 mty2 with
   | Ok _ -> None
-  | Error e -> Some (env, Error.In_Module_type e)
+  | Error e -> Some (env, Err.In_Module_type e)
 
 let check_functor_application_in_path
     ~errors ~loc ~lid_whole_app ~f0_path ~args
@@ -763,7 +567,7 @@ let check_functor_application_in_path
         let prepare_arg (arg_path, arg_mty) =
           let aliasable = can_alias env arg_path in
           let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
-          (Named_arg arg_path, smd)
+          (Err.Named_arg arg_path, smd)
         in
         let mty_f = (Env.find_module f0_path env).md_type in
         let args = List.map prepare_arg args in
@@ -785,63 +589,18 @@ let compunit env ~mark impl_name impl_sig intf_name intf_sig =
       impl_sig intf_sig
   with Result.Error reasons ->
     let cdiff =
-      Error.In_Compilation_unit(Error.diff impl_name intf_name reasons) in
+      Err.In_Compilation_unit(Err.diff impl_name intf_name reasons) in
     raise(Error(env, cdiff))
   | Ok x -> x
 
 (* Error report *)
 
-module Short_name = struct
-
-  type 'a item = {
-    item: 'a;
-    name : string;
-    from: Ident.t option;
-  }
-
-  type 'a t =
-    | Original of 'a
-    | Synthetic of string * 'a
-
-  type functor_param =
-    | Unit
-    | Named of (Ident.t option * module_type t)
-
-  let modtype (r : _ item) = match r.item with
-    | Mty_ident _
-    | Mty_alias _
-    | Mty_signature []
-      -> Original r.item
-    | Mty_signature _ | Mty_functor _
-      -> Synthetic (r.name, r.item)
-
-  let functor_param (ua : _ item) = match ua.item with
-    | Types.Unit -> Unit
-    | Types.Named (from, mty) ->
-        Named (from, modtype { ua with item = mty ; from })
-
-  let modexpr (r : _ item) = match r.item.Parsetree.pmod_desc with
-    | Pmod_ident _
-    | Pmod_structure []
-      -> Original r.item
-    | _
-      -> Synthetic (r.name, r.item)
-
-  let pp ppx = function
-    | Original x -> ppx x
-    | Synthetic (s,_) -> Format.dprintf "%s" s
-
-  let pp_orig ppx = function
-    | Original x | Synthetic (_, x) -> ppx x
-
-end
-
 module FunctorDiff = struct
   open Diffing
 
   let param_name = function
-      | Named(x,_) -> x
-      | Unit -> None
+      | Types.Named(x,_) -> x
+      | Types.Unit -> None
 
   let arg_weight = function
     | Insert _ -> 10
@@ -864,25 +623,25 @@ module FunctorDiff = struct
     | Change _ -> 10
     | Keep (param1, param2, _) -> begin
         match fst param1, param_name param2 with
-        | (Unit_arg | Anonymous _) , None
+        | Err.(Unit_arg | Anonymous _) , None
           -> 0
-        | Named_arg (Path.Pident n1), Some n2
+        | Err.Named_arg (Path.Pident n1), Some n2
           when String.equal (Ident.name n1) (Ident.name n2)
           -> 0
-        | Named_arg _, Some _ -> 1
-        | Named_arg _,  None | (Unit_arg | Anonymous _), Some _ -> 1
+        | Err.Named_arg _, Some _ -> 1
+        | Err.Named_arg _,  None | Err.(Unit_arg | Anonymous _), Some _ -> 1
       end
 
 
   type state = {
-    res: module_type option;
+    res: Types.module_type option;
     env: Env.t;
     subst: Subst.t;
   }
 
   let keep_expansible_param = function
-    | Mty_ident _ | Mty_alias _ as mty -> Some mty
-    | Mty_signature _ | Mty_functor _ -> None
+    | Types.Mty_ident _ | Types.Mty_alias _ as mty -> Some mty
+    | Types.Mty_signature _ | Types.Mty_functor _ -> None
 
   let lookup_expansion { env ; res ; _ } = match res with
     | None -> None
@@ -898,7 +657,9 @@ module FunctorDiff = struct
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let arg_update d st = match d with
+  let arg_update d st =
+    let open Types in
+    match d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
@@ -929,7 +690,7 @@ module FunctorDiff = struct
             st, [||]
       end
 
-  let arg_diff env _ctxt (l1,res1) (l2,_res2) =
+  let arg env _ctxt (l1,res1) (l2,_res2) =
     let update = Diffing.With_left_extensions arg_update in
     let test st mty1 mty2 =
       let loc = Location.none in
@@ -952,7 +713,9 @@ module FunctorDiff = struct
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let app_update d st =
+  let app_update d (st:state) =
+    let open Types in
+    let open Err in
     match d with
     | Insert _
     | Delete _
@@ -993,22 +756,22 @@ module FunctorDiff = struct
         end
       end
 
-  let app_diff env ~f ~args =
+  let app env ~f ~args =
     let params, res = retrieve_functor_params env f in
     let update = Diffing.With_right_extensions app_update in
     let test state (arg,arg_mty) param =
       let loc = Location.none in
       let snap = Btype.snapshot () in
       let res = match arg, param with
-        | Unit_arg, Unit -> Ok Tcoerce_none
-        | Unit_arg, Named _ | (Anonymous _ | Named_arg _), Unit ->
-            Result.Error (Error.Incompatible_params(arg,param))
-        | ( Anonymous _ | Named_arg _ ) , Named (_, param) ->
+        | Err.Unit_arg, Types.Unit -> Ok Typedtree.Tcoerce_none
+        | Err.Unit_arg, Types.Named _ | Err.(Anonymous _ | Named_arg _), Unit ->
+            Result.Error (Err.Incompatible_params(arg,param))
+        | Err.( Anonymous _ | Named_arg _ ) , Types.Named (_, param) ->
             match
               modtypes ~loc state.env ~mark:Mark_neither state.subst
                 arg_mty param
             with
-            | Error mty -> Result.Error (Error.Mismatch mty)
+            | Error mty -> Result.Error (Err.Mismatch mty)
             | Ok _ as x -> x
       in
       Btype.backtrack snap;
@@ -1020,71 +783,24 @@ module FunctorDiff = struct
       { env; subst = Subst.identity; res = keep_expansible_param res }
     in
     Diffing.variadic_diff ~weight:app_weight ~test ~update state args params
-
-  (* Simplication for printing *)
-
-  let shortname side pos =
-    match side with
-    | `Got -> Format.sprintf "$S%d" pos
-    | `Expected -> Format.sprintf "$T%d" pos
-    | `Unneeded -> "..."
-
-  let to_shortnames ctx patch =
-    let to_shortname side pos mty =
-      {Short_name. name = (shortname side pos); item = mty; from=None }
-    in
-    let elide_if_app s = match ctx with
-      | `App -> `Unneeded
-      | `Sig -> s
-    in
-    let aux i d =
-      let pos = i + 1 in
-      let d = match d with
-        | Diffing.Insert mty ->
-            Diffing.Insert (to_shortname `Expected pos mty)
-        | Diffing.Delete mty ->
-            Diffing.Delete (to_shortname (elide_if_app `Got) pos mty)
-        | Diffing.Change (g, e, p) ->
-            Diffing.Change
-              (to_shortname `Got pos g,
-               to_shortname `Expected pos e, p)
-        | Diffing.Keep (g, e, p) ->
-            Diffing.Keep (to_shortname `Got pos g,
-                       to_shortname (elide_if_app `Expected) pos e, p)
-      in
-      pos, d
-    in
-    List.mapi aux patch
-
-  let drop_inserted_suffix patch =
-    let rec drop = function
-      | Diffing.Insert _ :: q -> drop q
-      | rest -> List.rev rest in
-    drop (List.rev patch)
-
-  let prepare_patch ~drop ~ctx patch =
-    let drop_suffix x = if drop then drop_inserted_suffix x else x in
-    patch |> drop_suffix |> to_shortnames ctx
-
 end
-
 
 (* Hide the context and substitution parameters to the outside world *)
 
 let modtypes ~loc env ~mark mty1 mty2 =
   match modtypes ~loc env ~mark Subst.identity mty1 mty2 with
   | Ok x -> x
-  | Error reason -> raise (Error (env, Error.(In_Module_type reason)))
+  | Error reason -> raise (Error (env, Err.(In_Module_type reason)))
 let signatures env ~mark sig1 sig2 =
   match signatures ~loc:Location.none env ~mark Subst.identity sig1 sig2 with
   | Ok x -> x
-  | Error reason -> raise (Error(env,Error.(In_Signature reason)))
+  | Error reason -> raise (Error(env,Err.(In_Signature reason)))
 
 let type_declarations ~loc env ~mark id decl1 decl2 =
   match type_declarations ~loc env ~mark Subst.identity id decl1 decl2 with
   | Ok _ -> ()
-  | Error (Error.Core reason) ->
-      raise (Error(env,Error.(In_Type_declaration(id,reason))))
+  | Error (Err.Core reason) ->
+      raise (Error(env,Err.(In_Type_declaration(id,reason))))
   | Error _ -> assert false
 
 let strengthened_module_decl ~loc ~aliasable env ~mark md1 path1 md2 =
@@ -1092,794 +808,18 @@ let strengthened_module_decl ~loc ~aliasable env ~mark md1 path1 md2 =
     md1 path1 md2 with
   | Ok x -> x
   | Error mdiff ->
-      raise (Error(env,Error.(In_Module_type mdiff)))
-
-
-
-
-module Illegal_permutation = struct
-  (** Extraction of information in case of illegal permutation
-      in a module type *)
-
-  (** When examining coercions, we only have runtime component indices,
-      we use thus a limited version of {!pos}. *)
-  type coerce_pos =
-    | Item of int
-    | InArg
-    | InBody
-
-  let either f x g y = match f x with
-    | None -> g y
-    | Some _ as v -> v
-
-  (** We extract a lone transposition from a full tree of permutations. *)
-  let rec transposition_under path = function
-    | Tcoerce_structure(c,_) ->
-        either
-          (not_fixpoint path 0) c
-          (first_non_id path 0) c
-    | Tcoerce_functor(arg,res) ->
-        either
-          (transposition_under (InArg::path)) arg
-          (transposition_under (InBody::path)) res
-    | Tcoerce_none -> None
-    | Tcoerce_alias _ | Tcoerce_primitive _ ->
-        (* these coercions are not inversible, and raise an error earlier when
-           checking for module type equivalence *)
-        assert false
-  (* we search the first point which is not invariant at the current level *)
-  and not_fixpoint path pos = function
-    | [] -> None
-    | (n, _) :: q ->
-        if n = pos then
-          not_fixpoint path (pos+1) q
-        else
-          Some(List.rev path, pos, n)
-  (* we search the first item with a non-identity inner coercion *)
-  and first_non_id path pos = function
-    | [] -> None
-    | (_,Tcoerce_none) :: q -> first_non_id path (pos + 1) q
-    | (_,c) :: q ->
-        either
-          (transposition_under (Item pos :: path)) c
-          (first_non_id path (pos + 1)) q
-
-  let transposition c =
-    match transposition_under [] c with
-    | None -> raise Not_found
-    | Some x -> x
-
-  let rec runtime_item k = function
-    | [] -> raise Not_found
-    | item :: q ->
-        if not(is_runtime_component item) then
-          runtime_item k q
-        else if k = 0 then
-          item
-        else
-          runtime_item (k-1) q
-
-  (* Find module type at position [path] and convert the [coerce_pos] path to
-     a [pos] path *)
-  let rec find env ctx path mt = match mt, path with
-    | Mty_ident p, _ ->
-        begin match (Env.find_modtype p env).mtd_type with
-        | None -> raise Not_found
-        | Some mt -> find env ctx path mt
-        end
-    | Mty_alias _, _ -> assert false
-    | Mty_signature s , [] -> List.rev ctx, s
-    | Mty_signature s, Item k :: q ->
-        begin match runtime_item k s with
-        | Sig_module (id, _, md,_,_) -> find env (Module id :: ctx) q md.md_type
-        | _ -> raise Not_found
-        end
-    | Mty_functor(Named (_,mt) as arg,_), InArg :: q ->
-        find env (Arg arg :: ctx) q mt
-    | Mty_functor(arg, mt), InBody :: q ->
-        find env (Body arg :: ctx) q mt
-    | _ -> raise Not_found
-
-  let find env path mt = find env [] path mt
-  let item mt k = item_ident_name (runtime_item k mt)
-
-  let pp_item ppf (id,_,kind) =
-    Format.fprintf ppf "%s %S" (kind_of_field_desc kind) (Ident.name id)
-
-  let pp ctx_printer env ppf (mty,c) =
-    try
-      let p, k, l = transposition c in
-      let ctx, mt = find env p mty in
-      Format.fprintf ppf
-        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
-         @[For example,@ %a@]@ @[the %a@ and the %a are not in the same order@ \
-         in the expected and actual module types.@]@]"
-        ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
-    with Not_found -> (* this should not happen *)
-      Format.fprintf ppf
-        "Illegal permutation of runtime components in a module type."
-
-end
-
-
-
-let show_loc msg ppf loc =
-  let pos = loc.Location.loc_start in
-  if List.mem pos.Lexing.pos_fname [""; "_none_"; "//toplevel//"] then ()
-  else Format.fprintf ppf "@\n@[<2>%a:@ %s@]" Location.print_loc loc msg
-
-let show_locs ppf (loc1, loc2) =
-  show_loc "Expected declaration" ppf loc2;
-  show_loc "Actual declaration" ppf loc1
-
-
-open Format
-
-
-let path_of_context = function
-    Module id :: rem ->
-      let rec subm path = function
-        | [] -> path
-        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id)) rem
-        | _ -> assert false
-      in subm (Path.Pident id) rem
-  | _ -> assert false
-
-
-let rec context ppf = function
-    Module id :: rem ->
-      fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
-  | Modtype id :: rem ->
-      fprintf ppf "@[<2>module type %a =@ %a@]"
-        Printtyp.ident id context_mty rem
-  | Body x :: rem ->
-      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
-  | Arg x :: rem ->
-      fprintf ppf "functor (%s : %a) -> ..." (argname x) context_mty rem
-  | [] ->
-      fprintf ppf "<here>"
-and context_mty ppf = function
-    (Module _ | Modtype _) :: _ as rem ->
-      fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
-  | cxt -> context ppf cxt
-and args ppf = function
-    Body x :: rem ->
-      fprintf ppf "(%s)%a" (argname x) args rem
-  | Arg x :: rem ->
-      fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
-  | cxt ->
-      fprintf ppf " :@ %a" context_mty cxt
-and argname = function
-  | Unit -> ""
-  | Named (None, _) -> "_"
-  | Named (Some id, _) -> Ident.name id
-
-let alt_context ppf cxt =
-  if cxt = [] then () else
-  if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "in module %a," Printtyp.path (path_of_context cxt)
-  else
-    fprintf ppf "@[<hv 2>at position@ %a,@]" context cxt
-
-let context ppf cxt =
-  if cxt = [] then () else
-  if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
-  else
-    fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
-
-
-
-let buffer = ref Bytes.empty
-let is_big obj =
-  let size = !Clflags.error_size in
-  size > 0 &&
-  begin
-    if Bytes.length !buffer < size then buffer := Bytes.create size;
-    try ignore (Marshal.to_buffer !buffer 0 size obj []); false
-    with _ -> true
-  end
-
-module Pp = struct
-  open Error
-
-  let core id x =
-    match x with
-    | Value_descriptions diff ->
-        let t1 = Printtyp.tree_of_value_description id diff.got in
-        let t2 = Printtyp.tree_of_value_description id diff.expected in
-        Format.dprintf
-          "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]%a%t"
-          !Oprint.out_sig_item t1
-          !Oprint.out_sig_item t2
-        show_locs (diff.got.val_loc, diff.expected.val_loc)
-        Printtyp.Conflicts.print_explanations
-    | Type_declarations diff ->
-        Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
-          "Type declarations do not match"
-          !Oprint.out_sig_item
-          (Printtyp.tree_of_type_declaration id diff.got Trec_first)
-          "is not included in"
-          !Oprint.out_sig_item
-          (Printtyp.tree_of_type_declaration id diff.expected Trec_first)
-          (Includecore.report_type_mismatch
-             "the first" "the second" "declaration") diff.symptom
-          show_locs (diff.got.type_loc, diff.expected.type_loc)
-          Printtyp.Conflicts.print_explanations
-    | Extension_constructors diff ->
-        Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a%t@]"
-          "Extension declarations do not match"
-          !Oprint.out_sig_item
-          (Printtyp.tree_of_extension_constructor id diff.got Text_first)
-          "is not included in"
-          !Oprint.out_sig_item
-          (Printtyp.tree_of_extension_constructor id diff.expected Text_first)
-          (Includecore.report_extension_constructor_mismatch
-             "the first" "the second" "declaration") diff.symptom
-          show_locs (diff.got.ext_loc, diff.expected.ext_loc)
-          Printtyp.Conflicts.print_explanations
-    | Class_type_declarations diff ->
-        Format.dprintf
-          "@[<hv 2>Class type declarations do not match:@ \
-           %a@;<1 -2>does not match@ %a@]@ %a%t"
-          !Oprint.out_sig_item
-          (Printtyp.tree_of_cltype_declaration id diff.got Trec_first)
-          !Oprint.out_sig_item
-          (Printtyp.tree_of_cltype_declaration id diff.expected Trec_first)
-          Includeclass.report_error diff.symptom
-          Printtyp.Conflicts.print_explanations
-    | Class_declarations {got;expected;symptom} ->
-        let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
-        let t2 = Printtyp.tree_of_class_declaration id expected Trec_first in
-        Format.dprintf
-          "@[<hv 2>Class declarations do not match:@ \
-           %a@;<1 -2>does not match@ %a@]@ %a%t"
-          !Oprint.out_sig_item t1
-          !Oprint.out_sig_item t2
-          Includeclass.report_error symptom
-          Printtyp.Conflicts.print_explanations
-
-  let missing_field ppf item =
-    let id, loc, kind = item_ident_name item in
-    Format.fprintf ppf "The %s `%a' is required but not provided%a"
-      (kind_of_field_desc kind) Printtyp.ident id
-    (show_loc "Expected declaration") loc
-
-  let module_types {got=mty1; expected=mty2} =
-    Format.dprintf
-      "@[<hv 2>Modules do not match:@ \
-       %a@;<1 -2>is not included in@ %a@]"
-      !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
-      !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
-
-  let eq_module_types {got=mty1; expected=mty2} =
-    Format.dprintf
-      "@[<hv 2>Module types do not match:@ \
-       %a@;<1 -2>is not equal to@ %a@]"
-      !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
-      !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
-
-
-  let module_type_declarations id {got=d1 ; expected=d2} =
-    Format.dprintf
-      "@[<hv 2>Module type declarations do not match:@ \
-       %a@;<1 -2>does not match@ %a@]"
-      !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
-      !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
-
-  let interface_mismatch ppf diff =
-    Format.fprintf ppf
-      "The implementation %s@ does not match the interface %s:@ "
-      diff.got diff.expected
-
-  let core_module_type_symptom x  =
-    match x with
-    | Not_an_alias | Not_an_identifier | Abstract_module_type
-    | Incompatible_aliases ->
-        if Printtyp.Conflicts.exists () then
-          Some Printtyp.Conflicts.print_explanations
-        else None
-    | Unbound_module_path path ->
-        Some(Format.dprintf "Unbound module %a" Printtyp.path path)
-
-  let dmodtype mty =
-    let tmty = Printtyp.tree_of_modtype mty in
-    Format.dprintf "%a" !Oprint.out_module_type tmty
-
-  let definition_of_functor_param x = match Short_name.functor_param x with
-    | Short_name.Unit -> Format.dprintf "()"
-    | Short_name.Named(_,short_mty) ->
-        match short_mty with
-        | Original mty -> dmodtype mty
-        | Synthetic (name, mty) ->
-            Format.dprintf
-              "%s@ =@ %t" name (dmodtype mty)
-
-  let short_functor_param x = match Short_name.functor_param x with
-    | Short_name.Unit -> Format.dprintf "()"
-    | Short_name.Named (_, short_mty) ->
-        Short_name.pp dmodtype short_mty
-
-  let functor_param x = match Short_name.functor_param x with
-    | Short_name.Unit -> Format.dprintf "()"
-    | Short_name.Named (None, Original (Mty_signature []) ) ->
-        Format.dprintf "(sig end)"
-    | Short_name.Named (None, short_mty) ->
-        Short_name.pp dmodtype short_mty
-    | Short_name.Named (Some p, short_mty) ->
-        Format.dprintf "(%s : %t)"
-          (Ident.name p) (Short_name.pp dmodtype short_mty)
-
-  let definition_of_argument ua =
-    let arg, mty = ua.Short_name.item in
-    match arg with
-    | Unit_arg -> Format.dprintf "()"
-    | Named_arg p ->
-        let mty = Short_name.modtype { ua with item = mty } in
-        Format.dprintf
-          "%a@ :@ %t"
-          Printtyp.path p
-          (Short_name.pp_orig dmodtype mty)
-    | Anonymous md ->
-        let short_md = Short_name.modexpr { ua with item = md } in
-        begin match short_md with
-        | Original md -> fun ppf -> Pprintast.module_expr ppf md
-        | Synthetic (name, md) -> fun ppf ->
-            Format.fprintf ppf
-              "%s@ =@ %a" name Pprintast.module_expr md
-        end
-
-  let short_argument ua =
-    let arg, _mty = ua.Short_name.item in
-    match arg with
-    | Unit_arg -> Format.dprintf "()"
-    | Named_arg p -> fun ppf -> Printtyp.path ppf p
-    | Anonymous md ->
-        let short_md = Short_name.modexpr { ua with item=md } in
-        Short_name.pp (fun x ppf -> Pprintast.module_expr ppf x) short_md
-
-  let style = function
-    | Diffing.Keep _ -> Misc.Color.[ FG Green ]
-    | Diffing.Delete _ -> Misc.Color.[ FG Red; Bold]
-    | Diffing.Insert _ -> Misc.Color.[ FG Red; Bold]
-    | Diffing.Change _ -> Misc.Color.[ FG Magenta; Bold]
-
-  let prefix ppf (pos, p) =
-    let sty = style p in
-    Format.pp_open_stag ppf (Misc.Color.Style sty);
-    Format.fprintf ppf "%i." pos;
-    Format.pp_close_stag ppf ()
-
-  let param_id x = match x.Short_name.item with
-    | Named (Some _ as x,_) -> x
-    | Unit | Named(None,_) -> None
-
-  let got_arg = function
-    | Diffing.Delete mty
-    | Diffing.Keep (mty,_,_)
-    | Diffing.Change (mty,_,_) as x ->
-        Some (None,(x,mty))
-    | Diffing.Insert _ -> None
-
- let got_app = function
-    | Diffing.Delete mty
-    | Diffing.Keep (mty,_,_)
-    | Diffing.Change (mty,_,_) as x ->
-        Some (param_id mty,(x,mty))
-    | Diffing.Insert _ -> None
-
-  let expected = function
-    | Diffing.Insert mty
-    | Diffing.Keep(_,mty,_)
-    | Diffing.Change (_,mty,_) as x ->
-        Some (param_id mty,(x, mty))
-    | Diffing.Delete _ -> None
-
-  let space ppf () = Format.fprintf ppf "@ "
-  let params_diff sep proj printer patch =
-    let elt (x,param) =
-      let sty = style x in
-      Format.dprintf "%a%t%a"
-        Format.pp_open_stag (Misc.Color.Style sty)
-        (printer param)
-        Format.pp_close_stag ()
-    in
-    let params = List.filter_map proj @@ List.map snd patch in
-    Printtyp.functor_parameters ~sep elt params
-
-end
-
-
-
-module Linearize = struct
-  (** Construct a linear presentation of the error tree *)
-
-  open Error
-  let with_context ?loc ctx printer diff =
-    Location.msg ?loc "%a%a" context (List.rev ctx)
-      printer diff
-
-  let dwith_context ?loc ctx printer =
-    Location.msg ?loc "%a%t" context (List.rev ctx) printer
-
-  let dwith_context_and_elision ?loc ctx printer diff =
-    if is_big (diff.Error.got,diff.Error.expected) then
-      Location.msg ?loc "..."
-    else
-      dwith_context ?loc ctx (printer diff)
-
-  type ('a,'b) patch =
-    ( 'a Short_name.item, 'b Short_name.item,
-      Typedtree.module_coercion, Error.arg_functor_param_symptom
-    ) Diffing.change
-  type ('a,'b) t = {
-    msgs: Location.msg list;
-    post:
-      (Env.t * (int * ('a, 'b) patch) list) option
-  }
-
-  let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
-    match diff.symptom with
-    | Invalid_module_alias _ (* the difference is non-informative here *)
-    | After_alias_expansion _ (* we print only the expanded module types *) ->
-        module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
-          diff.symptom
-    | _ ->
-        let inner = if eqmode then Pp.eq_module_types else Pp.module_types in
-        let before = match diff.symptom with
-          | Functor Params _ -> before
-          | _ ->
-              let next = dwith_context_and_elision ctx inner diff in
-              next :: before in
-        module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
-          diff.symptom
-
-  and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
-    | Mt_core core ->
-        begin match Pp.core_module_type_symptom core with
-        | None -> { msgs = before; post = None }
-        | Some msg ->
-            { msgs = Location.msg "%t" msg :: before; post = None }
-        end
-    | Signature s -> signature ~expansion_token ~env ~before ~ctx s
-    | Functor f -> functor_symptom ~expansion_token ~env ~before ~ctx f
-    | After_alias_expansion diff ->
-        module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
-    | Invalid_module_alias path ->
-        let printer =
-          Format.dprintf "Module %a cannot be aliased" Printtyp.path path
-        in
-        let msgs = dwith_context ctx printer :: before in
-        { msgs; post = None }
-
-
-  and functor_symptom ~expansion_token ~env ~before ~ctx = function
-    | Result res ->
-        module_type ~expansion_token ~eqmode:false ~env ~before ~ctx res
-    | Params Error.{got; expected; symptom=()} ->
-        let d =
-          FunctorDiff.arg_diff env ctx got expected
-          |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
-        in
-        let actual = Pp.(params_diff space got_app functor_param d) in
-        let expected =
-          Pp.(params_diff space expected functor_param d)
-        in
-        let main =
-          Format.dprintf
-            "@[<hv 2>Modules do not match:@ \
-             @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
-             @[functor@ %t@ -> ...@]@]"
-            actual expected
-        in
-        let post = if expansion_token then Some (env,d) else None in
-        { msgs = dwith_context ctx main :: before; post }
-
-  and signature ~expansion_token ~env:_ ~before ~ctx sgs =
-    Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
-    match sgs.missings, sgs.incompatibles with
-    | a :: l , _ ->
-        let more =
-          if expansion_token then
-            with_context ctx Pp.missing_field a
-            :: List.map (Location.msg "%a" Pp.missing_field) l
-          else
-            []
-        in
-        let msgs = more @ before in
-        { msgs; post = None }
-    | [], a :: _ -> sigitem ~expansion_token ~env:sgs.env ~before ~ctx a
-    | [], [] -> assert false
-      )
-  and sigitem ~expansion_token ~env ~before ~ctx (name,s) = match s with
-    | Core c ->
-        { msgs = dwith_context ctx (Pp.core name c):: before; post = None }
-    | Module_type diff ->
-        module_type ~expansion_token ~eqmode:false ~env ~before
-          ~ctx:(Module name :: ctx) diff
-    | Module_type_declaration diff ->
-        module_type_decl ~expansion_token ~env ~before ~ctx name diff
-  and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
-    let next =
-      dwith_context_and_elision ctx (Pp.module_type_declarations id) diff in
-    let before = next :: before in
-    match diff.symptom with
-    | Not_less_than mts ->
-        let before =
-          Location.msg "The first module type is not included in the second"
-          :: before in
-        module_type ~expansion_token ~eqmode:true ~before ~env
-          ~ctx:(Modtype id :: ctx) mts
-    | Not_greater_than mts ->
-        let before =
-          Location.msg "The second module type is not included in the first"
-          :: before in
-        module_type ~expansion_token ~eqmode:true ~before ~env
-          ~ctx:(Modtype id :: ctx) mts
-    | Incomparable mts ->
-        module_type ~expansion_token ~eqmode:true ~env ~before
-          ~ctx:(Modtype id :: ctx) mts.less_than
-    | Illegal_permutation c ->
-        begin match diff.got.Types.mtd_type with
-        | None -> assert false
-        | Some mty ->
-            let main =
-            with_context (Modtype id::ctx)
-              (Illegal_permutation.pp alt_context env) (mty,c) in
-            { msgs = main :: before; post = None }
-        end
-
-  let module_type_subst ~env id diff =
-    match diff.symptom with
-    | Not_less_than mts ->
-        module_type ~expansion_token:true ~eqmode:true ~before:[] ~env
-          ~ctx:[Modtype id] mts
-    | Not_greater_than mts ->
-        module_type ~expansion_token:true ~eqmode:true ~before:[] ~env
-          ~ctx:[Modtype id] mts
-    | Incomparable mts ->
-        module_type ~expansion_token:true ~eqmode:true ~env ~before:[]
-          ~ctx:[Modtype id] mts.less_than
-    | Illegal_permutation c ->
-        let mty = diff.got in
-        let main =
-          with_context [Modtype id]
-            (Illegal_permutation.pp alt_context env) (mty,c) in
-        { msgs = [main]; post = None }
-
-
-  let insert_suberror mty =
-    Format.dprintf
-      "An argument appears to be missing with module type@;<1 2>@[%t@]"
-      (Pp.definition_of_functor_param mty)
-
-  let delete_suberror mty =
-    Format.dprintf
-      "An extra argument is provided of module type@;<1 2>@[%t@]"
-      (Pp.definition_of_functor_param mty)
-
-  let delete_suberror_app mty =
-    Format.dprintf
-      "The following extra argument is provided@;<1 2>@[%t@]"
-      (Pp.definition_of_argument mty)
-
-  let ok_suberror x y =
-    Format.dprintf
-      "Module types %t and %t match"
-      (Pp.short_functor_param x)
-      (Pp.short_functor_param y)
-
-  let ok_suberror_app x y =
-    let pp_orig_name = match Short_name.functor_param y with
-      | Short_name.Named (_, Original mty) ->
-          Format.dprintf " %t" (Pp.dmodtype mty)
-      | _ -> ignore
-    in
-    Format.dprintf
-      "Module %t matches the expected module type%t"
-      (Pp.short_argument x)
-      pp_orig_name
-
-  let diff_arg g e more =
-    let g = Pp.definition_of_functor_param g in
-    let e = Pp.definition_of_functor_param e in
-    Format.dprintf
-      "Module types do not match:@ @[%t@]@;<1 -2>does not include@ \
-       @[%t@]%t"
-      g e (more ())
-
-  let diff_app g e more =
-    let g = Pp.definition_of_argument g in
-    let e = Pp.definition_of_functor_param e in
-    Format.dprintf
-      "Modules do not match:@ @[%t@]@;<1 -2>\
-       is not included in@ @[%t@]%t"
-      g e (more ())
-
-  let param_subcase sub ~expansion_token env (pos, diff) =
-    Location.msg "%a%a%a %a@[<hv 2>%t@]%a"
-      Format.pp_print_tab ()
-      Format.pp_open_tbox ()
-      Pp.prefix (pos, diff)
-      Format.pp_set_tab ()
-      (Printtyp.wrap_printing_env env ~error:true
-         (fun () -> sub ~expansion_token env diff)
-      )
-     Format.pp_close_tbox ()
-
-  let param_onlycase sub ~expansion_token env (_, diff) =
-    Location.msg "%a@[<hv 2>%t@]"
-      Format.pp_print_tab ()
-      (Printtyp.wrap_printing_env env ~error:true
-         (fun () -> sub ~expansion_token env diff)
-      )
-
-  let param_suberrors sub ~expansion_token env l =
-    let rec aux = function
-      | [] -> []
-      | (_, Diffing.Keep _) as a :: q ->
-          param_subcase sub ~expansion_token env a
-          :: aux q
-      | a :: q ->
-          param_subcase sub ~expansion_token env a
-          :: List.map (param_subcase sub ~expansion_token:false env) q
-    in
-    match l with
-    | [a] -> [param_onlycase sub ~expansion_token env a]
-    | l -> aux l
-
-  let arg_incompatible = function
-    | Unit ->
-        Format.dprintf
-          "The functor was expected to be applicative at this position"
-    | Named _ ->
-        Format.dprintf
-          "The functor was expected to be generative at this position"
-
-  let app_incompatible = function
-    | Unit_arg ->
-        Format.dprintf
-          "The functor was expected to be applicative at this position"
-    | Named_arg _ | Anonymous _ ->
-        Format.dprintf
-          "The functor was expected to be generative at this position"
-
-
-  let rec diff_suberror:
-    'a 'b 'c 'd. ('c -> _) -> ('a -> 'b -> _) -> expansion_token:_ -> _ ->
-    'a -> 'b -> ('c,'d) Error.functor_param_symptom -> _
-    = fun incompatible msg ~expansion_token env g e diff -> match diff with
-    | Error.Incompatible_params (i,_) -> incompatible i
-    | Error.Mismatch mty_diff ->
-        let more () =
-          let r =
-            module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
-              ~ctx:[] mty_diff.symptom
-          in
-          let list l ppf = match l with
-            | [] -> ()
-            | _ :: _ ->
-                Format.fprintf ppf "@;<1 -2>@[%a@]"
-                  (Format.pp_print_list ~pp_sep:Pp.space
-                     (fun ppf f -> f.Location.txt ppf)
-                  )
-                  l
-          in
-          let post = match r.post with
-            | None -> []
-            | Some (env, patch) ->
-                param_suberrors arg ~expansion_token env patch in
-          list (List.rev_append r.msgs post) in
-        msg g e more
-
-  and arg ~expansion_token env = function
-    | Diffing.Insert mty -> insert_suberror mty
-    | Diffing.Delete mty -> delete_suberror mty
-    | Diffing.Change (g, e, d) ->
-        diff_suberror arg_incompatible diff_arg ~expansion_token env g e d
-    | Diffing.Keep (x, y, _) -> ok_suberror x y
-
-  let app ~expansion_token env = function
-    | Diffing.Insert mty -> insert_suberror mty
-    | Diffing.Delete mty -> delete_suberror_app mty
-    | Diffing.Change (g, e, d) ->
-        diff_suberror app_incompatible diff_app ~expansion_token env g e d
-    | Diffing.Keep (x, y, _) -> ok_suberror_app x y
-
-  let all env = function
-    | In_Compilation_unit diff ->
-      let first = Location.msg "%a" Pp.interface_mismatch diff in
-      signature ~expansion_token:true ~env ~before:[first] ~ctx:[] diff.symptom
-    | In_Type_declaration (id,reason) ->
-        let main = Location.msg "%t" (Pp.core id reason) in
-        { msgs = [main]; post = None }
-    | In_Module_type diff ->
-        module_type ~expansion_token:true ~eqmode:false ~before:[] ~env ~ctx:[]
-          diff
-    | In_Module_type_substitution (id,diff) ->
-        module_type_subst ~env id diff
-    | In_Signature diff ->
-        signature ~expansion_token:true ~before:[] ~env ~ctx:[] diff
-    | In_Expansion cmts ->
-        match Pp.core_module_type_symptom cmts with
-        | None -> assert false
-        | Some main ->
-            { msgs = [Location.msg "%t" main]; post = None }
-
-  let coalesce { msgs; _ } =
-    match List.rev msgs with
-    | [] -> ignore
-    | before ->
-        let ctx ppf =
-          Format.pp_print_list ~pp_sep:Pp.space
-            (fun ppf x -> x.Location.txt ppf)
-            ppf before in
-        ctx
-end
-
-let err_msgs (env, err) =
-  Printtyp.Conflicts.reset();
-  Printtyp.wrap_printing_env ~error:true env (fun () ->
-      let l = Linearize.all env err in
-      let main = Linearize.coalesce l in
-      let sub = match l.Linearize.post with
-        | None -> []
-        | Some (env,post) ->
-            Linearize.(param_suberrors arg) ~expansion_token:true env post in
-      sub, main
-    )
-
-let report_error err =
-  let sub, main = err_msgs err in
-  Location.errorf ~loc:Location.(in_file !input_name) ~sub "%t" main
-
-let report_apply_error ~loc env (lid_app, mty_f, args) =
-  let may_print_app ppf = match lid_app with
-    | None -> ()
-    | Some lid -> Format.fprintf ppf "%a " Printtyp.longident lid
-  in
-  let d =
-    FunctorDiff.app_diff env ~f:mty_f ~args
-    |> FunctorDiff.prepare_patch ~drop:true ~ctx:`App
-  in
-  match d with
-  | [ _, (Diffing.Change _ as c) ] ->
-      Location.errorf ~loc "%t" (Linearize.app env ~expansion_token:true c)
-  | _ ->
-      Location.errorf ~loc
-        ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
-        "@[<hv>The functor application %tis ill-typed.@ \
-         These arguments:@;<1 2>\
-         @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
-        may_print_app
-        Pp.(params_diff space got_arg short_argument d)
-        Pp.(params_diff space expected functor_param d)
-
-
-(* We could do a better job to split the individual error items
-   as sub-messages of the main interface mismatch on the whole unit. *)
-let () =
-  Location.register_error_of_exn
-    (function
-      | Error err -> Some (report_error err)
-      | Apply_error {loc; env; lid_app; mty_f; args} ->
-          Some (Printtyp.wrap_printing_env env ~error:true (fun () ->
-              report_apply_error ~loc env (lid_app, mty_f, args))
-            )
-      | _ -> None
-    )
-
+      raise (Error(env,Err.(In_Module_type mdiff)))
 
 let expand_module_alias env path =
   match expand_module_alias env path with
   | Ok x -> x
   | Result.Error _ ->
-      raise (Error(env,In_Expansion(Error.Unbound_module_path path)))
+      raise (Error(env,In_Expansion(Err.Unbound_module_path path)))
 
 let check_modtype_equiv ~loc env id mty1 mty2 =
   match check_modtype_equiv ~loc env ~mark:Mark_both mty1 mty2 with
   | Ok _ -> ()
   | Error e ->
       raise (Error(env,
-                   Error.(In_Module_type_substitution (id,diff mty1 mty2 e)))
+                   Err.(In_Module_type_substitution (id,diff mty1 mty2 e)))
             )

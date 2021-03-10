@@ -17,7 +17,6 @@
 
 open Typedtree
 open Types
-open Format
 
 (** Type describing which arguments of an inclusion to consider as used
     for the usage warnings. [Mark_both] is the default. *)
@@ -31,7 +30,7 @@ type mark =
   | Mark_neither
       (** Do not mark definitions used from either argument *)
 
-type explanation
+type explanation = Env.t * Errormod.all
 
 val modtypes:
   loc:Location.t -> Env.t -> mark:mark ->
@@ -61,7 +60,7 @@ val compunit:
 val type_declarations:
   loc:Location.t -> Env.t -> mark:mark ->
   Ident.t -> type_declaration -> type_declaration -> unit
-
+(*
 val print_coercion: formatter -> module_coercion -> unit
 
 type symptom =
@@ -89,20 +88,37 @@ type pos =
   | Modtype of Ident.t
   | Arg of functor_parameter
   | Body of functor_parameter
-
+*)
 exception Error of explanation
-type functor_arg_descr =
-  | Anonymous of Parsetree.module_expr
-  | Named_arg of Path.t
-  | Unit_arg
 exception Apply_error of {
     loc : Location.t ;
     env : Env.t ;
     lid_app : Longident.t option ;
     mty_f : module_type ;
-    args : (functor_arg_descr * Types.module_type)  list ;
+    args : (Errormod.functor_arg_descr * Types.module_type)  list ;
   }
 
-val err_msgs: explanation ->
+(*val err_msgs: explanation ->
   Location.msg list * (Format.formatter -> unit)
+*)
 val expand_module_alias: Env.t -> Path.t -> Types.module_type
+
+module FunctorDiff: sig
+  val app:
+    Env.t ->
+    f:Types.module_type ->
+    args:(Errormod.functor_arg_descr * Types.module_type) list ->
+    (Errormod.functor_arg_descr * Types.module_type,
+     Types.functor_parameter, Typedtree.module_coercion,
+     (Errormod.functor_arg_descr, 'a) Errormod.functor_param_symptom)
+      Diffing.patch
+
+  val arg: Env.t ->
+           'a ->
+           Types.functor_parameter list * Types.module_type ->
+           Types.functor_parameter list * 'b ->
+           (Types.functor_parameter, Types.functor_parameter,
+            Typedtree.module_coercion,
+            (Types.functor_parameter, 'c) Errormod.functor_param_symptom)
+           Diffing.patch
+end

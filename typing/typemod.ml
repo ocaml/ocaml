@@ -21,6 +21,8 @@ open Parsetree
 open Types
 open Format
 
+let () = Includemod_errorprinter.register ()
+
 module String = Misc.Stdlib.String
 
 module Sig_component_kind = struct
@@ -2043,9 +2045,9 @@ type application_summary = {
 let simplify_app_summary app_view =
   let mty = app_view.arg.mod_type in
   match app_view.sarg.pmod_desc , app_view.arg_path with
-  | Pmod_structure [], _ -> Includemod.Unit_arg, mty
-  | _, Some p -> Includemod.Named_arg p, mty
-  | _, None -> Includemod.Anonymous app_view.sarg, mty
+  | Pmod_structure [], _ -> Errormod.Unit_arg, mty
+  | _, Some p -> Errormod.Named_arg p, mty
+  | _, None -> Errormod.Anonymous app_view.sarg, mty
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
@@ -3008,7 +3010,7 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "@[This module is not a functor; it has type@ %a@]" modtype mty
   | Not_included errs ->
-      let sub, main = Includemod.err_msgs errs in
+      let sub, main = Includemod_errorprinter.err_msgs errs in
       Location.errorf ~loc ~sub
         "@[<v>Signature mismatch:@ %t@]" main
   | Cannot_eliminate_dependency mty ->
@@ -3026,7 +3028,7 @@ let report_error ~loc _env = function
         "@[The signature constrained by `with' has no component named %a@]"
         longident lid
   | With_mismatch(lid, explanation) ->
-      let sub, main = Includemod.err_msgs explanation in
+      let sub, main = Includemod_errorprinter.err_msgs explanation in
       Location.errorf ~loc ~sub
         "@[<v>\
            @[In this `with' constraint, the new definition of %a@ \
@@ -3035,7 +3037,7 @@ let report_error ~loc _env = function
            %t@]"
         longident lid main
   | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
-      let sub, main = Includemod.err_msgs explanation in
+      let sub, main = Includemod_errorprinter.err_msgs explanation in
       Location.errorf ~loc ~sub
         "@[<v>\
            @[This `with' constraint on %a makes the applicative functor @ \
