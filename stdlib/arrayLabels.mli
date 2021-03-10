@@ -337,6 +337,9 @@ val of_seq : 'a Seq.t -> 'a array
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 
+external unsafe_blit : src:'a array -> src_pos:int -> dst:'a array
+  -> dst_pos:int -> len:int -> unit = "caml_array_blit"
+
 module Floatarray : sig
   external create : int -> floatarray = "caml_floatarray_create"
   external length : floatarray -> int = "%floatarray_length"
