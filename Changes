@@ -198,6 +198,10 @@ OCaml 4.12.0
   constants.  Fixes compatibility with the integrated assembler in clang 11.0.0.
   (Jacob Young, review by Nicolás Ojeda Bär)
 
+- #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
+  (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
+   Jourdan)
+
 ### Standard library:
 
 - #9865: add Format.pp_print_seq
@@ -270,6 +274,9 @@ OCaml 4.12.0
 - #9797: Add Sys.mkdir and Sys.rmdir.
   (David Allsopp, review by Nicolás Ojeda Bär, Sébastien Hinderer and
    Xavier Leroy)
+
+- #10070: Fix Float.Array.blit when source and destination arrays coincide.
+  (Nicolás Ojeda Bär, review by Alain Frisch and Xavier Leroy)
 
 ### Other libraries:
 
@@ -502,6 +509,10 @@ OCaml 4.12.0
 
 - #9631: Named text sections for caml_system__code_begin/end symbols
   (Greta Yorsh, review by Frédéric Bour)
+
+- #9896: Share the strings representing scopes, fixing some regression
+  on .cmo/.cma sizes
+  (Alain Frisch and Xavier Clerc, review by Gabriel Scherer)
 
 ### Build system:
 

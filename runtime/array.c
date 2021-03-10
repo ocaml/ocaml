@@ -362,6 +362,15 @@ CAMLprim value caml_make_array(value init)
 
 /* Blitting */
 
+CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
+                                    value n)
+{
+  memmove((double *)a2 + Long_val(ofs2),
+          (double *)a1 + Long_val(ofs1),
+          Long_val(n) * sizeof(double));
+  return Val_unit;
+}
+
 CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {

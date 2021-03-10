@@ -110,7 +110,8 @@ CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
     caml_heap_size(Caml_state->shared_heap) / 150 * caml_custom_major_ratio;
   mlsize_t max_minor =
     Bsize_wsize (Caml_state->minor_heap_wsz) / 100 * caml_custom_minor_ratio;
-  return alloc_custom_gen (ops, bsz, mem, max_major, mem_minor, max_minor);
+  value v = alloc_custom_gen (ops, bsz, mem, max_major, mem_minor, max_minor);
+  return v;
 }
 
 struct custom_operations_list {

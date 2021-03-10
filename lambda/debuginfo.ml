@@ -20,12 +20,23 @@ open Location
 module Scoped_location = struct
   type scope_item =
     | Sc_anonymous_function
-    | Sc_value_definition of string
-    | Sc_module_definition of string
-    | Sc_class_definition of string
-    | Sc_method_definition of string
+    | Sc_value_definition
+    | Sc_module_definition
+    | Sc_class_definition
+    | Sc_method_definition
 
-  type scopes = scope_item list
+  type scopes =
+    | Empty
+    | Cons of {item: scope_item; str: string; str_fun: string}
+
+  let str_fun = function
+    | Empty -> "(fun)"
+    | Cons r -> r.str_fun
+
+  let cons item str =
+    Cons {item; str; str_fun = str ^ ".(fun)"}
+
+  let empty_scopes = Empty
 
   let add_parens_if_symbolic = function
     | "" -> ""
@@ -34,46 +45,36 @@ module Scoped_location = struct
        | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' -> s
        | _ -> "(" ^ s ^ ")"
 
-  let string_of_scope_item = function
-    | Sc_anonymous_function ->
-       "(fun)"
-    | Sc_value_definition name
-    | Sc_module_definition name
-    | Sc_class_definition name
-    | Sc_method_definition name ->
-       add_parens_if_symbolic name
-
-  let string_of_scopes scopes =
-    let dot acc =
-      match acc with
-      | [] -> []
-      | acc -> "." :: acc in
-    let rec to_strings acc = function
-      | [] -> acc
-        (* Collapse nested anonymous function scopes *)
-      | Sc_anonymous_function :: ((Sc_anonymous_function :: _) as rest) ->
-        to_strings acc rest
-        (* Use class#meth syntax for classes *)
-      | (Sc_method_definition _ as meth) ::
-        (Sc_class_definition _ as cls) :: rest ->
-        to_strings (string_of_scope_item cls :: "#" ::
-                      string_of_scope_item meth :: dot acc) rest
-      | s :: rest ->
-        to_strings (string_of_scope_item s :: dot acc) rest in
+  let dot ?(sep = ".") scopes s =
+    let s = add_parens_if_symbolic s in
     match scopes with
-    | [] -> "<unknown>"
-    | scopes -> String.concat "" (to_strings [] scopes)
+    | Empty -> s
+    | Cons {str; _} -> str ^ sep ^ s
 
   let enter_anonymous_function ~scopes =
-    Sc_anonymous_function :: scopes
+    let str = str_fun scopes in
+    Cons {item = Sc_anonymous_function; str; str_fun = str}
+
   let enter_value_definition ~scopes id =
-    Sc_value_definition (Ident.name id) :: scopes
+    cons Sc_value_definition (dot scopes (Ident.name id))
+
   let enter_module_definition ~scopes id =
-    Sc_module_definition (Ident.name id) :: scopes
+    cons Sc_module_definition (dot scopes (Ident.name id))
+
   let enter_class_definition ~scopes id =
-    Sc_class_definition (Ident.name id) :: scopes
-  let enter_method_definition ~scopes (m : Asttypes.label) =
-    Sc_method_definition m :: scopes
+    cons Sc_class_definition (dot scopes (Ident.name id))
+
+  let enter_method_definition ~scopes (s : Asttypes.label) =
+    let str =
+      match scopes with
+      | Cons {item = Sc_class_definition; _} -> dot ~sep:"#" scopes s
+      | _ -> dot scopes s
+    in
+    cons Sc_method_definition str
+
+  let string_of_scopes = function
+    | Empty -> "<unknown>"
+    | Cons {str; _} -> str
 
   type t =
     | Loc_unknown
