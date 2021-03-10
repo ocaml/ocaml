@@ -543,13 +543,12 @@ module Linearize = struct
     | After_alias_expansion _ (* we print only the expanded module types *) ->
         module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
           diff.symptom
+    | Functor Params d -> (* We jump directly to the functor param error *)
+        functor_params ~expansion_token ~env ~before ~ctx d
     | _ ->
         let inner = if eqmode then Pp.eq_module_types else Pp.module_types in
-        let before = match diff.symptom with
-          | Functor Params _ -> before
-          | _ ->
-              let next = dwith_context_and_elision ctx inner diff in
-              next :: before in
+        let next = dwith_context_and_elision ctx inner diff in
+        let before = next :: before in
         module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
           diff.symptom
 
@@ -572,27 +571,30 @@ module Linearize = struct
         { msgs; post = None }
 
 
+  and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
+    let d =
+      Includemod.Functor_inclusion_diff.diff env got expected
+      |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
+    in
+    let actual = Pp.(params_diff space got_app functor_param d) in
+    let expected =
+      Pp.(params_diff space expected functor_param d)
+    in
+    let main =
+      Format.dprintf
+        "@[<hv 2>Modules do not match:@ \
+         @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
+         @[functor@ %t@ -> ...@]@]"
+        actual expected
+    in
+    let post = if expansion_token then Some (env,d) else None in
+    { msgs = dwith_context ctx main :: before; post }
+
+
   and functor_symptom ~expansion_token ~env ~before ~ctx = function
     | Result res ->
         module_type ~expansion_token ~eqmode:false ~env ~before ~ctx res
-    | Params {got; expected; symptom=()} ->
-        let d =
-          Includemod.Functor_inclusion_diff.diff env got expected
-          |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
-        in
-        let actual = Pp.(params_diff space got_app functor_param d) in
-        let expected =
-          Pp.(params_diff space expected functor_param d)
-        in
-        let main =
-          Format.dprintf
-            "@[<hv 2>Modules do not match:@ \
-             @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
-             @[functor@ %t@ -> ...@]@]"
-            actual expected
-        in
-        let post = if expansion_token then Some (env,d) else None in
-        { msgs = dwith_context ctx main :: before; post }
+    | Params d -> functor_params ~expansion_token ~env ~before ~ctx d
 
   and signature ~expansion_token ~env:_ ~before ~ctx sgs =
     Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
