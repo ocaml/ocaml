@@ -256,10 +256,6 @@ OCaml 4.12.0
    and more generally all other data that is not a well-formed OCaml value
    (Xavier Leroy, review by Damien Doligez and Gabriel Scherer)
 
-- #9533: Added String.starts_with and String.ends_with.
-  (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
-  Alain Frisch)
-
 - #9663: Extend Printexc API for raw backtrace entries.
   (Stephen Dolan, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
@@ -680,8 +676,22 @@ OCaml 4.12.0
 - #10048: Fix bug with generalized local opens.
   (Leo White, review by Thomas Refis)
 
-OCaml 4.11.1
-------------
+- #10106, #10112: some expected-type explanations where forgotten
+  after some let-bindings
+  (Gabriel Scherer, review by Thomas Refis and Florian Angeletti,
+   report by Daniil Baturin)
+
+OCaml 4.11 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9096, #10096: fix a 4.11.0 performance regression in classes/objects
+  declared within a function
+  (Gabriel Scherer, review by Leo White, report by Sacha Ayoun)
+
+OCaml 4.11.1 (31 August 2020)
+-----------------------------
 
 ### Bug fixes:
 
@@ -694,7 +704,7 @@ OCaml 4.11.1
   (Florian Angeletti, review by Thomas Refis)
 
 OCaml 4.11.0 (19 August 2020)
----------------------------
+-----------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -2127,6 +2137,16 @@ OCaml 4.09.0 (19 September 2019)
 
 - #8944: Fix "open struct .. end" on clambda backend
   (Thomas Refis, review by Leo White, report by Damon Wang and Mark Shinwell)
+
+OCaml 4.08 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- #9326, #10125: Gc.set incorrectly handles the three `custom_*` fields,
+  causing a performance regression
+  (report by Emilio Jesús Gallego Arias, analysis and fix by Stephen Dolan,
+   code by Xavier Leroy, review by Hugo Heuzard and Gabriel Scherer)
 
 OCaml 4.08.1 (5 August 2019)
 ----------------------------
