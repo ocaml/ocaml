@@ -284,8 +284,8 @@ The following character sequences are also keywords:
 "    ]     _     `     {     {<    |     |]    ||    }     ~"
 \end{alltt}
 %
-Note that the following identifiers are keywords of the Camlp4
-extensions and should be avoided for compatibility reasons.
+Note that the following identifiers are keywords of the now unmaintained Camlp4
+system and should be avoided for backwards compatibility reasons.
 %
 \begin{verbatim}
     parser    value    $     $$    $:    <:    <<    >>    ??

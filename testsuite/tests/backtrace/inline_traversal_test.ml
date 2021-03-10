@@ -36,9 +36,9 @@ let () =
         | Some {filename; line_number; _} ->
             filename ^ ":" ^ Int.to_string line_number
       in
-      Printf.printf "- %s%s%s\n"
+      Printf.printf "File %s%s%s\n"
         location
-        (if is_inline then " inlined" else "")
+        (if is_inline then " (inlined)" else "")
         (if is_raise then ", raise" else "")
     in
     let rec print_slots = function

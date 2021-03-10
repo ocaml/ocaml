@@ -2300,7 +2300,7 @@ CAMLprim value foo_byte(value a, value b)
 }
 \end{verbatim}
 
-For convenicence, when all arguments and the result are annotated with
+For convenience, when all arguments and the result are annotated with
 "[\@unboxed]", it is possible to put the attribute only once on the
 declaration itself. So we can also write instead:
 

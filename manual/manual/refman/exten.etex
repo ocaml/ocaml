@@ -2,8 +2,7 @@
 %HEVEA\cutname{extn.html}
 
 This chapter describes language extensions and convenience features
-that are implemented in OCaml, but not described in the
-OCaml reference manual.
+that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 
 
 %HEVEA\cutdef{section}

@@ -333,6 +333,7 @@ static void caml_thread_initialize_domain()
 
   st_tls_newkey(&Thread_key);
   st_tls_set(Thread_key, (void *) new_thread);
+  st_thread_set_id(Ident(new_thread->descr));
 
   All_threads = new_thread;
   Current_thread = new_thread;
@@ -410,6 +411,7 @@ static void * caml_thread_start(void * v)
   caml_init_domain_self(th->domain_id);
 
   st_tls_set(Thread_key, th);
+  st_thread_set_id(Ident(th->descr));
 
   st_masterlock_acquire(&Thread_main_lock);
   Current_thread = st_tls_get(Thread_key);
@@ -483,6 +485,7 @@ CAMLexport int caml_c_thread_register(void)
   }
   /* Associate the thread descriptor with the thread */
   st_tls_set(Thread_key, (void *) th);
+  st_thread_set_id(Ident(th->descr));
   /* Allocate the thread descriptor on the heap */
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
   /* Release the master lock */

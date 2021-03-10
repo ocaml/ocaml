@@ -120,6 +120,8 @@ release: all
 	cp textman/manual.txt $(RELEASE)refman.txt
 	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
 
+web: html
+	$(MAKE) -C html_processing all
 
 files: $(FILES)
 	$(MAKE) -C cmds      all
@@ -168,6 +170,7 @@ clean:
 	$(MAKE) -C library   clean
 	$(MAKE) -C refman    clean
 	$(MAKE) -C tutorials clean
+	$(MAKE) -C html_processing clean
 	-rm -f texstuff/*
 	cd htmlman; rm -rf libref compilerlibref index.html \
 	manual*.html *.haux *.hind *.svg
