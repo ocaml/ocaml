@@ -291,6 +291,12 @@ let simplify_exits lam =
             (fun (x, _) (y, _) env -> Ident.Map.add x y env)
             xs ys Ident.Map.empty
         in
+        (* The evaluation order for Lstaticraise arguments is currently
+           right-to-left in all backends.
+           To preserve this, we use fold_left2 instead of fold_right2
+           (the first argument is inserted deepest in the expression,
+           so will be evaluated last).
+        *)
         List.fold_left2
           (fun r (y, kind) l -> Llet (Strict, kind, y, l, r))
           (Lambda.rename env handler) ys ls
