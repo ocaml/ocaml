@@ -265,6 +265,9 @@ Working version
 - #10189: Universal variables leaking through GADT equations
   (Jacques Garrigue, report by Leo White)
 
+- #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
+  (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
+
 OCaml 4.12.0
 ------------
 
