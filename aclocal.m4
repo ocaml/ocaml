@@ -51,6 +51,8 @@ clang __clang_major__ __clang_minor__
 gcc __GNUC__ __GNUC_MINOR__
 #elif defined(__xlc__) && defined(__xlC__)
 xlc __xlC__ __xlC_ver__
+#elif defined(__SUNPRO_C)
+sunc __SUNPRO_C __SUNPRO_C
 #else
 unknown
 #endif]

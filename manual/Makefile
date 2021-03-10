@@ -18,6 +18,9 @@ manual: tools
 html: tools
 	$(MAKE) -C manual html
 
+web: tools
+	$(MAKE) -C manual web
+
 release:
 	$(MAKE) -C manual release
 
@@ -40,3 +43,7 @@ clean:
 	$(MAKE) -C manual clean
 	$(MAKE) -C tools  clean
 	$(MAKE) -C tests  clean
+
+.PHONY: distclean
+distclean:
+	$(MAKE) -C manual distclean

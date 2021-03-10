@@ -1,24 +1,23 @@
 \chapter{The core language} \label{c:core-xamples}
 %HEVEA\cutname{coreexamples.html}
 
-This part of the manual is a tutorial introduction to the
-OCaml language. A good familiarity with programming in a conventional
-languages (say, C or Java) is assumed, but no prior exposure to
-functional languages is required. The present chapter introduces the
-core language. Chapter~\ref{c:moduleexamples} deals with the
-module system, chapter~\ref{c:objectexamples} with the
-object-oriented features, chapter~\ref{c:labl-examples} with
-extensions to the core language (labeled arguments and polymorphic
-variants), and chapter~\ref{c:advexamples} gives some advanced examples.
+This part of the manual is a tutorial introduction to the OCaml language. A
+good familiarity with programming in a conventional languages (say, C or Java)
+is assumed, but no prior exposure to functional languages is required. The
+present chapter introduces the core language. Chapter~\ref{c:moduleexamples}
+deals with the module system, chapter~\ref{c:objectexamples} with the
+object-oriented features, chapter~\ref{c:labl-examples} with extensions to the
+core language (labeled arguments and polymorphic variants),
+chapter~\ref{c:polymorphism} with the limitations of polymorphism, and
+chapter~\ref{c:advexamples} gives some advanced examples.
 
 \section{s:basics}{Basics}
 
-For this overview of OCaml, we use the interactive system, which
-is started by running "ocaml" from the Unix shell, or by launching the
-"OCamlwin.exe" application under Windows. This tutorial is presented
-as the transcript of a session with the interactive system:
-lines starting with "#" represent user input; the system responses are
-printed below, without a leading "#".
+For this overview of OCaml, we use the interactive system, which is started by
+running "ocaml" from the Unix shell or Windows command prompt. This tutorial is
+presented as the transcript of a session with the interactive system: lines
+starting with "#" represent user input; the system responses are printed below,
+without a leading "#".
 
 Under the interactive system, the user types OCaml phrases terminated
 by ";;" in response to the "#" prompt, and the system compiles them
@@ -26,7 +25,7 @@ on the fly, executes them, and prints the outcome of evaluation.
 Phrases are either simple expressions, or "let" definitions of
 identifiers (either values or functions).
 \begin{caml_example}{toplevel}
-1+2*3;;
+1 + 2 * 3;;
 let pi = 4.0 *. atan 1.0;;
 let square x = x *. x;;
 square (sin pi) +. square (cos pi);;
@@ -44,7 +43,7 @@ integers, but "+." and "*."  operate on floats.
 Recursive functions are defined with the "let rec" binding:
 \begin{caml_example}{toplevel}
 let rec fib n =
-  if n < 2 then n else fib (n-1) + fib (n-2);;
+  if n < 2 then n else fib (n - 1) + fib (n - 2);;
 fib 10;;
 \end{caml_example}
 
@@ -115,7 +114,7 @@ that the comparisons ("=", "<=", etc.) are {\em polymorphic} in OCaml:
 they operate between any two values of the same type. This makes
 "sort" itself polymorphic over all list types.
 \begin{caml_example}{toplevel}
-sort [6;2;5;3];;
+sort [6; 2; 5; 3];;
 sort [3.14; 2.718];;
 \end{caml_example}
 
@@ -212,7 +211,7 @@ let ratio num denom = {num; denom};;
 \end{caml_example}
 At last, it is possible to update few fields of a record at once:
 \begin{caml_example}{toplevel}
-  let integer_product integer ratio = { ratio with num = integer * ratio.num };;
+let integer_product integer ratio = { ratio with num = integer * ratio.num };;
 \end{caml_example}
 With this functional update notation, the record on the left-hand side
 of "with" is copied except for the fields on the right-hand side which
@@ -348,7 +347,7 @@ of the more advanced features of OCaml described in later chapters.
 Secondly, for records, OCaml can also deduce the right record type by
 looking at the whole set of fields used in a expression or pattern:
 \begin{caml_example}{toplevel}
-let project_and_rotate {x;y; _ } = { x= - y; y = x ; z = 0} ;;
+let project_and_rotate {x; y; _} = { x= - y; y = x; z = 0} ;;
 \end{caml_example}
 Since the fields "x" and "y" can only appear simultaneously in the first
 record type, OCaml infers that the type of "project_and_rotate" is
@@ -359,7 +358,7 @@ different fields or constructors, Ocaml picks the last defined type
 amongst all locally valid choices:
 
 \begin{caml_example}{toplevel}
-let look_at_xz {x;z} = x;;
+let look_at_xz {x; z} = x;;
 \end{caml_example}
 
 Here, OCaml has inferred that the possible choices for the type of
@@ -485,7 +484,7 @@ let head l =
   match l with
     [] -> raise Empty_list
   | hd :: tl -> hd;;
-head [1;2];;
+head [1; 2];;
 head [];;
 \end{caml_example}
 
@@ -521,7 +520,7 @@ let rec first_named_value values names =
   with
   | Empty_list -> "no named value"
   | Not_found -> first_named_value (List.tl values) names;;
-first_named_value [ 0; 10 ] [ 1, "one"; 10, "ten"];;
+first_named_value [0; 10] [1, "one"; 10, "ten"];;
 \end{caml_example}
 
 Also, finalization can be performed by
@@ -589,7 +588,7 @@ example, we can defer the computation of "1+1" until we need the result of that
 expression, "2". Let us see how we initialize a lazy expression. 
 
 \begin{caml_example}{toplevel}
-  let lazy_two = lazy ( print_endline "lazy_two evaluation"; 1 + 1 );;
+let lazy_two = lazy (print_endline "lazy_two evaluation"; 1 + 1);;
 \end{caml_example}
 
 We added "print_endline \"lazy_two evaluation\"" to see when the lazy
@@ -606,7 +605,7 @@ on that expression to force its evaluation. The function "force" comes from
 standard-library module \stdmoduleref{Lazy}.
 
 \begin{caml_example}{toplevel}
-  Lazy.force lazy_two;;
+Lazy.force lazy_two;;
 \end{caml_example}
 
 Notice that our function call above prints ``lazy_two evaluation'' and then 
@@ -616,7 +615,7 @@ Now if we look at the value of "lazy_two", we see that it is not displayed as
 "<lazy>" anymore but as "lazy 2".
 
 \begin{caml_example}{toplevel}
-  lazy_two;;
+lazy_two;;
 \end{caml_example}
 
 This is because "Lazy.force" memoizes the result of the forced expression. In other 
@@ -625,7 +624,7 @@ result of the first computation without recomputing the lazy expression. Let us
 force "lazy_two" once again. 
 
 \begin{caml_example}{toplevel}
-  Lazy.force lazy_two;;
+Lazy.force lazy_two;;
 \end{caml_example}
 
 The expression is not evaluated this time; notice that ``lazy_two evaluation'' is
@@ -634,17 +633,17 @@ not printed. The result of the initial computation is simply returned.
 Lazy patterns provide another way to force a lazy expression. 
 
 \begin{caml_example}{toplevel}
-  let lazy_l = lazy ([1; 2] @ [3; 4]);;
-  let lazy l = lazy_l;;
+let lazy_l = lazy ([1; 2] @ [3; 4]);;
+let lazy l = lazy_l;;
 \end{caml_example}
 
 We can also use lazy patterns in pattern matching.
 
 \begin{caml_example}{toplevel}
-  let maybe_eval lazy_guard lazy_expr = 
-    match lazy_guard, lazy_expr with
-    | lazy false, _ -> "matches if (Lazy.force lazy_guard = false); lazy_expr not forced"
-    | lazy true, lazy _ -> "matches if (Lazy.force lazy_guard = true); lazy_expr forced";;
+let maybe_eval lazy_guard lazy_expr = 
+  match lazy_guard, lazy_expr with
+  | lazy false, _ -> "matches if (Lazy.force lazy_guard = false); lazy_expr not forced"
+  | lazy true, lazy _ -> "matches if (Lazy.force lazy_guard = true); lazy_expr forced";;
 \end{caml_example}
 
 The lazy expression "lazy_expr" is forced only if the "lazy_guard" value yields 
@@ -756,7 +755,7 @@ There is a "printf" function in the \stdmoduleref{Printf} module
 output more concisely.
 It follows the behavior of the "printf" function from the C standard library.
 The "printf" function takes a format string that describes the desired output
-as a text interspered with specifiers (for instance "%d", "%f").
+as a text interspersed with specifiers (for instance "%d", "%f").
 Next, the specifiers are substituted by the following arguments in their order
 of apparition in the format string:
 \begin{caml_example}{toplevel}
@@ -836,96 +835,6 @@ let str : _ format =
 Printf.printf str 3 4.5 "string value";;
 \end{caml_example}
 
-%%%%%%%%%%% Should be moved to the camlp4 documentation.
-%% Parsing (transforming concrete syntax into abstract syntax) is usually
-%% more delicate. OCaml offers several tools to help write parsers:
-%% on the one hand, OCaml versions of the lexer generator Lex and the
-%% parser generator Yacc (see chapter~\ref{c:ocamlyacc}), which handle
-%% LALR(1) languages using push-down automata; on the other hand, a
-%% predefined type of streams (of characters or tokens) and
-%% pattern-matching over streams, which facilitate the writing of
-%% recursive-descent parsers for LL(1) languages. An example using
-%% "ocamllex" and "ocamlyacc" is given in
-%% chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
-%% The syntactic support for stream parsers is provided by the Camlp4
-%% preprocessor, which can be loaded into the interactive toplevel via
-%% the "#load" directives below.
-%%
-%% \begin{caml_example}
-%% #load "dynlink.cma";;
-%% #load "camlp4o.cma";;
-%% open Genlex;;
-%% let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
-%% \end{caml_example}
-%% For the lexical analysis phase (transformation of the input text into
-%% a stream of tokens), we use a ``generic'' lexer provided in the
-%% standard library module "Genlex". The "make_lexer" function takes a
-%% list of keywords and returns a lexing function that ``tokenizes'' an
-%% input stream of characters. Tokens are either identifiers, keywords,
-%% or literals (integer, floats, characters, strings). Whitespace and
-%% comments are skipped.
-%% \begin{caml_example}
-%% let token_stream = lexer (Stream.of_string "1.0 +x");;
-%% Stream.next token_stream;;
-%% Stream.next token_stream;;
-%% Stream.next token_stream;;
-%% \end{caml_example}
-%%
-%% The parser itself operates by pattern-matching on the stream of
-%% tokens. As usual with recursive descent parsers, we use several
-%% intermediate parsing functions to reflect the precedence and
-%% associativity of operators. Pattern-matching over streams is more
-%% powerful than on regular data structures, as it allows recursive calls
-%% to parsing functions inside the patterns, for matching sub-components of
-%% the input stream. See the Camlp4 documentation for more details.
-%%
-%% %Already said above
-%% %In order to use stream parsers at toplevel, we must first load the
-%% %"camlp4" preprocessor.
-%% %\begin{caml_example}
-%% %#load"camlp4o.cma";;
-%% %\end{caml_example}
-%% %Then we are ready to define our parser.
-%% \begin{caml_example}{toplevel}
-%% let rec parse_expr = parser
-%%     [< e1 = parse_mult; e = parse_more_adds e1 >] -> e
-%% and parse_more_adds e1 = parser
-%%     [< 'Kwd "+"; e2 = parse_mult; e = parse_more_adds (Sum(e1, e2)) >] -> e
-%%   | [< 'Kwd "-"; e2 = parse_mult; e = parse_more_adds (Diff(e1, e2)) >] -> e
-%%   | [< >] -> e1
-%% and parse_mult = parser
-%%     [< e1 = parse_simple; e = parse_more_mults e1 >] -> e
-%% and parse_more_mults e1 = parser
-%%     [< 'Kwd "*"; e2 = parse_simple; e = parse_more_mults (Prod(e1, e2)) >] -> e
-%%   | [< 'Kwd "/"; e2 = parse_simple; e = parse_more_mults (Quot(e1, e2)) >] -> e
-%%   | [< >] -> e1
-%% and parse_simple = parser
-%%     [< 'Ident s >] -> Var s
-%%   | [< 'Int i >] -> Const(float i)
-%%   | [< 'Float f >] -> Const f
-%%   | [< 'Kwd "("; e = parse_expr; 'Kwd ")" >] -> e;;
-%% let parse_expression = parser [< e = parse_expr; _ = Stream.empty >] -> e;;
-%% \end{caml_example}
-%%
-%% Composing the lexer and parser, we finally obtain a function to read
-%% an expression from a character string:
-%% \begin{caml_example}
-%% let read_expression s = parse_expression (lexer (Stream.of_string s));;
-%% read_expression "2*(x+y)";;
-%% \end{caml_example}
-%% A small puzzle: why do we get different results in the following two
-%% examples?
-%% \begin{caml_example}
-%% read_expression "x - 1";;
-%% read_expression "x-1";;
-%% \end{caml_example}
-%% Answer: the generic lexer provided by "Genlex" recognizes negative
-%% integer literals as one integer token.  Hence, "x-1" is read as
-%% the token "Ident \"x\"" followed by the token "Int(-1)"; this sequence
-%% does not match any of the parser rules.  On the other hand,
-%% the second space in "x - 1" causes the lexer to return the three
-%% expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
-
 \section{s:standalone-programs}{Standalone OCaml programs}
 
 All examples given so far were executed under the interactive system.
@@ -973,6 +882,4 @@ multiple source files, and can link with precompiled libraries.
 Chapters~\ref{c:camlc} and~\ref{c:nativecomp} explain how to use the
 batch compilers "ocamlc" and "ocamlopt".  Recompilation of
 multi-file OCaml projects can be automated using third-party
-build systems, such as the
-\href{https://github.com/ocaml/ocamlbuild/}{ocamlbuild}
-compilation manager.
+build systems, such as \href{https://github.com/ocaml/dune}{dune}.

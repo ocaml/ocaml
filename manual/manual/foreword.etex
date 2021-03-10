@@ -14,7 +14,7 @@ the compilers, toplevel system, and programming utilities.
 \item Part~\ref{p:library}, ``The OCaml library'', describes the
 modules provided in the standard library.
 \begin{latexonly}
-\item Part~\ref{p:appendix}, ``Appendix'', contains an
+\item Part~\ref{p:indexes}, ``Indexes'', contains an
 index of all identifiers defined in the standard library, and an
 index of keywords.
 \end{latexonly}
@@ -31,7 +31,7 @@ systems, including Linux and macOS.
 \end{unix}
 
 \begin{windows} This is material specific to Microsoft Windows
-  (XP, Vista, 7, 8, 10).
+  (Vista, 7, 8, 10).
 \end{windows}
 
 \section*{license}{License}

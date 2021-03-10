@@ -232,13 +232,7 @@
 
 
 % Caml-example related command
-\newenvironment{camlexample}[1]{
-  \ifnum\pdfstrcmp{#1}{toplevel}=0
-    \renewcommand{\hash}{\#}
-  \else
-    \renewcommand{\hash}{}
-  \fi
-}{}
+\newenvironment{camlexample}[1]{}{}
 \newenvironment{caml}{}{}
 \newcommand{\ocamlkeyword}{\bfseries}
 \newcommand{\ocamlhighlight}{\bfseries\uline}
@@ -248,8 +242,5 @@
 \definecolor{gray}{gray}{0.5}
 \newcommand{\ocamlcomment}{\color{gray}\normalfont\small}
 \newcommand{\ocamlstring}{\color{gray}\bfseries}
-
-\newcommand{\?}{\normalsize\tt\hash{} }
-\renewcommand{\:}{\small\ttfamily\slshape}
 
 \makeatother
