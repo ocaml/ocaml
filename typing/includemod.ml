@@ -944,11 +944,11 @@ module Functor_app_diff = struct
         end
     | Keep ((Anonymous _, mty) , Named (param_name, _param), _)
     | Change ((Anonymous _, mty), Named (param_name, _param), _) -> begin
-        let arg' = Subst.modtype Keep st.subst mty in
         begin match param_name with
         | Some param ->
+            let mty' = Subst.modtype Keep st.subst mty in
             let env =
-              Env.add_module ~arg:true param Mp_present arg' st.env in
+              Env.add_module ~arg:true param Mp_present mty' st.env in
             let res =
               Option.map (Mtype.nondep_supertype env [param]) st.res in
             I.expand_params { st with env; res}
