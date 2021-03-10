@@ -1,5 +1,5 @@
-OCaml 4.12.0
-------------
+OCaml 4.12.0 (24 February 2021)
+-------------------------------
 
 ### Supported platforms (highlights):
 
@@ -436,6 +436,9 @@ OCaml 4.12.0
   conjunction of single-index ones.
   (Florian Angeletti, review by Hezekiah M. Carty, Gabriel Scherer,
    and Marcello Seri)
+
+- #10233: Document `-save-ir-after scheduling` and update `-stop-after` options.
+  (Greta Yorsh, review by Gabriel Scherer and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
