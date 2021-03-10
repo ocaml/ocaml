@@ -60,7 +60,7 @@
    cmi_format persistent_env env type_immediacy
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper cmt_format untypeast
-   commonmod errormod includemod includemod_errorprinter
+   includemod includemod_errorprinter
    typetexp patterns printpat parmatch stypes typedecl typeopt rec_check
    typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy

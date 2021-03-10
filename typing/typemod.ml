@@ -2045,9 +2045,9 @@ type application_summary = {
 let simplify_app_summary app_view =
   let mty = app_view.arg.mod_type in
   match app_view.sarg.pmod_desc , app_view.arg_path with
-  | Pmod_structure [], _ -> Errormod.Unit_arg, mty
-  | _, Some p -> Errormod.Named_arg p, mty
-  | _, None -> Errormod.Anonymous app_view.sarg, mty
+  | Pmod_structure [], _ -> Includemod.Error.Unit_arg, mty
+  | _, Some p -> Includemod.Error.Named_arg p, mty
+  | _, None -> Includemod.Error.Anonymous app_view.sarg, mty
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes

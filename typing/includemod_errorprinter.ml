@@ -13,7 +13,178 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Err = Errormod
+
+module Context = struct
+  type pos =
+    | Module of Ident.t
+    | Modtype of Ident.t
+    | Arg of Types.functor_parameter
+    | Body of Types.functor_parameter
+
+  let path_of_context = function
+      Module id :: rem ->
+        let rec subm path = function
+          | [] -> path
+          | Module id :: rem -> subm (Path.Pdot (path, Ident.name id)) rem
+          | _ -> assert false
+        in subm (Path.Pident id) rem
+    | _ -> assert false
+
+
+  let rec context ppf = function
+      Module id :: rem ->
+        Format.fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
+    | Modtype id :: rem ->
+        Format.fprintf ppf "@[<2>module type %a =@ %a@]"
+          Printtyp.ident id context_mty rem
+    | Body x :: rem ->
+        Format.fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
+    | Arg x :: rem ->
+        Format.fprintf ppf "functor (%s : %a) -> ..."
+          (argname x) context_mty rem
+    | [] ->
+        Format.fprintf ppf "<here>"
+  and context_mty ppf = function
+      (Module _ | Modtype _) :: _ as rem ->
+        Format.fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
+    | cxt -> context ppf cxt
+  and args ppf = function
+      Body x :: rem ->
+        Format.fprintf ppf "(%s)%a" (argname x) args rem
+    | Arg x :: rem ->
+        Format.fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
+    | cxt ->
+        Format.fprintf ppf " :@ %a" context_mty cxt
+  and argname = function
+    | Types.Unit -> ""
+    | Types.Named (None, _) -> "_"
+    | Types.Named (Some id, _) -> Ident.name id
+
+  let alt_pp ppf cxt =
+    if cxt = [] then () else
+    if List.for_all (function Module _ -> true | _ -> false) cxt then
+      Format.fprintf ppf "in module %a," Printtyp.path (path_of_context cxt)
+    else
+      Format.fprintf ppf "@[<hv 2>at position@ %a,@]" context cxt
+
+  let pp ppf cxt =
+    if cxt = [] then () else
+    if List.for_all (function Module _ -> true | _ -> false) cxt then
+      Format.fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
+    else
+      Format.fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
+end
+
+module Illegal_permutation = struct
+  (** Extraction of information in case of illegal permutation
+      in a module type *)
+
+  (** When examining coercions, we only have runtime component indices,
+      we use thus a limited version of {!pos}. *)
+  type coerce_pos =
+    | Item of int
+    | InArg
+    | InBody
+
+  let either f x g y = match f x with
+    | None -> g y
+    | Some _ as v -> v
+
+  (** We extract a lone transposition from a full tree of permutations. *)
+  let rec transposition_under path (coerc:Typedtree.module_coercion) =
+    match coerc with
+    | Tcoerce_structure(c,_) ->
+        either
+          (not_fixpoint path 0) c
+          (first_non_id path 0) c
+    | Tcoerce_functor(arg,res) ->
+        either
+          (transposition_under (InArg::path)) arg
+          (transposition_under (InBody::path)) res
+    | Tcoerce_none -> None
+    | Tcoerce_alias _ | Tcoerce_primitive _ ->
+        (* these coercions are not inversible, and raise an error earlier when
+           checking for module type equivalence *)
+        assert false
+  (* we search the first point which is not invariant at the current level *)
+  and not_fixpoint path pos = function
+    | [] -> None
+    | (n, _) :: q ->
+        if n = pos then
+          not_fixpoint path (pos+1) q
+        else
+          Some(List.rev path, pos, n)
+  (* we search the first item with a non-identity inner coercion *)
+  and first_non_id path pos = function
+    | [] -> None
+    | (_, Typedtree.Tcoerce_none) :: q -> first_non_id path (pos + 1) q
+    | (_,c) :: q ->
+        either
+          (transposition_under (Item pos :: path)) c
+          (first_non_id path (pos + 1)) q
+
+  let transposition c =
+    match transposition_under [] c with
+    | None -> raise Not_found
+    | Some x -> x
+
+  let rec runtime_item k = function
+    | [] -> raise Not_found
+    | item :: q ->
+        if not(Includemod.is_runtime_component item) then
+          runtime_item k q
+        else if k = 0 then
+          item
+        else
+          runtime_item (k-1) q
+
+  (* Find module type at position [path] and convert the [coerce_pos] path to
+     a [pos] path *)
+  let rec find env ctx path (mt:Types.module_type) = match mt, path with
+    | (Mty_ident p | Mty_alias p), _ ->
+        begin match (Env.find_modtype p env).mtd_type with
+        | None -> raise Not_found
+        | Some mt -> find env ctx path mt
+        end
+    | Mty_signature s , [] -> List.rev ctx, s
+    | Mty_signature s, Item k :: q ->
+        begin match runtime_item k s with
+        | Sig_module (id, _, md,_,_) ->
+            find env (Context.Module id :: ctx) q md.md_type
+        | _ -> raise Not_found
+        end
+    | Mty_functor(Named (_,mt) as arg,_), InArg :: q ->
+        find env (Context.Arg arg :: ctx) q mt
+    | Mty_functor(arg, mt), InBody :: q ->
+        find env (Context.Body arg :: ctx) q mt
+    | _ -> raise Not_found
+
+  let find env path mt = find env [] path mt
+  let item mt k = Includemod.item_ident_name (runtime_item k mt)
+
+  let pp_item ppf (id,_,kind) =
+    Format.fprintf ppf "%s %S"
+      (Includemod.kind_of_field_desc kind)
+      (Ident.name id)
+
+  let pp ctx_printer env ppf (mty,c) =
+    try
+      let p, k, l = transposition c in
+      let ctx, mt = find env p mty in
+      Format.fprintf ppf
+        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
+         @[For example,@ %a@]@ @[the %a@ and the %a are not in the same order@ \
+         in the expected and actual module types.@]@]"
+        ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
+    with Not_found -> (* this should not happen *)
+      Format.fprintf ppf
+        "Illegal permutation of runtime components in a module type."
+
+end
+
+
+
+module Err = Includemod.Error
 
 
 module Short_name = struct
@@ -139,9 +310,9 @@ module Pp = struct
           Printtyp.Conflicts.print_explanations
 
   let missing_field ppf item =
-    let id, loc, kind = Commonmod.item_ident_name item in
+    let id, loc, kind =  Includemod.item_ident_name item in
     Format.fprintf ppf "The %s `%a' is required but not provided%a"
-      ( Commonmod.kind_of_field_desc kind) Printtyp.ident id
+      (Includemod.kind_of_field_desc kind) Printtyp.ident id
     (show_loc "Expected declaration") loc
 
   let module_types {got=mty1; expected=mty2} =
