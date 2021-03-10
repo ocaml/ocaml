@@ -791,16 +791,18 @@ let compunit env ~mark impl_name impl_sig intf_name intf_sig =
     raise(Error(env, cdiff))
   | Ok x -> x
 
-(* Error report *)
+(* Functor diffing computation:
+   The diffing computation uses the internal typing function
+ *)
 
-module FunctorDiff = struct
+module Functor_inclusion_diff = struct
   open Diffing
 
   let param_name = function
       | Named(x,_) -> x
       | Unit -> None
 
-  let arg_weight = function
+  let weight = function
     | Insert _ -> 10
     | Delete _ -> 10
     | Change _ -> 10
@@ -814,22 +816,6 @@ module FunctorDiff = struct
         | Some _, Some _ -> 1
         | Some _,  None | None, Some _ -> 1
       end
-
-  let app_weight = function
-    | Insert _ -> 10
-    | Delete _ -> 10
-    | Change _ -> 10
-    | Keep (param1, param2, _) -> begin
-        match (fst param1:Error.functor_arg_descr), param_name param2 with
-        | (Unit_arg | Anonymous _) , None
-          -> 0
-        | Named_arg (Path.Pident n1), Some n2
-          when String.equal (Ident.name n1) (Ident.name n2)
-          -> 0
-        | Named_arg _, Some _ -> 1
-        | Named_arg _,  None | (Unit_arg | Anonymous _), Some _ -> 1
-      end
-
 
   type state = {
     res: module_type option;
@@ -850,12 +836,12 @@ module FunctorDiff = struct
             let more = Array.of_list params  in
             Some (keep_expansible_param res, more)
 
-  let expand_arg_params state  =
+  let expand_params state  =
     match lookup_expansion state with
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let arg_update d st = match d with
+  let update d st = match d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
@@ -867,7 +853,7 @@ module FunctorDiff = struct
     | Change (Unit, Named (Some p, arg), _) ->
         let arg' = Subst.modtype Keep st.subst arg in
         let env = Env.add_module p Mp_present arg' st.env in
-        expand_arg_params { st with env }
+        expand_params { st with env }
     | Keep (Named (name1, _), Named (name2, arg2), _)
     | Change (Named (name1, _), Named (name2, arg2), _) -> begin
         let arg' = Subst.modtype Keep st.subst arg2 in
@@ -875,19 +861,19 @@ module FunctorDiff = struct
         | Some p1, Some p2 ->
             let env = Env.add_module p1 Mp_present arg' st.env in
             let subst = Subst.add_module p2 (Path.Pident p1) st.subst in
-            expand_arg_params { st with env; subst }
+            expand_params { st with env; subst }
         | None, Some p2 ->
             let env = Env.add_module p2 Mp_present arg' st.env in
             { st with env }, [||]
         | Some p1, None ->
             let env = Env.add_module p1 Mp_present arg' st.env in
-            expand_arg_params { st with env }
+            expand_params { st with env }
         | None, None ->
             st, [||]
       end
 
-  let arg env _ctxt (l1,res1) (l2,_res2) =
-    let update = Diffing.With_left_extensions arg_update in
+  let diff env _ctxt (l1,res1) (l2,_res2) =
+    let update = Diffing.With_left_extensions update in
     let test st mty1 mty2 =
       let loc = Location.none in
       let snap = Btype.snapshot () in
@@ -902,14 +888,34 @@ module FunctorDiff = struct
     let state =
       { env; subst = Subst.identity; res = keep_expansible_param res1}
     in
-    Diffing.variadic_diff ~weight:arg_weight ~test ~update state param1 param2
+    Diffing.variadic_diff ~weight ~test ~update state param1 param2
 
-  let expand_app_params state =
-    match lookup_expansion state with
-    | None -> state, [||]
-    | Some (res, expansion) -> { state with res }, expansion
+end
 
-  let app_update d (st:state) =
+module Functor_app_diff = struct
+  module I = Functor_inclusion_diff
+  open Diffing
+
+  let weight = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Change _ -> 10
+    | Keep (param1, param2, _) ->
+        (* We assign a small penalty to named arguments with
+           non-matching names *)
+        begin
+          let desc1 : Error.functor_arg_descr = fst param1 in
+          match desc1, I.param_name param2 with
+          | (Unit_arg | Anonymous _) , None
+            -> 0
+          | Named_arg (Path.Pident n1), Some n2
+            when String.equal (Ident.name n1) (Ident.name n2)
+            -> 0
+          | Named_arg _, Some _ -> 1
+          | Named_arg _,  None | (Unit_arg | Anonymous _), Some _ -> 1
+        end
+
+  let update d (st:I.state) =
     let open Error in
     match d with
     | Insert _
@@ -932,7 +938,7 @@ module FunctorDiff = struct
                 st.res
             in
             let subst = Subst.add_module param arg st.subst in
-            expand_app_params { st with subst; res }
+            I.expand_params { st with subst; res }
         | None ->
             st, [||]
         end
@@ -945,16 +951,16 @@ module FunctorDiff = struct
               Env.add_module ~arg:true param Mp_present arg' st.env in
             let res =
               Option.map (Mtype.nondep_supertype env [param]) st.res in
-            expand_app_params { st with env; res}
+            I.expand_params { st with env; res}
         | None ->
             st, [||]
         end
       end
 
-  let app env ~f ~args =
+  let diff env ~f ~args =
     let params, res = retrieve_functor_params env f in
-    let update = Diffing.With_right_extensions app_update in
-    let test state (arg,arg_mty) param =
+    let update = Diffing.With_right_extensions update in
+    let test (state:I.state) (arg,arg_mty) param =
       let loc = Location.none in
       let snap = Btype.snapshot () in
       let res = match (arg:Error.functor_arg_descr), param with
@@ -974,10 +980,10 @@ module FunctorDiff = struct
     in
     let args = Array.of_list args in
     let params = Array.of_list params in
-    let state =
-      { env; subst = Subst.identity; res = keep_expansible_param res }
+    let state : I.state =
+      { env; subst = Subst.identity; res = I.keep_expansible_param res }
     in
-    Diffing.variadic_diff ~weight:app_weight ~test ~update state args params
+    Diffing.variadic_diff ~weight ~test ~update state args params
 
 end
 

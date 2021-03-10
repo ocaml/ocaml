@@ -213,17 +213,8 @@ exception Apply_error of {
 
 val expand_module_alias: Env.t -> Path.t -> Types.module_type
 
-module FunctorDiff: sig
-  val app:
-    Env.t ->
-    f:Types.module_type ->
-    args:(Error.functor_arg_descr * Types.module_type) list ->
-    (Error.functor_arg_descr * Types.module_type,
-     Types.functor_parameter, Typedtree.module_coercion,
-     (Error.functor_arg_descr, 'a) Error.functor_param_symptom)
-      Diffing.patch
-
-  val arg: Env.t ->
+module Functor_inclusion_diff: sig
+  val diff: Env.t ->
            'a ->
            Types.functor_parameter list * Types.module_type ->
            Types.functor_parameter list * 'b ->
@@ -231,4 +222,15 @@ module FunctorDiff: sig
             Typedtree.module_coercion,
             (Types.functor_parameter, 'c) Error.functor_param_symptom)
            Diffing.patch
+end
+
+module Functor_app_diff: sig
+  val diff:
+    Env.t ->
+    f:Types.module_type ->
+    args:(Error.functor_arg_descr * Types.module_type) list ->
+    (Error.functor_arg_descr * Types.module_type,
+     Types.functor_parameter, Typedtree.module_coercion,
+     (Error.functor_arg_descr, 'a) Error.functor_param_symptom)
+      Diffing.patch
 end
