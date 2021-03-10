@@ -215,9 +215,8 @@ val expand_module_alias: Env.t -> Path.t -> Types.module_type
 
 module Functor_inclusion_diff: sig
   val diff: Env.t ->
-           'a ->
            Types.functor_parameter list * Types.module_type ->
-           Types.functor_parameter list * 'b ->
+           Types.functor_parameter list * Types.module_type ->
            (Types.functor_parameter, Types.functor_parameter,
             Typedtree.module_coercion,
             (Types.functor_parameter, 'c) Error.functor_param_symptom)

@@ -577,7 +577,7 @@ module Linearize = struct
         module_type ~expansion_token ~eqmode:false ~env ~before ~ctx res
     | Params {got; expected; symptom=()} ->
         let d =
-          Includemod.Functor_inclusion_diff.diff env ctx got expected
+          Includemod.Functor_inclusion_diff.diff env got expected
           |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
         in
         let actual = Pp.(params_diff space got_app functor_param d) in

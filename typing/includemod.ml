@@ -872,7 +872,7 @@ module Functor_inclusion_diff = struct
             st, [||]
       end
 
-  let diff env _ctxt (l1,res1) (l2,_res2) =
+  let diff env (l1,res1) (l2,_) =
     let update = Diffing.With_left_extensions update in
     let test st mty1 mty2 =
       let loc = Location.none in
