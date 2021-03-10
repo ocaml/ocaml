@@ -132,6 +132,9 @@ OCaml 4.12.0
   segfault.
   (Nicolás Ojeda Bär, report by Xavier Leroy, review by Xavier Leroy)
 
+- #9907: Fix native toplevel on native Windows.
+  (David Allsopp, review by Florian Angeletti)
+
 - #9909: Remove caml_code_area_start and caml_code_area_end globals (no longer
   needed as the pagetable heads towards retirement).
   (David Allsopp, review by Xavier Leroy)
@@ -322,8 +325,8 @@ OCaml 4.12.0
 - #9802: Ensure signals are handled before Unix.kill returns
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
-- #9869: Add Unix.SO_REUSEPORT
-  (Yishuai Li, review by Xavier Leroy)
+- #9869, #10073: Add Unix.SO_REUSEPORT
+  (Yishuai Li, review by Xavier Leroy, amended by David Allsopp)
 
 - #9906, #9914: Add Unix._exit as a way to exit the process immediately,
   skipping any finalization action
@@ -428,6 +431,11 @@ OCaml 4.12.0
 
 - #10008: Improve error message for aliases to the current compilation unit.
   (Leo White, review by Gabriel Scherer)
+
+- #10046: Link all DLLs with -static-libgcc on mingw32 to prevent dependency
+  on libgcc_s_sjlj-1.dll with mingw-w64 runtime 8.0.0 (previously this was
+  only needed for dllunix.dll).
+  (David Allsopp, report by Andreas Hauptmann, review by Xavier Leroy)
 
 ### Internal/compiler-libs changes:
 
@@ -549,6 +557,9 @@ OCaml 4.12.0
   builds)
   (David Allsopp, review by Xavier Leroy)
 
+- #10071: Fix bug in tests/misc/weaklifetime.ml that was reported in #10055
+  (Damien Doligez and Gabriel Scherer, report by David Allsopp)
+
 ### Bug fixes:
 
 - #7538, #9669: Check for misplaced attributes on module aliases
@@ -600,6 +611,11 @@ OCaml 4.12.0
   for the new closure representation (#9619)
   (Xavier Leroy, Sadiq Jaffer, Gabriel Scherer,
    review by Xavier Leroy and Jacques-Henri Jourdan)
+
+- #9739, #9747: Avoid calling type variables, types that are not variables in
+  recursive occurence error messages
+  (for instance, "Type variable int occurs inside int list")
+  (Florian Angeletti, report by Stephen Dolan, review by Armaël Guéneau)
 
 - #9759, #9767: Spurious GADT ambiguity without -principal
   (Jacques Garrigue, report by Thomas Refis,
