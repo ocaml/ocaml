@@ -56,7 +56,7 @@ let native =
     test_name = "native";
     test_run_by_default = true;
     test_actions =
-      (if Ocamltest_config.arch<>"none" then opt_actions else [skip])
+      (if Ocamltest_config.native_compiler then opt_actions else [skip])
   }
 
 let toplevel = {
@@ -114,7 +114,7 @@ let asmgen_skip_on_msvc64 =
   Actions_helpers.skip_with_reason "not ported to MSVC64 yet"
 
 let asmgen_actions =
-  if Ocamltest_config.arch="none" then [asmgen_skip_on_bytecode_only]
+  if not Ocamltest_config.native_compiler then [asmgen_skip_on_bytecode_only]
   else if msvc64 then [asmgen_skip_on_msvc64]
   else [
     setup_ocamlc_opt_build_env;
