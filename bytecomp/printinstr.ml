@@ -49,7 +49,6 @@ let instruction ppf = function
   | Kmakefloatblock(n) ->
       fprintf ppf "\tmakefloatblock %i" n
   | Kgetfield n -> fprintf ppf "\tgetfield %i" n
-  | Kgetmutablefield n -> fprintf ppf "\tgetmutablefield %i" n
   | Ksetfield n -> fprintf ppf "\tsetfield %i" n
   | Kgetfloatfield n -> fprintf ppf "\tgetfloatfield %i" n
   | Ksetfloatfield n -> fprintf ppf "\tsetfloatfield %i" n
