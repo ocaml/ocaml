@@ -3010,9 +3010,8 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "@[This module is not a functor; it has type@ %a@]" modtype mty
   | Not_included errs ->
-      let sub, main = Includemod_errorprinter.err_msgs errs in
-      Location.errorf ~loc ~sub
-        "@[<v>Signature mismatch:@ %t@]" main
+      let main = Includemod_errorprinter.err_msgs errs in
+      Location.errorf ~loc "@[<v>Signature mismatch:@ %t@]" main
   | Cannot_eliminate_dependency mty ->
       Location.errorf ~loc
         "@[This functor has type@ %a@ \
@@ -3028,8 +3027,8 @@ let report_error ~loc _env = function
         "@[The signature constrained by `with' has no component named %a@]"
         longident lid
   | With_mismatch(lid, explanation) ->
-      let sub, main = Includemod_errorprinter.err_msgs explanation in
-      Location.errorf ~loc ~sub
+      let main = Includemod_errorprinter.err_msgs explanation in
+      Location.errorf ~loc
         "@[<v>\
            @[In this `with' constraint, the new definition of %a@ \
              does not match its original definition@ \
@@ -3037,8 +3036,8 @@ let report_error ~loc _env = function
            %t@]"
         longident lid main
   | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
-      let sub, main = Includemod_errorprinter.err_msgs explanation in
-      Location.errorf ~loc ~sub
+      let main = Includemod_errorprinter.err_msgs explanation in
+      Location.errorf ~loc
         "@[<v>\
            @[This `with' constraint on %a makes the applicative functor @ \
              type %s ill-typed in the constrained signature:@]@ \

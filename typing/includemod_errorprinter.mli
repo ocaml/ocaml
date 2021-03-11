@@ -13,6 +13,5 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val err_msgs:
-  Includemod.explanation -> Location.msg list * (Format.formatter -> unit)
+val err_msgs: Includemod.explanation -> Format.formatter -> unit
 val register: unit -> unit
