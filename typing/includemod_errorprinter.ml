@@ -600,18 +600,20 @@ module Functor_suberror = struct
       )
 
   let param_suberrors sub ~expansion_token env l =
-    let rec aux = function
-      | [] -> []
+    let rec aux subcases = function
+      | [] -> subcases
       | (_, Diffing.Keep _) as a :: q ->
-          param_subcase sub ~expansion_token env a
-          :: aux q
+          aux (param_subcase sub ~expansion_token env a :: subcases) q
       | a :: q ->
-          param_subcase sub ~expansion_token env a
-          :: List.map (param_subcase sub ~expansion_token:false env) q
+          List.fold_left (fun acc x ->
+            (param_subcase sub ~expansion_token:false env x) :: acc
+            )
+            (param_subcase sub ~expansion_token env a :: subcases)
+            q
     in
     match l with
     | [a] -> [param_onlycase sub ~expansion_token env a]
-    | l -> aux l
+    | l -> aux [] l
 end
 
 
@@ -832,6 +834,7 @@ module Linearize = struct
             (fun ppf x -> x.Location.txt ppf)
             ppf before in
         ctx
+
 end
 
 
@@ -860,7 +863,10 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
   | [ _, (Diffing.Change _ as c) ] ->
       Location.errorf ~loc "%t" (Linearize.app env ~expansion_token:true c)
   | _ ->
+      let actual = Pp.(params_diff space got_arg short_argument d) in
+      let expected = Pp.(params_diff space expected functor_param d) in
       let sub =
+        List.rev @@
         Linearize.(Functor_suberror.param_suberrors app) env
           ~expansion_token:true d
       in
@@ -869,8 +875,7 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
          These arguments:@;<1 2>\
          @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
         may_print_app
-        Pp.(params_diff space got_arg short_argument d)
-        Pp.(params_diff space expected functor_param d)
+        actual expected
 
 let register () =
   Location.register_error_of_exn

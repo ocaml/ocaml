@@ -495,14 +495,6 @@ typing/cmt2annot.cmx : \
     file_formats/cmt_format.cmx \
     parsing/asttypes.cmi \
     typing/annot.cmi
-typing/commonmod.cmi : \
-    typing/types.cmi \
-    typing/typedtree.cmi \
-    typing/path.cmi \
-    parsing/location.cmi \
-    typing/includecore.cmi \
-    typing/ident.cmi \
-    typing/ctype.cmi
 typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
@@ -803,7 +795,6 @@ typing/includemod_errorprinter.cmx : \
     utils/clflags.cmx \
     typing/includemod_errorprinter.cmi
 typing/includemod_errorprinter.cmi : \
-    parsing/location.cmi \
     typing/includemod.cmi
 typing/mtype.cmo : \
     typing/types.cmi \
