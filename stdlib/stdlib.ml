@@ -43,24 +43,6 @@ exception Division_by_zero = Division_by_zero
 exception Sys_blocked_io = Sys_blocked_io
 exception Undefined_recursive_module = Undefined_recursive_module
 
-(* Effects *)
-
-type ('a, 'b) stack
-external take_cont_noexc : ('a, 'b) continuation -> ('a, 'b) stack = "caml_continuation_use_noexc" [@@noalloc]
-external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
-
-let continue k v =
-  resume (take_cont_noexc k) (fun x -> x) v
-let discontinue k e =
-  resume (take_cont_noexc k) (fun e -> raise e) e
-
-external perform : 'a eff -> 'a = "%perform"
-
-let reperform e k =
-  match perform e with
-  | v -> continue k v
-  | exception e -> discontinue k e
-
 (* Composition operators *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"

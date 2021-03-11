@@ -273,8 +273,6 @@ let rec register_printer fn =
 
 external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 
-external get_continuation_callstack: ('a,'b) continuation -> int -> raw_backtrace = "caml_get_continuation_callstack"
-
 let exn_slot x =
   let x = Obj.repr x in
   if Obj.tag x = 0 then Obj.field x 0 else x

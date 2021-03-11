@@ -39,8 +39,6 @@ type mapper = {
   expr: mapper -> Typedtree.expression -> expression;
   extension_constructor: mapper -> Typedtree.extension_constructor
                          -> extension_constructor;
-  effect_constructor: mapper -> Typedtree.extension_constructor
-                         -> effect_constructor;
   include_declaration:
     mapper -> Typedtree.include_declaration -> include_declaration;
   include_description:

@@ -86,7 +86,7 @@ jobs:
         if: ${{ matrix.id == 'super' }}
         run: |
           bash -xe tools/ci/actions/runner.sh test_multicore 3 "parallel" \
-          "callback" "gc-roots" "effects" "lib-threads" "lib-systhreads" \
+          "callback" "gc-roots" "lib-threads" "lib-systhreads" \
           "weak-ephe-final"
       - name: Run the testsuite (s=4096, debug runtime)
         env:
@@ -95,9 +95,9 @@ jobs:
         if: ${{ matrix.id == 'debug-s4096' }}
         run: |
           bash -xe tools/ci/actions/runner.sh test_multicore 1 "parallel" \
-          "effects" "lib-threads" "lib-systhreads" "weak-ephe-final"
+          "lib-threads" "lib-systhreads" "weak-ephe-final"
       - name: Run the testsuite (taskset -c 0)
         if: ${{ matrix.id == 'taskset' }}
         run: |
           bash -xe tools/ci/actions/runner.sh test_multicore 1 "parallel" \
-          "effects" "lib-threads" "lib-systhreads" "weak-ephe-final"
+          "lib-threads" "lib-systhreads" "weak-ephe-final"

@@ -606,7 +606,6 @@ let mk_directive ~loc name arg =
 %token DOT
 %token DOTDOT
 %token DOWNTO
-%token EFFECT
 %token ELSE
 %token END
 %token EOF
@@ -1322,8 +1321,6 @@ structure:
 structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
-  | EFFECT effect_declaration
-      { mkstr ~loc:$sloc (Pstr_effect $2) }
   | mkstr(
       item_extension post_item_attributes
         { let docs = symbol_docs $sloc in
@@ -1564,8 +1561,6 @@ signature_item:
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mksig ~loc:$sloc (Psig_extension ($1, (add_docs_attrs docs $2))) }
-  | EFFECT effect_constructor_declaration
-      { mksig ~loc:$sloc (Psig_effect $2) }
   | mksig(
       floating_attribute
         { Psig_attribute $1 }
@@ -2626,8 +2621,6 @@ pattern:
       { $1 }
   | EXCEPTION ext_attributes pattern %prec prec_constr_appl
       { mkpat_attrs ~loc:$sloc (Ppat_exception $3) $2}
-  | EFFECT simple_pattern simple_pattern
-      { mkpat ~loc:$sloc (Ppat_effect($2,$3)) }
 ;
 
 pattern_no_exn:
@@ -3041,39 +3034,6 @@ sig_exception_declaration:
     mkrhs(constr_ident) generalized_constructor_arguments attributes
       { let args, res = $2 in
         Te.decl $1 ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
-;
-
-effect_core_type_list:
-  inline_separated_nonempty_llist(STAR, atomic_type)
-      { $1 }
-;
-
-effect_constructor_arguments:
-  | COLON effect_core_type_list MINUSGREATER atomic_type %prec below_HASH
-                                  { ($2, $4) }
-  | COLON atomic_type %prec below_HASH
-                                  { ([], $2) }
-;
-
-effect_declaration:
-  | effect_constructor_declaration      { $1 }
-  | effect_constructor_rebind           { $1 }
-;
-
-effect_constructor_declaration:
-  id = mkrhs(constr_ident)
-  attrs1 = attributes
-  args_res = effect_constructor_arguments
-  attrs2 = post_item_attributes
-    { let args, res = args_res in
-      Te.effect_decl id res ~args ~loc:(make_loc $sloc) ~attrs:(attrs2@attrs1)
-    }
-
-effect_constructor_rebind:
-  | mkrhs(constr_ident) attributes
-    EQUAL mkrhs(constr_longident) post_item_attributes
-      { Te.effect_rebind $1 $4
-          ~loc:(make_loc $sloc) ~attrs:($5 @ $2) }
 ;
 
 generalized_constructor_arguments:

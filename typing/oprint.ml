@@ -584,10 +584,6 @@ and print_out_sig_item ppf =
   | Osig_typext (ext, Oext_exception) ->
       fprintf ppf "@[<2>exception %a@]"
         print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
-  | Osig_typext ({ oext_ret_type = Some (Otyp_constr(_, [ret]))} as ext,
-                 Oext_effect) ->
-      fprintf ppf "@[<2>effect %a@]"
-        print_out_constr (ext.oext_name, ext.oext_args, Some ret)
   | Osig_typext (ext, _es) ->
       print_out_extension_constructor ppf ext
   | Osig_modtype (name, Omty_abstract) ->

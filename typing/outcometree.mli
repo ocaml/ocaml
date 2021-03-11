@@ -143,7 +143,6 @@ and out_ext_status =
   | Oext_first
   | Oext_next
   | Oext_exception
-  | Oext_effect
 
 type out_phrase =
   | Ophr_eval of out_value * out_type

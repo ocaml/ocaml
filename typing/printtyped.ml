@@ -330,16 +330,14 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l1, l2, _partial) ->
+  | Texp_match (e, l1, _partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
       list i case ppf l1;
-      list i case ppf l2;
-  | Texp_try (e, l1, l2) ->
+  | Texp_try (e, l1) ->
       line i ppf "Texp_try\n";
       expression i ppf e;
       list i case ppf l1;
-      list i case ppf l2;
   | Texp_tuple (l) ->
       line i ppf "Texp_tuple\n";
       list i expression ppf l;
@@ -716,9 +714,6 @@ and signature_item i ppf x =
   | Tsig_typext e ->
       line i ppf "Tsig_typext\n";
       type_extension i ppf e;
-  | Tsig_effect ext ->
-      line i ppf "Psig_effect\n";
-      extension_constructor i ppf ext
   | Tsig_exception ext ->
       line i ppf "Tsig_exception\n";
       type_exception i ppf ext
@@ -831,9 +826,6 @@ and structure_item i ppf x =
   | Tstr_typext te ->
       line i ppf "Tstr_typext\n";
       type_extension i ppf te
-  | Tstr_effect ext ->
-      line i ppf "Pstr_effect\n";
-      extension_constructor i ppf ext;
   | Tstr_exception ext ->
       line i ppf "Tstr_exception\n";
       type_exception i ppf ext;

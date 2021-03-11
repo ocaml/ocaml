@@ -156,12 +156,6 @@ let add_extension_constructor bv ext =
       Option.iter (add_type bv) rty
   | Pext_rebind lid -> add bv lid
 
-let add_effect_constructor bv eff =
-  match eff.peff_kind with
-      Peff_decl(args, rty) ->
-        List.iter (add_type bv) args; add_type bv rty
-    | Peff_rebind lid -> add bv lid
-
 let add_type_extension bv te =
   add bv te.ptyext_path;
   List.iter (add_extension_constructor bv) te.ptyext_constructors
@@ -193,7 +187,6 @@ let rec add_pattern bv pat =
         (fun name -> pattern_bv := String.Map.add name bound !pattern_bv) id.txt
   | Ppat_open ( m, p) -> let bv = open_module bv m.txt in add_pattern bv p
   | Ppat_exception p -> add_pattern bv p
-  | Ppat_effect(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_extension e -> handle_extension e
 
 let add_pattern bv pat =
@@ -358,8 +351,6 @@ and add_sig_item (bv, m) item =
       List.iter (add_type_declaration bv) dcls; (bv, m)
   | Psig_typext te ->
       add_type_extension bv te; (bv, m)
-  | Psig_effect peff ->
-      add_effect_constructor bv peff; (bv, m)
   | Psig_exception te ->
       add_type_exception bv te; (bv, m)
   | Psig_module pmd ->
@@ -496,9 +487,6 @@ and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
       List.iter (add_type_declaration bv) dcls; (bv, m)
   | Pstr_typext te ->
       add_type_extension bv te;
-      (bv, m)
-  | Pstr_effect peff ->
-      add_effect_constructor bv peff;
       (bv, m)
   | Pstr_exception te ->
       add_type_exception bv te;
