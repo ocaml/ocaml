@@ -288,3 +288,6 @@
 \newcommand{\docitem}[3]{\item \moduleref{#1}{#2}{Module \texttt{#2}}: #3}
 \newcommand{\stddocitem}[2]{\docitem{libref}{#1}{#2}}
 \newcommand{\compilerdocitem}[2]{\docitem{compilerlibref}{#1}{#2}}
+
+%%% Missing macro
+\newcommand{\DeclareUnicodeCharacter}[2]{}
