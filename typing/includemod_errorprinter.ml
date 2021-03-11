@@ -581,7 +581,7 @@ module Functor_suberror = struct
 
   end
 
-  let param_subcase sub ~expansion_token env (pos, diff) =
+  let subcase sub ~expansion_token env (pos, diff) =
     Location.msg "%a%a%a %a@[<hv 2>%t@]%a"
       Format.pp_print_tab ()
       Format.pp_open_tbox ()
@@ -592,27 +592,27 @@ module Functor_suberror = struct
       )
      Format.pp_close_tbox ()
 
-  let param_onlycase sub ~expansion_token env (_, diff) =
+  let onlycase sub ~expansion_token env (_, diff) =
     Location.msg "%a@[<hv 2>%t@]"
       Format.pp_print_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
 
-  let param_suberrors sub ~expansion_token env l =
+  let params sub ~expansion_token env l =
     let rec aux subcases = function
       | [] -> subcases
       | (_, Diffing.Keep _) as a :: q ->
-          aux (param_subcase sub ~expansion_token env a :: subcases) q
+          aux (subcase sub ~expansion_token env a :: subcases) q
       | a :: q ->
           List.fold_left (fun acc x ->
-            (param_subcase sub ~expansion_token:false env x) :: acc
+            (subcase sub ~expansion_token:false env x) :: acc
             )
-            (param_subcase sub ~expansion_token env a :: subcases)
+            (subcase sub ~expansion_token env a :: subcases)
             q
     in
     match l with
-    | [a] -> [param_onlycase sub ~expansion_token env a]
+    | [a] -> [onlycase sub ~expansion_token env a]
     | l -> aux [] l
 end
 
@@ -634,6 +634,25 @@ module Linearize = struct
       Location.msg ?loc "..."
     else
       dwith_context ?loc ctx (printer diff)
+
+  let coalesce msgs =
+    match List.rev msgs with
+    | [] -> ignore
+    | before ->
+        let ctx ppf =
+          Format.pp_print_list ~pp_sep:Pp.space
+            (fun ppf x -> x.Location.txt ppf)
+            ppf before in
+        ctx
+
+  let subcase_list l ppf = match l with
+    | [] -> ()
+    | _ :: _ ->
+        Format.fprintf ppf "@;<1 -2>@[%a@]"
+          (Format.pp_print_list ~pp_sep:Pp.space
+             (fun ppf f -> f.Location.txt ppf)
+          )
+          (List.rev l)
 
   let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
     match diff.symptom with
@@ -685,7 +704,7 @@ module Linearize = struct
     let msgs = dwith_context ctx main :: before in
     let post =
       if expansion_token then
-        Functor_suberror.param_suberrors arg ~expansion_token env d
+        Functor_suberror.params arg ~expansion_token env d
       else []
     in
     post @ msgs
@@ -746,38 +765,19 @@ module Linearize = struct
             :: before
         end
 
-  and diff_suberror:
-    'a 'b 'c 'd. ('c -> _) -> ('a -> 'b -> _) -> expansion_token:_ -> _ ->
-    'a -> 'b -> ('c,'d) Err.functor_param_symptom -> _
-    = fun incompatible msg ~expansion_token env g e diff -> match diff with
-    | Err.Incompatible_params (i,_) -> incompatible i
-    | Err.Mismatch mty_diff ->
-        let more () =
-          let r =
-            module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
-              ~ctx:[] mty_diff.symptom
-          in
-          let list l ppf = match l with
-            | [] -> ()
-            | _ :: _ ->
-                Format.fprintf ppf "@;<1 -2>@[%a@]"
-                  (Format.pp_print_list ~pp_sep:Pp.space
-                     (fun ppf f -> f.Location.txt ppf)
-                  )
-                  l
-          in
-          list (List.rev r) in
-        msg g e more
-
   and arg ~expansion_token env = function
     | Diffing.Insert mty -> Functor_suberror.Inclusion.insert mty
     | Diffing.Delete mty -> Functor_suberror.Inclusion.delete mty
-    | Diffing.Change (g, e, d) ->
-        diff_suberror
-          Functor_suberror.Inclusion.incompatible
-          Functor_suberror.Inclusion.diff
-          ~expansion_token env g e d
     | Diffing.Keep (x, y, _) ->  Functor_suberror.Inclusion.ok x y
+    | Diffing.Change (_, _, Err.Incompatible_params (i,_)) ->
+          Functor_suberror.Inclusion.incompatible i
+    | Diffing.Change (g, e,  Err.Mismatch mty_diff) ->
+        let more () =
+          subcase_list @@
+            module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
+              ~ctx:[] mty_diff.symptom
+        in
+        Functor_suberror.Inclusion.diff g e more
 
   let module_type_subst ~env id diff =
     match diff.symptom with
@@ -800,12 +800,16 @@ module Linearize = struct
   let app ~expansion_token env = function
     | Diffing.Insert mty ->  Functor_suberror.Inclusion.insert mty
     | Diffing.Delete mty ->  Functor_suberror.App.delete mty
-    | Diffing.Change (g, e, d) ->
-        diff_suberror
-          Functor_suberror.App.incompatible
-          Functor_suberror.App.diff
-          ~expansion_token env g e d
     | Diffing.Keep (x, y, _) ->  Functor_suberror.App.ok x y
+    | Diffing.Change (_, _, Err.Incompatible_params (i,_)) ->
+          Functor_suberror.App.incompatible i
+    | Diffing.Change (g, e,  Err.Mismatch mty_diff) ->
+        let more () =
+          subcase_list @@
+            module_type_symptom ~eqmode:false ~expansion_token ~env ~before:[]
+              ~ctx:[] mty_diff.symptom
+        in
+        Functor_suberror.App.diff g e more
 
   let all env = function
     | In_Compilation_unit diff ->
@@ -824,16 +828,6 @@ module Linearize = struct
         match Pp.core_module_type_symptom cmts with
         | None -> assert false
         | Some main -> [Location.msg "%t" main]
-
-  let coalesce msgs =
-    match List.rev msgs with
-    | [] -> ignore
-    | before ->
-        let ctx ppf =
-          Format.pp_print_list ~pp_sep:Pp.space
-            (fun ppf x -> x.Location.txt ppf)
-            ppf before in
-        ctx
 
 end
 
@@ -867,7 +861,7 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
       let expected = Pp.(params_diff space expected functor_param d) in
       let sub =
         List.rev @@
-        Linearize.(Functor_suberror.param_suberrors app) env
+        Linearize.(Functor_suberror.params app) env
           ~expansion_token:true d
       in
       Location.errorf ~loc ~sub
