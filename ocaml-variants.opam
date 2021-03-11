@@ -7,7 +7,7 @@
 
    Initial build:
 
-      opam pin add -k path --inplace-build ocaml-variants.4.12.0+domains+effects .
+      opam pin add -k path --inplace-build ocaml-variants.4.12.0+domains .
 
    This installs the compiler for the new opam switch. Subsequent builds can be
    done locally with:
@@ -23,8 +23,8 @@
 *)
 
 opam-version: "2.0"
-version: "4.12.0+domains+effects"
-synopsis: "OCaml 4.12.0, with support for multicore domains and effects (dev branch)"
+version: "4.12.0+domains"
+synopsis: "OCaml 4.12.0, with support for multicore domains (dev branch)"
 maintainer: "kc@kcsrk.info"
 authors: "Xavier Leroy and many contributors"
 homepage: "https://github.com/ocaml-multicore/ocaml-multicore"
@@ -35,7 +35,6 @@ depends: [
   "base-bigarray" {post}
   "base-threads" {post}
   "base-domains" {post}
-  "base-effects" {post}
   "ocaml-option-nnp"
 ]
 conflict-class: "ocaml-core-compiler"

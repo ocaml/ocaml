@@ -631,15 +631,6 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
                                             path
                                             ext.tyexn_constructor, body),
           size
-      | Tstr_effect ext ->
-          let id = ext.ext_id in
-          let path = field_path rootpath id in
-          let body, size =
-            transl_structure ~scopes loc (id :: fields) cc rootpath final_env rem
-          in
-          Llet(Strict, Pgenval, id,
-                transl_extension_constructor ~scopes item.str_env path ext, body),
-          size
       | Tstr_module ({mb_presence=Mp_present} as mb) ->
           let id = mb.mb_id in
           (* Translate module first *)
@@ -851,7 +842,6 @@ let rec defined_idents = function
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ defined_idents rem
-    | Tstr_effect ext -> ext.ext_id :: defined_idents rem
     | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: defined_idents rem
     | Tstr_module {mb_id = Some id; mb_presence=Mp_present} ->
       id :: defined_idents rem
@@ -881,7 +871,6 @@ let rec more_idents = function
     | Tstr_type _ -> more_idents rem
     | Tstr_typext _ -> more_idents rem
     | Tstr_exception _ -> more_idents rem
-    | Tstr_effect _ -> more_idents rem
     | Tstr_recmodule _ -> more_idents rem
     | Tstr_modtype _ -> more_idents rem
     | Tstr_open od ->
@@ -919,7 +908,6 @@ and all_idents = function
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ all_idents rem
-    | Tstr_effect ext -> ext.ext_id :: all_idents rem
     | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: all_idents rem
     | Tstr_recmodule decls ->
       List.filter_map (fun mb -> mb.mb_id) decls @ all_idents rem
@@ -1041,20 +1029,6 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                            item.str_env
                                            path
                                            ext.tyexn_constructor
-            in
-            Lsequence(Llet(Strict, Pgenval, id,
-                           Lambda.subst no_env_update subst lam,
-                           store_ident loc id),
-                      transl_store ~scopes rootpath
-                        (add_ident false id subst) cont rem)
-        | Tstr_effect ext ->
-            let id = ext.ext_id in
-            let path = field_path rootpath id in
-            let loc = of_location ~scopes ext.ext_loc in
-            let lam = transl_extension_constructor ~scopes
-                                                   item.str_env
-                                                   path
-                                                   ext
             in
             Lsequence(Llet(Strict, Pgenval, id,
                            Lambda.subst no_env_update subst lam,
@@ -1509,11 +1483,6 @@ let transl_toplevel_item ~scopes item =
       toploop_setvalue ext.tyexn_constructor.ext_id
         (transl_extension_constructor ~scopes
            item.str_env None ext.tyexn_constructor)
-  | Tstr_effect ext ->
-      set_toplevel_unique_name ext.ext_id;
-      toploop_setvalue ext.ext_id
-        (transl_extension_constructor ~scopes
-           item.str_env None ext)
   | Tstr_module {mb_id=None; mb_presence=Mp_present; mb_expr=modl} ->
       transl_module ~scopes Tcoerce_none None modl
   | Tstr_module {mb_id=Some id; mb_presence=Mp_present; mb_expr=modl} ->

@@ -65,3 +65,16 @@ tests/promotion/bigrecmod.ml
 
 # instrumented runtime test is not very useful (and broken on multicore.) (#9413)
 tests/instrumented-runtime/'main.ml' with 1.1 (native)
+
+# Effects syntax has been removed
+effects
+tests/parallel/'mctest.ml' with 1.1 (bytecode)
+tests/parallel/'mctest.ml' with 1.2 (native)
+tests/callback/'stack_overflow.ml' with 1.2 (native)
+tests/callback/'nested_fiber.ml' with 1.1 (bytecode)
+tests/parallel/'deadcont.ml' with 1.2 (native)
+tests/parallel/'deadcont.ml' with 1.1 (bytecode)
+tests/callback/'test7.ml' with 1.1 (bytecode)
+tests/callback/'stack_overflow.ml' with 1.1 (bytecode)
+tests/callback/'test7.ml' with 1.2 (native)
+tests/callback/'nested_fiber.ml' with 1.2 (native)

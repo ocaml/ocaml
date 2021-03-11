@@ -25,8 +25,6 @@ val type_float: type_expr
 val type_bool: type_expr
 val type_unit: type_expr
 val type_exn: type_expr
-val type_eff: type_expr -> type_expr
-val type_continuation: type_expr -> type_expr -> type_expr
 val type_array: type_expr -> type_expr
 val type_list: type_expr -> type_expr
 val type_option: type_expr -> type_expr
@@ -45,8 +43,6 @@ val path_float: Path.t
 val path_bool: Path.t
 val path_unit: Path.t
 val path_exn: Path.t
-val path_eff: Path.t
-val path_continuation: Path.t
 val path_array: Path.t
 val path_list: Path.t
 val path_option: Path.t

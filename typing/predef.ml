@@ -35,8 +35,6 @@ and ident_float = ident_create "float"
 and ident_bool = ident_create "bool"
 and ident_unit = ident_create "unit"
 and ident_exn = ident_create "exn"
-and ident_eff = ident_create "eff"
-and ident_continuation = ident_create "continuation"
 and ident_array = ident_create "array"
 and ident_list = ident_create "list"
 and ident_option = ident_create "option"
@@ -55,8 +53,6 @@ and path_float = Pident ident_float
 and path_bool = Pident ident_bool
 and path_unit = Pident ident_unit
 and path_exn = Pident ident_exn
-and path_eff = Pident ident_eff
-and path_continuation = Pident ident_continuation
 and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_option = Pident ident_option
@@ -75,9 +71,6 @@ and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
 and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
 and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
 and type_exn = newgenty (Tconstr(path_exn, [], ref Mnil))
-and type_eff t = newgenty (Tconstr(path_eff, [t], ref Mnil))
-and type_continuation t1 t2 =
-  newgenty (Tconstr(path_continuation, [t1; t2], ref Mnil))
 and type_array t = newgenty (Tconstr(path_array, [t], ref Mnil))
 and type_list t = newgenty (Tconstr(path_list, [t], ref Mnil))
 and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
@@ -189,28 +182,6 @@ let common_initial_env add_type add_extension empty_env =
       }
     in
     add_type type_ident decl env
-  and add_continuation type_ident env =
-    let tvar1 = newgenvar() in
-    let tvar2 = newgenvar() in
-    let arity = 2 in
-    let decl =
-      {type_params = [tvar1; tvar2];
-       type_arity = arity;
-       type_kind = Type_abstract;
-       type_loc = Location.none;
-       type_private = Asttypes.Public;
-       type_manifest = None;
-       type_variance = [Variance.contravariant; Variance.covariant];
-       type_separability = Types.Separability.default_signature ~arity;
-       type_is_newtype = false;
-       type_expansion_scope = lowest_level;
-       type_attributes = [];
-       type_immediate = Unknown;
-       type_unboxed = unboxed_false_default_false;
-       type_uid = Uid.of_predef_id type_ident;
-      }
-    in
-    add_type type_ident decl env
   in
   let add_extension id l =
     add_extension id
@@ -260,8 +231,6 @@ let common_initial_env add_type add_extension empty_env =
     ) (
   add_type1 ident_array ~variance:Variance.full ~separability:Separability.Ind (
   add_type ident_exn ~kind:Type_open (
-  add_type1 ident_eff ~variance:Variance.full ~separability:Separability.Ind ~kind:(fun _ -> Type_open) (
-  add_continuation ident_continuation (
   add_type ident_unit ~immediate:Always
     ~kind:(Type_variant([cstr ident_void []])) (
   add_type ident_bool ~immediate:Always
@@ -272,7 +241,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_int ~immediate:Always (
   add_type ident_extension_constructor (
   add_type ident_floatarray (
-    empty_env))))))))))))))))))))))))))))))))
+    empty_env))))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in

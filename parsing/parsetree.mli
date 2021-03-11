@@ -249,8 +249,6 @@ and pattern_desc =
          *)
   | Ppat_exception of pattern
         (* exception P *)
-  | Ppat_effect of pattern * pattern
-        (* effect P P *)
   | Ppat_extension of extension
         (* [%id] *)
   | Ppat_open of Longident.t loc * pattern
@@ -537,26 +535,6 @@ and extension_constructor_kind =
          | C = D
        *)
 
-and effect_constructor =
-    {
-     peff_name: string loc;
-     peff_kind : effect_constructor_kind;
-     peff_loc : Location.t;
-     peff_attributes: attributes; (* C [@id1] [@id2] of ... *)
-    }
-
-and effect_constructor_kind =
-    Peff_decl of core_type list * core_type
-      (*
-         | C of T1 * ... * Tn     ([T1; ...; Tn], None)
-         | C: T0                  ([], Some T0)
-         | C: T1 * ... * Tn -> T0 ([T1; ...; Tn], Some T0)
-       *)
-  | Peff_rebind of Longident.t loc
-      (*
-         | C = D
-       *)
-
 (** {1 Class language} *)
 
 (* Type expressions for the class language *)
@@ -779,8 +757,6 @@ and signature_item_desc =
         (* type t1 += ... *)
   | Psig_exception of type_exception
         (* exception C of T *)
-  | Psig_effect of effect_constructor
-        (* effect C : T -> T *)
   | Psig_module of module_declaration
         (* module X = M
            module X : MT *)
@@ -929,9 +905,6 @@ and structure_item_desc =
   | Pstr_exception of type_exception
         (* exception C of T
            exception C = M.X *)
-  | Pstr_effect of effect_constructor
-        (* effect C : T -> T
-           effect C = M.X *)
   | Pstr_module of module_binding
         (* module X = ME *)
   | Pstr_recmodule of module_binding list

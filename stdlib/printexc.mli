@@ -190,15 +190,6 @@ external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
     @since 4.01.0
 *)
 
-(** {6 Continuations} *)
-
-val get_continuation_callstack: ('a,'b) continuation -> int -> raw_backtrace
-(** [Printexc.get_continuation_callstack c n] returns a description of the top
-    of the call stack on the continuation [c], with at most [n] entries. (Note:
-    this function is not related to exceptions at all, despite being part of
-    the [Printexc] module.)
-*)
-
 (** {1 Uncaught exceptions} *)
 
 val default_uncaught_exception_handler: exn -> raw_backtrace -> unit
