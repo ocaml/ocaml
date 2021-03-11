@@ -600,14 +600,14 @@ module Linearize = struct
     Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
     match sgs.missings, sgs.incompatibles with
     | a :: l , _ ->
-        let more =
+        let msgs =
           if expansion_token then
             with_context ctx Pp.missing_field a
             :: List.map (Location.msg "%a" Pp.missing_field) l
+            @ before
           else
-            []
+            before
         in
-        let msgs = more @ before in
         { msgs; post = None }
     | [], a :: _ -> sigitem ~expansion_token ~env:sgs.env ~before ~ctx a
     | [], [] -> assert false
@@ -628,7 +628,8 @@ module Linearize = struct
     | Not_less_than mts ->
         let before =
           Location.msg "The first module type is not included in the second"
-          :: before in
+          :: before
+        in
         module_type ~expansion_token ~eqmode:true ~before ~env
           ~ctx:(Context.Modtype id :: ctx) mts
     | Not_greater_than mts ->
@@ -877,9 +878,6 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
         Pp.(params_diff space got_arg short_argument d)
         Pp.(params_diff space expected functor_param d)
 
-
-(* We could do a better job to split the individual error items
-   as sub-messages of the main interface mismatch on the whole unit. *)
 let register () =
   Location.register_error_of_exn
     (function
