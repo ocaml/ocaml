@@ -265,7 +265,7 @@ let update_global_table () =
   if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
   let glob = Meta.global_data() in
   List.iter
-    (fun (slot, cst) -> glob.(slot) <- Gc.promote_to (transl_const cst) ())
+    (fun (slot, cst) -> glob.(slot) <- transl_const cst)
     !literal_table;
   literal_table := []
 
@@ -331,7 +331,7 @@ let get_global_position id = slot_for_getglobal id
 let get_global_value id =
   (Meta.global_data()).(slot_for_getglobal id)
 let assign_global_value id v =
-  (Meta.global_data()).(slot_for_getglobal id) <- Gc.promote_to v ()
+  (Meta.global_data()).(slot_for_getglobal id) <- v
 
 (* Check that all globals referenced in the given patch list
    have been initialized already *)
