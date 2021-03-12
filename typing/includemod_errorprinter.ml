@@ -339,34 +339,43 @@ module Functor_suberror = struct
     let params = List.filter_map proj @@ List.map snd patch in
     Printtyp.functor_parameters ~sep elt params
 
+  type abbreviation_kind =
+    | Got
+    | Expected
+    | Unneeded
+
+  type variant =
+    | App
+    | Inclusion
+
   let shortname side pos =
     match side with
-    | `Got -> Format.sprintf "$S%d" pos
-    | `Expected -> Format.sprintf "$T%d" pos
-    | `Unneeded -> "..."
+    | Got -> Format.sprintf "$S%d" pos
+    | Expected -> Format.sprintf "$T%d" pos
+    | Unneeded -> "..."
 
   let to_shortnames ctx patch =
     let to_shortname side pos mty =
       {Short_name. name = (shortname side pos); item = mty }
     in
     let elide_if_app s = match ctx with
-      | `App -> `Unneeded
-      | `Sig -> s
+      | App -> Unneeded
+      | Inclusion -> s
     in
     let aux i d =
       let pos = i + 1 in
       let d = match d with
         | Diffing.Insert mty ->
-            Diffing.Insert (to_shortname `Expected pos mty)
+            Diffing.Insert (to_shortname Expected pos mty)
         | Diffing.Delete mty ->
-            Diffing.Delete (to_shortname (elide_if_app `Got) pos mty)
+            Diffing.Delete (to_shortname (elide_if_app Got) pos mty)
         | Diffing.Change (g, e, p) ->
             Diffing.Change
-              (to_shortname `Got pos g,
-               to_shortname `Expected pos e, p)
+              (to_shortname Got pos g,
+               to_shortname Expected pos e, p)
         | Diffing.Keep (g, e, p) ->
-            Diffing.Keep (to_shortname `Got pos g,
-                          to_shortname (elide_if_app `Expected) pos e, p)
+            Diffing.Keep (to_shortname Got pos g,
+                          to_shortname (elide_if_app Expected) pos e, p)
       in
       pos, d
     in
@@ -429,7 +438,7 @@ module Functor_suberror = struct
 
       let patch env got expected =
         Includemod.Functor_inclusion_diff.diff env got expected
-        |> prepare_patch ~drop:false ~ctx:`Sig
+        |> prepare_patch ~drop:false ~ctx:Inclusion
 
     end
 
@@ -437,8 +446,7 @@ module Functor_suberror = struct
 
     let patch env ~f ~args =
       Includemod.Functor_app_diff.diff env ~f ~args
-      |> prepare_patch ~drop:true ~ctx:`App
-
+      |> prepare_patch ~drop:true ~ctx:App
 
     let got = function
       | Diffing.Delete mty
@@ -483,6 +491,7 @@ module Functor_suberror = struct
         "Modules do not match:@ @[%t@]@;<1 -2>\
          is not included in@ @[%t@]%t"
         (dmodtype mty) e (more ())
+
 
     let incompatible = function
       | Unit ->
