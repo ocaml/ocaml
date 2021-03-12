@@ -4632,10 +4632,9 @@ and type_statement ?explanation env sexp =
     exp
   end
 
-and type_unpacks : ?in_function: Location.t * type_expr ->
-  Env.t -> (string Location.loc * Location.t * Uid.t) list ->
-  Parsetree.expression -> type_expected -> expression
-= fun ?in_function env unpacks sbody expected_ty ->
+and type_unpacks ?(in_function : (Location.t * type_expr) option)
+    env (unpacks : (string Location.loc * Location.t * Uid.t) list)
+    sbody expected_ty =
   let ty = newvar() in
   (* remember original level *)
   let extended_env, tunpacks =
