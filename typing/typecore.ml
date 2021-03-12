@@ -40,6 +40,12 @@ type type_expected = {
   explanation: type_forcing_context option;
 }
 
+type to_unpack = {
+  tu_name: string Location.loc;
+  tu_loc: Location.t;
+  tu_uid: Uid.t
+}
+
 module Datatype_kind = struct
   type t = Record | Variant
 
@@ -197,6 +203,8 @@ let rcp node =
   node
 ;;
 
+
+(* Context for inline record arguments; see [type_ident] *)
 
 type recarg =
   | Allowed
@@ -1341,8 +1349,10 @@ let as_comp_pattern
    In counter-example mode, [Empty_branch] is raised when the counter-example
    does not match any value.  *)
 let rec type_pat
-  : type k r . k pattern_category -> no_existentials:_ -> mode:_ ->
-      env:_ -> _ -> _ -> (k general_pattern -> r) -> r
+  : type k r . k pattern_category ->
+      no_existentials: existential_restriction option ->
+      mode: pattern_checking_mode -> env: Env.t ref -> Parsetree.pattern ->
+      type_expr -> (k general_pattern -> r) -> r
   = fun category ~no_existentials ~mode
         ~env sp expected_ty k ->
   Builtin_attributes.warning_scope sp.ppat_attributes
@@ -1939,7 +1949,7 @@ and type_pat_aux
         in k p)
   | Ppat_type lid ->
       assert construction_not_used_in_counterexamples;
-      let (path, p,ty) = build_or_pat !env loc lid in
+      let (path, p, ty) = build_or_pat !env loc lid in
       unify_pat_types ~refine loc env ty (instance expected_ty);
       k @@ pure category @@ { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes)
@@ -2052,7 +2062,8 @@ let type_pattern_list
   let pvs = get_ref pattern_variables in
   let unpacks =
     List.map (fun (name, loc) ->
-      name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
+      {tu_name = name; tu_loc = loc;
+       tu_uid = Uid.mk ~current_unit:(Env.get_unit_name ())}
     ) (get_ref module_variables)
   in
   let new_env = add_pattern_variables !new_env pvs in
@@ -2667,6 +2678,18 @@ let rec is_inferred sexp =
   | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
   | _ -> false
 
+(* Merge explanation to type clash error *)
+
+let with_explanation explanation f =
+  match explanation with
+  | None -> f ()
+  | Some explanation ->
+      try f ()
+      with Error (loc', env', Expr_type_clash(trace', None, exp'))
+        when not loc'.Location.loc_ghost ->
+        let err = Expr_type_clash(trace', Some explanation, exp') in
+        raise (Error (loc', env', err))
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -2688,16 +2711,6 @@ and type_expect ?in_function ?recarg env sexp ty_expected_explained =
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
-
-and with_explanation explanation f =
-  match explanation with
-  | None -> f ()
-  | Some explanation ->
-      try f ()
-      with Error (loc', env', Expr_type_clash(trace', None, exp'))
-        when not loc'.Location.loc_ghost ->
-        let err = Expr_type_clash(trace', Some explanation, exp') in
-        raise (Error (loc', env', err))
 
 and type_expect_
     ?in_function ?(recarg=Rejected)
@@ -3862,7 +3875,8 @@ and type_binding_op_ident env s =
   in
   path, desc
 
-and type_function ?in_function loc attrs env ty_expected_explained l caselist =
+and type_function ?(in_function : (Location.t * type_expr) option)
+    loc attrs env ty_expected_explained arg_label caselist =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let (loc_fun, ty_fun) =
     match in_function with Some p -> p
@@ -3871,11 +3885,12 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then begin_def ();
   let (ty_arg, ty_res) =
-    try filter_arrow env (instance ty_expected) l
+    try filter_arrow env (instance ty_expected) arg_label
     with Unify _ ->
       match expand_head env ty_expected with
         {desc = Tarrow _} as ty ->
-          raise(Error(loc, env, Abstract_wrong_label(l, ty, explanation)))
+          raise(Error(loc, env,
+                      Abstract_wrong_label(arg_label, ty, explanation)))
       | _ ->
           raise(Error(loc_fun, env,
                       Too_many_arguments (in_function <> None,
@@ -3883,7 +3898,7 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
                                           explanation)))
   in
   let ty_arg =
-    if is_optional l then
+    if is_optional arg_label then
       let tv = newvar() in
       begin
         try unify env ty_arg (type_option tv)
@@ -3904,14 +3919,14 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
     let ls, tvar = list_labels env ty in
     List.for_all ((<>) Nolabel) ls && not tvar
   in
-  if is_optional l && not_nolabel_function ty_res then
+  if is_optional arg_label && not_nolabel_function ty_res then
     Location.prerr_warning (List.hd cases).c_lhs.pat_loc
       Warnings.Unerasable_optional_argument;
   let param = name_cases "param" cases in
   re {
-    exp_desc = Texp_function { arg_label = l; param; cases; partial; };
+    exp_desc = Texp_function { arg_label; param; cases; partial; };
     exp_loc = loc; exp_extra = [];
-    exp_type = instance (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
+    exp_type = instance (newgenty (Tarrow(arg_label, ty_arg, ty_res, Cok)));
     exp_attributes = attrs;
     exp_env = env }
 
@@ -4625,19 +4640,21 @@ and type_statement ?explanation env sexp =
     exp
   end
 
-and type_unpacks ?in_function env unpacks sbody expected_ty =
+and type_unpacks ?(in_function : (Location.t * type_expr) option)
+    env (unpacks : to_unpack list) sbody expected_ty =
   let ty = newvar() in
   (* remember original level *)
   let extended_env, tunpacks =
-    List.fold_left (fun (env, unpacks) (name, loc, uid) ->
+    List.fold_left (fun (env, tunpacks) unpack ->
       begin_def ();
       let context = Typetexp.narrow () in
       let modl =
         !type_module env
           Ast_helper.(
-            Mod.unpack ~loc
-              (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
-                                          name.loc)))
+            Mod.unpack ~loc:unpack.tu_loc
+              (Exp.ident ~loc:unpack.tu_name.loc
+                 (mkloc (Longident.Lident unpack.tu_name.txt)
+                    unpack.tu_name.loc)))
       in
       Mtype.lower_nongen ty.level modl.mod_type;
       let pres =
@@ -4647,14 +4664,15 @@ and type_unpacks ?in_function env unpacks sbody expected_ty =
       in
       let scope = create_scope () in
       let md =
-        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc;
-          md_uid = uid; }
+        { md_type = modl.mod_type; md_attributes = [];
+          md_loc = unpack.tu_name.loc;
+          md_uid = unpack.tu_uid; }
       in
       let (id, env) =
-        Env.enter_module_declaration ~scope name.txt pres md env
+        Env.enter_module_declaration ~scope unpack.tu_name.txt pres md env
       in
       Typetexp.widen context;
-      env, (id, name, pres, modl) :: unpacks
+      env, (id, unpack.tu_name, pres, modl) :: tunpacks
     ) (env, []) unpacks
   in
   (* ideally, we should catch Expr_type_clash errors
@@ -4804,7 +4822,8 @@ and type_cases
         in
         let unpacks =
           List.map (fun (name, loc) ->
-            name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
+            {tu_name = name; tu_loc = loc;
+             tu_uid = Uid.mk ~current_unit:(Env.get_unit_name ())}
           ) unpacks
         in
         let ty_res' =
