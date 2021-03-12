@@ -321,13 +321,6 @@ module Functor_suberror = struct
     | Types.Named (Some _ as x,_) -> x
     | Types.(Unit | Named(None,_)) -> None
 
-  let expected = function
-    | Diffing.Insert mty
-    | Diffing.Keep(_,mty,_)
-    | Diffing.Change (_,mty,_) as x ->
-        Some (param_id mty,(x, mty))
-    | Diffing.Delete _ -> None
-
   let params_diff sep proj printer patch =
     let elt (x,param) =
       let sty = style x in
@@ -338,6 +331,18 @@ module Functor_suberror = struct
     in
     let params = List.filter_map proj @@ List.map snd patch in
     Printtyp.functor_parameters ~sep elt params
+
+  let expected d =
+    let extract = function
+      | Diffing.Insert mty
+      | Diffing.Keep(_,mty,_)
+      | Diffing.Change (_,mty,_) as x ->
+          Some (param_id mty,(x, mty))
+      | Diffing.Delete _ -> None
+    in
+    params_diff space extract Short_name.full_functor_param d
+
+
 
   type abbreviation_kind =
     | Got
@@ -394,15 +399,15 @@ module Functor_suberror = struct
 
   module Inclusion = struct
 
-    let got = function
+    let got d =
+      let extract = function
       | Diffing.Delete mty
       | Diffing.Keep (mty,_,_)
       | Diffing.Change (mty,_,_) as x ->
           Some (param_id mty,(x,mty))
       | Diffing.Insert _ -> None
-
-    let actual d = params_diff space got Short_name.full_functor_param d
-    let expected d = params_diff space expected Short_name.full_functor_param d
+      in
+      params_diff space extract Short_name.full_functor_param d
 
     let insert mty =
       Format.dprintf
@@ -448,14 +453,15 @@ module Functor_suberror = struct
       Includemod.Functor_app_diff.diff env ~f ~args
       |> prepare_patch ~drop:true ~ctx:App
 
-    let got = function
-      | Diffing.Delete mty
-      | Diffing.Keep (mty,_,_)
-      | Diffing.Change (mty,_,_) as x ->
-          Some (None,(x,mty))
-      | Diffing.Insert _ -> None
-
-    let actual d = params_diff space got Short_name.short_argument d
+    let got d =
+      let extract = function
+        | Diffing.Delete mty
+        | Diffing.Keep (mty,_,_)
+        | Diffing.Change (mty,_,_) as x ->
+            Some (None,(x,mty))
+        | Diffing.Insert _ -> None
+      in
+      params_diff space extract Short_name.short_argument d
 
     let delete mty =
       Format.dprintf
@@ -710,8 +716,8 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
 
 and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let d = Functor_suberror.Inclusion.patch env got expected in
-  let actual = Functor_suberror.Inclusion.actual d in
-  let expected = Functor_suberror.Inclusion.expected d in
+  let actual = Functor_suberror.Inclusion.got d in
+  let expected = Functor_suberror.expected d in
   let main =
     Format.dprintf
       "@[<hv 2>Modules do not match:@ \
@@ -877,8 +883,8 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
       in
       Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
   | _ ->
-      let actual = Functor_suberror.App.actual d in
-      let expected = Functor_suberror.Inclusion.expected d in
+      let actual = Functor_suberror.App.got d in
+      let expected = Functor_suberror.expected d in
       let sub =
         List.rev @@ Functor_suberror.params app env ~expansion_token:true d
       in
