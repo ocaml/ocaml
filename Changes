@@ -101,6 +101,9 @@ Working version
 
 ### Standard library:
 
+- #10286: Added Array.unsafe_blit.
+  (Andrew Hunter, review by TK.)
+
 - #9533: Added String.starts_with and String.ends_with.
   (Bernhard Schommer, review by Daniel Bünzli, Gabriel Scherer and
   Alain Frisch)
