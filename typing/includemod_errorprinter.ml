@@ -212,56 +212,118 @@ let dmodtype mty =
 
 let space ppf () = Format.fprintf ppf "@ "
 
-module Short_name = struct
+(**
+   In order to display a list of functor arguments in a compact format,
+   we introduce a notion of shorthand for functor arguments.
+   The aim is to first present the lists of actual and expected types with
+   shorthands:
 
-  type 'a item = {
+     (X: $S1) (Y: $S2) (Z: An_existing_module_type) ...
+   does not match
+     (X: $T1) (Y: A_real_path) (Z: $T3) ...
+
+   and delay the full display of the module types corresponding to $S1, $S2,
+   $T1, and $T3 to the suberror message.
+
+*)
+module With_shorthand = struct
+
+  (** A item with a potential shorthand name *)
+  type 'a named = {
     item: 'a;
     name : string;
   }
 
   type 'a t =
-    | Original of 'a
-    | Synthetic of string * 'a
+    | Original of 'a (** The shorthand has been discarded *)
+    | Synthetic of 'a named
+    (** The shorthand is potentially useful *)
 
   type functor_param =
     | Unit
     | Named of (Ident.t option * Types.module_type t)
 
-  let modtype (r : _ item) = match r.item with
+  (** Shorthand generation *)
+  type kind =
+    | Got
+    | Expected
+    | Unneeded
+
+  type variant =
+    | App
+    | Inclusion
+
+  let elide_if_app ctx s = match ctx with
+    | App -> Unneeded
+    | Inclusion -> s
+
+  let make side pos =
+    match side with
+    | Got -> Format.sprintf "$S%d" pos
+    | Expected -> Format.sprintf "$T%d" pos
+    | Unneeded -> "..."
+
+  (** Add shorthands to a patch *)
+  let patch ctx p =
+    let add_shorthand side pos mty =
+      {name = (make side pos); item = mty }
+    in
+    let aux i d =
+      let pos = i + 1 in
+      let d = match d with
+        | Diffing.Insert mty ->
+            Diffing.Insert (add_shorthand Expected pos mty)
+        | Diffing.Delete mty ->
+            Diffing.Delete (add_shorthand (elide_if_app ctx Got) pos mty)
+        | Diffing.Change (g, e, p) ->
+            Diffing.Change
+              (add_shorthand Got pos g,
+               add_shorthand Expected pos e, p)
+        | Diffing.Keep (g, e, p) ->
+            Diffing.Keep (add_shorthand Got pos g,
+                          add_shorthand (elide_if_app ctx Expected) pos e, p)
+      in
+      pos, d
+    in
+    List.mapi aux p
+
+  (** Shorthand computation from named item *)
+  let modtype (r : _ named) = match r.item with
     | Types.Mty_ident _
     | Types.Mty_alias _
     | Types.Mty_signature []
       -> Original r.item
     | Types.Mty_signature _ | Types.Mty_functor _
-      -> Synthetic (r.name, r.item)
+      -> Synthetic r
 
-  let functor_param (ua : _ item) = match ua.item with
+  let functor_param (ua : _ named) = match ua.item with
     | Types.Unit -> Unit
     | Types.Named (from, mty) ->
         Named (from, modtype { ua with item = mty })
 
+  (** Printing of arguments with shorthands *)
   let pp ppx = function
     | Original x -> ppx x
-    | Synthetic (s,_) -> Format.dprintf "%s" s
+    | Synthetic s -> Format.dprintf "%s" s.name
 
   let pp_orig ppx = function
-    | Original x | Synthetic (_, x) -> ppx x
+    | Original x | Synthetic { item=x; _ } -> ppx x
 
-  let definition_of_functor_param x = match functor_param x with
+  let definition x = match functor_param x with
     | Unit -> Format.dprintf "()"
     | Named(_,short_mty) ->
         match short_mty with
         | Original mty -> dmodtype mty
-        | Synthetic (name, mty) ->
+        | Synthetic {name; item = mty} ->
             Format.dprintf
               "%s@ =@ %t" name (dmodtype mty)
 
-  let short_functor_param x = match functor_param x with
+  let param x = match functor_param x with
     | Unit -> Format.dprintf "()"
     | Named (_, short_mty) ->
         pp dmodtype short_mty
 
-  let full_functor_param x = match functor_param x with
+  let qualified_param x = match functor_param x with
     | Unit -> Format.dprintf "()"
     | Named (None, Original (Mty_signature []) ) ->
         Format.dprintf "(sig end)"
@@ -285,11 +347,11 @@ module Short_name = struct
         let short_mty = modtype { ua with item = mty } in
         begin match short_mty with
         | Original mty -> dmodtype mty
-        | Synthetic (name, mty) ->
+        | Synthetic {name; item=mty} ->
             Format.dprintf "%s@ :@ %t" name (dmodtype mty)
         end
 
-  let short_argument ua =
+  let arg ua =
     let arg, mty = ua.item in
     match (arg: Err.functor_arg_descr) with
     | Unit -> Format.dprintf "()"
@@ -299,7 +361,6 @@ module Short_name = struct
         pp dmodtype short_mty
 
 end
-
 
 
 module Functor_suberror = struct
@@ -317,11 +378,12 @@ module Functor_suberror = struct
     Format.fprintf ppf "%i." pos;
     Format.pp_close_stag ppf ()
 
-  let param_id x = match x.Short_name.item with
+  let param_id x = match x.With_shorthand.item with
     | Types.Named (Some _ as x,_) -> x
     | Types.(Unit | Named(None,_)) -> None
 
-  let params_diff sep proj printer patch =
+  (** Print the list of params with style *)
+  let pretty_params sep proj printer patch =
     let elt (x,param) =
       let sty = style x in
       Format.dprintf "%a%t%a"
@@ -340,51 +402,7 @@ module Functor_suberror = struct
           Some (param_id mty,(x, mty))
       | Diffing.Delete _ -> None
     in
-    params_diff space extract Short_name.full_functor_param d
-
-
-
-  type abbreviation_kind =
-    | Got
-    | Expected
-    | Unneeded
-
-  type variant =
-    | App
-    | Inclusion
-
-  let shortname side pos =
-    match side with
-    | Got -> Format.sprintf "$S%d" pos
-    | Expected -> Format.sprintf "$T%d" pos
-    | Unneeded -> "..."
-
-  let to_shortnames ctx patch =
-    let to_shortname side pos mty =
-      {Short_name. name = (shortname side pos); item = mty }
-    in
-    let elide_if_app s = match ctx with
-      | App -> Unneeded
-      | Inclusion -> s
-    in
-    let aux i d =
-      let pos = i + 1 in
-      let d = match d with
-        | Diffing.Insert mty ->
-            Diffing.Insert (to_shortname Expected pos mty)
-        | Diffing.Delete mty ->
-            Diffing.Delete (to_shortname (elide_if_app Got) pos mty)
-        | Diffing.Change (g, e, p) ->
-            Diffing.Change
-              (to_shortname Got pos g,
-               to_shortname Expected pos e, p)
-        | Diffing.Keep (g, e, p) ->
-            Diffing.Keep (to_shortname Got pos g,
-                          to_shortname (elide_if_app Expected) pos e, p)
-      in
-      pos, d
-    in
-    List.mapi aux patch
+    pretty_params space extract With_shorthand.qualified_param d
 
   let drop_inserted_suffix patch =
     let rec drop = function
@@ -394,7 +412,7 @@ module Functor_suberror = struct
 
   let prepare_patch ~drop ~ctx patch =
     let drop_suffix x = if drop then drop_inserted_suffix x else x in
-    patch |> drop_suffix |> to_shortnames ctx
+    patch |> drop_suffix |> With_shorthand.patch ctx
 
 
   module Inclusion = struct
@@ -407,27 +425,27 @@ module Functor_suberror = struct
           Some (param_id mty,(x,mty))
       | Diffing.Insert _ -> None
       in
-      params_diff space extract Short_name.full_functor_param d
+      pretty_params space extract With_shorthand.qualified_param d
 
     let insert mty =
       Format.dprintf
         "An argument appears to be missing with module type@;<1 2>@[%t@]"
-        (Short_name.definition_of_functor_param mty)
+        (With_shorthand.definition mty)
 
     let delete mty =
       Format.dprintf
         "An extra argument is provided of module type@;<1 2>@[%t@]"
-        (Short_name.definition_of_functor_param mty)
+        (With_shorthand.definition mty)
 
       let ok x y =
         Format.dprintf
           "Module types %t and %t match"
-          (Short_name.short_functor_param x)
-          (Short_name.short_functor_param y)
+          (With_shorthand.param x)
+          (With_shorthand.param y)
 
       let diff g e more =
-        let g = Short_name.definition_of_functor_param g in
-        let e = Short_name.definition_of_functor_param e in
+        let g = With_shorthand.definition g in
+        let e = With_shorthand.definition e in
         Format.dprintf
           "Module types do not match:@ @[%t@]@;<1 -2>does not include@ \
            @[%t@]%t"
@@ -461,35 +479,38 @@ module Functor_suberror = struct
             Some (None,(x,mty))
         | Diffing.Insert _ -> None
       in
-      params_diff space extract Short_name.short_argument d
+      pretty_params space extract With_shorthand.arg d
 
     let delete mty =
       Format.dprintf
         "The following extra argument is provided@;<1 2>@[%t@]"
-        (Short_name.definition_of_argument mty)
+        (With_shorthand.definition_of_argument mty)
 
     let ok x y =
-      let pp_orig_name = match Short_name.functor_param y with
-        | Short_name.Named (_, Original mty) ->
+      let pp_orig_name = match With_shorthand.functor_param y with
+        | With_shorthand.Named (_, Original mty) ->
             Format.dprintf " %t" (dmodtype mty)
         | _ -> ignore
       in
       Format.dprintf
         "Module %t matches the expected module type%t"
-        (Short_name.short_argument x)
+        (With_shorthand.arg x)
         pp_orig_name
 
     let diff g e more =
-      let g = Short_name.definition_of_argument g in
-      let e = Short_name.definition_of_functor_param e in
+      let g = With_shorthand.definition_of_argument g in
+      let e = With_shorthand.definition e in
       Format.dprintf
         "Modules do not match:@ @[%t@]@;<1 -2>\
          is not included in@ @[%t@]%t"
         g e (more ())
 
+    (** Specialized to avoid introducing shorthand names
+        for single change difference
+    *)
     let single_diff g e more =
-      let _arg, mty = g.Short_name.item in
-      let e = match e.Short_name.item with
+      let _arg, mty = g.With_shorthand.item in
+      let e = match e.With_shorthand.item with
         | Types.Unit -> Format.dprintf "()"
         | Types.Named(_, mty) -> dmodtype mty
       in
@@ -546,6 +567,7 @@ end
 
 
 (** Construct a linear presentation of the error tree *)
+
 open Err
 
 (* Context helper functions *)
