@@ -103,8 +103,6 @@ external finalise_last : (unit -> unit) -> 'a -> unit =
   "caml_final_register_called_without_value"
 external finalise_release : unit -> unit = "caml_final_release"
 
-external promote_to : 'a -> 'b -> 'a = "caml_obj_promote_to"
-
 type alarm = bool ref
 type alarm_rec = {active : alarm; f : unit -> unit}
 
