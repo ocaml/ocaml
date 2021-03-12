@@ -876,11 +876,9 @@ module Functor_inclusion_diff = struct
     let update = Diffing.With_left_extensions update in
     let test st mty1 mty2 =
       let loc = Location.none in
-      let snap = Btype.snapshot () in
       let res, _, _ =
         functor_param ~loc st.env ~mark:Mark_neither st.subst mty1 mty2
       in
-      Btype.backtrack snap;
       res
     in
     let param1 = Array.of_list l1 in
@@ -962,7 +960,6 @@ module Functor_app_diff = struct
     let update = Diffing.With_right_extensions update in
     let test (state:I.state) (arg,arg_mty) param =
       let loc = Location.none in
-      let snap = Btype.snapshot () in
       let res = match (arg:Error.functor_arg_descr), param with
         | Unit, Unit -> Ok Tcoerce_none
         | Unit, Named _ | (Anonymous | Named _), Unit ->
@@ -975,7 +972,6 @@ module Functor_app_diff = struct
             | Error mty -> Result.Error (Error.Mismatch mty)
             | Ok _ as x -> x
       in
-      Btype.backtrack snap;
       res
     in
     let args = Array.of_list args in
