@@ -40,6 +40,14 @@ type type_expected = {
   explanation: type_forcing_context option;
 }
 
+type to_unpack = {
+  tu_name: string Location.loc;
+  tu_loc: Location.t;
+  (* Simply naming these fields like [loc] causes conflicts e.g. with
+      [Asttypes.loc] *)
+  tu_uid: Uid.t
+}
+
 module Datatype_kind = struct
   type t = Record | Variant
 
@@ -1943,7 +1951,7 @@ and type_pat_aux
         in k p)
   | Ppat_type lid ->
       assert construction_not_used_in_counterexamples;
-      let (path, p,ty) = build_or_pat !env loc lid in
+      let (path, p, ty) = build_or_pat !env loc lid in
       unify_pat_types ~refine loc env ty (instance expected_ty);
       k @@ pure category @@ { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes)
@@ -2056,7 +2064,8 @@ let type_pattern_list
   let pvs = get_ref pattern_variables in
   let unpacks =
     List.map (fun (name, loc) ->
-      name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
+      {tu_name = name; tu_loc = loc;
+       tu_uid = Uid.mk ~current_unit:(Env.get_unit_name ())}
     ) (get_ref module_variables)
   in
   let new_env = add_pattern_variables !new_env pvs in
@@ -4633,20 +4642,20 @@ and type_statement ?explanation env sexp =
   end
 
 and type_unpacks ?(in_function : (Location.t * type_expr) option)
-    env (unpacks : (string Location.loc * Location.t * Uid.t) list)
-    sbody expected_ty =
+    env (unpacks : to_unpack list) sbody expected_ty =
   let ty = newvar() in
   (* remember original level *)
   let extended_env, tunpacks =
-    List.fold_left (fun (env, tunpacks) (name, loc, uid) ->
+    List.fold_left (fun (env, tunpacks) unpack ->
       begin_def ();
       let context = Typetexp.narrow () in
       let modl =
         !type_module env
           Ast_helper.(
-            Mod.unpack ~loc
-              (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
-                                          name.loc)))
+            Mod.unpack ~loc:unpack.tu_loc
+              (Exp.ident ~loc:unpack.tu_name.loc
+                 (mkloc (Longident.Lident unpack.tu_name.txt)
+                    unpack.tu_name.loc)))
       in
       Mtype.lower_nongen ty.level modl.mod_type;
       let pres =
@@ -4656,14 +4665,15 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
       in
       let scope = create_scope () in
       let md =
-        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc;
-          md_uid = uid; }
+        { md_type = modl.mod_type; md_attributes = [];
+          md_loc = unpack.tu_name.loc;
+          md_uid = unpack.tu_uid; }
       in
       let (id, env) =
-        Env.enter_module_declaration ~scope name.txt pres md env
+        Env.enter_module_declaration ~scope unpack.tu_name.txt pres md env
       in
       Typetexp.widen context;
-      env, (id, name, pres, modl) :: tunpacks
+      env, (id, unpack.tu_name, pres, modl) :: tunpacks
     ) (env, []) unpacks
   in
   (* ideally, we should catch Expr_type_clash errors
@@ -4813,7 +4823,8 @@ and type_cases
         in
         let unpacks =
           List.map (fun (name, loc) ->
-            name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
+            {tu_name = name; tu_loc = loc;
+             tu_uid = Uid.mk ~current_unit:(Env.get_unit_name ())}
           ) unpacks
         in
         let ty_res' =
