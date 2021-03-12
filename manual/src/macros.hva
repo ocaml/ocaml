@@ -258,7 +258,7 @@
 % Notations pour les metavariables
 \def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
 \def\optvar#1{[\var{#1}\/]}
-\def\event{§§}
+\def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
 
 \newcommand{\vfill}{}
@@ -288,3 +288,6 @@
 \newcommand{\docitem}[3]{\item \moduleref{#1}{#2}{Module \texttt{#2}}: #3}
 \newcommand{\stddocitem}[2]{\docitem{libref}{#1}{#2}}
 \newcommand{\compilerdocitem}[2]{\docitem{compilerlibref}{#1}{#2}}
+
+%%% Missing macro
+\newcommand{\DeclareUnicodeCharacter}[2]{}
