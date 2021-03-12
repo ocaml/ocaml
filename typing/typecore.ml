@@ -3889,7 +3889,8 @@ and type_function ?(in_function : (Location.t * type_expr) option)
     with Unify _ ->
       match expand_head env ty_expected with
         {desc = Tarrow _} as ty ->
-          raise(Error(loc, env, Abstract_wrong_label(arg_label, ty, explanation)))
+          raise(Error(loc, env,
+                      Abstract_wrong_label(arg_label, ty, explanation)))
       | _ ->
           raise(Error(loc_fun, env,
                       Too_many_arguments (in_function <> None,
