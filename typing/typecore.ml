@@ -198,6 +198,8 @@ let rcp node =
 ;;
 
 
+(* Context for inline record arguments; see [type_ident] *)
+
 type recarg =
   | Allowed
   | Required
@@ -1341,8 +1343,10 @@ let as_comp_pattern
    In counter-example mode, [Empty_branch] is raised when the counter-example
    does not match any value.  *)
 let rec type_pat
-  : type k r . k pattern_category -> no_existentials:_ -> mode:_ ->
-      env:_ -> _ -> _ -> (k general_pattern -> r) -> r
+  : type k r . k pattern_category ->
+      no_existentials: existential_restriction option ->
+      mode: pattern_checking_mode -> env: Env.t ref -> Parsetree.pattern ->
+      type_expr -> (k general_pattern -> r) -> r
   = fun category ~no_existentials ~mode
         ~env sp expected_ty k ->
   Builtin_attributes.warning_scope sp.ppat_attributes
@@ -2667,6 +2671,18 @@ let rec is_inferred sexp =
   | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
   | _ -> false
 
+(* Merge explanation to type clash error *)
+
+let with_explanation explanation f =
+  match explanation with
+  | None -> f ()
+  | Some explanation ->
+      try f ()
+      with Error (loc', env', Expr_type_clash(trace', None, exp'))
+        when not loc'.Location.loc_ghost ->
+        let err = Expr_type_clash(trace', Some explanation, exp') in
+        raise (Error (loc', env', err))
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -2688,16 +2704,6 @@ and type_expect ?in_function ?recarg env sexp ty_expected_explained =
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
-
-and with_explanation explanation f =
-  match explanation with
-  | None -> f ()
-  | Some explanation ->
-      try f ()
-      with Error (loc', env', Expr_type_clash(trace', None, exp'))
-        when not loc'.Location.loc_ghost ->
-        let err = Expr_type_clash(trace', Some explanation, exp') in
-        raise (Error (loc', env', err))
 
 and type_expect_
     ?in_function ?(recarg=Rejected)
@@ -3862,7 +3868,10 @@ and type_binding_op_ident env s =
   in
   path, desc
 
-and type_function ?in_function loc attrs env ty_expected_explained l caselist =
+and type_function : ?in_function: Location.t * type_expr ->
+  Location.t -> Parsetree.attributes -> Env.t -> type_expected -> arg_label ->
+  Parsetree.case list -> expression
+= fun ?in_function loc attrs env ty_expected_explained l caselist ->
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let (loc_fun, ty_fun) =
     match in_function with Some p -> p
@@ -4625,11 +4634,14 @@ and type_statement ?explanation env sexp =
     exp
   end
 
-and type_unpacks ?in_function env unpacks sbody expected_ty =
+and type_unpacks : ?in_function: Location.t * type_expr ->
+  Env.t -> (string Location.loc * Location.t * Uid.t) list ->
+  Parsetree.expression -> type_expected -> expression
+= fun ?in_function env unpacks sbody expected_ty ->
   let ty = newvar() in
   (* remember original level *)
   let extended_env, tunpacks =
-    List.fold_left (fun (env, unpacks) (name, loc, uid) ->
+    List.fold_left (fun (env, tunpacks) (name, loc, uid) ->
       begin_def ();
       let context = Typetexp.narrow () in
       let modl =
@@ -4654,7 +4666,7 @@ and type_unpacks ?in_function env unpacks sbody expected_ty =
         Env.enter_module_declaration ~scope name.txt pres md env
       in
       Typetexp.widen context;
-      env, (id, name, pres, modl) :: unpacks
+      env, (id, name, pres, modl) :: tunpacks
     ) (env, []) unpacks
   in
   (* ideally, we should catch Expr_type_clash errors
