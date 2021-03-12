@@ -482,6 +482,18 @@ module Functor_suberror = struct
          is not included in@ @[%t@]%t"
         g e (more ())
 
+    let single_diff g e more =
+      let _arg, mty = g.Short_name.item in
+      let e = match e.Short_name.item with
+        | Types.Unit -> Format.dprintf "()"
+        | Types.Named(_, mty) -> dmodtype mty
+      in
+      Format.dprintf
+        "Modules do not match:@ @[%t@]@;<1 -2>\
+         is not included in@ @[%t@]%t"
+        (dmodtype mty) e (more ())
+
+
     let incompatible = function
       | Unit_arg ->
           Format.dprintf
@@ -854,8 +866,17 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
   in
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
-  | [ _, (Diffing.Change _ as c) ] ->
-      Location.errorf ~loc "%t" (app env ~expansion_token:true c)
+  (* We specialize the one change and one argument case to remove the
+     presentation of the functor arguments *)
+  | [ _,  Diffing.Change (_, _, Err.Incompatible_params (i,_)) ] ->
+      Location.errorf ~loc "%t" (Functor_suberror.App.incompatible i)
+  | [ _, Diffing.Change (g, e,  Err.Mismatch mty_diff) ] ->
+      let more () =
+        subcase_list @@
+        module_type_symptom ~eqmode:false ~expansion_token:true ~env ~before:[]
+          ~ctx:[] mty_diff.symptom
+      in
+      Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
   | _ ->
       let actual = Functor_suberror.App.actual d in
       let expected = Functor_suberror.Inclusion.expected d in

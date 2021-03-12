@@ -119,8 +119,7 @@ module F : functor (X : sig type t end) -> sig end
 Line 2, characters 11-31:
 2 | module M = F(struct type x end)
                ^^^^^^^^^^^^^^^^^^^^
-Error: Modules do not match: $S1 = struct type x end is not included in
-       $T1 = sig type t end
+Error: Modules do not match: sig type x end is not included in sig type t end
      The type `t' is required but not provided
 |}]
 
@@ -544,7 +543,7 @@ module F : functor (X : a) -> sig type t end
 Line 6, characters 13-19:
 6 |     type t = F(X).t
                  ^^^^^^
-Error: Modules do not match: P.X : a/1 is not included in a/2
+Error: Modules do not match: a/1 is not included in a/2
      Line 3, characters 2-15:
        Definition of module type a/1
      Line 1, characters 0-13:

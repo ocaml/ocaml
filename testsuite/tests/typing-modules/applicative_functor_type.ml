@@ -20,7 +20,7 @@ Line 1, characters 9-22:
 1 | type t = Set.Make(M).t
              ^^^^^^^^^^^^^
 Error: Modules do not match:
-       M : sig type t = M.t val equal : 'a -> 'a -> bool end
+       sig type t = M.t val equal : 'a -> 'a -> bool end
      is not included in Set.OrderedType
      The value `compare' is required but not provided
      File "set.mli", line 55, characters 4-31: Expected declaration
@@ -42,8 +42,8 @@ Line 1, characters 9-15:
 1 | type t = F(M).t
              ^^^^^^
 Error: Modules do not match:
-       M : sig type t = M.t val equal : 'a -> 'a -> bool end
-     is not included in $T1 = sig type t = M.t val equal : unit end
+       sig type t = M.t val equal : 'a -> 'a -> bool end
+     is not included in sig type t = M.t val equal : unit end
      Values do not match:
        val equal : 'a -> 'a -> bool
      is not included in
