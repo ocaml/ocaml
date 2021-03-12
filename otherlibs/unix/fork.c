@@ -15,6 +15,7 @@
 
 #define CAML_INTERNALS
 
+#include <caml/domain.h>
 #include <caml/mlvalues.h>
 #include <caml/debugger.h>
 #include <caml/eventlog.h>
@@ -27,6 +28,7 @@ CAMLprim value unix_fork(value unit)
   CAML_EV_FLUSH();
 
   ret = fork();
+  if (ret == 0 && caml_atfork_hook != NULL) caml_atfork_hook();
   if (ret == -1) uerror("fork", Nothing);
 
   CAML_EVENTLOG_DO({

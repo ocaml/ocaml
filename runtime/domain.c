@@ -92,3 +92,5 @@ void caml_init_domain (void)
   Caml_state->checking_pointer_pc = NULL;
   #endif
 }
+
+CAMLexport void (*caml_atfork_hook)(void) = NULL;
