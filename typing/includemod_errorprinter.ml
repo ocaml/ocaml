@@ -750,7 +750,7 @@ and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let msgs = dwith_context ctx main :: before in
   let post =
     if expansion_token then
-      Functor_suberror.params arg ~expansion_token env d
+      Functor_suberror.params functor_arg_diff ~expansion_token env d
     else []
   in
   post @ msgs
@@ -811,7 +811,7 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
           :: before
       end
 
-and arg ~expansion_token env = function
+and functor_arg_diff ~expansion_token env = function
   | Diffing.Insert mty -> Functor_suberror.Inclusion.insert mty
   | Diffing.Delete mty -> Functor_suberror.Inclusion.delete mty
   | Diffing.Keep (x, y, _) ->  Functor_suberror.Inclusion.ok x y
@@ -825,7 +825,7 @@ and arg ~expansion_token env = function
       in
       Functor_suberror.Inclusion.diff g e more
 
-let app ~expansion_token env = function
+let functor_app_diff ~expansion_token env = function
   | Diffing.Insert mty ->  Functor_suberror.Inclusion.insert mty
   | Diffing.Delete mty ->  Functor_suberror.App.delete mty
   | Diffing.Keep (x, y, _) ->  Functor_suberror.App.ok x y
@@ -908,7 +908,8 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
       let actual = Functor_suberror.App.got d in
       let expected = Functor_suberror.expected d in
       let sub =
-        List.rev @@ Functor_suberror.params app env ~expansion_token:true d
+        List.rev @@
+        Functor_suberror.params functor_app_diff env ~expansion_token:true d
       in
       Location.errorf ~loc ~sub
         "@[<hv>The functor application %tis ill-typed.@ \
