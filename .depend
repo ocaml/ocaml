@@ -708,7 +708,6 @@ typing/includemod.cmo : \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/path.cmi \
-    parsing/parsetree.cmi \
     typing/mtype.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -731,7 +730,6 @@ typing/includemod.cmx : \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/path.cmx \
-    parsing/parsetree.cmi \
     typing/mtype.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
@@ -750,7 +748,6 @@ typing/includemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/path.cmi \
-    parsing/parsetree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/includecore.cmi \
@@ -762,9 +759,7 @@ typing/includemod_errorprinter.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
-    parsing/pprintast.cmi \
     typing/path.cmi \
-    parsing/parsetree.cmi \
     typing/oprint.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -780,9 +775,7 @@ typing/includemod_errorprinter.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/printtyp.cmx \
-    parsing/pprintast.cmx \
     typing/path.cmx \
-    parsing/parsetree.cmi \
     typing/oprint.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
