@@ -258,7 +258,7 @@
 % Notations pour les metavariables
 \def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
 \def\optvar#1{[\var{#1}\/]}
-\def\event{§§}
+\def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
 
 \newcommand{\vfill}{}
@@ -280,3 +280,6 @@
 
 %%% References to modules in the standard library
 \newcommand{\stdmoduleref}[1]{\ahref{libref/#1.html}{\texttt{#1}}}
+
+%%% Missing macro
+\newcommand{\DeclareUnicodeCharacter}[2]{}
