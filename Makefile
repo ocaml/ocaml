@@ -1040,7 +1040,7 @@ toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 make_opcodes := tools/make_opcodes$(EXE)
 
 bytecomp/opcodes.ml: runtime/caml/instruct.h $(make_opcodes)
-	runtime/ocamlrun$(EXE) $(make_opcodes) -opcodes < $< > $@
+	$(make_opcodes) -opcodes < $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(CAMLC) -i $< > $@

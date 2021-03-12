@@ -231,10 +231,10 @@ make_opcodes := make_opcodes$(EXE)
 $(eval $(call PROGRAM_SYNONYM,make_opcodes))
 
 $(make_opcodes): make_opcodes.ml
-	$(CAMLC) $< -o $@
+	$(CAMLC) -custom $< -o $@
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
-	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(make_opcodes) -opnames < $< > $@
+	./$(make_opcodes) -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml

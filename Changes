@@ -237,6 +237,10 @@ Working version
   socklen_t detection on Windows.
   (Antonin Décimo, review by David Allsopp and Sébastien Hinderer)
 
+- #10293: Build tools/make_optcodes with -custom so that it is always executable
+  during any kind of bootstrap operation.
+  (David Allsopp, report by Tom Kelly, review by ???)
+
 ### Bug fixes:
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
