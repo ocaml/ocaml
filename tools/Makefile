@@ -230,8 +230,11 @@ make_opcodes := make_opcodes$(EXE)
 
 $(eval $(call PROGRAM_SYNONYM,make_opcodes))
 
+.INTERMEDIATE: $(make_opcodes).tmp
 $(make_opcodes): make_opcodes.ml
-	$(CAMLC) -custom $< -o $@
+	$(CAMLC) -without-runtime $< -o $@.tmp
+	cat $(ROOTDIR)/boot/ocamlrun$(EXE) $(make_opcodes).tmp > $@
+	chmod +x $@
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 	./$(make_opcodes) -opnames < $< > $@
