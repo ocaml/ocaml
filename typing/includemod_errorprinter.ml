@@ -217,7 +217,6 @@ module Short_name = struct
   type 'a item = {
     item: 'a;
     name : string;
-    from: Ident.t option;
   }
 
   type 'a t =
@@ -239,7 +238,7 @@ module Short_name = struct
   let functor_param (ua : _ item) = match ua.item with
     | Types.Unit -> Unit
     | Types.Named (from, mty) ->
-        Named (from, modtype { ua with item = mty ; from })
+        Named (from, modtype { ua with item = mty })
 
   let modexpr (r : _ item) = match r.item.Parsetree.pmod_desc with
     | Pmod_ident _
@@ -356,7 +355,7 @@ module Functor_suberror = struct
 
   let to_shortnames ctx patch =
     let to_shortname side pos mty =
-      {Short_name. name = (shortname side pos); item = mty; from=None }
+      {Short_name. name = (shortname side pos); item = mty }
     in
     let elide_if_app s = match ctx with
       | `App -> `Unneeded
