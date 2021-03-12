@@ -486,6 +486,8 @@ module Functor_suberror = struct
         "The following extra argument is provided@;<1 2>@[%t@]"
         (With_shorthand.definition_of_argument mty)
 
+    let insert = Inclusion.insert
+
     let ok x y =
       let pp_orig_name = match With_shorthand.functor_param y with
         | With_shorthand.Named (_, Original mty) ->
@@ -826,7 +828,7 @@ and functor_arg_diff ~expansion_token env = function
       Functor_suberror.Inclusion.diff g e more
 
 let functor_app_diff ~expansion_token env = function
-  | Diffing.Insert mty ->  Functor_suberror.Inclusion.insert mty
+  | Diffing.Insert mty ->  Functor_suberror.App.insert mty
   | Diffing.Delete mty ->  Functor_suberror.App.delete mty
   | Diffing.Keep (x, y, _) ->  Functor_suberror.App.ok x y
   | Diffing.Change (_, _, Err.Incompatible_params (i,_)) ->
