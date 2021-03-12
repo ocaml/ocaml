@@ -240,13 +240,6 @@ module Short_name = struct
     | Types.Named (from, mty) ->
         Named (from, modtype { ua with item = mty })
 
-  let modexpr (r : _ item) = match r.item.Parsetree.pmod_desc with
-    | Pmod_ident _
-    | Pmod_structure []
-      -> Original r.item
-    | _
-      -> Synthetic (r.name, r.item)
-
   let pp ppx = function
     | Original x -> ppx x
     | Synthetic (s,_) -> Format.dprintf "%s" s
@@ -281,30 +274,29 @@ module Short_name = struct
   let definition_of_argument ua =
     let arg, mty = ua.item in
     match (arg: Err.functor_arg_descr) with
-    | Unit_arg -> Format.dprintf "()"
-    | Named_arg p ->
+    | Unit -> Format.dprintf "()"
+    | Named p ->
         let mty = modtype { ua with item = mty } in
         Format.dprintf
           "%a@ :@ %t"
           Printtyp.path p
           (pp_orig dmodtype mty)
-    | Anonymous md ->
-        let short_md = modexpr { ua with item = md } in
-        begin match short_md with
-        | Original md -> fun ppf -> Pprintast.module_expr ppf md
-        | Synthetic (name, md) -> fun ppf ->
-            Format.fprintf ppf
-              "%s@ =@ %a" name Pprintast.module_expr md
+    | Anonymous ->
+        let short_mty = modtype { ua with item = mty } in
+        begin match short_mty with
+        | Original mty -> dmodtype mty
+        | Synthetic (name, mty) ->
+            Format.dprintf "%s@ :@ %t" name (dmodtype mty)
         end
 
   let short_argument ua =
-    let arg, _mty = ua.item in
+    let arg, mty = ua.item in
     match (arg: Err.functor_arg_descr) with
-    | Unit_arg -> Format.dprintf "()"
-    | Named_arg p -> fun ppf -> Printtyp.path ppf p
-    | Anonymous md ->
-        let short_md = modexpr { ua with item=md } in
-        pp (fun x ppf -> Pprintast.module_expr ppf x) short_md
+    | Unit -> Format.dprintf "()"
+    | Named p -> fun ppf -> Printtyp.path ppf p
+    | Anonymous ->
+        let short_mty = modtype { ua with item=mty } in
+        pp dmodtype short_mty
 
 end
 
@@ -492,12 +484,11 @@ module Functor_suberror = struct
          is not included in@ @[%t@]%t"
         (dmodtype mty) e (more ())
 
-
     let incompatible = function
-      | Unit_arg ->
+      | Unit ->
           Format.dprintf
             "The functor was expected to be applicative at this position"
-      | Named_arg _ | Anonymous _ ->
+      | Named _ | Anonymous ->
           Format.dprintf
             "The functor was expected to be generative at this position"
 

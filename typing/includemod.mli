@@ -40,9 +40,9 @@ module Error: sig
   type 'elt core_diff =('elt,unit) diff
 
   type functor_arg_descr =
-    | Anonymous of Parsetree.module_expr
-    | Named_arg of Path.t
-    | Unit_arg
+    | Anonymous
+    | Named of Path.t
+    | Unit
 
   type core_sigitem_symptom =
     | Value_descriptions of Types.value_description core_diff

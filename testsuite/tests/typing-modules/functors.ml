@@ -296,7 +296,7 @@ Error: The functor application is ill-typed.
        1. Module $S1 matches the expected module type
        2. Module $S2 matches the expected module type
        3. Modules do not match:
-            $S3 = struct type yy = K.y end
+            $S3 : sig type yy = K.y end
           is not included in
             $T3 = sig type y = A.y end
           The type `y' is required but not provided
@@ -527,7 +527,7 @@ Error: The functor application is ill-typed.
             Definition of module type b/1
           Line 2, characters 0-13:
             Definition of module type b/2
-       3. Modules do not match: $S3 = struct type w end is not included in y
+       3. Modules do not match: $S3 : sig type w end is not included in y
 |}]
 
 module F(X:a) = struct type t end
@@ -1606,8 +1606,7 @@ Error: The functor application is ill-typed.
        do not match these parameters:
          functor (X : ...) (Y : $T3) (Z : $T4) -> ...
        1. Module X matches the expected module type
-       2. The following extra argument is provided
-              ... = struct type t = int end
+       2. The following extra argument is provided ... : sig type t = int end
        3. Modules do not match:
             Y : sig type t = Y.t = Y of int end
           is not included in

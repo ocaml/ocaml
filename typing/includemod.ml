@@ -49,9 +49,9 @@ type pos =
 module Error = struct
 
   type functor_arg_descr =
-    | Anonymous of Parsetree.module_expr
-    | Named_arg of Path.t
-    | Unit_arg
+    | Anonymous
+    | Named of Path.t
+    | Unit
 
   type ('a,'b) diff = {got:'a; expected:'a; symptom:'b}
   type 'a core_diff =('a,unit) diff
@@ -765,7 +765,7 @@ let check_functor_application_in_path
         let prepare_arg (arg_path, arg_mty) =
           let aliasable = can_alias env arg_path in
           let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
-          (Error.Named_arg arg_path, smd)
+          (Error.Named arg_path, smd)
         in
         let mty_f = (Env.find_module f0_path env).md_type in
         let args = List.map prepare_arg args in
@@ -906,27 +906,27 @@ module Functor_app_diff = struct
         begin
           let desc1 : Error.functor_arg_descr = fst param1 in
           match desc1, I.param_name param2 with
-          | (Unit_arg | Anonymous _) , None
+          | (Unit | Anonymous) , None
             -> 0
-          | Named_arg (Path.Pident n1), Some n2
+          | Named (Path.Pident n1), Some n2
             when String.equal (Ident.name n1) (Ident.name n2)
             -> 0
-          | Named_arg _, Some _ -> 1
-          | Named_arg _,  None | (Unit_arg | Anonymous _), Some _ -> 1
+          | Named _, Some _ -> 1
+          | Named _,  None | (Unit | Anonymous), Some _ -> 1
         end
 
-  let update d (st:I.state) =
+  let update (d: (_,Types.functor_parameter,_,_) change) (st:I.state) =
     let open Error in
     match d with
     | Insert _
     | Delete _
-    | Keep ((Unit_arg,_),_,_)
+    | Keep ((Unit,_),_,_)
     | Keep (_,Unit,_)
     | Change (_,(Unit | Named (None,_)), _ )
-    | Change ((Unit_arg,_), Named (Some _, _), _) ->
+    | Change ((Unit,_), Named (Some _, _), _) ->
         st, [||]
-    | Keep ((Named_arg arg,  _mty) , Named (param_name, _param), _)
-    | Change ((Named_arg arg, _mty), Named (param_name, _param), _) ->
+    | Keep ((Named arg,  _mty) , Named (param_name, _param), _)
+    | Change ((Named arg, _mty), Named (param_name, _param), _) ->
         begin match param_name with
         | Some param ->
             let res =
@@ -942,8 +942,8 @@ module Functor_app_diff = struct
         | None ->
             st, [||]
         end
-    | Keep ((Anonymous _, mty) , Named (param_name, _param), _)
-    | Change ((Anonymous _, mty), Named (param_name, _param), _) -> begin
+    | Keep ((Anonymous, mty) , Named (param_name, _param), _)
+    | Change ((Anonymous, mty), Named (param_name, _param), _) -> begin
         begin match param_name with
         | Some param ->
             let mty' = Subst.modtype Keep st.subst mty in
@@ -964,10 +964,10 @@ module Functor_app_diff = struct
       let loc = Location.none in
       let snap = Btype.snapshot () in
       let res = match (arg:Error.functor_arg_descr), param with
-        | Unit_arg, Unit -> Ok Tcoerce_none
-        | Unit_arg, Named _ | (Anonymous _ | Named_arg _), Unit ->
+        | Unit, Unit -> Ok Tcoerce_none
+        | Unit, Named _ | (Anonymous | Named _), Unit ->
             Result.Error (Error.Incompatible_params(arg,param))
-        | ( Anonymous _ | Named_arg _ ) , Named (_, param) ->
+        | ( Anonymous | Named _ ) , Named (_, param) ->
             match
               modtypes ~loc state.env ~mark:Mark_neither state.subst
                 arg_mty param

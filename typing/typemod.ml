@@ -2037,17 +2037,17 @@ type application_summary = {
   loc: Location.t;
   attributes: attributes;
   f_loc: Location.t; (* loc for F *)
-  sarg: Parsetree.module_expr;
+  arg_is_syntactic_unit: bool;
   arg: Typedtree.module_expr;
   arg_path:Path.t option
 }
 
 let simplify_app_summary app_view =
   let mty = app_view.arg.mod_type in
-  match app_view.sarg.pmod_desc , app_view.arg_path with
-  | Pmod_structure [], _ -> Includemod.Error.Unit_arg, mty
-  | _, Some p -> Includemod.Error.Named_arg p, mty
-  | _, None -> Includemod.Error.Anonymous app_view.sarg, mty
+  match app_view.arg_is_syntactic_unit , app_view.arg_path with
+  | true,   _ -> Includemod.Error.Unit, mty
+  | false, Some p -> Includemod.Error.Named p, mty
+  | false, None -> Includemod.Error.Anonymous, mty
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
@@ -2188,7 +2188,8 @@ and type_application loc strengthen funct_body env smod =
           { loc=smod.pmod_loc;
             attributes=smod.pmod_attributes;
             f_loc = f.pmod_loc;
-            sarg; arg;
+            arg_is_syntactic_unit = sarg.pmod_desc = Pmod_structure [];
+            arg;
             arg_path = path_of_module arg
           }
         in
@@ -2209,7 +2210,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
     app_view =
   match Env.scrape_alias env funct.mod_type with
   | Mty_functor (Unit, mty_res) ->
-      if app_view.sarg.pmod_desc <> Pmod_structure [] then
+      if not app_view.arg_is_syntactic_unit then
         raise (Error (app_view.f_loc, env, Apply_generative));
       if funct_body && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body));
@@ -2222,7 +2223,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args) funct_body env funct
       let coercion =
         try
           Includemod.modtypes
-            ~loc:app_view.sarg.pmod_loc ~mark:Mark_both env
+            ~loc:app_view.arg.mod_loc ~mark:Mark_both env
             app_view.arg.mod_type mty_param
         with Includemod.Error _ ->
           let args = List.map simplify_app_summary args in
