@@ -1048,6 +1048,14 @@ CAMLexport void caml_enter_blocking_section() {
   caml_enter_blocking_section_hook();
 }
 
+/* default handler for unix_fork, will be called by unix_fork. */
+static void caml_atfork_default(void) {
+  caml_reset_domain_lock();
+  caml_acquire_domain_lock();
+}
+
+CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
+
 void caml_print_stats () {
   struct gc_stats s;
 #if defined(COLLECT_STATS) && defined(NATIVE_CODE)

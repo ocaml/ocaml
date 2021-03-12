@@ -396,7 +396,8 @@ int pthread_atfork(void (*prepare)(void), void (*parent)(void),
 
 static int st_atfork(void (*fn)(void))
 {
-  return pthread_atfork(NULL, NULL, fn);
+  caml_atfork_hook = fn;
+  return 0;
 }
 
 /* Signal handling */
