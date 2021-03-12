@@ -750,12 +750,12 @@ and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
       actual expected
   in
   let msgs = dwith_context ctx main :: before in
-  let post =
+  let functor_suberrors =
     if expansion_token then
       Functor_suberror.params functor_arg_diff ~expansion_token env d
     else []
   in
-  post @ msgs
+  functor_suberrors @ msgs
 
 and functor_symptom ~expansion_token ~env ~before ~ctx = function
   | Result res ->
