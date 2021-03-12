@@ -3868,10 +3868,8 @@ and type_binding_op_ident env s =
   in
   path, desc
 
-and type_function : ?in_function: Location.t * type_expr ->
-  Location.t -> Parsetree.attributes -> Env.t -> type_expected -> arg_label ->
-  Parsetree.case list -> expression
-= fun ?in_function loc attrs env ty_expected_explained l caselist ->
+and type_function ?(in_function : (Location.t * type_expr) option)
+    loc attrs env ty_expected_explained arg_label caselist =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let (loc_fun, ty_fun) =
     match in_function with Some p -> p
@@ -3880,11 +3878,11 @@ and type_function : ?in_function: Location.t * type_expr ->
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then begin_def ();
   let (ty_arg, ty_res) =
-    try filter_arrow env (instance ty_expected) l
+    try filter_arrow env (instance ty_expected) arg_label
     with Unify _ ->
       match expand_head env ty_expected with
         {desc = Tarrow _} as ty ->
-          raise(Error(loc, env, Abstract_wrong_label(l, ty, explanation)))
+          raise(Error(loc, env, Abstract_wrong_label(arg_label, ty, explanation)))
       | _ ->
           raise(Error(loc_fun, env,
                       Too_many_arguments (in_function <> None,
@@ -3892,7 +3890,7 @@ and type_function : ?in_function: Location.t * type_expr ->
                                           explanation)))
   in
   let ty_arg =
-    if is_optional l then
+    if is_optional arg_label then
       let tv = newvar() in
       begin
         try unify env ty_arg (type_option tv)
@@ -3913,14 +3911,14 @@ and type_function : ?in_function: Location.t * type_expr ->
     let ls, tvar = list_labels env ty in
     List.for_all ((<>) Nolabel) ls && not tvar
   in
-  if is_optional l && not_nolabel_function ty_res then
+  if is_optional arg_label && not_nolabel_function ty_res then
     Location.prerr_warning (List.hd cases).c_lhs.pat_loc
       Warnings.Unerasable_optional_argument;
   let param = name_cases "param" cases in
   re {
-    exp_desc = Texp_function { arg_label = l; param; cases; partial; };
+    exp_desc = Texp_function { arg_label; param; cases; partial; };
     exp_loc = loc; exp_extra = [];
-    exp_type = instance (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
+    exp_type = instance (newgenty (Tarrow(arg_label, ty_arg, ty_res, Cok)));
     exp_attributes = attrs;
     exp_env = env }
 
