@@ -43,8 +43,6 @@ type type_expected = {
 type to_unpack = {
   tu_name: string Location.loc;
   tu_loc: Location.t;
-  (* Simply naming these fields like [loc] causes conflicts e.g. with
-      [Asttypes.loc] *)
   tu_uid: Uid.t
 }
 
