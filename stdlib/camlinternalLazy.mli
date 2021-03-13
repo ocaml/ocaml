@@ -20,6 +20,7 @@
 type 'a t = 'a lazy_t
 
 exception Undefined
+exception RacyLazy
 
 val force_lazy_block : 'a lazy_t -> 'a
 
