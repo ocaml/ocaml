@@ -205,6 +205,10 @@ val host : string
 val target : string
 (** Whether the compiler is a cross-compiler *)
 
+val mkres : string
+
+val res_ext : string
+
 val flambda : bool
 (** Whether the compiler was configured for flambda *)
 

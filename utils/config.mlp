@@ -141,6 +141,9 @@ let ext_dll = "%%EXT_DLL%%"
 let host = "%%HOST%%"
 let target = "%%TARGET%%"
 
+let mkres = "%%MKRES%%"
+let res_ext = "%%RESEXT%%"
+
 let default_executable_name =
   match Sys.os_type with
     "Unix" -> "a.out"

@@ -746,6 +746,8 @@ build_os
 build_vendor
 build_cpu
 build
+resext
+mkres
 naked_pointers_checker
 naked_pointers
 compute_deps
@@ -2891,6 +2893,8 @@ VERSION=4.13.0+dev0-2020-10-19
 
 
  # TODO: rename this variable
+
+
 
 
 
@@ -14323,6 +14327,21 @@ if test "x$ac_cv_func_copysign" = xyes; then :
 fi
 
 fi ;;
+esac
+
+case $host in #(
+  *-*-mingw32) :
+
+    mkres="${toolpref}windres -o "
+    resext=.o
+   ;; #(
+  *-pc-windows) :
+
+    mkres="rc /nolog /fo "
+    resext=.res
+   ;; #(
+  *) :
+     ;;
 esac
 
 ## getrusage

@@ -467,21 +467,12 @@ let debug_info_to_file filename =
 
 let debug_info_resource_id = 1459 (* arbitrary, must fit in 16 bits *)
 
-let output_win32_resource oc type_ name data =
-  let buf = Bytes.make 32 '\x00' in
-  Bytes.set_int32_le buf 0 (Int32.of_int (String.length data)); (* DataSize *)
-  Bytes.set_int32_le buf 4 32l; (* HeaderSize *)
-  Bytes.set_int16_le buf 8 0xffff;
-  Bytes.set_int16_le buf 10 type_; (* TYPE *)
-  Bytes.set_int16_le buf 12 0xffff;
-  Bytes.set_int16_le buf 14 name; (* NAME *)
-  output_bytes oc buf;
-  output_string oc data
-
 let debug_info_to_win32_resource filename =
   let f oc =
-    output_win32_resource oc 0 0 "";
-    output_win32_resource oc 10 debug_info_resource_id (debug_info_to_string ())
+    let debug_info_filename = Filename.chop_extension filename ^ ".data" in
+    let f oc = output_string oc (debug_info_to_string ()) in
+    Misc.protect_writing_to_file ~filename:debug_info_filename ~f;
+    Printf.fprintf oc "%d 10 %s" debug_info_resource_id debug_info_filename
   in
   Misc.protect_writing_to_file ~filename ~f
 
@@ -534,8 +525,8 @@ let link_bytecode_as_c tolink outfile with_main =
        (* The entry point *)
        if with_main then begin
          if !Clflags.debug then begin
-           if Config.ccomp_type = "msvc" then begin
-           let debug_file_name = Filename.chop_extension outfile ^ ".res" in
+           if Sys.win32 then begin
+           let debug_file_name = Filename.chop_extension outfile ^ ".rc" in
            debug_info_to_win32_resource debug_file_name;
            Printf.fprintf outchan "\
 \n#include <caml/osdeps.h>\
@@ -550,13 +541,13 @@ let link_bytecode_as_c tolink outfile with_main =
            debug_info_to_file debug_file_name;
            Printf.fprintf outchan "\
 \n#define INCBIN_STYLE INCBIN_STYLE_SNAKE\
-\n#define INCBIN_PREFIX\
+\n#define INCBIN_PREFIX caml_\
 \n#include <caml/incbin.h>\
-\nINCBIN(caml_debug,\"%s\");\
+\nINCBIN(debug,%S);\
 \nvoid read_main_debug_info(struct debug_info *di)\
 \n{\
 \n  caml_read_main_debug_info_from_value(di, (char *)caml_debug_data, caml_debug_size);\
-\n}" debug_file_name
+\n}" (Misc.replace_substring ~before:"\\" ~after:"/" debug_file_name)
          end else
            output_string outchan "\
 \nvoid read_main_debug_info(struct debug_info *di)\
@@ -644,9 +635,9 @@ let build_custom_runtime prim_name exec_name =
     else
       [] in
   let debug_info =
-    if !Clflags.output_complete_executable && Config.ccomp_type = "msvc" then
-      let flag = [Filename.chop_extension prim_name ^ ".res"] in
-      if Ccomp.linker_is_flexlink then "-link" :: flag else flag
+    if !Clflags.output_complete_executable && Sys.win32 then
+      assert (0 = Ccomp.compile_resource ~output:(flag ^ Config.res_ext) (flag ^ ".rc"));
+      if Ccomp.linker_is_flexlink then "-link" :: (flag ^ Config.res_ext) :: [] else (flag ^ Config.res_ext) :: []
     else
       []
   in
