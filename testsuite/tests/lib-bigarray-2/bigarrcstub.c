@@ -18,21 +18,39 @@
 #include <caml/mlvalues.h>
 #include <caml/bigarray.h>
 
-extern void filltab_(void);
-extern void printtab_(float * data, int * dimx, int * dimy);
-extern float ftab_[];
+#define DIMX 6
+#define DIMY 8
 
-value fortran_filltab(value unit)
+double ctab[DIMX][DIMY];
+
+void filltab(void)
 {
-  filltab_();
-  return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
-                            2, ftab_, (intnat)8, (intnat)6);
+  int x, y;
+  for (x = 0; x < DIMX; x++)
+    for (y = 0; y < DIMY; y++)
+      ctab[x][y] = x * 100 + y;
 }
 
-value fortran_printtab(value ba)
+void printtab(double tab[DIMX][DIMY])
 {
-  int dimx = Caml_ba_array_val(ba)->dim[0];
-  int dimy = Caml_ba_array_val(ba)->dim[1];
-  printtab_(Caml_ba_data_val(ba), &dimx, &dimy);
+  int x, y;
+  for (x = 0; x < DIMX; x++) {
+    printf("%3d", x);
+    for (y = 0; y < DIMY; y++)
+      printf("  %6.1f", tab[x][y]);
+    printf("\n");
+  }
+}
+
+value c_filltab(value unit)
+{
+  filltab();
+  return caml_ba_alloc_dims(CAML_BA_FLOAT64 | CAML_BA_C_LAYOUT,
+                            2, ctab, (intnat)DIMX, (intnat)DIMY);
+}
+
+value c_printtab(value ba)
+{
+  printtab(Caml_ba_data_val(ba));
   return Val_unit;
 }
