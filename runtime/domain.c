@@ -974,6 +974,12 @@ CAMLexport inline int caml_bt_is_in_blocking_section(void)
 
 }
 
+CAMLexport inline intnat caml_domain_is_multicore ()
+{
+  dom_internal *self = domain_self;
+  return (!caml_domain_alone() || self->backup_thread_running);
+}
+
 CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
