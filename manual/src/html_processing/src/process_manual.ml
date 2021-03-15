@@ -42,7 +42,7 @@ let preg_anyspace =
      "\u{200a}"; (* HAIR SPACE *)
      "\u{202f}"; (* NARROW NO-BREAK SPACE *)
     ]
-  |> sprintf "\\(%s\\)"
+  |> sprintf "\\(%s\\)+"
 
 (* Remove number: "Chapter 1  The core language" ==> "The core language" *)
 let remove_number s =
