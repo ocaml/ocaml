@@ -1,7 +1,7 @@
 (* TEST *)
 
 let tree_size = try int_of_string Sys.argv.(1) with _ -> 9
-let iterations = try int_of_string Sys.argv.(2) with _ -> 1000
+let iterations = try int_of_string Sys.argv.(2) with _ -> 500
 let num_domains = try int_of_string Sys.argv.(3) with _ -> 4
 
 type 'a tree = Empty | Node of 'a tree * 'a tree
@@ -19,6 +19,9 @@ let work () =
   done
 
 let _ =
-  let domains = Array.init (num_domains - 1) (fun _ -> Domain.spawn(work)) in
-  work ();
-  Array.iter Domain.join domains
+  for _ = 0 to 5 do
+    let domains = Array.init (num_domains - 1) (fun _ -> Domain.spawn(work)) in
+    let v = make tree_size in
+    ignore @@ check v;
+    Array.iter Domain.join domains
+  done
