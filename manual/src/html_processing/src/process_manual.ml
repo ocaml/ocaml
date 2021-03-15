@@ -26,8 +26,23 @@ let preg_emspace = "\\(\u{2003}\\| \\)"
 let preg_chapter_space = "\\( \\|\u{2004}\u{200d}\\)"
 let writtenby_css = "span.c010" (* "span.c009" for hevea 2.32 *)
 
-let preg_anyspace = "\\( \\|\u{2003}\\| \\|\u{2004}\\)+"
-
+let preg_anyspace =
+  String.concat "\\|"
+    ["\u{00a0}"; (* NO-BREAK SPACE *)
+     "\u{2000}"; (* EN QUAD *)
+     "\u{2001}"; (* EM QUAD *)
+     "\u{2002}"; (* EN SPACE *)
+     "\u{2003}"; (* EM SPACE *)
+     "\u{2004}"; (* THREE-PER-EM SPACE *)
+     "\u{2005}"; (* FOUR-PER-EM SPACE *)
+     "\u{2006}"; (* SIX-PER-EM SPACE *)
+     "\u{2007}"; (* FIGURE SPACE *)
+     "\u{2008}"; (* PUNCTUATION SPACE *)
+     "\u{2009}"; (* THIN SPACE *)
+     "\u{200a}"; (* HAIR SPACE *)
+     "\u{202f}"; (* NARROW NO-BREAK SPACE *)
+    ]
+  |> sprintf "\\(%s\\)"
 
 (* Remove number: "Chapter 1  The core language" ==> "The core language" *)
 let remove_number s =
