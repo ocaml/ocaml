@@ -323,6 +323,19 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.03.0 (4.05.0 in BytesLabels) *)
 
+val starts_with :
+  prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
+(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+    [prefix].
+
+    @since 4.13.0 *)
+
+val ends_with :
+  suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
+(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+
+    @since 4.13.0 *)
+
 (** {1:unsafe Unsafe conversions (for advanced users)}
 
     This section describes unsafe, low-level conversion functions
@@ -452,6 +465,21 @@ let s = Bytes.of_string "hello"
     [string] type for this purpose.
 *)
 
+
+val split_on_char: sep:char -> bytes -> bytes list
+(** [split_on_char sep s] returns the list of all (possibly empty)
+    subsequences of [s] that are delimited by the [sep] character.
+
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      byte sequence equal to the input ([Bytes.concat (Bytes.make 1 sep)
+      (Bytes.split_on_char sep s) = s]).
+    - No byte sequence in the result contains the [sep] character.
+
+    @since 4.13.0
+*)
 
 (** {1 Iterators} *)
 
