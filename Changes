@@ -268,8 +268,8 @@ Working version
 - #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
   (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
 
-OCaml 4.12.0
-------------
+OCaml 4.12.0 (24 February 2021)
+-------------------------------
 
 ### Supported platforms (highlights):
 
@@ -506,7 +506,7 @@ OCaml 4.12.0
   (David Allsopp, review by Guillaume Munch-Maccagnoni and
   Jacques-Henri Jourdan)
 
-- #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
+- #9506: Remove support for FreeBSD prior to 4.0R, that required explicit
   floating-point initialization to behave like IEEE standard
   (Hannes Mehnert, review by David Allsopp)
 
