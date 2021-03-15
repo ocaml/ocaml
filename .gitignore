@@ -93,6 +93,10 @@ _build
 /manual/src/cmds/warnings-help.etex
 /manual/src/warnings-help.etex
 
+/api_docgen/build
+/api_docgen/odoc/build
+/api_docgen/ocamldoc/build
+
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
 /ocamldoc/odoc
