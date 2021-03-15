@@ -102,7 +102,7 @@ module State = struct
         (* 32 random bits on both 64-bit OCaml and JavaScript.
            Use upper 16 bits of b1 and b2. *)
         let bpos =
-          (((b2 land 0x3FFFC000) lsl 2) lor (b1 lsr 14)) land max_int_32
+          (((b2 land 0x3FFFC000) lsl 2) lor (b1 lsr 14))
         in
           (bpos, max_int_32)
       else
