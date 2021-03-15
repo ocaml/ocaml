@@ -292,6 +292,7 @@ void caml_final_merge_finalisable (struct finalisable *source, struct finalisabl
 {
   uintnat new_size;
 
+  CAMLassert (target->old <= target->young);
   CAMLassert (source->old == source->young);
   if (target->young + source->young >= target->size) {
     new_size = 2 * (target->young + source->young);
@@ -307,10 +308,27 @@ void caml_final_merge_finalisable (struct finalisable *source, struct finalisabl
     }
   }
   memmove(target->table + source->young, target->table,
-          source->young * sizeof (struct final));
-  memcpy(target->table, source->table, source->young * sizeof (struct final));
+          target->young * sizeof (struct final));
+  memcpy(target->table, source->table,
+         source->young * sizeof (struct final));
   target->old += source->young;
   target->young += source->young;
+
+#ifdef DEBUG
+  {
+    /** check target is well formed on the values */
+    int i;
+    for (i = 0; i < target->old; i++) {
+      CAMLassert (target->table[i].val); /* no null ptrs */
+      CAMLassert (Is_block(target->table[i].val));
+      CAMLassert (!Is_young(target->table[i].val));
+    };
+    for (; i < target->young; i++) {
+      CAMLassert (target->table[i].val); /* no null ptrs */
+      CAMLassert (Is_block(target->table[i].val));
+    }
+  }
+#endif
 }
 
 static void generic_final_register (struct finalisable *final, value f, value v)
