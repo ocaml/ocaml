@@ -20,6 +20,7 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
 #include "caml/fix_code.h"
@@ -263,6 +264,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
   if (prog == NULL) {           /* Interpreter is initializing */
     static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
     value raise_unhandled_closure;
+
+    caml_register_code_fragment((char *) raise_unhandled_code,
+                                (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
+                                DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
