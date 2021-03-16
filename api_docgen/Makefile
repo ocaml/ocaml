@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 ROOTDIR = ..
--include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.build_config
 
 ifeq ($(DOCUMENTATION_TOOL),odoc)
   include odoc/Makefile

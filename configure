@@ -776,6 +776,7 @@ AS
 endianness
 ASPP
 ocamltest
+documentation_tool_cmd
 documentation_tool
 ocamldoc
 with_camltex
@@ -1605,6 +1606,7 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
+  --with-odoc
 
 Some influential environment variables:
   AS          which assembler to use
@@ -2894,6 +2896,7 @@ VERSION=4.13.0+dev0-2020-10-19
 
 
  # TODO: rename this variable
+
 
 
 
@@ -17057,11 +17060,29 @@ else
   ocamldoc=ocamldoc
 fi
 
-if test x"$with_odoc" = "xyes"; then :
-  documentation_tool="odoc"
+documentation_tool_cmd=''
+
+# Check whether --with-odoc was given.
+if test "${with_odoc+set}" = set; then :
+  withval=$with_odoc; case $withval in #(
+  yes) :
+    documentation_tool='odoc' ;; #(
+  no) :
+    documentation_tool='ocamldoc' ;; #(
+  *) :
+    documentation_tool_cmd="$withval"
+    documentation_tool='odoc' ;;
+esac
 else
-  documentation_tool="ocamldoc"
+  documentation_tool='ocamldoc'
 fi
+
+if test "x$documentation_tool_cmd" = 'x'
+ documentation_tool_cmd="$documentation_tool"; then :
+
+fi
+
+
 
 case $enable_ocamltest,4.13.0+dev0-2020-10-19 in #(
   yes,*|,*+dev*) :
