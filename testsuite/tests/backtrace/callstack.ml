@@ -18,8 +18,7 @@ let () = f3 ()
 
 let () = Printf.printf "from finalizer:\n"
 let () =
-  Gc.finalise (fun _ -> ( (* f0  *) ())) [|1|];
-  (* TODO: finalizer issue to fix, see Multicore issue #385 *)
+  Gc.finalise (fun _ -> f0 ()) [|1|];
   Gc.full_major ();
   ()
 
