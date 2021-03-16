@@ -2,17 +2,15 @@
 
 #include <string.h>
 #include <unistd.h>
-#include "caml/misc.h"
+#include "caml/alloc.h"
+#include "caml/codefrag.h"
+#include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/gc_ctrl.h"
-#include "caml/instruct.h"
-#include "caml/fail.h"
-#include "caml/alloc.h"
 #include "caml/platform.h"
-#include "caml/fix_code.h"
 #include "caml/minor_gc.h"
+#include "caml/misc.h"
 #include "caml/major_gc.h"
-#include "caml/shared_heap.h"
 #include "caml/memory.h"
 #include "caml/startup_aux.h"
 #ifdef NATIVE_CODE
@@ -284,7 +282,12 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, v
     high = Stack_high(stack);
     low = stack->sp;
     for (sp = low; sp < high; sp++) {
-      f(fdata, *sp, sp);
+      /* Code pointers inside the stack are naked pointers.
+         We must avoid passing them to function [f]. */
+      value v = *sp;
+      if (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL) {
+        f(fdata, v, sp);
+      }
     }
 
     f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
