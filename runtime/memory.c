@@ -179,31 +179,12 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
                         memory_order_release);
 }
 
-CAMLexport void caml_initialize_field (value obj, intnat field, value val)
-{
-  Assert(Is_block(obj));
-  Assert(0 <= field && field < Wosize_val(obj));
-#ifdef DEBUG
-  /* caml_initialize_field can only be used on just-allocated objects */
-  if (Is_young(obj))
-    Assert(Op_val(obj)[field] == Debug_uninit_minor ||
-           Op_val(obj)[field] == Val_unit);
-  else
-    Assert(Op_val(obj)[field] == Debug_uninit_major ||
-           Op_val(obj)[field] == Val_unit);
-#endif
-
-  write_barrier(obj, field, Op_val(obj)[field], val);
-  Op_val(obj)[field] = val;
-}
-
 /* Compatability with old C-API
    bit of a HACK as less Assert possible here
  */
 CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
-  /* caml_initialize_field can only be used on just-allocated objects */
   if (Is_young((value)fp))
     Assert(*fp == Debug_uninit_minor ||
            *fp == Val_unit);

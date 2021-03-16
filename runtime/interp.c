@@ -734,12 +734,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         block = caml_alloc_shr(wosize, tag);
         Setup_for_c_call;
-        caml_initialize_field(block, 0, accu);
+        caml_initialize(&Field(block, 0), accu);
         Restore_after_c_call;
         for (i = 1; i < wosize; i++) {
           value v = *sp++;
           Setup_for_c_call;
-          caml_initialize_field(block, i, v);
+          caml_initialize(&Field(block, i), v);
           Restore_after_c_call;
         }
       }
