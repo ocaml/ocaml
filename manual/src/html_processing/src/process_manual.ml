@@ -151,7 +151,7 @@ let load_html file =
   (* For the main index file, we do a few adjustments *)
   let html = if file = "index.html"
     then Re.Str.(global_replace
-                   (regexp ("Part\u{2004}\\([I|V]+\\)<br>"))
+                   (regexp ("Part\u{2004}\\([I|V]+\\)<br>\n"))
                    {|<span class="number">\1.</span>|} html)
     else html in
 
