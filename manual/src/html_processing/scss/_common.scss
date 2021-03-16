@@ -244,3 +244,18 @@ html {
     margin-right:4px;
     margin-left:-1em
 }
+
+@mixin disc {
+    content:"●";
+    color:$logocolor;
+    margin-right:4px;
+    margin-left:-1em
+}
+
+@mixin diamond {
+    content:"◆";
+    font-size:smaller;	
+    color:$logocolor;
+    margin-right:4px;
+    margin-left:-1em
+}   
