@@ -1,6 +1,6 @@
 (* TEST
 
-flags = "-w A"
+flags = "-w +A"
 files = "module_without_cmx.mli"
 
 * setup-ocamlc.byte-build-env
