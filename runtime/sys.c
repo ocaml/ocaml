@@ -424,8 +424,8 @@ CAMLprim value caml_sys_get_argv(value unit)
   CAMLlocal2 (exe_name, res);
   exe_name = caml_copy_string_of_os(caml_params->exe_name);
   res = caml_alloc_small(2, 0);
-  caml_initialize_field(res, 0, exe_name);
-  caml_initialize_field(res, 1, caml_read_root(main_argv));
+  caml_initialize(&Field(res, 0), exe_name);
+  caml_initialize(&Field(res, 1), caml_read_root(main_argv));
   CAMLreturn(res);
 }
 

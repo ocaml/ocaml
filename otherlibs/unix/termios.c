@@ -193,18 +193,17 @@ static struct {
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
 
-static void encode_terminal_status(value res, int field)
+static void encode_terminal_status(value *dst)
 {
-  CAMLparam1(res);
   long * pc;
   int i;
 
-  for(pc = terminal_io_descr; *pc != End; field++) {
+  for(pc = terminal_io_descr; *pc != End; ) {
     switch(*pc++) {
     case Bool:
       { int * src = (int *) (*pc++);
         int msk = *pc++;
-        caml_initialize_field(res, field, Val_bool(*src & msk));
+        caml_initialize(dst, Val_bool(*src & msk));
         break; }
     case Enum:
       { int * src = (int *) (*pc++);
@@ -213,7 +212,7 @@ static void encode_terminal_status(value res, int field)
         int msk = *pc++;
         for (i = 0; i < num; i++) {
           if ((*src & msk) == pc[i]) {
-            caml_initialize_field(res, field, Val_int(i + ofs));
+            caml_initialize(dst, Val_int(i + ofs));
             break;
           }
         }
@@ -222,7 +221,7 @@ static void encode_terminal_status(value res, int field)
     case Speed:
       { int which = *pc++;
         speed_t speed = 0;
-        caml_initialize_field(res, field, Val_int(9600));   /* in case no speed in speedtable matches */
+        caml_initialize(dst, Val_int(9600));  /* in case no speed in speedtable matches */
         switch (which) {
         case Output:
           speed = cfgetospeed(&terminal_status); break;
@@ -231,18 +230,17 @@ static void encode_terminal_status(value res, int field)
         }
         for (i = 0; i < NSPEEDS; i++) {
           if (speed == speedtable[i].speed) {
-            caml_initialize_field(res, field, Val_int(speedtable[i].baud));
+            caml_initialize(dst, Val_int(speedtable[i].baud));
             break;
           }
         }
         break; }
     case Char:
       { int which = *pc++;
-        caml_initialize_field(res, field, Val_int(terminal_status.c_cc[which]));
+        caml_initialize(dst, Val_int(terminal_status.c_cc[which]));
         break; }
     }
   }
-  CAMLreturn0;
 }
 
 static void decode_terminal_status(value v, int field)
@@ -307,7 +305,7 @@ CAMLprim value unix_tcgetattr(value fd)
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     uerror("tcgetattr", Nothing);
   res = caml_alloc_tuple(NFIELDS);
-  encode_terminal_status(res, 0);
+  encode_terminal_status(&Field(res, 0));
   return res;
 }
 
