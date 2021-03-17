@@ -19,13 +19,6 @@ let index_title = "Home"
 let archives =
   ["refman-html.tar.gz"; "refman.txt"; "refman.pdf"; "refman.info.tar.gz"]
 
-(* WARNING these are sensitive to Hevea fluctuations: *)
-(* "long" space is either " " (hevea 2.32) or "\u{2003}" (hevea 2.35) *)
-let preg_emspace = "\\(\u{2003}\\| \\)"
-(* What hevea inserts between "Chapter" and the chapter number: *)
-let preg_chapter_space = "\\( \\|\u{2004}\u{200d}\\|\u{2004}\u{202f}\\)"
-let writtenby_css = "span.c010" (* "span.c009" for hevea 2.32 *)
-
 let preg_anyspace =
   String.concat "\\|"
     ["\u{00a0}"; (* NO-BREAK SPACE *)
@@ -43,6 +36,13 @@ let preg_anyspace =
      "\u{202f}"; (* NARROW NO-BREAK SPACE *)
     ]
   |> sprintf "\\(%s\\)+"
+
+(* WARNING these are sensitive to Hevea fluctuations: *)
+(* "long" space is either " " (hevea 2.32) or "\u{2003}" (hevea 2.35) *)
+let preg_emspace = "\\(\u{2003}\\| \\)"
+(* What hevea inserts between "Chapter" and the chapter number: *)
+let preg_chapter_space = "\\(\u{2004}\u{200d}\\|" ^ preg_anyspace ^ "\\)"
+let writtenby_css = "span.c010" (* "span.c009" for hevea 2.32 *)
 
 (* Remove number: "Chapter 1  The core language" ==> "The core language" *)
 let remove_number s =
@@ -121,9 +121,8 @@ let load_html file =
     (* Normalize non-break spaces to the utf8 \u00A0: *)
     |> Re.Str.(global_replace (regexp_string "&#XA0;") " ")
     |> Re.Str.(global_replace reg_chapter)
-      (if file = "index.html" then {|<span class="number">\2.</span>|}
-       else {|<span class="number">Chapter \2</span>|})
-    |> Re.Str.(global_replace (regexp preg_chapter_space)) "\u{2004}"
+      (if file = "index.html" then {|<span class="number">\3.</span>|}
+       else {|<span class="number">Chapter \3</span>|})
 
     (* I think it would be good to replace "chapter" by "tutorial" for part
        I. The problem of course is how we number chapters in the other parts. *)
@@ -151,8 +150,8 @@ let load_html file =
   (* For the main index file, we do a few adjustments *)
   let html = if file = "index.html"
     then Re.Str.(global_replace
-                   (regexp ("Part\u{2004}\\([I|V]+\\)<br>\n"))
-                   {|<span class="number">\1.</span>|} html)
+                   (regexp ("Part" ^ preg_chapter_space ^ "\\([I|V]+\\)<br>\n"))
+                   {|<span class="number">\3.</span>|} html)
     else html in
 
   (* Set utf8 encoding directly in the html string *)
