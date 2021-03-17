@@ -110,10 +110,18 @@ let () =
 |}]
 
 (* Also allow annotations on multiary constructors *)
+
 type ('a,'b) pair = Pair of 'a * 'b
 
 let f = function Pair (x, y : int * _) -> x + y
 [%%expect{|
 type ('a, 'b) pair = Pair of 'a * 'b
 val f : (int, int) pair -> int = <fun>
+|}]
+
+(* Interaction with local open in patterns (see also #10271) *)
+
+let f String.(Dyn (type a) (w, x : a ty * a)) = ignore (x : a)
+[%%expect{|
+val f : dyn -> unit = <fun>
 |}]

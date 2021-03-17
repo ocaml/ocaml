@@ -407,11 +407,13 @@ let pattern_variables = ref ([] : pattern_variable list)
 let pattern_force = ref ([] : (unit -> unit) list)
 let allow_modules = ref false
 let module_variables = ref ([] : module_variable list)
+let pattern_type_decls = ref []
 let reset_pattern allow =
   pattern_variables := [];
   pattern_force := [];
   allow_modules := allow;
   module_variables := [];
+  pattern_type_decls := [];
 ;;
 
 let maybe_add_pattern_variables_ghost loc_let env pv =
@@ -1640,6 +1642,7 @@ and type_pat_aux
                   let (id, new_env) =
                     Env.enter_type ~scope:expansion_scope name.txt decl !env in
                   env := new_env;
+                  pattern_type_decls := (id, decl) :: !pattern_type_decls;
                   {name with txt = id})
                 nl
             in
@@ -1959,8 +1962,14 @@ and type_pat_aux
       let path, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc lid in
       let new_env = ref new_env in
+      let old_type_decls = !pattern_type_decls in
+      pattern_type_decls := [];
       type_pat category ~env:new_env p expected_ty ( fun p ->
-        env := Env.copy_local !env ~from:!new_env;
+        let env' =
+          List.fold_right (fun (id,decl) -> Env.add_type ~check:false id decl)
+            !pattern_type_decls !env in
+        env := Env.copy_local env' ~from:!new_env;
+        pattern_type_decls := !pattern_type_decls @ old_type_decls;
         k { p with pat_extra =( Tpat_open (path,lid,!new_env),
                             loc, sp.ppat_attributes) :: p.pat_extra }
       )
