@@ -747,8 +747,8 @@ let addr_array_set arr ofs newval dbg =
   Cop(Cextcall("caml_modify_field", typ_void, [], false),
       [arr; untag_int ofs dbg; newval], dbg)
 let addr_array_initialize arr ofs newval dbg =
-  Cop(Cextcall("caml_initialize_field", typ_void, [], false),
-      [arr; untag_int ofs dbg; newval], dbg)
+  Cop(Cextcall("caml_initialize", typ_void, [], false),
+      [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
 let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Lambda.Assignment),
     [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
@@ -820,8 +820,8 @@ let make_alloc_generic set_fn dbg tag wordsize args =
 
 let make_alloc dbg tag args =
   let addr_array_init arr ofs newval dbg =
-    Cop(Cextcall("caml_initialize_field", typ_void, [], false),
-        [arr; untag_int ofs dbg; newval], dbg)
+    Cop(Cextcall("caml_initialize", typ_void, [], false),
+        [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
   in
   make_alloc_generic addr_array_init dbg tag (List.length args) args
 
@@ -2202,8 +2202,8 @@ let setfield n ptr init arg1 arg2 dbg =
              dbg))
   | Caml_initialize ->
       return_unit dbg
-        (Cop(Cextcall("caml_initialize_field", typ_void, [], false),
-             [arg1; Cconst_int (n, dbg); arg2],
+        (Cop(Cextcall("caml_initialize", typ_void, [], false),
+             [field_address arg1 n dbg; arg2],
              dbg))
   | Simple ->
       return_unit dbg (set_field arg1 n arg2 init dbg)
