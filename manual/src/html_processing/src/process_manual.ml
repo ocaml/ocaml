@@ -23,7 +23,7 @@ let archives =
 (* "long" space is either " " (hevea 2.32) or "\u{2003}" (hevea 2.35) *)
 let preg_emspace = "\\(\u{2003}\\| \\)"
 (* What hevea inserts between "Chapter" and the chapter number: *)
-let preg_chapter_space = "\\( \\|\u{2004}\u{200d}\\)"
+let preg_chapter_space = "\\( \\|\u{2004}\u{200d}\\|\u{2004}\u{202f}\\)"
 let writtenby_css = "span.c010" (* "span.c009" for hevea 2.32 *)
 
 let preg_anyspace =
