@@ -233,26 +233,6 @@ static int obj_update_tag (value blk, int old_tag, int new_tag)
   }
 }
 
-CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
-{
- if (obj_update_tag(blk, Int_val(old_tag), Int_val(new_tag)))
-   return Val_true;
- return Val_false;
-}
-
-CAMLprim value caml_obj_make_forward (value blk, value fwd)
-{
-  /* Modify field before setting tag */
-  caml_modify_field(blk, 0, fwd);
-
-  /* This function is only called on Lazy_tag objects. The only racy write to
-   * this object is by the GC threads. */
-  CAMLassert (Tag_val(blk) == Forcing_tag);
-  obj_update_tag (blk, Forcing_tag, Forward_tag);
-
-  return Val_unit;
-}
-
 CAMLprim value caml_lazy_reset_to_lazy (value v)
 {
   CAMLassert (Tag_val(v) == Forcing_tag);
