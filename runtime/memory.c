@@ -96,7 +96,7 @@
    Using release stores for all writes also ensures publication safety
    for newly-allocated objects, and isn't necessary for initialising
    writes. The cost is free on x86, but requires a fence in
-   caml_modify_field on weakly-ordered architectures (ARM, Power).
+   caml_modify on weakly-ordered architectures (ARM, Power).
 
    However, instead of using acquire loads for all reads, an
    optimisation is possible. (Optimising reads is more important than
