@@ -179,9 +179,6 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
                         memory_order_release);
 }
 
-/* Compatability with old C-API
-   bit of a HACK as less Assert possible here
- */
 CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
 #ifdef DEBUG
