@@ -248,7 +248,7 @@ static value ephe_get_field (value e, mlsize_t offset)
     elt = Op_val(e)[offset];
     caml_darken (0, elt, 0);
     res = caml_alloc_shr (1, Some_tag);
-    caml_initialize_field(res, 0, elt);
+    caml_initialize(&Field(res, 0), elt);
   }
   CAMLreturn (res);
 }
@@ -300,7 +300,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     Op_val(e)[offset] = elt = v;
   }
   res = caml_alloc_shr (1, Some_tag);
-  caml_initialize_field(res, 0, elt);
+  caml_initialize(&Field(res, 0), elt);
   CAMLreturn(res);
 }
 

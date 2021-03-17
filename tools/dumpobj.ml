@@ -323,11 +323,6 @@ let op_shapes = [
   opGETFIELD2, Nothing;
   opGETFIELD3, Nothing;
   opGETFIELD, Uint;
-  opGETMUTABLEFIELD0, Nothing;
-  opGETMUTABLEFIELD1, Nothing;
-  opGETMUTABLEFIELD2, Nothing;
-  opGETMUTABLEFIELD3, Nothing;
-  opGETMUTABLEFIELD, Uint;
   opGETFLOATFIELD, Uint;
   opSETFIELD0, Nothing;
   opSETFIELD1, Nothing;

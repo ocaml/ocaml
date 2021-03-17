@@ -133,14 +133,6 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 /* Initialising fields of objects just allocated with Alloc_small */
 #define Init_field(o, i, x) Op_val(o)[i] = (x)
 
-/* Inlined read barrier for interpreter loop.
-   Does 'accu = accu[i]' */
-#define Accu_field(i) do {                    \
-    int idx = (i);                            \
-    value field_contents = Op_val(accu)[idx]; \
-    accu = field_contents;                    \
-  } while (0)
-
 #define Check_trap_barrier \
   if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \
       caml_debugger(TRAP_BARRIER, Val_unit)
@@ -705,7 +697,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETGLOBALFIELD): {
       accu = Field(caml_read_root(caml_global_data), *pc);
       pc++;
-      Accu_field(*pc);
+      accu = Field(accu, *pc);
       pc++;
       Next;
     }
@@ -742,12 +734,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         block = caml_alloc_shr(wosize, tag);
         Setup_for_c_call;
-        caml_initialize_field(block, 0, accu);
+        caml_initialize(&Field(block, 0), accu);
         Restore_after_c_call;
         for (i = 1; i < wosize; i++) {
           value v = *sp++;
           Setup_for_c_call;
-          caml_initialize_field(block, i, v);
+          caml_initialize(&Field(block, i), v);
           Restore_after_c_call;
         }
       }
@@ -815,16 +807,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = Field(accu, 3); Next;
     Instruct(GETFIELD):
       accu = Field(accu, *pc); pc++; Next;
-    Instruct(GETMUTABLEFIELD0):
-      Accu_field(0); Next;
-    Instruct(GETMUTABLEFIELD1):
-      Accu_field(1); Next;
-    Instruct(GETMUTABLEFIELD2):
-      Accu_field(2); Next;
-    Instruct(GETMUTABLEFIELD3):
-      Accu_field(3); Next;
-    Instruct(GETMUTABLEFIELD):
-      Accu_field(*pc); pc++; Next;
+
     Instruct(GETFLOATFIELD): {
       double d = Double_flat_field(accu, *pc++);
       Alloc_small(accu, Double_wosize, Double_tag, Enter_gc);
@@ -872,7 +855,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(GETVECTITEM):
-      Accu_field(Long_val(sp[0]));
+      accu = Field(accu, Long_val(sp[0]));
       sp += 1;
       Next;
     Instruct(SETVECTITEM):

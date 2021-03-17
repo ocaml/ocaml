@@ -93,6 +93,8 @@ CAMLextern void caml_leave_blocking_section(void);
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
 
+CAMLextern void (*caml_atfork_hook)(void);
+
 CAMLextern void (*caml_domain_start_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 
