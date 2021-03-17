@@ -18,22 +18,28 @@ resources.
 
 ## Variants
 
-* **Parallel Minor GC (default)** -- A variant that performs stop-the-world parallel
-  minor collection. The branch is
-  [`parallel_minor_gc`](https://github.com/ocaml-multicore/ocaml-multicore/tree/parallel_minor_gc).
-* **Concurrent Minor GC** -- A variant that garbage collects each domain's minor
-  heap concurrently. The branch is [`master`](https://github.com/ocaml-multicore/ocaml-multicore/tree/master).
-* **Parallel Minor GC + No effect syntax** -- This branch does not have syntax
-  extension for effects (but includes the compiler and runtime system changes).
+### Active variants
+
+* **4.12+domains+effects (default)** -- A variant based on 4.12 that performs stop-the-world parallel minor collection. It makes available domains and the syntax extensions for using effects. The branch is
+ [`4.12+domains+effects`](https://github.com/ocaml-multicore/ocaml-multicore/tree/4.12+domains%2Beffects).
+* **4.12+domains** -- This branch has domains but does not have the syntax
+  extension for effects (it retains the compiler and runtime system changes needed for effects).
   The branch is
-  [`no-effect-syntax`](https://github.com/ocaml-multicore/ocaml-multicore/tree/no-effect-syntax).
+  [`4.12+domains`](https://github.com/ocaml-multicore/ocaml-multicore/tree/4.12+domains).
   This branch is useful to install ppx libraries.
+
+### Historical variants
+
+ * **Parallel Minor GC (4.10)** -- A 4.10 branch using a stop-the-world parallel minor collection. The branch is [`parallel_minor_gc`](https://github.com/ocaml-multicore/ocaml-multicore/tree/parallel_minor_gc).
+ * **Parallel Minor GC + No effect syntax (4.10)** -- A 4.10 branch using a stop-the-world parallel minor collection but without the syntax extension for effects. The branch is [`no-effect-syntax`](https://github.com/ocaml-multicore/ocaml-multicore/tree/no-effect-syntax).
+ * **Parallel Minor GC (4.06)** -- A 4.06 branch using a stop-the-world parallel minor collection. The branch is [`parallel_minor_gc_4_06`](https://github.com/ocaml-multicore/ocaml-multicore/tree/parallel_minor_gc_4_06).
+ * **Concurrent Minor GC (4.06)** -- A 4.06 branch that collects each domain's minor heap concurrently. The branch is [`master`](https://github.com/ocaml-multicore/ocaml-multicore/tree/master).
 
 ## Installation
 
-If you want to try out Multicore OCaml, the easiest way is to install the compiler using [OPAM](https://github.com/ocaml-multicore/multicore-opam#install-multicore-ocaml). 
+If you want to try out Multicore OCaml, the easiest way is to install the compiler using [OPAM](https://github.com/ocaml-multicore/multicore-opam#install-multicore-ocaml).
 
-Parallel programming examples are available in the [domainslib](https://github.com/ocaml-multicore/domainslib/tree/master/test) library. 
+Parallel programming examples are available in the [domainslib](https://github.com/ocaml-multicore/domainslib/tree/master/test) library.
 
 Effect handler (concurrent programming) examples are available in [effects-examples](https://github.com/kayceesrk/effects-examples) repo.
 
