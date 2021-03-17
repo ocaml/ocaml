@@ -236,7 +236,6 @@ static int obj_update_tag (value blk, int old_tag, int new_tag)
 CAMLprim value caml_lazy_reset_to_lazy (value v)
 {
   CAMLassert (Tag_val(v) == Forcing_tag);
-  CAMLassert (Field(v, 0) = caml_ml_domain_id(Val_unit));
 
   obj_update_tag (v, Forcing_tag, Lazy_tag);
   return Val_unit;
@@ -245,7 +244,6 @@ CAMLprim value caml_lazy_reset_to_lazy (value v)
 CAMLprim value caml_lazy_update_to_forward (value v)
 {
   CAMLassert (Tag_val(v) == Forcing_tag);
-  CAMLassert (Field(v, 0) = caml_ml_domain_id(Val_unit));
 
   obj_update_tag (v, Forcing_tag, Forward_tag);
   return Val_unit;
