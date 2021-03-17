@@ -51,8 +51,6 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
 CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
-CAMLextern void caml_modify_field (value, intnat, value);
-#define caml_modify_field caml_modify_field
 CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
 CAMLextern void caml_initialize_field (value, intnat, value);
 #define caml_initialize_field caml_initialize_field
@@ -470,7 +468,7 @@ struct caml__roots_block {
 #define Store_field(block, offset, val) do{ \
   mlsize_t caml__temp_offset = (offset); \
   value caml__temp_val = (val); \
-  caml_modify_field ((block), caml__temp_offset, caml__temp_val); \
+  caml_modify (&Field ((block), caml__temp_offset), caml__temp_val); \
 }while(0)
 
 /*
