@@ -148,24 +148,6 @@ static void write_barrier(value obj, intnat field, value old_val, value new_val)
    }
 }
 
-CAMLexport void caml_modify_field (value obj, intnat field, value val)
-{
-  Assert (Is_block(obj));
-  Assert(field >= 0 && field < Wosize_val(obj));
-
-  write_barrier(obj, field, Op_val(obj)[field], val);
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-  Caml_state->mutable_stores++;
-#endif
-  /* See Note [MM] above */
-  atomic_thread_fence(memory_order_acquire);
-  atomic_store_explicit(&Op_atomic_val(obj)[field], val,
-                        memory_order_release);
-}
-
-/* Compatability with old C-API
-   bit of a HACK as less Assert possible here
- */
 CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
 {
   write_barrier((value)fp, 0, *fp, val);
@@ -313,7 +295,7 @@ CAMLexport void caml_set_fields (value obj, value v)
   Assert (Is_block(obj));
 
   for (i = 0; i < Wosize_val(obj); i++) {
-    caml_modify_field(obj, i, v);
+    caml_modify(&Field(obj, i), v);
   }
 }
 
@@ -335,13 +317,13 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
     /* copy descending */
     for (i = n; i > 0; i--) {
       caml_read_field(src, srcoff + i - 1, &x);
-      caml_modify_field(dst, dstoff + i - 1, x);
+      caml_modify(&Field(dst, dstoff + i - 1), x);
     }
   } else {
     /* copy ascending */
     for (i = 0; i < n; i++) {
       caml_read_field(src, srcoff + i, &x);
-      caml_modify_field(dst, dstoff + i, x);
+      caml_modify(&Field(dst, dstoff + i), x);
     }
   }
   CAMLreturn0;
