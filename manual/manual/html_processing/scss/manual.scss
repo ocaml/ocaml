@@ -285,10 +285,13 @@ span.c003{
 }
 div.caml-example.toplevel code.caml-input::before,
 div.caml-example.toplevel div.caml-input::before{
-    content:"#";
+    /* content:"#"; */ /* pre-4.11 */
     color:#888
 }
-span.c004{
+span.number{
+    padding-right: 1ex;
+}
+span.c004, span.c002{
     color:#888
 }
 span.c006{
@@ -301,7 +304,8 @@ span.c009{
     background-color:#f3ece6;
     border-radius:6px
 }
-span.authors.c009{
+span.authors{
+    font-style:italic;
     background-color:inherit
 }
 span.c013{
