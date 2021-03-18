@@ -20,12 +20,15 @@
 
 #include <stdio.h>
 #include "caml/backtrace.h"
-#include "caml/memory.h"
 #include "caml/callback.h"
-#include "caml/major_gc.h"
+#include "caml/custom.h"
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
+#include "caml/eventlog.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
 
@@ -153,6 +156,21 @@ int caml_startup_aux(int pooling)
     caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");
 
+  /* Initialize the domain */
+  caml_init_domain();
+
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
+#ifdef DEBUG
+  caml_gc_message(-1, "### OCaml runtime: debug mode ###\n");
+#endif
+  if (caml_cleanup_on_exit)
+    pooling = 1;
+
   /* Second and subsequent calls are ignored,
      since the runtime has already started */
   startup_count++;
@@ -161,6 +179,20 @@ int caml_startup_aux(int pooling)
 
   if (pooling)
     caml_stat_create_pool();
+
+  /* caml_stat_alloc* functions are available after this point */
+
+  caml_init_locale();
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+  caml_install_invalid_parameter_handler();
+#endif
+  caml_init_custom_operations();
+  caml_init_gc(caml_init_minor_heap_wsz, caml_init_heap_wsz,
+               caml_init_heap_chunk_sz, caml_init_percent_free,
+               caml_init_max_percent_free, caml_init_major_window,
+               caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
+               caml_init_custom_minor_max_bsz, caml_init_policy);
+  caml_init_backtrace();
 
   return 1;
 }

@@ -32,16 +32,13 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
-#include "caml/custom.h"
 #include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/dynlink.h"
-#include "caml/eventlog.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fix_code.h"
 #include "caml/freelist.h"
-#include "caml/gc_ctrl.h"
 #include "caml/instrtrace.h"
 #include "caml/interp.h"
 #include "caml/intext.h"
@@ -462,26 +459,11 @@ CAMLexport void caml_main(char_os **argv)
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
 
-  /* Initialize the domain */
-  caml_init_domain();
-
-  /* Determine options */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
-#endif
-  if (!caml_startup_aux(/* pooling */ caml_cleanup_on_exit))
+  if (!caml_startup_aux(0)) {
+    /* startup was already done once */
     return;
+  }
 
-  caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
-  caml_install_invalid_parameter_handler();
-#endif
-  caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
 
   /* Determine position of bytecode file */
@@ -536,14 +518,8 @@ CAMLexport void caml_main(char_os **argv)
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
-  caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
-                caml_init_heap_chunk_sz, caml_init_percent_free,
-                caml_init_max_percent_free, caml_init_major_window,
-                caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz, caml_init_policy);
   caml_init_stack (caml_init_max_stack_wsz);
   caml_init_atom_table();
-  caml_init_backtrace();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -607,27 +583,11 @@ CAMLexport value caml_startup_code_exn(
   char_os * cds_file;
   char_os * exe_name;
 
-  /* Initialize the domain */
-  caml_init_domain();
-  /* Determine options */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
-#endif
-  if (caml_cleanup_on_exit)
-    pooling = 1;
-  if (!caml_startup_aux(pooling))
+  if (!caml_startup_aux(pooling)) {
+    /* startup was already done once */
     return Val_unit;
+  }
 
-  caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
-  caml_install_invalid_parameter_handler();
-#endif
-  caml_init_custom_operations();
   cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
   if (cds_file != NULL) {
     caml_cds_file = caml_stat_strdup_os(cds_file);
@@ -635,14 +595,8 @@ CAMLexport value caml_startup_code_exn(
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   /* Initialize the abstract machine */
-  caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
-                caml_init_heap_chunk_sz, caml_init_percent_free,
-                caml_init_max_percent_free, caml_init_major_window,
-                caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz, caml_init_policy);
   caml_init_stack (caml_init_max_stack_wsz);
   caml_init_atom_table();
-  caml_init_backtrace();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

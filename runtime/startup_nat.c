@@ -21,15 +21,12 @@
 #include <stdlib.h>
 #include "caml/callback.h"
 #include "caml/backtrace.h"
-#include "caml/custom.h"
 #include "caml/codefrag.h"
 #include "caml/debugger.h"
 #include "caml/domain.h"
-#include "caml/eventlog.h"
 #include "caml/fail.h"
 #include "caml/freelist.h"
 #include "caml/gc.h"
-#include "caml/gc_ctrl.h"
 #include "caml/intext.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -108,40 +105,18 @@ value caml_startup_common(char_os **argv, int pooling)
   char_os * exe_name, * proc_self_exe;
   char tos;
 
-  /* Initialize the domain */
-  caml_init_domain();
-  /* Determine options */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
-#endif
-  if (caml_cleanup_on_exit)
-    pooling = 1;
-  if (!caml_startup_aux(pooling))
+  if (!caml_startup_aux(pooling)) {
+    /* startup was already done once */
     return Val_unit;
+  }
 
   caml_init_frame_descriptors();
-  caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
-  caml_install_invalid_parameter_handler();
-#endif
-  caml_init_custom_operations();
   Caml_state->top_of_stack = &tos;
-  caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
-                caml_init_heap_chunk_sz, caml_init_percent_free,
-                caml_init_max_percent_free, caml_init_major_window,
-                caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz, caml_init_policy);
   init_static();
   caml_init_signals();
 #ifdef _WIN32
   caml_win32_overflow_detection();
 #endif
-  caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
   if (exe_name == NULL) exe_name = T("");
