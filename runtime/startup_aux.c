@@ -103,6 +103,8 @@ static void scanmult (char_os *opt, uintnat *var)
   }
 }
 
+static uintnat record_backtrace = 0;
+
 void caml_parse_ocamlrunparam(void)
 {
   char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
@@ -114,8 +116,7 @@ void caml_parse_ocamlrunparam(void)
     while (*opt != '\0'){
       switch (*opt++){
       case 'a': scanmult (opt, &caml_init_policy); break;
-      case 'b': scanmult (opt, &p); caml_record_backtrace(Val_int (p));
-        break;
+      case 'b': scanmult (opt, &record_backtrace); break;
       case 'c': scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
       case 'h': scanmult (opt, &caml_init_heap_wsz); break;
       case 'H': scanmult (opt, &caml_use_huge_pages); break;
@@ -156,20 +157,17 @@ int caml_startup_aux(int pooling)
     caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");
 
-  /* Initialize the domain */
-  caml_init_domain();
-
   /* Determine options */
 #ifdef DEBUG
   caml_verb_gc = 0x3F;
 #endif
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+  if (caml_cleanup_on_exit)
+    pooling = 1;
+
 #ifdef DEBUG
   caml_gc_message(-1, "### OCaml runtime: debug mode ###\n");
 #endif
-  if (caml_cleanup_on_exit)
-    pooling = 1;
 
   /* Second and subsequent calls are ignored,
      since the runtime has already started */
@@ -182,6 +180,10 @@ int caml_startup_aux(int pooling)
 
   /* caml_stat_alloc* functions are available after this point */
 
+  /* Initialize the domain */
+  caml_init_domain();
+
+  CAML_EVENTLOG_INIT();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
@@ -193,6 +195,7 @@ int caml_startup_aux(int pooling)
                caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
                caml_init_custom_minor_max_bsz, caml_init_policy);
   caml_init_backtrace();
+  caml_record_backtrace(Val_int(record_backtrace));
 
   return 1;
 }
