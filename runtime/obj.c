@@ -91,7 +91,7 @@ CAMLprim value caml_obj_set_raw_field(value arg, value pos, value bits)
 CAMLprim value caml_obj_make_forward (value blk, value fwd)
 {
   /* Modify field before setting tag */
-  caml_modify_field(blk, 0, fwd);
+  caml_modify(&Field(blk, 0), fwd);
 
   /* This function is only called on Lazy_tag objects. The only racy write to
    * this object is by the GC threads. */
