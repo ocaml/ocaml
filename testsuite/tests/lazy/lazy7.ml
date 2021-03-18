@@ -8,6 +8,7 @@ let rec safe_force l =
   match Lazy.try_force l with
   | Some x -> x
   | None -> (
+      Domain.Sync.cpu_relax () ;
       safe_force l
     )
 
