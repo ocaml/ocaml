@@ -244,7 +244,12 @@ let emit_load_store instr addressing_mode addr n arg =
         let (lo, hi) = low_high_s d in
         if hi <> 0 then
           `	addis	11, 11, {emit_int hi}\n`;
-        `	{emit_string instr}	{emit_reg arg}, {emit_int lo}(11)\n`
+        if valid_offset instr lo then
+          `	{emit_string instr}	{emit_reg arg}, {emit_int lo}(11)\n`
+        else begin
+          `	li	0, {emit_int lo}\n`;
+          `	{emit_string instr}x	{emit_reg arg}, 11, 0\n`
+        end
       end
   | Iindexed ofs ->
       if is_immediate ofs && valid_offset instr ofs then
