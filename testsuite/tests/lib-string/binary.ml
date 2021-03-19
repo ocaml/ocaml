@@ -97,6 +97,7 @@ let () =
 
 let () =
   let b = "\xfe\xdc\xba\x98\x76\x54\x32\x10\x01\x00" in
+  let b = Bytes.(to_string (copy (of_string b))) in
   assert (String.get_int64_le b 0 = 0x1032547698badcfeL);
   assert (String.get_int64_be b 0 = 0xfedcba9876543210L);
   assert (String.get_int64_le b 1 = 0x011032547698badcL);
