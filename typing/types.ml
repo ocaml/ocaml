@@ -440,9 +440,14 @@ let equal_tag t1 t2 =
       Path.same path1 path2 && b1 = b2
   | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
 
-let may_equal_constr c1 c2 = match c1.cstr_tag,c2.cstr_tag with
-| Cstr_extension _,Cstr_extension _ -> c1.cstr_arity = c2.cstr_arity
-| tag1,tag2 -> equal_tag tag1 tag2
+let may_equal_constr c1 c2 =
+  c1.cstr_arity = c2.cstr_arity
+  && (match c1.cstr_tag,c2.cstr_tag with
+     | Cstr_extension _,Cstr_extension _ ->
+         (* extension constructors may be rebindings of each other *)
+         true
+     | tag1, tag2 ->
+         equal_tag tag1 tag2)
 
 type label_description =
   { lbl_name: string;                   (* Short name *)
