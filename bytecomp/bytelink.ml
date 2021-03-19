@@ -285,6 +285,11 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
+let debug_info_to_string () =
+  let str = Marshal.to_string (Array.of_list !debug_info) [] in
+  debug_info := [];
+  str
+
 (* Output a list of strings with 0-termination *)
 
 let output_stringlist oc l =
@@ -456,6 +461,21 @@ let output_cds_file outfile =
        Bytesections.write_toc_and_trailer outchan;
     )
 
+let debug_info_to_file filename =
+  let f oc = output_string oc (debug_info_to_string ()) in
+  Misc.protect_writing_to_file ~filename ~f
+
+let debug_info_resource_id = 1459 (* arbitrary, must fit in 16 bits *)
+
+let debug_info_to_win32_resource filename =
+  let f oc =
+    let debug_info_filename = Filename.chop_extension filename ^ ".data" in
+    let f oc = output_string oc (debug_info_to_string ()) in
+    Misc.protect_writing_to_file ~filename:debug_info_filename ~f;
+    Printf.fprintf oc "%d 10 %s" debug_info_resource_id debug_info_filename
+  in
+  Misc.protect_writing_to_file ~filename ~f
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile with_main =
@@ -473,6 +493,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
+\n#include <caml/backtrace.h>\
 \n#include <caml/startup.h>\n";
        output_string outchan "static int caml_code[] = {\n";
        Symtable.init();
@@ -503,6 +524,36 @@ let link_bytecode_as_c tolink outfile with_main =
        Symtable.output_primitive_table outchan;
        (* The entry point *)
        if with_main then begin
+         if !Clflags.debug then begin
+           if Sys.win32 then begin
+           let debug_file_name = Filename.chop_extension outfile ^ ".rc" in
+           debug_info_to_win32_resource debug_file_name;
+           Printf.fprintf outchan "\
+\n#include <caml/osdeps.h>\
+\nvoid read_main_debug_info(struct debug_info *di)\
+\n{\
+\n  int size;\
+\n  char *data = caml_load_win32_resource(%d, &size);\
+\n  caml_read_main_debug_info_from_value(di, data, size);\
+\n}" debug_info_resource_id
+           end else
+           let debug_file_name = (Filename.chop_extension outfile) ^ ".debug" in
+           debug_info_to_file debug_file_name;
+           Printf.fprintf outchan "\
+\n#define INCBIN_STYLE INCBIN_STYLE_SNAKE\
+\n#define INCBIN_PREFIX caml_\
+\n#include <caml/incbin.h>\
+\nINCBIN(debug,%S);\
+\nvoid read_main_debug_info(struct debug_info *di)\
+\n{\
+\n  caml_read_main_debug_info_from_value(di, (char *)caml_debug_data, caml_debug_size);\
+\n}" (Misc.replace_substring ~before:"\\" ~after:"/" debug_file_name)
+         end else
+           output_string outchan "\
+\nvoid read_main_debug_info(struct debug_info *di)\
+\n{\
+\n  return;\
+\n}";
          output_string outchan "\
 \n#ifdef _WIN32\
 \nint wmain(int argc, wchar_t **argv)\
@@ -510,7 +561,7 @@ let link_bytecode_as_c tolink outfile with_main =
 \nint main(int argc, char **argv)\
 \n#endif\
 \n{\
-\n  caml_byte_program_mode = COMPLETE_EXE;\
+\n  caml_read_main_debug_info = &read_main_debug_info;\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
@@ -583,11 +634,18 @@ let build_custom_runtime prim_name exec_name =
           flag
     else
       [] in
+  let debug_info =
+    if !Clflags.output_complete_executable && Sys.win32 then
+      assert (0 = Ccomp.compile_resource ~output:(flag ^ Config.res_ext) (flag ^ ".rc"));
+      if Ccomp.linker_is_flexlink then "-link" :: (flag ^ Config.res_ext) :: [] else (flag ^ Config.res_ext) :: []
+    else
+      []
+  in
   let exitcode =
     (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
   in
   Ccomp.call_linker Ccomp.Exe exec_name
-    (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
+    (debug_prefix_map @ debug_info @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
     exitcode = 0
 
 let append_bytecode bytecode_name exec_name =
@@ -699,7 +757,7 @@ let link objfiles output_name =
       (fun () ->
          link_bytecode_as_c tolink c_file !Clflags.output_complete_executable;
          if !Clflags.output_complete_executable then begin
-           temps := c_file :: !temps;
+           if false then temps := c_file :: !temps;
            if not (build_custom_runtime c_file output_name) then
              raise(Error Custom_runtime)
          end else if not (Filename.check_suffix output_name ".c") then begin

@@ -243,6 +243,8 @@ FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
 STDLIB_MANPAGES=@stdlib_manpages@
 NAKED_POINTERS=@naked_pointers@
+MKRES=@mkres@
+RESEXT=@resext@
 
 ### Native command to build ocamlrun.exe
 

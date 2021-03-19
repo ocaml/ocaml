@@ -84,4 +84,7 @@ let _ =
     eprintf "Usage: cmpbyt <file 1> <file 2>\n";
     exit 2
   end;
-  if cmpbyt Sys.argv.(1) Sys.argv.(2) then exit 0 else exit 1
+  try
+    if cmpbyt Sys.argv.(1) Sys.argv.(2) then exit 0 else exit 1
+  with Bytesections.Bad_magic_number ->
+    exit 3

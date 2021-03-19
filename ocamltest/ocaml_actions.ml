@@ -864,17 +864,23 @@ let compare_programs backend comparison_tool log env =
     (Result.pass_with_reason reason, env)
   end else really_compare_programs backend comparison_tool log env
 
-let make_bytecode_programs_comparison_tool =
+let make_bytecode_programs_comparison_tool ~result_of_exitcode =
   let ocamlrun = Ocaml_files.ocamlrun in
   let cmpbyt = Ocaml_files.cmpbyt in
   let tool_name = ocamlrun ^ " " ^ cmpbyt in
-  Filecompare.make_comparison_tool tool_name ""
+  Filecompare.make_comparison_tool ~result_of_exitcode tool_name ""
 
 let native_programs_comparison_tool = Filecompare.default_comparison_tool
 
+let result_of_exitcode commandline = function
+  | 0 -> Filecompare.Same
+  | 1 -> Filecompare.Different
+  | 3 -> Filecompare.Same (* bad bytecode magic -- program was compiled to C exexcutable *)
+  | exit_code -> Filecompare.Error (commandline, exit_code)
+
 let compare_bytecode_programs_code log env =
   let bytecode_programs_comparison_tool =
-    make_bytecode_programs_comparison_tool in
+    make_bytecode_programs_comparison_tool ~result_of_exitcode in
   compare_programs
     Ocaml_backends.Bytecode bytecode_programs_comparison_tool log env
 

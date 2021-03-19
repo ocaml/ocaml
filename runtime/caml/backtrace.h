@@ -110,6 +110,13 @@ CAMLextern char_os * caml_cds_file;
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
 CAMLextern void caml_load_main_debug_info(void);
+
+struct debug_info;
+
+CAMLextern void caml_read_main_debug_info_from_value(struct debug_info *, char *, int);
+
+CAMLextern void (*caml_read_main_debug_info)(struct debug_info *);
+
 #endif
 
 

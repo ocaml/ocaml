@@ -349,7 +349,37 @@ intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
 
 /* Read the debugging info contained in the current bytecode executable. */
 
-static void read_main_debug_info(struct debug_info *di)
+CAMLexport void caml_read_main_debug_info_from_value(struct debug_info *di, char *data, int len)
+{
+  CAMLparam0();
+  CAMLlocal5(datav, events, v, l, evl);
+  int i, orig;
+
+  CAMLassert(di->already_read == 0);
+  di->already_read = 1;
+
+  datav = caml_input_value_from_block(data, len);
+
+  events = caml_alloc(Wosize_val(datav), 0);
+
+  for (i = 0; i < Wosize_val(datav); i++) {
+    v = Field(datav, i);
+    orig = Long_val(Field (v, 0));
+    evl = Field(v, 1);
+    for (l = evl; l != Val_int(0); l = Field(l, 1)) {
+      value ev = Field(l, 0);
+      Field(ev, EV_POS) = Val_long(Long_val(Field(ev, EV_POS)) + orig);
+    }
+    /* Record event list */
+    Store_field(events, i, evl);
+  }
+
+  di->events = process_debug_events(caml_start_code, events, &di->num_events);
+
+  CAMLreturn0;
+}
+
+static void read_main_debug_info_from_binary(struct debug_info *di)
 {
   CAMLparam0();
   CAMLlocal3(events, evl, l);
@@ -414,6 +444,9 @@ static void read_main_debug_info(struct debug_info *di)
   CAMLreturn0;
 }
 
+CAMLexport void (*caml_read_main_debug_info)(struct debug_info *) =
+  &read_main_debug_info_from_binary;
+
 CAMLexport void caml_init_debug_info(void)
 {
   caml_ext_table_init(&caml_debug_info, 1);
@@ -423,7 +456,7 @@ CAMLexport void caml_init_debug_info(void)
 CAMLexport void caml_load_main_debug_info(void)
 {
   if (Caml_state->backtrace_active > 1) {
-    read_main_debug_info(caml_debug_info.contents[0]);
+    (*caml_read_main_debug_info)(caml_debug_info.contents[0]);
   }
 }
 
@@ -452,7 +485,7 @@ static struct ev_info *event_for_location(code_t pc)
     return NULL;
 
   if (!di->already_read)
-    read_main_debug_info(di);
+    (*caml_read_main_debug_info)(di);
 
   if (di->num_events == 0)
     return NULL;

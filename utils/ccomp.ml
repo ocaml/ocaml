@@ -212,3 +212,7 @@ let linker_is_flexlink =
      invocations for the native Windows ports and for Cygwin, if shared library
      support is enabled. *)
   Sys.win32 || Config.supports_shared_libraries && Sys.cygwin
+
+let compile_resource ~output input =
+  command (Printf.sprintf "%s %s %s") Config.mkres
+    (Filename.quote output) (Filename.quote input)

@@ -167,6 +167,8 @@ AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([naked_pointers])
 AC_SUBST([naked_pointers_checker])
+AC_SUBST([mkres])
+AC_SUBST([resext])
 
 ## Generated files
 
@@ -1156,6 +1158,16 @@ AS_CASE([$host],
       [has_c99_float_ops=false])])
   AS_IF([$has_c99_float_ops],
     [AC_CHECK_FUNC([copysign], [AC_DEFINE([HAS_C99_FLOAT_OPS])])])])
+
+AS_CASE([$host],
+  [*-*-mingw32], [
+    mkres="${toolpref}windres -o "
+    resext=.o
+  ],
+  [*-pc-windows], [
+    mkres="rc /nolog /fo "
+    resext=.res
+  ])
 
 ## getrusage
 AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE])])
