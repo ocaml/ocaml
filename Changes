@@ -269,7 +269,8 @@ Working version
    Jeremie Dimino)
 
 - #10294, #10295: fix an assert-failure in pattern-matching compilation
-  (Gabriel Scherer, report by Nicolás Ojeda Bär)
+  (Gabriel Scherer, review by Thomas Refis and Luc Maranget,
+   report by Nicolás Ojeda Bär)
 
 - #10147, #10148: Fix building runtime with GCC on macOS.
   (David Allsopp, report by John Skaller)
