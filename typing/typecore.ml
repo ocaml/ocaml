@@ -3365,8 +3365,9 @@ and type_expect_
                 let ty, b = enlarge_type env ty' in
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify trace ->
+                  let expanded = full_expand ~may_forget_scope:true env ty' in
                   raise(Error(sarg.pexp_loc, env,
-                        Coercion_failure(ty', full_expand env ty', trace, b)))
+                              Coercion_failure(ty', expanded, trace, b)))
                 end
             end;
             (arg, ty', None, cty')

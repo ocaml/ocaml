@@ -165,14 +165,6 @@ Line 4, characters 13-17:
 4 |   | BoolLit, true -> ()
                  ^^^^
 Error: This pattern matches values of type bool
-       but a pattern was expected which matches values of type a
-       This instance of a is ambiguous:
-       it would escape the scope of its equation
-|}, Principal{|
-Line 4, characters 13-17:
-4 |   | BoolLit, true -> ()
-                 ^^^^
-Error: This pattern matches values of type bool
        but a pattern was expected which matches values of type a = bool
        This instance of bool is ambiguous:
        it would escape the scope of its equation
