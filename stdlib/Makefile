@@ -56,6 +56,10 @@ allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
 .PHONY: install
+# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
+install::
+	rm -f $(INSTALL_LIBDIR)/stdlib__*.cmi
+
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
@@ -81,7 +85,11 @@ endif
 installopt: installopt-default
 
 .PHONY: installopt-default
-installopt-default:
+# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
+installopt-default::
+	rm -f $(INSTALL_LIBDIR)/stdlib__*.cmx
+
+installopt-default::
 	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"
