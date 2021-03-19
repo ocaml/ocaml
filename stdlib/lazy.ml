@@ -51,6 +51,8 @@ type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined = CamlinternalLazy.Undefined
 
+exception RacyLazy = CamlinternalLazy.RacyLazy
+
 external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward"
 
 external force : 'a t -> 'a = "%lazy_force"

@@ -13,7 +13,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
+(* See [stdlib/camlinternalLazy.ml] for the specifications of these external
+ * functions. *)
+external update_to_forcing : Obj.t -> int = "caml_lazy_update_to_forcing"
+external update_to_forward : Obj.t -> unit = "caml_lazy_update_to_forward"
 
 type shape =
   | Function
@@ -97,13 +100,19 @@ let rec update_mod shape o n =
       then begin overwrite_closure o n end
       else overwrite_closure o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
+      (* XXX: Not thread-safe. Assumes [o] and [n] are not concurrently forced,
+       * and no safe points are inserted. *)
       if Obj.tag n = Obj.lazy_tag then
         Obj.set_field o 0 (Obj.field n 0)
       else if Obj.tag n = Obj.forward_tag then begin (* PR#4316 *)
-        make_forward o (Obj.field n 0)
+        assert (update_to_forcing o = 0);
+        Obj.set_field o 0 (Obj.field n 0);
+        update_to_forward o
       end else begin
         (* forwarding pointer was shortcut by GC *)
-        make_forward o n
+        assert (update_to_forcing o = 0);
+        Obj.set_field o 0 n;
+        update_to_forward o
       end
   | Class ->
       assert (Obj.tag n = 0 && Obj.size n = 4);

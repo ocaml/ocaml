@@ -17,13 +17,12 @@
 
 type 'a t = 'a CamlinternalLazy.t
 (** A value of type ['a Lazy.t] is a deferred computation, called
-   a suspension, that has a result of type ['a].  The special
-   expression syntax [lazy (expr)] makes a suspension of the
-   computation of [expr], without computing [expr] itself yet.
-   "Forcing" the suspension will then compute [expr] and return its
-   result. Matching a suspension with the special pattern syntax
-   [lazy(pattern)] also computes the underlying expression and
-   tries to bind it to [pattern]:
+   a suspension, that has a result of type ['a].  The special expression syntax
+   [lazy (expr)] makes a suspension of the computation of [expr], without
+   computing [expr] itself yet. "Forcing" the suspension will then compute
+   [expr] and return its result. Matching a suspension with the special pattern
+   syntax [lazy(pattern)] also computes the underlying expression and tries to
+   bind it to [pattern]:
 
   {[
     let lazy_option_map f x =
@@ -32,20 +31,19 @@ type 'a t = 'a CamlinternalLazy.t
     | _ -> None
   ]}
 
-   Note: If lazy patterns appear in multiple cases in a pattern-matching,
-   lazy expressions may be forced even outside of the case ultimately selected
-   by the pattern matching. In the example above, the suspension [x] is always
+   Note: If lazy patterns appear in multiple cases in a pattern-matching, lazy
+   expressions may be forced even outside of the case ultimately selected by
+   the pattern matching. In the example above, the suspension [x] is always
    computed.
 
-
-   Note: [lazy_t] is the built-in type constructor used by the compiler
-   for the [lazy] keyword.  You should not use it directly.  Always use
-   [Lazy.t] instead.
+   Note: [lazy_t] is the built-in type constructor used by the compiler for the
+   [lazy] keyword.  You should not use it directly.  Always use [Lazy.t]
+   instead.
 
    Note: [Lazy.force] (and therefore the [lazy] pattern-matching) are
-   thread-safe, but will raise the [Undefined] exception if forced
-   concurrently. If you need to share a lazy between threads, then you
-   need to use [Lazy.try_force] and implement your own synchronisation.
+   thread-safe, but will raise the [RacyLazy] exception if forced concurrently.
+   If you need to share a lazy between threads, then you need to use
+   [Lazy.try_force] and implement your own synchronisation.
    (@since XXX)
 
    Note: if the program is compiled with the [-rectypes] option,
@@ -60,6 +58,8 @@ type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined
 
+exception RacyLazy
+
 (* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
@@ -67,7 +67,8 @@ external force : 'a t -> 'a = "%lazy_force"
    same value again without recomputing it.  If it raised an exception,
    the same exception is raised again.
    @raise Undefined if the forcing of [x] tries to force [x] itself
-   recursively, or if [x] is concurrently forced by another domain.
+   recursively.
+   @raise RacyLazy if [x] is forced in parallel by another domain.
 *)
 
 val try_force : 'a t -> 'a option
@@ -77,12 +78,14 @@ val try_force : 'a t -> 'a option
 
 val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
-    result.  If [x] has already been forced, [force_val x]
-    returns the same value again without recomputing it.
+    result.  If [x] has already been forced, [force_val x] returns the same
+    value again without recomputing it.
     @raise Undefined if the forcing of [x] tries to force [x] itself
-    recursively, or if [x] is concurrently forced by another domain.
-    If the computation of [x] raises an exception, it is unspecified
-    whether [force_val x] raises the same exception or {!Undefined}. *)
+    recursively.
+    @raise RacyLazy if [x] is forced in parallel by another domain. If the
+    computation of [x] raises an exception, then performing [force_val x] again
+    raises {!Undefined} if forced from the same domain, and {!RacyLazy} if
+    forced from a different domain. *)
 
 val try_force_val : 'a t -> 'a option
 (** [try_force_val x] behaves similarly to [Some (force_val x)],
