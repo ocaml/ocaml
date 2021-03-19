@@ -52,5 +52,6 @@ value c_filltab(value unit)
 value c_printtab(value ba)
 {
   printtab(Caml_ba_data_val(ba));
+  fflush(stdout);
   return Val_unit;
 }
