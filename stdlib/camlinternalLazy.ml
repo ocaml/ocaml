@@ -121,14 +121,18 @@ let try_force_gen_lazy_block ~only_val (blk : 'arg lazy_t) =
    for debugging purpose. *)
 let force_gen ~only_val (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
+  (* XXX No safe points start *)
   let t = Obj.tag x in
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg)
+  (* XXX No safe points end *)
   else if t <> Obj.lazy_tag && t <> Obj.forcing_tag then (Obj.obj x : 'arg)
   else force_gen_lazy_block ~only_val lzv
 
 let try_force_gen ~only_val (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
+  (* XXX No safe points start *)
   let t = Obj.tag x in
   if t = Obj.forward_tag then Some (Obj.obj (Obj.field x 0) : 'arg)
+  (* XXX No safe points end *)
   else if t <> Obj.lazy_tag && t <> Obj.forcing_tag then Some (Obj.obj x : 'arg)
   else try_force_gen_lazy_block ~only_val lzv
