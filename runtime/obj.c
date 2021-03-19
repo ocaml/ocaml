@@ -31,49 +31,26 @@
 #include "caml/platform.h"
 #include "caml/prims.h"
 
-CAMLprim value caml_obj_tag(value arg)
+static int obj_tag (value arg)
 {
   if (Is_long (arg)){
-    return Val_int (1000);   /* int_tag */
+    return 1000;   /* int_tag */
   }else if ((long) arg & (sizeof (value) - 1)){
-    return Val_int (1002);   /* unaligned_tag */
+    return 1002;   /* unaligned_tag */
   }else{
-    return Val_int(Tag_val(arg));
+    return Tag_val(arg);
   }
+}
+
+CAMLprim value caml_obj_tag(value arg)
+{
+  return Val_int (obj_tag(arg));
 }
 
 CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
   return Val_unit;
-}
-
-static int obj_update_tag (value blk, int old_tag, int new_tag)
-{
-  header_t hd;
-  tag_t tag;
-
-  SPIN_WAIT {
-    hd = Hd_val(blk);
-    tag = Tag_hd(hd);
-
-    if (tag != old_tag) return 0;
-    if (caml_domain_alone()) {
-      Tag_val (blk) = new_tag;
-      return 1;
-    }
-
-    if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
-                                       (hd & ~0xFF) | new_tag))
-      return 1;
-  }
-}
-
-CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
-{
-  if (obj_update_tag(blk, Int_val(old_tag), Int_val(new_tag)))
-    return Val_true;
-  return Val_false;
 }
 
 CAMLprim value caml_obj_raw_field(value arg, value pos)
@@ -85,19 +62,6 @@ CAMLprim value caml_obj_raw_field(value arg, value pos)
 CAMLprim value caml_obj_set_raw_field(value arg, value pos, value bits)
 {
   Field(arg, Long_val(pos)) = (value) Nativeint_val(bits);
-  return Val_unit;
-}
-
-CAMLprim value caml_obj_make_forward (value blk, value fwd)
-{
-  /* Modify field before setting tag */
-  caml_modify(&Field(blk, 0), fwd);
-
-  /* This function is only called on Lazy_tag objects. The only racy write to
-   * this object is by the GC threads. */
-  CAMLassert (Tag_val(blk) == Forcing_tag);
-  obj_update_tag (blk, Forcing_tag, Forward_tag);
-
   return Val_unit;
 }
 
@@ -235,11 +199,9 @@ CAMLprim value caml_obj_is_shared (value obj)
   return Val_int(Is_long(obj) || !Is_young(obj));
 }
 
-/* The following function is used in stdlib/lazy.ml.
-   It is not written in OCaml because it must be atomic with respect
-   to the GC.
- */
-
+/* The following functions are used to support lazy values. They are not
+ * written in OCaml in order to ensure atomicity guarantees with respect to the
+ * GC. */
 CAMLprim value caml_lazy_make_forward (value v)
 {
   CAMLparam1 (v);
@@ -248,6 +210,91 @@ CAMLprim value caml_lazy_make_forward (value v)
   res = caml_alloc_small (1, Forward_tag);
   Field (res, 0) = v;
   CAMLreturn (res);
+}
+
+static int obj_update_tag (value blk, int old_tag, int new_tag)
+{
+  header_t hd;
+  tag_t tag;
+
+  SPIN_WAIT {
+    hd = Hd_val(blk);
+    tag = Tag_hd(hd);
+
+    if (tag != old_tag) return 0;
+    if (caml_domain_alone()) {
+      Tag_val (blk) = new_tag;
+      return 1;
+    }
+
+    if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
+                                       (hd & ~0xFF) | new_tag))
+      return 1;
+  }
+}
+
+CAMLprim value caml_lazy_reset_to_lazy (value v)
+{
+  CAMLassert (Tag_val(v) == Forcing_tag);
+
+  obj_update_tag (v, Forcing_tag, Lazy_tag);
+  return Val_unit;
+}
+
+CAMLprim value caml_lazy_update_to_forward (value v)
+{
+  CAMLassert (Tag_val(v) == Forcing_tag);
+
+  obj_update_tag (v, Forcing_tag, Forward_tag);
+  return Val_unit;
+}
+
+CAMLprim value caml_lazy_read_result (value v)
+{
+  if (obj_tag(v) == Forward_tag)
+    return Field(v,0);
+  return v;
+}
+
+CAMLprim value caml_lazy_update_to_forcing (value v)
+{
+  tag_t tag;
+  value field0;
+
+  tag = obj_tag(v);
+  if (tag != Lazy_tag && tag != Forcing_tag && tag != Forward_tag) {
+    /* v is not a lazy block. It must have been forced by another domain and
+     * short-circuited by the GC at a safepoint. */
+    return Val_int(4);
+  }
+
+  /* v is a lazy block with Lazy_tag, Forcing_tag or Forward_tag. */
+  if (obj_update_tag (v, Lazy_tag, Forcing_tag)) {
+    /* Successfully update the tag to Forcing_tag */
+    return Val_int(0);
+  } else {
+    field0 = Field(v,0);
+    /* The tag has to be read again after the field field. We use [atomic_load]
+     * in order to enforce ordering between the two reads. */
+    tag = Tag_hd (atomic_load (Hp_atomic_val(v)));
+
+    if (tag == Forcing_tag) {
+      if (field0 == caml_ml_domain_id(Val_unit))
+        return Val_int(1);
+      else
+        return Val_int(2);
+    } else if (tag == Forward_tag) {
+      return Val_int(3);
+    } else {
+      CAMLassert (tag == Lazy_tag);
+      /* We may reach here if the tag of [v] has been reset to [Lazy_tag] using
+       * [caml_lazy_reset_to_lazy] since our own attempt at updating the tag of
+       * [v] in [obj_update_tag] failed. The compare and swap in
+       * [obj_update_tag] failed since it must have observed [Forcing_tag].
+       * This represents a racy update of the tag of [v] by another mutator. */
+      return Val_int(2);
+    }
+  }
 }
 
 /* For mlvalues.h and camlinternalOO.ml
