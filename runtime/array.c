@@ -111,7 +111,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  caml_modify_field(array, idx, newval);
+  caml_modify(&Field(array, idx), newval);
   return Val_unit;
 }
 
@@ -204,7 +204,7 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
-  caml_modify_field(array, idx, newval);
+  caml_modify(&Field(array, idx), newval);
   return Val_unit;
 }
 
@@ -387,7 +387,7 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
 #endif
     CAMLassert (Tag_val(a2) != Double_array_tag);
     caml_blit_fields(a1, Long_val(ofs1), a2, Long_val(ofs2), Long_val(n));
-    /* Many caml_modify_field in a row can create a lot of old-to-young refs.
+    /* Many caml_modify in a row can create a lot of old-to-young refs.
         Give the minor GC a chance to run if it needs to. */
     caml_check_urgent_gc(Val_unit);
     return Val_unit;
@@ -541,7 +541,7 @@ CAMLprim value caml_array_fill(value array,
 #endif
   /* TODO: potential optimization by code duplication as in PR8716 */
   for (; len > 0; len--, ofs++) {
-    caml_modify_field(array, ofs, val);
+    caml_modify(&Field(array, ofs), val);
   }
   return Val_unit;
 }
