@@ -1,6 +1,12 @@
 OCaml 4.12, maintenance version
 -------------------------------
 
+### Bug fixes:
+
+- #10294, #10295: fix an assert-failure in pattern-matching compilation
+  (Gabriel Scherer, review by Thomas Refis and Luc Maranget,
+   report by Nicolás Ojeda Bär)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
