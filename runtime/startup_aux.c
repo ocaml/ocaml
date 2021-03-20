@@ -157,6 +157,12 @@ int caml_startup_aux(int pooling)
     caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");
 
+  /* Second and subsequent calls are ignored,
+     since the runtime has already started */
+  startup_count++;
+  if (startup_count > 1)
+    return 0;
+
   /* Determine options */
 #ifdef DEBUG
   caml_verb_gc = 0x3F;
@@ -168,12 +174,6 @@ int caml_startup_aux(int pooling)
 #ifdef DEBUG
   caml_gc_message(-1, "### OCaml runtime: debug mode ###\n");
 #endif
-
-  /* Second and subsequent calls are ignored,
-     since the runtime has already started */
-  startup_count++;
-  if (startup_count > 1)
-    return 0;
 
   if (pooling)
     caml_stat_create_pool();
