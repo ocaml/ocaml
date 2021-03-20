@@ -85,6 +85,12 @@ Working version
   experimental.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #10304: Fix a crash when combining the instrumented runtime and the
+   pooled mode, and fixes some leaks in the normal runtime in pooled mode
+   or when calling caml_startup* several times.
+  (Guillaume Munch-Maccagnoni, review by Max Mouratov and Gabriel
+   Scherer)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
