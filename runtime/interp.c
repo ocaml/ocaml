@@ -75,7 +75,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 // Do call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
-  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = Val_pc(pc); \
+  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
@@ -86,7 +86,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
    first backtrace slot points to the event following the C call
    instruction. */
 #define Setup_for_c_call \
-  { sp -= 2; sp[0] = env; sp[1] = Val_pc(pc + 1); domain_state->current_stack->sp = sp; }
+  { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); domain_state->current_stack->sp = sp; }
 #define Restore_after_c_call \
   { sp = domain_state->current_stack->sp; env = *sp; sp += 2; }
 
@@ -99,13 +99,13 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
     sp[0] = accu; /* accu */ \
     sp[1] = Val_unit; /* C_CALL frame: dummy environment */ \
     sp[2] = Val_unit; /* RETURN frame: dummy local 0 */ \
-    sp[3] = Val_pc(pc); /* RETURN frame: saved return address */  \
+    sp[3] = (value)pc; /* RETURN frame: saved return address */  \
     sp[4] = env; /* RETURN frame: saved environment */ \
     sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_event \
   { sp = domain_state->current_stack->sp; accu = sp[0]; \
-    pc = Pc_val(sp[3]); env = sp[4]; extra_args = Long_val(sp[5]); \
+    pc = (code_t) sp[3]; env = sp[4]; extra_args = Long_val(sp[5]); \
     sp += 6; }
 
 /* Debugger interface */
@@ -315,7 +315,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   env = Atom(0);
   accu = Val_int(0);
 
-
 #ifdef THREADED_CODE
 #ifdef DEBUG
  next_instr:
@@ -327,7 +326,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
   while(1) {
 #ifdef DEBUG
-
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_params->trace_level>1) printf("\n##%ld\n", caml_bcodcount);
@@ -614,9 +612,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, 2 + nvars, Closure_tag, Enter_gc);
         for (i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
       } else {
+        /* PR#6385: must allocate in major heap */
         /* caml_alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
-        /* PR#6385: must allocate in major heap */
         accu = caml_alloc_shr(2 + nvars, Closure_tag);
         for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 2), sp[i]);
       }
@@ -913,7 +911,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHTRAP):
       sp -= 4;
-      Trap_pc(sp) = Val_pc(pc + *pc);
+      Trap_pc(sp) = pc + *pc;
       Trap_link(sp) = Val_long(domain_state->trap_sp_off);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
@@ -940,7 +938,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(RERAISE):
       Check_trap_barrier;
       if (domain_state->backtrace_active) {
-        *--sp = Val_pc(pc - 1);
+        *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 1);
       }
       goto raise_notrace;
@@ -949,7 +947,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     raise_exception:
       Check_trap_barrier;
       if (domain_state->backtrace_active) {
-        *--sp = Val_pc(pc - 1);
+        *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 0);
       }
     raise_notrace:
@@ -982,7 +980,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         }
       } else {
         sp = Stack_high(domain_state->current_stack) + domain_state->trap_sp_off;
-        pc = Pc_val(Trap_pc(sp));
+        pc = Trap_pc(sp);
         domain_state->trap_sp_off = Long_val(Trap_link(sp));
         env = sp[2];
         extra_args = Long_val(sp[3]);

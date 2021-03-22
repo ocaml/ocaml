@@ -259,6 +259,8 @@ static inline void* Ptr_val(value val)
 #define Val_pc(pc) Val_ptr(pc)
 #define Pc_val(val) ((code_t)Ptr_val(val))
 
+#define Code_val_our(val) Pc_val(Field((val), 0))
+
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
 
