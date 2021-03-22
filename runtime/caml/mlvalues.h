@@ -256,9 +256,6 @@ static inline void* Ptr_val(value val)
   return (void*)(val - 1);
 }
 
-#define Val_pc(pc) Val_ptr(pc)
-#define Pc_val(val) ((code_t)Ptr_val(val))
-
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
