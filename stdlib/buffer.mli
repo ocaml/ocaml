@@ -90,6 +90,18 @@ val reset : t -> unit
    For long-lived buffers that may have grown a lot, [reset] allows
    faster reclamation of the space used by the buffer. *)
 
+val output_buffer : out_channel -> t -> unit
+(** [output_buffer oc b] writes the current contents of buffer [b]
+   on the output channel [oc]. *)
+
+val truncate : t -> int -> unit
+(** [truncate b len] truncates the length of [b] to [len]
+  Note: the internal byte sequence is not shortened.
+  @raise Invalid_argument if [len < 0] or [len > length b].
+  @since 4.05.0 *)
+
+(** {1 Appending} *)
+
 (** Note: all [add_*] operations can raise [Failure] if the internal byte
     sequence of the buffer would need to grow beyond {!Sys.max_string_length}.
 *)
@@ -169,16 +181,6 @@ val add_channel : t -> in_channel -> int -> unit
 
    @raise Invalid_argument if [len < 0] or [len > Sys.max_string_length].
  *)
-
-val output_buffer : out_channel -> t -> unit
-(** [output_buffer oc b] writes the current contents of buffer [b]
-   on the output channel [oc]. *)
-
-val truncate : t -> int -> unit
-(** [truncate b len] truncates the length of [b] to [len]
-  Note: the internal byte sequence is not shortened.
-  @raise Invalid_argument if [len < 0] or [len > length b].
-  @since 4.05.0 *)
 
 (** {1 Buffers and Sequences} *)
 
