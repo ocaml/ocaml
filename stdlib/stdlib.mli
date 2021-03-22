@@ -673,8 +673,8 @@ val ( ^ ) : string -> string -> string
 (** String concatenation.
     Right-associative operator, see {!Ocaml_operators} for more information.
 
-    Raise [Invalid_argument "Bytes.create"] if the resulting string would be
-    larger than {!Sys.max_string_length}.
+    @raise Invalid_argument if the result is longer then
+    than {!Sys.max_string_length} bytes.
 *)
 
 (** {1 Character operations}
