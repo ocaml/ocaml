@@ -263,9 +263,7 @@ static inline void* Ptr_val(value val)
 #define Closure_tag 247
 
 /* TODO: move fully to the upstream representation of Code_val */
-#define Bytecode_val(val) (Pc_val(val))
-#define Val_bytecode(code) (Val_pc(code))
-#define Code_val(val) Bytecode_val(Field((val), 0))
+#define Code_val(val) Pc_val(Field((val), 0))
 #define Closinfo_val(val) Field((val), 1)          /* Arity and start env */
 /* In the closure info field, the top 8 bits are the arity (signed).
    The low bit is set to one, to look like an integer.

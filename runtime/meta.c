@@ -126,7 +126,7 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   (void)fragnum; /* clobber warning */
 
   clos = caml_alloc_small (2, Closure_tag);
-  Field(clos, 0) = Val_bytecode(prog);
+  Field(clos, 0) = Val_pc(prog);
   Closinfo_val(clos) = Make_closinfo(0, 2);
   bytecode = caml_alloc_small (2, Abstract_tag);
   Bc_val(bytecode)->prog = prog;
