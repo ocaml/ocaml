@@ -278,7 +278,13 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
 
     domain_state->dls_root = caml_create_root_noexc(Val_unit);
     if(domain_state->dls_root == NULL) {
-      goto create_root_failure;
+      goto create_dls_root_failure;
+    }
+
+    domain_state->unique_token_root =
+      caml_create_root_noexc(caml_alloc_1(Abstract_tag,Val_unit));
+    if(domain_state->unique_token_root == NULL) {
+      goto create_unique_token_root_failure;
     }
 
     domain_state->stack_cache = caml_alloc_stack_cache();
@@ -313,8 +319,10 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   caml_free_stack(domain_state->current_stack);
 alloc_main_stack_failure:
 create_stack_cache_failure:
+  caml_delete_root(domain_state->unique_token_root);
+create_unique_token_root_failure:
   caml_delete_root(domain_state->dls_root);
-create_root_failure:
+create_dls_root_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
@@ -622,7 +630,14 @@ struct domain* caml_domain_of_id(int id)
 
 CAMLprim value caml_ml_domain_id(value unit)
 {
+  CAMLnoalloc;
   return Val_int(domain_self->interruptor.unique_id);
+}
+
+CAMLprim value caml_ml_domain_unique_token (value unit)
+{
+  CAMLnoalloc;
+  return caml_read_root(Caml_state->unique_token_root);
 }
 
 static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
@@ -1249,6 +1264,7 @@ static void domain_terminate()
 
   caml_gc_log("Domain terminating");
   caml_delete_root(domain_state->dls_root);
+  caml_delete_root(domain_state->unique_token_root);
   s->terminating = 1;
 
   while (!finished) {
