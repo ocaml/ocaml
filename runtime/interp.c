@@ -275,7 +275,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
                      sizeof(raise_unhandled_code));
 #endif
     raise_unhandled_closure = caml_alloc_small (2, Closure_tag);
-    Field(raise_unhandled_closure, 0) = Val_bytecode(raise_unhandled_code);
+    Field(raise_unhandled_closure, 0) = Val_pc(raise_unhandled_code);
     Closinfo_val(raise_unhandled_closure) = Make_closinfo(0, 2);
     raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
@@ -598,7 +598,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, num_args + 3, Closure_tag, Enter_gc);
         Field(accu, 2) = env;
         for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
-        Field(accu, 0) = Val_bytecode(pc-3); /* Point to the preceding RESTART instr. */
+        Field(accu, 0) = Val_pc(pc-3); /* Point to the preceding RESTART instr. */
         Closinfo_val(accu) = Make_closinfo(0, 2);
         sp += num_args;
         goto do_return;
@@ -622,7 +622,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       }
       /* The code pointer is not in the heap, so no need to go through
          caml_initialize. */
-      Field(accu, 0) = Val_bytecode(pc + *pc);
+      Field(accu, 0) = Val_pc(pc + *pc);
       Closinfo_val(accu) = Make_closinfo(0, 2);
       pc++;
       sp += nvars;
@@ -654,12 +654,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
          so no need to go through caml_initialize. */
       *--sp = accu;
       p = &Field(accu, 0);
-      *p++ = Val_bytecode (pc + pc[0]);
+      *p++ = Val_pc (pc + pc[0]);
       *p++ = Make_closinfo(0, envofs);
       for (i = 1; i < nfuncs; i++) {
         *p++ = Make_header(i * 3, Infix_tag, 0); /* color irrelevant */
         *--sp = (value) p;
-        *p++ = Val_bytecode (pc + pc[i]);
+        *p++ = Val_pc (pc + pc[i]);
         envofs -= 3;
         *p++ = Make_closinfo(0, envofs);
       }
