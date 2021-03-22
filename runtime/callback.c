@@ -62,9 +62,9 @@ static inline void restore_stack_parent(caml_domain_state* domain_state, value c
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
+static __thread opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 
-static int callback_code_inited = 0;
+static __thread int callback_code_inited = 0;
 
 static void init_callback_code(void)
 {
@@ -83,7 +83,6 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLxparamN(args, narg);
   CAMLlocal1(cont);
   value res;
-  opcode_t code[7];
   int i;
   caml_domain_state* domain_state = Caml_state;
 
@@ -93,22 +92,17 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 
   if (!callback_code_inited) init_callback_code();
 
-  code[0] = callback_code[0];
-  code[1] = narg + 3;
-  code[2] = callback_code[2];
-  code[3] = narg;
-  code[4] = callback_code[4];
-  code[5] = callback_code[5];
-  code[6] = callback_code[6];
+  callback_code[1] = narg + 3;
+  callback_code[3] = narg;
 
-  domain_state->current_stack->sp[narg] = Val_pc (code + 4); /* return address */
+  domain_state->current_stack->sp[narg] = (value)(callback_code + 4); /* return address */
   domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
   domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
   domain_state->current_stack->sp[narg + 3] = closure;
 
   cont = save_and_clear_stack_parent(domain_state);
 
-  res = caml_interprete(code, sizeof(code));
+  res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res)) domain_state->current_stack->sp += narg + 4; /* PR#3419 */
 
   restore_stack_parent(domain_state, cont);
