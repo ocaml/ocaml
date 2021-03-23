@@ -276,9 +276,9 @@ AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
     [use frame pointers in runtime and generated code])])
 
-AC_ARG_ENABLE([naked-pointers],
-  [AS_HELP_STRING([--disable-naked-pointers],
-    [do not allow naked pointers])])
+AC_ARG_ENABLE([naked-pointers], [],
+  [AC_MSG_ERROR([Naked pointers are not allowed in OCaml Multicore.])],
+  [AC_DEFINE([NO_NAKED_POINTERS])])
 
 AC_ARG_ENABLE([naked-pointers-checker],
   [AS_HELP_STRING([--enable-naked-pointers-checker],
@@ -1722,13 +1722,6 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
 
-## No naked pointers
-
-AS_IF([test x"$enable_naked_pointers" = "xno" ],
-  [naked_pointers=false
-   AC_DEFINE([NO_NAKED_POINTERS])],
-  [naked_pointers=true])
-
 ## Collect multicore stats
 
 AS_IF([test x"$enable_stats" = "xyes" ],
@@ -1840,7 +1833,7 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
 ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
-AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])]
+AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32],

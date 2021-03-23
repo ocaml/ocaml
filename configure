@@ -1562,8 +1562,6 @@ Optional Features:
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --disable-ocamltest     do not build the ocamltest driver
   --enable-frame-pointers use frame pointers in runtime and generated code
-  --disable-naked-pointers
-                          do not allow naked pointers
   --enable-naked-pointers-checker
                           enable the naked pointers checker
   --disable-cfi           disable the CFI directives in assembly files
@@ -3179,7 +3177,10 @@ fi
 
 # Check whether --enable-naked-pointers was given.
 if test "${enable_naked_pointers+set}" = set; then :
-  enableval=$enable_naked_pointers;
+  enableval=$enable_naked_pointers; as_fn_error $? "Naked pointers are not allowed in OCaml Multicore." "$LINENO" 5
+else
+  $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
+
 fi
 
 
@@ -16817,16 +16818,6 @@ $as_echo "$as_me: not using frame pointers" >&6;}
   frame_pointers=false
 fi
 
-## No naked pointers
-
-if test x"$enable_naked_pointers" = "xno" ; then :
-  naked_pointers=false
-   $as_echo "#define NO_NAKED_POINTERS 1" >>confdefs.h
-
-else
-  naked_pointers=true
-fi
-
 ## Collect multicore stats
 
 if test x"$enable_stats" = "xyes" ; then :
@@ -17101,7 +17092,7 @@ $as_echo "$ac_cv_lib_execinfo_backtrace" >&6; }
 if test "x$ac_cv_lib_execinfo_backtrace" = xyes; then :
   cclibs="$cclibs -lexecinfo"
 fi
-]
+
 
 case $host in #(
   *-*-mingw32) :
