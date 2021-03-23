@@ -316,6 +316,8 @@ val open_signature:
 
 val open_pers_signature: string -> t -> (t, [`Not_found]) result
 
+val remove_last_open: Path.t -> t -> t option
+
 (* Insertion by name *)
 
 val enter_value:
