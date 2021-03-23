@@ -116,7 +116,7 @@ DOMAIN_STATE(int, pools_to_rescan_count)
 DOMAIN_STATE(caml_root, dls_root)
 /* Domain-local state */
 
-DOMAIN_STATE(caml_root, unique_token_root)
+DOMAIN_STATE(value, unique_token_root)
 
 /*****************************************************************************/
 /* GC stats (see gc_ctrl.c and the Gc module) */
