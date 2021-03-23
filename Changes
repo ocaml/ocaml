@@ -135,6 +135,9 @@ Working version
 - #10185: Consider that IPv6 is always enabled on Windows.
   (Antonin Décimo, review by David Allsopp and Xavier Leroy)
 
+- #10306: Map WSA error code to Unix errno for sockopt and getsockname
+  functions (Antonin Décimo, review by David Allsopp)
+
 ### Tools:
 
 - #10139: Remove confusing navigation bar from stdlib documentation.

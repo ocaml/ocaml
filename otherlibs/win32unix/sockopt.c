@@ -133,8 +133,10 @@ unix_getsockopt_aux(char * name,
   }
 
   if (getsockopt(Socket_val(socket), level, option,
-                 (void *) &optval, &optsize) == -1)
+                 (void *) &optval, &optsize) == -1) {
+    win32_maperr(WSAGetLastError());
     uerror(name, Nothing);
+  }
 
   switch (ty) {
   case TYPE_BOOL:
@@ -199,8 +201,10 @@ unix_setsockopt_aux(char * name,
   }
 
   if (setsockopt(Socket_val(socket), level, option,
-                 (void *) &optval, optsize) == -1)
+                 (void *) &optval, optsize) == -1) {
+    win32_maperr(WSAGetLastError());
     uerror(name, Nothing);
+  }
 
   return Val_unit;
 }
