@@ -702,7 +702,7 @@ void caml_darken_cont(value cont)
           atomic_compare_exchange_strong(
               Hp_atomic_val(cont), &hd,
               With_status_hd(hd, NOT_MARKABLE))) {
-        value stk = Op_val(cont)[0];
+        value stk = Field(cont, 0);
         if (Ptr_val(stk) != NULL)
           caml_scan_stack(&caml_darken, 0, Ptr_val(stk), 0);
         atomic_store_explicit(
@@ -772,7 +772,7 @@ intnat ephe_mark (intnat budget, uintnat for_cycle)
 
     size = Wosize_hd(hd);
     for (i = CAML_EPHE_FIRST_KEY; alive_data && i < size; i++) {
-      key = Op_val(v)[i];
+      key = Field(v, i);
     ephemeron_again:
       if (key != caml_ephe_none && Is_block(key)) {
         if (Tag_val(key) == Forward_tag) {
@@ -782,7 +782,7 @@ intnat ephe_mark (intnat budget, uintnat for_cycle)
                 Tag_val(f) == Double_tag) {
               /* Do not short-circuit the pointer */
             } else {
-              Op_val(v)[i] = key = f;
+              Field(v, i) = key = f;
               goto ephemeron_again;
             }
           }
