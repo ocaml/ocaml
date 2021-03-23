@@ -271,7 +271,7 @@ static void generic_final_minor_update (struct domain* d, struct finalisable * f
     CAMLassert (Is_block (final->table[i].val));
     if (Is_young(final->table[i].val)) {
       CAMLassert (caml_get_header_val(final->table[i].val) == 0);
-      final->table[i].val = Op_val(final->table[i].val)[0];
+      final->table[i].val = Field(final->table[i].val, 0);
     }
   }
 }

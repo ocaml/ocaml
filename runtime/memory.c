@@ -179,7 +179,7 @@ CAMLexport int caml_atomic_cas_field (value obj, intnat field, value oldval, val
 {
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
-    value* p = &Op_val(obj)[field];
+    value* p = &Field(obj, field);
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
@@ -203,7 +203,7 @@ CAMLexport int caml_atomic_cas_field (value obj, intnat field, value oldval, val
 CAMLprim value caml_atomic_load (value ref)
 {
   if (caml_domain_alone()) {
-    return Op_val(ref)[0];
+    return Field(ref, 0);
   } else {
     value v;
     /* See Note [MM] above */
@@ -218,8 +218,8 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
 {
   value ret;
   if (caml_domain_alone()) {
-    ret = Op_val(ref)[0];
-    Op_val(ref)[0] = v;
+    ret = Field(ref, 0);
+    Field(ref, 0) = v;
   } else {
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);

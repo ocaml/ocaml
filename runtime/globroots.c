@@ -262,7 +262,7 @@ static void scan_native_globals(scanning_action f, void* fdata)
   for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
     for(glob = caml_globals[i]; *glob != 0; glob++) {
       for (j = 0; j < Wosize_val(*glob); j++){
-        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+        f(fdata, Field(*glob, j), &Field(*glob, j));
       }
     }
   }
@@ -271,7 +271,7 @@ static void scan_native_globals(scanning_action f, void* fdata)
   iter_list(dyn_globals, lnk) {
     for(glob = (value *) lnk->data; *glob != 0; glob++) {
       for (j = 0; j < Wosize_val(*glob); j++){
-        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+        f(fdata, Field(*glob, j), &Field(*glob, j));
       }
     }
   }
