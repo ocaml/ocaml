@@ -17092,7 +17092,7 @@ $as_echo "$ac_cv_lib_execinfo_backtrace" >&6; }
 if test "x$ac_cv_lib_execinfo_backtrace" = xyes; then :
   cclibs="$cclibs -lexecinfo"
 fi
-]
+
 
 case $host in #(
   *-*-mingw32) :
