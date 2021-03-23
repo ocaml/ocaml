@@ -1833,7 +1833,7 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags \$(CFLAGS)"
 ocamlc_cppflags="$common_cppflags \$(CPPFLAGS)"
 cclibs="$cclibs $mathlib"
 
-AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])]
+AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32],
