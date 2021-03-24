@@ -83,7 +83,7 @@ CAMLexport double caml_Double_val(value val)
 
   CAMLassert(sizeof(double) == 2 * sizeof(value));
   buffer.v[0] = Field(val, 0);
-  buffer.v[1] = Field(val, 0);
+  buffer.v[1] = Field(val, 1);
   return buffer.d;
 }
 
@@ -94,7 +94,7 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
   CAMLassert(sizeof(double) == 2 * sizeof(value));
   buffer.d = dbl;
   Field(val, 0) = buffer.v[0];
-  Field(val, 0) = buffer.v[1];
+  Field(val, 1) = buffer.v[1];
 }
 
 #endif

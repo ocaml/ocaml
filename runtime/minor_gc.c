@@ -341,8 +341,7 @@ static void oldify_one (void* st_v, value v, value *p)
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared(sz, tag);
     for (i = 0; i < sz; i++) {
-      value curr = Field(v, i);
-      Field(result, i) = curr;
+      Field(result, i) = Field(v, i);
     }
     CAMLassert (infix_offset == 0);
     if( !try_update_object_header(v, p, result, 0) ) {
