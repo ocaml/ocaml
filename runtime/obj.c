@@ -279,7 +279,7 @@ CAMLprim value caml_lazy_update_to_forcing (value v)
     tag = Tag_hd (atomic_load (Hp_atomic_val(v)));
 
     if (tag == Forcing_tag) {
-      if (field0 == caml_ml_domain_id(Val_unit))
+      if (field0 == caml_ml_domain_unique_token(Val_unit))
         return Val_int(1);
       else
         return Val_int(2);
