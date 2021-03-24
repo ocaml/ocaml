@@ -43,7 +43,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) {
-        Op_val(result)[i] = Val_unit;
+        Field(result, i) = Val_unit;
       }
     }
   } else {
@@ -76,7 +76,7 @@ static inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
   Alloc_small(v, wosize, tag,
       { enter_gc_preserving_vals(wosize, vals); });
   for (i = 0; i < wosize; i++) {
-    Op_val(v)[i] = vals[i];
+    Field(v, i) = vals[i];
   }
   return v;
 }
@@ -174,7 +174,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
   value result = caml_alloc(wosize, String_tag);
 
-  Op_val (result) [wosize - 1] = 0;
+  Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
   Byte (result, offset_index) = offset_index - len;
   return result;

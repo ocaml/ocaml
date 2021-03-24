@@ -131,7 +131,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 
 
 /* Initialising fields of objects just allocated with Alloc_small */
-#define Init_field(o, i, x) Op_val(o)[i] = (x)
+#define Init_field(o, i, x) Field(o, i) = (x)
 
 #define Check_trap_barrier \
   if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \

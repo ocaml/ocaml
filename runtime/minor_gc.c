@@ -201,20 +201,20 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
 
   if( caml_domain_alone() ) {
     *Hp_val (v) = 0;
-    Op_val(v)[0] = result;
+    Field(v, 0) = result;
     success = 1;
   } else {
     header_t hd = atomic_load(Hp_atomic_val(v));
     if( hd == 0 ) {
       // in this case this has been updated by another domain, throw away result
       // and return the one in the object
-      result = Op_val(v)[0];
+      result = Field(v, 0);
     } else if( Is_update_in_progress(hd) ) {
       // here we've caught a domain in the process of moving a minor heap object
       // we need to wait for it to finish
       spin_on_header(v);
       // Also throw away result and use the one from the other domain
-      result = Op_val(v)[0];
+      result = Field(v, 0);
     } else {
       // Here the header is neither zero nor an in-progress update
       header_t desired_hd = In_progress_update_val;
@@ -230,7 +230,7 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
         // We were sniped by another domain, spin for that to complete then
         // throw away result and use the one from the other domain
         spin_on_header(v);
-        result = Op_val(v)[0];
+        result = Field(v, 0);
       }
     }
   }
@@ -274,7 +274,7 @@ static void oldify_one (void* st_v, value v, value *p)
     hd = get_header_val(v);
     if (hd == 0) {
       /* already forwarded, another domain is likely working on this. */
-      *p = Op_val(v)[0] + infix_offset;
+      *p = Field(v, 0) + infix_offset;
       return;
     }
     tag = Tag_hd (hd);
@@ -288,12 +288,12 @@ static void oldify_one (void* st_v, value v, value *p)
   } while (tag == Infix_tag);
 
   if (tag == Cont_tag) {
-    value stack_value = Op_val(v)[0];
+    value stack_value = Field(v, 0);
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
     result = alloc_shared(1, Cont_tag);
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
-      Op_val(result)[0] = Val_ptr(stk);
+      Field(result, 0) = Val_ptr(stk);
       if (stk != NULL) {
         caml_scan_stack(&oldify_one, st, stk, 0);
       }
@@ -303,7 +303,7 @@ static void oldify_one (void* st_v, value v, value *p)
       // Conflict - fix up what we allocated on the major heap
       *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);
       #ifdef DEBUG
-      Op_val(result)[0] = Val_long(1);
+      Field(result, 0) = Val_long(1);
       #endif
     }
   } else if (tag < Infix_tag) {
@@ -311,11 +311,11 @@ static void oldify_one (void* st_v, value v, value *p)
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared (sz, tag);
-    field0 = Op_val(v)[0];
+    field0 = Field(v, 0);
     if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
-        Op_val (result)[0] = field0;
-        Op_val (result)[1] = st->todo_list;
+        Field(result, 0) = field0;
+        Field(result, 1) = st->todo_list;
         st->todo_list = v;
       } else {
         CAMLassert (sz == 1);
@@ -330,7 +330,7 @@ static void oldify_one (void* st_v, value v, value *p)
       {
         int c;
         for( c = 0; c < sz ; c++ ) {
-          Op_val(result)[c] = Val_long(1);
+          Field(result, c) = Val_long(1);
         }
       }
       #endif
@@ -341,8 +341,7 @@ static void oldify_one (void* st_v, value v, value *p)
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared(sz, tag);
     for (i = 0; i < sz; i++) {
-      value curr = Op_val(v)[i];
-      Op_val (result)[i] = curr;
+      Field(result, i) = Field(v, i);
     }
     CAMLassert (infix_offset == 0);
     if( !try_update_object_header(v, p, result, 0) ) {
@@ -350,7 +349,7 @@ static void oldify_one (void* st_v, value v, value *p)
       *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
       #ifdef DEBUG
       for( i = 0; i < sz ; i++ ) {
-        Op_val(result)[i] = Val_long(1);
+        Field(result, i) = Val_long(1);
       }
       #endif
     }
@@ -364,7 +363,7 @@ static void oldify_one (void* st_v, value v, value *p)
     ft = 0;
 
     if (Is_block (f)) {
-      ft = Tag_val (get_header_val(f) == 0 ? Op_val (f)[0] : f);
+      ft = Tag_val (get_header_val(f) == 0 ? Field(f, 0) : f);
     }
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
@@ -379,7 +378,7 @@ static void oldify_one (void* st_v, value v, value *p)
       } else {
         *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);
         #ifdef DEBUG
-        Op_val(result)[0] = Val_long(1);
+        Field(result, 0) = Val_long(1);
         #endif
       }
     } else {
@@ -435,21 +434,21 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
     by another domain, so this assert using get_header_val is probably not
     neccessary */
     CAMLassert (get_header_val(v) == 0);       /* It must be forwarded. */
-    new_v = Op_val (v)[0];                /* Follow forward pointer. */
-    st->todo_list = Op_val (new_v)[1]; /* Remove from list. */
+    new_v = Field(v, 0);                /* Follow forward pointer. */
+    st->todo_list = Field (new_v, 1); /* Remove from list. */
 
-    f = Op_val (new_v)[0];
+    f = Field(new_v, 0);
     CAMLassert (!Is_debug_tag(f));
     if (Is_block (f) && Is_young(f)) {
       oldify_one (st, f, Op_val (new_v));
     }
     for (i = 1; i < Wosize_val (new_v); i++){
-      f = Op_val (v)[i];
+      f = Field(v, i);
       CAMLassert (!Is_debug_tag(f));
       if (Is_block (f) && Is_young(f)) {
         oldify_one (st, f, Op_val (new_v) + i);
       } else {
-        Op_val (new_v)[i] = f;
+        Field(new_v, i) = f;
       }
     }
     CAMLassert (Wosize_val(new_v));
@@ -465,11 +464,11 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
          re < ephe_ref_table.ptr; re++) {
       value *data = re->offset == CAML_EPHE_DATA_OFFSET
               ? &Ephe_data(re->ephe)
-              :  &Op_val(re->ephe)[re->offset];
+              :  &Field(re->ephe, re->offset);
       if (*data != caml_ephe_none && Is_block(*data) && Is_young(*data) ) {
         resolve_infix_val(data);
         if (get_header_val(*data) == 0) { /* Value copied to major heap */
-          *data = Op_val(*data)[0];
+          *data = Field(*data, 0);
         } else {
           oldify_one(st, *data, data);
           redo = 1; /* oldify_todo_list can still be 0 */
@@ -629,7 +628,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
       if (get_header_val(*v) == 0) { /* value copied to major heap */
-        *v = Op_val(*v)[0];
+        *v = Field(*v, 0);
       } else {
         oldify_one(&st, *v, v);
       }

@@ -446,9 +446,9 @@ Caml_inline void caml_read_field(value x, intnat i, value* ret) {
   *ret = v;
 }
 
-#define Int_field(x, i) Int_val(Op_val(x)[i])
-#define Long_field(x, i) Long_val(Op_val(x)[i])
-#define Bool_field(x, i) Bool_val(Op_val(x)[i])
+#define Int_field(x, i) Int_val(Field(x, i))
+#define Long_field(x, i) Long_val(Field(x, i))
+#define Bool_field(x, i) Bool_val(Field(x, i))
 
 
 #ifdef __cplusplus

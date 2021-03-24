@@ -540,7 +540,7 @@ void caml_debugger(enum event_kind event, value param)
       i = caml_getword(dbg_in);
       if (Tag_val(val) != Double_array_tag) {
         caml_putch(dbg_out, 0);
-        putval(dbg_out, Op_val(val)[i]);
+        putval(dbg_out, Field(val, i));
       } else {
         double d = Double_flat_field(val, i);
         caml_putch(dbg_out, 1);

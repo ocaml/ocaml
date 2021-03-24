@@ -156,7 +156,7 @@ caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", Op_val (v)[i]);
+        fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", Field (v, i));
       };
       if (s > 0)
         putc (')', f);
