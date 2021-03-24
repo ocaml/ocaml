@@ -21,10 +21,6 @@ tests/lib-dynlink-private/'test.ml' with 1.2.1.2.8.19.1 (run)
 tests/weak-ephe-final/'weaktest.ml' with 1 (native)
 tests/weak-ephe-final/'weaktest.ml' with 2 (bytecode)
 
-# TODO: something is bad in typing with gadts and effects
-# (went wrong when this test was introduced in #1931)
-tests/typing-gadts/'principality-and-gadts.ml' with 1 (expect)
-
 # TODO: port the new Ephemeron C-api to multicore
 #  https://github.com/ocaml/ocaml/pull/676
 ephe-c-api
