@@ -330,7 +330,7 @@ CAMLprim value caml_fresh_oo_id (value v) {
 
 CAMLprim value caml_set_oo_id (value obj) {
   value v = Val_unit;
-  Op_val(obj)[1] = caml_fresh_oo_id(v);
+  Field(obj, 1) = caml_fresh_oo_id(v);
   return obj;
 }
 

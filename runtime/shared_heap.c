@@ -405,7 +405,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
   {
     int i;
     for (i = 0; i < wosize; i++) {
-      Op_val(Val_hp(p))[i] = Debug_free_major;
+      Field(Val_hp(p), i) = Debug_free_major;
     }
   }
 #endif
@@ -681,7 +681,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
   Assert(Has_status_hd(Hd_val(v), global.UNMARKED));
 
   if (Tag_val(v) == Cont_tag) {
-    struct stack_info* stk = Ptr_val(Op_val(v)[0]);
+    struct stack_info* stk = Ptr_val(Field(v, 0));
     if (stk != NULL)
       caml_scan_stack(verify_push, st, stk, 0);
   } else if (Tag_val(v) < No_scan_tag) {
@@ -690,7 +690,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
       i = Start_env_closinfo(Closinfo_val(v));
     }
     for (; i < Wosize_val(v); i++) {
-      value f = Op_val(v)[i];
+      value f = Field(v, i);
       if (Is_young(v) && Is_young(f)) {
         Assert(caml_owner_of_young_block(v) ==
                caml_owner_of_young_block(f));
