@@ -43,27 +43,30 @@ exception RacyLazy
  * If [blk] happens to have any other tag or is a primitive value, then returns
  * [4].
  *)
-external update_to_forcing : Obj.t -> int = "caml_lazy_update_to_forcing"
+external update_to_forcing : Obj.t -> int =
+  "caml_lazy_update_to_forcing" [@@noalloc]
 
 (* [reset_to_lazy blk] expects [blk] to be a lazy object with [Obj.forcing_tag]
  * and updates the tag to [Obj.lazy_tag], taking care to handle concurrent
  * marking of this object's header by a concurrent GC thread.
  *)
-external reset_to_lazy : Obj.t -> unit = "caml_lazy_reset_to_lazy"
+external reset_to_lazy : Obj.t -> unit = "caml_lazy_reset_to_lazy" [@@noalloc]
 
 (* [update_to_forward blk] expects [blk] to be a lazy object with
  * [Obj.forcing_tag] and updates the tag to [Obj.forward_tag], taking care to
  * handle concurrent marking of this object's header by a concurrent GC thread.
  *)
-external update_to_forward : Obj.t -> unit = "caml_lazy_update_to_forward"
+external update_to_forward : Obj.t -> unit =
+  "caml_lazy_update_to_forward" [@@noalloc]
 
-external domain_self : unit -> int = "caml_ml_domain_id"
+external domain_unique_token : unit -> Obj.t =
+  "caml_ml_domain_unique_token" [@@noalloc]
 
 (* Assumes [blk] is a block with tag forcing *)
 let do_force_block blk =
   let b = Obj.repr blk in
   let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
-  Obj.set_field b 0 (Obj.repr (domain_self ()));
+  Obj.set_field b 0 (domain_unique_token ());
   try
     let result = closure () in
     Obj.set_field b 0 (Obj.repr result);
@@ -81,7 +84,7 @@ let do_force_block blk =
 let do_force_val_block blk =
   let b = Obj.repr blk in
   let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
-  Obj.set_field b 0 (Obj.repr (domain_self ()));
+  Obj.set_field b 0 (domain_unique_token ());
   let result = closure () in
   Obj.set_field b 0 (Obj.repr result);
   update_to_forward b;
