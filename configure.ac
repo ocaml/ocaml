@@ -61,7 +61,7 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
-instrumented_runtime=false
+instrumented_runtime=true
 instrumented_runtime_ldlibs=""
 
 # Information about the package
@@ -227,12 +227,11 @@ AC_ARG_ENABLE([dependency-generation],
 AC_ARG_VAR([DLLIBS],
   [which libraries to use (in addition to -ldl) to load dynamic libs])
 
-# Disable instrumented-runtime with multicore
 AC_ARG_ENABLE([instrumented-runtime],
   [AS_HELP_STRING([--enable-instrumented-runtime],
     [build the instrumented runtime @<:@default=auto@:>@])],
   [],
-  [enable_instrumented_runtime=no])
+  [enable_instrumented_runtime=auto])
 
 AC_ARG_ENABLE([vmthreads], [],
   [AC_MSG_ERROR([The vmthreads library is no longer available. \
