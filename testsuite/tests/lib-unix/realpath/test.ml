@@ -6,6 +6,9 @@ include unix
 *)
 
 let main () =
+  (* On Windows this tests that we strip \\?\ *)
+  let cwd = String.lowercase_ascii (Sys.getcwd ()) in
+  assert (cwd = String.lowercase_ascii (Unix.realpath cwd));
   Unix.mkdir "test_dir" 0o755;
   close_out (open_out "test_dir/test_file");
   let p0 = Unix.realpath "test_dir/.//test_file" in
