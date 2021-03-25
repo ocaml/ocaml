@@ -85,4 +85,4 @@ tool-debugger
 tests/promotion/bigrecmod.ml
 
 # disabled as there's a bug with signal handlers
-tests/callback/test_signalhandlers
+tests/callback/'test_signalhandler.ml' with 1.2 (native)
