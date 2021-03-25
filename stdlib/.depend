@@ -137,11 +137,9 @@ camlinternalFormatBasics.cmx : \
     camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmi :
 camlinternalLazy.cmo : \
-    stdlib__sys.cmi \
     stdlib__obj.cmi \
     camlinternalLazy.cmi
 camlinternalLazy.cmx : \
-    stdlib__sys.cmx \
     stdlib__obj.cmx \
     camlinternalLazy.cmi
 camlinternalLazy.cmi :
@@ -313,13 +311,16 @@ stdlib__gc.cmo : \
     stdlib__sys.cmi \
     stdlib__string.cmi \
     stdlib__printf.cmi \
+    stdlib__printexc.cmi \
     stdlib__gc.cmi
 stdlib__gc.cmx : \
     stdlib__sys.cmx \
     stdlib__string.cmx \
     stdlib__printf.cmx \
+    stdlib__printexc.cmx \
     stdlib__gc.cmi
-stdlib__gc.cmi :
+stdlib__gc.cmi : \
+    stdlib__printexc.cmi
 stdlib__genlex.cmo : \
     stdlib__string.cmi \
     stdlib__stream.cmi \
