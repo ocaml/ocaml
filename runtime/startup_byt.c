@@ -519,7 +519,6 @@ CAMLexport void caml_main(char_os **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_stack (caml_init_max_stack_wsz);
-  caml_init_atom_table();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -596,7 +595,6 @@ CAMLexport value caml_startup_code_exn(
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   /* Initialize the abstract machine */
   caml_init_stack (caml_init_max_stack_wsz);
-  caml_init_atom_table();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

@@ -40,7 +40,7 @@ extern void caml_win32_unregister_overflow_detection (void);
 CAMLexport header_t *caml_atom_table = NULL;
 
 /* Initialize the atom table */
-void caml_init_atom_table(void)
+static void init_atom_table(void)
 {
   caml_stat_block b;
   int i;
@@ -73,17 +73,19 @@ void caml_init_atom_table(void)
 
 /* Parse the OCAMLRUNPARAM environment variable. */
 
-uintnat caml_init_percent_free = Percent_free_def;
-uintnat caml_init_max_percent_free = Max_percent_free_def;
-uintnat caml_init_minor_heap_wsz = Minor_heap_def;
-uintnat caml_init_heap_chunk_sz = Heap_chunk_def;
-uintnat caml_init_heap_wsz = Init_heap_def;
+static uintnat init_percent_free = Percent_free_def;
+static uintnat init_max_percent_free = Max_percent_free_def;
+static uintnat init_minor_heap_wsz = Minor_heap_def;
+static uintnat init_heap_chunk_sz = Heap_chunk_def;
+static uintnat init_heap_wsz = Init_heap_def;
+static uintnat init_major_window = Major_window_def;
+static uintnat init_custom_major_ratio = Custom_major_ratio_def;
+static uintnat init_custom_minor_ratio = Custom_minor_ratio_def;
+static uintnat init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
+static uintnat init_policy = Allocation_policy_def;
+static uintnat record_backtrace = 0;
+
 uintnat caml_init_max_stack_wsz = Max_stack_def;
-uintnat caml_init_major_window = Major_window_def;
-uintnat caml_init_custom_major_ratio = Custom_major_ratio_def;
-uintnat caml_init_custom_minor_ratio = Custom_minor_ratio_def;
-uintnat caml_init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
-uintnat caml_init_policy = Allocation_policy_def;
 extern int caml_parser_trace;
 uintnat caml_trace_level = 0;
 int caml_cleanup_on_exit = 0;
@@ -103,9 +105,7 @@ static void scanmult (char_os *opt, uintnat *var)
   }
 }
 
-static uintnat record_backtrace = 0;
-
-void caml_parse_ocamlrunparam(void)
+static void parse_ocamlrunparam(void)
 {
   char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
   uintnat p;
@@ -115,24 +115,24 @@ void caml_parse_ocamlrunparam(void)
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'a': scanmult (opt, &caml_init_policy); break;
+      case 'a': scanmult (opt, &init_policy); break;
       case 'b': scanmult (opt, &record_backtrace); break;
       case 'c': scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
-      case 'h': scanmult (opt, &caml_init_heap_wsz); break;
+      case 'h': scanmult (opt, &init_heap_wsz); break;
       case 'H': scanmult (opt, &caml_use_huge_pages); break;
-      case 'i': scanmult (opt, &caml_init_heap_chunk_sz); break;
+      case 'i': scanmult (opt, &init_heap_chunk_sz); break;
       case 'l': scanmult (opt, &caml_init_max_stack_wsz); break;
-      case 'M': scanmult (opt, &caml_init_custom_major_ratio); break;
-      case 'm': scanmult (opt, &caml_init_custom_minor_ratio); break;
-      case 'n': scanmult (opt, &caml_init_custom_minor_max_bsz); break;
-      case 'o': scanmult (opt, &caml_init_percent_free); break;
-      case 'O': scanmult (opt, &caml_init_max_percent_free); break;
+      case 'M': scanmult (opt, &init_custom_major_ratio); break;
+      case 'm': scanmult (opt, &init_custom_minor_ratio); break;
+      case 'n': scanmult (opt, &init_custom_minor_max_bsz); break;
+      case 'o': scanmult (opt, &init_percent_free); break;
+      case 'O': scanmult (opt, &init_max_percent_free); break;
       case 'p': scanmult (opt, &p); caml_parser_trace = (p != 0); break;
       case 'R': break; /*  see stdlib/hashtbl.mli */
-      case 's': scanmult (opt, &caml_init_minor_heap_wsz); break;
+      case 's': scanmult (opt, &init_minor_heap_wsz); break;
       case 't': scanmult (opt, &caml_trace_level); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'w': scanmult (opt, &caml_init_major_window); break;
+      case 'w': scanmult (opt, &init_major_window); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case ',': continue;
       }
@@ -150,7 +150,6 @@ static int startup_count = 0;
 /* Has the runtime been shut down already? */
 static int shutdown_happened = 0;
 
-
 int caml_startup_aux(int pooling)
 {
   if (shutdown_happened == 1)
@@ -167,7 +166,7 @@ int caml_startup_aux(int pooling)
 #ifdef DEBUG
   caml_verb_gc = 0x3F;
 #endif
-  caml_parse_ocamlrunparam();
+  parse_ocamlrunparam();
   if (caml_cleanup_on_exit)
     pooling = 1;
 
@@ -189,13 +188,14 @@ int caml_startup_aux(int pooling)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  caml_init_gc(caml_init_minor_heap_wsz, caml_init_heap_wsz,
-               caml_init_heap_chunk_sz, caml_init_percent_free,
-               caml_init_max_percent_free, caml_init_major_window,
-               caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-               caml_init_custom_minor_max_bsz, caml_init_policy);
+  caml_init_gc(init_minor_heap_wsz, init_heap_wsz,
+               init_heap_chunk_sz, init_percent_free,
+               init_max_percent_free, init_major_window,
+               init_custom_major_ratio, init_custom_minor_ratio,
+               init_custom_minor_max_bsz, init_policy);
   caml_init_backtrace();
   caml_record_backtrace(Val_int(record_backtrace));
+  init_atom_table();
 
   return 1;
 }

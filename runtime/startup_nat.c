@@ -43,7 +43,7 @@
 extern int caml_parser_trace;
 extern char caml_system__code_begin, caml_system__code_end;
 
-/* Initialize the atom table and the static data and code area limits. */
+/* Initialize the static data and code area limits. */
 
 struct segment { char * begin; char * end; };
 
@@ -53,8 +53,6 @@ static void init_static(void)
 
   char * caml_code_area_start, * caml_code_area_end;
   int i;
-
-  caml_init_atom_table ();
 
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
     /* PR#5509: we must include the zero word at end of data segment,
