@@ -1,20 +1,24 @@
 (* In order to use the development compiler with opam 2.0, first create a new
    switch
 
-      opam switch create 4.12.0+multicore --empty
+      opam switch create . --empty
+
+   which creates _opam in the build directory.
 
    Initial build:
 
-      opam pin add -k path --inplace-build ocaml-variants.4.12.0+multicore .
+      opam pin add -k path --inplace-build ocaml-variants.4.12.0+domains+effects .
 
    This installs the compiler for the new opam switch. Subsequent builds can be
    done locally with:
 
-      make world; make world.opt
+      make -j
 
    Subsequent installs are done with:
 
       opam install --assume-built ocaml-variants
+
+   which will install the built compiler only and then recompile all the packages.
 
 *)
 
