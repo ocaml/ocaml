@@ -404,7 +404,7 @@ val foo : string foo -> string = <fun>
 Line 3, characters 29-34:
 3 |   | { x = (x : string); eq = Refl3 } -> x
                                  ^^^^^
-Warning 18 [not-principal]: typing this pattern requires considering M.t and string as equal.
+Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
 val foo : string foo -> string = <fun>
 |}]
