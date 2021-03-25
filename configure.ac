@@ -282,6 +282,10 @@ AC_ARG_ENABLE([naked-pointers-checker],
   [AS_HELP_STRING([--enable-naked-pointers-checker],
     [enable the naked pointers checker])])
 
+AC_ARG_ENABLE([spacetime], [],
+  [AC_MSG_ERROR([spacetime profiling was deleted in OCaml 4.12.])],
+  [])
+
 AC_ARG_ENABLE([cfi],
   [AS_HELP_STRING([--disable-cfi],
     [disable the CFI directives in assembly files])])
