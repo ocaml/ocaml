@@ -1,7 +1,7 @@
 (* TEST
 flags = "-no-alias-deps"
 compile_only = "true"
-files = "c.mli d.mli"
+readonly_files = "c.mli d.mli"
 * setup-ocamlc.byte-build-env
 ** script
 script =

@@ -2,7 +2,7 @@
 
 include dynlink
 libraries = ""
-files = "sheep.mli sheep.ml pig.mli"
+readonly_files = "sheep.mli sheep.ml pig.mli"
 set plugin1 = "${test_source_directory}/plugin1"
 set plugin2 = "${test_source_directory}/plugin2"
 set plugin2b = "${test_source_directory}/plugin2b"

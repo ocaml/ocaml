@@ -1,5 +1,5 @@
 (* TEST
-files = "a.ml b.ml b2.ml"
+readonly_files = "a.ml b.ml b2.ml"
 * setup-ocamlopt.byte-build-env
 ** script
 script = "mkdir -p dir"

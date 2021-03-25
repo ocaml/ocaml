@@ -58,7 +58,7 @@ let exit_status_of_variable env variable =
     (Environments.safe_lookup variable env)
   with _ -> 0
 
-let files env = words_of_variable env Builtin_variables.files
+let readonly_files env = words_of_variable env Builtin_variables.readonly_files
 
 let setup_symlinks test_source_directory build_directory files =
   let symlink filename =
@@ -86,7 +86,7 @@ let setup_symlinks test_source_directory build_directory files =
 
 let setup_build_env add_testfile additional_files (_log : out_channel) env =
   let build_dir = (test_build_directory env) in
-  let some_files = additional_files @ (files env) in
+  let some_files = additional_files @ (readonly_files env) in
   let files =
     if add_testfile
     then (testfile env) :: some_files

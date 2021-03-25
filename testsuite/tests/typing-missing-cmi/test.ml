@@ -1,5 +1,5 @@
 (* TEST
-files = "a.ml b.ml c.ml main.ml main_ok.ml"
+readonly_files = "a.ml b.ml c.ml main.ml main_ok.ml"
 * setup-ocamlc.byte-build-env
 ** script
 script = "mkdir -p subdir"

@@ -37,8 +37,8 @@ let exit_status = Variables.make ("exit_status",
 let file = Variables.make ("file",
   "File whose existence should be tested")
 
-let files = Variables.make ("files",
-  "Files used by the tests")
+let readonly_files = Variables.make ("readonly_files",
+  "Files which are only read by the tests")
 
 let make = Variables.make ("MAKE",
   "Command used to invoke make")
@@ -114,7 +114,7 @@ let _ = List.iter Variables.register_variable
     commandline;
     exit_status;
     file;
-    files;
+    readonly_files;
     make;
     ocamltest_response;
     ocamltest_log;

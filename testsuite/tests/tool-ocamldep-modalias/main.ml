@@ -1,6 +1,6 @@
 (* TEST
 
-files = "A.ml B.ml C.ml D.ml lib_impl.ml lib.mli"
+readonly_files = "A.ml B.ml C.ml D.ml lib_impl.ml lib.mli"
 
 script = "sh ${test_source_directory}/setup-links.sh"
 set sources = "A.ml B.ml C.ml D.ml"

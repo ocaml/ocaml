@@ -2,7 +2,7 @@
 
 include dynlink
 
-files = "abstract.mli abstract.ml static.ml client.ml main.ml"
+readonly_files = "abstract.mli abstract.ml static.ml client.ml main.ml"
 
 set src_sub = "${test_source_directory}/sub"
 
