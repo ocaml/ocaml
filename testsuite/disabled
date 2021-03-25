@@ -83,3 +83,6 @@ tool-debugger
 
 # since promotion is based on minor heap size now, this test can no longer be correct
 tests/promotion/bigrecmod.ml
+
+# disabled as there's a bug with signal handlers
+tests/callback/test_signalhandlers

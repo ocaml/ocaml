@@ -517,6 +517,14 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   clear_table ((struct generic_table *)&minor_tables->major_ref);
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
+
+#ifdef DEBUG
+  {
+    uintnat* p = (uintnat*)domain_state->young_start;
+    for (; p < (uintnat*)domain_state->young_end; p++)
+      *p = Debug_uninit_align;
+  }
+#endif
 }
 
 void caml_empty_minor_heap_promote (struct domain* domain, int participating_count, struct domain** participating, int not_alone)
