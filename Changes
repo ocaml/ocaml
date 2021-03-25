@@ -124,7 +124,7 @@ Working version
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`
-  (Daniel Bünzli, review by David Allsopp and Josh Berdine)
+  (Daniel Bünzli, review by David Allsopp, Josh Berdine and Gabriel Scherer)
 
 * #10084: Unix.open_process_args* functions now look up the program in the PATH.
   This was already the case under Windows, but this is now also done under
