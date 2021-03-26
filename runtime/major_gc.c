@@ -257,6 +257,7 @@ void caml_adopt_orphaned_work ()
     CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
     if (f->todo_head) {
       if (myf->todo_tail == NULL) {
+        CAMLassert(myf->todo_head == NULL);
         myf->todo_head = f->todo_head;
         myf->todo_tail = f->todo_tail;
       } else {
