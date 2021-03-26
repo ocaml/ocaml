@@ -54,12 +54,16 @@ let () =
 let () =
   let start = timer_ticks () in
   let flag = Atomic.make false in
+  let do_notify = ref false in
+  let () = Gc.minor () in
   let d1 = spawn (fun () ->
     critical_section (fun () ->
+      do_notify := true;
       let r = wait_until Int64.(add start (of_int 1000_000_000)) in
       assert (r = Notified);
       Atomic.set flag true)) in
   let d2 = spawn (fun () ->
+    while not !do_notify do Domain.Sync.cpu_relax () done;
     notify (get_id d1);
     assert (Atomic.get flag)) in
   join d1;
