@@ -256,16 +256,9 @@ static inline void* Ptr_val(value val)
   return (void*)(val - 1);
 }
 
-#define Val_pc(pc) Val_ptr(pc)
-#define Pc_val(val) ((code_t)Ptr_val(val))
-
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
-
-/* TODO: move fully to the upstream representation of Code_val */
-#define Bytecode_val(val) (Pc_val(val))
-#define Val_bytecode(code) (Val_pc(code))
-#define Code_val(val) Bytecode_val(Field((val), 0))
+#define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
 #define Closinfo_val(val) Field((val), 1)          /* Arity and start env */
 /* In the closure info field, the top 8 bits are the arity (signed).
    The low bit is set to one, to look like an integer.
