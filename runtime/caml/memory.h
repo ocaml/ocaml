@@ -563,26 +563,6 @@ struct caml__roots_block {
 
 #define End_roots() CAML_LOCAL_ROOTS = caml__roots_block.next; }
 
-/* [caml_create_root] creates a new GC root, initialised to the given
-   value.  The value stored in this root may only be read and written
-   with [caml_read_root] and [caml_modify_root]. */
-
-CAMLextern caml_root caml_create_root (value);
-CAMLextern caml_root caml_create_root_noexc(value);
-
-/* [caml_delete_root] deletes a root created by caml_create_root */
-
-CAMLextern void caml_delete_root (caml_root);
-
-/* [caml_read_root] loads the value stored in a root */
-
-CAMLextern value caml_read_root (caml_root);
-
-/* [caml_modify_root] stores a new value in a root */
-
-CAMLextern void caml_modify_root (caml_root, value);
-
-
 /** Compatability with old C-API **/
 
 /* [caml_register_global_root] registers a global C variable as a memory root

@@ -29,11 +29,6 @@
 #include "caml/debugger.h"
 #include "caml/startup.h"
 
-void caml_init_backtrace(void)
-{
-  return;
-}
-
 /* Start or stop the backtrace machinery */
 CAMLprim value caml_record_backtrace(value vflag)
 {
@@ -43,10 +38,9 @@ CAMLprim value caml_record_backtrace(value vflag)
     Caml_state->backtrace_active = flag;
     Caml_state->backtrace_pos = 0;
     if (flag) {
-      Caml_state->backtrace_last_exn = caml_create_root(Val_unit);
+      caml_modify_generational_global_root(&Caml_state->backtrace_last_exn, Val_unit);
     } else {
-      caml_delete_root(Caml_state->backtrace_last_exn);
-      Caml_state->backtrace_last_exn = NULL;
+      caml_remove_generational_global_root(&Caml_state->backtrace_last_exn);
     }
   }
   return Val_unit;
@@ -205,8 +199,7 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 
   caml_domain_state* domain_state = Caml_state;
 
-  if (domain_state->backtrace_last_exn != NULL)
-    caml_modify_root (domain_state->backtrace_last_exn, exn);
+  caml_modify_generational_global_root (&domain_state->backtrace_last_exn, exn);
 
   bt_size = Wosize_val(backtrace);
   if(bt_size > BACKTRACE_BUFFER_SIZE){

@@ -25,57 +25,6 @@
 
 static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
-/* legacy multicore API that we need to fix */
-CAMLexport caml_root caml_create_root(value init)
-{
-  CAMLparam1(init);
-
-  value* v = (value*)caml_stat_alloc(sizeof(value));
-
-  *v = init;
-
-  caml_register_global_root(v);
-
-  CAMLreturnT(caml_root, (caml_root)v);
-}
-
-CAMLexport caml_root caml_create_root_noexc(value init)
-{
-  CAMLparam1(init);
-
-  value* v = (value*)caml_stat_alloc_noexc(sizeof(value));
-
-  if( v == NULL ) {
-    CAMLdrop;
-    return NULL;
-  }
-
-  *v = init;
-
-  caml_register_global_root(v);
-
-  CAMLreturnT(caml_root, (caml_root)v);
-}
-
-CAMLexport void caml_delete_root(caml_root root)
-{
-  value* v = (value*)root;
-  Assert(root);
-  /* the root will be removed from roots_all and freed at the next GC */
-  caml_remove_global_root(v);
-  caml_stat_free(v);
-}
-
-CAMLexport value caml_read_root(caml_root root)
-{
-  return *((value*)root);
-}
-
-CAMLexport void caml_modify_root(caml_root root, value newv)
-{
-  *((value*)root) = newv;
-}
-
 /* The three global root lists.
    Each is represented by a skip list with the key being the address
    of the root.  (The associated data field is unused.) */

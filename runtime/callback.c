@@ -272,7 +272,7 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
 /* Naming of OCaml values */
 
 struct named_value {
-  caml_root val;
+  value val;
   struct named_value * next;
   char name[1];
 };
@@ -304,7 +304,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   caml_plat_lock(&named_value_lock);
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
-      caml_modify_root(nv->val, val);
+      caml_modify_generational_global_root(&nv->val, val);
       found = 1;
       break;
     }
@@ -313,9 +313,10 @@ CAMLprim value caml_register_named_value(value vname, value val)
     nv = (struct named_value *)
       caml_stat_alloc(sizeof(struct named_value) + namelen);
     memcpy(nv->name, name, namelen + 1);
-    nv->val = caml_create_root(val);
+    nv->val = val;
     nv->next = named_value_table[h];
     named_value_table[h] = nv;
+    caml_register_generational_global_root(&nv->val);
   }
   caml_plat_unlock(&named_value_lock);
   return Val_unit;
@@ -324,18 +325,17 @@ CAMLprim value caml_register_named_value(value vname, value val)
 CAMLexport const value* caml_named_value(char const *name)
 {
   struct named_value * nv;
-  caml_root ret = NULL;
   caml_plat_lock(&named_value_lock);
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
     if (strcmp(name, nv->name) == 0){
-      ret = nv->val;
-      break;
+      caml_plat_unlock(&named_value_lock);
+      return &nv->val;
     }
   }
   caml_plat_unlock(&named_value_lock);
-  return Op_val(ret);
+  return NULL;
 }
 
 CAMLexport int caml_get_callback_depth ()

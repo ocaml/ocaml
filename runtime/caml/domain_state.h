@@ -25,8 +25,6 @@
 
 #include "misc.h"
 
-typedef struct caml_root_private* caml_root;
-
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
 typedef struct {
