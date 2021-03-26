@@ -218,7 +218,8 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 static __thread intnat caml_bcodcount;
 #endif
 
-static caml_root raise_unhandled;
+static value raise_unhandled;
+value global_data;
 
 /* The interpreter itself */
 value caml_interprete(code_t prog, asize_t prog_size)
@@ -272,8 +273,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
     raise_unhandled_closure = caml_alloc_small (2, Closure_tag);
     Field(raise_unhandled_closure, 0) = Val_bytecode(raise_unhandled_code);
     Closinfo_val(raise_unhandled_closure) = Make_closinfo(0, 2);
-    raise_unhandled = caml_create_root(raise_unhandled_closure);
-    caml_global_data = caml_create_root(Val_unit);
+    raise_unhandled = raise_unhandled_closure;
+    caml_register_generational_global_root(&raise_unhandled);
+    caml_global_data = Val_unit;
+    caml_register_generational_global_root(&caml_global_data);
     caml_init_callbacks();
     return Val_unit;
   }
@@ -687,7 +690,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBAL):
-      accu = Field(caml_read_root(caml_global_data), *pc);
+      accu = Field(caml_global_data, *pc);
       pc++;
       Next;
 
@@ -695,7 +698,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       /* Fallthrough */
     Instruct(GETGLOBALFIELD): {
-      accu = Field(caml_read_root(caml_global_data), *pc);
+      accu = Field(caml_global_data, *pc);
       pc++;
       accu = Field(accu, *pc);
       pc++;
@@ -703,7 +706,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETGLOBAL):
-      caml_modify(&Field(caml_read_root(caml_global_data), *pc), accu);
+      global_data = caml_global_data;
+      caml_modify(&Field(global_data, *pc), accu);
+      caml_modify_generational_global_root(&caml_global_data, global_data);
       accu = Val_unit;
       pc++;
       Next;
@@ -1270,7 +1275,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 do_resume: {
       struct stack_info* stk = Ptr_val(accu);
       if (stk == NULL) {
-         accu = Field(caml_read_root(caml_global_data), CONTINUATION_ALREADY_TAKEN_EXN);
+         accu = Field(caml_global_data, CONTINUATION_ALREADY_TAKEN_EXN);
          goto raise_exception;
       }
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);
@@ -1304,7 +1309,7 @@ do_resume: {
       struct stack_info* parent_stack = Stack_parent(old_stack);
 
       if (parent_stack == NULL) {
-        accu = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        accu = Field(caml_global_data, UNHANDLED_EXN);
         goto raise_exception;
       }
 
@@ -1348,8 +1353,8 @@ do_resume: {
 
       if (parent == NULL) {
         accu = caml_continuation_use(cont);
-        resume_fn = caml_read_root(raise_unhandled);
-        resume_arg = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        resume_fn = raise_unhandled;
+        resume_arg = Field(caml_global_data, UNHANDLED_EXN);
         goto do_resume;
       }
 

@@ -77,7 +77,7 @@ struct c_stack_link {
 #define NUM_STACK_SIZE_CLASSES 5
 
 /* The table of global identifiers */
-extern caml_root caml_global_data;
+extern value caml_global_data;
 
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])

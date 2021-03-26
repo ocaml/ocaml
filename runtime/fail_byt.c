@@ -102,7 +102,7 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 */
 static void check_global_data(char const *exception_name)
 {
-  if (caml_global_data == 0 || !Is_block(caml_read_root(caml_global_data))) {
+  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s during initialisation\n", exception_name);
     exit(2);
   }
@@ -110,7 +110,7 @@ static void check_global_data(char const *exception_name)
 
 static void check_global_data_param(char const *exception_name, char const *msg)
 {
-  if (caml_global_data == 0 || !Is_block(caml_read_root(caml_global_data))) {
+  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s(\"%s\")\n", exception_name, msg);
     exit(2);
   }
@@ -119,7 +119,7 @@ static void check_global_data_param(char const *exception_name, char const *msg)
 Caml_inline value caml_get_failwith_tag (char const *msg)
 {
   check_global_data_param("Failure", msg);
-  return Field(caml_read_root(caml_global_data), FAILURE_EXN);
+  return Field(caml_global_data, FAILURE_EXN);
 }
 
 CAMLexport void caml_failwith (char const *msg)
@@ -138,7 +138,7 @@ CAMLexport void caml_failwith_value (value msg)
 Caml_inline value caml_get_invalid_argument_tag (char const *msg)
 {
   check_global_data_param("Invalid_argument", msg);
-  return Field(caml_read_root(caml_global_data), INVALID_EXN);
+  return Field(caml_global_data, INVALID_EXN);
 }
 
 CAMLexport void caml_invalid_argument (char const *msg)
@@ -162,56 +162,56 @@ CAMLexport void caml_array_bound_error(void)
 CAMLexport void caml_raise_out_of_memory(void)
 {
   check_global_data("Out_of_memory");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 OUT_OF_MEMORY_EXN));
 }
 
 CAMLexport void caml_raise_stack_overflow(void)
 {
   check_global_data("Stack_overflow");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 STACK_OVERFLOW_EXN));
 }
 
 CAMLexport void caml_raise_sys_error(value msg)
 {
   check_global_data_param("Sys_error", String_val(msg));
-  caml_raise_with_arg(Field(caml_read_root(caml_global_data),
+  caml_raise_with_arg(Field(caml_global_data,
                                 SYS_ERROR_EXN), msg);
 }
 
 CAMLexport void caml_raise_end_of_file(void)
 {
   check_global_data("End_of_file");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 END_OF_FILE_EXN));
 }
 
 CAMLexport void caml_raise_zero_divide(void)
 {
   check_global_data("Division_by_zero");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 ZERO_DIVIDE_EXN));
 }
 
 CAMLexport void caml_raise_not_found(void)
 {
   check_global_data("Not_found");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 NOT_FOUND_EXN));
 }
 
 CAMLexport void caml_raise_sys_blocked_io(void)
 {
   check_global_data("Sys_blocked_io");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 SYS_BLOCKED_IO));
 }
 
 CAMLexport void caml_raise_continuation_already_taken(void)
 {
   check_global_data("Continuation_already_taken");
-  caml_raise_constant(Field(caml_read_root(caml_global_data),
+  caml_raise_constant(Field(caml_global_data,
                                 CONTINUATION_ALREADY_TAKEN_EXN));
 }
 
@@ -229,11 +229,11 @@ int caml_is_special_exception(value exn) {
 
   value f;
 
-  if (caml_global_data == 0 || !Is_block(caml_read_root(caml_global_data))) {
+  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
     return 0;
   }
 
-  f = caml_read_root(caml_global_data);
+  f = caml_global_data;
   return exn == Field(f, MATCH_FAILURE_EXN)
       || exn == Field(f, ASSERT_FAILURE_EXN)
       || exn == Field(f, UNDEFINED_RECURSIVE_MODULE_EXN);

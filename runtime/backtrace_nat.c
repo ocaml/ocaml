@@ -80,9 +80,9 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
   caml_domain_state* domain_state = Caml_state;
   caml_frame_descrs fds;
 
-  if (exn != caml_read_root(domain_state->backtrace_last_exn)) {
+  if (exn != domain_state->backtrace_last_exn) {
     domain_state->backtrace_pos = 0;
-    caml_modify_root(domain_state->backtrace_last_exn, exn);
+    caml_modify_generational_global_root(&domain_state->backtrace_last_exn, exn);
   }
 
   if (Caml_state->backtrace_buffer == NULL &&

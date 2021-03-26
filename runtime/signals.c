@@ -125,10 +125,11 @@ void caml_free_signal_stack()
 
 /* Execute a signal handler immediately */
 
-static caml_root caml_signal_handlers;
+static value caml_signal_handlers;
 
 void caml_init_signal_handling() {
-  caml_signal_handlers = caml_create_root(caml_alloc_shr(NSIG, 0));
+  caml_signal_handlers = caml_alloc_shr(NSIG, 0);
+  caml_register_generational_global_root(&caml_signal_handlers);
 }
 
 static void caml_execute_signal(int signal_number)
@@ -143,7 +144,7 @@ static void caml_execute_signal(int signal_number)
   sigaddset(&nsigs, signal_number);
   sigprocmask(SIG_BLOCK, &nsigs, &sigs);
 #endif
-  caml_read_field(caml_read_root(caml_signal_handlers), signal_number, &handler);
+  caml_read_field(caml_signal_handlers, signal_number, &handler);
   res = caml_callback_exn(
            handler,
            Val_int(caml_rev_convert_signal_number(signal_number)));
@@ -296,14 +297,16 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     res = Val_int(1);
     break;
   case 2:                       /* was Signal_handle */
-    caml_read_field(caml_read_root(caml_signal_handlers), sig, &handler);
+    caml_read_field(caml_signal_handlers, signal_number, &handler);
     res = caml_alloc_1 (0, handler);
     break;
   default:                      /* error in caml_set_signal_action */
     caml_sys_error(NO_ARG);
   }
   if (Is_block(action)) {
-    caml_modify(&Field(caml_read_root(caml_signal_handlers), sig), Field(action, 0));
+    value signal_handlers = caml_signal_handlers;
+    caml_modify(&Field(signal_handlers, sig), Field(action, 0));
+    caml_modify_generational_global_root(&caml_signal_handlers, signal_handlers);
   }
   caml_process_pending_signals();
   CAMLreturn (res);

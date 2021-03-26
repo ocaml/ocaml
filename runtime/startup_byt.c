@@ -361,7 +361,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
   /* TODO: do we need multicore Lock here */
-  caml_modify_root(caml_global_data, caml_input_val(chan));
+  caml_modify_generational_global_root(&caml_global_data, caml_input_val(chan));
   /* TODO: do we need multicore Unlock here */
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
@@ -445,7 +445,7 @@ CAMLexport value caml_startup_code_exn(
   /* Use the builtin table of primitives */
   caml_build_primitive_table_builtin();
   /* Load the globals */
-  caml_modify_root(caml_global_data, caml_input_value_from_block(data, data_size));
+  caml_modify_generational_global_root(&caml_global_data, caml_input_value_from_block(data, data_size));
   caml_minor_collection(); /* ensure all globals are in major heap */
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_init_section_table(section_table, section_table_size);
