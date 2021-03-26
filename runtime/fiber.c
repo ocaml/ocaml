@@ -2,17 +2,15 @@
 
 #include <string.h>
 #include <unistd.h>
-#include "caml/misc.h"
+#include "caml/alloc.h"
+#include "caml/codefrag.h"
+#include "caml/fail.h"
 #include "caml/fiber.h"
 #include "caml/gc_ctrl.h"
-#include "caml/instruct.h"
-#include "caml/fail.h"
-#include "caml/alloc.h"
 #include "caml/platform.h"
-#include "caml/fix_code.h"
 #include "caml/minor_gc.h"
+#include "caml/misc.h"
 #include "caml/major_gc.h"
-#include "caml/shared_heap.h"
 #include "caml/memory.h"
 #include "caml/startup_aux.h"
 #ifdef NATIVE_CODE
@@ -274,6 +272,10 @@ void caml_change_max_stack_size (uintnat new_max_size)
   Used by the GC to find roots on the stacks of running or runnable fibers.
 */
 
+Caml_inline int is_block_and_not_code_frag(value v) {
+  return Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL;
+}
+
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, value* v_gc_regs)
 {
   value *low, *high, *sp;
@@ -284,12 +286,20 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack, v
     high = Stack_high(stack);
     low = stack->sp;
     for (sp = low; sp < high; sp++) {
-      f(fdata, *sp, sp);
+      /* Code pointers inside the stack are naked pointers.
+         We must avoid passing them to function [f]. */
+      value v = *sp;
+      if (Is_block(v) && caml_find_code_fragment_by_pc((char *) v) == NULL) {
+        f(fdata, v, sp);
+      }
     }
 
-    f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
-    f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
-    f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
+    if (is_block_and_not_code_frag(Stack_handle_value(stack)))
+      f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
+    if (is_block_and_not_code_frag(Stack_handle_exception(stack)))
+      f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
+    if (is_block_and_not_code_frag(Stack_handle_effect(stack)))
+      f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
 
     stack = Stack_parent(stack);
   }
@@ -410,7 +420,7 @@ int caml_try_realloc_stack(asize_t required_space)
 struct stack_info* caml_alloc_main_stack (uintnat init_size)
 {
   struct stack_info* stk =
-    alloc_stack_noexc(init_size, Val_unit, Val_unit,  Val_unit);
+    alloc_stack_noexc(init_size, Val_unit, Val_unit, Val_unit);
   return stk;
 }
 

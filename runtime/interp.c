@@ -20,6 +20,7 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/callback.h"
+#include "caml/codefrag.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
 #include "caml/fix_code.h"
@@ -74,7 +75,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 // Do call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
-  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = Val_pc(pc); \
+  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
@@ -85,7 +86,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
    first backtrace slot points to the event following the C call
    instruction. */
 #define Setup_for_c_call \
-  { sp -= 2; sp[0] = env; sp[1] = Val_pc(pc + 1); domain_state->current_stack->sp = sp; }
+  { sp -= 2; sp[0] = env; sp[1] = (value)(pc + 1); domain_state->current_stack->sp = sp; }
 #define Restore_after_c_call \
   { sp = domain_state->current_stack->sp; env = *sp; sp += 2; }
 
@@ -98,13 +99,13 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
     sp[0] = accu; /* accu */ \
     sp[1] = Val_unit; /* C_CALL frame: dummy environment */ \
     sp[2] = Val_unit; /* RETURN frame: dummy local 0 */ \
-    sp[3] = Val_pc(pc); /* RETURN frame: saved return address */  \
+    sp[3] = (value) pc; /* RETURN frame: saved return address */  \
     sp[4] = env; /* RETURN frame: saved environment */ \
     sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_event \
   { sp = domain_state->current_stack->sp; accu = sp[0]; \
-    pc = Pc_val(sp[3]); env = sp[4]; extra_args = Long_val(sp[5]); \
+    pc = (code_t) sp[3]; env = sp[4]; extra_args = Long_val(sp[5]); \
     sp += 6; }
 
 /* Debugger interface */
@@ -221,6 +222,7 @@ static __thread intnat caml_bcodcount;
 static caml_root raise_unhandled;
 
 /* The interpreter itself */
+
 value caml_interprete(code_t prog, asize_t prog_size)
 {
 #ifdef PC_REG
@@ -263,6 +265,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
   if (prog == NULL) {           /* Interpreter is initializing */
     static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
     value raise_unhandled_closure;
+
+    caml_register_code_fragment((char *) raise_unhandled_code,
+                                (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
+                                DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
@@ -270,7 +276,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
                      sizeof(raise_unhandled_code));
 #endif
     raise_unhandled_closure = caml_alloc_small (2, Closure_tag);
-    Field(raise_unhandled_closure, 0) = Val_bytecode(raise_unhandled_code);
+    Code_val(raise_unhandled_closure) = (code_t)raise_unhandled_code;
     Closinfo_val(raise_unhandled_closure) = Make_closinfo(0, 2);
     raise_unhandled = caml_create_root(raise_unhandled_closure);
     caml_global_data = caml_create_root(Val_unit);
@@ -310,7 +316,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
   env = Atom(0);
   accu = Val_int(0);
 
-
 #ifdef THREADED_CODE
 #ifdef DEBUG
  next_instr:
@@ -322,7 +327,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
   while(1) {
 #ifdef DEBUG
-
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_params->trace_level>1) printf("\n##%ld\n", caml_bcodcount);
@@ -426,7 +430,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSH_RETADDR): {
       sp -= 3;
-      sp[0] = Val_pc(pc + *pc);
+      sp[0] = (value) (pc + *pc);
       sp[1] = env;
       sp[2] = Val_long(extra_args);
       pc++;
@@ -442,7 +446,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       value arg1 = sp[0];
       sp -= 3;
       sp[0] = arg1;
-      sp[1] = Val_pc(pc);
+      sp[1] = (value)pc;
       sp[2] = env;
       sp[3] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -456,7 +460,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp -= 3;
       sp[0] = arg1;
       sp[1] = arg2;
-      sp[2] = Val_pc(pc);
+      sp[2] = (value)pc;
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -472,7 +476,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp[0] = arg1;
       sp[1] = arg2;
       sp[2] = arg3;
-      sp[3] = Val_pc(pc);
+      sp[3] = (value)pc;
       sp[4] = env;
       sp[5] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -565,7 +569,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         goto check_stacks;
       } else {
         /* return to callee, no stack switching */
-        pc = Pc_val(sp[0]);
+        pc = (code_t)(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
         sp += 3;
@@ -593,7 +597,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, num_args + 3, Closure_tag, Enter_gc);
         Field(accu, 2) = env;
         for (i = 0; i < num_args; i++) Field(accu, i + 3) = sp[i];
-        Field(accu, 0) = Val_bytecode(pc-3); /* Point to the preceding RESTART instr. */
+        Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
         Closinfo_val(accu) = Make_closinfo(0, 2);
         sp += num_args;
         goto do_return;
@@ -609,15 +613,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, 2 + nvars, Closure_tag, Enter_gc);
         for (i = 0; i < nvars; i++) Field(accu, i + 2) = sp[i];
       } else {
+        /* PR#6385: must allocate in major heap */
         /* caml_alloc_shr and caml_initialize never trigger a GC,
            so no need to Setup_for_gc */
-        /* PR#6385: must allocate in major heap */
         accu = caml_alloc_shr(2 + nvars, Closure_tag);
         for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 2), sp[i]);
       }
       /* The code pointer is not in the heap, so no need to go through
          caml_initialize. */
-      Field(accu, 0) = Val_bytecode(pc + *pc);
+      Code_val(accu) = pc + *pc;
       Closinfo_val(accu) = Make_closinfo(0, 2);
       pc++;
       sp += nvars;
@@ -630,7 +634,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t envofs = nfuncs * 3 - 1;
       mlsize_t blksize = envofs + nvars;
       int i;
-      value *p;
+      value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag, Enter_gc);
@@ -649,12 +653,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
          so no need to go through caml_initialize. */
       *--sp = accu;
       p = &Field(accu, 0);
-      *p++ = Val_bytecode (pc + pc[0]);
+      *p++ = (value) (pc + pc[0]);
       *p++ = Make_closinfo(0, envofs);
       for (i = 1; i < nfuncs; i++) {
         *p++ = Make_header(i * 3, Infix_tag, 0); /* color irrelevant */
         *--sp = (value) p;
-        *p++ = Val_bytecode (pc + pc[i]);
+        *p++ = (value) (pc + pc[i]);
         envofs -= 3;
         *p++ = Make_closinfo(0, envofs);
       }
@@ -807,7 +811,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = Field(accu, 3); Next;
     Instruct(GETFIELD):
       accu = Field(accu, *pc); pc++; Next;
-
     Instruct(GETFLOATFIELD): {
       double d = Double_flat_field(accu, *pc++);
       Alloc_small(accu, Double_wosize, Double_tag, Enter_gc);
@@ -908,7 +911,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSHTRAP):
       sp -= 4;
-      Trap_pc(sp) = Val_pc(pc + *pc);
+      Trap_pc(sp) = pc + *pc;
       Trap_link(sp) = Val_long(domain_state->trap_sp_off);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
@@ -935,7 +938,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(RERAISE):
       Check_trap_barrier;
       if (domain_state->backtrace_active) {
-        *--sp = Val_pc(pc - 1);
+        *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 1);
       }
       goto raise_notrace;
@@ -944,7 +947,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     raise_exception:
       Check_trap_barrier;
       if (domain_state->backtrace_active) {
-        *--sp = Val_pc(pc - 1);
+        *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 0);
       }
     raise_notrace:
@@ -977,15 +980,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         }
       } else {
         sp = Stack_high(domain_state->current_stack) + domain_state->trap_sp_off;
-        pc = Pc_val(Trap_pc(sp));
+        pc = Trap_pc(sp);
         domain_state->trap_sp_off = Long_val(Trap_link(sp));
         env = sp[2];
         extra_args = Long_val(sp[3]);
         sp += 4;
       }
       Next;
-
-
 
 /* Stack checks */
 
@@ -1221,10 +1222,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETDYNMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
       value meths = Field (sp[0], 0);
-      int li = 3, hi = Field (meths,0), mi;
+      int li = 3, hi = Field(meths,0), mi;
       while (li < hi) {
         mi = ((li+hi) >> 1) | 1;
-        if (accu < Field (meths,mi)) hi = mi-2;
+        if (accu < Field(meths,mi)) hi = mi-2;
         else li = mi;
       }
       accu = Field (meths, li-1);
@@ -1262,7 +1263,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp -= 3;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(0);
-      sp[2] = Val_pc(pc);
+      sp[2] = (value)pc;
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       goto do_resume;
@@ -1312,7 +1313,7 @@ do_resume: {
 
       sp -= 4;
       sp[0] = Val_long(domain_state->trap_sp_off);
-      sp[1] = Val_pc(pc);
+      sp[1] = (value)pc;
       sp[2] = env;
       sp[3] = Val_long(extra_args);
 
