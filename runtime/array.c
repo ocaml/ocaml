@@ -513,6 +513,58 @@ CAMLprim value caml_array_concat(value al)
   return res;
 }
 
+CAMLprim value caml_array_concat_sub(value al)
+{
+  value static_arrays[STATIC_SIZE], * arrays;
+  intnat static_offsets[STATIC_SIZE], * offsets;
+  intnat static_lengths[STATIC_SIZE], * lengths;
+  intnat n, i, off, len;
+  value l, arr_off_len, arr, res;
+
+  /* Length of list = number of arrays */
+  for (n = 0, l = al; l != Val_int(0); l = Field(l, 1)) n++;
+  /* Allocate extra storage if too many arrays */
+  if (n <= STATIC_SIZE) {
+    arrays = static_arrays;
+    offsets = static_offsets;
+    lengths = static_lengths;
+  } else {
+    arrays = caml_stat_alloc(n * sizeof(value));
+    offsets = caml_stat_alloc_noexc(n * sizeof(intnat));
+    if (offsets == NULL) {
+      caml_stat_free(arrays);
+      caml_raise_out_of_memory();
+    }
+    lengths = caml_stat_alloc_noexc(n * sizeof(value));
+    if (lengths == NULL) {
+      caml_stat_free(offsets);
+      caml_stat_free(arrays);
+      caml_raise_out_of_memory();
+    }
+  }
+  /* Build the parameters to caml_array_gather */
+  for (i = 0, l = al; l != Val_int(0); l = Field(l, 1), i++) {
+    arr_off_len = Field(l, 0);
+    arr = Field(arr_off_len, 0);
+    off = Long_val(Field(arr_off_len, 1));
+    len = Long_val(Field(arr_off_len, 2));
+    if (off < 0 || len < 0 || off > caml_array_length(arr) - len)
+      caml_invalid_argument("Array.concat_sub");
+    arrays[i] = arr;
+    offsets[i] = off;
+    lengths[i] = len;
+  }
+  /* Do the concatenation */
+  res = caml_array_gather(n, arrays, offsets, lengths);
+  /* Free the extra storage if needed */
+  if (n > STATIC_SIZE) {
+    caml_stat_free(arrays);
+    caml_stat_free(offsets);
+    caml_stat_free(lengths);
+  }
+  return res;
+}
+
 CAMLprim value caml_array_fill(value array,
                                value v_ofs,
                                value v_len,
