@@ -84,7 +84,7 @@ DOMAIN_STATE(intnat, backtrace_active)
 
 DOMAIN_STATE(code_t*, backtrace_buffer)
 
-DOMAIN_STATE(caml_root, backtrace_last_exn)
+DOMAIN_STATE(value, backtrace_last_exn)
 
 DOMAIN_STATE(intnat, compare_unordered)
 
@@ -113,7 +113,7 @@ DOMAIN_STATE(struct pool**, pools_to_rescan)
 DOMAIN_STATE(int, pools_to_rescan_len)
 DOMAIN_STATE(int, pools_to_rescan_count)
 
-DOMAIN_STATE(caml_root, dls_root)
+DOMAIN_STATE(value, dls_root)
 /* Domain-local state */
 
 DOMAIN_STATE(value, unique_token_root)

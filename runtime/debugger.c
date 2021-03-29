@@ -35,7 +35,7 @@
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
 int caml_debugger_fork_mode = 1; /* parent by default */
-caml_root marshal_flags;
+value marshal_flags;
 
 #if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
@@ -192,7 +192,8 @@ void caml_debugger_init(void)
   flags = caml_alloc(2, Tag_cons);
   Store_field(flags, 0, Val_int(1)); /* Marshal.Closures */
   Store_field(flags, 1, Val_emptylist);
-  marshal_flags = caml_create_root(flags);
+  marshal_flags = flags;
+  caml_register_generational_global_root(&marshal_flags);
 
   a = caml_secure_getenv(T("CAML_DEBUG_SOCKET"));
   address = a ? caml_stat_strdup_of_os(a) : NULL;
@@ -284,7 +285,7 @@ static void safe_output_value(struct channel *chan, value val)
   saved_external_raise = Caml_state->external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
     Caml_state->external_raise = &exception_ctx;
-    caml_output_val(chan, val, caml_read_root(marshal_flags));
+    caml_output_val(chan, val, marshal_flags);
   } else {
     /* Send wrong magic number, will cause [caml_input_value] to fail */
     caml_really_putblock(chan, "\000\000\000\000", 4);
@@ -523,7 +524,7 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_GET_GLOBAL:
       i = caml_getword(dbg_in);
-      putval(dbg_out, Field(caml_read_root(caml_global_data), i));
+      putval(dbg_out, Field(caml_global_data, i));
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
