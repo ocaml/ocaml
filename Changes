@@ -187,7 +187,7 @@ Working version
 - #8877: Call the linker when ocamlopt is invoked with .o and .a files only.
   (Greta Yorsh, review by Leo White)
 
-- #10207: deprecate single uppercase or lowercase letter in warning
+- #10207, #10312: deprecate single uppercase or lowercase letter in warning
   specifications.
   The form `-w aBcD` was equivalent to `-w -a+b-c+d`.
   It is now deprecated to improve the coexistence with warning mnemonics.

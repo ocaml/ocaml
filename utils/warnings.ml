@@ -497,7 +497,14 @@ type token =
   | Num of int * int * modifier
 
 let letter_alert tokens =
-  let deprecated = function Letter (c,None) -> Some c | _ -> None in
+  let deprecated = function
+    | Letter (('a' | 'A'), _) ->
+        (* do not warn on 'a' and 'A' to enable the "a+x+y..." and "A-x-y..."
+           idiom *)
+        None
+    | Letter (c,None) -> Some c
+    | _ -> None
+  in
   let print_char ppf c =
     let lowercase = Char.lowercase_ascii c = c in
     Format.fprintf ppf "%c%c"
