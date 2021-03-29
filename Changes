@@ -287,6 +287,10 @@ Working version
 - #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
   (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
 
+- #10298, #10305: Incorrect propagation of type equalities in functor
+  application
+  (Jacques Garrigue, report and review by Didier Remy)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
