@@ -41,7 +41,10 @@ type 'a t = 'a CamlinternalLazy.t
    instead.
 
    Note: [Lazy.force] (and therefore the [lazy] pattern-matching) are
-   thread-safe, but will raise the [RacyLazy] exception if forced concurrently.
+   thread-safe, but will raise the [RacyLazy] exception if forced
+   concurrently from multiple domains and will raise the [Undefined]
+   exception if forced concurrently from multiple systhreads or fibers
+   within a domain.
    If you need to share a lazy between threads, then you need to use
    [Lazy.try_force] and implement your own synchronisation.
    (@since XXX)
