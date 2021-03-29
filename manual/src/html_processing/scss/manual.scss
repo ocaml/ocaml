@@ -23,7 +23,7 @@
 	}
     }
     ul{list-style:none;}
-    ul.itemize li::before{@include caret;}
+    ul.itemize li::before{@include disc;}
 
     /* When the TOC is repeated in the main content */
     ul.ul-content {
@@ -54,7 +54,10 @@
 	}
     }
     /* only for Contents/Foreword in index.html: */
-    ul.ul-content li::before{@include caret;}
+    ul.ul-content li::before{
+	@include disc;
+	margin-left: 0;
+    }
     /* table of contents: (manual.001.html): */
     ul.toc ul.toc ul.toc{
 	font-size:smaller;
@@ -275,7 +278,7 @@ blockquote.quote{
 }
 #part-menu li.active a{
     color:#000;
-    &::before{@include caret;}
+    &::before{@include diamond}
 }
 span.c003{
     color:#564233;

@@ -7,7 +7,7 @@ $logocolor:#ec6a0d;
 $logo_height:67px;
 
 @if $ocamlorg {
-    .container { 
+    .container {
 	margin-left:0;
 	margin-right:0;
     }
@@ -179,7 +179,7 @@ html {
 	}
     }
 }
-    
+
 @mixin nav-toc-mobile {
     position:static;
     width:auto;
@@ -225,7 +225,7 @@ html {
 	position: absolute;
 	background: transparent;
     }
-    .content, .api {    
+    .content, .api {
 	nav.toc {
 	    margin-right: 1em;
 	    float: left;
@@ -243,4 +243,24 @@ html {
     font-size:smaller;
     margin-right:4px;
     margin-left:-1em
+}
+
+@mixin disc {
+    content:"●";
+    color:$logocolor;
+    margin-right:4px;
+    margin-left:-1em;
+    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-size:13px;
+    vertical-align:1px;
+}
+
+@mixin diamond {
+    content:"◆";
+    color:$logocolor;
+    margin-right:4px;
+    margin-left:-1em;
+    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-size:14px;
+    vertical-align:1px;
 }
