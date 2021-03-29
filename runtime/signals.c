@@ -304,9 +304,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     caml_sys_error(NO_ARG);
   }
   if (Is_block(action)) {
-    value signal_handlers = caml_signal_handlers;
-    caml_modify(&Field(signal_handlers, sig), Field(action, 0));
-    caml_modify_generational_global_root(&caml_signal_handlers, signal_handlers);
+    caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
   caml_process_pending_signals();
   CAMLreturn (res);

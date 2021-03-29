@@ -219,7 +219,6 @@ static __thread intnat caml_bcodcount;
 #endif
 
 static value raise_unhandled;
-value global_data;
 
 /* The interpreter itself */
 value caml_interprete(code_t prog, asize_t prog_size)
@@ -705,13 +704,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
 
-    Instruct(SETGLOBAL):
-      global_data = caml_global_data;
-      caml_modify(&Field(global_data, *pc), accu);
-      caml_modify_generational_global_root(&caml_global_data, global_data);
+    Instruct(SETGLOBAL):  {
+      caml_modify(&Field(caml_global_data, *pc), accu);
       accu = Val_unit;
       pc++;
       Next;
+    }
 
 /* Allocation of blocks */
 
