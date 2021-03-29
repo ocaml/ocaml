@@ -297,7 +297,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     res = Val_int(1);
     break;
   case 2:                       /* was Signal_handle */
-    caml_read_field(caml_signal_handlers, signal_number, &handler);
+    caml_read_field(caml_signal_handlers, sig, &handler);
     res = caml_alloc_1 (0, handler);
     break;
   default:                      /* error in caml_set_signal_action */

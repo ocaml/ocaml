@@ -277,9 +277,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     }
 
     domain_state->dls_root = Val_unit;
-    if(domain_state->dls_root == (value)NULL) {
-      goto create_dls_root_failure;
-    }
     caml_register_generational_global_root(&domain_state->dls_root);
 
     domain_state->unique_token_root = caml_alloc_shr_noexc(Abstract_tag, Val_unit);
@@ -326,7 +323,6 @@ create_stack_cache_failure:
   caml_remove_generational_global_root(&domain_state->unique_token_root);
   caml_remove_generational_global_root(&domain_state->dls_root);
 create_unique_token_failure:
-create_dls_root_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
