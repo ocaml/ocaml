@@ -147,6 +147,10 @@ val blit :
    designate a valid subarray of [src], or if [dst_pos] and [len] do not
    designate a valid subarray of [dst]. *)
 
+val concat_sub : ('a array * int * int) list -> 'a array
+(** [concat_sub [(a1, p1, l1); ...; (an, pn, ln)]] is equivalent to
+    [concat [sub a1 p1 l1; ...; sub an pn ln]] but more efficient. *)
+
 val to_list : 'a array -> 'a list
 (** [to_list a] returns the list of all the elements of [a]. *)
 
