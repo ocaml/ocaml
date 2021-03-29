@@ -256,8 +256,14 @@ void caml_adopt_orphaned_work ()
     CAMLassert (!myf->updated_last);
     CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
     if (f->todo_head) {
-      myf->todo_tail->next = f->todo_head;
-      myf->todo_tail = f->todo_tail;
+      if (myf->todo_tail == NULL) {
+        CAMLassert(myf->todo_head == NULL);
+        myf->todo_head = f->todo_head;
+        myf->todo_tail = f->todo_tail;
+      } else {
+        myf->todo_tail->next = f->todo_head;
+        myf->todo_tail = f->todo_tail;
+      }
     }
     if (f->first.young > 0) {
       caml_final_merge_finalisable (&f->first, &myf->first);
