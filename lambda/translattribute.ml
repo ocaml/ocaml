@@ -38,6 +38,10 @@ let is_local_attribute = function
   | {txt=("local"|"ocaml.local")} -> true
   | _ -> false
 
+let is_tmc_attribute = function
+  | {txt=("tail_mod_cons"|"ocaml.tail_mod_cons")} -> true
+  | _ -> false
+
 let find_attribute p attributes =
   let inline_attribute, other_attributes =
     List.partition (fun a -> p a.Parsetree.attr_name) attributes
@@ -245,6 +249,23 @@ let add_local_attribute expr loc attributes =
         (Warnings.Misplaced_attribute "local");
       expr
 
+let add_tmc_attribute expr loc attributes =
+  let is_tmc_attribute a = is_tmc_attribute a.Parsetree.attr_name in
+  if List.exists is_tmc_attribute attributes then
+    match expr with
+    | Lfunction funct ->
+        if funct.attr.tmc_candidate then
+            Location.prerr_warning loc
+              (Warnings.Duplicated_attribute "tail_mod_cons");
+        let attr = { funct.attr with tmc_candidate = true } in
+        Lfunction { funct with attr }
+    | expr ->
+        Location.prerr_warning loc
+          (Warnings.Misplaced_attribute "tail_mod_cons");
+        expr
+  else
+    expr
+
 (* Get the [@inlined] attribute payload (or default if not present).
    It also returns the expression without this attribute. This is
    used to ensure that this attribute is not misplaced: If it
@@ -356,5 +377,8 @@ let add_function_attributes lam loc attr =
   in
   let lam =
     add_local_attribute lam loc attr
+  in
+  let lam =
+    add_tmc_attribute lam loc attr
   in
   lam

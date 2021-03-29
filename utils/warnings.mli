@@ -95,6 +95,8 @@ type t =
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
+  | Unused_tmc_attribute                    (* 69 *)
+  | Tmc_breaks_tailcall                     (* 70 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}

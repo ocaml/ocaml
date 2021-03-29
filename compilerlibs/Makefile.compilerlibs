@@ -75,7 +75,7 @@ LAMBDA=lambda/debuginfo.cmo \
   lambda/translobj.cmo lambda/translattribute.cmo \
   lambda/translprim.cmo lambda/translcore.cmo \
   lambda/translclass.cmo lambda/translmod.cmo \
-  lambda/simplif.cmo lambda/runtimedef.cmo
+  lambda/tmc.cmo lambda/simplif.cmo lambda/runtimedef.cmo
 LAMBDA_CMI=
 
 COMP=\

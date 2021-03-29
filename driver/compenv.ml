@@ -262,6 +262,8 @@ let read_one_param ppf position name v =
   | "trans-mod" -> set "trans-mod" [ transparent_modules ] v
   | "opaque" -> set "opaque" [ opaque ] v
 
+  | "force_tmc" -> set "force_tmc" [ force_tmc ] v
+
   | "pp" -> preprocessor := Some v
   | "runtime-variant" -> runtime_variant := v
   | "with-runtime" -> set "with-runtime" [ with_runtime ] v
