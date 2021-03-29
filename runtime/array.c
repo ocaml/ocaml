@@ -466,9 +466,10 @@ CAMLprim value caml_array_append(value a1, value a2)
   return caml_array_gather(2, arrays, offsets, lengths);
 }
 
+#define STATIC_SIZE 16
+
 CAMLprim value caml_array_concat(value al)
 {
-#define STATIC_SIZE 16
   value static_arrays[STATIC_SIZE], * arrays;
   intnat static_offsets[STATIC_SIZE], * offsets;
   intnat static_lengths[STATIC_SIZE], * lengths;
