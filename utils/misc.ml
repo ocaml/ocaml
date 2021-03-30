@@ -659,37 +659,46 @@ module Color = struct
 
   (* map a tag to a style, if the tag is known.
      @raise Not_found otherwise *)
-  let style_of_tag s = match s with
+  let style_of_stag = function
     | Format.String_tag "error" -> (!cur_styles).error
     | Format.String_tag "warning" -> (!cur_styles).warning
     | Format.String_tag "loc" -> (!cur_styles).loc
     | _ -> raise Not_found
 
+  let rec style_of_stags stags =
+    match stags () with
+    | Seq.Nil -> [Reset]
+    | Seq.Cons(stag, rest) ->
+      match style_of_stag stag with
+      | style -> style
+      | exception Not_found -> style_of_stags rest
+
   let color_enabled = ref true
 
   (* either prints the tag of [s] or delegates to [or_else] *)
-  let mark_open_tag ~or_else s =
-    try
-      let style = style_of_tag s in
-      if !color_enabled then ansi_of_style_l style else ""
-    with Not_found -> or_else s
+  let mark_open_tag ~or_else stag stags =
+    match style_of_stag stag with
+    | exception Not_found -> or_else stag stags
+    | style ->
+        if !color_enabled then ansi_of_style_l style else ""
 
-  let mark_close_tag ~or_else s =
-    try
-      let _ = style_of_tag s in
-      if !color_enabled then ansi_of_style_l [Reset] else ""
-    with Not_found -> or_else s
+  let mark_close_tag ~or_else stag stags =
+    match style_of_stag stag with
+    | exception Not_found -> or_else stag stags
+    | _ ->
+        let style = style_of_stags stags in
+        if !color_enabled then ansi_of_style_l style else ""
 
   (* add color handling to formatter [ppf] *)
   let set_color_tag_handling ppf =
     let open Format in
-    let functions = pp_get_formatter_stag_functions ppf () in
+    let functions = pp_get_formatter_stags_functions ppf () in
     let functions' = {functions with
-      mark_open_stag=(mark_open_tag ~or_else:functions.mark_open_stag);
-      mark_close_stag=(mark_close_tag ~or_else:functions.mark_close_stag);
+      mark_open_stags=(mark_open_tag ~or_else:functions.mark_open_stags);
+      mark_close_stags=(mark_close_tag ~or_else:functions.mark_close_stags);
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
-    pp_set_formatter_stag_functions ppf functions';
+    pp_set_formatter_stags_functions ppf functions';
     ()
 
   external isatty : out_channel -> bool = "caml_sys_isatty"

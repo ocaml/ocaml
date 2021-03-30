@@ -670,12 +670,12 @@ type stag += RGB of {r:int;g:int;b:int}
   More precisely: when a semantic tag is opened or closed then both and
   successive 'tag-printing' and 'tag-marking' operations occur:
   - Tag-printing a semantic tag means calling the formatter specific function
-  [print_open_stag] (resp. [print_close_stag]) with the name of the tag as
+  [print_open_stags] (resp. [print_close_stags]) with the name of the tag as
   argument: that tag-printing function can then print any regular material
   to the formatter (so that this material is enqueued as usual in the
   formatter queue for further line splitting computation).
   - Tag-marking a semantic tag means calling the formatter specific function
-  [mark_open_stag] (resp. [mark_close_stag]) with the name of the tag as
+  [mark_open_stags] (resp. [mark_close_stags]) with the name of the tag as
   argument: that tag-marking function can then return the 'tag-opening
   marker' (resp. `tag-closing marker') for direct output into the output
   device of the formatter.
@@ -719,9 +719,9 @@ val pp_open_stag : formatter -> stag -> unit
 val open_stag : stag -> unit
 (** [pp_open_stag ppf t] opens the semantic tag named [t].
 
-  The [print_open_stag] tag-printing function of the formatter is called with
+  The [print_open_stags] tag-printing function of the formatter is called with
   [t] as argument; then the opening tag marker for [t], as given by
-  [mark_open_stag t], is written into the output device of the formatter.
+  [mark_open_stags t], is written into the output device of the formatter.
 *)
 
 val pp_close_stag : formatter -> unit -> unit
@@ -862,11 +862,11 @@ val get_formatter_out_functions : unit -> formatter_out_functions
 
 (** {1:tagsmeaning Redefining semantic tag operations} *)
 
-type formatter_stag_functions = {
-  mark_open_stag : stag -> string;
-  mark_close_stag : stag -> string;
-  print_open_stag : stag -> unit;
-  print_close_stag : stag -> unit;
+type formatter_stags_functions = {
+  mark_open_stags : stag -> stag Seq.t -> string;
+  mark_close_stags : stag -> stag Seq.t -> string;
+  print_open_stags : stag -> stag Seq.t -> unit;
+  print_close_stags : stag -> stag Seq.t -> unit;
 }
 (** The semantic tag handling functions specific to a formatter:
   [mark] versions are the 'tag-marking' functions that associate a string
@@ -874,12 +874,14 @@ type formatter_stag_functions = {
   those markers as 0 length tokens in the output device of the formatter.
   [print] versions are the 'tag-printing' functions that can perform
   regular printing when a tag is closed or opened.
+
+  The [stag Seq.t] parameters are passed the sequence of enclosing stags.
 *)
 
-val pp_set_formatter_stag_functions :
-  formatter -> formatter_stag_functions -> unit
-val set_formatter_stag_functions : formatter_stag_functions -> unit
-(** [pp_set_formatter_stag_functions ppf tag_funs] changes the meaning of
+val pp_set_formatter_stags_functions :
+  formatter -> formatter_stags_functions -> unit
+val set_formatter_stags_functions : formatter_stags_functions -> unit
+(** [pp_set_formatter_stags_functions ppf tag_funs] changes the meaning of
   opening and closing semantic tag operations to use the functions in
   [tag_funs] when printing on [ppf].
 
@@ -896,9 +898,9 @@ val set_formatter_stag_functions : formatter_stag_functions -> unit
   in the pretty-printer queue.
 *)
 
-val pp_get_formatter_stag_functions :
-  formatter -> unit -> formatter_stag_functions
-val get_formatter_stag_functions : unit -> formatter_stag_functions
+val pp_get_formatter_stags_functions :
+  formatter -> unit -> formatter_stags_functions
+val get_formatter_stags_functions : unit -> formatter_stags_functions
 (** Return the current semantic tag operation functions of the standard
   pretty-printer. *)
 
@@ -1353,6 +1355,41 @@ val pp_get_all_formatter_output_functions :
   (int -> unit)
 [@@ocaml.deprecated "Use Format.pp_get_formatter_out_functions instead."]
 (** @deprecated Subsumed by [pp_get_formatter_out_functions]. *)
+
+type formatter_stag_functions = {
+  mark_open_stag : stag -> string;
+  mark_close_stag : stag -> string;
+  print_open_stag : stag -> unit;
+  print_close_stag : stag -> unit;
+}
+[@@ocaml.deprecated "Use formatter_stags_functions."]
+(** @deprecated Subsumed by {!formatter_stags_functions}. *)
+
+val pp_set_formatter_stag_functions :
+  formatter -> formatter_stag_functions -> unit
+[@@ocaml.deprecated
+  "Use Format.pp_set_formatter_stags_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!pp_set_formatter_stags_functions}. *)
+
+val set_formatter_stag_functions : formatter_stag_functions -> unit
+[@@ocaml.deprecated
+  "Use Format.set_formatter_stags_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!set_formatter_stags_functions}. *)
+
+val pp_get_formatter_stag_functions :
+  formatter -> unit -> formatter_stag_functions
+[@@ocaml.deprecated
+  "Use Format.pp_get_formatter_stags_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!pp_get_formatter_stags_functions}. *)
+
+val get_formatter_stag_functions : unit -> formatter_stag_functions
+[@@ocaml.deprecated
+  "Use Format.get_formatter_stags_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!get_formatter_stags_functions}. *)
 
 (** {2 String tags} *)
 
