@@ -83,6 +83,9 @@ let stdin = Variables.make ("stdin", "Default standard input")
 let stdout = Variables.make ("stdout", "Default standard output")
 let stderr = Variables.make ("stderr", "Default standard error")
 
+let subdirectories = Variables.make ("subdirectories",
+  "Subdirectories to copy recursively from test source to test build directory")
+
 let test_build_directory = Variables.make ("test_build_directory",
   "Directory for files produced during a test")
 
@@ -128,6 +131,7 @@ let _ = List.iter Variables.register_variable
     stdin;
     stdout;
     stderr;
+    subdirectories;
     test_build_directory;
     test_file;
     test_source_directory;

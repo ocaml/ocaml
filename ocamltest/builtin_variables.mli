@@ -55,6 +55,8 @@ val stdin : Variables.t
 val stdout : Variables.t
 val stderr : Variables.t
 
+val subdirectories : Variables.t
+
 val test_build_directory : Variables.t
 val test_build_directory_prefix : Variables.t
 
