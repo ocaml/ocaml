@@ -57,7 +57,6 @@ static struct ctf_stream_header header = {
 #pragma pack(1)
 struct ctf_event_header {
   uint64_t timestamp;
-  uint32_t pid;
   uint32_t id;
 };
 
@@ -67,15 +66,28 @@ struct event {
   uint16_t  counter_kind; /* misc counter name */
   uint8_t  alloc_bucket; /* for alloc counters */
   uint64_t count; /* for misc counters */
+  uint8_t is_backup_thread; /* is this event from a backup thread ? */
 };
 
-#define EVENT_BUF_SIZE 4096
+#define EVENT_BUF_SIZE 32768
 struct event_buffer {
+  uintnat ev_flushed;
+  int domain_unique_id;
   uintnat ev_generated;
+  uint64_t alloc_buckets [20]; /* allocation stats, by size */
   struct event events[EVENT_BUF_SIZE];
 };
 
-static struct event_buffer* evbuf;
+#define evbuf Caml_state->eventlog_buffer
+
+static int64_t startup_timestamp;
+static int eventlog_enabled = 0;
+
+static __thread uint8_t is_backup_thread = 0;
+
+void caml_eventlog_is_backup_thread() {
+  is_backup_thread = 1;
+};
 
 static int64_t time_counter(void)
 {
@@ -119,33 +131,47 @@ static int64_t time_counter(void)
 #endif
 }
 
-static void setup_evbuf()
+static void flush_events(FILE* out, struct event_buffer* eb);
+
+void caml_eventlog_teardown(void)
 {
-  CAMLassert(!evbuf);
-  evbuf = caml_stat_alloc_noexc(sizeof(*evbuf));
+  if(!evbuf) return;
 
-  if (evbuf == NULL)
-    caml_fatal_error("eventlog: could not allocate event buffer");
+  if (Caml_state->eventlog_out != NULL) {
+    flush_events(Caml_state->eventlog_out, evbuf);
+    fflush(Caml_state->eventlog_out);
+    fclose(Caml_state->eventlog_out);
+    Caml_state->eventlog_out = NULL;
+  };
 
-  evbuf->ev_generated = 0;
+  free(evbuf);
+
+  evbuf = NULL;
 }
 
 #define OUTPUT_FILE_LEN 4096
-static void setup_eventlog_file()
+static void thread_setup_eventlog_file(int unique_id)
 {
   char_os output_file[OUTPUT_FILE_LEN];
   char_os *eventlog_filename = NULL;
+  long pid;
+
+#ifdef _WIN32
+  pid = _getpid();
+#else
+  pid = getpid();
+#endif
 
   eventlog_filename = caml_secure_getenv(T("OCAML_EVENTLOG_PREFIX"));
 
   if (eventlog_filename) {
-    int ret = snprintf_os(output_file, OUTPUT_FILE_LEN, T("%s.%ld.eventlog"),
-                         eventlog_filename, Caml_state->eventlog_startup_pid);
+    int ret = snprintf_os(output_file, OUTPUT_FILE_LEN, T("%s.%ld.%d.eventlog"),
+			  eventlog_filename, pid, unique_id);
     if (ret > OUTPUT_FILE_LEN)
       caml_fatal_error("eventlog: specified OCAML_EVENTLOG_PREFIX is too long");
   } else {
-    snprintf_os(output_file, OUTPUT_FILE_LEN, T("caml-%ld.eventlog"),
-               Caml_state->eventlog_startup_pid);
+    snprintf_os(output_file, OUTPUT_FILE_LEN, T("caml-%ld-%d.eventlog"),
+		pid, unique_id);
   }
 
   Caml_state->eventlog_out = fopen_os(output_file, T("wb"));
@@ -155,36 +181,64 @@ static void setup_eventlog_file()
                       1, Caml_state->eventlog_out);
     if (ret != 1)
       caml_eventlog_disable();
-    fflush(Caml_state->eventlog_out);
   } else {
     caml_fatal_error("eventlog: could not open trace for writing");
   }
+
+
 }
 #undef OUTPUT_FILE_LEN
+
+static void thread_setup_evbuf()
+{
+  CAMLassert(!evbuf);
+
+  evbuf = caml_stat_alloc_noexc(sizeof(*evbuf));
+
+  if (evbuf == NULL)
+    caml_fatal_error("eventlog: could not allocate event buffer");
+
+  evbuf->ev_flushed = 0;
+  evbuf->ev_generated = 0;
+  evbuf->domain_unique_id = 2 * Caml_state->unique_id;
+
+  Caml_state->eventlog_out = NULL;
+
+  if (!Caml_state->eventlog_out)
+    thread_setup_eventlog_file(evbuf->domain_unique_id);
+
+  /* reset alloc_buckets */
+  for (int i = 1; i < 20; i++) {
+      evbuf->alloc_buckets[i] = 0;
+  }
+
+  return ;
+}
 
 #define FWRITE_EV(item, size) \
   if (fwrite(item, size, 1, out) != 1) \
     goto fwrite_failure;
 
+#define FWRITE_HEADER(header, tid, is_bt) \
+  FWRITE_EV(header, sizeof(struct ctf_event_header));\
+  FWRITE_EV(tid, sizeof(uint32_t));\
+  FWRITE_EV(is_bt, sizeof(uint8_t));
+
 static void flush_events(FILE* out, struct event_buffer* eb)
 {
   uintnat i;
   uint64_t flush_duration;
-  uintnat n = eb->ev_generated;
+  uintnat n = evbuf->ev_generated;
+  struct ctf_event_header flush_header;
 
-  struct ctf_event_header ev_flush;
-  ev_flush.id = EV_FLUSH;
-  ev_flush.timestamp = time_counter() -
-                        Caml_state->eventlog_startup_timestamp;
-  ev_flush.pid = Caml_state->eventlog_startup_pid;
+  flush_header.id = EV_FLUSH;
+  flush_header.timestamp = time_counter() - startup_timestamp;
 
   for (i = 0; i < n; i++) {
     struct event ev = eb->events[i];
-    ev.header.pid = Caml_state->eventlog_startup_pid;
 
-    FWRITE_EV(&ev.header, sizeof(struct ctf_event_header));
-
-    switch (ev.header.id)
+    FWRITE_HEADER(&ev.header, &eb->domain_unique_id, &ev.is_backup_thread);
+    switch (ev.header.id) /* event payload */
     {
     case EV_ENTRY:
       FWRITE_EV(&ev.phase, sizeof(uint16_t));
@@ -205,12 +259,10 @@ static void flush_events(FILE* out, struct event_buffer* eb)
     }
   }
 
-  flush_duration =
-    (time_counter() - Caml_state->eventlog_startup_timestamp) -
-    ev_flush.timestamp;
+  flush_duration = (time_counter() - startup_timestamp) - flush_header.timestamp;
 
-  FWRITE_EV(&ev_flush, sizeof(struct ctf_event_header));
-  FWRITE_EV(&flush_duration, sizeof(uint64_t));
+  FWRITE_HEADER(&flush_header, &eb->domain_unique_id, &is_backup_thread)
+  FWRITE_EV(&flush_duration, sizeof(int64_t));
 
   return;
 
@@ -243,22 +295,15 @@ void caml_eventlog_init()
   char_os *toggle = caml_secure_getenv(T("OCAML_EVENTLOG_ENABLED"));
 
   if (toggle != NULL) {
-    Caml_state->eventlog_enabled = 1;
-    if (*toggle == 'p')
-      Caml_state->eventlog_paused = 1;
+    eventlog_enabled = 1;
+    // FIXME(engil): disabling eventlog pause on Multicore for now
+    // if (*toggle == 'p')
+    //   atomic_store_rel(&Caml_state->eventlog_paused, 1);
   };
 
-  if (!Caml_state->eventlog_enabled) return;
+  if (!eventlog_enabled) return;
 
-  Caml_state->eventlog_startup_timestamp = time_counter();
-#ifdef _WIN32
-  Caml_state->eventlog_startup_pid = _getpid();
-#else
-  Caml_state->eventlog_startup_pid = getpid();
-#endif
-
-  setup_eventlog_file();
-  setup_evbuf();
+  startup_timestamp = time_counter();
 
   atexit(&teardown_eventlog);
 }
@@ -269,8 +314,8 @@ static void post_event(ev_gc_phase phase, ev_gc_counter counter_kind,
   uintnat i;
   struct event* ev;
 
-  if (!Caml_state->eventlog_enabled) return;
-  if (Caml_state->eventlog_paused) return;
+  if (!eventlog_enabled) return;
+  if (!evbuf) thread_setup_evbuf();
 
   i = evbuf->ev_generated;
   CAMLassert(i <= EVENT_BUF_SIZE);
@@ -285,8 +330,8 @@ static void post_event(ev_gc_phase phase, ev_gc_counter counter_kind,
   ev->counter_kind = counter_kind;
   ev->alloc_bucket = bucket;
   ev->phase = phase;
-  ev->header.timestamp = time_counter() -
-                           Caml_state->eventlog_startup_timestamp;
+  ev->is_backup_thread = is_backup_thread;
+  ev->header.timestamp = time_counter() - startup_timestamp;
   evbuf->ev_generated = i + 1;
 }
 
@@ -305,8 +350,6 @@ void caml_ev_counter(ev_gc_counter counter, uint64_t val)
   post_event(0, counter, 0, val, EV_COUNTER);
 }
 
-static uint64_t alloc_buckets [20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
 /* This function records allocations in caml_alloc_shr_aux in given bucket sizes
    These buckets are meant to be flushed explicitly by the caller through the
    caml_ev_alloc_flush function. Until then the buckets are just updated until
@@ -314,15 +357,18 @@ static uint64_t alloc_buckets [20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 */
 void caml_ev_alloc(uint64_t sz)
 {
-  if (!Caml_state->eventlog_enabled) return;
-  if (Caml_state->eventlog_paused) return;
+  if (!eventlog_enabled) return;
+  // if (Caml_state->eventlog_paused) return;
+
+  if (evbuf == NULL)
+    thread_setup_evbuf();
 
   if (sz < 10) {
-    ++alloc_buckets[sz];
+    ++evbuf->alloc_buckets[sz];
   } else if (sz < 100) {
-    ++alloc_buckets[sz/10 + 9];
+    ++evbuf->alloc_buckets[sz/10 + 9];
   } else {
-    ++alloc_buckets[19];
+    ++evbuf->alloc_buckets[19];
   }
 }
 
@@ -333,21 +379,24 @@ void caml_ev_alloc_flush()
 {
   int i;
 
-  if (!Caml_state->eventlog_enabled) return;
-  if (Caml_state->eventlog_paused) return;
+  if (!eventlog_enabled) return;
+  // if (Caml_state->eventlog_paused) return;
+
+  if (evbuf == NULL)
+    thread_setup_evbuf();
 
   for (i = 1; i < 20; i++) {
-    if (alloc_buckets[i] != 0) {
-      post_event(0, 0, i, alloc_buckets[i], EV_ALLOC);
+    if (evbuf->alloc_buckets[i] != 0) {
+      post_event(0, 0, i, evbuf->alloc_buckets[i], EV_ALLOC);
     };
-    alloc_buckets[i] = 0;
+    evbuf->alloc_buckets[i] = 0;
   }
 }
 
 void caml_ev_flush()
 {
-  if (!Caml_state->eventlog_enabled) return;
-  if (Caml_state->eventlog_paused) return;
+  if (!eventlog_enabled) return;
+  // if (Caml_state->eventlog_paused) return;
 
   if (Caml_state->eventlog_out) {
     if (evbuf)
@@ -358,26 +407,29 @@ void caml_ev_flush()
 
 void caml_eventlog_disable()
 {
-  Caml_state->eventlog_enabled = 0;
-  teardown_eventlog();
+  // FIXME(engil): disabling runtime eventlog disable on Multicore for now
+  // eventlog_enabled = 0;
+  // teardown_eventlog();
 }
 
 CAMLprim value caml_eventlog_resume(value v)
 {
-  CAMLassert(v == Val_unit);
-  if (Caml_state->eventlog_enabled)
-    Caml_state->eventlog_paused = 0;
+  // FIXME(engil): disabling eventlog pause on Multicore for now
+  // CAMLassert(v == Val_unit);
+  // if (eventlog_enabled)
+  //   Caml_state->eventlog_paused = 0;
   return Val_unit;
 }
 
 CAMLprim value caml_eventlog_pause(value v)
 {
-  CAMLassert(v == Val_unit);
-  if (Caml_state->eventlog_enabled) {
-    Caml_state->eventlog_paused = 1;
-    if (evbuf && Caml_state->eventlog_out)
-      flush_events(Caml_state->eventlog_out, evbuf);
-  };
+  // FIXME(engil): disabling eventlog pause on Multicore for now
+  // CAMLassert(v == Val_unit);
+  // if (eventlog_enabled) {
+  //   Caml_state->eventlog_paused = 1;
+  //   if (evbuf && Caml_state->eventlog_out)
+  //     flush_events(Caml_state->eventlog_out, evbuf);
+  // };
   return Val_unit;
 }
 
