@@ -130,17 +130,7 @@ int caml_naked_pointers_detected = 0;
 #endif
 
 void (*caml_major_gc_hook)(void) = NULL;
-// FIXME: use this if possible, but work accounting is tricky
-//static mark_entry get_mark_entry(value v)
-//{
-//  mark_entry m = {Op_val(v), Op_val(v) + Wosize_val(v)};
-//  CAMLassert(Tag_val(v) < No_scan_tag);
-//  CAMLassert(Is_black_val(v));
-//  if (Tag_val(v) == Closure_tag) {
-//    m.start += Start_env_closinfo(Closinfo_val(block));
-//  }
-//}
-//
+
 /* This function prunes the mark stack if it's about to overflow. It does so
    by building a skiplist of major heap chunks and then iterating through the
    mark stack and setting redarken_start/redarken_end on each chunk to indicate
@@ -355,27 +345,44 @@ void caml_shrink_mark_stack () {
 static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
   heap_chunk_head* chunk = Chunk_head(heap_chunk);
   mark_entry me = chunk->redarken_first;
-  value* end = chunk->redarken_end;
-  while (me.end <= end) {
-    value v;
-    if (stk->count < stk->size/4) {
-      stk->stack[stk->count++] = me;
-    } else {
-      /* Only fill up a quarter of the mark stack, we can resume later
-         for more if we need to */
-      chunk->redarken_first = me;
-      return 0;
+  header_t* end = (header_t*)chunk->redarken_end;
+  while (1) {
+    header_t* hp;
+    /* Skip a prefix of fields that need no marking */
+    CAMLassert(me.start <= me.end);
+    while (me.start < me.end &&
+           (!Is_block(*me.start) || Is_young(*me.start))) {
+      me.start++;
     }
 
-    v = Val_hp(me.end);
-    while (Op_val(v) < end &&
-           (Tag_val(v) >= No_scan_tag || !Is_black_val(v))) {
-      v = Val_hp(Op_val(v) + Wosize_val(v));
+    /* Push to the mark stack (if anything's left) */
+    if (me.start < me.end) {
+      if (stk->count < stk->size/4) {
+        stk->stack[stk->count++] = me;
+      } else {
+        /* Only fill up a quarter of the mark stack, we can resume later
+           for more if we need to */
+        chunk->redarken_first = me;
+        return 0;
+      }
     }
-    me.start = Op_val(v);
-    me.end = me.start + Wosize_val(v);
-    if (Tag_val(v) == Closure_tag) {
-      me.start += Start_env_closinfo(Closinfo_val(v));
+
+    /* Find the next block that needs to be re-marked */
+    hp = (header_t*)me.end;
+    while (hp < end) {
+      value v = Val_hp(hp);
+      if (Tag_val(v) < No_scan_tag && Is_black_val(v))
+        break;
+      hp = (header_t*)(Op_val(v) + Wosize_val(v));
+    }
+    if (hp == end)
+      break;
+
+    /* Found a block */
+    me.start = Op_hp(hp);
+    me.end = me.start + Wosize_hp(hp);
+    if (Tag_hp(hp) == Closure_tag) {
+      me.start += Start_env_closinfo(Closinfo_val(Val_hp(hp)));
     }
   }
 
@@ -574,25 +581,47 @@ static void mark_ephe_aux (struct mark_stack *stk, intnat *work,
 }
 
 
-#define Pb_size 256
+#define Pb_size (1 << 8)
 #define Pb_min 64
 #define Pb_mask (Pb_size - 1)
-#define Queue_prefetch_distance 4
 
-static uintnat rotate1(uintnat x)
+Caml_inline void prefetch_block(value v)
+{
+  /* Prefetch a block so that scanning it later avoids cache misses.
+     We will access at least the header, but we don't yet know how
+     many of the fields we will access - the block might be already
+     marked, not scannable, or very short. The compromise here is to
+     prefetch the header and the first few fields.
+
+     We issue two prefetches, with the second being a few words ahead
+     of the first. Most of the time, these will land in the same
+     cacheline, be coalesced by hardware, and so not cost any more
+     than a single prefetch. Two memory operations are issued only
+     when the two prefetches land in different cachelines.
+
+     In the case where the block is not already in cache, and yet is
+     already marked, not markable, or extremely short, then we waste
+     somewhere between 1/8-1/2 of a prefetch operation (in expectation,
+     depending on alignment, word size, and cache line size), which is
+     cheap enough to make this worthwhile. */
+  caml_prefetch(Hp_val(v));
+  caml_prefetch(&Field(v, 3));
+}
+
+Caml_inline uintnat rotate1(uintnat x)
 {
   return (x << ((sizeof x)*8 - 1)) | (x >> 1);
 }
 
-CAMLnoinline static intnat do_some_marking(intnat work)
+Caml_noinline static intnat do_some_marking(intnat work)
 {
   uintnat pb_enqueued = 0, pb_dequeued = 0;
   int darkened_anything = 0;
   value pb[Pb_size];
-  uintnat min_pb = Pb_min;
+  /* These global values are cached in locals,
+     so that they can be stored in registers */
   struct mark_stack stk = *Caml_state->mark_stack;
-
-  uintnat young_start = (uintnat)Caml_state->young_start;
+  uintnat young_start = (uintnat)Val_hp(Caml_state->young_start);
   uintnat half_young_len = ((uintnat)Caml_state->young_end - (uintnat)Caml_state->young_start) >> 1;
 #define Is_block_and_not_young(v) \
   (((intnat)rotate1((uintnat)v - young_start)) > (intnat)half_young_len)
@@ -605,6 +634,15 @@ CAMLnoinline static intnat do_some_marking(intnat work)
 
   while (1) {
     value *scan, *obj_end, *scan_end;
+    uintnat min_pb = Pb_min; /* keep pb at least this full */
+
+    if (work <= 0 || stk.count == 0) {
+      if (pb_enqueued == pb_dequeued)
+        break;
+      /* Dequeue from pb even when close to empty, because
+         we have nothing else to do */
+      min_pb = 0;
+    }
 
     if (pb_enqueued > pb_dequeued + min_pb) {
       /* Dequeue from prefetch buffer */
@@ -646,15 +684,6 @@ CAMLnoinline static intnat do_some_marking(intnat work)
         work -= env_offset;
         scan += env_offset;
       }
-    } else if (work <= 0 || stk.count == 0) {
-      if (min_pb > 0) {
-        // drain pb before quitting
-        min_pb = 0;
-        continue;
-      } else {
-        // done
-        break;
-      }
     } else {
       mark_entry m = stk.stack[--stk.count];
       scan = m.start;
@@ -673,8 +702,7 @@ CAMLnoinline static intnat do_some_marking(intnat work)
         if (pb_enqueued == pb_dequeued + Pb_size) {
           break; /* Prefetch buffer is full */
         }
-        caml_prefetch(Hp_val(v));
-        caml_prefetch(&Field(v, Queue_prefetch_distance - 1));
+        prefetch_block(v);
         pb[(pb_enqueued++) & Pb_mask] = v;
       }
     }
@@ -691,7 +719,6 @@ CAMLnoinline static intnat do_some_marking(intnat work)
         stk = *Caml_state->mark_stack;
       }
       stk.stack[stk.count++] = m;
-      min_pb = Pb_min;
     }
   }
   CAMLassert(pb_enqueued == pb_dequeued);
