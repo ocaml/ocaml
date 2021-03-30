@@ -489,14 +489,14 @@ module FlexDLL = struct
       e_lfanew: int64;
       number_of_sections: int;
       size_of_optional_header: int;
-      characteristics: int;
+      _characteristics: int;
     }
 
   let read_header e_lfanew d buf =
     let number_of_sections = get_uint16 d buf 6 in
     let size_of_optional_header = get_uint16 d buf 20 in
-    let characteristics = get_uint16 d buf 22 in
-    {e_lfanew; number_of_sections; size_of_optional_header; characteristics}
+    let _characteristics = get_uint16 d buf 22 in
+    {e_lfanew; number_of_sections; size_of_optional_header; _characteristics}
 
   type optional_header_magic =
     | PE32
@@ -504,7 +504,7 @@ module FlexDLL = struct
 
   type optional_header =
     {
-      magic: optional_header_magic;
+      _magic: optional_header_magic;
       image_base: int64;
     }
 
@@ -515,24 +515,19 @@ module FlexDLL = struct
       load_bytes d Int64.(add e_lfanew (of_int header_size))
         size_of_optional_header
     in
-    let magic =
+    let _magic, image_base =
       match get_uint16 d buf 0 with
-      | 0x10b -> PE32
-      | 0x20b -> PE32PLUS
+      | 0x10b -> PE32, uint64_of_uint32 (get_uint32 d buf 28)
+      | 0x20b -> PE32PLUS, get_uint64 d buf 24
       | n ->
           raise (Error (Unsupported ("optional_header_magic", Int64.of_int n)))
     in
-    let image_base =
-      match magic with
-      | PE32 -> uint64_of_uint32 (get_uint32 d buf 28)
-      | PE32PLUS -> get_uint64 d buf 24
-    in
-    {magic; image_base}
+    {_magic; image_base}
 
   type section =
     {
       name: string;
-      virtual_size: int;
+      _virtual_size: int;
       virtual_address: int64;
       size_of_raw_data: int;
       pointer_to_raw_data: int64;
@@ -550,12 +545,12 @@ module FlexDLL = struct
     let mk i =
       let base = i * section_header_size in
       let name = name_at ~max_len:8 buf (base + 0) in
-      let virtual_size = get_uint "virtual_size" d buf (base + 8) in
+      let _virtual_size = get_uint "virtual_size" d buf (base + 8) in
       let virtual_address = uint64_of_uint32 (get_uint32 d buf (base + 12)) in
       let size_of_raw_data = get_uint "size_of_raw_data" d buf (base + 16) in
       let pointer_to_raw_data =
         uint64_of_uint32 (get_uint32 d buf (base + 20)) in
-      {name; virtual_size; virtual_address;
+      {name; _virtual_size; virtual_address;
        size_of_raw_data; pointer_to_raw_data}
     in
     Array.init number_of_sections mk

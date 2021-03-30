@@ -24,6 +24,16 @@ type loc = {
   loc_ghost: bool;
 }
 
+type field_usage_warning =
+  | Unused
+  | Not_read
+  | Not_mutated
+
+type constructor_usage_warning =
+  | Unused
+  | Not_constructed
+  | Only_exported_private
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -61,8 +71,8 @@ type t =
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool * bool (* 38 *)
+  | Unused_constructor of string * constructor_usage_warning (* 37 *)
+  | Unused_extension of string * bool * constructor_usage_warning (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool * string (* 41 *)
@@ -93,6 +103,7 @@ type t =
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
+  | Unused_field of string * field_usage_warning (* 69 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -171,9 +182,10 @@ let number = function
   | Unused_open_bang _ -> 66
   | Unused_functor_parameter _ -> 67
   | Match_on_mutable_state_prevent_uncurry -> 68
+  | Unused_field _ -> 69
 ;;
 
-let last_warning_number = 68
+let last_warning_number = 69
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -332,6 +344,8 @@ let descriptions =
     68, "Pattern-matching depending on mutable state prevents the remaining \
          arguments from being uncurried.",
     ["match-on-mutable-state-prevent-uncurry"];
+    69, "Unused record field.",
+    ["unused-field"];
   ]
 ;;
 
@@ -644,7 +658,7 @@ let parse_options errflag s =
   alerts
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66-67-68";;
+let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66..69";;
 let defaults_warn_error = "-a+31";;
 
 let () = ignore @@ parse_options false defaults_w;;
@@ -740,26 +754,26 @@ let message = function
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
-  | Unused_constructor (s, false, false) -> "unused constructor " ^ s ^ "."
-  | Unused_constructor (s, true, _) ->
+  | Unused_constructor (s, Unused) -> "unused constructor " ^ s ^ "."
+  | Unused_constructor (s, Not_constructed) ->
       "constructor " ^ s ^
       " is never used to build values.\n\
         (However, this constructor appears in patterns.)"
-  | Unused_constructor (s, false, true) ->
+  | Unused_constructor (s, Only_exported_private) ->
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+  | Unused_extension (s, is_exception, complaint) ->
      let kind =
        if is_exception then "exception" else "extension constructor" in
      let name = kind ^ " " ^ s in
-     begin match cu_pattern, cu_privatize with
-       | false, false -> "unused " ^ name
-       | true, _ ->
+     begin match complaint with
+       | Unused -> "unused " ^ name
+       | Not_constructed ->
           name ^
           " is never used to build values.\n\
            (However, this constructor appears in patterns.)"
-       | false, true ->
+       | Only_exported_private ->
           name ^
           " is never used to build values.\n\
             It is exported or rebound as a private extension."
@@ -887,6 +901,14 @@ let message = function
     "This pattern depends on mutable state.\n\
      It prevents the remaining arguments from being uncurried, which will \
      cause additional closure allocations."
+  | Unused_field (s, Unused) -> "unused record field " ^ s ^ "."
+  | Unused_field (s, Not_read) ->
+      "record field " ^ s ^
+      " is never read.\n\
+        (However, this field is used to build or mutate values.)"
+  | Unused_field (s, Not_mutated) ->
+      "mutable record field " ^ s ^
+      " is never mutated."
 ;;
 
 let nerrors = ref 0;;

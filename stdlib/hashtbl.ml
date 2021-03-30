@@ -21,7 +21,7 @@
 type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
     mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
-    mutable seed: int;                        (* for randomization *)
+    seed: int;                        (* for randomization *)
     mutable initial_size: int;                (* initial array size *)
   }
 

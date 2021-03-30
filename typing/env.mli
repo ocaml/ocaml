@@ -133,11 +133,16 @@ val mark_value_used: Uid.t -> unit
 val mark_module_used: Uid.t -> unit
 val mark_type_used: Uid.t -> unit
 
-type constructor_usage = Positive | Pattern | Privatize
+type constructor_usage = Positive | Pattern | Exported_private | Exported
 val mark_constructor_used:
     constructor_usage -> constructor_declaration -> unit
 val mark_extension_used:
     constructor_usage -> extension_constructor -> unit
+
+type label_usage =
+    Projection | Mutation | Construct | Exported_private | Exported
+val mark_label_used:
+    label_usage -> label_declaration -> unit
 
 (* Lookup by long identifiers *)
 
@@ -217,14 +222,14 @@ val lookup_all_constructors_from_type:
   (constructor_description * (unit -> unit)) list
 
 val lookup_label:
-  ?use:bool -> loc:Location.t -> Longident.t -> t ->
+  ?use:bool -> loc:Location.t -> label_usage -> Longident.t -> t ->
   label_description
 val lookup_all_labels:
-  ?use:bool -> loc:Location.t -> Longident.t -> t ->
+  ?use:bool -> loc:Location.t -> label_usage -> Longident.t -> t ->
   ((label_description * (unit -> unit)) list,
    Location.t * t * lookup_error) result
 val lookup_all_labels_from_type:
-  ?use:bool -> loc:Location.t -> Path.t -> t ->
+  ?use:bool -> loc:Location.t -> label_usage -> Path.t -> t ->
   (label_description * (unit -> unit)) list
 
 val lookup_instance_variable:
