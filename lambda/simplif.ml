@@ -121,9 +121,11 @@ let simplify_exits lam =
 
   let rec count ~try_depth = function
   | (Lvar _| Lmutvar _ | Lconst _) -> ()
-  | Lapply ap -> count ~try_depth ap.ap_func; List.iter (count ~try_depth) ap.ap_args
+  | Lapply ap ->
+      count ~try_depth ap.ap_func;
+      List.iter (count ~try_depth) ap.ap_args
   | Lfunction {body} -> count ~try_depth body
-  | Llet(_str, _kind, _v, l1, l2)
+  | Llet(_, _kind, _v, l1, l2)
   | Lmutlet(_kind, _v, l1, l2) ->
       count ~try_depth l2; count ~try_depth l1
   | Lletrec(bindings, body) ->
@@ -142,11 +144,12 @@ let simplify_exits lam =
       | None -> ()
       | Some d -> match sw with
         | []|[_] -> count ~try_depth d
-        | _ -> count ~try_depth d;
-        count ~try_depth d (* default will get replicated *)
+        | _ -> (* default will get replicated *)
+            count ~try_depth d; count ~try_depth d
       end
-  | Lstaticraise (i,ls) -> incr_exit i 1 try_depth;
-  List.iter (count ~try_depth) ls
+  | Lstaticraise (i,ls) ->
+      incr_exit i 1 try_depth;
+      List.iter (count ~try_depth) ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
       (* i will be replaced by j in l1, so each occurrence of i in l1
          increases j's ref count *)
@@ -159,14 +162,19 @@ let simplify_exits lam =
          l2 will be removed, so don't count its exits *)
       if (get_exit i).count > 0 then
         count ~try_depth l2
-  | Ltrywith(l1, _v, l2) -> count ~try_depth:(try_depth+1) l1;
-  count ~try_depth l2;
-  | Lifthenelse(l1, l2, l3) -> count ~try_depth l1;
-  count ~try_depth l2; count ~try_depth l3
+  | Ltrywith(l1, _v, l2) ->
+      count ~try_depth:(try_depth+1) l1;
+      count ~try_depth l2;
+  | Lifthenelse(l1, l2, l3) ->
+      count ~try_depth l1;
+      count ~try_depth l2;
+      count ~try_depth l3
   | Lsequence(l1, l2) -> count ~try_depth l1; count ~try_depth l2
   | Lwhile(l1, l2) -> count ~try_depth l1; count ~try_depth l2
-  | Lfor(_, l1, l2, _dir, l3) -> count ~try_depth l1;
-  count ~try_depth l2; count ~try_depth l3
+  | Lfor(_, l1, l2, _dir, l3) ->
+      count ~try_depth l1;
+      count ~try_depth l2;
+      count ~try_depth l3
   | Lassign(_v, l) -> count ~try_depth l
   | Lsend(_k, m, o, ll, _) -> List.iter (count ~try_depth) (m::o::ll)
   | Levent(l, _) -> count ~try_depth l
