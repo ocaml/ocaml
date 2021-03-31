@@ -207,6 +207,9 @@ Working version
 - #9650, #9651: keep refactoring the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
+- #9827: Replace references with functions arguments in Simplif
+  (@Anukriti12, review by Vincent Laviron and David Allsop)
+
 - #9994: Make Types.type_expr a private type, and abstract marking mechanism
   (Jacques Garrigue and Takafumi Saikawa,
    review by Gabriel Scherer and Leo White)

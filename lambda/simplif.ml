@@ -221,8 +221,10 @@ let simplify_exits lam =
                      ap_args = List.map (simplif ~try_depth) ap.ap_args}
   | Lfunction{kind; params; return; body = l; attr; loc} ->
      Lfunction{kind; params; return; body = simplif ~try_depth l; attr; loc}
-  | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
-  | Lmutlet(kind, v, l1, l2) -> Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
+  | Llet(str, kind, v, l1, l2) ->
+      Llet(str, kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
+  | Lmutlet(kind, v, l1, l2) ->
+      Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif ~try_depth l)) bindings,
       simplif ~try_depth body)
