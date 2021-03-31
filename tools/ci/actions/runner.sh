@@ -67,6 +67,20 @@ Test () {
   cd ..
 }
 
+TestLoop () {
+  echo Running testsuite for "$@"
+  rm -f to_test.txt
+  for test in "$@"
+  do
+      echo tests/$test >> to_test.txt
+  done
+  for it in {1..$2}
+  do
+      $MAKE -C testsuite one LIST=../to_test.txt || exit 1
+  done || exit 1
+  cd ..
+}
+
 API_Docs () {
   echo Ensuring that all library documentation compiles
   $MAKE -C ocamldoc html_doc pdf_doc texi_doc
@@ -116,6 +130,7 @@ case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
+test_multicore) TestLoop "${@:3}";;
 api-docs) API_Docs;;
 install) Install;;
 other-checks) Checks;;
