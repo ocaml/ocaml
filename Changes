@@ -208,7 +208,7 @@ Working version
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
 - #9827: Replace references with functions arguments in Simplif
-  (@Anukriti12, review by Vincent Laviron and David Allsop)
+  (Anukriti Kumar, review by Vincent Laviron and David Allsop)
 
 - #9994: Make Types.type_expr a private type, and abstract marking mechanism
   (Jacques Garrigue and Takafumi Saikawa,
