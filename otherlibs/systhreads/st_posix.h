@@ -265,9 +265,9 @@ static int st_mutex_destroy(st_mutex m)
   return 0;
 }
 
-static INLINE void st_mutex_lock(st_mutex m)
+static INLINE int st_mutex_lock(st_mutex m)
 {
-  return caml_plat_lock(m);
+  return pthread_mutex_lock(m);
 }
 
 #define MUTEX_PREVIOUSLY_UNLOCKED 1
@@ -279,9 +279,9 @@ static INLINE int st_mutex_trylock(st_mutex m)
   return retcode;
 }
 
-static INLINE void st_mutex_unlock(st_mutex m)
+static INLINE int st_mutex_unlock(st_mutex m)
 {
-  return caml_plat_unlock(m);
+  return pthread_mutex_unlock(m);
 }
 
 /* Condition variables */
