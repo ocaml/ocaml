@@ -2816,6 +2816,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             signature = dclsig
           }
         end else begin
+          Location.prerr_warning (Location.in_file sourcefile)
+            Warnings.Missing_mli;
           let coercion =
             Includemod.compunit initial_env ~mark:Mark_positive
               sourcefile sg "(inferred signature)" simple_sg
