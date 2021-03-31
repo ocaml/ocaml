@@ -649,6 +649,7 @@ CAMLprim value caml_mutex_new(value unit)        /* ML */
 
 CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
 {
+  st_retcode retcode;
   st_mutex mut = Mutex_val(wrapper);
 
   /* PR#4351: first try to acquire mutex without releasing the master lock */
@@ -656,17 +657,20 @@ CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
   /* If unsuccessful, block on mutex */
   Begin_root(wrapper)
     caml_enter_blocking_section();
-    st_mutex_lock(mut);
+    retcode = st_mutex_lock(mut);
     caml_leave_blocking_section();
   End_roots();
+  st_check_error(retcode, "Mutex.lock");
   return Val_unit;
 }
 
 CAMLprim value caml_mutex_unlock(value wrapper)           /* ML */
 {
+  st_retcode retcode;
   st_mutex mut = Mutex_val(wrapper);
   /* PR#4351: no need to release and reacquire master lock */
-  st_mutex_unlock(mut);
+  retcode = st_mutex_unlock(mut);
+  st_check_error(retcode, "Mutex.unlock");
   return Val_unit;
 }
 
