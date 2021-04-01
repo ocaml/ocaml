@@ -104,6 +104,8 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   uintnat array_size, page, delta;
   void * addr;
 
+  fprintf(stderr, "FBR: caml_unix_map_file entry\n");
+
   fd = Int_val(vfd);
   flags = Caml_ba_kind_val(vkind) | Caml_ba_layout_val(vlayout);
   startpos = File_offset_val(vstart);
@@ -172,10 +174,10 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
          to a file */
 #if defined(MAP_ANONYMOUS)
       shared |= MAP_ANONYMOUS;
-      fprintf(stdout, "MAP_ANONYMOUS\n%!");
+      fprintf(stderr, "MAP_ANONYMOUS\n");
 #elif !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
       shared |= MAP_ANON;
-      fprintf(stdout, "MAP_ANON\n%!");
+      fprintf(stderr, "MAP_ANON\n");
 #endif
     }
     addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
@@ -183,9 +185,10 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   } else
     addr = NULL; /* PR#5463 - mmap fails on empty region */
   if (fd != -1) caml_leave_blocking_section();
-  if (addr == (void *) MAP_FAILED) uerror("map_file", Nothing);
+  if (addr == (void *) MAP_FAILED) uerror("FBR map_file", Nothing);
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
+  fprintf(stderr, "FBR: caml_unix_map_file exit\n");
   return caml_unix_mapped_alloc(flags, num_dims, addr, dim);
 }
 
