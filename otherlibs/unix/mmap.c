@@ -172,14 +172,16 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
          to a file */
 #if defined(MAP_ANONYMOUS)
       shared |= MAP_ANONYMOUS;
+      fprintf(stdout, "MAP_ANONYMOUS\n%!");
 #elif !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
       shared |= MAP_ANON;
+      fprintf(stdout, "MAP_ANON\n%!");
 #endif
     }
     addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
                 shared, fd, startpos - delta);
   } else
-    addr = NULL;                /* PR#5463 - mmap fails on empty region */
+    addr = NULL; /* PR#5463 - mmap fails on empty region */
   if (fd != -1) caml_leave_blocking_section();
   if (addr == (void *) MAP_FAILED) uerror("map_file", Nothing);
   addr = (void *) ((uintnat) addr + delta);
