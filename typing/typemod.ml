@@ -2067,7 +2067,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in md
   | Pmod_structure sstr ->
       let (str, sg, names, _finalenv) =
-        type_structure funct_body anchor env sstr in
+        Builtin_attributes.warning_scope [] (fun () ->
+            type_structure funct_body anchor env sstr
+          )
+      in
       let md =
         { mod_desc = Tmod_structure str;
           mod_type = Mty_signature sg;
@@ -2582,15 +2585,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         (str :: str_rem, sg @ sig_rem, final_env)
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
-  let run () =
-    let (items, sg, final_env) = type_struct env sstr in
-    let str = { str_items = items; str_type = sg; str_final_env = final_env } in
-    Cmt_format.set_saved_types
-      (Cmt_format.Partial_structure str :: previous_saved_types);
-    str, sg, names, final_env
-  in
-  if toplevel then run ()
-  else Builtin_attributes.warning_scope [] run
+  let (items, sg, final_env) = type_struct env sstr in
+  let str = { str_items = items; str_type = sg; str_final_env = final_env } in
+  Cmt_format.set_saved_types
+    (Cmt_format.Partial_structure str :: previous_saved_types);
+  str, sg, names, final_env
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
@@ -2769,84 +2768,85 @@ let gen_annot outputprefix sourcefile annots =
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
-  Misc.try_finally (fun () ->
-      Typecore.reset_delayed_checks ();
-      Env.reset_required_globals ();
-      if !Clflags.print_types then (* #7656 *)
-        ignore @@ Warnings.parse_options false "-32-34-37-38-60";
-      let (str, sg, names, finalenv) =
-        type_structure initial_env ast in
-      let simple_sg = Signature_names.simplify finalenv names sg in
-      if !Clflags.print_types then begin
+  let run () =
+    Typecore.reset_delayed_checks ();
+    Env.reset_required_globals ();
+    if !Clflags.print_types then (* #7656 *)
+      ignore @@ Warnings.parse_options false "-32-34-37-38-60";
+    let (str, sg, names, finalenv) =
+      type_structure initial_env ast in
+    let simple_sg = Signature_names.simplify finalenv names sg in
+    if !Clflags.print_types then begin
+      Typecore.force_delayed_checks ();
+      Printtyp.wrap_printing_env ~error:false initial_env
+        (fun () -> fprintf std_formatter "%a@."
+            (Printtyp.printed_signature sourcefile) simple_sg
+        );
+      gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
+      { structure = str;
+        coercion = Tcoerce_none;
+        signature = simple_sg
+      } (* result is ignored by Compile.implementation *)
+    end else begin
+      let sourceintf =
+        Filename.remove_extension sourcefile ^ !Config.interface_suffix in
+      if Sys.file_exists sourceintf then begin
+        let intf_file =
+          try
+            Load_path.find_uncap (modulename ^ ".cmi")
+          with Not_found ->
+            raise(Error(Location.in_file sourcefile, Env.empty,
+                        Interface_not_compiled sourceintf)) in
+        let dclsig = Env.read_signature modulename intf_file in
+        let coercion =
+          Includemod.compunit initial_env ~mark:Mark_positive
+            sourcefile sg intf_file dclsig
+        in
         Typecore.force_delayed_checks ();
-        Printtyp.wrap_printing_env ~error:false initial_env
-          (fun () -> fprintf std_formatter "%a@."
-              (Printtyp.printed_signature sourcefile) simple_sg
-          );
-        gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
+        (* It is important to run these checks after the inclusion test above,
+           so that value declarations which are not used internally but
+           exported are not reported as being unused. *)
+        let annots = Cmt_format.Implementation str in
+        Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
+          annots (Some sourcefile) initial_env None;
+        gen_annot outputprefix sourcefile annots;
         { structure = str;
-          coercion = Tcoerce_none;
-          signature = simple_sg
-        } (* result is ignored by Compile.implementation *)
+          coercion;
+          signature = dclsig
+        }
       end else begin
-        let sourceintf =
-          Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-        if Sys.file_exists sourceintf then begin
-          let intf_file =
-            try
-              Load_path.find_uncap (modulename ^ ".cmi")
-            with Not_found ->
-              raise(Error(Location.in_file sourcefile, Env.empty,
-                          Interface_not_compiled sourceintf)) in
-          let dclsig = Env.read_signature modulename intf_file in
-          let coercion =
-            Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg intf_file dclsig
+        Location.prerr_warning (Location.in_file sourcefile)
+          Warnings.Missing_mli;
+        let coercion =
+          Includemod.compunit initial_env ~mark:Mark_positive
+            sourcefile sg "(inferred signature)" simple_sg
+        in
+        check_nongen_schemes finalenv simple_sg;
+        normalize_signature simple_sg;
+        Typecore.force_delayed_checks ();
+        (* See comment above. Here the target signature contains all
+           the value being exported. We can still capture unused
+           declarations like "let x = true;; let x = 1;;", because in this
+           case, the inferred signature contains only the last declaration. *)
+        if not !Clflags.dont_write_files then begin
+          let alerts = Builtin_attributes.alerts_of_str ast in
+          let cmi =
+            Env.save_signature ~alerts
+              simple_sg modulename (outputprefix ^ ".cmi")
           in
-          Typecore.force_delayed_checks ();
-          (* It is important to run these checks after the inclusion test above,
-             so that value declarations which are not used internally but
-             exported are not reported as being unused. *)
           let annots = Cmt_format.Implementation str in
-          Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-            annots (Some sourcefile) initial_env None;
-          gen_annot outputprefix sourcefile annots;
-          { structure = str;
-            coercion;
-            signature = dclsig
-          }
-        end else begin
-          Location.prerr_warning (Location.in_file sourcefile)
-            Warnings.Missing_mli;
-          let coercion =
-            Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg "(inferred signature)" simple_sg
-          in
-          check_nongen_schemes finalenv simple_sg;
-          normalize_signature simple_sg;
-          Typecore.force_delayed_checks ();
-          (* See comment above. Here the target signature contains all
-             the value being exported. We can still capture unused
-             declarations like "let x = true;; let x = 1;;", because in this
-             case, the inferred signature contains only the last declaration. *)
-          if not !Clflags.dont_write_files then begin
-            let alerts = Builtin_attributes.alerts_of_str ast in
-            let cmi =
-              Env.save_signature ~alerts
-                simple_sg modulename (outputprefix ^ ".cmi")
-            in
-            let annots = Cmt_format.Implementation str in
-            Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-              annots (Some sourcefile) initial_env (Some cmi);
-            gen_annot outputprefix sourcefile annots
-          end;
-          { structure = str;
-            coercion;
-            signature = simple_sg
-          }
-        end
+          Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
+            annots (Some sourcefile) initial_env (Some cmi);
+          gen_annot outputprefix sourcefile annots
+        end;
+        { structure = str;
+          coercion;
+          signature = simple_sg
+        }
       end
-    )
+    end
+  in
+  Misc.try_finally (fun () -> Builtin_attributes.warning_scope [] run)
     ~exceptionally:(fun () ->
         let annots =
           Cmt_format.Partial_implementation

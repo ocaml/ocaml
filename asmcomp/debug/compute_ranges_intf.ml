@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
+[@@@ocaml.warning "-missing-mli"]
 
 (** This file defines types that are used to specify the interface of
     [Compute_ranges].  The description of [Compute_ranges] is:
