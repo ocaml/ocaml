@@ -22,22 +22,22 @@ include $(ROOTDIR)/Makefile.common
 BYTECODE_C_SOURCES := $(addsuffix .c, \
   interp misc fix_code startup_aux startup_byt major_gc \
   minor_gc memory alloc roots globroots fail_byt signals \
-  signals_byt printexc backtrace_byt backtrace compare ints \
+  signals_byt printexc backtrace_byt backtrace compare ints eventlog \
   floats str array io extern intern hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak finalise custom dynlink \
-  platform eventlog fiber shared_heap addrmap \
-  afl $(UNIX_OR_WIN32) bigarray main domain \
+  platform fiber shared_heap addrmap \
+  afl $(UNIX_OR_WIN32) bigarray main memprof domain \
   skiplist codefrag)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
   startup_aux startup_nat main fail_nat roots signals \
   signals_nat misc major_gc minor_gc memory alloc compare ints \
-  floats str array io extern intern hash sys parsing gc_ctrl md5 obj \
+  floats str array io extern intern hash sys parsing gc_ctrl eventlog md5 obj \
   lexing $(UNIX_OR_WIN32) printexc callback weak finalise custom \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
-  platform eventlog fiber shared_heap addrmap frame_descriptors \
+  platform fiber shared_heap addrmap frame_descriptors \
   dynlink clambda_checks afl bigarray \
-  domain skiplist codefrag)
+  memprof domain skiplist codefrag)
 
 GENERATED_HEADERS := caml/opnames.h caml/version.h caml/jumptbl.h
 CONFIG_HEADERS := caml/m.h caml/s.h
