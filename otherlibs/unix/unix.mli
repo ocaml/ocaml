@@ -578,6 +578,11 @@ val map_file :
   copy-on-write of the modified pages; the underlying file is not
   affected.
 
+  On operating systems that support MAP_ANON or MAP_ANONYMOUS, and if
+  the file_descr has integer value -1 and pos equal 0, the
+  created memory map will not be synchronized to a file.
+  @since NEXT_RELEASE
+
   [Genarray.map_file] is much more efficient than reading
   the whole file in a Bigarray, modifying that Bigarray,
   and writing it afterwards.
