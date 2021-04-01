@@ -178,7 +178,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
 #elif defined(MAP_ANON)
       shared |= MAP_ANON;
       fprintf(stderr, "MAP_ANON\n");
-#elif
+#else
       fprintf(stderr, "neither MAP_ANON nor MAP_ANONYMOUS\n");
 #endif
     }
