@@ -121,38 +121,43 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine file size. We avoid lseek here because it is fragile,
      and because some mappable file types do not support it
-   */
-  caml_enter_blocking_section();
-  if (fstat(fd, &st) == -1) {
-    caml_leave_blocking_section();
-    uerror("map_file", Nothing);
-  }
-  file_size = st.st_size;
+  */
+  if (fd != -1) {
+    caml_enter_blocking_section();
+    if (fstat(fd, &st) == -1) {
+      caml_leave_blocking_section();
+      uerror("map_file", Nothing);
+    }
+    file_size = st.st_size;
+  } else
+    file_size = 0;
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
   for (i = 0; i < num_dims; i++)
     if (dim[i] != -1) array_size *= dim[i];
   /* Check if the major dimension is unknown */
-  if (dim[major_dim] == -1) {
-    /* Determine major dimension from file size */
-    if (file_size < startpos) {
-      caml_leave_blocking_section();
-      caml_failwith("Unix.map_file: file position exceeds file size");
-    }
-    data_size = file_size - startpos;
-    dim[major_dim] = (uintnat) (data_size / array_size);
-    array_size = dim[major_dim] * array_size;
-    if (array_size != data_size) {
-      caml_leave_blocking_section();
-      caml_failwith("Unix.map_file: file size doesn't match array dimensions");
-    }
-  } else {
-    /* Check that file is large enough, and grow it otherwise */
-    if (file_size < startpos + array_size) {
-      if (caml_grow_file(fd, startpos + array_size) == -1) { /* PR#5543 */
+  if (fd != -1) {
+    if (dim[major_dim] == -1) {
+      /* Determine major dimension from file size */
+      if (file_size < startpos) {
         caml_leave_blocking_section();
-        uerror("map_file", Nothing);
+        caml_failwith("Unix.map_file: file position exceeds file size");
+      }
+      data_size = file_size - startpos;
+      dim[major_dim] = (uintnat) (data_size / array_size);
+      array_size = dim[major_dim] * array_size;
+      if (array_size != data_size) {
+        caml_leave_blocking_section();
+        caml_failwith("Unix.map_file: file size doesn't match array dimensions");
+      }
+    } else {
+      /* Check that file is large enough, and grow it otherwise */
+      if (file_size < startpos + array_size) {
+        if (caml_grow_file(fd, startpos + array_size) == -1) { /* PR#5543 */
+          caml_leave_blocking_section();
+          uerror("map_file", Nothing);
+        }
       }
     }
   }
@@ -161,12 +166,21 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   delta = (uintnat) startpos % page;
   /* Do the mmap */
   shared = Bool_val(vshared) ? MAP_SHARED : MAP_PRIVATE;
-  if (array_size > 0)
+  if (array_size > 0) {
+    if (fd == -1 && startpos == 0) {
+      /* the user doesn't need the memory region to be synchronized
+         to a file */
+#if defined(MAP_ANONYMOUS)
+      shared |= MAP_ANONYMOUS;
+#elif !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+      shared |= MAP_ANON;
+#endif
+    }
     addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
                 shared, fd, startpos - delta);
-  else
+  } else
     addr = NULL;                /* PR#5463 - mmap fails on empty region */
-  caml_leave_blocking_section();
+  if (fd != -1) caml_leave_blocking_section();
   if (addr == (void *) MAP_FAILED) uerror("map_file", Nothing);
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
