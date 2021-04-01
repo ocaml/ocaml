@@ -5,8 +5,8 @@
 (*            Damien Doligez, projet Para, INRIA Rocquencourt             *)
 (*            Jacques-Henri Jourdan, projet Gallium, INRIA Paris          *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 1996-2016 Institut National de Recherche en Informatique   *)
+(*     et en Automatique.                                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -98,10 +98,12 @@ let allocated_bytes () =
   let (mi, pro, ma) = counters () in
   (mi +. ma -. pro) *. float_of_int (Sys.word_size / 8)
 
+
 external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register"
 external finalise_last : (unit -> unit) -> 'a -> unit =
   "caml_final_register_called_without_value"
 external finalise_release : unit -> unit = "caml_final_release"
+
 
 type alarm = bool ref
 type alarm_rec = {active : alarm; f : unit -> unit}
@@ -120,3 +122,41 @@ let create_alarm f =
 
 
 let delete_alarm a = a := false
+
+module Memprof =
+  struct
+    type allocation_source = Normal | Marshal | Custom
+    type allocation =
+      { n_samples : int;
+        size : int;
+        source : allocation_source;
+        callstack : Printexc.raw_backtrace }
+
+    type ('minor, 'major) tracker = {
+      alloc_minor: allocation -> 'minor option;
+      alloc_major: allocation -> 'major option;
+      promote: 'minor -> 'major option;
+      dealloc_minor: 'minor -> unit;
+      dealloc_major: 'major -> unit;
+    }
+
+    let null_tracker = {
+      alloc_minor = (fun _ -> None);
+      alloc_major = (fun _ -> None);
+      promote = (fun _ -> None);
+      dealloc_minor = (fun _ -> ());
+      dealloc_major = (fun _ -> ());
+    }
+
+    external c_start :
+      float -> int -> ('minor, 'major) tracker -> unit
+      = "caml_memprof_start"
+
+    let start
+      ~sampling_rate
+      ?(callstack_size = max_int)
+      tracker =
+      c_start sampling_rate callstack_size tracker
+
+    external stop : unit -> unit = "caml_memprof_stop"
+  end
