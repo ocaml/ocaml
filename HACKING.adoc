@@ -225,8 +225,8 @@ If you are working on a development version of the compiler, you can create an
 opam switch from it by running the following from the development repository:
 
 -----
--opam switch create . --empty
--opam install .
+opam switch create . --empty
+opam install .
 -----
 
 If you want to test someone else's development version from a public
