@@ -105,6 +105,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   void * addr;
 
   fprintf(stderr, "FBR: caml_unix_map_file entry\n");
+  fflush(stderr);
 
   fd = Int_val(vfd);
   flags = Caml_ba_kind_val(vkind) | Caml_ba_layout_val(vlayout);
@@ -175,11 +176,14 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
 #if defined(MAP_ANONYMOUS)
       shared |= MAP_ANONYMOUS;
       fprintf(stderr, "MAP_ANONYMOUS\n");
+      fflush(stderr);
 #elif defined(MAP_ANON)
       shared |= MAP_ANON;
       fprintf(stderr, "MAP_ANON\n");
+      fflush(stderr);
 #else
       fprintf(stderr, "neither MAP_ANON nor MAP_ANONYMOUS\n");
+      fflush(stderr);
 #endif
     }
     addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
@@ -191,6 +195,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the OCaml bigarray */
   fprintf(stderr, "FBR: caml_unix_map_file exit\n");
+  fflush(stderr);
   return caml_unix_mapped_alloc(flags, num_dims, addr, dim);
 }
 
