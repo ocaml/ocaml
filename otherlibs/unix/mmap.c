@@ -175,9 +175,11 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
 #if defined(MAP_ANONYMOUS)
       shared |= MAP_ANONYMOUS;
       fprintf(stderr, "MAP_ANONYMOUS\n");
-#elif !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#elif defined(MAP_ANON)
       shared |= MAP_ANON;
       fprintf(stderr, "MAP_ANON\n");
+#elif
+      fprintf(stderr, "neither MAP_ANON nor MAP_ANONYMOUS\n");
 #endif
     }
     addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
