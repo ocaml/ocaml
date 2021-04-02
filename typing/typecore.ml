@@ -594,8 +594,8 @@ let solve_Ppat_alias env pat =
   generalize ty_var;
   ty_var
 
-let solve_Ppat_tuple ~refine loc env length expected_ty =
-  let vars = List.init length (fun _ -> newgenvar ()) in
+let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
+  let vars = List.map (fun _ -> newgenvar ()) args in
   let ty = newgenty (Ttuple vars) in
   let expected_ty = generic_instance expected_ty in
   unify_pat_types ~refine loc env ty expected_ty;
@@ -1706,8 +1706,7 @@ and type_pat_aux
       raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
       assert (List.length spl >= 2);
-      let expected_tys =
-        solve_Ppat_tuple ~refine loc env (List.length spl) expected_ty in
+      let expected_tys = solve_Ppat_tuple ~refine loc env spl expected_ty in
       let spl_ann = List.combine spl expected_tys in
       map_fold_cont (fun (p,t) -> type_pat Value p t) spl_ann (fun pl ->
         rvp k {
