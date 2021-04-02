@@ -651,8 +651,8 @@ let solve_constructor_annotation env name_list sty ty_args ty_ex =
   end;
   ty_args, Some (ids, cty)
 
-let solve_Ppat_construct ~refine env loc constr no_existentials svto
-        expected_ty =
+let solve_Ppat_construct ~refine env loc constr no_existentials
+        existential_styp expected_ty =
   (* if constructor is gadt, we must verify that the expected type has the
      correct head *)
   if constr.cstr_generalized then
@@ -669,8 +669,8 @@ let solve_Ppat_construct ~refine env loc constr no_existentials svto
     unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
   in
   let expansion_scope = get_gadt_equations_level () in
-  let ty_args, ty_res, equated_types, vto =
-    match svto with
+  let ty_args, ty_res, equated_types, existential_ctyp =
+    match existential_styp with
       None ->
         let ty_args, ty_res, _ =
           instance_constructor ~in_pattern:(env, expansion_scope) constr in
@@ -681,9 +681,9 @@ let solve_Ppat_construct ~refine env loc constr no_existentials svto
         let ty_args, ty_res, ty_ex =
           instance_constructor ?in_pattern constr in
         let equated_types = unify_res ty_res in
-        let ty_args, svto =
+        let ty_args, existential_ctyp =
           solve_constructor_annotation env name_list sty ty_args ty_ex in
-        ty_args, ty_res, equated_types, svto
+        ty_args, ty_res, equated_types, existential_ctyp
   in
   end_def ();
   generalize_structure expected_ty;
@@ -710,7 +710,7 @@ let solve_Ppat_construct ~refine env loc constr no_existentials svto
         equated_types
     with Warn_only_once -> ()
   end;
-  (ty_args, vto)
+  (ty_args, existential_ctyp)
 
 let solve_Ppat_record_field ~refine loc env label label_lid record_ty =
   begin_def ();
@@ -1748,7 +1748,7 @@ and type_pat_aux
           let name = constr.cstr_name in
           raise (Error (loc, !env, Unexpected_existential (r, name, exs)))
       end;
-      let sarg', svto =
+      let sarg', existential_styp =
         match sarg with
           None -> None, None
         | Some (vl, {ppat_desc = Ppat_constraint (sp, sty)})
@@ -1767,7 +1767,7 @@ and type_pat_aux
             Builtin_attributes.explicit_arity sp.ppat_attributes
           -> spl
         | Some({ppat_desc = Ppat_any} as sp) when
-            constr.cstr_arity = 0 && svto = None
+            constr.cstr_arity = 0 && existential_styp = None
           ->
             Location.prerr_warning sp.ppat_loc
               Warnings.Wildcard_arg_to_constant_constr;
@@ -1785,9 +1785,9 @@ and type_pat_aux
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
 
-      let (ty_args, vto) =
-        solve_Ppat_construct ~refine env loc constr no_existentials svto
-          expected_ty
+      let (ty_args, existential_ctyp) =
+        solve_Ppat_construct ~refine env loc constr no_existentials
+          existential_styp expected_ty
       in
 
       let rec check_non_escaping p =
@@ -1812,7 +1812,7 @@ and type_pat_aux
         (List.combine sargs ty_args)
         (fun args ->
           rvp k {
-            pat_desc=Tpat_construct(lid, constr, args, vto);
+            pat_desc=Tpat_construct(lid, constr, args, existential_ctyp);
             pat_loc = loc; pat_extra=[];
             pat_type = instance expected_ty;
             pat_attributes = sp.ppat_attributes;
