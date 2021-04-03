@@ -1448,7 +1448,7 @@ the value \var{a} and returns the value returned by~\var{f}.
 \item "caml_callback3("\var{f, a, b, c}")" applies the functional value \var{f}
 (a curried OCaml function with three arguments) to \var{a}, \var{b} and \var{c}.
 \item "caml_callbackN("\var{f, n, args}")" applies the functional value \var{f}
-to the \var{n} arguments contained in the array of values \var{args}.
+to the \var{n} arguments contained in the C array of values \var{args}.
 \end{itemize}
 If the function \var{f} does not return, but raises an exception that
 escapes the scope of the application, then this exception is
