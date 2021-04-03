@@ -213,6 +213,16 @@ let string_of_condition = function
   | NO -> "no"
   | O -> "o"
 
+let string_of_float_condition = function
+  | EQf -> "eq"
+  | LTf -> "lt"
+  | LEf -> "le"
+  | UNORDf -> "unord"
+  | NEQf -> "neq"
+  | NLTf -> "nlt"
+  | NLEf -> "nle"
+  | ORDf -> "ord"
+
 let string_of_rounding = function
   | RoundDown -> "roundsd.down"
   | RoundUp -> "roundsd.up"

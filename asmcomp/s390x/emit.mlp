@@ -479,6 +479,14 @@ let emit_instr i =
         `	brc	{emit_int mask}, {emit_label lbl}\n`;
         `	lghi	{emit_reg i.res.(0)}, 0\n`;
         `{emit_label lbl}:\n`
+    | Lop(Icompf cmp) ->
+        let lbl = new_label() in
+        `	cdbr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 1\n`;
+        let mask = branch_for_float_comparison cmp in
+        `	brcl	{emit_int mask}, {emit_label lbl}\n`;
+        `	lghi	{emit_reg i.res.(0)}, 0\n`;
+        `{emit_label lbl}:\n`
     | Lop(Iintop (Icheckbound)) ->
         let lbl = bound_error_label i.dbg in
         `	clgr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;

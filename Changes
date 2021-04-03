@@ -94,6 +94,11 @@ Working version
 - #10244: Optimise Int32.unsigned_to_int
   (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
 
+- #9945: Turn boolean-result float comparisons into primitive operations.
+  Uses the architecture's elementary operations for float comparisons,
+  when available, rather than branching and then setting the return value.
+  (Stefan Muenzel, review by Stephen Dolan and Alain Frisch)
+
 ### Type system:
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`

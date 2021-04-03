@@ -138,3 +138,21 @@ let win64 =
   match Config.system with
   | "win64" | "mingw64" | "cygwin" -> true
   | _                   -> false
+
+open X86_ast
+
+(* Certain float conditions aren't represented directly in the opcode for
+   float comparison, so we have to swap the arguments. The swap information
+   is also needed downstream because one of the arguments is clobbered. *)
+let float_cond_and_need_swap cond =
+  match (cond : Lambda.float_comparison) with
+  | CFeq  -> EQf,  false
+  | CFneq -> NEQf, false
+  | CFlt  -> LTf,  false
+  | CFnlt -> NLTf, false
+  | CFgt  -> LTf,  true
+  | CFngt -> NLTf, true
+  | CFle  -> LEf,  false
+  | CFnle -> NLEf, false
+  | CFge  -> LEf,  true
+  | CFnge -> NLEf, true

@@ -140,6 +140,21 @@ let emit_float_load dst ofs =
 let emit_float_store src ofs =
   emit_mem_op "fsd" (reg_name src) ofs
 
+let emit_float_test cmp ~arg ~res =
+  let negated =
+    match cmp with
+    | CFneq | CFnlt | CFngt | CFnle | CFnge -> true
+    | CFeq | CFlt | CFgt | CFle | CFge -> false
+  in
+  begin match cmp with
+  | CFeq | CFneq -> `	feq.d	{emit_reg res}, {emit_reg arg.(0)}, {emit_reg arg.(1)}\n`
+  | CFlt | CFnlt -> `	flt.d	{emit_reg res}, {emit_reg arg.(0)}, {emit_reg arg.(1)}\n`
+  | CFgt | CFngt -> `	flt.d	{emit_reg res}, {emit_reg arg.(1)}, {emit_reg arg.(0)}\n`
+  | CFle | CFnle -> `	fle.d	{emit_reg res}, {emit_reg arg.(0)}, {emit_reg arg.(1)}\n`
+  | CFge | CFnge -> `	fle.d	{emit_reg res}, {emit_reg arg.(1)}, {emit_reg arg.(0)}\n`
+  end;
+  negated
+
 (* Record live pointers at call points *)
 
 let record_frame_label live dbg =
@@ -417,6 +432,9 @@ let emit_instr i =
           `	sltu	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
           `	xori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, 1\n`;
       end
+  | Lop(Icompf cmp) ->
+      let negated = emit_float_test cmp ~res:i.res.(0) ~arg:i.arg in
+      if negated then `	xori	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, 1\n`;
   | Lop(Iintop (Icheckbound)) ->
       let lbl = bound_error_label i.dbg in
       `	bleu	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_label lbl}\n`
@@ -473,18 +491,12 @@ let emit_instr i =
       | Iinttest_imm _ ->
           Misc.fatal_error "Emit.emit_instr (Iinttest_imm _)"
       | Ifloattest cmp ->
+          let negated = emit_float_test cmp ~arg:i.arg ~res:reg_tmp in
           let branch =
-            match cmp with
-            | CFneq | CFnlt | CFngt | CFnle | CFnge -> "beqz"
-            | CFeq | CFlt | CFgt | CFle | CFge -> "bnez"
+            if negated
+            then "beqz"
+            else "bnez"
           in
-          begin match cmp with
-          | CFeq | CFneq -> `	feq.d	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-          | CFlt | CFnlt -> `	flt.d	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-          | CFgt | CFngt -> `	flt.d	{emit_reg reg_tmp}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
-          | CFle | CFnle -> `	fle.d	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-          | CFge | CFnge -> `	fle.d	{emit_reg reg_tmp}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
-          end;
           `	{emit_string branch}	{emit_reg reg_tmp}, {emit_label lbl}\n`
       | Ioddtest ->
           `	andi	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, 1\n`;

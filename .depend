@@ -2059,9 +2059,13 @@ asmcomp/afl_instrument.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/arch.cmo : \
+    asmcomp/x86_ast.cmi \
+    lambda/lambda.cmi \
     utils/config.cmi \
     utils/clflags.cmi
 asmcomp/arch.cmx : \
+    asmcomp/x86_ast.cmi \
+    lambda/lambda.cmx \
     utils/config.cmx \
     utils/clflags.cmx
 asmcomp/asmgen.cmo : \
@@ -2864,6 +2868,7 @@ asmcomp/selectgen.cmi : \
     asmcomp/arch.cmo
 asmcomp/selection.cmo : \
     asmcomp/selectgen.cmi \
+    asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
@@ -2872,6 +2877,7 @@ asmcomp/selection.cmo : \
     asmcomp/selection.cmi
 asmcomp/selection.cmx : \
     asmcomp/selectgen.cmx \
+    asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \

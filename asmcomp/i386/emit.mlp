@@ -362,7 +362,7 @@ let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
 
 (* Emit the code for a floating-point comparison *)
 
-let emit_float_test cmp arg lbl =
+let emit_float_test_and_return_condition cmp arg : condition =
   let actual_cmp =
     match (is_tos arg.(0), is_tos arg.(1)) with
     | (true, true) ->
@@ -387,41 +387,45 @@ let emit_float_test cmp arg lbl =
   | CFeq ->
       I.and_ (int 69) ah;
       I.cmp (int 64) ah;
-      I.je lbl
+      E
   | CFneq ->
       I.and_ (int 68) ah;
       I.xor (int 64) ah;
-      I.jne lbl
+      NE
   | CFle ->
       I.and_ (int 69) ah;
       I.dec ah;
       I.cmp (int 64) ah;
-      I.jb lbl
+      B
   | CFnle ->
       I.and_ (int 69) ah;
       I.dec ah;
       I.cmp (int 64) ah;
-      I.jae lbl
+      AE
   | CFge ->
       I.and_ (int 5) ah;
-      I.je lbl
+      E
   | CFnge ->
       I.and_ (int 5) ah;
-      I.jne lbl
+      NE
   | CFlt ->
       I.and_ (int 69) ah;
       I.cmp (int 1) ah;
-      I.je lbl
+      E
   | CFnlt ->
       I.and_ (int 69) ah;
       I.cmp (int 1) ah;
-      I.jne lbl
+      NE
   | CFgt ->
       I.and_ (int 69) ah;
-      I.je lbl
+      E
   | CFngt ->
       I.and_ (int 69) ah;
-      I.jne lbl
+      NE
+
+let emit_float_test cmp arg lbl =
+  let condition = emit_float_test_and_return_condition cmp arg in
+  I.j condition lbl
 
 (* Emit a Ifloatspecial instruction *)
 
@@ -647,6 +651,10 @@ let emit_instr fallthrough i =
       I.cmp (reg i.arg.(1)) (reg i.arg.(0));
       I.set (cond cmp) al;
       I.movzx al (reg i.res.(0));
+  | Lop(Icompf cmp) ->
+      let cond = emit_float_test_and_return_condition cmp i.arg in
+      I.set cond al;
+      I.movzx al (reg i.res.(0))
   | Lop(Iintop_imm(Icomp cmp, n)) ->
       I.cmp (int n) (reg i.arg.(0));
       I.set (cond cmp) al;

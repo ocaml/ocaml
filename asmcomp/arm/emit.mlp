@@ -178,6 +178,18 @@ let name_for_comparison = function
   | Iunsigned Ceq -> "eq" | Iunsigned Cne -> "ne" | Iunsigned Cle -> "ls"
   | Iunsigned Cge -> "cs" | Iunsigned Clt -> "cc" | Iunsigned Cgt -> "hi"
 
+let name_for_float_comparison = function
+  | CFeq -> "eq"
+  | CFneq -> "ne"
+  | CFlt -> "cc"
+  | CFnlt -> "cs"
+  | CFle -> "ls"
+  | CFnle -> "hi"
+  | CFgt -> "gt"
+  | CFngt -> "le"
+  | CFge -> "ge"
+  | CFnge -> "lt"
+
 let name_for_int_operation = function
   (* Use adds,subs,... to enable 16-bit T1 encoding *)
     Iadd  -> "adds"
@@ -401,9 +413,7 @@ let emit_load_symbol_addr dst s =
 (* Emit instructions that set [rd] to 1 if integer condition [cmp] holds
    and set [rd] to 0 otherwise. *)
 
-let emit_set_condition cmp rd =
-  let compthen = name_for_comparison cmp in
-  let compelse = name_for_comparison (negate_integer_comparison cmp) in
+let emit_set_condition_generic ~compthen ~compelse rd =
   if !arch < ARMv8 || not !thumb then begin
     `	ite	{emit_string compthen}\n`;
     `	mov{emit_string	compthen}	{emit_reg rd}, #1\n`;
@@ -426,6 +436,16 @@ let emit_set_condition cmp rd =
       `	movs	{emit_reg rd}, {emit_reg temp}\n`; 5
     end
   end
+
+let emit_set_condition cmp rd =
+  let compthen = name_for_comparison cmp in
+  let compelse = name_for_comparison (negate_integer_comparison cmp) in
+  emit_set_condition_generic ~compthen ~compelse rd
+
+let emit_set_condition_float cmp rd =
+  let compthen = name_for_float_comparison cmp in
+  let compelse = name_for_float_comparison (negate_float_comparison cmp) in
+  emit_set_condition_generic ~compthen ~compelse rd
 
 (* Emit code to load the address of a label in the lr register *)
 let emit_load_handler_address handler =
@@ -675,6 +695,10 @@ let emit_instr i =
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         1 + emit_set_condition cmp i.res.(0)
+    | Lop(Icompf cmp) ->
+        `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	fmstat\n`;
+        2 + emit_set_condition_float cmp i.res.(0)
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         1 + emit_set_condition cmp i.res.(0)
@@ -799,19 +823,7 @@ let emit_instr i =
             let comp = name_for_comparison cmp in
             `	b{emit_string comp}	{emit_label lbl}\n`; 2
         | Ifloattest cmp ->
-            let comp =
-              match cmp with
-              | CFeq -> "eq"
-              | CFneq -> "ne"
-              | CFlt -> "cc"
-              | CFnlt -> "cs"
-              | CFle -> "ls"
-              | CFnle -> "hi"
-              | CFgt -> "gt"
-              | CFngt -> "le"
-              | CFge -> "ge"
-              | CFnge -> "lt"
-            in
+            let comp = name_for_float_comparison cmp in
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	fmstat\n`;
             `	b{emit_string comp}	{emit_label lbl}\n`; 3

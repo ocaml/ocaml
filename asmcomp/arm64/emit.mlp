@@ -504,6 +504,7 @@ module BR = Branch_relaxation.Make (struct
       | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
       end
     | Lop (Iintop (Icomp _)) -> 2
+    | Lop (Icompf _) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
     | Lop (Iintop (Icheckbound)) -> 2
     | Lop (Ispecific (Ifar_intop_checkbound)) -> 3
@@ -631,6 +632,19 @@ let emit_load_literal dst lbl =
     `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
     `	ldr	{emit_reg dst}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
   end
+
+
+let name_for_float_comparison = function
+  | CFeq -> "eq"
+  | CFneq -> "ne"
+  | CFlt -> "cc"
+  | CFnlt -> "cs"
+  | CFle -> "ls"
+  | CFnle -> "hi"
+  | CFgt -> "gt"
+  | CFngt -> "le"
+  | CFge -> "ge"
+  | CFnge -> "lt"
 
 (* Output the assembly code for an instruction *)
 
@@ -772,6 +786,10 @@ let emit_instr i =
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
+    | Lop(Icompf cmp) ->
+        let comp = name_for_float_comparison cmp in
+        `	fcmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	cset	{emit_reg i.res.(0)}, {emit_string comp}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         emit_cmpimm i.arg.(0) n;
         `	cset	{emit_reg i.res.(0)}, {emit_string (name_for_comparison cmp)}\n`
@@ -898,19 +916,7 @@ let emit_instr i =
             let comp = name_for_comparison cmp in
             `	b.{emit_string comp}	{emit_label lbl}\n`
         | Ifloattest cmp ->
-            let comp =
-              match cmp with
-              | CFeq -> "eq"
-              | CFneq -> "ne"
-              | CFlt -> "cc"
-              | CFnlt -> "cs"
-              | CFle -> "ls"
-              | CFnle -> "hi"
-              | CFgt -> "gt"
-              | CFngt -> "le"
-              | CFge -> "ge"
-              | CFnge -> "lt"
-            in
+            let comp = name_for_float_comparison cmp in
             `	fcmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	b.{emit_string comp}	{emit_label lbl}\n`
         | Ioddtest ->
