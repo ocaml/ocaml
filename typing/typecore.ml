@@ -4327,7 +4327,11 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
     not tvar && List.for_all ((=) Nolabel) ls
   in
   let lv = (repr ty_expected').level in
-  match expand_head env (correct_levels ty_expected') with
+  let ty_expected'' =
+    if Env.has_local_constraints env then correct_levels ty_expected'
+    else ty_expected'
+  in
+  match expand_head env ty_expected'' with
     {desc = Tarrow(Nolabel,_,ty_res0,_)} when is_inferred sarg ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
