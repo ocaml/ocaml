@@ -589,20 +589,6 @@ Error: This expression has type
        but an expression was expected of type
          #comparable as 'a = < cmp : 'a -> int; .. >
        Type int_comparable = < cmp : int_comparable -> int; x : int >
-       is not compatible with type
-         int_comparable3 =
-           < cmp : int_comparable -> int; setx : int -> unit; x : int >
-       The first object type has no method setx
-|}, Principal{|
-Line 1, characters 25-27:
-1 | (new sorted_list ())#add c3;;
-                             ^^
-Error: This expression has type
-         int_comparable3 =
-           < cmp : int_comparable -> int; setx : int -> unit; x : int >
-       but an expression was expected of type
-         #comparable as 'a = < cmp : 'a -> int; .. >
-       Type int_comparable = < cmp : int_comparable -> int; x : int >
        is not compatible with type 'a = < cmp : 'a -> int; .. >
        The first object type has no method setx
 |}];;   (* Error; strange message with -principal *)

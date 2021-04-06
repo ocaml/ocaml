@@ -18,8 +18,6 @@
 open Asttypes
 open Types
 
-module TypePairs : Hashtbl.S with type key = type_expr * type_expr
-
 exception Unify    of Errortrace.unification_error
 exception Equality of Errortrace.equality_error
 exception Moregen  of Errortrace.moregen_error
@@ -67,9 +65,6 @@ val newobj: type_expr -> type_expr
 val newconstr: Path.t -> type_expr list -> type_expr
 val none: type_expr
         (* A dummy type expression *)
-
-val repr: type_expr -> type_expr
-        (* Return the canonical representative of a type. *)
 
 val object_fields: type_expr -> type_expr
 val flatten_fields:
@@ -225,7 +220,7 @@ val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
         equations_level:int -> allow_recursive:bool ->
-        Env.t ref -> type_expr -> type_expr -> unit TypePairs.t
+        Env.t ref -> type_expr -> type_expr -> unit Btype.TypePairs.t
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible.
            Returns the pairs of types that have been equated.  *)

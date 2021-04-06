@@ -242,10 +242,10 @@ let init_shape id modl =
       [] -> []
     | Sig_value(subid, {val_kind=Val_reg; val_type=ty; val_loc=loc},_) :: rem ->
         let init_v =
-          match Ctype.expand_head env ty with
-            {desc = Tarrow(_,_,_,_)} ->
+          match get_desc (Ctype.expand_head env ty) with
+            Tarrow(_,_,_,_) ->
               const_int 0 (* camlinternalMod.Function *)
-          | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
+          | Tconstr(p, _, _) when Path.same p Predef.path_lazy_t ->
               const_int 1 (* camlinternalMod.Lazy *)
           | _ ->
               let not_a_function =

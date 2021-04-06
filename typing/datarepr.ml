@@ -24,16 +24,15 @@ open Btype
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
-    let ty = repr ty in
     if try_mark_node ty then
-      match ty.desc with
+      match get_desc ty with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
           if not (static_row row) then begin
-            match row.row_more.desc with
+            match get_desc row.row_more with
             | Tvar _ when param -> ret := TypeSet.add ty !ret
             | _ -> loop row.row_more
           end
@@ -177,9 +176,10 @@ let extension_descr ~current_unit path_ext ext =
       cstr_uid = ext.ext_uid;
     }
 
-let none = Private_type_expr.create (Ttuple [])
-    ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
-                                        (* Clearly ill-formed type *)
+let none =
+  create_expr (Ttuple []) ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
+    (* Clearly ill-formed type *)
+
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
