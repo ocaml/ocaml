@@ -205,9 +205,9 @@ let class_declarations ~old_env:_ env  subst decl1 decl2 =
 (* Expand a module type identifier when possible *)
 
 let expand_modtype_path env path =
-   match Env.(find_modtype path env).mtd_type with
-     | None | exception Not_found -> None
-     | Some x -> Some x
+   match Env.find_modtype_expansion path env with
+     | exception Not_found -> None
+     | x -> Some x
 
 let expand_module_alias env path =
   match (Env.find_module path env).md_type with
