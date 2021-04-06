@@ -79,7 +79,3 @@ tool-debugger
 
 # since promotion is based on minor heap size now, this test can no longer be correct
 tests/promotion/bigrecmod.ml
-
-# TODO: disabled as there's a bug with signal handlers
-# https://github.com/ocaml-multicore/ocaml-multicore/issues/517
-tests/callback/'test_signalhandler.ml' with 1.2 (native)
