@@ -470,13 +470,13 @@ and functor_param ~loc env ~mark subst param1 param2 = match param1, param2 with
       in
       let env, subst =
         match name1, name2 with
-        | Some p1, Some p2 ->
-            Env.add_module p1 Mp_present arg2' env,
-            Subst.add_module p2 (Path.Pident p1) subst
-        | None, Some p2 ->
-            Env.add_module p2 Mp_present arg2' env, subst
-        | Some p1, None ->
-            Env.add_module p1 Mp_present arg2' env, subst
+        | Some id1, Some id2 ->
+            Env.add_module id1 Mp_present arg2' env,
+            Subst.add_module id2 (Path.Pident id1) subst
+        | None, Some id2 ->
+            Env.add_module id2 Mp_present arg2' env, subst
+        | Some id1, None ->
+            Env.add_module id1 Mp_present arg2' env, subst
         | None, None ->
             env, subst
       in
@@ -848,25 +848,25 @@ module Functor_inclusion_diff = struct
     | Keep (_,Unit,_)
     | Change (_,(Unit | Named (None,_)), _) ->
         st, [||]
-    | Insert (Named (Some p, arg))
-    | Delete (Named (Some p, arg))
-    | Change (Unit, Named (Some p, arg), _) ->
+    | Insert (Named (Some id, arg))
+    | Delete (Named (Some id, arg))
+    | Change (Unit, Named (Some id, arg), _) ->
         let arg' = Subst.modtype Keep st.subst arg in
-        let env = Env.add_module p Mp_present arg' st.env in
+        let env = Env.add_module id Mp_present arg' st.env in
         expand_params { st with env }
     | Keep (Named (name1, _), Named (name2, arg2), _)
     | Change (Named (name1, _), Named (name2, arg2), _) -> begin
         let arg' = Subst.modtype Keep st.subst arg2 in
         match name1, name2 with
-        | Some p1, Some p2 ->
-            let env = Env.add_module p1 Mp_present arg' st.env in
-            let subst = Subst.add_module p2 (Path.Pident p1) st.subst in
+        | Some id1, Some id2 ->
+            let env = Env.add_module id1 Mp_present arg' st.env in
+            let subst = Subst.add_module id2 (Path.Pident id1) st.subst in
             expand_params { st with env; subst }
-        | None, Some p2 ->
-            let env = Env.add_module p2 Mp_present arg' st.env in
+        | None, Some id2 ->
+            let env = Env.add_module id2 Mp_present arg' st.env in
             { st with env }, [||]
-        | Some p1, None ->
-            let env = Env.add_module p1 Mp_present arg' st.env in
+        | Some id1, None ->
+            let env = Env.add_module id1 Mp_present arg' st.env in
             expand_params { st with env }
         | None, None ->
             st, [||]
