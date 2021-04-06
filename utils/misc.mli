@@ -376,6 +376,7 @@ module Color : sig
   type styles = {
     error: style list;
     warning: style list;
+    success: style list;
     loc: style list;
   }
 

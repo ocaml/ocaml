@@ -2143,7 +2143,7 @@ let head_error_printer txt_got txt_but = function
   | None -> ignore
   | Some d ->
       let d = Trace.map_diff trees_of_type_expansion d in
-      dprintf "%t@;<1 2>%a@ %t@;<1 2>%a"
+      dprintf "%t@;<1 2>@{<error>%a@}@ %t@;<1 2>@{<success>%a@}"
         txt_got type_expansion d.Trace.got
         txt_but type_expansion d.Trace.expected
 
