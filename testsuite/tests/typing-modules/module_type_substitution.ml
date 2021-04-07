@@ -137,10 +137,12 @@ Line 4, characters 2-30:
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of t
        does not match its original definition in the constrained signature:
-       Modules do not match:
+       At position module type t = <here>
+       Module types do not match:
          sig type t = X of x | Y of y end
-       is not included in
+       is not equal to
          base
+       At position module type t = <here>
        Type declarations do not match:
          type t = X of x | Y of y
        is not included in

@@ -3,6 +3,9 @@ Working version
 
 ### Language features:
 
+- #9331: Improve error messages for functor application and functor types.
+  (Florian Angeletti and Gabriel Radanne, review by Leo White)
+
 - #10013: Let-punning
   Allow 'let* x in ...' and 'let%ext x in ...' as shorthand for
     'let* x = x in ...' and 'let%ext x = x in ...' respectively.

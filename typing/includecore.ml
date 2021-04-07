@@ -194,7 +194,7 @@ let report_record_mismatch first second decl ppf err =
   | Label_mismatch (l1, l2, err) ->
       pr
         "@[<hv>Fields do not match:@;<1 2>%a@ is not compatible with:\
-         @;<1 2>%a@ %a"
+         @;<1 2>%a@ %a@]"
         Printtyp.label l1
         Printtyp.label l2
         (report_label_mismatch first second) err
@@ -230,7 +230,7 @@ let report_variant_mismatch first second decl ppf err =
   | Constructor_mismatch (c1, c2, err) ->
       pr
         "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
-         @;<1 2>%a@ %a"
+         @;<1 2>%a@ %a@]"
         Printtyp.constructor c1
         Printtyp.constructor c2
         (report_constructor_mismatch first second decl) err

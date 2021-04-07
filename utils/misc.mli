@@ -370,6 +370,8 @@ module Color : sig
     | Bold
     | Reset
 
+  type Format.stag += Style of style list
+
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)
 

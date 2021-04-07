@@ -21,7 +21,6 @@
 *)
 
 open Types
-open Format
 
 module Signature_names : sig
   type t
@@ -104,14 +103,14 @@ type hiding_error =
 
 type error =
     Cannot_apply of module_type
-  | Not_included of Includemod.error list
+  | Not_included of Includemod.explanation
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
-  | With_mismatch of Longident.t * Includemod.error list
+  | With_mismatch of Longident.t * Includemod.explanation
   | With_makes_applicative_functor_ill_typed of
-      Longident.t * Path.t * Includemod.error list
+      Longident.t * Path.t * Includemod.explanation
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | With_cannot_remove_constrained_type
   | Repeated_name of Sig_component_kind.t * string
@@ -137,4 +136,4 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-val report_error: Env.t -> formatter -> error -> unit
+val report_error: Env.t -> loc:Location.t -> error -> Location.error
