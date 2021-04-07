@@ -84,7 +84,7 @@ type changes =
   | Unchanged
   | Invalid
 
-let trail = s_ref (ref Unchanged)
+let trail = s_table ref Unchanged
 
 let log_change ch =
   let r' = ref Unchanged in
