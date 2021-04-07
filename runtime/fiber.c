@@ -145,14 +145,13 @@ static inline void scan_stack_frames(scanning_action f, void* fdata, struct stac
   caml_frame_descrs fds = caml_get_frame_descrs();
 
   sp = (char*)stack->sp;
+  regs = gc_regs;
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
 
   retaddr = *(uintnat*)sp;
   sp += sizeof(value);
-
-  regs = gc_regs;
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
@@ -178,11 +177,11 @@ next_chunk:
       retaddr = Saved_return_address(sp);
       /* XXX KC: disabled already scanned optimization. */
     } else {
-      /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the trap frame (2 words). */
-      sp += 2 * sizeof(value); /* trap frame */
-      regs = *(value**)sp;
-      sp += 2 * sizeof(value); /* DWARF and gc_regs */
+      /* This marks the top of an ML stack chunk. Move sp to the previous
+       * stack chunk.  */
+      sp += 3 * sizeof(value); /* trap frame & DWARF pointer */
+      regs = *(value**)sp;     /* update gc_regs */
+      sp += 1 * sizeof(value); /* gc_regs */
       goto next_chunk;
     }
   }
