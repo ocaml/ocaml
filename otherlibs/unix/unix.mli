@@ -208,6 +208,7 @@ type wait_flag =
 (** Flags for {!waitpid}. *)
 
 val execv : string -> string array -> 'a
+[@@ocaml.alert file_system "This function may access the file system."]
 (** [execv prog args] execute the program in file [prog], with
    the arguments [args], and the current process environment.
    These [execv*] functions never return: on success, the current
@@ -215,14 +216,17 @@ val execv : string -> string array -> 'a
    @raise Unix_error on failure *)
 
 val execve : string -> string array -> string array -> 'a
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!execv}, except that the third argument provides the
    environment to the program executed. *)
 
 val execvp : string -> string array -> 'a
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!execv}, except that
    the program is searched in the path. *)
 
 val execvpe : string -> string array -> string array -> 'a
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!execve}, except that
    the program is searched in the path. *)
 
@@ -251,6 +255,7 @@ val waitpid : wait_flag list -> int -> int * process_status
    On Windows: can only wait for a given PID, not any child process. *)
 
 val system : string -> process_status
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Execute the given command, wait until it terminates, and return
    its termination status. The string is interpreted by the shell
    [/bin/sh] (or the command interpreter [cmd.exe] on Windows) and
@@ -343,6 +348,7 @@ type file_perm = int
     read for group, none for others *)
 
 val openfile : string -> open_flag list -> file_perm -> file_descr
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Open the named file with the given flags. Third argument is the
    permissions to give to the file if it is created (see
    {!umask}). Return a file descriptor on the named file. *)
@@ -461,6 +467,7 @@ val lseek : file_descr -> int -> seek_command -> int
     offset (from the beginning of the file). *)
 
 val truncate : string -> int -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Truncates the named file to the given size. *)
 
 val ftruncate : file_descr -> int -> unit
@@ -497,9 +504,11 @@ type stats =
 (** The information returned by the {!stat} calls. *)
 
 val stat : string -> stats
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Return the information for the named file. *)
 
 val lstat : string -> stats
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!stat}, but in case the file is a symbolic link,
    return the information for the link itself. *)
 
@@ -622,6 +631,7 @@ val unlink : string -> unit
 *)
 
 val rename : string -> string -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** [rename src dst] changes the name of a file from [src] to [dst],
     moving it between directories if needed.  If [dst] already
     exists, its contents will be replaced with those of [src].
@@ -662,6 +672,7 @@ type access_permission =
 
 
 val chmod : string -> file_perm -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Change the permissions of the named file. *)
 
 val fchmod : file_descr -> file_perm -> unit
@@ -670,6 +681,7 @@ val fchmod : file_descr -> file_perm -> unit
     On Windows: not implemented. *)
 
 val chown : string -> int -> int -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Change the owner uid and owner gid of the named file.
 
     On Windows: not implemented. *)
@@ -686,6 +698,7 @@ val umask : int -> int
     On Windows: not implemented. *)
 
 val access : string -> access_permission list -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Check that the process has the given permissions over the named file.
 
    On Windows: execute permission [X_OK] cannot be tested, just
@@ -780,18 +793,22 @@ val clear_close_on_exec : file_descr -> unit
 
 
 val mkdir : string -> file_perm -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Create a directory with the given permissions (see {!umask}). *)
 
 val rmdir : string -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Remove an empty directory. *)
 
 val chdir : string -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Change the process working directory. *)
 
 val getcwd : unit -> string
 (** Return the name of the current working directory. *)
 
 val chroot : string -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Change the process root directory.
 
     On Windows: not implemented. *)
@@ -800,6 +817,7 @@ type dir_handle
 (** The type of descriptors over opened directories. *)
 
 val opendir : string -> dir_handle
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Open a descriptor on a directory *)
 
 val readdir : dir_handle -> string
@@ -826,6 +844,7 @@ val pipe : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
    optional argument. *)
 
 val mkfifo : string -> file_perm -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Create a named pipe with the given permissions (see {!umask}).
 
    On Windows: not implemented. *)
@@ -837,6 +856,7 @@ val mkfifo : string -> file_perm -> unit
 val create_process :
   string -> string array -> file_descr -> file_descr ->
     file_descr -> int
+[@@ocaml.alert file_system "This function may access the file system."]
 (** [create_process prog args stdin stdout stderr]
    forks a new process that executes the program
    in file [prog], with arguments [args]. The pid of the new
@@ -853,12 +873,14 @@ val create_process :
 val create_process_env :
   string -> string array -> string array -> file_descr ->
     file_descr -> file_descr -> int
+[@@ocaml.alert file_system "This function may access the file system."]
 (** [create_process_env prog args env stdin stdout stderr]
    works as {!create_process}, except that the extra argument
    [env] specifies the environment passed to the program. *)
 
 
 val open_process_in : string -> in_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** High-level pipe and process management. This function
    runs the given command in parallel with the program.
    The standard output of the command is redirected to a pipe,
@@ -872,6 +894,7 @@ val open_process_in : string -> in_channel
    more efficient alternative to {!open_process_in}. *)
 
 val open_process_out : string -> out_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!open_process_in}, but redirect the standard input of
    the command to a pipe.  Data written to the returned output channel
    is sent to the standard input of the command.
@@ -883,6 +906,7 @@ val open_process_out : string -> out_channel
    {!open_process_out}. *)
 
 val open_process : string -> in_channel * out_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!open_process_out}, but redirects both the standard input
    and standard output of the command to pipes connected to the two
    returned channels.  The input channel is connected to the output
@@ -893,6 +917,7 @@ val open_process : string -> in_channel * out_channel
 
 val open_process_full :
   string -> string array -> in_channel * out_channel * in_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Similar to {!open_process}, but the second argument specifies
    the environment passed to the command.  The result is a triple
    of channels connected respectively to the standard output, standard input,
@@ -902,6 +927,7 @@ val open_process_full :
    {!open_process_full}. *)
 
 val open_process_args_in : string -> string array -> in_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** [open_process_args_in prog args] runs the program [prog] with arguments
     [args].  The new process executes concurrently with the current process.
     The standard output of the new process is redirected to a pipe, which can be
@@ -915,6 +941,7 @@ val open_process_args_in : string -> string array -> in_channel
     @since 4.08.0 *)
 
 val open_process_args_out : string -> string array -> out_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!open_process_args_in}, but redirect the standard input of the new
     process to a pipe.  Data written to the returned output channel is sent to
     the standard input of the program.  Warning: writes on output channels are
@@ -924,6 +951,7 @@ val open_process_args_out : string -> string array -> out_channel
     @since 4.08.0 *)
 
 val open_process_args : string -> string array -> in_channel * out_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!open_process_args_out}, but redirects both the standard input and
     standard output of the new process to pipes connected to the two returned
     channels.  The input channel is connected to the output of the program, and
@@ -934,6 +962,7 @@ val open_process_args : string -> string array -> in_channel * out_channel
 val open_process_args_full :
   string -> string array -> string array ->
     in_channel * out_channel * in_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Similar to {!open_process_args}, but the third argument specifies the
     environment passed to the new process.  The result is a triple of channels
     connected respectively to the standard output, standard input, and standard
@@ -992,6 +1021,7 @@ val close_process_full :
 
 val symlink : ?to_dir: (* thwart tools/sync_stdlib_docs *) bool ->
               string -> string -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** [symlink ?to_dir src dst] creates the file [dst] as a symbolic link
    to the file [src]. On Windows, [to_dir] indicates if the symbolic link
    points to a directory or a file; if omitted, [symlink] examines [src]
@@ -1031,6 +1061,7 @@ val has_symlink : unit -> bool
    @since 4.03.0 *)
 
 val readlink : string -> string
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Read the contents of a symbolic link. *)
 
 
@@ -1219,6 +1250,7 @@ val times : unit -> process_times
    for child processes. *)
 
 val utimes : string -> float -> float -> unit
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Set the last access time (second arg) and last modification time
    (third arg) for a file. Times are expressed in seconds from
    00:00:00 GMT, Jan. 1, 1970.  If both times are [0.0], the access

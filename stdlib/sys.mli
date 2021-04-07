@@ -33,9 +33,11 @@ val executable_name : string
     executable. *)
 
 external file_exists : string -> bool = "caml_sys_file_exists"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Test if a file with the given name exists. *)
 
 external is_directory : string -> bool = "caml_sys_is_directory"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Returns [true] if the given name refers to a directory,
     [false] if it refers to another kind of file.
     @raise Sys_error if no file exists with the given name.
@@ -43,9 +45,11 @@ external is_directory : string -> bool = "caml_sys_is_directory"
 *)
 
 external remove : string -> unit = "caml_sys_remove"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Remove the given file name from the file system. *)
 
 external rename : string -> string -> unit = "caml_sys_rename"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Rename a file.  [rename oldpath newpath] renames the file
     called [oldpath], giving it [newpath] as its new name,
     moving it between directories if needed.  If [newpath] already
@@ -67,6 +71,7 @@ val getenv_opt: string -> string option
 *)
 
 external command : string -> int = "caml_sys_system_command"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Execute the given shell command and return its exit code.
 
   The argument of {!Sys.command} is generally the name of a
@@ -92,15 +97,18 @@ external time : unit -> (float [@unboxed]) =
    since the beginning of execution. *)
 
 external chdir : string -> unit = "caml_sys_chdir"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Change the current working directory of the process. *)
 
 external mkdir : string -> int -> unit = "caml_sys_mkdir"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Create a directory with the given permissions.
 
     @since 4.12.0
 *)
 
 external rmdir : string -> unit = "caml_sys_rmdir"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Remove an empty directory.
 
     @since 4.12.0
@@ -110,6 +118,7 @@ external getcwd : unit -> string = "caml_sys_getcwd"
 (** Return the current working directory of the process. *)
 
 external readdir : string -> string array = "caml_sys_read_directory"
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Return the names of all files present in the given directory.
    Names denoting the current directory and the parent directory
    (["."] and [".."] in Unix) are not returned.  Each string in the

@@ -142,6 +142,7 @@ val temp_file : ?temp_dir: string -> string -> string -> string
 val open_temp_file :
       ?mode: open_flag list -> ?perms: int -> ?temp_dir: string -> string ->
       string -> string * out_channel
+[@@ocaml.alert file_system "This function may access the file system."]
 (** Same as {!Filename.temp_file}, but returns both the name of a fresh
    temporary file, and an output channel opened (atomically) on
    this file.  This function is more secure than [temp_file]: there
