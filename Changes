@@ -173,6 +173,11 @@ Working version
   (François Bobot, Nicolás Ojeda Bär, review by Daniel Bünzli and Damien
   Doligez)
 
+- #9987, #9988, #9996, #9997: add an odoc mode for the documentation
+  of the standard library and compiler library
+  (Florian Angeletti, review by David Allsopp, Sébastien Hinderer,
+   and Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #9407: added warning for missing mli interface file

@@ -27,9 +27,9 @@ Compilation units that use the "threads" library must also be compiled with
 the "-I +threads" option (see chapter~\ref{c:camlc}).
 
 \begin{linklist}
-\stddocitem{Thread}{lightweight threads}
-\stddocitem{Mutex}{locks for mutual exclusion}
-\stddocitem{Condition}{condition variables to synchronize between threads}
-\stddocitem{Semaphore}{semaphores, another thread synchronization mechanism}
-\stddocitem{Event}{first-class synchronous communication}
+\libdocitem{Thread}{lightweight threads}
+\libdocitem{Mutex}{locks for mutual exclusion}
+\libdocitem{Condition}{condition variables to synchronize between threads}
+\libdocitem{Semaphore}{semaphores, another thread synchronization mechanism}
+\libdocitem{Event}{first-class synchronous communication}
 \end{linklist}

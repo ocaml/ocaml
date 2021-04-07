@@ -144,7 +144,7 @@ result by running
 make html_doc
 ----
 
-and then opening link:./api_docgen/html/libref/index.html[] in a web browser.
+and then opening link:./api_docgen/build/html/libref/index.html[] in a web browser.
 
 === Tools
 
