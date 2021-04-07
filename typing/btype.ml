@@ -84,14 +84,12 @@ type changes =
   | Unchanged
   | Invalid
 
-let trail = s_table Weak.create 1
+let trail = s_ref (ref Unchanged)
 
 let log_change ch =
-  match Weak.get !trail 0 with None -> ()
-  | Some r ->
-      let r' = ref Unchanged in
-      r := Change (ch, r');
-      Weak.set !trail 0 (Some r')
+  let r' = ref Unchanged in
+  !trail := Change (ch, r');
+  trail := r'
 
 (**** Representative of a type ****)
 
@@ -725,11 +723,7 @@ let set_commu rc c =
 let snapshot () =
   let old = !last_snapshot in
   last_snapshot := !new_id;
-  match Weak.get !trail 0 with Some r -> (r, old)
-  | None ->
-      let r = ref Unchanged in
-      Weak.set !trail 0 (Some r);
-      (r, old)
+  (!trail, old)
 
 let rec rev_log accu = function
     Unchanged -> accu
@@ -749,7 +743,7 @@ let backtrack (changes, old) =
       List.iter undo_change backlog;
       changes := Unchanged;
       last_snapshot := old;
-      Weak.set !trail 0 (Some changes)
+      trail := changes
 
 let rec rev_compress_log log r =
   match !r with
