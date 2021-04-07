@@ -24,6 +24,20 @@
 #define fiber_debug_log(...)
 #endif
 
+void caml_change_max_stack_size (uintnat new_max_size)
+{
+  struct stack_info *current_stack = Caml_state->current_stack;
+  asize_t size = Stack_high(current_stack) - (value*)current_stack->sp
+                 + Stack_threshold / sizeof (value);
+
+  if (new_max_size < size) new_max_size = size;
+  if (new_max_size != caml_max_stack_size){
+    caml_gc_log ("Changing stack limit to %luk bytes",
+                     new_max_size * sizeof (value) / 1024);
+  }
+  caml_max_stack_size = new_max_size;
+}
+
 struct stack_info** caml_alloc_stack_cache () {
   int i;
 
@@ -251,19 +265,6 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
     if (!caml_try_realloc_stack(req))
       caml_raise_stack_overflow();
   return Val_unit;
-}
-
-void caml_change_max_stack_size (uintnat new_max_size)
-{
-  asize_t size = Stack_high(Caml_state->current_stack) - Caml_state->current_stack->sp
-                 + Stack_threshold / sizeof (value);
-
-  if (new_max_size < size) new_max_size = size;
-  if (new_max_size != caml_max_stack_size){
-    caml_gc_log ("Changing stack limit to %luk bytes",
-                     new_max_size * sizeof (value) / 1024);
-  }
-  caml_max_stack_size = new_max_size;
 }
 
 /*

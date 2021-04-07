@@ -142,9 +142,8 @@ type control =
 
     mutable stack_limit : int;
     [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.stack_limit = ...}"]
-    (** The maximum size of the stack (in words).  This is only
-       relevant to the byte-code runtime, as the native code runtime
-       uses the operating system's stack.  Default: 1024k. *)
+    (** The maximum size of the fiber stacks (in words).
+       Default: 1024k. *)
 
     mutable allocation_policy : int;
     [@ocaml.deprecated_mutable
