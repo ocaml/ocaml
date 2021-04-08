@@ -265,23 +265,22 @@ static int st_mutex_destroy(st_mutex m)
   return 0;
 }
 
-static INLINE void st_mutex_lock(st_mutex m)
+static INLINE int st_mutex_lock(st_mutex m)
 {
-  return caml_plat_lock(m);
+  return pthread_mutex_lock(m);
 }
 
-#define MUTEX_PREVIOUSLY_UNLOCKED 1
-#define MUTEX_ALREADY_LOCKED 0
+#define MUTEX_PREVIOUSLY_UNLOCKED 0
+#define MUTEX_ALREADY_LOCKED EBUSY
 
 static INLINE int st_mutex_trylock(st_mutex m)
 {
-  int retcode = caml_plat_try_lock(m);
-  return retcode;
+  return pthread_mutex_trylock(m);
 }
 
-static INLINE void st_mutex_unlock(st_mutex m)
+static INLINE int st_mutex_unlock(st_mutex m)
 {
-  return caml_plat_unlock(m);
+  return pthread_mutex_unlock(m);
 }
 
 /* Condition variables */
