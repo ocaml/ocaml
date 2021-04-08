@@ -61,10 +61,6 @@ tests/lib-unix/kill/'unix_kill.ml' with 1.2 (native)
 tests/lib-threads/'beat.ml' with 1.2 (native)
 tests/lib-threads/'beat.ml' with 1.1 (bytecode)
 
-# TODO: need to implement this error behaviour https://github.com/ocaml/ocaml/pull/9846
-tests/lib-threads/'mutex_errors.ml' with 1.1 (bytecode)
-tests/lib-threads/'mutex_errors.ml' with 1.2 (native)
-
 # TODO: pr9971 broken in our systhread implmentation with debug build (#9971/#9973)
 tests/lib-threads/'pr9971.ml' with 1.1 (bytecode)
 tests/lib-threads/'pr9971.ml' with 1.2 (native)
