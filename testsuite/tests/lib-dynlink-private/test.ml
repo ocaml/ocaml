@@ -86,7 +86,7 @@ module = "plugin6/partridge.mli"
 flags = "-I plugin6"
 module = "plugin6/partridge.ml"
 ***** ocamlc.byte
-program = "${test_build_directory}/test.byte"
+program = "./test.byte.exe"
 libraries = "dynlink"
 all_modules = "sheep.cmo test.cmo"
 ****** run
@@ -174,7 +174,7 @@ program = "plugin6/partridge.cmxs"
 flags = "-I plugin6 -shared"
 all_modules = "plugin6/partridge.ml"
 ****** ocamlopt.byte
-program = "${test_build_directory}/test.exe"
+program = "./test.opt.exe"
 libraries = "dynlink"
 all_modules = "sheep.cmx test.cmx"
 ******* run
