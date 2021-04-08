@@ -22,74 +22,84 @@ module = "sheep.ml"
 module = "pig.mli"
 ****** ocamlc.byte
 module = "test.ml"
-*** script
+******* script
 script = "mkdir plugin1 plugin2 plugin2b plugin2c plugin3 plugin4 plugin5 plugin6"
-**** script
+******** script
 script = "cp ${plugin1}/sheep.mli ${plugin1}/sheep.ml plugin1"
-**** script
+********* script
 script = "cp ${plugin2}/cow.mli ${plugin2}/cow.ml plugin2"
-**** script
+********** script
 script = "cp ${plugin2b}/cow.mli ${plugin2b}/cow.ml plugin2b"
-**** script
+*********** script
 script = "cp ${plugin2c}/cow.mli ${plugin2c}/cow.ml plugin2c"
-**** script
+************ script
 script = "cp ${plugin3}/pig.mli ${plugin3}/pig.ml plugin3"
-**** script
+************* script
 script = "cp ${plugin4}/chicken.mli ${plugin4}/chicken.ml plugin4"
-**** script
+************** script
 script = "cp ${plugin5}/chicken.mli ${plugin5}/chicken.ml plugin5"
-**** script
+*************** script
 script = "cp ${plugin6}/pheasant.mli ${plugin6}/pheasant.ml ${plugin6}/partridge.mli ${plugin6}/partridge.ml plugin6"
-***** ocamlc.byte
+**************** ocamlc.byte
 module = "plugin1/sheep.mli"
-***** ocamlc.byte
+***************** ocamlc.byte
 flags = "-I plugin1"
 module = "plugin1/sheep.ml"
-***** ocamlc.byte
+****************** ocamlc.byte
+flags = ""
 module = "plugin2/cow.mli"
-***** ocamlc.byte
+******************* ocamlc.byte
 flags = "-I plugin2"
 module = "plugin2/cow.ml"
-***** ocamlc.byte
+******************** ocamlc.byte
+flags = ""
 module = "plugin2b/cow.mli"
-***** ocamlc.byte
+********************* ocamlc.byte
 flags = "-I plugin2b"
 module = "plugin2b/cow.ml"
-***** ocamlc.byte
+********************** ocamlc.byte
+flags = ""
 module = "plugin2c/cow.mli"
-***** ocamlc.byte
+*********************** ocamlc.byte
 flags = "-I plugin2c"
 module = "plugin2c/cow.ml"
-***** ocamlc.byte
+************************ ocamlc.byte
+flags = ""
 module = "plugin3/pig.mli"
-***** ocamlc.byte
+************************* ocamlc.byte
 flags = "-I plugin3"
 module = "plugin3/pig.ml"
-***** ocamlc.byte
+************************** ocamlc.byte
+flags = ""
 module = "plugin4/chicken.mli"
-***** ocamlc.byte
+*************************** ocamlc.byte
 flags = "-I plugin4"
 module = "plugin4/chicken.ml"
-***** ocamlc.byte
+**************************** ocamlc.byte
+flags = ""
 module = "plugin5/chicken.mli"
-***** ocamlc.byte
+***************************** ocamlc.byte
 flags = "-I plugin5"
 module = "plugin5/chicken.ml"
-***** ocamlc.byte
+****************************** ocamlc.byte
+flags = ""
 module = "plugin6/pheasant.mli"
-***** ocamlc.byte
+******************************* ocamlc.byte
 flags = "-I plugin6"
 module = "plugin6/pheasant.ml"
-***** ocamlc.byte
+******************************** ocamlc.byte
+flags = ""
 module = "plugin6/partridge.mli"
-***** ocamlc.byte
+********************************* ocamlc.byte
 flags = "-I plugin6"
 module = "plugin6/partridge.ml"
-***** ocamlc.byte
+********************************** ocamlc.byte
+flags = ""
 program = "./test.byte.exe"
 libraries = "dynlink"
 all_modules = "sheep.cmo test.cmo"
-****** run
+module = ""
+*********************************** run
 
 ** native-dynlink
 *** setup-ocamlopt.byte-build-env
@@ -101,83 +111,102 @@ module = "sheep.ml"
 module = "pig.mli"
 ******* ocamlopt.byte
 module = "test.ml"
-**** script
+******** script
 script = "mkdir plugin1 plugin2 plugin2b plugin2c plugin3 plugin4 plugin5 plugin6"
-***** script
+********* script
 script = "cp ${plugin1}/sheep.mli ${plugin1}/sheep.ml plugin1"
-***** script
+********** script
 script = "cp ${plugin2}/cow.mli ${plugin2}/cow.ml plugin2"
-***** script
+*********** script
 script = "cp ${plugin2b}/cow.mli ${plugin2b}/cow.ml plugin2b"
-***** script
+************ script
 script = "cp ${plugin2c}/cow.mli ${plugin2c}/cow.ml plugin2c"
-***** script
+************* script
 script = "cp ${plugin3}/pig.mli ${plugin3}/pig.ml plugin3"
-***** script
+************** script
 script = "cp ${plugin4}/chicken.mli ${plugin4}/chicken.ml plugin4"
-***** script
+*************** script
 script = "cp ${plugin5}/chicken.mli ${plugin5}/chicken.ml plugin5"
-***** script
+**************** script
 script = "cp ${plugin6}/pheasant.mli ${plugin6}/pheasant.ml ${plugin6}/partridge.mli ${plugin6}/partridge.ml plugin6"
-****** ocamlopt.byte
+***************** ocamlopt.byte
+flags = ""
 module = "plugin1/sheep.mli"
-****** ocamlopt.byte
+****************** ocamlopt.byte
 program = "plugin1/sheep.cmxs"
 flags = "-I plugin1 -shared"
+module = ""
 all_modules = "plugin1/sheep.ml"
-****** ocamlopt.byte
+******************* ocamlopt.byte
+flags = ""
 module = "plugin2/cow.mli"
-****** ocamlopt.byte
+******************** ocamlopt.byte
 program = "plugin2/cow.cmxs"
 flags = "-I plugin2 -shared"
+module = ""
 all_modules = "plugin2/cow.ml"
-****** ocamlopt.byte
+********************* ocamlopt.byte
+flags = ""
 module = "plugin2b/cow.mli"
-****** ocamlopt.byte
+********************** ocamlopt.byte
 program = "plugin2b/cow.cmxs"
 flags = "-I plugin2b -shared"
+module = ""
 all_modules = "plugin2b/cow.ml"
-****** ocamlopt.byte
+*********************** ocamlopt.byte
+flags = ""
 module = "plugin2c/cow.mli"
-****** ocamlopt.byte
+************************ ocamlopt.byte
 program = "plugin2c/cow.cmxs"
 flags = "-I plugin2c -shared"
+module = ""
 all_modules = "plugin2c/cow.ml"
-****** ocamlopt.byte
+************************* ocamlopt.byte
+flags = ""
 module = "plugin3/pig.mli"
-****** ocamlopt.byte
+************************** ocamlopt.byte
 program = "plugin3/pig.cmxs"
 flags = "-I plugin3 -shared"
+module = ""
 all_modules = "plugin3/pig.ml"
-****** ocamlopt.byte
+*************************** ocamlopt.byte
+flags = ""
 module = "plugin4/chicken.mli"
-****** ocamlopt.byte
+**************************** ocamlopt.byte
 program = "plugin4/chicken.cmxs"
 flags = "-I plugin4 -shared"
+module = ""
 all_modules = "plugin4/chicken.ml"
-****** ocamlopt.byte
+***************************** ocamlopt.byte
+flags = ""
 module = "plugin5/chicken.mli"
-****** ocamlopt.byte
+****************************** ocamlopt.byte
 program = "plugin5/chicken.cmxs"
 flags = "-I plugin5 -shared"
+module = ""
 all_modules = "plugin5/chicken.ml"
-****** ocamlopt.byte
+******************************* ocamlopt.byte
+flags = ""
 module = "plugin6/pheasant.mli"
-****** ocamlopt.byte
+******************************** ocamlopt.byte
 program = "plugin6/pheasant.cmxs"
 flags = "-I plugin6 -shared"
+module = ""
 all_modules = "plugin6/pheasant.ml"
-****** ocamlopt.byte
+********************************* ocamlopt.byte
+flags = ""
 module = "plugin6/partridge.mli"
-****** ocamlopt.byte
+********************************** ocamlopt.byte
 program = "plugin6/partridge.cmxs"
 flags = "-I plugin6 -shared"
+module = ""
 all_modules = "plugin6/partridge.ml"
-****** ocamlopt.byte
+*********************************** ocamlopt.byte
+flags = ""
 program = "./test.opt.exe"
 libraries = "dynlink"
 all_modules = "sheep.cmx test.cmx"
-******* run
+************************************ run
 *)
 
 let () = Sheep.baa Sheep.s (* Use Sheep module *)
