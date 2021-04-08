@@ -105,7 +105,7 @@ static atomic_uintnat thread_next_id;
 
 static value caml_threadstatus_new (value unit);
 static void caml_threadstatus_terminate (value wrapper);
-static void caml_threadstatus_wait (value wrapper);
+static st_retcode caml_threadstatus_wait (value wrapper);
 
 /* Imports from the native-code runtime system */
 #ifdef NATIVE_CODE
@@ -442,6 +442,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
 {
   CAMLparam1(clos);
   caml_thread_t th;
+  st_retcode err;
 
   th = caml_thread_new_info();
   th->descr = caml_thread_new_descriptor(clos);
@@ -452,9 +453,12 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   Current_thread->next->prev = th;
   Current_thread->next = th;
 
-  st_thread_create(NULL, caml_thread_start, (void *) th);
-  // FIXME: check return from create
-
+  err = st_thread_create(NULL, caml_thread_start, (void *) th);
+  if (err != 0) {
+    /* Creation failed, remove thread info block from list of threads */
+    caml_thread_remove_info(th);
+    st_check_error(err, "Thread.create");
+  }
   CAMLreturn(th->descr);
 }
 
@@ -599,7 +603,8 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 
 CAMLprim value caml_thread_join(value th)          /* ML */
 {
-  caml_threadstatus_wait(Terminated(th));
+  st_retcode rc = caml_threadstatus_wait(Terminated(th));
+  st_check_error(rc, "Thread.join");
   return Val_unit;
 }
 
@@ -640,8 +645,8 @@ CAMLprim value caml_mutex_new(value unit)        /* ML */
   st_mutex mut = NULL;
   value wrapper;
 
-  st_mutex_create(&mut);
-  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(caml_plat_mutex *),
+  st_check_error(st_mutex_create(&mut), "Mutex.create");
+  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(pthread_mutex_t *),
                               0, 1);
   Mutex_val(wrapper) = mut;
   return wrapper;
@@ -726,9 +731,9 @@ static struct custom_operations caml_condition_ops = {
 CAMLprim value caml_condition_new(value unit)        /* ML */
 {
   value wrapper;
-  st_condvar cond;
+  st_condvar cond = NULL;
 
-  st_condvar_create(&cond);
+  st_check_error(st_condvar_create(&cond), "Condition.create");
   wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
                               0, 1);
   Condition_val(wrapper) = cond;
@@ -739,25 +744,29 @@ CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
 {
   st_condvar cond = Condition_val(wcond);
   st_mutex mut = Mutex_val(wmut);
+  st_retcode retcode;
 
   Begin_roots2(wcond, wmut)
     caml_enter_blocking_section();
-    st_condvar_wait(cond, mut);
+    retcode = st_condvar_wait(cond, mut);
     caml_leave_blocking_section();
   End_roots();
+  st_check_error(retcode, "Condition.wait");
 
   return Val_unit;
 }
 
 CAMLprim value caml_condition_signal(value wrapper)           /* ML */
 {
-  st_condvar_signal(Condition_val(wrapper));
+  st_check_error(st_condvar_signal(Condition_val(wrapper)),
+                 "Condition.signal");
   return Val_unit;
 }
 
 CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 {
-  st_condvar_broadcast(Condition_val(wrapper));
+  st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
+                 "Condition.broadcast");
   return Val_unit;
 }
 
@@ -808,15 +817,16 @@ static void caml_threadstatus_terminate (value wrapper)
   st_event_trigger(Threadstatus_val(wrapper));
 }
 
-static void caml_threadstatus_wait (value wrapper)
+static st_retcode caml_threadstatus_wait (value wrapper)
 {
   st_event ts = Threadstatus_val(wrapper);
+  st_retcode retcode;
 
   Begin_roots1(wrapper)         /* prevent deallocation of ts */
     caml_enter_blocking_section();
-    st_event_wait(ts);
+    retcode = st_event_wait(ts);
     caml_leave_blocking_section();
   End_roots();
 
-  return;
+  return retcode;
 }
