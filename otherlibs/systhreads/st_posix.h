@@ -121,16 +121,16 @@ Caml_inline void st_thread_set_id(intnat id)
    threads. */
 
 typedef struct {
-  caml_plat_mutex lock;           /* to protect contents */
+  pthread_mutex_t lock;           /* to protect contents */
   atomic_uintnat busy;            /* 0 = free, 1 = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
-  caml_plat_cond free;            /* signaled when free */
+  pthread_cond_t free;            /* signaled when free */
 } st_masterlock;
 
 static void st_masterlock_init(st_masterlock *m) {
 
-  caml_plat_mutex_init(&m->lock);
-  caml_plat_cond_init(&m->free, &m->lock);
+  pthread_mutex_init(&m->lock, NULL);
+  pthread_cond_init(&m->free, NULL);
   atomic_store_rel(&m->busy, 1);
   atomic_store_rel(&m->waiters, 0);
 
@@ -168,26 +168,26 @@ static void st_bt_lock_release(st_masterlock *m) {
 
 static void st_masterlock_acquire(st_masterlock *m)
 {
-  caml_plat_lock(&m->lock);
+  pthread_mutex_lock(&m->lock);
   while (atomic_load_acq(&m->busy)) {
     atomic_fetch_add(&m->waiters, +1);
-    caml_plat_wait(&m->free);
+    pthread_cond_wait(&m->free, &m->lock);
     atomic_fetch_add(&m->waiters, -1);
   }
   atomic_store_rel(&m->busy, 1);
   st_bt_lock_acquire(m);
-  caml_plat_unlock(&m->lock);
+  pthread_mutex_unlock(&m->lock);
 
   return;
 }
 
 static void st_masterlock_release(st_masterlock * m)
 {
-  caml_plat_lock(&m->lock);
+  pthread_mutex_lock(&m->lock);
   atomic_store_rel(&m->busy, 0);
   st_bt_lock_release(m);
-  caml_plat_signal(&m->free);
-  caml_plat_unlock(&m->lock);
+  pthread_cond_signal(&m->free);
+  pthread_mutex_unlock(&m->lock);
 
   return;
 }
@@ -206,7 +206,7 @@ static INLINE void st_thread_yield(st_masterlock * m)
 {
   uintnat waiters;
 
-  caml_plat_lock(&m->lock);
+  pthread_mutex_lock(&m->lock);
   /* We must hold the lock to call this. */
 
   /* We already checked this without the lock, but we might have raced--if
@@ -215,13 +215,13 @@ static INLINE void st_thread_yield(st_masterlock * m)
   waiters = atomic_load_acq(&m->waiters);
 
   if (waiters == 0) {
-    caml_plat_unlock(&m->lock);
+    pthread_mutex_unlock(&m->lock);
     return;
   }
 
   atomic_store_rel(&m->busy, 0);
 
-  caml_plat_signal(&m->free);
+  pthread_cond_signal(&m->free);
   // releasing the domain lock but not triggering bt messaging
   // messaging the bt should not be required because yield assumes
   // that a thread will resume execution (be it the yielding thread
@@ -233,7 +233,7 @@ static INLINE void st_thread_yield(st_masterlock * m)
        wait, which is good: we'll reliably continue waiting until the next
        yield() or enter_blocking_section() call (or we see a spurious condvar
        wakeup, which are rare at best.) */
-       caml_plat_wait(&m->free);
+       pthread_cond_wait(&m->free, &m->lock);
   } while (atomic_load_acq(&m->busy));
 
   atomic_store_rel(&m->busy, 1);
@@ -241,28 +241,46 @@ static INLINE void st_thread_yield(st_masterlock * m)
 
   caml_acquire_domain_lock();
 
-  caml_plat_unlock(&m->lock);
+  pthread_mutex_unlock(&m->lock);
 
   return;
 }
 
 /* Mutexes */
 
-typedef caml_plat_mutex * st_mutex;
+typedef pthread_mutex_t * st_mutex;
 
 static int st_mutex_create(st_mutex * res)
 {
-  st_mutex mut = caml_stat_alloc_noexc(sizeof(caml_plat_mutex));
-  caml_plat_mutex_init(mut);
-  *res = mut;
+  int rc;
+  pthread_mutexattr_t attr;
+  st_mutex m;
+
+  rc = pthread_mutexattr_init(&attr);
+  if (rc != 0) goto error1;
+  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+  if (rc != 0) goto error2;
+  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
+  if (m == NULL) { rc = ENOMEM; goto error2; }
+  rc = pthread_mutex_init(m, &attr);
+  if (rc != 0) goto error3;
+  pthread_mutexattr_destroy(&attr);
+  *res = m;
   return 0;
+error3:
+  caml_stat_free(m);
+error2:
+  pthread_mutexattr_destroy(&attr);
+error1:
+  return rc;
 }
 
 static int st_mutex_destroy(st_mutex m)
 {
-  caml_plat_mutex_free(m);
+  int rc;
+  rc = pthread_mutex_destroy(m);
   caml_stat_free(m);
-  return 0;
+  return rc;
 }
 
 static INLINE int st_mutex_lock(st_mutex m)
@@ -285,80 +303,98 @@ static INLINE int st_mutex_unlock(st_mutex m)
 
 /* Condition variables */
 
-typedef caml_plat_cond * st_condvar;
+typedef pthread_cond_t * st_condvar;
 
-static void st_condvar_create(st_condvar * res)
+static int st_condvar_create(st_condvar * res)
 {
-  st_condvar cond = caml_stat_alloc_noexc(sizeof(caml_plat_cond));
-  caml_plat_cond_init_no_mutex(cond);
-  *res = cond;
+  int rc;
+  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
+  if (c == NULL) return ENOMEM;
+  rc = pthread_cond_init(c, NULL);
+  if (rc != 0) { caml_stat_free(c); return rc; }
+  *res = c;
+  return 0;
 }
 
-static void st_condvar_destroy(st_condvar c)
+static int st_condvar_destroy(st_condvar c)
 {
-  caml_plat_cond_free(c);
+  int rc;
+  rc = pthread_cond_destroy(c);
   caml_stat_free(c);
+  return rc;
 }
 
-static INLINE void st_condvar_signal(st_condvar c)
+static INLINE int st_condvar_signal(st_condvar c)
 {
-  return check_err("st_condvar_signal", pthread_cond_signal(&c->cond));
+ return pthread_cond_signal(c);
 }
 
-static INLINE void st_condvar_broadcast(st_condvar c)
+static INLINE int st_condvar_broadcast(st_condvar c)
 {
-  return check_err("st_condvar_broadcast", pthread_cond_broadcast(&c->cond));
+    return pthread_cond_broadcast(c);
 }
 
-static INLINE void st_condvar_wait(st_condvar c, st_mutex m)
+static INLINE int st_condvar_wait(st_condvar c, st_mutex m)
 {
-  caml_plat_cond_set_mutex(c, m);
-  caml_plat_wait(c);
-  return;
+  return pthread_cond_wait(c, m);
 }
 
 /* Triggered events */
 
 typedef struct st_event_struct {
-  caml_plat_mutex lock;         /* to protect contents */
+  pthread_mutex_t lock;         /* to protect contents */
   int status;                   /* 0 = not triggered, 1 = triggered */
-  caml_plat_cond triggered;     /* signaled when triggered */
+  pthread_cond_t triggered;     /* signaled when triggered */
 } * st_event;
 
 
-static void st_event_create(st_event * res)
+static int st_event_create(st_event * res)
 {
-  st_event e = caml_stat_alloc(sizeof(struct st_event_struct));
-  caml_plat_mutex_init(&e->lock);
-  caml_plat_cond_init(&e->triggered, &e->lock);
+  int rc;
+  st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
+  if (e == NULL) return ENOMEM;
+  rc = pthread_mutex_init(&e->lock, NULL);
+  if (rc != 0) { caml_stat_free(e); return rc; }
+  rc = pthread_cond_init(&e->triggered, NULL);
+  if (rc != 0)
+  { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
   e->status = 0;
   *res = e;
-  return ;
+  return 0;
 }
 
-static void st_event_destroy(st_event e)
+static int st_event_destroy(st_event e)
 {
-  caml_plat_cond_free(&e->triggered);
-  caml_plat_mutex_free(&e->lock);
+  int rc1, rc2;
+  rc1 = pthread_mutex_destroy(&e->lock);
+  rc2 = pthread_cond_destroy(&e->triggered);
   caml_stat_free(e);
+  return rc1 != 0 ? rc1 : rc2;
 }
 
-static void st_event_trigger(st_event e)
+static int st_event_trigger(st_event e)
 {
-  caml_plat_lock(&e->lock);
+  int rc;
+  rc = pthread_mutex_lock(&e->lock);
+  if (rc != 0) return rc;
   e->status = 1;
-  caml_plat_signal(&e->triggered);
-  caml_plat_unlock(&e->lock);
-  return;
+  rc = pthread_mutex_unlock(&e->lock);
+  if (rc != 0) return rc;
+  rc = pthread_cond_broadcast(&e->triggered);
+  return rc;
 }
 
-static void st_event_wait(st_event e)
+static int st_event_wait(st_event e)
 {
-  caml_plat_lock(&e->lock);
+  int rc;
+  rc = pthread_mutex_lock(&e->lock);
+  if (rc != 0) return rc;
   while(e->status == 0) {
-    caml_plat_wait(&e->triggered);
+    rc = pthread_cond_wait(&e->triggered, &e->lock);
+    if (rc != 0) return rc;
   }
-  caml_plat_unlock(&e->lock);
+  rc = pthread_mutex_unlock(&e->lock);
+  return rc;
 }
 
 /* Reporting errors */
