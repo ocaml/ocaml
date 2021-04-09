@@ -98,12 +98,12 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-value caml_startup_common(char_os **argv, int pooling)
+static value startup(char_os **argv, int pooling)
 {
   char_os * exe_name, * proc_self_exe;
   char tos;
 
-  if (!caml_startup_aux(pooling)) {
+  if (!caml_startup_common(pooling)) {
     /* startup was already done once */
     return Val_unit;
   }
@@ -133,7 +133,7 @@ value caml_startup_common(char_os **argv, int pooling)
 
 value caml_startup_exn(char_os **argv)
 {
-  return caml_startup_common(argv, /* pooling */ 0);
+  return startup(argv, /* pooling */ 0);
 }
 
 void caml_startup(char_os **argv)
@@ -150,7 +150,7 @@ void caml_main(char_os **argv)
 
 value caml_startup_pooled_exn(char_os **argv)
 {
-  return caml_startup_common(argv, /* pooling */ 1);
+  return startup(argv, /* pooling */ 1);
 }
 
 void caml_startup_pooled(char_os **argv)

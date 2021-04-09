@@ -150,7 +150,7 @@ static int startup_count = 0;
 /* Has the runtime been shut down already? */
 static int shutdown_happened = 0;
 
-int caml_startup_aux(int pooling)
+int caml_startup_common(int pooling)
 {
   if (shutdown_happened == 1)
     caml_fatal_error("caml_startup was called after the runtime "

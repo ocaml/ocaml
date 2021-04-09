@@ -459,7 +459,7 @@ CAMLexport void caml_main(char_os **argv)
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
 
-  if (!caml_startup_aux(0)) {
+  if (!caml_startup_common(0)) {
     /* startup was already done once */
     return;
   }
@@ -582,7 +582,7 @@ CAMLexport value caml_startup_code_exn(
   char_os * cds_file;
   char_os * exe_name;
 
-  if (!caml_startup_aux(pooling)) {
+  if (!caml_startup_common(pooling)) {
     /* startup was already done once */
     return Val_unit;
   }
