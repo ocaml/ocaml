@@ -676,7 +676,7 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
-  | Lop(Ialloc { bytes = n; dbginfo = _ }) ->
+  | Lop(Ialloc { bytes = n; dbginfo }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -687,7 +687,7 @@ let emit_instr fallthrough i =
         I.cmp (domain_field Domainstate.Domain_young_limit) r15;
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live (Dbg_other i.dbg)
+          record_frame_label i.live (Dbg_alloc dbginfo)
         in
         I.jb (label lbl_call_gc);
         I.lea (mem64 NONE 8 R15) (res i 0);
@@ -709,7 +709,7 @@ let emit_instr fallthrough i =
           I.mov (int n) rax;
           emit_call "caml_allocN"
         end;
-        let label = record_frame_label i.live (Dbg_other i.dbg) in
+        let label = record_frame_label i.live (Dbg_alloc dbginfo) in
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
