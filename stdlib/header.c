@@ -171,7 +171,7 @@ static char * read_runtime_path(int fd)
 
 static void errwrite(char * msg)
 {
-  write(2, msg, strlen(msg));
+  fputs(msg, stderr);
 }
 
 #ifndef O_BINARY
