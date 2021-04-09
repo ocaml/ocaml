@@ -27,6 +27,7 @@ let remove_section (s : Bytesections.Name.t) =
   match s with
   | DBUG -> !remove_DBUG
   | CRCS -> !remove_CRCS
+  | RNTM -> !remove_header
   | _ -> false
 
 let stripdebug infile outfile =

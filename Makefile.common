@@ -441,3 +441,11 @@ $(OCAMLRUN) $(ROOTDIR)/tools/stripdebug $(1) $(1).tmp \
 && $(INSTALL_PROG) $(1).tmp $(2) \
 && rm $(1).tmp
 endef # INSTALL_STRIPPED_BYTE_PROG
+
+# ocamlc has several mechanisms for linking a bytecode image to the runtime
+# which executes it. The exact mechanism depends on the platform and the precise
+# location of the runtime. The boot compiler (boot/ocamlc) therefore needs this
+# additional information, which comes from the stdlib build and is copied into
+# boot/ as part of coldstart. See read_runtime_launch_info in
+# bytecomp/bytelink.ml for further details.
+HEADER_NAME = runtime-launch-info

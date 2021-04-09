@@ -59,15 +59,6 @@ MANDIR=@mandir@
 PROGRAMS_MAN_DIR=$(MANDIR)/man1
 LIBRARIES_MAN_DIR=$(MANDIR)/man3
 
-### Do #! scripts work on your system?
-### Beware: on some systems (e.g. SunOS 4), this will work only if
-### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
-### In doubt, set HASHBANGSCRIPTS to false.
-SHEBANGSCRIPTS=@shebangscripts@
-LONG_SHEBANG=@long_shebang@
-# For compatibility
-HASHBANGSCRIPTS:=$(SHEBANGSCRIPTS)
-
 ### Path to the libtool script
 LIBTOOL = $(TOP_BUILDDIR)/libtool
 
@@ -231,6 +222,8 @@ NAKED_POINTERS=false
 STDLIB_MANPAGES=@build_libraries_manpages@
 WITH_OCAMLDOC=@with_ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
+SHEBANGSCRIPTS=@shebangscripts@
+HASHBANGSCRIPTS=$(SHEBANGSCRIPTS)
 
 ## Variables deprecated since OCaml 5.0
 
