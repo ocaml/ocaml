@@ -716,6 +716,12 @@ OCaml 5.2.0
   (Sébastien Hinderer, review by Antonin Décimo, David Allsopp and Florian
   Angeletti)
 
+- #12751: --with-target-bindir configure option implemented. This option
+  refers to the location of the runtime binaries on the target system for a
+  cross-compiler and is embedded in executables produced by ocamlc. It does
+  not affect the bytecode executables installed as part of the build.
+  (David Allsopp, review by Damien Doligez, Xavier Leroy and Olivier Nicole)
+
 - #12768: Detect mingw-w64 coupling with GCC or LLVM, detect clang-cl,
   and fix C compiler feature detection on macOS.
   (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)

@@ -21,8 +21,6 @@ OCAMLDEP ?= $(BOOT_OCAMLDEP)
 
 include $(ROOTDIR)/Makefile.common
 
-TARGET_BINDIR ?= $(BINDIR)
-
 # There are three ways the Standard Library is compiled in bytecode:
 # 1. During coldstart
 #      - using ../boot/ocamlc which runs on ../boot/ocamlrun
