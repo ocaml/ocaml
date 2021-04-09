@@ -65,11 +65,6 @@ tests/lib-threads/'beat.ml' with 1.1 (bytecode)
 tests/lib-threads/'pr9971.ml' with 1.1 (bytecode)
 tests/lib-threads/'pr9971.ml' with 1.2 (native)
 
-# TODO: our gc.set interface is not fully working (see #9326)
-# which make sense and which don't in multicore?
-tests/regression/pr9326/'gc_set.ml' with 1 (native)
-tests/regression/pr9326/'gc_set.ml' with 2 (bytecode)
-
 # ocamldebug is broken (#34)
 tool-debugger
 
