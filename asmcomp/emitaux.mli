@@ -85,6 +85,4 @@ type error =
 exception Error of error
 val report_error: Format.formatter -> error -> unit
 
-include module type of Emitenv_intf
-
-val mk_env : Linear.fundecl -> 'a -> ('a, 'gc, 'bd) per_function_env
+val mk_env : Linear.fundecl -> 'a -> 'a Emitenv.per_function_env

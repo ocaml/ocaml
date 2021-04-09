@@ -23,6 +23,7 @@ open Reg
 open Mach
 open Linear
 open Emitaux
+open Emitenv
 
 (* Layout of the stack.  The stack is kept 16-aligned. *)
 

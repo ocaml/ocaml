@@ -16,7 +16,7 @@
 type label = Linear.label
 
 (* Record calls to caml_call_gc, emitted out of line. *)
-type 'a gc_call =
+type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame_lbl: label;                (* Label of frame descriptor *)
@@ -27,7 +27,7 @@ type 'a gc_call =
    caml_ml_array_bound_error per bound check site.  Without -g, we can share
    a single call. *)
 
-type 'a bound_error_call =
+type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
     bd_frame: label;                    (* Label of frame descriptor *)
   }
@@ -47,11 +47,11 @@ type int_literal =
   }
 
 (* Environment for emitting a function *)
-type ('a, 'gc, 'bd) per_function_env = {
+type 'a per_function_env = {
   f : Linear.fundecl;
   mutable stack_offset : int;
-  mutable call_gc_sites : 'gc gc_call list;
-  mutable bound_error_sites : 'bd bound_error_call list;
+  mutable call_gc_sites : gc_call list;
+  mutable bound_error_sites : bound_error_call list;
   mutable bound_error_call : label option;
   mutable float_literals : float_literal list;
   mutable int_literals : int_literal list;

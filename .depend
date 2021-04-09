@@ -2533,6 +2533,7 @@ asmcomp/emit.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
     lambda/lambda.cmi \
+    asmcomp/emitenv.cmi \
     asmcomp/emitaux.cmi \
     utils/domainstate.cmi \
     utils/config.cmi \
@@ -2555,6 +2556,7 @@ asmcomp/emit.cmx : \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
     lambda/lambda.cmx \
+    asmcomp/emitenv.cmi \
     asmcomp/emitaux.cmx \
     utils/domainstate.cmx \
     utils/config.cmx \
@@ -2568,7 +2570,7 @@ asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : \
-    asmcomp/emitenv_intf.cmo \
+    asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/cmm.cmi \
@@ -2576,7 +2578,7 @@ asmcomp/emitaux.cmo : \
     asmcomp/arch.cmo \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
-    asmcomp/emitenv_intf.cmx \
+    asmcomp/emitenv.cmi \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/cmm.cmx \
@@ -2585,12 +2587,10 @@ asmcomp/emitaux.cmx : \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmi : \
     asmcomp/linear.cmi \
-    asmcomp/emitenv_intf.cmo \
+    asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi
-asmcomp/emitenv_intf.cmo : \
+asmcomp/emitenv.cmi : \
     asmcomp/linear.cmi
-asmcomp/emitenv_intf.cmx : \
-    asmcomp/linear.cmx
 asmcomp/interf.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \

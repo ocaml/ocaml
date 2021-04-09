@@ -25,6 +25,7 @@ open Reg
 open Mach
 open Linear
 open Emitaux
+open Emitenv
 
 (* Output a label *)
 

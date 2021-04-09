@@ -385,9 +385,8 @@ let create_asm_file = ref true
 let report_error ppf = function
   | Stack_frame_too_large n ->
       Format.fprintf ppf "stack frame too large (%d bytes)" n
-include Emitenv_intf
 
-let mk_env f p =
+let mk_env f (p:'a) : 'a Emitenv.per_function_env =
   {
     f;
     stack_offset = 0;

@@ -24,6 +24,7 @@ open Reg
 open Mach
 open Linear
 open Emitaux
+open Emitenv
 module String = Misc.Stdlib.String
 
 open X86_ast

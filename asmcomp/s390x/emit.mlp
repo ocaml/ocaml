@@ -24,6 +24,7 @@ open Reg
 open Mach
 open Linear
 open Emitaux
+open Emitenv
 
 let frame_size env =
   let size =

@@ -23,6 +23,7 @@ open Reg
 open Mach
 open Linear
 open Emitaux
+open Emitenv
 
 open X86_ast
 open X86_proc

@@ -23,6 +23,7 @@ open Reg
 open Mach
 open Linear
 open Emitaux
+open Emitenv
 
 (* Reserved space at bottom of stack *)
 
