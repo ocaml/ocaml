@@ -422,6 +422,8 @@ static void do_print_config(void)
 
   /* Parse ld.conf and print the effective search path */
   puts("shared_libs_path:");
+  caml_decompose_path(&caml_shared_libs_path,
+                      caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
   caml_parse_ld_conf();
   for (int i = 0; i < caml_shared_libs_path.size; i++) {
     dir = caml_shared_libs_path.contents[i];
