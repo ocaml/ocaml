@@ -690,7 +690,11 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Send_self, [obj; meth] ->
       Lsend(Self, meth, obj, [], loc)
   | Send_cache, [obj; meth; cache; pos] ->
-      Lsend(Cached, meth, obj, [cache; pos], loc)
+      (* Cached mode only works in the native backend *)
+      if !Clflags.native_code then
+        Lsend(Cached, meth, obj, [cache; pos], loc)
+      else
+        Lsend(Public, meth, obj, [], loc)
   | (Raise _ | Raise_with_backtrace
     | Lazy_force | Loc _ | Primitive _ | Comparison _
     | Send | Send_self | Send_cache), _ ->

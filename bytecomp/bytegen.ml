@@ -560,7 +560,7 @@ let rec comp_expr env exp sz cont =
         end
       end
   | Lsend(kind, met, obj, args, _) ->
-      let args = if kind = Cached then List.tl (List.tl args) else args in
+      assert (kind <> Cached);
       let nargs = List.length args + 1 in
       let getmethod, args' =
         if kind = Self then (Kgetmethod, met::obj::args) else
