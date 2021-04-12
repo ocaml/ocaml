@@ -1,7 +1,11 @@
 ROOTDIR = ../..
 include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/api_docgen/Makefile.docfiles
-include $(ROOTDIR)/Makefile.tools
+include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
+STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
+
 MANUAL=$(ROOTDIR)/manual/src
 
 .PHONY: all
@@ -19,7 +23,7 @@ cross-reference-checker: cross_reference_checker.ml
 .PHONY: check-cross-references
 check-cross-references: cross-reference-checker
 	$(SET_LD_PATH) \
-	  $(OCAMLRUN) ./cross-reference-checker \
+	  $(CAMLRUN) ./cross-reference-checker \
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
 	  $(ROOTDIR)/utils/warnings.ml \
 	  $(ROOTDIR)/driver/main_args.ml \
