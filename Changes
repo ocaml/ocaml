@@ -280,6 +280,10 @@ Working version
   socklen_t detection on Windows.
   (Antonin Décimo, review by David Allsopp and Sébastien Hinderer)
 
+- #10332, #10333: Generate lambda/runtimedef.ml correctly in Swedish locale.
+  (the letter 'w' is not included in '[a-z]' in sv_SE.UTF-8)
+  (David Allsopp, report by Anders Jackson, review by Gabriel Scherer)
+
 ### Bug fixes:
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
