@@ -277,27 +277,16 @@ let record_frame live dbg =
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
-  { gc_size: int;                       (* Allocation size, in bytes *)
-    gc_lbl: label;                      (* Entry label *)
+  { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label;                    (* Label of frame descriptor *)
-    is_poll : bool
   }
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
-  if gc.is_poll then begin
-    emit_call "caml_call_poll"
-  end else begin
-    match gc.gc_size with
-    | 16 -> emit_call "caml_call_gc1"
-    | 24 -> emit_call "caml_call_gc2"
-    | 32 -> emit_call "caml_call_gc3"
-    | n ->  I.add (int n) r15;
-            emit_call "caml_call_gc"
-  end;
+  emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
@@ -678,8 +667,6 @@ let emit_instr fallthrough i =
       end
   | Lop(Ialloc { bytes = n; dbginfo }) ->
       if !fastcode_flag then begin
-        let lbl_redo = new_label() in
-        def_label lbl_redo;
         I.sub (int n) r15;
         if Config.stats then begin
           I.inc (domain_field Domainstate.Domain_allocations);
@@ -690,13 +677,13 @@ let emit_instr fallthrough i =
           record_frame_label i.live (Dbg_alloc dbginfo)
         in
         I.jb (label lbl_call_gc);
+        let lbl_after_alloc = new_label() in
+        def_label lbl_after_alloc;
         I.lea (mem64 NONE 8 R15) (res i 0);
         call_gc_sites :=
-          { gc_size = n;
-            gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
-            gc_frame = lbl_frame;
-            is_poll = false } :: !call_gc_sites
+          { gc_lbl = lbl_call_gc;
+            gc_return_lbl = lbl_after_alloc;
+            gc_frame = lbl_frame; } :: !call_gc_sites
       end else begin
         if Config.stats then begin
           I.inc (domain_field Domainstate.Domain_allocations);
@@ -792,19 +779,17 @@ let emit_instr fallthrough i =
   | Lop (Inop) -> I.nop ()
   | Lop (Ipoll) ->
       I.cmp (domain_field Domainstate.Domain_young_limit) r15;
-      let gc_call_label = new_label () in
-      let label_after_gc = new_label () in
+      let lbl_call_gc = new_label() in
       let lbl_frame =
-        record_frame_label i.live (Dbg_other i.dbg)
+        record_frame_label i.live (Dbg_alloc [])
       in
-      I.jb (label gc_call_label);
+      I.jb (label lbl_call_gc);
+      let lbl_after_poll = new_label() in
+      def_label lbl_after_poll;
       call_gc_sites :=
-        { gc_size = 0;
-          gc_lbl = gc_call_label;
-          gc_return_lbl = label_after_gc;
-          gc_frame = lbl_frame;
-          is_poll = true } :: !call_gc_sites;
-      def_label label_after_gc;
+        { gc_lbl = lbl_call_gc;
+          gc_return_lbl = lbl_after_poll;
+          gc_frame = lbl_frame; } :: !call_gc_sites;
       ()
   | Lreloadretaddr ->
       ()
@@ -1092,9 +1077,6 @@ let begin_assembly() =
   all_functions := [];
   if system = S_win64 then begin
     D.extrn "caml_call_gc" NEAR;
-    D.extrn "caml_call_gc1" NEAR;
-    D.extrn "caml_call_gc2" NEAR;
-    D.extrn "caml_call_gc3" NEAR;
     D.extrn "caml_c_call" NEAR;
     D.extrn "caml_allocN" NEAR;
     D.extrn "caml_alloc1" NEAR;

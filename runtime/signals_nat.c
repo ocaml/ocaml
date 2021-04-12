@@ -29,10 +29,12 @@
 #include "caml/codefrag.h"
 #include "caml/domain.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/stack.h"
+#include "frame_descriptors.h"
 
 #ifndef NSIG
 #define NSIG 64
@@ -57,7 +59,51 @@ extern signal_handler caml_win32_signal(int sig, signal_handler action);
 
 void caml_garbage_collection()
 {
+  frame_descr* d;
+  intnat allocsz = 0;
+  char *sp;
+  uintnat retaddr;
+  intnat whsize;
+
+  caml_frame_descrs fds = caml_get_frame_descrs();
+  struct stack_info* stack = Caml_state->current_stack;
+
+  sp = (char*)stack->sp;
+  retaddr = *(uintnat*)sp;
+
+  { /* Find the frame descriptor for the current allocation */
+    uintnat h = Hash_retaddr(retaddr, fds.mask);
+    while (1) {
+      d = fds.descriptors[h];
+      if (d->retaddr == retaddr) break;
+      h = (h + 1) & fds.mask;
+    }
+    /* Must be an allocation frame */
+    CAMLassert(d && d->frame_size != 0xFFFF && (d->frame_size & 2));
+  }
+
+  { /* Compute the total allocation size at this point,
+       including allocations combined by Comballoc */
+    unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
+    int i, nallocs = *alloc_len++;
+    for (i = 0; i < nallocs; i++) {
+      /* Since 2 words is the smallest allocation, sizes are
+         encoded as (wosize - 2).
+         See Emitaux.emit_frames and caml/stack.h */
+      allocsz += alloc_len[i] + 2;
+    }
+    /* We have computed whsize (including header), but need wosize (without) */
+    allocsz -= 1;
+  }
+
+  whsize = Whsize_wosize(allocsz);
+
+  Caml_state->young_ptr += whsize * sizeof(value);
+
   caml_handle_gc_interrupt();
+
+  /* Re-do the allocation: we now have enough space in the minor heap. */
+  Caml_state->young_ptr -= whsize * sizeof(value);
 
 #ifdef WITH_SPACETIME
   if (caml_young_ptr == caml_young_alloc_end) {
