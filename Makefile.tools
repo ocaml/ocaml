@@ -67,7 +67,6 @@ else
   CUSTOM =
 endif
 
-OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml$(EXE) $(OCFLAGS) -noinit
 ifeq "$(FLEXLINK)" ""
   FLEXLINK_PREFIX=
 else
