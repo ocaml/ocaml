@@ -54,29 +54,6 @@ void caml_request_minor_gc (void);
 
 void caml_interrupt_self(void);
 
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-struct detailed_stats {
-  uint64 allocations;
-
-  uint64 mutable_loads;
-  uint64 immutable_loads;
-
-  uint64 mutable_stores;
-  uint64 immutable_stores;
-
-  uint64 extcall_noalloc;
-  uint64 extcall_alloc;
-  uint64 extcall_alloc_stackargs;
-
-  uint64 tailcall_imm;
-  uint64 tailcall_ind;
-  uint64 call_imm;
-  uint64 call_ind;
-
-  uint64 stackoverflow_checks;
-};
-#endif
-
 void caml_sample_gc_stats(struct gc_stats* buf);
 void caml_print_stats(void);
 

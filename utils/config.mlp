@@ -145,7 +145,6 @@ let default_executable_name =
 
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
-let stats = %%COLLECT_STATS%%;;
 let flexdll_dirs = [%%FLEXDLL_DIR%%];;
 
 type configuration_value =
@@ -189,7 +188,6 @@ let configuration_variables =
   p "os_type" Sys.os_type;
   p "default_executable_name" default_executable_name;
   p_bool "systhread_supported" systhread_supported;
-  p_bool "stats" stats;
   p "host" host;
   p "target" target;
   p_bool "flambda" flambda;

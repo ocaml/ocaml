@@ -151,9 +151,6 @@ static void write_barrier(value obj, intnat field, value old_val, value new_val)
 CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
 {
   write_barrier((value)fp, 0, *fp, val);
-  #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-  Caml_state->mutable_stores++;
-  #endif
 
   /* See Note [MM] above */
   atomic_thread_fence(memory_order_acquire);
@@ -334,9 +331,6 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
       Op_hp(v)[i] = init_val;
     }
   }
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-  dom_st->allocations++;
-#endif
   return Val_hp(v);
 }
 

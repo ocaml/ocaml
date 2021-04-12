@@ -194,10 +194,6 @@ val host : string
 val target : string
 (** Whether the compiler is a cross-compiler *)
 
-val stats : bool
-        (* Whether the compiler records detailed statistics about the program.
-           Warning: Expect a substantial performance hit. *)
-
 val flambda : bool
 (** Whether the compiler was configured for flambda *)
 
