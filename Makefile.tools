@@ -60,7 +60,6 @@ endif
 OCAMLRUN=$(ROOTDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
-OCOPTFLAGS=
 
 ifeq ($(SUPPORTS_SHARED_LIBRARIES),false)
   CUSTOM = -custom
