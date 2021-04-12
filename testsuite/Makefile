@@ -19,7 +19,7 @@ BASEDIR := $(shell pwd)
 
 FIND=find
 ROOTDIR = ..
-include $(ROOTDIR)/Makefile.tools
+include $(ROOTDIR)/Makefile.common
 
 OCAMLTESTDIR_CYGPATH=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)
 
@@ -92,6 +92,20 @@ OCAMLTESTFLAGS := \
   -timeout $(TIMEOUT) \
   $(OCAMLTEST_PROMOTE_FLAG) \
   $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG)
+
+# Make sure USE_RUNTIME is defined
+USE_RUNTIME ?=
+
+ifneq ($(USE_RUNTIME),)
+# Check USE_RUNTIME value
+ifeq ($(findstring $(USE_RUNTIME),d i),)
+$(error If set, USE_RUNTIME must be equal to "d" (debug runtime) \
+        or "i" (instrumented runtime))
+endif
+# When using the debug or instrumented runtime,
+# set the runtime's verbosity to 0 by default
+export OCAMLRUNPARAM?=v=0
+endif
 
 .PHONY: default
 default:
