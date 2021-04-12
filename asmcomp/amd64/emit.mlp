@@ -557,37 +557,22 @@ let emit_instr fallthrough i =
       add_used_symbol s;
       load_symbol_addr s (res i 0)
   | Lop(Icall_ind) ->
-      if Config.stats then begin
-        I.inc (domain_field Domainstate.Domain_call_ind);
-      end;
       I.call (arg i 0);
       record_frame i.live (Dbg_other i.dbg)
   | Lop(Icall_imm { func; }) ->
-      if Config.stats then begin
-        I.inc (domain_field Domainstate.Domain_call_imm);
-      end;
       add_used_symbol func;
       emit_call func;
       record_frame i.live (Dbg_other i.dbg)
   | Lop(Itailcall_ind) ->
       output_epilogue begin fun () ->
-      if Config.stats then begin
-        I.inc (domain_field Domainstate.Domain_tailcall_ind);
-      end;
       I.jmp (arg i 0);
       end
   | Lop(Itailcall_imm { func; }) ->
       begin
         if func = !function_name then begin
-          if Config.stats then begin
-            I.inc (domain_field Domainstate.Domain_tailcall_imm);
-          end;
           I.jmp (label !tailrec_entry_point)
         end else begin
           output_epilogue begin fun () ->
-            if Config.stats then begin
-              I.inc (domain_field Domainstate.Domain_tailcall_imm)
-          end;
           add_used_symbol func;
           emit_jump func
         end
@@ -601,21 +586,12 @@ let emit_instr fallthrough i =
         load_symbol_addr func rax;
         emit_call "caml_c_call_stack_args";
         record_frame i.live (Dbg_other i.dbg);
-        if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_extcall_alloc_stackargs)
-        end;
       end else if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame i.live (Dbg_other i.dbg);
-        if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_extcall_alloc)
-        end;
       end else begin
         I.mov rsp rbp;
-        if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_extcall_noalloc);
-        end;
         cfi_remember_state ();
         cfi_def_cfa_register "rbp";
         (* NB: gdb has asserts on contiguous stacks that mean it
@@ -657,10 +633,7 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (addressing addr REAL8 i 0) dest
       end
-  | Lop(Istore(chunk, addr, is_assignment)) ->
-      if Config.stats && is_assignment then begin
-        I.inc (domain_field Domainstate.Domain_immutable_stores);
-      end;
+  | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
       | Word_int | Word_val ->
           I.mov (arg i 0) (addressing addr QWORD i 1)
@@ -681,9 +654,6 @@ let emit_instr fallthrough i =
         let lbl_redo = new_label() in
         def_label lbl_redo;
         I.sub (int n) r15;
-        if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_allocations);
-        end;
         I.cmp (domain_field Domainstate.Domain_young_limit) r15;
         let lbl_call_gc = new_label() in
         let lbl_frame =
@@ -698,9 +668,6 @@ let emit_instr fallthrough i =
             gc_frame = lbl_frame;
             is_poll = false } :: !call_gc_sites
       end else begin
-        if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_allocations);
-        end;
         begin match n with
         | 16 -> emit_call "caml_alloc1"
         | 24 -> emit_call "caml_alloc2"
@@ -1012,9 +979,6 @@ let fundecl fundecl =
     let (overflow,ret) = new_label(), new_label() in
     let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
     I.lea (mem64 NONE (-(max_stack_size + threshold_offset)) RSP) r10;
-    if Config.stats then begin
-      I.inc (domain_field Domainstate.Domain_stackoverflow_checks);
-    end;
     I.cmp (domain_field Domainstate.Domain_current_stack) r10;
     I.jb (label overflow);
     def_label ret;

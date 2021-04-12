@@ -1083,12 +1083,6 @@ CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
 
 void caml_print_stats () {
   struct gc_stats s;
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-  struct detailed_stats ds;
-  caml_domain_state* st;
-  uint64_t total;
-  int i;
-#endif
 
   caml_gc_stat(Val_unit);
   caml_sample_gc_stats(&s);
@@ -1103,61 +1097,6 @@ void caml_print_stats () {
     (uintnat)s.minor_collections);
   fprintf(stderr, "Major collections:\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
     Caml_state->stat_major_collections);
-
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-  memset(&ds,0,sizeof(struct detailed_stats));
-  for (i=0; i<Max_domains; i++) {
-    st = all_domains[i].state.state;
-    if (st) {
-      ds.allocations += st->allocations;
-
-      ds.mutable_stores += st->mutable_stores;
-      ds.immutable_stores += st->immutable_stores;
-
-      ds.mutable_loads += st->mutable_loads;
-      ds.immutable_loads += st->immutable_loads;
-
-      ds.extcall_noalloc += st->extcall_noalloc;
-      ds.extcall_alloc += st->extcall_alloc;
-      ds.extcall_alloc_stackargs += st->extcall_alloc_stackargs;
-
-      ds.tailcall_imm += st->tailcall_imm;
-      ds.tailcall_ind += st->tailcall_ind;
-      ds.call_imm += st->call_imm;
-      ds.call_ind += st->call_ind;
-
-      ds.stackoverflow_checks += st->stackoverflow_checks;
-    }
-  }
-  fprintf(stderr, "\n**** Other stats ****\n");
-  fprintf(stderr, "Allocations:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", ds.allocations);
-
-  total = ds.mutable_loads + ds.immutable_loads;
-  fprintf(stderr, "\nLoads:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
-  fprintf(stderr, "Mutable loads:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.mutable_loads, (double)ds.mutable_loads * 100.0 / total);
-  fprintf(stderr, "Immutable loads:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.immutable_loads, (double)ds.immutable_loads * 100.0 / total);
-
-  total = ds.mutable_stores + ds.immutable_stores;
-  fprintf(stderr, "\nStores:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
-  fprintf(stderr, "Mutable stores:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.mutable_stores, (double)ds.mutable_stores * 100.0 / total);
-  fprintf(stderr, "Immutable stores:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.immutable_stores, (double)ds.immutable_stores * 100.0 / total);
-
-  total = ds.extcall_noalloc + ds.extcall_alloc + ds.extcall_alloc_stackargs;
-  fprintf(stderr, "\nExternal calls:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
-  fprintf(stderr, "NoAlloc:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.extcall_noalloc, (double)ds.extcall_noalloc * 100.0 / total);
-  fprintf(stderr, "Alloc:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.extcall_alloc, (double)ds.extcall_alloc * 100.0 / total);
-  fprintf(stderr, "Alloc + stack args:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.extcall_alloc_stackargs, (double)ds.extcall_alloc_stackargs * 100.0 / total);
-
-  total = ds.tailcall_imm + ds.tailcall_ind + ds.call_imm + ds.call_ind;
-  fprintf(stderr, "\nCalls:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
-  fprintf(stderr, "Imm tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.tailcall_imm, (double)ds.tailcall_imm * 100.0 / total);
-  fprintf(stderr, "Ind tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.tailcall_ind, (double)ds.tailcall_ind * 100.0 / total);
-  fprintf(stderr, "Imm non-tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.call_imm, (double)ds.call_imm * 100.0 / total);
-  fprintf(stderr, "Ind non-tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.call_ind, (double)ds.call_ind * 100.0 / total);
-
-  fprintf(stderr, "\nStackoverflow checks:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.stackoverflow_checks, (double)ds.stackoverflow_checks * 100.0 / total);
-
-#endif
 }
 
 CAMLexport int caml_domain_rpc(struct domain* domain,
