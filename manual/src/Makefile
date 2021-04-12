@@ -165,3 +165,7 @@ clean:
 	                   manual.hmanual manual.hmanual.kwd manual.css
 	cd textman; rm -f manual.txt *.haux *.hind *.htoc
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
+
+.PHONY: distclean
+distclean:
+	$(MAKE) -C html_processing distclean

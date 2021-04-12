@@ -111,6 +111,7 @@ Checks () {
   # check that the 'clean' target also works
   $MAKE clean
   $MAKE -C manual clean
+  $MAKE -C manual distclean
   # check that the `distclean` target definitely cleans the tree
   $MAKE distclean
   # Check the working tree is clean
