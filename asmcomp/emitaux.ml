@@ -348,41 +348,6 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
 
 (* Emission of block headers immediately prior to function entry points *)
 
-let emit_block_header_for_closure ~word_directive ~comment_string
-      ~function_entry_points_are_doubleword_aligned =
-  if true (* Config.no_naked_pointers *) then begin
-    let header =
-      (* Claim that the function is a zero-size [Abstract_tag] block
-         marked black. *)
-      (* CR-someday mshinwell: For multicore, to make marshalling work,
-         this will need to use a distinguished tag. *)
-      (* CR mshinwell: factor this definition out from here and cmmgen.ml,
-         and make sure it matches [Caml_black]. *)
-      let not_markable = Nativeint.shift_left (Nativeint.of_int 3) 8 in
-      Nativeint.logor not_markable (Nativeint.of_int Obj.abstract_tag)
-    in
-    (* The caller of [emit_block_header_for_closure] must ensure that we are
-       already sufficiently aligned.  If that involved doubleword alignment,
-       we emit a zero word here, to ensure that the function entry point
-       remains doubleword-aligned. *)
-    if function_entry_points_are_doubleword_aligned then begin
-      emit_string "\t";
-      emit_string word_directive;
-      emit_string "\t";
-      emit_nativeint Nativeint.zero;
-      emit_string "  ";
-      emit_string comment_string;
-      emit_string " preserve entry point alignment\n"
-    end;
-    emit_string "\t";
-    emit_string word_directive;
-    emit_string "\t";
-    emit_nativeint header;
-    emit_string "  ";
-    emit_string comment_string;
-    emit_string " GC block header\n"
-  end
-
 let emit_debug_info dbg =
   emit_debug_info_gen dbg (fun ~file_num ~file_name ->
       emit_string "\t.file\t";
