@@ -87,7 +87,9 @@ text: files latex_files
 
 
 all:
-	$(MAKE) html text info manual
+	$(MAKE) html
+	$(MAKE) text
+	$(MAKE) info
 	$(MAKE) manual
 	$(MAKE) index
 	$(MAKE) manual
