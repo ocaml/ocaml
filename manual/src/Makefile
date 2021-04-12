@@ -167,5 +167,5 @@ clean:
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
 
 .PHONY: distclean
-distclean:
+distclean: clean
 	$(MAKE) -C html_processing distclean

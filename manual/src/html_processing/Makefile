@@ -77,6 +77,9 @@ img: $(WEBDIRAPI)/search_icon.svg $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/search_
 clean:
 	rm -rf $(WEBDIR) src/.merlin _build
 
+.PHONY: distclean
+distclean:: clean
+
 distclean::
 	rm -rf .sass-cache
 
