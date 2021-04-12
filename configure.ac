@@ -93,7 +93,6 @@ AC_SUBST([arch64])
 AC_SUBST([model])
 AC_SUBST([system])
 AC_SUBST([systhread_support])
-AC_SUBST([collect_stats])
 AC_SUBST([unix_or_win32])
 AC_SUBST([unixlib])
 AC_SUBST([outputexe])
@@ -294,10 +293,6 @@ AC_ARG_ENABLE([installing-source-artifacts],
 AC_ARG_ENABLE([installing-bytecode-programs],
   [AS_HELP_STRING([--enable-installing-bytecode-programs],
     [also install the bytecode versions of programs])])
-
-AC_ARG_ENABLE([stats],
-  [AS_HELP_STRING([--enable-stats],
-    [enable multicore stats])])
 
 AC_ARG_ENABLE([native-compiler],
   [AS_HELP_STRING([--disable-native-compiler],
@@ -1721,13 +1716,6 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   )],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
-
-## Collect multicore stats
-
-AS_IF([test x"$enable_stats" = "xyes" ],
-  [AC_DEFINE([COLLECT_STATS])
-  collect_stats=true],
-  [collect_stats=false])
 
 AS_IF([test x"$enable_naked_pointers_checker" = "xyes" ],
   [AS_IF([test x"$enable_naked_pointers" = "xno" ],

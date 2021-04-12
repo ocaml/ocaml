@@ -821,7 +821,6 @@ outputobj
 outputexe
 unixlib
 unix_or_win32
-collect_stats
 systhread_support
 system
 model
@@ -897,7 +896,6 @@ enable_naked_pointers_checker
 enable_cfi
 enable_installing_source_artifacts
 enable_installing_bytecode_programs
-enable_stats
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
@@ -1569,7 +1567,6 @@ Optional Features:
                           install *.cmt* and *.mli files
   --enable-installing-bytecode-programs
                           also install the bytecode versions of programs
-  --enable-stats          enable multicore stats
   --disable-native-compiler
                           do not build the native compiler
   --enable-flambda        enable flambda optimizations
@@ -3205,13 +3202,6 @@ fi
 if test "${enable_installing_bytecode_programs+set}" = set; then :
   enableval=$enable_installing_bytecode_programs;
 fi
-
-
-# Check whether --enable-stats was given.
-if test "${enable_stats+set}" = set; then :
-  enableval=$enable_stats;
-fi
-
 
 # Check whether --enable-native-compiler was given.
 if test "${enable_native_compiler+set}" = set; then :
@@ -16816,16 +16806,6 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: not using frame pointers" >&5
 $as_echo "$as_me: not using frame pointers" >&6;}
   frame_pointers=false
-fi
-
-## Collect multicore stats
-
-if test x"$enable_stats" = "xyes" ; then :
-  $as_echo "#define COLLECT_STATS 1" >>confdefs.h
-
-  collect_stats=true
-else
-  collect_stats=false
 fi
 
 if test x"$enable_naked_pointers_checker" = "xyes" ; then :

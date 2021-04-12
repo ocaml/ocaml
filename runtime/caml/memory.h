@@ -213,11 +213,7 @@ extern uintnat caml_use_huge_pages;
 #define DEBUG_clear(result, wosize)
 #endif
 
-#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
-#define Count_alloc dom_st->allocations++
-#else
 #define Count_alloc
-#endif
 
 #define Alloc_small_with_profinfo(result, wosize, tag, GC, profinfo) do{    \
   caml_domain_state* dom_st;                                                \

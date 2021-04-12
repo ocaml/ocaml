@@ -64,8 +64,6 @@
 
 #undef HAS_STDATOMIC_H
 
-#undef COLLECT_STATS
-
 /* 2. For the Unix library. */
 
 #undef HAS_SOCKETS
