@@ -483,45 +483,25 @@ ENDFUNCTION(G(caml_call_realloc_stack))
 
 FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
-        movq    $0, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
+LBL(caml_call_gc):
+        SAVE_ALL_REGS
+        movq    %r15, Caml_state(gc_regs)
+        SWITCH_OCAML_TO_C_NO_CTXT(0)
+        C_call (GCALL(caml_garbage_collection))
+        SWITCH_C_TO_OCAML_NO_CTXT
+        movq    Caml_state(gc_regs), %r15
+        RESTORE_ALL_REGS
+        ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_call_gc))
-
-FUNCTION(G(caml_call_gc1))
-CFI_STARTPROC
-        addq    $16, %r15
-        movq    $0, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
-CFI_ENDPROC
-ENDFUNCTION(G(caml_call_gc1))
-
-FUNCTION(G(caml_call_gc2))
-CFI_STARTPROC
-        addq    $24, %r15
-        movq    $0, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
-CFI_ENDPROC
-ENDFUNCTION(G(caml_call_gc2))
-
-FUNCTION(G(caml_call_gc3))
-CFI_STARTPROC
-        addq    $32, %r15
-        movq    $0, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
-CFI_ENDPROC
-ENDFUNCTION(G(caml_call_gc3))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
 LBL(caml_alloc1):
         subq    $16, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(100)
+        jb      LBL(caml_call_gc)
         ret
-LBL(100):
-        movq    $16, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc1))
 
@@ -530,11 +510,8 @@ CFI_STARTPROC
 LBL(caml_alloc2):
         subq    $24, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(101)
+        jb      LBL(caml_call_gc)
         ret
-LBL(101):
-        movq    $24, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc2))
 
@@ -543,11 +520,8 @@ CFI_STARTPROC
 LBL(caml_alloc3):
         subq    $32, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(102)
+        jb      LBL(caml_call_gc)
         ret
-LBL(102):
-        movq    $32, %rax
-        jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc3))
 
@@ -557,34 +531,10 @@ CFI_STARTPROC
 LBL(caml_allocN):
         subq    %rax, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(call_gc_and_retry_alloc)
+        jb      LBL(caml_call_gc)
         ret
-LBL(call_gc_and_retry_alloc):
-        addq    %rax, %r15
-        SAVE_ALL_REGS
-        movq    %r15, Caml_state(gc_regs)
-        SWITCH_OCAML_TO_C_NO_CTXT(0)
-        C_call (GCALL(caml_garbage_collection))
-        SWITCH_C_TO_OCAML_NO_CTXT
-        movq    Caml_state(gc_regs), %r15
-        RESTORE_ALL_REGS
-        jmp     LBL(caml_allocN)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_allocN))
-
-FUNCTION(G(caml_call_poll))
-CFI_STARTPROC
-LBL(caml_call_poll):
-        SAVE_ALL_REGS
-        movq    %r15, Caml_state(gc_regs)
-        SWITCH_OCAML_TO_C_NO_CTXT(0)
-        C_call (GCALL(caml_garbage_collection))
-        SWITCH_C_TO_OCAML_NO_CTXT
-        movq    Caml_state(gc_regs), %r15
-        RESTORE_ALL_REGS
-        ret
-CFI_ENDPROC
-ENDFUNCTION(G(caml_call_poll))
 
 /******************************************************************************/
 /* Call a C function from OCaml */
