@@ -282,7 +282,8 @@ Working version
 
 - #10332, #10333: Generate lambda/runtimedef.ml correctly in Swedish locale.
   (the letter 'w' is not included in '[a-z]' in sv_SE.UTF-8)
-  (David Allsopp, report by Anders Jackson, review by Gabriel Scherer)
+  (David Allsopp, report by Anders Jackson, review by Florian Angeletti and
+   Gabriel Scherer)
 
 ### Bug fixes:
 
