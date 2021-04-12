@@ -133,6 +133,12 @@ EOF
 
 }
 
+BuildManual () {
+  $MAKE -C manual/src/html_processing duniverse
+  $MAKE -C manual manual
+  $MAKE -C manual web
+}
+
 # ReportBuildStatus accepts an exit code as a parameter (defaults to 1) and also
 # instructs GitHub Actions to set build-status to 'failed' on non-zero exit or
 # 'success' otherwise.
@@ -168,6 +174,7 @@ build) Build;;
 test) Test;;
 api-docs) API_Docs;;
 install) Install;;
+manual) BuildManual;;
 other-checks) Checks;;
 basic-compiler) BasicCompiler;;
 *) echo "Unknown CI instruction: $1"

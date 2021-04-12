@@ -46,7 +46,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Packages
       run: |
-        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended
+        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
   # Ensure that make distclean can be run from an empty tree
     - name: distclean
       run: |
@@ -66,6 +66,9 @@ jobs:
     - name: Install
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+    - name: Build the manual
+      run: |
+        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
     - name: Other checks
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
