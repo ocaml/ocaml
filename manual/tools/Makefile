@@ -5,7 +5,6 @@ include $(ROOTDIR)/Makefile.best_binaries
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
-OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 all: texquote2 transf
 

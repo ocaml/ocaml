@@ -27,7 +27,6 @@ include $(ROOTDIR)/Makefile.best_binaries
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
-OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
