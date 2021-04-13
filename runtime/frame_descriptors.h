@@ -19,6 +19,9 @@ typedef struct {
     Debug info is stored as a relative offset to a debuginfo structure. */
 } frame_descr;
 
+/* Allocation lengths are encoded as 0-255, giving sizes 1-256 */
+#define Wosize_encoded_alloc_len(n) ((uintnat)(n) + 1)
+
 /* Used to compute offsets in frame tables.
    ty must have power-of-2 size */
 #define Align_to(p, ty) \
