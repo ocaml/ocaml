@@ -1395,9 +1395,9 @@ let delayed_copy = ref []
 (* all free univars must be included in [visited]            *)
 let rec copy_sep cleanup_scope fixed free bound
     (visited : (int * (type_expr * type_expr list)) list)
-    (ty : type_expr) : type_expr =
+    may_share (ty : type_expr) : type_expr =
   let univars = free ty in
-  if TypeSet.is_empty univars then
+  if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
     let t = newstub ~scope:(get_scope ty) in
     delayed_copy :=
@@ -1429,17 +1429,19 @@ let rec copy_sep cleanup_scope fixed free bound
           let more = row.row_more in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
-          let more' = copy_rec more in
+          let more' = copy_rec false more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
-          let row = copy_row copy_rec fixed' row keep more' in
+          let row = copy_row (copy_rec true) fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
-          Tpoly (copy_sep cleanup_scope fixed free bound visited t1, tl')
-      | _ -> copy_type_desc copy_rec desc
+          Tpoly (copy_sep cleanup_scope fixed free bound visited true t1, tl')
+      | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
+          Tfield (p, field_kind_repr k, copy_rec true ty1, copy_rec false ty2)
+      | _ -> copy_type_desc (copy_rec true) desc
     in
     Transient_expr.set_stub_desc t desc';
     t
@@ -1455,7 +1457,8 @@ let instance_poly' cleanup_scope ~keep_names fixed univars sch =
   let vars = List.map copy_var univars in
   let pairs = List.map2 (fun u v -> get_id u, (v, [])) univars vars in
   delayed_copy := [];
-  let ty = copy_sep cleanup_scope fixed (compute_univars sch) [] pairs sch in
+  let ty =
+    copy_sep cleanup_scope fixed (compute_univars sch) [] pairs true sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
@@ -2106,9 +2109,9 @@ let reify_univars env ty =
 
 let rec has_cached_expansion p abbrev =
   match abbrev with
-    Mnil                   -> false
-  | Mcons(_, p', _, _, rem)   -> Path.same p p' || has_cached_expansion p rem
-  | Mlink rem              -> has_cached_expansion p !rem
+    Mnil                    -> false
+  | Mcons(_, p', _, _, rem) -> Path.same p p' || has_cached_expansion p rem
+  | Mlink rem               -> has_cached_expansion p !rem
 
 (**** Transform error trace ****)
 (* +++ Move it to some other place ? *)

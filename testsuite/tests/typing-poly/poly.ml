@@ -645,8 +645,8 @@ val f :
 - : (< p : 'b. < m : 'b; n : 'a; .. > as 'b > as 'a) ->
     (< m : 'c; n : 'a; .. > as 'c)
 = <fun>
-- : (< m : 'a. 'a * (< p : 'b. 'b * 'd * 'c > as 'e) as 'd > as 'c) ->
-    ('g * 'e as 'f)
+- : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
+    ('f * < p : 'b. 'b * 'e * 'c > as 'e)
 = <fun>
 - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
 |}, Principal{|
@@ -662,7 +662,11 @@ val f :
     (< m : 'c; n : < p : 'e. < m : 'e; n : 'd; .. > as 'e > as 'd; .. > as 'c)
 = <fun>
 - : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
-    ('f * (< p : 'b. 'b * 'e * < m : 'a. 'a * 'g > > as 'g) as 'e)
+    ('f *
+     < p : 'b.
+             'b * 'e *
+             (< m : 'a. 'a * < p : 'b0. 'b0 * 'h * 'g > as 'h > as 'g) >
+     as 'e)
 = <fun>
 - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
 |}];;
