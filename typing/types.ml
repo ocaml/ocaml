@@ -509,24 +509,30 @@ let rec field_kind_repr =
     Fvar {contents = Some kind} -> field_kind_repr kind
   | kind                        -> kind
 
-let rec repr_link compress (t : type_expr) d : type_expr -> type_expr =
+let rec repr_link (t : type_expr) d : type_expr -> type_expr =
  function
    {desc = Tlink t' as d'} ->
-     repr_link true t d' t'
+     repr_link t d' t'
  | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
-     repr_link true t d' t'
+     repr_link t d' t'
  | t' ->
-     if compress then begin
-       log_change (Ccompress (t, t.desc, d)); t.desc <- d
-     end;
+     log_change (Ccompress (t, t.desc, d));
+     t.desc <- d;
      t'
+
+let repr_link1 t = function
+   {desc = Tlink t' as d'} ->
+     repr_link t d' t'
+ | {desc = Tfield (_, k, _, t') as d'} when field_kind_repr k = Fabsent ->
+     repr_link t d' t'
+ | t' -> t'
 
 let repr t =
   match t.desc with
-   Tlink t' as d ->
-     repr_link false t d t'
- | Tfield (_, k, _, t') as d when field_kind_repr k = Fabsent ->
-     repr_link false t d t'
+   Tlink t' ->
+     repr_link1 t t'
+ | Tfield (_, k, _, t') when field_kind_repr k = Fabsent ->
+     repr_link1 t t'
  | _ -> t
 
 (* getters for type_expr *)
