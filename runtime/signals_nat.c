@@ -116,12 +116,6 @@ void caml_garbage_collection()
   /* Re-do the allocation: we now have enough space in the minor heap. */
   Caml_state->young_ptr -= alloc_bsize;
 
-#ifdef WITH_SPACETIME
-  if (caml_young_ptr == caml_young_alloc_end) {
-    caml_spacetime_automatic_snapshot();
-  }
-#endif
-
   caml_process_pending_signals();
 }
 
