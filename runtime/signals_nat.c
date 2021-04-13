@@ -108,7 +108,7 @@ void caml_garbage_collection()
      in a loop to ensure it. */
   do {
     caml_handle_gc_interrupt();
-  } while( Caml_state->young_ptr - alloc_bsize <= Caml_state->young_limit );
+  } while( Caml_state->young_ptr - alloc_bsize <= (char*)Caml_state->young_limit );
 
   /* Re-do the allocation: we now have enough space in the minor heap. */
   Caml_state->young_ptr -= alloc_bsize;
