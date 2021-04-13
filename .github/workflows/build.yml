@@ -66,9 +66,23 @@ jobs:
     - name: Install
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+    - name: Check for manual changes
+      id: manual
+      run: >-
+        tools/ci/actions/check-manual-modified.sh
+        '${{ github.event_name }}'
+        '${{ github.event.pull_request.base.ref }}'
+        '${{ github.event.pull_request.base.sha }}'
+        '${{ github.event.pull_request.head.ref }}'
+        '${{ github.event.pull_request.head.sha }}'
+        '${{ github.event.ref }}'
+        '${{ github.event.before }}'
+        '${{ github.event.ref }}'
+        '${{ github.event.after }}'
     - name: Build the manual
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
+      if: steps.manual.outputs.changed == 'true'
     - name: Other checks
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
