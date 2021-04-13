@@ -135,7 +135,7 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
 	 $(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
-	 | sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
+	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
 	) >$@
 #	sed --inplace is not portable, emulate
