@@ -368,6 +368,9 @@ Working version
   (Vincent Laviron, report by Yawar Amin and Nicolás Ojeda Bär, review by
    Jacques Garrigue)
 
+- #10338: Translcore.push_defaults does not respect scoping
+  (Jacques Garrigue, report by Stephen Dolan)
+
 - #10351: Fix DLL loading with binutils 2.36+ on mingw-w64
   (David Allsopp, review by Nicolás Ojeda Bär)
 

@@ -112,7 +112,7 @@ let rec push_defaults loc bindings cases partial =
       push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings)
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
-  | [case] ->
+  | [{c_guard=None} as case] ->
       let exp =
         List.fold_left
           (fun exp binds ->
