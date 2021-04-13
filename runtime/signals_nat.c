@@ -88,10 +88,7 @@ void caml_garbage_collection()
     unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
     int i, nallocs = *alloc_len++;
     for (i = 0; i < nallocs; i++) {
-      /* Since 2 words is the smallest allocation, sizes are
-         encoded as (wosize - 2).
-         See Emitaux.emit_frames and caml/stack.h */
-      allocsz += alloc_len[i] + 2;
+      allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
     }
     /* We have computed whsize (including header), but need wosize (without) */
     allocsz -= 1;
