@@ -167,7 +167,6 @@ has excellent documentation.
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
   Makefile.common::       common Makefile definitions
-  Makefile.tools::        used by manual/ and testsuite/ Makefiles
   README.adoc::           general information on the compiler distribution
   README.win32.adoc::     general information on the Windows ports of OCaml
   VERSION::               version string. Run `make configure` after changing.

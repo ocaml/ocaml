@@ -1,14 +1,14 @@
-TOPDIR = ../../..
-include $(TOPDIR)/Makefile.tools
+ROOTDIR = ../../..
+include $(ROOTDIR)/Makefile.common
 
-LD_PATH = "$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
+LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
 
 TOOLS = ../../tools
 CAMLLATEX = $(SET_LD_PATH) \
-  $(OCAMLRUN) $(TOPDIR)/tools/caml-tex \
-  -repo-root $(TOPDIR) -n 80 -v false
-TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+  $(CAMLRUN) $(ROOTDIR)/tools/caml-tex \
+  -repo-root $(ROOTDIR) -n 80 -v false
+TEXQUOTE = $(CAMLRUN) $(TOOLS)/texquote2
+TRANSF = $(SET_LD_PATH) $(CAMLRUN) $(TOOLS)/transf
 
 FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   ocamldep.tex profil.tex debugger.tex ocamldoc.tex \

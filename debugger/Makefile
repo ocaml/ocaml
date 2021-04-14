@@ -25,7 +25,6 @@ CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
-OCAMLLEX ?= $(BEST_OCAMLLEX)
 CAMLDEP=$(BEST_OCAMLDEP)
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
