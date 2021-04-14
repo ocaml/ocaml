@@ -58,6 +58,11 @@ utils/consistbl.cmx : \
     utils/consistbl.cmi
 utils/consistbl.cmi : \
     utils/misc.cmi
+utils/diffing.cmo : \
+    utils/diffing.cmi
+utils/diffing.cmx : \
+    utils/diffing.cmi
+utils/diffing.cmi :
 utils/domainstate.cmo : \
     utils/domainstate.cmi
 utils/domainstate.cmx : \
@@ -703,17 +708,17 @@ typing/includemod.cmo : \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/path.cmi \
-    typing/oprint.cmi \
     typing/mtype.cmi \
     utils/misc.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     typing/includecore.cmi \
     typing/includeclass.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    utils/diffing.cmi \
     typing/ctype.cmi \
     file_formats/cmt_format.cmi \
-    utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     typing/includemod.cmi
@@ -725,17 +730,17 @@ typing/includemod.cmx : \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/path.cmx \
-    typing/oprint.cmx \
     typing/mtype.cmx \
     utils/misc.cmx \
+    parsing/longident.cmx \
     parsing/location.cmx \
     typing/includecore.cmx \
     typing/includeclass.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    utils/diffing.cmx \
     typing/ctype.cmx \
     file_formats/cmt_format.cmx \
-    utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     typing/includemod.cmi
@@ -743,11 +748,47 @@ typing/includemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/path.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     typing/includecore.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    utils/diffing.cmi \
     typing/ctype.cmi
+typing/includemod_errorprinter.cmo : \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    typing/printtyp.cmi \
+    typing/path.cmi \
+    typing/oprint.cmi \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    typing/includemod.cmi \
+    typing/includecore.cmi \
+    typing/includeclass.cmi \
+    typing/ident.cmi \
+    typing/env.cmi \
+    utils/diffing.cmi \
+    utils/clflags.cmi \
+    typing/includemod_errorprinter.cmi
+typing/includemod_errorprinter.cmx : \
+    typing/types.cmx \
+    typing/typedtree.cmx \
+    typing/printtyp.cmx \
+    typing/path.cmx \
+    typing/oprint.cmx \
+    utils/misc.cmx \
+    parsing/location.cmx \
+    typing/includemod.cmx \
+    typing/includecore.cmx \
+    typing/includeclass.cmx \
+    typing/ident.cmx \
+    typing/env.cmx \
+    utils/diffing.cmx \
+    utils/clflags.cmx \
+    typing/includemod_errorprinter.cmi
+typing/includemod_errorprinter.cmi : \
+    typing/includemod.cmi
 typing/mtype.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
@@ -1531,6 +1572,7 @@ typing/typemod.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    typing/includemod_errorprinter.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -1563,6 +1605,7 @@ typing/typemod.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    typing/includemod_errorprinter.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -5876,6 +5919,7 @@ driver/main_args.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
     utils/misc.cmi \
+    parsing/location.cmi \
     utils/config.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
@@ -5884,6 +5928,7 @@ driver/main_args.cmx : \
     utils/warnings.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
+    parsing/location.cmx \
     utils/config.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \

@@ -641,6 +641,8 @@ module Color = struct
     in
     "\x1b[" ^ s ^ "m"
 
+
+  type Format.stag += Style of style list
   type styles = {
     error: style list;
     warning: style list;
@@ -663,6 +665,7 @@ module Color = struct
     | Format.String_tag "error" -> (!cur_styles).error
     | Format.String_tag "warning" -> (!cur_styles).warning
     | Format.String_tag "loc" -> (!cur_styles).loc
+    | Style s -> s
     | _ -> raise Not_found
 
   let color_enabled = ref true

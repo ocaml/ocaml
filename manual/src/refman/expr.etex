@@ -171,17 +171,28 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"let  match  fun  function  try"}{--}
 \end{tableau}
 
+It is simple to test or refresh one's understanding:
+
+\begin{caml_example}{toplevel}
+3 + 3 mod 2, 3 + (3 mod 2), (3 + 3) mod 2;;
+\end{caml_example}
+
 \subsection{ss:expr-basic}{Basic expressions}
 
 \subsubsection*{sss:expr-constants}{Constants}
 
-An expression consisting in a constant evaluates to this constant.
+An expression consisting in a constant evaluates to this constant. For example,
+\texttt{3.14} or \texttt{[||]}.
 
 \subsubsection*{sss:expr-var}{Value paths}
 
 An expression consisting in an access path evaluates to the value bound to
 this path in the current evaluation environment. The path can
 be either a value name or an access path to a value component of a module.
+
+\begin{caml_example}{toplevel}
+Float.ArrayLabels.to_list;;
+\end{caml_example}
 
 \subsubsection*{sss:expr-parenthesized}{Parenthesized expressions}
 \ikwd{begin\@\texttt{begin}}
@@ -194,6 +205,24 @@ is good style to use @'begin' \ldots 'end'@ inside control structures:
         if \ldots then begin \ldots ; \ldots end else begin \ldots ; \ldots end
 \end{alltt}
 and @'(' \ldots ')'@ for the other grouping situations.
+
+\begin{caml_example}{toplevel}
+let x = 1 + 2 * 3
+let y = (1 + 2) * 3;;
+\end{caml_example}
+
+\begin{caml_example}{toplevel}
+let f a b =
+  if a = b then
+    print_endline "Equal"
+  else begin
+      print_string "Not Equal: ";
+      print_int a;
+      print_string " and ";
+      print_int b;
+      print_newline ()
+  end;;
+\end{caml_example}
 
 Parenthesized expressions can contain a type constraint, as in @'('
 expr ':' typexpr ')'@. This constraint forces the type of @expr@ to be
@@ -216,15 +245,35 @@ functional value $f$, which is then applied to the values of
 The order in which the expressions @expr, argument_1, \ldots,
 argument_n@ are evaluated is not specified.
 
+\begin{caml_example}{toplevel}
+List.fold_left ( + ) 0 [1; 2; 3; 4; 5];;
+\end{caml_example}
+
 Arguments and parameters are matched according to their respective
 labels. Argument order is irrelevant, except among arguments with the
 same label, or no label.
+
+\begin{caml_example}{toplevel}
+ListLabels.fold_left ~f:( @ ) ~init:[] [[1; 2; 3]; [4; 5; 6]; [7; 8; 9]];;
+\end{caml_example}
 
 If a parameter is specified as optional (label prefixed by @"?"@) in the
 type of @expr@, the corresponding argument will be automatically
 wrapped with the constructor "Some", except if the argument itself is
 also prefixed by @"?"@, in which case it is passed as is.
-%
+
+\begin{caml_example}{toplevel}
+let fullname ?title first second =
+  match title with
+  | Some t -> t ^ " " ^ first ^ " " ^ second
+  | None -> first ^ " " ^ second
+
+let name = fullname ~title:"Mrs" "Jane" "Fisher"
+
+let address ?title first second town =
+  fullname ?title first second ^ "\n" ^ town;;
+\end{caml_example}
+
 If a non-labeled argument is passed, and its corresponding parameter
 is preceded by one or several optional parameters, then these
 parameters are {\em defaulted}, {\em i.e.} the value "None" will be
@@ -235,16 +284,26 @@ optional and non-optional, will be kept, and the result of the
 function will still be a function of these missing parameters to the
 body of $f$.
 
-As a special case, if the function has a known arity, all the
-arguments are unlabeled, and their number matches the number of
-non-optional parameters, then labels are ignored and non-optional
-parameters are matched in their definition order. Optional arguments
-are defaulted.
+\begin{caml_example}{toplevel}
+let fullname ?title first second =
+  match title with
+  | Some t -> t ^ " " ^ first ^ " " ^ second
+  | None -> first ^ " " ^ second
+
+let name = fullname "Jane" "Fisher";;
+\end{caml_example}
 
 In all cases but exact match of order and labels, without optional
 parameters, the function type should be known at the application
 point.  This can be ensured by adding a type constraint.  Principality
 of the derivation can be checked in the "-principal" mode.
+
+As a special case, OCaml supports "labels-omitted" full applications:
+if the function has a known arity, all the arguments are unlabeled,
+and their number matches the number of non-optional parameters, then
+labels are ignored and non-optional parameters are matched in their
+definition order. Optional arguments are defaulted. This omission of
+labels is discouraged and results in a warning, see \ref{ss:warn6}.
 
 \subsubsection*{sss:expr-function-definition}{Function definition}
 
@@ -273,7 +332,13 @@ matches the argument, the exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
 
-\medskip
+\begin{caml_example}{toplevel}
+(function (0, 0) -> "both zero"
+        | (0, _) -> "first only zero"
+        | (_, 0) -> "second only zero"
+        | (_, _) -> "neither zero")
+(7, 0);;
+\end{caml_example}
 
 The other form of function definition is introduced by the keyword "fun":
 \ikwd{fun\@\texttt{fun}}
@@ -285,6 +350,11 @@ This expression is equivalent to:
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
 
+\begin{caml_example}{toplevel}
+let f = (fun a -> fun b -> fun c -> a + b + c)
+let g = (fun a b c -> a + b + c);;
+\end{caml_example}
+
 An optional type constraint @typexpr@ can be added before "->" to enforce
 the type of the result to be compatible with the constraint @typexpr@:
 \begin{center}
@@ -295,6 +365,7 @@ is equivalent to
   @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" %
   (expr ":" typexpr )@
 \end{center}
+
 Beware of the small syntactic difference between a type constraint on
 the last parameter
 \begin{center}
@@ -305,10 +376,24 @@ and one on the result
   @"fun" parameter_1 \ldots parameter_n":" typexpr "->" expr @
 \end{center}
 
+\begin{caml_example}{toplevel}
+let eq = fun (a : int) (b : int) -> a = b
+let eq2 = fun a b : bool -> a = b
+let eq3 = fun (a : int) (b : int) : bool -> a = b;;
+\end{caml_example}
+
 The parameter patterns @"~"lab@ and @"~("lab [":" typ]")"@
 are shorthands for respectively @"~"lab":"lab@ and
 @"~"lab":("lab [":" typ]")"@, and similarly for their optional
 counterparts.
+
+\begin{caml_example}{toplevel}
+let bool_map ~cmp:(cmp : int -> int -> bool) l =
+  List.map cmp l
+
+let bool_map' ~(cmp : int -> int -> bool) l =
+  List.map cmp l;;
+\end{caml_example}
 
 A function of the form @"fun" "?" lab ":(" pattern '=' expr_0 ')' '->'
 expr@ is equivalent to
@@ -320,6 +405,16 @@ expr@ is equivalent to
 \end{center}
 where @ident@
 is a fresh variable, except that it is unspecified when @expr_0@ is evaluated.
+
+\begin{caml_example}{toplevel}
+let open_file_for_input ?binary filename =
+  match binary with
+  | Some true -> open_in_bin filename
+  | Some false | None -> open_in filename
+
+let open_file_for_input' ?(binary=false) filename =
+  if binary then open_in_bin filename else open_in filename;;
+\end{caml_example}
 
 After these two transformations, expressions are of the form
 \begin{center}
@@ -362,6 +457,13 @@ then @expr_i@ is evaluated and its value returned as the result of the
 matching, as usual. But if @@cond@_i@ evaluates to "false", the matching
 is resumed against the patterns following @pattern_i@.
 
+\begin{caml_example}{toplevel}
+let rec repeat f = function
+  | 0 -> ()
+  | n when n > 0 -> f (); repeat f (n - 1)
+  | _ -> raise (Invalid_argument "repeat");;
+\end{caml_example}
+
 \subsubsection*{sss:expr-localdef}{Local definitions}
 
 \ikwd{let\@\texttt{let}}
@@ -380,6 +482,17 @@ matchings fails, the exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
 
+\begin{caml_example}{toplevel}
+let v =
+  let x = 1 in [x; x; x]
+
+let v' =
+  let a, b = (1, 2) in a + b
+
+let v'' =
+  let a = 1 and b = 2 in a + b;;
+\end{caml_example}
+
 An alternate syntax is provided to bind variables to functional
 values: instead of writing
 \begin{center}
@@ -390,13 +503,21 @@ in a @"let"@ expression, one may instead write
 @"let" ident parameter_1 \ldots parameter_m "=" expr@
 \end{center}
 
-\medskip
+\begin{caml_example}{toplevel}
+let f = fun x -> fun y -> fun z -> x + y + z
+
+let f' = fun x y z -> x + y + z
+
+let f'' x y z = x + y + z;;
+\end{caml_example}
+
 \noindent
 Recursive definitions of names are introduced by @"let" "rec"@:
 \begin{center}
 @"let" "rec" pattern_1 "=" expr_1 "and" \ldots "and" pattern_n "=" expr_n
        "in" expr@
 \end{center}
+
 The only difference with the @"let"@ construct described above is
 that the bindings of names to values performed by the
 pattern-matching are considered already performed when the expressions
@@ -404,6 +525,15 @@ pattern-matching are considered already performed when the expressions
 to @expr_n@ can reference identifiers that are bound by one of the
 patterns @pattern_1, \ldots, pattern_n@, and expect them to have the
 same value as in @expr@, the body of the @"let" "rec"@ construct.
+
+\begin{caml_example}{toplevel}
+let rec even =
+  function 0 -> true | n -> odd (n - 1)
+and odd =
+  function 0 -> false | n -> even (n - 1)
+in
+  even 1000;;
+\end{caml_example}
 
 The recursive definition is guaranteed to behave as described above if
 the expressions @expr_1@ to @expr_n@ are function definitions
@@ -422,6 +552,29 @@ The behavior of other forms of @"let" "rec"@ definitions is
 implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
+
+It is possible to define local exceptions in expressions:
+@ "let" exception constr-decl "in" expr @ .
+
+\begin{caml_example}{toplevel}
+let map_empty_on_negative f l =
+  let exception Negative in
+  let aux x = if x < 0 then raise Negative else f x in
+    try List.map aux l with Negative -> [];;
+\end{caml_example}
+
+The syntactic scope of the exception constructor is the inner
+expression, but nothing prevents exception values created with this
+constructor from escaping this scope.  Two executions of the definition
+above result in two incompatible exception constructors (as for any
+exception definition). For instance:
+
+\begin{caml_example}{toplevel}
+let gen () = let exception A in A
+
+let () = assert(gen () = gen ());;
+\end{caml_example}
+
 \subsubsection{sss:expr-explicit-polytype}{Explicit polymorphic type annotations}
 (Introduced in OCaml 3.12)
 
@@ -437,21 +590,7 @@ and allow one to use this polymorphism in recursive occurrences
 (when using @"let" "rec"@). Note however that this is a normal polymorphic
 type, unifiable with any instance of itself.
 
-\subsubsection{sss:expr-local-exception}{Local exceptions}
-(Introduced in 4.04)
 
-It is possible to define local exceptions in expressions:
-@ "let" exception constr-decl "in" expr @ .
-The syntactic scope of the exception constructor is the inner
-expression, but nothing prevents exception values created with this
-constructor from escaping this scope.  Two executions of the definition
-above result in two incompatible exception constructors (as for any
-exception definition). For instance, the following assertion is
-true:
-\begin{verbatim}
-  let gen () = let exception A in A
-  let () = assert(gen () <> gen ())
-\end{verbatim}
 
 \subsection{ss:expr-control}{Control structures}
 
@@ -459,6 +598,15 @@ true:
 
 The expression @expr_1 ";" expr_2@ evaluates @expr_1@ first, then
 @expr_2@, and returns the value of @expr_2@.
+
+\begin{caml_example}{toplevel}
+let print_pair (a, b) =
+  print_string "(";
+  print_string (string_of_int a);
+  print_string ",";
+  print_string (string_of_int b);
+  print_endline ")";;
+\end{caml_example}
 
 \subsubsection*{sss:expr-conditional}{Conditional}
 \ikwd{if\@\texttt{if}}
@@ -468,8 +616,20 @@ the value of @expr_2@ if @expr_1@ evaluates to the boolean @"true"@,
 and to the value of @expr_3@ if @expr_1@ evaluates to the boolean
 @"false"@.
 
+\begin{caml_example}{toplevel}
+let rec factorial x =
+  if x <= 1 then 1 else x * factorial (x - 1);;
+\end{caml_example}
+
 The @"else" expr_3@ part can be omitted, in which case it defaults to
 @"else" "()"@.
+
+\begin{caml_example}{toplevel}
+let debug = ref false
+
+let log msg =
+  if !debug then prerr_endline msg;;
+\end{caml_example}
 
 \subsubsection*{sss:expr-case}{Case expression}\ikwd{match\@\texttt{match}}
 
@@ -487,10 +647,27 @@ value of the whole @'match'@ expression. The evaluation of
 @expr_i@ takes place in an environment enriched by the bindings
 performed during matching. If several patterns match the value of
 @expr@, the one that occurs first in the @'match'@ expression is
-selected. If none of the patterns match the value of @expr@, the
+selected.
+
+\begin{caml_example}{toplevel}
+let rec sum l =
+  match l with
+  | [] -> 0
+  | h :: t -> h + sum t;; 
+\end{caml_example}
+
+If none of the patterns match the value of @expr@, the
 exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
+
+\begin{caml_example}{toplevel}[warning=8, error]
+let unoption o =
+  match o with
+  | Some x -> x 
+
+let l = List.map unoption [Some 1; Some 10; None; Some 2];;
+\end{caml_example}
 
 \subsubsection*{sss:expr-boolean-operators}{Boolean operators}
 
@@ -519,6 +696,11 @@ exactly as
 The boolean operators @'&'@ and @'or'@ are deprecated synonyms for
 (respectively) @'&&'@ and @'||'@.
 
+\begin{caml_example}{toplevel}
+let xor a b =
+  (a || b) && not (a && b);;
+\end{caml_example}
+
 \subsubsection*{sss:expr-loops}{Loops}
 
 \ikwd{while\@\texttt{while}}
@@ -527,6 +709,17 @@ evaluates @expr_2@ while @expr_1@ evaluates to @'true'@. The loop
 condition @expr_1@ is evaluated and tested at the beginning of each
 iteration. The whole @'while' \ldots 'done'@ expression evaluates to
 the unit value @'()'@.
+
+\begin{caml_example}{toplevel}
+let chars_of_string s =
+  let i = ref 0 in
+  let chars = ref [] in
+    while !i < String.length s do
+      chars := s.[!i] :: !chars;
+      i := !i + 1
+    done;
+    List.rev !chars;;
+\end{caml_example}
 
 \ikwd{for\@\texttt{for}}
 The expression @'for' name '=' expr_1 'to' expr_2 'do' expr_3 'done'@
@@ -537,12 +730,28 @@ bound to the values
    $n$, $n+1$, \ldots, $p-1$, $p$.
    The loop body is never evaluated if $n > p$.
 
+\begin{caml_example}{toplevel}
+let chars_of_string s =
+  let l = ref [] in
+    for p = 0 to String.length s - 1 do
+      l := s.[p] :: !l
+    done;
+    List.rev !l;;
+\end{caml_example}
 
 The expression @'for' name '=' expr_1 'downto' expr_2 'do' expr_3 'done'@
 evaluates similarly, except that @name@ is successively bound to the values
    $n$, $n-1$, \ldots, $p+1$, $p$.
    The loop body is never evaluated if $n < p$.
 
+\begin{caml_example}{toplevel}
+let chars_of_string s =
+  let l = ref [] in
+    for p = String.length s - 1 downto 0 do
+      l := s.[p] :: !l
+    done;
+    !l;;
+\end{caml_example}
 
 In both cases, the whole @'for'@ expression evaluates to the unit
 value @'()'@.
@@ -570,6 +779,11 @@ selected. If none of the patterns matches the value of @expr@, the
 exception value is raised again, thereby transparently ``passing
 through'' the @'try'@ construct.
 
+\begin{caml_example}{toplevel}
+let find_opt p l =
+  try Some (List.find p l) with Not_found -> None;;
+\end{caml_example}
+
 \subsection{ss:expr-ops-on-data}{Operations on data structures}
 
 \subsubsection*{sss:expr-products}{Products}
@@ -577,6 +791,10 @@ through'' the @'try'@ construct.
 The expression @expr_1 ',' \ldots ',' expr_n@ evaluates to the
 \var{n}-tuple of the values of expressions @expr_1@ to @expr_n@. The
 evaluation order of the subexpressions is not specified.
+
+\begin{caml_example}{toplevel}
+(1 + 2 * 3, (1 + 2) * 3, 1 + (2 * 3));;
+\end{caml_example}
 
 \subsubsection*{sss:expr-variants}{Variants}
 
@@ -591,6 +809,12 @@ The expression @constr '('expr_1, \ldots, expr_n')'@ evaluates to the
 variant value whose constructor is @constr@, and whose arguments are
 the values of @expr_1 \ldots expr_n@.
 
+\begin{caml_example}{toplevel}
+type t = Var of string | Not of t | And of t * t | Or of t * t
+
+let test = And (Var "x", Not (Or (Var "y", Var "z")));;
+\end{caml_example}
+
 For lists, some syntactic sugar is provided. The expression
 @expr_1 '::' expr_2@ stands for the constructor @'(' '::' ')' @
 applied to the arguments @'(' expr_1 ',' expr_2 ')'@, and therefore
@@ -600,10 +824,18 @@ expr_n ']'@ is equivalent to @expr_1 '::' \ldots '::' expr_n '::'
 '[]'@, and therefore evaluates to the list whose elements are the
 values of @expr_1@ to @expr_n@.
 
+\begin{caml_example}{toplevel}
+0 :: [1; 2; 3] = 0 :: 1 :: 2 :: 3 :: [];;
+\end{caml_example}
+
 \subsubsection*{sss:expr-polyvars}{Polymorphic variants}
 
 The expression @"`"tag-name expr@ evaluates to the polymorphic variant
 value whose tag is @tag-name@, and whose argument is the value of @expr@.
+
+\begin{caml_example}{toplevel}
+let with_counter x = `V (x, ref 0);;
+\end{caml_example}
 
 \subsubsection*{sss:expr-records}{Records}
 
@@ -623,6 +855,14 @@ specified. Optional type constraints can be added after each field
  \ldots ';' field_n ':' typexpr_n '=' expr_n '}'@
 to force the type of @field_k@ to be compatible with @typexpr_k@.
 
+\begin{caml_example}{toplevel}
+type t = {house_no : int; street : string; town : string; postcode : string}
+
+let address x =
+  Printf.sprintf "The occupier\n%i %s\n%s\n%s"
+    x.house_no x.street x.town x.postcode;;
+\end{caml_example}
+
 The expression
 @"{" expr "with" field_1 ["=" expr_1] ";" \ldots ";" field_n ["=" expr_n] "}"@
 builds a fresh record with fields @field_1 \ldots field_n@ equal to
@@ -638,6 +878,13 @@ with
 @"{" expr "with" field_1 ':' typexpr_1 "=" expr_1 ";" %
  \ldots ";" field_n ':' typexpr_n "=" expr_n "}"@.
 
+\begin{caml_example}{toplevel}
+type t = {house_no : int; street : string; town : string; postcode : string}
+
+let uppercase_town address =
+  {address with town = String.uppercase_ascii address.town};;
+\end{caml_example}
+
 The expression @expr_1 '.' field@ evaluates @expr_1@ to a record
 value, and returns the value associated to @field@ in this record
 value.
@@ -649,6 +896,20 @@ associated to @field@ in this record by the value of
 declared @'mutable'@ in the definition of the record type. The whole
 expression @expr_1 '.' field '<-' expr_2@ evaluates to the unit value
 @'()'@.
+
+\begin{caml_example}{toplevel}
+type t = {mutable upper : int; mutable lower : int; mutable other : int}
+
+let stats = {upper = 0; lower = 0; other = 0}
+
+let collect =
+  String.iter
+    (function
+     | 'A'..'Z' -> stats.upper <- stats.upper + 1
+     | 'a'..'z' -> stats.lower <- stats.lower + 1
+     | _ -> stats.other <- stats.other + 1);;
+\end{caml_example}
+
 
 \subsubsection*{sss:expr-arrays}{Arrays}
 
@@ -668,6 +929,16 @@ the array denoted by @expr_1@, replacing element number @expr_2@ by
 the value of @expr_3@. The exception "Invalid_argument" is raised if
 the access is out of bounds. The value of the whole expression is @'()'@.
 
+\begin{caml_example}{toplevel}
+let scale arr n =
+  for x = 0 to Array.length arr - 1 do
+    arr.(x) <- arr.(x) * n
+  done
+
+let x = [|1; 10; 100|]
+let _ = scale x 2;;
+\end{caml_example}
+
 \subsubsection*{sss:expr-strings}{Strings}
 
 The expression @expr_1 '.[' expr_2 ']'@ returns the value of character
@@ -676,11 +947,15 @@ has number 0; the last character has number $n-1$, where \var{n} is the
 length of the string. The exception "Invalid_argument" is raised if the
 access is out of bounds.
 
+\begin{caml_example}{toplevel}
+let iter f s =
+  for x = 0 to String.length s - 1 do f s.[x] done;;
+\end{caml_example}
+
 The expression @expr_1 '.[' expr_2 ']' '<-' expr_3@ modifies in-place
 the string denoted by @expr_1@, replacing character number @expr_2@ by
 the value of @expr_3@. The exception "Invalid_argument" is raised if
 the access is out of bounds. The value of the whole expression is @'()'@.
-
 {\bf Note:} this possibility is offered only for backward
 compatibility with older versions of OCaml and will be removed in a
 future version. New code should use byte sequences and the "Bytes.set"
@@ -703,6 +978,10 @@ expressions). Symbols from the class @prefix-symbol@, as well as
 the keywords @"-"@ and @"-."@
 can appear in prefix position (in front of an expression).
 
+\begin{caml_example}{toplevel}
+(( * ), ( := ), ( || ));;
+\end{caml_example}
+
 Infix and prefix symbols do not have a fixed meaning: they are simply
 interpreted as applications of functions bound to the names
 corresponding to the symbols.  The expression @prefix-symbol expr@ is
@@ -715,6 +994,10 @@ and their initial meaning. (See the description of the core
 library module "Stdlib" in chapter~\ref{c:corelib} for more
 details). Their meaning may be changed at any time using
 @"let" "(" infix-op ")" name_1 name_2 "=" \ldots@
+
+\begin{caml_example}{toplevel}
+let ( + ), ( - ), ( * ), ( / ) = Int64.(add, sub, mul, div);;
+\end{caml_example}
 
 Note: the operators @'&&'@, @'||'@, and @'~-'@ are handled specially
 and it is not advisable to change their meaning.
@@ -784,6 +1067,20 @@ When @class-path@ evaluates to a class body, @'new' class-path@
 evaluates to a new object containing the instance variables and
 methods of this class.
 
+\begin{caml_example}{toplevel}
+class of_list (lst : int list) = object
+  val mutable l = lst
+  method next =
+    match l with
+    | [] -> raise (Failure "empty list");
+    | h::t -> l <- t; h
+end
+
+let a = new of_list [1; 1; 2; 3; 5; 8; 13]
+
+let b = new of_list;;
+\end{caml_example}
+
 When @class-path@ evaluates to a class function, @'new' class-path@
 evaluates to a function expecting the same number of arguments and
 returning a new object of this class.
@@ -798,6 +1095,15 @@ class-name '=' 'object' class-body 'end'@ ---see sections
 \ref{sss:class-body} and following for the syntax of @class-body@---
 and immediately creating a single object from it by @'new' class-name@.
 
+\begin{caml_example}{toplevel}
+let o =
+  object
+    val secret = 99
+    val password = "unlock"
+    method get guess = if guess <> password then None else Some secret
+  end;;
+\end{caml_example}
+
 The typing of immediate objects is slightly different from explicitly
 defining a class in two respects. First, the inferred object type may
 contain free type variables. Second, since the class body of an
@@ -808,6 +1114,20 @@ with a closed object type.
 
 The expression @expr '#' method-name@ invokes the method
 @method-name@ of the object denoted by @expr@.
+
+\begin{caml_example}{toplevel}
+class of_list (lst : int list) = object
+  val mutable l = lst
+  method next =
+    match l with
+    | [] -> raise (Failure "empty list");
+    | h::t -> l <- t; h
+end
+
+let a = new of_list [1; 1; 2; 3; 5; 8; 13]
+
+let third = ignore a#next; ignore a#next; a#next;;
+\end{caml_example}
 
 If @method-name@ is a polymorphic method, its type should be known at
 the invocation site.  This is true for instance if @expr@ is the name
@@ -825,6 +1145,15 @@ evaluates to the value of the given instance variable.  The expression
 variable @inst-var-name@, which must be mutable.  The whole expression
 @inst-var-name '<-' expr@ evaluates to @"()"@.
 
+\begin{caml_example}{toplevel}
+class of_list (lst : int list) = object
+  val mutable l = lst
+  method next =
+    match l with                            (* access instance variable *)
+    | [] -> raise (Failure "empty list");
+    | h::t -> l <- t; h                     (* modify instance variable *)
+end;;
+\end{caml_example}
 
 \subsubsection*{sss:expr-obj-duplication}{Object duplication}
 
@@ -835,6 +1164,16 @@ returns a copy of self with the given instance variables replaced by
 the values of the associated expressions. A single instance variable
 name @id@ stands for @id '=' id@. Other instance variables have the same
 value in the returned object as in self.
+
+\begin{caml_example}{toplevel}
+let o =
+  object
+    val secret = 99
+    val password = "unlock"
+    method get guess = if guess <> password then None else Some secret
+    method with_new_secret s = {< secret = s >}
+  end;;
+\end{caml_example}
 
 \subsection{ss:expr-coercions}{Coercions}
 
@@ -963,6 +1302,12 @@ location of @expr@ as arguments.  Assertion
 checking can be turned off with the "-noassert" compiler option.  In
 this case, @expr@ is not evaluated at all.
 
+\begin{caml_example}{toplevel}
+let f a b c =
+  assert (a <= b && b <= c);
+  (b -. a) /. (c -. b);; 
+\end{caml_example}
+
 As a special case, @"assert false"@ is reduced to
 @'raise' '('@"Assert_failure ..."@')'@, which gives it a polymorphic
 type.  This means that it can be used in place of any expression (for
@@ -971,6 +1316,12 @@ the @"assert false"@ ``assertions'' cannot be turned off by the
 "-noassert" option.
 %
 \index{Assertfailure\@\verb`Assert_failure`}
+
+\begin{caml_example}{toplevel}
+let min_known_nonempty = function
+  | [] -> assert false
+  | l -> List.hd (List.sort compare l);;
+\end{caml_example}
 
 \subsubsection*{sss:expr-lazy}{Lazy expressions}
 \ikwd{lazy\@\texttt{lazy}}
@@ -983,6 +1334,12 @@ be performed the first time the function "Lazy.force" is applied to the value
 of "Lazy.force" to \var{v} do not evaluate @expr@ again. Applications
 of "Lazy.force" may be implicit through pattern matching (see~\ref{sss:pat-lazy}).
 
+\begin{caml_example}{toplevel}
+let lazy_greeter = lazy (print_string "Hello, World!\n");;
+
+Lazy.force lazy_greeter;;
+\end{caml_example}
+
 \subsubsection*{sss:expr-local-modules}{Local modules}
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{module}}
@@ -992,13 +1349,14 @@ The expression
 locally binds the module expression @module-expr@ to the identifier
 @module-name@ during the evaluation of the expression @expr@.
 It then returns the value of @expr@.  For example:
-\begin{caml_example}{verbatim}
+\begin{caml_example}{toplevel}
 let remove_duplicates comparison_fun string_list =
   let module StringSet =
     Set.Make(struct type t = string
-                    let compare = comparison_fun end) in
-  StringSet.elements
-    (List.fold_right StringSet.add string_list StringSet.empty)
+                    let compare = comparison_fun end)
+  in
+    StringSet.elements
+      (List.fold_right StringSet.add string_list StringSet.empty);;
 \end{caml_example}
 
 \subsubsection*{sss:local-opens}{Local opens}
@@ -1010,11 +1368,25 @@ The expressions @"let" "open" module-path "in" expr@ and
 constructions locally open the module referred to by the module path
 @module-path@ in the respective scope of the expression @expr@.
 
+\begin{caml_example}{toplevel}
+let map_3d_matrix f m =
+  let open Array in
+    map (map (map f)) m
+
+let map_3d_matrix' f =
+  Array.(map (map (map f)));;
+\end{caml_example}
+
 When the body of a local open expression is delimited by
 @'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
 For expression, parentheses can also be omitted for @'{<' '>}'@.
 For example, @module-path'.['expr']'@ is equivalent to
 @module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
 equivalent to @module-path'.([|' expr '|])'@.
+
+\begin{caml_example}{toplevel}
+let vector = Random.[|int 255; int 255; int 255; int 255|];;
+\end{caml_example}
+
 
 %% \newpage

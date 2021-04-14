@@ -34,76 +34,76 @@ Here is a short listing, by theme, of the standard library modules.
 \begin{tabular}{lll}
 % Beware: these entries must be written in a very rigidly-defined
 % format, or the check-stdlib-modules script will complain.
-"String" & p.~\pageref{String} & string operations \\
-"Bytes" & p.~\pageref{Bytes} & operations on byte sequences\\
-"Array" & p.~\pageref{Array} & array operations \\
-"List" & p.~\pageref{List} & list operations \\
-"StdLabels" & p.~\pageref{StdLabels} & labelized versions of
+"String" & p.~\stdpageref{String} & string operations \\
+"Bytes" & p.~\stdpageref{Bytes} & operations on byte sequences\\
+"Array" & p.~\stdpageref{Array} & array operations \\
+"List" & p.~\stdpageref{List} & list operations \\
+"StdLabels" & p.~\stdpageref{StdLabels} & labelized versions of
 the above 4 modules \\
-"Unit" & p.~\pageref{Unit} & unit values \\
-"Bool" & p.~\pageref{Bool} & boolean values \\
-"Char" & p.~\pageref{Char} & character operations \\
-"Uchar" & p.~\pageref{Uchar} & Unicode characters \\
-"Int" & p.~\pageref{Int} & integer values \\
-"Option" & p.~\pageref{Option} & option values \\
-"Result" & p.~\pageref{Result} & result values \\
-"Either" & p.~\pageref{Either} & either values \\
-"Hashtbl" & p.~\pageref{Hashtbl} & hash tables and hash functions \\
-"Random" & p.~\pageref{Random} & pseudo-random number generator \\
-"Set" & p.~\pageref{Set} & sets over ordered types \\
-"Map" & p.~\pageref{Map} & association tables over ordered types \\
-"MoreLabels" & p.~\pageref{MoreLabels} & labelized versions of
+"Unit" & p.~\stdpageref{Unit} & unit values \\
+"Bool" & p.~\stdpageref{Bool} & boolean values \\
+"Char" & p.~\stdpageref{Char} & character operations \\
+"Uchar" & p.~\stdpageref{Uchar} & Unicode characters \\
+"Int" & p.~\stdpageref{Int} & integer values \\
+"Option" & p.~\stdpageref{Option} & option values \\
+"Result" & p.~\stdpageref{Result} & result values \\
+"Either" & p.~\stdpageref{Either} & either values \\
+"Hashtbl" & p.~\stdpageref{Hashtbl} & hash tables and hash functions \\
+"Random" & p.~\stdpageref{Random} & pseudo-random number generator \\
+"Set" & p.~\stdpageref{Set} & sets over ordered types \\
+"Map" & p.~\stdpageref{Map} & association tables over ordered types \\
+"MoreLabels" & p.~\stdpageref{MoreLabels} & labelized versions of
 "Hashtbl", "Set", and "Map" \\
-"Oo" & p.~\pageref{Oo} & useful functions on objects \\
-"Stack" & p.~\pageref{Stack} & last-in first-out stacks \\
-"Queue" & p.~\pageref{Queue} & first-in first-out queues \\
-"Buffer" & p.~\pageref{Buffer} & buffers that grow on demand \\
-"Seq" & p.~\pageref{Seq} & functional iterators \\
-"Lazy" & p.~\pageref{Lazy} & delayed evaluation \\
-"Weak" & p.~\pageref{Weak} & references that don't prevent objects
+"Oo" & p.~\stdpageref{Oo} & useful functions on objects \\
+"Stack" & p.~\stdpageref{Stack} & last-in first-out stacks \\
+"Queue" & p.~\stdpageref{Queue} & first-in first-out queues \\
+"Buffer" & p.~\stdpageref{Buffer} & buffers that grow on demand \\
+"Seq" & p.~\stdpageref{Seq} & functional iterators \\
+"Lazy" & p.~\stdpageref{Lazy} & delayed evaluation \\
+"Weak" & p.~\stdpageref{Weak} & references that don't prevent objects
 from being garbage-collected \\
-"Atomic" & p.~\pageref{Atomic} & atomic references (for compatibility with concurrent runtimes) \\
-"Ephemeron" & p.~\pageref{Ephemeron} & ephemerons and weak hash tables \\
-"Bigarray" & p.~\pageref{Bigarray} & large, multi-dimensional, numerical arrays
+"Atomic" & p.~\stdpageref{Atomic} & atomic references (for compatibility with concurrent runtimes) \\
+"Ephemeron" & p.~\stdpageref{Ephemeron} & ephemerons and weak hash tables \\
+"Bigarray" & p.~\stdpageref{Bigarray} & large, multi-dimensional, numerical arrays
 \end{tabular}
 \subsubsection*{sss:stdlib-arith}{Arithmetic:}
 \begin{tabular}{lll}
-"Complex" & p.~\pageref{Complex} & complex numbers \\
-"Float" & p.~\pageref{Float} & floating-point numbers \\
-"Int32" & p.~\pageref{Int32} & operations on 32-bit integers \\
-"Int64" & p.~\pageref{Int64} & operations on 64-bit integers \\
-"Nativeint" & p.~\pageref{Nativeint} & operations on platform-native
+"Complex" & p.~\stdpageref{Complex} & complex numbers \\
+"Float" & p.~\stdpageref{Float} & floating-point numbers \\
+"Int32" & p.~\stdpageref{Int32} & operations on 32-bit integers \\
+"Int64" & p.~\stdpageref{Int64} & operations on 64-bit integers \\
+"Nativeint" & p.~\stdpageref{Nativeint} & operations on platform-native
 integers
 \end{tabular}
 \subsubsection*{sss:stdlib-io}{input/output:}
 \begin{tabular}{lll}
-"Format" & p.~\pageref{Format} & pretty printing with automatic
+"Format" & p.~\stdpageref{Format} & pretty printing with automatic
 indentation and line breaking \\
-"Marshal" & p.~\pageref{Marshal} & marshaling of data structures \\
-"Printf" & p.~\pageref{Printf} & formatting printing functions \\
-"Scanf" & p.~\pageref{Scanf} & formatted input functions \\
-"Digest" & p.~\pageref{Digest} & MD5 message digest \\
+"Marshal" & p.~\stdpageref{Marshal} & marshaling of data structures \\
+"Printf" & p.~\stdpageref{Printf} & formatting printing functions \\
+"Scanf" & p.~\stdpageref{Scanf} & formatted input functions \\
+"Digest" & p.~\stdpageref{Digest} & MD5 message digest \\
 \end{tabular}
 \subsubsection*{sss:stdlib-parsing}{Parsing:}
 \begin{tabular}{lll}
-"Genlex" & p.~\pageref{Genlex} & a generic lexer over streams \\
-"Lexing" & p.~\pageref{Lexing} & the run-time library for lexers generated by "ocamllex" \\
-"Parsing" & p.~\pageref{Parsing} & the run-time library for parsers generated by "ocamlyacc" \\
-"Stream" & p.~\pageref{Stream} & basic functions over streams \\
+"Genlex" & p.~\stdpageref{Genlex} & a generic lexer over streams \\
+"Lexing" & p.~\stdpageref{Lexing} & the run-time library for lexers generated by "ocamllex" \\
+"Parsing" & p.~\stdpageref{Parsing} & the run-time library for parsers generated by "ocamlyacc" \\
+"Stream" & p.~\stdpageref{Stream} & basic functions over streams \\
 \end{tabular}
 \subsubsection*{sss:stdlib-system}{System interface:}
 \begin{tabular}{lll}
-"Arg" & p.~\pageref{Arg} & parsing of command line arguments \\
-"Callback" & p.~\pageref{Callback} & registering OCaml functions to
+"Arg" & p.~\stdpageref{Arg} & parsing of command line arguments \\
+"Callback" & p.~\stdpageref{Callback} & registering OCaml functions to
 be called from C \\
-"Filename" & p.~\pageref{Filename} & operations on file names \\
-"Gc" & p.~\pageref{Gc} & memory management control and statistics \\
-"Printexc" & p.~\pageref{Printexc} & a catch-all exception handler \\
-"Sys" & p.~\pageref{Sys} & system interface \\
+"Filename" & p.~\stdpageref{Filename} & operations on file names \\
+"Gc" & p.~\stdpageref{Gc} & memory management control and statistics \\
+"Printexc" & p.~\stdpageref{Printexc} & a catch-all exception handler \\
+"Sys" & p.~\stdpageref{Sys} & system interface \\
 \end{tabular}
 \subsubsection*{sss:stdlib-misc}{Misc:}
 \begin{tabular}{lll}
-"Fun" & p.~\pageref{Fun} & function values \\
+"Fun" & p.~\stdpageref{Fun} & function values \\
 \end{tabular}
 \end{latexonly}
 
@@ -162,6 +162,6 @@ be called from C \\
 \stddocitem{Unit}{unit values}
 \stddocitem{Weak}{arrays of weak pointers}
 \ifouthtml\else
-\stddocitem{Ocaml_operators}{}
+\input{Ocaml_operators}
 \fi
 \end{linklist}

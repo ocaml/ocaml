@@ -1,5 +1,5 @@
 (* TEST
-flags = " -w a "
+flags = " -w -a "
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 *** check-ocamlc.byte-output

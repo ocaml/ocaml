@@ -494,7 +494,7 @@ let print_version_num () =
 
 let main () =
   try
-    Warnings.parse_options false "a";
+    Option.iter Location.(prerr_alert none) @@ Warnings.parse_options false "a";
     Arg.parse_expand [
        "-f", Arg.String (fun s -> dumpfile := s),
              "<file>     Use <file> as dump file (default ocamlprof.dump)";

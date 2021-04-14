@@ -1,5 +1,5 @@
 (* TEST
-flags = " -principal -w +18+19 -warn-error A "
+flags = " -principal -w +18+19 -warn-error +A "
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 *** check-ocamlc.byte-output

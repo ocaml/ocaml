@@ -1700,7 +1700,8 @@ module Default = struct
     let _strict_sequence = set strict_sequence
     let _unboxed_types = set unboxed_types
     let _unsafe_string = set unsafe_string
-    let _w s = Warnings.parse_options false s
+    let _w s =
+      Warnings.parse_options false s |> Option.iter Location.(prerr_alert none)
 
     let anonymous = Compenv.anonymous
 
@@ -1724,7 +1725,8 @@ module Default = struct
     let _nopervasives = set nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _unsafe = set unsafe
-    let _warn_error s = Warnings.parse_options true s
+    let _warn_error s =
+      Warnings.parse_options true s |> Option.iter Location.(prerr_alert none)
     let _warn_help = Warnings.help_warnings
   end
 

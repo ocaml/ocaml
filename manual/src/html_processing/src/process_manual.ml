@@ -19,9 +19,34 @@ let index_title = "Home"
 let archives =
   ["refman-html.tar.gz"; "refman.txt"; "refman.pdf"; "refman.info.tar.gz"]
 
+let preg_anyspace =
+  String.concat "\\|"
+    ["\u{00a0}"; (* NO-BREAK SPACE *)
+     "\u{2000}"; (* EN QUAD *)
+     "\u{2001}"; (* EM QUAD *)
+     "\u{2002}"; (* EN SPACE *)
+     "\u{2003}"; (* EM SPACE *)
+     "\u{2004}"; (* THREE-PER-EM SPACE *)
+     "\u{2005}"; (* FOUR-PER-EM SPACE *)
+     "\u{2006}"; (* SIX-PER-EM SPACE *)
+     "\u{2007}"; (* FIGURE SPACE *)
+     "\u{2008}"; (* PUNCTUATION SPACE *)
+     "\u{2009}"; (* THIN SPACE *)
+     "\u{200a}"; (* HAIR SPACE *)
+     "\u{202f}"; (* NARROW NO-BREAK SPACE *)
+    ]
+  |> sprintf "\\(%s\\)+"
+
+(* WARNING these are sensitive to Hevea fluctuations: *)
+(* "long" space is either " " (hevea 2.32) or "\u{2003}" (hevea 2.35) *)
+let preg_emspace = "\\(\u{2003}\\| \\)"
+(* What hevea inserts between "Chapter" and the chapter number: *)
+let preg_chapter_space = "\\(\u{2004}\u{200d}\\|" ^ preg_anyspace ^ "\\)"
+let writtenby_css = "span.c010" (* "span.c009" for hevea 2.32 *)
+
 (* Remove number: "Chapter 1  The core language" ==> "The core language" *)
 let remove_number s =
-  Re.Str.(global_replace (regexp ".+  ") "" s)
+  Re.Str.(global_replace (regexp (".+" ^ preg_emspace)) "" s)
 
 let toc_get_title li =
   let a = li $ "a[href]" in
@@ -78,16 +103,26 @@ let copyright () =
   "<div class=\"copyright\">" ^ !copyright_text ^ "</div>"
   |> parse
 
+
+(* New UTF8 space chars have been introduced in Hevea 2.35. In Hevea 2.32, only
+   html nb_spaces "&#XA0;" were used. With 2.35 we have
+   'Chapter\u2004\u200d2\u2003The module system'. The \u200d is Zero Width
+   Joiner and should probably not be used here, see
+   https://github.com/maranget/hevea/pull/61 *)
+
+let reg_chapter = Re.Str.regexp
+    ("Chapter" ^ preg_chapter_space ^ "\\([0-9]+\\)" ^ preg_anyspace)
+
 let load_html file =
   dbg "%s" file;
   (* First we perform some direct find/replace in the html string. *)
   let html =
     read_file (html_file file)
-    (* Normalize non-break spaces: *)
+    (* Normalize non-break spaces to the utf8 \u00A0: *)
     |> Re.Str.(global_replace (regexp_string "&#XA0;") " ")
-    |> Re.Str.(global_replace (regexp "Chapter \\([0-9]+\\)"))
-      (if file = "index.html" then "<span>\\1.</span>"
-       else "<span>Chapter \\1</span>")
+    |> Re.Str.(global_replace reg_chapter)
+      (if file = "index.html" then {|<span class="number">\3.</span>|}
+       else {|<span class="number">Chapter \3</span>|})
 
     (* I think it would be good to replace "chapter" by "tutorial" for part
        I. The problem of course is how we number chapters in the other parts. *)
@@ -97,9 +132,12 @@ let load_html file =
 
     (* Remove the chapter number in local links, it makes the TOC unnecessarily
        unfriendly. *)
-    |> Re.Str.(global_replace (regexp ">[0-9]+\\.\\([0-9]+\\) ") ">\\1 ")
-    |> Re.Str.(global_replace (regexp "[0-9]+\\.\\([0-9]+\\.[0-9]+\\) "))
-      "\\1 "
+    |> Re.Str.(global_replace
+                 (regexp (">[0-9]+\\.\\([0-9]+\\)" ^ preg_anyspace)))
+      {|><span class="number">\1</span>|}
+    |> Re.Str.(global_replace
+                 (regexp ("[0-9]+\\.\\([0-9]+\\.[0-9]+\\)" ^ preg_anyspace)))
+      {|<span class="number">\1</span>|}
 
     (* The API (libref and compilerlibref directories) should be separate
        entities, to better distinguish them from the manual. *)
@@ -111,8 +149,9 @@ let load_html file =
 
   (* For the main index file, we do a few adjustments *)
   let html = if file = "index.html"
-    then Re.Str.(global_replace (regexp "Part \\([I|V]+\\)<br>")
-                   "<span>\\1. </span>" html)
+    then Re.Str.(global_replace
+                   (regexp ("Part" ^ preg_chapter_space ^ "\\([I|V]+\\)<br>\n"))
+                   {|<span class="number">\3.</span>|} html)
     else html in
 
   (* Set utf8 encoding directly in the html string *)
@@ -194,7 +233,7 @@ let make_template soup =
     | Some div -> div (* This is the case for "index.html" *)
     | None -> soup $ "h1" in
   title, header
-  
+
 (* Create a new file by keeping only the head/headers parts of "soup", deleting
    everything after the title, and inserting the content of external file (hence
    preserving TOC and headers) (WARNING: this mutates soup) *)
@@ -368,7 +407,7 @@ let add_logo file soup =
 
 (* Move authors to the end *)
 let move_authors body =
-  body $? "span.c009"
+  body $? writtenby_css
   |> Option.iter (fun authors ->
       match leaf_text authors with
       | None -> ()

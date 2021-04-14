@@ -7,7 +7,7 @@ use_runtime = "false"
 include unix
 ** setup-ocamlc.byte-build-env
 *** ocamlc.byte
-flags = "-w a -output-complete-exe puts.c -ccopt -I${ocamlsrcdir}/runtime"
+flags = "-w -a -output-complete-exe puts.c -ccopt -I${ocamlsrcdir}/runtime"
 program = "test2"
 **** run
 program = "./test2"

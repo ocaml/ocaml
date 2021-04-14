@@ -41,32 +41,87 @@ let value_declarations  : unit usage_tbl ref = s_table Types.Uid.Tbl.create 16
 let type_declarations   : unit usage_tbl ref = s_table Types.Uid.Tbl.create 16
 let module_declarations : unit usage_tbl ref = s_table Types.Uid.Tbl.create 16
 
-type constructor_usage = Positive | Pattern | Privatize
+type constructor_usage = Positive | Pattern | Exported_private | Exported
 type constructor_usages =
-    {
-     mutable cu_positive: bool;
-     mutable cu_pattern: bool;
-     mutable cu_privatize: bool;
-    }
-let add_constructor_usage ~rebind priv cu usage =
-  let private_or_rebind =
-    match priv with
-    | Asttypes.Private -> true
-    | Asttypes.Public -> rebind
-  in
-  if private_or_rebind then begin
-    cu.cu_positive <- true
-  end else begin
-    match usage with
-    | Positive -> cu.cu_positive <- true
-    | Pattern -> cu.cu_pattern <- true
-    | Privatize -> cu.cu_privatize <- true
-  end
+  {
+    mutable cu_positive: bool;
+    mutable cu_pattern: bool;
+    mutable cu_exported_private: bool;
+  }
+let add_constructor_usage cu usage =
+  match usage with
+  | Positive -> cu.cu_positive <- true
+  | Pattern -> cu.cu_pattern <- true
+  | Exported_private -> cu.cu_exported_private <- true
+  | Exported ->
+    cu.cu_positive <- true;
+    cu.cu_pattern <- true;
+    cu.cu_exported_private <- true
 
 let constructor_usages () =
-  {cu_positive = false; cu_pattern = false; cu_privatize = false}
+  {cu_positive = false; cu_pattern = false; cu_exported_private = false}
+
+let constructor_usage_complaint ~rebind priv cu
+  : Warnings.constructor_usage_warning option =
+  match priv, rebind with
+  | Asttypes.Private, _ | _, true ->
+      if cu.cu_positive || cu.cu_pattern || cu.cu_exported_private then None
+      else Some Unused
+  | Asttypes.Public, false -> begin
+      match cu.cu_positive, cu.cu_pattern, cu.cu_exported_private with
+      | true, _, _ -> None
+      | false, false, false -> Some Unused
+      | false, true, _ -> Some Not_constructed
+      | false, false, true -> Some Only_exported_private
+    end
 
 let used_constructors : constructor_usage usage_tbl ref =
+  s_table Types.Uid.Tbl.create 16
+
+type label_usage =
+    Projection | Mutation | Construct | Exported_private | Exported
+type label_usages =
+    {
+     mutable lu_projection: bool;
+     mutable lu_mutation: bool;
+     mutable lu_construct: bool;
+    }
+let add_label_usage lu usage =
+  match usage with
+  | Projection -> lu.lu_projection <- true;
+  | Mutation -> lu.lu_mutation <- true
+  | Construct -> lu.lu_construct <- true
+  | Exported_private ->
+    lu.lu_projection <- true
+  | Exported ->
+    lu.lu_projection <- true;
+    lu.lu_mutation <- true;
+    lu.lu_construct <- true
+
+let label_usages () =
+  {lu_projection = false; lu_mutation = false; lu_construct = false}
+
+let label_usage_complaint priv mut lu
+  : Warnings.field_usage_warning option =
+  match priv, mut with
+  | Asttypes.Private, _ ->
+      if lu.lu_projection then None
+      else Some Unused
+  | Asttypes.Public, Asttypes.Immutable -> begin
+      match lu.lu_projection, lu.lu_construct with
+      | true, _ -> None
+      | false, false -> Some Unused
+      | false, true -> Some Not_read
+    end
+  | Asttypes.Public, Asttypes.Mutable -> begin
+      match lu.lu_projection, lu.lu_mutation, lu.lu_construct with
+      | true, true, _ -> None
+      | false, false, false -> Some Unused
+      | false, _, _ -> Some Not_read
+      | true, false, _ -> Some Not_mutated
+    end
+
+let used_labels : label_usage usage_tbl ref =
   s_table Types.Uid.Tbl.create 16
 
 (** Map indexed by the name of module components. *)
@@ -642,14 +697,21 @@ let components_of_module_maker' =
             (module_components_repr, module_components_failure) result)
 
 let components_of_functor_appl' =
-  ref ((fun ~loc:_ _f _env _p1 _p2 -> assert false) :
-          loc:Location.t -> functor_components -> t ->
-            Path.t -> Path.t -> module_components)
+  ref ((fun ~loc:_ ~f_path:_ ~f_comp:_ ~arg:_ _env -> assert false) :
+          loc:Location.t -> f_path:Path.t -> f_comp:functor_components ->
+            arg:Path.t -> t -> module_components)
 let check_functor_application =
   (* to be filled by Includemod *)
-  ref ((fun ~errors:_ ~loc:_ _env _mty1 _path1 _mty2 _path2 -> assert false) :
-          errors:bool -> loc:Location.t -> t -> module_type ->
-            Path.t -> module_type -> Path.t -> unit)
+  ref ((fun ~errors:_ ~loc:_
+         ~lid_whole_app:_  ~f0_path:_ ~args:_
+         ~arg_path:_ ~arg_mty:_ ~param_mty:_
+         _env
+         -> assert false) :
+         errors:bool -> loc:Location.t ->
+       lid_whole_app:Longident.t ->
+       f0_path:Path.t -> args:(Path.t * Types.module_type) list ->
+       arg_path:Path.t -> arg_mty:module_type -> param_mty:module_type ->
+       t -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
@@ -825,6 +887,7 @@ let reset_declaration_caches () =
   Types.Uid.Tbl.clear !type_declarations;
   Types.Uid.Tbl.clear !module_declarations;
   Types.Uid.Tbl.clear !used_constructors;
+  Types.Uid.Tbl.clear !used_labels;
   ()
 
 let reset_cache () =
@@ -874,9 +937,16 @@ let modtype_of_functor_appl fcomp p1 p2 =
         Hashtbl.add fcomp.fcomp_subst_cache p2 mty;
         mty
 
-let check_functor_appl ~errors ~loc env p1 f arg p2 md =
-  if not (Hashtbl.mem f.fcomp_cache p2) then
-    !check_functor_application ~errors ~loc env md.md_type p2 arg p1
+let check_functor_appl
+    ~errors ~loc ~lid_whole_app ~f0_path ~args
+    ~f_comp
+    ~arg_path ~arg_mty ~param_mty
+    env =
+  if not (Hashtbl.mem f_comp.fcomp_cache arg_path) then
+    !check_functor_application
+      ~errors ~loc ~lid_whole_app ~f0_path ~args
+      ~arg_path ~arg_mty ~param_mty
+      env
 
 (* Lookup by identifier *)
 
@@ -892,10 +962,10 @@ let rec find_module_components path env =
   | Pdot(p, s) ->
       let sc = find_structure_components p env in
       (NameMap.find s sc.comp_modules).mda_components
-  | Papply(p1, p2) ->
-      let fc = find_functor_components p1 env in
+  | Papply(f_path, arg) ->
+      let f_comp = find_functor_components f_path env in
       let loc = Location.(in_file !input_name) in
-      !components_of_functor_appl' ~loc fc env p1 p2
+      !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg env
 
 and find_structure_components path env =
   match get_components (find_module_components path env) with
@@ -1719,7 +1789,7 @@ and store_type ~check id info env =
   let descrs = (List.map snd constructors, List.map snd labels) in
   let tda = { tda_declaration = info; tda_descriptions = descrs } in
   if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_constructor ("", false, false))
+    Warnings.is_active (Warnings.Unused_constructor ("", Unused))
   then begin
     let ty_name = Ident.name id in
     let priv = info.type_private in
@@ -1731,16 +1801,45 @@ and store_type ~check id info env =
         if not (Types.Uid.Tbl.mem !used_constructors k) then
           let used = constructor_usages () in
           Types.Uid.Tbl.add !used_constructors k
-            (add_constructor_usage ~rebind:false priv used);
+            (add_constructor_usage used);
           if not (ty_name = "" || ty_name.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
-                if not (is_in_signature env) && not used.cu_positive then
-                  Location.prerr_warning loc
-                    (Warnings.Unused_constructor
-                       (name, used.cu_pattern, used.cu_privatize)))
+                Option.iter
+                  (fun complaint ->
+                     if not (is_in_signature env) then
+                       Location.prerr_warning loc
+                         (Warnings.Unused_constructor(name, complaint)))
+                  (constructor_usage_complaint ~rebind:false priv used))
       end
       constructors
+  end;
+  if check && not loc.Location.loc_ghost &&
+    Warnings.is_active (Warnings.Unused_field ("", Unused))
+  then begin
+    let ty_name = Ident.name id in
+    let priv = info.type_private in
+    List.iter
+      begin fun (_, lbl) ->
+        let name = lbl.lbl_name in
+        let loc = lbl.lbl_loc in
+        let mut = lbl.lbl_mut in
+        let k = lbl.lbl_uid in
+        if not (Types.Uid.Tbl.mem !used_labels k) then
+          let used = label_usages () in
+          Types.Uid.Tbl.add !used_labels k
+            (add_label_usage used);
+          if not (ty_name = "" || ty_name.[0] = '_' || name.[0] = '_')
+          then !add_delayed_check_forward
+              (fun () ->
+                Option.iter
+                  (fun complaint ->
+                     if not (is_in_signature env) then
+                       Location.prerr_warning
+                         loc (Warnings.Unused_field(name, complaint)))
+                  (label_usage_complaint priv mut used))
+      end
+      labels
   end;
   { env with
     constrs =
@@ -1774,7 +1873,7 @@ and store_extension ~check ~rebind id addr ext env =
   in
   let cda = { cda_description = cstr; cda_address = Some addr } in
   if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_extension ("", false, false, false))
+    Warnings.is_active (Warnings.Unused_extension ("", false, Unused))
   then begin
     let priv = ext.ext_private in
     let is_exception = Path.same ext.ext_type_path Predef.path_exn in
@@ -1783,15 +1882,16 @@ and store_extension ~check ~rebind id addr ext env =
     if not (Types.Uid.Tbl.mem !used_constructors k) then begin
       let used = constructor_usages () in
       Types.Uid.Tbl.add !used_constructors k
-        (add_constructor_usage ~rebind priv used);
+        (add_constructor_usage used);
       !add_delayed_check_forward
-        (fun () ->
-          if not (is_in_signature env) && not used.cu_positive then
-            Location.prerr_warning loc
-              (Warnings.Unused_extension
-                 (name, is_exception, used.cu_pattern, used.cu_privatize)
-              )
-        )
+         (fun () ->
+           Option.iter
+             (fun complaint ->
+                if not (is_in_signature env) then
+                  Location.prerr_warning loc
+                    (Warnings.Unused_extension
+                       (name, is_exception, complaint)))
+             (constructor_usage_complaint ~rebind priv used))
     end;
   end;
   { env with
@@ -1841,20 +1941,21 @@ let scrape_alias env mty = scrape_alias env None mty
 
 (* Compute the components of a functor application in a path. *)
 
-let components_of_functor_appl ~loc f env p1 p2 =
+let components_of_functor_appl ~loc ~f_path ~f_comp ~arg env =
   try
-    Hashtbl.find f.fcomp_cache p2
+    let c = Hashtbl.find f_comp.fcomp_cache arg in
+    c
   with Not_found ->
-    let p = Papply(p1, p2) in
+    let p = Papply(f_path, arg) in
     let sub =
-      match f.fcomp_arg with
+      match f_comp.fcomp_arg with
       | Unit
       | Named (None, _) -> Subst.identity
-      | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
+      | Named (Some param, _) -> Subst.add_module param arg Subst.identity
     in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
-    let mty = Subst.modtype (Rescope (Path.scope p)) sub f.fcomp_res in
+    let mty = Subst.modtype (Rescope (Path.scope p)) sub f_comp.fcomp_res in
     let addr = Lazy_backtrack.create_failed Not_found in
     !check_well_formed_module env loc
       ("the signature of " ^ Path.name p) mty;
@@ -1864,7 +1965,7 @@ let components_of_functor_appl ~loc f env p1 p2 =
         (*???*)
         env None Subst.identity p addr mty
     in
-    Hashtbl.add f.fcomp_cache p2 comps;
+    Hashtbl.add f_comp.fcomp_cache arg comps;
     comps
 
 (* Define forward functions *)
@@ -2206,6 +2307,11 @@ let mark_extension_used usage ext =
   | mark -> mark usage
   | exception Not_found -> ()
 
+let mark_label_used usage ld =
+  match Types.Uid.Tbl.find !used_labels ld.ld_uid with
+  | mark -> mark usage
+  | exception Not_found -> ()
+
 let mark_constructor_description_used usage env cstr =
   let ty_path =
     match repr cstr.cstr_res with
@@ -2217,13 +2323,16 @@ let mark_constructor_description_used usage env cstr =
   | mark -> mark usage
   | exception Not_found -> ()
 
-let mark_label_description_used () env lbl =
+let mark_label_description_used usage env lbl =
   let ty_path =
     match repr lbl.lbl_res with
     | {desc=Tconstr(path, _, _)} -> path
     | _ -> assert false
   in
-  mark_type_path_used env ty_path
+  mark_type_path_used env ty_path;
+  match Types.Uid.Tbl.find !used_labels lbl.lbl_uid with
+  | mark -> mark usage
+  | exception Not_found -> ()
 
 let mark_class_used uid =
   match Types.Uid.Tbl.find !type_declarations uid with
@@ -2329,9 +2438,9 @@ let use_cltype ~use ~loc path desc =
       (Path.name path)
   end
 
-let use_label ~use ~loc env lbl =
+let use_label ~use ~loc usage env lbl =
   if use then begin
-    mark_label_description_used () env lbl;
+    mark_label_description_used usage env lbl;
     Builtin_attributes.check_alerts loc lbl.lbl_attributes lbl.lbl_name
   end
 
@@ -2421,14 +2530,14 @@ let lookup_ident_cltype ~errors ~use ~loc s env =
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_cltype (Lident s))
 
-let lookup_all_ident_labels ~errors ~use ~loc s env =
+let lookup_all_ident_labels ~errors ~use ~loc usage s env =
   match TycompTbl.find_all ~mark:use s env.labels with
   | [] -> may_lookup_error errors loc env (Unbound_label (Lident s))
   | lbls -> begin
       List.map
         (fun (lbl, use_fn) ->
            let use_fn () =
-             use_label ~use ~loc env lbl;
+             use_label ~use ~loc usage env lbl;
              use_fn ()
            in
            (lbl, use_fn))
@@ -2456,12 +2565,11 @@ let rec lookup_module_components ~errors ~use ~loc lid env =
   | Ldot(l, s) ->
       let path, data = lookup_dot_module ~errors ~use ~loc l s env in
       path, data.mda_components
-  | Lapply(l1, l2) ->
-      let p1, f, arg = lookup_functor_components ~errors ~use ~loc l1 env in
-      let p2, md = lookup_module ~errors ~use ~loc l2 env in
-      check_functor_appl ~errors ~loc env p1 f arg p2 md;
-      let comps = !components_of_functor_appl' ~loc f env p1 p2 in
-      (Papply(p1, p2), comps)
+  | Lapply _ as lid ->
+      let f_path, f_comp, arg = lookup_apply ~errors ~use ~loc lid env in
+      let comps =
+        !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg env in
+      Papply (f_path, arg), comps
 
 and lookup_structure_components ~errors ~use ~loc lid env =
   let path, comps = lookup_module_components ~errors ~use ~loc lid env in
@@ -2474,14 +2582,13 @@ and lookup_structure_components ~errors ~use ~loc lid env =
   | Error (No_components_alias p) ->
       may_lookup_error errors loc env (Cannot_scrape_alias(lid, p))
 
-and lookup_functor_components ~errors ~use ~loc lid env =
-  let path, comps = lookup_module_components ~errors ~use ~loc lid env in
+and get_functor_components ~errors ~loc lid env comps =
   match get_components_res comps with
   | Ok (Functor_comps fcomps) -> begin
       match fcomps.fcomp_arg with
       | Unit -> (* PR#7611 *)
           may_lookup_error errors loc env (Generative_used_as_applicative lid)
-      | Named (_, arg) -> path, fcomps, arg
+      | Named (_, arg) -> fcomps, arg
     end
   | Ok (Structure_comps _) ->
       may_lookup_error errors loc env (Structure_used_as_functor lid)
@@ -2489,6 +2596,54 @@ and lookup_functor_components ~errors ~use ~loc lid env =
       may_lookup_error errors loc env (Abstract_used_as_functor lid)
   | Error (No_components_alias p) ->
       may_lookup_error errors loc env (Cannot_scrape_alias(lid, p))
+
+and lookup_all_args ~errors ~use ~loc lid0 env =
+  let rec loop_lid_arg args = function
+    | Lident _ | Ldot _ as f_lid ->
+        (f_lid, args)
+    | Lapply (f_lid, arg_lid) ->
+        let arg_path, arg_md = lookup_module ~errors ~use ~loc arg_lid env in
+        loop_lid_arg ((f_lid,arg_path,arg_md.md_type)::args) f_lid
+  in
+  loop_lid_arg [] lid0
+
+and lookup_apply ~errors ~use ~loc lid0 env =
+  let f0_lid, args0 = lookup_all_args ~errors ~use ~loc lid0 env in
+  let args_for_errors = List.map (fun (_,p,mty) -> (p,mty)) args0 in
+  let f0_path, f0_comp =
+    lookup_module_components ~errors ~use ~loc f0_lid env
+  in
+  let check_one_apply ~errors ~loc ~f_lid ~f_comp ~arg_path ~arg_mty env =
+    let f_comp, param_mty =
+      get_functor_components ~errors ~loc f_lid env f_comp
+    in
+    check_functor_appl
+      ~errors ~loc ~lid_whole_app:lid0
+      ~f0_path ~args:args_for_errors ~f_comp
+      ~arg_path ~arg_mty ~param_mty
+      env;
+    arg_path, f_comp
+  in
+  let rec check_apply ~path:f_path ~comp:f_comp = function
+    | [] -> invalid_arg "Env.lookup_apply: empty argument list"
+    | [ f_lid, arg_path, arg_mty ] ->
+        let arg_path, comps =
+          check_one_apply ~errors ~loc ~f_lid ~f_comp
+            ~arg_path ~arg_mty env
+        in
+        f_path, comps, arg_path
+    | (f_lid, arg_path, arg_mty) :: args ->
+        let arg_path, f_comp =
+          check_one_apply ~errors ~loc ~f_lid ~f_comp
+            ~arg_path ~arg_mty env
+        in
+        let comp =
+          !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg:arg_path env
+        in
+        let path = Papply (f_path, arg_path) in
+        check_apply ~path ~comp args
+  in
+  check_apply ~path:f0_path ~comp:f0_comp args0
 
 and lookup_module ~errors ~use ~loc lid env =
   match lid with
@@ -2500,12 +2655,10 @@ and lookup_module ~errors ~use ~loc lid env =
       let path, data = lookup_dot_module ~errors ~use ~loc l s env in
       let md = Lazy_backtrack.force subst_modtype_maker data.mda_declaration in
       path, md
-  | Lapply(l1, l2) ->
-      let p1, fc, arg = lookup_functor_components ~errors ~use ~loc l1 env in
-      let p2, md2 = lookup_module ~errors ~use ~loc l2 env in
-      check_functor_appl ~errors ~loc env p1 fc arg p2 md2;
-      let md = md (modtype_of_functor_appl fc p1 p2) in
-      Papply(p1, p2), md
+  | Lapply _ as lid ->
+      let path_f, comp_f, path_arg = lookup_apply ~errors ~use ~loc lid env in
+      let md = md (modtype_of_functor_appl comp_f path_f path_arg) in
+      Papply(path_f, path_arg), md
 
 and lookup_dot_module ~errors ~use ~loc l s env =
   let p, comps = lookup_structure_components ~errors ~use ~loc l env in
@@ -2569,7 +2722,7 @@ let lookup_dot_cltype ~errors ~use ~loc l s env =
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_cltype (Ldot(l, s)))
 
-let lookup_all_dot_labels ~errors ~use ~loc l s env =
+let lookup_all_dot_labels ~errors ~use ~loc usage l s env =
   let (_, comps) = lookup_structure_components ~errors ~use ~loc l env in
   match NameMap.find s comps.comp_labels with
   | [] | exception Not_found ->
@@ -2577,7 +2730,7 @@ let lookup_all_dot_labels ~errors ~use ~loc l s env =
   | lbls ->
       List.map
         (fun lbl ->
-           let use_fun () = use_label ~use ~loc env lbl in
+           let use_fun () = use_label ~use ~loc usage env lbl in
            (lbl, use_fun))
         lbls
 
@@ -2609,11 +2762,9 @@ let lookup_module_path ~errors ~use ~loc ~load lid env : Path.t =
       else
         fst (lookup_ident_module Load ~errors ~use ~loc s env)
   | Ldot(l, s) -> fst (lookup_dot_module ~errors ~use ~loc l s env)
-  | Lapply(l1, l2) ->
-      let (p1, f, arg) = lookup_functor_components ~errors ~use ~loc l1 env in
-      let p2, md2 = lookup_module ~errors ~use ~loc l2 env in
-      check_functor_appl ~errors ~loc env p1 f arg p2 md2;
-      Papply(p1, p2)
+  | Lapply _ as lid ->
+      let path_f, _comp_f, path_arg = lookup_apply ~errors ~use ~loc lid env in
+      Papply(path_f, path_arg)
 
 let lookup_value ~errors ~use ~loc lid env =
   match lid with
@@ -2649,24 +2800,24 @@ let lookup_cltype ~errors ~use ~loc lid env =
   | Ldot(l, s) -> lookup_dot_cltype ~errors ~use ~loc l s env
   | Lapply _ -> assert false
 
-let lookup_all_labels ~errors ~use ~loc lid env =
+let lookup_all_labels ~errors ~use ~loc usage lid env =
   match lid with
-  | Lident s -> lookup_all_ident_labels ~errors ~use ~loc s env
-  | Ldot(l, s) -> lookup_all_dot_labels ~errors ~use ~loc l s env
+  | Lident s -> lookup_all_ident_labels ~errors ~use ~loc usage s env
+  | Ldot(l, s) -> lookup_all_dot_labels ~errors ~use ~loc usage l s env
   | Lapply _ -> assert false
 
-let lookup_label ~errors ~use ~loc lid env =
-  match lookup_all_labels ~errors ~use ~loc lid env with
+let lookup_label ~errors ~use ~loc usage lid env =
+  match lookup_all_labels ~errors ~use ~loc usage lid env with
   | [] -> assert false
   | (desc, use) :: _ -> use (); desc
 
-let lookup_all_labels_from_type ~use ~loc ty_path env =
+let lookup_all_labels_from_type ~use ~loc usage ty_path env =
   match find_type_descrs ty_path env with
   | exception Not_found -> []
   | (_, lbls) ->
       List.map
         (fun lbl ->
-           let use_fun () = use_label ~use ~loc env lbl in
+           let use_fun () = use_label ~use ~loc usage env lbl in
            (lbl, use_fun))
         lbls
 
@@ -2727,7 +2878,7 @@ let find_constructor_by_name lid env =
 
 let find_label_by_name lid env =
   let loc = Location.(in_file !input_name) in
-  lookup_label ~errors:false ~use:false ~loc lid env
+  lookup_label ~errors:false ~use:false ~loc Projection lid env
 
 (* Ordinary lookup functions *)
 
@@ -2765,8 +2916,8 @@ let lookup_constructor ?(use=true) ~loc lid env =
 let lookup_all_constructors_from_type ?(use=true) ~loc usage ty_path env =
   lookup_all_constructors_from_type ~use ~loc usage ty_path env
 
-let lookup_all_labels ?(use=true) ~loc lid env =
-  match lookup_all_labels ~errors:true ~use ~loc lid env with
+let lookup_all_labels ?(use=true) ~loc usage lid env =
+  match lookup_all_labels ~errors:true ~use ~loc usage lid env with
   | exception Error(Lookup_error(loc', env', err)) ->
       (Error(loc', env', err) : _ result)
   | lbls -> Ok lbls
@@ -2774,8 +2925,8 @@ let lookup_all_labels ?(use=true) ~loc lid env =
 let lookup_label ?(use=true) ~loc lid env =
   lookup_label ~errors:true ~use ~loc lid env
 
-let lookup_all_labels_from_type ?(use=true) ~loc ty_path env =
-  lookup_all_labels_from_type ~use ~loc ty_path env
+let lookup_all_labels_from_type ?(use=true) ~loc usage ty_path env =
+  lookup_all_labels_from_type ~use ~loc usage ty_path env
 
 let lookup_instance_variable ?(use=true) ~loc name env =
   match IdTbl.find_name wrap_value ~mark:use name env.values with

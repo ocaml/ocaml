@@ -49,6 +49,7 @@
 #include "caml/debugger.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
 #include "caml/io.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -159,6 +160,13 @@ CAMLprim value caml_sys_exit(value retcode_v)
     caml_shutdown();
 #ifdef _WIN32
   caml_restore_win32_terminal();
+#endif
+#ifdef NAKED_POINTERS_CHECKER
+  if (retcode == 0 && caml_naked_pointers_detected) {
+    fprintf (stderr, "\nOut-of-heap pointers were detected by the runtime.\n"
+                     "The process would otherwise have terminated normally.\n");
+    retcode = 70; /* EX_SOFTWARE; see sysexits.h */
+  }
 #endif
   exit(retcode);
 }

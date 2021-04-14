@@ -237,6 +237,27 @@ let capitalize_ascii s = apply1 Char.uppercase_ascii s
 let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
 (* duplicated in string.ml *)
+let starts_with ~prefix s =
+  let len_s = length s
+  and len_pre = length prefix in
+  let rec aux i =
+    if i = len_pre then true
+    else if unsafe_get s i <> unsafe_get prefix i then false
+    else aux (i + 1)
+  in len_s >= len_pre && aux 0
+
+(* duplicated in string.ml *)
+let ends_with ~suffix s =
+  let len_s = length s
+  and len_suf = length suffix in
+  let diff = len_s - len_suf in
+  let rec aux i =
+    if i = len_suf then true
+    else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
+    else aux (i + 1)
+  in diff >= 0 && aux 0
+
+(* duplicated in string.ml *)
 let rec index_rec s lim i c =
   if i >= lim then raise Not_found else
   if unsafe_get s i = c then i else index_rec s lim (i + 1) c
@@ -322,6 +343,18 @@ type t = bytes
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : t -> t -> bool = "caml_bytes_equal" [@@noalloc]
 
+(* duplicated in string.ml *)
+let split_on_char sep s =
+  let r = ref [] in
+  let j = ref (length s) in
+  for i = length s - 1 downto 0 do
+    if unsafe_get s i = sep then begin
+      r := sub s (i + 1) (!j - i - 1) :: !r;
+      j := i
+    end
+  done;
+  sub s 0 !j :: !r
+
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]
 let uppercase s = map Char.uppercase s
@@ -370,6 +403,8 @@ let of_seq i =
   sub !buf 0 !n
 
 (** {6 Binary encoding/decoding of integers} *)
+
+(* The get_ functions are all duplicated in string.ml *)
 
 external get_uint8 : bytes -> int -> int = "%bytes_safe_get"
 external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"

@@ -194,7 +194,7 @@ let report_record_mismatch first second decl ppf err =
   | Label_mismatch (l1, l2, err) ->
       pr
         "@[<hv>Fields do not match:@;<1 2>%a@ is not compatible with:\
-         @;<1 2>%a@ %a"
+         @;<1 2>%a@ %a@]"
         Printtyp.label l1
         Printtyp.label l2
         (report_label_mismatch first second) err
@@ -230,7 +230,7 @@ let report_variant_mismatch first second decl ppf err =
   | Constructor_mismatch (c1, c2, err) ->
       pr
         "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
-         @;<1 2>%a@ %a"
+         @;<1 2>%a@ %a@]"
         Printtyp.constructor c1
         Printtyp.constructor c2
         (report_constructor_mismatch first second decl) err
@@ -422,18 +422,29 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           let mark usage cstrs =
             List.iter (Env.mark_constructor_used usage) cstrs
           in
-          let usage =
-            if decl2.type_private = Public then Env.Positive
-            else Env.Privatize
+          let usage : Env.constructor_usage =
+            if decl2.type_private = Public then Env.Exported
+            else Env.Exported_private
           in
           mark usage cstrs1;
-          if equality then mark Env.Positive cstrs2
+          if equality then mark Env.Exported cstrs2
         end;
         Option.map
           (fun var_err -> Variant_mismatch var_err)
           (compare_variants ~loc env decl1.type_params decl2.type_params 1
              cstrs1 cstrs2)
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
+        if mark then begin
+          let mark usage lbls =
+            List.iter (Env.mark_label_used usage) lbls
+          in
+          let usage : Env.label_usage =
+            if decl2.type_private = Public then Env.Exported
+            else Env.Exported_private
+          in
+          mark usage labels1;
+          if equality then mark Env.Exported labels2
+        end;
         Option.map (fun rec_err -> Record_mismatch rec_err)
           (compare_records_with_representation ~loc env
              decl1.type_params decl2.type_params 1
@@ -480,9 +491,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
 
 let extension_constructors ~loc env ~mark id ext1 ext2 =
   if mark then begin
-    let usage =
-      if ext2.ext_private = Public then Env.Positive
-      else Env.Privatize
+    let usage : Env.constructor_usage =
+      if ext2.ext_private = Public then Env.Exported
+      else Env.Exported_private
     in
     Env.mark_extension_used usage ext1
   end;

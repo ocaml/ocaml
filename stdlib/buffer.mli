@@ -59,7 +59,7 @@ val to_bytes : t -> bytes
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns a copy of [len] bytes from the
     current contents of the buffer [b], starting at offset [off].
-    @raise Invalid_argument if [srcoff] and [len] do not designate a valid
+    @raise Invalid_argument if [off] and [len] do not designate a valid
     range of [b]. *)
 
 val blit : t -> int -> bytes -> int -> int -> unit
@@ -89,6 +89,22 @@ val reset : t -> unit
    of length [n] that was allocated by {!Buffer.create} [n].
    For long-lived buffers that may have grown a lot, [reset] allows
    faster reclamation of the space used by the buffer. *)
+
+val output_buffer : out_channel -> t -> unit
+(** [output_buffer oc b] writes the current contents of buffer [b]
+   on the output channel [oc]. *)
+
+val truncate : t -> int -> unit
+(** [truncate b len] truncates the length of [b] to [len]
+  Note: the internal byte sequence is not shortened.
+  @raise Invalid_argument if [len < 0] or [len > length b].
+  @since 4.05.0 *)
+
+(** {1 Appending} *)
+
+(** Note: all [add_*] operations can raise [Failure] if the internal byte
+    sequence of the buffer would need to grow beyond {!Sys.max_string_length}.
+*)
 
 val add_char : t -> char -> unit
 (** [add_char b c] appends the character [c] at the end of buffer [b]. *)
@@ -122,11 +138,18 @@ val add_bytes : t -> bytes -> unit
 
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
-   [ofs] in string [s] and appends them at the end of buffer [b]. *)
+   [ofs] in string [s] and appends them at the end of buffer [b].
+
+    @raise Invalid_argument if [ofs] and [len] do not designate a valid
+    range of [s]. *)
 
 val add_subbytes : t -> bytes -> int -> int -> unit
 (** [add_subbytes b s ofs len] takes [len] characters from offset
     [ofs] in byte sequence [s] and appends them at the end of buffer [b].
+
+    @raise Invalid_argument if [ofs] and [len] do not designate a valid
+    range of [s].
+
     @since 4.02 *)
 
 val add_substitute : t -> (string -> string) -> string -> unit
@@ -154,17 +177,10 @@ val add_channel : t -> in_channel -> int -> unit
    input channel [ic] and stores them at the end of buffer [b].
    @raise End_of_file if the channel contains fewer than [n]
    characters. In this case, the characters are still added to
-   the buffer, so as to avoid loss of data. *)
+   the buffer, so as to avoid loss of data.
 
-val output_buffer : out_channel -> t -> unit
-(** [output_buffer oc b] writes the current contents of buffer [b]
-   on the output channel [oc]. *)
-
-val truncate : t -> int -> unit
-(** [truncate b len] truncates the length of [b] to [len]
-  Note: the internal byte sequence is not shortened.
-  @raise Invalid_argument if [len < 0] or [len > length b].
-  @since 4.05.0 *)
+   @raise Invalid_argument if [len < 0] or [len > Sys.max_string_length].
+ *)
 
 (** {1 Buffers and Sequences} *)
 

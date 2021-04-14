@@ -190,7 +190,7 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-41-42-44-45-48 -warn-error +A
 
 ocamlc = $(BEST_OCAMLC) $(flags)
 
@@ -199,8 +199,6 @@ ocamlopt = $(BEST_OCAMLOPT) $(flags)
 ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
 depincludes :=
-
-OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 

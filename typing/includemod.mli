@@ -17,7 +17,6 @@
 
 open Typedtree
 open Types
-open Format
 
 (** Type describing which arguments of an inclusion to consider as used
     for the usage warnings. [Mark_both] is the default. *)
@@ -31,6 +30,121 @@ type mark =
   | Mark_neither
       (** Do not mark definitions used from either argument *)
 
+module Error: sig
+
+  type ('elt,'explanation) diff = {
+    got:'elt;
+    expected:'elt;
+    symptom:'explanation
+  }
+  type 'elt core_diff =('elt,unit) diff
+
+  type functor_arg_descr =
+    | Anonymous
+    | Named of Path.t
+    | Unit
+
+  type core_sigitem_symptom =
+    | Value_descriptions of Types.value_description core_diff
+    | Type_declarations of
+        (Types.type_declaration, Includecore.type_mismatch) diff
+    | Extension_constructors of
+        (Types.extension_constructor,
+         Includecore.extension_constructor_mismatch) diff
+    | Class_type_declarations of
+        (Types.class_type_declaration, Ctype.class_match_failure list) diff
+    | Class_declarations of
+        (Types.class_declaration, Ctype.class_match_failure list) diff
+
+  type core_module_type_symptom =
+    | Not_an_alias
+    | Not_an_identifier
+    | Incompatible_aliases
+    | Abstract_module_type
+    | Unbound_module_path of Path.t
+
+  type module_type_symptom =
+    | Mt_core of core_module_type_symptom
+    | Signature of signature_symptom
+    | Functor of functor_symptom
+    | Invalid_module_alias of Path.t
+    | After_alias_expansion of module_type_diff
+
+
+  and module_type_diff = (Types.module_type, module_type_symptom) diff
+
+  and functor_symptom =
+    | Params of functor_params_diff
+    | Result of module_type_diff
+
+  and ('arg,'path) functor_param_symptom =
+    | Incompatible_params of 'arg * Types.functor_parameter
+    | Mismatch of module_type_diff
+
+  and arg_functor_param_symptom =
+    (Types.functor_parameter, Ident.t) functor_param_symptom
+
+  and functor_params_diff =
+    (Types.functor_parameter list * Types.module_type) core_diff
+
+  and signature_symptom = {
+    env: Env.t;
+    missings: Types.signature_item list;
+    incompatibles: (Ident.t * sigitem_symptom) list;
+    oks: (int * Typedtree.module_coercion) list;
+  }
+  and sigitem_symptom =
+    | Core of core_sigitem_symptom
+    | Module_type_declaration of
+        (Types.modtype_declaration, module_type_declaration_symptom) diff
+    | Module_type of module_type_diff
+
+  and module_type_declaration_symptom =
+    | Illegal_permutation of Typedtree.module_coercion
+    | Not_greater_than of module_type_diff
+    | Not_less_than of module_type_diff
+    | Incomparable of
+        {less_than:module_type_diff; greater_than: module_type_diff}
+
+
+  type all =
+    | In_Compilation_unit of (string, signature_symptom) diff
+    | In_Signature of signature_symptom
+    | In_Module_type of module_type_diff
+    | In_Module_type_substitution of
+        Ident.t * (Types.module_type,module_type_declaration_symptom) diff
+    | In_Type_declaration of Ident.t * core_sigitem_symptom
+    | In_Expansion of core_module_type_symptom
+end
+type explanation = Env.t * Error.all
+
+(* Extract name, kind and ident from a signature item *)
+type field_kind =
+  | Field_value
+  | Field_type
+  | Field_exception
+  | Field_typext
+  | Field_module
+  | Field_modtype
+  | Field_class
+  | Field_classtype
+
+type field_desc = { name: string; kind: field_kind }
+
+val kind_of_field_desc: field_desc -> string
+val field_desc: field_kind -> Ident.t -> field_desc
+
+(** Map indexed by both field types and names.
+    This avoids name clashes between different sorts of fields
+    such as values and types. *)
+module FieldMap: Map.S with type key = field_desc
+
+val item_ident_name: Types.signature_item -> Ident.t * Location.t * field_desc
+val is_runtime_component: Types.signature_item -> bool
+
+
+(* Typechecking *)
+
 val modtypes:
   loc:Location.t -> Env.t -> mark:mark ->
   module_type -> module_type -> module_coercion
@@ -41,13 +155,13 @@ val strengthened_module_decl:
 
 val check_modtype_inclusion :
   loc:Location.t -> Env.t -> Types.module_type -> Path.t -> Types.module_type ->
-  unit
+  explanation option
 (** [check_modtype_inclusion ~loc env mty1 path1 mty2] checks that the
     functor application F(M) is well typed, where mty2 is the type of
     the argument of F and path1/mty1 is the path/unstrenghened type of M. *)
 
 val check_modtype_equiv:
-  loc:Location.t -> Env.t -> module_type -> module_type -> unit
+  loc:Location.t -> Env.t -> Ident.t -> module_type -> module_type -> unit
 
 val signatures: Env.t -> mark:mark ->
   signature -> signature -> module_coercion
@@ -60,7 +174,7 @@ val type_declarations:
   loc:Location.t -> Env.t -> mark:mark ->
   Ident.t -> type_declaration -> type_declaration -> unit
 
-val print_coercion: formatter -> module_coercion -> unit
+val print_coercion: Format.formatter -> module_coercion -> unit
 
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
@@ -79,7 +193,6 @@ type symptom =
   | Class_declarations of
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
-  | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
   | Invalid_module_alias of Path.t
 
@@ -88,9 +201,35 @@ type pos =
   | Modtype of Ident.t
   | Arg of functor_parameter
   | Body of functor_parameter
-type error = pos list * Env.t * symptom
 
-exception Error of error list
+exception Error of explanation
+exception Apply_error of {
+    loc : Location.t ;
+    env : Env.t ;
+    lid_app : Longident.t option ;
+    mty_f : module_type ;
+    args : (Error.functor_arg_descr * Types.module_type)  list ;
+  }
 
-val report_error: formatter -> error list -> unit
-val expand_module_alias: Env.t -> pos list -> Path.t -> Types.module_type
+val expand_module_alias: Env.t -> Path.t -> Types.module_type
+
+module Functor_inclusion_diff: sig
+  val diff: Env.t ->
+           Types.functor_parameter list * Types.module_type ->
+           Types.functor_parameter list * Types.module_type ->
+           (Types.functor_parameter, Types.functor_parameter,
+            Typedtree.module_coercion,
+            (Types.functor_parameter, 'c) Error.functor_param_symptom)
+           Diffing.patch
+end
+
+module Functor_app_diff: sig
+  val diff:
+    Env.t ->
+    f:Types.module_type ->
+    args:(Error.functor_arg_descr * Types.module_type) list ->
+    (Error.functor_arg_descr * Types.module_type,
+     Types.functor_parameter, Typedtree.module_coercion,
+     (Error.functor_arg_descr, 'a) Error.functor_param_symptom)
+      Diffing.patch
+end

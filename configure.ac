@@ -137,6 +137,8 @@ AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
+AC_SUBST([documentation_tool])
+AC_SUBST([documentation_tool_cmd])
 AC_SUBST([ocamltest])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
@@ -265,6 +267,11 @@ AC_ARG_ENABLE([ocamldoc],
     [do not build the ocamldoc documentation system])],
   [],
   [ocamldoc=auto])
+
+AC_ARG_WITH([odoc],
+  [AS_HELP_STRING([--with-odoc],
+    [build documentation with odoc])])
+
 
 AC_ARG_ENABLE([ocamltest],
   [AS_HELP_STRING([--disable-ocamltest],
@@ -1377,6 +1384,8 @@ AC_CHECK_FUNC([symlink],
   [AC_CHECK_FUNC([readlink],
     [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK])])])])
 
+AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
+
 # wait
 AC_CHECK_FUNC(
   [waitpid],
@@ -1735,6 +1744,20 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
 AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
+
+documentation_tool_cmd=''
+AC_ARG_WITH([odoc],
+  [AS_HELP_STRING([--with-odoc])],
+  [AS_CASE([$withval],
+    [yes],[documentation_tool='odoc'],
+    [no],[documentation_tool='ocamldoc'],
+    [documentation_tool_cmd="$withval"
+    documentation_tool='odoc'])],
+  [documentation_tool='ocamldoc'])
+AS_IF([test "x$documentation_tool_cmd" = 'x']
+ [documentation_tool_cmd="$documentation_tool"])
+
+
 
 AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
   [yes,*|,*+dev*],[ocamltest='ocamltest'],

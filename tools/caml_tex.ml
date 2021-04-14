@@ -15,7 +15,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@warning "a-40-6"]
+[@@@warning "+a-4-6-40..42-44-48"]
 open StdLabels
 open Str
 
@@ -119,7 +119,7 @@ module Toplevel = struct
     let buffer = Buffer.create 100 in
     let rec read_toplevel_stdout () =
       match Unix.select[stdout_out][][] 0. with
-      | [a], _, _ ->
+      | [_a], _, _ ->
           let n = Unix.read stdout_out b 0 size in
           Buffer.add_subbytes buffer b 0 n;
           if n = size then read_toplevel_stdout ()

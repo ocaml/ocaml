@@ -127,6 +127,7 @@ type regexp = {
   numregisters: int;       (* number of nullable Star or Plus *)
   startchars: int          (* index of set of starting chars, or -1 if none *)
 }
+[@@warning "-unused-field"]
 
 (** Opcodes for bytecode instructions; see strstubs.c for description *)
 
