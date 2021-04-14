@@ -2187,9 +2187,9 @@ let open_signature slot root env0 : (_,_) result =
 let remove_last_open root env0 =
   let rec filter_summary summary =
     match summary with
-      Env_open (s, p) ->
+      Env_empty -> raise Exit
+    | Env_open (s, p) ->
         if Path.same p root then s else raise Exit
-    | Env_empty
     | Env_value _
     | Env_type _
     | Env_extension _
