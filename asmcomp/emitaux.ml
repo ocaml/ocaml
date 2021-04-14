@@ -106,6 +106,7 @@ let emit_float32_directive directive x =
 (* Record live pointers at call points *)
 
 type frame_debuginfo =
+  | Dbg_alloc of Debuginfo.alloc_dbginfo
   | Dbg_raise of Debuginfo.t
   | Dbg_other of Debuginfo.t
 
@@ -183,14 +184,16 @@ let emit_frames a =
       match fd.fd_debuginfo with
       | Dbg_other d | Dbg_raise d ->
         if Debuginfo.is_none d then 0 else 1
+      | Dbg_alloc dbgs ->
+        if !Clflags.debug &&
+          List.exists (fun d ->
+            not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
+        then 3 else 2
     in
     a.efa_code_label fd.fd_lbl;
     a.efa_16 (fd.fd_frame_size + flags);
-    let uniq_fd_live_offset =
-      List.sort_uniq compare fd.fd_live_offset
-    in
-    a.efa_16 (List.length uniq_fd_live_offset);
-    List.iter a.efa_16 uniq_fd_live_offset;
+    a.efa_16 (List.length fd.fd_live_offset);
+    List.iter a.efa_16 fd.fd_live_offset;
     begin match fd.fd_debuginfo with
     | _ when flags = 0 ->
       ()
@@ -200,6 +203,23 @@ let emit_frames a =
     | Dbg_raise dbg ->
       a.efa_align 4;
       a.efa_label_rel (label_debuginfos true dbg) Int32.zero
+    | Dbg_alloc dbg ->
+      assert (List.length dbg < 256);
+      a.efa_8 (List.length dbg);
+      List.iter (fun Debuginfo.{alloc_words;_} ->
+        (* Possible allocations range between 2 and 257 *)
+        assert (2 <= alloc_words &&
+                alloc_words - 1 <= Config.max_young_wosize &&
+                Config.max_young_wosize <= 256);
+        a.efa_8 (alloc_words - 2)) dbg;
+      if flags = 3 then begin
+        a.efa_align 4;
+        List.iter (fun Debuginfo.{alloc_dbg; _} ->
+          if Debuginfo.is_none alloc_dbg then
+            a.efa_32 Int32.zero
+          else
+            a.efa_label_rel (label_debuginfos false alloc_dbg) Int32.zero) dbg
+      end
     end;
     a.efa_align Arch.size_addr
   in
