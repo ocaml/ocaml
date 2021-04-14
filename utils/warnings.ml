@@ -532,7 +532,7 @@ let letter_alert tokens =
     commit_chunk l on_going
   in
   match consecutive_letters with
-  | [] | [] :: _ -> None
+  | [] -> None
   | example :: _  ->
       let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
       let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
