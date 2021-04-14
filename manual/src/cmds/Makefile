@@ -27,11 +27,6 @@ all: $(FILES)
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
-warnings-help.etex: ../warnings-help.etex
-	cp $< $@
-
-
 .PHONY: clean
 clean:
 	rm -f *.tex
-	rm -f warnings-help.etex

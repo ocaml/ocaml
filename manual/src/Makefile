@@ -7,7 +7,7 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
-FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex ifocamldoc.tex
+FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
 TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
@@ -127,7 +127,7 @@ etex-files: $(FILES)
 version.tex: $(SRC)/VERSION
 	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
 
-warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+cmds/warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
