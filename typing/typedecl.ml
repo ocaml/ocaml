@@ -166,9 +166,11 @@ let is_fixed_type sd =
       sd.ptype_private = Private &&
       has_row_var sty
 
-(* Set the row variable in a fixed type. Require
-   [is_fixed_type decl] as a precondition *)
-let set_fixed_row env loc p decl =
+(* Set the row variable to a fixed type in a private row type declaration.
+   (e.g. [ type t = private [< `A | `B ] ] or [type u = private < .. > ])
+   Require [is_fixed_type decl] as a precondition
+*)
+let set_private_row env loc p decl =
   let tm =
     match decl.type_manifest with
       None -> assert false
@@ -437,7 +439,7 @@ let transl_declaration env sdecl (id, uid) =
               (Longident.Lident(Ident.name id ^ "#row")) env
         with Not_found -> assert false
       in
-      set_fixed_row env sdecl.ptype_loc p decl
+      set_private_row env sdecl.ptype_loc p decl
     end;
   (* Check for cyclic abbreviations *)
     begin match decl.type_manifest with None -> ()
@@ -1492,7 +1494,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
     }
   in
-  Option.iter (fun p -> set_fixed_row env sdecl.ptype_loc p new_sig_decl)
+  Option.iter (fun p -> set_private_row env sdecl.ptype_loc p new_sig_decl)
     fixed_row_path;
   begin match Ctype.closed_type_decl new_sig_decl with None -> ()
   | Some ty -> raise(Error(loc, Unbound_type_var(ty, new_sig_decl)))
