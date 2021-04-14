@@ -88,11 +88,24 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string option loc * module_presence * module_expr
 
+let trivial_pat pat =
+  match pat.pat_desc with
+    Tpat_var _
+  | Tpat_any -> true
+  | Tpat_construct (_, cd, [], _) ->
+      not cd.cstr_generalized && cd.cstr_consts = 1 && cd.cstr_nonconsts = 0
+  | _ -> false
+
+let trivial_case = function
+    {c_lhs = pat; c_guard = None; c_rhs = exp} ->
+      trivial_pat pat && exp.exp_desc <> Texp_unreachable
+  | _ -> false
+
 let rec push_defaults loc bindings cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
-        as exp}] ->
+        as exp}] when bindings = [] || trivial_pat pat ->
       let cases = push_defaults exp.exp_loc bindings cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
@@ -100,7 +113,9 @@ let rec push_defaults loc bindings cases partial =
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#default"};_}];
              exp_desc = Texp_let
-               (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
+               (Nonrecursive, binds,
+                ({exp_desc = Texp_function {cases = [case]}} as e2))}}]
+    when trivial_case case ->
       push_defaults loc (Bind_value binds :: bindings)
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
@@ -108,11 +123,12 @@ let rec push_defaults loc bindings cases partial =
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#modulepat"};_}];
              exp_desc = Texp_letmodule
                (Some id, name, pres, mexpr,
-                ({exp_desc = Texp_function _} as e2))}}] ->
+                ({exp_desc = Texp_function {cases = [case]}} as e2))}}]
+    when trivial_case case ->
       push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings)
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
-  | [{c_guard=None} as case] ->
+  | [case] when trivial_case case ->
       let exp =
         List.fold_left
           (fun exp binds ->
