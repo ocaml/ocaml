@@ -344,6 +344,10 @@ Working version
   application
   (Jacques Garrigue, report and review by Didier Remy)
 
+- #10324, #10325: Prevent generation of Lsend(Cached, _) in bytecode
+  (Vincent Laviron, report by Yawar Amin and Nicolás Ojeda Bär, review by
+   Jacques Garrigue)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
