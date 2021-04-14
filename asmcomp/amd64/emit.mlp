@@ -660,7 +660,7 @@ let emit_instr fallthrough i =
         | 24 -> emit_call "caml_alloc2"
         | 32 -> emit_call "caml_alloc3"
         | _  ->
-          I.mov (int n) rax;
+          I.sub (int n) r15;
           emit_call "caml_allocN"
         end;
         let label = record_frame_label i.live (Dbg_alloc dbginfo) in
