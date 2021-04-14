@@ -497,13 +497,6 @@ type token =
   | Num of int * int * modifier
 
 let letter_alert tokens =
-  let consecutive_letters (l,current) = function
-    | Letter (x, None) -> (l, x::current)
-    | _ ->
-        match current with
-        | [] | [ _ ] -> (l,current)
-        | _ :: _ :: _ -> (List.rev current :: l, [])
-  in
   let print_warning_char ppf c =
     let lowercase = Char.lowercase_ascii c = c in
     Format.fprintf ppf "%c%c"
@@ -523,10 +516,20 @@ let letter_alert tokens =
     | Letter(l,None) -> print_warning_char ppf l
   in
   let consecutive_letters =
-    let l, on_going = List.fold_left consecutive_letters ([],[]) tokens in
-    match on_going with
-    | [] | [_] -> l
-    | _ :: _ :: _ -> List.rev on_going :: l
+    (* we are tracking consecutive unsigned letter in warning strings:
+       for instance in '-w "not-principa"'. *)
+    let commit_chunk l = function
+      | [] | [ _ ] -> l
+      | _ :: _ :: _ as chunk -> List.rev chunk :: l
+    in
+    let group_consecutive_letters (l,current) = function
+    | Letter (x, None) -> (l, x::current)
+    | _ -> (commit_chunk l current, [])
+    in
+    let l, on_going =
+      List.fold_left group_consecutive_letters ([],[]) tokens
+    in
+    commit_chunk l on_going
   in
   match consecutive_letters with
   | [] | [] :: _ -> None
