@@ -155,7 +155,8 @@ static value heap_stats (int returnstats)
           ++ fragments;
           CAMLassert (prev_hp == NULL
                       || Color_hp (prev_hp) != Caml_blue
-                      || cur_hp == (header_t *) caml_gc_sweep_hp);
+                      || cur_hp == (header_t *) caml_gc_sweep_hp
+                      || Wosize_hp (prev_hp) == Max_wosize);
         }else{
           if (caml_gc_phase == Phase_sweep
               && cur_hp >= (header_t *) caml_gc_sweep_hp){
