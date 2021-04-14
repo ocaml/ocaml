@@ -684,13 +684,13 @@ invalid formats, as they will be rejected by future OCaml versions.
 \item["-unboxed-types"]
 When a type is unboxable (i.e. a record with a single argument or a
 concrete datatype with a single constructor of one argument) it will
-be unboxed unless annotated with "[@@ocaml.boxed]".
+be unboxed unless annotated with "[\@\@ocaml.boxed]".
 }%notop
 
 \notop{%
 \item["-no-unboxed-types"]
 When a type is unboxable  it will be boxed unless annotated with
-"[@@ocaml.unboxed]". This is the default.
+"[\@\@ocaml.unboxed]". This is the default.
 }%notop
 
 \item["-unsafe"]
@@ -763,16 +763,16 @@ following:
 \begin{options}
 \item["+"\var{num}] Enable warning number \var{num}.
 \item["-"\var{num}] Disable warning number \var{num}.
-\item["@"\var{num}] Enable and mark as fatal warning number \var{num}.
+\item["\@"\var{num}] Enable and mark as fatal warning number \var{num}.
 \item["+"\var{num1}..\var{num2}] Enable warnings in the given range.
 \item["-"\var{num1}..\var{num2}] Disable warnings in the given range.
-\item["@"\var{num1}..\var{num2}] Enable and mark as fatal warnings in
+\item["\@"\var{num1}..\var{num2}] Enable and mark as fatal warnings in
 the given range.
 \item["+"\var{letter}] Enable the set of warnings corresponding to
 \var{letter}. The letter may be uppercase or lowercase.
 \item["-"\var{letter}] Disable the set of warnings corresponding to
 \var{letter}. The letter may be uppercase or lowercase.
-\item["@"\var{letter}] Enable and mark as fatal the set of warnings
+\item["\@"\var{letter}] Enable and mark as fatal the set of warnings
 corresponding to \var{letter}. The letter may be uppercase or
 lowercase.
 \item[\var{uppercase-letter}] Enable the set of warnings corresponding
@@ -787,7 +787,7 @@ mnemonic name (see below), as follows:
 \begin{options}
 \item["+"\var{name}] Enable warning \var{name}.
 \item["-"\var{name}] Disable warning \var{name}.
-\item["@"\var{name}] Enable and mark as fatal warning \var{name}.
+\item["\@"\var{name}] Enable and mark as fatal warning \var{name}.
 \end{options}
 
 Warning numbers, letters and names which are not currently defined are
@@ -810,7 +810,7 @@ emitted. The \var{warning-list} has the same meaning as for
 the "-w" option: a "+" sign (or an uppercase letter) marks the
 corresponding warnings as fatal, a "-"
 sign (or a lowercase letter) turns them back into non-fatal warnings,
-and a "@" sign both enables and marks as fatal the corresponding
+and a "\@" sign both enables and marks as fatal the corresponding
 warnings.
 
 Note: it is not recommended to use warning sets (i.e. letters) as
