@@ -57,7 +57,6 @@ type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined
 
-(* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
    If [x] has already been forced, [Lazy.force x] returns the
@@ -67,9 +66,65 @@ external force : 'a t -> 'a = "%lazy_force"
    recursively.
 *)
 
+(** {1 Iterators} *)
+
+val map : ('a -> 'b) -> 'a t -> 'b t
+(** [map f x] returns a suspension that, when forced,
+    forces [x] and applies [f] to its value.
+
+    It is equivalent to [lazy (f (Lazy.force x))].
+
+    @since 4.13.0
+*)
+
+(** {1 Reasoning on already-forced suspensions} *)
+
+val is_val : 'a t -> bool
+(** [is_val x] returns [true] if [x] has already been forced and
+    did not raise an exception.
+    @since 4.00.0 *)
+
+val from_val : 'a -> 'a t
+(** [from_val v] evaluates [v] first (as any function would) and returns
+    an already-forced suspension of its result.
+    It is the same as [let x = v in lazy x], but uses dynamic tests
+    to optimize suspension creation in some cases.
+    @since 4.00.0 *)
+
+val map_val : ('a -> 'b) -> 'a t -> 'b t
+(** [map_val f x] applies [f] directly if [x] is already forced,
+   otherwise it behaves as [map f x].
+
+   When [x] is already forced, this behavior saves the construction of
+   a suspension, but on the other hand it performs more work eagerly
+   that may not be useful if you never force the function result.
+
+   If [f] raises an exception, it will be raised immediately when
+   [is_val x], or raised only when forcing the thunk otherwise.
+
+   If [map_val f x] does not raise an exception, then
+   [is_val (map_val f x)] is equal to [is_val x].
+
+    @since 4.13.0 *)
+
+
+(** {1 Advanced}
+
+   The following definitions are for advanced uses only; they require
+   familiary with the lazy compilation scheme to be used appropriately. *)
+
+val from_fun : (unit -> 'a) -> 'a t
+(** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
+
+    It should only be used if the function [f] is already defined.
+    In particular it is always less efficient to write
+    [from_fun (fun () -> expr)] than [lazy expr].
+
+    @since 4.00.0 *)
+
 val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
-    result.  If [x] has already been forced, [force_val x]
+    result. If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
 
     If the computation of [x] raises an exception, it is unspecified
@@ -78,25 +133,8 @@ val force_val : 'a t -> 'a
     recursively.
 *)
 
-val from_fun : (unit -> 'a) -> 'a t
-(** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
 
-    [from_fun] should only be used if the function [f] is already defined.
-    In particular it is always less efficient to write
-    [from_fun (fun () -> expr)] than [lazy expr].
-
-    @since 4.00.0 *)
-
-val from_val : 'a -> 'a t
-(** [from_val v] returns an already-forced suspension of [v].
-    This is for special purposes only and should not be confused with
-    [lazy (v)].
-    @since 4.00.0 *)
-
-val is_val : 'a t -> bool
-(** [is_val x] returns [true] if [x] has already been forced and
-    did not raise an exception.
-    @since 4.00.0 *)
+(** {1 Deprecated} *)
 
 val lazy_from_fun : (unit -> 'a) -> 'a t
   [@@ocaml.deprecated "Use Lazy.from_fun instead."]

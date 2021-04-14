@@ -121,6 +121,12 @@ Working version
 - #9582: Add Array.{find_opt,find_map,split,combine}.
   (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
 
+- #10097: Lazy.map, Lazy.map_val: ('a -> 'b) -> 'a Lazy.t -> 'b Lazy.t
+  (map f x) is always (lazy (f (force x))), whereas (map_val f x)
+  applies f directly if x is already forced.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, Alain Frisch, Xavier Leroy,
+   Daniel Bünzli and Stephen Dolan)
+
 * #10169, #10270: Use capitalized module names in the Standard Library prefixing
   scheme to match Dune, e.g. Stdlib__String instead of Stdlib__string. This is a
   breaking change only to code which attempted to use the internal names before.
