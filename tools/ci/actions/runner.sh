@@ -136,6 +136,7 @@ EOF
 
 BuildManual () {
   $MAKE -C manual/src/html_processing duniverse
+  $MAKE -C manual manual
   $MAKE -C manual web
 }
 
