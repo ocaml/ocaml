@@ -17,8 +17,8 @@ set -e
 
 # Test whether the manual/ has been touched by this PR.
 
-if [[ $1 = 'push' ]]; then
-  # Always build the manual for pushes
+if [[ $1 = 'push' && ${10} = 'ocaml/ocaml' ]]; then
+  # Always build the manual for pushes to ocaml/ocaml
   result=true
 else
   # We need all the commits in the PR to be available

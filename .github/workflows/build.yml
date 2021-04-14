@@ -79,6 +79,7 @@ jobs:
         '${{ github.event.before }}'
         '${{ github.event.ref }}'
         '${{ github.event.after }}'
+        '${{ github.event.repository.full_name }}'
     - name: Build the manual
       run: |
         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
