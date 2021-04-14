@@ -190,6 +190,11 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #8732, improved error messages for invalid private row type definitions.
+  For instance, [ type t = private [< `A > `A ] ] .
+  (Florian Angeletti, review by Jacques Garrigue, Thomas Refis,
+   and Gabriel Scherer)
+
 - #9407: added warning for missing mli interface file
   (Anukriti Kumar, review by Florian Angeletti)
 

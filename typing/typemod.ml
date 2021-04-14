@@ -554,7 +554,7 @@ let merge_constraint initial_env loc sg lid constr =
           Env.add_type ~check:false id_row decl_row initial_env
         in
         let tdecl =
-          Typedecl.transl_with_constraint id (Some(Pident id_row))
+          Typedecl.transl_with_constraint id ~fixed_row_path:(Pident id_row)
             ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
         check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl rs rem;
@@ -568,7 +568,7 @@ let merge_constraint initial_env loc sg lid constr =
        (With_type sdecl | With_typesubst sdecl as constr))
       when Ident.name id = s ->
         let tdecl =
-          Typedecl.transl_with_constraint id None
+          Typedecl.transl_with_constraint id
             ~sig_env ~sig_decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
         check_type_decl sig_env loc id row_id newdecl sig_decl rs rem;

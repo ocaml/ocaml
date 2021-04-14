@@ -54,7 +54,6 @@ type error =
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
-  | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Val_in_structure
   | Multiple_native_repr_attributes
@@ -65,6 +64,7 @@ type error =
   | Bad_unboxed_attribute of string
   | Boxed_and_unboxed
   | Nonrec_gadt
+  | Invalid_private_row_declaration of type_expr
 
 open Typedtree
 
@@ -166,8 +166,11 @@ let is_fixed_type sd =
       sd.ptype_private = Private &&
       has_row_var sty
 
-(* Set the row variable in a fixed type *)
-let set_fixed_row env loc p decl =
+(* Set the row variable to a fixed type in a private row type declaration.
+   (e.g. [ type t = private [< `A | `B ] ] or [type u = private < .. > ])
+   Require [is_fixed_type decl] as a precondition
+*)
+let set_private_row env loc p decl =
   let tm =
     match decl.type_manifest with
       None -> assert false
@@ -179,15 +182,20 @@ let set_fixed_row env loc p decl =
         let row = Btype.row_repr row in
         Btype.set_type_desc tm
           (Tvariant {row with row_fixed = Some Fixed_private});
-        if Btype.static_row row then Btype.newgenty Tnil
+        if Btype.static_row row then
+          (* the syntax hinted at the existence of a row variable,
+             but there is in fact no row variable to make private, e.g.
+             [ type t = private [< `A > `A] ] *)
+          raise (Error(loc, Invalid_private_row_declaration tm))
         else row.row_more
     | Tobject (ty, _) ->
-        snd (Ctype.flatten_fields ty)
-    | _ ->
-        raise (Error (loc, Bad_fixed_type "is not an object or variant"))
+        let r = snd (Ctype.flatten_fields ty) in
+        if not (Btype.is_Tvar r) then
+          (* a syntactically open object was closed by a constraint *)
+          raise (Error(loc, Invalid_private_row_declaration tm));
+        r
+    | _ -> assert false
   in
-  if not (Btype.is_Tvar rv) then
-    raise (Error (loc, Bad_fixed_type "has no row variable"));
   Btype.set_type_desc rv (Tconstr (p, decl.type_params, ref Mnil))
 
 (* Translate one type declaration *)
@@ -431,7 +439,7 @@ let transl_declaration env sdecl (id, uid) =
               (Longident.Lident(Ident.name id ^ "#row")) env
         with Not_found -> assert false
       in
-      set_fixed_row env sdecl.ptype_loc p decl
+      set_private_row env sdecl.ptype_loc p decl
     end;
   (* Check for cyclic abbreviations *)
     begin match decl.type_manifest with None -> ()
@@ -1403,7 +1411,8 @@ let transl_value_decl env loc valdecl =
    In particular, note that [sig_env] is an extension of
    [outer_env].
 *)
-let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
+let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
+    sdecl =
   Env.mark_type_used sig_decl.type_uid;
   reset_type_variables();
   Ctype.begin_def();
@@ -1485,9 +1494,8 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
       type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
     }
   in
-  begin match row_path with None -> ()
-  | Some p -> set_fixed_row env loc p new_sig_decl
-  end;
+  Option.iter (fun p -> set_private_row env sdecl.ptype_loc p new_sig_decl)
+    fixed_row_path;
   begin match Ctype.closed_type_decl new_sig_decl with None -> ()
   | Some ty -> raise(Error(loc, Unbound_type_var(ty, new_sig_decl)))
   end;
@@ -1825,8 +1833,6 @@ let report_error ppf = function
              (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
-  | Bad_fixed_type r ->
-      fprintf ppf "This fixed type %s" r
   | Variance Typedecl_variance.Varying_anonymous ->
       fprintf ppf "@[%s@ %s@ %s@]"
         "In this GADT definition," "the variance of some parameter"
@@ -1875,6 +1881,14 @@ let report_error ppf = function
   | Nonrec_gadt ->
       fprintf ppf
         "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
+  | Invalid_private_row_declaration ty ->
+      Format.fprintf ppf
+        "@[<hv>This private row type declaration is invalid.@ \
+         The type expression on the right-hand side reduces to@;<1 2>%a@ \
+         which does not have a free row type variable.@]@,\
+         @[<hv>@[Hint: If you intended to define a private type abbreviation,@ \
+         write explicitly@]@;<1 2>private %a@]"
+        Printtyp.type_expr ty Printtyp.type_expr ty
 
 let () =
   Location.register_error_of_exn
