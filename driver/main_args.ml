@@ -77,7 +77,7 @@ let mk_config f =
 
 let mk_config_var f =
   "-config-var", Arg.String f,
-  " Print the value of a configuration variable, a newline, and exit\n\
+  " Print the value of a configuration variable, without a newline, and exit\n\
 \    (print nothing and exit with error value if the variable does not exist)"
 ;;
 
