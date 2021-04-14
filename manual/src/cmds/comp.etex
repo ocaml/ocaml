@@ -409,25 +409,19 @@ let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
   the future, by using the attribute "ocaml.warn_on_literal_pattern"
   (see the manual section on builtin attributes in
   \ref{ss:builtin-attributes}):
-\begin{verbatim}
-  type t =
-    | Foo of string [@ocaml.warn_on_literal_pattern]
-    | Bar of string
+\begin{caml_example*}{verbatim}[warning=52]
+type t =
+  | Foo of string [@ocaml.warn_on_literal_pattern]
+  | Bar of string
 
-  let no_warning = function
-    | Bar "specific value" -> 0
-    | _ -> 1
+let no_warning = function
+  | Bar "specific value" -> 0
+  | _ -> 1
 
-  let warning = function
-    | Foo "specific value" -> 0
-    | _ -> 1
-
->    | Foo "specific value" -> 0
->          ^^^^^^^^^^^^^^^^
-> Warning 52: Code should not depend on the actual values of
-> this constructor's arguments. They are only for information
-> and may change in future versions. (See manual section 8.5)
-\end{verbatim}
+let warning = function
+  | Foo "specific value" -> 0
+  | _ -> 1
+\end{caml_example*}
 
   In particular, all built-in exceptions with a string argument have
   this attribute set: "Invalid_argument", "Failure", "Sys_error" will

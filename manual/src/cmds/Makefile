@@ -15,31 +15,16 @@ FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   warnings-help.tex flambda.tex \
   afl-fuzz.tex instrumented-runtime.tex unified-options.tex
 
-WITH_TRANSF = top.tex intf-c.tex flambda.tex \
-  afl-fuzz.tex lexyacc.tex debugger.tex
-
-WITH_CAMLEXAMPLE = instrumented-runtime.tex ocamldoc.tex
-
-
 etex-files: $(FILES)
 all: $(FILES)
 
+%.gen.tex: %.etex
+	$(CAMLLATEX) $< -o $*_camltex.tex
+	$(TRANSF) < $*_camltex.tex > $*.transf_error.tex
+	mv $*.transf_error.tex $@
 
-%.tex: %.etex
+%.tex: %.gen.tex
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
-	mv $*.texquote_error.tex $@
-
-$(WITH_TRANSF): %.tex: %.etex
-	$(TRANSF) < $< > $*.transf_error.tex
-	mv $*.transf_error.tex $*.transf_gen.tex
-	$(TEXQUOTE) < $*.transf_gen.tex > $*.texquote_error.tex
-	mv $*.texquote_error.tex $@
-
-$(WITH_CAMLEXAMPLE): %.tex: %.etex
-	$(CAMLLATEX) $< -o $*.gen.tex
-	$(TRANSF) < $*.gen.tex > $*.transf_error.tex
-	mv $*.transf_error.tex $*.transf_gen.tex
-	$(TEXQUOTE) < $*.transf_gen.tex > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
 warnings-help.etex: ../warnings-help.etex
