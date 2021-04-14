@@ -298,8 +298,10 @@ let destroyed_at_c_call =
        108;109;110;111;112;113;114;115])
 
 let destroyed_at_alloc =
-  let regs = [| rax |] in
-  Array.concat [regs; destroyed_by_plt_stub]
+  if X86_proc.use_plt then
+    destroyed_by_plt_stub
+  else
+    [| r11 |]
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _) ->

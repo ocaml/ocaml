@@ -529,7 +529,6 @@ FUNCTION(G(caml_allocN))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
 LBL(caml_allocN):
-        subq    %rax, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret
