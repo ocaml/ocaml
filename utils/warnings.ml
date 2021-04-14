@@ -533,7 +533,7 @@ let letter_alert tokens =
   in
   match consecutive_letters with
   | [] | [] :: _ -> None
-  | (example :: _ ) :: _  ->
+  | example :: _  ->
       let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
       let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
       let spelling_hint ppf =
@@ -551,13 +551,12 @@ let letter_alert tokens =
       let message =
         Format.asprintf
           "@[<v>@[Setting a warning with a sequence of lowercase \
-           or uppercase letters, like '%c%c',@ is deprecated.@]@ \
+           or uppercase letters,@ like '%a',@ is deprecated.@]@ \
            @[Use the equivalent signed form:@ %t.@]@ \
            @[Hint: Enabling or disabling a warning by its mnemonic name \
            requires a + or - prefix.@]\
            %t@?@]"
-          (Char.lowercase_ascii example)
-          (Char.uppercase_ascii example)
+          Format.(pp_print_list ~pp_sep:(fun _ -> ignore) pp_print_char) example
           (fun ppf -> List.iter (print_token ppf) tokens)
           spelling_hint
       in
