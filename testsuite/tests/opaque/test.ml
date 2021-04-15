@@ -11,12 +11,14 @@ all_modules = "intf/opaque_intf.mli"
 *** ocamlopt.byte
 flags = "-I intf"
 all_modules = "intf/opaque_impl.mli intf/regular.mli"
-**** script
-script = "cp intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi \
-             intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli fst"
-***** script
-script = "cp intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi \
-             intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli snd"
+**** copy
+src = "intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi \
+       intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli"
+dst = "fst/"
+***** copy
+src = "intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi \
+       intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli"
+dst = "snd/"
 ****** ocamlopt.byte
 flags = "-I fst -opaque"
 all_modules = "fst/opaque_impl.ml"
