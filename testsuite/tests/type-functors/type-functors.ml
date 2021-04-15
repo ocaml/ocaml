@@ -426,3 +426,21 @@ Error: This expression has type {X : S} -> X.t * bool
        but an expression was expected of type {Y : S} -> Y.t * unit
        Type bool is not compatible with type unit
 |}]
+
+(* Variance annotations are respected. *)
+
+module type POS = sig type +'a t end;;
+
+type +'a s = {X:POS} -> 'a X.t;;
+[%%expect{|
+module type POS = sig type +'a t end
+type 'a s = {X : POS} -> 'a X.t
+|}]
+
+module type INJ = sig type !'a t end;;
+
+type !'a t = {X:INJ} -> 'a X.t;;
+[%%expect{|
+module type INJ = sig type !'a t end
+type 'a t = {X : INJ} -> 'a X.t
+|}]

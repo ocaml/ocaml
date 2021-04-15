@@ -41,14 +41,14 @@ let get_variance ty visited =
   try TypeMap.find ty !visited with Not_found -> Variance.null
 
 let compute_variance env visited vari ty =
-  let rec compute_variance_rec vari ty =
+  let rec compute_variance_rec env id_pairs vari ty =
     (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
     let ty = Ctype.repr ty in
     let vari' = get_variance ty visited in
     if Variance.subset vari vari' then () else
     let vari = Variance.union vari vari' in
     visited := TypeMap.add ty vari !visited;
-    let compute_same = compute_variance_rec vari in
+    let compute_same = compute_variance_rec env id_pairs vari in
     match ty.desc with
       Tarrow (_, ty1, ty2, _) ->
         let open Variance in
@@ -57,7 +57,7 @@ let compute_variance env visited vari ty =
           if mem May_pos v || mem May_neg v
           then set May_weak true v else v
         in
-        compute_variance_rec v1 ty1;
+        compute_variance_rec env id_pairs v1 ty1;
         compute_same ty2
     | Ttuple tl ->
         List.iter compute_same tl
@@ -65,6 +65,7 @@ let compute_variance env visited vari ty =
         let open Variance in
         if tl = [] then () else begin
           try
+            let path = Path.subst id_pairs path in
             let decl = Env.find_type path env in
             let cvari f = mem f vari in
             List.iter2
@@ -73,7 +74,7 @@ let compute_variance env visited vari ty =
                 let strict =
                   cvari Inv && cv Inj || (cvari Pos || cvari Neg) && cv Inv
                 in
-                if strict then compute_variance_rec full ty else
+                if strict then compute_variance_rec env id_pairs full ty else
                 let p1 = inter v vari
                 and n1 = inter v (conjugate vari) in
                 let v1 =
@@ -84,10 +85,10 @@ let compute_variance env visited vari ty =
                   (cvari May_pos || cvari May_neg) && cv May_weak
                 in
                 let v2 = set May_weak weak v1 in
-                compute_variance_rec v2 ty)
+                compute_variance_rec env id_pairs v2 ty)
               tl decl.type_variance
           with Not_found ->
-            List.iter (compute_variance_rec unknown) tl
+            List.iter (compute_variance_rec env id_pairs unknown) tl
         end
     | Tobject (ty, _) ->
         compute_same ty
@@ -112,7 +113,7 @@ let compute_variance env visited vari ty =
                 let v = inter vari upper in
                 (* cf PR#7269:
                    if List.length tyl > 1 then upper else inter vari upper *)
-                List.iter (compute_variance_rec v) tyl
+                List.iter (compute_variance_rec env id_pairs v) tyl
             | _ -> ())
           row.row_fields;
         compute_same row.row_more
@@ -123,15 +124,22 @@ let compute_variance env visited vari ty =
         let v =
           Variance.(if mem Pos vari || mem Neg vari then full else unknown)
         in
-        List.iter (compute_variance_rec v) tyl
-    | Tfunctor (_, (_, _, tyl), ty) ->
+        List.iter (compute_variance_rec env id_pairs v) tyl
+    | Tfunctor (id, (p, nl, tyl), ty) ->
         let v =
           Variance.(if mem Pos vari || mem Neg vari then full else unknown)
         in
-        List.iter (compute_variance_rec v) tyl;
-        compute_same ty
+        List.iter (compute_variance_rec env id_pairs v) tyl;
+        let scoped_id = Ident.create_scoped ~scope:ty.level (Ident.name id) in
+        let env' =
+          Env.add_module scoped_id Mp_present
+            (!Ctype.mty_of_package' env (p, nl, tyl))
+            env
+        in
+        let id_pairs' = (id, scoped_id) :: id_pairs in
+        compute_variance_rec env' id_pairs' vari ty
   in
-  compute_variance_rec vari ty
+  compute_variance_rec env [] vari ty
 
 let make p n i =
   let open Variance in
