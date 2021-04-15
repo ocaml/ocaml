@@ -8,8 +8,9 @@ module = "a.ml"
 module = "b.ml"
 **** ocamlopt.byte
 module = "b2.ml"
-***** script
-script = "cp b.cmx b.cmi b2.cmx b2.cmi dir/"
+***** copy
+src = "b.cmx b.cmi b2.cmx b2.cmi"
+dst = "dir/"
 ****** cd
 cwd = "dir"
 ******* ocamlopt.byte
