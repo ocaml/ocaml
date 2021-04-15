@@ -70,21 +70,6 @@ void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
   cond->mutex = m;
 }
 
-/* TODO: This specific entrypoint is required for systhreads.
-   Refactoring conditions in platform context with support for
-   systhreads style conditions would be useful. */
-void caml_plat_cond_init_no_mutex(caml_plat_cond* cond)
-{
-  caml_plat_cond_init_aux(cond);
-  cond->mutex = NULL;
-}
-
-void caml_plat_cond_set_mutex(caml_plat_cond *cond, caml_plat_mutex* m)
-{
-  if (cond->mutex == NULL)
-    cond->mutex = m;
-}
-
 void caml_plat_wait(caml_plat_cond* cond)
 {
   caml_plat_assert_locked(cond->mutex);
