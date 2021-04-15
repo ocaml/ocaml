@@ -17,8 +17,9 @@
    flags = "-S start_from_emit.cmir-linear -save-ir-after scheduling"
    module = "empty.ml"
    ocamlopt_byte_exit_status = "0"
- ********* script
-  script = "cp start_from_emit.cmir-linear expected.cmir_linear"
+ ********* copy
+  src = "start_from_emit.cmir-linear"
+  dst = "expected.cmir_linear"
  ********** check-ocamlopt.byte-output
  *********** script
    script = "cmp start_from_emit.cmir-linear expected.cmir_linear"
