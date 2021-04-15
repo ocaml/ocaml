@@ -14,8 +14,9 @@ set OCAMLOPT = "${ocamlrun} ${ocamlopt_byte} ${stdlib}"
 compiler_directory_suffix = ".depend.mk"
 compiler_output = "${test_build_directory}/depend.mk"
 ** script
-*** script
-script = "cp lib_impl.ml lib.ml"
+*** copy
+src = "lib_impl.ml"
+dst = "lib.ml"
 **** ocamlc.byte
 commandline = "-depend -as-map lib.ml lib.mli"
 ***** ocamlc.byte
@@ -51,8 +52,9 @@ script = "${MAKE} -f Makefile.build2 opt"
 * setup-ocamlc.byte-build-env
 compiler_directory_suffix = ".depend.mod"
 ** script
-*** script
-script = "cp lib_impl.ml lib.ml"
+*** copy
+src = "lib_impl.ml"
+dst = "lib.ml"
 **** ocamlc.byte
 commandline = "-depend -as-map -modules lib.ml lib.mli"
 ***** ocamlc.byte
