@@ -515,8 +515,7 @@ type token =
   | Num of int * int * modifier
 
 let letter_alert tokens =
-  let deprecated = function Letter (c,None) -> Some c | _ -> None in
-  let print_char ppf c =
+  let print_warning_char ppf c =
     let lowercase = Char.lowercase_ascii c = c in
     Format.fprintf ppf "%c%c"
       (if lowercase then '-' else '+') c
@@ -532,15 +531,35 @@ let letter_alert tokens =
         else
           Format.fprintf ppf "%a%d..%d" print_modifier m a b
     | Letter(l,Some m) -> Format.fprintf ppf "%a%c" print_modifier m l
-    | Letter(l,None) -> print_char ppf l
+    | Letter(l,None) -> print_warning_char ppf l
   in
-  match List.find_map deprecated tokens with
-  | None -> None
-  | Some example ->
+  let consecutive_letters =
+    (* we are tracking sequences of 2 or more consecutive unsigned letters
+       in warning strings, for instance in '-w "not-principa"'. *)
+    let commit_chunk l = function
+      | [] | [ _ ] -> l
+      | _ :: _ :: _ as chunk -> List.rev chunk :: l
+    in
+    let group_consecutive_letters (l,current) = function
+    | Letter (x, None) -> (l, x::current)
+    | _ -> (commit_chunk l current, [])
+    in
+    let l, on_going =
+      List.fold_left group_consecutive_letters ([],[]) tokens
+    in
+    commit_chunk l on_going
+  in
+  match consecutive_letters with
+  | [] -> None
+  | example :: _  ->
       let pos = { Lexing.dummy_pos with pos_fname = "_none_" } in
       let nowhere = { loc_start=pos; loc_end=pos; loc_ghost=true } in
       let spelling_hint ppf =
-        if List.length (List.filter_map deprecated tokens) >= 5 then
+        let max_seq_len =
+          List.fold_left (fun l x -> max l (List.length x))
+            0 consecutive_letters
+        in
+        if max_seq_len >= 5 then
           Format.fprintf ppf
             "@ @[Hint: Did you make a spelling mistake \
              when using a mnemonic name?@]"
@@ -549,14 +568,13 @@ let letter_alert tokens =
       in
       let message =
         Format.asprintf
-          "@[<v>@[Setting a warning with single lowercase \
-           or uppercase letters, like '%c' or '%c',@ is deprecated.@]@ \
+          "@[<v>@[Setting a warning with a sequence of lowercase \
+           or uppercase letters,@ like '%a',@ is deprecated.@]@ \
            @[Use the equivalent signed form:@ %t.@]@ \
            @[Hint: Enabling or disabling a warning by its mnemonic name \
            requires a + or - prefix.@]\
            %t@?@]"
-          (Char.lowercase_ascii example)
-          (Char.uppercase_ascii example)
+          Format.(pp_print_list ~pp_sep:(fun _ -> ignore) pp_print_char) example
           (fun ppf -> List.iter (print_token ppf) tokens)
           spelling_hint
       in
