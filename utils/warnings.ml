@@ -516,8 +516,8 @@ let letter_alert tokens =
     | Letter(l,None) -> print_warning_char ppf l
   in
   let consecutive_letters =
-    (* we are tracking consecutive unsigned letter in warning strings:
-       for instance in '-w "not-principa"'. *)
+    (* we are tracking sequences of 2 or more consecutive unsigned letters
+       in warning strings, for instance in '-w "not-principa"'. *)
     let commit_chunk l = function
       | [] | [ _ ] -> l
       | _ :: _ :: _ as chunk -> List.rev chunk :: l
