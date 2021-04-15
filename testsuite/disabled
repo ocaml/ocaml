@@ -70,3 +70,6 @@ tool-debugger
 
 # since promotion is based on minor heap size now, this test can no longer be correct
 tests/promotion/bigrecmod.ml
+
+# instrumented runtime test is not very useful (and broken on multicore.) (#9413)
+tests/instrumented-runtime/'main.ml' with 1.1 (native)
