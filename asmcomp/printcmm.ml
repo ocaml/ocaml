@@ -156,6 +156,7 @@ let operation d = function
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
+  | Copaque -> "opaque"
 
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n

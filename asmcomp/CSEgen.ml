@@ -223,7 +223,7 @@ method class_of_operation op =
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
   | Iconst_int _ | Iconst_float _ | Iconst_symbol _ -> Op_pure
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ -> assert false                 (* treated specially *)
+  | Iextcall _ | Iopaque -> assert false       (* treated specially *)
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
   | Istore(_,_,asg) -> Op_store asg
@@ -276,6 +276,9 @@ method private cse n i =
          could be kept, but won't be usable for CSE as one of their
          arguments is always a memory load.  For simplicity, we
          just forget everything. *)
+      {i with next = self#cse empty_numbering i.next}
+  | Iop Iopaque ->
+      (* Assume arbitrary side effects from Iopaque *)
       {i with next = self#cse empty_numbering i.next}
   | Iop (Ialloc _) ->
       (* For allocations, we must avoid extending the live range of a

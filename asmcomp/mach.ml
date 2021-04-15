@@ -58,6 +58,7 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Iopaque
   | Ispecific of Arch.specific_operation
   | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
       provenance : unit option; is_assignment : bool; }

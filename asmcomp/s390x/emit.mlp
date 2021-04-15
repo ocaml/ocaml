@@ -539,6 +539,8 @@ let emit_instr i =
     | Lop(Iintoffloat) ->
         (* rounding method #5 = round toward 0 *)
         `	cgdbr	{emit_reg i.res.(0)}, 5, {emit_reg i.arg.(0)}\n`
+    | Lop(Iopaque) ->
+        assert (i.arg.(0).loc = i.res.(0).loc)
     | Lop(Ispecific sop) ->
         assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in

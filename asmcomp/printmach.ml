@@ -144,6 +144,7 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
+  | Iopaque -> fprintf ppf "opaque %a" reg arg.(0)
   | Iname_for_debugger { ident; which_parameter; } ->
     fprintf ppf "name_for_debugger %a%s=%a"
       V.print ident

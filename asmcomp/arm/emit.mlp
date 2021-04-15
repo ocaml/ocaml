@@ -721,6 +721,8 @@ let emit_instr i =
     | Lop(Iintoffloat) ->
         `	ftosizd	s14, {emit_reg i.arg.(0)}\n`;
         `	fmrs	{emit_reg i.res.(0)}, s14\n`; 2
+    | Lop(Iopaque) ->
+        assert (i.arg.(0).loc = i.res.(0).loc); 0
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf as op) ->
         let instr = (match op with
                        Iaddf              -> "faddd"

@@ -438,6 +438,8 @@ let emit_instr i =
       `	fcvt.d.l	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
   | Lop(Iintoffloat) ->
       `	fcvt.l.d	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, rtz\n`
+  | Lop(Iopaque) ->
+      assert (i.arg.(0).loc = i.res.(0).loc)
   | Lop(Ispecific sop) ->
       let instr = name_for_specific sop in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
