@@ -45,5 +45,5 @@ clean:
 	$(MAKE) -C tests  clean
 
 .PHONY: distclean
-distclean:
+distclean: clean
 	$(MAKE) -C src distclean

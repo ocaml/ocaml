@@ -20,61 +20,65 @@ all: css js img
 	$(DUNE) exec --root=. src/process_api.exe overwrite $(DBG)
 	$(DUNE) exec --root=. src/process_api.exe compiler overwrite $(DBG)
 
-$(WEBDIR):
-	mkdir -p $(WEBDIRMAN)
-	mkdir -p $(WEBDIRCOMP)
+$(WEBDIR)/%:
+	mkdir -p $@
 
-$(WEBDIRMAN)/manual.css: scss/_common.scss scss/manual.scss $(WEBDIR)
+$(WEBDIRMAN)/manual.css: scss/_common.scss scss/manual.scss | $(WEBDIRMAN)
 	sass scss/manual.scss > $(WEBDIRMAN)/manual.css
 
-$(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss $(WEBDIR)
+$(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss | $(WEBDIRAPI)
 	sass scss/style.scss > $(WEBDIRAPI)/style.css
 	cp $(WEBDIRAPI)/style.css $(WEBDIRCOMP)/style.css
 
 css: $(WEBDIRMAN)/manual.css $(WEBDIRAPI)/style.css
 
-# Just copy the JS files
+# Just copy the JS files:
+#
 JS_FILES0 := scroll.js navigation.js
 JS_FILES1 := $(JS_FILES0) search.js
 JS_FILES := $(addprefix $(WEBDIRAPI)/, $(JS_FILES1)) $(addprefix $(WEBDIRCOMP)/, $(JS_FILES1)) $(addprefix $(WEBDIRMAN)/, $(JS_FILES0))
 
 # There must be a more clever way
-$(WEBDIRAPI)/%.js: js/%.js
+$(WEBDIRAPI)/%.js: js/%.js | $(WEBDIRAPI)
 	cp $< $@
 
-$(WEBDIRMAN)/%.js: js/%.js
+$(WEBDIRMAN)/%.js: js/%.js | $(WEBDIRMAN)
 	cp $< $@
 
-$(WEBDIRCOMP)/%.js: js/%.js
+$(WEBDIRCOMP)/%.js: js/%.js | $(WEBDIRCOMP)
 	cp $< $@
 
-js: $(WEBDIR) $(JS_FILES)
+js: $(JS_FILES)
 
 # download images for local use
 SEARCH := search_icon.svg
-$(WEBDIRAPI)/search_icon.svg: $(WEBDIR)
+$(WEBDIRAPI)/search_icon.svg: | $(WEBDIRAPI)
 	curl "https://ocaml.org/img/search.svg" > $(WEBDIRAPI)/$(SEARCH)
-	cp $(WEBDIRAPI)/$(SEARCH) $(WEBDIRCOMP)/$(SEARCH)
+
+$(WEBDIRCOMP)/%: $(WEBDIRAPI)/% | $(WEBDIRCOMP)
+	cp $< $@
+
+$(WEBDIRMAIN)/%: $(WEBDIRAPI/% | $(WEBDIRAPI)
+	cp $< $@
 
 LOGO := colour-logo.svg
-$(WEBDIRAPI)/colour-logo.svg: $(WEBDIR)
+$(WEBDIRAPI)/colour-logo.svg: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
 	curl "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/SVG/colour-logo.svg" > $(WEBDIRAPI)/$(LOGO)
-	cp $(WEBDIRAPI)/$(LOGO) $(WEBDIRMAN)/$(LOGO)
-	cp $(WEBDIRAPI)/$(LOGO) $(WEBDIRCOMP)/$(LOGO)
 
 ICON := favicon.ico
-$(WEBDIRAPI)/favicon.ico: $(WEBDIR)
+$(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
 	curl "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
-	cp $(WEBDIRAPI)/$(ICON) $(WEBDIRMAN)/$(ICON)
-	cp $(WEBDIRAPI)/$(ICON) $(WEBDIRCOMP)/$(ICON)
 
 IMG_FILES0 := colour-logo.svg
 IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
 
-img: $(WEBDIR) $(WEBDIRAPI)/search_icon.svg $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/search_icon.svg $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
+img: $(WEBDIRAPI)/search_icon.svg $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/search_icon.svg $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
 
 clean:
 	rm -rf $(WEBDIR) src/.merlin _build
+
+.PHONY: distclean
+distclean:: clean
 
 distclean::
 	rm -rf .sass-cache
