@@ -1,6 +1,7 @@
 (* TEST
 
-readonly_files = "A.ml B.ml C.ml D.ml lib_impl.ml lib.mli"
+readonly_files = "A.ml B.ml C.ml D.ml lib_impl.ml lib.mli \
+  Makefile.build Makefile.build2"
 
 script = "sh ${test_source_directory}/setup-links.sh"
 set sources = "A.ml B.ml C.ml D.ml"
@@ -23,14 +24,12 @@ commandline = "-depend -map lib.ml -open Lib ${links}"
 compiler_reference = "${test_source_directory}/depend.mk.reference"
 ******* hasunix
 ******** script
-script = "cp ${test_source_directory}/Makefile.build Makefile"
-********* script
 script = "rm -f ${links}"
-********** script
-script = "${MAKE} byte"
-*********** native-compiler
-************ script
-script = "${MAKE} opt"
+********* script
+script = "${MAKE} -f Makefile.build byte"
+********** native-compiler
+*********** script
+script = "${MAKE} -f Makefile.build opt"
 
 * setup-ocamlc.byte-build-env
 compiler_directory_suffix = ".depend.mk2"
@@ -44,12 +43,10 @@ compiler_reference = "${test_source_directory}/depend.mk2.reference"
 ****** script
 script = "rm -f ${links}"
 ******* script
-script = "cp ${test_source_directory}/Makefile.build2 Makefile"
-******** script
-script = "${MAKE} byte"
-********* native-compiler
-********** script
-script = "${MAKE} opt"
+script = "${MAKE} -f Makefile.build2 byte"
+******** native-compiler
+********* script
+script = "${MAKE} -f Makefile.build2 opt"
 
 * setup-ocamlc.byte-build-env
 compiler_directory_suffix = ".depend.mod"
