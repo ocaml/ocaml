@@ -31,6 +31,8 @@ let cwd = Variables.make ("cwd",
 let commandline = Variables.make ("commandline",
   "Specify the commandline of a tool")
 
+let dst = Variables.make ("dst", "Location where to copy files and directories")
+
 let exit_status = Variables.make ("exit_status",
   "Expected program exit status")
 
@@ -79,6 +81,8 @@ let skip_header_bytes =
 let script = Variables.make ("script",
   "External script to run")
 
+let src = Variables.make ("src", "Files and directories to copy")
+
 let stdin = Variables.make ("stdin", "Default standard input")
 let stdout = Variables.make ("stdout", "Default standard output")
 let stderr = Variables.make ("stderr", "Default standard error")
@@ -115,6 +119,7 @@ let _ = List.iter Variables.register_variable
     arguments;
     cwd;
     commandline;
+    dst;
     exit_status;
     file;
     readonly_files;
@@ -125,6 +130,7 @@ let _ = List.iter Variables.register_variable
     program; program2;
     reason;
     reference;
+    src;
     skip_header_lines;
     skip_header_bytes;
     script;
