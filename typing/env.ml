@@ -153,6 +153,23 @@ type summary =
   | Env_value_unbound of summary * string * value_unbound_reason
   | Env_module_unbound of summary * string * module_unbound_reason
 
+let map_summary f = function
+    Env_empty -> Env_empty
+  | Env_value (s, id, d) -> Env_value (f s, id, d)
+  | Env_type (s, id, d) -> Env_type (f s, id, d)
+  | Env_extension (s, id, d) -> Env_extension (f s, id, d)
+  | Env_module (s, id, p, d) -> Env_module (f s, id, p, d)
+  | Env_modtype (s, id, d) -> Env_modtype (f s, id, d)
+  | Env_class (s, id, d) -> Env_class (f s, id, d)
+  | Env_cltype (s, id, d) -> Env_cltype (f s, id, d)
+  | Env_open (s, p) -> Env_open (f s, p)
+  | Env_functor_arg (s, id) -> Env_functor_arg (f s, id)
+  | Env_constraints (s, m) -> Env_constraints (f s, m)
+  | Env_copy_types s -> Env_copy_types (f s)
+  | Env_persistent (s, id) -> Env_persistent (f s, id)
+  | Env_value_unbound (s, u, r) -> Env_value_unbound (f s, u, r)
+  | Env_module_unbound (s, u, r) -> Env_module_unbound (f s, u, r)
+
 type address =
   | Aident of Ident.t
   | Adot of address * int
@@ -177,6 +194,9 @@ module TycompTbl =
           bindings for each name, as in comp_labels and
           comp_constrs. *)
 
+      root: Path.t;
+      (** Only used to check removal of open *)
+
       using: (string -> ('a * 'a) option -> unit) option;
       (** A callback to be applied when a component is used from this
           "open".  This is used to detect unused "opens".  The
@@ -191,7 +211,7 @@ module TycompTbl =
     let add id x tbl =
       {tbl with current = Ident.add id x tbl.current}
 
-    let add_open slot wrap components next =
+    let add_open slot wrap root components next =
       let using =
         match slot with
         | None -> None
@@ -199,8 +219,16 @@ module TycompTbl =
       in
       {
         current = Ident.empty;
-        opened = Some {using; components; next};
+        opened = Some {using; components; root; next};
       }
+
+    let remove_last_open rt tbl =
+      match tbl.opened with
+      | Some {root; next; _} when Path.same rt root ->
+          { next with current =
+            Ident.fold_all Ident.add tbl.current next.current }
+      | _ ->
+          assert false
 
     let rec find_same id tbl =
       try Ident.find_same id tbl.current
@@ -226,7 +254,7 @@ module TycompTbl =
         (Ident.find_all name tbl.current) @
       match tbl.opened with
       | None -> []
-      | Some {using; next; components} ->
+      | Some {using; next; components; root = _} ->
           let rest = find_all ~mark name next in
           let using = if mark then using else None in
           match NameMap.find name components with
@@ -240,7 +268,7 @@ module TycompTbl =
     let rec fold_name f tbl acc =
       let acc = Ident.fold_name (fun _id d -> f d) tbl.current acc in
       match tbl.opened with
-      | Some {using = _; next; components} ->
+      | Some {using = _; next; components; root = _} ->
           acc
           |> NameMap.fold
             (fun _name -> List.fold_right f)
@@ -327,6 +355,14 @@ module IdTbl =
         current = Ident.empty;
         layer = Open {using; root; components; next};
       }
+
+    let remove_last_open rt tbl =
+      match tbl.layer with
+      | Open {root; next; _} when Path.same rt root ->
+          { next with current =
+            Ident.fold_all Ident.add tbl.current next.current }
+      | _ ->
+          assert false
 
     let map f next =
       {
@@ -602,11 +638,6 @@ let error err = raise (Error err)
 
 let lookup_error loc env err =
   error (Lookup_error(loc, env, err))
-
-let copy_local ~from env =
-  { env with
-    local_constraints = from.local_constraints;
-    flags = from.flags }
 
 let same_constr = ref (fun _ _ _ -> assert false)
 
@@ -1312,7 +1343,7 @@ let make_copy_of_types env0 =
     IdTbl.map f env0.values
   in
   (fun env ->
-     if env.values != env0.values then fatal_error "Env.make_copy_of_types";
+     (*if env.values != env0.values then fatal_error "Env.make_copy_of_types";*)
      {env with values; summary = Env_copy_types env.summary}
   )
 
@@ -2106,7 +2137,7 @@ let enter_unbound_module name reason env =
 
 let add_components slot root env0 comps =
   let add_l w comps env0 =
-    TycompTbl.add_open slot w comps env0
+    TycompTbl.add_open slot w root comps env0
   in
   let add w comps env0 = IdTbl.add_open slot w root comps env0 in
   let constrs =
@@ -2153,6 +2184,43 @@ let open_signature slot root env0 : (_,_) result =
   | Ok (Structure_comps comps) ->
     Ok (add_components slot root env0 comps)
 
+let remove_last_open root env0 =
+  let rec filter_summary summary =
+    match summary with
+      Env_empty -> raise Exit
+    | Env_open (s, p) ->
+        if Path.same p root then s else raise Exit
+    | Env_value _
+    | Env_type _
+    | Env_extension _
+    | Env_module _
+    | Env_modtype _
+    | Env_class _
+    | Env_cltype _
+    | Env_functor_arg _
+    | Env_constraints _
+    | Env_persistent _
+    | Env_copy_types _
+    | Env_value_unbound _
+    | Env_module_unbound _ ->
+        map_summary filter_summary summary
+  in
+  match filter_summary env0.summary with
+  | summary ->
+      let rem_l tbl = TycompTbl.remove_last_open root tbl
+      and rem tbl = IdTbl.remove_last_open root tbl in
+      Some { env0 with
+             summary;
+             constrs = rem_l env0.constrs;
+             labels = rem_l env0.labels;
+             values = rem env0.values;
+             types = rem env0.types;
+             modtypes = rem env0.modtypes;
+             classes = rem env0.classes;
+             cltypes = rem env0.cltypes;
+             modules = rem env0.modules; }
+  | exception Exit ->
+      None
 
 (* Open a signature from a file *)
 
@@ -3124,38 +3192,24 @@ let filter_non_loaded_persistent f env =
       summary
     else
       match summary with
-      | Env_empty -> summary
-      | Env_value (s, id, vd) ->
-          Env_value (filter_summary s ids, id, vd)
-      | Env_type (s, id, td) ->
-          Env_type (filter_summary s ids, id, td)
-      | Env_extension (s, id, ec) ->
-          Env_extension (filter_summary s ids, id, ec)
-      | Env_module (s, id, mp, md) ->
-          Env_module (filter_summary s ids, id, mp, md)
-      | Env_modtype (s, id, md) ->
-          Env_modtype (filter_summary s ids, id, md)
-      | Env_class (s, id, cd) ->
-          Env_class (filter_summary s ids, id, cd)
-      | Env_cltype (s, id, ctd) ->
-          Env_cltype (filter_summary s ids, id, ctd)
-      | Env_open (s, p) ->
-          Env_open (filter_summary s ids, p)
-      | Env_functor_arg (s, id) ->
-          Env_functor_arg (filter_summary s ids, id)
-      | Env_constraints (s, cstrs) ->
-          Env_constraints (filter_summary s ids, cstrs)
-      | Env_copy_types s ->
-          Env_copy_types (filter_summary s ids)
-      | Env_persistent (s, id) ->
-          if String.Set.mem (Ident.name id) ids then
-            filter_summary s (String.Set.remove (Ident.name id) ids)
-          else
-            Env_persistent (filter_summary s ids, id)
-      | Env_value_unbound (s, n, r) ->
-          Env_value_unbound (filter_summary s ids, n, r)
-      | Env_module_unbound (s, n, r) ->
-          Env_module_unbound (filter_summary s ids, n, r)
+        Env_persistent (s, id) when String.Set.mem (Ident.name id) ids ->
+          filter_summary s (String.Set.remove (Ident.name id) ids)
+      | Env_empty
+      | Env_value _
+      | Env_type _
+      | Env_extension _
+      | Env_module _
+      | Env_modtype _
+      | Env_class _
+      | Env_cltype _
+      | Env_open _
+      | Env_functor_arg _
+      | Env_constraints _
+      | Env_copy_types _
+      | Env_persistent _
+      | Env_value_unbound _
+      | Env_module_unbound _ ->
+          map_summary (fun s -> filter_summary s ids) summary
   in
   { env with
     modules = remove_ids env.modules to_remove;

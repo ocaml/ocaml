@@ -2014,11 +2014,15 @@ and type_pat_aux
       assert construction_not_used_in_counterexamples;
       let path, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc lid in
-      let new_env = ref new_env in
-      type_pat category ~env:new_env p expected_ty ( fun p ->
-        env := Env.copy_local !env ~from:!new_env;
-        k { p with pat_extra =( Tpat_open (path,lid,!new_env),
-                            loc, sp.ppat_attributes) :: p.pat_extra }
+      env := new_env;
+      type_pat category ~env p expected_ty ( fun p ->
+        let new_env = !env in
+        begin match Env.remove_last_open path new_env with
+        | None -> assert false
+        | Some closed_env -> env := closed_env
+        end;
+        k { p with pat_extra = (Tpat_open (path,lid,new_env),
+                                loc, sp.ppat_attributes) :: p.pat_extra }
       )
   | Ppat_exception p ->
       type_pat Value p Predef.type_exn (fun p_exn ->
