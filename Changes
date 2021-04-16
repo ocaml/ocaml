@@ -336,8 +336,8 @@ Working version
 - #10166: Fix illegal permutation error reporting in module aliases.
   (Matthew Ryan, review by Florian Angeletti)
 
-- #10189: Universal variables leaking through GADT equations
-  (Jacques Garrigue, report by Leo White)
+- #10189, #10190, #10347: Universal variables leaking through GADT equations
+  (Jacques Garrigue, report and review by Leo White)
 
 - #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
   (Vincent Laviron, report by Github user Ngoguey42, review by Gabriel Scherer)
