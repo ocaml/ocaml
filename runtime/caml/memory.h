@@ -211,7 +211,7 @@ extern uintnat caml_use_huge_pages;
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   dom_st = Caml_state;                                                      \
   dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
-  if (Caml_check_gc_interrupt(dom_st)){                                     \
+  while (Caml_check_gc_interrupt(dom_st)) {                                 \
     dom_st->young_ptr += Bhsize_wosize (wosize);                            \
     { GC }                                                                  \
     dom_st->young_ptr -= Bhsize_wosize (wosize);                            \
