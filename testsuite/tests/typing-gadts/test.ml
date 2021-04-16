@@ -463,8 +463,7 @@ let test : type a. a t -> a = fun x ->
 Line 2, characters 30-42:
 2 |   let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                   ^^^^^^^^^^^^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
+Error: This expression has type int but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -577,8 +576,7 @@ val either : 'a -> 'a -> 'a = <fun>
 Line 3, characters 44-45:
 3 |   match v with Int -> let y = either 1 x in y
                                                 ^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
+Error: This expression has type int but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -633,15 +631,9 @@ let f (type a) (x : a t) y =
   match x with Int ->
     let module M = struct type b = a let z = (y : b) end
     in M.z
-;; (* fails because of aliasing... *)
+;;
 [%%expect{|
-Line 3, characters 46-47:
-3 |     let module M = struct type b = a let z = (y : b) end
-                                                  ^
-Error: This expression has type a = int
-       but an expression was expected of type b = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val f : 'a t -> 'a -> 'a = <fun>
 |}];;
 
 let f (type a) (x : a t) y =
@@ -1194,7 +1186,6 @@ Line 5, characters 24-25:
                             ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type b = int is not compatible with type int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -1212,7 +1203,6 @@ Line 5, characters 24-25:
                             ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type int is not compatible with type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -1228,7 +1218,6 @@ Line 4, characters 19-20:
                        ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type a = int is not compatible with type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
