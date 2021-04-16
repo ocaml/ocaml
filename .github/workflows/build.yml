@@ -72,6 +72,7 @@ jobs:
       id: manual
       run: >-
         tools/ci/actions/check-manual-modified.sh
+        '${{ github.ref }}'
         '${{ github.event_name }}'
         '${{ github.event.pull_request.base.ref }}'
         '${{ github.event.pull_request.base.sha }}'
