@@ -1563,6 +1563,9 @@ OCaml 4.13.0 (24 September 2021)
   (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan
    and Mark Shinwell)
 
+- #10348: Expand GADT equations lazily during unification to avoid ambiguity
+  (Jacques Garrigue, review by Leo White)
+
 - #10371: no longer generatd useless `.cds` file when using
   `-output-complete-exe`.
   (Nicolás Ojeda Bär, review by David Allsopp)
