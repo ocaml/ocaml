@@ -78,7 +78,7 @@ CAMLdeprecated_typedef(addr, char *);
 
 #ifndef CAMLDLLIMPORT
   #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
-      && defined(__CYGWIN__)
+      && (defined(__CYGWIN__) || defined(__MINGW32__))
     #define CAMLDLLIMPORT __declspec(dllimport)
   #else
     #define CAMLDLLIMPORT

@@ -360,6 +360,9 @@ Working version
   (Vincent Laviron, report by Yawar Amin and Nicolás Ojeda Bär, review by
    Jacques Garrigue)
 
+- #10351: Fix DLL loading with binutils 2.36+ on mingw-w64
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
