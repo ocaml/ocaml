@@ -76,6 +76,9 @@ Working version
   to the debugger via a socket.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #10217: Fix a segfault in a corner case of compaction (reported in #9853)
+  (Damien Doligez, report by Sadiq Jaffer, review by Stephen Dolan)
+
 - #10250, #10266: Dynamically allocate alternate signal stacks to
    accommodate changes in Glibc 2.34.
   (Xavier Leroy, reports by Tomasz Kłoczko and R.W.M. Jones, review by Anil
