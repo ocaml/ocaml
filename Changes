@@ -104,6 +104,9 @@ Working version
 - #10244: Optimise Int32.unsigned_to_int
   (Fabian Hemmer, review by Stephen Dolan and Xavier Leroy)
 
+- #10349: Fix destroyed_at_c_call on RISC-V
+  (Mark Shinwell, review by Nicolás Ojeda Bär)
+
 ### Type system:
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
