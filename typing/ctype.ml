@@ -2459,7 +2459,9 @@ let find_lowest_level ty =
   in find ty; unmark_type ty; !lowest
 
 let find_expansion_scope env path =
-  (Env.find_type path env).type_expansion_scope
+  let decl = Env.find_type path env in
+  if decl.type_manifest = None then generic_level
+  else decl.type_expansion_scope
 
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
@@ -2671,8 +2673,7 @@ let rec unify (env:Env.t ref) t1 t2 =
         update_scope_for Unify t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
-      when Env.has_local_constraints !env
-      && is_newtype !env p1 && is_newtype !env p2 ->
+      when Env.has_local_constraints !env ->
         (* Do not use local constraints more than necessary *)
         begin try
           if find_expansion_scope !env p1 > find_expansion_scope !env p2 then
