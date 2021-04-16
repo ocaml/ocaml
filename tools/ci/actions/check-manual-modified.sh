@@ -17,7 +17,7 @@ set -e
 
 # Test whether the manual/ has been touched by this PR.
 
-if [[ $1 = 'push' && ${10} = 'ocaml/ocaml' ]]; then
+if [[ $1 = 'push' && ${11} = 'ocaml/ocaml' ]]; then
   # Always build the manual for pushes to ocaml/ocaml
   result=true
 else

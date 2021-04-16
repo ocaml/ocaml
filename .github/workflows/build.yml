@@ -44,6 +44,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 50
     - name: Packages
       run: |
         sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
@@ -70,6 +72,7 @@ jobs:
       id: manual
       run: >-
         tools/ci/actions/check-manual-modified.sh
+        '${{ github.ref }}'
         '${{ github.event_name }}'
         '${{ github.event.pull_request.base.ref }}'
         '${{ github.event.pull_request.base.sha }}'
