@@ -2599,9 +2599,9 @@ let rec unify_public env t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
   if unify_eq t1 t2 then () else
   match (t1.desc, t2.desc) with
-  | (Tconstr (p1, [], _), Tconstr (p2, [], _))
+  | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
     when is_public_type env p1 && is_public_type env p2 ->
-      if Path.same p1 p2 then begin
+      if Path.same p1 p2 && tl1 = [] && tl2 = [] then begin
         update_level env t1.level t2;
         update_scope t1.scope t2;
         link_type t1 t2
@@ -2689,8 +2689,7 @@ let rec unify (env:Env.t ref) t1 t2 =
         update_level_for Unify !env t1.level t2;
         update_scope_for Unify t1.scope t2;
         link_type t1 t2
-    | (Tconstr (_, [], _), Tconstr (_, [], _))
-      when Env.has_local_constraints !env ->
+    | (Tconstr _, Tconstr _) when Env.has_local_constraints !env ->
         (try unify_public !env t1 t2  with Cannot_expand -> unify2 env t1 t2)
     | _ ->
         unify2 env t1 t2
