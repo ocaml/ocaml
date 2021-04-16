@@ -4326,13 +4326,22 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) Nolabel) ls
   in
-  let lv = (repr ty_expected').level in
-  let ty_expected'' =
-    if Env.has_local_constraints env then correct_levels ty_expected'
-    else ty_expected'
+  let may_coerce =
+    if not (is_inferred sarg) then None else
+    let work () =
+      match expand_head env ty_expected' with
+        {desc = Tarrow(Nolabel,_,ty_res0,_); level} ->
+          Some (no_labels ty_res0, level)
+      | _ -> None
+    in
+    (* Need to be careful not to expand local constraints here *)
+    if Env.has_local_constraints env then
+      let snap = Btype.snapshot () in
+      try_finally ~always:(fun () -> Btype.backtrack snap) work
+    else work ()
   in
-  match expand_head env ty_expected'' with
-    {desc = Tarrow(Nolabel,_,ty_res0,_)} when is_inferred sarg ->
+  match may_coerce with
+    Some (safe_expect, lv) ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       if !Clflags.principal then begin_def ();
@@ -4351,15 +4360,15 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         | Tvar _ ->  List.rev args, ty_fun, false
         |  _ -> [], texp.exp_type, false
       in
-      let args, ty_fun', simple_res = make_args [] texp.exp_type in
-      let warn = !Clflags.principal &&
-        (lv <> generic_level || (repr ty_fun').level <> generic_level)
-      and texp = {texp with exp_type = instance texp.exp_type}
-      and ty_fun = instance ty_fun' in
-      if not (simple_res || no_labels ty_res0) then begin
+      let args, ty_fun', simple_res = make_args [] texp.exp_type
+      and texp = {texp with exp_type = instance texp.exp_type} in
+      if not (simple_res || safe_expect) then begin
         unify_exp env texp ty_expected;
         texp
       end else begin
+      let warn = !Clflags.principal &&
+        (lv <> generic_level || (repr ty_fun').level <> generic_level)
+      and ty_fun = instance ty_fun' in
       let ty_arg, ty_res =
         match expand_head env ty_expected' with
           {desc = Tarrow(Nolabel,ty_arg,ty_res,_)} -> ty_arg, ty_res
@@ -4414,7 +4423,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
                       }],
                      func let_var) }
       end
-  | _ ->
+  | None ->
       let texp = type_expect ?recarg env sarg
         (mk_expected ?explanation ty_expected') in
       unify_exp env texp ty_expected;
