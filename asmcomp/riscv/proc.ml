@@ -233,9 +233,10 @@ let regs_are_volatile _ = false
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
-  (* s0-s11 and fs0-fs11 are callee-save *)
+  (* s0-s11 and fs0-fs11 are callee-save.  However s2 needs to be in this
+     list since it is clobbered by caml_c_call itself. *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 22;
+    [0; 1; 2; 3; 4; 5; 6; 7; 8; 16; 17; 18; 19; 20; 22;
      100; 101; 102; 103; 104; 105; 106; 107; 110; 111; 112; 113; 114; 115; 116;
      117; 128; 129; 130; 131])
 
