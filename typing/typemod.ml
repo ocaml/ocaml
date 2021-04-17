@@ -2837,9 +2837,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (fun () -> fprintf std_formatter "%a@."
               (Printtyp.printed_signature sourcefile) simple_sg
           );
-        gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
+        let coercion = Tcoerce_none in
+        gen_annot outputprefix sourcefile
+          (Cmt_format.Implementation (str, coercion));
         { structure = str;
-          coercion = Tcoerce_none;
+          coercion;
           signature = simple_sg
         } (* result is ignored by Compile.implementation *)
       end else begin
@@ -2861,7 +2863,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (* It is important to run these checks after the inclusion test above,
              so that value declarations which are not used internally but
              exported are not reported as being unused. *)
-          let annots = Cmt_format.Implementation str in
+          let annots = Cmt_format.Implementation (str, coercion) in
           Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
             annots (Some sourcefile) initial_env None;
           gen_annot outputprefix sourcefile annots;
@@ -2889,7 +2891,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
               Env.save_signature ~alerts
                 simple_sg modulename (outputprefix ^ ".cmi")
             in
-            let annots = Cmt_format.Implementation str in
+            let annots = Cmt_format.Implementation (str, coercion) in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
               annots (Some sourcefile) initial_env (Some cmi);
             gen_annot outputprefix sourcefile annots
