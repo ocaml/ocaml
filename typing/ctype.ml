@@ -4494,23 +4494,6 @@ let rec arity ty =
     Tarrow(_, _t1, t2, _) -> 1 + arity t2
   | _ -> 0
 
-(* Check whether an abbreviation expands to itself. *)
-let cyclic_abbrev env id ty =
-  let rec check_cycle seen ty =
-    let ty = repr ty in
-    match ty.desc with
-      Tconstr (p, _tl, _abbrev) ->
-        p = Path.Pident id || List.memq ty seen ||
-        begin try
-          check_cycle (ty :: seen) (expand_abbrev_opt env ty)
-        with
-          Cannot_expand -> false
-        | Unify _ -> true
-        end
-    | _ ->
-        false
-  in check_cycle [] ty
-
 (* Check for non-generalizable type variables *)
 exception Non_closed0
 let visited = ref TypeSet.empty
