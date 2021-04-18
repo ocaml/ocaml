@@ -215,10 +215,6 @@ val type_package:
   (Env.t -> Parsetree.module_expr -> Path.t -> Longident.t list ->
   Typedtree.module_expr * type_expr list) ref
 
-val create_package_type : Location.t -> Env.t ->
-  Longident.t * (Longident.t * Parsetree.core_type) list ->
-  Path.t * (Longident.t * Typedtree.core_type) list * Types.type_expr
-
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 
 val check_recursive_bindings : Env.t -> Typedtree.value_binding list -> unit

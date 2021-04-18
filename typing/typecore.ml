@@ -2582,17 +2582,6 @@ let generalizable level ty =
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
-(* Helpers for packaged modules. *)
-let create_package_type loc env (p, l) =
-  let s = !Typetexp.transl_modtype_longident loc env p in
-  let fields = List.map (fun (name, ct) ->
-                           name, Typetexp.transl_simple_type env false ct) l in
-  let ty = newty (Tpackage (s,
-                    List.map fst l,
-                   List.map (fun (_, cty) -> cty.ctyp_type) fields))
-  in
-   (s, fields, ty)
-
 (* Helpers for type_cases *)
 
 let contains_variant_either ty =
