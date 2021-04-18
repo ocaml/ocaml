@@ -95,11 +95,17 @@ module Sys = struct
   let rm_rf path =
     let rec erase path =
       (* Sys.file_exists will return false for dangling symlinks *)
-      if Sys.file_exists path && Sys.is_directory path then begin
-        Array.iter (fun entry -> erase (Filename.concat path entry))
-                   (Sys.readdir path);
-        Sys.rmdir path
-      end else erase_file path
+      if Sys.file_exists path then
+        if Sys.is_directory path then begin
+          (* path might be a symlink to a directory *)
+          try Sys.remove path
+          with Sys_error _ ->
+            (* path is definitely a directory, not a symlink to a directory *)
+            Array.iter (fun entry -> erase (Filename.concat path entry))
+                       (Sys.readdir path);
+            Sys.rmdir path
+        end else erase_file path
+      else erase_file path
     in
       if Sys.file_exists path then
         try erase path
