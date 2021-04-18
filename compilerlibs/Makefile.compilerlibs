@@ -279,6 +279,7 @@ OPTTOPLEVEL_CMI=toplevel/topcommon.cmi toplevel/native/topeval.cmi \
 
 TOPLEVEL_SHARED_MLIS = topeval.mli trace.mli topmain.mli
 TOPLEVEL_SHARED_CMIS = $(TOPLEVEL_SHARED_MLIS:%.mli=%.cmi)
+TOPLEVEL_SHARED_ARTEFACTS = $(TOPLEVEL_SHARED_MLIS) $(TOPLEVEL_SHARED_CMIS)
 
 $(addprefix toplevel/byte/, $(TOPLEVEL_SHARED_CMIS)):\
 toplevel/byte/%.cmi: toplevel/%.cmi
@@ -289,13 +290,12 @@ toplevel/native/%.cmi: toplevel/%.cmi
 	cp $< toplevel/$*.mli $(@D)
 
 beforedepend::
-	cp $(addprefix toplevel/, $(TOPLEVEL_SHARED_MLIS)) toplevel/byte
-	cp $(addprefix toplevel/, $(TOPLEVEL_SHARED_MLIS)) toplevel/native
+	cd toplevel ; cp $(TOPLEVEL_SHARED_MLIS) byte/
+	cd toplevel ; cp $(TOPLEVEL_SHARED_MLIS) native/
 
 partialclean::
-	rm -f $(foreach ext, byte native, \
-    $(addprefix toplevel/$(ext)/, $(TOPLEVEL_SHARED_MLIS)) \
-                                  $(TOPLEVEL_SHARED_CMIS))
+	cd toplevel/byte ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
+	cd toplevel/native ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
 $(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)
