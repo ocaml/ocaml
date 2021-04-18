@@ -128,9 +128,7 @@ ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
-  asmcomp/debug/reg_availability_set.cmo \
-  asmcomp/mach.cmo asmcomp/proc.cmo \
+  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo \
   asmcomp/cmmgen_state.cmo \
@@ -149,9 +147,6 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/linear.cmo asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   file_formats/linear_format.cmo \
-  asmcomp/debug/available_regs.cmo \
-  asmcomp/debug/compute_ranges_intf.cmo \
-  asmcomp/debug/compute_ranges.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \

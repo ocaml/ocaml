@@ -525,7 +525,6 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Ibswap _)) -> 1
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
-    | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size ()
     | Llabel _ -> 0
@@ -877,7 +876,6 @@ let emit_instr i =
         end
     | Lop(Ispecific(Isignext size)) ->
         `	sbfm	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0, #{emit_int (size - 1)}\n`
-    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         ()
     | Lreturn ->
