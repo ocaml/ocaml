@@ -58,7 +58,13 @@ opt.opt: allopt
 .PHONY: install
 # Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
 install::
-	rm -f $(INSTALL_LIBDIR)/stdlib__*.cmi
+	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmi)), \
+         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmi)))"; \
+  if test -n "$$stale" ; then \
+    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
+    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cm* and re-run make install"; \
+    exit 1; \
+  fi
 
 install::
 	$(INSTALL_DATA) \
@@ -87,7 +93,13 @@ installopt: installopt-default
 .PHONY: installopt-default
 # Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
 installopt-default::
-	rm -f $(INSTALL_LIBDIR)/stdlib__*.cmx
+	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmx)), \
+         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmx)))"; \
+  if test -n "$$stale" ; then \
+    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
+    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cmx and re-run make install"; \
+    exit 1; \
+  fi
 
 installopt-default::
 	$(INSTALL_DATA) \
