@@ -241,3 +241,23 @@ let logical_imm_length x =
 
 let is_logical_immediate x =
   x <> 0n && x <> -1n && run_automata (logical_imm_length x) 0 x
+
+(* Specific operations that are pure *)
+
+let operation_is_pure = function
+  | Ifar_alloc _
+  | Ifar_intop_checkbound
+  | Ifar_intop_imm_checkbound _
+  | Ishiftcheckbound _
+  | Ifar_shiftcheckbound _ -> false
+  | _ -> true
+
+(* Specific operations that can raise *)
+
+let operation_can_raise = function
+  | Ifar_alloc _
+  | Ifar_intop_checkbound
+  | Ifar_intop_imm_checkbound _
+  | Ishiftcheckbound _
+  | Ifar_shiftcheckbound _ -> true
+  | _ -> false

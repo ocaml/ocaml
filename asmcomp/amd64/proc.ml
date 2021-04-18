@@ -348,17 +348,6 @@ let max_register_pressure = function
     if fp then [| 12; 15 |] else [| 13; 15 |]
   | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
 
-(* Pure operations (without any side effect besides updating their result
-   registers). *)
-
-let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
-  | Ispecific(Ilea _|Isextend32|Izextend32) -> true
-  | Ispecific _ -> false
-  | _ -> true
-
 (* Layout of the stack frame *)
 
 let frame_required fd =
