@@ -160,6 +160,11 @@ Working version
 - #10306: Map WSA error code to Unix errno for sockopt and getsockname
   functions (Antonin Décimo, review by David Allsopp)
 
+- #10309: Properly return EBADF on error in Unix.descr_of_{in,out}_channel on
+  Win32 and map Windows error correctly in Unix.truncate and Unix.ftruncate on
+  Win32.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #10139: Remove confusing navigation bar from stdlib documentation.
