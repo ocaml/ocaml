@@ -140,6 +140,12 @@ Working version
   build (the Dune rules still do not generate a distributable compiler).
   (David Allsopp and Mark Shinwell, review by Gabriel Scherer)
 
+* #10276 Provide more meaningful int_of_string error messages.
+  Instead of generic error `Exception: Failure "int_of_string"`, a more
+  detailed message is provided, e.g.
+  `Exception: Failure "int_of_string: wrong char 'a' for base 10"`.
+  (Krzysztof Leśniak, review by ???)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`

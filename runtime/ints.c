@@ -79,37 +79,63 @@ static intnat parse_intnat(value s, int nbits, const char *errmsg)
   const char * p;
   uintnat res, threshold;
   int sign, base, signedness, d;
+  char errorbuf[128];
 
   p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
   threshold = ((uintnat) -1) / base;
   d = parse_digit(*p);
-  if (d < 0 || d >= base) caml_failwith(errmsg);
+  if (d < 0 || d >= base) {
+    snprintf(errorbuf, sizeof(errorbuf), "%s: wrong char '%c' for base %d",
+      errmsg, *p, base);
+    caml_failwith(errorbuf);
+  }
   for (p++, res = d; /*nothing*/; p++) {
     char c = *p;
     if (c == '_') continue;
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
     /* Detect overflow in multiplication base * res */
-    if (res > threshold) caml_failwith(errmsg);
+    if (res > threshold) {
+      snprintf(errorbuf, sizeof(errorbuf),
+        "%s: overflow while converting '%s' to int", errmsg, String_val(s));
+      caml_failwith(errorbuf);
+    }
     res = base * res + d;
     /* Detect overflow in addition (base * res) + d */
-    if (res < (uintnat) d) caml_failwith(errmsg);
+    if (res < (uintnat) d) {
+      snprintf(errorbuf, sizeof(errorbuf),
+        "%s: overflow while converting '%s' to int", errmsg, String_val(s));
+      caml_failwith(errorbuf);
+    }
   }
   if (p != String_val(s) + caml_string_length(s)){
-    caml_failwith(errmsg);
+    snprintf(errorbuf, sizeof(errorbuf), "%s: unconverted trailing characters: "
+      "'%s' for base %d", errmsg, p, base);
+    caml_failwith(errorbuf);
   }
   if (signedness) {
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
     if (sign >= 0) {
-      if (res >= (uintnat)1 << (nbits - 1)) caml_failwith(errmsg);
+      if (res >= (uintnat)1 << (nbits - 1)) {
+        snprintf(errorbuf, sizeof(errorbuf), "%s: overflow: value '%s' "
+          "won't fit into signed %dbit int", errmsg, String_val(s), nbits);
+        caml_failwith(errorbuf);
+      }
     } else {
-      if (res >  (uintnat)1 << (nbits - 1)) caml_failwith(errmsg);
+      if (res >  (uintnat)1 << (nbits - 1)) {
+        snprintf(errorbuf, sizeof(errorbuf), "%s: overflow: value '%s' "
+          "won't fit into signed %dbit int", errmsg, String_val(s), nbits);
+        caml_failwith(errorbuf);
+      }
     }
   } else {
     /* Unsigned representation expected, allow 0 to 2^nbits - 1
        and tolerate -(2^nbits - 1) to 0 */
-    if (nbits < sizeof(uintnat) * 8 && res >= (uintnat)1 << nbits)
-      caml_failwith(errmsg);
+    if (nbits < sizeof(uintnat) * 8 && res >= (uintnat)1 << nbits) {
+      snprintf(errorbuf, sizeof(errorbuf), "%s: overflow: value '%s' "
+        "won't fit into unsigned %dbit int", errmsg, String_val(s), nbits);
+      caml_failwith(errorbuf);
+    }
   }
   return sign < 0 ? -((intnat) res) : (intnat) res;
 }
@@ -587,11 +613,16 @@ CAMLprim value caml_int64_of_string(value s)
   const char * p;
   uint64_t res, threshold;
   int sign, base, signedness, d;
+  char errorbuf[128];
 
   p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
   threshold = ((uint64_t) -1) / base;
   d = parse_digit(*p);
-  if (d < 0 || d >= base) caml_failwith(INT64_ERRMSG);
+  if (d < 0 || d >= base) {
+    snprintf(errorbuf, sizeof(errorbuf), "%s: wrong char '%c' for base %d",
+      INT64_ERRMSG, *p, base);
+    caml_failwith(errorbuf);
+  }
   res = d;
   for (p++; /*nothing*/; p++) {
     char c = *p;
@@ -599,20 +630,40 @@ CAMLprim value caml_int64_of_string(value s)
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
     /* Detect overflow in multiplication base * res */
-    if (res > threshold) caml_failwith(INT64_ERRMSG);
+    if (res > threshold) {
+      snprintf(errorbuf, sizeof(errorbuf),
+        "%s: overflow while converting '%s' to int",
+        INT64_ERRMSG, String_val(s));
+      caml_failwith(errorbuf);
+    }
     res = base * res + d;
     /* Detect overflow in addition (base * res) + d */
-    if (res < (uint64_t) d) caml_failwith(INT64_ERRMSG);
+    if (res < (uint64_t) d) {
+      snprintf(errorbuf, sizeof(errorbuf),
+        "%s: overflow while converting '%s' to int",
+        INT64_ERRMSG, String_val(s));
+      caml_failwith(errorbuf);
+    }
   }
   if (p != String_val(s) + caml_string_length(s)){
-    caml_failwith(INT64_ERRMSG);
+    snprintf(errorbuf, sizeof(errorbuf), "%s: unconverted trailing characters: "
+      "'%s' for base %d", INT64_ERRMSG, p, base);
+    caml_failwith(errorbuf);
   }
   if (signedness) {
     /* Signed representation expected, allow -2^63 to 2^63 - 1 only */
     if (sign >= 0) {
-      if (res >= (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);
+      if (res >= (uint64_t)1 << 63) {
+        snprintf(errorbuf, sizeof(errorbuf), "%s: overflow: value '%s' "
+          "won't fit into signed 64bit int", INT64_ERRMSG, String_val(s));
+        caml_failwith(errorbuf);
+      }
     } else {
-      if (res >  (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);
+      if (res >  (uint64_t)1 << 63) {
+        snprintf(errorbuf, sizeof(errorbuf), "%s: overflow: value '%s' "
+          "won't fit into signed 64bit int", INT64_ERRMSG, String_val(s));
+        caml_failwith(errorbuf);
+      }
     }
   }
   if (sign < 0) res = - res;
