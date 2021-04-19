@@ -140,6 +140,9 @@ Working version
   build (the Dune rules still do not generate a distributable compiler).
   (David Allsopp and Mark Shinwell, review by Gabriel Scherer)
 
+- #10240: Add Map.of_list operation analogous to Set.of_list.
+  (Josh Berdine, review by ???)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`

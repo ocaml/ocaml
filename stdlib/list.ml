@@ -459,7 +459,7 @@ let sort_uniq cmp l =
           let c = cmp x1 x2 in
           if c = 0 then
             let c = cmp x2 x3 in
-            if c = 0 then [x2] else if c < 0 then [x2; x3] else [x3; x2]
+            if c = 0 then [x1] else if c < 0 then [x2; x3] else [x3; x2]
           else if c < 0 then
             let c = cmp x2 x3 in
             if c = 0 then [x1; x2]
@@ -499,7 +499,7 @@ let sort_uniq cmp l =
           let c = cmp x1 x2 in
           if c = 0 then
             let c = cmp x2 x3 in
-            if c = 0 then [x2] else if c > 0 then [x2; x3] else [x3; x2]
+            if c = 0 then [x1] else if c > 0 then [x2; x3] else [x3; x2]
           else if c > 0 then
             let c = cmp x2 x3 in
             if c = 0 then [x1; x2]
