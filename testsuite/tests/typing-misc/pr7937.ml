@@ -19,7 +19,7 @@ Line 3, characters 35-39:
 3 | let f: 'a. 'a r -> 'a r = fun x -> true;;
                                        ^^^^
 Error: This expression has type bool but an expression was expected of type
-         ([< `X of 'b & 'a & 'c & 'd & 'e ] as 'a) r
+         ([< `X of 'b & 'a & 'c ] as 'a) r
        Types for tag `X are incompatible
 |}]
 
@@ -37,7 +37,7 @@ Line 1, characters 35-51:
                                        ^^^^^^^^^^^^^^^^
 Error: This expression has type int ref
        but an expression was expected of type
-         ([< `X of 'b & 'a & 'c & 'd & 'e ] as 'a) r
+         ([< `X of 'b & 'a & 'c ] as 'a) r
        Types for tag `X are incompatible
 |}]
 
@@ -49,7 +49,6 @@ Line 1, characters 32-36:
 Error: This pattern matches values of type bool
        but a pattern was expected which matches values of type
          ([< `X of int & 'a ] as 'a) r
-       Types for tag `X are incompatible
 |}]
 
 
@@ -61,5 +60,4 @@ Line 1, characters 32-48:
 Error: This pattern matches values of type int ref
        but a pattern was expected which matches values of type
          ([< `X of int & 'a ] as 'a) r
-       Types for tag `X are incompatible
 |}]

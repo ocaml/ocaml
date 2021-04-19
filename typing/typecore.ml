@@ -352,14 +352,13 @@ let unify_pat ?refine env pat expected_ty =
 
 (* unification of a type with a Tconstr with freshly created arguments *)
 let unify_head_only ~refine loc env ty constr =
-  let ty_res = instance constr.cstr_res in
-  let ty_res = repr ty_res in
-  match ty_res.desc with
-  | Tconstr(p,args,m) ->
-      set_type_desc ty_res (Tconstr(p,List.map (fun _ -> newvar ()) args,m));
-      enforce_constraints !env ty_res;
-      unify_pat_types ~refine loc env ty_res ty
-  | _ -> assert false
+  let path =
+    match (repr constr.cstr_res).desc with
+    | Tconstr(p, _, _) -> p
+    | _ -> assert false in
+  let decl = Env.find_type path !env in
+  let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
+  unify_pat_types ~refine loc env ty' ty
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 (* make all Reither present in open variants *)
