@@ -638,8 +638,8 @@ let f (type a) (x : a t) y =
 Line 3, characters 46-47:
 3 |     let module M = struct type b = a let z = (y : b) end
                                                   ^
-Error: This expression has type 'a but an expression was expected of type
-         a = int
+Error: This expression has type a = int
+       but an expression was expected of type b = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
