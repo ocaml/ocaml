@@ -206,18 +206,16 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 # generic rules :
 #################
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .cmxs
-
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) $(COMPFLAGS) -c $<
 
-.mli.cmi:
+%.cmi: %.mli
 	$(OCAMLC)  $(COMPFLAGS) -c $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
-.ml.cmxs:
+%.cmxs: %.ml
 	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets

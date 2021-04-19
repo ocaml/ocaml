@@ -68,16 +68,13 @@ clean::
 
 beforedepend:: lexer.ml
 
-.SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi .cmx
-
-.ml.cmo:
+%.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.mli.cmi:
+%.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend

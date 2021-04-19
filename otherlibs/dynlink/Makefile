@@ -289,13 +289,11 @@ depend: beforedepend
 
 include .depend
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx
-
-.mli.cmi:
+%.cmi: %.mli
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<

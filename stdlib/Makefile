@@ -210,8 +210,6 @@ clean::
 clean::
 	rm -f $(CAMLHEADERS)
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx
-
 export AWK
 
 %.cmi: %.mli

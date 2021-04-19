@@ -142,15 +142,13 @@ installopt:
 	  "$(INSTALL_THREADSLIBDIR)"
 	cd "$(INSTALL_THREADSLIBDIR)" && $(RANLIB) threads.$(A)
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.mli.cmi:
+%.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmo:
+%.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
