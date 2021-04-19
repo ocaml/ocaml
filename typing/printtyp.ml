@@ -1670,7 +1670,8 @@ type rec_item_group =
   | Rec_group of (bound_ident list * syntactic_sig_item list)
 
 (** Private row types are manifested as a sequence of definitions
-    preceding a recursive group, we split then too *)
+    preceding a recursive group, we collect them and separate them from the
+    syntatic recursive group. *)
 type syntatic_rec_item_group =
   { pre_ghosts: Types.signature_item list; group:rec_item_group }
 
@@ -1719,7 +1720,10 @@ let group_recursive_items x =
     let group = Rec_group(List.rev ids, List.rev group) in
     { pre_ghosts=List.rev pre; group } in
   let rec not_in_group ~pre acc = function
-  | [] -> List.rev acc
+  | [] ->
+      (* ghost private row declarations precede a syntactic type declaration *)
+      assert ( pre = [] );
+      List.rev acc
   | {src=Sig_type(id,_,_,_) as row; _ } :: rest
        when is_row_name (Ident.name id) ->
      not_in_group ~pre:(row::pre) acc rest
@@ -1775,7 +1779,7 @@ and tree_of_signature_rec env' sg =
   let collect_trees_of_rec_group group =
     let env = !printing_env in
     let env', group_trees =
-      trees_of_recursive_sigitem_group !printing_env group
+      trees_of_recursive_sigitem_group env group
     in
     set_printing_env env';
     (env, group_trees) in
@@ -1792,6 +1796,9 @@ and trees_of_recursive_sigitem_group env syntactic_group =
   | Rec_group (ids,items) ->
       List.iter (fun x -> Naming_context.add_protected x.ident) ids;
       let type_id x = if x.hide then Some x.ident else None in
+      (* we hide the items being defined from short-path to avoid shortening
+         [type t = Path.To.t] into [type t = t].
+      *)
       hide_rec_items (List.filter_map type_id ids);
       let r = List.map display items in
       Naming_context.reset_protected ();
