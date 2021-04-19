@@ -29,8 +29,7 @@
    ../Makefile.common
    ../Makefile.best_binaries
    Makefile
-   ./ocamltest_config.ml.in
-   ./getocamloptdefaultflags)
+   ./ocamltest_config.ml.in)
  (action (run make %{targets} COMPUTE_DEPS=false)))
 
 ;; FIXME: handle UNIX_OR_WIN32 or something similar
