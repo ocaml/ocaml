@@ -172,6 +172,9 @@ Working version
 
 ### Tools:
 
+- #8645, #10363: ocamldoc: escape `<`, `>`, and `&` in html backend.
+  (Florian Angeletti, report by Wim Lewis, review by Gabriel Scherer)
+
 - #10139: Remove confusing navigation bar from stdlib documentation.
   Adds a -nonavbar option to ocamldoc, and uses it to improve navigation within
   the reference manual.
