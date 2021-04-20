@@ -137,18 +137,23 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
 
+type field_mismatch =
+  | Kind_mismatch of
+      Types.label_declaration * Types.label_declaration * label_mismatch
+  | Name_mismatch of Ident.t * Ident.t
+
+type record_change =
+  (Types.label_declaration, Types.label_declaration,
+   type_expr list * type_expr list,field_mismatch) Diffing.change
+
 type record_mismatch =
-  | Label_mismatch of Types.label_declaration
-                      * Types.label_declaration
-                      * label_mismatch
-  | Label_names of int * Ident.t * Ident.t
-  | Label_missing of position * Ident.t
+  | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
   | Type of Errortrace.equality_error
   | Arity
-  | Inline_record of record_mismatch
+  | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
 
@@ -250,22 +255,50 @@ let report_label_mismatch first second env ppf err =
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
+let pp_record_diff first second prefix decl env ppf
+    (_, (x: record_change) as px) =
+  match x with
+  | Diffing.Keep _ -> ()
+  | Diffing.Delete cd ->
+      Format.fprintf ppf "%aAn extra field, %s, is provided in %s %s."
+        prefix px (Ident.name cd.ld_id) first decl
+  | Diffing.Insert cd ->
+      Format.fprintf  ppf "%aA field, %s, is missing in %s %s."
+        prefix px (Ident.name cd.ld_id) first decl
+  | Diffing.Change (_,_, Kind_mismatch (lbl1, lbl2, err)) ->
+      Format.fprintf ppf
+        "@[<hv>%aFields do not match:@;<1 2>\
+         %a@ is not the same as:\
+         @;<1 2>%a@ %a@]"
+        prefix px
+        Printtyp.label lbl1
+        Printtyp.label lbl2
+        (report_label_mismatch first second env) err
+    | Diffing.Change (_,_, Name_mismatch (name1, name2)) ->
+        Format.fprintf ppf "%aFields have different names, %s and %s."
+          prefix px (Ident.name name1) (Ident.name name2)
+
+let report_patch pr_diff first second decl env ppf patch =
+  let nl ppf () = Format.fprintf ppf "@," in
+  let filtered_diff =
+    List.filter (function (_,Diffing.Keep _) -> false | _ -> true ) @@
+    List.mapi (fun n x -> 1+n,x) patch
+  in
+  let no_prefix _ppf _ = () in
+  match filtered_diff with
+  | [ elt ] ->
+      Format.fprintf ppf "@[<hv>%a@]"
+        (pr_diff first second no_prefix decl env) elt
+  | _ ->
+      let pp_diff = pr_diff first second Diffing.prefix decl env in
+      Format.fprintf ppf "@[<hv>%a@]"
+        (Format.pp_print_list ~pp_sep:nl pp_diff) filtered_diff
+
 let report_record_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
-  | Label_mismatch (l1, l2, err) ->
-      pr
-        "@[<hv>Fields do not match:@;<1 2>%a@ is not the same as:\
-         @;<1 2>%a@ %a@]"
-        Printtyp.label l1
-        Printtyp.label l2
-        (report_label_mismatch first second env) err
-  | Label_names (n, name1, name2) ->
-      pr "@[<hv>Fields number %i have different names, %s and %s.@]"
-        n (Ident.name name1) (Ident.name name2)
-  | Label_missing (ord, s) ->
-      pr "@[<hv>The field %s is only present in %s %s.@]"
-        (Ident.name s) (choose ord first second) decl
+  | Label_mismatch patch ->
+      report_patch pp_record_diff first second decl env ppf patch
   | Unboxed_float_representation ord ->
       pr "@[<hv>Their internal representations differ:@ %s %s %s.@]"
         (choose ord first second) decl
@@ -276,7 +309,8 @@ let report_constructor_mismatch first second decl env ppf err =
   match (err : constructor_mismatch) with
   | Type err -> report_type_inequality env ppf err
   | Arity -> pr "They have different arities."
-  | Inline_record err -> report_record_mismatch first second decl env ppf err
+  | Inline_record err ->
+      report_patch pp_record_diff first second decl env ppf err
   | Kind ord ->
       pr "%s uses inline records and %s doesn't."
         (String.capitalize_ascii (choose ord first second))
@@ -379,6 +413,105 @@ let report_type_mismatch first second decl env ppf err =
           pr "%s is not a type that is always immediate on 64 bit platforms."
             first
 
+module Record_diffing = struct
+
+  let compare_labels env params1 params2
+      (ld1 : Types.label_declaration)
+      (ld2 : Types.label_declaration) =
+    if ld1.ld_mutable <> ld2.ld_mutable
+    then
+      let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
+      Some (Mutability  ord)
+    else
+    let tl1 = params1 @ [ld1.ld_type] in
+    let tl2 = params2 @ [ld2.ld_type] in
+    match Ctype.equal env true tl1 tl2 with
+    | exception Ctype.Equality err ->
+        Some (Type err : label_mismatch)
+    | () -> None
+
+  let rec equal ~loc env params1 params2
+      (labels1 : Types.label_declaration list)
+      (labels2 : Types.label_declaration list) =
+    match labels1, labels2 with
+    | [], [] -> true
+    | _ :: _ , [] | [], _ :: _ -> false
+    | ld1 :: rem1, ld2 :: rem2 ->
+        if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
+        then false
+        else begin
+          Builtin_attributes.check_deprecated_mutable_inclusion
+            ~def:ld1.ld_loc
+            ~use:ld2.ld_loc
+            loc
+            ld1.ld_attributes ld2.ld_attributes
+            (Ident.name ld1.ld_id);
+          match compare_labels env params1 params2 ld1 ld2 with
+          | Some _ -> false
+          (* add arguments to the parameters, cf. PR#7378 *)
+          | None ->
+              equal ~loc env
+                (ld1.ld_type::params1) (ld2.ld_type::params2)
+                rem1 rem2
+        end
+
+  let update d (params1,params2 as st) =
+    match (d:record_change) with
+    | Diffing.(Insert _ | Change _ | Delete _) -> st
+    | Diffing.Keep (x,y,_) -> x.ld_type::params1, y.ld_type::params2
+
+  let test _loc env (params1,params2)
+      (lbl1:Types.label_declaration)
+      (lbl2:Types.label_declaration) =
+    if Ident.name lbl1.ld_id <> Ident.name lbl2.ld_id then
+      Error (Name_mismatch (lbl1.ld_id, lbl2.ld_id))
+    else
+      match compare_labels env params1 params2 lbl1 lbl2 with
+      | Some r ->
+          Error (Kind_mismatch (lbl1, lbl2, r))
+      | None -> Ok (lbl1.ld_type::params1,lbl2.ld_type::params2)
+
+  let diffing loc env params1 params2 cstrs_1 cstrs_2 =
+    let test = test loc env in
+    Diffing.diff
+      ~weight:Diffing.default_weight
+      ~test
+      ~update (params1,params2)
+      (Array.of_list cstrs_1)
+      (Array.of_list cstrs_2)
+
+
+  let compare ~loc env params1 params2 l r =
+    if equal ~loc env params1 params2 l r then
+      None
+    else
+      Some (diffing loc env params1 params2 l r)
+
+  let compare_with_representation ~loc env params1 params2 l r rep1 rep2 =
+    if not (equal ~loc env params1 params2 l r) then
+      let patch = diffing loc env params1 params2 l r in
+      Some (Record_mismatch (Label_mismatch patch))
+    else
+     match rep1, rep2 with
+     | Record_unboxed _, Record_unboxed _ -> None
+     | Record_unboxed _, _ -> Some (Unboxed_representation First)
+     | _, Record_unboxed _ -> Some (Unboxed_representation Second)
+
+     | Record_float, Record_float -> None
+     | Record_float, _ ->
+        Some (Record_mismatch (Unboxed_float_representation First))
+     | _, Record_float ->
+        Some (Record_mismatch (Unboxed_float_representation Second))
+
+     | Record_regular, Record_regular
+     | Record_inlined _, Record_inlined _
+     | Record_extension _, Record_extension _ -> None
+     | (Record_regular|Record_inlined _|Record_extension _),
+       (Record_regular|Record_inlined _|Record_extension _) ->
+        assert false
+
+end
+
 let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
@@ -393,7 +526,7 @@ let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
       Option.map
         (fun rec_err -> Inline_record rec_err)
-        (compare_records env ~loc params1 params2 0 l1 l2)
+        (Record_diffing.compare env ~loc params1 params2 l1 l2)
   | Types.Cstr_record _, _ -> Some (Kind First : constructor_mismatch)
   | _, Types.Cstr_record _ -> Some (Kind Second : constructor_mismatch)
 
@@ -433,7 +566,7 @@ and compare_variants ~loc env params1 params2 n
         | None -> compare_variants ~loc env params1 params2 (n+1) rem1 rem2
       end
 
-and compare_variants_with_representation ~loc env params1 params2 n
+let compare_variants_with_representation ~loc env params1 params2 n
       cstrs1 cstrs2 rep1 rep2
   =
   let err = compare_variants ~loc env params1 params2 n cstrs1 cstrs2 in
@@ -447,69 +580,6 @@ and compare_variants_with_representation ~loc env params1 params2 n
      Some (Unboxed_representation First)
   | None, Variant_regular, Variant_unboxed ->
      Some (Unboxed_representation Second)
-
-and compare_labels env params1 params2
-      (ld1 : Types.label_declaration) (ld2 : Types.label_declaration) =
-  if ld1.ld_mutable <> ld2.ld_mutable then begin
-    let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
-    Some (Mutability  ord)
-  end else begin
-    let tl1 = params1 @ [ld1.ld_type] in
-    let tl2 = params2 @ [ld2.ld_type] in
-    match Ctype.equal env true tl1 tl2 with
-    | exception Ctype.Equality err -> Some (Type err : label_mismatch)
-    | () -> None
-  end
-
-and compare_records ~loc env params1 params2 n
-    (labels1 : Types.label_declaration list)
-    (labels2 : Types.label_declaration list) =
-  match labels1, labels2 with
-  | [], []           -> None
-  | [], l::_ -> Some (Label_missing (Second, l.Types.ld_id))
-  | l::_, [] -> Some (Label_missing (First, l.Types.ld_id))
-  | ld1::rem1, ld2::rem2 ->
-      if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
-      then Some (Label_names (n, ld1.ld_id, ld2.ld_id))
-      else begin
-        Builtin_attributes.check_deprecated_mutable_inclusion
-          ~def:ld1.ld_loc
-          ~use:ld2.ld_loc
-          loc
-          ld1.ld_attributes ld2.ld_attributes
-          (Ident.name ld1.ld_id);
-        match compare_labels env params1 params2 ld1 ld2 with
-        | Some r -> Some (Label_mismatch (ld1, ld2, r))
-        (* add arguments to the parameters, cf. PR#7378 *)
-        | None -> compare_records ~loc env
-                    (ld1.ld_type::params1) (ld2.ld_type::params2)
-                    (n+1)
-                    rem1 rem2
-      end
-
-let compare_records_with_representation ~loc env params1 params2 n
-      labels1 labels2 rep1 rep2
-  =
-  match compare_records ~loc env params1 params2 n labels1 labels2 with
-  | Some err -> Some (Record_mismatch err)
-  | None ->
-     match rep1, rep2 with
-     | Record_unboxed _, Record_unboxed _ -> None
-     | Record_unboxed _, _ -> Some (Unboxed_representation First)
-     | _, Record_unboxed _ -> Some (Unboxed_representation Second)
-
-     | Record_float, Record_float -> None
-     | Record_float, _ ->
-        Some (Record_mismatch (Unboxed_float_representation First))
-     | _, Record_float ->
-        Some (Record_mismatch (Unboxed_float_representation Second))
-
-     | Record_regular, Record_regular
-     | Record_inlined _, Record_inlined _
-     | Record_extension _, Record_extension _ -> None
-     | (Record_regular|Record_inlined _|Record_extension _),
-       (Record_regular|Record_inlined _|Record_extension _) ->
-        assert false
 
 (* Inclusion between "private" annotations *)
 let privacy_mismatch env decl1 decl2 =
@@ -676,6 +746,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
       | () -> None
     end
 
+
 let type_declarations ?(equality = false) ~loc env ~mark name
       decl1 path decl2 =
   Builtin_attributes.check_alerts_inclusion
@@ -743,8 +814,8 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           mark usage labels1;
           if equality then mark Env.Exported labels2
         end;
-        compare_records_with_representation ~loc env
-          decl1.type_params decl2.type_params 1
+        Record_diffing.compare_with_representation ~loc env
+          decl1.type_params decl2.type_params
           labels1 labels2
           rep1 rep2
     | (Type_open, Type_open) -> None

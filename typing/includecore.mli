@@ -47,16 +47,23 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
 
+type field_mismatch =
+  | Kind_mismatch of
+      Types.label_declaration * Types.label_declaration * label_mismatch
+  | Name_mismatch of Ident.t * Ident.t
+
+type record_change =
+  (Types.label_declaration, Types.label_declaration,
+   type_expr list * type_expr list, field_mismatch) Diffing.change
+
 type record_mismatch =
-  | Label_mismatch of label_declaration * label_declaration * label_mismatch
-  | Label_names of int * Ident.t * Ident.t
-  | Label_missing of position * Ident.t
+  | Label_mismatch of record_change list
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
   | Type of Errortrace.equality_error
   | Arity
-  | Inline_record of record_mismatch
+  | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
 
