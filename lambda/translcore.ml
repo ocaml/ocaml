@@ -106,12 +106,12 @@ let trivial_pat pat =
       not cd.cstr_generalized && cd.cstr_consts = 1 && cd.cstr_nonconsts = 0
   | _ -> false
 
-let rec push_defaults loc bindings cases partial need_pat =
+let rec push_defaults loc bindings use_lhs cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
         as exp}] when bindings = [] || trivial_pat pat ->
-      let cases = push_defaults exp.exp_loc bindings cases partial false in
+      let cases = push_defaults exp.exp_loc bindings false cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
@@ -120,19 +120,19 @@ let rec push_defaults loc bindings cases partial need_pat =
              exp_desc = Texp_let
                (Nonrecursive, binds,
                 ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings)
+      push_defaults loc (Bind_value binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
-                   partial true
+                   partial
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#modulepat"};_}];
              exp_desc = Texp_letmodule
                (Some id, name, pres, mexpr,
                 ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings)
+      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
-                   partial true
+                   partial
   | [{c_lhs=pat; c_guard=None; c_rhs=exp} as case]
-    when need_pat || trivial_pat pat && exp.exp_desc <> Texp_unreachable ->
+    when use_lhs || trivial_pat pat && exp.exp_desc <> Texp_unreachable ->
       [{case with c_rhs = wrap_bindings bindings exp}]
   | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
       let param = Typecore.name_cases "param" cases in
@@ -160,8 +160,7 @@ let rec push_defaults loc bindings cases partial need_pat =
   | _ ->
       cases
 
-let push_defaults loc bindings cases partial =
-  push_defaults loc bindings cases partial false
+let push_defaults loc = push_defaults loc [] false
 
 (* Insertion of debugging events *)
 
@@ -862,7 +861,7 @@ and transl_function ~scopes e param cases partial =
   let ((kind, params, return), body) =
     event_function ~scopes e
       (function repr ->
-         let pl = push_defaults e.exp_loc [] cases partial in
+         let pl = push_defaults e.exp_loc cases partial in
          let return_kind = function_return_value_kind e.exp_env e.exp_type in
          transl_curried_function ~scopes e.exp_loc return_kind
            repr partial param pl)
