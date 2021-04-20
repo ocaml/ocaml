@@ -759,6 +759,7 @@ afl
 function_sections
 flat_float_array
 windows_unicode
+cmm_invariants
 flambda_invariants
 flambda
 frame_pointers
@@ -900,6 +901,7 @@ enable_installing_bytecode_programs
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
+enable_cmm_invariants
 with_target_bindir
 enable_reserved_header_bits
 enable_stdlib_manpages
@@ -1575,6 +1577,7 @@ Optional Features:
   --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
+  --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
                           headers for profiling info
@@ -2932,6 +2935,7 @@ VERSION=4.13.0+dev0-2020-10-19
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3235,6 +3239,12 @@ fi
 # Check whether --enable-flambda-invariants was given.
 if test "${enable_flambda_invariants+set}" = set; then :
   enableval=$enable_flambda_invariants;
+fi
+
+
+# Check whether --enable-cmm-invariants was given.
+if test "${enable_cmm_invariants+set}" = set; then :
+  enableval=$enable_cmm_invariants;
 fi
 
 
@@ -17108,6 +17118,12 @@ fi
 else
   flambda=false
   flambda_invariants=false
+fi
+
+if test x"$enable_cmm_invariants" = "xyes"; then :
+  cmm_invariants=true
+else
+  cmm_invariants=false
 fi
 
 if test x"$enable_flat_float_array" = "xno"; then :

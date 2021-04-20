@@ -211,6 +211,9 @@ val flambda : bool
 val with_flambda_invariants : bool
 (** Whether the invariants checks for flambda are enabled *)
 
+val with_cmm_invariants : bool
+(** Whether the invariants checks for Cmm are enabled *)
+
 val profinfo : bool
 (** Whether the compiler was configured for profiling *)
 

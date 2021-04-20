@@ -58,6 +58,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST_STRING,EXT_OBJ) \
 	    $(call SUBST,FLAMBDA) \
 	    $(call SUBST,WITH_FLAMBDA_INVARIANTS) \
+	    $(call SUBST,WITH_CMM_INVARIANTS) \
 	    $(call SUBST_STRING,FLEXLINK_FLAGS) \
 	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
 	    $(call SUBST,HOST) \
