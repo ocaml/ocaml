@@ -371,6 +371,12 @@ Working version
 - #10351: Fix DLL loading with binutils 2.36+ on mingw-w64
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #10339, #10354: Fix handling of exception-raising specific
+   operations during spilling.  (This bug affects ARM and ARM64.)
+   In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
+  (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan)
+
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 
