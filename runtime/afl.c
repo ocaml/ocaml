@@ -34,12 +34,6 @@ CAMLprim value caml_reset_afl_instrumentation(value unused)
   return Val_unit;
 }
 
-CAMLexport value caml_setup_afl(value unit)
-{
-  /* AFL is not supported */
-  return Val_unit;
-}
-
 #else
 
 #include <unistd.h>
