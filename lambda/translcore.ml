@@ -98,12 +98,14 @@ let wrap_bindings bindings exp =
            Texp_letmodule (Some id, name, pres, mexpr, exp)})
     exp bindings
 
-let trivial_pat pat =
+let rec trivial_pat pat =
   match pat.pat_desc with
     Tpat_var _
   | Tpat_any -> true
   | Tpat_construct (_, cd, [], _) ->
       not cd.cstr_generalized && cd.cstr_consts = 1 && cd.cstr_nonconsts = 0
+  | Tpat_tuple patl ->
+      List.for_all trivial_pat patl
   | _ -> false
 
 let rec push_defaults loc bindings use_lhs cases partial =
