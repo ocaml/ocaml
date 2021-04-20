@@ -1124,7 +1124,9 @@ val pp_print_either :
   left:(formatter -> 'a -> unit) ->
   right:(formatter -> 'b -> unit) -> formatter -> ('a, 'b) Either.t -> unit
 (** [pp_print_either ~left ~right ppf e] prints [e] on [ppf] using
-    [left] if [e] is [Either.Left _] and [right] if [e] is [Either.Right _]. *)
+    [left] if [e] is [Either.Left _] and [right] if [e] is [Either.Right _]. 
+    
+    @since 4.13 *)
 
 (** {1:fpp Formatted pretty-printing} *)
 
