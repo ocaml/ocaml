@@ -346,10 +346,12 @@ static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
   heap_chunk_head* chunk = Chunk_head(heap_chunk);
   mark_entry me = chunk->redarken_first;
   header_t* end = (header_t*)chunk->redarken_end;
+  if (chunk->redarken_end <= me.start) return 1;
+
   while (1) {
     header_t* hp;
     /* Skip a prefix of fields that need no marking */
-    CAMLassert(me.start <= me.end);
+    CAMLassert(me.start <= me.end && (header_t*)me.end <= end);
     while (me.start < me.end &&
            (!Is_block(*me.start) || Is_young(*me.start))) {
       me.start++;
@@ -369,6 +371,7 @@ static int redarken_chunk(char* heap_chunk, struct mark_stack* stk) {
 
     /* Find the next block that needs to be re-marked */
     hp = (header_t*)me.end;
+    CAMLassert(hp <= end);
     while (hp < end) {
       value v = Val_hp(hp);
       if (Tag_val(v) < No_scan_tag && Is_black_val(v))
