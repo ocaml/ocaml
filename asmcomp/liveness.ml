@@ -44,7 +44,7 @@ let rec live i finally =
       Reg.set_of_array i.arg
   | Iop op ->
       let after = live i.next finally in
-      if Proc.op_is_pure op                    (* no side effects *)
+      if operation_is_pure op                  (* no side effects *)
       && Reg.disjoint_set_array after i.res    (* results are not used after *)
       && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)
