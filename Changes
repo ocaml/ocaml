@@ -382,6 +382,11 @@ OCaml 4.13.0
 - #10232: Warning for unused record fields.
   (Leo White, review by Florian Angeletti)
 
+- #?????: Improve error messages for mismatched record and variant
+  definitions.
+  (Florian Angeletti, review by ???)
+
+
 ### Internal/compiler-libs changes:
 
 - #9243, simplify parser rules for array indexing operations
