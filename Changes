@@ -87,7 +87,8 @@ Working version
   (David Allsopp and Mark Shinwell, review by Gabriel Scherer)
  
 - #10242: Added convenience pretty printer for Either.t in the Format module.
-  (Oghenevwogaga Ebresafe, review by Nicolás Ojeda Bär, Gabriel Scherer and Xavier Van de Woestyne)
+  (Oghenevwogaga Ebresafe, review by Nicolás Ojeda Bär,
+  Gabriel Scherer and Xavier Van de Woestyne)
 
 ### Other libraries:
 
