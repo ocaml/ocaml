@@ -184,15 +184,6 @@ CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 
 #ifdef CAML_INTERNALS
 
-/* FIXME */
-/* There are two GC bits in the object header, with the following
-   possible values:
-    00: new object, not forwarded
-    11: forwarded by a fault promotion */
-
-#define Is_promoted_hd(hd)  (((hd) & (3 << 8)) == (3 << 8))
-#define Promotedhd_hd(hd)  ((hd) | (3 << 8))
-
 extern uintnat caml_use_huge_pages;
 
 #ifdef HAS_HUGE_PAGES
@@ -213,8 +204,6 @@ extern uintnat caml_use_huge_pages;
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Count_alloc
-
 #define Alloc_small_with_profinfo(result, wosize, tag, GC, profinfo) do{    \
   caml_domain_state* dom_st;                                                \
                                                 CAMLassert ((wosize) >= 1); \
@@ -222,17 +211,15 @@ extern uintnat caml_use_huge_pages;
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   dom_st = Caml_state;                                                      \
   dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
-  if (Caml_check_gc_interrupt(dom_st)){                                     \
+  while (Caml_check_gc_interrupt(dom_st)) {                                 \
     dom_st->young_ptr += Bhsize_wosize (wosize);                            \
     { GC }                                                                  \
     dom_st->young_ptr -= Bhsize_wosize (wosize);                            \
   }                                                                         \
   Hd_hp (dom_st->young_ptr) =                                               \
     Make_header_with_profinfo ((wosize), (tag), 0, profinfo);               \
-  /* FIXME: Spacetime */ if (profinfo == 0);                                \
   (result) = Val_hp (dom_st->young_ptr);                                    \
   DEBUG_clear ((result), (wosize));                                         \
-  Count_alloc;                                                              \
 }while(0)
 
 #define Alloc_small(result, wosize, tag, GC) \
