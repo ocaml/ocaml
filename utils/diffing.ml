@@ -368,3 +368,22 @@ let variadic_diff ~weight ~test ~(update:_ update) state line column =
   let fullstate = { line; column; state } in
   compute_matrix ~weight ~test ~update fullstate
   |> construct_patch
+
+
+let style = function
+  | Keep _ -> Misc.Color.[ FG Green ]
+  | Delete _ -> Misc.Color.[ FG Red; Bold]
+  | Insert _ -> Misc.Color.[ FG Red; Bold]
+  | Change _ -> Misc.Color.[ FG Magenta; Bold]
+
+let prefix ppf (pos, p) =
+  let sty = style p in
+  Format.pp_open_stag ppf (Misc.Color.Style sty);
+  Format.fprintf ppf "%i. " pos;
+  Format.pp_close_stag ppf ()
+
+  let default_weight = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Change _ -> 10
+    | Keep _ -> 0

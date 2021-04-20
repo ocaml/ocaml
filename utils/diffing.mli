@@ -110,3 +110,10 @@ val variadic_diff :
   test:('state -> 'l -> 'r -> ('eq, 'diff) result) ->
   update:('l, 'r, 'eq, 'diff, 'state) update ->
   'state -> 'l array -> 'r array -> ('l, 'r, 'eq, 'diff) patch
+
+
+val default_weight : _ change -> int
+
+(** Printing default function *)
+val prefix: Format.formatter -> (int *  _ change) -> unit
+val style: _ change -> Misc.Color.style list

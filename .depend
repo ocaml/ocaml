@@ -59,10 +59,13 @@ utils/consistbl.cmx : \
 utils/consistbl.cmi : \
     utils/misc.cmi
 utils/diffing.cmo : \
+    utils/misc.cmi \
     utils/diffing.cmi
 utils/diffing.cmx : \
+    utils/misc.cmx \
     utils/diffing.cmi
-utils/diffing.cmi :
+utils/diffing.cmi : \
+    utils/misc.cmi
 utils/domainstate.cmo : \
     utils/domainstate.cmi
 utils/domainstate.cmx : \

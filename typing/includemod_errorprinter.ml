@@ -366,18 +366,6 @@ end
 module Functor_suberror = struct
   open Err
 
-  let style = function
-    | Diffing.Keep _ -> Misc.Color.[ FG Green ]
-    | Diffing.Delete _ -> Misc.Color.[ FG Red; Bold]
-    | Diffing.Insert _ -> Misc.Color.[ FG Red; Bold]
-    | Diffing.Change _ -> Misc.Color.[ FG Magenta; Bold]
-
-  let prefix ppf (pos, p) =
-    let sty = style p in
-    Format.pp_open_stag ppf (Misc.Color.Style sty);
-    Format.fprintf ppf "%i." pos;
-    Format.pp_close_stag ppf ()
-
   let param_id x = match x.With_shorthand.item with
     | Types.Named (Some _ as x,_) -> x
     | Types.(Unit | Named(None,_)) -> None
@@ -385,7 +373,7 @@ module Functor_suberror = struct
   (** Print the list of params with style *)
   let pretty_params sep proj printer patch =
     let elt (x,param) =
-      let sty = style x in
+      let sty = Diffing.style x in
       Format.dprintf "%a%t%a"
         Format.pp_open_stag (Misc.Color.Style sty)
         (printer param)
@@ -533,10 +521,10 @@ module Functor_suberror = struct
   end
 
   let subcase sub ~expansion_token env (pos, diff) =
-    Location.msg "%a%a%a %a@[<hv 2>%t@]%a"
+    Location.msg "%a%a%a%a@[<hv 2>%t@]%a"
       Format.pp_print_tab ()
       Format.pp_open_tbox ()
-      prefix (pos, diff)
+      Diffing.prefix (pos, diff)
       Format.pp_set_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
