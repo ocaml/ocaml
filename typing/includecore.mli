@@ -68,11 +68,10 @@ type constructor_mismatch =
   | Explicit_return_type of position
 
 type variant_mismatch =
-  | Constructor_mismatch of constructor_declaration
-                            * constructor_declaration
+  | Constructor_mismatch of Types.constructor_declaration
+                            * Types.constructor_declaration
                             * constructor_mismatch
-  | Constructor_names of int * Ident.t * Ident.t
-  | Constructor_missing of position * Ident.t
+  | Constructor_names of Ident.t * Ident.t
 
 type extension_constructor_mismatch =
   | Constructor_privacy
@@ -80,6 +79,9 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * extension_constructor
                             * constructor_mismatch
+type variant_change =
+  (Types.constructor_declaration, Types.constructor_declaration,
+   Asttypes.label, variant_mismatch) Diffing.change
 
 type private_variant_mismatch =
   | Only_outer_closed
@@ -102,7 +104,7 @@ type type_mismatch =
   | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance
   | Record_mismatch of record_mismatch
-  | Variant_mismatch of variant_mismatch
+  | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
