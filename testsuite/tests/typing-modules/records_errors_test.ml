@@ -152,3 +152,141 @@ Error: Signature mismatch:
          type t = { f0 : unit; f1 : unit; }
        A field, f1, is missing in the first declaration.
 |}];;
+
+
+(** Random additions and deletions of fields *)
+
+module Addition : sig
+  type t = {a : unit; b : unit; c : unit; d : unit}
+end = struct
+  type t = {a : unit; b : unit; beta : unit; c : unit; d: unit}
+end
+[%%expect {|
+Lines 5-7, characters 6-3:
+5 | ......struct
+6 |   type t = {a : unit; b : unit; beta : unit; c : unit; d: unit}
+7 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t = { a : unit; b : unit; beta : unit; c : unit; d : unit; }
+         end
+       is not included in
+         sig type t = { a : unit; b : unit; c : unit; d : unit; } end
+       Type declarations do not match:
+         type t = { a : unit; b : unit; beta : unit; c : unit; d : unit; }
+       is not included in
+         type t = { a : unit; b : unit; c : unit; d : unit; }
+       An extra field, beta, is provided in the first declaration.
+|}]
+
+
+module Deletion : sig
+  type t = {a : unit; b : unit; c : unit; d : unit}
+end = struct
+  type t = {a : unit; c : unit; d : unit}
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = {a : unit; c : unit; d : unit}
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = { a : unit; c : unit; d : unit; } end
+       is not included in
+         sig type t = { a : unit; b : unit; c : unit; d : unit; } end
+       Type declarations do not match:
+         type t = { a : unit; c : unit; d : unit; }
+       is not included in
+         type t = { a : unit; b : unit; c : unit; d : unit; }
+       A field, b, is missing in the first declaration.
+|}]
+
+
+module Multi: sig
+  type t = {
+    a : unit;
+    b : unit;
+    c : unit;
+    d : unit;
+    e : unit;
+    f : unit;
+    g : unit
+  }
+end = struct
+  type t = {
+    a : unit;
+    b : unit;
+    beta: int;
+    c : unit;
+    d : unit;
+    f : unit;
+    g : unit;
+    phi : unit;
+  }
+end
+
+[%%expect {|
+Lines 11-22, characters 6-3:
+11 | ......struct
+12 |   type t = {
+13 |     a : unit;
+14 |     b : unit;
+15 |     beta: int;
+...
+19 |     g : unit;
+20 |     phi : unit;
+21 |   }
+22 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t = {
+             a : unit;
+             b : unit;
+             beta : int;
+             c : unit;
+             d : unit;
+             f : unit;
+             g : unit;
+             phi : unit;
+           }
+         end
+       is not included in
+         sig
+           type t = {
+             a : unit;
+             b : unit;
+             c : unit;
+             d : unit;
+             e : unit;
+             f : unit;
+             g : unit;
+           }
+         end
+       Type declarations do not match:
+         type t = {
+           a : unit;
+           b : unit;
+           beta : int;
+           c : unit;
+           d : unit;
+           f : unit;
+           g : unit;
+           phi : unit;
+         }
+       is not included in
+         type t = {
+           a : unit;
+           b : unit;
+           c : unit;
+           d : unit;
+           e : unit;
+           f : unit;
+           g : unit;
+         }
+       3. An extra field, beta, is provided in the first declaration.
+       6. A field, e, is missing in the first declaration.
+       9. An extra field, phi, is provided in the first declaration.
+|}]

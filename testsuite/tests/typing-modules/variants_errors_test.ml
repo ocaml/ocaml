@@ -202,3 +202,124 @@ Error: Signature mismatch:
          A of 'a
        The type 'a is not equal to the type 'b
 |}];;
+
+
+
+(** Random additions and deletions of constructors *)
+
+module Addition : sig
+  type t =
+    | A
+    | B
+    | C
+    | D
+end = struct
+  type t =
+    | A
+    | B
+    | Beta
+    | C
+    | D
+end
+[%%expect {|
+Lines 9-16, characters 6-3:
+ 9 | ......struct
+10 |   type t =
+11 |     | A
+12 |     | B
+13 |     | Beta
+14 |     | C
+15 |     | D
+16 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A | B | Beta | C | D end
+       is not included in
+         sig type t = A | B | C | D end
+       Type declarations do not match:
+         type t = A | B | Beta | C | D
+       is not included in
+         type t = A | B | C | D
+       An extra constructor, Beta, is provided in the first declaration.
+|}]
+
+
+module Addition : sig
+  type t =
+    | A
+    | B
+    | C
+    | D
+end = struct
+  type t =
+    | A
+    | B
+    | D
+end
+[%%expect {|
+Lines 7-12, characters 6-3:
+ 7 | ......struct
+ 8 |   type t =
+ 9 |     | A
+10 |     | B
+11 |     | D
+12 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A | B | D end
+       is not included in
+         sig type t = A | B | C | D end
+       Type declarations do not match:
+         type t = A | B | D
+       is not included in
+         type t = A | B | C | D
+       A constructor, C, is missing in the first declaration.
+|}]
+
+
+module Multi: sig
+  type t =
+    | A
+    | B
+    | C
+    | D
+    | E
+    | F
+    | G
+end = struct
+  type t =
+    | A
+    | B
+    | Beta
+    | C
+    | D
+    | F
+    | G
+    | Phi
+end
+
+[%%expect {|
+Lines 10-20, characters 6-3:
+10 | ......struct
+11 |   type t =
+12 |     | A
+13 |     | B
+14 |     | Beta
+...
+17 |     | F
+18 |     | G
+19 |     | Phi
+20 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A | B | Beta | C | D | F | G | Phi end
+       is not included in
+         sig type t = A | B | C | D | E | F | G end
+       Type declarations do not match:
+         type t = A | B | Beta | C | D | F | G | Phi
+       is not included in
+         type t = A | B | C | D | E | F | G
+       3. An extra constructor, Beta, is provided in the first declaration.
+       6. A constructor, E, is missing in the first declaration.
+       9. An extra constructor, Phi, is provided in the first declaration.
+|}]
