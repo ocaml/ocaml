@@ -44,6 +44,9 @@ module Out_name = struct
   let set out_name x = out_name.printed_name <- x
 end
 
+(** Some identifiers may require hiding when printing *)
+type bound_ident = { hide:bool; ident:Ident.t }
+
 (* printing environment for path shortening and naming *)
 let printing_env = ref Env.empty
 
@@ -203,7 +206,6 @@ module Conflicts = struct
 
   let exists () = M.cardinal !explanations >0
 end
-
 
 module Naming_context = struct
 
@@ -1641,15 +1643,6 @@ let wrap_env fenv ftree arg =
   set_printing_env env;
   tree
 
-let filter_rem_sig item rem =
-  match item, rem with
-  | Sig_class _, ctydecl :: tydecl1 :: tydecl2 :: rem ->
-      ([ctydecl; tydecl1; tydecl2], rem)
-  | Sig_class_type _, tydecl1 :: tydecl2 :: rem ->
-      ([tydecl1; tydecl2], rem)
-  | _ ->
-      ([], rem)
-
 let dummy =
   {
     type_params = [];
@@ -1672,46 +1665,95 @@ let hide ids env = List.fold_right
     (fun id -> Env.add_type ~check:false (Ident.rename id) dummy)
     ids env
 
-let hide_rec_items = function
-  | Sig_type(id, _decl, rs, _) ::rem
-    when rs = Trec_first && not !Clflags.real_paths ->
-      let rec get_ids = function
-          Sig_type (id, _, Trec_next, _) :: rem ->
-            id :: get_ids rem
-        | _ -> []
-      in
-      let ids = id :: get_ids rem in
-      set_printing_env
-        (hide ids !printing_env)
-  | _ -> ()
+let hide_rec_items ids =
+  if not !Clflags.real_paths then
+    set_printing_env (hide ids !printing_env)
+
+(** Classes and class types generate ghosts signature items, we group them
+    together before printing *)
+type syntactic_sig_item =
+  {
+    src: Types.signature_item;
+    post_ghosts: Types.signature_item list
+    (** ghost classes types are post-declared *);
+  }
+type rec_item_group =
+  | Not_rec of syntactic_sig_item
+  | Rec_group of (bound_ident list * syntactic_sig_item list)
+
+(** Private row types are manifested as a sequence of definitions
+    preceding a recursive group, we collect them and separate them from the
+    syntatic recursive group. *)
+type syntatic_rec_item_group =
+  { pre_ghosts: Types.signature_item list; group:rec_item_group }
+
+let group_syntactic_items x =
+  let rec group ~acc = function
+    | Sig_class _ as src :: rem ->
+       let ctydecl, tydecl1, tydecl2, rem =
+         match rem with
+         | cty :: tydecl1 :: tydecl2 :: rem -> cty, tydecl1, tydecl2, rem
+         | _ ->  (* a class declaration for [c] is followed by the ghost
+                    declarations of class type [c], and types [c] and [#c] *)
+            assert false
+       in
+        let s_elt =
+          { src; post_ghosts= [ctydecl; tydecl1; tydecl2]}
+        in
+        group ~acc:(s_elt :: acc) rem
+    | Sig_class_type _ as src :: rem ->
+       let tydecl1, tydecl2, rem =
+         match rem with
+         | tydecl1 :: tydecl2 :: rem -> tydecl1, tydecl2, rem
+         | _ ->  (* a class type declaration for [ct] is followed by the ghost
+                    declarations of types [ct] and [#ct] *)
+            assert false
+       in
+       group
+         ~acc:({src; post_ghosts = [tydecl1; tydecl2]}::acc)
+         rem
+    | (Sig_module _ | Sig_value _ | Sig_type _ | Sig_typext _
+      | Sig_modtype _ as src)  :: rem ->
+        group ~acc:({src; post_ghosts=[]} :: acc) rem
+    | [] -> List.rev acc in
+  group  ~acc:[] x
+
+let add_sigitem env x =
+  Env.add_signature (x.src :: x.post_ghosts) env
 
 let recursive_sigitem = function
-  | Sig_class(id,_,rs,_) -> Some(id,rs,3)
-  | Sig_class_type (id,_,rs,_) -> Some(id,rs,2)
-  | Sig_type(id, _, rs, _)
-  | Sig_module(id, _, _, rs, _) -> Some (id,rs,0)
-  | _ -> None
+  | Sig_type(ident, _, rs, _) -> Some({hide=true;ident},rs)
+  | Sig_class(ident,_,rs,_) | Sig_class_type (ident,_,rs,_)
+  | Sig_module(ident, _, _, rs, _) -> Some ({hide=false;ident},rs)
+  | Sig_value _ | Sig_modtype _ | Sig_typext _  -> None
 
-let skip k l = snd (Misc.Stdlib.List.split_at k l)
-
-let protect_rec_items items =
-  let rec get_ids recs = function
-    | [] -> []
-    | item :: rem -> match recursive_sigitem item with
-      | Some (id, r, k ) when r = recs -> id :: get_ids Trec_next (skip k rem)
-      | _ -> [] in
-  List.iter Naming_context.add_protected (get_ids Trec_first items)
-
-let stop_type_group env =
-  Naming_context.reset_protected ();
-  set_printing_env env
-
-let still_in_type_group env' in_type_group item =
-  match in_type_group, recursive_sigitem item with
-  | true, Some (_,Trec_next,_) -> true
-  | _, Some (_, (Trec_not | Trec_first),_) ->
-      stop_type_group env' ; true
-  | _ -> stop_type_group env'; false
+let group_recursive_items x =
+  let rec_group pre ids group =
+    let group = Rec_group(List.rev ids, List.rev group) in
+    { pre_ghosts=List.rev pre; group } in
+  let rec not_in_group ~pre acc = function
+  | [] ->
+      (* ghost private row declarations precede a syntactic type declaration *)
+      assert ( pre = [] );
+      List.rev acc
+  | {src=Sig_type(id,_,_,_) as row; _ } :: rest
+       when is_row_name (Ident.name id) ->
+     not_in_group ~pre:(row::pre) acc rest
+  | elt :: rest ->
+      match recursive_sigitem elt.src with
+      | None | Some (_,Trec_not) ->
+         let sgroup = { pre_ghosts=List.rev pre; group=Not_rec elt } in
+         not_in_group ~pre:[] (sgroup::acc) rest
+      | Some (id, (Trec_first | Trec_next) )  ->
+         in_group ~pre [id] [elt] acc rest
+  and in_group ~pre ids group acc = function
+  | [] -> List.rev (rec_group pre ids group :: acc)
+  | elt :: rest as all ->
+      match recursive_sigitem elt.src with
+      | Some (id, Trec_next) -> in_group ~pre (id::ids) (elt::group) acc rest
+      | None | Some (_,(Trec_not|Trec_first)) ->
+          not_in_group ~pre:[] (rec_group pre ids group::acc) all in
+  not_in_group ~pre:[] [] x
 
 let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_ident p ->
@@ -1742,42 +1784,62 @@ and tree_of_functor_parameter = function
       Some (name, tree_of_modtype ~ellipsis:false ty_arg), env
 
 and tree_of_signature sg =
-  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
+  wrap_env (fun env -> env)(fun sg ->
+      let tree_groups = tree_of_signature_rec !printing_env sg in
+      List.concat_map (fun (_env,l) -> List.map snd l) tree_groups
+    ) sg
 
-and tree_of_signature_rec env' in_type_group = function
-    [] -> stop_type_group env'; []
-  | item :: rem as items ->
-      let in_type_group = still_in_type_group env' in_type_group item in
-      let (sg, rem) = filter_rem_sig item rem in
-      hide_rec_items items;
-      protect_rec_items items;
-      reset_naming_context ();
-      let trees = trees_of_sigitem item in
-      let env' = Env.add_signature (item :: sg) env' in
-      trees @ tree_of_signature_rec env' in_type_group rem
+and tree_of_signature_rec env' sg =
+  let structured = group_recursive_items (group_syntactic_items sg) in
+  let collect_trees_of_rec_group group =
+    let env = !printing_env in
+    let env', group_trees =
+      trees_of_recursive_sigitem_group env group
+    in
+    set_printing_env env';
+    (env, group_trees) in
+  set_printing_env env';
+  List.map collect_trees_of_rec_group structured
 
-and trees_of_sigitem = function
+and trees_of_recursive_sigitem_group env syntactic_group =
+  let display x =
+    reset_naming_context ();
+    x.src, tree_of_sigitem x.src in
+  let env = Env.add_signature syntactic_group.pre_ghosts env in
+  match syntactic_group.group with
+  | Not_rec x -> add_sigitem env x, [display x]
+  | Rec_group (ids,items) ->
+      List.iter (fun x -> Naming_context.add_protected x.ident) ids;
+      let type_id x = if x.hide then Some x.ident else None in
+      (* we hide the items being defined from short-path to avoid shortening
+         [type t = Path.To.t] into [type t = t].
+      *)
+      hide_rec_items (List.filter_map type_id ids);
+      let r = List.map display items in
+      Naming_context.reset_protected ();
+      List.fold_left add_sigitem env items,
+      r
+
+and tree_of_sigitem = function
   | Sig_value(id, decl, _) ->
-      [tree_of_value_description id decl]
-  | Sig_type(id, _, _, _) when is_row_name (Ident.name id) ->
-      []
+      tree_of_value_description id decl
   | Sig_type(id, decl, rs, _) ->
-      [tree_of_type_declaration id decl rs]
+      tree_of_type_declaration id decl rs
   | Sig_typext(id, ext, es, _) ->
-      [tree_of_extension_constructor id ext es]
+      tree_of_extension_constructor id ext es
   | Sig_module(id, _, md, rs, _) ->
       let ellipsis =
         List.exists (function
           | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
           | _ -> false)
           md.md_attributes in
-      [tree_of_module id md.md_type rs ~ellipsis]
+      tree_of_module id md.md_type rs ~ellipsis
   | Sig_modtype(id, decl, _) ->
-      [tree_of_modtype_declaration id decl]
+      tree_of_modtype_declaration id decl
   | Sig_class(id, decl, rs, _) ->
-      [tree_of_class_declaration id decl rs]
+      tree_of_class_declaration id decl rs
   | Sig_class_type(id, decl, rs, _) ->
-      [tree_of_cltype_declaration id decl rs]
+      tree_of_cltype_declaration id decl rs
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -1834,18 +1896,9 @@ let print_items showval env x =
   refresh_weak();
   reset_naming_context ();
   Conflicts.reset ();
-  let rec print showval in_type_group env = function
-  | [] -> stop_type_group env; []
-  | item :: rem as items ->
-      let in_type_group = still_in_type_group env in_type_group item in
-      let (sg, rem) = filter_rem_sig item rem in
-      hide_rec_items items;
-      protect_rec_items items;
-      reset_naming_context ();
-      let trees = trees_of_sigitem item in
-      List.map (fun d -> (d, showval env item)) trees @
-      print showval in_type_group (Env.add_signature (item :: sg) env) rem in
-  print showval false env x
+  let extend_val env (sigitem,outcome) = outcome, showval env sigitem in
+  let post_process (env,l) = List.map (extend_val env) l in
+  List.concat_map post_process @@ tree_of_signature_rec env x
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 
