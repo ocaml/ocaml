@@ -295,6 +295,9 @@ Working version
   specific solver functions.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
+- #10358: Use a hash table for the load path.
+  (Leo White, review by Gabriel Scherer)
+
 ### Build system:
 
 - #9191, #10091, #10182: take the LDFLAGS variable into account, except on
