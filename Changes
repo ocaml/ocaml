@@ -325,9 +325,9 @@ Working version
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
-- #8575: Surprising interaction between polymorphic variants and constructor
-  disambiguation.
-  (Jacques Garrigue, report by Thomas Refis)
+- #8575, #10362: Surprising interaction between polymorphic variants and
+  constructor disambiguation.
+  (Jacques Garrigue, report and review by Thomas Refis)
 
 - #9936: Make sure that `List.([1;2;3])` is printed `[1;2;3]` in the toplevel
   by identifying lists by their types.
