@@ -76,18 +76,18 @@ clean::
 
 # The dependency generator
 
-CAMLDEP = \
+OCAMLDEP = \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   ocamldep.cmo depend.cmi
 
 ocamldep$(EXE): LINKFLAGS += -compat-32
-ocamldep$(EXE): $(CAMLDEP)
-ocamldep.opt$(EXE): $(call byte2native, $(CAMLDEP))
+ocamldep$(EXE): $(OCAMLDEP)
+ocamldep.opt$(EXE): $(call byte2native, $(OCAMLDEP))
 
 # The profiler
 
-CSLPROF=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
+OCAMLPROF=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo \
@@ -95,21 +95,21 @@ CSLPROF=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   pprintast.cmo \
   lexer.cmo parse.cmo ocamlprof.cmo
 
-ocamlprof$(EXE): $(CSLPROF)
-ocamlprof.opt$(EXE): $(call byte2native, $(CSLPROF))
+ocamlprof$(EXE): $(OCAMLPROF)
+ocamlprof.opt$(EXE): $(call byte2native, $(OCAMLPROF))
 all: profiling.cmo
 allopt: profiling.cmx
 
-ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
-               warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-               clflags.cmo local_store.cmo \
-               terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
-               main_args.cmo
+OCAMLCP = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
+          warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
+          clflags.cmo local_store.cmo \
+          terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
+          main_args.cmo
 
-ocamlcp$(EXE): $(ocamlcp_cmos) ocamlcp.cmo
-ocamlcp.opt$(EXE): $(call byte2native, $(ocamlcp_cmos) ocamlcp.cmo)
-ocamloptp$(EXE): $(ocamlcp_cmos) ocamloptp.cmo
-ocamloptp.opt$(EXE): $(call byte2native, $(ocamlcp_cmos) ocamloptp.cmo)
+ocamlcp$(EXE): $(OCAMLCP) ocamlcp.cmo
+ocamlcp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamlcp.cmo)
+ocamloptp$(EXE): $(OCAMLCP) ocamloptp.cmo
+ocamloptp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamloptp.cmo)
 
 opt:: profiling.cmx
 
@@ -129,10 +129,10 @@ installopt::
 	  "$(INSTALL_LIBDIR)"
 
 # To help building mixed-mode libraries (OCaml + C)
-ocamlmklib_cmos = config.cmo build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo
+OCAMLMKLIB = config.cmo build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo
 
-ocamlmklib$(EXE): $(ocamlmklib_cmos)
-ocamlmklib.opt$(EXE): $(call byte2native, $(ocamlmklib_cmos))
+ocamlmklib$(EXE): $(OCAMLMKLIB)
+ocamlmklib.opt$(EXE): $(call byte2native, $(OCAMLMKLIB))
 
 # To make custom toplevels
 
@@ -244,21 +244,21 @@ ifeq "$(SYSTEM)" "cygwin"
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
 endif
 
-OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
-        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
-        $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
-        objinfo.cmo
+OCAMLOBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+             $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+             $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
+             objinfo.cmo
 
-ocamlobjinfo$(EXE): $(OBJINFO)
-ocamlobjinfo.opt$(EXE): $(call byte2native, $(OBJINFO))
+ocamlobjinfo$(EXE): $(OCAMLOBJINFO)
+ocamlobjinfo.opt$(EXE): $(call byte2native, $(OCAMLOBJINFO))
 
-primreq=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+PRIMREQ=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         primreq.cmo
 
 # Scan object files for required primitives
-primreq$(EXE): $(primreq)
-primreq.opt$(EXE): $(call byte2native, $(primreq))
+primreq$(EXE): $(PRIMREQ)
+primreq.opt$(EXE): $(call byte2native, $(PRIMREQ))
 
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
@@ -282,12 +282,12 @@ install::
 
 # Copy a bytecode executable, stripping debug info
 
-stripdebug=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+STRIPDEBUG=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
            $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
            stripdebug.cmo
 
-stripdebug$(EXE): $(stripdebug)
-stripdebug.opt$(EXE): $(call byte2native, $(stripdebug))
+stripdebug$(EXE): $(STRIPDEBUG)
+stripdebug.opt$(EXE): $(call byte2native, $(STRIPDEBUG))
 
 # Compare two bytecode executables
 
