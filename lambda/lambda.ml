@@ -247,6 +247,10 @@ type local_attribute =
   | Never_local (* [@local never] *)
   | Default_local (* [@local maybe] or no [@local] attribute *)
 
+type poll_attribute =
+  | Error_poll (* [@poll error] *)
+  | Default_poll (* no [@poll] attribute *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt
@@ -266,6 +270,7 @@ type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
   local: local_attribute;
+  poll: poll_attribute;
   is_a_functor: bool;
   stub: bool;
   tmc_candidate: bool;
@@ -350,6 +355,7 @@ let default_function_attribute = {
   inline = Default_inline;
   specialise = Default_specialise;
   local = Default_local;
+  poll = Default_poll;
   is_a_functor = false;
   stub = false;
   tmc_candidate = false;

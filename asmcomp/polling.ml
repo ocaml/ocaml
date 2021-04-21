@@ -18,6 +18,7 @@
 (**************************************************************************)
 
 open Mach
+open Format
 
 module Int = Numbers.Int
 module String = Misc.Stdlib.String
@@ -25,6 +26,9 @@ module String = Misc.Stdlib.String
 let function_is_assumed_to_never_poll func =
   String.starts_with ~prefix:"caml_apply" func
   || String.starts_with ~prefix:"caml_send" func
+type error = Poll_error of Mach.instruction list
+
+exception Error of error
 
 (* Detection of recursive handlers that are not guaranteed to poll
    at every loop iteration. *)
@@ -184,7 +188,7 @@ let contains_polls = ref false
 
 let add_poll i =
   contains_polls := true;
-  Mach.instr_cons (Iop (Ipoll { return_label = None })) [||] [||] i
+  Mach.instr_cons_debug (Iop (Ipoll { return_label = None })) [||] [||] i.dbg i
 
 let instr_body handler_safe i =
   let add_unsafe_handler ube (k, _) =
@@ -240,12 +244,30 @@ let instr_body handler_safe i =
   in
   instr Int.Set.empty i
 
+let find_poll_alloc_or_calls instr =
+  let f_match i =
+      match i.desc with
+      | Iop(Ipoll _ | Ialloc _ | Icall_ind | Icall_imm _ |
+            Itailcall_ind | Itailcall_imm _ |
+            Iextcall { alloc = true }) -> true
+      | _ -> false in
+  let matches = ref [] in
+    Mach.instr_iter
+      (fun i -> if f_match i then matches := i :: !matches else ())
+      instr;
+  !matches
+
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   if function_is_assumed_to_never_poll f.fun_name then f
   else begin
     let handler_needs_poll = polled_loops_analysis f.fun_body in
     contains_polls := false;
     let new_body = instr_body handler_needs_poll f.fun_body in
+    if f.fun_poll_error then begin
+      match find_poll_alloc_or_calls new_body with
+      | [] -> ()
+      | poll_error_instrs -> raise (Error(Poll_error poll_error_instrs))
+    end;
     let new_contains_calls = f.fun_contains_calls || !contains_polls in
     { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
   end
@@ -256,3 +278,37 @@ let requires_prologue_poll ~future_funcnames ~fun_name i =
     match potentially_recursive_tailcall ~future_funcnames i with
     | Might_not_poll -> true
     | Always_polls -> false
+
+(* Error report *)
+
+let instr_type i =
+  match i.desc with
+  | Iop(Ipoll _) -> "inserted poll"
+  | Iop(Ialloc _) -> "allocation"
+  | Iop(Icall_ind | Icall_imm _ |
+        Itailcall_ind | Itailcall_imm _) -> "function call"
+  | Iop(Iextcall { alloc = true }) -> "alloc external call"
+  | _ -> assert(false) (* This should never happen *)
+
+let report_error ppf = function
+| Poll_error instrs ->
+   fprintf ppf
+     "Polling instructions in function annotated with [@poll error]\n";
+   List.iter (fun i ->
+    fprintf ppf "\t%s" (instr_type i);
+    begin match i.desc with
+    | Iop(Ipoll _) -> ()
+    | _ -> begin
+            fprintf ppf " at ";
+            Location.print_loc ppf (Debuginfo.to_location i.dbg)
+          end
+    end;
+    fprintf ppf "\n"
+   ) instrs
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

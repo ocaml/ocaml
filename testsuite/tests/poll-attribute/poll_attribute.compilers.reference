@@ -1,0 +1,6 @@
+File "poll_attribute.ml", line 1:
+Error: Polling instructions in function annotated with [@poll error]
+	inserted poll
+	function call at File "poll_attribute.ml", line 17, characters 13-16
+	allocation at File "poll_attribute.ml", line 16, characters 29-37
+

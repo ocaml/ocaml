@@ -101,6 +101,7 @@ let tupled_function_call_stub original_params unboxed_version ~closure_bound_var
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
     ~closure_origin:(Closure_origin.create (Closure_id.wrap closure_bound_var))
+    ~poll_error:false (* don't propogate attribute to wrappers *)
 
 let register_const t (constant:Flambda.constant_defining_value) name
     : Flambda.constant_defining_value_block_field * Internal_variable_names.t =
@@ -591,12 +592,17 @@ and close_functions t external_env function_declarations : Flambda.named =
     let closure_origin =
       Closure_origin.create (Closure_id.wrap unboxed_version)
     in
+    let poll_error = match Function_decl.poll_attribute decl with
+                    | Error_poll -> true
+                    | Default_poll -> false
+    in
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
         ~inline:(Function_decl.inline decl)
         ~specialise:(Function_decl.specialise decl)
         ~is_a_functor:(Function_decl.is_a_functor decl)
         ~closure_origin
+        ~poll_error
     in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map

@@ -2818,6 +2818,8 @@ asmcomp/polling.cmo : \
     utils/numbers.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    parsing/location.cmi \
+    lambda/debuginfo.cmi \
     asmcomp/dataflow.cmi \
     asmcomp/cmm.cmi \
     asmcomp/polling.cmi
@@ -2825,6 +2827,8 @@ asmcomp/polling.cmx : \
     utils/numbers.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    parsing/location.cmx \
+    lambda/debuginfo.cmx \
     asmcomp/dataflow.cmx \
     asmcomp/cmm.cmx \
     asmcomp/polling.cmi
