@@ -140,7 +140,7 @@ type label_mismatch =
 type field_mismatch =
   | Kind_mismatch of
       Types.label_declaration * Types.label_declaration * label_mismatch
-  | Name_mismatch of Ident.t * Ident.t
+  | Name_mismatch of { types_match:bool; left:Ident.t; right:Ident.t }
 
 type record_change =
   (Types.label_declaration, Types.label_declaration,
@@ -161,7 +161,7 @@ type variant_mismatch =
   | Constructor_mismatch of Types.constructor_declaration
                             * Types.constructor_declaration
                             * constructor_mismatch
-  | Constructor_names of Ident.t * Ident.t
+  | Constructor_names of { types_match:bool; left:Ident.t; right:Ident.t }
 
 type extension_constructor_mismatch =
   | Constructor_privacy
@@ -277,9 +277,9 @@ let pp_record_diff first second prefix decl env ppf
         Printtyp.label lbl1
         Printtyp.label lbl2
         (report_label_mismatch first second env) err
-    | Diffing.Change (_,_, Name_mismatch (name1, name2)) ->
+    | Diffing.Change (_,_, Name_mismatch {left; right; _ }) ->
         Format.fprintf ppf "%aFields have different names, %s and %s."
-          prefix px (Ident.name name1) (Ident.name name2)
+          prefix px (Ident.name left) (Ident.name right)
 
 let report_patch pr_diff first second decl env ppf patch =
   let nl ppf () = Format.fprintf ppf "@," in
@@ -341,10 +341,10 @@ let pp_variant_diff first second prefix decl env ppf (_, (x:variant_change) as p
         Printtyp.constructor c1
         Printtyp.constructor c2
         (report_constructor_mismatch first second decl env) err
-  | Diffing.Change (_,_, Constructor_names (name1, name2)) ->
+  | Diffing.Change (_,_, Constructor_names {left; right; _ }) ->
       Format.fprintf ppf
         "%aConstructors have different names, %s and %s."
-        prefix px (Ident.name name1) (Ident.name name2)
+        prefix px (Ident.name left) (Ident.name right)
 
 let report_extension_constructor_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -473,17 +473,31 @@ module Record_diffing = struct
       (lbl1:Types.label_declaration)
       (lbl2:Types.label_declaration) =
     if Ident.name lbl1.ld_id <> Ident.name lbl2.ld_id then
-      Error (Name_mismatch (lbl1.ld_id, lbl2.ld_id))
+      let types_match =
+        match compare_labels env params1 params2 lbl1 lbl2 with
+        | Some _ -> false
+        | None -> true
+      in
+      Error (Name_mismatch {types_match; left=lbl1.ld_id; right=lbl2.ld_id})
     else
       match compare_labels env params1 params2 lbl1 lbl2 with
       | Some r ->
           Error (Kind_mismatch (lbl1, lbl2, r))
       | None -> Ok (lbl1.ld_type::params1,lbl2.ld_type::params2)
 
+  let weight = function
+    | Diffing.Insert _ -> 10
+    | Diffing.Delete _ -> 10
+    | Diffing.Keep _ -> 0
+    | Diffing.Change (_,_,Name_mismatch t ) ->
+        if t.types_match then 10 else 15
+    | Diffing.Change _ -> 10
+
+
   let diffing loc env params1 params2 cstrs_1 cstrs_2 =
     let test = test loc env in
     Diffing.diff
-      ~weight:Diffing.default_weight
+      ~weight
       ~test
       ~update (params1,params2)
       (Array.of_list cstrs_1)
@@ -578,11 +592,26 @@ module Variant_diffing = struct
 
   let update _ () = ()
 
+  let weight = function
+    | Diffing.Insert _ -> 10
+    | Diffing.Delete _ -> 10
+    | Diffing.Keep _ -> 0
+    | Diffing.Change (_,_,Constructor_names t) ->
+        if t.types_match then 10 else 15
+    | Diffing.Change _ -> 10
+
+
   let test loc env params1 params2 ()
       (cd1:Types.constructor_declaration)
       (cd2:Types.constructor_declaration): (_,variant_mismatch) result =
     if Ident.name cd1.cd_id <> Ident.name cd2.cd_id then
-      Error (Constructor_names (cd1.cd_id, cd2.cd_id))
+      let types_match =
+        match compare_constructors ~loc env params1 params2
+                cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+        | Some _ -> false
+        | None -> true
+      in
+      Error (Constructor_names { types_match; left=cd1.cd_id; right=cd2.cd_id})
     else
       match compare_constructors ~loc env params1 params2
               cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
@@ -593,7 +622,7 @@ module Variant_diffing = struct
   let diffing loc env params1 params2 cstrs_1 cstrs_2 =
     let test = test loc env params1 params2 in
     Diffing.diff
-      ~weight:Diffing.default_weight
+      ~weight
       ~test
       ~update ()
       (Array.of_list cstrs_1)

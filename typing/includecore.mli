@@ -50,7 +50,8 @@ type label_mismatch =
 type field_mismatch =
   | Kind_mismatch of
       Types.label_declaration * Types.label_declaration * label_mismatch
-  | Name_mismatch of Ident.t * Ident.t
+  | Name_mismatch of { types_match:bool; left:Ident.t; right:Ident.t }
+
 
 type record_change =
   (Types.label_declaration, Types.label_declaration,
@@ -71,7 +72,7 @@ type variant_mismatch =
   | Constructor_mismatch of Types.constructor_declaration
                             * Types.constructor_declaration
                             * constructor_mismatch
-  | Constructor_names of Ident.t * Ident.t
+  | Constructor_names of { types_match:bool; left:Ident.t; right:Ident.t }
 
 type extension_constructor_mismatch =
   | Constructor_privacy
