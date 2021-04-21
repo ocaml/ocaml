@@ -268,6 +268,9 @@ Working version
   to the implementation and the coercion.
   (Leandro Ostera, review by Gabriel Scherer and Thomas Refis)
 
+- #10045: Add libext variable to ocamltest and enable C# tests on on mingw
+  (David Allsopp, review by Gabriel Scherer)
+
 * #10061, #10078, #10187: remove library `ocamlopttoplevel`, remove modules
   `Opttoploop`, `Opttopstart`, which are replaced by `Toploop` and `Topstart` in
   library `ocamltoplevel`, made available in native code.

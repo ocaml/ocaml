@@ -138,5 +138,10 @@ goto :EOF
 goto :EOF
 
 :test
-if "%BUILD_MODE%" neq "C" "%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
+rem No tests run in the "C" build mode
+if "%BUILD_MODE%" equ "C" goto :EOF
+rem Add a C# compiler in PATH for the testsuite for mingw
+if "%PORT%" equ "mingw64" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+if "%PORT%" equ "mingw32" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
+"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF
