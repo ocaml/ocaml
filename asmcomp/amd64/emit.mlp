@@ -517,7 +517,7 @@ let emit_instr env fallthrough i =
             emit_jump func
           end
         end
-      end;
+      end
   | Lop(Iextcall { func; alloc; }) ->
       add_used_symbol func;
       if alloc then begin
@@ -535,7 +535,7 @@ let emit_instr env fallthrough i =
           I.mov (domain_field Domainstate.Domain_young_ptr) r15
         end
       end else begin
-        emit_call func;
+        emit_call func
       end
   | Lop(Istackoffset n) ->
       if n < 0

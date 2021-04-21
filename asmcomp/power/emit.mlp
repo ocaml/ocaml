@@ -50,6 +50,8 @@ let mk_pending () =
     jumptables = [];
   }
 
+(* Layout of the stack.  The stack is kept 16-aligned. *)
+
 let initial_stack_offset f =
   reserved_stack_space +
   size_int * f.fun_num_stack_slots.(0) +    (* Local int variables *)
@@ -68,9 +70,10 @@ let slot_offset env loc cls =
       reserved_stack_space + env.stack_offset +
       (if cls = 0 then env.f.fun_num_stack_slots.(1) * size_float + n * size_int
                   else n * size_float)
-  | Incoming n -> frame_size env + reserved_stack_space + n
-  (* CR: reserved_stack_space is already taken into account by frame_size.
-     Why is it added again when calculating slot_offset for Incoming? *)
+  | Incoming n ->
+    (* Callee's [reserved_stack_space] is included in [frame_size].
+       To access incoming arguments, add caller's [reserverd_stack_space]. *)
+    frame_size env + reserved_stack_space + n
   | Outgoing n -> reserved_stack_space + n
 
 let retaddr_offset env =
@@ -1097,10 +1100,10 @@ let fundecl fundecl =
       env.float_literals
   end;
   (* Emit the jump tables *)
-  match env.p.jumptables_lbl with
-  | None -> assert (List.length env.p.jumptables = 0)
-  | Some j ->
-    assert (List.length env.p.jumptables > 0);
+  match env.p.jumptables, env.p.jumptables_lbl with
+  | _ :: _, None | [], Some _ -> assert false (* Sanity check *)
+  | [], None -> ()
+  | _ :: _, Some j ->
     emit_string rodata_space;
     `	.align	2\n`;
     `{emit_label j}:`;

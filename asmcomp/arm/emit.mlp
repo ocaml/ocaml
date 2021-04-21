@@ -78,7 +78,8 @@ type pending =
     mutable offset_literals : offset_computation list;
     mutable gotrel_literals : gotrel_literal list;
     mutable symbol_literals : symbol_literal list;
-    (* Total space (in words) occupied by pending literals *)
+    (* Total space (in words) occupied by the pending literals above
+       and [env.float_literals]. *)
     mutable size_literals : int;
   }
 
@@ -303,7 +304,7 @@ let gotrel_literal env lbl_pic =
 let symbol_literal env sym =
   let p = env.p in
   try
-    let sl = List.find (fun x -> compare x.sym sym = 0) p.symbol_literals in
+    let sl = List.find (fun x -> String.equal x.sym sym) p.symbol_literals in
     sl.lbl
   with Not_found ->
     let lbl = new_label() in
@@ -961,7 +962,7 @@ let fundecl fundecl =
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
   emit_all env 0 true fundecl.fun_body;
-  emit_literals env;(* CR: shouldn't it be after emit_call_gc like in arm64? *)
+  emit_literals env;
   List.iter emit_call_gc env.call_gc_sites;
   List.iter emit_call_bound_error env.bound_error_sites;
   cfi_endproc();
