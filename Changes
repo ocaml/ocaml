@@ -141,6 +141,10 @@ Working version
   distributable compiler).
   (David Allsopp and Mark Shinwell, review by Gabriel Scherer)
 
+- #10177: Seq.(flatten : 'a t t -> 'a t),
+  Seq.(delay : (unit -> 'a t) -> 'a t)
+  (Gabriel Scherer, review by ???)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`

@@ -35,4 +35,20 @@ let () =
   ()
 ;;
 
+(* delay *)
+let () =
+  (* Seq.concat is not (yet?) in the stdlib *)
+  let rec concat xss = fun () ->
+    match xss () with
+    | Seq.Nil -> Seq.Nil
+    | Seq.Cons (xs, xss) -> Seq.append xs (concat xss) ()
+  in
+  let do_not_force_too_much =
+    Seq.cons
+      (Seq.return ())
+      (Seq.delay @@ fun () -> Seq.return (assert false)) in
+  match concat do_not_force_too_much () with
+  | Seq.Nil -> assert false
+  | Seq.Cons ((), seq) -> ignore seq
+
 let () = print_endline "OK";;
