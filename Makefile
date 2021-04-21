@@ -82,7 +82,7 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
-RUNTOP=./runtime/ocamlrun$(EXE) ./ocaml$(EXE) \
+RUNTOP = $(OCAMLRUN) ./ocaml$(EXE) \
   -nostdlib -I stdlib -I toplevel \
   -noinit $(TOPFLAGS) $(TOPINCLUDES)
 NATRUNTOP=./ocamlnat$(EXE) \
