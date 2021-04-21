@@ -13,7 +13,6 @@
 #*                                                                        *
 #**************************************************************************
 
-MAKEFLAGS := -r -R
 ROOTDIR = ..
 # NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
 # gets included, so that its definition here takes precedence
@@ -21,11 +20,10 @@ ROOTDIR = ..
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include $(ROOTDIR)/Makefile.common
 
-DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
 # the shell.
-override installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
+installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
                    ocamlmktop ocamlmklib ocamlobjinfo
 
 install_files :=
@@ -46,9 +44,6 @@ COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -strict-sequence \
 LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
-.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
-allopt: opt.opt
-
 programs_byte := \
   ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib  \
   ocamlmktop ocamlcmt dumpobj ocamlobjinfo \
@@ -56,23 +51,23 @@ programs_byte := \
 install_files += $(filter $(installed_tools), $(programs_byte))
 programs_opt := $(programs_byte:%=%.opt)
 
-programs_byte_exe := $(programs_byte:%=%$(EXE))
-programs_opt_exe := $(programs_opt:%=%$(EXE))
-ifneq "$(EXE)" ""
-$(programs_byte) $(programs_opt): %: %$(EXE)
-endif
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+all: $(programs_byte)
+opt.opt: $(programs_opt)
+allopt: opt.opt
 
-$(programs_byte_exe):
+$(foreach program, $(programs_byte) $(programs_opt),\
+  $(eval $(call PROGRAM_SYNONYM,$(program))))
+
+$(programs_byte:%=%$(EXE)):
 	$(CAMLC) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(filter-out %.cmi,$^)
 
-$(programs_opt_exe):
+$(programs_opt:%=%$(EXE)):
 	$(CAMLOPT_CMD) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(filter-out %.cmi,$^)
 
-all: $(programs_byte_exe)
-opt.opt: $(programs_opt_exe)
 clean::
-	rm -f $(programs_byte) $(programs_byte_exe)
-	rm -f $(programs_opt) $(programs_opt_exe)
+	rm -f $(programs_byte) $(programs_byte:%=%.exe)
+	rm -f $(programs_opt) $(programs_opt:%=%.exe)
 
 # The dependency generator
 
