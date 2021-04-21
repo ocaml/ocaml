@@ -187,6 +187,7 @@ let reg64 = function
   | _ -> assert false
 
 let arg env i n = reg env i.arg.(n)
+let res env i n = reg env i.res.(n)
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
@@ -441,7 +442,7 @@ let emit_instr env fallthrough i =
   let res16 i n = emit_subreg env reg_low_16_name WORD i.res.(n) in
   let res32 i n = emit_subreg env reg_low_32_name DWORD i.res.(n) in
   let arg = arg env in
-  let res i n = reg env i.res.(n) in
+  let res = res env in
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
