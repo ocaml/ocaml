@@ -237,7 +237,7 @@ $(make_opcodes): make_opcodes.ml
 	$(CAMLC) $< -o $@
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
-	$(ROOTDIR)/runtime/ocamlrun$(EXE) $(make_opcodes) -opnames < $< > $@
+	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml

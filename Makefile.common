@@ -40,8 +40,17 @@ else
 FLEXDLL_SUBMODULE_PRESENT =
 endif
 
-# Use boot/ocamlc.opt if available
+# Variables used to represent the OCaml runtime system
+# Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.
+# However, under some circumstances it is important to be able to
+# distinguish one from the other, hence these two variables.
+# Boot/ocamlrun is the most frequently used in the build system, so
+# we use OCAMLRUN to designate it and keep NEW_OCAMLRUN to refer
+# to runtime/ocamlrun, because it's less frequently used.
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
+NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
+
+# Use boot/ocamlc.opt if available
 ifeq (0,$(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
   echo $$?))
