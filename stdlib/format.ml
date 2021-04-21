@@ -1237,6 +1237,10 @@ let pp_print_result ~ok ~error ppf = function
 | Ok v -> ok ppf v
 | Error e -> error ppf e
 
+let pp_print_either ~left ~right ppf = function
+| Either.Left l -> left ppf l
+| Either.Right r -> right ppf r
+
  (**************************************************************)
 
 let compute_tag output tag_acc =
