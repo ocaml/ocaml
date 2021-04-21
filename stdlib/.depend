@@ -269,6 +269,7 @@ stdlib__Format.cmo : format.ml \
     stdlib__Queue.cmi \
     stdlib__List.cmi \
     stdlib__Int.cmi \
+    stdlib__Either.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
     stdlib__Buffer.cmi \
@@ -281,6 +282,7 @@ stdlib__Format.cmx : format.ml \
     stdlib__Queue.cmx \
     stdlib__List.cmx \
     stdlib__Int.cmx \
+    stdlib__Either.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
     stdlib__Buffer.cmx \
@@ -288,6 +290,7 @@ stdlib__Format.cmx : format.ml \
 stdlib__Format.cmi : format.mli \
     stdlib.cmi \
     stdlib__Seq.cmi \
+    stdlib__Either.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
     stdlib__Printexc.cmi \
