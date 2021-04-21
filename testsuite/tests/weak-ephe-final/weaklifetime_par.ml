@@ -7,6 +7,8 @@ let size = 1000;;
 let num_domains = 4;;
 let random_state = Domain.DLS.new_key Random.State.make_self_init
 
+let random_int = Random.State.int (Domain.DLS.get random_state)
+
 type block = int array;;
 
 type objdata =
@@ -21,7 +23,7 @@ type bunch = {
 
 let data =
   Array.init size (fun i ->
-    let n = 1 + Random.int size in
+    let n = 1 + random_int size in
     {
       objs = Array.make n (Absent 0);
       wp = Weak.create n;
@@ -45,7 +47,7 @@ type change = No_change | Fill | Erase;;
    1. if the block and weak pointer are absent, fill them
    2. if the block and weak pointer are present, randomly erase the block
 *)
-let check_and_change i j =
+let check_and_change data i j =
   let gc1 = gccount () in
   let change =
     (* we only read data.(i).objs.(j) in this local binding to ensure
@@ -57,12 +59,12 @@ let check_and_change i j =
     | Absent n, true -> assert (gc1 <= n+2); No_change
     | Absent _, false -> Fill
     | Present _, true ->
-      if Random.int 10 = 0 then Erase else No_change
+      if random_int 10 = 0 then Erase else No_change
   in
   match change with
   | No_change -> ()
   | Fill ->
-    let x = Array.make (1 + Random.int 10) 42 in
+    let x = Array.make (1 + random_int 10) 42 in
     data.(i).objs.(j) <- Present x;
     Weak.set data.(i).wp j (Some x);
   | Erase ->
@@ -73,19 +75,28 @@ let check_and_change i j =
 
 let dummy = ref [||];;
 
-let run i () =
-  let s = Domain.DLS.get random_state in
+let run index () =
+  let domain_data = Array.init 100 (fun i ->
+    let n = 1 + random_int 100 in
+    {
+      objs = Array.make n (Absent 0);
+      wp = Weak.create n;
+    }
+  ) in
   while gccount () < 5 do
-    dummy := Array.make (Random.int 300) 0;
-    let i = (Random.State.int s (size/num_domains)) + i * size/num_domains in
-    let j = Random.State.int s (Array.length data.(i).objs) in
-    check_and_change i j;
+    dummy := Array.make (random_int 300) 0;
+    let i = (random_int (size/num_domains)) + index * size/num_domains in
+    let j = random_int (Array.length data.(i).objs) in
+    check_and_change data i j;
+    let ix = random_int 100 in
+    let jx = random_int (Array.length domain_data.(ix).objs) in
+    check_and_change domain_data ix jx
   done
 
 let _ =
-  for i = 1 to 5 do
-    let domains = Array.init (num_domains - 1) (fun i -> Domain.spawn(run i)) in
-    run (num_domains - 1) ();
+  for index = 0 to 4 do
+    let domains = Array.init (num_domains - 1) (fun i -> Domain.spawn(run ((i + index) mod 5))) in
+    run ((num_domains - 1 + index) mod 5) ();
     Array.iter Domain.join domains
   done;
   print_endline "ok"
