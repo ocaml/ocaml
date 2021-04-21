@@ -64,7 +64,7 @@ $(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
 
 .PHONY: depend
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
 	  unix.ml > .depend
 
 include .depend

@@ -38,7 +38,7 @@ endif
 include stdlib/StdlibModules
 
 CAMLC=$(BOOT_OCAMLC) -g -nostdlib -I boot -use-prims runtime/primitives
-CAMLOPT=$(CAMLRUN) ./ocamlopt$(EXE) -g -nostdlib -I stdlib -I otherlibs/dynlink
+CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x riscv
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
         -I lambda -I middle_end -I middle_end/closure \
@@ -58,7 +58,7 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-CAMLDEP=$(CAMLRUN) boot/ocamlc -depend
+CAMLDEP=$(OCAMLRUN) boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 
@@ -165,7 +165,7 @@ core: coldstart
 
 # Check if fixpoint reached
 
-CMPBYT := $(CAMLRUN) tools/cmpbyt$(EXE)
+CMPBYT := $(OCAMLRUN) tools/cmpbyt$(EXE)
 
 .PHONY: compare
 compare:
@@ -195,7 +195,7 @@ promote-cross: promote-common
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 .PHONY: promote
-promote: PROMOTE = $(CAMLRUN) tools/stripdebug
+promote: PROMOTE = $(OCAMLRUN) tools/stripdebug
 promote: promote-common
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 
@@ -243,7 +243,7 @@ coreboot:
 # Rebuild the library (using runtime/ocamlrun ./ocamlc)
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
-	$(MAKE) CAMLRUN=runtime/ocamlrun$(EXE) promote
+	$(MAKE) OCAMLRUN=runtime/ocamlrun$(EXE) promote
 # Rebuild the core system
 	$(MAKE) partialclean
 	$(MAKE) core
@@ -621,7 +621,7 @@ ocaml.tmp: $(ocaml_dependencies)
 	$(CAMLC) $(LINKFLAGS) -I toplevel/byte -linkall -o $@ $^
 
 ocaml$(EXE): $(expunge) ocaml.tmp
-	- $(CAMLRUN) $^ $@ $(PERVASIVES)
+	- $(OCAMLRUN) $^ $@ $(PERVASIVES)
 
 partialclean::
 	rm -f ocaml$(EXE)
@@ -713,7 +713,7 @@ cvt_emit := tools/cvt_emit$(EXE)
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp $(cvt_emit)
 	echo \# 1 \"$(ARCH)/emit.mlp\" > $@
-	$(CAMLRUN) $(cvt_emit) < $< >> $@ \
+	$(OCAMLRUN) $(cvt_emit) < $< >> $@ \
 	|| { rm -f $@; exit 2; }
 
 partialclean::
@@ -782,7 +782,7 @@ library: ocamlc
 .PHONY: library-cross
 library-cross:
 	$(MAKE) -C stdlib \
-	  $(BOOT_FLEXLINK_CMD) CAMLRUN=../runtime/ocamlrun$(EXE) all
+	  $(BOOT_FLEXLINK_CMD) OCAMLRUN=../runtime/ocamlrun$(EXE) all
 
 .PHONY: libraryopt
 libraryopt:

@@ -41,13 +41,13 @@ FLEXDLL_SUBMODULE_PRESENT =
 endif
 
 # Use boot/ocamlc.opt if available
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
+OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 ifeq (0,$(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
   echo $$?))
   BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
 else
-  BOOT_OCAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc
+  BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
 endif
 
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
@@ -126,7 +126,7 @@ endef # PROGRAM_SYNONYM
 
 # Lexer generation
 
-BOOT_OCAMLLEX ?= $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 
 # Default value for OCAMLLEX
 # In those directories where this needs to be overriden, the overriding

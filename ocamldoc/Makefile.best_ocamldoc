@@ -13,8 +13,6 @@
 #*                                                                        *
 #**************************************************************************
 
-
-OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 OCAMLDOC=$(ROOTDIR)/ocamldoc/ocamldoc$(EXE)
 OCAMLDOC_OPT=$(ROOTDIR)/ocamldoc/ocamldoc.opt$(EXE)
 
