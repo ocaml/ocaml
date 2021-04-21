@@ -507,8 +507,7 @@ and transl_type_aux env policy styp =
                           ) l in
       let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
       let ty = newty (Tpackage (path,
-                       List.map (fun (s, _pty) -> s.txt) l,
-                       List.map (fun (_,cty) -> cty.ctyp_type) ptys))
+                       List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys))
       in
       ctyp (Ttyp_package {
             pack_path = path;

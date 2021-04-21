@@ -555,9 +555,9 @@ and raw_type_desc ppf = function
           match row.row_name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
-  | Tpackage (p, _, tl) ->
+  | Tpackage (p, fl) ->
       fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
-        raw_type_list tl
+        raw_type_list (List.map snd fl)
 and raw_row_fixed ppf = function
 | None -> fprintf ppf "None"
 | Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
@@ -895,8 +895,8 @@ let rec mark_loops_rec visited ty =
     | Tconstr(p, tyl, _) ->
         let (_p', s) = best_type_path p in
         List.iter (mark_loops_rec visited) (apply_subst s tyl)
-    | Tpackage (_, _, tyl) ->
-        List.iter (mark_loops_rec visited) tyl
+    | Tpackage (_, fl) ->
+        List.iter (fun (_n, ty) -> mark_loops_rec visited ty) fl
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias px else
          begin
@@ -1063,10 +1063,14 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar _ ->
         Otyp_var (false, name_of_type new_name ty)
-    | Tpackage (p, n, tyl) ->
-        let n =
-          List.map (fun li -> String.concat "." (Longident.flatten li)) n in
-        Otyp_module (tree_of_path Module_type p, n, tree_of_typlist sch tyl)
+    | Tpackage (p, fl) ->
+        let fl =
+          List.map
+            (fun (li, ty) -> (
+              String.concat "." (Longident.flatten li),
+              tree_of_typexp sch ty
+            )) fl in
+        Otyp_module (tree_of_path Module_type p, fl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin
