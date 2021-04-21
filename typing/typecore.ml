@@ -3008,7 +3008,7 @@ and type_expect_
       begin try match
         sarg, expand_head env ty_expected, expand_head env ty_expected0 with
       | Some sarg, {desc = Tvariant row}, {desc = Tvariant row0} ->
-          let row = row_repr row in
+          let row = row_repr row and row0 = row_repr row0 in
           begin match row_field_repr (List.assoc l row.row_fields),
           row_field_repr (List.assoc l row0.row_fields) with
             Rpresent (Some ty), Rpresent (Some ty0) ->
