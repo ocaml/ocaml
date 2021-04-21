@@ -53,44 +53,6 @@ let emit_reg = function
     {loc = Reg r} -> emit_string (register_name r)
   | _ -> fatal_error "Emit_arm.emit_reg"
 
-(* Pending offset computations : {lbl; dst; src;} --> lbl: .word dst-(src+N) *)
-type offset_computation =
-  { lbl : label;
-    dst : label;
-    src : label;
-  }
-
-(* Pending relative references to the global offset table *)
-type gotrel_literal =
-  { lbl_got : label;
-    lbl_pic : label;
-  }
-
-(* Pending symbol literals *)
-type symbol_literal =
-  {
-    sym : string;
-    lbl : label;
-  }
-
-type pending =
-  {
-    mutable offset_literals : offset_computation list;
-    mutable gotrel_literals : gotrel_literal list;
-    mutable symbol_literals : symbol_literal list;
-    (* Total space (in words) occupied by the pending literals above
-       and [env.float_literals]. *)
-    mutable size_literals : int;
-  }
-
-let mk_pending () =
-  {
-    offset_literals = [];
-    gotrel_literals = [];
-    symbol_literals = [];
-    size_literals = 0;
-  }
-
 let frame_size env =
   let sz =
     env.stack_offset +
@@ -288,41 +250,37 @@ let float_literal env fl =
     x.lbl
   with Not_found ->
     let lbl = new_label() in
-    env.p.size_literals <- env.p.size_literals + 2;
+    env.size_literals <- env.size_literals + 2;
     env.float_literals <- { fl; lbl } :: env.float_literals;
     lbl
 
 (* Label a GOTREL literal *)
 let gotrel_literal env lbl_pic =
-  let p = env.p in
   let lbl_got = new_label() in
-  p.size_literals <- p.size_literals + 1;
-  p.gotrel_literals <- { lbl_got; lbl_pic } :: p.gotrel_literals;
+  env.size_literals <- env.size_literals + 1;
+  env.gotrel_literals <- { lbl_got; lbl_pic } :: env.gotrel_literals;
   lbl_got
 
 (* Label a symbol literal *)
 let symbol_literal env sym =
-  let p = env.p in
   try
-    let sl = List.find (fun x -> String.equal x.sym sym) p.symbol_literals in
+    let sl = List.find (fun x -> String.equal x.sym sym) env.symbol_literals in
     sl.lbl
   with Not_found ->
     let lbl = new_label() in
-    p.size_literals <- p.size_literals + 1;
-    p.symbol_literals <- { sym; lbl } :: p.symbol_literals;
+    env.size_literals <- env.size_literals + 1;
+    env.symbol_literals <- { sym; lbl } :: env.symbol_literals;
     lbl
 
 (* Add an offset computation *)
 let offset_literal env dst src =
-  let p = env.p in
   let lbl = new_label() in
-  p.size_literals <- p.size_literals + 1;
-  p.offset_literals <- { lbl; dst; src; } :: p.offset_literals;
+  env.size_literals <- env.size_literals + 1;
+  env.offset_literals <- { lbl; dst; src; } :: env.offset_literals;
   lbl
 
 (* Emit all pending literals *)
 let emit_literals env =
-  let p = env.p in
   if env.float_literals <> [] then begin
     `	.align	3\n`;
     List.iter
@@ -331,22 +289,22 @@ let emit_literals env =
       env.float_literals;
     env.float_literals <- []
   end;
-  if p.symbol_literals <> [] then begin
+  if env.symbol_literals <> [] then begin
     let offset = if !thumb then 4 else 8 in
     let suffix = if !Clflags.pic_code then "(GOT)" else "" in
     `	.align	2\n`;
     List.iter
       (fun { lbl_got; lbl_pic } ->
         `{emit_label lbl_pic}:	.word	_GLOBAL_OFFSET_TABLE_-({emit_label lbl_got}+{emit_int offset})\n`)
-      p.gotrel_literals;
+      env.gotrel_literals;
     List.iter
       (fun { sym; lbl } ->
         `{emit_label lbl}:	.word	{emit_symbol sym}{emit_string suffix}\n`)
-      p.symbol_literals;
-    p.gotrel_literals <- [];
-    p.symbol_literals <- []
+      env.symbol_literals;
+    env.gotrel_literals <- [];
+    env.symbol_literals <- []
   end;
-  if p.offset_literals <> [] then begin
+  if env.offset_literals <> [] then begin
     (* Additions using the pc register read a value 4 or 8 bytes greater than
        the instruction's address, depending on the Thumb setting.  However in
        Thumb mode we must follow interworking conventions and ensure that the
@@ -357,10 +315,10 @@ let emit_literals env =
     List.iter
       (fun { lbl; dst; src; } ->
          `{emit_label lbl}:	.word	{emit_label dst}-({emit_label src}+{emit_int offset})\n`)
-      p.offset_literals;
-    p.offset_literals <- []
+      env.offset_literals;
+    env.offset_literals <- []
   end;
-  p.size_literals <- 0
+  env.size_literals <- 0
 
 (* Emit code to load the address of a symbol *)
 
@@ -929,12 +887,12 @@ let rec emit_all env ninstr fallthrough i =
     let limit = (if !fpu >= VFPv2 && env.float_literals <> []
                  then 127
                  else 511) in
-    let limit = limit - env.p.size_literals - max_instruction_size i in
+    let limit = limit - env.size_literals - max_instruction_size i in
     let ninstr' =
       if ninstr >= limit - 64 && not fallthrough then begin
         emit_literals env;
         0
-      end else if env.p.size_literals != 0 && ninstr >= limit then begin
+      end else if env.size_literals != 0 && ninstr >= limit then begin
         let lbl = new_label() in
         `	b	{emit_label lbl}\n`;
         emit_literals env;
@@ -949,7 +907,7 @@ let rec emit_all env ninstr fallthrough i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl (mk_pending()) in
+  let env = mk_env fundecl in
   emit_named_text_section fundecl.fun_name;
   `	.align	2\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;

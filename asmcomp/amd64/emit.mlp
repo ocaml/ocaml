@@ -828,7 +828,7 @@ let all_functions = ref []
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl () in
+  let env = mk_env fundecl in
   all_functions := fundecl :: !all_functions;
   emit_named_text_section fundecl.fun_name;
   D.align 16;

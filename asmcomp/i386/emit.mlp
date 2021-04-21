@@ -888,7 +888,7 @@ let rec emit_all env fallthrough i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl () in
+  let env = mk_env fundecl in
   emit_named_text_section fundecl.fun_name;
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);

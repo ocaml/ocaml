@@ -529,7 +529,7 @@ let rec emit_all env = function
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl () in
+  let env = mk_env fundecl in
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
   `	{emit_string code_space}\n`;

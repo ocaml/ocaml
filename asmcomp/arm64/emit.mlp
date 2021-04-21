@@ -963,7 +963,7 @@ let rec emit_all env i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl () in
+  let env = mk_env fundecl in
   emit_named_text_section fundecl.fun_name;
   `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;

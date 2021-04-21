@@ -33,23 +33,6 @@ let reserved_stack_space =
   | ELF64v1 -> 48
   | ELF64v2 -> 32
 
-(* Record jump tables (for PPC64).  In order to reduce the size of the TOC,
-   we concatenate all jumptables and emit them at the end of the function. *)
-
-type pending = {
-  (* Label of glue code for calling the GC. *)
-  mutable call_gc_label : int;
-  mutable jumptables_lbl : label option;
-  mutable jumptables : label list; (* in reverse order *)
-}
-
-let mk_pending () =
-  {
-    call_gc_label = 0;
-    jumptables_lbl = None;
-    jumptables = [];
-  }
-
 (* Layout of the stack.  The stack is kept 16-aligned. *)
 
 let initial_stack_offset f =
@@ -523,19 +506,19 @@ end)
 (* Assembly code for inlined allocation *)
 
 let emit_alloc env i bytes dbginfo far =
-  if env.p.call_gc_label = 0 then env.p.call_gc_label <- new_label ();
+  if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	{emit_string lg}	0, {emit_int offset}(30)\n`;
   `	addi    31, 31, {emit_int(-bytes)}\n`;
   `	{emit_string cmplg}	31, 0\n`;
   if not far then begin
-    `	bltl	{emit_label env.p.call_gc_label}\n`;
+    `	bltl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
     `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
   end else begin
     let lbl = new_label() in
     `	bge	{emit_label lbl}\n`;
-    `	bl	{emit_label env.p.call_gc_label}\n`;
+    `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
     `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
   end
@@ -928,14 +911,14 @@ let emit_instr env i =
     | Lswitch jumptbl ->
         let lbl = new_label() in
         if ppc64 then begin
-          let jumptables_lbl = match env.p.jumptables_lbl with
+          let jumptables_lbl = match env.jumptables_lbl with
             | None ->
-              env.p.jumptables_lbl <- Some lbl;
-              assert (List.length env.p.jumptables = 0);
+              env.jumptables_lbl <- Some lbl;
+              assert (List.length env.jumptables = 0);
               lbl
             | Some l-> l
           in
-          let start = List.length env.p.jumptables in
+          let start = List.length env.jumptables in
           let (start_lo, start_hi) = low_high_s start in
           emit_tocload emit_gpr 11 (TocLabel jumptables_lbl);
           `	addi	12, {emit_reg i.arg.(0)}, {emit_int start_lo}\n`;
@@ -952,7 +935,7 @@ let emit_instr env i =
         `	mtctr	0\n`;
         `	bctr\n`;
         if ppc64 then begin
-          env.p.jumptables <- List.rev_append (Array.to_list jumptbl) env.p.jumptables
+          env.jumptables <- List.rev_append (Array.to_list jumptbl) env.jumptables
         end else begin
           emit_string rodata_space;
           `{emit_label lbl}:`;
@@ -1026,7 +1009,7 @@ let rec emit_all env i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl (mk_pending ()) in
+  let env = mk_env fundecl in
   begin match abi with
   | ELF32 ->
     emit_string code_space;
@@ -1062,8 +1045,8 @@ let fundecl fundecl =
   BR.relax fundecl ~max_out_of_line_code_offset:0;
   emit_all env fundecl.fun_body;
   (* Emit the glue code to call the GC *)
-  if env.p.call_gc_label > 0 then begin
-    `{emit_label env.p.call_gc_label}:\n`;
+  if env.call_gc_label > 0 then begin
+    `{emit_label env.call_gc_label}:\n`;
     match abi with
     | ELF32 ->
       `	b	{emit_symbol "caml_call_gc"}\n`
@@ -1100,7 +1083,7 @@ let fundecl fundecl =
       env.float_literals
   end;
   (* Emit the jump tables *)
-  match env.p.jumptables, env.p.jumptables_lbl with
+  match env.jumptables, env.jumptables_lbl with
   | _ :: _, None | [], Some _ -> assert false (* Sanity check *)
   | [], None -> ()
   | _ :: _, Some j ->
@@ -1110,7 +1093,7 @@ let fundecl fundecl =
     List.iter
       (fun  lbl ->
          `	.long	{emit_label lbl} - {emit_label j}\n`)
-      (List.rev env.p.jumptables)
+      (List.rev env.jumptables)
 
 (* Emission of data *)
 

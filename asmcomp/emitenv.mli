@@ -23,9 +23,8 @@ type gc_call =
   }
 
 (* Record calls to caml_ml_array_bound_error.
-   In -g mode, or when using Spacetime profiling, we maintain one call to
-   caml_ml_array_bound_error per bound check site.  Without -g, we can share
-   a single call. *)
+   In -g mode, we maintain one call to caml_ml_array_bound_error
+   per bound check site.  Without -g, we can share a single call. *)
 
 type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
@@ -46,14 +45,49 @@ type int_literal =
     n_lbl : label;
   }
 
+(* Pending offset computations : {lbl; dst; src;} --> lbl: .word dst-(src+N) *)
+type offset_computation =
+  { lbl : label;
+    dst : label;
+    src : label;
+  }
+
+(* Pending relative references to the global offset table *)
+type gotrel_literal =
+  { lbl_got : label;
+    lbl_pic : label;
+  }
+
+(* Pending symbol literals *)
+type symbol_literal =
+  {
+    sym : string;
+    lbl : label;
+  }
+
 (* Environment for emitting a function *)
-type 'a per_function_env = {
+type per_function_env = {
   f : Linear.fundecl;
   mutable stack_offset : int;
   mutable call_gc_sites : gc_call list;
   mutable bound_error_sites : bound_error_call list;
   mutable bound_error_call : label option;
+  mutable call_gc_label : label;                       (* used only in power *)
+
+  (* record jump tables (for PPC64).  In order to reduce the size of the TOC,
+     we concatenate all jumptables and emit them at the end of the function. *)
+  mutable jumptables_lbl : label option;                (* use only in power *)
+  mutable jumptables : label list; (* in reverse order *)
+
+  (* pending literals *)
   mutable float_literals : float_literal list;
-  mutable int_literals : int_literal list;
-  p : 'a;
+  mutable int_literals : int_literal list;             (* used only in s390x *)
+  mutable offset_literals : offset_computation list;     (* used only in arm *)
+  mutable gotrel_literals : gotrel_literal list;         (* used only in arm *)
+  mutable symbol_literals : symbol_literal list;         (* used only in arm *)
+  (* [size_literals] is the total space (in words) occupied
+     by pending literals. *)
+  mutable size_literals : int;                           (* used only in arm *)
+
+
 }
