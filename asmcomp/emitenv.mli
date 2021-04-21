@@ -69,18 +69,19 @@ type symbol_literal =
 type per_function_env = {
   f : Linear.fundecl;
   mutable stack_offset : int;
-  mutable call_gc_sites : gc_call list;
-  mutable bound_error_sites : bound_error_call list;
-  mutable bound_error_call : label option;
+  mutable call_gc_sites : gc_call list;  (* used in all targets except power *)
   mutable call_gc_label : label;                       (* used only in power *)
+  mutable bound_error_sites : bound_error_call list;
+                                         (* used in all targets except power *)
+  mutable bound_error_call : label option;       (* used in amd64,i386,s390x *)
 
   (* record jump tables (for PPC64).  In order to reduce the size of the TOC,
      we concatenate all jumptables and emit them at the end of the function. *)
-  mutable jumptables_lbl : label option;                (* use only in power *)
+  mutable jumptables_lbl : label option;               (* used only in power *)
   mutable jumptables : label list; (* in reverse order *)
 
   (* pending literals *)
-  mutable float_literals : float_literal list;
+  mutable float_literals : float_literal list;   (* in all except amd64,i386 *)
   mutable int_literals : int_literal list;             (* used only in s390x *)
   mutable offset_literals : offset_computation list;     (* used only in arm *)
   mutable gotrel_literals : gotrel_literal list;         (* used only in arm *)
@@ -88,6 +89,4 @@ type per_function_env = {
   (* [size_literals] is the total space (in words) occupied
      by pending literals. *)
   mutable size_literals : int;                           (* used only in arm *)
-
-
 }
