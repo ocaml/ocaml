@@ -66,7 +66,7 @@ let primitive_descriptions pd1 pd2 =
 type value_mismatch =
   | Primitive_mismatch of primitive_mismatch
   | Not_a_primitive
-  | Type of Env.t * Errortrace.non_unification Errortrace.t
+  | Type of Env.t * Errortrace.comparison Errortrace.t
 
 exception Dont_match of value_mismatch
 
@@ -131,7 +131,7 @@ let choose_other ord first second =
   | Second -> choose First first second
 
 type label_mismatch =
-  | Type of Env.t * Errortrace.non_unification Errortrace.t
+  | Type of Env.t * Errortrace.comparison Errortrace.t
   | Mutability of position
 
 type record_mismatch =
@@ -143,7 +143,7 @@ type record_mismatch =
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
-  | Type of Env.t * Errortrace.non_unification Errortrace.t
+  | Type of Env.t * Errortrace.comparison Errortrace.t
   | Arity
   | Inline_record of record_mismatch
   | Kind of position
@@ -168,18 +168,18 @@ type private_variant_mismatch =
   | Missing of position * string
   | Presence of string
   | Incompatible_types_for of string
-  | Types of Env.t * Errortrace.non_unification Errortrace.t
+  | Types of Env.t * Errortrace.comparison Errortrace.t
 
 type private_object_mismatch =
   | Missing of string
-  | Types of Env.t * Errortrace.non_unification Errortrace.t
+  | Types of Env.t * Errortrace.comparison Errortrace.t
 
 type type_mismatch =
   | Arity
   | Privacy
   | Kind
-  | Constraint of Env.t * Errortrace.non_unification Errortrace.t
-  | Manifest of Env.t * Errortrace.non_unification Errortrace.t
+  | Constraint of Env.t * Errortrace.comparison Errortrace.t
+  | Manifest of Env.t * Errortrace.comparison Errortrace.t
   | Private_variant of type_expr * type_expr * private_variant_mismatch
   | Private_object of type_expr * type_expr * private_object_mismatch
   | Variance

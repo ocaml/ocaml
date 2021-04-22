@@ -21,8 +21,8 @@ open Types
 module TypePairs : Hashtbl.S with type key = type_expr * type_expr
 
 exception Unify of Errortrace.unification Errortrace.t
-exception Equality of Errortrace.non_unification Errortrace.t
-exception Moregen of Errortrace.non_unification Errortrace.t
+exception Equality of Errortrace.comparison Errortrace.t
+exception Moregen of Errortrace.comparison Errortrace.t
 exception Subtype of Errortrace.Subtype.t * Errortrace.unification Errortrace.t
 exception Escape of Errortrace.desc Errortrace.escape
 
@@ -31,6 +31,8 @@ exception Cannot_expand
 exception Cannot_apply
 exception Matches_failure of Env.t * Errortrace.unification Errortrace.t
   (* Raised from [matches], hence the odd name *)
+exception Incompatible
+  (* Raised from [mcomp] *)
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -232,16 +234,20 @@ val does_match: Env.t -> type_expr -> type_expr -> bool
 val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
 
+type class_match_failure_trace_type =
+  | CM_Equality
+  | CM_Moregen
+
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * Errortrace.non_unification Errortrace.t
+  | CM_Type_parameter_mismatch of Env.t * Errortrace.comparison Errortrace.t
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * Errortrace.non_unification Errortrace.t
-  | CM_Val_type_mismatch of string * Env.t * Errortrace.non_unification Errortrace.t
-  | CM_Val_type_mismatch_eq of string * Env.t * Errortrace.non_unification Errortrace.t
-  | CM_Meth_type_mismatch of string * Env.t * Errortrace.non_unification Errortrace.t
-  | CM_Meth_type_mismatch_eq of string * Env.t * Errortrace.non_unification Errortrace.t
+  | CM_Parameter_mismatch of Env.t * Errortrace.comparison Errortrace.t
+  | CM_Val_type_mismatch of
+      class_match_failure_trace_type * string * Env.t * Errortrace.comparison Errortrace.t
+  | CM_Meth_type_mismatch of
+      class_match_failure_trace_type * string * Env.t * Errortrace.comparison Errortrace.t
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string
@@ -342,4 +348,5 @@ val package_subtype :
     (Env.t -> Path.t -> (Longident.t * type_expr) list ->
       Path.t -> (Longident.t * type_expr) list -> bool) ref
 
+(* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit

@@ -49,6 +49,10 @@ let rec hide_params = function
   | cty -> cty
 *)
 
+let printtyp_for = function
+  | CM_Equality -> Printtyp.equality
+  | CM_Moregen  -> Printtyp.moregen
+
 let include_err ppf =
   function
   | CM_Virtual_class ->
@@ -75,30 +79,18 @@ let include_err ppf =
           fprintf ppf "A parameter has type")
         (function ppf ->
           fprintf ppf "but is expected to have type")
-  | CM_Val_type_mismatch (lab, env, trace) ->
-      Printtyp.report_error Printtyp.moregen ppf env trace
+  | CM_Val_type_mismatch (trace_type, lab, env, trace) ->
+      Printtyp.report_error (printtyp_for trace_type) ppf env trace
         (function ppf ->
           fprintf ppf "The instance variable %s@ has type" lab)
         (function ppf ->
           fprintf ppf "but is expected to have type")
-  | CM_Val_type_mismatch_eq (lab, env, trace) ->
-      Printtyp.report_error Printtyp.equality ppf env trace
-        (function ppf ->
-           fprintf ppf "The instance variable %s@ has type" lab)
-        (function ppf ->
-           fprintf ppf "but is expected to have type")
-  | CM_Meth_type_mismatch (lab, env, trace) ->
-      Printtyp.report_error Printtyp.moregen ppf env trace
+  | CM_Meth_type_mismatch (trace_type, lab, env, trace) ->
+      Printtyp.report_error (printtyp_for trace_type) ppf env trace
         (function ppf ->
           fprintf ppf "The method %s@ has type" lab)
         (function ppf ->
           fprintf ppf "but is expected to have type")
-  | CM_Meth_type_mismatch_eq (lab, env, trace) ->
-      Printtyp.report_error Printtyp.equality ppf env trace
-        (function ppf ->
-           fprintf ppf "The method %s@ has type" lab)
-        (function ppf ->
-           fprintf ppf "but is expected to have type")
   | CM_Non_mutable_value lab ->
       fprintf ppf
        "@[The non-mutable instance variable %s cannot become mutable@]" lab

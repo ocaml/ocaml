@@ -178,9 +178,9 @@ val report_ambiguous_type_error:
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
 
 type 'variety trace_format
-val unification : Errortrace.unification     trace_format
-val equality    : Errortrace.non_unification trace_format
-val moregen     : Errortrace.non_unification trace_format
+val unification : Errortrace.unification trace_format
+val equality    : Errortrace.comparison  trace_format
+val moregen     : Errortrace.comparison  trace_format
 
 val report_error :
   'variety trace_format ->

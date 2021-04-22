@@ -52,8 +52,8 @@ let explain trace f =
   explain (List.rev trace)
 
 (* Type indices *)
-type unification     = private Unification
-type non_unification = private Non_unification
+type unification = private Unification
+type comparison  = private Comparison
 
 type fixed_row_case =
   | Cannot_be_closed
@@ -67,7 +67,7 @@ type 'variety variant =
   | No_intersection : unification variant
   | Fixed_row : position * fixed_row_case * fixed_explanation -> unification variant
   (* Equality & Moregen *)
-  | Openness : position (* Always [Second] for Moregen *) -> non_unification variant
+  | Openness : position (* Always [Second] for Moregen *) -> comparison variant
 
 type 'variety obj =
   (* Common *)
@@ -95,8 +95,7 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Diff x -> Diff (map_diff f x)
   | Escape { kind = Equation x; context} -> Escape { kind = Equation (f x); context }
   | Escape { kind = (Univ _ | Self | Constructor _ | Module_type _ | Constraint); _ }
-  | Variant _ | Obj _ | Incompatible_fields _ as x -> x
-  | Rec_occur (_, _) as x -> x
+  | Variant _ | Obj _ | Incompatible_fields _ | Rec_occur (_, _) as x -> x
 
 let map f t = List.map (map_elt f) t
 
@@ -107,7 +106,7 @@ let incompatible_fields name got expected =
   Incompatible_fields { name; diff={got; expected} }
 
 
-let swap_unification_elt = function
+let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
   | Diff x -> Diff (swap_diff x)
   | Incompatible_fields { name; diff } ->
     Incompatible_fields { name; diff = swap_diff diff}
@@ -119,7 +118,7 @@ let swap_unification_elt = function
     Variant (No_tags(swap_position pos,f))
   | x -> x
 
-let swap_unification_trace e = List.map swap_unification_elt e
+let swap_trace e = List.map swap_elt e
 
 module Subtype = struct
   type 'a elt =

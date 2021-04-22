@@ -33,8 +33,8 @@ val explain: 'a list ->
   'b option
 
 (* Type indices *)
-type unification     = private Unification
-type non_unification = private Non_unification
+type unification = private Unification
+type comparison  = private Comparison
 
 type fixed_row_case =
   | Cannot_be_closed
@@ -48,7 +48,7 @@ type 'variety variant =
   | No_intersection : unification variant
   | Fixed_row : position * fixed_row_case * fixed_explanation -> unification variant
   (* Equality & Moregen *)
-  | Openness : position (* Always [Second] for Moregen *) -> non_unification variant
+  | Openness : position (* Always [Second] for Moregen *) -> comparison variant
 
 type 'variety obj =
   (* Common *)
@@ -75,13 +75,13 @@ val diff : type_expr -> type_expr -> (desc, _) elt
 (** [flatten f trace] flattens all elements of type {!desc} in
     [trace] to either [f x.t expanded] if [x.expanded=Some expanded]
     or [f x.t x.t] otherwise *)
-val flatten: (type_expr -> type_expr -> 'a) -> 'variant t -> ('a, 'variant) elt list
+val flatten: (type_expr -> type_expr -> 'a) -> 'variety t -> ('a, 'variety) elt list
 
-val map : ('a -> 'b) -> ('a, 'variant) elt list -> ('b, 'variant) elt list
+val map : ('a -> 'b) -> ('a, 'variety) elt list -> ('b, 'variety) elt list
 
 val incompatible_fields : string -> type_expr -> type_expr -> (desc, _) elt
 
-val swap_unification_trace : unification t -> unification t
+val swap_trace : 'variety t -> 'variety t
 
 module Subtype : sig
   type 'a elt =
@@ -91,7 +91,7 @@ module Subtype : sig
 
   val diff: type_expr -> type_expr -> desc elt
 
-  val map : (desc -> desc) -> desc elt list -> desc elt list
-
   val flatten : (type_expr -> type_expr -> 'a) -> t -> 'a elt list
+
+  val map : (desc -> desc) -> desc elt list -> desc elt list
 end
