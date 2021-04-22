@@ -116,3 +116,25 @@ Line 4, characters 7-29:
 Error: This expression has type int
        This is not a function; it cannot be applied.
 |}]
+
+
+(* PR#8917
+   In nested recursive definitions, we have to remember all recursive items
+   under definitions, not just the last one
+ *)
+
+module RecMod = struct
+  module A= struct end
+  module type s = sig
+    module rec A: sig type t end
+    and B: sig type t = A.t end
+  end
+end
+[%%expect {|
+module RecMod :
+  sig
+    module A : sig end
+    module type s =
+      sig module rec A : sig type t end and B : sig type t = A.t end end
+  end
+|}]

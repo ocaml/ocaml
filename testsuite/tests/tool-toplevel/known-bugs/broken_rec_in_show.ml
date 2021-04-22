@@ -36,9 +36,9 @@ module M : sig type t val x : t end
 |}];;
 
 module rec M : sig type t val x : M.t end = struct type t = int let x = 0 end;;
-(* this output is strange, it is surprising to use M/2 here. *)
+(* this output is CORRECT . *)
 [%%expect{|
-module rec M : sig type t val x : M/2.t end
+module rec M : sig type t val x : M.t end
 |}];;
 #show_module M;;
 (* this output is INCORRECT, it should use 'rec' *)

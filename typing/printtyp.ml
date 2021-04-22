@@ -250,7 +250,7 @@ let set namespace x = map.(Namespace.id namespace) <- x
 
 (* Names used in recursive definitions are not considered when determining
    if a name is already attributed in the current environment.
-   This is a weaker version of hidden_rec_items used by short-path. *)
+   This is a complementary version of hidden_rec_items used by short-path. *)
 let protected = ref S.empty
 
 (* When dealing with functor arguments, identity becomes fuzzy because the same
@@ -262,10 +262,9 @@ let with_arg id f =
   protect_refs [ R(fuzzy, S.add (Ident.name id) !fuzzy) ] f
 let fuzzy_id namespace id = namespace = Module && S.mem (Ident.name id) !fuzzy
 
-let add_protected id = protected := S.add (Ident.name id) !protected
-let reset_protected () = protected := S.empty
-let with_hidden id f =
-  protect_refs [ R(protected,S.add (Ident.name id) !protected)] f
+let with_hidden ids f =
+  let update m id = S.add (Ident.name id.ident) m in
+  protect_refs [ R(protected, List.fold_left update !protected ids)] f
 
 let pervasives_name namespace name =
   if not !enabled then Out_name.create name else
@@ -335,6 +334,11 @@ let ident_name namespace id =
 
 let reset () =
   Array.iteri ( fun i _ -> map.(i) <- M.empty ) map
+
+let with_ctx f =
+  let old = Array.copy map in
+  try_finally f
+    ~always:(fun () -> Array.blit old 0 map 0 (Array.length map))
 
 end
 let ident_name = Naming_context.ident_name
@@ -1661,13 +1665,26 @@ let dummy =
     type_uid = Uid.internal_not_actually_unique;
   }
 
-let hide ids env = List.fold_right
-    (fun id -> Env.add_type ~check:false (Ident.rename id) dummy)
-    ids env
+(** we hide items being defined from short-path to avoid shortening
+    [type t = Path.To.t] into [type t = t].
+*)
+let hide ids env =
+    let hide_id id env =
+       if id.hide then
+         Env.add_type ~check:false (Ident.rename id.ident) dummy env
+       else env
+    in
+    List.fold_right hide_id ids env
 
-let hide_rec_items ids =
+let with_hidden_items ids f =
+  let with_hidden_in_printing_env ids f =
+    wrap_env (hide ids) (Naming_context.with_hidden ids) f
+  in
   if not !Clflags.real_paths then
-    set_printing_env (hide ids !printing_env)
+    with_hidden_in_printing_env ids f
+  else
+    Naming_context.with_hidden ids f
+
 
 (** Classes and class types generate ghosts signature items, we group them
     together before printing *)
@@ -1794,7 +1811,8 @@ and tree_of_signature_rec env' sg =
   let collect_trees_of_rec_group group =
     let env = !printing_env in
     let env', group_trees =
-      trees_of_recursive_sigitem_group env group
+      Naming_context.with_ctx
+        (fun () -> trees_of_recursive_sigitem_group env group)
     in
     set_printing_env env';
     (env, group_trees) in
@@ -1802,23 +1820,13 @@ and tree_of_signature_rec env' sg =
   List.map collect_trees_of_rec_group structured
 
 and trees_of_recursive_sigitem_group env syntactic_group =
-  let display x =
-    reset_naming_context ();
-    x.src, tree_of_sigitem x.src in
+  let display x = x.src, tree_of_sigitem x.src in
   let env = Env.add_signature syntactic_group.pre_ghosts env in
   match syntactic_group.group with
   | Not_rec x -> add_sigitem env x, [display x]
   | Rec_group (ids,items) ->
-      List.iter (fun x -> Naming_context.add_protected x.ident) ids;
-      let type_id x = if x.hide then Some x.ident else None in
-      (* we hide the items being defined from short-path to avoid shortening
-         [type t = Path.To.t] into [type t = t].
-      *)
-      hide_rec_items (List.filter_map type_id ids);
-      let r = List.map display items in
-      Naming_context.reset_protected ();
       List.fold_left add_sigitem env items,
-      r
+      with_hidden_items ids (fun () -> List.map display items)
 
 and tree_of_sigitem = function
   | Sig_value(id, decl, _) ->
@@ -2343,8 +2351,6 @@ let tree_of_path = tree_of_path Other
 let tree_of_modtype = tree_of_modtype ~ellipsis:false
 let type_expansion ty ppf ty' =
   type_expansion ppf (trees_of_type_expansion (ty,ty'))
-let tree_of_type_declaration id td rs =
-  Naming_context.with_hidden id ( (* for disambiguation *)
-    wrap_env (hide [id]) (* for short-path *)
-      (fun () -> tree_of_type_declaration id td rs)
-  )
+let tree_of_type_declaration ident td rs =
+  with_hidden_items [{hide=true; ident}]
+    (fun () -> tree_of_type_declaration ident td rs)
