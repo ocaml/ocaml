@@ -301,7 +301,7 @@ let extract_option_type env ty =
     Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
-let protect_extraction env ty =
+let protect_expansion env ty =
   if Env.has_local_constraints env then generic_instance ty else ty
 
 type record_extraction_result =
@@ -309,8 +309,11 @@ type record_extraction_result =
   | Not_a_record_type
   | Maybe_a_record_type
 
+let extract_concrete_typedecl_protected env ty =
+  extract_concrete_typedecl env (protect_expansion env ty)
+
 let extract_concrete_record env ty =
-  match extract_concrete_typedecl env (protect_extraction env ty) with
+  match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_record (fields, _)}) ->
     Record_type (p0, p, fields)
   | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
@@ -322,7 +325,7 @@ type variant_extraction_result =
   | Maybe_a_variant_type
 
 let extract_concrete_variant env ty =
-  match extract_concrete_typedecl env (protect_extraction env ty) with
+  match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_variant (cstrs, _)}) ->
     Variant_type (p0, p, cstrs)
   | Typedecl(p0, p, {type_kind=Type_open}) ->
@@ -2844,7 +2847,7 @@ and type_expect_
   | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
-    let ty_exp = expand_head env ty_expected in
+    let ty_exp = expand_head env (protect_expansion env ty_expected) in
     let fmt6_path =
       Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
                   "format6"))
@@ -3046,7 +3049,7 @@ and type_expect_
       type_construct env loc lid sarg ty_expected_explained sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
-      let ty_expected1 = protect_extraction env ty_expected in
+      let ty_expected1 = protect_expansion env ty_expected in
       let ty_expected0 = instance ty_expected in
       begin try match
         sarg, get_desc (expand_head env ty_expected1),
@@ -3732,7 +3735,7 @@ and type_expect_
   | Pexp_poly(sbody, sty) ->
       if !Clflags.principal then begin_def ();
       let ty, cty =
-        match sty with None -> ty_expected, None
+        match sty with None -> protect_expansion env ty_expected, None
         | Some sty ->
             let sty = Ast_helper.Typ.force_poly sty in
             let cty = Typetexp.transl_simple_type env false sty in
@@ -3816,7 +3819,8 @@ and type_expect_
         match get_desc (Ctype.expand_head env (instance ty_expected)) with
           Tpackage (p, fl) ->
             if !Clflags.principal &&
-              get_level (Ctype.expand_head env ty_expected)
+              get_level (Ctype.expand_head env
+                           (protect_expansion env ty_expected))
                 < Btype.generic_level
             then
               Location.prerr_warning loc
@@ -4423,7 +4427,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         (lv <> generic_level || get_level ty_fun' <> generic_level)
       and ty_fun = instance ty_fun' in
       let ty_arg, ty_res =
-        match get_desc (expand_head env ty_expected') with
+        match get_desc (expand_head env ty_expected) with
           Tarrow(Nolabel,ty_arg,ty_res,_) -> ty_arg, ty_res
         | _ -> assert false
       in
