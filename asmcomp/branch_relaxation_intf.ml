@@ -55,7 +55,7 @@ module type S = sig
   val offset_pc_at_branch : distance
 
   (* The maximum size of a given instruction. *)
-  val instr_size : Linear.instruction_desc -> distance
+  val instr_size : Linear.fundecl -> Linear.instruction_desc -> distance
 
   (* Insertion of target-specific code to relax operations that cannot be
      relaxed generically.  It is assumed that these rewrites do not change

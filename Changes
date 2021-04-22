@@ -311,6 +311,9 @@ Working version
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)
 
+- #8936: Per-function environment for Emit
+  (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
+
 ### Build system:
 
 - #9191, #10091, #10182: take the LDFLAGS variable into account, except on

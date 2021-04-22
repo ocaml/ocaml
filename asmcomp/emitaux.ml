@@ -385,3 +385,21 @@ let create_asm_file = ref true
 let report_error ppf = function
   | Stack_frame_too_large n ->
       Format.fprintf ppf "stack frame too large (%d bytes)" n
+
+let mk_env f : Emitenv.per_function_env =
+  {
+    f;
+    stack_offset = 0;
+    call_gc_sites = [];
+    bound_error_sites = [];
+    bound_error_call = None;
+    call_gc_label = 0;
+    jumptables_lbl = None;
+    jumptables = [];
+    float_literals = [];
+    int_literals = [];
+    offset_literals = [];
+    gotrel_literals = [];
+    symbol_literals = [];
+    size_literals = 0;
+  }
