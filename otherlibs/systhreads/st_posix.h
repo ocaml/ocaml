@@ -246,99 +246,6 @@ static INLINE void st_thread_yield(st_masterlock * m)
   return;
 }
 
-/* Mutexes */
-
-typedef pthread_mutex_t * st_mutex;
-
-static int st_mutex_create(st_mutex * res)
-{
-  int rc;
-  pthread_mutexattr_t attr;
-  st_mutex m;
-
-  rc = pthread_mutexattr_init(&attr);
-  if (rc != 0) goto error1;
-  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-  if (rc != 0) goto error2;
-  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) { rc = ENOMEM; goto error2; }
-  rc = pthread_mutex_init(m, &attr);
-  if (rc != 0) goto error3;
-  pthread_mutexattr_destroy(&attr);
-  *res = m;
-  return 0;
-error3:
-  caml_stat_free(m);
-error2:
-  pthread_mutexattr_destroy(&attr);
-error1:
-  return rc;
-}
-
-static int st_mutex_destroy(st_mutex m)
-{
-  int rc;
-  rc = pthread_mutex_destroy(m);
-  caml_stat_free(m);
-  return rc;
-}
-
-static INLINE int st_mutex_lock(st_mutex m)
-{
-  return pthread_mutex_lock(m);
-}
-
-#define MUTEX_PREVIOUSLY_UNLOCKED 0
-#define MUTEX_ALREADY_LOCKED EBUSY
-
-static INLINE int st_mutex_trylock(st_mutex m)
-{
-  return pthread_mutex_trylock(m);
-}
-
-static INLINE int st_mutex_unlock(st_mutex m)
-{
-  return pthread_mutex_unlock(m);
-}
-
-/* Condition variables */
-
-typedef pthread_cond_t * st_condvar;
-
-static int st_condvar_create(st_condvar * res)
-{
-  int rc;
-  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
-  rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { caml_stat_free(c); return rc; }
-  *res = c;
-  return 0;
-}
-
-static int st_condvar_destroy(st_condvar c)
-{
-  int rc;
-  rc = pthread_cond_destroy(c);
-  caml_stat_free(c);
-  return rc;
-}
-
-static INLINE int st_condvar_signal(st_condvar c)
-{
- return pthread_cond_signal(c);
-}
-
-static INLINE int st_condvar_broadcast(st_condvar c)
-{
-    return pthread_cond_broadcast(c);
-}
-
-static INLINE int st_condvar_wait(st_condvar c, st_mutex m)
-{
-  return pthread_cond_wait(c, m);
-}
-
 /* Triggered events */
 
 typedef struct st_event_struct {
@@ -397,25 +304,6 @@ static int st_event_wait(st_event e)
   return rc;
 }
 
-/* Reporting errors */
-
-static void st_check_error(int retcode, char * msg)
-{
-  char * err;
-  int errlen, msglen;
-  value str;
-
-  if (retcode == 0) return;
-  if (retcode == ENOMEM) caml_raise_out_of_memory();
-  err = strerror(retcode);
-  msglen = strlen(msg);
-  errlen = strlen(err);
-  str = caml_alloc_string(msglen + 2 + errlen);
-  memmove (&Byte(str, 0), msg, msglen);
-  memmove (&Byte(str, msglen), ": ", 2);
-  memmove (&Byte(str, msglen + 2), err, errlen);
-  caml_raise_sys_error(str);
-}
 
 /* "At fork" processing */
 

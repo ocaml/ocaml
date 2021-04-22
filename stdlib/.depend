@@ -191,6 +191,14 @@ stdlib__complex.cmo : \
 stdlib__complex.cmx : \
     stdlib__complex.cmi
 stdlib__complex.cmi :
+stdlib__condition.cmo : \
+    stdlib__mutex.cmi \
+    stdlib__condition.cmi
+stdlib__condition.cmx : \
+    stdlib__mutex.cmx \
+    stdlib__condition.cmi
+stdlib__condition.cmi : \
+    stdlib__mutex.cmi
 stdlib__digest.cmo : \
     stdlib__string.cmi \
     stdlib__char.cmi \
@@ -457,6 +465,11 @@ stdlib__moreLabels.cmi : \
     stdlib__seq.cmi \
     stdlib__map.cmi \
     stdlib__hashtbl.cmi
+stdlib__mutex.cmo : \
+    stdlib__mutex.cmi
+stdlib__mutex.cmx : \
+    stdlib__mutex.cmi
+stdlib__mutex.cmi :
 stdlib__nativeint.cmo : \
     stdlib__sys.cmi \
     stdlib.cmi \
@@ -606,6 +619,15 @@ stdlib__scanf.cmx : \
     stdlib__scanf.cmi
 stdlib__scanf.cmi : \
     stdlib.cmi
+stdlib__semaphore.cmo : \
+    stdlib__mutex.cmi \
+    stdlib__condition.cmi \
+    stdlib__semaphore.cmi
+stdlib__semaphore.cmx : \
+    stdlib__mutex.cmx \
+    stdlib__condition.cmx \
+    stdlib__semaphore.cmi
+stdlib__semaphore.cmi :
 stdlib__seq.cmo : \
     stdlib__seq.cmi
 stdlib__seq.cmx : \

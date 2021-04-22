@@ -24,7 +24,7 @@ export LC_ALL=C
   for prim in \
       alloc array compare extern floats gc_ctrl hash intern interp ints io \
       lexing md5 meta memprof obj parsing signals str sys callback weak \
-      finalise domain platform fiber memory startup_aux \
+      finalise domain platform fiber memory startup_aux mutex_condvar \
       dynlink backtrace_byt backtrace afl \
       bigarray eventlog
   do
