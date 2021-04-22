@@ -246,7 +246,7 @@ let output_epilogue env f =
 (* Label a floating-point literal *)
 let float_literal env fl =
   try
-    let x = List.find (fun x -> compare x.fl fl = 0) env.float_literals in
+    let x = List.find (fun x -> Int64.equal x.fl fl) env.float_literals in
     x.lbl
   with Not_found ->
     let lbl = new_label() in

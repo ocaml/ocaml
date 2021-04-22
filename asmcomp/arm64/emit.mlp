@@ -310,10 +310,7 @@ let emit_cmpimm rs n =
 (* Label a floating-point literal *)
 let float_literal env fl =
   try
-    let eq x =
-      Float.equal (Int64.float_of_bits x.fl) (Int64.float_of_bits fl)
-    in
-    let x = List.find eq env.float_literals in
+    let x = List.find (fun x -> Int64.equal x.fl fl) env.float_literals in
     x.lbl
   with Not_found ->
     let lbl = new_label() in
