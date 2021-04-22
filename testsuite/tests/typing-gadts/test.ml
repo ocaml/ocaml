@@ -361,13 +361,6 @@ module Propagation = struct
 end
 ;;
 [%%expect{|
-Lines 11-13, characters 12-20:
-11 | ............match x with
-12 |     | IntLit n -> (n : s )
-13 |     | BoolLit b -> b
-Warning 18 [not-principal]:
-  The return type of this pattern-matching is ambiguous.
-  Please add a type annotation, as the choice of `s' is not principal.
 module Propagation :
   sig
     type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
