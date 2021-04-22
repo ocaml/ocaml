@@ -169,18 +169,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-let trace_of_error = function
-    Label_mismatch (_,{trace})
-  | Pattern_type_clash ({trace},_)
-  | Or_pattern_type_clash (_,{trace})
-  | Expr_type_clash ({trace},_,_)
-  | Coercion_failure (_,{trace},_)
-  | Less_general (_,{trace})
-  | Letop_type_clash (_,{trace})
-  | Andop_type_clash (_,{trace})
-  | Bindings_type_clash {trace} -> Some trace
-  | _ -> None
-
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
@@ -4946,7 +4934,7 @@ and type_cases
   ) half_typed_cases;
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
-  let mk_cases interbranch_propagation =
+  let cases =
     List.map
       (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
              untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
@@ -4975,7 +4963,8 @@ and type_cases
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt && interbranch_propagation then
+          else if contains_gadt then
+            (* allow propagation from preceding branches *)
             correct_levels ty_res
           else ty_res in
         let guard =
@@ -4997,31 +4986,6 @@ and type_cases
         }
       )
       half_typed_cases
-  in
-  let cases =
-    let may_backtrack = does_contain_gadt && not !Clflags.principal in
-    if not may_backtrack then mk_cases false else
-    let state = save_state (ref env) in
-    let has_equation_escape err =
-      match trace_of_error err with
-        Some tr ->
-          List.exists Errortrace.
-            (function Escape {kind=Equation _} -> true | _ -> false) tr
-      | None -> false
-    in
-    try mk_cases false
-    with Error(_,_,err) when has_equation_escape err ->
-      set_state state (ref env);
-      let cases = mk_cases true in
-      let msg =
-        Format.asprintf
-          "@[<v2>@ @[<hov>The return type of this pattern-matching \
-           is ambiguous.@ \
-           Please add a type annotation,@ as the choice of `@[%a@]'@]@]"
-          Printtyp.type_expr ty_res
-      in
-      Location.prerr_warning loc (Warnings.Not_principal msg);
-      cases
   in
   if !Clflags.principal || does_contain_gadt then begin
     let ty_res' = instance ty_res in

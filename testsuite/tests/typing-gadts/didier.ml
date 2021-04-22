@@ -47,13 +47,6 @@ let f (type t) (x : t) (tag : t ty) =
   | Bool -> x
 ;;
 [%%expect{|
-Lines 2-4, characters 2-13:
-2 | ..match tag with
-3 |   | Int -> x > 0
-4 |   | Bool -> x
-Warning 18 [not-principal]:
-  The return type of this pattern-matching is ambiguous.
-  Please add a type annotation, as the choice of `bool' is not principal.
 val f : 't -> 't ty -> bool = <fun>
 |}, Principal{|
 Line 4, characters 12-13:
