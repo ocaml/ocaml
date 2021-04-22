@@ -1443,8 +1443,8 @@ OCaml 4.13.0 (24 September 2021)
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
-- #8575, #10362: Surprising interaction between polymorphic variants and
-  constructor disambiguation.
+- #8575, #10362, #10364: Surprising interaction between polymorphic variants
+  and constructor disambiguation.
   (Jacques Garrigue, report and review by Thomas Refis)
 
 - #8917, #8929, #9889, #10219: fix printing of nested recursive definitions
