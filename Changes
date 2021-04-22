@@ -342,6 +342,10 @@ Working version
   (David Allsopp, report by Anders Jackson, review by Florian Angeletti and
    Gabriel Scherer)
 
+- #10366: Make it possible to use the OCAMLRUN variable to specify
+  which runtime to use while building the compilers (Sébastien Hinderer,
+  review by David Allsopp)
+
 ### Bug fixes:
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
