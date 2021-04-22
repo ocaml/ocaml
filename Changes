@@ -302,6 +302,9 @@ Working version
   specific solver functions.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
+- #10327: Add a subdirectories variable and a copy action to ocamltest
+  (Sébastien Hinderer, review by David Allsopp)
+
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)
 

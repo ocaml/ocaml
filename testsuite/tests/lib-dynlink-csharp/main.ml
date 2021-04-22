@@ -2,7 +2,7 @@
 
 include dynlink
 
-files = "entry.c main.cs plugin.ml"
+readonly_files = "entry.c main.cs plugin.ml"
 
 * csharp-compiler
 ** shared-libraries

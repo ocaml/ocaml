@@ -2,7 +2,7 @@
 
 include dynlink
 
-files = "test7_interface_only.mli test7_plugin.ml"
+readonly_files = "test7_interface_only.mli test7_plugin.ml"
 
 libraries = ""
 

@@ -238,6 +238,34 @@ let file_exists_action _log env =
       end
 let file_exists = make "file-exists" file_exists_action
 
+let copy_action log env =
+  let do_copy src dst =
+    let (entry_type, f) =
+      if Sys.is_directory src
+      then ("directory", Sys.copy_directory)
+      else ("file", Sys.copy_file)
+    in
+    Printf.fprintf log "Copying %s %s to %s\n%!" entry_type src dst;
+    f src dst
+  in
+  let src = Environments.lookup Builtin_variables.src env in
+  let dst = Environments.lookup Builtin_variables.dst env in
+  match (src, dst) with
+    | (None, _) | (_, None) ->
+      let reason = reason_with_fallback env "src or dst are undefined" in
+      let result = Result.fail_with_reason reason in
+      (result, env)
+    | (Some src, Some dst) ->
+      let f =
+        if String.ends_with ~suffix:"/" dst
+        then fun src -> do_copy src (dst ^ (Filename.basename src))
+        else fun src -> do_copy src dst
+      in
+      List.iter f (String.words src);
+      (Result.pass, env)
+
+let copy = make "copy" copy_action
+
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings
   [
@@ -281,4 +309,5 @@ let _ =
     function_sections;
     naked_pointers;
     file_exists;
+    copy;
   ]

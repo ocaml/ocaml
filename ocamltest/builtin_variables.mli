@@ -23,11 +23,13 @@ val cwd : Variables.t
 
 val commandline : Variables.t
 
+val dst : Variables.t
+
 val exit_status : Variables.t
 
 val file : Variables.t
 
-val files : Variables.t
+val readonly_files : Variables.t
 
 val make : Variables.t
 
@@ -51,9 +53,13 @@ val skip_header_bytes : Variables.t
 
 val script : Variables.t
 
+val src : Variables.t
+
 val stdin : Variables.t
 val stdout : Variables.t
 val stderr : Variables.t
+
+val subdirectories : Variables.t
 
 val test_build_directory : Variables.t
 val test_build_directory_prefix : Variables.t

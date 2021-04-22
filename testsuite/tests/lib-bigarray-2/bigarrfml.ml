@@ -1,6 +1,6 @@
 (* TEST
 
-files = "bigarrf.f bigarrfstub.c"
+readonly_files = "bigarrf.f bigarrfstub.c"
 last_flags = "-cclib -lgfortran"
 
 * script
