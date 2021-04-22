@@ -375,6 +375,8 @@ void caml_ev_alloc(uint64_t sz)
 /*  Note that this function does not trigger an actual disk flush, it just
     pushes events in the event buffer.
 */
+// FIXME(engil): alloc events are not flushed on Multicore for now.
+// we have no counter currently in place in the runtime.
 void caml_ev_alloc_flush()
 {
   int i;
