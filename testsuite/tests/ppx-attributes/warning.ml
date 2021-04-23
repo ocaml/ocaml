@@ -2,6 +2,7 @@
 *)
 
 [@@@ocaml.warning "@A"]
+[@@@ocaml.warning "-missing-mli"]
 [@@@ocaml.alert "++all"]
 
 (* Fixture *)
