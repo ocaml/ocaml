@@ -43,7 +43,7 @@ ARCHES=amd64 i386 arm arm64 power s390x riscv
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
         -I lambda -I middle_end -I middle_end/closure \
         -I middle_end/flambda -I middle_end/flambda/base_types \
-        -I asmcomp -I asmcomp/debug \
+        -I asmcomp \
         -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname \
@@ -469,9 +469,6 @@ endif
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/debug/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    middle_end/*.cmt middle_end/*.cmti \
@@ -493,10 +490,6 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmt asmcomp/*.cmti \
 	    asmcomp/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/debug/*.cmt asmcomp/debug/*.cmti \
-	    asmcomp/debug/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -541,7 +534,6 @@ installoptopt:
            middle_end/closure/*.cmx \
            middle_end/flambda/*.cmx \
            middle_end/flambda/base_types/*.cmx \
-	   asmcomp/debug/*.cmx \
           "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	   compilerlibs/*.cmxa compilerlibs/*.$(A) \
@@ -1079,7 +1071,7 @@ endif
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
            lambda middle_end/closure middle_end/flambda \
-           middle_end/flambda/base_types asmcomp/debug \
+           middle_end/flambda/base_types \
            driver toplevel toplevel/byte toplevel/native tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.s $$d/*.asm \
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
@@ -1089,7 +1081,7 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
-         middle_end/flambda/base_types asmcomp/debug \
+         middle_end/flambda/base_types \
          driver toplevel toplevel/byte toplevel/native; \
 	 do \
 	   $(CAMLDEP) $(DEPFLAGS) -I $$d $(DEPINCLUDES) $$d/*.mli $$d/*.ml \

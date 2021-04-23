@@ -799,16 +799,6 @@ let mk_dlive f =
   "-dlive", Arg.Unit f, " (undocumented)"
 ;;
 
-let mk_davail f =
-  "-davail", Arg.Unit f, " Print register availability info when printing \
-    liveness"
-;;
-
-let mk_drunavail f =
-  "-drunavail", Arg.Unit f, " Run register availability pass (for testing \
-    only; needs -g)"
-;;
-
 let mk_dspill f =
   "-dspill", Arg.Unit f, " (undocumented)"
 ;;
@@ -1092,8 +1082,6 @@ module type Optcommon_options = sig
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
-  val _davail : unit -> unit
-  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit
@@ -1456,8 +1444,6 @@ struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
-    mk_davail F._davail;
-    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1562,8 +1548,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
-    mk_davail F._davail;
-    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1736,7 +1720,6 @@ module Default = struct
     let _classic_inlining () = classic_inlining := true
     let _compact = clear optimize_for_speed
     let _dalloc = set dump_regalloc
-    let _davail () = dump_avail := true
     let _dclambda = set dump_clambda
     let _dcmm = set dump_cmm
     let _dcombine = set dump_combine
@@ -1755,7 +1738,6 @@ module Default = struct
     let _drawclambda = set dump_rawclambda
     let _drawflambda = set dump_rawflambda
     let _dreload = set dump_reload
-    let _drunavail () = debug_runavail := true
     let _dscheduling = set dump_scheduling
     let _dsel = set dump_selection
     let _dspill = set dump_spill
