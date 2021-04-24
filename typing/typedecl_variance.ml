@@ -119,11 +119,11 @@ let compute_variance env visited vari ty =
     | Tpoly (ty, _) ->
         compute_same ty
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
-    | Tpackage (_, _, tyl) ->
+    | Tpackage (_, fl) ->
         let v =
           Variance.(if mem Pos vari || mem Neg vari then full else unknown)
         in
-        List.iter (compute_variance_rec v) tyl
+        List.iter (fun (_, ty) -> compute_variance_rec v ty) fl
   in
   compute_variance_rec vari ty
 
