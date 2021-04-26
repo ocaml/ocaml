@@ -408,6 +408,9 @@ Working version
    In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
   (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan)
 
+- #10371: no longer generatd useless `.cds` file when using
+  `-output-complete-exe`.
+  (Nicolás Ojeda Bär, review by David Allsopp)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
