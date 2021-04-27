@@ -2014,7 +2014,10 @@ let diff_printing_status { Errortrace.got=t1, t1'; expected=t2, t2'} =
   else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
   else Keep
 
-(* A record that's kept abstract for ease of future extensibility *)
+(* A configuration type that controls which trace we print.  This could be exposed, but we
+   instead expose three separate [report_{unification,equality,moregen}_error] functions.
+   This also lets us give the unification case an extra optional argument without adding
+   it to the equality and moregen cases. *)
 type 'variety trace_format =
   | Unification : Errortrace.unification trace_format
   | Equality    : Errortrace.comparison  trace_format
@@ -2308,6 +2311,10 @@ let report_error trace_format ppf env tr
   wrap_printing_env env (fun () -> error trace_format env tr txt1 ppf txt2
                                      type_expected_explanation)
     ~error:true
+
+let report_unification_error = report_error Unification
+let report_equality_error    = report_error Equality    ?type_expected_explanation:None
+let report_moregen_error     = report_error Moregen     ?type_expected_explanation:None
 
 module Subtype = struct
   (* There's a frustrating amount of code duplication between this module and the outside

@@ -5439,7 +5439,7 @@ let report_type_expected_explanation_opt expl ppf =
 let report_unification_error ~loc ?sub env trace
     ?type_expected_explanation txt1 txt2 =
   Location.error_of_printer ~loc ?sub (fun ppf () ->
-    Printtyp.report_error Printtyp.Unification ppf env trace
+    Printtyp.report_unification_error ppf env trace
       ?type_expected_explanation txt1 txt2
   ) ()
 
@@ -5459,14 +5459,12 @@ let report_error ~loc env = function
   | Pattern_type_clash (trace, pat) ->
       let diff = type_clash_of_trace trace in
       let sub = report_pattern_type_clash_hints pat diff in
-      Location.error_of_printer ~loc ~sub (fun ppf () ->
-        Printtyp.report_error Printtyp.Unification ppf env trace
-          (function ppf ->
-            fprintf ppf "This pattern matches values of type")
-          (function ppf ->
-            fprintf ppf "but a pattern was expected which matches values of \
-                         type");
-      ) ()
+      report_unification_error ~loc ~sub env trace
+        (function ppf ->
+          fprintf ppf "This pattern matches values of type")
+        (function ppf ->
+          fprintf ppf "but a pattern was expected which matches values of \
+                       type");
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
         (function ppf ->
@@ -5488,15 +5486,13 @@ let report_error ~loc env = function
   | Expr_type_clash (trace, explanation, exp) ->
       let diff = type_clash_of_trace trace in
       let sub = report_expr_type_clash_hints exp diff in
-      Location.error_of_printer ~loc ~sub (fun ppf () ->
-        Printtyp.report_error Printtyp.Unification ppf env trace
-          ~type_expected_explanation:
-            (report_type_expected_explanation_opt explanation)
-          (function ppf ->
-             fprintf ppf "This expression has type")
-          (function ppf ->
-             fprintf ppf "but an expression was expected of type");
-      ) ()
+      report_unification_error ~loc ~sub env trace
+        ~type_expected_explanation:
+          (report_type_expected_explanation_opt explanation)
+        (function ppf ->
+           fprintf ppf "This expression has type")
+        (function ppf ->
+           fprintf ppf "but an expression was expected of type");
   | Apply_non_function typ ->
       begin match (repr typ).desc with
         Tarrow _ ->
@@ -5613,7 +5609,7 @@ let report_error ~loc env = function
         v
   | Coercion_failure (ty, ty', trace, b) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.report_error Printtyp.Unification ppf env trace
+        Printtyp.report_unification_error ppf env trace
           (function ppf ->
              let ty, ty' = Printtyp.prepare_expansion (ty, ty') in
              fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \

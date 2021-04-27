@@ -1889,12 +1889,12 @@ let report_error env ppf = function
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
       fprintf ppf "@[<v>The class constraints are not consistent.@ ";
-      Printtyp.report_error Printtyp.Unification ppf env trace
+      Printtyp.report_unification_error ppf env trace
         (fun ppf -> fprintf ppf "Type")
         (fun ppf -> fprintf ppf "is not compatible with type");
       fprintf ppf "@]"
   | Field_type_mismatch (k, m, trace) ->
-      Printtyp.report_error Printtyp.Unification ppf env trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "The %s %s@ has type" k m)
         (function ppf ->
@@ -1932,7 +1932,7 @@ let report_error env ppf = function
         !Oprint.out_type (Printtyp.tree_of_typexp false actual)
         !Oprint.out_type (Printtyp.tree_of_typexp false expected)
   | Constructor_type_mismatch (c, trace) ->
-      Printtyp.report_error Printtyp.Unification ppf env trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "The expression \"new %s\" has type" c)
         (function ppf ->
@@ -1960,7 +1960,7 @@ let report_error env ppf = function
            but is here applied to %i type argument(s)@]"
         Printtyp.longident lid expected provided
   | Parameter_mismatch trace ->
-      Printtyp.report_error Printtyp.Unification ppf env trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "The type parameter")
         (function ppf ->
@@ -2015,12 +2015,12 @@ let report_error env ppf = function
         "@[The type of this class,@ %a,@ \
            contains non-collapsible conjunctive types in constraints.@ %t@]"
         (Printtyp.class_declaration id) clty
-        (fun ppf -> Printtyp.report_error Printtyp.Unification ppf env trace
+        (fun ppf -> Printtyp.report_unification_error ppf env trace
             (fun ppf -> fprintf ppf "Type")
             (fun ppf -> fprintf ppf "is not compatible with type")
         )
   | Final_self_clash trace ->
-      Printtyp.report_error Printtyp.Unification ppf env trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "This object is expected to have type")
         (function ppf ->

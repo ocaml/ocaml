@@ -177,16 +177,22 @@ val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
 
-type 'variety trace_format =
-  | Unification : Errortrace.unification trace_format
-  | Equality    : Errortrace.comparison  trace_format
-  | Moregen     : Errortrace.comparison  trace_format
-
-val report_error :
-  'variety trace_format ->
+val report_unification_error :
   formatter -> Env.t ->
-  'variety Errortrace.t ->
+  Errortrace.unification Errortrace.t ->
   ?type_expected_explanation:(formatter -> unit) ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+val report_equality_error :
+  formatter -> Env.t ->
+  Errortrace.comparison Errortrace.t ->
+  (formatter -> unit) -> (formatter -> unit) ->
+  unit
+
+val report_moregen_error :
+  formatter -> Env.t ->
+  Errortrace.comparison Errortrace.t ->
   (formatter -> unit) -> (formatter -> unit) ->
   unit
 
