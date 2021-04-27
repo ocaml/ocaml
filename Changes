@@ -386,6 +386,10 @@ Working version
 - #10189, #10190, #10347: Universal variables leaking through GADT equations
   (Jacques Garrigue, report and review by Leo White)
 
+- #10253, #10373: tweak error message for unknown variant constructors
+  or record fields in type-directed disambiguation
+  (Florian Angeletti, report by Hongbo Zhang, review by Gabriel Scherer)
+
 - #10277: Need to detect ambiguity recursively inside types
   (Jacques Garrigue, review by Thomas Refis and Leo White)
 
@@ -414,10 +418,6 @@ Working version
 - #10371: no longer generatd useless `.cds` file when using
   `-output-complete-exe`.
   (Nicolás Ojeda Bär, review by David Allsopp)
-
-- #????, tweak error message for unknown variant constructors
-  or record fields in type-directed disambiguation
-  (Florian Angeletti, report by Hongbo Zhang , review by ???)
 
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
