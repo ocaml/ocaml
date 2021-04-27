@@ -415,6 +415,10 @@ Working version
   `-output-complete-exe`.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #????, tweak error message for unknown variant constructors
+  or record fields in type-directed disambiguation
+  (Florian Angeletti, report by Hongbo Zhang , review by ???)
+
 OCaml 4.12.0 (24 February 2021)
 -------------------------------
 

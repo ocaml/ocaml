@@ -5550,7 +5550,7 @@ let report_error ~loc env = function
           end else begin
             fprintf ppf
               "@[@[<2>%s type@ %a%t@]@ \
-               The %s %s does not belong to type %a@]"
+               There is no %s %s within type %a@]"
               eorp Printtyp.type_expr ty
               (report_type_expected_explanation_opt explanation)
               (Datatype_kind.label_name kind)

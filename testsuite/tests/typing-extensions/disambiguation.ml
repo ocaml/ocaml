@@ -30,7 +30,7 @@ Line 1, characters 11-15:
 1 | let x: t = Alph;;
                ^^^^
 Error: This variant expression is expected to have type t
-       The constructor Alph does not belong to type t
+       There is no constructor Alph within type t
 Hint: Did you mean Aleph or Alpha?
 |}]
 
@@ -41,7 +41,7 @@ Line 2, characters 12-16:
 2 | let y : w = Alha;;
                 ^^^^
 Error: This variant expression is expected to have type M.w
-       The constructor Alha does not belong to type M.w
+       There is no constructor Alha within type M.w
 Hint: Did you mean Alpha?
 |}]
 
@@ -51,7 +51,7 @@ Line 1, characters 11-14:
 1 | let z: t = Bet;;
                ^^^
 Error: This variant expression is expected to have type t
-       The constructor Bet does not belong to type t
+       There is no constructor Bet within type t
 Hint: Did you mean Beth?
 |}]
 
@@ -65,7 +65,7 @@ Line 3, characters 9-13:
 3 | let g = (Gamm:t);;
              ^^^^
 Error: This variant expression is expected to have type t
-       The constructor Gamm does not belong to type t
+       There is no constructor Gamm within type t
 Hint: Did you mean Gamma?
 |}];;
 
@@ -75,7 +75,7 @@ Line 1, characters 6-15:
 1 | raise Not_Found;;
           ^^^^^^^^^
 Error: This variant expression is expected to have type exn
-       The constructor Not_Found does not belong to type exn
+       There is no constructor Not_Found within type exn
 Hint: Did you mean Not_found?
 |}]
 
@@ -156,7 +156,7 @@ Line 7, characters 13-17:
 7 | let x: P.p = Alha;;
                  ^^^^
 Error: This variant expression is expected to have type P.p
-       The constructor Alha does not belong to type x
+       There is no constructor Alha within type x
 Hint: Did you mean Alpha?
 |}]
 
@@ -170,7 +170,7 @@ Line 3, characters 13-14:
 3 | let y: N.s = T ;;
                  ^
 Error: This variant expression is expected to have type N.s
-       The constructor T does not belong to type M.t
+       There is no constructor T within type M.t
 |}]
 
 (** Pattern matching *)
@@ -197,7 +197,7 @@ Line 3, characters 8-12:
 3 |   raise Locl;;
             ^^^^
 Error: This variant expression is expected to have type exn
-       The constructor Locl does not belong to type exn
+       There is no constructor Locl within type exn
 Hint: Did you mean Local?
 |}]
 
