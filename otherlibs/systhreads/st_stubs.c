@@ -35,7 +35,7 @@
 #include "caml/backtrace.h"
 #include "caml/signals.h"
 
-#include "caml/st_posix.h"
+#include "caml/sync.h"
 #include "st_posix.h"
 
 /* ML value for a thread descriptor */
