@@ -1,8 +1,6 @@
 (* TEST
 *)
 
-Random.init 12345;;
-
 let size = 1000;;
 let num_domains = 4;;
 let random_state = Domain.DLS.new_key Random.State.make_self_init
