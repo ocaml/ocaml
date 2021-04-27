@@ -256,15 +256,26 @@ opam switch create . --empty
 opam install . --inplace-build
 -----
 
-However, if you want to avoid the initial full compilation or need specific
-configuration options, you can also configure it manually, as long as you make
-sure that the configuration prefix is the one where `opam` would install the
-compiler.
-For instance, if you don't need `ocamldoc` and `ocamltest` you can run:
+However, if you need specific configuration options, you can also configure it
+manually, as long as you make sure that the configuration prefix is the one
+where `opam` would install the compiler.
+You will then need to install the compiler, either from the working directory
+(that you must build yourself) or using the regular sandboxed builds.
 
 -----
+# Example with regular opam build
 opam switch create . --empty
-./configure --prefix=$(opam var prefix) --disable-ocamldoc --disable-ocamltest
+opam install .
+./configure --prefix=$(opam var prefix) # put extra configuration args here
+-----
+
+-----
+# Example with installation from the current directory, installing only the
+# bytecode versions of the tools
+opam switch create . --empty
+./configure --prefix=$(opam var prefix) # put extra configuration args here
+make world && make opt
+opam install . --assume-built
 -----
 
 ===== Basic workflow
@@ -287,10 +298,15 @@ The `opam-custom-install` plugin allows you to install a package using a custom
 command instead of the package-supplied one. It can be installed following
 instructions https://gitlab.ocamlpro.com/louis/opam-custom-install[here].
 
-In our case, we need to build the compiler (to some extent, more details later),
-then we run `opam custom-install . -- make install`.
+In our case, we need to build the compiler, and when we've built everything
+that we need then we run `opam custom-install ocaml-variants -- make install`.
 This will make `opam` remove the previously installed version of the compiler
 (if any), then install the new one in its stead.
+
+-----
+# reinstall the compiler, and rebuild all opam packages
+opam custom-install ocaml-variants -- make install
+-----
 
 Since most `opam` packages depend on the compiler, this will trigger a
 reinstallation of all the packages in the switch.
@@ -300,6 +316,35 @@ identical), you can use the additional `--no-recompilations` flag.
 There are no checks that it's safe to do so, so if your patch ends up
 changing even slightly one of the core libraries' files, you will likely
 get inconsistent assumptions errors later.
+
+-----
+# reinstall the compiler, leaving the opam packages untouched -- unsafe!
+opam custom-install --no-recompilations ocaml-variants -- make install
+-----
+
+Note aout the first installation:
+When you start from an empty switch, and install a compiler (in our case,
+tha `ocaml-variants` package provided by the compiler's `opam` file), then
+a number of additional packages are installed to ensure that the switch
+will work correctly. Mainly, the `ocaml` package needs to be installed,
+and while it's done automatically when using regular `opam` commands, the
+`custom-install` plugin will not force installation of dependencies.
+Moreover, if you try to fix the problem by manually installing the `ocaml`
+package, `opam` will try to recompile `ocaml-variants`, using the default
+instructions. You can get around this by running
+`opam reinstall --forget-pending` just after the `opam custom-install` command
+and just before the `opam install ocaml command`.
+Full example:
+
+-----
+opam switch create . --empty
+./configure --prefix=$(opam var prefix) --disable-ocamldoc --disable-ocamltest
+make world && make opt
+opam custom-install ocaml-variants -- make install
+opam reinstall --forget-pending --yes
+opam install ocaml
+# You now have a working switch, in which you can start installing packages
+-----
 
 One advantage of this plugin over a plain `make install` is that it
 correctly tracks the files associated with the compiler, so if your
@@ -318,11 +363,11 @@ for the actual debugging phase.
 
 You can achieve some improvements using built-in `opam` commands.
 
-Using `opam install . --inplace-build --assume-built` will simply remove the
+Using `opam install . --assume-built` will simply remove the
 package for the compiler, then run the installation instructions
 (`make install`) in the working directory, tracking the installed files
 correctly. The main difference with the `opam-custom-install` version
-is that there's no way to prevent this command from trigerring a full
+is that there's no way to prevent this command from triggering a full
 recompilation of your switch.
 
 You can also run `make install` manually, which will not trigger a
