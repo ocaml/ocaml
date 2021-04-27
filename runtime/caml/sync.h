@@ -10,13 +10,13 @@
 
 #include <pthread.h>
 
-typedef int st_retcode;
+typedef int sync_retcode;
 
 /* Mutexes */
 
-typedef pthread_mutex_t * st_mutex;
+typedef pthread_mutex_t * sync_mutex;
 
-Caml_inline int st_mutex_lock(st_mutex m)
+Caml_inline int sync_mutex_lock(sync_mutex m)
 {
   return pthread_mutex_lock(m);
 }
@@ -24,38 +24,38 @@ Caml_inline int st_mutex_lock(st_mutex m)
 #define MUTEX_PREVIOUSLY_UNLOCKED 0
 #define MUTEX_ALREADY_LOCKED EBUSY
 
-Caml_inline int st_mutex_trylock(st_mutex m)
+Caml_inline int sync_mutex_trylock(sync_mutex m)
 {
   return pthread_mutex_trylock(m);
 }
 
-Caml_inline int st_mutex_unlock(st_mutex m)
+Caml_inline int sync_mutex_unlock(sync_mutex m)
 {
   return pthread_mutex_unlock(m);
 }
 
 /* Condition variables */
 
-typedef pthread_cond_t * st_condvar;
+typedef pthread_cond_t * sync_condvar;
 
-Caml_inline int st_condvar_signal(st_condvar c)
+Caml_inline int sync_condvar_signal(sync_condvar c)
 {
  return pthread_cond_signal(c);
 }
 
-Caml_inline int st_condvar_broadcast(st_condvar c)
+Caml_inline int sync_condvar_broadcast(sync_condvar c)
 {
     return pthread_cond_broadcast(c);
 }
 
-Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
+Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
 {
   return pthread_cond_wait(c, m);
 }
 
 /* Reporting errors */
 
-static void st_check_error(int retcode, char * msg)
+static void sync_check_error(int retcode, char * msg)
 {
   char * err;
   int errlen, msglen;

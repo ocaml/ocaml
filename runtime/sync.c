@@ -15,11 +15,11 @@
 
 /* Mutex operations */
 
-static int st_mutex_create(st_mutex * res)
+static int sync_mutex_create(sync_mutex * res)
 {
   int rc;
   pthread_mutexattr_t attr;
-  st_mutex m;
+  sync_mutex m;
 
   rc = pthread_mutexattr_init(&attr);
   if (rc != 0) goto error1;
@@ -40,7 +40,7 @@ error1:
   return rc;
 }
 
-static int st_mutex_destroy(st_mutex m)
+static int sync_mutex_destroy(sync_mutex m)
 {
   int rc;
   rc = pthread_mutex_destroy(m);
@@ -48,17 +48,17 @@ static int st_mutex_destroy(st_mutex m)
   return rc;
 }
 
-#define Mutex_val(v) (* ((st_mutex *) Data_custom_val(v)))
+#define Mutex_val(v) (* ((sync_mutex *) Data_custom_val(v)))
 
 static void caml_mutex_finalize(value wrapper)
 {
-  st_mutex_destroy(Mutex_val(wrapper));
+  sync_mutex_destroy(Mutex_val(wrapper));
 }
 
 static int caml_mutex_compare(value wrapper1, value wrapper2)
 {
-  st_mutex mut1 = Mutex_val(wrapper1);
-  st_mutex mut2 = Mutex_val(wrapper2);
+  sync_mutex mut1 = Mutex_val(wrapper1);
+  sync_mutex mut2 = Mutex_val(wrapper2);
   return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
 }
 
@@ -80,10 +80,10 @@ static const struct custom_operations caml_mutex_ops = {
 
 CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
 {
-  st_mutex mut = NULL;
+  sync_mutex mut = NULL;
   value wrapper;
 
-  st_check_error(st_mutex_create(&mut), "Mutex.create");
+  sync_check_error(sync_mutex_create(&mut), "Mutex.create");
   wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(pthread_mutex_t *),
                               0, 1);
   Mutex_val(wrapper) = mut;
@@ -92,48 +92,48 @@ CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
 
 CAMLprim value caml_ml_mutex_lock(value wrapper)     /* ML */
 {
-  st_retcode retcode;
-  st_mutex mut = Mutex_val(wrapper);
+  sync_retcode retcode;
+  sync_mutex mut = Mutex_val(wrapper);
 
   /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
+  if (sync_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
   /* If unsuccessful, block on mutex */
   Begin_root(wrapper)
     caml_enter_blocking_section();
-    retcode = st_mutex_lock(mut);
+    retcode = sync_mutex_lock(mut);
     caml_leave_blocking_section();
   End_roots();
-  st_check_error(retcode, "Mutex.lock");
+  sync_check_error(retcode, "Mutex.lock");
   return Val_unit;
 }
 
 CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
 {
-  st_retcode retcode;
-  st_mutex mut = Mutex_val(wrapper);
+  sync_retcode retcode;
+  sync_mutex mut = Mutex_val(wrapper);
   /* PR#4351: no need to release and reacquire master lock */
-  retcode = st_mutex_unlock(mut);
-  st_check_error(retcode, "Mutex.unlock");
+  retcode = sync_mutex_unlock(mut);
+  sync_check_error(retcode, "Mutex.unlock");
   return Val_unit;
 }
 
 CAMLprim value caml_ml_mutex_try_lock(value wrapper)           /* ML */
 {
-  st_mutex mut = Mutex_val(wrapper);
-  st_retcode retcode;
-  retcode = st_mutex_trylock(mut);
+  sync_mutex mut = Mutex_val(wrapper);
+  sync_retcode retcode;
+  retcode = sync_mutex_trylock(mut);
   if (retcode == MUTEX_ALREADY_LOCKED) return Val_false;
-  st_check_error(retcode, "Mutex.try_lock");
+  sync_check_error(retcode, "Mutex.try_lock");
   return Val_true;
 }
 
 
 /* Conditions operations */
 
-static int st_condvar_create(st_condvar * res)
+static int sync_condvar_create(sync_condvar * res)
 {
   int rc;
-  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
+  sync_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
   if (c == NULL) return ENOMEM;
   rc = pthread_cond_init(c, NULL);
   if (rc != 0) { caml_stat_free(c); return rc; }
@@ -141,7 +141,7 @@ static int st_condvar_create(st_condvar * res)
   return 0;
 }
 
-static int st_condvar_destroy(st_condvar c)
+static int sync_condvar_destroy(sync_condvar c)
 {
   int rc;
   rc = pthread_cond_destroy(c);
@@ -149,17 +149,17 @@ static int st_condvar_destroy(st_condvar c)
   return rc;
 }
 
-#define Condition_val(v) (* (st_condvar *) Data_custom_val(v))
+#define Condition_val(v) (* (sync_condvar *) Data_custom_val(v))
 
 static void caml_condition_finalize(value wrapper)
 {
-  st_condvar_destroy(Condition_val(wrapper));
+  sync_condvar_destroy(Condition_val(wrapper));
 }
 
 static int caml_condition_compare(value wrapper1, value wrapper2)
 {
-  st_condvar cond1 = Condition_val(wrapper1);
-  st_condvar cond2 = Condition_val(wrapper2);
+  sync_condvar cond1 = Condition_val(wrapper1);
+  sync_condvar cond2 = Condition_val(wrapper2);
   return cond1 == cond2 ? 0 : cond1 < cond2 ? -1 : 1;
 }
 
@@ -182,10 +182,10 @@ static struct custom_operations caml_condition_ops = {
 CAMLprim value caml_ml_condition_new(value unit)        /* ML */
 {
   value wrapper;
-  st_condvar cond = NULL;
+  sync_condvar cond = NULL;
 
-  st_check_error(st_condvar_create(&cond), "Condition.create");
-  wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
+  sync_check_error(sync_condvar_create(&cond), "Condition.create");
+  wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(sync_condvar *),
                               0, 1);
   Condition_val(wrapper) = cond;
   return wrapper;
@@ -193,30 +193,30 @@ CAMLprim value caml_ml_condition_new(value unit)        /* ML */
 
 CAMLprim value caml_ml_condition_wait(value wcond, value wmut)           /* ML */
 {
-  st_condvar cond = Condition_val(wcond);
-  st_mutex mut = Mutex_val(wmut);
-  st_retcode retcode;
+  sync_condvar cond = Condition_val(wcond);
+  sync_mutex mut = Mutex_val(wmut);
+  sync_retcode retcode;
 
   Begin_roots2(wcond, wmut)
     caml_enter_blocking_section();
-    retcode = st_condvar_wait(cond, mut);
+    retcode = sync_condvar_wait(cond, mut);
     caml_leave_blocking_section();
   End_roots();
-  st_check_error(retcode, "Condition.wait");
+  sync_check_error(retcode, "Condition.wait");
 
   return Val_unit;
 }
 
 CAMLprim value caml_ml_condition_signal(value wrapper)           /* ML */
 {
-  st_check_error(st_condvar_signal(Condition_val(wrapper)),
+  sync_check_error(sync_condvar_signal(Condition_val(wrapper)),
                  "Condition.signal");
   return Val_unit;
 }
 
 CAMLprim value caml_ml_condition_broadcast(value wrapper)           /* ML */
 {
-  st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
+  sync_check_error(sync_condvar_broadcast(Condition_val(wrapper)),
                  "Condition.broadcast");
   return Val_unit;
 }
