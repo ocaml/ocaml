@@ -457,7 +457,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
     caml_thread_remove_info(th);
-    st_check_error(err, "Thread.create");
+    sync_check_error(err, "Thread.create");
   }
   CAMLreturn(th->descr);
 }
@@ -604,7 +604,7 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 CAMLprim value caml_thread_join(value th)          /* ML */
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
-  st_check_error(rc, "Thread.join");
+  sync_check_error(rc, "Thread.join");
   return Val_unit;
 }
 

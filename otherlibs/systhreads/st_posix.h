@@ -369,7 +369,7 @@ value caml_thread_sigmask(value cmd, value sigs) /* ML */
   caml_enter_blocking_section();
   retcode = pthread_sigmask(how, &set, &oldset);
   caml_leave_blocking_section();
-  st_check_error(retcode, "Thread.sigmask");
+  sync_check_error(retcode, "Thread.sigmask");
   return st_encode_sigset(&oldset);
 }
 
@@ -383,7 +383,7 @@ value caml_wait_signal(value sigs) /* ML */
   caml_enter_blocking_section();
   retcode = sigwait(&set, &signo);
   caml_leave_blocking_section();
-  st_check_error(retcode, "Thread.wait_signal");
+  sync_check_error(retcode, "Thread.wait_signal");
   return Val_int(caml_rev_convert_signal_number(signo));
 #else
   caml_invalid_argument("Thread.wait_signal not implemented");
