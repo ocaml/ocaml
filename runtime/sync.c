@@ -78,7 +78,7 @@ static const struct custom_operations caml_mutex_ops = {
   custom_fixed_length_default
 };
 
-CAMLprim value caml_mutex_new(value unit)        /* ML */
+CAMLprim value caml_ml_mutex_new(value unit)        /* ML */
 {
   st_mutex mut = NULL;
   value wrapper;
@@ -90,7 +90,7 @@ CAMLprim value caml_mutex_new(value unit)        /* ML */
   return wrapper;
 }
 
-CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
+CAMLprim value caml_ml_mutex_lock(value wrapper)     /* ML */
 {
   st_retcode retcode;
   st_mutex mut = Mutex_val(wrapper);
@@ -107,7 +107,7 @@ CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
   return Val_unit;
 }
 
-CAMLprim value caml_mutex_unlock(value wrapper)           /* ML */
+CAMLprim value caml_ml_mutex_unlock(value wrapper)           /* ML */
 {
   st_retcode retcode;
   st_mutex mut = Mutex_val(wrapper);
@@ -117,7 +117,7 @@ CAMLprim value caml_mutex_unlock(value wrapper)           /* ML */
   return Val_unit;
 }
 
-CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
+CAMLprim value caml_ml_mutex_try_lock(value wrapper)           /* ML */
 {
   st_mutex mut = Mutex_val(wrapper);
   st_retcode retcode;
@@ -179,7 +179,7 @@ static struct custom_operations caml_condition_ops = {
   custom_fixed_length_default
 };
 
-CAMLprim value caml_condition_new(value unit)        /* ML */
+CAMLprim value caml_ml_condition_new(value unit)        /* ML */
 {
   value wrapper;
   st_condvar cond = NULL;
@@ -191,7 +191,7 @@ CAMLprim value caml_condition_new(value unit)        /* ML */
   return wrapper;
 }
 
-CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
+CAMLprim value caml_ml_condition_wait(value wcond, value wmut)           /* ML */
 {
   st_condvar cond = Condition_val(wcond);
   st_mutex mut = Mutex_val(wmut);
@@ -207,14 +207,14 @@ CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
   return Val_unit;
 }
 
-CAMLprim value caml_condition_signal(value wrapper)           /* ML */
+CAMLprim value caml_ml_condition_signal(value wrapper)           /* ML */
 {
   st_check_error(st_condvar_signal(Condition_val(wrapper)),
                  "Condition.signal");
   return Val_unit;
 }
 
-CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
+CAMLprim value caml_ml_condition_broadcast(value wrapper)           /* ML */
 {
   st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
                  "Condition.broadcast");
