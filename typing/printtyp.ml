@@ -2254,6 +2254,10 @@ let warn_on_missing_def env ppf t =
     end
   | _ -> ()
 
+let prepare_expansion_head empty_tr = function
+  | Errortrace.Diff d -> Some (Errortrace.map_diff (may_prepare_expansion empty_tr) d)
+  | _ -> None
+
 let head_error_printer txt_got txt_but = function
   | None -> ignore
   | Some d ->
@@ -2268,12 +2272,7 @@ let warn_on_missing_defs env ppf = function
       warn_on_missing_def env ppf te1;
       warn_on_missing_def env ppf te2
 
-(* ASZ lifted back? *)
 let error trace_format env tr txt1 ppf txt2 ty_expect_explanation =
-  let prepare_expansion_head empty_tr = function
-    | Errortrace.Diff d -> Some (Errortrace.map_diff (may_prepare_expansion empty_tr) d)
-    | _ -> None
-  in
   reset ();
   let tr = prepare_trace (fun t t' -> t, hide_variant_name t') tr in
   let mis = mismatch txt1 env tr in
