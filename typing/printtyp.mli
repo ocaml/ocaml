@@ -177,10 +177,10 @@ val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
 
-type 'variety trace_format
-val unification : Errortrace.unification trace_format
-val equality    : Errortrace.comparison  trace_format
-val moregen     : Errortrace.comparison  trace_format
+type 'variety trace_format =
+  | Unification : Errortrace.unification trace_format
+  | Equality    : Errortrace.comparison  trace_format
+  | Moregen     : Errortrace.comparison  trace_format
 
 val report_error :
   'variety trace_format ->

@@ -2015,13 +2015,15 @@ let diff_printing_status { Errortrace.got=t1, t1'; expected=t2, t2'} =
   else Keep
 
 (* A record that's kept abstract for ease of future extensibility *)
-type 'variety trace_format = {
-  incompatibility_phrase : string
-}
+type 'variety trace_format =
+  | Unification : Errortrace.unification trace_format
+  | Equality    : Errortrace.comparison  trace_format
+  | Moregen     : Errortrace.comparison  trace_format
 
-let unification = { incompatibility_phrase = "is not compatible with type" }
-let equality    = { incompatibility_phrase = "is not equal to type" }
-let moregen     = { incompatibility_phrase = "is not compatible with type" }
+let incompatibility_phrase (type variety) : variety trace_format -> string = function
+  | Unification -> "is not compatible with type"
+  | Equality    -> "is not equal to type"
+  | Moregen     -> "is not compatible with type"
 
 let printing_status = function
   | Errortrace.Diff d -> diff_printing_status d
@@ -2291,7 +2293,7 @@ let error trace_format env tr txt1 ppf txt2 ty_expect_explanation =
          @]"
         head_error
         ty_expect_explanation
-        (trace false trace_format.incompatibility_phrase) tr
+        (trace false (incompatibility_phrase trace_format)) tr
         (explain mis);
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
@@ -2343,7 +2345,7 @@ module Subtype = struct
       print_labels := true;
       raise exn
 
-  let filter_unification_trace = filter_trace unification
+  let filter_unification_trace = filter_trace Unification
 
   let rec filter_subtype_trace keep_last = function
     | [] -> []

@@ -50,8 +50,8 @@ let rec hide_params = function
 *)
 
 let printtyp_for = function
-  | CM_Equality -> Printtyp.equality
-  | CM_Moregen  -> Printtyp.moregen
+  | CM_Equality -> Printtyp.Equality
+  | CM_Moregen  -> Printtyp.Moregen
 
 let include_err ppf =
   function
@@ -61,7 +61,7 @@ let include_err ppf =
       fprintf ppf
         "The classes do not have the same number of type parameters"
   | CM_Type_parameter_mismatch (env, trace) ->
-      Printtyp.report_error Printtyp.equality ppf env trace
+      Printtyp.report_error Printtyp.Equality ppf env trace
         (function ppf ->
           fprintf ppf "A type parameter has type")
         (function ppf ->
@@ -74,7 +74,7 @@ let include_err ppf =
           "is not matched by the class type"
           Printtyp.class_type cty2)
   | CM_Parameter_mismatch (env, trace) ->
-      Printtyp.report_error Printtyp.moregen ppf env trace
+      Printtyp.report_error Printtyp.Moregen ppf env trace
         (function ppf ->
           fprintf ppf "A parameter has type")
         (function ppf ->

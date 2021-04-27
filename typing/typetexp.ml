@@ -724,13 +724,13 @@ let report_error env ppf = function
          anywhere so it's unclear how it should be handled *)
       fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
-      Printtyp.report_error Printtyp.unification ppf Env.empty trace
+      Printtyp.report_error Printtyp.Unification ppf Env.empty trace
         (function ppf ->
            fprintf ppf "This type")
         (function ppf ->
            fprintf ppf "should be an instance of type")
   | Alias_type_mismatch trace ->
-      Printtyp.report_error Printtyp.unification ppf Env.empty trace
+      Printtyp.report_error Printtyp.Unification ppf Env.empty trace
         (function ppf ->
            fprintf ppf "This alias is bound to type")
         (function ppf ->
