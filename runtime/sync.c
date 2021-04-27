@@ -11,7 +11,7 @@
 #include "caml/fail.h"
 #include "caml/memory.h"
 
-#include "caml/st_posix.h"
+#include "caml/sync.h"
 
 /* Mutex operations */
 
