@@ -318,11 +318,14 @@ caml_tex_files := \
 
 caml_tex := caml-tex$(EXE)
 
+# caml-tex uses str.cma and unix.cma and so must be compiled with
+# $(ROOTDIR)/ocamlc not $(ROOTDIR)/boot/ocamlc since the boot
+# compiler does not necessarily have the correct shared library
+# configuration.
 $(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
 $(caml_tex): $(caml_tex_files)
-	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) -nostdlib \
-	                            -I $(ROOTDIR)/stdlib $(LINKFLAGS) -linkall \
-	                            -o $@ -no-alias-deps $^
+	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) -nostdlib -I $(ROOTDIR)/stdlib \
+	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage
