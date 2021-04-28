@@ -211,6 +211,9 @@ Working version
   (Florian Angeletti, review by David Allsopp, Sébastien Hinderer,
    and Gabriel Scherer)
 
+- #9632: Document incremental build solutions with opam
+  (Vincent Laviron, review by Daniel Bünzli and Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #8732, improved error messages for invalid private row type definitions.

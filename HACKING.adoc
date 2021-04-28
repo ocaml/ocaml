@@ -238,6 +238,142 @@ opam switch create my-switch-name --empty
 opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
 ----
 
+==== Incremental builds with `opam`
+
+This section documents some tips to speed up your workflow when you need to
+alternate between testing your branch and patching the compiler.
+We'll assume that you're currently in a clone of the compiler's source code.
+
+===== Initial setup
+
+For the rest of the section to work, you'll need your compiler to be
+configured in the same way as `opam` would have configured it. The simplest
+way is to run the normal commands for the switch initialization, with the extra
+`--inplace-build` flag:
+
+-----
+opam switch create . --empty
+opam install . --inplace-build
+-----
+
+However, if you need specific configuration options, you can also configure it
+manually, as long as you make sure that the configuration prefix is the one
+where `opam` would install the compiler.
+You will then need to install the compiler, either from the working directory
+(that you must build yourself) or using the regular sandboxed builds.
+
+-----
+# Example with regular opam build
+opam switch create . --empty
+opam install .
+./configure --prefix=$(opam var prefix) # put extra configuration args here
+-----
+
+-----
+# Example with installation from the current directory, installing only the
+# bytecode versions of the tools
+opam switch create . --empty
+./configure --prefix=$(opam var prefix) # put extra configuration args here
+make world && make opt
+opam install . --assume-built
+-----
+
+===== Basic workflow
+
+We will assume that the workflow alternates between work on the compiler and
+external (`opam`-related) commands.
+As an example, debugging an issue in the compiler can be done by a first step
+that triggers the issue (by installing a given `opam` package), then adding
+some logging to the compiler, re-trigger the issue, and based on the logs either
+add more logging, or try a patch, and so on.
+
+The part of this workflow that we're going to optimize is when we switch from
+working on the compiler to using the compiler. The basic way to do this is to
+run `opam install .` again, but this will recompile the compiler from scratch
+and also trigger a recompilation of all the packages in the switch.
+
+===== Using `opam-custom-install`
+
+The `opam-custom-install` plugin allows you to install a package using a custom
+command instead of the package-supplied one. It can be installed following
+instructions https://gitlab.ocamlpro.com/louis/opam-custom-install[here].
+
+In our case, we need to build the compiler, and when we've built everything
+that we need then we run `opam custom-install ocaml-variants -- make install`.
+This will make `opam` remove the previously installed version of the compiler
+(if any), then install the new one in its stead.
+
+-----
+# reinstall the compiler, and rebuild all opam packages
+opam custom-install ocaml-variants -- make install
+-----
+
+Since most `opam` packages depend on the compiler, this will trigger a
+reinstallation of all the packages in the switch.
+If you want to avoid that (for instance, your patch only adds some logging
+so you expect the core libraries and all the already compiled packages to be
+identical), you can use the additional `--no-recompilations` flag.
+There are no checks that it's safe to do so, so if your patch ends up
+changing even slightly one of the core libraries' files, you will likely
+get inconsistent assumptions errors later.
+
+-----
+# reinstall the compiler, leaving the opam packages untouched -- unsafe!
+opam custom-install --no-recompilations ocaml-variants -- make install
+-----
+
+Note aout the first installation:
+When you start from an empty switch, and install a compiler (in our case,
+tha `ocaml-variants` package provided by the compiler's `opam` file), then
+a number of additional packages are installed to ensure that the switch
+will work correctly. Mainly, the `ocaml` package needs to be installed,
+and while it's done automatically when using regular `opam` commands, the
+`custom-install` plugin will not force installation of dependencies.
+Moreover, if you try to fix the problem by manually installing the `ocaml`
+package, `opam` will try to recompile `ocaml-variants`, using the default
+instructions. You can get around this by running
+`opam reinstall --forget-pending` just after the `opam custom-install` command
+and just before the `opam install ocaml command`.
+Full example:
+
+-----
+opam switch create . --empty
+./configure --prefix=$(opam var prefix) --disable-ocamldoc --disable-ocamltest
+make world && make opt
+opam custom-install ocaml-variants -- make install
+opam reinstall --forget-pending --yes
+opam install ocaml
+# You now have a working switch, in which you can start installing packages
+-----
+
+One advantage of this plugin over a plain `make install` is that it
+correctly tracks the files associated with the compiler, so if your
+`make install` command only installs the bytecode versions of the tools,
+then with `opam-custom-install` you will end up in a state where only the
+bytecode tools are installed, whereas with a raw `make install` you will have
+stale native binaries remaining in your switch.
+Since it's significantly faster to build the bytecode version of the tools,
+and many `opam` packages will pick the native version of the compilers if
+present and the bytecode version otherwise, you can build your initial switch
+with the native versions (to get quickly to a state where a bug appears),
+then clean your working directory and start building bytecode tools only
+for the actual debugging phase.
+
+===== Without `opam-custom-install`
+
+You can achieve some improvements using built-in `opam` commands.
+
+Using `opam install . --assume-built` will simply remove the
+package for the compiler, then run the installation instructions
+(`make install`) in the working directory, tracking the installed files
+correctly. The main difference with the `opam-custom-install` version
+is that there's no way to prevent this command from triggering a full
+recompilation of your switch.
+
+You can also run `make install` manually, which will not trigger a
+recompilation, but will not remove the previous version either and can
+mess with `opam`'s tracking of installed files.
+
 === Useful Makefile targets
 
 Besides the targets listed in link:INSTALL.adoc[] for build and
