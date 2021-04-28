@@ -257,8 +257,6 @@ let simplify_exits lam =
             ap_inlined=Default_inline;
             ap_specialised=Default_specialise;
           }
-        (* Simplify %identity *)
-      | Pidentity, [e] -> e
 
         (* Simplify Obj.with_tag *)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
@@ -675,8 +673,6 @@ let rec emit_tail_infos is_tail lambda =
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
-  | Lprim (Pidentity, [arg], _) ->
-      emit_tail_infos is_tail arg
   | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
       emit_tail_infos is_tail arg
   | Lprim (Psequand, [arg1; arg2], _)

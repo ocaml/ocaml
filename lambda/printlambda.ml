@@ -147,7 +147,6 @@ let float_comparison ppf = function
   | CFnge -> fprintf ppf "!>=."
 
 let primitive ppf = function
-  | Pidentity -> fprintf ppf "id"
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
   | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
@@ -345,7 +344,6 @@ let primitive ppf = function
   | Popaque -> fprintf ppf "opaque"
 
 let name_of_primitive = function
-  | Pidentity -> "Pidentity"
   | Pbytes_of_string -> "Pbytes_of_string"
   | Pbytes_to_string -> "Pbytes_to_string"
   | Pignore -> "Pignore"

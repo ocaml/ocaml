@@ -147,7 +147,6 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pignore
   | Prevapply
   | Pdirapply
-  | Pidentity
   | Pgetglobal _
   | Psetglobal _
     ->

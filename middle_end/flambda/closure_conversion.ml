@@ -407,7 +407,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
-  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
     close t env arg
   | Lprim (Pignore, [arg], _) ->
     let var = Variable.create Names.ignore in

@@ -119,7 +119,6 @@ let pfloatcomp = "Pfloatcomp"
 let pfloatfield = "Pfloatfield"
 let pfloatofint = "Pfloatofint"
 let pgetglobal = "Pgetglobal"
-let pidentity = "Pidentity"
 let pignore = "Pignore"
 let pint_as_pointer = "Pint_as_pointer"
 let pintcomp = "Pintcomp"
@@ -221,7 +220,6 @@ let pfloatcomp_arg = "Pfloatcomp_arg"
 let pfloatfield_arg = "Pfloatfield_arg"
 let pfloatofint_arg = "Pfloatofint_arg"
 let pgetglobal_arg = "Pgetglobal_arg"
-let pidentity_arg = "Pidentity_arg"
 let pignore_arg = "Pignore_arg"
 let pint_as_pointer_arg = "Pint_as_pointer_arg"
 let pintcomp_arg = "Pintcomp_arg"
@@ -310,7 +308,6 @@ let anon_fn_with_loc (sloc: Lambda.scoped_location) =
       (Filename.basename file) line pp_chars
 
 let of_primitive : Lambda.primitive -> string = function
-  | Pidentity -> pidentity
   | Pbytes_of_string -> pbytes_of_string
   | Pbytes_to_string -> pbytes_to_string
   | Pignore -> pignore
@@ -416,7 +413,6 @@ let of_primitive : Lambda.primitive -> string = function
   | Popaque -> popaque
 
 let of_primitive_arg : Lambda.primitive -> string = function
-  | Pidentity -> pidentity_arg
   | Pbytes_of_string -> pbytes_of_string_arg
   | Pbytes_to_string -> pbytes_to_string_arg
   | Pignore -> pignore_arg
