@@ -198,6 +198,8 @@ _build
 /runtime/ld.conf
 /runtime/.gdb_history
 /runtime/.dep
+/runtime/build_config.h
+/runtime/sak
 /runtime/domain_state32.inc
 /runtime/domain_state64.inc
 
