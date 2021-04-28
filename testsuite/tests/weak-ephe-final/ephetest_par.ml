@@ -187,8 +187,9 @@ let run () =
 end
 
 let _ =
-  let module M1 = M() in
-  let module M2 = M() in
-  let d = Domain.spawn M2.run in
-  M1.run();
-  Domain.join d
+  for _ = 1 to 5 do
+    let d = Array.init 3 (fun _ -> let module Mx = M () in Domain.spawn Mx.run) in
+    let module Mx = M() in
+    Mx.run ();
+    Array.iter Domain.join d
+  done
