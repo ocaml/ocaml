@@ -149,16 +149,14 @@ let create_archive archive file_list =
 
 let expand_libname cclibs =
   cclibs |> List.map (fun cclib ->
-    if String.length cclib < 2 || String.sub cclib 0 2 <> "-l"
-    then cclib
-    else begin
+    if String.starts_with ~prefix:"-l" cclib then
       let libname =
         "lib" ^ String.sub cclib 2 (String.length cclib - 2) ^ Config.ext_lib in
       try
         Load_path.find libname
       with Not_found ->
         libname
-    end)
+    else cclib)
 
 type link_mode =
   | Exe
