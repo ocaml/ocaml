@@ -5,10 +5,10 @@ LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
 
 TOOLS = ../../tools
 CAMLLATEX = $(SET_LD_PATH) \
-  $(CAMLRUN) $(ROOTDIR)/tools/caml-tex \
+  $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
   -repo-root $(ROOTDIR) -n 80 -v false
-TEXQUOTE = $(CAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(CAMLRUN) $(TOOLS)/transf
+TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
+TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
 
 FILES = coreexamples.tex lablexamples.tex objectexamples.tex \

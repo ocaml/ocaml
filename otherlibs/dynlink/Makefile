@@ -281,21 +281,19 @@ DEPEND_DUMMY_FILES=\
 
 depend: beforedepend
 	touch $(DEPEND_DUMMY_FILES)
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
-	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
 
 include .depend
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx
-
-.mli.cmi:
+%.cmi: %.mli
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<

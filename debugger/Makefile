@@ -62,13 +62,10 @@ clean::
 	rm -f ocamldebug ocamldebug.exe
 	rm -f *.cmo *.cmi
 
-.SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi
-
-.ml.cmo:
+%.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.mli.cmi:
+%.cmi: %.mli
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend

@@ -23,7 +23,7 @@ cross-reference-checker: cross_reference_checker.ml
 .PHONY: check-cross-references
 check-cross-references: cross-reference-checker
 	$(SET_LD_PATH) \
-	  $(CAMLRUN) ./cross-reference-checker \
+	  $(OCAMLRUN) ./cross-reference-checker \
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
 	  $(ROOTDIR)/utils/warnings.ml \
 	  $(ROOTDIR)/driver/main_args.ml \
