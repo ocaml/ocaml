@@ -382,9 +382,9 @@ static void start_cycle (void)
   CAMLassert (Caml_state->mark_stack->count == 0);
   CAMLassert (redarken_first_chunk == NULL);
   caml_gc_message (0x01, "Starting new major GC cycle\n");
+  marked_words = 0;
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
-  marked_words = 0;
   heap_wsz_at_cycle_start = Caml_state->stat_heap_wsz;
   caml_gc_subphase = Subphase_mark_roots;
   ephe_list_pure = 1;
