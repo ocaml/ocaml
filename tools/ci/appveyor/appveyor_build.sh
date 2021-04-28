@@ -70,7 +70,7 @@ function set_configuration {
             dep='--disable-dependency-generation'
         ;;
         msvc64)
-            build='--build=x86_64-unknown-cygwin'
+            build='--build=x86_64-pc-cygwin'
             host='--host=x86_64-pc-windows'
             # Explicitly test dependency generation on msvc64
             dep='--enable-dependency-generation'
