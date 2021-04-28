@@ -20,10 +20,10 @@ let check_dls_domain_reuse () =
   let k1 = Domain.DLS.new_key (fun () -> 100) in
   let k2 = Domain.DLS.new_key (fun () -> 200) in
   let domains = Array.init 4 (fun _ -> Domain.spawn(fun _ ->
-    Domain.DLS.set k1 1000;
-    Domain.DLS.set k2 2000;
-    assert (Domain.DLS.get k1 = 1000);
-    assert (Domain.DLS.get k2 = 2000))) in
+    Domain.DLS.set k1 31415;
+    Domain.DLS.set k2 27182;
+    assert (Domain.DLS.get k1 = 31415);
+    assert (Domain.DLS.get k2 = 27182))) in
   Array.iter Domain.join domains;
   Gc.full_major ();
   let domains2 = Array.init 4 (fun _ -> Domain.spawn(fun _ ->
