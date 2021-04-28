@@ -65,20 +65,33 @@ module String = struct
       end else begin
         let j = i+1 in
         match s.[i] with
-          | '\'' -> f (not quote) w ws j
+          | '\''
+          | '"' as c ->
+            begin
+              match quote with
+              | None ->
+                (* Begin quoted word *)
+                f (Some c) w ws j
+              | Some quote_char when quote_char = c ->
+                (* End quoted word *)
+                f None w ws j
+              | _ ->
+                (* Continue string *)
+                f quote (w ^ (string_of_char c)) ws j
+            end
           | ' ' ->
             begin
-              if quote
-              then f true (w ^ (string_of_char ' ')) ws j
+              if quote <> None
+              then f quote (w ^ (string_of_char ' ')) ws j
               else begin
                 if w=""
-                then f false w ws j
-                else f false "" (w::ws) j
+                then f None w ws j
+                else f None "" (w::ws) j
               end
             end
           | _ as c -> f quote (w ^ (string_of_char c)) ws j
       end in
-    if l=0 then [] else f false "" [] 0
+    if l=0 then [] else f None "" [] 0
 end
 
 module Sys = struct
