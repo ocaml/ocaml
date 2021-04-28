@@ -650,6 +650,12 @@ OCaml 4.13.0
   which runtime to use while building the compilers (Sébastien Hinderer,
   review by David Allsopp)
 
+- #10451: Replace the use of iconv with a C utility to convert $(LIBDIR) to a
+  C string constant on Windows when building the runtime. Hardens the generation
+  of the constant on Unix for paths with backslashes, double-quotes and
+  newlines.
+  (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #6654, #9774, #10401: make `include` and with `constraints` handle correctly
