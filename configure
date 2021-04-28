@@ -17767,7 +17767,7 @@ else
           && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ; then :
   case $build in #(
   *-pc-cygwin) :
-    prefix=`cygpath -m "$prefix"` ;; #(
+    prefix="$(LC_ALL=C.UTF-8 cygpath -m "$prefix")" ;; #(
   *) :
      ;;
 esac
