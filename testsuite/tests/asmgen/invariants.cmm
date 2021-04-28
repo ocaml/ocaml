@@ -1,6 +1,5 @@
 (* TEST
-* cmm-invariants
-** codegen
+* codegen
 codegen_expected_exit_status = "2"
 *)
 
