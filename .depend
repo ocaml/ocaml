@@ -2141,6 +2141,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/comballoc.cmi \
     asmcomp/coloring.cmi \
     asmcomp/cmmgen.cmi \
+    asmcomp/cmm_invariants.cmi \
     asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
@@ -2182,6 +2183,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/comballoc.cmx \
     asmcomp/coloring.cmx \
     asmcomp/cmmgen.cmx \
+    asmcomp/cmm_invariants.cmx \
     asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
@@ -2418,6 +2420,16 @@ asmcomp/cmm_helpers.cmi : \
     middle_end/clambda_primitives.cmi \
     middle_end/clambda.cmi \
     parsing/asttypes.cmi
+asmcomp/cmm_invariants.cmo : \
+    utils/numbers.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/cmm_invariants.cmi
+asmcomp/cmm_invariants.cmx : \
+    utils/numbers.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/cmm_invariants.cmi
+asmcomp/cmm_invariants.cmi : \
+    asmcomp/cmm.cmi
 asmcomp/cmmgen.cmo : \
     typing/types.cmi \
     middle_end/printclambda_primitives.cmi \

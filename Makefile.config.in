@@ -234,6 +234,7 @@ TARGET=@target@
 HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
+WITH_CMM_INVARIANTS=@cmm_invariants@
 FORCE_SAFE_STRING=@force_safe_string@
 DEFAULT_SAFE_STRING=@default_safe_string@
 WINDOWS_UNICODE=@windows_unicode@

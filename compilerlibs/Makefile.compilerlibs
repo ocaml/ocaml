@@ -134,6 +134,7 @@ ASMCOMP=\
   asmcomp/cmmgen_state.cmo \
   asmcomp/cmm_helpers.cmo \
   asmcomp/cmmgen.cmo \
+  asmcomp/cmm_invariants.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
   asmcomp/selection.cmo \

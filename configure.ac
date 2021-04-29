@@ -156,6 +156,7 @@ AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
 AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
+AC_SUBST([cmm_invariants])
 AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
@@ -315,6 +316,10 @@ AC_ARG_ENABLE([flambda],
 AC_ARG_ENABLE([flambda-invariants],
   [AS_HELP_STRING([--enable-flambda-invariants],
     [enable invariants checks in flambda])])
+
+AC_ARG_ENABLE([cmm-invariants],
+  [AS_HELP_STRING([--enable-cmm-invariants],
+    [enable invariants checks in Cmm])])
 
 AC_ARG_WITH([target-bindir],
   [AS_HELP_STRING([--with-target-bindir],
@@ -1774,6 +1779,10 @@ AS_IF([test x"$enable_flambda" = "xyes"],
     [flambda_invariants=false])],
   [flambda=false
   flambda_invariants=false])
+
+AS_IF([test x"$enable_cmm_invariants" = "xyes"],
+  [cmm_invariants=true],
+  [cmm_invariants=false])
 
 AS_IF([test x"$enable_flat_float_array" = "xno"],
   [flat_float_array=false],
