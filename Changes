@@ -410,7 +410,8 @@ Working version
   or record fields in type-directed disambiguation
   (Florian Angeletti, report by Hongbo Zhang, review by Gabriel Scherer)
 
-* #10277: Need to detect ambiguity recursively inside types in principal mode
+* #10277, #10383: Need to detect ambiguity recursively inside types to
+  guarantee principality (affects only principal mode)
   (Jacques Garrigue, review by Thomas Refis and Leo White)
 
 - #10283, #10284: Enforce right-to-left evaluation order for Lstaticraise
