@@ -270,6 +270,7 @@ let _ =
     arch64;
     has_symlink;
     setup_build_env;
+    setup_simple_build_env;
     run;
     script;
     check_program_output;

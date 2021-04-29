@@ -703,7 +703,10 @@ let run_codegen log env =
     flags env;
     "-S " ^ testfile
   ] in
-  let expected_exit_status = 0 in
+  let expected_exit_status =
+    Actions_helpers.exit_status_of_variable env
+      Ocaml_variables.codegen_exit_status
+  in
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:default_ocaml_env
@@ -713,12 +716,15 @@ let run_codegen log env =
       log env commandline in
   if exit_status=expected_exit_status
   then begin
-    let finalise =
-       if Ocamltest_config.ccomptype="msvc"
-      then finalise_codegen_msvc
-      else finalise_codegen_cc
-    in
-    finalise testfile_basename log env
+    if exit_status=0
+    then begin
+      let finalise =
+        if Ocamltest_config.ccomptype="msvc"
+        then finalise_codegen_msvc
+        else finalise_codegen_cc
+      in
+      finalise testfile_basename log env
+    end else (Result.pass, env)
   end else begin
     let reason =
       (Actions_helpers.mkreason

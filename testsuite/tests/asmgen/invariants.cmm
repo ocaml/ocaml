@@ -1,6 +1,7 @@
 (* TEST
-* codegen
-codegen_expected_exit_status = "2"
+* setup-simple-build-env
+** codegen
+codegen_exit_status = "2"
 *)
 
 (*
