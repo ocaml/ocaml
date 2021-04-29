@@ -1148,7 +1148,7 @@ end = struct
           lst
       ) to_remove.hide []
     in
-    let aux component sg =
+    let simplify_item (component: Types.signature_item) =
       let user_kind, user_id, user_loc =
         let open Sig_component_kind in
         match component with
@@ -1161,7 +1161,7 @@ end = struct
         | Sig_class_type (id, ct, _, _) -> Class_type, id, ct.clty_loc
       in
       if Ident.Map.mem user_id to_remove.hide then
-        sg
+        None
       else begin
         let component =
           if to_remove.subst == Subst.identity then
@@ -1206,10 +1206,10 @@ end = struct
               in
               raise (Error(err_loc, env, Cannot_hide_id hiding_error))
         in
-        component :: sg
+        Some component
       end
     in
-    List.fold_right aux sg []
+    List.filter_map simplify_item sg
 end
 
 let has_remove_aliases_attribute attr =
