@@ -154,6 +154,9 @@ Working version
   (Gabriel Scherer, review by Ulugbek Abdullaev and Daniel Bünzli
    and Nicolás Ojeda Bär and Florian Angeletti)
 
+- #882: Add fold_left, fold_right, exists and for_all to String/Bytes
+  (Yotam Barnoy, review by Alain Frisch and Jeremy Yallop)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`

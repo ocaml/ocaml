@@ -223,6 +223,36 @@ let mapi f s =
     r
   end
 
+let fold_left f x a =
+  let r = ref x in
+  for i = 0 to length a - 1 do
+    r := f !r (unsafe_get a i)
+  done;
+  !r
+
+let fold_right f a x =
+  let r = ref x in
+  for i = length a - 1 downto 0 do
+    r := f (unsafe_get a i) !r
+  done;
+  !r
+
+let exists p s =
+  let n = length s in
+  let rec loop i =
+    if i = n then false
+    else if p (unsafe_get s i) then true
+    else loop (succ i) in
+  loop 0
+
+let for_all p s =
+  let n = length s in
+  let rec loop i =
+    if i = n then true
+    else if p (unsafe_get s i) then loop (succ i)
+    else false in
+  loop 0
+
 let uppercase_ascii s = map Char.uppercase_ascii s
 let lowercase_ascii s = map Char.lowercase_ascii s
 
