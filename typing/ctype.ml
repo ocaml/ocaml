@@ -848,9 +848,10 @@ let check_scope_escape env level ty =
 let rec update_scope scope ty =
   let ty = repr ty in
   if ty.scope < scope then begin
-   if ty.level < scope then raise (Trace.scope_escape ty);
-   set_scope ty scope;
-   iter_type_expr (update_scope scope) ty
+    if ty.level < scope then raise (Trace.scope_escape ty);
+    set_scope ty scope;
+    (* Only recurse in principal mode as this is not necessary for soundness *)
+    if !Clflags.principal then iter_type_expr (update_scope scope) ty
   end
 
 (* Note: the level of a type constructor must be greater than its binding
