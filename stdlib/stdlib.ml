@@ -263,10 +263,7 @@ let string_of_int n =
 
 external int_of_string : string -> int = "caml_int_of_string"
 
-let int_of_string_opt s =
-  (* TODO: provide this directly as a non-raising primitive. *)
-  try Some (int_of_string s)
-  with Failure _ -> None
+external int_of_string_opt : string -> int option = "caml_int_of_string_opt"
 
 external string_get : string -> int -> char = "%string_safe_get"
 
