@@ -109,7 +109,8 @@ Working version
 
 - #1400: Add an optional invariants check on Cmm, which can be activated
   with the -dcmm-invariants flag
-  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan)
+  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+   and David Allsopp)
 
 ### Type system:
 
