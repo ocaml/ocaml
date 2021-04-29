@@ -25,7 +25,6 @@
 #include "caml/custom.h"
 #include "caml/memory.h"
 #include "caml/fail.h"
-#include "caml/alloc.h"
 #include "caml/startup.h"
 #include "caml/fiber.h"
 #include "caml/callback.h"
@@ -36,6 +35,7 @@
 #include "caml/backtrace.h"
 #include "caml/signals.h"
 
+#include "caml/sync.h"
 #include "st_posix.h"
 
 /* ML value for a thread descriptor */
@@ -457,7 +457,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
     caml_thread_remove_info(th);
-    st_check_error(err, "Thread.create");
+    sync_check_error(err, "Thread.create");
   }
   CAMLreturn(th->descr);
 }
@@ -604,169 +604,7 @@ CAMLprim value caml_thread_yield(value unit)        /* ML */
 CAMLprim value caml_thread_join(value th)          /* ML */
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
-  st_check_error(rc, "Thread.join");
-  return Val_unit;
-}
-
-/* Mutex operations */
-
-#define Mutex_val(v) (* ((st_mutex *) Data_custom_val(v)))
-
-static void caml_mutex_finalize(value wrapper)
-{
-  st_mutex_destroy(Mutex_val(wrapper));
-}
-
-static int caml_mutex_compare(value wrapper1, value wrapper2)
-{
-  st_mutex mut1 = Mutex_val(wrapper1);
-  st_mutex mut2 = Mutex_val(wrapper2);
-  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
-}
-
-static intnat caml_mutex_hash(value wrapper)
-{
-  return (intnat) (Mutex_val(wrapper));
-}
-
-static const struct custom_operations caml_mutex_ops = {
-  "_mutex",
-  caml_mutex_finalize,
-  caml_mutex_compare,
-  caml_mutex_hash,
-  custom_serialize_default,
-  custom_deserialize_default,
-  custom_compare_ext_default,
-  custom_fixed_length_default
-};
-
-CAMLprim value caml_mutex_new(value unit)        /* ML */
-{
-  st_mutex mut = NULL;
-  value wrapper;
-
-  st_check_error(st_mutex_create(&mut), "Mutex.create");
-  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(pthread_mutex_t *),
-                              0, 1);
-  Mutex_val(wrapper) = mut;
-  return wrapper;
-}
-
-CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
-{
-  st_retcode retcode;
-  st_mutex mut = Mutex_val(wrapper);
-
-  /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mut) == MUTEX_PREVIOUSLY_UNLOCKED) return Val_unit;
-  /* If unsuccessful, block on mutex */
-  Begin_root(wrapper)
-    caml_enter_blocking_section();
-    retcode = st_mutex_lock(mut);
-    caml_leave_blocking_section();
-  End_roots();
-  st_check_error(retcode, "Mutex.lock");
-  return Val_unit;
-}
-
-CAMLprim value caml_mutex_unlock(value wrapper)           /* ML */
-{
-  st_retcode retcode;
-  st_mutex mut = Mutex_val(wrapper);
-  /* PR#4351: no need to release and reacquire master lock */
-  retcode = st_mutex_unlock(mut);
-  st_check_error(retcode, "Mutex.unlock");
-  return Val_unit;
-}
-
-CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
-{
-  st_mutex mut = Mutex_val(wrapper);
-  st_retcode retcode;
-  retcode = st_mutex_trylock(mut);
-  if (retcode == MUTEX_ALREADY_LOCKED) return Val_false;
-  st_check_error(retcode, "Mutex.try_lock");
-  return Val_true;
-}
-
-/* Conditions operations */
-
-// TODO: refactor the condition part in a way that makes the Condition module
-// and platform code cohabit.
-// st_cond_broadcast and st_cond_signal are borrowed from platform
-// but do not assert on the mutex.
-// The main issue is that platform conditions do rely on explicitly binding a
-// mutex to the cond, which is not how Condition work.
-
-#define Condition_val(v) (* (st_condvar *) Data_custom_val(v))
-
-static void caml_condition_finalize(value wrapper)
-{
-  st_condvar_destroy(Condition_val(wrapper));
-}
-
-static int caml_condition_compare(value wrapper1, value wrapper2)
-{
-  st_condvar cond1 = Condition_val(wrapper1);
-  st_condvar cond2 = Condition_val(wrapper2);
-  return cond1 == cond2 ? 0 : cond1 < cond2 ? -1 : 1;
-}
-
-static intnat caml_condition_hash(value wrapper)
-{
-  return (intnat) (Condition_val(wrapper));
-}
-
-static struct custom_operations caml_condition_ops = {
-  "_condition",
-  caml_condition_finalize,
-  caml_condition_compare,
-  caml_condition_hash,
-  custom_serialize_default,
-  custom_deserialize_default,
-  custom_compare_ext_default,
-  custom_fixed_length_default
-};
-
-CAMLprim value caml_condition_new(value unit)        /* ML */
-{
-  value wrapper;
-  st_condvar cond = NULL;
-
-  st_check_error(st_condvar_create(&cond), "Condition.create");
-  wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
-                              0, 1);
-  Condition_val(wrapper) = cond;
-  return wrapper;
-}
-
-CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
-{
-  st_condvar cond = Condition_val(wcond);
-  st_mutex mut = Mutex_val(wmut);
-  st_retcode retcode;
-
-  Begin_roots2(wcond, wmut)
-    caml_enter_blocking_section();
-    retcode = st_condvar_wait(cond, mut);
-    caml_leave_blocking_section();
-  End_roots();
-  st_check_error(retcode, "Condition.wait");
-
-  return Val_unit;
-}
-
-CAMLprim value caml_condition_signal(value wrapper)           /* ML */
-{
-  st_check_error(st_condvar_signal(Condition_val(wrapper)),
-                 "Condition.signal");
-  return Val_unit;
-}
-
-CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
-{
-  st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
-                 "Condition.broadcast");
+  sync_check_error(rc, "Thread.join");
   return Val_unit;
 }
 

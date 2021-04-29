@@ -52,14 +52,12 @@ LIBNAME=threads
 BYTECODE_C_OBJS=st_stubs.b.$(O)
 NATIVECODE_C_OBJS=st_stubs.n.$(O)
 
-THREADS_SOURCES = thread.ml mutex.ml condition.ml event.ml threadUnix.ml \
-  semaphore.ml
+THREADS_SOURCES = thread.ml event.ml threadUnix.ml
 
 THREADS_BCOBJS = $(THREADS_SOURCES:.ml=.cmo)
 THREADS_NCOBJS = $(THREADS_SOURCES:.ml=.cmx)
 
-MLIFILES=thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
-  semaphore.mli
+MLIFILES=thread.mli event.mli threadUnix.mli
 
 CMIFILES=$(MLIFILES:.mli=.cmi)
 
