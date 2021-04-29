@@ -313,7 +313,6 @@ OCaml is then compiled normally for the port you require.
   make
   make install
 
- * You should ignore the error messages that say ocamlopt was not found.
  * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the
    FlexDLL object files in `lib/`.
