@@ -1,10 +1,4 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
 *)
 
 (* Test Mutex.try_lock *)
