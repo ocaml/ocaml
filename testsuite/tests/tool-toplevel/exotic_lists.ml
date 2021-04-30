@@ -15,3 +15,9 @@ end;;
 L.[[1];[2];[3];[4];[5]];;
 open L;;
 [1;2;3;4;5];;
+
+module List_abbrev = struct
+  type ('a,'b) t = ('a * 'b option) option list
+end
+let l: _ List_abbrev.t = [None; Some(0,None)]
+;;

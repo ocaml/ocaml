@@ -360,9 +360,9 @@ Working version
   in presence of a name collision.
   (Florian Angeletti, report by Thomas Refis, review by Gabriel Scherer)
 
-- #9936: Make sure that `List.([1;2;3])` is printed `[1;2;3]` in the toplevel
-  by identifying lists by their types.
-  (Florian Angeletti, review by Gabriel Scherer)
+- #9936, #???: Make sure that `List.([1;2;3])` is printed `[1;2;3]` in
+  the toplevel by identifying lists by their types in case of re-exports.
+  (Florian Angeletti, review by Gabriel Scherer and Leo White)
 
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
