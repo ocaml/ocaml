@@ -22,6 +22,8 @@ Error: This expression has type b = int
 let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq) (g : a) =
    let Refl = w2 in let Refl = w1 in g 3;;
 [%%expect{|
+val f : ('a, 'b -> 'b) eq -> ('a, int -> int) eq -> 'a -> int = <fun>
+|}, Principal{|
 Line 2, characters 37-40:
 2 |    let Refl = w2 in let Refl = w1 in g 3;;
                                          ^^^
