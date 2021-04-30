@@ -348,6 +348,9 @@ Working version
 
 ### Bug fixes:
 
+- #6985, #10385: remove all ghost row types from included modules
+  (Florian Angeletti, review by Gabriel Scherer)
+
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
