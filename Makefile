@@ -48,7 +48,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
 
 COMPFLAGS=-strict-sequence -principal -absname \
           -w +a-4-9-40-41-42-44-45-48-66-70 \
-	  -warn-error +a \
+          -warn-error +a \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 
@@ -852,7 +852,7 @@ parsing/parser.mli: boot/menhir/parser.mli
 
 beforedepend:: parsing/camlinternalMenhirLib.ml \
   parsing/camlinternalMenhirLib.mli \
-	parsing/parser.ml parsing/parser.mli
+  parsing/parser.ml parsing/parser.mli
 
 partialclean:: partialclean-menhir
 

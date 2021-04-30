@@ -27,13 +27,13 @@ libref = $(STDLIB) $(otherlibref)
 
 # odoc needs a "page-" prefix for a mld documentation file
 define page_name
-	$(dir $1)page-$(notdir $1)
+  $(dir $1)page-$(notdir $1)
 endef
 
 define stdlib_prefix
-	$(if $(filter-out stdlib camlinternal%,$1),\
-	Stdlib.$(call capitalize,$1),\
-	$(call capitalize, $1))
+  $(if $(filter-out stdlib camlinternal%,$1),\
+  Stdlib.$(call capitalize,$1),\
+  $(call capitalize, $1))
 endef
 
 # define the right conditional for the manual
@@ -86,9 +86,9 @@ build/compilerlibref/%.odoc: %.cmti $(libref:%=build/libref/%.odoc) \
 ALL_TEXT = $(libref_TEXT:%=libref/%) $(compilerlibref_TEXT:%=compilerlibref/%)
 ALL_PAGE_TEXT=$(foreach mld,$(ALL_TEXT),$(call page_name,$(mld)))
 TARGET_UNITS= \
-	$(compilerlibref:%=compilerlibref/%) \
-	libref/stdlib $(otherlibref:%=libref/%) \
-	$(addprefix libref/,$(filter camlinternal%,$(STDLIB)))
+  $(compilerlibref:%=compilerlibref/%) \
+  libref/stdlib $(otherlibref:%=libref/%) \
+  $(addprefix libref/,$(filter camlinternal%,$(STDLIB)))
 ALL_UNITS = $(compilerlibref:%=compilerlibref/%) $(libref:%=libref/%)
 ALL_PAGED_DOC = $(TARGET_UNITS) $(ALL_PAGE_TEXT)
 
@@ -96,11 +96,11 @@ ALL_PAGED_DOC = $(TARGET_UNITS) $(ALL_PAGE_TEXT)
 # Note that we are using a dependency on the whole phase 1 rather than tracking
 # the individual file dependencies
 $(ALL_UNITS:%=build/%.odocl):%.odocl:%.odoc \
-	| $(ALL_PAGED_DOC:%=build/%.odoc)
+  | $(ALL_PAGED_DOC:%=build/%.odoc)
 	$(odoc) link -I build/libref -I build/compilerlibref $<
 
 $(ALL_PAGE_TEXT:%=build/%.odocl):%.odocl:%.odoc \
-	| $(ALL_PAGED_DOC:%=build/%.odoc)
+  | $(ALL_PAGED_DOC:%=build/%.odoc)
 	$(odoc) link -I build/libref -I build/compilerlibref $<
 
 # Rules for all three backends:
@@ -134,8 +134,8 @@ $(build/libref.html.stamp build/compilerlibref.html.stamp):
 
 # The stdlib index is generated from the list of stdlib modules.
 stdlib_INDEX=\
-	$(foreach m,$(stdlib_UNPREFIXED),$(call stdlib_prefix,$m))\
-	$(call capitalize, $(otherlibref))
+  $(foreach m,$(stdlib_UNPREFIXED),$(call stdlib_prefix,$m))\
+  $(call capitalize, $(otherlibref))
 build/libref.mld:
 	echo {0 OCaml standard library} {!modules:$(stdlib_INDEX)} > $@
 
