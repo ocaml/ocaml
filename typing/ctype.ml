@@ -91,9 +91,9 @@ exception Public_method_to_private_method
 
 let escape kind = {kind; context = None}
 let escape_exn kind = Escape (escape kind)
-let scope_escape_exn kind = escape_exn (Equation (short kind))
+let scope_escape_exn ty = escape_exn (Equation (short ty))
 let raise_escape_exn kind = raise (escape_exn kind)
-let raise_scope_escape_exn kind = raise (scope_escape_exn kind)
+let raise_scope_escape_exn ty = raise (scope_escape_exn ty)
 
 exception Tags of label * label
 
