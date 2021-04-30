@@ -1,6 +1,7 @@
 (* TEST
-* setup-simple-build-env
-** codegen
+* native-compiler
+** setup-simple-build-env
+*** codegen
 codegen_exit_status = "2"
 *)
 
