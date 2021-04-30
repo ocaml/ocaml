@@ -158,7 +158,7 @@ case "${OCAML_ARCH}" in
     check_make_alldepend=true
   ;;
   mingw64)
-    build='--build=x86_64-unknown-cygwin'
+    build='--build=x86_64-pc-cygwin'
     host='--host=x86_64-w64-mingw32'
     instdir='C:/ocamlmgw64'
     cleanup=true
@@ -172,7 +172,7 @@ case "${OCAML_ARCH}" in
     cleanup=true
   ;;
   msvc64)
-    build='--build=x86_64-unknown-cygwin'
+    build='--build=x86_64-pc-cygwin'
     host='--host=x86_64-pc-windows'
     instdir='C:/ocamlms64'
     configure=nt
