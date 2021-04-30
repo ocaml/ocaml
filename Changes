@@ -337,6 +337,13 @@ Working version
 - #8936: Per-function environment for Emit
   (Greta Yorsh, review by Vincent Laviron and Florian Angeletti)
 
+- #10170: Maintain more structural information in type-checking errors
+  A mostly-internal change that preserves more information in errors
+  during type checking; most significantly, it split the errors from
+  unification, moregen, and type equality into three different types.
+  (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
+  Florian Angeletti, and Jacques Garrigue)
+
 ### Build system:
 
 - #9191, #10091, #10182: take the LDFLAGS variable into account, except on
