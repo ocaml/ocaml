@@ -1109,8 +1109,8 @@ config.status:
 	@echo "- In file README.win32.adoc for Windows systems."
 	@echo "On Unix systems, if you've just unpacked the distribution,"
 	@echo "something like"
-	@echo "	./configure"
-	@echo "	make"
-	@echo "	make install"
+	@echo "  ./configure"
+	@echo "  make"
+	@echo "  make install"
 	@echo "should work."
 	@false
