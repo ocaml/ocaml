@@ -1747,7 +1747,10 @@ let expand_head_opt env ty =
     repr ty
 
 (* Recursively expand the head of a type.
-   Also expand #-types. *)
+   Also expand #-types.
+
+   Error printing relies on [full_expand] returning exactly its input (i.e., a physically
+   equal type) when nothing changes. *)
 let full_expand ~may_forget_scope env ty =
   let ty =
     if may_forget_scope then
@@ -1756,7 +1759,12 @@ let full_expand ~may_forget_scope env ty =
         (* #10277: forget scopes when printing trace *)
         begin_def ();
         init_def ty.level;
-        let ty = expand_head env (correct_levels ty) in
+        let ty =
+          (* The same as [expand_head], except in the failing case we return the
+             *original* type, not [correct_levels ty].*)
+          try try_expand_head try_expand_safe env (correct_levels ty) with
+          | Cannot_expand -> repr ty
+        in
         end_def ();
         ty
     else expand_head env ty
