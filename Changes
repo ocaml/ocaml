@@ -432,10 +432,11 @@ Working version
   (David Allsopp, review by Nicolás Ojeda Bär)
 
 - #10339, #10354, #10387: Fix handling of exception-raising specific
-   operations during spilling and liveness analysis.
+  operations during spilling and liveness analysis.
   (This bug affects ARM and ARM64.)
-   In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
-  (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan)
+  In passing, refactor Proc.op_is_pure and Mach.operation_can_raise.
+  (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan
+   and Mark Shinwell)
 
 - #10371: no longer generatd useless `.cds` file when using
   `-output-complete-exe`.
