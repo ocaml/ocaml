@@ -54,9 +54,8 @@ and strengthen_sig ~aliasable env sg p =
     [] -> []
   | (Sig_value(_, _, _) as sigelt) :: rem ->
       sigelt :: strengthen_sig ~aliasable env rem p
-  | Sig_type(id, {type_kind=Type_abstract}, _, _) ::
-    (Sig_type(id', {type_private=Private}, _, _) :: _ as rem)
-    when Ident.name id = Ident.name id' ^ "#row" ->
+  | Sig_type(id, {type_kind=Type_abstract}, _, _) :: rem
+    when Btype.is_row_name (Ident.name id) ->
       strengthen_sig ~aliasable env rem p
   | Sig_type(id, decl, rs, vis) :: rem ->
       let newdecl =
