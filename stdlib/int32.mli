@@ -215,6 +215,12 @@ val equal: t -> t -> bool
 (** The equal function for int32s.
     @since 4.03.0 *)
 
+val min: t -> t -> t
+(** Return the smaller of the two 32-bit integers. *)
+
+val max: t -> t -> t
+(** Return the greater of the two 32-bit integers. *)
+
 (**/**)
 
 (** {1 Deprecated functions} *)

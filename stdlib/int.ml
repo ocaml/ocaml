@@ -48,3 +48,6 @@ let of_string s = try Some (int_of_string s) with Failure _ -> None
 
 external format_int : string -> int -> string = "caml_format_int"
 let to_string x = format_int "%d" x
+
+let min (x : int) (y : int) = if x <= y then x else y
+let max (x : int) (y : int) = if x >= y then x else y

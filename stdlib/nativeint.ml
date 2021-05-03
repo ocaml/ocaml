@@ -88,3 +88,6 @@ let unsigned_div n d =
 
 let unsigned_rem n d =
   sub n (mul (unsigned_div n d) d)
+
+let min (x : t) (y : t) = if x <= y then x else y
+let max (x : t) (y : t) = if x >= y then x else y
