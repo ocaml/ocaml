@@ -81,7 +81,8 @@ struct event_buffer {
 #define evbuf Caml_state->eventlog_buffer
 
 static time_t startup_timestamp;
-static int eventlog_enabled = 0;
+static atomic_uintnat eventlog_enabled = 0;
+static atomic_uintnat eventlog_paused = 0;
 
 static __thread uint8_t is_backup_thread = 0;
 
@@ -296,9 +297,8 @@ void caml_eventlog_init()
 
   if (toggle != NULL) {
     eventlog_enabled = 1;
-    // FIXME(engil): disabling eventlog pause on Multicore for now
-    // if (*toggle == 'p')
-    //   atomic_store_rel(&Caml_state->eventlog_paused, 1);
+    if (*toggle == 'p')
+      atomic_store_rel(&eventlog_paused, 1);
   };
 
   if (!eventlog_enabled) return;
@@ -315,6 +315,7 @@ static void post_event(ev_gc_phase phase, ev_gc_counter counter_kind,
   struct event* ev;
 
   if (!eventlog_enabled) return;
+  if (eventlog_paused) return;
   if (!evbuf) thread_setup_evbuf();
 
   i = evbuf->ev_generated;
@@ -358,7 +359,7 @@ void caml_ev_counter(ev_gc_counter counter, uint64_t val)
 void caml_ev_alloc(uint64_t sz)
 {
   if (!eventlog_enabled) return;
-  // if (Caml_state->eventlog_paused) return;
+  if (eventlog_paused) return;
 
   if (evbuf == NULL)
     thread_setup_evbuf();
@@ -382,7 +383,7 @@ void caml_ev_alloc_flush()
   int i;
 
   if (!eventlog_enabled) return;
-  // if (Caml_state->eventlog_paused) return;
+  if (eventlog_paused) return;
 
   if (evbuf == NULL)
     thread_setup_evbuf();
@@ -398,7 +399,7 @@ void caml_ev_alloc_flush()
 void caml_ev_flush()
 {
   if (!eventlog_enabled) return;
-  // if (Caml_state->eventlog_paused) return;
+  if (eventlog_paused) return;
 
   if (Caml_state->eventlog_out) {
     if (evbuf)
@@ -409,29 +410,22 @@ void caml_ev_flush()
 
 void caml_eventlog_disable()
 {
-  // FIXME(engil): disabling runtime eventlog disable on Multicore for now
-  // eventlog_enabled = 0;
-  // teardown_eventlog();
+  atomic_store_rel(&eventlog_enabled, 0);
 }
 
 CAMLprim value caml_eventlog_resume(value v)
 {
-  // FIXME(engil): disabling eventlog pause on Multicore for now
-  // CAMLassert(v == Val_unit);
-  // if (eventlog_enabled)
-  //   Caml_state->eventlog_paused = 0;
+  CAMLassert(v == Val_unit);
+  if (eventlog_enabled)
+    atomic_store_rel(&eventlog_paused, 0);
   return Val_unit;
 }
 
 CAMLprim value caml_eventlog_pause(value v)
 {
-  // FIXME(engil): disabling eventlog pause on Multicore for now
-  // CAMLassert(v == Val_unit);
-  // if (eventlog_enabled) {
-  //   Caml_state->eventlog_paused = 1;
-  //   if (evbuf && Caml_state->eventlog_out)
-  //     flush_events(Caml_state->eventlog_out, evbuf);
-  // };
+  CAMLassert(v == Val_unit);
+  if (eventlog_enabled)
+    atomic_store_rel(&eventlog_paused, 1);
   return Val_unit;
 }
 
