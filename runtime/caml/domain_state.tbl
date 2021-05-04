@@ -129,23 +129,6 @@ DOMAIN_STATE(intnat, stat_major_collections)
 DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(uintnat, stat_blocks_marked)
 
-/*****************************************************************************/
-/* Detailed stats */
-/*****************************************************************************/
-DOMAIN_STATE(uintnat, allocations)
-DOMAIN_STATE(uintnat, mutable_loads)
-DOMAIN_STATE(uintnat, immutable_loads)
-DOMAIN_STATE(uintnat, mutable_stores)
-DOMAIN_STATE(uintnat, immutable_stores)
-DOMAIN_STATE(uintnat, extcall_noalloc)
-DOMAIN_STATE(uintnat, extcall_alloc)
-DOMAIN_STATE(uintnat, extcall_alloc_stackargs)
-DOMAIN_STATE(uintnat, tailcall_imm)
-DOMAIN_STATE(uintnat, tailcall_ind)
-DOMAIN_STATE(uintnat, call_imm)
-DOMAIN_STATE(uintnat, call_ind)
-DOMAIN_STATE(uintnat, stackoverflow_checks)
-
 DOMAIN_STATE(uintnat, eventlog_paused)
 DOMAIN_STATE(uintnat, eventlog_enabled)
 DOMAIN_STATE(FILE*, eventlog_out)
