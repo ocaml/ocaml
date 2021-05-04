@@ -1,0 +1,5 @@
+File "weak_bigarray.ml", line 18, characters 10-23:
+18 |     match Weak.get_copy w 0 with
+               ^^^^^^^^^^^^^
+Alert deprecated: Stdlib.Weak.get_copy
+Use Weak.get instead.

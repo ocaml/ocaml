@@ -1,0 +1,10 @@
+File "ephetest.ml", line 13, characters 8-24:
+13 |   match K1.get_data_copy eph with
+             ^^^^^^^^^^^^^^^^
+Alert deprecated: Stdlib.Ephemeron.K1.get_data_copy
+Use Ephemeron.K1.get_data instead.
+File "ephetest.ml", line 21, characters 8-23:
+21 |   match K1.get_key_copy eph with
+             ^^^^^^^^^^^^^^^
+Alert deprecated: Stdlib.Ephemeron.K1.get_key_copy
+Use Ephemeron.K1.get_key instead.
