@@ -165,6 +165,9 @@ Working version
 - #4070, #10398: small optimization of Stdlib.{frexp,modf}.
   (Markus Mottl, Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #10389, #10391, #10392: Add {Int,Int32,Int64,Nativeint}.{min,max}.
+  (Nicolás Ojeda Bär and Alain Frisch, review by Xavier Leroy)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`
