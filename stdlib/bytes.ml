@@ -80,11 +80,13 @@ let (++) a b =
   | false, false, true  -> invalid_arg "Bytes.extend" (* overflow *)
   | _ -> c
 
+let int_min x y : int = if x <= y then x else y
+
 let extend s left right =
   let len = length s ++ left ++ right in
   let r = create len in
   let (srcoff, dstoff) = if left < 0 then -left, 0 else 0, left in
-  let cpylen = min (length s - srcoff) (len - dstoff) in
+  let cpylen = int_min (length s - srcoff) (len - dstoff) in
   if cpylen > 0 then unsafe_blit s srcoff r dstoff cpylen;
   r
 
@@ -418,7 +420,7 @@ let of_seq i =
   let buf = ref (make 256 '\000') in
   let resize () =
     (* resize *)
-    let new_len = min (2 * length !buf) Sys.max_string_length in
+    let new_len = int_min (2 * length !buf) Sys.max_string_length in
     if length !buf = new_len then failwith "Bytes.of_seq: cannot grow bytes";
     let new_buf = make new_len '\000' in
     blit !buf 0 new_buf 0 !n;

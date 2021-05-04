@@ -80,6 +80,7 @@ let new_engine tbl state buf =
   end;
   result
 
+let int_min x y : int = if x <= y then x else y
 
 let lex_refill read_fun aux_buffer lexbuf =
   let read =
@@ -109,7 +110,7 @@ let lex_refill read_fun aux_buffer lexbuf =
          space since n <= String.length aux_buffer <= String.length buffer.
          Watch out for string length overflow, though. *)
       let newlen =
-        min (2 * Bytes.length lexbuf.lex_buffer) Sys.max_string_length in
+        int_min (2 * Bytes.length lexbuf.lex_buffer) Sys.max_string_length in
       if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n > newlen
       then failwith "Lexing.lex_refill: cannot grow buffer";
       let newbuf = Bytes.create newlen in
