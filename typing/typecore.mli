@@ -129,7 +129,8 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Errortrace.unification Errortrace.t
   | Pattern_type_clash :
-      Errortrace.unification Errortrace.t * _ Typedtree.pattern_desc option -> error
+      Errortrace.unification Errortrace.t * _ Typedtree.pattern_desc option
+      -> error
   | Or_pattern_type_clash of Ident.t * Errortrace.unification Errortrace.t
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list

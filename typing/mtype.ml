@@ -237,7 +237,8 @@ let enrich_typedecl env p id decl =
   | None ->
     match Env.find_type p env with
     | exception Not_found -> decl
-        (* Type which was not present in the signature, so we don't have anything to do. *)
+        (* Type which was not present in the signature, so we don't have
+           anything to do. *)
     | orig_decl ->
         if decl.type_arity <> orig_decl.type_arity then
           decl
@@ -253,9 +254,10 @@ let enrich_typedecl env p id decl =
           let env = Env.add_type ~check:false id decl env in
           match Ctype.mcomp env orig_ty new_ty with
           | exception Ctype.Incompatible -> decl
-              (* The current declaration is not compatible with the one we got from the
-                 signature. We should just fail now, but then, we could also have failed
-                 if the arities of the two decls were different, which we didn't. *)
+              (* The current declaration is not compatible with the one we got
+                 from the signature. We should just fail now, but then, we could
+                 also have failed if the arities of the two decls were
+                 different, which we didn't. *)
           | () ->
               let orig_ty =
                 Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil))

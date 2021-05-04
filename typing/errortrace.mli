@@ -63,7 +63,8 @@ type 'variety variant =
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
-  | Fixed_row : position * fixed_row_case * fixed_explanation -> unification variant
+  | Fixed_row :
+      position * fixed_row_case * fixed_explanation -> unification variant
   (* Equality & Moregen *)
   | Openness : position (* Always [Second] for Moregen *) -> comparison variant
 
@@ -77,8 +78,8 @@ type 'variety obj =
 type ('a, 'variety) elt =
   (* Common *)
   | Diff : 'a diff -> ('a, _) elt
-  | Variant :  'variety variant -> ('a, 'variety) elt
-  | Obj :  'variety obj -> ('a, 'variety) elt
+  | Variant : 'variety variant -> ('a, 'variety) elt
+  | Obj : 'variety obj -> ('a, 'variety) elt
   | Escape : 'a escape -> ('a, _) elt
   | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
   (* Unification & Moregen; included in Equality for simplicity *)
@@ -92,7 +93,8 @@ val diff : type_expr -> type_expr -> (desc, _) elt
 (** [flatten f trace] flattens all elements of type {!desc} in
     [trace] to either [f x.t expanded] if [x.expanded=Some expanded]
     or [f x.t x.t] otherwise *)
-val flatten: (type_expr -> type_expr -> 'a) -> 'variety t -> ('a, 'variety) elt list
+val flatten :
+  (type_expr -> type_expr -> 'a) -> 'variety t -> ('a, 'variety) elt list
 
 val map : ('a -> 'b) -> ('a, 'variety) elt list -> ('b, 'variety) elt list
 

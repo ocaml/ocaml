@@ -82,7 +82,8 @@ type 'variety variant =
   | No_tags : position * (Asttypes.label * row_field) list -> _ variant
   (* Unification *)
   | No_intersection : unification variant
-  | Fixed_row : position * fixed_row_case * fixed_explanation -> unification variant
+  | Fixed_row :
+      position * fixed_row_case * fixed_explanation -> unification variant
   (* Equality & Moregen *)
   | Openness : position (* Always [Second] for Moregen *) -> comparison variant
 
@@ -96,10 +97,11 @@ type 'variety obj =
 type ('a, 'variety) elt =
   (* Common *)
   | Diff : 'a diff -> ('a, _) elt
-  | Variant :  'variety variant -> ('a, 'variety) elt
-  | Obj :  'variety obj -> ('a, 'variety) elt
+  | Variant : 'variety variant -> ('a, 'variety) elt
+  | Obj : 'variety obj -> ('a, 'variety) elt
   | Escape : 'a escape -> ('a, _) elt
-  | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt (* Could move into [obj] *)
+  | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
+      (* Could move [Incompatible_fields] into [obj] *)
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 
@@ -110,8 +112,10 @@ let diff got expected = Diff (map_diff short { got; expected })
 
 let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Diff x -> Diff (map_diff f x)
-  | Escape { kind = Equation x; context} -> Escape { kind = Equation (f x); context }
-  | Escape { kind = (Univ _ | Self | Constructor _ | Module_type _ | Constraint); _ }
+  | Escape {kind = Equation x; context} ->
+      Escape { kind = Equation (f x); context }
+  | Escape {kind = (Univ _ | Self | Constructor _ | Module_type _ | Constraint);
+            _}
   | Variant _ | Obj _ | Incompatible_fields _ | Rec_occur (_, _) as x -> x
 
 let map f t = List.map (map_elt f) t
@@ -152,4 +156,3 @@ module Subtype = struct
 
   let flatten f t = map (flatten_desc f) t
 end
-

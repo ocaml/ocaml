@@ -245,9 +245,11 @@ type class_match_failure =
   | CM_Class_type_mismatch of Env.t * class_type * class_type
   | CM_Parameter_mismatch of Env.t * Errortrace.comparison Errortrace.t
   | CM_Val_type_mismatch of
-      class_match_failure_trace_type * string * Env.t * Errortrace.comparison Errortrace.t
+      class_match_failure_trace_type *
+      string * Env.t * Errortrace.comparison Errortrace.t
   | CM_Meth_type_mismatch of
-      class_match_failure_trace_type * string * Env.t * Errortrace.comparison Errortrace.t
+      class_match_failure_trace_type *
+      string * Env.t * Errortrace.comparison Errortrace.t
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string

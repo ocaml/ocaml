@@ -64,22 +64,25 @@ exception Subtype of Errortrace.Subtype.t * unification Errortrace.t
 
 exception Escape of desc Errortrace.escape
 
-(* For local use: throw the appropriate exception.  Can be passed into local functions as
-   a parameter *)
+(* For local use: throw the appropriate exception.  Can be passed into local
+   functions as a parameter *)
 type _ trace_exn =
 | Unify    : unification trace_exn
 | Moregen  : comparison  trace_exn
 | Equality : comparison  trace_exn
 
-let raise_trace_for (type variant) (tr_exn : variant trace_exn) (tr : variant Errortrace.t) : 'a =
+let raise_trace_for
+      (type variant)
+      (tr_exn : variant trace_exn)
+      (tr     : variant Errortrace.t) : 'a =
   match tr_exn with
   | Unify    -> raise (Unify    tr)
   | Equality -> raise (Equality tr)
   | Moregen  -> raise (Moregen  tr)
 
-(* Uses of this function are a bit suspicious, as we usually want to maintain trace
-   information; sometimes it makes sense, however, since we're maintaining the trace at an
-   outer exception handler. *)
+(* Uses of this function are a bit suspicious, as we usually want to maintain
+   trace information; sometimes it makes sense, however, since we're maintaining
+   the trace at an outer exception handler. *)
 let raise_unexplained_for tr_exn =
   raise_trace_for tr_exn []
 
@@ -1715,8 +1718,8 @@ let expand_head_opt env ty =
 (* Recursively expand the head of a type.
    Also expand #-types.
 
-   Error printing relies on [full_expand] returning exactly its input (i.e., a physically
-   equal type) when nothing changes. *)
+   Error printing relies on [full_expand] returning exactly its input (i.e., a
+   physically equal type) when nothing changes. *)
 let full_expand ~may_forget_scope env ty =
   let ty =
     if may_forget_scope then
@@ -2226,10 +2229,10 @@ let rec expands_to_datatype env ty =
       end
   | _ -> false
 
-(* [mcomp] tests if two types are "compatible" -- i.e., if they could ever unify.  (This
-   is distinct from [eqtype], which checks if two types *are* exactly the same.)  This is
-   used to decide whether GADT cases are unreachable.  It is broadly part of
-   unification. *)
+(* [mcomp] tests if two types are "compatible" -- i.e., if they could ever
+   unify.  (This is distinct from [eqtype], which checks if two types *are*
+   exactly the same.)  This is used to decide whether GADT cases are
+   unreachable.  It is broadly part of unification. *)
 
 (* mcomp type_pairs subst env t1 t2 does not raise an
    exception if it is possible that t1 and t2 are actually
@@ -2278,7 +2281,8 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then raise Incompatible
+              if non_aliasable p decl || is_datatype decl then
+                raise Incompatible
             with Not_found -> ()
             end
         (*
@@ -2869,8 +2873,10 @@ and unify3 env t1 t1' t2 t2' =
             List.iter (fun (_n, ty) -> reify env ty) (fl1 @ fl2);
             (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
           end
-      | (Tnil,  Tconstr _ ) -> raise (Unify Errortrace.[Obj(Abstract_row Second)])
-      | (Tconstr _,  Tnil ) -> raise (Unify Errortrace.[Obj(Abstract_row First)])
+      | (Tnil,  Tconstr _ ) ->
+          raise (Unify Errortrace.[Obj(Abstract_row Second)])
+      | (Tconstr _,  Tnil ) ->
+          raise (Unify Errortrace.[Obj(Abstract_row First)])
       | (_, _) -> raise_unexplained_for Unify
       end;
       (* XXX Commentaires + changer "create_recursion"
@@ -3629,7 +3635,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           normalize_subst subst;
           if List.assq t1 !subst != t2 then raise_unexplained_for Equality
         with Not_found ->
-          if List.exists (fun (_, t) -> t == t2) !subst then raise_unexplained_for Equality;
+          if List.exists (fun (_, t) -> t == t2) !subst then
+            raise_unexplained_for Equality;
           subst := (t1, t2) :: !subst
         end
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -3648,10 +3655,11 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tvar _, Tvar _) when rename ->
               begin try
                 normalize_subst subst;
-                if List.assq t1' !subst != t2' then raise_unexplained_for Equality
+                if List.assq t1' !subst != t2' then
+                  raise_unexplained_for Equality
               with Not_found ->
-                if List.exists (fun (_, t) -> t == t2') !subst
-                then raise_unexplained_for Equality;
+                if List.exists (fun (_, t) -> t == t2') !subst then
+                  raise_unexplained_for Equality;
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -3669,8 +3677,10 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                   t1'.level p1 fl1 t2'.level p2 fl2
               with Not_found -> raise_unexplained_for Equality
               end
-          | (Tnil,  Tconstr _ ) -> raise_for Equality (Obj (Abstract_row Second))
-          | (Tconstr _,  Tnil ) -> raise_for Equality (Obj (Abstract_row First))
+          | (Tnil,  Tconstr _ ) ->
+              raise_for Equality (Obj (Abstract_row Second))
+          | (Tconstr _,  Tnil ) ->
+              raise_for Equality (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
               eqtype_row rename type_pairs subst env row1 row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
@@ -3721,7 +3731,7 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
            try
              eqtype rename type_pairs subst env t1 t2;
            with Equality trace ->
-             raise ( Equality (Errortrace.incompatible_fields n t1 t2 :: trace )))
+             raise (Equality (Errortrace.incompatible_fields n t1 t2 :: trace)))
         pairs
 
 and eqtype_kind k1 k2 =
@@ -3739,8 +3749,10 @@ and eqtype_row rename type_pairs subst env row1 row2 =
   | _ ->
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
-  if row1.row_closed <> row2.row_closed
-  then raise_for Equality (Variant (Openness (if row2.row_closed then First else Second)));
+  if row1.row_closed <> row2.row_closed then begin
+    raise_for Equality
+      (Variant (Openness (if row2.row_closed then First else Second)))
+  end;
   if not row1.row_closed then begin
     match r1, r2 with
     | _::_, _ -> raise_for Equality (Variant (No_tags (Second, r1)))
@@ -3868,15 +3880,17 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
         List.iter
           (fun (lab, _k1, t1, _k2, t2) ->
             try moregen true type_pairs env t1 t2 with Moregen trace ->
-              raise (Failure [CM_Meth_type_mismatch
-                                 (CM_Moregen, lab, env, expand_trace env trace)]))
+              raise (Failure [
+                CM_Meth_type_mismatch
+                  (CM_Moregen, lab, env, expand_trace env trace)]))
           pairs;
       Vars.iter
         (fun lab (_mut, _v, ty) ->
            let (_mut', _v', ty') = Vars.find lab sign1.csig_vars in
            try moregen true type_pairs env ty' ty with Moregen trace ->
-             raise (Failure [CM_Val_type_mismatch
-                                (CM_Moregen, lab, env, expand_trace env trace)]))
+             raise (Failure [
+               CM_Val_type_mismatch
+                 (CM_Moregen, lab, env, expand_trace env trace)]))
         sign2.csig_vars
   | _ ->
       raise (Failure [])
@@ -3933,7 +3947,8 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
         (fun (lab, k1, _t1, k2, _t2) err ->
            match moregen_kind k1 k2 with
            | () -> err
-           | exception Public_method_to_private_method -> CM_Public_method lab::err)
+           | exception Public_method_to_private_method ->
+               CM_Public_method lab :: err)
         pairs error
     in
     let error =

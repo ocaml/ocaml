@@ -2014,16 +2014,18 @@ let diff_printing_status { Errortrace.got=t1, t1'; expected=t2, t2'} =
   else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
   else Keep
 
-(* A configuration type that controls which trace we print.  This could be exposed, but we
-   instead expose three separate [report_{unification,equality,moregen}_error] functions.
-   This also lets us give the unification case an extra optional argument without adding
-   it to the equality and moregen cases. *)
+(* A configuration type that controls which trace we print.  This could be
+   exposed, but we instead expose three separate
+   [report_{unification,equality,moregen}_error] functions.  This also lets us
+   give the unification case an extra optional argument without adding it to the
+   equality and moregen cases. *)
 type 'variety trace_format =
   | Unification : Errortrace.unification trace_format
   | Equality    : Errortrace.comparison  trace_format
   | Moregen     : Errortrace.comparison  trace_format
 
-let incompatibility_phrase (type variety) : variety trace_format -> string = function
+let incompatibility_phrase (type variety) : variety trace_format -> string =
+  function
   | Unification -> "is not compatible with type"
   | Equality    -> "is not equal to type"
   | Moregen     -> "is not compatible with type"
@@ -2124,8 +2126,10 @@ let explanation_diff env t3 t4 : (Format.formatter -> unit) option =
       None
 
 let explain_fixed_row_case ppf = function
-  | Errortrace.Cannot_be_closed -> fprintf ppf "it cannot be closed"
-  | Errortrace.Cannot_add_tags tags -> fprintf ppf "it may not allow the tag(s) %a" print_tags tags
+  | Errortrace.Cannot_be_closed ->
+      fprintf ppf "it cannot be closed"
+  | Errortrace.Cannot_add_tags tags ->
+      fprintf ppf "it may not allow the tag(s) %a" print_tags tags
 
 let explain_fixed_row pos expl = match expl with
   | Fixed_private ->
@@ -2134,7 +2138,8 @@ let explain_fixed_row pos expl = match expl with
     dprintf "The %a variant type is bound to the universal type variable %a"
       Errortrace.print_pos pos type_expr x
   | Reified p ->
-    dprintf "The %a variant type is bound to %t" Errortrace.print_pos pos (print_path p)
+    dprintf "The %a variant type is bound to %t"
+      Errortrace.print_pos pos (print_path p)
   | Rigid -> ignore
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
@@ -2150,7 +2155,9 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
         Errortrace.print_pos pos
         print_tags (List.map fst fields)
     )
-  | Errortrace.Fixed_row (pos, k, (Univar _ | Reified _ | Fixed_private as e)) ->
+  | Errortrace.Fixed_row (pos,
+                          k,
+                          (Univar _ | Reified _ | Fixed_private as e)) ->
       Some (
         dprintf "@,@[%t,@ %a@]" (explain_fixed_row pos e)
           explain_fixed_row_case k
@@ -2189,8 +2196,10 @@ let explain_escape pre = function
       None
 
 let explain_object (type variety) : variety Errortrace.obj -> _ = function
-  | Errortrace.Missing_field (pos,f) ->
-      Some(dprintf "@,@[The %a object type has no method %s@]" Errortrace.print_pos pos f)
+  | Errortrace.Missing_field (pos,f) -> Some(
+      dprintf "@,@[The %a object type has no method %s@]"
+        Errortrace.print_pos pos f
+    )
   | Errortrace.Abstract_row pos -> Some(
       dprintf
         "@,@[The %a object type has an abstract row, it cannot be closed@]"
@@ -2199,7 +2208,8 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
   | Errortrace.Self_cannot_be_closed ->
       Some (dprintf "@,Self type cannot be unified with a closed object type")
 
-let explanation (type variety) intro prev env : ('a, variety) Errortrace.elt -> _ = function
+let explanation (type variety) intro prev env
+  : ('a, variety) Errortrace.elt -> _ = function
   | Errortrace.Diff { Errortrace.got = _,s; expected = _,t } ->
     explanation_diff env s t
   | Errortrace.Escape {kind;context} ->
@@ -2258,7 +2268,8 @@ let warn_on_missing_def env ppf t =
   | _ -> ()
 
 let prepare_expansion_head empty_tr = function
-  | Errortrace.Diff d -> Some (Errortrace.map_diff (may_prepare_expansion empty_tr) d)
+  | Errortrace.Diff d ->
+      Some (Errortrace.map_diff (may_prepare_expansion empty_tr) d)
   | _ -> None
 
 let head_error_printer txt_got txt_but = function
@@ -2312,15 +2323,19 @@ let report_error trace_format ppf env tr
                                      type_expected_explanation)
     ~error:true
 
-let report_unification_error = report_error Unification
-let report_equality_error    = report_error Equality    ?type_expected_explanation:None
-let report_moregen_error     = report_error Moregen     ?type_expected_explanation:None
+let report_unification_error =
+  report_error Unification
+let report_equality_error =
+  report_error Equality ?type_expected_explanation:None
+let report_moregen_error =
+  report_error Moregen ?type_expected_explanation:None
 
 module Subtype = struct
-  (* There's a frustrating amount of code duplication between this module and the outside
-     code, particularly in [prepare_trace] and [filter_trace].  Unfortunately, [Subtype]
-     is *just* similar enough to have code duplication, while being *just* different
-     enough (it's only [Diff]) for the abstraction to be nonobvious.  Someday, perhaps… *)
+  (* There's a frustrating amount of code duplication between this module and
+     the outside code, particularly in [prepare_trace] and [filter_trace].
+     Unfortunately, [Subtype] is *just* similar enough to have code duplication,
+     while being *just* different enough (it's only [Diff]) for the abstraction
+     to be nonobvious.  Someday, perhaps... *)
 
   let printing_status = function
     | Errortrace.Subtype.Diff d -> diff_printing_status d
@@ -2357,17 +2372,18 @@ module Subtype = struct
     | [] -> []
     | [Errortrace.Subtype.Diff d as elt]
       when printing_status elt = Optional_refinement ->
-      if keep_last then [d] else []
-    | Errortrace.Subtype.Diff d :: rem -> d :: filter_subtype_trace keep_last rem
+        if keep_last then [d] else []
+    | Errortrace.Subtype.Diff d :: rem ->
+        d :: filter_subtype_trace keep_last rem
 
   let unification_get_diff = function
     | Errortrace.Diff diff ->
-      Some (Errortrace.map_diff trees_of_type_expansion diff)
+        Some (Errortrace.map_diff trees_of_type_expansion diff)
     | _ -> None
 
   let subtype_get_diff = function
     | Errortrace.Subtype.Diff diff ->
-      Some (Errortrace.map_diff trees_of_type_expansion diff)
+        Some (Errortrace.map_diff trees_of_type_expansion diff)
 
   let report_error ppf env tr1 txt1 tr2 =
     wrap_printing_env ~error:true env (fun () ->
@@ -2386,8 +2402,8 @@ module Subtype = struct
       if tr2 = [] then fprintf ppf "@]" else
         let mis = mismatch (dprintf "Within this type") env tr2 in
         fprintf ppf "%a%t%t@]"
-          (trace filter_unification_trace unification_get_diff false (mis = None)
-             "is not compatible with type") tr2
+          (trace filter_unification_trace unification_get_diff false
+             (mis = None) "is not compatible with type") tr2
           (explain mis)
           Conflicts.print_explanations
     )
