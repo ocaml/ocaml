@@ -234,6 +234,16 @@ val equal: t -> t -> bool
 (** The equal function for int64s.
     @since 4.03.0 *)
 
+val min: t -> t -> t
+(** Return the smaller of the two arguments.
+    @since XXXX
+*)
+
+val max: t -> t -> t
+(** Return the greater of the two arguments.
+    @since XXXX
+ *)
+
 (**/**)
 
 (** {1 Deprecated functions} *)
