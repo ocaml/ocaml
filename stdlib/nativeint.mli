@@ -226,10 +226,12 @@ val equal: t -> t -> bool
     @since 4.03.0 *)
 
 val min : t -> t -> t
-(** Return the smaller of the two native integers. *)
+(** Return the smaller of the two native integers.
+    @since 4.13.0 *)
 
 val max : t -> t -> t
-(** Return the greater of the two native integers. *)
+(** Return the greater of the two native integers.
+    @since 4.13.0 *)
 
 (**/**)
 

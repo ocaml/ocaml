@@ -216,10 +216,12 @@ val equal: t -> t -> bool
     @since 4.03.0 *)
 
 val min: t -> t -> t
-(** Return the smaller of the two 32-bit integers. *)
+(** Return the smaller of the two 32-bit integers.
+    @since 4.13.0 *)
 
 val max: t -> t -> t
-(** Return the greater of the two 32-bit integers. *)
+(** Return the greater of the two 32-bit integers.
+    @since 4.13.0 *)
 
 (**/**)
 

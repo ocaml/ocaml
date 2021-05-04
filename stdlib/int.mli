@@ -144,7 +144,9 @@ val to_string : int -> string
 (** [to_string x] is the written representation of [x] in decimal. *)
 
 val min : int -> int -> int
-(** Return the smaller of the two integers. *)
+(** Return the smaller of the two integers.
+    @since 4.13.0 *)
 
 val max : int -> int -> int
-(** Return the greater of the two integers. *)
+(** Return the greater of the two integers.
+    @since 4.13.0 *)
