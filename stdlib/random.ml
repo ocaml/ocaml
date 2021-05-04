@@ -49,7 +49,7 @@ module State = struct
       s.st.(i) <- i;
     done;
     let accu = ref "x" in
-    for i = 0 to 54 + max 55 l do
+    for i = 0 to 54 + Int.max 55 l do
       let j = i mod 55 in
       let k = i mod l in
       accu := combine !accu seed.(k);
