@@ -80,7 +80,7 @@ struct event_buffer {
 
 #define evbuf Caml_state->eventlog_buffer
 
-static int64_t startup_timestamp;
+static time_t startup_timestamp;
 static int eventlog_enabled = 0;
 
 static __thread uint8_t is_backup_thread = 0;
