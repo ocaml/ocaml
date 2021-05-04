@@ -230,10 +230,9 @@ static void flush_events(FILE* out, struct event_buffer* eb)
   uintnat i;
   uint64_t flush_duration;
   uintnat n = evbuf->ev_generated;
-  struct ctf_event_header flush_header;
+  struct ctf_event_header header; // header for alloc event and flush events
 
-  flush_header.id = EV_FLUSH;
-  flush_header.timestamp = time_counter() - startup_timestamp;
+  header.timestamp = time_counter() - startup_timestamp;
 
   for (i = 0; i < n; i++) {
     struct event ev = eb->events[i];
@@ -251,18 +250,26 @@ static void flush_events(FILE* out, struct event_buffer* eb)
       FWRITE_EV(&ev.count, sizeof(uint64_t));
       FWRITE_EV(&ev.counter_kind, sizeof(uint16_t));
       break;
-    case EV_ALLOC:
-      FWRITE_EV(&ev.count, sizeof(uint64_t));
-      FWRITE_EV(&ev.alloc_bucket, sizeof(uint8_t));
-      break;
     default:
       break;
     }
   }
 
-  flush_duration = (time_counter() - startup_timestamp) - flush_header.timestamp;
+  // flush alloc counters
+  for (i = 1; i < 20; i++) {
+    if (eb->alloc_buckets[i] != 0) {
+      header.id = EV_ALLOC;
+      FWRITE_HEADER(&header, &eb->domain_unique_id, &is_backup_thread);
+      FWRITE_EV(&eb->alloc_buckets[i], sizeof(uint64_t));
+      FWRITE_EV(&i, sizeof(uint8_t));
+    };
+    evbuf->alloc_buckets[i] = 0;
+  };
 
-  FWRITE_HEADER(&flush_header, &eb->domain_unique_id, &is_backup_thread)
+  header.id = EV_FLUSH;
+  flush_duration = (time_counter() - startup_timestamp) - header.timestamp;
+
+  FWRITE_HEADER(&header, &eb->domain_unique_id, &is_backup_thread)
   FWRITE_EV(&flush_duration, sizeof(int64_t));
 
   return;
@@ -355,6 +362,9 @@ void caml_ev_counter(ev_gc_counter counter, uint64_t val)
    These buckets are meant to be flushed explicitly by the caller through the
    caml_ev_alloc_flush function. Until then the buckets are just updated until
    flushed.
+   TODO(engil): we actually need to record these in Multicore.
+   Since the allocator is much different in Multicore it is unclear where and if
+   we want these.
 */
 void caml_ev_alloc(uint64_t sz)
 {
@@ -370,29 +380,6 @@ void caml_ev_alloc(uint64_t sz)
     ++evbuf->alloc_buckets[sz/10 + 9];
   } else {
     ++evbuf->alloc_buckets[19];
-  }
-}
-
-/*  Note that this function does not trigger an actual disk flush, it just
-    pushes events in the event buffer.
-*/
-// FIXME(engil): alloc events are not flushed on Multicore for now.
-// we have no counter currently in place in the runtime.
-void caml_ev_alloc_flush()
-{
-  int i;
-
-  if (!eventlog_enabled) return;
-  if (eventlog_paused) return;
-
-  if (evbuf == NULL)
-    thread_setup_evbuf();
-
-  for (i = 1; i < 20; i++) {
-    if (evbuf->alloc_buckets[i] != 0) {
-      post_event(0, 0, i, evbuf->alloc_buckets[i], EV_ALLOC);
-    };
-    evbuf->alloc_buckets[i] = 0;
   }
 }
 
