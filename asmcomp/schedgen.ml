@@ -121,7 +121,7 @@ let rec longest_path critical_outputs node =
         node.length <-
           List.fold_left
             (fun len (son, delay) ->
-              max len (longest_path critical_outputs son + delay))
+              Int.max len (longest_path critical_outputs son + delay))
             0 sons
   end;
   node.length

@@ -570,7 +570,7 @@ method insert_move env src dst =
     self#insert env (Iop Imove) [|src|] [|dst|]
 
 method insert_moves env src dst =
-  for i = 0 to min (Array.length src) (Array.length dst) - 1 do
+  for i = 0 to Stdlib.Int.min (Array.length src) (Array.length dst) - 1 do
     self#insert_move env src.(i) dst.(i)
   done
 

@@ -27,8 +27,6 @@ module type S = sig
     (** same as {!stats} but only count the alive bindings *)
 end
 
-let int_max x y : int = if x >= y then x else y
-
 module GenHashTable = struct
 
   type equal =
@@ -347,7 +345,7 @@ module GenHashTable = struct
 
     let stats h =
       let mbl =
-        Array.fold_left (fun m b -> int_max m (bucket_length 0 b)) 0 h.data in
+        Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
       let histo = Array.make (mbl + 1) 0 in
       Array.iter
         (fun b ->
@@ -369,7 +367,7 @@ module GenHashTable = struct
       let size = ref 0 in
       let mbl =
         Array.fold_left
-          (fun m b -> int_max m (bucket_length_alive 0 b)) 0 h.data
+          (fun m b -> Int.max m (bucket_length_alive 0 b)) 0 h.data
       in
       let histo = Array.make (mbl + 1) 0 in
       Array.iter

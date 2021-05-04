@@ -234,11 +234,9 @@ let rec bucket_length accu = function
   | Empty -> accu
   | Cons{next} -> bucket_length (accu + 1) next
 
-let int_max x y : int = if x >= y then x else y
-
 let stats h =
   let mbl =
-    Array.fold_left (fun m b -> int_max m (bucket_length 0 b)) 0 h.data in
+    Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
   let histo = Array.make (mbl + 1) 0 in
   Array.iter
     (fun b ->

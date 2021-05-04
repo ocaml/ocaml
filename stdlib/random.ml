@@ -27,9 +27,6 @@
 
 external random_seed: unit -> int array = "caml_sys_random_seed"
 
-let int_max x y : int = if x >= y then x else y
-
-
 module State = struct
 
   type t = { st : int array; mutable idx : int }
@@ -52,7 +49,7 @@ module State = struct
       s.st.(i) <- i;
     done;
     let accu = ref "x" in
-    for i = 0 to 54 + int_max 55 l do
+    for i = 0 to 54 + Int.max 55 l do
       let j = i mod 55 in
       let k = i mod l in
       accu := combine !accu seed.(k);

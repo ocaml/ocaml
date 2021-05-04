@@ -428,7 +428,7 @@ and to_clambda_switch t env cases num_keys default =
   List.iter
     (fun (key, lam) ->
       index.(key) <- store.act_store () lam;
-      smallest_key := min key !smallest_key
+      smallest_key := Int.min key !smallest_key
     )
     cases;
   if !smallest_key < num_keys then begin

@@ -385,10 +385,10 @@ let compile fold_case re =
       emit_instr op_BEGGROUP n;
       emit_code r;
       emit_instr op_ENDGROUP n;
-      numgroups := max !numgroups (n+1)
+      numgroups := Int.max !numgroups (n+1)
   | Refgroup n ->
       emit_instr op_REFGROUP n;
-      numgroups := max !numgroups (n+1)
+      numgroups := Int.max !numgroups (n+1)
   | Bol ->
       emit_instr op_BOL 0
   | Eol ->
