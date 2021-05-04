@@ -110,12 +110,12 @@ val compare : int -> int -> int
 
 val min : int -> int -> int
 (** Return the smaller of the two arguments.
-    @since XXXX
+    @since 4.13.0
 *)
 
 val max : int -> int -> int
 (** Return the greater of the two arguments.
-    @since XXXX
+    @since 4.13.0
  *)
 
 (** {1:convert Converting} *)

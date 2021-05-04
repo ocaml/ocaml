@@ -217,12 +217,12 @@ val equal: t -> t -> bool
 
 val min: t -> t -> t
 (** Return the smaller of the two arguments.
-    @since XXXX
+    @since 4.13.0
 *)
 
 val max: t -> t -> t
 (** Return the greater of the two arguments.
-    @since XXXX
+    @since 4.13.0
  *)
 
 
