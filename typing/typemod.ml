@@ -944,10 +944,20 @@ let approx_modtype env smty =
 module Signature_names : sig
   type t
 
+ type shadowable =
+    {
+      self: Ident.t;
+      group: Ident.t list;
+      (** group includes the element itself and all elements
+                that should be removed at the same time
+      *)
+      loc:Location.t;
+    }
+
   type info = [
     | `Exported
     | `From_open
-    | `Shadowable of Ident.t * Location.t
+    | `Shadowable of shadowable
     | `Substituted_away of Subst.t
     | `Unpackable_modtype_substituted_away of Ident.t * Subst.t
   ]
@@ -963,14 +973,24 @@ module Signature_names : sig
   val check_class_type: ?info:info -> t -> Location.t -> Ident.t -> unit
 
   val check_sig_item:
-    ?info:info -> t -> Location.t -> Types.signature_item -> unit
+    ?info:info -> t -> Location.t -> Signature_group.rec_group -> unit
 
   val simplify: Env.t -> t -> Types.signature -> Types.signature
 end = struct
 
+  type shadowable =
+    {
+      self: Ident.t;
+      group: Ident.t list;
+      (** group includes the element itself and all elements
+                that should be removed at the same time
+      *)
+      loc:Location.t;
+    }
+
   type bound_info = [
     | `Exported
-    | `Shadowable of Ident.t * Location.t
+    | `Shadowable of shadowable
   ]
 
   type info = [
@@ -1054,12 +1074,14 @@ end = struct
         let name = Ident.name id in
         match Hashtbl.find_opt tbl name with
         | None -> Hashtbl.add tbl name bound_info
-        | Some (`Shadowable (shadowed_id, shadowed_loc)) ->
+        | Some (`Shadowable s) ->
             Hashtbl.replace tbl name bound_info;
             let reason = Shadowed_by (id, loc) in
+            List.iter (fun shadowed_id ->
             to_be_removed.hide <-
-              Ident.Map.add shadowed_id (cl, shadowed_loc, reason)
+              Ident.Map.add shadowed_id (cl, s.loc, reason)
                 to_be_removed.hide
+              ) s.group
         | Some `Exported ->
             raise(Error(loc, Env.empty, Repeated_name(cl, name)))
 
@@ -1067,7 +1089,7 @@ end = struct
     let info =
       match info with
       | Some i -> i
-      | None -> `Shadowable (id, loc)
+      | None -> `Shadowable {self=id; group=[id]; loc}
     in
     check Sig_component_kind.Value t loc id info
   let check_type ?(info=`Exported) t loc id =
@@ -1083,24 +1105,35 @@ end = struct
   let check_class_type ?(info=`Exported) t loc id =
     check Sig_component_kind.Class_type t loc id info
 
-  let check_sig_item ?info names loc component =
-    let component_kind, id =
-      let open Sig_component_kind in
-      match component with
-      | Sig_type(id, _, _, _) -> Type, id
-      | Sig_module(id, _, _, _, _) -> Module, id
-      | Sig_modtype(id, _, _) -> Module_type, id
-      | Sig_typext(id, _, _, _) -> Extension_constructor, id
-      | Sig_value (id, _, _) -> Value, id
-      | Sig_class (id, _, _, _) -> Class, id
-      | Sig_class_type (id, _, _, _) -> Class_type, id
-    in
+  let classify =
+    let open Sig_component_kind in
+    function
+    | Sig_type(id, _, _, _) -> Type, id
+    | Sig_module(id, _, _, _, _) -> Module, id
+    | Sig_modtype(id, _, _) -> Module_type, id
+    | Sig_typext(id, _, _, _) -> Extension_constructor, id
+    | Sig_value (id, _, _) -> Value, id
+    | Sig_class (id, _, _, _) -> Class, id
+    | Sig_class_type (id, _, _, _) -> Class_type, id
+
+  let check_item ?info names loc kind id ids =
     let info =
       match info with
-      | None -> `Shadowable (id, loc)
+      | None -> `Shadowable {self=id; group=ids; loc}
       | Some i -> i
     in
-    check component_kind names loc id info
+    check kind names loc id info
+
+  let check_sig_item ?info names loc (item:Signature_group.rec_group) =
+    let check ?info names loc item =
+      let all = List.map classify (Signature_group.flatten item) in
+      let group = List.map snd all in
+      List.iter (fun (kind,id) -> check_item ?info names loc kind id group)
+        all
+    in
+    (* we can ignore x.pre_ghosts: they are eliminated by strengthening, and
+       thus never appear in includes *)
+     List.iter (check ?info names loc) (Signature_group.rec_items item.group)
 
   (*
     Before applying local module type substitutions where the
@@ -1569,7 +1602,9 @@ and transl_signature env sg =
             let scope = Ctype.create_scope () in
             let sg, newenv = Env.enter_signature ~scope
                        (extract_sig env smty.pmty_loc mty) env in
-            List.iter (Signature_names.check_sig_item names item.psig_loc) sg;
+            Signature_group.iter
+              (Signature_names.check_sig_item names item.psig_loc)
+              sg;
             let incl =
               { incl_mod = tmty;
                 incl_type = sg;
@@ -2325,7 +2360,7 @@ and type_open_decl_aux ?used_slot ?toplevel funct_body names env od =
       | Some false | None -> Some `From_open, Hidden
       | Some true -> None, Exported
     in
-    List.iter (Signature_names.check_sig_item ?info names loc) sg;
+    Signature_group.iter (Signature_names.check_sig_item ?info names loc) sg;
     let sg =
       List.map (function
         | Sig_value(id, vd, _) -> Sig_value(id, vd, visibility)
@@ -2606,7 +2641,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg, new_env = Env.enter_signature ~scope
             (extract_sig_open env smodl.pmod_loc modl.mod_type) env in
-        List.iter (Signature_names.check_sig_item names loc) sg;
+        Signature_group.iter (Signature_names.check_sig_item names loc) sg;
         let incl =
           { incl_mod = modl;
             incl_type = sg;
