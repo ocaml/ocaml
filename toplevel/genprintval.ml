@@ -270,27 +270,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               Oval_stuff "<fun>"
           | Ttuple(ty_list) ->
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
-          | Tconstr(_, [ty_arg], _) when is_list ty ->
-              if O.is_block obj then
-                match check_depth depth obj ty with
-                  Some x -> x
-                | None ->
-                    let rec tree_of_conses tree_list depth obj ty_arg =
-                      if !printer_steps < 0 || depth < 0 then
-                        Oval_ellipsis :: tree_list
-                      else if O.is_block obj then
-                        let tree =
-                          nest tree_of_val (depth - 1) (O.field obj 0) ty_arg
-                        in
-                        let next_obj = O.field obj 1 in
-                        nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
-                          (tree_of_conses (tree :: tree_list))
-                          depth next_obj ty_arg
-                      else tree_list
-                    in
-                    Oval_list (List.rev (tree_of_conses [] depth obj ty_arg))
-              else
-                Oval_list []
+          | Tconstr(path, [ty_arg], _)
+            when Path.same path Predef.path_list ->
+              tree_of_list depth ty ty_arg obj
           | Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_array ->
               let length = O.size obj in
@@ -387,6 +369,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
                     tree_of_val depth obj
                       (instantiate_type env decl.type_params ty_list body)
+                | {type_kind = Type_variant _; type_manifest = Some mty}
+                  when is_list mty ->
+                    let ty_arg = Ctype.newvar () in
+                    Ctype.unify env (Ctype.instance ty)
+                      (Predef.type_list ty_arg);
+                    tree_of_list depth ty ty_arg obj
                 | {type_kind = Type_variant constr_list; type_unboxed} ->
                     let unbx = type_unboxed.unboxed in
                     let tag =
@@ -482,6 +470,28 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
+
+      and tree_of_list depth ty ty_arg obj =
+        if O.is_block obj then
+          match check_depth depth obj ty with
+            Some x -> x
+          | None ->
+              let rec tree_of_conses tree_list depth obj ty_arg =
+                if !printer_steps < 0 || depth < 0 then
+                  Oval_ellipsis :: tree_list
+                else if O.is_block obj then
+                  let tree =
+                    nest tree_of_val (depth - 1) (O.field obj 0) ty_arg
+                  in
+                  let next_obj = O.field obj 1 in
+                  nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
+                    (tree_of_conses (tree :: tree_list))
+                    depth next_obj ty_arg
+                else tree_list
+              in
+              Oval_list (List.rev (tree_of_conses [] depth obj ty_arg))
+        else
+          Oval_list []
 
       and tree_of_record_fields depth env path type_params ty_list
           lbl_list pos obj unboxed =

@@ -7,4 +7,6 @@ L.(::) ([1; 2],
 module L : sig type 'a t = 'a list = [] | (::) of 'a * 'a t end
 - : int L.t L.t = [[1]; [2]; [3]; [4]; [5]]
 - : int L.t = [1; 2; 3; 4; 5]
+module List_abbrev : sig type ('a, 'b) t = ('a * 'b option) option list end
+val l : (int, 'a) List_abbrev.t = [None; Some (0, None)]
 
