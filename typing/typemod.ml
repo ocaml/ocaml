@@ -241,32 +241,20 @@ let check_recmod_typedecls env decls =
 
 (* Merge one "with" constraint in a signature *)
 
-let rec add_rec_types env = function
-    Sig_type(id, decl, Trec_next, _) :: rem ->
-      add_rec_types (Env.add_type ~check:true id decl env) rem
-  | _ -> env
-
-let check_type_decl env loc id row_id newdecl decl rs rem =
+let check_type_decl env loc id row_id newdecl decl rec_group =
   let env = Env.add_type ~check:true id newdecl env in
   let env =
     match row_id with
     | None -> env
     | Some id -> Env.add_type ~check:false id newdecl env
   in
-  let env = if rs = Trec_not then env else add_rec_types env rem in
+  let env =
+    let add_sigitem env x =
+      Env.add_signature Signature_group.(x.src :: x.post_ghosts) env
+    in
+    List.fold_left add_sigitem env rec_group in
   Includemod.type_declarations ~mark:Mark_both ~loc env id newdecl decl;
   Typedecl.check_coherence env loc (Path.Pident id) newdecl
-
-let update_rec_next rs rem =
-  match rs with
-    Trec_next -> rem
-  | Trec_first | Trec_not ->
-      match rem with
-        Sig_type (id, decl, Trec_next, priv) :: rem ->
-          Sig_type (id, decl, rs, priv) :: rem
-      | Sig_module (id, pres, mty, Trec_next, priv) :: rem ->
-          Sig_module (id, pres, mty, rs, priv) :: rem
-      | _ -> rem
 
 let make_variance p n i =
   let open Variance in
@@ -511,12 +499,27 @@ let merge_constraint initial_env loc sg lid constr =
   in
   let real_ids = ref [] in
   let unpackable_modtype = ref None in
-  let rec merge sig_env sg namelist row_id =
-    match (sg, namelist, constr) with
-      ([], _, _) ->
-        raise(Error(loc, sig_env, With_no_component lid.txt))
-    | (Sig_type(id, decl, rs, priv) :: rem, [s],
-       With_type ({ptype_kind = Ptype_abstract} as sdecl))
+  let split_row_id s ghosts =
+    let srow = s ^ "#row" in
+    let row_id_list, ghosts =
+      let split x = match x with
+        | Sig_type(id,_,_,_) when Ident.name id = srow -> Either.Left id
+        | item -> Either.Right item
+      in
+      List.partition_map split ghosts
+    in
+    match row_id_list with
+    | [] -> None, ghosts
+    | [a] -> Some a, ghosts
+    | _  -> assert false
+  in
+  let rec patch_item constr namelist sig_env ~rec_group ~ghosts item =
+    let return ?(ghosts=ghosts) ?(replace_by=[]) info =
+      Some {Signature_group.info; ghosts=ghosts; replace_by}
+    in
+    match item, namelist, constr with
+    | Sig_type(id, decl, rs, priv), [s],
+       With_type ({ptype_kind = Ptype_abstract} as sdecl)
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
           let arity = List.length sdecl.ptype_params in
@@ -557,33 +560,36 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint id ~fixed_row_path:(Pident id_row)
             ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl rs rem;
+        let row_id, ghosts = split_row_id s ghosts in
+        check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl
+          rec_group;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
-        (Pident id, lid, Twith_type tdecl),
-        Sig_type(id_row, decl_row, rs', priv)
-        :: Sig_type(id, newdecl, rs, priv)
-        :: rem
-    | (Sig_type(id, sig_decl, rs, priv) :: rem , [s],
-       (With_type sdecl | With_typesubst sdecl as constr))
+        return ~ghosts
+          ~replace_by:[ Sig_type(id, newdecl, rs, priv);
+                        Sig_type(id_row, decl_row, rs', priv)
+                      ]
+          (Pident id, lid, Twith_type tdecl)
+    | Sig_type(id, sig_decl, rs, priv) , [s],
+       (With_type sdecl | With_typesubst sdecl as constr)
       when Ident.name id = s ->
         let tdecl =
           Typedecl.transl_with_constraint id
             ~sig_env ~sig_decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
-        check_type_decl sig_env loc id row_id newdecl sig_decl rs rem;
+        let row_id, ghosts = split_row_id s ghosts in
+        check_type_decl sig_env loc id row_id newdecl sig_decl rec_group;
         begin match constr with
           With_type _ ->
-            (Pident id, lid, Twith_type tdecl),
-            Sig_type(id, newdecl, rs, priv) :: rem
+            return ~ghosts
+              ~replace_by:[Sig_type(id, newdecl, rs, priv)]
+              (Pident id, lid, Twith_type tdecl)
         | (* With_typesubst *) _ ->
             real_ids := [Pident id];
-            (Pident id, lid, Twith_typesubst tdecl),
-            update_rec_next rs rem
+            return ~ghosts (Pident id, lid, Twith_typesubst tdecl)
         end
-    | (Sig_modtype(id, mtd, priv) :: rem, [s],
-       (With_modtype mty | With_modtypesubst mty)
-      )
+    | Sig_modtype(id, mtd, priv), [s],
+      (With_modtype mty | With_modtypesubst mty)
       when Ident.name id = s ->
         let () = match mtd.mtd_type with
           | None -> ()
@@ -600,8 +606,9 @@ let merge_constraint initial_env loc sg lid constr =
               mtd_loc = loc;
             }
           in
-          (Pident id, lid, Twith_modtype mty),
-          Sig_modtype(id, mtd', priv) :: rem
+          return
+            ~replace_by:[Sig_modtype(id, mtd', priv)]
+            (Pident id, lid, Twith_modtype mty)
         else begin
           let path = Pident id in
           real_ids := [path];
@@ -609,14 +616,10 @@ let merge_constraint initial_env loc sg lid constr =
           | Mty_ident _ -> ()
           | mty -> unpackable_modtype := Some mty
           end;
-          (Pident id, lid, Twith_modtypesubst mty),
-          rem
+          return (Pident id, lid, Twith_modtypesubst mty)
         end
-    | (Sig_type(id, _, _, _) :: rem, [s], (With_type _ | With_typesubst _))
-      when Ident.name id = s ^ "#row" ->
-        merge sig_env rem namelist (Some id)
-    | (Sig_module(id, pres, md, rs, priv) :: rem, [s],
-       With_module {lid=lid'; md=md'; path; remove_aliases})
+    | Sig_module(id, pres, md, rs, priv), [s],
+      With_module {lid=lid'; md=md'; path; remove_aliases}
       when Ident.name id = s ->
         let mty = md'.md_type in
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
@@ -624,18 +627,18 @@ let merge_constraint initial_env loc sg lid constr =
         let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
         ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
                  newmd.md_type md.md_type);
-        (Pident id, lid, Twith_module (path, lid')),
-        Sig_module(id, pres, newmd, rs, priv) :: rem
-    | (Sig_module(id, _, md, rs, _) :: rem, [s], With_modsubst (lid',path,md'))
+        return
+          ~replace_by:[Sig_module(id, pres, newmd, rs, priv)]
+          (Pident id, lid, Twith_module (path, lid'))
+    | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
              ~aliasable sig_env md' path md);
         real_ids := [Pident id];
-        (Pident id, lid, Twith_modsubst (path, lid')),
-        update_rec_next rs rem
-    | (Sig_module(id, _, md, rs, priv) as item :: rem, s :: namelist, constr)
+        return (Pident id, lid, Twith_modsubst (path, lid'))
+    | Sig_module(id, _, md, rs, priv) as item, s :: namelist, constr
       when Ident.name id = s ->
         let sg = extract_sig sig_env loc md.md_type in
         let ((path, _, tcstr), newsg) = merge_signature sig_env sg namelist in
@@ -651,15 +654,15 @@ let merge_constraint initial_env loc sg lid constr =
               let newmd = {md with md_type = Mty_signature newsg} in
               Sig_module(id, Mp_present, newmd, rs, priv)
         in
-        (path, lid, tcstr),
-        item :: rem
-    | (item :: rem, _, _) ->
-        let (cstr, items) = merge sig_env rem namelist row_id
-        in
-        cstr, item :: items
+        return ~replace_by:[item] (path, lid, tcstr)
+    | _ -> None
   and merge_signature env sg namelist =
     let sig_env = Env.add_signature sg env in
-    merge sig_env sg namelist None
+    match
+      Signature_group.replace_in_place (patch_item constr namelist sig_env) sg
+    with
+    | Some (x,sg) -> x, sg
+    | None -> raise(Error(loc, sig_env, With_no_component lid.txt))
   in
   try
     let names = Longident.flatten lid.txt in
