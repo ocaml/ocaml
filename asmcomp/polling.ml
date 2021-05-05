@@ -2,9 +2,10 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*                Sadiq Jaffer, OCaml Labs Consultancy Ltd                *)
+(*        Xavier Leroy and Damien Doligez, projet Cambium, INRIA Paris    *)
 (*                                                                        *)
-(*   Copyright 2020 OCaml Labs Consultancy Ltd                            *)
+(*   Copyright 2021 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -14,8 +15,8 @@
 
 open Mach
 
-let is_addr_live i =
-  not (Reg.Set.is_empty (Reg.Set.filter (fun f -> f.typ = Cmm.Addr) i))
+module String = Misc.Stdlib.String
+module IntSet = Set.Make(Int)
 
 (* replace with starts_with when it arrives *)
 let isprefix s1 s2 =
