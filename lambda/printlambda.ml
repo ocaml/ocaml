@@ -150,8 +150,6 @@ let primitive ppf = function
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
   | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
-  | Prevapply -> fprintf ppf "revapply"
-  | Pdirapply -> fprintf ppf "dirapply"
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable, shape) ->
@@ -347,8 +345,6 @@ let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
   | Pbytes_to_string -> "Pbytes_to_string"
   | Pignore -> "Pignore"
-  | Prevapply -> "Prevapply"
-  | Pdirapply -> "Pdirapply"
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"

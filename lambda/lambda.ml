@@ -43,8 +43,6 @@ type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
   | Pignore
-  | Prevapply
-  | Pdirapply
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t

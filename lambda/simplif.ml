@@ -231,33 +231,6 @@ let simplify_exits lam =
   | Lprim(p, ll, loc) -> begin
     let ll = List.map (simplif ~try_depth) ll in
     match p, ll with
-        (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply, [x; Lapply ap]
-      | Prevapply, [x; Levent (Lapply ap,_)] ->
-        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Prevapply, [x; f] ->
-          Lapply {
-            ap_loc=loc;
-            ap_func=f;
-            ap_args=[x];
-            ap_tailcall=Default_tailcall;
-            ap_inlined=Default_inline;
-            ap_specialised=Default_specialise;
-          }
-        (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply, [Lapply ap; x]
-      | Pdirapply, [Levent (Lapply ap,_); x] ->
-        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Pdirapply, [f; x] ->
-          Lapply {
-            ap_loc=loc;
-            ap_func=f;
-            ap_args=[x];
-            ap_tailcall=Default_tailcall;
-            ap_inlined=Default_inline;
-            ap_specialised=Default_specialise;
-          }
-
         (* Simplify Obj.with_tag *)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
         [Lconst (Const_base (Const_int tag));
