@@ -85,6 +85,7 @@ TYPING = \
   typing/persistent_env.cmo \
   typing/env.cmo \
   typing/typedtree.cmo \
+  typing/signature_group.cmo \
   typing/printtyped.cmo \
   typing/ctype.cmo \
   typing/printtyp.cmo \
