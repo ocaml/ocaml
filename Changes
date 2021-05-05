@@ -382,6 +382,16 @@ Working version
   in presence of a name collision.
   (Florian Angeletti, report by Thomas Refis, review by Gabriel Scherer)
 
+- #9974, #????: make `include` and with `constraints` handle correctly the
+  ghost components of signatures. For instance, in
+
+    include struct class c = object end end type c
+
+   the type `c` shadows the `class c` to avoid shadowing only the ghost type
+   c introduced by the class.
+  (Florian Angeletti and Gabriel Scherer, report by Eduardo Rafael,
+   review by ???)
+
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
