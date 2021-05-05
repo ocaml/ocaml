@@ -2790,10 +2790,14 @@ asmcomp/mach.cmi : \
 asmcomp/polling.cmo : \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    asmcomp/dataflow.cmi \
+    asmcomp/cmm.cmi \
     asmcomp/polling.cmi
 asmcomp/polling.cmx : \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    asmcomp/dataflow.cmx \
+    asmcomp/cmm.cmx \
     asmcomp/polling.cmi
 asmcomp/polling.cmi : \
     utils/misc.cmi \

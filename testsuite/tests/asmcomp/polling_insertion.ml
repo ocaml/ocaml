@@ -24,69 +24,50 @@
 external request_minor_gc : unit -> unit = "request_minor_gc"
 external minor_gcs : unit -> int = "minor_gcs"
 
-(* This function tests that polls are added to the entry point of loops *)
+(* This function tests that polls are added to loops *)
 let polls_added_to_loops () =
   let minors_before = minor_gcs () in
   request_minor_gc ();
   for a = 0 to 1 do
-    let minors_now = minor_gcs () in
-    (* Poll is at loop entry *)
-    assert (minors_before < minors_now)
-  done
+    ignore (Sys.opaque_identity 42)
+  done;
+  let minors_now = minor_gcs () in
+  assert (minors_before < minors_now)
 
 
-(* This next pair of functions test that polls are added to the prologue
-   of a function. We need a loop in this function to avoid the poll getting
-   removed by the leaf function optimisation *)
+(* This function should have no prologue poll but will have
+   one in the loop. *)
 let func_with_added_poll_because_loop () =
-  (* the loop here means this is not treated as a leaf *)
-  for a = 0 to Sys.opaque_identity(0) do
+  (* We do two loop iterations so that the poll is triggered whether
+     in poll-at-top or poll-at-bottom mode. *)
+  for a = 0 to Sys.opaque_identity(1) do
     ignore (Sys.opaque_identity 42)
   done
   [@@inline never]
 
-let func_with_added_poll_because_call () =
-  (* the call here means this is not treated at a leaf *)
+let func_with_no_prologue_poll () =
+  (* this function does not have indirect or 'forward' tail call nor
+      does it call a synthesised function with suppressed polls. *)
   ignore(Sys.opaque_identity(minor_gcs ()))
   [@@inline never]
 
-let func_with_added_poll_because_allocation_is_conditional n =
-  (* the call here means this is not treated at a leaf *)
-  ignore(Sys.opaque_identity(minor_gcs ()));
-  (* since this is not a leaf, it will have a poll if there are
-     no unconditional allocations. We use the if here to ensure
-     the allocation is conditional. *)
-  if n = 0 then
-    ignore(Sys.opaque_identity(ref 42))
-  else
-    ()
-  [@@inline never]
-
-let polls_added_to_functions () =
+let prologue_polls_in_functions () =
   ignore(Sys.opaque_identity(ref 41));
   let minors_before = minor_gcs () in
   request_minor_gc ();
   func_with_added_poll_because_loop ();
   let minors_now = minor_gcs () in
-  assert (minors_before = minors_now);
+  assert (minors_before < minors_now);
 
   ignore(Sys.opaque_identity(ref 41));
   let minors_before = minor_gcs () in
   request_minor_gc ();
-  func_with_added_poll_because_call ();
-  let minors_now = minor_gcs () in
-  assert (minors_before = minors_now);
-
-  ignore(Sys.opaque_identity(ref 41));
-  let minors_before = minor_gcs () in
-  request_minor_gc ();
-  func_with_added_poll_because_allocation_is_conditional 1;
+  func_with_no_prologue_poll ();
   let minors_now = minor_gcs () in
   assert (minors_before = minors_now)
 
 (* These next functions test that polls are not added to functions that
-   unconditionally allocate. We need the empty loop to avoid these functions
-   being treated as leaf functions.
+   unconditionally allocate.
    [allocating_func] allocates unconditionally
    [allocating_func_if] allocates unconditionally but does so
    on two separate branches *)
@@ -176,19 +157,6 @@ let polls_not_added_to_allocating_loops () =
         ignore(Sys.opaque_identity(ref 41));
         request_minor_gc ()
   done
-
-(* this next function checks that leaf functions do not have polls
-   inserted. A leaf function here is one that makes no calls
-   (including tail calls) and has no loops. *)
-let leaf_func () =
-  ignore(Sys.opaque_identity 0)
-
-let polls_not_added_to_leaf_functions () =
-  let minors_before = minor_gcs () in
-  request_minor_gc ();
-  leaf_func ();
-  let minors_now = minor_gcs () in
-  assert(minors_before = minors_now)
 
 (* this next set of functions tests that self tail recursive functions
    have polls added correctly *)
@@ -298,7 +266,7 @@ let () =
   polls_added_to_loops (); (* relies on there being some minor heap usage *)
 
   ignore(Sys.opaque_identity(ref 41));
-  polls_added_to_functions ();
+  prologue_polls_in_functions ();
 
   ignore(Sys.opaque_identity(ref 41));
   polls_added_to_self_recursive_functions ();
@@ -320,9 +288,6 @@ let () =
 
   ignore(Sys.opaque_identity(ref 41));
   polls_not_added_to_allocating_loops ();
-
-  ignore(Sys.opaque_identity(ref 41));
-  polls_not_added_to_leaf_functions ();
 
   ignore(Sys.opaque_identity(ref 41));
   polls_not_added_in_caml_apply ()
