@@ -41,3 +41,14 @@ val seq: Types.signature -> rec_group Seq.t
 
 val iter: (rec_group -> unit) -> Types.signature -> unit
 val fold: ('acc -> rec_group -> 'acc) -> 'acc -> Types.signature -> 'acc
+
+type 'a in_place_patch = {
+  ghosts: Types.signature;
+  replace_by: Types.signature;
+  info: 'a;
+}
+
+val replace_in_place:
+  ( rec_group:sig_item list -> ghosts:Types.signature -> Types.signature_item
+    -> 'a in_place_patch option )
+  -> Types.signature -> ('a * Types.signature) option
