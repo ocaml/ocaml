@@ -653,16 +653,15 @@ let run_main argv =
          "<file> Read additional NUL separated command line arguments from \n\
          \      <file>"
   ];
-  let usage =
-    Printf.sprintf "Usage: %s [options] <source files>\nOptions are:"
-                   (Filename.basename Sys.argv.(0))
-  in
-  Clflags.parse_arguments argv (add_dep_arg (fun f -> Src (f, None))) usage;
+  let program = Filename.basename Sys.argv.(0) in
+  Compenv.parse_arguments (ref argv)
+      (add_dep_arg (fun f -> Src (f, None))) program;
   process_dep_args (List.rev !dep_args_rev);
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);
   exit (if Error_occurred.get () then 2 else 0)
+
 
 let main () =
   run_main Sys.argv

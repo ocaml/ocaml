@@ -567,17 +567,10 @@ let add_arguments loc args =
       arg_names := String.Map.add arg_name loc !arg_names
   ) args
 
-let print_arguments usage =
-  Arg.usage !arg_spec usage
+let create_usage_msg program =
+  Printf.sprintf "Usage: %s <options> <files>\n\
+    Try '%s --help' for more information." program program
 
-(* This function is almost the same as [Arg.parse_expand], except
-   that [Arg.parse_expand] could not be used because it does not take a
-   reference for [arg_spec].*)
-let parse_arguments argv f msg =
-  try
-    let argv = ref argv in
-    let current = ref 0 in
-    Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
-  with
-  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
-  | Arg.Help msg -> Printf.printf "%s" msg; exit 0
+
+let print_arguments program =
+  Arg.usage !arg_spec (create_usage_msg program)
