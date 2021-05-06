@@ -2514,6 +2514,16 @@ asmcomp/comballoc.cmx : \
     asmcomp/comballoc.cmi
 asmcomp/comballoc.cmi : \
     asmcomp/mach.cmi
+asmcomp/dataflow.cmo : \
+    asmcomp/mach.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/dataflow.cmi
+asmcomp/dataflow.cmx : \
+    asmcomp/mach.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/dataflow.cmi
+asmcomp/dataflow.cmi : \
+    asmcomp/mach.cmi
 asmcomp/deadcode.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -2686,7 +2696,7 @@ asmcomp/liveness.cmo : \
     asmcomp/printmach.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
-    asmcomp/cmm.cmi \
+    asmcomp/dataflow.cmi \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmx : \
     asmcomp/reg.cmx \
@@ -2694,7 +2704,7 @@ asmcomp/liveness.cmx : \
     asmcomp/printmach.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
-    asmcomp/cmm.cmx \
+    asmcomp/dataflow.cmx \
     asmcomp/liveness.cmi
 asmcomp/liveness.cmi : \
     asmcomp/mach.cmi
