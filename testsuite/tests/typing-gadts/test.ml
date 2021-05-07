@@ -1246,3 +1246,20 @@ Error: This expression has type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
+
+module M = struct
+  type t
+end
+type (_,_) eq = Refl: ('a,'a) eq
+let f (x:M.t) (y: (M.t, int -> int) eq) =
+  let Refl = y in
+  if true then x else fun x -> x + 1
+[%%expect{|
+module M : sig type t end
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 7, characters 22-36:
+7 |   if true then x else fun x -> x + 1
+                          ^^^^^^^^^^^^^^
+Error: This function should have type int -> int
+       but its first argument is not labelled
+|}]
