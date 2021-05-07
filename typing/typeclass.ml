@@ -66,8 +66,8 @@ type 'a full_class = {
 type class_env = { val_env : Env.t; met_env : Env.t; par_env : Env.t }
 
 type error =
-    Unconsistent_constraint of Ctype.Unification_trace.t
-  | Field_type_mismatch of string * string * Ctype.Unification_trace.t
+  | Unconsistent_constraint of Errortrace.unification Errortrace.t
+  | Field_type_mismatch of string * string * Errortrace.unification Errortrace.t
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of arg_label
@@ -76,10 +76,10 @@ type error =
   | Unbound_class_2 of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
-  | Constructor_type_mismatch of string * Ctype.Unification_trace.t
+  | Constructor_type_mismatch of string * Errortrace.unification Errortrace.t
   | Virtual_class of bool * bool * string list * string list
   | Parameter_arity_mismatch of Longident.t * int * int
-  | Parameter_mismatch of Ctype.Unification_trace.t
+  | Parameter_mismatch of Errortrace.unification Errortrace.t
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
@@ -87,8 +87,8 @@ type error =
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
-      Ident.t * Types.class_declaration * Ctype.Unification_trace.t
-  | Final_self_clash of Ctype.Unification_trace.t
+      Ident.t * Types.class_declaration * Errortrace.unification Errortrace.t
+  | Final_self_clash of Errortrace.unification Errortrace.t
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
@@ -309,7 +309,6 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
       begin try
         Ctype.unify env self_type cl_sig.csig_self
       with Ctype.Unify trace ->
-        let open Ctype.Unification_trace in
         match trace with
         | Diff _ :: Incompatible_fields {name = n; _ } :: rem ->
             raise(Error(loc, env, Field_type_mismatch ("method", n, rem)))
@@ -1889,10 +1888,11 @@ let report_error env ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
-      fprintf ppf "The class constraints are not consistent.@.";
+      fprintf ppf "@[<v>The class constraints are not consistent.@ ";
       Printtyp.report_unification_error ppf env trace
         (fun ppf -> fprintf ppf "Type")
-        (fun ppf -> fprintf ppf "is not compatible with type")
+        (fun ppf -> fprintf ppf "is not compatible with type");
+      fprintf ppf "@]"
   | Field_type_mismatch (k, m, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->

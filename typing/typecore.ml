@@ -76,14 +76,14 @@ type existential_restriction =
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * Ctype.Unification_trace.t
+  | Label_mismatch of Longident.t * Errortrace.unification Errortrace.t
   | Pattern_type_clash :
-      Ctype.Unification_trace.t * _ pattern_desc option -> error
-  | Or_pattern_type_clash of Ident.t * Ctype.Unification_trace.t
+      Errortrace.unification Errortrace.t * _ pattern_desc option -> error
+  | Or_pattern_type_clash of Ident.t * Errortrace.unification Errortrace.t
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
-      Ctype.Unification_trace.t * type_forcing_context option
+      Errortrace.unification Errortrace.t * type_forcing_context option
       * expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr * bool
@@ -102,17 +102,17 @@ type error =
   | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of string
-  | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
+  | Not_subtype of Errortrace.Subtype.t * Errortrace.unification Errortrace.t
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * Ctype.Unification_trace.t * bool
+      type_expr * type_expr * Errortrace.unification Errortrace.t * bool
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
-  | Less_general of string * Ctype.Unification_trace.t
+  | Less_general of string * Errortrace.unification Errortrace.t
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
@@ -132,9 +132,9 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Letop_type_clash of string * Ctype.Unification_trace.t
-  | Andop_type_clash of string * Ctype.Unification_trace.t
-  | Bindings_type_clash of Ctype.Unification_trace.t
+  | Letop_type_clash of string * Errortrace.unification Errortrace.t
+  | Andop_type_clash of string * Errortrace.unification Errortrace.t
+  | Bindings_type_clash of Errortrace.unification Errortrace.t
   | Unbound_existential of Ident.t list * type_expr
   | Missing_type_constraint
 
@@ -1303,8 +1303,8 @@ let rec has_literal_pattern p = match p.ppat_desc with
 
 let check_scope_escape loc env level ty =
   try Ctype.check_scope_escape env level ty
-  with Unify trace ->
-    raise(Error(loc, env, Pattern_type_clash(trace, None)))
+  with Escape trace ->
+    raise(Error(loc, env, Pattern_type_clash([Escape trace], None)))
 
 type pattern_checking_mode =
   | Normal
@@ -2491,7 +2491,7 @@ let check_univars env kind exp ty_expected vars =
   if not complete then
     let ty_expected = instance ty_expected in
     raise (Error (exp.exp_loc, env,
-                  Less_general(kind, [Unification_trace.diff ty ty_expected])))
+                  Less_general(kind, [Errortrace.diff ty ty_expected])))
 
 let generalize_and_check_univars env kind exp ty_expected vars =
   generalize exp.exp_type;
@@ -4932,7 +4932,7 @@ and type_cases
     let has_equation_escape err =
       match trace_of_error err with
         Some tr ->
-          List.exists Ctype.Unification_trace.
+          List.exists Errortrace.
             (function Escape {kind=Equation _} -> true | _ -> false) tr
       | None -> false
     in
@@ -5360,7 +5360,7 @@ let longident = Printtyp.longident
 
 (* Returns the first diff of the trace *)
 let type_clash_of_trace trace =
-  Ctype.Unification_trace.(explain trace (fun ~prev:_ -> function
+  Errortrace.(explain trace (fun ~prev:_ -> function
     | Diff diff -> Some diff
     | _ -> None
   ))
@@ -5392,8 +5392,7 @@ let report_literal_type_constraint expected_type const =
   | _, _ -> []
 
 let report_literal_type_constraint const = function
-  | Some Unification_trace.
-    { expected = { t = { desc = Tconstr (typ, [], _) } } } ->
+  | Some Errortrace.{ expected = { t = { desc = Tconstr (typ, [], _) } } } ->
       report_literal_type_constraint typ const
   | Some _ | None -> []
 
@@ -5460,14 +5459,12 @@ let report_error ~loc env = function
   | Pattern_type_clash (trace, pat) ->
       let diff = type_clash_of_trace trace in
       let sub = report_pattern_type_clash_hints pat diff in
-      Location.error_of_printer ~loc ~sub (fun ppf () ->
-        Printtyp.report_unification_error ppf env trace
-          (function ppf ->
-            fprintf ppf "This pattern matches values of type")
-          (function ppf ->
-            fprintf ppf "but a pattern was expected which matches values of \
-                         type");
-      ) ()
+      report_unification_error ~loc ~sub env trace
+        (function ppf ->
+          fprintf ppf "This pattern matches values of type")
+        (function ppf ->
+          fprintf ppf "but a pattern was expected which matches values of \
+                       type");
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
         (function ppf ->
@@ -5489,15 +5486,13 @@ let report_error ~loc env = function
   | Expr_type_clash (trace, explanation, exp) ->
       let diff = type_clash_of_trace trace in
       let sub = report_expr_type_clash_hints exp diff in
-      Location.error_of_printer ~loc ~sub (fun ppf () ->
-        Printtyp.report_unification_error ppf env trace
-          ~type_expected_explanation:
-            (report_type_expected_explanation_opt explanation)
-          (function ppf ->
-             fprintf ppf "This expression has type")
-          (function ppf ->
-             fprintf ppf "but an expression was expected of type");
-      ) ()
+      report_unification_error ~loc ~sub env trace
+        ~type_expected_explanation:
+          (report_type_expected_explanation_opt explanation)
+        (function ppf ->
+           fprintf ppf "This expression has type")
+        (function ppf ->
+           fprintf ppf "but an expression was expected of type");
   | Apply_non_function typ ->
       begin match (repr typ).desc with
         Tarrow _ ->
@@ -5603,7 +5598,7 @@ let report_error ~loc env = function
       Location.errorf ~loc "The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.report_subtyping_error ppf env tr1 "is not a subtype of" tr2
+        Printtyp.Subtype.report_error ppf env tr1 "is not a subtype of" tr2
       ) ()
   | Outside_class ->
       Location.errorf ~loc

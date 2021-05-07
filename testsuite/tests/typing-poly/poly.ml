@@ -966,6 +966,19 @@ Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 |}];;
 
+(* Full unification trace reported for "Constraints are not satisfied in this type" *)
+type ('a,'b) t constraint 'a = 'b
+               constraint 'a = int
+  and 'a u = (float,string) t;;
+[%%expect {|
+Line 3, characters 13-29:
+3 |   and 'a u = (float,string) t;;
+                 ^^^^^^^^^^^^^^^^
+Error: Constraints are not satisfied in this type.
+       Type (float, string) t should be an instance of (int, int) t
+       Type float is not compatible with type int
+|}]
+
 (* Example of wrong expansion *)
 type 'a u = < m : 'a v > and 'a v = 'a list u;;
 [%%expect {|
@@ -1005,14 +1018,14 @@ type u = 'a t as 'a
 |}];;
 
 (* pass typetexp, but fails during Typedecl.check_recursion *)
-type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
-and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
+type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
+and  ('a2, 'b2) ty2 = 'b2 -> unit constraint 'b2 = [> `V2 of ('a2, 'b2) ty1 as 'a2];;
 [%%expect {|
-Line 1, characters 0-71:
-1 | type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of a contains a cycle:
-       [> `B of ('a, 'b) b as 'b ] as 'a
+Line 1, characters 0-83:
+1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of ty1 contains a cycle:
+       [> `V1 of ('a, 'b) ty2 as 'b ] as 'a
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)

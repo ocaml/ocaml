@@ -84,6 +84,7 @@ TYPING = \
   file_formats/cmi_format.cmo \
   typing/persistent_env.cmo \
   typing/env.cmo \
+  typing/errortrace.cmo \
   typing/typedtree.cmo \
   typing/printtyped.cmo \
   typing/ctype.cmo \
