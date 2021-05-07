@@ -119,9 +119,6 @@ let _ = Topcommon.add_directive "untrace_all"
 (* --- *)
 
 
-let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
-             options are:"
-
 let preload_objects = ref []
 
 (* Position of the first non expanded argument *)
@@ -209,15 +206,10 @@ let () =
 
 let main () =
   let ppf = Format.err_formatter in
+  let program = "ocaml" in
   Compenv.readenv ppf Before_args;
-  let list = ref Options.list in
-  begin
-    try
-      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
-    with
-    | Arg.Bad msg -> Printf.eprintf "%s" msg; raise (Compenv.Exit_with_status 2)
-    | Arg.Help msg -> Printf.printf "%s" msg; raise (Compenv.Exit_with_status 0)
-  end;
+  Clflags.add_arguments __LOC__ Options.list;
+  Compenv.parse_arguments ~current argv file_argument program;
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then raise (Compenv.Exit_with_status 2);

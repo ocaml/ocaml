@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+
+
 (** Command line flags *)
 
 (** Optimization parameters represented as ints indexed by round number. *)
@@ -259,11 +261,8 @@ val arg_spec : (string * Arg.spec * string) list ref
    added. *)
 val add_arguments : string -> (string * Arg.spec * string) list -> unit
 
-(* [parse_arguments argv anon_arg usage] will parse the arguments, using
-  the arguments provided in [Clflags.arg_spec].
-*)
-val parse_arguments : string array -> Arg.anon_fun -> string -> unit
-
+(* [create_usage_msg program] creates a usage message for [program] *)
+val create_usage_msg: string -> string
 (* [print_arguments usage] print the standard usage message *)
 val print_arguments : string -> unit
 
