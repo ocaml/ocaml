@@ -29,3 +29,24 @@ Lines 1-3, characters 16-30:
 3 | end with type ct := <m : int >
 Error: The signature constrained by `with' has no component named ct
 |}]
+
+(** Check that we keep the same structure even after replacing a ghost item *)
+
+module type s = sig
+  type top
+  and t = private < .. >
+  and mid
+  and u = private < .. >
+  and v
+end with type t = private < .. >
+    with type u = private < .. >
+[%%expect {|
+module type s =
+  sig
+    type top
+    and t = private < .. >
+    and mid
+    and u = private < .. >
+    and v
+  end
+|}]

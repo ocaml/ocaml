@@ -501,17 +501,13 @@ let merge_constraint initial_env loc sg lid constr =
   let unpackable_modtype = ref None in
   let split_row_id s ghosts =
     let srow = s ^ "#row" in
-    let row_id_list, ghosts =
-      let split x = match x with
-        | Sig_type(id,_,_,_) when Ident.name id = srow -> Either.Left id
-        | item -> Either.Right item
-      in
-      List.partition_map split ghosts
+    let rec split before = function
+        | Sig_type(id,_,_,_) :: rest when Ident.name id = srow ->
+            before, Some id, rest
+        | a :: rest -> split (a::before) rest
+        | [] -> before, None, []
     in
-    match row_id_list with
-    | [] -> None, ghosts
-    | [a] -> Some a, ghosts
-    | _  -> assert false
+    split [] ghosts
   in
   let rec patch_item constr namelist sig_env ~rec_group ~ghosts item =
     let return ?(ghosts=ghosts) ?(replace_by=[]) info =
@@ -560,15 +556,17 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint id ~fixed_row_path:(Pident id_row)
             ~sig_env ~sig_decl:decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type in
-        let row_id, ghosts = split_row_id s ghosts in
+        let before_ghosts, row_id, after_ghosts = split_row_id s ghosts in
         check_type_decl sig_env sdecl.ptype_loc id row_id newdecl decl
           rec_group;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
+        let ghosts =
+          List.rev_append before_ghosts
+            (Sig_type(id_row, decl_row, rs', priv)::after_ghosts)
+        in
         return ~ghosts
-          ~replace_by:[ Sig_type(id, newdecl, rs, priv);
-                        Sig_type(id_row, decl_row, rs', priv)
-                      ]
+          ~replace_by:[Sig_type(id, newdecl, rs, priv)]
           (Pident id, lid, Twith_type tdecl)
     | Sig_type(id, sig_decl, rs, priv) , [s],
        (With_type sdecl | With_typesubst sdecl as constr)
@@ -577,7 +575,8 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint id
             ~sig_env ~sig_decl ~outer_env:initial_env sdecl in
         let newdecl = tdecl.typ_type and loc = sdecl.ptype_loc in
-        let row_id, ghosts = split_row_id s ghosts in
+        let before_ghosts, row_id, after_ghosts = split_row_id s ghosts in
+        let ghosts = List.rev_append before_ghosts after_ghosts in
         check_type_decl sig_env loc id row_id newdecl sig_decl rec_group;
         begin match constr with
           With_type _ ->
