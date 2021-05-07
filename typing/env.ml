@@ -479,8 +479,10 @@ module IdTbl =
 
   end
 
-type type_descriptions =
-    constructor_description list * label_description list
+type type_descr_kind =
+  (label_description, constructor_description) type_kind
+
+type type_descriptions = type_descr_kind
 
 let in_signature_flag = 0x01
 
@@ -1083,27 +1085,39 @@ let type_of_cstr path = function
       let labels =
         List.map snd (Datarepr.labels_of_type path decl)
       in
-      { tda_declaration = decl; tda_descriptions = ([], labels) }
-  | _ ->
-      assert false
+      begin match decl.type_kind with
+      | Type_record (_, repr) ->
+        {
+          tda_declaration = decl;
+          tda_descriptions = Type_record (labels, repr);
+        }
+      | _ -> assert false
+      end
+  | _ -> assert false
 
-let find_type_full path env =
+let find_type_data path env =
   match Path.constructor_typath path with
   | Regular p -> begin
       match Path.Map.find p env.local_constraints with
       | decl ->
-          { tda_declaration = decl; tda_descriptions = [], [] }
+          { tda_declaration = decl; tda_descriptions = Type_abstract }
       | exception Not_found -> find_type_full p env
     end
   | Cstr (ty_path, s) ->
+      (* This case corresponds to an inlined record *)
       let tda =
         try find_type_full ty_path env
         with Not_found -> assert false
       in
-      let (cstrs, _) = tda.tda_descriptions in
       let cstr =
-        try List.find (fun cstr -> cstr.cstr_name = s) cstrs
-        with Not_found -> assert false
+        begin match tda.tda_descriptions with
+        | Type_variant cstrs -> begin
+            try
+              List.find (fun cstr -> cstr.cstr_name = s) cstrs
+            with Not_found -> assert false
+          end
+        | Type_record _ | Type_abstract | Type_open -> assert false
+        end
       in
       type_of_cstr path cstr
   | LocalExt id ->
@@ -1127,9 +1141,9 @@ let find_type_full path env =
       | _ -> assert false
 
 let find_type p env =
-  (find_type_full p env).tda_declaration
+  (find_type_data p env).tda_declaration
 let find_type_descrs p env =
-  (find_type_full p env).tda_descriptions
+  (find_type_data p env).tda_descriptions
 
 let rec find_module_address path env =
   match path with
@@ -1655,29 +1669,41 @@ let rec components_of_module_maker
             let final_decl = Subst.type_declaration prefixing_sub fresh_decl in
             Btype.set_row_name final_decl
               (Subst.type_path prefixing_sub (Path.Pident id));
-            let constructors =
-              List.map snd
-                (Datarepr.constructors_of_type ~current_unit:(get_unit_name ())
-                   path final_decl)
+            let descrs =
+              match decl.type_kind with
+              | Type_variant _ ->
+                  let cstrs = List.map snd
+                    (Datarepr.constructors_of_type path final_decl
+                        ~current_unit:(get_unit_name ()))
+                  in
+                  List.iter
+                    (fun descr ->
+                      let cda = {
+                        cda_description = descr;
+                        cda_address = None }
+                      in
+                      c.comp_constrs <-
+                        add_to_tbl descr.cstr_name cda c.comp_constrs
+                    ) cstrs;
+                 Type_variant cstrs
+              | Type_record (_, repr) ->
+                  let lbls = List.map snd
+                    (Datarepr.labels_of_type path final_decl)
+                  in
+                  List.iter
+                    (fun descr ->
+                      c.comp_labels <-
+                        add_to_tbl descr.lbl_name descr c.comp_labels)
+                    lbls;
+                  Type_record (lbls, repr)
+              | Type_abstract -> Type_abstract
+              | Type_open -> Type_open
             in
-            let labels =
-              List.map snd (Datarepr.labels_of_type path final_decl) in
             let tda =
               { tda_declaration = final_decl;
-                tda_descriptions = (constructors, labels); }
+                tda_descriptions = descrs; }
             in
             c.comp_types <- NameMap.add (Ident.name id) tda c.comp_types;
-            List.iter
-              (fun descr ->
-                 let cda = { cda_description = descr; cda_address = None } in
-                 c.comp_constrs <-
-                   add_to_tbl descr.cstr_name cda c.comp_constrs)
-              constructors;
-            List.iter
-              (fun descr ->
-                c.comp_labels <-
-                  add_to_tbl descr.lbl_name descr c.comp_labels)
-              labels;
             env := store_type_infos id fresh_decl !env
         | Sig_typext(id, ext, _, _) ->
             let ext' = Subst.extension_constructor sub ext in
@@ -1812,77 +1838,88 @@ and store_type ~check id info env =
       (fun s -> Warnings.Unused_type_declaration s)
       !type_declarations;
   let path = Pident id in
-  let constructors =
-    Datarepr.constructors_of_type path info
-      ~current_unit:(get_unit_name ())
+  let descrs, env =
+    match info.type_kind with
+    | Type_variant _ ->
+        let constructors = Datarepr.constructors_of_type path info
+                            ~current_unit:(get_unit_name ())
+        in
+        if check && not loc.Location.loc_ghost &&
+          Warnings.is_active (Warnings.Unused_constructor ("", Unused))
+        then begin
+          let ty_name = Ident.name id in
+          let priv = info.type_private in
+            List.iter
+              begin fun (_, cstr) ->
+                let name = cstr.cstr_name in
+                let loc = cstr.cstr_loc in
+                let k = cstr.cstr_uid in
+                if not (Types.Uid.Tbl.mem !used_constructors k) then
+                  let used = constructor_usages () in
+                  Types.Uid.Tbl.add !used_constructors k
+                    (add_constructor_usage used);
+                  if not (ty_name = "" || ty_name.[0] = '_')
+                  then !add_delayed_check_forward
+                      (fun () ->
+                        Option.iter
+                          (fun complaint ->
+                             if not (is_in_signature env) then
+                               Location.prerr_warning loc
+                                 (Warnings.Unused_constructor(name, complaint)))
+                          (constructor_usage_complaint ~rebind:false priv used))
+              end
+              constructors
+        end;
+        Type_variant (List.map snd constructors),
+        { env with
+          constrs =
+            List.fold_right
+              (fun (id, descr) constrs ->
+                let cda = { cda_description = descr; cda_address = None } in
+                TycompTbl.add id cda constrs)
+              constructors env.constrs;
+        }
+    | Type_record (_, repr) ->
+        let labels = Datarepr.labels_of_type path info in
+        if check && not loc.Location.loc_ghost &&
+          Warnings.is_active (Warnings.Unused_field ("", Unused))
+        then begin
+          let ty_name = Ident.name id in
+          let priv = info.type_private in
+          List.iter
+            begin fun (_, lbl) ->
+              let name = lbl.lbl_name in
+              let loc = lbl.lbl_loc in
+              let mut = lbl.lbl_mut in
+              let k = lbl.lbl_uid in
+              if not (Types.Uid.Tbl.mem !used_labels k) then
+                let used = label_usages () in
+                Types.Uid.Tbl.add !used_labels k
+                  (add_label_usage used);
+                if not (ty_name = "" || ty_name.[0] = '_' || name.[0] = '_')
+                then !add_delayed_check_forward
+                    (fun () ->
+                      Option.iter
+                        (fun complaint ->
+                           if not (is_in_signature env) then
+                             Location.prerr_warning
+                               loc (Warnings.Unused_field(name, complaint)))
+                        (label_usage_complaint priv mut used))
+            end
+            labels
+        end;
+        Type_record (List.map snd labels, repr),
+        { env with
+          labels =
+            List.fold_right
+              (fun (id, descr) labels -> TycompTbl.add id descr labels)
+              labels env.labels;
+        }
+    | Type_abstract -> Type_abstract, env
+    | Type_open -> Type_open, env
   in
-  let labels = Datarepr.labels_of_type path info in
-  let descrs = (List.map snd constructors, List.map snd labels) in
   let tda = { tda_declaration = info; tda_descriptions = descrs } in
-  if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_constructor ("", Unused))
-  then begin
-    let ty_name = Ident.name id in
-    let priv = info.type_private in
-    List.iter
-      begin fun (_, cstr) ->
-        let name = cstr.cstr_name in
-        let loc = cstr.cstr_loc in
-        let k = cstr.cstr_uid in
-        if not (Types.Uid.Tbl.mem !used_constructors k) then
-          let used = constructor_usages () in
-          Types.Uid.Tbl.add !used_constructors k
-            (add_constructor_usage used);
-          if not (ty_name = "" || ty_name.[0] = '_')
-          then !add_delayed_check_forward
-              (fun () ->
-                Option.iter
-                  (fun complaint ->
-                     if not (is_in_signature env) then
-                       Location.prerr_warning loc
-                         (Warnings.Unused_constructor(name, complaint)))
-                  (constructor_usage_complaint ~rebind:false priv used))
-      end
-      constructors
-  end;
-  if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_field ("", Unused))
-  then begin
-    let ty_name = Ident.name id in
-    let priv = info.type_private in
-    List.iter
-      begin fun (_, lbl) ->
-        let name = lbl.lbl_name in
-        let loc = lbl.lbl_loc in
-        let mut = lbl.lbl_mut in
-        let k = lbl.lbl_uid in
-        if not (Types.Uid.Tbl.mem !used_labels k) then
-          let used = label_usages () in
-          Types.Uid.Tbl.add !used_labels k
-            (add_label_usage used);
-          if not (ty_name = "" || ty_name.[0] = '_' || name.[0] = '_')
-          then !add_delayed_check_forward
-              (fun () ->
-                Option.iter
-                  (fun complaint ->
-                     if not (is_in_signature env) then
-                       Location.prerr_warning
-                         loc (Warnings.Unused_field(name, complaint)))
-                  (label_usage_complaint priv mut used))
-      end
-      labels
-  end;
   { env with
-    constrs =
-      List.fold_right
-        (fun (id, descr) constrs ->
-           let cda = { cda_description = descr; cda_address = None } in
-           TycompTbl.add id cda constrs)
-        constructors env.constrs;
-    labels =
-      List.fold_right
-        (fun (id, descr) labels -> TycompTbl.add id descr labels)
-        labels env.labels;
     types = IdTbl.add id tda env.types;
     summary = Env_type(env.summary, id, info) }
 
@@ -1892,7 +1929,7 @@ and store_type_infos id info env =
      manifest-ness of the type.  Used in components_of_module to
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
-  let tda = { tda_declaration = info; tda_descriptions = [], [] } in
+  let tda = { tda_declaration = info; tda_descriptions = Type_abstract } in
   { env with
     types = IdTbl.add id tda env.types;
     summary = Env_type(env.summary, id, info) }
@@ -2882,7 +2919,8 @@ let lookup_label ~errors ~use ~loc usage lid env =
 let lookup_all_labels_from_type ~use ~loc usage ty_path env =
   match find_type_descrs ty_path env with
   | exception Not_found -> []
-  | (_, lbls) ->
+  | Type_variant _ | Type_abstract | Type_open -> []
+  | Type_record (lbls, _) ->
       List.map
         (fun lbl ->
            let use_fun () = use_label ~use ~loc usage env lbl in
@@ -2903,7 +2941,8 @@ let lookup_constructor ~errors ~use ~loc usage lid env =
 let lookup_all_constructors_from_type ~use ~loc usage ty_path env =
   match find_type_descrs ty_path env with
   | exception Not_found -> []
-  | (cstrs, _) ->
+  | Type_record _ | Type_abstract | Type_open -> []
+  | Type_variant cstrs ->
       List.map
         (fun cstr ->
            let use_fun () =

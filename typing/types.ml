@@ -229,7 +229,7 @@ end
 type type_declaration =
   { type_params: type_expr list;
     type_arity: int;
-    type_kind: type_kind;
+    type_kind: type_decl_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
@@ -243,10 +243,12 @@ type type_declaration =
     type_uid: Uid.t;
  }
 
-and type_kind =
+and type_decl_kind = (label_declaration, constructor_declaration) type_kind
+
+and ('lbl, 'cstr) type_kind =
     Type_abstract
-  | Type_record of label_declaration list  * record_representation
-  | Type_variant of constructor_declaration list
+  | Type_record of 'lbl list * record_representation
+  | Type_variant of 'cstr list
   | Type_open
 
 and record_representation =
