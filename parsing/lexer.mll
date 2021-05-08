@@ -253,12 +253,98 @@ let preprocessor = ref None
 
 let escaped_newlines = ref false
 
-(* Warn about Latin-1 characters used in idents *)
+(* Normalize UTF8-encoding of Latin-1 accented characters
+   to decomposed form (NFD) *)
 
-let warn_latin1 lexbuf =
-  Location.deprecated
-    (Location.curr lexbuf)
-    "ISO-Latin1 characters in identifiers"
+let nfd_table = [|
+  (* "\xc3\x80" *) "A\xcc\x80" (* À *);
+  (* "\xc3\x81" *) "A\xcc\x81" (* Á *);
+  (* "\xc3\x82" *) "A\xcc\x82" (* Â *);
+  (* "\xc3\x83" *) "A\xcc\x83" (* Ã *);
+  (* "\xc3\x84" *) "A\xcc\x88" (* Ä *);
+  (* "\xc3\x85" *) "A\xcc\x8a" (* Å *);
+  (* "\xc3\x86" *) "" (* Æ *);
+  (* "\xc3\x87" *) "C\xcc\xa7" (* Ç *);
+  (* "\xc3\x88" *) "E\xcc\x80" (* È *);
+  (* "\xc3\x89" *) "E\xcc\x81" (* É *);
+  (* "\xc3\x8a" *) "E\xcc\x82" (* Ê *);
+  (* "\xc3\x8b" *) "E\xcc\x88" (* Ë *);
+  (* "\xc3\x8c" *) "I\xcc\x80" (* Ì *);
+  (* "\xc3\x8d" *) "I\xcc\x81" (* Í *);
+  (* "\xc3\x8e" *) "I\xcc\x82" (* Î *);
+  (* "\xc3\x8f" *) "I\xcc\x88" (* Ï *);
+  (* "\xc3\x90" *) "" (* Ð *);
+  (* "\xc3\x91" *) "N\xcc\x83" (* Ñ *);
+  (* "\xc3\x92" *) "O\xcc\x80" (* Ò *);
+  (* "\xc3\x93" *) "O\xcc\x81" (* Ó *);
+  (* "\xc3\x94" *) "O\xcc\x82" (* Ô *);
+  (* "\xc3\x95" *) "O\xcc\x83" (* Õ *);
+  (* "\xc3\x96" *) "O\xcc\x88" (* Ö *);
+  (* "\xc3\x97" *) "";
+  (* "\xc3\x98" *) "" (* Ø *);
+  (* "\xc3\x99" *) "U\xcc\x80" (* Ù *);
+  (* "\xc3\x9a" *) "U\xcc\x81" (* Ú *);
+  (* "\xc3\x9b" *) "U\xcc\x82" (* Û *);
+  (* "\xc3\x9c" *) "U\xcc\x88" (* Ü *);
+  (* "\xc3\x9d" *) "Y\xcc\x81" (* Ý *);
+  (* "\xc3\x9e" *) "" (* Þ *);
+  (* "\xc3\x9f" *) "" (* ß *);
+  (* "\xc3\xa0" *) "a\xcc\x80" (* à *);
+  (* "\xc3\xa1" *) "a\xcc\x81" (* á *);
+  (* "\xc3\xa2" *) "a\xcc\x82" (* â *);
+  (* "\xc3\xa3" *) "a\xcc\x83" (* ã *);
+  (* "\xc3\xa4" *) "a\xcc\x88" (* ä *);
+  (* "\xc3\xa5" *) "a\xcc\x8a" (* å *);
+  (* "\xc3\xa6" *) "" (* æ *);
+  (* "\xc3\xa7" *) "c\xcc\xa7" (* ç *);
+  (* "\xc3\xa8" *) "e\xcc\x80" (* è *);
+  (* "\xc3\xa9" *) "e\xcc\x81" (* é *);
+  (* "\xc3\xaa" *) "e\xcc\x82" (* ê *);
+  (* "\xc3\xab" *) "e\xcc\x88" (* ë *);
+  (* "\xc3\xac" *) "i\xcc\x80" (* ì *);
+  (* "\xc3\xad" *) "i\xcc\x81" (* í *);
+  (* "\xc3\xae" *) "i\xcc\x82" (* î *);
+  (* "\xc3\xaf" *) "i\xcc\x88" (* ï *);
+  (* "\xc3\xb0" *) "" (* ð *);
+  (* "\xc3\xb1" *) "n\xcc\x83" (* ñ *);
+  (* "\xc3\xb2" *) "o\xcc\x80" (* ò *);
+  (* "\xc3\xb3" *) "o\xcc\x81" (* ó *);
+  (* "\xc3\xb4" *) "o\xcc\x82" (* ô *);
+  (* "\xc3\xb5" *) "o\xcc\x83" (* õ *);
+  (* "\xc3\xb6" *) "o\xcc\x88" (* ö *);
+  (* "\xc3\xb7" *) "";
+  (* "\xc3\xb8" *) "" (* ø *);
+  (* "\xc3\xb9" *) "u\xcc\x80" (* ù *);
+  (* "\xc3\xba" *) "u\xcc\x81" (* ú *);
+  (* "\xc3\xbb" *) "u\xcc\x82" (* û *);
+  (* "\xc3\xbc" *) "u\xcc\x88" (* ü *);
+  (* "\xc3\xbd" *) "y\xcc\x81" (* ý *);
+  (* "\xc3\xbe" *) "" (* þ *);
+  (* "\xc3\xbf" *) "y\xcc\x88" (* ÿ *);
+|]
+
+let normalize_utf8 s =
+  let l = String.length s in
+  let b = Buffer.create (l + 10) in
+  let rec normalize i =
+    if i < l then begin
+      let c = s.[i] in
+      if c <> '\xc3' then begin
+        Buffer.add_char b c; normalize (i + 1)
+      end else begin
+        assert (i + 1 < l);
+        let c2 = s.[i + 1] in
+        assert (Char.code c2 >= 0x80 && Char.code c2 <= 0xbf);
+        let t = nfd_table.(Char.code c2 - 0x80) in
+        if t <> ""
+        then Buffer.add_string b t
+        else (Buffer.add_char b c; Buffer.add_char b c2);
+        normalize (i + 2)
+      end
+    end in
+  normalize 0; Buffer.contents b
+
+(* Docstring handling *)
 
 let handle_docstrings = ref true
 let comment_list = ref []
@@ -334,10 +420,77 @@ let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
-let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let lowercase_latin1 = 
+  lowercase
+| "\xc3\x9f" (* ß *)
+| "\xc3\xa0" | "a\xcc\x80" (* à *)
+| "\xc3\xa1" | "a\xcc\x81" (* á *)
+| "\xc3\xa2" | "a\xcc\x82" (* â *)
+| "\xc3\xa3" | "a\xcc\x83" (* ã *)
+| "\xc3\xa4" | "a\xcc\x88" (* ä *)
+| "\xc3\xa5" | "a\xcc\x8a" (* å *)
+| "\xc3\xa6" (* æ *)
+| "\xc3\xa7" | "c\xcc\xa7" (* ç *)
+| "\xc3\xa8" | "e\xcc\x80" (* è *)
+| "\xc3\xa9" | "e\xcc\x81" (* é *)
+| "\xc3\xaa" | "e\xcc\x82" (* ê *)
+| "\xc3\xab" | "e\xcc\x88" (* ë *)
+| "\xc3\xac" | "i\xcc\x80" (* ì *)
+| "\xc3\xad" | "i\xcc\x81" (* í *)
+| "\xc3\xae" | "i\xcc\x82" (* î *)
+| "\xc3\xaf" | "i\xcc\x88" (* ï *)
+| "\xc3\xb0" (* ð *)
+| "\xc3\xb1" | "n\xcc\x83" (* ñ *)
+| "\xc3\xb2" | "o\xcc\x80" (* ò *)
+| "\xc3\xb3" | "o\xcc\x81" (* ó *)
+| "\xc3\xb4" | "o\xcc\x82" (* ô *)
+| "\xc3\xb5" | "o\xcc\x83" (* õ *)
+| "\xc3\xb6" | "o\xcc\x88" (* ö *)
+| "\xc3\xb8" (* ø *)
+| "\xc3\xb9" | "u\xcc\x80" (* ù *)
+| "\xc3\xba" | "u\xcc\x81" (* ú *)
+| "\xc3\xbb" | "u\xcc\x82" (* û *)
+| "\xc3\xbc" | "u\xcc\x88" (* ü *)
+| "\xc3\xbd" | "y\xcc\x81" (* ý *)
+| "\xc3\xbe" (* þ *)
+| "\xc3\xbf" | "y\xcc\x88" (* ÿ *)
+
+let uppercase_latin1 =
+  uppercase
+| "\xc3\x80" | "A\xcc\x80" (* À *)
+| "\xc3\x81" | "A\xcc\x81" (* Á *)
+| "\xc3\x82" | "A\xcc\x82" (* Â *)
+| "\xc3\x83" | "A\xcc\x83" (* Ã *)
+| "\xc3\x84" | "A\xcc\x88" (* Ä *)
+| "\xc3\x85" | "A\xcc\x8a" (* Å *)
+| "\xc3\x86" (* Æ *)
+| "\xc3\x87" | "C\xcc\xa7" (* Ç *)
+| "\xc3\x88" | "E\xcc\x80" (* È *)
+| "\xc3\x89" | "E\xcc\x81" (* É *)
+| "\xc3\x8a" | "E\xcc\x82" (* Ê *)
+| "\xc3\x8b" | "E\xcc\x88" (* Ë *)
+| "\xc3\x8c" | "I\xcc\x80" (* Ì *)
+| "\xc3\x8d" | "I\xcc\x81" (* Í *)
+| "\xc3\x8e" | "I\xcc\x82" (* Î *)
+| "\xc3\x8f" | "I\xcc\x88" (* Ï *)
+| "\xc3\x90" (* Ð *)
+| "\xc3\x91" | "N\xcc\x83" (* Ñ *)
+| "\xc3\x92" | "O\xcc\x80" (* Ò *)
+| "\xc3\x93" | "O\xcc\x81" (* Ó *)
+| "\xc3\x94" | "O\xcc\x82" (* Ô *)
+| "\xc3\x95" | "O\xcc\x83" (* Õ *)
+| "\xc3\x96" | "O\xcc\x88" (* Ö *)
+| "\xc3\x98" (* Ø *)
+| "\xc3\x99" | "U\xcc\x80" (* Ù *)
+| "\xc3\x9a" | "U\xcc\x81" (* Ú *)
+| "\xc3\x9b" | "U\xcc\x82" (* Û *)
+| "\xc3\x9c" | "U\xcc\x88" (* Ü *)
+| "\xc3\x9d" | "Y\xcc\x81" (* Ý *)
+| "\xc3\x9e" (* Þ *)
+
 let identchar_latin1 =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+  lowercase_latin1 | uppercase_latin1 | ['\'' '0'-'9']
+
 (* This should be kept in sync with the [is_identchar] function in [env.ml] *)
 
 let symbolchar =
@@ -396,25 +549,23 @@ rule token = parse
       { check_label_name lexbuf name;
         LABEL name }
   | "~" (lowercase_latin1 identchar_latin1 * as name) ':'
-      { warn_latin1 lexbuf;
-        LABEL name }
+      { LABEL (normalize_utf8 name) }
   | "?"
       { QUESTION }
   | "?" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         OPTLABEL name }
   | "?" (lowercase_latin1 identchar_latin1 * as name) ':'
-      { warn_latin1 lexbuf;
-        OPTLABEL name }
+      { OPTLABEL (normalize_utf8 name) }
   | lowercase identchar * as name
       { try Hashtbl.find keyword_table name
         with Not_found -> LIDENT name }
   | lowercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; LIDENT name }
+      { LIDENT (normalize_utf8 name) }
   | uppercase identchar * as name
       { UIDENT name } (* No capitalized keywords *)
   | uppercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; UIDENT name }
+      { UIDENT (normalize_utf8 name) }
   | int_literal as lit { INT (lit, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }
