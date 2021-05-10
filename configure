@@ -2789,7 +2789,7 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 extralibs=
-instrumented_runtime=false
+instrumented_runtime=true
 instrumented_runtime_ldlibs=""
 
 # Information about the package
@@ -2838,7 +2838,6 @@ VERSION=4.12.0+multicore
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 
@@ -3104,12 +3103,11 @@ fi
 
 
 
-# Disable instrumented-runtime with multicore
 # Check whether --enable-instrumented-runtime was given.
 if test "${enable_instrumented_runtime+set}" = set; then :
   enableval=$enable_instrumented_runtime;
 else
-  enable_instrumented_runtime=no
+  enable_instrumented_runtime=auto
 fi
 
 
@@ -3202,6 +3200,7 @@ fi
 if test "${enable_installing_bytecode_programs+set}" = set; then :
   enableval=$enable_installing_bytecode_programs;
 fi
+
 
 # Check whether --enable-native-compiler was given.
 if test "${enable_native_compiler+set}" = set; then :

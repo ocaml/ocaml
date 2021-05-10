@@ -564,7 +564,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
     }
   }
 
- CAML_EV_BEGIN(EV_MINOR_REF_TABLES);
+ CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET);
 
   if( not_alone ) {
     int participating_idx = -1;
@@ -645,8 +645,10 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   caml_final_do_young_roots (&oldify_one, &st, domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
+  CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
   oldify_mopup (&st, 1); /* ephemerons promoted here */
-  CAML_EV_END(EV_MINOR_REF_TABLES);
+  CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
+  CAML_EV_END(EV_MINOR_REMEMBERED_SET);
   caml_gc_log("promoted %d roots, %lu bytes", remembered_roots, st.live_bytes);
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
@@ -673,7 +675,9 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS);
   caml_do_local_roots(&oldify_one, &st, domain->state->local_roots, domain->state->current_stack, domain->state->gc_regs);
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&oldify_one, &st, domain);
+  CAML_EV_BEGIN(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   oldify_mopup (&st, 0);
+  CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
   /* we reset these pointers before allowing any mutators to be
