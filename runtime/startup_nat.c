@@ -95,7 +95,6 @@ value caml_startup_common(char_os **argv, int pooling)
 
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif

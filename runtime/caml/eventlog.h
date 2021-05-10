@@ -25,55 +25,64 @@ typedef enum {
 } ev_type;
 
 typedef enum {
-    EV_DOMAIN_SPAWN,
-    EV_DOMAIN_SEND_INTERRUPT,
-    EV_DOMAIN_IDLE_WAIT,
+    EV_COMPACT_MAIN,
+    EV_COMPACT_RECOMPACT,
     EV_EXPLICIT_GC_SET,
     EV_EXPLICIT_GC_STAT,
     EV_EXPLICIT_GC_MINOR,
     EV_EXPLICIT_GC_MAJOR,
-    EV_EXPLICIT_GC_MAJOR_SLICE,
     EV_EXPLICIT_GC_FULL_MAJOR,
     EV_EXPLICIT_GC_COMPACT,
+    EV_MAJOR,
+    EV_MAJOR_ROOTS,
+    EV_MAJOR_SWEEP,
+    EV_MAJOR_MARK_ROOTS,
+    EV_MAJOR_MARK_MAIN,
+    EV_MAJOR_MARK_FINAL,
+    EV_MAJOR_MARK,
+    EV_MAJOR_MARK_GLOBAL_ROOTS_SLICE,
+    EV_MAJOR_ROOTS_GLOBAL,
+    EV_MAJOR_ROOTS_DYNAMIC_GLOBAL,
+    EV_MAJOR_ROOTS_LOCAL,
+    EV_MAJOR_ROOTS_C,
+    EV_MAJOR_ROOTS_FINALISED,
+    EV_MAJOR_ROOTS_MEMPROF,
+    EV_MAJOR_ROOTS_HOOK,
+    EV_MAJOR_CHECK_AND_COMPACT,
+    EV_MINOR,
+    EV_MINOR_LOCAL_ROOTS,
+    EV_MINOR_REF_TABLES,
+    EV_MINOR_COPY,
+    EV_MINOR_UPDATE_WEAK,
+    EV_MINOR_FINALIZED,
+    EV_EXPLICIT_GC_MAJOR_SLICE,
+    EV_DOMAIN_SPAWN,
+    EV_DOMAIN_SEND_INTERRUPT,
+    EV_DOMAIN_IDLE_WAIT,
     EV_FINALISE_UPDATE_FIRST,
     EV_FINALISE_UPDATE_LAST,
     EV_INTERRUPT_GC,
     EV_INTERRUPT_REMOTE,
-    EV_MAJOR,
     EV_MAJOR_EPHE_MARK,
     EV_MAJOR_EPHE_SWEEP,
     EV_MAJOR_FINISH_MARKING,
     EV_MAJOR_GC_CYCLE_DOMAINS,
     EV_MAJOR_GC_PHASE_CHANGE,
     EV_MAJOR_GC_STW,
-    EV_MAJOR_MARK_ROOTS,
-    EV_MAJOR_MARK_MAIN,
-    EV_MAJOR_MARK_FINAL,
-    EV_MAJOR_MARK,
-    EV_MAJOR_MARK_GLOBAL_ROOTS_SLICE,
     EV_MAJOR_MARK_OPPORTUNISTIC,
-    EV_MAJOR_ROOTS,
-    EV_MAJOR_ROOTS_GLOBAL,
-    EV_MAJOR_ROOTS_DYNAMIC_GLOBAL,
-    EV_MAJOR_ROOTS_LOCAL,
-    EV_MAJOR_ROOTS_C,
-    EV_MAJOR_ROOTS_FINALISED,
-    EV_MAJOR_ROOTS_HOOK,
     EV_MAJOR_SLICE,
-    EV_MAJOR_SWEEP,
-    EV_MINOR,
     EV_MINOR_CLEAR,
-    EV_MINOR_FINALIZED,
     EV_MINOR_FINALIZERS_OLDIFY,
     EV_MINOR_GLOBAL_ROOTS,
     EV_MINOR_LEAVE_BARRIER,
-    EV_MINOR_LOCAL_ROOTS,
-    EV_MINOR_REF_TABLES,
-    EV_MINOR_UPDATE_WEAK,
     EV_STW_API_BARRIER,
     EV_STW_HANDLER,
     EV_STW_LEADER,
-
+    EV_MAJOR_FINISH_SWEEPING,
+    EV_MINOR_FINALIZERS_ADMIN,
+    EV_MINOR_REMEMBERED_SET,
+    EV_MINOR_REMEMBERED_SET_PROMOTE,
+    EV_MINOR_LOCAL_ROOTS_PROMOTE
 } ev_gc_phase;
 
 typedef enum {
@@ -81,6 +90,8 @@ typedef enum {
     EV_C_FORCE_MINOR_ALLOC_SMALL,
     EV_C_FORCE_MINOR_MAKE_VECT,
     EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE,
+    EV_C_FORCE_MINOR_WEAK,
+    EV_C_FORCE_MINOR_MEMPROF,
     EV_C_MAJOR_MARK_SLICE_REMAIN,
     EV_C_MAJOR_MARK_SLICE_FIELDS,
     EV_C_MAJOR_MARK_SLICE_POINTERS,
@@ -102,12 +113,14 @@ typedef enum {
 
 #define CAML_EVENTLOG_INIT() caml_eventlog_init()
 #define CAML_EVENTLOG_DISABLE() caml_eventlog_disable()
+#define CAML_EVENTLOG_IS_BACKUP_THREAD() caml_eventlog_is_backup_thread()
 #define CAML_EV_BEGIN(p) caml_ev_begin(p)
 #define CAML_EV_END(p) caml_ev_end(p)
 #define CAML_EV_COUNTER(c, v) caml_ev_counter(c, v)
 #define CAML_EV_ALLOC(s) caml_ev_alloc(s)
 #define CAML_EV_ALLOC_FLUSH() caml_ev_alloc_flush()
 #define CAML_EV_FLUSH() caml_ev_flush()
+#define CAML_EVENTLOG_TEARDOWN() caml_eventlog_teardown()
 
 /* General note about the public API for the eventlog framework
    The caml_ev_* functions are no-op when called with the eventlog framework
@@ -120,6 +133,8 @@ typedef enum {
 
 void caml_eventlog_init(void);
 void caml_eventlog_disable(void);
+void caml_eventlog_teardown(void);
+void caml_eventlog_is_backup_thread(void);
 void caml_ev_begin(ev_gc_phase phase);
 void caml_ev_end(ev_gc_phase phase);
 void caml_ev_counter(ev_gc_counter counter, uint64_t val);
@@ -133,12 +148,14 @@ void caml_ev_flush(void);
 
 #define CAML_EVENTLOG_INIT() /**/
 #define CAML_EVENTLOG_DISABLE() /**/
+#define CAML_EVENTLOG_IS_BACKUP_THREAD() /**/
 #define CAML_EV_BEGIN(p) /**/
 #define CAML_EV_END(p) /**/
 #define CAML_EV_COUNTER(c, v) /**/
 #define CAML_EV_ALLOC(S) /**/
 #define CAML_EV_ALLOC_FLUSH() /**/
 #define CAML_EV_FLUSH() /**/
+#define CAML_EVENTLOG_TEARDOWN() /**/
 
 #endif /*CAML_INSTR*/
 
