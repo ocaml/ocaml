@@ -800,10 +800,10 @@ let name_recursion sdecl id decl =
   | { type_kind = Type_abstract;
       type_manifest = Some ty;
       type_private = Private; } when is_fixed_type sdecl ->
-    let ty' = newty2 (get_level ty) (get_desc ty) in
+    let ty' = newty2 ~level:(get_level ty) (get_desc ty) in
     if Ctype.deep_occur ty ty' then
       let td = Tconstr(Path.Pident id, decl.type_params, ref Mnil) in
-      link_type ty (newty2 (get_level ty) td);
+      link_type ty (newty2 ~level:(get_level ty) td);
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl

@@ -4494,7 +4494,7 @@ and type_application env funct sargs =
   (* funct.exp_type may be generic *)
   let result_type omitted ty_fun =
     List.fold_left
-      (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun,Cok)))
+      (fun ty_fun (l,ty,lv) -> newty2 ~level:lv (Tarrow(l,ty,ty_fun,Cok)))
       ty_fun omitted
   in
   let has_label l ty_fun =

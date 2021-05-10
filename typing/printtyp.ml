@@ -1271,7 +1271,7 @@ let filter_params tyl =
     List.fold_left
       (fun tyl ty ->
         if List.exists (eq_type ty) tyl
-        then newty2 generic_level (Ttuple [ty]) :: tyl
+        then newty2 ~level:generic_level (Ttuple [ty]) :: tyl
         else ty :: tyl)
       (* Two parameters might be identical due to a constraint but we need to
          print them differently in order to make the output syntactically valid.
@@ -2075,7 +2075,7 @@ let type_path_list =
 let hide_variant_name t =
   match get_desc t with
   | Tvariant row when (row_repr row).row_name <> None ->
-      newty2 (get_level t)
+      newty2 ~level:(get_level t)
         (Tvariant {(row_repr row) with row_name = None;
                    row_more = newvar2 (get_level (row_more row))})
   | _ -> t

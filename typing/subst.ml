@@ -161,7 +161,7 @@ let rec typexp copy_scope s ty =
       if s.for_saving || get_id ty < 0 then
         let ty' =
           if s.for_saving then newpersty (norm desc)
-          else newty2 (get_level ty) desc
+          else newty2 ~level:(get_level ty) desc
         in
         For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
         ty'

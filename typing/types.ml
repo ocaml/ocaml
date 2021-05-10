@@ -570,7 +570,7 @@ let newty3 ~level ~scope desc  =
   incr new_id;
   create_expr desc ~level ~scope ~id:!new_id
 
-let newty2 level desc =
+let newty2 ~level desc =
   newty3 ~level ~scope:Ident.lowest_scope desc
 
                   (**********************************)

@@ -231,11 +231,11 @@ let proper_abbrevs path tl abbrev =
 
 (* Re-export generic type creators *)
 
-let newty desc              = newty2 !current_level desc
+let newty desc              = newty2 ~level:!current_level desc
 
-let newvar ?name ()         = newty2 !current_level (Tvar name)
-let newvar2 ?name level     = newty2 level (Tvar name)
-let new_global_var ?name () = newty2 !global_level (Tvar name)
+let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
+let newvar2 ?name level     = newty2 ~level:level (Tvar name)
+let new_global_var ?name () = newty2 ~level:!global_level (Tvar name)
 let newstub ~scope          = newty3 ~level:!current_level ~scope (Tvar None)
 
 let newobj fields      = newty (Tobject (fields, ref None))
@@ -324,7 +324,7 @@ let flatten_fields ty =
 
 let build_fields level =
   List.fold_right
-    (fun (s, k, ty1) ty2 -> newty2 level (Tfield(s, k, ty1, ty2)))
+    (fun (s, k, ty1) ty2 -> newty2 ~level (Tfield(s, k, ty1, ty2)))
 
 let associate_fields fields1 fields2 =
   let rec associate p s s' =
@@ -377,7 +377,7 @@ let close_object ty =
   let rec close ty =
     match get_desc ty with
       Tvar _ ->
-        link_type ty (newty2 (get_level ty) Tnil); true
+        link_type ty (newty2 ~level:(get_level ty) Tnil); true
     | Tfield(lab, _, _, _) when lab = dummy_method ->
         false
     | Tfield(_, _, _, ty') -> close ty'
@@ -778,7 +778,7 @@ let rec check_scope_escape env level ty =
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
         check_scope_escape env level
-          (newty2 orig_level (Tpackage (p', fl)))
+          (newty2 ~level:orig_level (Tpackage (p', fl)))
     | _ ->
         iter_type_expr (check_scope_escape env level) ty
     end;
@@ -1110,7 +1110,7 @@ let rec copy ?partial ?keep_names scope ty =
             if keep then level else !current_level
           else generic_level
     in
-    if forget <> generic_level then newty2 forget (Tvar None) else
+    if forget <> generic_level then newty2 ~level:forget (Tvar None) else
     let desc = get_desc ty in
     let t = newstub ~scope:(get_scope ty) in
     For_copy.redirect_desc scope ty (Tsubst (t, None));
@@ -1609,7 +1609,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* another way to expand is to normalize the path itself *)
             let path' = Env.normalize_type_path None env path in
             if Path.same path path' then raise Cannot_expand
-            else newty2 level (Tconstr (path', args, abbrev))
+            else newty2 ~level (Tconstr (path', args, abbrev))
           | (params, body, lv) ->
             (* prerr_endline
               ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
@@ -1774,7 +1774,7 @@ let full_expand ~may_forget_scope env ty =
   in
   match get_desc ty with
     Tobject (fi, {contents = Some (_, v::_)}) when is_Tvar v ->
-      newty2 (get_level ty) (Tobject (fi, ref None))
+      newty2 ~level:(get_level ty) (Tobject (fi, ref None))
   | _ ->
       ty
 
@@ -2095,7 +2095,7 @@ let polyfy env ty vars =
   For_copy.with_scope (fun scope ->
     let vars' = List.filter_map (subst_univar scope) vars in
     let ty = copy scope ty in
-    let ty = newty2 (get_level ty) (Tpoly(ty, vars')) in
+    let ty = newty2 ~level:(get_level ty) (Tpoly(ty, vars')) in
     let complete = List.length vars = List.length vars' in
     ty, complete
   )
@@ -2195,7 +2195,7 @@ let reify env t =
       Env.enter_type (get_new_abstract_name name) decl !env
         ~scope:fresh_constr_scope in
     let path = Path.Pident id in
-    let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
+    let t = newty2 ~level:lev (Tconstr (path,[],ref Mnil))  in
     env := new_env;
     path, t
   in
@@ -2222,7 +2222,7 @@ let reify env t =
                 let row =
                   let row_fixed = Some (Reified path) in
                   {r with row_fields=[]; row_fixed; row_more = t} in
-                link_type m (newty2 level (Tvariant row));
+                link_type m (newty2 ~level (Tvariant row));
                 if level < fresh_constr_scope then
                   raise_for Unify (Escape (escape (Constructor path)))
             | _ -> assert false
@@ -2963,7 +2963,7 @@ and make_rowvar level use1 rest1 use2 rest2  =
     | _ -> None
   in
   if use1 then rest1 else
-  if use2 then rest2 else Types.newty2 level (Tvar name)
+  if use2 then rest2 else newty2 ~level (Tvar name)
 
 and unify_fields env ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
@@ -3024,7 +3024,8 @@ and unify_row env row1 row2 =
     | Some _, Some _ -> if get_level rm2 < get_level rm1 then rm2 else rm1
     | Some _, None -> rm1
     | None, Some _ -> rm2
-    | None, None -> newty2 (Int.min (get_level rm1) (get_level rm2)) (Tvar None)
+    | None, None ->
+        newty2 ~level:(Int.min (get_level rm1) (get_level rm2)) (Tvar None)
   in
   let fixed = merge_fixed_explanation fixed1 fixed2
   and closed = row1.row_closed || row2.row_closed in
@@ -3101,7 +3102,7 @@ and unify_row env row1 row2 =
       pairs;
     if static_row row1 then begin
       let rm = row_more row1 in
-      if is_Tvar rm then link_type rm (newty2 (get_level rm) Tnil)
+      if is_Tvar rm then link_type rm (newty2 ~level:(get_level rm) Tnil)
     end
   with exn ->
     Transient_expr.set_desc tm1 md1;
@@ -3287,7 +3288,7 @@ exception Filter_arrow_failed of filter_arrow_failure
 let filter_arrow env t l =
   let function_type level =
     let t1 = newvar2 level and t2 = newvar2 level in
-    let t' = newty2 level (Tarrow (l, t1, t2, Cok)) in
+    let t' = newty2 ~level (Tarrow (l, t1, t2, Cok)) in
     t', t1, t2
   in
   let t =
@@ -3325,7 +3326,7 @@ exception Filter_method_failed of filter_method_failure
 let rec filter_method_field env name priv ty =
   let method_type level =
       let ty1 = newvar2 level and ty2 = newvar2 level in
-      let ty' = newty2 level (Tfield (name,
+      let ty' = newty2 ~level (Tfield (name,
                                       begin match priv with
                                         Private -> Fvar (ref None)
                                       | Public  -> Fpresent
@@ -3710,10 +3711,10 @@ let rec rigidify_rec vars ty =
         let row = row_repr row in
         let more = row.row_more in
         if is_Tvar more && not (row_fixed row) then begin
-          let more' = newty2 (get_level more) (get_desc more) in
+          let more' = newty2 ~level:(get_level more) (get_desc more) in
           let row' =
             {row with row_fixed=Some Rigid; row_fields=[]; row_more=more'}
-          in link_type more (newty2 (get_level ty) (Tvariant row'))
+          in link_type more (newty2 ~level:(get_level ty) (Tvariant row'))
         end;
         iter_row (rigidify_rec vars) row;
         (* only consider the row variable if the variant is not static *)
@@ -4612,8 +4613,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
               let (co, cn) = Variance.get_upper v in
               if co then
                 if cn then
-                  (trace, newty2 (get_level t1) (Ttuple[t1]),
-                   newty2 (get_level t2) (Ttuple[t2]), !univar_pairs) :: cstrs
+                  (trace, newty2 ~level:(get_level t1) (Ttuple[t1]),
+                   newty2 ~level:(get_level t2) (Ttuple[t2]), !univar_pairs)
+                  :: cstrs
                 else
                   subtype_rec
                     env
@@ -4825,9 +4827,9 @@ let rec unalias_object ty =
   let level = get_level ty in
   match get_desc ty with
     Tfield (s, k, t1, t2) ->
-      newty2 level (Tfield (s, k, t1, unalias_object t2))
+      newty2 ~level (Tfield (s, k, t1, unalias_object t2))
   | Tvar _ | Tnil as desc ->
-      newty2 level desc
+      newty2 ~level desc
   | Tunivar _ ->
       ty
   | Tconstr _ ->
@@ -4843,12 +4845,13 @@ let unalias ty =
   | Tvariant row ->
       let row = row_repr row in
       let more = row.row_more in
-      newty2 level
-        (Tvariant {row with row_more = newty2 (get_level more) (get_desc more)})
+      newty2 ~level
+        (Tvariant {row with
+                   row_more = newty2 ~level:(get_level more) (get_desc more)})
   | Tobject (ty, nm) ->
-      newty2 level (Tobject (unalias_object ty, nm))
+      newty2 ~level (Tobject (unalias_object ty, nm))
   | desc ->
-      newty2 level desc
+      newty2 ~level desc
 
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
@@ -5008,7 +5011,7 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
           with (Nondep_cannot_erase _) as exn ->
             (* If that doesn't work, try expanding abbrevs *)
             try Tlink (nondep_type_rec ~expand_private env ids
-                         (try_expand env (newty2 (get_level ty) desc)))
+                         (try_expand env (newty2 ~level:(get_level ty) desc)))
               (*
                  The [Tlink] is important. The expanded type may be a
                  variable, or may not be completely copied yet

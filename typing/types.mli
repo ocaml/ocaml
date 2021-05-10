@@ -271,7 +271,7 @@ val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
 val newty3: level:int -> scope:int -> type_desc -> type_expr
         (** Create a type with a fresh id *) 
 
-val newty2: int -> type_desc -> type_expr
+val newty2: level:int -> type_desc -> type_expr
         (** Create a type with a fresh id and no scope *)
 
 val field_kind_repr: field_kind -> field_kind
