@@ -586,13 +586,15 @@ CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
     for(i = 0; i < length; i++){
       dest_has_white_value |= Is_White_During_Mark(Field(ard, offset_d + i));
     };
-    /* test if the destination can't be in set (2) because of the keys that are going to be set */
+    /* test if the destination can't be in set (2) because of the keys that are
+       going to be set */
     if(!dest_has_white_value) goto No_darkening;
     for(i = 0; i < length; i++){
       /* test if the source is going to bring a white key to replace the one set */
       if(Is_White_During_Mark(Field(ars, offset_s + i))) goto No_darkening;
     };
-    /* the destination ephemeron could be in the set (2) because of a white key replaced and not have one anymore after. */
+    /* the destination ephemeron could be in the set (2) because of a white key
+        replaced and not have one anymore after. */
     caml_darken(Field(ard, CAML_EPHE_DATA_OFFSET),NULL);
   }
   No_darkening:
