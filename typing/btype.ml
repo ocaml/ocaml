@@ -25,45 +25,46 @@ open Local_store
 let wrap_repr f ty = f (Transient_expr.repr ty)
 let wrap_type_expr f tty = f (Transient_expr.type_expr tty)
 
-module TTypeSet = Set.Make(TransientTypeOps)
+module TransientTypeSet = Set.Make(TransientTypeOps)
 module TypeSet = struct
-  include TTypeSet
+  include TransientTypeSet
   let add = wrap_repr add
   let mem = wrap_repr mem
   let singleton = wrap_repr singleton
-  let exists p = TTypeSet.exists (wrap_type_expr p)
-  let elements set = List.map Transient_expr.type_expr (TTypeSet.elements set)
+  let exists p = TransientTypeSet.exists (wrap_type_expr p)
+  let elements set =
+    List.map Transient_expr.type_expr (TransientTypeSet.elements set)
 end
-module TTypeMap = Map.Make(TransientTypeOps)
+module TransientTypeMap = Map.Make(TransientTypeOps)
 module TypeMap = struct
-  include TTypeMap
+  include TransientTypeMap
   let add ty = wrap_repr add ty
   let find ty = wrap_repr find ty
   let singleton ty = wrap_repr singleton ty
-  let fold f = TTypeMap.fold (wrap_type_expr f)
+  let fold f = TransientTypeMap.fold (wrap_type_expr f)
 end
-module TTypeHash = Hashtbl.Make(TransientTypeOps)
+module TransientTypeHash = Hashtbl.Make(TransientTypeOps)
 module TypeHash = struct
-  include TTypeHash
+  include TransientTypeHash
   let add hash = wrap_repr (add hash)
   let find hash = wrap_repr (find hash)
-  let iter f = TTypeHash.iter (wrap_type_expr f)
+  let iter f = TransientTypeHash.iter (wrap_type_expr f)
 end
-module TTypePairs =
+module TransientTypePairs =
   Hashtbl.Make (struct
     type t = transient_expr * transient_expr
     let equal (t1, t1') (t2, t2') = (t1 == t2) && (t1' == t2')
     let hash (t, t') = t.id + 93 * t'.id
  end)
 module TypePairs = struct
-  include TTypePairs
+  include TransientTypePairs
   open Transient_expr
   let wrap_repr f (t1, t2) = f (repr t1, repr t2)
   let wrap_type_expr f (tt1, tt2) = f (type_expr tt1, type_expr tt2)
   let add hash = wrap_repr (add hash)
   let find hash = wrap_repr (find hash)
   let mem hash = wrap_repr (mem hash)
-  let iter f = TTypePairs.iter (wrap_type_expr f)
+  let iter f = TransientTypePairs.iter (wrap_type_expr f)
 end
 
 (**** Forward declarations ****)

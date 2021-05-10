@@ -876,7 +876,7 @@ end = struct
        of the union-find class. *)
     let t = substitute t in
     try List.assq t !names with Not_found ->
-      try TTypeMap.find t !weak_var_map with Not_found ->
+      try TransientTypeMap.find t !weak_var_map with Not_found ->
       let name =
         match t.desc with
           Tvar (Some name) | Tunivar (Some name) ->

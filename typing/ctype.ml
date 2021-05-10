@@ -1393,9 +1393,8 @@ let delayed_copy = ref []
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
-let rec copy_sep cleanup_scope fixed free bound
-    (visited : (int * (type_expr * type_expr list)) list)
-    may_share (ty : type_expr) : type_expr =
+let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
+    (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
@@ -1421,7 +1420,7 @@ let rec copy_sep cleanup_scope fixed free bound
       | Tlink _ | Tsubst _ ->
           assert false
     in
-    let copy_rec = copy_sep cleanup_scope fixed free bound visited in
+    let copy_rec = copy_sep ~cleanup_scope ~fixed ~free ~bound visited in
     let desc' =
       match desc with
       | Tvariant row0 ->
@@ -1429,19 +1428,24 @@ let rec copy_sep cleanup_scope fixed free bound
           let more = row.row_more in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
-          let more' = copy_rec false more in
+          let more' = copy_rec ~may_share:false more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
-          let row = copy_row (copy_rec true) fixed' row keep more' in
+          let row =
+            copy_row (copy_rec ~may_share:true) fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
-          Tpoly (copy_sep cleanup_scope fixed free bound visited true t1, tl')
+          let body =
+            copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share:true
+              visited t1 in
+          Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
-          Tfield (p, field_kind_repr k, copy_rec true ty1, copy_rec false ty2)
-      | _ -> copy_type_desc (copy_rec true) desc
+          Tfield (p, field_kind_repr k, copy_rec ~may_share:true ty1,
+                  copy_rec ~may_share:false ty2)
+      | _ -> copy_type_desc (copy_rec ~may_share:true) desc
     in
     Transient_expr.set_stub_desc t desc';
     t
@@ -1458,7 +1462,8 @@ let instance_poly' cleanup_scope ~keep_names fixed univars sch =
   let pairs = List.map2 (fun u v -> get_id u, (v, [])) univars vars in
   delayed_copy := [];
   let ty =
-    copy_sep cleanup_scope fixed (compute_univars sch) [] pairs true sch in
+    copy_sep ~cleanup_scope ~fixed ~free:(compute_univars sch) ~bound:[]
+      ~may_share:true pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty

@@ -232,15 +232,15 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
-(* getters for type_expr; calls repr before answering a value *)
+(** Getters for type_expr; calls repr before answering a value *)
 
 val get_desc: type_expr -> type_desc
 val get_level: type_expr -> int
 val get_scope: type_expr -> int
 val get_id: type_expr -> int
 
-(* transient type_expr *)
-
+(** Transient [type_expr].
+    Should only be used immediately after [Transient_expr.repr] *)
 type transient_expr = private
       { mutable desc: type_desc;
         mutable level: int;
@@ -248,41 +248,45 @@ type transient_expr = private
         id: int }
 
 module Transient_expr : sig
-  (* Operations on transient types *)
+  (** Operations on [transient_expr] *)
+
   val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
   val set_desc: transient_expr -> type_desc -> unit
   val set_level: transient_expr -> int -> unit
   val set_scope: transient_expr -> int -> unit
   val repr: type_expr -> transient_expr
   val type_expr: transient_expr -> type_expr
-  (* Operations on [type_expr] seen as [transient_expr] *)
   val coerce: type_expr -> transient_expr
+      (** Coerce without normalizing with [repr] *)
+
   val set_stub_desc: type_expr -> type_desc -> unit
-      (* Instantiate a not yet instantiated stub *)
+      (** Instantiate a not yet instantiated stub.
+          Fail if already instantiated. *)
 end
 
 val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
 
-(* Functions and definitions moved from Btype *)
+(** Functions and definitions moved from Btype *)
 
 val newty3: level:int -> scope:int -> type_desc -> type_expr
+        (** Create a type with a fresh id *) 
+
 val newty2: int -> type_desc -> type_expr
-        (* Create a type with a fresh id *)
+        (** Create a type with a fresh id and no scope *)
 
 val field_kind_repr: field_kind -> field_kind
-        (* Return the canonical representative of an object field
-           kind. *)
-
-(* Comparisons for functors *)
+        (** Return the canonical representative of an object field kind. *)
 
 module TransientTypeOps : sig
+  (** Comparisons for functors *)
+
   type t = transient_expr
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val hash : t -> int
 end
 
-(* Comparison for [type_expr]; cannot be used for functors *)
+(** Comparisons for [type_expr]; cannot be used for functors *)
 
 val eq_type: type_expr -> type_expr -> bool
 val compare_type: type_expr -> type_expr -> int

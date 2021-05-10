@@ -20,36 +20,31 @@ open Types
 
 (**** Sets, maps and hashtables of types ****)
 
-module TTypeSet  : Set.S with type elt = transient_expr
-module TypeSet   : sig
-  include Set.S with type elt = transient_expr and type t = TTypeSet.t
+module TypeSet : sig
+  include Set.S with type elt = transient_expr
   val add: type_expr -> t -> t
   val mem: type_expr -> t -> bool
   val singleton: type_expr -> t
   val exists: (type_expr -> bool) -> t -> bool
   val elements: t -> type_expr list
 end
-module TTypeMap   : Map.S with type key = transient_expr
-module TypeMap    : sig
+module TransientTypeMap : Map.S with type key = transient_expr
+module TypeMap : sig
   include Map.S with type key = transient_expr
-                     and type 'a t = 'a TTypeMap.t
+                     and type 'a t = 'a TransientTypeMap.t
   val add: type_expr -> 'a -> 'a t -> 'a t
   val find: type_expr -> 'a t -> 'a
   val singleton: type_expr -> 'a -> 'a t
   val fold: (type_expr -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 end
-module TTypeHash : Hashtbl.S with type key = transient_expr
-module TypeHash  : sig
+module TypeHash : sig
   include Hashtbl.S with type key = transient_expr
-                     and type 'a t = 'a TTypeHash.t
   val add: 'a t -> type_expr -> 'a -> unit
   val find: 'a t -> type_expr -> 'a
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
 end
-module TTypePairs : Hashtbl.S with type key = transient_expr * transient_expr
 module TypePairs : sig
   include Hashtbl.S with type key = transient_expr * transient_expr
-                     and type 'a t = 'a TTypePairs.t
   val add: 'a t -> type_expr * type_expr -> 'a -> unit
   val find: 'a t -> type_expr * type_expr -> 'a
   val mem: 'a t -> type_expr * type_expr -> bool
