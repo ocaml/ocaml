@@ -92,7 +92,8 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
         or none (nb: new ephemerons are added in this part by weak.c)
       - An ephemeron in (2):
          - is in any state if caml_ephe_list_pure is false
-         - otherwise has at least a white key or is white or its data is black or none.
+         - otherwise has at least a white key or is white or its data is
+           black or none.
            The third case can happen only using a set_* of weak.c
       - the ephemerons in (3) are in an unknown state and must be checked
 
