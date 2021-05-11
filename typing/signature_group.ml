@@ -39,39 +39,30 @@ let rec_items = function
 type rec_group =
   { pre_ghosts: Types.signature_item list; group:core_rec_group }
 
-let take n seq =
-  let rec aux l rem n seq =
-    if n = 0 then List.rev l, rem, seq else
-      match seq () with
-      | Seq.Nil -> assert false
-      | Seq.Cons((x,rem),next) ->
-          aux (x::l) rem (n-1) next
-  in
-  aux [] [] n seq
-
-let rec partial_lists l () = match l with
-  | [] -> Seq.Nil
-  | a :: q -> Seq.Cons((a,q), partial_lists q)
-
-let rec item_seq seq () =
-  match seq () with
-  | Seq.Nil -> Seq.Nil
-  | Seq.Cons((x,q), seq) ->
-    match x with
-    | Types.Sig_class _ as src ->
-        let ghosts, q, seq = take 3 seq in
-        (* a class declaration for [c] is followed by the ghost
-           declarations of class type [c], and types [c] and [#c] *)
-        Seq.Cons(({ src; post_ghosts=ghosts},q), item_seq seq)
-    | Types.Sig_class_type _ as src ->
-        let ghosts, q, seq = take 2 seq in
-        (* a class type declaration for [ct] is followed by the ghost
-           declarations of types [ct] and [#ct] *)
-        Seq.Cons(({src; post_ghosts = ghosts},q), item_seq seq)
-    | Types.(Sig_module _ | Sig_value _ | Sig_type _ | Sig_typext _
-            | Sig_modtype _ as src) ->
-        Seq.Cons(({src; post_ghosts=[]},q), item_seq seq)
-
+let next_group = function
+  | [] -> None
+  | src :: q ->
+      let ghosts, q =
+        match src with
+        | Types.Sig_class _ ->
+            (* a class declaration for [c] is followed by the ghost
+               declarations of class type [c], and types [c] and [#c] *)
+            begin match q with
+            | ct::t::ht::q -> [ct;t;ht], q
+            | _ -> assert false
+            end
+        | Types.Sig_class_type _  ->
+            (* a class type declaration for [ct] is followed by the ghost
+               declarations of types [ct] and [#ct] *)
+           begin match q with
+            | t::ht::q -> [t;ht], q
+            | _ -> assert false
+           end
+        | Types.(Sig_module _ | Sig_value _ | Sig_type _ | Sig_typext _
+                | Sig_modtype _) ->
+            [],q
+      in
+      Some({src; post_ghosts=ghosts}, q)
 
 let recursive_sigitem = function
   | Types.Sig_type(ident, _, rs, _)
@@ -80,38 +71,36 @@ let recursive_sigitem = function
   | Types.Sig_module(ident, _, _, rs, _) -> Some (ident,rs)
   | Types.(Sig_value _ | Sig_modtype _ | Sig_typext _ )  -> None
 
-let group_seq x =
-  let cons_group q pre group seq =
+let next x =
+  let cons_group pre group q =
     let group = Rec_group (List.rev group) in
-    Seq.Cons(({ pre_ghosts=List.rev pre; group },q), seq)
+    Some({ pre_ghosts=List.rev pre; group },q)
   in
-  let rec not_in_group pre seq () = match seq () with
-    | Seq.Nil ->
+  let rec not_in_group pre l = match next_group l with
+    | None ->
         assert (pre=[]);
-        Seq.Nil
-    | Seq.Cons((elt,q), seq) ->
+        None
+    | Some(elt, q)  ->
         match recursive_sigitem elt.src with
         | Some (id, _) when Btype.is_row_name (Ident.name id) ->
-            not_in_group (elt.src::pre) seq ()
+            not_in_group (elt.src::pre) q
         | None | Some (_, Types.Trec_not) ->
             let sgroup = { pre_ghosts=List.rev pre; group=Not_rec elt } in
-            Seq.Cons((sgroup,q), not_in_group [] seq)
+            Some (sgroup,q)
         | Some (id, Types.(Trec_first | Trec_next) )  ->
-            in_group q ~pre ~ids:[id] ~group:[elt] seq ()
-  and in_group q ~pre ~ids ~group seq () = match seq () with
-    | Seq.Nil ->
-        cons_group [] pre group (fun () -> Seq.Nil)
-    | Seq.Cons((elt,qnext),next) ->
+            in_group ~pre ~ids:[id] ~group:[elt] q
+  and in_group ~pre ~ids ~group rem = match next_group rem with
+    | None -> cons_group pre group []
+    | Some (elt,next) ->
         match recursive_sigitem elt.src with
         | Some (id, Types.Trec_next) ->
-            in_group qnext ~pre ~ids:(id::ids) ~group:(elt::group) next ()
+            in_group ~pre ~ids:(id::ids) ~group:(elt::group) next
         | None | Some (_, Types.(Trec_not|Trec_first)) ->
-            cons_group q pre group (not_in_group [] seq)
+            cons_group pre group rem
   in
   not_in_group [] x
 
-let full_seq l = l |> partial_lists |> item_seq |> group_seq
-let seq l = Seq.map fst (full_seq l)
+let seq l = Seq.unfold next l
 let iter f l = Seq.iter f (seq l)
 let fold f acc l = Seq.fold_left f acc (seq l)
 
@@ -134,20 +123,20 @@ type 'a in_place_patch = {
 
 
 let replace_in_place f sg =
-  let rec next_group f before (seq: (rec_group * Types.signature) Seq.t) =
-    match seq () with
-    | Seq.Nil -> None
-    | Seq.Cons((item,rem), next) ->
+  let rec next_group f before signature =
+    match next signature with
+    | None -> None
+    | Some(item,sg) ->
         core_group f ~before ~ghosts:item.pre_ghosts ~before_group:[]
-          (rec_items item.group) ~rem ~next
-  and core_group f ~before ~ghosts ~before_group current ~rem ~next =
+          (rec_items item.group) ~sg
+  and core_group f ~before ~ghosts ~before_group current ~sg =
     let commit ghosts = before_group @ List.rev_append ghosts before in
     match current with
-    | [] -> next_group f (commit ghosts) next
+    | [] -> next_group f (commit ghosts) sg
     | a :: q ->
         match f ~rec_group:q ~ghosts a.src with
         | Some { info; ghosts; replace_by } ->
-            let after = List.concat_map flatten q @ rem in
+            let after = List.concat_map flatten q @ sg in
             let after = match recursive_sigitem a.src, replace_by with
               | None, _ | _, _ :: _ -> after
               | Some (_,rs), [] -> update_rec_next rs after
@@ -158,6 +147,6 @@ let replace_in_place f sg =
             let before_group =
               List.rev_append a.post_ghosts (a.src :: before_group)
             in
-            core_group f ~before ~ghosts ~before_group q ~rem ~next
+            core_group f ~before ~ghosts ~before_group q ~sg
   in
-  next_group f [] (full_seq sg)
+  next_group f [] sg

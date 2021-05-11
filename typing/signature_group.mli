@@ -58,7 +58,7 @@ type rec_group =
     The second element of the tuple in the {!full_seq} case is the not-yet
     traversed part of the signature.
 *)
-val full_seq: Types.signature -> (rec_group * Types.signature) Seq.t
+val next: Types.signature -> (rec_group * Types.signature) option
 val seq: Types.signature -> rec_group Seq.t
 
 val iter: (rec_group -> unit) -> Types.signature -> unit
