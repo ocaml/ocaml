@@ -43,7 +43,7 @@ let copy_buffer = Bytes.create 256
 let copy_chars_unix nchars =
   let n = ref nchars in
   while !n > 0 do
-    let m = input !inchan copy_buffer 0 (min !n 256) in
+    let m = input !inchan copy_buffer 0 (Int.min !n 256) in
     if m = 0 then raise End_of_file;
     output !outchan copy_buffer 0 m;
     n := !n - m

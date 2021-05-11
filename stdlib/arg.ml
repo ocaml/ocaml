@@ -339,8 +339,8 @@ let second_word s =
 
 let max_arg_len cur (kwd, spec, doc) =
   match spec with
-  | Symbol _ -> max cur (String.length kwd)
-  | _ -> max cur (String.length kwd + second_word doc)
+  | Symbol _ -> Int.max cur (String.length kwd)
+  | _ -> Int.max cur (String.length kwd + second_word doc)
 
 
 let replace_leading_tab s =
@@ -355,7 +355,7 @@ let add_padding len ksd =
       ksd
   | (kwd, (Symbol _ as spec), msg) ->
       let cutcol = second_word msg in
-      let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
+      let spaces = String.make ((Int.max 0 (len - cutcol)) + 3) ' ' in
       (kwd, spec, "\n" ^ spaces ^ replace_leading_tab msg)
   | (kwd, spec, msg) ->
       let cutcol = second_word msg in
@@ -373,7 +373,7 @@ let add_padding len ksd =
 let align ?(limit=max_int) speclist =
   let completed = add_help speclist in
   let len = List.fold_left max_arg_len 0 completed in
-  let len = min len limit in
+  let len = Int.min len limit in
   List.map (add_padding len) completed
 
 let trim_cr s =

@@ -333,7 +333,7 @@ module Env = struct
       try
         Closure_origin.Map.find id t.inlining_counts
       with Not_found ->
-        max 1 (Clflags.Int_arg_helper.get
+        Int.max 1 (Clflags.Int_arg_helper.get
                  ~key:t.round !Clflags.inline_max_unroll)
     in
     inlining_count > 0
@@ -343,7 +343,7 @@ module Env = struct
       try
         Closure_origin.Map.find id t.inlining_counts
       with Not_found ->
-        max 1 (Clflags.Int_arg_helper.get
+        Int.max 1 (Clflags.Int_arg_helper.get
                  ~key:t.round !Clflags.inline_max_unroll)
     in
     let inlining_counts =
