@@ -119,6 +119,7 @@ exception Undefined_recursive_module of (string * int * int)
 (** {1 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
+  [@@ocaml.alert polymorphic_comparison]
 (** [e1 = e2] tests for structural equality of [e1] and [e2].
    Mutable structures (e.g. references and arrays) are equal
    if and only if their current contents are structurally equal,
@@ -128,26 +129,31 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    Left-associative operator, see {!Ocaml_operators} for more information. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
+  [@@ocaml.alert polymorphic_comparison]
 (** Negation of {!Stdlib.( = )}.
     Left-associative operator, see {!Ocaml_operators} for more information.
 *)
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
+  [@@ocaml.alert polymorphic_comparison]
 (** See {!Stdlib.( >= )}.
     Left-associative operator, see {!Ocaml_operators} for more information.
 *)
 
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+  [@@ocaml.alert polymorphic_comparison]
 (** See {!Stdlib.( >= )}.
     Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+  [@@ocaml.alert polymorphic_comparison]
 (** See {!Stdlib.( >= )}.
     Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+  [@@ocaml.alert polymorphic_comparison]
 (** Structural ordering functions. These functions coincide with
    the usual orderings over integers, characters, strings, byte sequences
    and floating-point numbers, and extend them to a
@@ -160,6 +166,7 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 *)
 
 external compare : 'a -> 'a -> int = "%compare"
+  [@@ocaml.alert polymorphic_comparison]
 (** [compare x y] returns [0] if [x] is equal to [y],
    a negative integer if [x] is less than [y], and a positive integer
    if [x] is greater than [y].  The ordering implemented by [compare]
@@ -179,11 +186,13 @@ external compare : 'a -> 'a -> int = "%compare"
    the {!List.sort} and {!Array.sort} functions. *)
 
 val min : 'a -> 'a -> 'a
+  [@@ocaml.alert polymorphic_comparison]
 (** Return the smaller of the two arguments.
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 
 val max : 'a -> 'a -> 'a
+  [@@ocaml.alert polymorphic_comparison]
 (** Return the greater of the two arguments.
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
