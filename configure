@@ -699,6 +699,7 @@ DIRECT_LD
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+flexlink
 ac_ct_DEP_CC
 DEP_CC
 CPP
@@ -799,7 +800,8 @@ RANLIB
 AR
 shebangscripts
 long_shebang
-iflexdir
+bootstrapping_flexdll
+flexdir
 ocamlc_cppflags
 ocamlc_cflags
 nativecclibs
@@ -910,6 +912,7 @@ enable_force_safe_string
 enable_flat_float_array
 enable_function_sections
 with_afl
+with_flexdll
 enable_shared
 enable_static
 with_pic
@@ -1602,6 +1605,7 @@ Optional Packages:
   --with-odoc             build documentation with odoc
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
+  --with-flexdll          bootstrap FlexDLL from the given sources
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-aix-soname=aix|svr4|both
@@ -2793,7 +2797,6 @@ oc_ldflags=""
 oc_dll_ldflags=""
 with_sharedlibs=true
 ostype="Unix"
-iflexdir=""
 SO="so"
 toolchain="cc"
 profinfo=false
@@ -2801,6 +2804,7 @@ profinfo_width=0
 extralibs=
 instrumented_runtime=false
 instrumented_runtime_libs=""
+bootstrapping_flexdll=false
 
 # Information about the package
 
@@ -2848,6 +2852,7 @@ VERSION=4.13.0+dev0-2020-10-19
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -3335,6 +3340,15 @@ fi
 # Check whether --with-afl was given.
 if test "${with_afl+set}" = set; then :
   withval=$with_afl;
+fi
+
+
+
+# Check whether --with-flexdll was given.
+if test "${with_flexdll+set}" = set; then :
+  withval=$with_flexdll; if test x"$withval" = 'xyes'; then :
+  with_flexdll=flexdll
+fi
 fi
 
 
@@ -12787,6 +12801,352 @@ esac
 
 if test x"$enable_shared" = "xno"; then :
   with_sharedlibs=false
+  case $host in #(
+  *-pc-windows|*-w64-mingw32) :
+    as_fn_error $? "Cannot build native Win32 with --disable-shared" "$LINENO" 5 ;; #(
+  *) :
+     ;;
+esac
+fi
+
+# Define flexlink chain and flags correctly for the different Windows ports
+case $host in #(
+  i686-*-cygwin) :
+    flexdll_chain='cygwin'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
+  x86_64-*-cygwin) :
+    flexdll_chain='cygwin64'
+    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
+  *-*-cygwin*) :
+    as_fn_error $? "unknown cygwin variant" "$LINENO" 5 ;; #(
+  i686-w64-mingw32) :
+    flexdll_chain='mingw'
+    flexlink_flags="-chain $flexdll_chain -stack 16777216" ;; #(
+  x86_64-w64-mingw32) :
+    flexdll_chain='mingw64'
+    flexlink_flags="-chain $flexdll_chain -stack 33554432" ;; #(
+  i686-pc-windows) :
+    flexdll_chain='msvc'
+    flexlink_flags="-merge-manifest -stack 16777216" ;; #(
+  x86_64-pc-windows) :
+    flexdll_chain='msvc64'
+    flexlink_flags="-x64 -merge-manifest -stack 33554432" ;; #(
+  *) :
+     ;;
+esac
+
+if test x"$enable_shared" != 'xno'; then :
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for flexdll sources" >&5
+$as_echo_n "checking for flexdll sources... " >&6; }
+  if test x"$with_flexdll" = "xno"; then :
+  flexdir=''
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+$as_echo "disabled" >&6; }
+else
+  flexmsg=''
+    case $target in #(
+  *-*-cygwin*|*-w64-mingw32|*-pc-windows) :
+    if test x"$with_flexdll" = 'x' -o x"$with_flexdll" = 'xflexdll'; then :
+  if test -f 'flexdll/flexdll.h'; then :
+  flexdir=flexdll
+          iflexdir='$(ROOTDIR)/flexdll'
+          with_flexdll="$iflexdir"
+else
+  if test x"$with_flexdll" != 'x'; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
+$as_echo "requested but not available" >&6; }
+            as_fn_error $? "exiting" "$LINENO" 5
+fi
+fi
+else
+  rm -rf flexdll-sources
+        if test -f "$with_flexdll/flexdll.h"; then :
+  mkdir -p flexdll-sources
+          cp -r "$with_flexdll"/* flexdll-sources/
+          flexdir='flexdll-sources'
+          iflexdir='$(ROOTDIR)/flexdll-sources'
+          flexmsg=" (from $with_flexdll)"
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
+$as_echo "requested but not available" >&6; }
+          as_fn_error $? "exiting" "$LINENO" 5
+fi
+fi
+      if test x"$flexdir" = 'x'; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iflexdir$flexmsg" >&5
+$as_echo "$iflexdir$flexmsg" >&6; }
+        bootstrapping_flexdll=true
+        # The submodule should be searched *before* any other -I paths
+        internal_cppflags="-I $iflexdir $internal_cppflags"
+fi ;; #(
+  *) :
+    if test x"$with_flexdll" != 'x'; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: requested but not supported" >&5
+$as_echo "requested but not supported" >&6; }
+        as_fn_error $? "exiting" "$LINENO" 5
+fi ;;
+esac
+fi
+
+  # Extract the first word of "flexlink", so it can be a program name with args.
+set dummy flexlink; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_flexlink+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$flexlink"; then
+  ac_cv_prog_flexlink="$flexlink" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_flexlink="flexlink"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+flexlink=$ac_cv_prog_flexlink
+if test -n "$flexlink"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $flexlink" >&5
+$as_echo "$flexlink" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+  if test -n "$flexlink" -a -z "$flexdir"; then :
+
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $flexlink works" >&5
+$as_echo_n "checking whether $flexlink works... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int answer = 42;
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  # Create conftest1.$ac_objext as a symlink on Cygwin to ensure that native
+    # flexlink can cope. The reverse test is unnecessary (a Cygwin-compiled
+    # flexlink can read anything).
+    mv conftest.$ac_objext conftest1.$ac_objext
+    case $host in #(
+  *-pc-cygwin) :
+    ln -s conftest1.$ac_objext conftest2.$ac_objext ;; #(
+  *) :
+    cp conftest1.$ac_objext conftest2.$ac_objext ;;
+esac
+
+    CC="$flexlink -chain $flexdll_chain -exe"
+    LIBS="conftest2.$ac_objext"
+    CPPFLAGS="$internal_cppflags $CPPFLAGS"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main() { return 0; }
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+      as_fn_error $? "$flexlink does not work" "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: unexpected compile error" >&5
+$as_echo "unexpected compile error" >&6; }
+    as_fn_error $? "error calling the C compiler" "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+
+    case $host in #(
+  *-w64-mingw32|*-pc-windows) :
+    flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
+      if test -z "$flexlink_where"; then :
+  as_fn_error $? "$flexlink is not executable from a native Win32 process" "$LINENO" 5
+
+fi ;; #(
+  *) :
+     ;;
+esac
+
+fi
+
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  if test -n "$flexdir"; then :
+  CPPFLAGS="-I $flexdir $CPPFLAGS"
+fi
+  have_flexdll_h=no
+  ac_fn_c_check_header_mongrel "$LINENO" "flexdll.h" "ac_cv_header_flexdll_h" "$ac_includes_default"
+if test "x$ac_cv_header_flexdll_h" = xyes; then :
+  have_flexdll_h=yes
+else
+  have_flexdll_h=no
+fi
+
+
+  if test x"$have_flexdll_h" = 'xno'; then :
+  if test -n "$flexdir"; then :
+  as_fn_error $? "$flexdir/flexdll.h appears unusable" "$LINENO" 5
+fi
+fi
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+
+  if test -n "$flexlink" -a x"$have_flexdll_h" = 'xno'; then :
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if \"$flexlink -where\" includes flexdll.h" >&5
+$as_echo_n "checking if \"$flexlink -where\" includes flexdll.h... " >&6; }
+  flexlink_where="$($flexlink -where | tr -d '\r')"
+  CPPFLAGS="$CPPFLAGS -I \"$flexlink_where\""
+  cat > conftest.c <<"EOF"
+#include <flexdll.h>
+int main (void) {return 0;}
+EOF
+  cat > conftest.Makefile <<EOF
+all:
+	$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.c $LIBS
+EOF
+  if make -f conftest.Makefile >/dev/null 2>/dev/null; then :
+  have_flexdll_h=yes
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+    if test "x$have_flexdll_h" = 'xyes'; then :
+  internal_cppflags="$internal_cppflags -I \"$flexlink_where\""
+fi
+
+fi
+
+fi
+
+if test x"$have_flexdll_h" = 'xno'; then :
+  case $host in #(
+  *-*-cygwin*) :
+    if $with_sharedlibs; then :
+  with_sharedlibs=false
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexdll.h not found: shared library support disabled." >&5
+$as_echo "$as_me: WARNING: flexdll.h not found: shared library support disabled." >&2;}
+
+fi ;; #(
+  *-w64-mingw32|*-pc-windows) :
+    as_fn_error $? "flexdll.h is required for native Win32" "$LINENO" 5 ;; #(
+  *) :
+     ;;
+esac
+fi
+
+if test -z "$flexdir" -o x"$have_flexdll_h" = 'xno'; then :
+  case $host in #(
+  *-*-cygwin*) :
+    if $with_sharedlibs; then :
+  if test -z "$flexlink"; then :
+  with_sharedlibs=false
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink/flexdll.h not found: shared library support disabled." >&5
+$as_echo "$as_me: WARNING: flexlink/flexdll.h not found: shared library support disabled." >&2;}
+
+fi
+fi ;; #(
+  *-w64-mingw32|*-pc-windows) :
+    if test -z "$flexlink"; then :
+  as_fn_error $? "flexlink is required for native Win32" "$LINENO" 5
+fi ;; #(
+  *) :
+     ;;
+esac
 fi
 
 case $CC,$host in #(
@@ -12797,56 +13157,24 @@ case $CC,$host in #(
   *,*-*-haiku*) :
     mathlib="" ;; #(
   *,*-*-cygwin*) :
-    case $target in #(
-  i686-*) :
-    flavor=cygwin ;; #(
-  x86_64-*) :
-    flavor=cygwin64 ;; #(
-  *) :
-    as_fn_error $? "unknown cygwin variant" "$LINENO" 5 ;;
-esac
     common_cppflags="$common_cppflags -U_WIN32"
     if $with_sharedlibs; then :
-  flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | tr -d '\015'`
-      if test -z "$flexdir"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: native shared libraries won't be available.
-        " >&5
-$as_echo "$as_me: WARNING: flexlink not found: native shared libraries won't be available.
-        " >&2;}
-        with_sharedlibs=false
+  mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+      mkexedebugflag="-link -g"
 else
-  iflexdir="-I\"$flexdir\""
-        mkexe="$flexlink -exe"
-        mkexedebugflag="-link -g"
-
-fi
-
-fi
-    if ! $with_sharedlibs; then :
   mkexe="$mkexe -Wl,--stack,16777216"
       oc_ldflags="-Wl,--stack,16777216"
 
 fi
     ostype="Cygwin" ;; #(
   *,*-*-mingw32) :
-    if $with_sharedlibs; then :
-  case $host in #(
+    case $host in #(
   i686-*-*) :
-    flexdll_chain="mingw"; oc_dll_ldflags="-static-libgcc" ;; #(
-  x86_64-*-*) :
-    flexdll_chain="mingw64" ;; #(
+    oc_dll_ldflags="-static-libgcc" ;; #(
   *) :
      ;;
 esac
-      flexlink="flexlink -chain $flexdll_chain -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | tr -d '\015'`
-      if test -z "$flexdir"; then :
-  flexdir='$(ROOTDIR)/flexdll'
-fi
-      iflexdir="-I\"$flexdir\""
-      mkexedebugflag="-link -g"
-fi
+    mkexedebugflag="-link -g"
     ostype="Win32"
     toolchain="mingw"
     mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
@@ -12857,23 +13185,7 @@ fi
     ostype="Win32"
     mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='/ENTRY:wmainCRTStartup'
-    case $host in #(
-  i686-pc-windows) :
-    flexdll_chain=msvc ;; #(
-  x86_64-pc-windows) :
-    flexdll_chain=msvc64 ;; #(
-  *) :
-     ;;
-esac
-    if $with_sharedlibs; then :
-  flexlink="flexlink -chain $flexdll_chain -merge-manifest -stack 16777216"
-      flexdir=`$flexlink -where | tr -d '\015'`
-      if test -z "$flexdir"; then :
-  flexdir='$(ROOTDIR)/flexdll'
-fi
-      iflexdir="-I\"$flexdir\""
-      mkexedebugflag=''
-fi ;; #(
+    mkexedebugflag='' ;; #(
   *,x86_64-*-linux*) :
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
@@ -13691,8 +14003,8 @@ fi
       mkmaindll='$(FLEXLINK) -maindll'
       shared_libraries_supported=$with_sharedlibs ;; #(
   *-*-cygwin*) :
-    mksharedlib="$flexlink"
-      mkmaindll="$flexlink -maindll"
+    mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
       shared_libraries_supported=true ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
@@ -16784,6 +17096,7 @@ $as_echo_n "checking whether the assembler supports --debug-prefix-map... " >&6;
   saved_CC="$CC"
   saved_CFLAGS="$CFLAGS"
   saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
   saved_ac_ext="$ac_ext"
   saved_ac_compile="$ac_compile"
   # Move the content of confdefs.h to another file so it does not
@@ -16826,6 +17139,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   CPPFLAGS="$saved_CPPFLAGS"
   CFLAGS="$saved_CFLAGS"
   CC="$saved_CC"
+  LIBS="$saved_LIBS"
 
 
 
@@ -16840,6 +17154,7 @@ else
   saved_CC="$CC"
   saved_CFLAGS="$CFLAGS"
   saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
   saved_ac_ext="$ac_ext"
   saved_ac_compile="$ac_compile"
   # Move the content of confdefs.h to another file so it does not
@@ -16905,6 +17220,7 @@ fi
   CPPFLAGS="$saved_CPPFLAGS"
   CFLAGS="$saved_CFLAGS"
   CC="$saved_CC"
+  LIBS="$saved_LIBS"
 
 
     if $aspp_ok && $as_ok; then :
@@ -17249,24 +17565,6 @@ esac ;; #(
     windows_unicode=0 ;;
 esac
 
-# Define flexlink chain and flags correctly for the different Windows ports
-case $host in #(
-  i686-w64-mingw32) :
-    flexdll_chain='mingw'
-    flexlink_flags="-chain $flexdll_chain -stack 16777216" ;; #(
-  x86_64-w64-mingw32) :
-    flexdll_chain='mingw64'
-    flexlink_flags="-chain $flexdll_chain -stack 33554432" ;; #(
-  i686-pc-windows) :
-    flexdll_chain='msvc'
-    flexlink_flags="-merge-manifest -stack 16777216" ;; #(
-  x86_64-pc-windows) :
-    flexdll_chain='msvc64'
-    flexlink_flags="-x64 -merge-manifest -stack 33554432" ;; #(
-  *) :
-     ;;
-esac
-
 # Define default prefix correctly for the different Windows ports
 if test x"$prefix" = "xNONE"; then :
   case $host in #(
@@ -17327,6 +17625,9 @@ if test x"$enable_stdlib_manpages" != "xno"; then :
 else
   stdlib_manpages=false
 fi
+
+# Do not permanently cache the result of flexdll.h
+unset ac_cv_header_flexdll_h
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure

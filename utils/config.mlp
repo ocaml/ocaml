@@ -58,16 +58,17 @@ let ranlib = "%%RANLIBCMD%%"
 let default_rpath = "%%RPATH%%"
 let mksharedlibrpath = "%%MKSHAREDLIBRPATH%%"
 let ar = "%%ARCMD%%"
+let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 let mkdll, mkexe, mkmaindll =
   (* @@DRA Cygwin - but only if shared libraries are enabled, which we
      should be able to detect? *)
-  if Sys.os_type = "Win32" then
+  if Sys.win32 || Sys.cygwin && supports_shared_libraries then
     try
       let flexlink =
         let flexlink = Sys.getenv "OCAML_FLEXLINK" in
         let f i =
           let c = flexlink.[i] in
-          if c = '/' then '\\' else c in
+          if c = '/' && Sys.win32 then '\\' else c in
         (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
       flexlink ^ "%%FLEXLINK_DLL_LDFLAGS%%",
       flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
@@ -83,7 +84,6 @@ let with_cmm_invariants = %%WITH_CMM_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
-let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 

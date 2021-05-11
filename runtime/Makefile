@@ -83,6 +83,10 @@ ASM_OBJECTS := $(ASM_SOURCES:.$(ASM_EXT)=.$(O))
 
 libcamlrun_OBJECTS := $(BYTECODE_C_SOURCES:.c=.b.$(O))
 
+libcamlrun_non_shared_OBJECTS := \
+  $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
+          $(libcamlrun_OBJECTS))
+
 libcamlrund_OBJECTS := $(BYTECODE_C_SOURCES:.c=.bd.$(O)) \
   instrtrace.bd.$(O)
 
@@ -100,10 +104,6 @@ libasmrunpic_OBJECTS := $(NATIVE_C_SOURCES:.c=.npic.$(O)) \
   $(ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
 
 # General (non target-specific) assembler and compiler flags
-
-ifdef BOOTSTRAPPING_FLEXLINK
-OC_CPPFLAGS += -DBOOTSTRAPPING_FLEXLINK
-endif
 
 # On Windows, OCAML_STDLIB_DIR needs to be defined dynamically
 
@@ -124,8 +124,6 @@ OCAML_STDLIB_DIR = $(LIBDIR)
 STDLIB_CPP_FLAG = -DOCAML_STDLIB_DIR='"$(OCAML_STDLIB_DIR)"'
 endif
 
-OC_CPPFLAGS += $(IFLEXDIR)
-
 ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
@@ -138,7 +136,7 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
 OC_NATIVE_CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
-OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR)
+OC_NATIVE_CPPFLAGS += -DSYS_$(SYSTEM)
 
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
@@ -154,16 +152,10 @@ endif
 
 # Commands used to build native libraries
 
+LIBS := $(BYTECCLIBS)
+
 ifeq "$(UNIX_OR_WIN32)" "win32"
-LIBS = $(BYTECCLIBS) $(EXTRALIBS)
-ifdef BOOTSTRAPPING_FLEXLINK
-MAKE_OCAMLRUN=$(MKEXE_BOOT)
-else
-MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
-endif
-else
-LIBS = $(BYTECCLIBS)
-MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
+LIBS += $(EXTRALIBS)
 endif
 
 # Build, install and clean targets
@@ -200,8 +192,8 @@ endif
 .PHONY: clean
 clean:
 	rm -f *.o *.obj *.a *.lib *.so *.dll ld.conf
-	rm -f ocamlrun ocamlrund ocamlruni
-	rm -f ocamlrun.exe ocamlrund.exe ocamlruni.exe
+	rm -f ocamlrun ocamlrund ocamlruni ocamlruns
+	rm -f ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe
 	rm -f primitives primitives.new prims.c $(GENERATED_HEADERS)
 	rm -f domain_state*.inc
 	rm -rf $(DEPDIR)
@@ -272,9 +264,15 @@ caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION
 # Libraries and programs
 
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
-	$(call MAKE_OCAMLRUN,$@,$^ $(LIBS))
+	$(MKEXE) -o $@ $^ $(LIBS)
+
+ocamlruns$(EXE): prims.$(O) libcamlrun_non_shared.$(A)
+	$(call MKEXE_USING_COMPILER,$@,$^ $(LIBS))
 
 libcamlrun.$(A): $(libcamlrun_OBJECTS)
+	$(call MKLIB,$@, $^)
+
+libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS)
 	$(call MKLIB,$@, $^)
 
 ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
@@ -350,11 +348,11 @@ ifneq "$(1)" "%"
 $(DEPDIR)/$(1).$(D): %.c | $(DEPDIR) $(GENERATED_HEADERS)
 	$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT \
 	  '$$*$(subst %,,$(1)).$(O)' -MF $$@
-endif
-$(1).$(O): %.c
+endif # ifneq "$(1)" "%"
+$(1).$(O): $(2).c
 else
-$(1).$(O): %.c $(CONFIG_HEADERS) $(GENERATED_HEADERS) $(RUNTIME_HEADERS)
-endif
+$(1).$(O): $(2).c $(CONFIG_HEADERS) $(GENERATED_HEADERS) $(RUNTIME_HEADERS)
+endif # ifneq "$(COMPUTE_DEPS)" "false"
 	$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
@@ -365,11 +363,15 @@ object_types += %.n %.nd %.ni %.np %.npic
 endif
 
 $(foreach object_type, $(object_types), \
-  $(eval $(call COMPILE_C_FILE,$(object_type))))
+  $(eval $(call COMPILE_C_FILE,$(object_type),%)))
 
 dynlink.%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG)
 
 startup_byt.%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG) -DHOST='"$(HOST)"'
+
+$(UNIX_OR_WIN32)_non_shared.%.$(O): OC_CPPFLAGS += -DBUILDING_LIBCAMLRUNS
+
+$(eval $(call COMPILE_C_FILE,$(UNIX_OR_WIN32)_non_shared.%,$(UNIX_OR_WIN32)))
 
 $(foreach object_type,$(subst %,,$(object_types)), \
   $(eval dynlink$(object_type).$(O): $(ROOTDIR)/Makefile.config))
