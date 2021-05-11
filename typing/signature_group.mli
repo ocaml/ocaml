@@ -67,7 +67,8 @@ val fold: ('acc -> rec_group -> 'acc) -> 'acc -> Types.signature -> 'acc
 (** Describe how to amend one element of a signature *)
 type 'a in_place_patch = {
   ghosts: Types.signature; (** updated list of ghost items *)
-  replace_by: Types.signature; (** replacement for the selected item *)
+  replace_by: Types.signature_item option;
+  (** replacement for the selected item *)
   info: 'a; (** some more data to return to the outer scope *)
 }
 

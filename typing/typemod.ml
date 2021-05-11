@@ -510,7 +510,7 @@ let merge_constraint initial_env loc sg lid constr =
     split [] ghosts
   in
   let rec patch_item constr namelist sig_env ~rec_group ~ghosts item =
-    let return ?(ghosts=ghosts) ?(replace_by=[]) info =
+    let return ?(ghosts=ghosts) ~replace_by info =
       Some {Signature_group.info; ghosts=ghosts; replace_by}
     in
     match item, namelist, constr with
@@ -566,7 +566,7 @@ let merge_constraint initial_env loc sg lid constr =
             (Sig_type(id_row, decl_row, rs', priv)::after_ghosts)
         in
         return ~ghosts
-          ~replace_by:[Sig_type(id, newdecl, rs, priv)]
+          ~replace_by:(Some (Sig_type(id, newdecl, rs, priv)))
           (Pident id, lid, Twith_type tdecl)
     | Sig_type(id, sig_decl, rs, priv) , [s],
        (With_type sdecl | With_typesubst sdecl as constr)
@@ -581,11 +581,12 @@ let merge_constraint initial_env loc sg lid constr =
         begin match constr with
           With_type _ ->
             return ~ghosts
-              ~replace_by:[Sig_type(id, newdecl, rs, priv)]
+              ~replace_by:(Some(Sig_type(id, newdecl, rs, priv)))
               (Pident id, lid, Twith_type tdecl)
         | (* With_typesubst *) _ ->
             real_ids := [Pident id];
-            return ~ghosts (Pident id, lid, Twith_typesubst tdecl)
+            return ~ghosts ~replace_by:None
+              (Pident id, lid, Twith_typesubst tdecl)
         end
     | Sig_modtype(id, mtd, priv), [s],
       (With_modtype mty | With_modtypesubst mty)
@@ -606,7 +607,7 @@ let merge_constraint initial_env loc sg lid constr =
             }
           in
           return
-            ~replace_by:[Sig_modtype(id, mtd', priv)]
+            ~replace_by:(Some(Sig_modtype(id, mtd', priv)))
             (Pident id, lid, Twith_modtype mty)
         else begin
           let path = Pident id in
@@ -615,7 +616,7 @@ let merge_constraint initial_env loc sg lid constr =
           | Mty_ident _ -> ()
           | mty -> unpackable_modtype := Some mty
           end;
-          return (Pident id, lid, Twith_modtypesubst mty)
+          return ~replace_by:None (Pident id, lid, Twith_modtypesubst mty)
         end
     | Sig_module(id, pres, md, rs, priv), [s],
       With_module {lid=lid'; md=md'; path; remove_aliases}
@@ -627,7 +628,7 @@ let merge_constraint initial_env loc sg lid constr =
         ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
                  newmd.md_type md.md_type);
         return
-          ~replace_by:[Sig_module(id, pres, newmd, rs, priv)]
+          ~replace_by:(Some(Sig_module(id, pres, newmd, rs, priv)))
           (Pident id, lid, Twith_module (path, lid'))
     | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
@@ -636,7 +637,7 @@ let merge_constraint initial_env loc sg lid constr =
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
              ~aliasable sig_env md' path md);
         real_ids := [Pident id];
-        return (Pident id, lid, Twith_modsubst (path, lid'))
+        return ~replace_by:None (Pident id, lid, Twith_modsubst (path, lid'))
     | Sig_module(id, _, md, rs, priv) as item, s :: namelist, constr
       when Ident.name id = s ->
         let sg = extract_sig sig_env loc md.md_type in
@@ -653,7 +654,7 @@ let merge_constraint initial_env loc sg lid constr =
               let newmd = {md with md_type = Mty_signature newsg} in
               Sig_module(id, Mp_present, newmd, rs, priv)
         in
-        return ~replace_by:[item] (path, lid, tcstr)
+        return ~replace_by:(Some item) (path, lid, tcstr)
     | _ -> None
   and merge_signature env sg namelist =
     let sig_env = Env.add_signature sg env in

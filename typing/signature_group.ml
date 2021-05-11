@@ -117,7 +117,7 @@ let update_rec_next rs rem =
 
 type 'a in_place_patch = {
   ghosts: Types.signature;
-  replace_by: Types.signature;
+  replace_by: Types.signature_item option;
   info: 'a;
 }
 
@@ -138,10 +138,14 @@ let replace_in_place f sg =
         | Some { info; ghosts; replace_by } ->
             let after = List.concat_map flatten q @ sg in
             let after = match recursive_sigitem a.src, replace_by with
-              | None, _ | _, _ :: _ -> after
-              | Some (_,rs), [] -> update_rec_next rs after
+              | None, _ | _, Some _ -> after
+              | Some (_,rs), None -> update_rec_next rs after
             in
-            let sg = List.rev_append (replace_by @ commit ghosts) after in
+            let before = match replace_by with
+              | None -> commit ghosts
+              | Some x -> x :: commit ghosts
+            in
+            let sg = List.rev_append before after in
             Some(info, sg)
         | None ->
             let before_group =
