@@ -754,7 +754,6 @@ force_instrumented_runtime
 compute_deps
 stdlib_manpages
 PACKLD
-flexlink_flags
 flexdll_chain
 afl
 function_sections
@@ -811,6 +810,8 @@ oc_cppflags
 oc_cflags
 toolchain
 ccomptype
+mkexe_via_cc_ldflags
+mkexe_extra_flags
 mkexedebugflag
 mkexe
 fpic
@@ -831,7 +832,6 @@ libext
 OBJEXT
 exeext
 ac_tool_prefix
-DIRECT_CPP
 DIFF_FLAGS
 CC
 OCAML_VERSION_SHORT
@@ -2781,14 +2781,17 @@ $as_echo "$as_me: Configuring OCaml version 5.0.0+dev0-2021-11-05" >&6;}
 ## Command-line arguments passed to configure
 CONFIGURE_ARGS="$*"
 
-# Command to build executalbes
-# In general this command is supposed to use the CFLAGs- and LDFLAGS-
-# related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
-# flags, CFLAGS and LDFLAGS for generic flags chosen by the user), but
-# at the moment they are not taken into account on Windows, because
-# flexlink, which is used to build executables on this platform, can
-# not handle them.
-mkexe="\$(CC) \$(OC_CFLAGS) \$(CFLAGS) \$(OC_LDFLAGS) \$(LDFLAGS)"
+# Command to build executables
+# Ultimately, MKEXE may build an executable using the C compiler or it may use
+# a wrapper for a linker (i.e. flexlink). The build system must therefore not
+# rely on $CFLAGS because these cannot be processed by flexlink (and are not
+# passed)
+mkexe_cmd='$(CC)'
+mkexe_cflags='$(OC_CFLAGS) $(CFLAGS)'
+mkexe_extra_flags=''
+mkexe_via_cc_extra_cmd=''
+mkexe_ldflags_prefix=''
+mkexe_via_cc_ldflags_prefix=''
 
 # Flags for building executable files with debugging symbols
 mkexedebugflag="-g"
@@ -2919,8 +2922,8 @@ OCAML_VERSION_SHORT=5.0
 
 
 
- # TODO: rename this variable
 
+ # TODO: rename this variable
 
 
 
@@ -12532,6 +12535,7 @@ case $host in #(
   # So we let them do, at the moment
   *-pc-windows) :
 
+      mkexe_via_cc_extra_cmd=' && $(call MERGEMANIFESTEXE,$(1))'
       libext=lib
       AR=""
       if test "$host_cpu" = "x86_64" ; then :
@@ -12895,26 +12899,26 @@ fi
 case $host in #(
   i686-*-cygwin) :
     flexdll_chain='cygwin'
-    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
+    mkexe_extra_flags='-merge-manifest -stack 16777216' ;; #(
   x86_64-*-cygwin) :
     flexdll_chain='cygwin64'
-    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216" ;; #(
+    mkexe_extra_flags='-merge-manifest -stack 16777216' ;; #(
   *-*-cygwin*) :
     as_fn_error $? "unknown cygwin variant" "$LINENO" 5 ;; #(
   i686-w64-mingw32) :
     flexdll_chain='mingw'
-    flexlink_flags="-chain $flexdll_chain -stack 16777216" ;; #(
+    mkexe_extra_flags='-stack 16777216' ;; #(
   x86_64-w64-mingw32) :
     flexdll_chain='mingw64'
-    flexlink_flags="-chain $flexdll_chain -stack 33554432" ;; #(
+    mkexe_extra_flags='-stack 33554432' ;; #(
   i686-pc-windows) :
     flexdll_chain='msvc'
-    flexlink_flags="-merge-manifest -stack 16777216" ;; #(
+    mkexe_extra_flags='-merge-manifest -stack 16777216' ;; #(
   x86_64-pc-windows) :
     flexdll_chain='msvc64'
-    flexlink_flags="-x64 -merge-manifest -stack 33554432" ;; #(
+    mkexe_extra_flags='-merge-manifest -stack 33554432' ;; #(
   *) :
-     ;;
+    flexdll_chain='' ;;
 esac
 
 if test x"$supports_shared_libraries" != 'xfalse'; then :
@@ -13219,7 +13223,7 @@ esac
 
 case $cc_basename,$host in #(
   *,x86_64-*-darwin*) :
-    mkexe="$mkexe -Wl,-no_compact_unwind";
+    oc_ldflags='-Wl,-no_compact_unwind';
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   *,aarch64-*-darwin*|arm64-*-darwin*) :
@@ -13230,11 +13234,11 @@ case $cc_basename,$host in #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
     if $supports_shared_libraries; then :
-  mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
-      mkexedebugflag="-link -g"
-else
-  mkexe="$mkexe -Wl,--stack,16777216"
-      oc_ldflags="-Wl,--stack,16777216"
+  mkexe_cmd='$(FLEXLINK_CMD) -exe -chain $(FLEXDLL_CHAIN)'
+      mkexe_cflags=''
+      mkexe_ldflags_prefix='-link '
+      mkexe_extra_flags=''
+      oc_ldflags='-Wl,--stack,16777216'
 
 fi
     ostype="Cygwin" ;; #(
@@ -13245,24 +13249,27 @@ fi
   *) :
      ;;
 esac
-    mkexedebugflag="-link -g"
     ostype="Win32"
     toolchain="mingw"
-    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe_cmd='$(FLEXLINK_CMD) -exe -chain $(FLEXDLL_CHAIN)'
+    mkexe_cflags=''
+    mkexe_ldflags_prefix='-link '
     oc_ldflags='-municode'
     SO="dll" ;; #(
   *,*-pc-windows) :
     toolchain=msvc
     ostype="Win32"
-    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe_cmd='$(FLEXLINK_CMD) -exe -chain $(FLEXDLL_CHAIN)'
+    mkexe_cflags=''
+    mkexe_ldflags_prefix='-link '
+    mkexe_via_cc_ldflags_prefix='/link '
     oc_ldflags='/ENTRY:wmainCRTStartup'
     mkexedebugflag='' ;; #(
   *,x86_64-*-linux*) :
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   xlc*,powerpc-ibm-aix*) :
-    mkexe="$mkexe "
-     oc_ldflags="-brtl -bexpfull"
+    oc_ldflags='-brtl -bexpfull'
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   gcc*,powerpc-*-linux*) :
@@ -14071,39 +14078,37 @@ natdynlinkopts=""
 if test x"$enable_shared" != "xno"; then :
   case $host in #(
   x86_64-apple-darwin*) :
-    mksharedlib="$CC -shared \
-                   -undefined dynamic_lookup -Wl,-no_compact_unwind \
-                   \$(LDFLAGS)"
+    mksharedlib='$(CC) -shared '\
+'-undefined dynamic_lookup -Wl,-no_compact_unwind'
       supports_shared_libraries=true ;; #(
   aarch64-apple-darwin*|arm64-apple-darwin*) :
-    mksharedlib="$CC -shared \
-                   -undefined dynamic_lookup \$(LDFLAGS)"
+    mksharedlib='$(CC) -shared -undefined dynamic_lookup'
       supports_shared_libraries=true ;; #(
   *-*-mingw32) :
-    mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll'
+    mksharedlib='$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN)'
+      mkmaindll='$(FLEXLINK_CMD) -maindll -chain $(FLEXDLL_CHAIN)'
       if test -n "$oc_dll_ldflags"; then :
 
         mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
         mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""
 fi ;; #(
   *-pc-windows) :
-    mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll' ;; #(
+    mksharedlib='$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN)'
+      mkmaindll='$(FLEXLINK_CMD) -maindll -chain $(FLEXDLL_CHAIN)' ;; #(
   *-*-cygwin*) :
-    mksharedlib='$(FLEXLINK)'
-      mkmaindll='$(FLEXLINK) -maindll' ;; #(
+    mksharedlib='$(FLEXLINK_CMD) -chain $(FLEXDLL_CHAIN)'
+      mkmaindll='$(FLEXLINK_CMD) -maindll -chain $(FLEXDLL_CHAIN)' ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
-    mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
+    mksharedlib='$(CC) -qmkshrobj -G'
                 supports_shared_libraries=true ;; #(
   *) :
      ;;
 esac ;; #(
   *-*-solaris*) :
     sharedlib_cflags="-fPIC"
-      mksharedlib="$CC -shared"
+      mksharedlib='$(CC) -shared'
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       supports_shared_libraries=true ;; #(
@@ -14112,13 +14117,13 @@ esac ;; #(
     sharedlib_cflags="-fPIC"
        case $cc_basename,$host in #(
   *gcc*,powerpc-*-linux*) :
-    mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)" ;; #(
+    mksharedlib='$(CC) -shared -mbss-plt' ;; #(
   *,i[3456]86-*) :
     # Disable DT_TEXTREL warnings on Linux and BSD i386
            # See https://github.com/ocaml/ocaml/issues/9800
-           mksharedlib="$CC -shared \$(LDFLAGS) -Wl,-z,notext" ;; #(
+           mksharedlib='$(CC) -shared -Wl,-z,notext' ;; #(
   *) :
-    mksharedlib="$CC -shared \$(LDFLAGS)" ;;
+    mksharedlib='$(CC) -shared' ;;
 esac
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
@@ -18071,6 +18076,15 @@ fi
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
 
+# Just before config.status is generated, determine the final values for MKEXE,
+# MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:
+# $mkexe - the linking commmand and munged CFLAGS + any extra flexlink flags
+# $mksharedlib - the full linking command for DLLs
+# $mkmaindll - the full linking command for main program in DLL
+# $oc_ldflags and $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
+# $(OC_DLL_LDFLAGS) and can be overidden in the build.
+
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -18179,6 +18193,62 @@ LIBOBJS=$ac_libobjs
 
 LTLIBOBJS=$ac_ltlibobjs
 
+
+
+  # Construct $mkexe
+  mkexe="$mkexe_cmd"
+  if test -n "$mkexe_cflags"; then :
+  mkexe="$mkexe $mkexe_cflags"
+fi
+  if test -n "$mkexe_extra_flags"; then :
+  mkexe="$mkexe $mkexe_extra_flags"
+fi
+  # If $mkexe_ldflags_prefix is given, apply it to $oc_ldflags and $oc_dllflags
+  # and ensure that LDFLAGS is passed using it. This is used for flexlink. where
+  # linker flags need to be prefixed with -link.
+  if test -n "$mkexe_ldflags_prefix"; then :
+
+    if test -n "$mkexedebugflag"; then :
+  mkexedebugflag="${mkexe_ldflags_prefix}${mkexedebugflag}"
+fi
+    mkdll_ldflags="\$(if \$(LDFLAGS), \
+\$(addprefix ${mkexe_ldflags_prefix},\$(LDFLAGS)))"
+    mkexe=\
+"${mkexe} \$(addprefix ${mkexe_ldflags_prefix},\$(OC_LDFLAGS))${mkdll_ldflags}"
+    mkdll_ldflags="\$(addprefix ${mkexe_ldflags_prefix},\$(OC_DLL_LDFLAGS)) \
+${mkdll_ldflags}"
+
+else
+
+    mkdll_ldflags='$(OC_DLL_LDFLAGS) $(LDFLAGS)'
+    mkexe="${mkexe} \$(OC_LDFLAGS) \$(LDFLAGS)"
+
+fi
+  mksharedlib="$mksharedlib $mkdll_ldflags"
+  mkmaindll="$mkmaindll $mkdll_ldflags"
+  # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
+  # the msvc ports.
+  if test -n "$mkexe_via_cc_ldflags_prefix"; then :
+
+    mkexe_via_cc_ldflags=\
+"\$(addprefix ${mkexe_via_cc_ldflags_prefix},\$(OC_LDFLAGS) \$(LDFLAGS))"
+
+else
+
+    mkexe_via_cc_ldflags='$(OC_LDFLAGS) $(LDFLAGS)'
+
+fi
+  # cl requires linker flags after the objects.
+  if test "$ccomptype" = 'msvc'; then :
+  mkexe_via_cc_ldflags=\
+"\$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"
+else
+  mkexe_via_cc_ldflags=\
+"$mkexe_via_cc_ldflags \$(OUTPUTEXE)\$(1) \$(2)"
+fi
+  if test -n "$mkexe_via_cc_extra_cmd"; then :
+  mkexe_via_cc_ldflags="$mkexe_via_cc_ldflags $mkexe_via_cc_extra_cmd"
+fi
 
 
 : "${CONFIG_STATUS=./config.status}"

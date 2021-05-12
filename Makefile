@@ -804,7 +804,7 @@ runtime/caml/jumptbl.h : runtime/caml/instruct.h
 # to supply a host C compiler and different flags and a linking macro.
 SAK_CC ?= $(CC)
 SAK_CFLAGS ?= $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS)
-SAK_LINK ?= $(MKEXE_USING_COMPILER)
+SAK_LINK ?= $(MKEXE_VIA_CC)
 
 $(SAK): runtime/sak.$(O)
 	$(call SAK_LINK,$@,$^)
@@ -825,7 +825,7 @@ runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A)
 	$(MKEXE) -o $@ $^ $(BYTECCLIBS)
 
 runtime/ocamlruns$(EXE): runtime/prims.$(O) runtime/libcamlrun_non_shared.$(A)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(BYTECCLIBS))
+	$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS))
 
 runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS)
 	$(call MKLIB,$@, $^)
