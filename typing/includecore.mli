@@ -35,6 +35,14 @@ type value_mismatch =
 
 exception Dont_match of value_mismatch
 
+(* Documents which kind of private thing would be revealed *)
+type privacy_mismatch =
+  | Private_type_abbreviation
+  | Private_variant_type
+  | Private_record_type
+  | Private_extensible_variant
+  | Private_row_type
+
 type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
@@ -79,7 +87,7 @@ type private_object_mismatch =
 
 type type_mismatch =
   | Arity
-  | Privacy
+  | Privacy of privacy_mismatch
   | Kind
   | Constraint of Errortrace.equality_error
   | Manifest of Errortrace.equality_error

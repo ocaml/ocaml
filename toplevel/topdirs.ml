@@ -214,7 +214,6 @@ let match_simple_printer_type desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   begin try
-    (* Only the call to [Ctype.unify] can actually fail *)
     Ctype.unify !toplevel_env
       (Ctype.newconstr printer_type [ty_arg])
       (Ctype.instance desc.val_type);
@@ -237,7 +236,6 @@ let match_generic_printer_type desc path args printer_type =
                                              Cunknown)))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   begin try
-    (* Only the call to [Ctype.unify] can actually fail *)
     Ctype.unify !toplevel_env
       ty_expected
       (Ctype.instance desc.val_type);

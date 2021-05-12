@@ -22,8 +22,16 @@ type position = First | Second
 val swap_position : position -> position
 val print_pos : Format.formatter -> position -> unit
 
-type desc = { t: type_expr; expanded: type_expr option }
-type 'a diff = { got: 'a; expected: 'a}
+type expanded_type = { ty: type_expr; expanded: type_expr }
+
+(** [unexpanded_type ty] creates an [expanded_type] whose expansion is also
+    [ty].  Usually, you want [Ctype.expand_type] instead, since the expansion
+    carries useful information; however, in certain circumstances, the error is
+    about the expansion of the type, meaning that actually performing the
+    expansion produces more confusing or inaccurate output. *)
+val unexpanded_type : type_expr -> expanded_type
+
+type 'a diff = { got: 'a; expected: 'a }
 
 (** [map_diff f {expected;got}] is [{expected=f expected; got=f got}] *)
 val map_diff: ('a -> 'b) -> 'a diff -> 'b diff
@@ -43,7 +51,7 @@ type 'a escape =
   { kind : 'a escape_kind;
     context : type_expr option }
 
-val short : type_expr -> desc
+val map_escape : ('a -> 'b) -> 'a escape -> 'b escape
 
 val explain: 'a list ->
   (prev:'a option -> 'a -> 'b option) ->
@@ -86,22 +94,17 @@ type ('a, 'variety) elt =
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 
-type 'variety t =
-  (desc, 'variety) elt list
+type ('a, 'variety) t = ('a, 'variety) elt list
 
-val diff : type_expr -> type_expr -> (desc, _) elt
+type 'variety trace = (type_expr,     'variety) t
+type 'variety error = (expanded_type, 'variety) t
 
-(** [flatten f trace] flattens all elements of type {!desc} in
-    [trace] to either [f x.t expanded] if [x.expanded=Some expanded]
-    or [f x.t x.t] otherwise *)
-val flatten :
-  (type_expr -> type_expr -> 'a) -> 'variety t -> ('a, 'variety) elt list
+val map : ('a -> 'b) -> ('a, 'variety) t -> ('b, 'variety) t
 
-val map : ('a -> 'b) -> ('a, 'variety) elt list -> ('b, 'variety) elt list
+val incompatible_fields :
+  name:string -> got:type_expr -> expected:type_expr -> (type_expr, _) elt
 
-val incompatible_fields : string -> type_expr -> type_expr -> (desc, _) elt
-
-val swap_trace : 'variety t -> 'variety t
+val swap_trace : ('a, 'variety) t -> ('a, 'variety) t
 
 (* The traces (['variety t]) are the core error types.  However, we bundle them
    up into three "top-level" error types, which are used elsewhere:
@@ -111,13 +114,13 @@ val swap_trace : 'variety t -> 'variety t
    that are being built (or processed) from those that are complete and have
    become the final error. *)
 
-type unification_error = { trace : unification t } [@@unboxed]
+type unification_error = { trace : unification error } [@@unboxed]
 
 type equality_error =
-  { trace : comparison t;
+  { trace : comparison error;
     subst : (type_expr * type_expr) list }
 
-type moregen_error = { trace : comparison t } [@@unboxed]
+type moregen_error = { trace : comparison error } [@@unboxed]
 
 (* Wraps up the two different kinds of [comparison] errors in one type *)
 type comparison_error =
@@ -131,11 +134,10 @@ module Subtype : sig
   type 'a elt =
     | Diff of 'a diff
 
-  type t = desc elt list
+  type 'a t = 'a elt list
 
-  val diff: type_expr -> type_expr -> desc elt
+  type trace = type_expr     t
+  type error = expanded_type t
 
-  val flatten : (type_expr -> type_expr -> 'a) -> t -> 'a elt list
-
-  val map : (desc -> desc) -> desc elt list -> desc elt list
+  val map : ('a -> 'b) -> 'a t -> 'b t
 end

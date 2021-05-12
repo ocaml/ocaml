@@ -679,6 +679,7 @@ typing/includeclass.cmx : \
     typing/includeclass.cmi
 typing/includeclass.cmi : \
     typing/types.cmi \
+    typing/printtyp.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     typing/ctype.cmi

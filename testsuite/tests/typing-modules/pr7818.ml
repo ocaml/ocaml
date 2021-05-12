@@ -327,5 +327,6 @@ Error: This variant or record definition does not match that of type M.t
          E of (MkT(Desc).t, MkT(Desc).t) eq
        The type (MkT(M.T).t, MkT(M.T).t) eq is not equal to the type
          (MkT(Desc).t, MkT(Desc).t) eq
-       Type MkT(M.T).t is not equal to type MkT(Desc).t
+       Type MkT(M.T).t = Set.Make(M.Term0).t is not equal to type
+         MkT(Desc).t = Set.Make(Desc).t
 |}]

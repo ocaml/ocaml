@@ -121,11 +121,11 @@ type error =
   | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of string
-  | Not_subtype of Errortrace.Subtype.t * Errortrace.unification_error
+  | Not_subtype of Errortrace.Subtype.error * Errortrace.unification_error
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * Errortrace.unification_error * bool
+      Errortrace.expanded_type * Errortrace.unification_error * bool
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
@@ -167,7 +167,7 @@ let trace_of_error = function
   | Pattern_type_clash ({trace},_)
   | Or_pattern_type_clash (_,{trace})
   | Expr_type_clash ({trace},_,_)
-  | Coercion_failure (_,_,{trace},_)
+  | Coercion_failure (_,{trace},_)
   | Less_general (_,{trace})
   | Letop_type_clash (_,{trace})
   | Andop_type_clash (_,{trace})
@@ -1341,7 +1341,10 @@ let rec has_literal_pattern p = match p.ppat_desc with
 let check_scope_escape loc env level ty =
   try Ctype.check_scope_escape env level ty
   with Escape esc ->
-    raise(Error(loc, env, Pattern_type_clash({trace=[Escape esc]}, None)))
+    (* We don't expand the type here because if we do, we might expand to the
+       type that escaped, leading to confusing error messages. *)
+    let trace = Errortrace.[Escape (map_escape unexpanded_type esc)] in
+    raise (Error(loc, env, Pattern_type_clash({trace}, None)))
 
 type pattern_checking_mode =
   | Normal
@@ -2531,7 +2534,8 @@ let check_univars env kind exp ty_expected vars =
     raise (Error (exp.exp_loc,
                   env,
                   Less_general(kind,
-                               {trace = [Errortrace.diff ty ty_expected]})))
+                               {trace = [Ctype.expanded_diff env
+                                           ~got:ty ~expected:ty_expected]})))
 
 let generalize_and_check_univars env kind exp ty_expected vars =
   generalize exp.exp_type;
@@ -3398,7 +3402,7 @@ and type_expect_
                 begin try Ctype.unify env arg.exp_type ty with Unify err ->
                   let expanded = full_expand ~may_forget_scope:true env ty' in
                   raise(Error(sarg.pexp_loc, env,
-                              Coercion_failure(ty', expanded, err, b)))
+                              Coercion_failure({ty = ty'; expanded}, err, b)))
                 end
             end;
             (arg, ty', None, cty')
@@ -5440,7 +5444,7 @@ let report_literal_type_constraint expected_type const =
   | _, _ -> []
 
 let report_literal_type_constraint const = function
-  | Some Errortrace.{ expected = { t = { desc = Tconstr (typ, [], _) } } } ->
+  | Some Errortrace.{ expected = { ty = { desc = Tconstr (typ, [], _) } } } ->
       report_literal_type_constraint typ const
   | Some _ | None -> []
 
@@ -5655,14 +5659,14 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "The instance variable %s is overridden several times"
         v
-  | Coercion_failure (ty, ty', err, b) ->
+  | Coercion_failure (ty_exp, err, b) ->
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.report_unification_error ppf env err
           (function ppf ->
-             let ty, ty' = Printtyp.prepare_expansion (ty, ty') in
+             let ty_exp = Printtyp.prepare_expansion ty_exp in
              fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \
                           it has type"
-             (Printtyp.type_expansion ty) ty')
+             (Printtyp.type_expansion Type) ty_exp)
           (function ppf ->
              fprintf ppf "but is here used with type");
         if b then

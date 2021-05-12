@@ -28,19 +28,17 @@ let print_pos ppf = function
   | First -> fprintf ppf "first"
   | Second -> fprintf ppf "second"
 
-type desc = { t: type_expr; expanded: type_expr option }
-type 'a diff = { got: 'a; expected: 'a}
+type expanded_type = { ty: type_expr; expanded: type_expr }
 
-let short t = { t; expanded = None }
+let unexpanded_type ty = { ty; expanded = ty }
+
+type 'a diff = { got: 'a; expected: 'a }
+
 let map_diff f r =
   (* ordering is often meaningful when dealing with type_expr *)
   let got = f r.got in
   let expected = f r.expected in
-  { got; expected}
-
-let flatten_desc f x = match x.expanded with
-  | None -> f x.t x.t
-  | Some expanded -> f x.t expanded
+  { got; expected }
 
 let swap_diff x = { got = x.expected; expected = x.got }
 
@@ -57,6 +55,11 @@ type 'a escape_kind =
 type 'a escape =
   { kind : 'a escape_kind;
     context : type_expr option }
+
+let map_escape f esc =
+  {esc with kind = match esc.kind with
+     | Equation eq -> Equation (f eq)
+     | (Constructor _ | Univ _ | Self | Module_type _ | Constraint) as c -> c}
 
 let explain trace f =
   let rec explain = function
@@ -106,10 +109,10 @@ type ('a, 'variety) elt =
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 
-type 'variety t =
-  (desc, 'variety) elt list
+type ('a, 'variety) t = ('a, 'variety) elt list
 
-let diff got expected = Diff (map_diff short { got; expected })
+type 'variety trace = (type_expr,     'variety) t
+type 'variety error = (expanded_type, 'variety) t
 
 let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Diff x -> Diff (map_diff f x)
@@ -121,12 +124,8 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
 
 let map f t = List.map (map_elt f) t
 
-(* Convert desc to type_expr * type_expr *)
-let flatten f = map (flatten_desc f)
-
-let incompatible_fields name got expected =
+let incompatible_fields ~name ~got ~expected =
   Incompatible_fields { name; diff={got; expected} }
-
 
 let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
   | Diff x -> Diff (swap_diff x)
@@ -142,13 +141,13 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
 
 let swap_trace e = List.map swap_elt e
 
-type unification_error = { trace : unification t } [@@unboxed]
+type unification_error = { trace : unification error } [@@unboxed]
 
 type equality_error =
-  { trace : comparison t;
+  { trace : comparison error;
     subst : (type_expr * type_expr) list }
 
-type moregen_error = { trace : comparison t } [@@unboxed]
+type moregen_error = { trace : comparison error } [@@unboxed]
 
 type comparison_error =
   | Equality_error of equality_error
@@ -161,14 +160,13 @@ module Subtype = struct
   type 'a elt =
     | Diff of 'a diff
 
-  type t = desc elt list
+  type 'a t = 'a elt list
 
-  let diff got expected = Diff (map_diff short {got;expected})
+  type trace = type_expr     t
+  type error = expanded_type t
 
   let map_elt f = function
     | Diff x -> Diff (map_diff f x)
 
   let map f t = List.map (map_elt f) t
-
-  let flatten f t = map (flatten_desc f) t
 end

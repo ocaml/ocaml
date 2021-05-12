@@ -138,24 +138,6 @@ let rec scrape_class_type =
     Cty_constr (_, _, cty) -> scrape_class_type cty
   | cty                     -> cty
 
-(* Generalize a class type *)
-let rec generalize_class_type gen =
-  function
-    Cty_constr (_, params, cty) ->
-      List.iter gen params;
-      generalize_class_type gen cty
-  | Cty_signature {csig_self = sty; csig_vars = vars; csig_inher = inher} ->
-      gen sty;
-      Vars.iter (fun _ (_, _, ty) -> gen ty) vars;
-      List.iter (fun (_,tl) -> List.iter gen tl) inher
-  | Cty_arrow (_, ty, cty) ->
-      gen ty;
-      generalize_class_type gen cty
-
-let generalize_class_type vars =
-  let gen = if vars then Ctype.generalize else Ctype.generalize_structure in
-  generalize_class_type gen
-
 (* Return the virtual methods of a class type *)
 let virtual_methods sign =
   let (fields, _) =
@@ -1078,7 +1060,7 @@ and class_expr_aux cl_num val_env met_env scl =
       let cl = class_expr cl_num val_env met_env scl' in
       if !Clflags.principal then begin
         Ctype.end_def ();
-        generalize_class_type false cl.cl_type;
+        Ctype.generalize_class_type false cl.cl_type;
       end;
       let rec nonopt_labels ls ty_fun =
         match ty_fun with
@@ -1636,7 +1618,7 @@ let final_decl env define_class
   end;
 
   List.iter Ctype.generalize clty.cty_params;
-  generalize_class_type true clty.cty_type;
+  Ctype.generalize_class_type true clty.cty_type;
   Option.iter  Ctype.generalize clty.cty_new;
   List.iter Ctype.generalize obj_abbr.type_params;
   Option.iter  Ctype.generalize obj_abbr.type_manifest;
@@ -1930,9 +1912,9 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
-        !Oprint.out_type (Printtyp.tree_of_typexp false abbrev)
-        !Oprint.out_type (Printtyp.tree_of_typexp false actual)
-        !Oprint.out_type (Printtyp.tree_of_typexp false expected)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type abbrev)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type actual)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type expected)
   | Constructor_type_mismatch (c, err) ->
       Printtyp.report_unification_error ppf env err
         (function ppf ->
@@ -1973,10 +1955,10 @@ let report_error env ppf = function
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
         Printtyp.ident id
-        !Oprint.out_type (Printtyp.tree_of_typexp false params)
-        !Oprint.out_type (Printtyp.tree_of_typexp false cstrs)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type params)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type cstrs)
   | Class_match_failure error ->
-      Includeclass.report_error ppf error
+      Includeclass.report_error Type ppf error
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
@@ -1987,8 +1969,8 @@ let report_error env ppf = function
         fprintf ppf
           "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
           kind lab
-          !Oprint.out_type (Printtyp.tree_of_typexp false ty)
-          !Oprint.out_type (Printtyp.tree_of_typexp false ty0)
+          !Oprint.out_type (Printtyp.tree_of_typexp Type ty)
+          !Oprint.out_type (Printtyp.tree_of_typexp Type ty0)
       in
       let print_reason ppf = function
       | Ctype.CC_Method (ty0, real, lab, ty) ->

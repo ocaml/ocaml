@@ -165,11 +165,11 @@ type error =
   | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of string
-  | Not_subtype of Errortrace.Subtype.t * Errortrace.unification_error
+  | Not_subtype of Errortrace.Subtype.error * Errortrace.unification_error
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * Errortrace.unification_error * bool
+      Errortrace.expanded_type * Errortrace.unification_error * bool
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr

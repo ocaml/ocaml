@@ -563,7 +563,7 @@ Error: Signature mismatch:
        is not included in
          external f : int -> int -> int = "f" "f_nat"
        The syntactic arities of these primitives were not the same
-       (They must have the same number of ->s present in the source)
+       (They must have the same number of arrows present in the source)
 |}]
 
 module Bad21 : sig
@@ -592,7 +592,7 @@ Error: Signature mismatch:
        is not included in
          external f : int -> int -> int = "f" "f_nat"
        The syntactic arities of these primitives were not the same
-       (They must have the same number of ->s present in the source)
+       (They must have the same number of arrows present in the source)
 |}]
 
 (* This will fail with a *type* error, instead of an arity mismatch *)

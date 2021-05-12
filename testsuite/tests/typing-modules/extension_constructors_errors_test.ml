@@ -40,7 +40,7 @@ Error: Signature mismatch:
          type t += private A
        is not included in
          type t += A
-       A private type would be revealed.
+       Private extension constructor(s) would be revealed.
 |}];;
 
 module M2 : sig type t += A end = struct type t += private A | B end;;
@@ -57,5 +57,5 @@ Error: Signature mismatch:
          type t += private A
        is not included in
          type t += A
-       A private type would be revealed.
+       Private extension constructor(s) would be revealed.
 |}];;

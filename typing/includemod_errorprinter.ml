@@ -653,7 +653,7 @@ let core env id x =
         (Printtyp.tree_of_cltype_declaration id diff.got Trec_first)
         !Oprint.out_sig_item
         (Printtyp.tree_of_cltype_declaration id diff.expected Trec_first)
-        Includeclass.report_error diff.symptom
+        (Includeclass.report_error Scheme) diff.symptom
         Printtyp.Conflicts.print_explanations
   | Err.Class_declarations {got;expected;symptom} ->
       let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
@@ -663,7 +663,7 @@ let core env id x =
          %a@;<1 -2>does not match@ %a@]@ %a%t"
         !Oprint.out_sig_item t1
         !Oprint.out_sig_item t2
-        Includeclass.report_error symptom
+        (Includeclass.report_error Scheme) symptom
         Printtyp.Conflicts.print_explanations
 
 let missing_field ppf item =

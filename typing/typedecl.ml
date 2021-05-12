@@ -274,13 +274,15 @@ let make_constructor env type_path type_params sargs sret_type =
       begin match (Ctype.repr ret_type).desc with
         | Tconstr (p', _, _) when Path.same type_path p' -> ()
         | _ ->
-          raise (Error
-                   (sret_type.ptyp_loc,
-                    Constraint_failed
-                      (env, {trace =
-                               [Errortrace.diff
-                                  ret_type
-                                  (Ctype.newconstr type_path type_params)]})))
+          let trace =
+            (* Expansion is not helpful here -- the restriction on GADT return
+               types is purely syntactic.  (In the worst case, expansion
+               produces gibberish.) *)
+            [Ctype.unexpanded_diff
+               ~got:ret_type
+               ~expected:(Ctype.newconstr type_path type_params)]
+          in
+          raise (Error (sret_type.ptyp_loc, Constraint_failed (env, {trace})))
       end;
       widen z;
       targs, Some tret_type, args, Some ret_type
@@ -487,7 +489,11 @@ let rec check_constraints_rec env loc visited ty =
           raise (Error(loc, Unavailable_type_constructor path)) in
       let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
       begin
-        try Ctype.matches env ty ty'
+        (* We don't expand the error trace because that produces types that
+           *already* violate the constraints -- we need to report a problem with
+           the unexpanded types, or we get errors that talk about the same type
+           twice.  This is generally true for constraint errors. *)
+        try Ctype.matches ~expand_error_trace:false env ty ty'
         with Ctype.Matches_failure (env, err) ->
           raise (Error(loc, Constraint_failed (env, err)))
       end;
@@ -1703,8 +1709,8 @@ let report_error ppf = function
              All uses need to match the definition for the recursive type \
              to be regular.@]"
             (Path.name definition)
-            !Oprint.out_type (Printtyp.tree_of_typexp false defined_as)
-            !Oprint.out_type (Printtyp.tree_of_typexp false used_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
       | _ :: _ ->
           fprintf ppf
             "@[<hv>This recursive type is not regular.@ \
@@ -1714,8 +1720,8 @@ let report_error ppf = function
              All uses need to match the definition for the recursive type \
              to be regular.@]"
             (Path.name definition)
-            !Oprint.out_type (Printtyp.tree_of_typexp false defined_as)
-            !Oprint.out_type (Printtyp.tree_of_typexp false used_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
+            !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
             pp_expansions expansions
       end
   | Inconsistent_constraint (env, err) ->

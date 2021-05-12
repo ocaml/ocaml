@@ -341,7 +341,7 @@ Error: Signature mismatch:
          type a = M/1.t
        is not included in
          type a = M/2.t
-       The type M/1.t is not equal to the type M/2.t
+       The type M/1.t = M/2.M.t is not equal to the type M/2.t
        Line 2, characters 14-42:
          Definition of module M/1
        File "_none_", line 1:

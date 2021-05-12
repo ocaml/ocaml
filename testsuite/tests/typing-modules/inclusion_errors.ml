@@ -526,7 +526,7 @@ Error: Modules do not match:
        val r : '_weak1 list ref ref
      is not included in
        val r : Choice.t list ref ref
-     The type 'weak1 list ref ref is not compatible with the type
+     The type '_weak1 list ref ref is not compatible with the type
        Choice.t list ref ref
      The type constructor Choice.t would escape its scope
 |}];;
@@ -615,6 +615,7 @@ Error: Signature mismatch:
          val f : s -> s
        The type < m : int > -> < m : int > is not compatible with the type
          s -> s
+       Type < m : int > is not compatible with type s = < m : int; .. >
        The second object type has an abstract row, it cannot be closed
 |}];;
 
@@ -660,8 +661,8 @@ Error: Signature mismatch:
          val x : '_weak2 list ref
        is not included in
          val x : 'a list ref
-       The type 'weak2 list ref is not compatible with the type 'a list ref
-       Type 'weak2 is not compatible with type 'a
+       The type '_weak2 list ref is not compatible with the type 'a list ref
+       Type '_weak2 is not compatible with type 'a
 |}];;
 
 module M = struct let r = ref [] end;;
@@ -682,7 +683,7 @@ Error: Signature mismatch:
          val r : '_weak3 list ref
        is not included in
          val r : t list ref
-       The type 'weak3 list ref is not compatible with the type t list ref
+       The type '_weak3 list ref is not compatible with the type t list ref
        The type constructor t would escape its scope
 |}];;
 
@@ -725,8 +726,9 @@ Error: Signature mismatch:
          val r : '_weak4 list ref
        is not included in
          val r : T.s list ref
-       The type 'weak4 list ref is not compatible with the type T.s list ref
-       This instance of T.s is ambiguous:
+       The type '_weak4 list ref is not compatible with the type T.s list ref
+       Type '_weak4 is not compatible with type T.s = T.t
+       This instance of T.t is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1251,7 +1253,7 @@ Error: Signature mismatch:
          type t = private [ `A | `B ]
        is not included in
          type t = [ `A | `B ]
-       A private type would be revealed.
+       A private type abbreviation would be revealed
 |}];;
 
 module M : sig
@@ -1354,7 +1356,7 @@ Error: Signature mismatch:
 type w = float
 type q = (int * w)
 type u = private (int * q)
-module M : sig (* Confussing error message :( *)
+module M : sig
   type t = private (int * (int * int))
 end = struct
   type t = private u
@@ -1377,7 +1379,8 @@ Error: Signature mismatch:
        is not included in
          type t = private int * (int * int)
        The type int * q is not equal to the type int * (int * int)
-       Type w is not equal to type int
+       Type q = int * w is not equal to type int * int
+       Type w = float is not equal to type int
 |}];;
 
 type s = private int
@@ -1424,7 +1427,7 @@ Error: Signature mismatch:
          type t = private A
        is not included in
          type t = A
-       A private type would be revealed.
+       Private variant constructor(s) would be revealed
 |}];;
 
 module M : sig
@@ -1446,7 +1449,7 @@ Error: Signature mismatch:
          type t = private A | B
        is not included in
          type t = A | B
-       A private type would be revealed.
+       Private variant constructor(s) would be revealed
 |}];;
 
 module M : sig
@@ -1468,7 +1471,7 @@ Error: Signature mismatch:
          type t = private A of { x : int; y : bool; }
        is not included in
          type t = A of { x : int; y : bool; }
-       A private type would be revealed.
+       Private variant constructor(s) would be revealed
 |}];;
 
 module M : sig
@@ -1490,7 +1493,7 @@ Error: Signature mismatch:
          type t = private { x : int; y : bool; }
        is not included in
          type t = { x : int; y : bool; }
-       A private type would be revealed.
+       A private record constructor would be revealed
 |}];;
 
 module M : sig
@@ -1512,7 +1515,7 @@ Error: Signature mismatch:
          type t = private A | B
        is not included in
          type t = A
-       A private type would be revealed.
+       Private variant constructor(s) would be revealed
 |}];;
 
 module M : sig
@@ -1534,7 +1537,7 @@ Error: Signature mismatch:
          type t = private A
        is not included in
          type t = A | B
-       A private type would be revealed.
+       Private variant constructor(s) would be revealed
 |}];;
 
 module M : sig
@@ -1556,7 +1559,7 @@ Error: Signature mismatch:
          type t = private { x : int; y : bool; }
        is not included in
          type t = { x : int; }
-       A private type would be revealed.
+       A private record constructor would be revealed
 |}];;
 
 module M : sig
@@ -1578,7 +1581,7 @@ Error: Signature mismatch:
          type t = private { x : int; }
        is not included in
          type t = { x : int; y : bool; }
-       A private type would be revealed.
+       A private record constructor would be revealed
 |}];;
 
 module M : sig
@@ -1600,7 +1603,7 @@ Error: Signature mismatch:
          type t = private { x : int; y : bool; }
        is not included in
          type t = A | B
-       A private type would be revealed.
+       Their kinds differ.
 |}];;
 
 module M : sig
@@ -1622,7 +1625,7 @@ Error: Signature mismatch:
          type t = private A | B
        is not included in
          type t = { x : int; y : bool; }
-       A private type would be revealed.
+       Their kinds differ.
 |}];;
 
 module M : sig
@@ -1644,7 +1647,7 @@ Error: Signature mismatch:
          type t = private [> `A | `B ]
        is not included in
          type t = [ `A ]
-       A private type would be revealed.
+       A private row type would be revealed
 |}];;
 
 module M : sig
@@ -1666,7 +1669,7 @@ Error: Signature mismatch:
          type t = private [< `A | `B ]
        is not included in
          type t = [ `A ]
-       A private type would be revealed.
+       A private row type would be revealed
 |}];;
 
 module M : sig
@@ -1688,7 +1691,7 @@ Error: Signature mismatch:
          type t = private [< `A | `B > `A ]
        is not included in
          type t = [ `A ]
-       A private type would be revealed.
+       A private row type would be revealed
 |}];;
 
 module M : sig
@@ -1710,5 +1713,5 @@ Error: Signature mismatch:
          type t = private < m : int; .. >
        is not included in
          type t = < m : int >
-       A private type would be revealed.
+       A private row type would be revealed
 |}];;

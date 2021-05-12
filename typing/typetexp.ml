@@ -746,9 +746,9 @@ let report_error env ppf = function
         Printtyp.reset_and_mark_loops_list [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
-          !Oprint.out_type (tree_of_typexp false ty)
+          !Oprint.out_type (tree_of_typexp Type ty)
           "which should be"
-           !Oprint.out_type (tree_of_typexp false ty'))
+           !Oprint.out_type (tree_of_typexp Type ty'))
   | Not_a_variant ty ->
       fprintf ppf
         "@[The type %a@ does not expand to a polymorphic variant type@]"

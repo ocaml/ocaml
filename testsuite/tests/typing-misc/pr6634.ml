@@ -24,6 +24,7 @@ Error: Signature mismatch:
        is not included in
          type t = [ `T of t/1 ]
        The type [ `T of t/1 ] is not equal to the type [ `T of t/2 ]
+       Type t/1 = [ `T of t/1 ] is not equal to type t/2 = int
        Types for tag `T are incompatible
        Line 4, characters 2-20:
          Definition of type t/1

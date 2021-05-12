@@ -26,9 +26,9 @@ Error: Signature mismatch:
          val write : _[< `A of '_weak2 | `B of '_weak3 ] -> unit
        is not included in
          val write : [< `A of string | `B of int ] -> unit
-       The type ([< `A of 'weak2 | `B of 'weak3 ] as 'a) -> unit
+       The type (_[< `A of '_weak2 | `B of '_weak3 ] as 'a) -> unit
        is not compatible with the type
          ([< `A of string | `B of int ] as 'b) -> unit
-       Type [< `A of 'weak2 | `B of 'weak3 ] as 'a
+       Type _[< `A of '_weak2 | `B of '_weak3 ] as 'a
        is not compatible with type [< `A of string | `B of int ] as 'b
 |}]

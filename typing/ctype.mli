@@ -23,9 +23,9 @@ module TypePairs : Hashtbl.S with type key = type_expr * type_expr
 exception Unify    of Errortrace.unification_error
 exception Equality of Errortrace.equality_error
 exception Moregen  of Errortrace.moregen_error
-exception Subtype  of Errortrace.Subtype.t * Errortrace.unification_error
+exception Subtype  of Errortrace.Subtype.error * Errortrace.unification_error
 
-exception Escape of Errortrace.desc Errortrace.escape
+exception Escape of type_expr Errortrace.escape
 
 exception Tags of label * label
 exception Cannot_expand
@@ -124,6 +124,9 @@ val lower_contravariant: Env.t -> type_expr -> unit
 val generalize_structure: type_expr -> unit
         (* Generalize the structure of a type, lowering variables
            to !current_level *)
+val generalize_class_type :
+  bool -> class_type -> unit
+        (* Generalize the components of a class type *)
 val generalize_spine: type_expr -> unit
         (* Special function to generalize a method during inference *)
 val correct_levels: type_expr -> type_expr
@@ -190,6 +193,22 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
 
+(* Expansion of types for error traces; lives here instead of in [Errortrace]
+   because the expansion machinery lives here. *)
+
+(* Create an [Errortrace.Diff] by expanding the two types *)
+val expanded_diff :
+  Env.t ->
+  got:type_expr -> expected:type_expr ->
+  (Errortrace.expanded_type, 'variant) Errortrace.elt
+
+(* Create an [Errortrace.Diff] by *duplicating* the two types, so that each
+   one's expansion is identical to itself.  Despite the name, does create
+   [Errortrace.expanded_type]s. *)
+val unexpanded_diff :
+  got:type_expr -> expected:type_expr ->
+  (Errortrace.expanded_type, 'variant) Errortrace.elt
+
 val full_expand: may_forget_scope:bool -> Env.t -> type_expr -> type_expr
 
 type typedecl_extraction_result =
@@ -231,9 +250,11 @@ val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
         (* Check those types are all distinct type variables *)
-val matches: Env.t -> type_expr -> type_expr -> unit
+val matches: expand_error_trace:bool -> Env.t -> type_expr -> type_expr -> unit
         (* Same as [moregeneral false], implemented using the two above
-           functions and backtracking. Ignore levels *)
+           functions and backtracking. Ignore levels. The [expand_error_trace]
+           flag controls whether the error raised performs expansion; this
+           should almost always be [true]. *)
 val does_match: Env.t -> type_expr -> type_expr -> bool
         (* Same as [matches], but returns a [bool] *)
 

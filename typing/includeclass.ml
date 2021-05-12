@@ -49,7 +49,7 @@ let rec hide_params = function
   | cty -> cty
 *)
 
-let include_err ppf =
+let include_err mode ppf =
   function
   | CM_Virtual_class ->
       fprintf ppf "A class cannot be changed from virtual to concrete"
@@ -57,7 +57,7 @@ let include_err ppf =
       fprintf ppf
         "The classes do not have the same number of type parameters"
   | CM_Type_parameter_mismatch (env, err) ->
-      Printtyp.report_equality_error ppf env err
+      Printtyp.report_equality_error ppf mode env err
         (function ppf ->
           fprintf ppf "A type parameter has type")
         (function ppf ->
@@ -70,19 +70,19 @@ let include_err ppf =
           "is not matched by the class type"
           Printtyp.class_type cty2)
   | CM_Parameter_mismatch (env, err) ->
-      Printtyp.report_moregen_error ppf env err
+      Printtyp.report_moregen_error ppf mode env err
         (function ppf ->
           fprintf ppf "A parameter has type")
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Val_type_mismatch (lab, env, err) ->
-      Printtyp.report_comparison_error ppf env err
+      Printtyp.report_comparison_error ppf mode env err
         (function ppf ->
           fprintf ppf "The instance variable %s@ has type" lab)
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Meth_type_mismatch (lab, env, err) ->
-      Printtyp.report_comparison_error ppf env err
+      Printtyp.report_comparison_error ppf mode env err
         (function ppf ->
           fprintf ppf "The method %s@ has type" lab)
         (function ppf ->
@@ -108,9 +108,9 @@ let include_err ppf =
   | CM_Private_method lab ->
       fprintf ppf "@[The private method %s cannot become public@]" lab
 
-let report_error ppf = function
+let report_error mode ppf = function
   |  [] -> ()
   | err :: errs ->
       let print_errs ppf errs =
-         List.iter (fun err -> fprintf ppf "@ %a" include_err err) errs in
-      fprintf ppf "@[<v>%a%a@]" include_err err print_errs errs
+        List.iter (fun err -> fprintf ppf "@ %a" (include_err mode) err) errs in
+      fprintf ppf "@[<v>%a%a@]" (include_err mode) err print_errs errs
