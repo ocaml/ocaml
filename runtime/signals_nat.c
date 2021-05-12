@@ -174,6 +174,16 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 #error "CONTEXT_SP is required if HAS_STACK_OVERFLOW_DETECTION is defined"
 #endif
 
+CAMLno_asan
+static void restore_default_sigsegv_handler()
+{
+  struct sigaction act;
+  act.sa_handler = SIG_DFL;
+  act.sa_flags = 0;
+  sigemptyset(&act.sa_mask);
+  sigaction(SIGSEGV, &act, NULL);
+}
+
 /* Code compiled with ocamlopt never accesses more than
    EXTRA_STACK bytes below the stack pointer. */
 #define EXTRA_STACK 256
@@ -188,8 +198,26 @@ extern void caml_stack_overflow(caml_domain_state*);
 CAMLno_asan
 DECLARE_SIGNAL_HANDLER(segv_handler)
 {
-  struct sigaction act;
   char * fault_addr;
+
+#if defined(INFO_CODE) && !defined(SYS_macosx)
+  /* If the signal was sent by a process, CONTEXT_FAULTING_ADDRESS is
+     not guaranteed to be valid and up-to-date. In this case, we make
+     sure to call the default handler by re-raising the exception.
+
+     On MacOS, one cannot reliably detect if the signal comes from a
+     process (http://www.openradar.me/FB8707529). However, on this
+     platform si_addr is valid and null in this case, so the rest of
+     the function is well-defined. This leads to another issue though:
+     the first time a SIGSEGV is sent to this process by another
+     process, execution continues with stack overflow detection turned
+     off. */
+  if (INFO_CODE == SI_USER || INFO_CODE == SI_QUEUE || INFO_CODE <= 0) {
+    restore_default_sigsegv_handler();
+    raise(SIGSEGV);
+    return;
+  }
+#endif
 
   /* Sanity checks:
      - faulting address is word-aligned
@@ -232,10 +260,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
   } else {
     /* Otherwise, deactivate our exception handler and return,
        causing fatal signal to be generated at point of error. */
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGSEGV, &act, NULL);
+    restore_default_sigsegv_handler();
   }
 }
 
