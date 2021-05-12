@@ -511,7 +511,7 @@ let merge_constraint initial_env loc sg lid constr =
   in
   let rec patch_item constr namelist sig_env ~rec_group ~ghosts item =
     let return ?(ghosts=ghosts) ~replace_by info =
-      Some {Signature_group.info; ghosts=ghosts; replace_by}
+      Some (info, {Signature_group.ghosts; replace_by})
     in
     match item, namelist, constr with
     | Sig_type(id, decl, rs, priv), [s],

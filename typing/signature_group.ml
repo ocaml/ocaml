@@ -115,10 +115,9 @@ let update_rec_next rs rem =
           Types.Sig_module (id, pres, mty, rs, priv) :: rem
       | _ -> rem
 
-type 'a in_place_patch = {
+type in_place_patch = {
   ghosts: Types.signature;
   replace_by: Types.signature_item option;
-  info: 'a;
 }
 
 
@@ -135,7 +134,7 @@ let replace_in_place f sg =
     | [] -> next_group f (commit ghosts) sg
     | a :: q ->
         match f ~rec_group:q ~ghosts a.src with
-        | Some { info; ghosts; replace_by } ->
+        | Some (info, {ghosts; replace_by}) ->
             let after = List.concat_map flatten q @ sg in
             let after = match recursive_sigitem a.src, replace_by with
               | None, _ | _, Some _ -> after

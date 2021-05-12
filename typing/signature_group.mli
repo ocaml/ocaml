@@ -65,16 +65,15 @@ val iter: (rec_group -> unit) -> Types.signature -> unit
 val fold: ('acc -> rec_group -> 'acc) -> 'acc -> Types.signature -> 'acc
 
 (** Describe how to amend one element of a signature *)
-type 'a in_place_patch = {
+type in_place_patch = {
   ghosts: Types.signature; (** updated list of ghost items *)
   replace_by: Types.signature_item option;
   (** replacement for the selected item *)
-  info: 'a; (** some more data to return to the outer scope *)
 }
 
 (**
   [!replace_in_place patch sg] replaces the first element of the signature
-   for which [patch ~rec_group ~ghosts component] returns [Some patch].
+   for which [patch ~rec_group ~ghosts component] returns [Some (value,patch)].
    The [rec_group] argument is the remaining part of the mutually
    recursive group of [component].
    The [ghosts] list is the current prefix of ghost components associated to
@@ -82,5 +81,5 @@ type 'a in_place_patch = {
 *)
 val replace_in_place:
   ( rec_group:sig_item list -> ghosts:Types.signature -> Types.signature_item
-    -> 'a in_place_patch option )
+    -> ('a * in_place_patch) option )
   -> Types.signature -> ('a * Types.signature) option
