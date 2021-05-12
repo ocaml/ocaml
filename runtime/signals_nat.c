@@ -111,6 +111,17 @@ int caml_set_signal_action(int signo, int action)
   signal_handler act;
 #endif
 
+  /* Never replace our own handlers of synchronous signals */
+  switch(signo) {
+  case SIGSEGV:
+  case SIGFPE:
+#ifdef SIGTRAP
+  case SIGTRAP:
+#endif
+    caml_invalid_argument("Sys.signal: signal reserved");
+    break;
+  }
+
 #ifdef POSIX_SIGNALS
   switch(action) {
   case 0:

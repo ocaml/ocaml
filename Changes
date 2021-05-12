@@ -93,6 +93,15 @@ Working version
   of the current overhead.
   (Damien Doligez, review by Stephen Dolan)
 
+- #10409: Fix a bug where a SIGSEGV signal could be ignored by the
+   runtime and execution continue in an inconsistent state. Also,
+   prevent replacing the own signal handlers of the runtime for
+   SIGSEGV, SIGFPE and SIGTRAP with Sys.signal, to prevent similar
+   inconsistent state. Sys.signal will now raise an Invalid_argument
+   exception if you try to do so.
+  (Guillaume Munch-Maccagnoni, report by Martin Jambon, review by
+   Stephen Dolan and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #1400: Add an optional invariants check on Cmm, which can be activated
