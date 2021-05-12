@@ -694,24 +694,27 @@ let merge_constraint initial_env loc sg lid constr =
                              With_cannot_remove_constrained_type));
             fun s path -> Subst.add_type_function path ~params ~body s
        in
-       let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
+       let sub = Subst.change_locs Subst.identity loc in
+       let sub = List.fold_left how_to_extend_subst sub !real_ids in
        (* This signature will not be used directly, it will always be freshened
           by the caller. So what we do with the scope doesn't really matter. But
           making it local makes it unlikely that we will ever use the result of
           this function unfreshened without issue. *)
        Subst.signature Make_local sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
+       let sub = Subst.change_locs Subst.identity loc in
        let sub =
          List.fold_left
            (fun s path -> Subst.add_module_path path real_path s)
-           Subst.identity
+           sub
            !real_ids
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
     | (_, _, Twith_modtypesubst tmty) ->
         let add s p = Subst.add_modtype_path p tmty.mty_type s in
-        let sub = List.fold_left add Subst.identity !real_ids in
+        let sub = Subst.change_locs Subst.identity loc in
+        let sub = List.fold_left add sub !real_ids in
         Subst.signature Make_local sub sg
     | _ ->
        sg
