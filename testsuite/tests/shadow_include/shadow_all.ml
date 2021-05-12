@@ -140,11 +140,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module M/237 by M/254
+Error: Illegal shadowing of included module M/236 by M/253
        Line 2, characters 2-11:
-         Module M/237 came from this include
+         Module M/236 came from this include
        Line 3, characters 2-26:
-         The value ignore has no valid type if M/237 is shadowed
+         The value ignore has no valid type if M/236 is shadowed
 |}]
 
 
@@ -181,11 +181,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/324 by T/341
+Error: Illegal shadowing of included module type T/322 by T/339
        Line 2, characters 2-11:
-         Module type T/324 came from this include
+         Module type T/322 came from this include
        Line 3, characters 2-39:
-         The module F has no valid type if T/324 is shadowed
+         The module F has no valid type if T/322 is shadowed
 |}]
 
 module type Extension = sig
@@ -198,11 +198,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/360 by ext/377
+Error: Illegal shadowing of included type ext/357 by ext/374
        Line 2, characters 2-11:
-         Type ext/360 came from this include
+         Type ext/357 came from this include
        Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/360 is shadowed
+         The extension constructor C2 has no valid type if ext/357 is shadowed
 |}]
 
 module type Class = sig

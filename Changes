@@ -393,6 +393,15 @@ Working version
 
 ### Bug fixes:
 
+- #6654, #9974, #10401: make `include` and with `constraints` handle correctly
+  the ghost components of signatures. For instance, in
+
+    include struct class c = object end end type c
+
+   the type `c` shadows the `class c` to avoid shadowing only the ghost type
+   c introduced by the class.
+  (Florian Angeletti, report by Eduardo Rafael, review by Gabriel Scherer)
+
 - #6985, #10385: remove all ghost row types from included modules
   (Florian Angeletti, review by Gabriel Scherer)
 

@@ -58,7 +58,7 @@
    ident path primitive types btype oprint subst predef datarepr
    cmi_format persistent_env env type_immediacy errortrace
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
-   tast_iterator tast_mapper cmt_format untypeast
+   tast_iterator tast_mapper signature_group cmt_format untypeast
    includemod includemod_errorprinter
    typetexp patterns printpat parmatch stypes typedecl typeopt rec_check
    typecore
