@@ -17,7 +17,6 @@
 
 BASEDIR := $(shell pwd)
 
-FIND=find
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 
