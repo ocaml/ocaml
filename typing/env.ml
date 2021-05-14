@@ -1831,90 +1831,90 @@ and store_value ?check id addr decl env =
     values = IdTbl.add id (Val_bound vda) env.values;
     summary = Env_value(env.summary, id, decl) }
 
+and store_constructor ~check type_decl type_id cstr_id cstr env =
+  if check && not type_decl.type_loc.Location.loc_ghost
+     && Warnings.is_active (Warnings.Unused_constructor ("", Unused))
+  then begin
+    let ty_name = Ident.name type_id in
+    let name = cstr.cstr_name in
+    let loc = cstr.cstr_loc in
+    let k = cstr.cstr_uid in
+    let priv = type_decl.type_private in
+    if not (Types.Uid.Tbl.mem !used_constructors k) then begin
+      let used = constructor_usages () in
+      Types.Uid.Tbl.add !used_constructors k
+        (add_constructor_usage used);
+      if not (ty_name = "" || ty_name.[0] = '_')
+      then
+        !add_delayed_check_forward
+          (fun () ->
+            Option.iter
+              (fun complaint ->
+                 if not (is_in_signature env) then
+                   Location.prerr_warning loc
+                     (Warnings.Unused_constructor(name, complaint)))
+              (constructor_usage_complaint ~rebind:false priv used));
+    end;
+  end;
+  { env with
+    constrs =
+      TycompTbl.add cstr_id
+        { cda_description = cstr; cda_address = None } env.constrs;
+  }
+
+and store_label ~check type_decl type_id lbl_id lbl env =
+  if check && not type_decl.type_loc.Location.loc_ghost
+     && Warnings.is_active (Warnings.Unused_field ("", Unused))
+  then begin
+    let ty_name = Ident.name type_id in
+    let priv = type_decl.type_private in
+    let name = lbl.lbl_name in
+    let loc = lbl.lbl_loc in
+    let mut = lbl.lbl_mut in
+    let k = lbl.lbl_uid in
+    if not (Types.Uid.Tbl.mem !used_labels k) then
+      let used = label_usages () in
+      Types.Uid.Tbl.add !used_labels k
+        (add_label_usage used);
+      if not (ty_name = "" || ty_name.[0] = '_' || name.[0] = '_')
+      then !add_delayed_check_forward
+          (fun () ->
+            Option.iter
+              (fun complaint ->
+                 if not (is_in_signature env) then
+                   Location.prerr_warning
+                     loc (Warnings.Unused_field(name, complaint)))
+              (label_usage_complaint priv mut used))
+  end;
+  { env with
+    labels = TycompTbl.add lbl_id lbl env.labels;
+  }
+
 and store_type ~check id info env =
   let loc = info.type_loc in
   if check then
     check_usage loc id info.type_uid
       (fun s -> Warnings.Unused_type_declaration s)
       !type_declarations;
-  let path = Pident id in
   let descrs, env =
+    let path = Pident id in
     match info.type_kind with
     | Type_variant _ ->
         let constructors = Datarepr.constructors_of_type path info
                             ~current_unit:(get_unit_name ())
         in
-        if check && not loc.Location.loc_ghost &&
-          Warnings.is_active (Warnings.Unused_constructor ("", Unused))
-        then begin
-          let ty_name = Ident.name id in
-          let priv = info.type_private in
-            List.iter
-              begin fun (_, cstr) ->
-                let name = cstr.cstr_name in
-                let loc = cstr.cstr_loc in
-                let k = cstr.cstr_uid in
-                if not (Types.Uid.Tbl.mem !used_constructors k) then
-                  let used = constructor_usages () in
-                  Types.Uid.Tbl.add !used_constructors k
-                    (add_constructor_usage used);
-                  if not (ty_name = "" || ty_name.[0] = '_')
-                  then !add_delayed_check_forward
-                      (fun () ->
-                        Option.iter
-                          (fun complaint ->
-                             if not (is_in_signature env) then
-                               Location.prerr_warning loc
-                                 (Warnings.Unused_constructor(name, complaint)))
-                          (constructor_usage_complaint ~rebind:false priv used))
-              end
-              constructors
-        end;
         Type_variant (List.map snd constructors),
-        { env with
-          constrs =
-            List.fold_right
-              (fun (id, descr) constrs ->
-                let cda = { cda_description = descr; cda_address = None } in
-                TycompTbl.add id cda constrs)
-              constructors env.constrs;
-        }
+        List.fold_left
+          (fun env (cstr_id, cstr) ->
+            store_constructor ~check info id cstr_id cstr env)
+          env constructors
     | Type_record (_, repr) ->
         let labels = Datarepr.labels_of_type path info in
-        if check && not loc.Location.loc_ghost &&
-          Warnings.is_active (Warnings.Unused_field ("", Unused))
-        then begin
-          let ty_name = Ident.name id in
-          let priv = info.type_private in
-          List.iter
-            begin fun (_, lbl) ->
-              let name = lbl.lbl_name in
-              let loc = lbl.lbl_loc in
-              let mut = lbl.lbl_mut in
-              let k = lbl.lbl_uid in
-              if not (Types.Uid.Tbl.mem !used_labels k) then
-                let used = label_usages () in
-                Types.Uid.Tbl.add !used_labels k
-                  (add_label_usage used);
-                if not (ty_name = "" || ty_name.[0] = '_' || name.[0] = '_')
-                then !add_delayed_check_forward
-                    (fun () ->
-                      Option.iter
-                        (fun complaint ->
-                           if not (is_in_signature env) then
-                             Location.prerr_warning
-                               loc (Warnings.Unused_field(name, complaint)))
-                        (label_usage_complaint priv mut used))
-            end
-            labels
-        end;
         Type_record (List.map snd labels, repr),
-        { env with
-          labels =
-            List.fold_right
-              (fun (id, descr) labels -> TycompTbl.add id descr labels)
-              labels env.labels;
-        }
+        List.fold_left
+          (fun env (lbl_id, lbl) ->
+            store_label ~check info id lbl_id lbl env)
+          env labels
     | Type_abstract -> Type_abstract, env
     | Type_open -> Type_open, env
   in
