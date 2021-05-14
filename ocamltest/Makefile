@@ -186,7 +186,7 @@ bytecode_modules := $(o_files) $(cmo_files)
 native_modules := $(o_files) $(cmx_files)
 
 directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
-                                       compilerlibs file_formats)
+                                       compilerlibs file_formats runtime asmrun)
 
 include_directories := $(addprefix -I , $(directories))
 

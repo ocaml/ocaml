@@ -235,6 +235,7 @@ TARGET=@target@
 HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
+FORCE_INSTRUMENTED_RUNTIME=@force_instrumented_runtime@
 FORCE_SAFE_STRING=@force_safe_string@
 DEFAULT_SAFE_STRING=@default_safe_string@
 WINDOWS_UNICODE=@windows_unicode@
