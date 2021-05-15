@@ -1013,7 +1013,7 @@ CAMLprim value caml_log1p_float(value f)
 }
 
 #ifndef HAS_C99_FLOAT_OPS
-static inline double simple_erf(double x)
+Caml_inline double simple_erf(double x)
 {
   /* This algorithm for calculating the error function is based on formula
      7.1.26 from the "Handbook of Mathematical Functions" by Abramowitz
