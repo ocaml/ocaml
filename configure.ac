@@ -1251,8 +1251,7 @@ AS_IF([$has_c99_float_ops],
   [AC_DEFINE([HAS_C99_FLOAT_OPS])
   # newlib's fma is intentionally broken (Cygwin64)
   AS_CASE([$target], [x86_64-*-cygwin], [], [AC_DEFINE([HAS_WORKING_FMA])])],
-  [AS_IF([test x"$enable_imprecise_c99_float_ops" = "xyes" ],
-    [],
+  [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
     [AC_MSG_ERROR(m4_normalize([
       C99 float ops unavailable, enable replacements
       with --enable-imprecise-c99-float-ops]))])])

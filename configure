@@ -14647,9 +14647,7 @@ if $has_c99_float_ops; then :
  ;;
 esac
 else
-  if test x"$enable_imprecise_c99_float_ops" = "xyes" ; then :
-
-else
+  if test x"$enable_imprecise_c99_float_ops" != "xyes" ; then :
   as_fn_error $? "C99 float ops unavailable, enable replacements with --enable-imprecise-c99-float-ops" "$LINENO" 5
 fi
 fi
