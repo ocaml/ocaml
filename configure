@@ -14648,7 +14648,24 @@ if $has_c99_float_ops; then :
 esac
 else
   if test x"$enable_imprecise_c99_float_ops" != "xyes" ; then :
+  case $enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor in #(
+  no,*) :
+    hard_error=true ;; #(
+  ,msvc-*) :
+    if test "${ocaml_cv_cc_vendor#msvc-}" -lt 1800 ; then :
+  hard_error=false
+else
+  hard_error=true
+fi ;; #(
+  *) :
+    hard_error=true ;;
+esac
+     if test x"$hard_error" = 'xtrue'; then :
   as_fn_error $? "C99 float ops unavailable, enable replacements with --enable-imprecise-c99-float-ops" "$LINENO" 5
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: C99 float ops unavailable, replacements enabled (ancient Visual Studio)" >&5
+$as_echo "$as_me: WARNING: C99 float ops unavailable, replacements enabled (ancient Visual Studio)" >&2;}
+fi
 fi
 fi
 
