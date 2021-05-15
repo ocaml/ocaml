@@ -90,6 +90,11 @@ Working version
 
 ### Code generation and optimizations:
 
+- #1400: Add an optional invariants check on Cmm, which can be activated
+  with the -dcmm-invariants flag
+  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+   and David Allsopp)
+
 - #9876: do not cache the young_limit GC variable in a processor register.
   This affects the ARM64, PowerPC and RISC-V ports, making signal handling
   and minor GC triggers more reliable, at the cost of a small slowdown.
@@ -111,10 +116,9 @@ Working version
 - #10349: Fix destroyed_at_c_call on RISC-V
   (Mark Shinwell, review by Nicolás Ojeda Bär)
 
-- #1400: Add an optional invariants check on Cmm, which can be activated
-  with the -dcmm-invariants flag
-  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
-   and David Allsopp)
+- #10404: Add a generic backward dataflow analyzer and use it to speed up
+  liveness analysis
+  (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
 
 ### Type system:
 
