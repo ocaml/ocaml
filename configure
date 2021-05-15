@@ -14619,162 +14619,33 @@ fi
 
 ## Check for C99 float ops
 
-# Note: this was disabled on Windows but the autoconf-generated script
-# does find the function it is looking for.
-# however the fma test does not pass so we disable the feature
-# for the moment, to be backward-compatible
-
-case $host in #(
-  *-*-mingw32|*-pc-windows) :
-     ;; #(
-  *) :
-    has_c99_float_ops=true
-  ac_fn_c_check_func "$LINENO" "expm1" "ac_cv_func_expm1"
-if test "x$ac_cv_func_expm1" = xyes; then :
+has_c99_float_ops=true
+for ac_func in expm1 log1p hypot fma exp2 log2 cbrt acosh asinh atanh erf erfc trunc round copysign
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
 
 else
   has_c99_float_ops=false
 fi
+done
 
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "log1p" "ac_cv_func_log1p"
-if test "x$ac_cv_func_log1p" = xyes; then :
 
-else
-  has_c99_float_ops=false
-fi
+if $has_c99_float_ops; then :
+  $as_echo "#define HAS_C99_FLOAT_OPS 1" >>confdefs.h
 
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "hypot" "ac_cv_func_hypot"
-if test "x$ac_cv_func_hypot" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "fma" "ac_cv_func_fma"
-if test "x$ac_cv_func_fma" = xyes; then :
-
-      case $target in #(
+  # newlib's fma is intentionally broken (Cygwin64)
+  case $target in #(
   x86_64-*-cygwin) :
      ;; #(
   *) :
     $as_echo "#define HAS_WORKING_FMA 1" >>confdefs.h
  ;;
 esac
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "exp2" "ac_cv_func_exp2"
-if test "x$ac_cv_func_exp2" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "log2" "ac_cv_func_log2"
-if test "x$ac_cv_func_log2" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "cbrt" "ac_cv_func_cbrt"
-if test "x$ac_cv_func_cbrt" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "acosh" "ac_cv_func_acosh"
-if test "x$ac_cv_func_acosh" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "asinh" "ac_cv_func_asinh"
-if test "x$ac_cv_func_asinh" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "atanh" "ac_cv_func_atanh"
-if test "x$ac_cv_func_atanh" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "erf" "ac_cv_func_erf"
-if test "x$ac_cv_func_erf" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "erfc" "ac_cv_func_erfc"
-if test "x$ac_cv_func_erfc" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "trunc" "ac_cv_func_trunc"
-if test "x$ac_cv_func_trunc" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "round" "ac_cv_func_round"
-if test "x$ac_cv_func_round" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-  if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "copysign" "ac_cv_func_copysign"
-if test "x$ac_cv_func_copysign" = xyes; then :
-
-else
-  has_c99_float_ops=false
-fi
-
-fi
-   ;;
-esac
-
-if $has_c99_float_ops; then :
-  $as_echo "#define HAS_C99_FLOAT_OPS 1" >>confdefs.h
-
 else
   if test x"$enable_imprecise_c99_float_ops" = "xyes" ; then :
 

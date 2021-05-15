@@ -1243,49 +1243,14 @@ OCAML_SIGNAL_HANDLERS_SEMANTICS
 
 ## Check for C99 float ops
 
-# Note: this was disabled on Windows but the autoconf-generated script
-# does find the function it is looking for.
-# however the fma test does not pass so we disable the feature
-# for the moment, to be backward-compatible
-
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [],
-  [has_c99_float_ops=true
-  AC_CHECK_FUNC([expm1], [], [has_c99_float_ops=false])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([log1p], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([hypot], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([fma], [
-      AS_CASE([$target],[x86_64-*-cygwin],[],[AC_DEFINE([HAS_WORKING_FMA])])],
-      [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([exp2], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([log2], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([cbrt], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([acosh], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([asinh], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([atanh], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([erf], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([erfc], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([trunc], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([round], [], [has_c99_float_ops=false])])
-  AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([copysign], [], [has_c99_float_ops=false])])
-  ])
+has_c99_float_ops=true
+AC_CHECK_FUNCS(m4_normalize([expm1 log1p hypot fma exp2 log2 cbrt acosh asinh
+  atanh erf erfc trunc round copysign]), [], [has_c99_float_ops=false])
 
 AS_IF([$has_c99_float_ops],
-  [AC_DEFINE([HAS_C99_FLOAT_OPS])],
+  [AC_DEFINE([HAS_C99_FLOAT_OPS])
+  # newlib's fma is intentionally broken (Cygwin64)
+  AS_CASE([$target], [x86_64-*-cygwin], [], [AC_DEFINE([HAS_WORKING_FMA])])],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" = "xyes" ],
     [],
     [AC_MSG_ERROR(m4_normalize([
