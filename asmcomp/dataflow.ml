@@ -36,24 +36,24 @@ let analyze ?(exnhandler = fun x -> x) ~transfer instr =
   let rec before end_ exn i =
     match i.desc with
     | Iend ->
-        transfer i end_ exn
+        transfer i ~next:end_ ~exn
     | Ireturn | Iop (Itailcall_ind | Itailcall_imm _) ->
-        transfer i D.bot D.bot
+        transfer i ~next:D.bot ~exn:D.bot
     | Iop _ ->
         let bx = before end_ exn i.next in
-        transfer i bx exn
+        transfer i ~next:bx ~exn
     | Iifthenelse(_, ifso, ifnot) ->
         let bx = before end_ exn i.next in
         let b1 = before bx exn ifso
         and b0 = before bx exn ifnot in
-        transfer i (D.join b1 b0) exn
+        transfer i ~next:(D.join b1 b0) ~exn
     | Iswitch(_, cases) ->
         let bx = before end_ exn i.next in
         let b1 =
           Array.fold_left
             (fun accu case -> D.join accu (before bx exn case))
             D.bot cases in
-        transfer i b1 exn
+        transfer i ~next:b1 ~exn
     | Icatch(rc, handlers, body) ->
         let bx = before end_ exn i.next in
         begin match rc with
@@ -69,16 +69,16 @@ let analyze ?(exnhandler = fun x -> x) ~transfer instr =
             while List.fold_left update false handlers do () done
         end;
         let b = before bx exn body in
-        transfer i b exn
+        transfer i ~next:b ~exn
     | Iexit n ->
-        transfer i (get_lbl n) exn
+        transfer i ~next:(get_lbl n) ~exn
     | Itrywith(body, handler) ->
         let bx = before end_ exn i.next in
         let bh = exnhandler (before bx exn handler) in
         let bb = before bx bh body in
-        transfer i bb exn
+        transfer i ~next:bb ~exn
     | Iraise _ ->
-        transfer i D.bot exn
+        transfer i ~next:D.bot ~exn
   in
     let b = before D.bot D.bot instr in
     (b, get_lbl)

@@ -28,7 +28,7 @@ end
 module Backward(D: DOMAIN) : sig
 
   val analyze: ?exnhandler: (D.t -> D.t) ->
-               transfer: (Mach.instruction -> D.t -> D.t -> D.t) ->
+               transfer: (Mach.instruction -> next: D.t -> exn: D.t -> D.t) ->
                Mach.instruction ->
                D.t * (int -> D.t)
 
@@ -40,11 +40,11 @@ module Backward(D: DOMAIN) : sig
      - a mapping from catch handler label to the abstract state at the
        beginning of the handler with this label.
 
-     The [transfer] function is called as [transfer i at_next at_raise].
+     The [transfer] function is called as [transfer i ~next ~exn].
      - [i] is a sub-instruction of [instr].
-     - [at_next] is the abstract state "after" the instruction for
+     - [next] is the abstract state "after" the instruction for
        normal control flow, falling through the successor(s) of [i].
-     - [at_raise] is the abstract state "after" the instruction for
+     - [exn] is the abstract state "after" the instruction for
        exceptional control flow, branching to the nearest exception handler
        or exiting the function with an unhandled exception.
 
@@ -52,7 +52,7 @@ module Backward(D: DOMAIN) : sig
      the instruction.  The dataflow analysis will, then, propagate this
      state "before" as the state "after" the predecessor instructions.
 
-     For compound instructions like [Iifthenelse], the [at_next] abstract
+     For compound instructions like [Iifthenelse], the [next] abstract
      value that is passed to [transfer] is not the abstract state at
      the end of the compound instruction (e.g. after the "then" and "else"
      branches have joined), but the join of the abstract states at
