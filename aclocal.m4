@@ -58,7 +58,8 @@ unknown
 #endif]
     )],
     [AC_CACHE_VAL([ocaml_cv_cc_vendor],
-      [ocaml_cv_cc_vendor=`grep ['^[a-z]'] conftest.i | tr -s ' ' '-'`])],
+      [ocaml_cv_cc_vendor=`grep ['^[a-z]'] conftest.i | tr -s ' ' '-' \
+                                                      | tr -d '\r'`])],
     [AC_MSG_FAILURE([unexpected preprocessor failure])])
   AC_MSG_RESULT([$ocaml_cv_cc_vendor])
 ])
