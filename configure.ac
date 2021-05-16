@@ -1255,8 +1255,9 @@ AS_IF([$has_c99_float_ops],
   [AC_DEFINE([HAS_C99_FLOAT_OPS])
   # Check whether round works (known bug in mingw-w64)
   OCAML_C99_CHECK_ROUND
-  # newlib's fma is intentionally broken (Cygwin64)
-  AS_CASE([$target], [x86_64-*-cygwin], [], [AC_DEFINE([HAS_WORKING_FMA])])],
+  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
+  # in VS2013-2017 and present but unimplemented in Cygwin64)
+  OCAML_C99_CHECK_FMA],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
     [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor],
       [no,*], [hard_error=true],

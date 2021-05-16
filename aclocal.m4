@@ -412,3 +412,60 @@ int main (void) {
       [AC_MSG_RESULT([cross-compiling; assume yes])
       AC_DEFINE([HAS_WORKING_ROUND])])])
 ])
+
+AC_DEFUN([OCAML_C99_CHECK_FMA], [
+  AC_MSG_CHECKING([whether fma works])
+  OCAML_RUN_IFELSE(
+    [AC_LANG_SOURCE([[
+#include <math.h>
+int main (void) {
+  /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
+     broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
+     The static volatile variables aim to thwart GCC's constant folding. */
+  static volatile double x, y, z;
+  double t264, t265, t266;
+  x = 0x3.bd5b7dde5fddap-496;
+  y = 0x3.bd5b7dde5fddap-496;
+  z = -0xd.fc352bc352bap-992;
+  t264 = fma(x, y, z);
+  x = 0x3.bd5b7dde5fddap-504;
+  y = 0x3.bd5b7dde5fddap-504;
+  z = -0xd.fc352bc352bap-1008;
+  t265 = fma(x, y, z);
+  x = 0x8p-540;
+  y = 0x4p-540;
+  z = 0x4p-1076;
+  t266 = fma(x, y, z);
+  return (!(t264 == 0x1.0989687cp-1044 ||
+            t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
+            t264 == 0x0.00000428p-1022)
+       || !(t265 == 0x1.0988p-1060 ||
+            t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
+            t265 == 0x0.000000000428p-1022)
+       || !(t266 == 0x8p-1076));
+}
+    ]])],
+    [AC_MSG_RESULT([yes])
+    AC_DEFINE([HAS_WORKING_FMA])],
+    [AC_MSG_RESULT([no])
+    AS_CASE([$enable_imprecise_c99_float_ops,$target],
+      [no,*], [hard_error=true],
+      [yes,*], [hard_error=false],
+      [*,x86_64-w64-mingw32|*,x86_64-*-cygwin*], [hard_error=false],
+      [AS_CASE([$ocaml_cv_cc_vendor],
+        [msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920 ],
+          [hard_error=false],
+          [hard_error=true])],
+        [hard_error=true])])
+    AS_IF([test x"$hard_error" = "xtrue"],
+      [AC_MSG_ERROR(m4_normalize([
+        fma does not work, enable emulation with
+        --enable-imprecise-c99-float-ops]))],
+      [AC_MSG_WARN(m4_normalize([
+        fma does not work; emulation enabled]))])],
+    [AS_CASE([$target],
+      [x86_64-w64-mingw32|x86_64-*-cygwin*],
+        [AC_MSG_RESULT([cross-compiling; assume not])],
+      [AC_MSG_RESULT([cross-compiling; assume yes])
+      AC_DEFINE([HAS_WORKING_FMA])])])
+])

@@ -52,7 +52,8 @@
 #undef HAS_WORKING_FMA
 
 /* Define HAS_WORKING_FMA if the fma function is correctly implemented. The
-   newlib library (intentionally) just has return x * y + z. */
+   newlib library (intentionally) just has return x * y + z. This hatch is
+   also used for https://sourceforge.net/p/mingw-w64/bugs/848/ */
 
 #undef HAS_WORKING_ROUND
 
