@@ -373,3 +373,42 @@ AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
     [assert=false])
   cross_compiling="$old_cross_compiling"
 ])
+
+# This is AC_RUN_IFELSE but taking $host_runnable into account (i.e. if the
+# program can be run, then it is run)
+AC_DEFUN([OCAML_RUN_IFELSE], [
+  old_cross_compiling="$cross_compiling"
+  AS_IF([test "x$host_runnable" = 'xtrue'], [cross_compiling='no'])
+  AC_RUN_IFELSE([$1],[$2],[$3],[$4])
+  cross_compiling="$old_cross_compiling"
+])
+
+AC_DEFUN([OCAML_C99_CHECK_ROUND], [
+  AC_MSG_CHECKING([whether round works])
+  OCAML_RUN_IFELSE(
+    [AC_LANG_SOURCE([[
+#include <math.h>
+int main (void) {
+  static volatile double d = 0.49999999999999994449;
+  return (fpclassify(round(d)) != FP_ZERO);
+}
+    ]])],
+    [AC_MSG_RESULT([yes])
+    AC_DEFINE([HAS_WORKING_ROUND])],
+    [AC_MSG_RESULT([no])
+    AS_CASE([$enable_imprecise_c99_float_ops,$target],
+      [no,*], [hard_error=true],
+      [yes,*], [hard_error=false],
+      [*,x86_64-w64-mingw32], [hard_error=false],
+      [hard_error=true])
+    AS_IF([test x"$hard_error" = "xtrue"],
+      [AC_MSG_ERROR(m4_normalize([
+        round does not work, enable emulation with
+        --enable-imprecise-c99-float-ops]))],
+      [AC_MSG_WARN(m4_normalize([
+        round does not work; emulation enabled]))])],
+    [AS_CASE([$target],
+      [x86_64-w64-mingw32],[AC_MSG_RESULT([cross-compiling; assume not])],
+      [AC_MSG_RESULT([cross-compiling; assume yes])
+      AC_DEFINE([HAS_WORKING_ROUND])])])
+])

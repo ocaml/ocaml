@@ -14671,6 +14671,69 @@ done
 if $has_c99_float_ops; then :
   $as_echo "#define HAS_C99_FLOAT_OPS 1" >>confdefs.h
 
+  # Check whether round works (known bug in mingw-w64)
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether round works" >&5
+$as_echo_n "checking whether round works... " >&6; }
+
+  old_cross_compiling="$cross_compiling"
+  if test "x$host_runnable" = 'xtrue'; then :
+  cross_compiling='no'
+fi
+  if test "$cross_compiling" = yes; then :
+  case $target in #(
+  x86_64-w64-mingw32) :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: cross-compiling; assume not" >&5
+$as_echo "cross-compiling; assume not" >&6; } ;; #(
+  *) :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: cross-compiling; assume yes" >&5
+$as_echo "cross-compiling; assume yes" >&6; }
+      $as_echo "#define HAS_WORKING_ROUND 1" >>confdefs.h
+ ;;
+esac
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <math.h>
+int main (void) {
+  static volatile double d = 0.49999999999999994449;
+  return (fpclassify(round(d)) != FP_ZERO);
+}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    $as_echo "#define HAS_WORKING_ROUND 1" >>confdefs.h
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    case $enable_imprecise_c99_float_ops,$target in #(
+  no,*) :
+    hard_error=true ;; #(
+  yes,*) :
+    hard_error=false ;; #(
+  *,x86_64-w64-mingw32) :
+    hard_error=false ;; #(
+  *) :
+    hard_error=true ;;
+esac
+    if test x"$hard_error" = "xtrue"; then :
+  as_fn_error $? "round does not work, enable emulation with --enable-imprecise-c99-float-ops" "$LINENO" 5
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: round does not work; emulation enabled" >&5
+$as_echo "$as_me: WARNING: round does not work; emulation enabled" >&2;}
+fi
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+  cross_compiling="$old_cross_compiling"
+
+
   # newlib's fma is intentionally broken (Cygwin64)
   case $target in #(
   x86_64-*-cygwin) :

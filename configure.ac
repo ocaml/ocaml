@@ -1253,6 +1253,8 @@ AC_CHECK_FUNCS(m4_normalize([expm1 log1p hypot fma exp2 log2 cbrt acosh asinh
 
 AS_IF([$has_c99_float_ops],
   [AC_DEFINE([HAS_C99_FLOAT_OPS])
+  # Check whether round works (known bug in mingw-w64)
+  OCAML_C99_CHECK_ROUND
   # newlib's fma is intentionally broken (Cygwin64)
   AS_CASE([$target], [x86_64-*-cygwin], [], [AC_DEFINE([HAS_WORKING_FMA])])],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],

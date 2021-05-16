@@ -497,7 +497,7 @@ CAMLprim value caml_trunc_float(value f)
 
 CAMLexport double caml_round(double f)
 {
-#ifdef HAS_C99_FLOAT_OPS
+#ifdef HAS_WORKING_ROUND
   return round(f);
 #else
   union { uint64_t i; double d; } u, pred_one_half; /* predecessor of 0.5 */
