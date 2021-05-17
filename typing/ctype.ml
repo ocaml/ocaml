@@ -1096,7 +1096,7 @@ let rec copy ?partial ?keep_names scope ty =
   let copy = copy ?partial ?keep_names scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
-  | _ ->
+  | desc ->
     let level = get_level ty in
     if level <> generic_level && partial = None then ty else
     (* We only forget types that are non generic and do not contain
@@ -1111,7 +1111,6 @@ let rec copy ?partial ?keep_names scope ty =
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let desc = get_desc ty in
     let t = newstub ~scope:(get_scope ty) in
     For_copy.redirect_desc scope ty (Tsubst (t, None));
     let desc' =
