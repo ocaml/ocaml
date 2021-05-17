@@ -20,6 +20,16 @@ BASEDIR := $(shell pwd)
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 
+ifeq "$(UNIX_OR_WIN32)" "win32"
+  CYGPATH=cygpath -m
+  # Ensure that the test runners definitely use Cygwin's sort and not the
+  # Windows sort command
+  SORT=/usr/bin/sort
+else
+  CYGPATH=echo
+  SORT=sort
+endif
+
 BASEDIR_HOST := $(shell $(CYGPATH) "$(BASEDIR)")
 ROOTDIR_HOST := $(BASEDIR_HOST)/$(ROOTDIR)
 
