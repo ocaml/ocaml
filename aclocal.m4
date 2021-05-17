@@ -357,3 +357,19 @@ EOF
 
   OCAML_CC_RESTORE_VARIABLES
 ])
+
+AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
+  AC_MSG_CHECKING([whether host executables can be run in the build])
+  old_cross_compiling="$cross_compiling"
+  cross_compiling='no'
+  AC_RUN_IFELSE(
+    [AC_LANG_SOURCE([[int main (void) {return 0;}]])],
+    [AC_MSG_RESULT([yes])
+    host_runnable=true],
+    [AC_MSG_RESULT([no])
+    host_runnable=false],
+    # autoconf displays a warning if this parameter is missing, but
+    # cross-compilation mode was disabled above.
+    [assert=false])
+  cross_compiling="$old_cross_compiling"
+])

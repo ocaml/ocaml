@@ -488,6 +488,10 @@ AS_CASE([$host],
 ## Find vendor of the C compiler
 OCAML_CC_VENDOR
 
+## In cross-compilation mode, can we run executables produced?
+# At the moment, it's required, but the fact is used in C99 function detection
+OCAML_HOST_IS_EXECUTABLE
+
 # Determine how to call the C preprocessor directly.
 # Most of the time, calling the C preprocessor through the C compiler is
 # desirable and even important.

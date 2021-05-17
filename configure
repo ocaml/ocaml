@@ -12553,6 +12553,38 @@ rm -f conftest.err conftest.i conftest.$ac_ext
 $as_echo "$ocaml_cv_cc_vendor" >&6; }
 
 
+## In cross-compilation mode, can we run executables produced?
+# At the moment, it's required, but the fact is used in C99 function detection
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether host executables can be run in the build" >&5
+$as_echo_n "checking whether host executables can be run in the build... " >&6; }
+  old_cross_compiling="$cross_compiling"
+  cross_compiling='no'
+  if test "$cross_compiling" = yes; then :
+  # autoconf displays a warning if this parameter is missing, but
+    # cross-compilation mode was disabled above.
+    assert=false
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main (void) {return 0;}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    host_runnable=true
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    host_runnable=false
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+  cross_compiling="$old_cross_compiling"
+
+
 # Determine how to call the C preprocessor directly.
 # Most of the time, calling the C preprocessor through the C compiler is
 # desirable and even important.
