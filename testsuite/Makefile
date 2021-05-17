@@ -322,7 +322,7 @@ tools:
 clean:
 	@$(MAKE) -C lib clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
-	$(FIND) . -name '*_ocamltest*' | xargs rm -rf
+	find . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
 
 .PHONY: report
