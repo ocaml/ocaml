@@ -384,11 +384,40 @@ let () =
     )
     "Print the signature of the corresponding value."
 
+let is_nonrec_type id td =
+  (* We track both recursive uses of t (`type t = X of t`) and
+     nonrecursive uses (`type nonrec t = t`) to only print the nonrec keyword
+     when it is necessary to make the type printable.
+  *)
+  let recursive_use = ref false in
+  let nonrecursive_use = ref false in
+  let it_path = function
+    | Path.Pident id' when Ident.name id' = Ident.name id ->
+        if Ident.same id id' then
+          recursive_use := true
+        else
+          nonrecursive_use:= true
+    | _ -> ()
+  in
+  let it =  Btype.{type_iterators with it_path } in
+  let () =
+    it.it_type_declaration it td;
+    Btype.unmark_iterators.it_type_declaration Btype.unmark_iterators td
+  in
+  match !recursive_use, !nonrecursive_use with
+  | false, true -> Trec_not
+  | true, _ | _, false -> Trec_first
+    (* note: true, true is possible *)
+
 let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
-       let _path, desc = Env.lookup_type ~loc lid env in
-       [ Sig_type (id, desc, Trec_not, Exported) ]
+       let path, desc = Env.lookup_type ~loc lid env in
+       let id, rs = match path with
+         | Pident id -> id, is_nonrec_type id desc
+         | _ -> id, Trec_first
+       in
+       [ Sig_type (id, desc, rs, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
 
@@ -469,22 +498,42 @@ let () =
     )
     "Print the signature of the corresponding exception."
 
+let is_rec_module id md =
+  let exception Exit in
+  let rec it_path = function
+    | Path.Pdot(root, _ ) -> it_path root
+    | Path.Pident id' -> if (Ident.same id id') then raise Exit
+    | _ -> ()
+  in
+  let it =  Btype.{type_iterators with it_path } in
+  let rs = match it.it_module_declaration it md with
+    | () -> Trec_not
+    | exception Exit -> Trec_first
+  in
+  Btype.unmark_iterators.it_module_declaration Btype.unmark_iterators md;
+  rs
+
+
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
+       let path, md = Env.lookup_module ~loc lid env in
+       let id = match path with
+         | Pident id -> id
+         | _ -> id
+       in
        let rec accum_aliases md acc =
-         let acc =
+         let acc rs =
            Sig_module (id, Mp_present,
                        {md with md_type = trim_signature md.md_type},
-                       Trec_not, Exported) :: acc in
+                       rs, Exported) :: acc in
          match md.md_type with
          | Mty_alias path ->
              let md = Env.find_module path env in
-             accum_aliases md acc
+             accum_aliases md (acc Trec_not)
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
-             List.rev acc
+             List.rev (acc (is_rec_module id md))
        in
-       let _, md = Env.lookup_module ~loc lid env in
        accum_aliases md []
     )
     "Print the signature of the corresponding module."
