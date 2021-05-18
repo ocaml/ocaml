@@ -13,3 +13,24 @@ Error: The type of this class,
        contains non-collapsible conjunctive types in constraints.
        Type int is not compatible with type float
 |}]
+
+class type ct = object
+  method x : int
+end
+
+class c (y : 'a * float) : ct = object
+  method x = y
+end
+[%%expect{|
+class type ct = object method x : int end
+Lines 5-7, characters 32-3:
+5 | ................................object
+6 |   method x = y
+7 | end
+Error: The class type object method x : 'a * float end
+       is not matched by the class type ct
+       The class type object method x : 'a * float end
+       is not matched by the class type object method x : int end
+       The method x has type 'a * float but is expected to have type int
+       Type 'a * float is not compatible with type int
+|}]

@@ -46,6 +46,29 @@ Error: Signature mismatch:
          type ('a, 'b) t = 'a * 'a
 |}];;
 
+type 'a x
+module M: sig
+  type ('a,'b,'c) t = ('a * 'b * 'c * 'b * 'a) x
+end = struct
+  type ('b,'c,'a) t = ('b * 'c * 'a * 'c * 'a) x
+end
+[%%expect{|
+type 'a x
+Lines 4-6, characters 6-3:
+4 | ......struct
+5 |   type ('b,'c,'a) t = ('b * 'c * 'a * 'c * 'a) x
+6 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type ('b, 'c, 'a) t = ('b * 'c * 'a * 'c * 'a) x end
+       is not included in
+         sig type ('a, 'b, 'c) t = ('a * 'b * 'c * 'b * 'a) x end
+       Type declarations do not match:
+         type ('b, 'c, 'a) t = ('b * 'c * 'a * 'c * 'a) x
+       is not included in
+         type ('a, 'b, 'c) t = ('a * 'b * 'c * 'b * 'a) x
+|}]
+
 module M : sig
   type t = <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>
 end = struct
@@ -537,6 +560,27 @@ Error: Signature mismatch:
        is not included in
          val f : s -> s
 |}];;
+
+module M : sig
+  val f : 'a -> float
+end = struct
+  let f : 'b -> int = fun _ -> 0
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f : 'b -> int = fun _ -> 0
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : 'b -> int end
+       is not included in
+         sig val f : 'a -> float end
+       Values do not match:
+         val f : 'b -> int
+       is not included in
+         val f : 'a -> float
+|}]
 
 module M : sig
   val x : 'a list ref
@@ -1235,4 +1279,312 @@ Error: Signature mismatch:
          type t = private s
        is not included in
          type t = private float
+|}];;
+
+module M : sig
+  type t = A
+end = struct
+  type t = private A
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private A
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private A end
+       is not included in
+         sig type t = A end
+       Type declarations do not match:
+         type t = private A
+       is not included in
+         type t = A
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = A | B
+end = struct
+  type t = private A | B
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private A | B
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private A | B end
+       is not included in
+         sig type t = A | B end
+       Type declarations do not match:
+         type t = private A | B
+       is not included in
+         type t = A | B
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = A of { x : int; y : bool }
+end = struct
+  type t = private A of { x : int; y : bool }
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private A of { x : int; y : bool }
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private A of { x : int; y : bool; } end
+       is not included in
+         sig type t = A of { x : int; y : bool; } end
+       Type declarations do not match:
+         type t = private A of { x : int; y : bool; }
+       is not included in
+         type t = A of { x : int; y : bool; }
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = { x : int; y : bool }
+end = struct
+  type t = private { x : int; y : bool }
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private { x : int; y : bool }
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private { x : int; y : bool; } end
+       is not included in
+         sig type t = { x : int; y : bool; } end
+       Type declarations do not match:
+         type t = private { x : int; y : bool; }
+       is not included in
+         type t = { x : int; y : bool; }
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = A
+end = struct
+  type t = private A | B
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private A | B
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private A | B end
+       is not included in
+         sig type t = A end
+       Type declarations do not match:
+         type t = private A | B
+       is not included in
+         type t = A
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = A | B
+end = struct
+  type t = private A
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private A
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private A end
+       is not included in
+         sig type t = A | B end
+       Type declarations do not match:
+         type t = private A
+       is not included in
+         type t = A | B
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = { x : int }
+end = struct
+  type t = private { x : int; y : bool }
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private { x : int; y : bool }
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private { x : int; y : bool; } end
+       is not included in
+         sig type t = { x : int; } end
+       Type declarations do not match:
+         type t = private { x : int; y : bool; }
+       is not included in
+         type t = { x : int; }
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = { x : int; y : bool }
+end = struct
+  type t = private { x : int }
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private { x : int }
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private { x : int; } end
+       is not included in
+         sig type t = { x : int; y : bool; } end
+       Type declarations do not match:
+         type t = private { x : int; }
+       is not included in
+         type t = { x : int; y : bool; }
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = A | B
+end = struct
+  type t = private { x : int; y : bool }
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private { x : int; y : bool }
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private { x : int; y : bool; } end
+       is not included in
+         sig type t = A | B end
+       Type declarations do not match:
+         type t = private { x : int; y : bool; }
+       is not included in
+         type t = A | B
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = { x : int; y : bool }
+end = struct
+  type t = private A | B
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private A | B
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private A | B end
+       is not included in
+         sig type t = { x : int; y : bool; } end
+       Type declarations do not match:
+         type t = private A | B
+       is not included in
+         type t = { x : int; y : bool; }
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = [`A]
+end = struct
+  type t = private [> `A | `B]
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private [> `A | `B]
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private [> `A | `B ] end
+       is not included in
+         sig type t = [ `A ] end
+       Type declarations do not match:
+         type t = private [> `A | `B ]
+       is not included in
+         type t = [ `A ]
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = [`A]
+end = struct
+  type t = private [< `A | `B]
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private [< `A | `B]
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private [< `A | `B ] end
+       is not included in
+         sig type t = [ `A ] end
+       Type declarations do not match:
+         type t = private [< `A | `B ]
+       is not included in
+         type t = [ `A ]
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = [`A]
+end = struct
+  type t = private [< `A | `B > `A]
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private [< `A | `B > `A]
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private [< `A | `B > `A ] end
+       is not included in
+         sig type t = [ `A ] end
+       Type declarations do not match:
+         type t = private [< `A | `B > `A ]
+       is not included in
+         type t = [ `A ]
+       A private type would be revealed.
+|}];;
+
+module M : sig
+  type t = < m : int >
+end = struct
+  type t = private < m : int; .. >
+end;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = private < m : int; .. >
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = private < m : int; .. > end
+       is not included in
+         sig type t = < m : int > end
+       Type declarations do not match:
+         type t = private < m : int; .. >
+       is not included in
+         type t = < m : int >
+       A private type would be revealed.
 |}];;
