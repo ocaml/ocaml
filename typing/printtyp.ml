@@ -1683,12 +1683,13 @@ let ident_sigitem = function
   | Types.Sig_typext (ident,_,_,_)   ->  {hide=false; ident }
 
 let hide ids env =
-    let hide_id id env =
-       if id.hide then
-         Env.add_type ~check:false (Ident.rename id.ident) dummy env
-       else env
-    in
-    List.fold_right hide_id ids env
+  let hide_id id env =
+    (* Global idents cannot be renamed *)
+    if id.hide && not (Ident.global id.ident) then
+      Env.add_type ~check:false (Ident.rename id.ident) dummy env
+    else env
+  in
+  List.fold_right hide_id ids env
 
 let with_hidden_items ids f =
   let with_hidden_in_printing_env ids f =
