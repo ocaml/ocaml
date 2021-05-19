@@ -271,9 +271,6 @@ let rec reload i before =
    NB ter: is it the same thing for catch bodies ?
 *)
 
-(* CR mshinwell for pchambart: Try to test the new algorithms for dealing
-   with Icatch. *)
-
 let spill_at_exit : (int, Reg.Set.t) Hashtbl.t = Hashtbl.create 20
 
 let get_spill_at_exit k =
