@@ -126,7 +126,7 @@ Working version
 
 - #10419: Add %frame_pointers primitive which is true only in native code with
   frame pointers mode enabled.
-  (David Allsopp, review by Mark Shinwell)
+  (David Allsopp, review by Vincent Laviron and Mark Shinwell)
 
 ### Type system:
 
