@@ -120,6 +120,10 @@ Working version
   liveness analysis
   (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
 
+- #10414: Avoid compilation times exponential in the nesting of loops
+  in the spilling and reloading passes
+  (Xavier Leroy, review by Vincent Laviron)
+
 ### Type system:
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`
