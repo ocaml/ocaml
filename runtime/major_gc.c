@@ -52,6 +52,7 @@ struct mark_stack {
 
 uintnat caml_percent_free;
 static uintnat marked_words, heap_wsz_at_cycle_start;
+static double s_factor, m_factor, ooh_ratio;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
@@ -69,7 +70,6 @@ extern value caml_fl_merge;  /* Defined in freelist.c. */
 static char *redarken_first_chunk = NULL;
 
 static char *sweep_chunk;
-static double p_backlog = 0.0; /* backlog for the gc speedup parameter */
 
 int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
 
@@ -925,6 +925,18 @@ static void sweep_slice (intnat work)
   caml_gc_sweep_hp = sweep_hp;
 }
 
+void set_caml_percent_free (uintnat pf)
+{
+  caml_percent_free = pf;
+  double o = caml_percent_free / 100.;
+  double lambda = Mark_to_sweep_ratio;
+  double s = 1 + (1 + 2 / lambda) / o;
+  double m = lambda * s;
+  s_factor = s;
+  m_factor = m;
+  ooh_ratio = 1/(o+1)/m + 1/s;
+}
+
 /* The main entry point for the major GC. Called about once for each
    minor GC. [howmuch] is the amount of work to do:
    -1 if the GC is triggered automatically
@@ -933,84 +945,22 @@ static void sweep_slice (intnat work)
  */
 void caml_major_collection_slice (intnat howmuch)
 {
-  double p, dp, filt_p, spend;
+  double alloc, filt_alloc, spend;
   intnat computed_work;
   int i;
-  /*
-     Free memory at the start of the GC cycle (garbage + free list) (assumed):
-                 FM = Caml_state->stat_heap_wsz * caml_percent_free
-                      / (100 + caml_percent_free)
-
-     Assuming steady state and enforcing a constant allocation rate, then
-     FM is divided in 2/3 for garbage and 1/3 for free list.
-                 G = 2 * FM / 3
-     G is also the amount of memory that will be used during this cycle
-     (still assuming steady state).
-
-     Proportion of G consumed since the previous slice:
-                 PH = caml_allocated_words / G
-                    = caml_allocated_words * 3 * (100 + caml_percent_free)
-                      / (2 * Caml_state->stat_heap_wsz * caml_percent_free)
-     Proportion of extra-heap resources consumed since the previous slice:
-                 PE = caml_extra_heap_resources
-     Proportion of total work to do in this slice:
-                 P  = max (PH, PE)
-
-     Here, we insert a time-based filter on the P variable to avoid large
-     latency spikes in the GC, so the P below is a smoothed-out version of
-     the P above.
-
-     Amount of marking work for the GC cycle:
-             MW = Caml_state->stat_heap_wsz * 100 / (100 + caml_percent_free)
-                  + caml_incremental_roots_count
-     Amount of sweeping work for the GC cycle:
-             SW = Caml_state->stat_heap_wsz
-
-     In order to finish marking with a non-empty free list, we will
-     use 40% of the time for marking, and 60% for sweeping.
-
-     Let MT be the time spent marking, ST the time spent sweeping, and TT
-     the total time for this cycle. We have:
-                 MT = 40/100 * TT
-                 ST = 60/100 * TT
-
-     Amount of time to spend on this slice:
-                 T  = P * TT = P * MT / (40/100) = P * ST / (60/100)
-
-     Since we must do MW work in MT time or SW work in ST time, the amount
-     of work for this slice is:
-                 MS = P * MW / (40/100)  if marking
-                 SS = P * SW / (60/100)  if sweeping
-
-     Amount of marking work for a marking slice:
-                 MS = P * MW / (40/100)
-                 MS = P * (Caml_state->stat_heap_wsz * 250
-                           / (100 + caml_percent_free)
-                           + 2.5 * caml_incremental_roots_count)
-     Amount of sweeping work for a sweeping slice:
-                 SS = P * SW / (60/100)
-                 SS = P * Caml_state->stat_heap_wsz * 5 / 3
-
-     This slice will either mark MS words or sweep SS words.
-  */
 
   if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
 
-  p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
-      / Caml_state->stat_heap_wsz / caml_percent_free / 2.0;
+  alloc = caml_allocated_words;
   if (caml_dependent_size > 0){
-    dp = (double) caml_dependent_allocated * (100 + caml_percent_free)
-         / caml_dependent_size / caml_percent_free;
-  }else{
-    dp = 0.0;
+    double R = caml_dependent_size / Caml_state->stat_heap_wsz;
+    double equiv = caml_dependent_allocated / R;
+    if (equiv > alloc) alloc = equiv;
   }
-  if (p < dp) p = dp;
-  if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
-  p += p_backlog;
-  p_backlog = 0.0;
-  if (p > 0.3){
-    p_backlog = p - 0.3;
-    p = 0.3;
+  if (caml_extra_heap_resources > 0.0){
+    double equiv =
+      Caml_state->stat_heap_wsz * ooh_ratio * caml_extra_heap_resources;
+    if (equiv > alloc) alloc = equiv;
   }
 
   CAML_EV_COUNTER (EV_C_MAJOR_WORK_EXTRA,
@@ -1025,14 +975,11 @@ void caml_major_collection_slice (intnat howmuch)
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (caml_extra_heap_resources * 1000000));
   caml_gc_message (0x40, "raw work-to-do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "du\n",
-                   (intnat) (p * 1000000));
-  caml_gc_message (0x40, "work backlog = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "du\n",
-                   (intnat) (p_backlog * 1000000));
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                   (intnat) alloc);
 
   for (i = 0; i < caml_major_window; i++){
-    caml_major_ring[i] += p / caml_major_window;
+    caml_major_ring[i] += alloc / caml_major_window;
   }
 
   if (caml_gc_clock >= 1.0){
@@ -1051,7 +998,7 @@ void caml_major_collection_slice (intnat howmuch)
     spend = fmin (caml_major_work_credit,
                   caml_major_ring[caml_major_ring_index]);
     caml_major_work_credit -= spend;
-    filt_p = caml_major_ring[caml_major_ring_index] - spend;
+    filt_alloc = caml_major_ring[caml_major_ring_index] - spend;
     caml_major_ring[caml_major_ring_index] = 0.0;
   }else{
     /* forced GC slice: do work and add it to the credit */
@@ -1060,22 +1007,18 @@ void caml_major_collection_slice (intnat howmuch)
          we do not use the current bucket, as it may be empty */
       int i = caml_major_ring_index + 1;
       if (i >= caml_major_window) i = 0;
-      filt_p = caml_major_ring[i];
+      filt_alloc = caml_major_ring[i];
     }else{
       /* manual setting */
-      filt_p = (double) howmuch * 3.0 * (100 + caml_percent_free)
-               / Caml_state->stat_heap_wsz / caml_percent_free / 2.0;
+      filt_alloc = (double) howmuch;
     }
-    caml_major_work_credit += filt_p;
-    /* Limit work credit to 1.0 */
-    caml_major_work_credit = fmin(caml_major_work_credit, 1.0);
+    caml_major_work_credit += filt_alloc;
   }
 
-  p = filt_p;
+  alloc = filt_alloc;
 
-  caml_gc_message (0x40, "filtered work-to-do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "du\n",
-                   (intnat) (p * 1000000));
+  caml_gc_message (0x40, "filtered allocation counter = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n", (intnat) alloc);
 
   if (caml_gc_phase == Phase_idle){
     if (Caml_state->young_ptr == Caml_state->young_alloc_end){
@@ -1085,21 +1028,19 @@ void caml_major_collection_slice (intnat howmuch)
       start_cycle ();
       CAML_EV_END(EV_MAJOR_ROOTS);
     }
-    p = 0;
+    alloc = 0;
     goto finished;
   }
 
-  if (p < 0){
-    p = 0;
+  if (alloc < 0){
+    alloc = 0;
     goto finished;
   }
 
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean){
-    computed_work = (intnat) (p * ((double) Caml_state->stat_heap_wsz * 250
-                                   / (100 + caml_percent_free)
-                                   + caml_incremental_roots_count));
+    computed_work = (intnat) (alloc * m_factor);
   }else{
-    computed_work = (intnat) (p * Caml_state->stat_heap_wsz * 5 / 3);
+    computed_work = (intnat) (alloc * s_factor);
   }
   caml_gc_message (0x40, "computed work = %"
                    ARCH_INTNAT_PRINTF_FORMAT "d words\n", computed_work);
@@ -1146,18 +1087,17 @@ void caml_major_collection_slice (intnat howmuch)
 
  finished:
   caml_gc_message (0x40, "work-done = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "du\n",
-                   (intnat) (p * 1000000));
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n", (intnat) alloc);
 
   /* if some of the work was not done, take it back from the credit
      or spread it over the buckets. */
-  p = filt_p - p;
-  spend = fmin (p, caml_major_work_credit);
+  alloc = filt_alloc - alloc;
+  spend = fmin (alloc, caml_major_work_credit);
   caml_major_work_credit -= spend;
-  if (p > spend){
-    p -= spend;
-    p /= caml_major_window;
-    for (i = 0; i < caml_major_window; i++) caml_major_ring[i] += p;
+  if (alloc > spend){
+    alloc -= spend;
+    alloc /= caml_major_window;
+    for (i = 0; i < caml_major_window; i++) caml_major_ring[i] += alloc;
   }
 
   Caml_state->stat_major_words += caml_allocated_words;
@@ -1174,7 +1114,6 @@ void caml_major_collection_slice (intnat howmuch)
 void caml_finish_major_cycle (void)
 {
   if (caml_gc_phase == Phase_idle){
-    p_backlog = 0.0; /* full major GC cycle, the backlog becomes irrelevant */
     start_cycle ();
   }
   while (caml_gc_phase == Phase_mark) mark_slice (LONG_MAX);
