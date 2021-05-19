@@ -124,6 +124,10 @@ Working version
   in the spilling and reloading passes
   (Xavier Leroy, review by Vincent Laviron)
 
+- #10419: Add %frame_pointers primitive which is true only in native code with
+  frame pointers mode enabled.
+  (David Allsopp, review by Mark Shinwell)
+
 ### Type system:
 
 * #10081: Typecheck `x |> f` and `f @@ x` as `(f x)`

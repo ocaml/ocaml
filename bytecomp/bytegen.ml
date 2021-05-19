@@ -384,6 +384,7 @@ let comp_bint_primitive bi suff args =
   Kccall(pref ^ suff, List.length args)
 
 let comp_primitive p args =
+  let runtime_const const_name = Kccall("caml_sys_const_" ^ const_name, 1) in
   match p with
     Pgetglobal id -> Kgetglobal id
   | Psetglobal id -> Ksetglobal id
@@ -450,17 +451,15 @@ let comp_primitive p args =
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
   | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3)
   | Parraysetu _ -> Ksetvectitem
-  | Pctconst c ->
-     let const_name = match c with
-       | Big_endian -> "big_endian"
-       | Word_size -> "word_size"
-       | Int_size -> "int_size"
-       | Max_wosize -> "max_wosize"
-       | Ostype_unix -> "ostype_unix"
-       | Ostype_win32 -> "ostype_win32"
-       | Ostype_cygwin -> "ostype_cygwin"
-       | Backend_type -> "backend_type" in
-     Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
+  | Pctconst Big_endian -> runtime_const "big_endian"
+  | Pctconst Word_size -> runtime_const "word_size"
+  | Pctconst Int_size -> runtime_const "int_size"
+  | Pctconst Max_wosize -> runtime_const "max_wosize"
+  | Pctconst Ostype_unix -> runtime_const "ostype_unix"
+  | Pctconst Ostype_win32 -> runtime_const "ostype_win32"
+  | Pctconst Ostype_cygwin -> runtime_const "ostype_cygwin"
+  | Pctconst Backend_type -> runtime_const "backend_type"
+  | Pctconst Frame_pointers -> Kconst(Const_base(Const_int 0)) (* false *)
   | Pisint -> Kisint
   | Pisout -> Kisout
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args

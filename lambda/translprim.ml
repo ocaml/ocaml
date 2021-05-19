@@ -143,6 +143,7 @@ let primitives_table =
     "%ostype_unix", Primitive ((Pctconst Ostype_unix), 1);
     "%ostype_win32", Primitive ((Pctconst Ostype_win32), 1);
     "%ostype_cygwin", Primitive ((Pctconst Ostype_cygwin), 1);
+    "%frame_pointers", Primitive ((Pctconst Frame_pointers), 0);
     "%negint", Primitive (Pnegint, 1);
     "%succint", Primitive ((Poffsetint 1), 1);
     "%predint", Primitive ((Poffsetint(-1)), 1);

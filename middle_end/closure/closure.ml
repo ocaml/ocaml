@@ -1047,6 +1047,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         (Uletrec(udefs, ubody), approx)
       end
   (* Compile-time constants *)
+  | Lprim(Pctconst Frame_pointers, [], _loc) ->
+      make_const_bool Config.with_frame_pointers
   | Lprim(Pctconst c, [arg], _loc) ->
       let cst, approx =
         match c with
@@ -1059,6 +1061,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
         | Backend_type ->
             make_const_int 0 (* tag 0 is the same as Native here *)
+        | Frame_pointers -> assert false
       in
       let arg, _approx = close env arg in
       let id = Ident.create_local "dummy" in

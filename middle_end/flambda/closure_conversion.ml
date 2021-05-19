@@ -438,6 +438,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (name_expr
         (Prim (Praise kind, [arg_var], dbg))
         ~name:Names.raise)
+  | Lprim (Pctconst Frame_pointers, [], _loc) ->
+      let cst = lambda_const_bool Config.with_frame_pointers in
+      let cst, name = close_const t cst in
+      name_expr cst ~name
   | Lprim (Pctconst c, [arg], _loc) ->
       let module Backend = (val t.backend) in
       let const =
@@ -452,6 +456,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         | Ostype_cygwin -> lambda_const_bool (String.equal Sys.os_type "Cygwin")
         | Backend_type ->
             Lambda.const_int 0 (* tag 0 is the same as Native *)
+        | Frame_pointers -> assert false
         end
       in
       close t env
