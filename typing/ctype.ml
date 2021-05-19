@@ -3227,7 +3227,7 @@ let expand_head_trace env t =
 
 (*
    Unify [t] and [l:'a -> 'b]. Return ['a] and ['b].
-   In label mode, label mismatch is accepted when
+   In [-nolabels] mode, label mismatch is accepted when
    (1) the requested label is ""
    (2) the original label is not optional
 *)
