@@ -239,8 +239,8 @@ Working version
 
 ### Compiler user-interface and warnings:
 
-- #1737, #2092, #7852, #7859, #10405: Update locations during destructive
-  substitutions
+- #1737, #2092, #7852, #7859, #10405, #10417: Update locations during
+  destructive substitutions
   (Thomas Refis, review by Gabriel Radanne, report by Hugo Heuzard)
 
 - #8732, improved error messages for invalid private row type definitions.
