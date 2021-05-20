@@ -1748,14 +1748,13 @@ In case the shared library produced with "-output-obj" is to be loaded and
 unloaded repeatedly by a single process, care must be taken to unload the
 OCaml runtime explicitly, in order to avoid various system resource leaks.
 
-Since 4.05, "caml_shutdown" function can be used to shut the runtime down
+Since 4.06, "caml_shutdown" function can be used to shut the runtime down
 gracefully, which equals the following:
 \begin{itemize}
 \item Running the functions that were registered with "Stdlib.at_exit".
 \item Triggering finalization of allocated custom blocks (see
-section~\ref{s:c-custom}). For example, "Stdlib.in_channel" and
-"Stdlib.out_channel" are represented by custom blocks that enclose file
-descriptors, which are to be released.
+section~\ref{s:c-custom}). For example, arrays created with
+"Bigarray.create" get their memory released.
 \item Unloading the dependent shared libraries that were loaded by the runtime,
 including "dynlink" plugins.
 \item Freeing the memory blocks that were allocated by the runtime with
@@ -1764,7 +1763,9 @@ from "memory.h" for managing static (that is, non-moving) blocks of heap
 memory, as all the blocks allocated with these functions are automatically
 freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
 have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
-runtime is started with a specialized "caml_startup_pooled" function.
+runtime is started with a specialized "caml_startup_pooled" function, or with
+runtime parameter "c" (``cleanup on exit'', which in addition calls
+"caml_shutdown" on exit).
 \end{itemize}
 
 As a shared library may have several clients simultaneously, it is made for
