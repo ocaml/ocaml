@@ -88,6 +88,7 @@ type prim =
   | Send
   | Send_self
   | Send_cache
+  | Frame_pointers
 
 let used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
@@ -143,6 +144,7 @@ let primitives_table =
     "%ostype_unix", Primitive ((Pctconst Ostype_unix), 1);
     "%ostype_win32", Primitive ((Pctconst Ostype_win32), 1);
     "%ostype_cygwin", Primitive ((Pctconst Ostype_cygwin), 1);
+    "%frame_pointers", Frame_pointers;
     "%negint", Primitive (Pnegint, 1);
     "%succint", Primitive ((Poffsetint 1), 1);
     "%predint", Primitive ((Poffsetint(-1)), 1);
@@ -695,9 +697,14 @@ let lambda_of_prim prim_name prim loc args arg_exps =
         Lsend(Cached, meth, obj, [cache; pos], loc)
       else
         Lsend(Public, meth, obj, [], loc)
+  | Frame_pointers, [] ->
+      let frame_pointers =
+        if !Clflags.native_code && Config.with_frame_pointers then 1 else 0
+      in
+      Lconst (const_int frame_pointers)
   | (Raise _ | Raise_with_backtrace
     | Lazy_force | Loc _ | Primitive _ | Comparison _
-    | Send | Send_self | Send_cache), _ ->
+    | Send | Send_self | Send_cache | Frame_pointers), _ ->
       raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
 let check_primitive_arity loc p =
@@ -713,6 +720,7 @@ let check_primitive_arity loc p =
     | Loc _ -> p.prim_arity = 1 || p.prim_arity = 0
     | Send | Send_self -> p.prim_arity = 2
     | Send_cache -> p.prim_arity = 4
+    | Frame_pointers -> p.prim_arity = 0
   in
   if not ok then raise(Error(loc, Wrong_arity_builtin_primitive p.prim_name))
 
@@ -782,7 +790,7 @@ let primitive_needs_event_after = function
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
   | Lazy_force | Send | Send_self | Send_cache -> true
-  | Raise _ | Raise_with_backtrace | Loc _ -> false
+  | Raise _ | Raise_with_backtrace | Loc _ | Frame_pointers -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
   let prim =
