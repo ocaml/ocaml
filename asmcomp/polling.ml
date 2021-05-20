@@ -185,9 +185,18 @@ let instr_body handler_safe i =
   in
   instr IntSet.empty i
 
+let contains_poll instr =
+  let poll = ref false in
+  Mach.instr_iter
+      (fun i -> match i.desc with Iop (Ipoll _) -> poll := true | _ -> ())
+      instr;
+  !poll
+
 let instrument_fundecl ~future_funcnames:_ (f : Mach.fundecl) : Mach.fundecl =
   let handler_needs_poll = polled_loops_analysis f.fun_body in
-  { f with fun_body = instr_body handler_needs_poll f.fun_body }
+  let new_body = instr_body handler_needs_poll f.fun_body in
+  let new_contains_calls = f.fun_contains_calls || contains_poll new_body in
+  { f with fun_body = new_body; fun_contains_calls = new_contains_calls }
 
 let requires_prologue_poll ~future_funcnames i =
   potentially_recursive_tailcall ~fwd_func:future_funcnames i
