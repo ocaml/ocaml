@@ -40,7 +40,7 @@
 #ifdef CAML_INSTR
 
 #define CTF_MAGIC 0xc1fc1fc1
-#define CAML_TRACE_VERSION 0x1
+#define CAML_TRACE_VERSION 0x100 /* Multicore OCaml WIP */
 
 struct ctf_stream_header {
   uint32_t magic;
