@@ -17,14 +17,13 @@ let major_collections () =
 
 (* test to force domain to do a full GC while another is waiting *)
 let _ =
-  let d = Domain.spawn (fun _ ->
-  	Domain.Sync.critical_section (fun () -> Domain.Sync.wait());
-  ) in
+  let sem = Semaphore.Binary.make false in
+  let d = Domain.spawn (fun _ -> Semaphore.Binary.acquire sem) in
   Gc.full_major ();
   let n = major_collections () in
   ignore (make 22);
   assert ((major_collections ()) > n);
-  Domain.Sync.notify (Domain.get_id d);
+  Semaphore.Binary.release sem;
   Domain.join d;
   print_endline "wait OK"
 
