@@ -305,11 +305,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->trap_sp_off = 1;
 #endif
 
-    domain_state->eventlog_enabled = 0;
-    domain_state->eventlog_paused = 0;
-    domain_state->eventlog_startup_pid = 0;
-    domain_state->eventlog_startup_timestamp = 0;
-    domain_state->eventlog_out = NULL;
 
 #if defined(NAKED_POINTERS_CHECKER) && !defined(_WIN32)
     domain_state->checking_pointer_pc = NULL;
@@ -409,6 +404,8 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
   caml_init_signal_handling();
   startup_timestamp = caml_time_counter();
+
+  CAML_EVENTLOG_INIT();
 }
 
 void caml_init_domain_self(int domain_id) {
@@ -434,6 +431,8 @@ static void* backup_thread_func(void* v)
 
   domain_self = di;
   SET_Caml_state((void*)(di->tls_area));
+
+  CAML_EVENTLOG_IS_BACKUP_THREAD();
 
   /* TODO: how does the backup thread interact with the eventlog infra?
    * caml_ev_tag_self_as_backup_thread(); */
@@ -1260,6 +1259,7 @@ static void domain_terminate()
   caml_domain_stop_hook();
   caml_stat_free(domain_state->ephe_info);
   caml_teardown_major_gc();
+  CAML_EVENTLOG_TEARDOWN();
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
   caml_free_minor_tables(domain_state->minor_tables);
