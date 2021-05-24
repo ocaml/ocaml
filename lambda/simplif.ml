@@ -648,13 +648,6 @@ let rec emit_tail_infos is_tail lambda =
   | Lconst _ -> ()
   | Lapply ap ->
       begin
-        (* Note: is_tail does not take backend-specific logic into
-           account (maximum number of parameters, etc.)  so it may
-           over-approximate tail-callness.
-
-           Trying to do something more fine-grained would result in
-           different warnings depending on whether the native or
-           bytecode compiler is used. *)
         let maybe_warn ~is_tail ~expect_tail =
           if is_tail <> expect_tail then
             Location.prerr_warning (to_location ap.ap_loc)
@@ -662,6 +655,9 @@ let rec emit_tail_infos is_tail lambda =
         match ap.ap_tailcall with
         | Default_tailcall -> ()
         | Tailcall_expectation expect_tail ->
+            let is_tail =
+              is_tail
+              && List.length ap.ap_args <= max_arguments_for_tailcalls () in
             maybe_warn ~is_tail ~expect_tail
       end;
       emit_tail_infos false ap.ap_func;

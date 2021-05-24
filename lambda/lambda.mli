@@ -434,6 +434,16 @@ val max_arity : unit -> int
       This is unlimited ([max_int]) for bytecode, but limited
       (currently to 126) for native code. *)
 
+val max_arguments_for_tailcalls : unit -> int
+  (** Maximal number of arguments for a tail call.
+      This is unlimited ([max_int]) for bytecode, but limited
+      by the number of registers available for parameter passing
+      (minus one) in native code.  If more arguments are provided,
+      the backend can turn the tail call into a normal call. *)
+
+val set_num_parameter_regs : int -> unit
+  (** Record the number of registers available for parameter passing. *)
+
 (***********************)
 (* For static failures *)
 (***********************)

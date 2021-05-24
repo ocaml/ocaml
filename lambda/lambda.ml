@@ -970,5 +970,18 @@ let max_arity () =
   (* 126 = 127 (the maximal number of parameters supported in C--)
            - 1 (the hidden parameter containing the environment) *)
 
+let num_param_regs = ref 0
+
+let set_num_parameter_regs n =
+  assert (n > 0); num_param_regs := n
+
+let max_arguments_for_tailcalls () =
+  if !Clflags.native_code then begin
+    let n = !num_param_regs in
+    assert (n > 0); n - 1
+    (* -1 for the hidden parameter containing the environment *)
+  end else
+    max_int
+
 let reset () =
   raise_count := 0

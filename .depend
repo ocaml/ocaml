@@ -6037,6 +6037,7 @@ driver/optmaindriver.cmo : \
     driver/makedepend.cmi \
     driver/main_args.cmi \
     parsing/location.cmi \
+    lambda/lambda.cmi \
     middle_end/flambda/import_approx.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
@@ -6057,6 +6058,7 @@ driver/optmaindriver.cmx : \
     driver/makedepend.cmx \
     driver/main_args.cmx \
     parsing/location.cmx \
+    lambda/lambda.cmx \
     middle_end/flambda/import_approx.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
