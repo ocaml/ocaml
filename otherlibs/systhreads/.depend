@@ -1,34 +1,8 @@
-condition.cmo : \
-    mutex.cmi \
-    condition.cmi
-condition.cmx : \
-    mutex.cmx \
-    condition.cmi
-condition.cmi : \
-    mutex.cmi
 event.cmo : \
-    mutex.cmi \
-    condition.cmi \
     event.cmi
 event.cmx : \
-    mutex.cmx \
-    condition.cmx \
     event.cmi
 event.cmi :
-mutex.cmo : \
-    mutex.cmi
-mutex.cmx : \
-    mutex.cmi
-mutex.cmi :
-semaphore.cmo : \
-    mutex.cmi \
-    condition.cmi \
-    semaphore.cmi
-semaphore.cmx : \
-    mutex.cmx \
-    condition.cmx \
-    semaphore.cmi
-semaphore.cmi :
 thread.cmo : \
     thread.cmi
 thread.cmx : \
