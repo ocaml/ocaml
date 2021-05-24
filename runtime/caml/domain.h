@@ -81,7 +81,6 @@ void caml_init_domain_self(int);
 
 struct domain* caml_domain_self();
 struct domain* caml_owner_of_young_block(value);
-struct domain* caml_domain_of_id(int);
 
 CAMLextern atomic_uintnat caml_num_domains_running;
 CAMLextern uintnat caml_minor_heaps_base;
@@ -95,31 +94,26 @@ INLINE intnat caml_domain_alone()
 typedef struct interrupt interrupt;
 typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
-CAMLcheckresult
-int caml_domain_rpc(struct domain*,
-                     domain_rpc_handler, void*);
-
-typedef struct interrupt interrupt;
 void caml_acknowledge_interrupt(interrupt*);
 
 #ifdef DEBUG
 int caml_domain_is_in_stw();
 #endif
 
-void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data);
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(struct domain*, void*, int, struct domain**), void* data,
   void (*leader_setup)(struct domain*),
   void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data);
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void*, void (*leader_setup)(struct domain*));
 
-void caml_global_barrier();
-
+/* barriers */
 typedef uintnat barrier_status;
+void caml_global_barrier();
 barrier_status caml_global_barrier_begin();
 int caml_global_barrier_is_final(barrier_status);
 void caml_global_barrier_end(barrier_status);
 int caml_global_barrier_num_domains();
+
 int caml_domain_is_terminating(void);
 value caml_ml_domain_unique_token(value);
 
