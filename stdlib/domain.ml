@@ -10,7 +10,7 @@ module Raw = struct
   type timeout_or_notified = Timeout | Notified
   external wait_until : int64 -> timeout_or_notified
     = "caml_ml_domain_yield_until"
-  external spawn : (unit -> unit) -> t
+  external spawn : (unit -> unit) -> Mutex.t -> Condition.t -> bool ref -> t
     = "caml_domain_spawn"
   external self : unit -> t
     = "caml_ml_domain_id"
@@ -46,67 +46,76 @@ type id = Raw.t
 
 type 'a state =
 | Running
-| Joining of ('a, exn) result option ref * id
+| Joining of ('a, exn) result option ref
 | Finished of ('a, exn) result
 | Joined
 
-type 'a t =
-  { domain : Raw.t; state : 'a state Atomic.t }
+type 'a t = {
+  domain : Raw.t;
+  mutex: Mutex.t;
+  condition: Condition.t;
+  terminated: bool ref;
+  state: 'a state Atomic.t }
 
 exception Retry
 let rec spin f =
   try f () with Retry ->
-     (* fixme: spin more gently *)
-     spin f
+      Sync.cpu_relax ();
+      spin f
 
 let cas r vold vnew =
   if not (Atomic.compare_and_set r vold vnew) then raise Retry
 
 let spawn f =
+  let mutex = Mutex.create () in
+  let condition = Condition.create () in
+  let terminated = ref false in
   let state = Atomic.make Running in
   let body () =
     let result = match f () with
       | x -> Ok x
       | exception ex -> Error ex in
-    (* Begin a critical section that is ended by domain
-       termination *)
-    Raw.critical_adjust (+1);
     spin (fun () ->
       match Atomic.get state with
       | Running ->
          cas state Running (Finished result)
-      | Joining (r, d) as old ->
+      | Joining x as old ->
          cas state old Joined;
-         r := Some result;
-         Raw.interrupt d
+         x := Some result
       | Joined | Finished _ ->
-         failwith "internal error: I'm already finished?") in
-  { domain = Raw.spawn body; state }
+         failwith "internal error: I'm already finished?")
+  in
+  { domain = Raw.spawn body mutex condition terminated; mutex; condition; terminated; state }
 
-let join { domain ; state } =
+let termination_wait mutex condition terminated =
+  Mutex.lock mutex;
+  while !terminated = false do
+    Condition.wait condition mutex
+  done;
+  Mutex.unlock mutex
+
+let join { mutex; condition; terminated; state; _ } =
   let res = spin (fun () ->
     match Atomic.get state with
-    | Running ->
-       let res = ref None in
-       cas state Running (Joining (res, Raw.self ()));
-       spin (fun () ->
-         Sync.critical_section (fun () ->
-           match !res with
-           | None -> Sync.wait (); raise Retry
-           | Some r -> r))
-    | Finished res as old ->
-       cas state old Joined;
-       res
+    | Running -> begin
+      let x = ref None in
+      cas state Running (Joining x);
+      termination_wait mutex condition terminated;
+      match !x with
+      | None -> failwith "internal error: termination signaled but result not passed"
+      | Some r -> r
+    end
+    | Finished x as old ->
+      cas state old Joined;
+      termination_wait mutex condition terminated;
+      x
     | Joining _ | Joined ->
-       raise (Invalid_argument "This domain has already been joined")) in
-  (* Wait until the domain has terminated.
-     The domain is in a critical section which will be
-     ended by the runtime when it terminates *)
-  Sync.notify domain;
+      raise (Invalid_argument "This domain has already been joined")
+    )
+  in
   match res with
   | Ok x -> x
   | Error ex -> raise ex
-
 
 let get_id { domain; _ } = domain
 
