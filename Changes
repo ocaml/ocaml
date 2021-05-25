@@ -34,6 +34,9 @@ Working version
   and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and Leo White)
 
+- #10265: Move type_unboxed.unboxed into type_kind
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,

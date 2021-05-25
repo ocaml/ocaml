@@ -1240,7 +1240,7 @@ let rec tree_of_type_decl id decl =
   in
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant cstrs ->
+  | Type_variant (cstrs, _rep) ->
       List.iter
         (fun c ->
            mark_loops_constructor_arguments c.cd_args;
@@ -1263,7 +1263,7 @@ let rec tree_of_type_decl id decl =
           decl.type_manifest = None || decl.type_private = Private
       | Type_record _ ->
           decl.type_private = Private
-      | Type_variant tll ->
+      | Type_variant (tll, _rep) ->
           decl.type_private = Private ||
           List.exists (fun cd -> cd.cd_res <> None) tll
       | Type_open ->
@@ -1299,30 +1299,33 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let ty, priv =
+  let ty, priv, unboxed =
     match decl.type_kind with
     | Type_abstract ->
         begin match ty_manifest with
-        | None -> (Otyp_abstract, Public)
+        | None -> (Otyp_abstract, Public, false)
         | Some ty ->
-            tree_of_typexp false ty, decl.type_private
+            tree_of_typexp false ty, decl.type_private, false
         end
-    | Type_variant cstrs ->
+    | Type_variant (cstrs, rep) ->
         tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
-        decl.type_private
-    | Type_record(lbls, _rep) ->
+        decl.type_private,
+        (rep = Variant_unboxed)
+    | Type_record(lbls, rep) ->
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
-        decl.type_private
+        decl.type_private,
+        (match rep with Record_unboxed _ -> true | _ -> false)
     | Type_open ->
         tree_of_manifest Otyp_open,
-        decl.type_private
+        decl.type_private,
+        false
   in
     { otype_name = name;
       otype_params = args;
       otype_type = ty;
       otype_private = priv;
       otype_immediate = Type_immediacy.of_attributes decl.type_attributes;
-      otype_unboxed = decl.type_unboxed.unboxed;
+      otype_unboxed = unboxed;
       otype_cstrs = constraints }
 
 and tree_of_constructor_arguments = function
@@ -1665,7 +1668,7 @@ let dummy =
     type_loc = Location.none;
     type_attributes = [];
     type_immediate = Unknown;
-    type_unboxed = unboxed_false_default_false;
+    type_unboxed_default = false;
     type_uid = Uid.internal_not_actually_unique;
   }
 

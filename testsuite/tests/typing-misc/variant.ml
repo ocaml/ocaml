@@ -103,12 +103,14 @@ Error: This variant or record definition does not match that of type d
        The types are not equal.
 |}]
 
-type unboxed = d = X of float [@@unboxed]
+type mono = Foo of float
+type unboxed = mono = Foo of float [@@unboxed]
 [%%expect{|
-Line 1, characters 0-41:
-1 | type unboxed = d = X of float [@@unboxed]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type d
+type mono = Foo of float
+Line 2, characters 0-46:
+2 | type unboxed = mono = Foo of float [@@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type mono
        Their internal representations differ:
        this definition uses unboxed representation.
 |}]

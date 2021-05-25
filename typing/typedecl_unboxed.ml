@@ -34,20 +34,16 @@ let rec get_unboxed_type_representation env ty fuel =
         This Predef.type_int
     | {type_immediate = Always_on_64bits; _} ->
         Only_on_64_bits Predef.type_int
-    | {type_unboxed = {unboxed = false}} -> This ty
     | {type_params; type_kind =
-         Type_record ([{ld_type = ty2; _}], _)
-       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
-       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
-
+         Type_record ([{ld_type = ty2; _}], Record_unboxed _)
+       | Type_variant ([{cd_args = Cstr_tuple [ty2]; _}], Variant_unboxed)
+       | Type_variant ([{cd_args = Cstr_record [{ld_type = ty2; _}]; _}],
+                       Variant_unboxed)}
       ->
         let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
         get_unboxed_type_representation env
           (Ctype.apply env type_params ty2 args) (fuel - 1)
-    | {type_kind=Type_abstract} -> Unavailable
-          (* This case can occur when checking a recursive unboxed type
-             declaration. *)
-    | _ -> assert false (* only the above can be unboxed *)
+    | _ -> This ty
     end
   | _ -> This ty
 

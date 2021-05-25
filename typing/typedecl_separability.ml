@@ -56,13 +56,13 @@ let structure : type_definition -> type_structure = fun def ->
       | Some type_expr -> Synonym type_expr
       end
 
-  | ( Type_record ([{ld_type = ty; _}], _)
-    | Type_variant [{cd_args = Cstr_tuple [ty]; _}]
-    | Type_variant [{cd_args = Cstr_record [{ld_type = ty; _}]; _}])
-       when def.type_unboxed.unboxed ->
+  | ( Type_record ([{ld_type = ty; _}], Record_unboxed _)
+    | Type_variant ([{cd_args = Cstr_tuple [ty]; _}], Variant_unboxed)
+    | Type_variant ([{cd_args = Cstr_record [{ld_type = ty; _}]; _}],
+                    Variant_unboxed)) ->
      let params =
        match def.type_kind with
-       | Type_variant [{cd_res = Some ret_type}] ->
+       | Type_variant ([{cd_res = Some ret_type}], _) ->
           begin match Ctype.repr ret_type with
           | {desc=Tconstr (_, tyl, _)} ->
              List.map Ctype.repr tyl
