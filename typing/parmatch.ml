@@ -801,35 +801,6 @@ let should_extend ext env = match ext with
       end
 end
 
-module ConstructorTagHashtbl = Hashtbl.Make(
-  struct
-    type t = Types.constructor_tag
-    let hash = Hashtbl.hash
-    let equal = Types.equal_tag
-  end
-)
-
-(* complement constructor tags *)
-let complete_tags nconsts nconstrs tags =
-  let seen_const = Array.make nconsts false
-  and seen_constr = Array.make nconstrs false in
-  List.iter
-    (function
-      | Cstr_constant i -> seen_const.(i) <- true
-      | Cstr_block i -> seen_constr.(i) <- true
-      | _  -> assert false)
-    tags ;
-  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
-  for i = 0 to nconsts-1 do
-    if not seen_const.(i) then
-      ConstructorTagHashtbl.add r (Cstr_constant i) ()
-  done ;
-  for i = 0 to nconstrs-1 do
-    if not seen_constr.(i) then
-      ConstructorTagHashtbl.add r (Cstr_block i) ()
-  done ;
-  r
-
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
@@ -886,14 +857,17 @@ let rec get_variant_constructors env ty =
     end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
-(* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs constr all_tags =
+module ConstructorNameSet = Set.Make(String)
+
+(* Sends back a pattern that complements constructor names all_names *)
+let complete_constrs constr all_names =
   let c = constr.pat_desc in
-  let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors constr.pat_env c.cstr_res in
+  let all_names = ConstructorNameSet.of_list all_names in
+  (* complete_tags c.cstr_consts c.cstr_nonconsts all_tags in *)
   let others =
     List.filter
-      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
+      (fun cnstr -> not (ConstructorNameSet.mem cnstr.cstr_name all_names))
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
@@ -902,14 +876,16 @@ let complete_constrs constr all_tags =
 let build_other_constrs env p =
   let open Patterns.Head in
   match p.pat_desc with
-  | Construct ({ cstr_tag = Cstr_constant _ | Cstr_block _ } as c) ->
-      let constr = { p with pat_desc = c } in
-      let get_tag q =
-        match q.pat_desc with
-        | Construct c -> c.cstr_tag
-        | _ -> fatal_error "Parmatch.get_tag" in
-      let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-      pat_of_constrs p (complete_constrs constr all_tags)
+  | Construct ({ cstr_tag = Cstr_extension _ }) -> extra_pat
+  | Construct
+      ({ cstr_tag = Cstr_constant _ | Cstr_block _ | Cstr_unboxed } as c) ->
+        let constr = { p with pat_desc = c } in
+        let get_name q =
+          match q.pat_desc with
+          | Construct c -> c.cstr_name
+          | _ -> fatal_error "Parmatch.get_name" in
+        let all_names =  List.map (fun (p,_) -> get_name p) env in
+        pat_of_constrs p (complete_constrs constr all_names)
   | _ -> extra_pat
 
 (* Auxiliary for build_other *)
