@@ -721,10 +721,11 @@ static void stw_handler(caml_domain_state* domain)
     SPIN_WAIT {
       if (atomic_load_acq(&stw_request.domains_still_running) == 0)
         break;
-      caml_handle_incoming_interrupts();
 
       if (stw_request.enter_spin_callback)
         stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
+      else
+        cpu_relax();
     }
   }
   CAML_EV_END(EV_STW_API_BARRIER);
