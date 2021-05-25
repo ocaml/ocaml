@@ -51,7 +51,7 @@
    with OS-level threads, called "domains".
 */
 
-/* control of interrupts */
+/* control of STW interrupts */
 struct interruptor {
   atomic_uintnat* interrupt_word;
   caml_plat_mutex lock;
@@ -62,27 +62,10 @@ struct interruptor {
   /* unlike the domain ID, this ID number is not reused */
   uintnat unique_id;
 
-  /* Queue of domains trying to send interrupts here */
-  struct interrupt* qhead;
-  struct interrupt* qtail;      /* defined only when qhead != NULL */
-};
-
-typedef struct interrupt interrupt;
-typedef void (*domain_rpc_handler)(caml_domain_state*, void*, interrupt*);
-
-struct interrupt {
-  /* immutable fields */
-  domain_rpc_handler handler;
-  void* data;
-
-  atomic_uintnat acknowledged;
-
-  /* accessed only when target's lock held */
-  struct interrupt* next;
+  atomic_uintnat interrupt_pending;
 };
 
 void caml_handle_incoming_interrupts(void);
-
 
 struct dom_internal {
   /* readonly fields, initialised and never modified */
@@ -106,7 +89,31 @@ struct dom_internal {
 };
 typedef struct dom_internal dom_internal;
 
-static uintnat handle_incoming(struct interruptor* s);
+
+static struct {
+  atomic_uintnat domains_still_running;
+  atomic_uintnat num_domains_still_processing;
+  void (*callback)(caml_domain_state*, void*, int participating_count, caml_domain_state** others_participating);
+  void* data;
+  int num_domains;
+  atomic_uintnat barrier;
+  void (*enter_spin_callback)(caml_domain_state*, void*);
+  void* enter_spin_data;
+
+  caml_domain_state* participating[Max_domains];
+  struct interruptor* interruptors[Max_domains];
+} stw_request = {
+  ATOMIC_UINTNAT_INIT(0),
+  ATOMIC_UINTNAT_INIT(0),
+  NULL,
+  NULL,
+  0,
+  ATOMIC_UINTNAT_INIT(0),
+  NULL,
+  NULL,
+  { 0 },
+  { 0 }
+};
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
@@ -121,6 +128,8 @@ CAMLexport uintnat caml_tls_areas_base;
 static __thread dom_internal* domain_self;
 
 static int64_t startup_timestamp;
+
+static uintnat handle_incoming(struct interruptor* s);
 
 #ifdef __APPLE__
 /* OSX has issues with dynamic loading + exported TLS.
@@ -222,7 +231,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
         atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
         s->interrupt_word = young_limit;
       }
-      Assert(s->qhead == NULL);
+      Assert(!s->interrupt_pending);
       s->running = 1;
       atomic_fetch_add(&caml_num_domains_running, 1);
     }
@@ -238,6 +247,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->id = d->id;
     domain_state->unique_id = d->interruptor.unique_id;
     d->state = domain_state;
+    Assert(!d->interruptor.interrupt_pending);
 
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
@@ -365,7 +375,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     caml_plat_mutex_init(&dom->interruptor.lock);
     caml_plat_cond_init(&dom->interruptor.cond,
                         &dom->interruptor.lock);
-    dom->interruptor.qhead = dom->interruptor.qtail = NULL;
+    dom->interruptor.interrupt_pending = 0;
     dom->interruptor.running = 0;
     dom->interruptor.terminating = 0;
     dom->interruptor.unique_id = i;
@@ -645,31 +655,6 @@ static void interrupt_domain(dom_internal* d) {
   atomic_store_rel(d->interrupt_word_address, INTERRUPT_MAGIC);
 }
 
-static struct {
-  atomic_uintnat domains_still_running;
-  atomic_uintnat num_domains_still_processing;
-  void (*callback)(caml_domain_state*, void*, int participating_count,  caml_domain_state** others_participating);
-  void* data;
-  int num_domains;
-  atomic_uintnat barrier;
-  void (*enter_spin_callback)(caml_domain_state*, void*);
-  void* enter_spin_data;
-
-  struct interrupt reqs[Max_domains];
-  caml_domain_state* participating[Max_domains];
-} stw_request = {
-  ATOMIC_UINTNAT_INIT(0),
-  ATOMIC_UINTNAT_INIT(0),
-  NULL,
-  NULL,
-  0,
-  ATOMIC_UINTNAT_INIT(0),
-  NULL,
-  NULL,
-  { { 0 } },
-  { 0 }
-};
-
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
@@ -728,10 +713,9 @@ static void decrement_stw_domains_still_processing()
 }
 
 static void caml_poll_gc_work();
-static void stw_handler(caml_domain_state* domain, void* unused2, interrupt* done)
+static void stw_handler(caml_domain_state* domain)
 {
   CAML_EV_BEGIN(EV_STW_HANDLER);
-  atomic_store_rel(&done->acknowledged, 1);
   CAML_EV_BEGIN(EV_STW_API_BARRIER);
   {
     SPIN_WAIT {
@@ -770,12 +754,8 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
-static int caml_send_partial_interrupt(
-                         struct interruptor* target,
-                         domain_rpc_handler handler,
-                         void* data,
-                         struct interrupt* req);
-static void caml_wait_interrupt_acknowledged(struct interruptor* self, struct interrupt* req);
+static int caml_send_interrupt(struct interruptor* target);
+static void caml_wait_interrupt_serviced(struct interruptor* self, struct interruptor* target);
 
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**), void* data,
@@ -829,29 +809,26 @@ int caml_try_run_on_all_domains_with_spin_work(
      the interrupt (i.e. are not terminated and are participating in
      this STW section). */
   {
-    struct interrupt* reqs = stw_request.reqs;
     caml_domain_state** participating = stw_request.participating;
+    struct interruptor** interruptors = stw_request.interruptors;
 
     for (i = 0; i < Max_domains; i++) {
       if (&all_domains[i] == domain_self) {
         participating[domains_participating] = domain_self->state;
+        interruptors[domains_participating] = &domain_self->interruptor;
+        Assert(!domain_self->interruptor.interrupt_pending);
         domains_participating++;
         continue;
       }
-      if (caml_send_partial_interrupt(
-                              &all_domains[i].interruptor,
-                              stw_handler,
-                              0,
-                              &reqs[domains_participating])) {
+      if (caml_send_interrupt(&all_domains[i].interruptor)) {
         participating[domains_participating] = all_domains[i].state;
+        interruptors[domains_participating] = &all_domains[i].interruptor;
         domains_participating++;
       }
     }
 
     for(i = 0; i < domains_participating ; i++) {
-      if( participating[i] && domain_self->state != participating[i] ) {
-        caml_wait_interrupt_acknowledged(&domain_self->interruptor, &reqs[i]);
-      }
+      caml_wait_interrupt_serviced(&domain_self->interruptor, interruptors[i]);
     }
   }
 
@@ -864,6 +841,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   /* release from the enter barrier */
   atomic_store_rel(&stw_request.domains_still_running, 0);
+
 
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
@@ -1081,23 +1059,23 @@ void caml_print_stats () {
 
    - Don't hold interruptor locks for long
    - Don't hold two interruptor locks at the same time
-   - Continue to handle incoming interrupts even when waiting for a response */
+ */
 
 /* must be called with s->lock held */
 static uintnat handle_incoming(struct interruptor* s)
 {
   uintnat handled = 0;
   Assert (s->running);
-  while (s->qhead != NULL) {
-    struct interrupt* req = s->qhead;
-    s->qhead = req->next;
+  if (atomic_load_acq(&s->interrupt_pending)) {
+    atomic_store_rel(&s->interrupt_pending, 0);
+
     /* Unlock s while the handler runs, to allow other
        domains to send us messages. This is necessary to
        avoid deadlocks, since the handler might send
        interrupts */
     caml_plat_unlock(&s->lock);
 
-    req->handler(domain_self->state, req->data, req);
+    stw_handler(domain_self->state);
 
     caml_plat_lock(&s->lock);
     handled++;
@@ -1215,6 +1193,9 @@ static void domain_terminate()
     caml_free_stack(domain_state->current_stack);
   }
 
+  /* we shouldn't have any unserviced interrupts pending */
+  Assert(!domain_self->interruptor.interrupt_pending);
+
   atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
@@ -1228,12 +1209,12 @@ static void domain_terminate()
 
 int caml_incoming_interrupts_queued()
 {
-  return domain_self->interruptor.qhead != NULL;
+  return atomic_load_acq(&domain_self->interruptor.interrupt_pending);
 }
 
 static inline void handle_incoming_interrupts(struct interruptor* s, int otherwise_relax)
 {
-  if (s->qhead != NULL) {
+  if (atomic_load_acq(&s->interrupt_pending)) {
     caml_plat_lock(&s->lock);
     handle_incoming(s);
     caml_plat_unlock(&s->lock);
@@ -1252,14 +1233,14 @@ void caml_handle_incoming_interrupts()
   handle_incoming_interrupts(&domain_self->interruptor, 0);
 }
 
-static void caml_wait_interrupt_acknowledged (struct interruptor* self,
-                                           struct interrupt* req)
+static void caml_wait_interrupt_serviced (struct interruptor* self,
+                                          struct interruptor* target)
 {
   int i;
 
   /* Often, interrupt handlers are fast, so spin for a bit before waiting */
   for (i=0; i<1000; i++) {
-    if (atomic_load_acq(&req->acknowledged)) {
+    if (!atomic_load_acq(&target->interrupt_pending)) {
       return;
     }
     cpu_relax();
@@ -1267,7 +1248,7 @@ static void caml_wait_interrupt_acknowledged (struct interruptor* self,
 
   {
     SPIN_WAIT {
-      if (atomic_load_acq(&req->acknowledged))
+      if (!atomic_load_acq(&target->interrupt_pending))
         return;
       handle_incoming_otherwise_relax(self);
     }
@@ -1276,32 +1257,18 @@ static void caml_wait_interrupt_acknowledged (struct interruptor* self,
   return;
 }
 
-int caml_send_partial_interrupt(
-                         struct interruptor* target,
-                         domain_rpc_handler handler,
-                         void* data,
-                         struct interrupt* req)
+int caml_send_interrupt(struct interruptor* target)
 {
-  req->handler = handler;
-  req->data = data;
-  atomic_store_rel(&req->acknowledged, 0);
-  req->next = NULL;
-
   caml_plat_lock(&target->lock);
   if (!target->running) {
     caml_plat_unlock(&target->lock);
     return 0;
   }
 
-  /* add to wait queue */
-  if (target->qhead) {
-    /* queue was nonempty */
-    target->qtail->next = req;
-    target->qtail = req;
-  } else {
-    /* queue was empty */
-    target->qhead = target->qtail = req;
-  }
+  /* signal that there is an interrupt pending */
+  Assert(!atomic_load_acq(&target->interrupt_pending));
+  atomic_store_rel(&target->interrupt_pending, 1);
+
   /* Signal the condition variable, in case the target is
      itself waiting for an interrupt to be processed elsewhere */
   caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
