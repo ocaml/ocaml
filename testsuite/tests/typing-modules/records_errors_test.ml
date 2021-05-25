@@ -287,6 +287,218 @@ Error: Signature mismatch:
            g : unit;
          }
        3. An extra field, beta, is provided in the first declaration.
-       6. A field, e, is missing in the first declaration.
-       9. An extra field, phi, is provided in the first declaration.
+       5. A field, e, is missing in the first declaration.
+       8. An extra field, phi, is provided in the first declaration.
+|}]
+
+
+(** Multiple errors *)
+
+module M : sig
+  type t = { a:int; e:int; c:int; d:int; b:int }
+end = struct
+  type t = { alpha:int; b:int; c:int; d:int; e:int }
+end
+[%%expect {|
+Lines 5-7, characters 6-3:
+5 | ......struct
+6 |   type t = { alpha:int; b:int; c:int; d:int; e:int }
+7 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t = { alpha : int; b : int; c : int; d : int; e : int; }
+         end
+       is not included in
+         sig type t = { a : int; e : int; c : int; d : int; b : int; } end
+       Type declarations do not match:
+         type t = { alpha : int; b : int; c : int; d : int; e : int; }
+       is not included in
+         type t = { a : int; e : int; c : int; d : int; b : int; }
+       1. Fields have different names, alpha and a.
+       2<->5. Fields b and e have been swapped.
+|}]
+
+
+module M: sig
+  type t = { a:int; b:int; c:int; d:int; e:int; f:float }
+end =
+struct
+  type t = { b:int; c:int; d:int; e:int; a:int; f:int }
+end
+[%%expect {|
+Lines 4-6, characters 0-3:
+4 | struct
+5 |   type t = { b:int; c:int; d:int; e:int; a:int; f:int }
+6 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t = { b : int; c : int; d : int; e : int; a : int; f : int; }
+         end
+       is not included in
+         sig
+           type t = {
+             a : int;
+             b : int;
+             c : int;
+             d : int;
+             e : int;
+             f : float;
+           }
+         end
+       Type declarations do not match:
+         type t = { b : int; c : int; d : int; e : int; a : int; f : int; }
+       is not included in
+         type t = { a : int; b : int; c : int; d : int; e : int; f : float; }
+       1->5. Field a has been moved from position 1 to 5.
+       6. Fields do not match:
+         f : int;
+       is not the same as:
+         f : float;
+       The type int is not equal to the type float
+|}]
+
+(** Existential types introduce equations that must be taken in account
+    when diffing
+*)
+
+
+module Eq : sig
+  type t = A: { a:'a; b:'b; x:'a } -> t
+end = struct
+  type t = A: { a:'a; b:'b; x:'x } -> t
+end
+[%%expect {|
+Lines 8-10, characters 6-3:
+ 8 | ......struct
+ 9 |   type t = A: { a:'a; b:'b; x:'x } -> t
+10 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A : { a : 'a; b : 'b; x : 'x; } -> t end
+       is not included in
+         sig type t = A : { a : 'a; b : 'b; x : 'a; } -> t end
+       Type declarations do not match:
+         type t = A : { a : 'a; b : 'b; x : 'x; } -> t
+       is not included in
+         type t = A : { a : 'a; b : 'b; x : 'a; } -> t
+       Constructors do not match:
+         A : { a : 'a; b : 'b; x : 'x; } -> t
+       is not the same as:
+         A : { a : 'a; b : 'b; x : 'a; } -> t
+       Fields do not match:
+         x : 'x;
+       is not the same as:
+         x : 'a;
+       The type 'x is not equal to the type 'a
+|}]
+
+
+module Not_a_swap: sig
+  type t = A: { x:'a; a:'a; b:'b; y:'b} -> t
+end = struct
+  type t = A: { y:'a; a:'a; b:'b; x:'b} -> t
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = A: { y:'a; a:'a; b:'b; x:'b} -> t
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A : { y : 'a; a : 'a; b : 'b; x : 'b; } -> t end
+       is not included in
+         sig type t = A : { x : 'a; a : 'a; b : 'b; y : 'b; } -> t end
+       Type declarations do not match:
+         type t = A : { y : 'a; a : 'a; b : 'b; x : 'b; } -> t
+       is not included in
+         type t = A : { x : 'a; a : 'a; b : 'b; y : 'b; } -> t
+       Constructors do not match:
+         A : { y : 'a; a : 'a; b : 'b; x : 'b; } -> t
+       is not the same as:
+         A : { x : 'a; a : 'a; b : 'b; y : 'b; } -> t
+       1. Fields have different names, y and x.
+       4. Fields have different names, x and y.
+|}]
+
+module Swap: sig
+  type t = A: { x:'a; a:'a; b:'b; y:'b} -> t
+end = struct
+  type t = A: { y:'b; a:'a; b:'b; x:'a} -> t
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = A: { y:'b; a:'a; b:'b; x:'a} -> t
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A : { y : 'b; a : 'a; b : 'b; x : 'a; } -> t end
+       is not included in
+         sig type t = A : { x : 'a; a : 'a; b : 'b; y : 'b; } -> t end
+       Type declarations do not match:
+         type t = A : { y : 'b; a : 'a; b : 'b; x : 'a; } -> t
+       is not included in
+         type t = A : { x : 'a; a : 'a; b : 'b; y : 'b; } -> t
+       Constructors do not match:
+         A : { y : 'b; a : 'a; b : 'b; x : 'a; } -> t
+       is not the same as:
+         A : { x : 'a; a : 'a; b : 'b; y : 'b; } -> t
+       Fields x and y have been swapped.
+|}]
+
+
+module Not_a_move: sig
+  type t = A: { a:'a; b:'b; x:'b} -> t
+end = struct
+  type t = A: { x:'a; a:'a; b:'b} -> t
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = A: { x:'a; a:'a; b:'b} -> t
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A : { x : 'a; a : 'a; b : 'b; } -> t end
+       is not included in
+         sig type t = A : { a : 'a; b : 'b; x : 'b; } -> t end
+       Type declarations do not match:
+         type t = A : { x : 'a; a : 'a; b : 'b; } -> t
+       is not included in
+         type t = A : { a : 'a; b : 'b; x : 'b; } -> t
+       Constructors do not match:
+         A : { x : 'a; a : 'a; b : 'b; } -> t
+       is not the same as:
+         A : { a : 'a; b : 'b; x : 'b; } -> t
+       1. An extra field, x, is provided in the first declaration.
+       3. A field, x, is missing in the first declaration.
+|}]
+
+
+module Move: sig
+  type t = A: { a:'a; b:'b; x:'b} -> t
+end = struct
+  type t = A: { x:'b; a:'a; b:'b} -> t
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = A: { x:'b; a:'a; b:'b} -> t
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A : { x : 'b; a : 'a; b : 'b; } -> t end
+       is not included in
+         sig type t = A : { a : 'a; b : 'b; x : 'b; } -> t end
+       Type declarations do not match:
+         type t = A : { x : 'b; a : 'a; b : 'b; } -> t
+       is not included in
+         type t = A : { a : 'a; b : 'b; x : 'b; } -> t
+       Constructors do not match:
+         A : { x : 'b; a : 'a; b : 'b; } -> t
+       is not the same as:
+         A : { a : 'a; b : 'b; x : 'b; } -> t
+       Field x has been moved from position 3 to 1.
 |}]

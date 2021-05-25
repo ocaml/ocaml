@@ -47,15 +47,8 @@ type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
 
-type field_mismatch =
-  | Kind_mismatch of
-      Types.label_declaration * Types.label_declaration * label_mismatch
-  | Name_mismatch of { types_match:bool; left:Ident.t; right:Ident.t }
-
-
 type record_change =
-  (Types.label_declaration, Types.label_declaration,
-   type_expr list * type_expr list, field_mismatch) Diffing.change
+  (Types.label_declaration, label_mismatch) Diffing_with_keys.change
 
 type record_mismatch =
   | Label_mismatch of record_change list
@@ -68,12 +61,6 @@ type constructor_mismatch =
   | Kind of position
   | Explicit_return_type of position
 
-type variant_mismatch =
-  | Constructor_mismatch of Types.constructor_declaration
-                            * Types.constructor_declaration
-                            * constructor_mismatch
-  | Constructor_names of { types_match:bool; left:Ident.t; right:Ident.t }
-
 type extension_constructor_mismatch =
   | Constructor_privacy
   | Constructor_mismatch of Ident.t
@@ -81,8 +68,8 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * constructor_mismatch
 type variant_change =
-  (Types.constructor_declaration, Types.constructor_declaration,
-   Asttypes.label, variant_mismatch) Diffing.change
+  (Types.constructor_declaration, constructor_mismatch)
+    Diffing_with_keys.change
 
 type private_variant_mismatch =
   | Only_outer_closed

@@ -370,11 +370,23 @@ let variadic_diff ~weight ~test ~(update:_ update) state line column =
   |> construct_patch
 
 
+type change_kind =
+  | Deletion
+  | Insertion
+  | Modification
+  | Preservation
+
+let classify = function
+  | Delete _ -> Deletion
+  | Insert _ -> Insertion
+  | Change _ -> Modification
+  | Keep _ -> Preservation
+
 let style = function
-  | Keep _ -> Misc.Color.[ FG Green ]
-  | Delete _ -> Misc.Color.[ FG Red; Bold]
-  | Insert _ -> Misc.Color.[ FG Red; Bold]
-  | Change _ -> Misc.Color.[ FG Magenta; Bold]
+  | Preservation -> Misc.Color.[ FG Green ]
+  | Deletion -> Misc.Color.[ FG Red; Bold]
+  | Insertion -> Misc.Color.[ FG Red; Bold]
+  | Modification -> Misc.Color.[ FG Magenta; Bold]
 
 let prefix ppf (pos, p) =
   let sty = style p in

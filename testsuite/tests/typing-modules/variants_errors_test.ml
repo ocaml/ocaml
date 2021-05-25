@@ -320,6 +320,93 @@ Error: Signature mismatch:
        is not included in
          type t = A | B | C | D | E | F | G
        3. An extra constructor, Beta, is provided in the first declaration.
-       6. A constructor, E, is missing in the first declaration.
-       9. An extra constructor, Phi, is provided in the first declaration.
+       5. A constructor, E, is missing in the first declaration.
+       8. An extra constructor, Phi, is provided in the first declaration.
+|}]
+
+
+(** Swaps and moves *)
+
+module Swap : sig
+  type t =
+    | A
+    | E
+    | C
+    | D
+    | B
+end = struct
+  type t =
+    | Alpha
+    | B
+    | C
+    | D
+    | E
+end
+[%%expect {|
+Lines 10-17, characters 6-3:
+10 | ......struct
+11 |   type t =
+12 |     | Alpha
+13 |     | B
+14 |     | C
+15 |     | D
+16 |     | E
+17 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = Alpha | B | C | D | E end
+       is not included in
+         sig type t = A | E | C | D | B end
+       Type declarations do not match:
+         type t = Alpha | B | C | D | E
+       is not included in
+         type t = A | E | C | D | B
+       1. Constructors have different names, Alpha and A.
+       2<->5. Constructors B and E have been swapped.
+|}]
+
+
+module Move: sig
+  type t =
+    | A of int
+    | B
+    | C
+    | D
+    | E
+    | F
+end = struct
+  type t =
+    | A of float
+    | B
+    | D
+    | E
+    | F
+    | C
+end
+[%%expect {|
+Lines 9-17, characters 6-3:
+ 9 | ......struct
+10 |   type t =
+11 |     | A of float
+12 |     | B
+13 |     | D
+14 |     | E
+15 |     | F
+16 |     | C
+17 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A of float | B | D | E | F | C end
+       is not included in
+         sig type t = A of int | B | C | D | E | F end
+       Type declarations do not match:
+         type t = A of float | B | D | E | F | C
+       is not included in
+         type t = A of int | B | C | D | E | F
+       1. Constructors do not match:
+         A of float
+       is not the same as:
+         A of int
+       The type float is not equal to the type int
+       3->6. Constructor C has been moved from position 3 to 6.
 |}]

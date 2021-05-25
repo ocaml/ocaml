@@ -66,6 +66,16 @@ utils/diffing.cmx : \
     utils/diffing.cmi
 utils/diffing.cmi : \
     utils/misc.cmi
+utils/diffing_with_keys.cmo : \
+    utils/misc.cmi \
+    utils/diffing.cmi \
+    utils/diffing_with_keys.cmi
+utils/diffing_with_keys.cmx : \
+    utils/misc.cmx \
+    utils/diffing.cmx \
+    utils/diffing_with_keys.cmi
+utils/diffing_with_keys.cmi : \
+    utils/diffing.cmi
 utils/domainstate.cmo : \
     utils/domainstate.cmi
 utils/domainstate.cmx : \
@@ -697,6 +707,8 @@ typing/includecore.cmo : \
     typing/ident.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    utils/diffing_with_keys.cmi \
+    utils/diffing.cmi \
     typing/ctype.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
@@ -713,6 +725,8 @@ typing/includecore.cmx : \
     typing/ident.cmx \
     typing/errortrace.cmx \
     typing/env.cmx \
+    utils/diffing_with_keys.cmx \
+    utils/diffing.cmx \
     typing/ctype.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
@@ -726,7 +740,8 @@ typing/includecore.cmi : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/errortrace.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    utils/diffing_with_keys.cmi
 typing/includemod.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \

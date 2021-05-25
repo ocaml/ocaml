@@ -373,7 +373,7 @@ module Functor_suberror = struct
   (** Print the list of params with style *)
   let pretty_params sep proj printer patch =
     let elt (x,param) =
-      let sty = Diffing.style x in
+      let sty = Diffing.(style @@ classify x) in
       Format.dprintf "%a%t%a"
         Format.pp_open_stag (Misc.Color.Style sty)
         (printer param)
@@ -524,7 +524,7 @@ module Functor_suberror = struct
     Location.msg "%a%a%a%a@[<hv 2>%t@]%a"
       Format.pp_print_tab ()
       Format.pp_open_tbox ()
-      Diffing.prefix (pos, diff)
+      Diffing.prefix (pos, Diffing.classify diff)
       Format.pp_set_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)

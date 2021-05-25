@@ -66,6 +66,7 @@ type ('left, 'right, 'eq, 'diff) change =
   | Keep of 'left * 'right * 'eq
   | Change of 'left * 'right * 'diff
 
+
 val map :
   ('l1 -> 'l2) -> ('r1 -> 'r2) ->
   ('l1, 'r1, 'eq, 'diff) change ->
@@ -115,5 +116,14 @@ val variadic_diff :
 val default_weight : _ change -> int
 
 (** Printing default function *)
-val prefix: Format.formatter -> (int *  _ change) -> unit
-val style: _ change -> Misc.Color.style list
+type change_kind =
+  | Deletion
+  | Insertion
+  | Modification
+  | Preservation
+
+val classify: _ change -> change_kind
+val prefix: Format.formatter -> (int * change_kind) -> unit
+val style: change_kind -> Misc.Color.style list
+
+(** Enriched analysis in presence of keys *)
