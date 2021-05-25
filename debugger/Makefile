@@ -65,7 +65,7 @@ clean::
 	rm -f ocamldebug ocamldebug.exe
 	rm -f *.cmo *.cmi
 
-ocamldebug_entry.cmo: ocamldebug_entry.ml
+ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml

@@ -349,6 +349,10 @@ main.cmx : \
     ../file_formats/cmi_format.cmx \
     ../utils/clflags.cmx \
     checkpoints.cmx
+ocamldebug_entry.cmo : \
+    $(UNIXDIR)/unix.cmi
+ocamldebug_entry.cmx : \
+    $(UNIXDIR)/unix.cmx
 parameters.cmo : \
     ../utils/load_path.cmi \
     ../typing/envaux.cmi \
