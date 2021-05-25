@@ -862,7 +862,7 @@ module ConstructorSet = Set.Make(struct
   let compare c1 c2 = String.compare c1.cstr_name c2.cstr_name
 end)
 
-(* Sends back a pattern that complements constructor names all_names *)
+(* Sends back a pattern that complements the given constructors all_constrs *)
 let complete_constrs constr all_constrs =
   let c = constr.pat_desc in
   let constrs = get_variant_constructors constr.pat_env c.cstr_res in
@@ -871,6 +871,7 @@ let complete_constrs constr all_constrs =
     List.filter
       (fun cnstr -> not (ConstructorSet.mem cnstr all_constrs))
       constrs in
+  (* Split constructors to put constant ones first *)
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
