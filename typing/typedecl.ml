@@ -71,18 +71,14 @@ open Typedtree
 
 exception Error of Location.t * error
 
-(* Note: do not factor the branches in the following pattern-matching:
-   the records must be constants for the compiler to do sharing on them.
-*)
 let get_unboxed_from_attributes sdecl =
   let unboxed = Builtin_attributes.has_unboxed sdecl.ptype_attributes in
   let boxed = Builtin_attributes.has_boxed sdecl.ptype_attributes in
-  match boxed, unboxed, !Clflags.unboxed_types with
-  | true, true, _ -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
-  | true, false, _ -> false, false
-  | false, true, _ -> true, false
-  | false, false, false -> false, true
-  | false, false, true -> true, true
+  match boxed, unboxed with
+  | true, true -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
+  | true, false -> Some false
+  | false, true -> Some true
+  | false, false -> None
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -299,9 +295,10 @@ let transl_declaration env sdecl (id, uid) =
       transl_simple_type env false sty', loc)
     sdecl.ptype_cstrs
   in
-  let raw_status_unboxed, raw_unboxed_default =
-    get_unboxed_from_attributes sdecl in
-  if raw_status_unboxed && not raw_unboxed_default then begin
+  let unboxed_attr = get_unboxed_from_attributes sdecl in
+  begin match unboxed_attr with
+  | (None | Some false) -> ()
+  | Some true ->
     let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
     match sdecl.ptype_kind with
     | Ptype_abstract    -> bad "it is abstract"
@@ -338,7 +335,8 @@ let transl_declaration env sdecl (id, uid) =
     | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
     | Ptype_variant [{pcd_args = Pcstr_record [{pld_mutable=Immutable; _}]; _}]
     | Ptype_record [{pld_mutable=Immutable; _}] ->
-      raw_status_unboxed, raw_unboxed_default
+      Option.value unboxed_attr ~default:!Clflags.unboxed_types,
+      Option.is_none unboxed_attr
     | _ -> false, false (* Not unboxable, mark as boxed *)
   in
   let (tkind, kind) =

@@ -406,28 +406,26 @@ and compare_records ~loc env params1 params2 n
 let compare_records_with_representation ~loc env params1 params2 n
       labels1 labels2 rep1 rep2
   =
-  let err = compare_records ~loc env params1 params2 n labels1 labels2 in
-  match err, rep1, rep2 with
-  | None, Record_regular, Record_regular
-  | None, Record_float, Record_float
-  | None, Record_unboxed _, Record_unboxed _
-  | None, Record_inlined _, Record_inlined _
-  | None, Record_extension _, Record_extension _ ->
-     None
-  | Some err, _, _ ->
-     Some (Record_mismatch err)
-  | None, Record_unboxed _, _ ->
-     Some (Unboxed_representation First)
-  | None, _, Record_unboxed _ ->
-     Some (Unboxed_representation Second)
-  | None, Record_float, _ ->
-     Some (Record_mismatch (Unboxed_float_representation First))
-  | None, _, Record_float ->
-     Some (Record_mismatch (Unboxed_float_representation Second))
-  | None,
-    (Record_regular|Record_inlined _|Record_extension _),
-    (Record_regular|Record_inlined _|Record_extension _) ->
-     assert false
+  match compare_records ~loc env params1 params2 n labels1 labels2 with
+  | Some err -> Some (Record_mismatch err)
+  | None ->
+     match rep1, rep2 with
+     | Record_unboxed _, Record_unboxed _ -> None
+     | Record_unboxed _, _ -> Some (Unboxed_representation First)
+     | _, Record_unboxed _ -> Some (Unboxed_representation Second)
+
+     | Record_float, Record_float -> None
+     | Record_float, _ ->
+        Some (Record_mismatch (Unboxed_float_representation First))
+     | _, Record_float ->
+        Some (Record_mismatch (Unboxed_float_representation Second))
+
+     | Record_regular, Record_regular
+     | Record_inlined _, Record_inlined _
+     | Record_extension _, Record_extension _ -> None
+     | (Record_regular|Record_inlined _|Record_extension _),
+       (Record_regular|Record_inlined _|Record_extension _) ->
+        assert false
 
 let private_variant env row1 params1 row2 params2 =
     let r1, r2, pairs =

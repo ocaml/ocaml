@@ -230,7 +230,8 @@ let find_constr_by_tag tag cstrlist =
 
 let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
-  | Type_variant (cstrs,rep) -> constructor_descrs ~current_unit ty_path decl cstrs rep
+  | Type_variant (cstrs,rep) ->
+     constructor_descrs ~current_unit ty_path decl cstrs rep
   | Type_record _ | Type_abstract | Type_open -> []
 
 let labels_of_type ty_path decl =
