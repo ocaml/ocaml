@@ -106,6 +106,8 @@ ocamlcp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamlcp.cmo)
 ocamloptp$(EXE): $(OCAMLCP) ocamloptp.cmo
 ocamloptp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamloptp.cmo)
 
+opt:: profiling.cmx
+
 install::
 	$(INSTALL_DATA) \
 	  profiling.cmi profiling.cmo \
