@@ -3,7 +3,6 @@
 effect Stop : unit
 
 let f count =
-  let _n = (Domain.self ():> int) in
   let r = ref 0 in
   for i = 1 to count do
     incr r;
@@ -17,14 +16,14 @@ let _ =
     try Lazy.force l with
     effect Stop k -> continue k () in
     Printf.printf "%d\n" v1;
-  let l2 = lazy (f 1_000) in
+  let l2 = lazy (f 2_000) in
   let v2 =
     try Lazy.force l2 with
     effect Stop k ->
       let d = Domain.spawn(fun () -> continue k ()) in
       Domain.join d in
     Printf.printf "%d\n" v2;
-  let l3 = lazy (f 1_000) in
+  let l3 = lazy (f 3_000) in
   let _ =
     try Lazy.force l3 with
     effect Stop _ ->
