@@ -857,17 +857,19 @@ let rec get_variant_constructors env ty =
     end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
-module ConstructorNameSet = Set.Make(String)
+module ConstructorSet = Set.Make(struct
+  type t = constructor_description
+  let compare c1 c2 = String.compare c1.cstr_name c2.cstr_name
+end)
 
 (* Sends back a pattern that complements constructor names all_names *)
-let complete_constrs constr all_names =
+let complete_constrs constr all_constrs =
   let c = constr.pat_desc in
   let constrs = get_variant_constructors constr.pat_env c.cstr_res in
-  let all_names = ConstructorNameSet.of_list all_names in
-  (* complete_tags c.cstr_consts c.cstr_nonconsts all_tags in *)
+  let all_constrs = ConstructorSet.of_list all_constrs in
   let others =
     List.filter
-      (fun cnstr -> not (ConstructorNameSet.mem cnstr.cstr_name all_names))
+      (fun cnstr -> not (ConstructorSet.mem cnstr all_constrs))
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
@@ -880,11 +882,11 @@ let build_other_constrs env p =
   | Construct
       ({ cstr_tag = Cstr_constant _ | Cstr_block _ | Cstr_unboxed } as c) ->
         let constr = { p with pat_desc = c } in
-        let get_name q =
+        let get_constr q =
           match q.pat_desc with
-          | Construct c -> c.cstr_name
-          | _ -> fatal_error "Parmatch.get_name" in
-        let all_names =  List.map (fun (p,_) -> get_name p) env in
+          | Construct c -> c
+          | _ -> fatal_error "Parmatch.get_constr" in
+        let all_names =  List.map (fun (p,_) -> get_constr p) env in
         pat_of_constrs p (complete_constrs constr all_names)
   | _ -> extra_pat
 
