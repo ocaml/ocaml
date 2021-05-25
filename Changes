@@ -107,7 +107,8 @@ Working version
   functions in String to match those in Bytes.
   (David Allsopp, review by Damien Doligez, Gabriel Scherer and others)
 
-- #9487, #9489: Add Random.int63 which allows 62-bit bounds on 64-bit systems.
+- #9487, #9489: Add Random.full_int which allows 62-bit bounds on 64-bit
+  systems.
   (David Allsopp, request by Francois Berenger, review by Xavier Leroy and
    Damien Doligez)
 

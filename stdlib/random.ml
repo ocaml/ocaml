@@ -118,9 +118,9 @@ module State = struct
     let v = r mod n in
     if r - v > max_int - n + 1 then int63aux s n else v
 
-  let int63 s bound =
+  let full_int s bound =
     if bound <= 0 then
-      invalid_arg "Random.int63"
+      invalid_arg "Random.full_int"
     else if bound > 0x3FFFFFFF then
       int63aux s bound
     else
@@ -198,7 +198,7 @@ let default = {
 
 let bits () = State.bits default
 let int bound = State.int default bound
-let int63 bound = State.int63 default bound
+let full_int bound = State.full_int default bound
 let int32 bound = State.int32 default bound
 let nativeint bound = State.nativeint default bound
 let int64 bound = State.int64 default bound
