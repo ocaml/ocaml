@@ -88,6 +88,11 @@ Working version
   experimental.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #10194: Change compaction-triggering heuristic: use the overhead measured
+  by the previous GC cycle instead of an indirect (and noisy) computation
+  of the current overhead.
+  (Damien Doligez, review by Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #1400: Add an optional invariants check on Cmm, which can be activated
