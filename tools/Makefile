@@ -93,7 +93,7 @@ OCAMLPROF=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
 ocamlprof$(EXE): $(OCAMLPROF)
 ocamlprof.opt$(EXE): $(call byte2native, $(OCAMLPROF))
 all: profiling.cmo
-allopt: profiling.cmx
+opt.opt: profiling.cmx
 
 OCAMLCP = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
           warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
@@ -105,8 +105,6 @@ ocamlcp$(EXE): $(OCAMLCP) ocamlcp.cmo
 ocamlcp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamlcp.cmo)
 ocamloptp$(EXE): $(OCAMLCP) ocamloptp.cmo
 ocamloptp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamloptp.cmo)
-
-opt:: profiling.cmx
 
 install::
 	$(INSTALL_DATA) \
