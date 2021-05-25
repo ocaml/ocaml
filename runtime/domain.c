@@ -607,10 +607,17 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
     caml_failwith("failed to create domain thread");
   }
 
+  /* while waiting for the child thread to startup
+     we need to servicing any STW if they come in */
   caml_plat_lock(&domain_self->interruptor.lock);
   while (p.status == Dom_starting) {
-    if (handle_incoming(&domain_self->interruptor) == 0)
+    if (caml_incoming_interrupts_queued()) {
+      caml_plat_unlock(&domain_self->interruptor.lock);
+      handle_incoming(&domain_self->interruptor);
+      caml_plat_lock(&domain_self->interruptor.lock);
+    } else {
       caml_plat_wait(&domain_self->interruptor.cond);
+    }
   }
   caml_plat_unlock(&domain_self->interruptor.lock);
 
@@ -1054,32 +1061,15 @@ void caml_print_stats () {
     Caml_state->stat_major_collections);
 }
 
-/* Sending interrupts between domains.
-
-   To avoid deadlock, some rules are important:
-
-   - Don't hold interruptor locks for long
-   - Don't hold two interruptor locks at the same time
- */
-
-/* must be called with s->lock held */
+/* must NOT be called with s->lock held */
 static uintnat handle_incoming(struct interruptor* s)
 {
-  uintnat handled = 0;
+  uintnat handled = atomic_load_acq(&s->interrupt_pending);
   Assert (s->running);
-  if (atomic_load_acq(&s->interrupt_pending)) {
+  if (handled) {
     atomic_store_rel(&s->interrupt_pending, 0);
 
-    /* Unlock s while the handler runs, to allow other
-       domains to send us messages. This is necessary to
-       avoid deadlocks, since the handler might send
-       interrupts */
-    caml_plat_unlock(&s->lock);
-
     stw_handler(domain_self->state);
-
-    caml_plat_lock(&s->lock);
-    handled++;
   }
   return handled;
 }
@@ -1155,7 +1145,7 @@ static void domain_terminate()
      * fail, which forces this domain to finish marking and sweeping again.
      */
 
-    if (handle_incoming(s) == 0 &&
+    if (!caml_incoming_interrupts_queued() &&
         Caml_state->marking_done &&
         Caml_state->sweeping_done) {
 
@@ -1216,9 +1206,7 @@ int caml_incoming_interrupts_queued()
 static inline void handle_incoming_interrupts(struct interruptor* s, int otherwise_relax)
 {
   if (atomic_load_acq(&s->interrupt_pending)) {
-    caml_plat_lock(&s->lock);
     handle_incoming(s);
-    caml_plat_unlock(&s->lock);
   } else if (otherwise_relax) {
     cpu_relax();
   }
@@ -1254,12 +1242,15 @@ static void caml_wait_interrupt_serviced (struct interruptor* self,
       handle_incoming_otherwise_relax(self);
     }
   }
-
-  return;
 }
 
 int caml_send_interrupt(struct interruptor* target)
 {
+  /* we have blocked new domains joining as the STW is in progress
+   * a target domain can not go from 'not running' to 'running'
+   */
+  if (!target->running) return 0;
+
   caml_plat_lock(&target->lock);
   if (!target->running) {
     caml_plat_unlock(&target->lock);
