@@ -68,11 +68,19 @@ struct interruptor {
   /* Queue of domains trying to send interrupts here */
   struct interrupt* qhead;
   struct interrupt* qtail;      /* defined only when qhead != NULL */
-
-  /* Next pointer for wait queues.
-     Touched only when the queue is locked */
-  struct interruptor* next;
 };
+
+struct interrupt {
+  /* immutable fields */
+  domain_rpc_handler handler;
+  void* data;
+
+  atomic_uintnat acknowledged;
+
+  /* accessed only when target's lock held */
+  struct interrupt* next;
+};
+
 /* returns 0 on failure, if the target has terminated. */
 CAMLcheckresult
 int caml_send_interrupt(struct interruptor* self,
@@ -119,17 +127,6 @@ CAMLexport uintnat caml_tls_areas_base;
 static __thread dom_internal* domain_self;
 
 static int64_t startup_timestamp;
-
-struct interrupt {
-  /* immutable fields */
-  domain_rpc_handler handler;
-  void* data;
-
-  atomic_uintnat acknowledged;
-
-  /* accessed only when target's lock held */
-  struct interrupt* next;
-};
 
 #ifdef __APPLE__
 /* OSX has issues with dynamic loading + exported TLS.
@@ -626,11 +623,6 @@ struct domain* caml_owner_of_young_block(value v) {
   return &all_domains[heap_id].state;
 }
 
-struct domain* caml_domain_of_id(int id)
-{
-  return &all_domains[id].state;
-}
-
 CAMLprim value caml_ml_domain_id(value unit)
 {
   CAMLnoalloc;
@@ -771,19 +763,6 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   caml_poll_gc_work();
 }
 
-/* This runs the passed handler on all running domains but must only be run on *one* domain
-   inside of a global barrier during a stop-the-world phase. */
-void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data) {
-  int i;
-
-  for (i = 0; i < Max_domains; i++) {
-    struct interruptor* interruptor = &all_domains[i].interruptor;
-
-    if( interruptor->running ) {
-      handler(&all_domains[i].state, data);
-    }
-  }
-}
 
 #ifdef DEBUG
 int caml_domain_is_in_stw() {
@@ -1097,23 +1076,6 @@ void caml_print_stats () {
   fprintf(stderr, "Major collections:\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n",
     Caml_state->stat_major_collections);
 }
-
-CAMLexport int caml_domain_rpc(struct domain* domain,
-                                domain_rpc_handler handler, void* data)
-{
-  return caml_send_interrupt(&domain_self->interruptor, &domain->internals->interruptor,
-                      handler, data);
-}
-
-
-
-/* Generate functions for accessing domain state variables in debug mode */
-#ifdef DEBUG
-  #define DOMAIN_STATE(type, name) \
-    type get_##name() { return Caml_state->name; }
-  #include "caml/domain_state.tbl"
-  #undef DOMAIN_STATE
-#endif
 
 /* Sending interrupts between domains.
 
