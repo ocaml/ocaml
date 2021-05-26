@@ -120,6 +120,21 @@ val flatten : 'a list list -> 'a list
    (length of the argument + length of the longest sub-list).
  *)
 
+val intersperse : 'a -> 'a list -> 'a list
+(** [intersperse sep l] is the list formed by inserting [sep] between
+    adjacent elements of [l].
+
+    For example, [intersperse 0 \[1; 2; 3\]] is [\[1; 0; 2; 0; 3\]].
+    @since 4.13.0
+ *)
+
+val intercalate : 'a list -> 'a list list -> 'a list
+(** [intercalate sep l] is the list formed by inserting the list [sep]
+    between adjacent lists in [l] and then concatenating the result.
+    It is equivalent to [intersperse sep l |> concat].
+
+    @since 4.13.0
+  *)
 
 (** {1 Comparison} *)
 
