@@ -34,6 +34,9 @@ Working version
   and their local equivalent `module type T := sig type u end`
   (Florian Angeletti, review by Gabriel Radanne and Leo White)
 
+- #10265: Move type_unboxed.unboxed into type_kind
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #9284: Add -config option to display the configuration of ocamlrun on stdout,
@@ -44,6 +47,10 @@ Working version
   (Stephen Dolan and Will Hasenplaugh, review by David Allsopp, Xavier
    Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
    Sivaramakrishnan)
+
+- #9919: Introduce caml_record_backtraces and update Interfacing with C to
+  refer to it (previous instruction to use caml_record_backtrace primitive was
+  not possible without defining CAML_INTERNALS)
 
 - #10102: Ignore PROFINFO_WIDTH if WITH_PROFINFO is not defined (technically
   a breaking change if the configuration system was being abused before).
@@ -88,7 +95,20 @@ Working version
   experimental.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #10194: Change compaction-triggering heuristic: use the overhead measured
+  by the previous GC cycle instead of an indirect (and noisy) computation
+  of the current overhead.
+  (Damien Doligez, review by Stephen Dolan)
+
 ### Code generation and optimizations:
+
+- #1400: Add an optional invariants check on Cmm, which can be activated
+  with the -dcmm-invariants flag
+  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+   and David Allsopp)
+
+- #9562, #367: Allow CSE of immutable loads across stores
+  (Stephen Dolan, review by Mark Shinwell)
 
 - #9876: do not cache the young_limit GC variable in a processor register.
   This affects the ARM64, PowerPC and RISC-V ports, making signal handling
@@ -111,10 +131,17 @@ Working version
 - #10349: Fix destroyed_at_c_call on RISC-V
   (Mark Shinwell, review by Nicolás Ojeda Bär)
 
-- #1400: Add an optional invariants check on Cmm, which can be activated
-  with the -dcmm-invariants flag
-  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
-   and David Allsopp)
+- #10404: Add a generic backward dataflow analyzer and use it to speed up
+  liveness analysis
+  (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
+
+- #10414: Avoid compilation times exponential in the nesting of loops
+  in the spilling and reloading passes
+  (Xavier Leroy, review by Vincent Laviron)
+
+- #10419: Add %frame_pointers primitive which is true only in native code with
+  frame pointers mode enabled.
+  (David Allsopp, review by Vincent Laviron and Mark Shinwell)
 
 ### Type system:
 
@@ -235,9 +262,12 @@ Working version
 
 ### Compiler user-interface and warnings:
 
-- #1737, #2092, #7852, #7859, #10405: Update locations during destructive
-  substitutions
+- #1737, #2092, #7852, #7859, #10405, #10417: Update locations during
+  destructive substitutions
   (Thomas Refis, review by Gabriel Radanne, report by Hugo Heuzard)
+
+- #2245: Improve error message for link order error in bytecode
+  (Pierre Chambart, review by Jérémie Dimino and Gabriel Scherer)
 
 - #8732, improved error messages for invalid private row type definitions.
   For instance, [ type t = private [< `A > `A ] ] .
@@ -408,6 +438,13 @@ Working version
 
 - #6985, #10385: remove all ghost row types from included modules
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #7453, #9828, #10416: fix #show for recursive types and modules
+  (Florian Angeletti, review by Gabriel Scherer)
+
+* #7469, #10408: Sys.time now returns processor time on Windows (previously
+  returned wall-clock time)
+  (David Allsopp, review by Nicolás Ojeda Bär)
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section
   when the systhreads library is loaded.

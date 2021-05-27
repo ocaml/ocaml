@@ -454,7 +454,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iextcall { alloc = false; }) -> 1
     | Lop (Iextcall { alloc = true; }) -> 3
     | Lop (Istackoffset _) -> 2
-    | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
+    | Lop (Iload (size, addr, _)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
     | Lop (Ialloc _) when f.fun_fast -> 5
@@ -673,7 +673,7 @@ let emit_instr env i =
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
         env.stack_offset <- env.stack_offset + n
-    | Lop(Iload(size, addr)) ->
+    | Lop(Iload(size, addr, _mut)) ->
         let dst = i.res.(0) in
         let base =
           match addr with

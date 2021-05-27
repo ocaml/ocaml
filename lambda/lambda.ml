@@ -40,12 +40,9 @@ type is_safe =
   | Unsafe
 
 type primitive =
-  | Pidentity
   | Pbytes_to_string
   | Pbytes_of_string
   | Pignore
-  | Prevapply
-  | Pdirapply
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -491,8 +488,6 @@ let shallow_iter ~tail ~non_tail:f = function
   | Lletrec(decl, body) ->
       tail body;
       List.iter (fun (_id, exp) -> f exp) decl
-  | Lprim (Pidentity, [l], _) ->
-      tail l
   | Lprim (Psequand, [l1; l2], _)
   | Lprim (Psequor, [l1; l2], _) ->
       f l1;

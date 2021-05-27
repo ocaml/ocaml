@@ -109,7 +109,7 @@ let rec is_tailcall = function
    from the tail call optimization? *)
 
 let preserve_tailcall_for_prim = function
-    Pidentity | Popaque | Pdirapply | Prevapply | Psequor | Psequand ->
+  | Popaque | Psequor | Psequand ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
@@ -671,21 +671,10 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Popaque), [arg], _) ->
+  | Lprim(Popaque, [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
-  | Lprim(Pdirapply, [func;arg], loc)
-  | Lprim(Prevapply, [arg;func], loc) ->
-      let exp = Lapply{
-        ap_loc=loc;
-        ap_func=func;
-        ap_args=[arg];
-        ap_tailcall=Default_tailcall;
-        ap_inlined=Default_inline;
-        ap_specialised=Default_specialise;
-      } in
-      comp_expr env exp sz cont
   | Lprim(Pnot, [arg], _) ->
       let newcont =
         match cont with

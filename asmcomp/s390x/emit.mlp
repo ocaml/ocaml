@@ -359,7 +359,7 @@ let emit_instr env i =
         emit_stack_adjust n;
         env.stack_offset <- env.stack_offset + n
 
-     | Lop(Iload(chunk, addr)) ->
+     | Lop(Iload(chunk, addr, _mut)) ->
         let loadinstr =
           match chunk with
             Byte_unsigned -> "llgc"

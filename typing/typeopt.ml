@@ -26,7 +26,8 @@ let scrape_ty env ty =
   match ty.desc with
   | Tconstr (p, _, _) ->
       begin match Env.find_type p env with
-      | {type_unboxed = {unboxed = true; _}; _} ->
+      | {type_kind = ( Type_variant (_, Variant_unboxed)
+                     | Type_record (_, Record_unboxed _) ); _} ->
         begin match Typedecl.get_unboxed_type_representation env ty with
         | None -> ty
         | Some ty2 -> ty2
