@@ -278,6 +278,7 @@ stdlib__Format.cmo : format.ml \
     stdlib__Either.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
+    stdlib__Bytes.cmi \
     stdlib__Buffer.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
@@ -291,6 +292,7 @@ stdlib__Format.cmx : format.ml \
     stdlib__Either.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
+    stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
