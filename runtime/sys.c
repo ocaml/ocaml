@@ -539,7 +539,7 @@ double caml_sys_time_include_children_unboxed(value include_children)
   #else
     /* clock() is standard ANSI C. We have no way of getting
        subprocess times in this branch. */
-    return (double)clock() / CLOCKS_PER_SEC;
+    return (double)clock_os() / CLOCKS_PER_SEC;
   #endif
 #endif
 }
