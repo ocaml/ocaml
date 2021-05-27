@@ -48,6 +48,10 @@ Working version
    Leroy and Damien Doligez, benchmarking by Shubham Kumar and KC
    Sivaramakrishnan)
 
+- #9919: Introduce caml_record_backtraces and update Interfacing with C to
+  refer to it (previous instruction to use caml_record_backtrace primitive was
+  not possible without defining CAML_INTERNALS)
+
 - #10102: Ignore PROFINFO_WIDTH if WITH_PROFINFO is not defined (technically
   a breaking change if the configuration system was being abused before).
   (David Allsopp, review by Xavier Leroy)
