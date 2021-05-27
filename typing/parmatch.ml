@@ -862,14 +862,14 @@ module ConstructorSet = Set.Make(struct
   let compare c1 c2 = String.compare c1.cstr_name c2.cstr_name
 end)
 
-(* Sends back a pattern that complements the given constructors all_constrs *)
-let complete_constrs constr all_constrs =
+(* Sends back a pattern that complements the given constructors used_constrs *)
+let complete_constrs constr used_constrs =
   let c = constr.pat_desc in
   let constrs = get_variant_constructors constr.pat_env c.cstr_res in
-  let all_constrs = ConstructorSet.of_list all_constrs in
+  let used_constrs = ConstructorSet.of_list used_constrs in
   let others =
     List.filter
-      (fun cnstr -> not (ConstructorSet.mem cnstr all_constrs))
+      (fun cnstr -> not (ConstructorSet.mem cnstr used_constrs))
       constrs in
   (* Split constructors to put constant ones first *)
   let const, nonconst =
@@ -887,8 +887,8 @@ let build_other_constrs env p =
           match q.pat_desc with
           | Construct c -> c
           | _ -> fatal_error "Parmatch.get_constr" in
-        let all_names =  List.map (fun (p,_) -> get_constr p) env in
-        pat_of_constrs p (complete_constrs constr all_names)
+        let used_constrs =  List.map (fun (p,_) -> get_constr p) env in
+        pat_of_constrs p (complete_constrs constr used_constrs)
   | _ -> extra_pat
 
 (* Auxiliary for build_other *)
