@@ -124,9 +124,3 @@ val range : ?start: int -> ?stop: int -> ?step: int -> int t
    If [step] is 0 and  [stop] is not specified, 
    then the sequence is an infinite repetition of [start] 
    *)
-
-val init :  int -> (int -> 'a) -> 'a t
-(** [init len f] is the sequence containing f 0, f 1 ... f (len - 1), evaluated left to right.
-    @raise Invalid_argument if [len < 0].
-    Also see {!List.init}
- *)

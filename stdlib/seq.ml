@@ -92,8 +92,3 @@ let rec range ?(start=0) ?stop ?(step=1) () =
   | Some f when step > 0 && start < f -> Cons(start, range ~start:(start + step) ?stop ~step)
   | Some f when step < 0 && start > f -> Cons(start, range ~start:(start + step) ?stop ~step)
   | _ -> Nil
-
-
-let init len f = 
-  if len < 0 then invalid_arg "Seq.init" else
-  map f (range ~stop:len)
