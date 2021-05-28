@@ -429,10 +429,25 @@ val split : ('a * 'b) list -> 'a list * 'b list
    Not tail-recursive.
  *)
 
+val split_map : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list
+(** Split a list into a pair of lists by applying a given splitting function
+    to each element.
+
+    [split_map f \[a1; ...; an\]] is [(\[b1; ...; bn\], \[c1; ...; cn\])],
+    where [f ai = (bi, ci)].
+
+    Not tail-recursive.
+
+    @since 4.13.0
+ *)
+
 val combine : 'a list -> 'b list -> ('a * 'b) list
 (** Transform a pair of lists into a list of pairs:
    [combine [a1; ...; an] [b1; ...; bn]] is
    [[(a1,b1); ...; (an,bn)]].
+
+   Equivalent to [map2 (fun a b -> (a, b))].
+
    @raise Invalid_argument if the two lists
    have different lengths. Not tail-recursive.
  *)
