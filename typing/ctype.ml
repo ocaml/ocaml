@@ -2602,8 +2602,8 @@ let rec unify_public env t1 t2 =
   | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
     when is_public_type env p1 && is_public_type env p2 ->
       if Path.same p1 p2 && tl1 = [] && tl2 = [] then begin
-        update_level env t1.level t2;
-        update_scope t1.scope t2;
+        update_level_for Unify env t1.level t2;
+        update_scope_for Unify t1.scope t2;
         link_type t1 t2
       end else
         if find_expansion_scope env p1 > find_expansion_scope env p2

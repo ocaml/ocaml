@@ -617,7 +617,7 @@ Error: Signature mismatch:
        Values do not match:
          val r : '_weak4 list ref
        is not included in
-         val r : T.s list ref
+         val r : T.t list ref
 |}];;
 
 module M: sig
