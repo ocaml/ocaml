@@ -133,7 +133,7 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint | Iload((Single | Double | Double_u), _, _)
+  | Ifloatofint | Iload((Single | Double ), _, _)
   | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem _ | Ifloatspecial _) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.
@@ -149,7 +149,6 @@ let pseudoregs_for_operation op arg res =
 let chunk_double = function
     Single -> false
   | Double -> true
-  | Double_u -> true
   | _ -> assert false
 
 (* The selector class *)
@@ -293,8 +292,8 @@ method select_push exp =
   | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload (Double_u, _), [loc], _) ->
-      let (addr, arg) = self#select_addressing Double_u loc in
+  | Cop(Cload (Double, _), [loc], _) ->
+      let (addr, arg) = self#select_addressing Double loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 

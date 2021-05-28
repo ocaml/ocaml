@@ -136,7 +136,6 @@ type memory_chunk =
   | Word_val                           (* pointer inside heap or encoded int *)
   | Single
   | Double                             (* 64-bit-aligned 64-bit float *)
-  | Double_u                           (* word-aligned 64-bit float *)
 
 and operation =
     Capply of machtype

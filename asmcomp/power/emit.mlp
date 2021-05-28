@@ -743,7 +743,7 @@ let emit_instr env i =
           | Thirtytwo_signed -> if ppc64 then "lwa" else "lwz"
 	  | Word_int | Word_val -> lg
           | Single -> "lfs"
-          | Double | Double_u -> "lfd" in
+          | Double -> "lfd" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
@@ -755,7 +755,7 @@ let emit_instr env i =
 	  | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
 	  | Word_int | Word_val -> stg
           | Single -> "stfs"
-          | Double | Double_u -> "stfd" in
+          | Double -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc { bytes; dbginfo }) ->
         emit_alloc env i bytes dbginfo false

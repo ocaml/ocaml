@@ -528,7 +528,7 @@ let emit_instr env i =
     | Lop(Iload(Single, addr, _mut)) when !fpu >= VFPv2 ->
         `	flds	s14, {emit_addressing addr i.arg 0}\n`;
         `	fcvtds	{emit_reg i.res.(0)}, s14\n`; 2
-    | Lop(Iload((Double | Double_u), addr, _mut)) when !fpu = Soft ->
+    | Lop(Iload(Double, addr, _mut)) when !fpu = Soft ->
         (* Use LDM or LDRD if possible *)
         begin match i.res.(0), i.res.(1), addr with
           {loc = Reg rt}, {loc = Reg rt2}, Iindexed 0
@@ -555,14 +555,13 @@ let emit_instr env i =
           | Byte_signed -> "ldrsb"
           | Sixteen_unsigned -> "ldrh"
           | Sixteen_signed -> "ldrsh"
-          | Double
-          | Double_u -> "fldd"
+          | Double -> "fldd"
           | _ (* 32-bit quantities *) -> "ldr" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 0}\n`; 1
     | Lop(Istore(Single, addr, _)) when !fpu >= VFPv2 ->
         `	fcvtsd	s14, {emit_reg i.arg.(0)}\n`;
         `	fsts	s14, {emit_addressing addr i.arg 1}\n`; 2
-    | Lop(Istore((Double | Double_u), addr, _)) when !fpu = Soft ->
+    | Lop(Istore(Double, addr, _)) when !fpu = Soft ->
         (* Use STM or STRD if possible *)
         begin match i.arg.(0), i.arg.(1), addr with
           {loc = Reg rt}, {loc = Reg rt2}, Iindexed 0
@@ -584,8 +583,7 @@ let emit_instr env i =
           | Byte_signed -> "strb"
           | Sixteen_unsigned
           | Sixteen_signed -> "strh"
-          | Double
-          | Double_u -> "fstd"
+          | Double -> "fstd"
           | _ (* 32-bit quantities *) -> "str" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
     | Lop(Ialloc { bytes = n; dbginfo }) ->
