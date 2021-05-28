@@ -2687,8 +2687,9 @@ and unify2_rec env t10 t1 t20 t2 =
   let t1 = repr t1 and t2 = repr t2 in
   if unify_eq t1 t2 then () else
   try match (t1.desc, t2.desc) with
-  | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
+  | (Tconstr (p1, tl1, a1), Tconstr (p2, tl2, a2)) ->
       if Path.same p1 p2 && tl1 = [] && tl2 = [] && is_public_type !env p1
+      && not (has_cached_expansion p1 !a1 || has_cached_expansion p2 !a2)
       then begin
         update_level_for Unify !env t1.level t2;
         update_scope_for Unify t1.scope t2;
