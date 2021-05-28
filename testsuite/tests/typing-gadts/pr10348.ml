@@ -36,3 +36,15 @@ let foo (type a) (x : (a, int) eq) (a : a) p =
 [%%expect{|
 val foo : ('a, int) eq -> 'a -> bool -> 'a = <fun>
 |}]
+
+type ('a,'b) fst = 'a
+
+let foo4 (type a) (x : (a, int) eq) (a : a) p =
+  let module M : sig type t = (a,bool) fst val x : t end =
+    struct type t = (a,bool) fst let x = a end in
+  let Refl = x in
+  if p then a else M.x;;
+[%%expect{|
+type ('a, 'b) fst = 'a
+val foo4 : ('a, int) eq -> 'a -> bool -> 'a = <fun>
+|}]

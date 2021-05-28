@@ -2594,24 +2594,6 @@ let unify1_var env t1 t2 =
   | exception Unify _ when !umode = Pattern ->
       false
 
-(* Do not use local constraints more than necessary *)
-let rec unify_public env t1 t2 =
-  let t1 = repr t1 and t2 = repr t2 in
-  if unify_eq t1 t2 then () else
-  match (t1.desc, t2.desc) with
-  | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-    when is_public_type env p1 && is_public_type env p2 ->
-      if Path.same p1 p2 && tl1 = [] && tl2 = [] then begin
-        update_level_for Unify env t1.level t2;
-        update_scope_for Unify t1.scope t2;
-        link_type t1 t2
-      end else
-        if find_expansion_scope env p1 > find_expansion_scope env p2
-        then unify_public env t1 (try_expand_safe env t2)
-        else unify_public env (try_expand_safe env t1) t2
-  | _ ->
-      raise Cannot_expand
-
 (* Can only be called when generate_equations is true *)
 let record_equation t1 t2 =
   match !equations_generation with
@@ -2690,7 +2672,7 @@ let rec unify (env:Env.t ref) t1 t2 =
         update_scope_for Unify t1.scope t2;
         link_type t1 t2
     | (Tconstr _, Tconstr _) when Env.has_local_constraints !env ->
-        (try unify_public !env t1 t2  with Cannot_expand -> unify2 env t1 t2)
+        unify2_rec env t1 t1 t2 t2
     | _ ->
         unify2 env t1 t2
     end;
@@ -2699,13 +2681,34 @@ let rec unify (env:Env.t ref) t1 t2 =
     reset_trace_gadt_instances reset_tracing;
     raise( Unify (Errortrace.diff t1 t2 :: trace) )
 
-and unify2 env t1 t2 =
+and unify2 env t1 t2 = unify2_expand env t1 t1 t2 t2
+
+and unify2_rec env t10 t1 t20 t2 =
+  let t1 = repr t1 and t2 = repr t2 in
+  if unify_eq t1 t2 then () else
+  try match (t1.desc, t2.desc) with
+  | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
+      if Path.same p1 p2 && tl1 = [] && tl2 = [] && is_public_type !env p1
+      then begin
+        update_level_for Unify !env t1.level t2;
+        update_scope_for Unify t1.scope t2;
+        link_type t1 t2
+      end else
+        if find_expansion_scope !env p1 > find_expansion_scope !env p2
+        then unify2_rec env t10 t1 t20 (try_expand_safe !env t2)
+        else unify2_rec env t10 (try_expand_safe !env t1) t20 t2
+  | _ ->
+      raise Cannot_expand
+  with Cannot_expand ->
+    unify2_expand env t10 t1 t20 t2
+
+and unify2_expand env t1 t1' t2 t2' =
   (* Second step: expansion of abbreviations *)
   (* Expansion may change the representative of the types. *)
-  ignore (expand_head_unif !env t1);
-  ignore (expand_head_unif !env t2);
-  let t1' = expand_head_unif !env t1 in
-  let t2' = expand_head_unif !env t2 in
+  ignore (expand_head_unif !env t1');
+  ignore (expand_head_unif !env t2');
+  let t1' = expand_head_unif !env t1' in
+  let t2' = expand_head_unif !env t2' in
   let lv = Int.min t1'.level t2'.level in
   let scope = Int.max t1'.scope t2'.scope in
   update_level_for Unify !env lv t2;
