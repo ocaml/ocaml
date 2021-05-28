@@ -195,6 +195,9 @@ Working version
 - #10389, #10391, #10392: Add {Int,Int32,Int64,Nativeint}.{min,max}.
   (Nicolás Ojeda Bär and Alain Frisch, review by Xavier Leroy)
 
+- #10430: Add Format.print_bytes and Format.pp_print_bytes.
+  (Gabriel Radanne, review by Gabriel Scherer and David Allsopp)
+
 ### Other libraries:
 
 - #10047: Add `Unix.realpath`

@@ -636,6 +636,8 @@ let pp_print_as state isize s =
 let pp_print_string state s =
   pp_print_as state (String.length s) s
 
+let pp_print_bytes state s =
+  pp_print_as state (Bytes.length s) (Bytes.to_string s)
 
 (* To format an integer. *)
 let pp_print_int state i = pp_print_string state (Int.to_string i)
@@ -1114,6 +1116,7 @@ and open_stag = pp_open_stag std_formatter
 and close_stag = pp_close_stag std_formatter
 and print_as = pp_print_as std_formatter
 and print_string = pp_print_string std_formatter
+and print_bytes = pp_print_bytes std_formatter
 and print_int = pp_print_int std_formatter
 and print_float = pp_print_float std_formatter
 and print_char = pp_print_char std_formatter
