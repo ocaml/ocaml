@@ -46,10 +46,6 @@ Examples:
     ./configure --prefix=/usr
 
 
-* On a Linux x86-64 host, to build a 32-bit version of OCaml:
-
-    ./configure --build=x86_64-pc-linux-gnu --host=i686-linux-gnu
-
 * For AIX 7.x with the IBM compiler `xlc`:
 
     ./configure CC=xlc

@@ -121,9 +121,12 @@ NATIVE_COMPILER=@native_compiler@
 ### Name of architecture for the native-code compiler
 ### Currently supported:
 ###
-### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
-### power       Macintosh under Mac OS X and Linux
-### arm         ARM under Linux
+### amd64       Intel and AMD x86 64-bit processors
+### arm         ARM v6, v7, v8 in 32-bit mode
+### arm64       AArch64, e.g. ARM v8 in 64-bit mode
+### power       POWER and PowerPC
+### riscv       RISC-V 64-bit
+### s390x       IBM zSystems / s390
 ###
 ### Set ARCH=none if your machine is not supported
 ARCH=@arch@

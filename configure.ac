@@ -194,10 +194,6 @@ AS_CASE([$host],
     SO=dll
     outputexe=-Fe
     syslib='$(1).lib'],
-  [i386-*-solaris*],
-    [AC_MSG_ERROR([Building for 32 bits target is not supported. \
-If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
-(or "cc -m64" if you don't have GCC).])],
   [ccomptype=cc
   S=s
   SO=so
@@ -440,7 +436,7 @@ AS_CASE([$host],
   [*-pc-windows],
     [AC_CHECK_TOOLS(
       [DEP_CC],
-      [$DEP_CC gcc cc x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc],
+      [$DEP_CC gcc cc x86_64-w64-mingw32-gcc],
       [false])],
   [DEP_CC="$CC"])
 
@@ -671,17 +667,10 @@ AS_CASE([$host],
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
-# Enable SSE2 on x86 mingw to avoid using 80-bit registers.
-AS_CASE([$host],
-  [i686-*-mingw32],
-    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
-
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
 # Problem: flags are added to CC rather than CPPFLAGS
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [],
-  [common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"])
+common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"
 
 # Adjust according to target
 
@@ -699,23 +688,14 @@ AS_IF([test x"$enable_shared" = "xno"],
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],
-  [i686-*-cygwin],
-    [flexdll_chain='cygwin'
-    flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216"],
   [x86_64-*-cygwin],
     [flexdll_chain='cygwin64'
     flexlink_flags="-chain $flexdll_chain -merge-manifest -stack 16777216"],
   [*-*-cygwin*],
-    [AC_MSG_ERROR([unknown cygwin variant])],
-  [i686-w64-mingw32],
-    [flexdll_chain='mingw'
-    flexlink_flags="-chain $flexdll_chain -stack 16777216"],
+    [AC_MSG_ERROR([unsupported cygwin variant])],
   [x86_64-w64-mingw32],
     [flexdll_chain='mingw64'
     flexlink_flags="-chain $flexdll_chain -stack 33554432"],
-  [i686-pc-windows],
-    [flexdll_chain='msvc'
-    flexlink_flags="-merge-manifest -stack 16777216"],
   [x86_64-pc-windows],
     [flexdll_chain='msvc64'
     flexlink_flags="-x64 -merge-manifest -stack 33554432"])
@@ -816,9 +796,7 @@ AS_CASE([$CC,$host],
     )
     ostype="Cygwin"],
   [*,*-*-mingw32],
-    [AS_CASE([$host],
-      [i686-*-*], [oc_dll_ldflags="-static-libgcc"])
-    mkexedebugflag="-link -g"
+    [mkexedebugflag="-link -g"
     ostype="Win32"
     toolchain="mingw"
     mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
@@ -995,8 +973,6 @@ AS_IF([test x"$enable_shared" != "xno"],
     [*-*-cygwin*], [natdynlink=true],
     [*-*-mingw32], [natdynlink=true],
     [*-pc-windows], [natdynlink=true],
-    [[i[3456]86-*-linux*]], [natdynlink=true],
-    [[i[3456]86-*-gnu*]], [natdynlink=true],
     [[x86_64-*-linux*]], [natdynlink=true],
     [arm64-*-darwin*], [natdynlink=true],
     [aarch64-*-darwin*], [natdynlink=true],
@@ -1004,17 +980,11 @@ AS_IF([test x"$enable_shared" != "xno"],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
     [x86_64-*-solaris*], [natdynlink=true],
-    [i686-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-dragonfly*], [natdynlink=true],
-    [[i[3456]86-*-freebsd*]], [natdynlink=true],
     [x86_64-*-freebsd*], [natdynlink=true],
-    [[i[3456]86-*-openbsd*]], [natdynlink=true],
     [x86_64-*-openbsd*], [natdynlink=true],
-    [[i[3456]86-*-netbsd*]], [natdynlink=true],
     [x86_64-*-netbsd*], [natdynlink=true],
-    [i386-*-gnu0.3], [natdynlink=true],
-    [[i[3456]86-*-haiku*]], [natdynlink=true],
     [arm*-*-linux*], [natdynlink=true],
     [arm*-*-freebsd*], [natdynlink=true],
     [earm*-*-netbsd*], [natdynlink=true],
@@ -1041,20 +1011,6 @@ model=default
 system=unknown
 
 AS_CASE([$host],
-  [[i[3456]86-*-linux*]],
-    [arch=i386; system=linux_elf],
-  [[i[3456]86-*-*bsd*]],
-    [arch=i386; system=bsd_elf],
-  [[i[3456]86-*-haiku*]],
-    [arch=i386; system=beos],
-  [[i[3456]86-*-cygwin]],
-    [arch=i386; system=cygwin],
-  [[i[3456]86-*-gnu*]],
-    [arch=i386; system=gnu],
-  [[i[3456]86-*-mingw32]],
-    [arch=i386; system=mingw],
-  [i686-pc-windows],
-    [arch=i386; system=win32],
   [x86_64-pc-windows],
     [arch=amd64; system=win64],
   [[powerpc64le*-*-linux*]],
@@ -1208,11 +1164,8 @@ default_aspp="$CC -c"
 AS_CASE([$as_target,$ocaml_cv_cc_vendor],
   [*-*-linux*,gcc-*],
     [AS_CASE([$as_cpu],
-      [x86_64|arm*|aarch64*|i[[3-6]]86|riscv*],
+      [x86_64|arm*|aarch64*|riscv*],
         [default_as="${toolpref}as"])],
-  [i686-pc-windows,*],
-    [default_as="ml -nologo -coff -Cp -c -Fo"
-    default_aspp="$default_as"],
   [x86_64-pc-windows,*],
     [default_as="ml64 -nologo -Cp -c -Fo"
     default_aspp="$default_as"],
@@ -1765,8 +1718,7 @@ AS_CASE([$enable_debug_runtime],
 AC_MSG_CHECKING([whether stack overflows can be detected])
 
 AS_CASE([$arch,$system],
-  [i386,linux_elf|amd64,linux|amd64,macosx \
-    |amd64,openbsd|i386,bsd_elf],
+  [amd64,linux|amd64,macosx|amd64,bsd_elf],
     [AC_DEFINE([HAS_STACK_OVERFLOW_DETECTION])
     AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])])
@@ -1900,7 +1852,7 @@ AS_IF([test x"$enable_flat_float_array" = "xno"],
 AS_IF([test x"$enable_function_sections" = "xno"],
   [function_sections=false],
   [AS_CASE([$arch],
-    [amd64|i386|arm64], # not supported on arm32, see issue #9124.
+    [amd64|arm64], # not supported on arm32, see issue #9124.
      [AS_CASE([$target],
         [*-cygwin*|*-mingw*|*-windows|*-apple-darwin*],
           [function_sections=false;
@@ -1978,9 +1930,7 @@ AS_CASE([$host],
 # Define default prefix correctly for the different Windows ports
 AS_IF([test x"$prefix" = "xNONE"],
   [AS_CASE([$host],
-    [i686-w64-mingw32], [prefix='C:/ocamlmgw'],
     [x86_64-w64-mingw32], [prefix='C:/ocamlmgw64'],
-    [i686-pc-windows], [prefix='C:/ocamlms'],
     [x86_64-pc-windows], [prefix='C:/ocamlms64'])],
   [AS_IF([test x"$unix_or_win32" = "xwin32" \
           && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ],

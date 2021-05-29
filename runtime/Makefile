@@ -397,9 +397,6 @@ domain_state32.inc: caml/domain_state.tbl gen_domain_state32_inc.awk
 amd64nt.obj: amd64nt.asm domain_state64.inc
 	$(ASM)$@ $(ASMFLAGS) $<
 
-i386nt.obj: i386nt.asm domain_state32.inc
-	$(ASM)$@ $(ASMFLAGS) $<
-
 %_libasmrunpic.obj: %.asm
 	$(ASM)$@ $(ASMFLAGS) $<
 
