@@ -330,7 +330,7 @@ external erf : float -> float = "caml_erf_float" "caml_erf"
 
 external erfc : float -> float = "caml_erfc_float" "caml_erfc"
   [@@unboxed] [@@noalloc]
-(** Complementary error function ([erfc x = 1.0 -. erf x]).
+(** Complementary error function ([erfc x = 1 - erf x]).
     The argument ranges over the entire real line.
     The result is always within [[-1.0, 1.0]].
 
