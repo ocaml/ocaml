@@ -174,7 +174,7 @@ method private instr_in_basic_block instr try_nesting =
 
 (* Determine whether an operation is a memory store or a memory load.
    Can be overridden for some processors to signal specific
-   load or store instructions (e.g. on the I386). *)
+   load or store instructions (e.g. on the x86-64). *)
 
 method is_store = function
     Istore(_, _, _) -> true

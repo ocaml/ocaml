@@ -304,10 +304,8 @@ method private cse n i =
               (* This operation was computed earlier. *)
               (* Are there registers that hold the results computed earlier? *)
               begin match find_regs_containing n1 vres with
-              | Some res when (not (self#is_cheap_operation op))
-                           && (not (Proc.regs_are_volatile res)) ->
-                  (* We can replace res <- op args with r <- move res,
-                     provided res are stable (non-volatile) registers.
+              | Some res when (not (self#is_cheap_operation op)) ->
+                  (* We can replace res <- op args with r <- move res.
                      If the operation is very cheap to compute, e.g.
                      an integer constant, don't bother. *)
                   let n3 = set_known_regs n1 i.res vres in

@@ -2606,14 +2606,12 @@ asmcomp/dataflow.cmi : \
     asmcomp/mach.cmi
 asmcomp/deadcode.cmo : \
     asmcomp/reg.cmi \
-    asmcomp/proc.cmi \
     utils/numbers.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : \
     asmcomp/reg.cmx \
-    asmcomp/proc.cmx \
     utils/numbers.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
