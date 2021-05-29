@@ -16,29 +16,6 @@ jobs:
     - name: Run the testsuite
       run: |
         make -C testsuite USE_RUNTIME=d all
-  i386-static:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Packages
-      run: |
-        sudo apt-get update -y && sudo apt-get install -y gcc-multilib gfortran-multilib
-    - name: configure tree
-      run: |
-        XARCH=i386 CONFIG_ARG='--disable-stdlib-manpages --disable-shared --enable-cmm-invariants' bash -xe tools/ci/actions/runner.sh configure
-    - name: Build
-      run: |
-        bash -xe tools/ci/actions/runner.sh build
-    - name: Run the testsuite
-      run: |
-        bash -xe tools/ci/actions/runner.sh test
-    - name: Install
-      run: |
-        bash -xe tools/ci/actions/runner.sh install
-    - name: Other checks
-      run: |
-        bash -xe tools/ci/actions/runner.sh other-checks
   full-flambda:
     runs-on: ubuntu-latest
     steps:
