@@ -149,7 +149,7 @@ let scrape_for_type_of env pres mty =
       end
     | mty, Some path ->
         strengthen ~aliasable:false env mty path
-    | _ -> mty
+    | mty, _ -> mty
   in
   make_aliases_absent pres (loop env None mty)
 
