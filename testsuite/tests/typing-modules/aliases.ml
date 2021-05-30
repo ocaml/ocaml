@@ -88,10 +88,10 @@ module C4 :
 - : char = 'B'
 |}];;
 
-module G(X:sig end) = struct module M = X end;; (* does not alias X *)
+module G(X:sig end) = struct module M = X end;; (* (weak) aliases to X *)
 module M = G(struct end);;
 [%%expect{|
-module G : functor (X : sig end) -> sig module M : sig end end
+module G : functor (X : sig end) -> sig module M = X end
 module M : sig module M : sig end end
 |}];;
 
@@ -265,7 +265,7 @@ val pow : t -> t -> t = <fun>
 
 module F(X:sig module C = Char end) = struct module C = X.C end;;
 [%%expect{|
-module F : functor (X : sig module C = Char end) -> sig module C = Char end
+module F : functor (X : sig module C = Char end) -> sig module C = X.C end
 |}];;
 
 (* Applicative functors *)
@@ -275,100 +275,8 @@ module SSet = Set.Make(S);;
 let f (x : StringSet.t) = (x : SSet.t);;
 [%%expect{|
 module S = String
-module StringSet :
-  sig
-    type elt = String.t
-    type t = Set.Make(String).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
-    val add : elt -> t -> t
-    val singleton : elt -> t
-    val remove : elt -> t -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val disjoint : t -> t -> bool
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val min_elt_opt : t -> elt option
-    val max_elt : t -> elt
-    val max_elt_opt : t -> elt option
-    val choose : t -> elt
-    val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
-    val find : elt -> t -> elt
-    val find_opt : elt -> t -> elt option
-    val find_first : (elt -> bool) -> t -> elt
-    val find_first_opt : (elt -> bool) -> t -> elt option
-    val find_last : (elt -> bool) -> t -> elt
-    val find_last_opt : (elt -> bool) -> t -> elt option
-    val of_list : elt list -> t
-    val to_seq_from : elt -> t -> elt Seq.t
-    val to_seq : t -> elt Seq.t
-    val to_rev_seq : t -> elt Seq.t
-    val add_seq : elt Seq.t -> t -> t
-    val of_seq : elt Seq.t -> t
-  end
-module SSet :
-  sig
-    type elt = S.t
-    type t = Set.Make(S).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
-    val add : elt -> t -> t
-    val singleton : elt -> t
-    val remove : elt -> t -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val disjoint : t -> t -> bool
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val min_elt_opt : t -> elt option
-    val max_elt : t -> elt
-    val max_elt_opt : t -> elt option
-    val choose : t -> elt
-    val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
-    val find : elt -> t -> elt
-    val find_opt : elt -> t -> elt option
-    val find_first : (elt -> bool) -> t -> elt
-    val find_first_opt : (elt -> bool) -> t -> elt option
-    val find_last : (elt -> bool) -> t -> elt
-    val find_last_opt : (elt -> bool) -> t -> elt option
-    val of_list : elt list -> t
-    val to_seq_from : elt -> t -> elt Seq.t
-    val to_seq : t -> elt Seq.t
-    val to_rev_seq : t -> elt Seq.t
-    val add_seq : elt Seq.t -> t -> t
-    val of_seq : elt Seq.t -> t
-  end
+module StringSet = Set.Make(String)
+module SSet = Set.Make(S)
 val f : StringSet.t -> SSet.t = <fun>
 |}];;
 
@@ -401,53 +309,7 @@ A1.empty = A.empty;;
 module A :
   sig
     module B : sig type t val compare : 'a -> 'b -> int end
-    module S :
-      sig
-        type elt = B.t
-        type t = Set.Make(B).t
-        val empty : t
-        val is_empty : t -> bool
-        val mem : elt -> t -> bool
-        val add : elt -> t -> t
-        val singleton : elt -> t
-        val remove : elt -> t -> t
-        val union : t -> t -> t
-        val inter : t -> t -> t
-        val disjoint : t -> t -> bool
-        val diff : t -> t -> t
-        val compare : t -> t -> int
-        val equal : t -> t -> bool
-        val subset : t -> t -> bool
-        val iter : (elt -> unit) -> t -> unit
-        val map : (elt -> elt) -> t -> t
-        val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-        val for_all : (elt -> bool) -> t -> bool
-        val exists : (elt -> bool) -> t -> bool
-        val filter : (elt -> bool) -> t -> t
-        val filter_map : (elt -> elt option) -> t -> t
-        val partition : (elt -> bool) -> t -> t * t
-        val cardinal : t -> int
-        val elements : t -> elt list
-        val min_elt : t -> elt
-        val min_elt_opt : t -> elt option
-        val max_elt : t -> elt
-        val max_elt_opt : t -> elt option
-        val choose : t -> elt
-        val choose_opt : t -> elt option
-        val split : elt -> t -> t * bool * t
-        val find : elt -> t -> elt
-        val find_opt : elt -> t -> elt option
-        val find_first : (elt -> bool) -> t -> elt
-        val find_first_opt : (elt -> bool) -> t -> elt option
-        val find_last : (elt -> bool) -> t -> elt
-        val find_last_opt : (elt -> bool) -> t -> elt option
-        val of_list : elt list -> t
-        val to_seq_from : elt -> t -> elt Seq.t
-        val to_seq : t -> elt Seq.t
-        val to_rev_seq : t -> elt Seq.t
-        val add_seq : elt Seq.t -> t -> t
-        val of_seq : elt Seq.t -> t
-      end
+    module S = Set.Make(B)
     val empty : S.t
   end
 module A1 = A
@@ -468,12 +330,11 @@ module N = G (M);;
 module N = F (M.Y) (M);;
 [%%expect{|
 module FF : functor (X : sig end) -> sig type t end
-module M :
-  sig module X : sig end module Y : sig type t = FF(X).t end type t = Y.t end
+module M : sig module X : sig end module Y = FF(X) type t = Y.t end
 module F : functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig end
-module G : functor (M : sig type t = M.Y.t end) -> sig end
-module N : sig end
-module N : sig end
+module G = F(M.Y)
+module N = G(M)
+module N = F(M.Y)(M)
 |}];;
 
 (* PR#5058 *)
@@ -509,8 +370,8 @@ module A2 : sig end
 module L1 : sig module X = A1 end
 module L2 : sig module X = A2 end
 module F : functor (L : sig module X : sig end end) -> sig end
-module F1 : sig end
-module F2 : sig end
+module F1 = F(L1)
+module F2 = F(L2)
 |}];;
 
 (* Counter example: why we need to be careful with PR#6307 *)
@@ -532,53 +393,7 @@ module type S' = sig
 end;; (* fail *)
 [%%expect{|
 module Int : sig type t = int val compare : 'a -> 'a -> int end
-module SInt :
-  sig
-    type elt = Int.t
-    type t = Set.Make(Int).t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
-    val add : elt -> t -> t
-    val singleton : elt -> t
-    val remove : elt -> t -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val disjoint : t -> t -> bool
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val min_elt_opt : t -> elt option
-    val max_elt : t -> elt
-    val max_elt_opt : t -> elt option
-    val choose : t -> elt
-    val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
-    val find : elt -> t -> elt
-    val find_opt : elt -> t -> elt option
-    val find_first : (elt -> bool) -> t -> elt
-    val find_first_opt : (elt -> bool) -> t -> elt option
-    val find_last : (elt -> bool) -> t -> elt
-    val find_last_opt : (elt -> bool) -> t -> elt option
-    val of_list : elt list -> t
-    val to_seq_from : elt -> t -> elt Seq.t
-    val to_seq : t -> elt Seq.t
-    val to_rev_seq : t -> elt Seq.t
-    val add_seq : elt Seq.t -> t -> t
-    val of_seq : elt Seq.t -> t
-  end
+module SInt = Set.Make(Int)
 type (_, _) eq = Eq : ('a, 'a) eq
 type wrap = W of (SInt.t, SInt.t) eq
 module M :
@@ -880,4 +695,258 @@ module M :
   end
 module N : sig val s : string end
 val s : string = "hello"
+|}]
+
+(* Check that codegen works correctly with weak aliases.
+   These tests should segfault (by trying to dereference 0) if the modules
+   become misaligned due to a bug with handling of module presence. *)
+module type S = sig
+  type t
+  val create : unit -> t
+end
+module INT = struct
+  type t = int
+  let create () = 0
+end
+module REF = struct
+  type t = int ref ref
+  let create () = ref (ref 1)
+end
+module F (X : S) = struct
+  module A = REF
+  module B = REF
+  module C = REF
+  module D = X
+  module E = REF
+  module F = REF
+  module G = REF
+end
+module M = F(INT)
+let sum_m =
+    ! !(M.A.create ())
+  + ! !(M.B.create ())
+  + ! !(M.C.create ())
+  + ! !(M.E.create ())
+  + ! !(M.F.create ())
+  + ! !(M.G.create ())
+module N : sig (* Force REF-aliased modules to be present *)
+  module A : S with type t = int ref ref
+  module B : S with type t = int ref ref
+  module C : S with type t = int ref ref
+  module D = INT
+  module E : S with type t = int ref ref
+  module F : S with type t = int ref ref
+  module G : S with type t = int ref ref
+end = M
+let sum_n =
+    ! !(N.A.create ())
+  + ! !(N.B.create ())
+  + ! !(N.C.create ())
+  + ! !(N.E.create ())
+  + ! !(N.F.create ())
+  + ! !(N.G.create ())
+module O : sig (* Force all modules to be present *)
+  module A : S with type t = int ref ref
+  module B : S with type t = int ref ref
+  module C : S with type t = int ref ref
+  module D : S with type t = int
+  module E : S with type t = int ref ref
+  module F : S with type t = int ref ref
+  module G : S with type t = int ref ref
+end = M
+let sum_o =
+    ! !(O.A.create ())
+  + ! !(O.B.create ())
+  + ! !(O.C.create ())
+  + ! !(O.E.create ())
+  + ! !(O.F.create ())
+  + ! !(O.G.create ())
+module P : sig (* Force INT module to be present *)
+  module A = REF
+  module B = REF
+  module C = REF
+  module D : S with type t = int
+  module E = REF
+  module F = REF
+  module G = REF
+end = M
+let sum_p =
+    ! !(P.A.create ())
+  + ! !(P.B.create ())
+  + ! !(P.C.create ())
+  + ! !(P.E.create ())
+  + ! !(P.F.create ())
+  + ! !(P.G.create ())
+module F' (X : S) : sig (* Functor with all modules present *)
+  module A : S with type t = int ref ref
+  module B : S with type t = int ref ref
+  module C : S with type t = int ref ref
+  module D : S with type t = X.t
+  module E : S with type t = int ref ref
+  module F : S with type t = int ref ref
+  module G : S with type t = int ref ref
+end = struct
+  module A = REF
+  module B = REF
+  module C = REF
+  module D = X
+  module E = REF
+  module F = REF
+  module G = REF
+end
+module Q = F'(INT)
+let sum_q =
+    ! !(Q.A.create ())
+  + ! !(Q.B.create ())
+  + ! !(Q.C.create ())
+  + ! !(Q.E.create ())
+  + ! !(Q.F.create ())
+  + ! !(Q.G.create ())
+module F'' (X : S) : sig (* Functor with REF-aliased modules present *)
+  module A : S with type t = int ref ref
+  module B : S with type t = int ref ref
+  module C : S with type t = int ref ref
+  module D = X
+  module E : S with type t = int ref ref
+  module F : S with type t = int ref ref
+  module G : S with type t = int ref ref
+end = struct
+  module A = REF
+  module B = REF
+  module C = REF
+  module D = X
+  module E = REF
+  module F = REF
+  module G = REF
+end
+module R = F''(INT)
+let sum_r =
+    ! !(R.A.create ())
+  + ! !(R.B.create ())
+  + ! !(R.C.create ())
+  + ! !(R.E.create ())
+  + ! !(R.F.create ())
+  + ! !(R.G.create ());;
+
+[%%expect {|
+module type S = sig type t val create : unit -> t end
+module INT : sig type t = int val create : unit -> int end
+module REF : sig type t = int ref ref val create : unit -> int ref ref end
+module F :
+  functor (X : S) ->
+    sig
+      module A = REF
+      module B = REF
+      module C = REF
+      module D = X
+      module E = REF
+      module F = REF
+      module G = REF
+    end
+module M = F(INT)
+val sum_m : int = 6
+module N :
+  sig
+    module A : sig type t = int ref ref val create : unit -> t end
+    module B : sig type t = int ref ref val create : unit -> t end
+    module C : sig type t = int ref ref val create : unit -> t end
+    module D = INT
+    module E : sig type t = int ref ref val create : unit -> t end
+    module F : sig type t = int ref ref val create : unit -> t end
+    module G : sig type t = int ref ref val create : unit -> t end
+  end
+val sum_n : int = 6
+module O :
+  sig
+    module A : sig type t = int ref ref val create : unit -> t end
+    module B : sig type t = int ref ref val create : unit -> t end
+    module C : sig type t = int ref ref val create : unit -> t end
+    module D : sig type t = int val create : unit -> t end
+    module E : sig type t = int ref ref val create : unit -> t end
+    module F : sig type t = int ref ref val create : unit -> t end
+    module G : sig type t = int ref ref val create : unit -> t end
+  end
+val sum_o : int = 6
+module P :
+  sig
+    module A = REF
+    module B = REF
+    module C = REF
+    module D : sig type t = int val create : unit -> t end
+    module E = REF
+    module F = REF
+    module G = REF
+  end
+val sum_p : int = 6
+module F' :
+  functor (X : S) ->
+    sig
+      module A : sig type t = int ref ref val create : unit -> t end
+      module B : sig type t = int ref ref val create : unit -> t end
+      module C : sig type t = int ref ref val create : unit -> t end
+      module D : sig type t = X.t val create : unit -> t end
+      module E : sig type t = int ref ref val create : unit -> t end
+      module F : sig type t = int ref ref val create : unit -> t end
+      module G : sig type t = int ref ref val create : unit -> t end
+    end
+module Q = F'(INT)
+val sum_q : int = 6
+module F'' :
+  functor (X : S) ->
+    sig
+      module A : sig type t = int ref ref val create : unit -> t end
+      module B : sig type t = int ref ref val create : unit -> t end
+      module C : sig type t = int ref ref val create : unit -> t end
+      module D = X
+      module E : sig type t = int ref ref val create : unit -> t end
+      module F : sig type t = int ref ref val create : unit -> t end
+      module G : sig type t = int ref ref val create : unit -> t end
+    end
+module R = F''(INT)
+val sum_r : int = 6
+|}]
+
+(* Functor aliases *)
+module M : sig
+  module A = F(INT).A
+  module B = F'(INT).B
+  module C = F''(INT).C
+  module D = F(INT).D
+  module E = F'(INT).D (* Not a typo: we want the functor argument's alias. *)
+  module F = F''(INT).D (* Not a typo: we want the functor argument's alias. *)
+end = struct
+  module A = M.A
+  module B = Q.B
+  module C = R.C
+  module D = M.D
+  module E = Q.D
+  module F = R.D
+end
+module N : sig (* Refine from weak aliases to abstract types. *)
+  module A : S
+  module B : S
+  module C : S
+  module D : S
+  module E : S
+  module F : S
+end = M;;
+[%%expect {|
+module M :
+  sig
+    module A = REF
+    module B = F'(INT).B
+    module C = F''(INT).C
+    module D = INT
+    module E = F'(INT).D
+    module F = INT
+  end
+module N :
+  sig
+    module A : S
+    module B : S
+    module C : S
+    module D : S
+    module E : S
+    module F : S
+  end
 |}]

@@ -25,7 +25,7 @@ module M :
 
 module N = F(M);;
 [%%expect{|
-module N : sig val x : M.t end
+module N = F(M)
 |}]
 
 module A : sig end = struct

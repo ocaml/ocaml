@@ -37,7 +37,7 @@ module T3 = Fix(F3);;
 let x : T3.Fixed.t = S Z;;
 [%%expect{|
 module F3 : functor (X : T) -> sig type t = Z | S of X.t end
-module T3 : sig module rec Fixed : sig type t = F3(Fixed).t end end
+module T3 = Fix(F3)
 val x : T3.Fixed.t = F3(T3.Fixed).S F3(T3.Fixed).Z
 |}]
 
@@ -109,7 +109,7 @@ M.f 5;;
 [%%expect{|
 module Foo :
   functor (F : T -> T) -> sig val f : Fix(F).Fixed.t -> Fix(F).Fixed.t end
-module M : sig val f : Fix(Id).Fixed.t -> Fix(Id).Fixed.t end
+module M = Foo(Id)
 Line 1:
 Error: In the signature of Fix(Id):
        The definition of Fixed.t contains a cycle:

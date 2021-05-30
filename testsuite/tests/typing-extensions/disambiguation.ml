@@ -60,7 +60,7 @@ module N = F(X);;
 open N
 let g = (Gamm:t);;
 [%%expect {|
-module N : sig type u = F(X).u = .. type t += Gamma type u += Gamme end
+module N = F(X)
 Line 3, characters 9-13:
 3 | let g = (Gamm:t);;
              ^^^^
@@ -136,7 +136,7 @@ let x : X.t = Beth;;
 [%%expect {|
 module F : functor (X : sig type t = .. end) -> sig type X.t += Beth end
 module X : sig type t = .. end
-module FX : sig type X.t += Beth end
+module FX = F(X)
 type exn += Beth
 val x : X.t = <extension>
 |}]
