@@ -950,3 +950,54 @@ module N :
     module F : S
   end
 |}]
+
+module Weak_alias_mismatch_failure : sig
+  module A = F'(INT).C
+end = struct
+  module A = REF
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   module A = REF
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig module A = REF end
+       is not included in
+         sig module A = F'(INT).C end
+       In module A:
+       Modules do not match:
+         (module REF)
+       is not included in
+         (module F'(INT).C)
+|}]
+
+module Weak_alias_non_alias_failure : sig
+  module A = F'(INT).C
+end = struct
+  module A = struct
+    include REF
+  end
+end
+[%%expect {|
+Lines 3-7, characters 6-3:
+3 | ......struct
+4 |   module A = struct
+5 |     include REF
+6 |   end
+7 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module A :
+             sig type t = int ref ref val create : unit -> int ref ref end
+         end
+       is not included in
+         sig module A = F'(INT).C end
+       In module A:
+       Modules do not match:
+         sig type t = int ref ref val create : unit -> int ref ref end
+       is not included in
+         (module F'(INT).C)
+|}]
